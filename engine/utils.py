@@ -2,8 +2,11 @@
 Utility functions for the regelrecht engine
 """
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import math
+
+if TYPE_CHECKING:
+    from engine.context import RuleContext
 
 
 def clean_nan_value(value: Any) -> Any:

@@ -82,6 +82,7 @@ class ArticleEngine:
             calculation_date=reference_date,
             input_specs=self.inputs,
             output_specs=self.outputs_spec,
+            current_law=self.law,
         )
 
         # Execute actions
@@ -156,7 +157,7 @@ class ArticleEngine:
 
     def _evaluate_value(self, value: Any, context: RuleContext) -> Any:
         """
-        Evaluate a value (may be literal or variable reference)
+        Evaluate a value (may be literal, variable reference, or nested operation)
 
         Args:
             value: Value to evaluate
@@ -165,8 +166,15 @@ class ArticleEngine:
         Returns:
             Evaluated value
         """
+        # Variable reference: $VARIABLE_NAME
         if isinstance(value, str) and value.startswith("$"):
             return context._resolve_value(value[1:])
+
+        # Nested operation: {operation: ..., ...}
+        if isinstance(value, dict) and "operation" in value:
+            return self._evaluate_operation(value, context)
+
+        # Literal value
         return value
 
     def _evaluate_operation(self, operation: dict, context: RuleContext) -> Any:

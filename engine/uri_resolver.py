@@ -1,14 +1,16 @@
 """
-URI Resolution for regelrecht:// URIs
+URI Resolution for regelrecht:// URIs and file path references
 
-Parses and resolves regelrecht:// URIs to law articles and fields.
+Parses and resolves references to law articles and fields.
 
-URI Format: regelrecht://{law_id}/{endpoint}#{field}
+Supported formats:
+1. regelrecht:// URI: regelrecht://{law_id}/{endpoint}#{field}
+2. File path reference: regulation/nl/{layer}/{law_id}#{field}
 
 Examples:
   - regelrecht://zvw/is_verzekerd#is_verzekerd
-  - regelrecht://zorgtoeslagwet/bereken_zorgtoeslag#heeft_recht_op_zorgtoeslag
-  - regelrecht://regeling_standaardpremie/standaardpremie#standaardpremie
+  - regulation/nl/wet/zvw#is_verzekerd
+  - regulation/nl/ministeriele_regeling/regeling_standaardpremie#standaardpremie
 """
 
 from dataclasses import dataclass
@@ -30,46 +32,71 @@ class RegelrechtURI:
     @staticmethod
     def _parse(uri: str) -> tuple[str, str, str | None]:
         """
-        Parse regelrecht:// URI into components
+        Parse URI into components
+
+        Supports two formats:
+        1. regelrecht://law_id/endpoint#field
+        2. regulation/nl/layer/law_id#field
 
         Args:
-            uri: URI string like "regelrecht://law_id/endpoint#field"
+            uri: URI string
 
         Returns:
-            Tuple of (law_id, endpoint, field)
+            Tuple of (law_id, endpoint_or_field, field)
+            For file paths without explicit endpoint, endpoint is the field name
 
         Raises:
             ValueError: If URI format is invalid
         """
-        if not uri.startswith("regelrecht://"):
-            raise ValueError(
-                f"Invalid regelrecht URI: must start with 'regelrecht://', got: {uri}"
-            )
-
-        # Remove scheme
-        path = uri[len("regelrecht://") :]
-
-        # Split on fragment (#)
-        if "#" in path:
-            path_part, field = path.split("#", 1)
+        # Split on fragment (#) first
+        if "#" in uri:
+            path_part, field = uri.split("#", 1)
         else:
-            path_part = path
+            path_part = uri
             field = None
 
-        # Split path on first /
-        if "/" not in path_part:
+        # Check if it's a regelrecht:// URI
+        if path_part.startswith("regelrecht://"):
+            # Remove scheme
+            path = path_part[len("regelrecht://") :]
+
+            # Split path on first /
+            if "/" not in path:
+                raise ValueError(
+                    f"Invalid regelrecht URI: must contain law_id/endpoint, got: {uri}"
+                )
+
+            law_id, endpoint = path.split("/", 1)
+
+            if not law_id or not endpoint:
+                raise ValueError(
+                    f"Invalid regelrecht URI: law_id and endpoint cannot be empty, got: {uri}"
+                )
+
+            return law_id, endpoint, field
+
+        # Otherwise, treat as file path: regulation/nl/layer/law_id
+        elif path_part.startswith("regulation/nl/"):
+            # Parse path parts
+            parts = path_part.split("/")
+            if len(parts) < 4:
+                raise ValueError(
+                    f"Invalid file path reference: expected regulation/nl/layer/law_id, got: {uri}"
+                )
+
+            # Extract law_id (last part of path)
+            law_id = parts[-1]
+
+            # For file path references, the endpoint is the field name
+            # (we look up the article that produces this output)
+            endpoint = field if field else law_id
+
+            return law_id, endpoint, field
+
+        else:
             raise ValueError(
-                f"Invalid regelrecht URI: must contain law_id/endpoint, got: {uri}"
+                f"Invalid URI format: must be regelrecht:// or regulation/nl/..., got: {uri}"
             )
-
-        law_id, endpoint = path_part.split("/", 1)
-
-        if not law_id or not endpoint:
-            raise ValueError(
-                f"Invalid regelrecht URI: law_id and endpoint cannot be empty, got: {uri}"
-            )
-
-        return law_id, endpoint, field
 
     def __str__(self) -> str:
         return self.uri
