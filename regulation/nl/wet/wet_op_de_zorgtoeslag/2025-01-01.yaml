@@ -65,6 +65,8 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2"
 
     machine_readable:
+      endpoint: "bereken_zorgtoeslag"
+
       definitions:
         DREMPELINKOMEN_ALLEENSTAANDE:
           value: 3971900
@@ -125,7 +127,7 @@ articles:
           - name: "STANDAARDPREMIE"
             type: "amount"
             source:
-              ref: "#standaardpremie"
+              ref: "regulation/nl/ministeriele_regeling/regeling_standaardpremie#standaardpremie"
             type_spec:
               unit: "eurocent"
 
@@ -203,7 +205,7 @@ articles:
                       subject: "$VERMOGEN_ONDER_GRENS"
                       value: true
                     - operation: "GREATER_THAN"
-                      subject: "$HOOGTE_ZORGTOESLAG"
+                      subject: "$hoogte_zorgtoeslag"
                       value: 0
                 then: true
                 else: false
@@ -219,6 +221,9 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3"
 
     machine_readable:
+      public: true
+      endpoint: "vermogen_onder_grens"
+
       definitions:
         VERMOGENSGRENS_ALLEENSTAAND:
           value: 14189600

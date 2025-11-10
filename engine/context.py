@@ -39,6 +39,7 @@ class RuleContext:
         calculation_date: str,
         input_specs: list[dict] = None,
         output_specs: list[dict] = None,
+        current_law: Any = None,
     ):
         """
         Initialize execution context
@@ -50,6 +51,7 @@ class RuleContext:
             calculation_date: Reference date for calculations
             input_specs: Input specifications from execution section
             output_specs: Output specifications from execution section
+            current_law: The law being executed (for resolving # references)
         """
         self.definitions = self._process_definitions(definitions)
         self.parameters = parameters
@@ -57,6 +59,7 @@ class RuleContext:
         self.calculation_date = calculation_date
         self.input_specs = input_specs or []
         self.output_specs = output_specs or []
+        self.current_law = current_law
 
         # Execution state
         self.outputs: dict[str, Any] = {}
@@ -158,6 +161,17 @@ class RuleContext:
         if not uri:
             logger.warning(f"No url or ref found in source spec for {input_name}")
             return None
+
+        # Handle internal references (same-file): #output_name
+        if uri.startswith("#"):
+            output_name = uri[1:]  # Remove the # prefix
+            logger.debug(f"Resolving internal reference: {output_name}")
+
+            # Build full URI to current law's article that produces this output
+            # We need to find which article in the current law produces this output
+            full_uri = f"regulation/nl/{self.current_law.regulatory_layer.lower()}/{self.current_law.id}{uri}"
+            uri = full_uri
+
         params_spec = source_spec.get("parameters", {})
 
         # Resolve parameter values ($BSN -> actual BSN value)
