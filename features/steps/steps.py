@@ -9,7 +9,7 @@ from mock_data_service import MockDataService
 @given("the following RvIG personal data:")
 def step_given_rvig_personal_data(context):
     """Store RvIG personal data from table"""
-    if not hasattr(context, 'mock_service'):
+    if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
@@ -27,7 +27,7 @@ def step_given_rvig_personal_data(context):
 @given("the following RvIG relationship data:")
 def step_given_rvig_relationship_data(context):
     """Store RvIG relationship data from table"""
-    if not hasattr(context, 'mock_service'):
+    if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
@@ -42,7 +42,7 @@ def step_given_rvig_relationship_data(context):
 @given("the following RVZ insurance data:")
 def step_given_rvz_insurance_data(context):
     """Store RVZ insurance data from table"""
-    if not hasattr(context, 'mock_service'):
+    if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
@@ -56,7 +56,7 @@ def step_given_rvz_insurance_data(context):
 @given("the following BELASTINGDIENST box1 data:")
 def step_given_belastingdienst_box1_data(context):
     """Store Belastingdienst box 1 data from table"""
-    if not hasattr(context, 'mock_service'):
+    if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
@@ -65,7 +65,9 @@ def step_given_belastingdienst_box1_data(context):
             "loon_uit_dienstbetrekking": float(row["loon_uit_dienstbetrekking"]),
             "uitkeringen_en_pensioenen": float(row["uitkeringen_en_pensioenen"]),
             "winst_uit_onderneming": float(row["winst_uit_onderneming"]),
-            "resultaat_overige_werkzaamheden": float(row["resultaat_overige_werkzaamheden"]),
+            "resultaat_overige_werkzaamheden": float(
+                row["resultaat_overige_werkzaamheden"]
+            ),
             "eigen_woning": float(row["eigen_woning"]),
         }
         context.mock_service.store_belastingdienst_box1_data(data)
@@ -74,7 +76,7 @@ def step_given_belastingdienst_box1_data(context):
 @given("the following BELASTINGDIENST box2 data:")
 def step_given_belastingdienst_box2_data(context):
     """Store Belastingdienst box 2 data from table"""
-    if not hasattr(context, 'mock_service'):
+    if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
@@ -89,7 +91,7 @@ def step_given_belastingdienst_box2_data(context):
 @given("the following BELASTINGDIENST box3 data:")
 def step_given_belastingdienst_box3_data(context):
     """Store Belastingdienst box 3 data from table"""
-    if not hasattr(context, 'mock_service'):
+    if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
@@ -114,15 +116,31 @@ def step_when_healthcare_allowance_executed(context):
             super().__init__(regulation_dir)
             self.mock_service = mock_service
 
-        def evaluate_uri(self, uri, parameters, reference_date=None, requested_output=None):
+        def evaluate_uri(
+            self, uri, parameters, reference_date=None, requested_output=None
+        ):
             # If this is an external law call (not in our regulation directory), use mock
-            if any(external in uri for external in ["wet_brp", "zvw", "awir", "belastingdienst", "inkomstenbelasting", "toeslagpartner"]):
+            if any(
+                external in uri
+                for external in [
+                    "wet_brp",
+                    "zvw",
+                    "awir",
+                    "belastingdienst",
+                    "inkomstenbelasting",
+                    "toeslagpartner",
+                ]
+            ):
                 print(f"Mock call: {uri} -> {requested_output}")
-                result = self.mock_service.get_mock_result(uri, parameters, requested_output)
+                result = self.mock_service.get_mock_result(
+                    uri, parameters, requested_output
+                )
                 print(f"Mock result: {result.output}")
                 return result
             # Otherwise, use the real engine
-            return super().evaluate_uri(uri, parameters, reference_date, requested_output)
+            return super().evaluate_uri(
+                uri, parameters, reference_date, requested_output
+            )
 
     # Create service with mocks
     service = MockLawExecutionService("regulation/nl", context.mock_service)
@@ -135,7 +153,7 @@ def step_when_healthcare_allowance_executed(context):
         result = service.evaluate_law_endpoint(
             law_id="zorgtoeslagwet",
             endpoint="bereken_zorgtoeslag",
-            parameters=parameters
+            parameters=parameters,
         )
         context.result = result
     except Exception as e:
@@ -146,7 +164,7 @@ def step_when_healthcare_allowance_executed(context):
 @then('the allowance amount is "{amount}" euro')
 def step_then_allowance_amount(context, amount):
     """Verify the calculated allowance amount"""
-    if hasattr(context, 'error'):
+    if hasattr(context, "error"):
         raise AssertionError(f"Execution failed: {context.error}")
 
     # Get the result

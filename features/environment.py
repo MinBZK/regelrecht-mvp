@@ -23,14 +23,14 @@ def before_all(context):
 def before_scenario(context, scenario):
     """Run before each scenario"""
     # Clean up context for each scenario
-    if hasattr(context, 'mock_service'):
-        delattr(context, 'mock_service')
-    if hasattr(context, 'bsn'):
-        delattr(context, 'bsn')
-    if hasattr(context, 'result'):
-        delattr(context, 'result')
-    if hasattr(context, 'error'):
-        delattr(context, 'error')
+    if hasattr(context, "mock_service"):
+        delattr(context, "mock_service")
+    if hasattr(context, "bsn"):
+        delattr(context, "bsn")
+    if hasattr(context, "result"):
+        delattr(context, "result")
+    if hasattr(context, "error"):
+        delattr(context, "error")
 
 
 def after_scenario(context, scenario):
