@@ -14,42 +14,31 @@ class MockDataService:
     """Mock external data sources for testing"""
 
     def __init__(self):
-        self.rvig_personal_data = {}
-        self.rvig_relationship_data = {}
-        self.rvz_insurance_data = {}
-        self.belastingdienst_box1_data = {}
-        self.belastingdienst_box2_data = {}
-        self.belastingdienst_box3_data = {}
+        # Service-oriented storage: service -> datasource -> BSN -> data
+        self.services = {
+            "RVIG": {},  # BRP data sources
+            "RVZ": {},  # Healthcare insurance data sources
+            "BELASTINGDIENST": {},  # Tax service data sources
+        }
 
-    def store_rvig_personal_data(self, data: dict):
-        """Store RvIG personal data by BSN"""
-        bsn = data["bsn"]
-        self.rvig_personal_data[bsn] = data
+    def store_data(self, service: str, datasource: str, data: dict):
+        """
+        Store data for a service datasource by BSN
 
-    def store_rvig_relationship_data(self, data: dict):
-        """Store RvIG relationship data by BSN"""
+        Args:
+            service: Service name (e.g., "BELASTINGDIENST", "RVIG")
+            datasource: Datasource name (e.g., "box1", "personal_data")
+            data: Data dict containing at least "bsn" field
+        """
         bsn = data["bsn"]
-        self.rvig_relationship_data[bsn] = data
 
-    def store_rvz_insurance_data(self, data: dict):
-        """Store RVZ insurance data by BSN"""
-        bsn = data["bsn"]
-        self.rvz_insurance_data[bsn] = data
+        if service not in self.services:
+            self.services[service] = {}
 
-    def store_belastingdienst_box1_data(self, data: dict):
-        """Store Belastingdienst box 1 data by BSN"""
-        bsn = data["bsn"]
-        self.belastingdienst_box1_data[bsn] = data
+        if datasource not in self.services[service]:
+            self.services[service][datasource] = {}
 
-    def store_belastingdienst_box2_data(self, data: dict):
-        """Store Belastingdienst box 2 data by BSN"""
-        bsn = data["bsn"]
-        self.belastingdienst_box2_data[bsn] = data
-
-    def store_belastingdienst_box3_data(self, data: dict):
-        """Store Belastingdienst box 3 data by BSN"""
-        bsn = data["bsn"]
-        self.belastingdienst_box3_data[bsn] = data
+        self.services[service][datasource][bsn] = data
 
     def get_mock_result(
         self, uri: str, parameters: dict, field: Optional[str] = None
@@ -70,8 +59,9 @@ class MockDataService:
 
         # BRP (Basisregistratie Personen) - Personal data
         if "wet_brp" in uri or "brp" in uri:
-            if bsn in self.rvig_personal_data:
-                data = self.rvig_personal_data[bsn]
+            personal_data = self.services.get("RVIG", {}).get("personal_data", {})
+            if bsn in personal_data:
+                data = personal_data[bsn]
                 # Calculate age from birth date
                 birth_date = datetime.strptime(data["geboortedatum"], "%Y-%m-%d").date()
                 today = datetime.now().date()
@@ -84,22 +74,27 @@ class MockDataService:
 
         # ZVW (Zorgverzekeringswet) - Health insurance
         elif "zvw" in uri:
-            if bsn in self.rvz_insurance_data:
-                data = self.rvz_insurance_data[bsn]
+            insurance_data = self.services.get("RVZ", {}).get("insurance", {})
+            if bsn in insurance_data:
+                data = insurance_data[bsn]
                 outputs["is_verzekerd"] = data["polis_status"] == "ACTIEF"
 
         # AWIR/Toeslagpartner - Relationship and income data
         elif "awir" in uri or "toeslagpartner" in uri:
             if "toeslagpartner" in uri or field == "heeft_toeslagpartner":
-                if bsn in self.rvig_relationship_data:
-                    data = self.rvig_relationship_data[bsn]
+                relationship_data = self.services.get("RVIG", {}).get(
+                    "relationship_data", {}
+                )
+                if bsn in relationship_data:
+                    data = relationship_data[bsn]
                     outputs["heeft_toeslagpartner"] = (
                         data["partnerschap_type"] != "GEEN"
                     )
             if "toetsingsinkomen" in uri or field == "toetsingsinkomen":
                 # Calculate total income from box 1 and box 2
-                box1 = self.belastingdienst_box1_data.get(bsn, {})
-                box2 = self.belastingdienst_box2_data.get(bsn, {})
+                belastingdienst = self.services.get("BELASTINGDIENST", {})
+                box1 = belastingdienst.get("box1", {}).get(bsn, {})
+                box2 = belastingdienst.get("box2", {}).get(bsn, {})
 
                 # Box 1: Sum all income sources (already in eurocent)
                 box1_total = (
@@ -121,8 +116,9 @@ class MockDataService:
         elif (
             "belastingdienst" in uri or "inkomstenbelasting" in uri
         ) and "rendementsgrondslag" in uri:
-            if bsn in self.belastingdienst_box3_data:
-                data = self.belastingdienst_box3_data[bsn]
+            box3_data = self.services.get("BELASTINGDIENST", {}).get("box3", {})
+            if bsn in box3_data:
+                data = box3_data[bsn]
                 # Calculate total assets (already in eurocent)
                 total_assets = (
                     int(data.get("spaargeld", 0))

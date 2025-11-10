@@ -6,103 +6,39 @@ from behave import given, when, then
 from mock_data_service import MockDataService
 
 
-@given("the following RvIG personal data:")
-def step_given_rvig_personal_data(context):
-    """Store RvIG personal data from table"""
+@given('the following {service} "{datasource}" data:')
+def step_given_service_datasource_data(context, service, datasource):
+    """
+    Generic step to store service datasource data from table
+
+    Args:
+        service: Service name (e.g., "RVIG", "BELASTINGDIENST")
+        datasource: Datasource name (e.g., "personal_data", "box1")
+    """
     if not hasattr(context, "mock_service"):
         context.mock_service = MockDataService()
 
     for row in context.table:
-        data = {
-            "bsn": row["bsn"],
-            "geboortedatum": row["geboortedatum"],
-            "verblijfsadres": row["verblijfsadres"],
-            "land_verblijf": row["land_verblijf"],
-        }
-        context.mock_service.store_rvig_personal_data(data)
+        # Convert all values to appropriate types
+        data = {"bsn": row["bsn"]}
+
+        # Add all other columns
+        for key in row.headings:
+            if key != "bsn":
+                value = row[key]
+                # Handle null values
+                if value == "null":
+                    data[key] = None
+                # Try to convert to float if it looks numeric
+                else:
+                    try:
+                        data[key] = float(value)
+                    except ValueError:
+                        data[key] = value
+
+        context.mock_service.store_data(service, datasource, data)
         # Store BSN for later use
         context.bsn = row["bsn"]
-
-
-@given("the following RvIG relationship data:")
-def step_given_rvig_relationship_data(context):
-    """Store RvIG relationship data from table"""
-    if not hasattr(context, "mock_service"):
-        context.mock_service = MockDataService()
-
-    for row in context.table:
-        data = {
-            "bsn": row["bsn"],
-            "partnerschap_type": row["partnerschap_type"],
-            "partner_bsn": row["partner_bsn"] if row["partner_bsn"] != "null" else None,
-        }
-        context.mock_service.store_rvig_relationship_data(data)
-
-
-@given("the following RVZ insurance data:")
-def step_given_rvz_insurance_data(context):
-    """Store RVZ insurance data from table"""
-    if not hasattr(context, "mock_service"):
-        context.mock_service = MockDataService()
-
-    for row in context.table:
-        data = {
-            "bsn": row["bsn"],
-            "polis_status": row["polis_status"],
-        }
-        context.mock_service.store_rvz_insurance_data(data)
-
-
-@given("the following BELASTINGDIENST box1 data:")
-def step_given_belastingdienst_box1_data(context):
-    """Store Belastingdienst box 1 data from table"""
-    if not hasattr(context, "mock_service"):
-        context.mock_service = MockDataService()
-
-    for row in context.table:
-        data = {
-            "bsn": row["bsn"],
-            "loon_uit_dienstbetrekking": float(row["loon_uit_dienstbetrekking"]),
-            "uitkeringen_en_pensioenen": float(row["uitkeringen_en_pensioenen"]),
-            "winst_uit_onderneming": float(row["winst_uit_onderneming"]),
-            "resultaat_overige_werkzaamheden": float(
-                row["resultaat_overige_werkzaamheden"]
-            ),
-            "eigen_woning": float(row["eigen_woning"]),
-        }
-        context.mock_service.store_belastingdienst_box1_data(data)
-
-
-@given("the following BELASTINGDIENST box2 data:")
-def step_given_belastingdienst_box2_data(context):
-    """Store Belastingdienst box 2 data from table"""
-    if not hasattr(context, "mock_service"):
-        context.mock_service = MockDataService()
-
-    for row in context.table:
-        data = {
-            "bsn": row["bsn"],
-            "reguliere_voordelen": float(row["reguliere_voordelen"]),
-            "vervreemdingsvoordelen": float(row["vervreemdingsvoordelen"]),
-        }
-        context.mock_service.store_belastingdienst_box2_data(data)
-
-
-@given("the following BELASTINGDIENST box3 data:")
-def step_given_belastingdienst_box3_data(context):
-    """Store Belastingdienst box 3 data from table"""
-    if not hasattr(context, "mock_service"):
-        context.mock_service = MockDataService()
-
-    for row in context.table:
-        data = {
-            "bsn": row["bsn"],
-            "spaargeld": float(row["spaargeld"]),
-            "beleggingen": float(row["beleggingen"]),
-            "onroerend_goed": float(row["onroerend_goed"]),
-            "schulden": float(row["schulden"]),
-        }
-        context.mock_service.store_belastingdienst_box3_data(data)
 
 
 @when("the healthcare allowance law is executed")
