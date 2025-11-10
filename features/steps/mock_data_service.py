@@ -51,7 +51,9 @@ class MockDataService:
         bsn = data["bsn"]
         self.belastingdienst_box3_data[bsn] = data
 
-    def get_mock_result(self, uri: str, parameters: dict, field: Optional[str] = None) -> ArticleResult:
+    def get_mock_result(
+        self, uri: str, parameters: dict, field: Optional[str] = None
+    ) -> ArticleResult:
         """
         Return mock data based on URI
 
@@ -73,7 +75,11 @@ class MockDataService:
                 # Calculate age from birth date
                 birth_date = datetime.strptime(data["geboortedatum"], "%Y-%m-%d").date()
                 today = datetime.now().date()
-                age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                age = (
+                    today.year
+                    - birth_date.year
+                    - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                )
                 outputs["leeftijd"] = age
 
         # ZVW (Zorgverzekeringswet) - Health insurance
@@ -87,7 +93,9 @@ class MockDataService:
             if "toeslagpartner" in uri or field == "heeft_toeslagpartner":
                 if bsn in self.rvig_relationship_data:
                     data = self.rvig_relationship_data[bsn]
-                    outputs["heeft_toeslagpartner"] = data["partnerschap_type"] != "GEEN"
+                    outputs["heeft_toeslagpartner"] = (
+                        data["partnerschap_type"] != "GEEN"
+                    )
             if "toetsingsinkomen" in uri or field == "toetsingsinkomen":
                 # Calculate total income from box 1 and box 2
                 box1 = self.belastingdienst_box1_data.get(bsn, {})
@@ -95,31 +103,32 @@ class MockDataService:
 
                 # Box 1: Sum all income sources (already in eurocent)
                 box1_total = (
-                    int(box1.get("loon_uit_dienstbetrekking", 0)) +
-                    int(box1.get("uitkeringen_en_pensioenen", 0)) +
-                    int(box1.get("winst_uit_onderneming", 0)) +
-                    int(box1.get("resultaat_overige_werkzaamheden", 0)) +
-                    int(box1.get("eigen_woning", 0))
+                    int(box1.get("loon_uit_dienstbetrekking", 0))
+                    + int(box1.get("uitkeringen_en_pensioenen", 0))
+                    + int(box1.get("winst_uit_onderneming", 0))
+                    + int(box1.get("resultaat_overige_werkzaamheden", 0))
+                    + int(box1.get("eigen_woning", 0))
                 )
 
                 # Box 2: Sum capital gains (already in eurocent)
-                box2_total = (
-                    int(box2.get("reguliere_voordelen", 0)) +
-                    int(box2.get("vervreemdingsvoordelen", 0))
+                box2_total = int(box2.get("reguliere_voordelen", 0)) + int(
+                    box2.get("vervreemdingsvoordelen", 0)
                 )
 
                 outputs["toetsingsinkomen"] = box1_total + box2_total
 
         # Belastingdienst/Inkomstenbelasting - Assets (rendementsgrondslag)
-        elif ("belastingdienst" in uri or "inkomstenbelasting" in uri) and "rendementsgrondslag" in uri:
+        elif (
+            "belastingdienst" in uri or "inkomstenbelasting" in uri
+        ) and "rendementsgrondslag" in uri:
             if bsn in self.belastingdienst_box3_data:
                 data = self.belastingdienst_box3_data[bsn]
                 # Calculate total assets (already in eurocent)
                 total_assets = (
-                    int(data.get("spaargeld", 0)) +
-                    int(data.get("beleggingen", 0)) +
-                    int(data.get("onroerend_goed", 0)) -
-                    int(data.get("schulden", 0))
+                    int(data.get("spaargeld", 0))
+                    + int(data.get("beleggingen", 0))
+                    + int(data.get("onroerend_goed", 0))
+                    - int(data.get("schulden", 0))
                 )
                 outputs["rendementsgrondslag"] = total_assets
 
@@ -130,5 +139,5 @@ class MockDataService:
             law_uuid="mock-uuid",
             output=outputs,
             input={},
-            path=None
+            path=None,
         )
