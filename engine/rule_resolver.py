@@ -71,9 +71,14 @@ class RuleResolver:
 
         # Index endpoints
         for endpoint, article in law.get_all_endpoints().items():
-            key = (law.id, endpoint)
+            # Extract local endpoint name (after dot) for indexing
+            # Endpoints in YAML are fully qualified like "law_id.endpoint_name"
+            # but URIs use "law_id/endpoint_name" format
+            local_endpoint = endpoint.split(".")[-1] if "." in endpoint else endpoint
+
+            key = (law.id, local_endpoint)
             if key in self._endpoint_index:
-                print(f"Warning: Duplicate endpoint '{law.id}/{endpoint}', overwriting")
+                print(f"Warning: Duplicate endpoint '{law.id}/{local_endpoint}', overwriting")
             self._endpoint_index[key] = article
 
     def _load_yaml(self, file_path: Path) -> dict:

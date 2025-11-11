@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.12.0"
 dependencies = [
     "jsonschema>=4.25.1",
+    "lxml>=6.0.2",
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
 ]

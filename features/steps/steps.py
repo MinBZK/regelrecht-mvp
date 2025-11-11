@@ -55,25 +55,8 @@ def step_when_healthcare_allowance_executed(context):
         def evaluate_uri(
             self, uri, parameters, reference_date=None, requested_output=None
         ):
-            # If this is an external law call (not in our regulation directory), use mock
-            if any(
-                external in uri
-                for external in [
-                    "wet_brp",
-                    "zvw",
-                    "awir",
-                    "belastingdienst",
-                    "inkomstenbelasting",
-                    "toeslagpartner",
-                ]
-            ):
-                print(f"Mock call: {uri} -> {requested_output}")
-                result = self.mock_service.get_mock_result(
-                    uri, parameters, requested_output
-                )
-                print(f"Mock result: {result.output}")
-                return result
-            # Otherwise, use the real engine
+            # All laws should now be real - no mocking needed!
+            # Just use the real engine for everything
             return super().evaluate_uri(
                 uri, parameters, reference_date, requested_output
             )
@@ -107,11 +90,11 @@ def step_then_allowance_amount(context, amount):
     result = context.result
 
     # The output should be in eurocent, convert to euro
-    if "hoogte_zorgtoeslag" in result.output:
-        actual_amount_eurocent = result.output["hoogte_zorgtoeslag"]
+    if "HOOGTE_ZORGTOESLAG" in result.output:
+        actual_amount_eurocent = result.output["HOOGTE_ZORGTOESLAG"]
         actual_amount_euro = actual_amount_eurocent / 100
     else:
-        raise AssertionError(f"No 'hoogte_zorgtoeslag' in outputs: {result.output}")
+        raise AssertionError(f"No 'HOOGTE_ZORGTOESLAG' in outputs: {result.output}")
 
     # Compare with expected amount
     expected_amount = float(amount)

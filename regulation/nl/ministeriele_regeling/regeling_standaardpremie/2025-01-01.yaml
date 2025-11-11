@@ -1,57 +1,58 @@
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
-$id: "regeling_standaardpremie"
+$id: regeling_standaardpremie
 uuid: ac962262-6628-49bf-a465-5d831271936a
-regulatory_layer: "MINISTERIELE_REGELING"
-publication_date: "2024-11-19"
-effective_date: "#datum_inwerkingtreding"
-name: "#wet_naam"
-competent_authority: "00000002003182447001"
-
-identifiers:
-  bwb_id: "BWBR0050536"
-  url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01"
-
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2024-11-19'
+effective_date: '#datum_inwerkingtreding'
+bwb_id: BWBR0050536
+url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
+name: '#wet_naam'
+competent_authority: 00000002003182447001
 articles:
-  - number: "1"
-    text: |
-      De standaardpremie, bedoeld in artikel 4 van de Wet op de zorgtoeslag,
-      bedraagt voor het berekeningsjaar 2025: € 2.112.
-    url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1"
+- number: '1'
+  text: 'De standaardpremie, bedoeld in artikel 4 van de Wet op de zorgtoeslag,
 
-    machine_readable:
-      endpoint: "standaardpremie"
+    bedraagt voor het berekeningsjaar 2025: € 2.112.
 
-      execution:
-        actions:
-          - output: "standaardpremie"
-            type: "amount"
-            type_spec:
-              unit: "eurocent"
-            value: 211200
+    '
+  url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1
+  machine_readable:
+    public: true
+    endpoint: regeling_standaardpremie.standaardpremie
+    execution:
+      output:
+      - name: STANDAARDPREMIE
+        type: amount
+      - name: BEREKENINGSJAAR
+        type: number
+      actions:
+      - output: STANDAARDPREMIE
+        value: 211200
+      - output: BEREKENINGSJAAR
+        value: 2025
+- number: '2'
+  text: 'Deze regeling treedt in werking met ingang van 1 januari 2025.
 
-          - output: "berekeningsjaar"
-            type: "number"
-            value: 2025
+    '
+  url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel2
+  machine_readable:
+    execution:
+      output:
+      - name: DATUM_INWERKINGTREDING
+        type: string
+      actions:
+      - output: DATUM_INWERKINGTREDING
+        value: '2025-01-01'
+- number: '3'
+  text: 'Deze regeling wordt aangehaald als: Regeling standaardpremie zorgverzekering 2025.
 
-  - number: "2"
-    text: |
-      Deze regeling treedt in werking met ingang van 1 januari 2025.
-    url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel2"
-
-    machine_readable:
-      execution:
-        actions:
-          - output: "datum_inwerkingtreding"
-            value: "2025-01-01"
-
-  - number: "3"
-    text: |
-      Deze regeling wordt aangehaald als: Regeling standaardpremie zorgverzekering 2025.
-    url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel3"
-
-    machine_readable:
-
-      execution:
-        actions:
-          - output: "wet_naam"
-            value: "Regeling standaardpremie zorgverzekering 2025"
+    '
+  url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel3
+  machine_readable:
+    execution:
+      output:
+      - name: WET_NAAM
+        type: string
+      actions:
+      - output: WET_NAAM
+        value: Regeling standaardpremie zorgverzekering 2025
