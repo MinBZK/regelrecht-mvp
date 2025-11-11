@@ -23,6 +23,7 @@ class LawExecutionService:
             regulation_dir: Path to regulation directory
         """
         self.resolver = RuleResolver(regulation_dir)
+        self.rule_resolver = self.resolver  # Alias for backward compatibility
         self.engine_cache: dict[tuple[str, str], ArticleEngine] = {}
 
         logger.info(
@@ -73,9 +74,15 @@ class LawExecutionService:
 
         engine = self.engine_cache[cache_key]
 
+        # Determine what to calculate
+        output_to_calculate = requested_output
+        if output_to_calculate is None:
+            # Use field from URI if no requested_output specified
+            output_to_calculate = field
+
         # Execute article
         result = engine.evaluate(
-            parameters, self, reference_date, requested_output or field
+            parameters, self, reference_date, output_to_calculate
         )
 
         return result

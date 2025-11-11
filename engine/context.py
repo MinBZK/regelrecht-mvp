@@ -7,6 +7,7 @@ Manages state and value resolution during article execution.
 from dataclasses import dataclass, field
 from typing import Any, Optional
 import copy
+from datetime import datetime
 
 from engine.logging_config import logger
 
@@ -48,7 +49,7 @@ class RuleContext:
             definitions: Article-level definitions
             parameters: Input parameters (e.g., {"BSN": "123456789"})
             service_provider: Service for resolving URIs
-            calculation_date: Reference date for calculations
+            calculation_date: Reference date for calculations (YYYY-MM-DD)
             input_specs: Input specifications from execution section
             output_specs: Output specifications from execution section
             current_law: The law being executed (for resolving # references)
@@ -60,6 +61,13 @@ class RuleContext:
         self.input_specs = input_specs or []
         self.output_specs = output_specs or []
         self.current_law = current_law
+
+        # Parse reference date and make it available as a context variable
+        try:
+            self.reference_date = datetime.strptime(calculation_date, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid calculation_date format: {calculation_date}, using current date")
+            self.reference_date = datetime.now()
 
         # Execution state
         self.outputs: dict[str, Any] = {}
@@ -101,40 +109,62 @@ class RuleContext:
         Resolve a variable reference
 
         Resolution priority:
-        1. Local scope (loop variables)
-        2. Outputs (calculated values)
-        3. Resolved inputs
-        4. Definitions (constants)
-        5. Parameters (direct inputs)
-        6. Input with source.url (cross-law reference)
+        1. Context variables (referencedate)
+        2. Local scope (loop variables)
+        3. Outputs (calculated values)
+        4. Resolved inputs
+        5. Definitions (constants)
+        6. Parameters (direct inputs)
+        7. Input with source.url (cross-law reference)
+
+        Supports dot notation for property access (e.g., referencedate.year)
 
         Args:
-            path: Variable name
+            path: Variable name or path (e.g., "referencedate.year")
 
         Returns:
             Resolved value or None
         """
-        # 1. Local scope (FOREACH loop variables)
+        # Handle dot notation for property access
+        if "." in path:
+            parts = path.split(".", 1)
+            base_var = parts[0]
+            property_path = parts[1]
+
+            # Resolve the base variable
+            base_value = self._resolve_value(base_var)
+            if base_value is None:
+                logger.warning(f"Could not resolve base variable: {base_var}")
+                return None
+
+            # Navigate the property path
+            return self._get_property(base_value, property_path)
+
+        # 1. Context variables (special built-in variables)
+        if path == "referencedate":
+            return self.reference_date
+
+        # 2. Local scope (FOREACH loop variables)
         if path in self.local:
             return self.local[path]
 
-        # 2. Outputs (calculated values)
+        # 3. Outputs (calculated values)
         if path in self.outputs:
             return self.outputs[path]
 
-        # 3. Resolved inputs (already fetched)
+        # 4. Resolved inputs (already fetched)
         if path in self.resolved_inputs:
             return self.resolved_inputs[path]
 
-        # 4. Definitions (constants)
+        # 5. Definitions (constants)
         if path in self.definitions:
             return self.definitions[path]
 
-        # 5. Parameters (direct inputs)
+        # 6. Parameters (direct inputs)
         if path in self.parameters:
             return self.parameters[path]
 
-        # 6. Input with source - need to resolve
+        # 7. Input with source - need to resolve
         input_spec = self._find_input_spec(path)
         if input_spec and "source" in input_spec:
             value = self._resolve_from_source(input_spec["source"], path)
@@ -143,6 +173,35 @@ class RuleContext:
 
         logger.warning(f"Could not resolve variable: {path}")
         return None
+
+    def _get_property(self, obj: Any, property_path: str) -> Any:
+        """
+        Get a property from an object, supporting nested properties
+
+        Args:
+            obj: Object to get property from
+            property_path: Property path (e.g., "year" or "date.year")
+
+        Returns:
+            Property value or None
+        """
+        if "." in property_path:
+            parts = property_path.split(".", 1)
+            first_prop = parts[0]
+            remaining = parts[1]
+            intermediate = self._get_property(obj, first_prop)
+            if intermediate is None:
+                return None
+            return self._get_property(intermediate, remaining)
+
+        # Get the property
+        if hasattr(obj, property_path):
+            return getattr(obj, property_path)
+        elif isinstance(obj, dict) and property_path in obj:
+            return obj[property_path]
+        else:
+            logger.warning(f"Property {property_path} not found on {type(obj)}")
+            return None
 
     def _resolve_from_source(self, source_spec: dict, input_name: str) -> Any:
         """
