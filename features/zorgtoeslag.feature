@@ -3,6 +3,16 @@ Feature: Healthcare allowance calculation
   I want to know if I am entitled to healthcare allowance
   So that I can reduce my healthcare costs
 
+  # Temporary: Test Article 4 grondslag-based resolution
+  # This scenario should be removed once Article 2 uses Article 4 internally
+  Scenario: Get standard premium from Article 4 for 2025
+    When I request the standard premium for year 2025
+    Then the standard premium is "211200" eurocent
+
+  Scenario: No regeling found for year 2024
+    When I request the standard premium for year 2024
+    Then the standard premium calculation should fail with "No matching regeling found"
+
   Scenario: Person over 18 is entitled to healthcare allowance
     Given the following RVIG "personal_data" data:
       | bsn       | geboortedatum | verblijfsadres | land_verblijf |

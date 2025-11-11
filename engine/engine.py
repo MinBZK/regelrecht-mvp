@@ -152,6 +152,10 @@ class ArticleEngine:
         if "conditions" in action:
             return self._evaluate_conditions(action["conditions"], context)
 
+        # Check for resolve (cross-law reference with matching)
+        if "resolve" in action:
+            return self._evaluate_resolve(action["resolve"], context)
+
         logger.warning(f"Unknown action type: {action}")
         return None
 
@@ -333,6 +337,130 @@ class ArticleEngine:
             return False
 
         return False
+
+    def _evaluate_resolve(self, resolve_spec: dict, context: RuleContext) -> Any:
+        """
+        Evaluate a resolve action - find and call a law/regulation matching criteria
+
+        This uses grondslag-based resolution: it finds regelingen that explicitly
+        declare the current article as their legal basis (grondslag).
+
+        Args:
+            resolve_spec: Resolve specification with:
+                - type: Type of regulation (e.g., "ministeriele_regeling")
+                - output: Which output field to extract
+                - match: Optional matching criteria (field: value pairs)
+            context: Execution context
+
+        Returns:
+            Resolved value from the matched law
+        """
+        resolve_type = resolve_spec.get("type")
+        output_field = resolve_spec.get("output")
+        match_criteria = resolve_spec.get("match", {})
+
+        logger.debug(
+            f"Resolving from grondslag: type={resolve_type}, current_law={self.law.id}, "
+            f"current_article={self.article.number}, output={output_field}, match={match_criteria}"
+        )
+
+        # Find regelingen that have this article as their grondslag
+        # Access the rule_resolver through the service_provider
+        if not hasattr(context.service_provider, 'rule_resolver'):
+            logger.error("Service provider does not have rule_resolver")
+            return None
+
+        regelingen = context.service_provider.rule_resolver.find_regelingen_by_grondslag(
+            law_id=self.law.id,
+            article=self.article.number
+        )
+
+        if not regelingen:
+            logger.warning(
+                f"No regelingen found with grondslag {self.law.id} article {self.article.number}"
+            )
+            return None
+
+        logger.debug(f"Found {len(regelingen)} regelingen with matching grondslag: {regelingen}")
+
+        # Evaluate expected match value if it's a variable reference
+        expected_match_value = None
+        if match_criteria and "value" in match_criteria:
+            expected_match_value = self._evaluate_value(match_criteria["value"], context)
+            logger.debug(f"Expected match value: {expected_match_value}")
+
+        # Try each regeling until we find one that matches
+        for regeling_id in regelingen:
+            # Build the URI to the target regeling
+            # Use the output_field as the endpoint (fragment)
+            if resolve_type == "ministeriele_regeling":
+                uri = f"regulation/nl/ministeriele_regeling/{regeling_id}#{output_field}"
+            elif resolve_type == "wet":
+                uri = f"regulation/nl/wet/{regeling_id}#{output_field}"
+            else:
+                logger.error(f"Unknown resolve type: {resolve_type}")
+                continue
+
+            try:
+                # Phase 1: If we have match criteria, first verify the match
+                # This avoids calculating expensive outputs until we know it's the right regeling
+                if match_criteria and "output" in match_criteria:
+                    match_output = match_criteria["output"]
+
+                    logger.debug(f"Phase 1: Checking match criteria for {regeling_id}")
+                    match_result = context.service_provider.evaluate_uri(
+                        uri=uri,
+                        parameters={},
+                        reference_date=context.calculation_date,
+                        requested_output=match_output,  # Only calculate the match field
+                    )
+
+                    if match_output not in match_result.output:
+                        logger.warning(
+                            f"Regeling {regeling_id}: Match output field '{match_output}' not found"
+                        )
+                        continue  # Try next regeling
+
+                    regeling_match_value = match_result.output[match_output]
+                    if regeling_match_value != expected_match_value:
+                        logger.debug(
+                            f"Regeling {regeling_id}: Match criteria not met: "
+                            f"{match_output}={regeling_match_value} != {expected_match_value}, trying next"
+                        )
+                        continue  # Try next regeling
+
+                    logger.debug(f"Phase 1: Match criteria satisfied for {regeling_id}")
+
+                # Phase 2: Now calculate the actual requested output
+                logger.debug(f"Phase 2: Calculating output '{output_field}' for {regeling_id}")
+                result = context.service_provider.evaluate_uri(
+                    uri=uri,
+                    parameters={},
+                    reference_date=context.calculation_date,
+                    requested_output=output_field,  # Only calculate the requested output
+                )
+
+                # Extract the requested output field
+                if output_field in result.output:
+                    logger.info(f"Successfully resolved to regeling: {regeling_id}")
+                    return result.output[output_field]
+                else:
+                    logger.error(
+                        f"Regeling {regeling_id}: Output field '{output_field}' not found in result"
+                    )
+                    continue  # Try next regeling
+
+            except Exception as e:
+                logger.error(f"Error resolving {uri}: {e}, trying next")
+                continue  # Try next regeling
+
+        # No matching regeling found
+        error_msg = (
+            f"No matching regeling found for {self.law.id} article {self.article.number} "
+            f"with criteria {match_criteria}"
+        )
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     def _evaluate_conditions(self, conditions: list, context: RuleContext) -> Any:
         """Evaluate conditions list (IF-THEN-ELSE chain)"""

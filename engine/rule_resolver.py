@@ -26,6 +26,7 @@ class RuleResolver:
         self.regulation_dir = Path(regulation_dir)
         self._law_registry: dict[str, ArticleBasedLaw] = {}
         self._endpoint_index: dict[tuple[str, str], Article] = {}
+        self._grondslag_index: dict[tuple[str, str], list[str]] = {}  # (law_id, article) -> [regeling_ids]
         self._yaml_cache: dict[str, dict] = {}
 
         # Load all laws
@@ -82,6 +83,27 @@ class RuleResolver:
                     f"Warning: Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
                 )
             self._endpoint_index[key] = article
+
+        # Index by grondslag if present
+        if "grondslag" in yaml_data:
+            grondslag_data = yaml_data["grondslag"]
+
+            # Support both single grondslag (dict) and multiple grondslag (list)
+            grondslag_list = []
+            if isinstance(grondslag_data, dict):
+                # Single grondslag - convert to list
+                grondslag_list = [grondslag_data]
+            elif isinstance(grondslag_data, list):
+                # Multiple grondslag - use as is
+                grondslag_list = grondslag_data
+
+            # Index each grondslag entry
+            for grondslag in grondslag_list:
+                if isinstance(grondslag, dict) and "law_id" in grondslag and "article" in grondslag:
+                    grondslag_key = (grondslag["law_id"], grondslag["article"])
+                    if grondslag_key not in self._grondslag_index:
+                        self._grondslag_index[grondslag_key] = []
+                    self._grondslag_index[grondslag_key].append(law.id)
 
     def _load_yaml(self, file_path: Path) -> dict:
         """Load YAML file with caching"""
@@ -159,6 +181,20 @@ class RuleResolver:
     def get_law_count(self) -> int:
         """Get number of loaded laws"""
         return len(self._law_registry)
+
+    def find_regelingen_by_grondslag(self, law_id: str, article: str) -> list[str]:
+        """
+        Find all ministeriele regelingen based on a specific law article
+
+        Args:
+            law_id: The law ID (e.g., "zorgtoeslagwet")
+            article: The article number (e.g., "4")
+
+        Returns:
+            List of law IDs that have this law+article as grondslag
+        """
+        grondslag_key = (law_id, article)
+        return self._grondslag_index.get(grondslag_key, [])
 
     def get_endpoint_count(self) -> int:
         """Get number of indexed endpoints"""

@@ -80,6 +80,69 @@ def step_when_healthcare_allowance_executed(context):
         raise
 
 
+@when("I request the standard premium for year {year:d}")
+def step_when_request_standard_premium(context, year):
+    """Request the standard premium for a specific year"""
+    from engine.service import LawExecutionService
+
+    # Create service
+    service = LawExecutionService("regulation/nl")
+
+    # Set reference_date to match the year
+    reference_date = f"{year}-01-01"
+
+    try:
+        # Call the get_standaardpremie endpoint (Article 4)
+        result = service.evaluate_law_endpoint(
+            law_id="zorgtoeslagwet",
+            endpoint="get_standaardpremie",
+            parameters={},
+            reference_date=reference_date,
+        )
+        context.result = result
+    except Exception as e:
+        context.error = e
+        # Don't raise - let the Then step verify the error
+
+
+@then('the standard premium is "{amount}" eurocent')
+def step_then_standard_premium(context, amount):
+    """Verify the standard premium amount"""
+    if hasattr(context, "error"):
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    # Get the result
+    result = context.result
+
+    # The output should be in eurocent
+    if "standaardpremie" in result.output:
+        actual_amount = result.output["standaardpremie"]
+    else:
+        raise AssertionError(f"No 'standaardpremie' in outputs: {result.output}")
+
+    # Compare with expected amount
+    expected_amount = int(amount)
+
+    if actual_amount != expected_amount:
+        raise AssertionError(
+            f"Expected premium of {expected_amount} eurocent, but got {actual_amount} eurocent"
+        )
+
+
+@then('the standard premium calculation should fail with "{error_message}"')
+def step_then_standard_premium_fails(context, error_message):
+    """Verify that the calculation failed with expected error"""
+    if not hasattr(context, "error"):
+        raise AssertionError("Expected calculation to fail, but it succeeded")
+
+    # Check if the error message contains the expected text
+    error_str = str(context.error)
+    if error_message not in error_str:
+        raise AssertionError(
+            f"Expected error to contain '{error_message}', but got: {error_str}"
+        )
+
+
 @then('the allowance amount is "{amount}" euro')
 def step_then_allowance_amount(context, amount):
     """Verify the calculated allowance amount"""
