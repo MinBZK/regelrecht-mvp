@@ -22,12 +22,11 @@ class LawExecutionService:
         Args:
             regulation_dir: Path to regulation directory
         """
-        self.resolver = RuleResolver(regulation_dir)
-        self.rule_resolver = self.resolver  # Alias for backward compatibility
+        self.rule_resolver = RuleResolver(regulation_dir)
         self.engine_cache: dict[tuple[str, str], ArticleEngine] = {}
 
         logger.info(
-            f"Loaded {self.resolver.get_law_count()} laws with {self.resolver.get_endpoint_count()} endpoints"
+            f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_endpoint_count()} endpoints"
         )
 
     def evaluate_uri(
@@ -59,7 +58,7 @@ class LawExecutionService:
             reference_date = datetime.now().date().isoformat()
 
         # Resolve URI to law, article, field
-        law, article, field = self.resolver.resolve_uri(uri)
+        law, article, field = self.rule_resolver.resolve_uri(uri)
 
         if not law or not article:
             raise ValueError(f"Could not resolve URI: {uri}")
@@ -111,11 +110,11 @@ class LawExecutionService:
 
     def list_available_laws(self) -> list[str]:
         """Get list of all loaded law IDs"""
-        return self.resolver.list_all_laws()
+        return self.rule_resolver.list_all_laws()
 
     def list_available_endpoints(self) -> list[tuple[str, str]]:
         """Get list of all (law_id, endpoint) pairs"""
-        return self.resolver.list_all_endpoints()
+        return self.rule_resolver.list_all_endpoints()
 
     def get_law_info(self, law_id: str) -> dict:
         """
@@ -127,7 +126,7 @@ class LawExecutionService:
         Returns:
             Dictionary with law metadata
         """
-        law = self.resolver.get_law_by_id(law_id)
+        law = self.rule_resolver.get_law_by_id(law_id)
         if not law:
             return {}
 
