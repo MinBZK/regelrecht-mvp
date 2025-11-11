@@ -1,0 +1,48 @@
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$id: wet_inkomstenbelasting_2001
+uuid: af346e90-acbf-46d9-8e29-2ebb75e6610f
+regulatory_layer: WET
+publication_date: '2001-12-15'
+effective_date: '2025-01-01'
+bwb_id: BWBR0011353
+url: https://wetten.overheid.nl/BWBR0011353/2025-01-01
+name: Wet inkomstenbelasting 2001
+competent_authority: TODO
+
+articles:
+- number: '5.2'
+  text: |
+    Artikel 5.2 - Rendementsgrondslag
+
+    [TODO: Full legal text to be downloaded]
+
+    De rendementsgrondslag is de waarde van de bezittingen verminderd met de
+    schulden, zoals bepaald in Box 3 van de inkomstenbelasting.
+  url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel5.2
+  machine_readable:
+    public: true
+    endpoint: wet_inkomstenbelasting_2001.rendementsgrondslag
+    execution:
+      parameters:
+      - name: BSN
+        type: string
+        required: true
+        description: Burgerservicenummer van de persoon
+      output:
+      - name: RENDEMENTSGRONDSLAG
+        type: amount
+        description: Rendementsgrondslag (vermogen) in eurocent
+      actions:
+      - output: RENDEMENTSGRONDSLAG
+        value: 0
+
+- number: '2.18'
+  text: |
+    Artikel 2.18 - Verzamelinkomen
+
+    [TODO: Full legal text to be downloaded]
+
+    Het verzamelinkomen is de som van het belastbare inkomen uit werk en woning,
+    het belastbare inkomen uit aanmerkelijk belang, en het belastbare inkomen
+    uit sparen en beleggen.
+  url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18

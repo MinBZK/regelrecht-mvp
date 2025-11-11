@@ -155,12 +155,27 @@ class RuleContext:
         Returns:
             Resolved value from URI/ref call
         """
-        # Support both 'url' and 'ref' for backward compatibility
-        uri = source_spec.get("url") or source_spec.get("ref")
+        # Support multiple field names for source reference:
+        # - 'article' (schema v0.2.0)
+        # - 'url' or 'ref' (backward compatibility)
+        article_ref = source_spec.get("article")
+        uri = source_spec.get("url") or source_spec.get("ref") or article_ref
 
         if not uri:
-            logger.warning(f"No url or ref found in source spec for {input_name}")
+            logger.warning(f"No article/url/ref found in source spec for {input_name}")
             return None
+
+        # Convert article reference format to URI format
+        # article: "law_id.endpoint" -> regelrecht://law_id/endpoint#input_name
+        if article_ref and not uri.startswith("#") and not uri.startswith("regelrecht://") and not uri.startswith("regulation/"):
+            # Parse article reference: "law_id.endpoint"
+            if "." in article_ref:
+                law_id, endpoint = article_ref.rsplit(".", 1)
+                # Add input_name as field to extract from output
+                uri = f"regelrecht://{law_id}/{endpoint}#{input_name}"
+            else:
+                # Just an endpoint name, assume internal reference
+                uri = f"#{article_ref}"
 
         # Handle internal references (same-file): #output_name
         if uri.startswith("#"):

@@ -70,14 +70,14 @@ class MockDataService:
                     - birth_date.year
                     - ((today.month, today.day) < (birth_date.month, birth_date.day))
                 )
-                outputs["leeftijd"] = age
+                outputs["LEEFTIJD"] = age
 
         # ZVW (Zorgverzekeringswet) - Health insurance
         elif "zvw" in uri:
             insurance_data = self.services.get("RVZ", {}).get("insurance", {})
             if bsn in insurance_data:
                 data = insurance_data[bsn]
-                outputs["is_verzekerd"] = data["polis_status"] == "ACTIEF"
+                outputs["IS_VERZEKERD"] = data["polis_status"] == "ACTIEF"
 
         # AWIR/Toeslagpartner - Relationship and income data
         elif "awir" in uri or "toeslagpartner" in uri:
@@ -87,7 +87,7 @@ class MockDataService:
                 )
                 if bsn in relationship_data:
                     data = relationship_data[bsn]
-                    outputs["heeft_toeslagpartner"] = (
+                    outputs["HEEFT_TOESLAGPARTNER"] = (
                         data["partnerschap_type"] != "GEEN"
                     )
             if "toetsingsinkomen" in uri or field == "toetsingsinkomen":
@@ -110,7 +110,7 @@ class MockDataService:
                     box2.get("vervreemdingsvoordelen", 0)
                 )
 
-                outputs["toetsingsinkomen"] = box1_total + box2_total
+                outputs["TOETSINGSINKOMEN"] = box1_total + box2_total
 
         # Belastingdienst/Inkomstenbelasting - Assets (rendementsgrondslag)
         elif (
@@ -126,7 +126,7 @@ class MockDataService:
                     + int(data.get("onroerend_goed", 0))
                     - int(data.get("schulden", 0))
                 )
-                outputs["rendementsgrondslag"] = total_assets
+                outputs["RENDEMENTSGRONDSLAG"] = total_assets
 
         # Return result
         return ArticleResult(
