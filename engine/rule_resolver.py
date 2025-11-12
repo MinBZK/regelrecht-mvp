@@ -78,7 +78,9 @@ class RuleResolver:
 
             key = (law.id, local_endpoint)
             if key in self._endpoint_index:
-                print(f"Warning: Duplicate endpoint '{law.id}/{local_endpoint}', overwriting")
+                print(
+                    f"Warning: Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
+                )
             self._endpoint_index[key] = article
 
     def _load_yaml(self, file_path: Path) -> dict:
