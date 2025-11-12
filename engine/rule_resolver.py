@@ -26,7 +26,9 @@ class RuleResolver:
         self.regulation_dir = Path(regulation_dir)
         self._law_registry: dict[str, ArticleBasedLaw] = {}
         self._endpoint_index: dict[tuple[str, str], Article] = {}
-        self._grondslag_index: dict[tuple[str, str], list[str]] = {}  # (law_id, article) -> [regeling_ids]
+        self._grondslag_index: dict[
+            tuple[str, str], list[str]
+        ] = {}  # (law_id, article) -> [regeling_ids]
         self._yaml_cache: dict[str, dict] = {}
 
         # Load all laws
@@ -99,7 +101,11 @@ class RuleResolver:
 
             # Index each grondslag entry
             for grondslag in grondslag_list:
-                if isinstance(grondslag, dict) and "law_id" in grondslag and "article" in grondslag:
+                if (
+                    isinstance(grondslag, dict)
+                    and "law_id" in grondslag
+                    and "article" in grondslag
+                ):
                     grondslag_key = (grondslag["law_id"], grondslag["article"])
                     if grondslag_key not in self._grondslag_index:
                         self._grondslag_index[grondslag_key] = []
@@ -182,7 +188,9 @@ class RuleResolver:
         """Get number of loaded laws"""
         return len(self._law_registry)
 
-    def find_regelingen_by_grondslag(self, law_id: str, article: str) -> list[ArticleBasedLaw]:
+    def find_regelingen_by_grondslag(
+        self, law_id: str, article: str
+    ) -> list[ArticleBasedLaw]:
         """
         Find ministeriele regelingen that declare a specific law article as their grondslag
 
@@ -199,7 +207,9 @@ class RuleResolver:
         grondslag_key = (law_id, article)
         all_laws = self._grondslag_index.get(grondslag_key, [])
         # Filter to only return ministeriele regelingen
-        return [law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"]
+        return [
+            law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"
+        ]
 
     def get_endpoint_count(self) -> int:
         """Get number of indexed endpoints"""

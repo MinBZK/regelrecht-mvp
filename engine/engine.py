@@ -366,13 +366,14 @@ class ArticleEngine:
 
         # Find regelingen that have this article as their grondslag
         # Access the rule_resolver through the service_provider
-        if not hasattr(context.service_provider, 'rule_resolver'):
+        if not hasattr(context.service_provider, "rule_resolver"):
             logger.error("Service provider does not have rule_resolver")
             return None
 
-        regelingen = context.service_provider.rule_resolver.find_regelingen_by_grondslag(
-            law_id=self.law.id,
-            article=self.article.number
+        regelingen = (
+            context.service_provider.rule_resolver.find_regelingen_by_grondslag(
+                law_id=self.law.id, article=self.article.number
+            )
         )
 
         if not regelingen:
@@ -382,12 +383,16 @@ class ArticleEngine:
             return None
 
         regeling_ids = [law.id for law in regelingen]
-        logger.debug(f"Found {len(regelingen)} regelingen with matching grondslag: {regeling_ids}")
+        logger.debug(
+            f"Found {len(regelingen)} regelingen with matching grondslag: {regeling_ids}"
+        )
 
         # Evaluate expected match value if it's a variable reference
         expected_match_value = None
         if match_criteria and "value" in match_criteria:
-            expected_match_value = self._evaluate_value(match_criteria["value"], context)
+            expected_match_value = self._evaluate_value(
+                match_criteria["value"], context
+            )
             logger.debug(f"Expected match value: {expected_match_value}")
 
         # Try each regeling until we find one that matches
@@ -436,7 +441,9 @@ class ArticleEngine:
                     logger.debug(f"Phase 1: Match criteria satisfied for {regeling_id}")
 
                 # Phase 2: Now calculate the actual requested output
-                logger.debug(f"Phase 2: Calculating output '{output_field}' for {regeling_id}")
+                logger.debug(
+                    f"Phase 2: Calculating output '{output_field}' for {regeling_id}"
+                )
                 result = regeling_engine.evaluate(
                     parameters={},
                     service_provider=context.service_provider,
@@ -455,7 +462,9 @@ class ArticleEngine:
                     continue  # Try next regeling
 
             except Exception as e:
-                logger.error(f"Error resolving regeling {regeling_id}: {e}, trying next")
+                logger.error(
+                    f"Error resolving regeling {regeling_id}: {e}, trying next"
+                )
                 continue  # Try next regeling
 
         # No matching regeling found
