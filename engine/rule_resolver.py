@@ -11,6 +11,7 @@ import yaml
 
 from engine.article_loader import ArticleBasedLaw, Article
 from engine.uri_resolver import RegelrechtURI
+from engine.logging_config import logger
 
 
 class RuleResolver:
@@ -56,7 +57,7 @@ class RuleResolver:
                 try:
                     self._load_law_file(item)
                 except Exception as e:
-                    print(f"Warning: Failed to load {item}: {e}")
+                    logger.warning(f"Failed to load {item}: {e}")
 
     def _load_law_file(self, file_path: Path):
         """Load a single law file"""
@@ -68,7 +69,7 @@ class RuleResolver:
 
         # Register by $id
         if law.id in self._law_registry:
-            print(f"Warning: Duplicate law ID '{law.id}', overwriting previous")
+            logger.warning(f"Duplicate law ID '{law.id}', overwriting previous")
 
         self._law_registry[law.id] = law
 
@@ -81,8 +82,8 @@ class RuleResolver:
 
             key = (law.id, local_endpoint)
             if key in self._endpoint_index:
-                print(
-                    f"Warning: Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
+                logger.warning(
+                    f"Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
                 )
             self._endpoint_index[key] = article
 
@@ -161,17 +162,17 @@ class RuleResolver:
         try:
             parsed = RegelrechtURI(uri)
         except ValueError as e:
-            print(f"Invalid URI: {e}")
+            logger.error(f"Invalid URI: {e}")
             return (None, None, None)
 
         law = self.get_law_by_id(parsed.law_id)
         if not law:
-            print(f"Law not found: {parsed.law_id}")
+            logger.error(f"Law not found: {parsed.law_id}")
             return (None, None, None)
 
         article = law.find_article_by_endpoint(parsed.endpoint)
         if not article:
-            print(f"Endpoint not found: {parsed.law_id}/{parsed.endpoint}")
+            logger.error(f"Endpoint not found: {parsed.law_id}/{parsed.endpoint}")
             return (None, None, None)
 
         return (law, article, parsed.field)
