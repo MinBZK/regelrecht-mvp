@@ -48,7 +48,7 @@ def fix_source_format(source):
             path, field = ref.split("#", 1)
             parts = path.split("/")
 
-            # Extract law type and name
+            # Extract law name
             if len(parts) >= 4:
                 law_name = parts[3] if len(parts) > 3 else ""
 
