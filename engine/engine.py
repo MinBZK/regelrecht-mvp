@@ -57,7 +57,7 @@ class ArticleEngine:
         self,
         parameters: dict,
         service_provider: Any,
-        reference_date: str,
+        calculation_date: str,
         requested_output: Optional[str] = None,
     ) -> ArticleResult:
         """
@@ -66,7 +66,7 @@ class ArticleEngine:
         Args:
             parameters: Input parameters (e.g., {"BSN": "123456789"})
             service_provider: Service for resolving URIs
-            reference_date: Reference date for calculations
+            calculation_date: Date for which calculations are performed
             requested_output: Specific output to calculate (optional, calculates all if None)
 
         Returns:
@@ -79,7 +79,7 @@ class ArticleEngine:
             definitions=self.definitions,
             parameters=parameters,
             service_provider=service_provider,
-            calculation_date=reference_date,
+            calculation_date=calculation_date,
             input_specs=self.inputs,
             output_specs=self.outputs_spec,
             current_law=self.law,
@@ -381,7 +381,8 @@ class ArticleEngine:
             )
             return None
 
-        logger.debug(f"Found {len(regelingen)} regelingen with matching grondslag: {regelingen}")
+        regeling_ids = [law.id for law in regelingen]
+        logger.debug(f"Found {len(regelingen)} regelingen with matching grondslag: {regeling_ids}")
 
         # Evaluate expected match value if it's a variable reference
         expected_match_value = None
@@ -390,28 +391,31 @@ class ArticleEngine:
             logger.debug(f"Expected match value: {expected_match_value}")
 
         # Try each regeling until we find one that matches
-        for regeling_id in regelingen:
-            # Build the URI to the target regeling
-            # Use the output_field as the endpoint (fragment)
-            if resolve_type == "ministeriele_regeling":
-                uri = f"regulation/nl/ministeriele_regeling/{regeling_id}#{output_field}"
-            elif resolve_type == "wet":
-                uri = f"regulation/nl/wet/{regeling_id}#{output_field}"
-            else:
-                logger.error(f"Unknown resolve type: {resolve_type}")
-                continue
+        for regeling_law in regelingen:
+            regeling_id = regeling_law.id
+
+            # Find the article that produces the requested output
+            regeling_article = regeling_law.find_article_by_endpoint(output_field)
+            if not regeling_article:
+                logger.warning(
+                    f"Regeling {regeling_id}: No article found with endpoint '{output_field}'"
+                )
+                continue  # Try next regeling
 
             try:
+                # Create engine for this regeling article
+                regeling_engine = ArticleEngine(regeling_article, regeling_law)
+
                 # Phase 1: If we have match criteria, first verify the match
                 # This avoids calculating expensive outputs until we know it's the right regeling
                 if match_criteria and "output" in match_criteria:
                     match_output = match_criteria["output"]
 
                     logger.debug(f"Phase 1: Checking match criteria for {regeling_id}")
-                    match_result = context.service_provider.evaluate_uri(
-                        uri=uri,
+                    match_result = regeling_engine.evaluate(
                         parameters={},
-                        reference_date=context.calculation_date,
+                        service_provider=context.service_provider,
+                        calculation_date=context.calculation_date,
                         requested_output=match_output,  # Only calculate the match field
                     )
 
@@ -433,10 +437,10 @@ class ArticleEngine:
 
                 # Phase 2: Now calculate the actual requested output
                 logger.debug(f"Phase 2: Calculating output '{output_field}' for {regeling_id}")
-                result = context.service_provider.evaluate_uri(
-                    uri=uri,
+                result = regeling_engine.evaluate(
                     parameters={},
-                    reference_date=context.calculation_date,
+                    service_provider=context.service_provider,
+                    calculation_date=context.calculation_date,
                     requested_output=output_field,  # Only calculate the requested output
                 )
 
@@ -451,7 +455,7 @@ class ArticleEngine:
                     continue  # Try next regeling
 
             except Exception as e:
-                logger.error(f"Error resolving {uri}: {e}, trying next")
+                logger.error(f"Error resolving regeling {regeling_id}: {e}, trying next")
                 continue  # Try next regeling
 
         # No matching regeling found

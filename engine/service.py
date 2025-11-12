@@ -33,7 +33,7 @@ class LawExecutionService:
         self,
         uri: str,
         parameters: dict,
-        reference_date: Optional[str] = None,
+        calculation_date: Optional[str] = None,
         requested_output: Optional[str] = None,
     ) -> ArticleResult:
         """
@@ -42,7 +42,7 @@ class LawExecutionService:
         Args:
             uri: regelrecht:// URI to evaluate
             parameters: Input parameters (e.g., {"BSN": "123456789"})
-            reference_date: Reference date for calculations (defaults to today)
+            calculation_date: Date for which calculations are performed (defaults to today)
             requested_output: Specific output field to calculate (optional)
 
         Returns:
@@ -53,9 +53,9 @@ class LawExecutionService:
         """
         logger.info(f"Evaluating URI: {uri}")
 
-        # Default reference date to today
-        if reference_date is None:
-            reference_date = datetime.now().date().isoformat()
+        # Default calculation date to today
+        if calculation_date is None:
+            calculation_date = datetime.now().date().isoformat()
 
         # Resolve URI to law, article, field
         law, article, field = self.rule_resolver.resolve_uri(uri)
@@ -81,7 +81,7 @@ class LawExecutionService:
 
         # Execute article
         result = engine.evaluate(
-            parameters, self, reference_date, output_to_calculate
+            parameters, self, calculation_date, output_to_calculate
         )
 
         return result
@@ -91,7 +91,7 @@ class LawExecutionService:
         law_id: str,
         endpoint: str,
         parameters: dict,
-        reference_date: Optional[str] = None,
+        calculation_date: Optional[str] = None,
     ) -> ArticleResult:
         """
         Evaluate by law ID and endpoint directly
@@ -100,13 +100,15 @@ class LawExecutionService:
             law_id: Law identifier (e.g., "zorgtoeslagwet")
             endpoint: Endpoint name (e.g., "bereken_zorgtoeslag")
             parameters: Input parameters
-            reference_date: Reference date for calculations
+            calculation_date: Date for which calculations are performed
 
         Returns:
             ArticleResult with outputs
         """
-        uri = f"regelrecht://{law_id}/{endpoint}"
-        return self.evaluate_uri(uri, parameters, reference_date)
+        from engine.uri_resolver import RegelrechtURIBuilder
+
+        uri = RegelrechtURIBuilder.build(law_id, endpoint)
+        return self.evaluate_uri(uri, parameters, calculation_date)
 
     def list_available_laws(self) -> list[str]:
         """Get list of all loaded law IDs"""

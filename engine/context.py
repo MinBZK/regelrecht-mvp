@@ -62,7 +62,7 @@ class RuleContext:
         self.output_specs = output_specs or []
         self.current_law = current_law
 
-        # Parse reference date and make it available as a context variable
+        # Parse calculation date as datetime object for use as $referencedate context variable
         try:
             self.reference_date = datetime.strptime(calculation_date, "%Y-%m-%d")
         except (ValueError, TypeError):
@@ -236,24 +236,14 @@ class RuleContext:
             if "." in article_ref:
                 law_id, endpoint = article_ref.rsplit(".", 1)
                 # Add input_name as field to extract from output
-                uri = f"regelrecht://{law_id}/{endpoint}#{input_name}"
+                from engine.uri_resolver import RegelrechtURIBuilder
+                uri = RegelrechtURIBuilder.build(law_id, endpoint, input_name)
             else:
                 # Just an endpoint name, assume internal reference
                 uri = f"#{article_ref}"
 
-        # Handle internal references (same-file): #output_name
-        if uri.startswith("#"):
-            output_name = uri[1:]  # Remove the # prefix
-            logger.debug(f"Resolving internal reference: {output_name}")
-
-            # Build full URI to current law's article that produces this output
-            # We need to find which article in the current law produces this output
-            full_uri = f"regulation/nl/{self.current_law.regulatory_layer.lower()}/{self.current_law.id}{uri}"
-            uri = full_uri
-
-        params_spec = source_spec.get("parameters", {})
-
         # Resolve parameter values ($BSN -> actual BSN value)
+        params_spec = source_spec.get("parameters", {})
         resolved_params = {}
         for key, value in params_spec.items():
             if isinstance(value, str) and value.startswith("$"):
@@ -261,6 +251,44 @@ class RuleContext:
             else:
                 resolved_params[key] = value
 
+        # Handle internal references (same-law): #endpoint
+        if uri.startswith("#"):
+            endpoint = uri[1:]  # Remove the # prefix
+            logger.debug(f"Resolving internal reference: #{endpoint}")
+
+            # Create cache key for internal reference (use original uri which includes #)
+            cache_key = self._make_cache_key(uri, resolved_params)
+
+            # Check cache
+            if cache_key in self._uri_cache:
+                logger.debug(f"Cache hit for internal reference #{endpoint}")
+                return self._uri_cache[cache_key]
+
+            # Find the article by endpoint in current law
+            article = self.current_law.find_article_by_endpoint(endpoint)
+            if not article:
+                logger.error(f"Internal reference #{endpoint} not found in law {self.current_law.id}")
+                return None
+
+            # Execute the article directly
+            from engine.engine import ArticleEngine
+            engine = ArticleEngine(article, self.current_law)
+            result = engine.evaluate(
+                parameters=resolved_params,
+                service_provider=self.service_provider,
+                calculation_date=self.calculation_date,
+                requested_output=endpoint,
+            )
+
+            # Extract the endpoint output
+            value = result.output.get(endpoint)
+
+            # Cache result
+            self._uri_cache[cache_key] = value
+            logger.debug(f"Resolved internal reference #{endpoint} -> {value}")
+            return value
+
+        # Handle external references (cross-law URIs)
         # Create cache key
         cache_key = self._make_cache_key(uri, resolved_params)
 

@@ -84,7 +84,7 @@ class RuleResolver:
                 )
             self._endpoint_index[key] = article
 
-        # Index by grondslag if present
+        # Index by grondslag if present (all regulatory layers)
         if "grondslag" in yaml_data:
             grondslag_data = yaml_data["grondslag"]
 
@@ -103,7 +103,7 @@ class RuleResolver:
                     grondslag_key = (grondslag["law_id"], grondslag["article"])
                     if grondslag_key not in self._grondslag_index:
                         self._grondslag_index[grondslag_key] = []
-                    self._grondslag_index[grondslag_key].append(law.id)
+                    self._grondslag_index[grondslag_key].append(law)
 
     def _load_yaml(self, file_path: Path) -> dict:
         """Load YAML file with caching"""
@@ -182,19 +182,24 @@ class RuleResolver:
         """Get number of loaded laws"""
         return len(self._law_registry)
 
-    def find_regelingen_by_grondslag(self, law_id: str, article: str) -> list[str]:
+    def find_regelingen_by_grondslag(self, law_id: str, article: str) -> list[ArticleBasedLaw]:
         """
-        Find all ministeriele regelingen based on a specific law article
+        Find ministeriele regelingen that declare a specific law article as their grondslag
+
+        All law types are indexed, but only ministeriele regelingen
+        (regulatory_layer == "MINISTERIELE_REGELING") are returned.
 
         Args:
             law_id: The law ID (e.g., "zorgtoeslagwet")
             article: The article number (e.g., "4")
 
         Returns:
-            List of law IDs that have this law+article as grondslag
+            List of ministeriele regeling ArticleBasedLaw objects with this grondslag
         """
         grondslag_key = (law_id, article)
-        return self._grondslag_index.get(grondslag_key, [])
+        all_laws = self._grondslag_index.get(grondslag_key, [])
+        # Filter to only return ministeriele regelingen
+        return [law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"]
 
     def get_endpoint_count(self) -> int:
         """Get number of indexed endpoints"""
