@@ -44,9 +44,8 @@ def fix_source_format(source):
             path, field = ref.split("#", 1)
             parts = path.split("/")
 
-            # Extract law type and name
+            # Extract law name
             if len(parts) >= 4:
-                law_type = parts[2]  # 'wet' or 'ministeriele_regeling'
                 law_name = parts[3] if len(parts) > 3 else ""
 
                 # Convert to article format: law_name.field

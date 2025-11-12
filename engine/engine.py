@@ -395,7 +395,10 @@ class ArticleEngine:
             )
             logger.debug(f"Expected match value: {expected_match_value}")
 
-        # Try each regeling until we find one that matches
+        # Track the first matching regeling to ensure a single match
+        first_match = None
+
+        # Try each regeling - error immediately if we find a second match
         for regeling_law in regelingen:
             regeling_id = regeling_law.id
 
@@ -453,8 +456,21 @@ class ArticleEngine:
 
                 # Extract the requested output field
                 if output_field in result.output:
-                    logger.info(f"Successfully resolved to regeling: {regeling_id}")
-                    return result.output[output_field]
+                    logger.info(f"Regeling {regeling_id} matches criteria")
+
+                    # Check if we already found a match
+                    if first_match is not None:
+                        # Multiple matches - error immediately
+                        error_msg = (
+                            f"Multiple regelingen match for {self.law.id} article {self.article.number} "
+                            f"with criteria {match_criteria}. Found at least: [{first_match['law'].id}, {regeling_id}]. "
+                            f"Please add more specific match criteria to ensure deterministic resolution."
+                        )
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
+
+                    # Store first match
+                    first_match = {"law": regeling_law, "result": result.output[output_field]}
                 else:
                     logger.error(
                         f"Regeling {regeling_id}: Output field '{output_field}' not found in result"
@@ -467,13 +483,20 @@ class ArticleEngine:
                 )
                 continue  # Try next regeling
 
-        # No matching regeling found
-        error_msg = (
-            f"No matching regeling found for {self.law.id} article {self.article.number} "
-            f"with criteria {match_criteria}"
+        # Check if we found exactly one match
+        if first_match is None:
+            error_msg = (
+                f"No matching regeling found for {self.law.id} article {self.article.number} "
+                f"with criteria {match_criteria}"
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Exactly one match - return the result
+        logger.info(
+            f"Successfully resolved to unique regeling: {first_match['law'].id}"
         )
-        logger.error(error_msg)
-        raise ValueError(error_msg)
+        return first_match["result"]
 
     def _evaluate_conditions(self, conditions: list, context: RuleContext) -> Any:
         """Evaluate conditions list (IF-THEN-ELSE chain)"""
