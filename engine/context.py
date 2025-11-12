@@ -66,7 +66,9 @@ class RuleContext:
         try:
             self.reference_date = datetime.strptime(calculation_date, "%Y-%m-%d")
         except (ValueError, TypeError):
-            logger.warning(f"Invalid calculation_date format: {calculation_date}, using current date")
+            logger.warning(
+                f"Invalid calculation_date format: {calculation_date}, using current date"
+            )
             self.reference_date = datetime.now()
 
         # Execution state
@@ -237,6 +239,7 @@ class RuleContext:
                 law_id, endpoint = article_ref.rsplit(".", 1)
                 # Add input_name as field to extract from output
                 from engine.uri_resolver import RegelrechtURIBuilder
+
                 uri = RegelrechtURIBuilder.build(law_id, endpoint, input_name)
             else:
                 # Just an endpoint name, assume internal reference
@@ -267,11 +270,14 @@ class RuleContext:
             # Find the article by endpoint in current law
             article = self.current_law.find_article_by_endpoint(endpoint)
             if not article:
-                logger.error(f"Internal reference #{endpoint} not found in law {self.current_law.id}")
+                logger.error(
+                    f"Internal reference #{endpoint} not found in law {self.current_law.id}"
+                )
                 return None
 
             # Execute the article directly
             from engine.engine import ArticleEngine
+
             engine = ArticleEngine(article, self.current_law)
             result = engine.evaluate(
                 parameters=resolved_params,
