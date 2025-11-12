@@ -1,0 +1,51 @@
+$id: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+uuid: ac962262-6628-49bf-a465-5d831271936a
+regulatory_layer: "MINISTERIELE_REGELING"
+publication_date: "2024-11-19"
+
+bwb_id: "BWBR0050536"
+url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01"
+
+articles:
+  - number: "1"
+    text: |
+      De standaardpremie, bedoeld in artikel 4 van de Wet op de zorgtoeslag,
+      bedraagt voor het berekeningsjaar 2025: € 2.112.
+    url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1"
+
+    machine_readable:
+      public: true
+      endpoint: "regeling_standaardpremie.standaardpremie"
+
+      definitions:
+        STANDAARDPREMIE_2025:
+          value: 211200
+
+      execution:
+        produces:
+          legal_character: "WAARDEBEPALING"
+
+        output:
+          - name: "standaardpremie"
+            type: "amount"
+            type_spec:
+              unit: "eurocent"
+
+        actions:
+          - output: "standaardpremie"
+            value: "$STANDAARDPREMIE_2025"
+
+  - number: "2"
+    text: |
+      Deze regeling treedt in werking met ingang van 1 januari 2025.
+    url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel2"
+
+  - number: "3"
+    text: |
+      Deze regeling wordt aangehaald als: Regeling vaststelling standaardpremie
+      en bestuursrechtelijke premies 2025.
+    url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel3"
+
+    machine_readable:
+      definitions:
+        citeertitel: "Regeling vaststelling standaardpremie en bestuursrechtelijke premies 2025"
