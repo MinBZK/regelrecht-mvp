@@ -53,12 +53,12 @@ def step_when_healthcare_allowance_executed(context):
             self.mock_service = mock_service
 
         def evaluate_uri(
-            self, uri, parameters, reference_date=None, requested_output=None
+            self, uri, parameters, calculation_date=None, requested_output=None
         ):
             # All laws should now be real - no mocking needed!
             # Just use the real engine for everything
             return super().evaluate_uri(
-                uri, parameters, reference_date, requested_output
+                uri, parameters, calculation_date, requested_output
             )
 
     # Create service with mocks
@@ -88,8 +88,8 @@ def step_when_request_standard_premium(context, year):
     # Create service
     service = LawExecutionService("regulation/nl")
 
-    # Set reference_date to match the year
-    reference_date = f"{year}-01-01"
+    # Set calculation_date to match the year
+    calculation_date = f"{year}-01-01"
 
     try:
         # Call the get_standaardpremie endpoint (Article 4)
@@ -97,7 +97,7 @@ def step_when_request_standard_premium(context, year):
             law_id="zorgtoeslagwet",
             endpoint="get_standaardpremie",
             parameters={},
-            reference_date=reference_date,
+            calculation_date=calculation_date,
         )
         context.result = result
     except Exception as e:
