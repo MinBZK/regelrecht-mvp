@@ -81,7 +81,11 @@ class ArticleBasedLaw:
             article_endpoint = article.get_endpoint()
             if article_endpoint:
                 # Extract local endpoint name (after dot)
-                local_name = article_endpoint.split(".")[-1] if "." in article_endpoint else article_endpoint
+                local_name = (
+                    article_endpoint.split(".")[-1]
+                    if "." in article_endpoint
+                    else article_endpoint
+                )
                 if local_name == endpoint:
                     return article
         return None

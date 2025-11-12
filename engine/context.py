@@ -167,7 +167,12 @@ class RuleContext:
 
         # Convert article reference format to URI format
         # article: "law_id.endpoint" -> regelrecht://law_id/endpoint#input_name
-        if article_ref and not uri.startswith("#") and not uri.startswith("regelrecht://") and not uri.startswith("regulation/"):
+        if (
+            article_ref
+            and not uri.startswith("#")
+            and not uri.startswith("regelrecht://")
+            and not uri.startswith("regulation/")
+        ):
             # Parse article reference: "law_id.endpoint"
             if "." in article_ref:
                 law_id, endpoint = article_ref.rsplit(".", 1)

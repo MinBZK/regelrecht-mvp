@@ -161,7 +161,9 @@ def parse_articles(toestand_tree, bwbr_id, date):
         article_text = extract_text_from_element(artikel)
 
         # Generate URL
-        article_url = f"https://wetten.overheid.nl/{bwbr_id}/{date}#Artikel{article_number}"
+        article_url = (
+            f"https://wetten.overheid.nl/{bwbr_id}/{date}#Artikel{article_number}"
+        )
 
         articles.append(
             {"number": article_number, "text": article_text, "url": article_url}
@@ -265,7 +267,7 @@ def main():
         print("Next steps:")
         print(f"1. Validate: uv run python script/validate.py {output_file}")
         print(
-            f"2. Interpret: Use the law-machine-readable-interpreter skill to add machine_readable sections"
+            "2. Interpret: Use the law-machine-readable-interpreter skill to add machine_readable sections"
         )
 
     except Exception as e:

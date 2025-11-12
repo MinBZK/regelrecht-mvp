@@ -53,7 +53,11 @@ def fix_source_format(source):
                 return {"article": f"{law_name}.{field}"}
 
         # Fallback: just remove 'ref' prefix and parameters
-        return {"article": ref.replace("regulation/nl/wet/", "").replace("regulation/nl/ministeriele_regeling/", "")}
+        return {
+            "article": ref.replace("regulation/nl/wet/", "").replace(
+                "regulation/nl/ministeriele_regeling/", ""
+            )
+        }
 
     # If no 'ref', return as-is (might already be in correct format)
     return source
@@ -134,7 +138,7 @@ def fix_law_file(yaml_path):
             )
         print(f"   ✅ Fixed {changes} article(s)")
     else:
-        print(f"   ℹ️  No changes needed")
+        print("   ℹ️  No changes needed")
 
     return changes
 
@@ -144,8 +148,10 @@ def main():
         print("Usage: uv run python script/fix_schema.py <yaml_file> [yaml_file...]")
         print()
         print("Example:")
-        print('  uv run python script/fix_schema.py regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml')
-        print('  uv run python script/fix_schema.py regulation/nl/**/*.yaml')
+        print(
+            "  uv run python script/fix_schema.py regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml"
+        )
+        print("  uv run python script/fix_schema.py regulation/nl/**/*.yaml")
         sys.exit(1)
 
     files = []
@@ -166,7 +172,7 @@ def main():
             files.append(Path(pattern))
 
     if not files:
-        print(f"❌ No files found")
+        print("❌ No files found")
         sys.exit(1)
 
     print(f"📁 Processing {len(files)} file(s)...\n")
