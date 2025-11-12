@@ -470,7 +470,10 @@ class ArticleEngine:
                         raise ValueError(error_msg)
 
                     # Store first match
-                    first_match = {"law": regeling_law, "result": result.output[output_field]}
+                    first_match = {
+                        "law": regeling_law,
+                        "result": result.output[output_field],
+                    }
                 else:
                     logger.error(
                         f"Regeling {regeling_id}: Output field '{output_field}' not found in result"
