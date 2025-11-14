@@ -449,7 +449,8 @@
     },
     "variableReference": {
       "type": "string",
-      "pattern": "^\\$[A-Z_][A-Z0-9_]*(?:\\.[A-Z_][A-Z0-9_]*)*$"
+      "pattern": "^\\$[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Variable reference starting with $ (e.g., $standaardpremie, $referencedate.year). Supports dot notation for property access."
     },
     "parameterField": {
       "allOf": [
