@@ -5,6 +5,7 @@ These tests use synthetic fixture YAML files to test that components
 work together correctly. They do NOT test actual law behavior - that's
 what BDD/behavior tests are for.
 """
+
 import pytest
 from pathlib import Path
 
@@ -69,7 +70,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 50},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         assert isinstance(result, ArticleResult)
@@ -84,7 +85,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="check_threshold",
             parameters={"value": 75},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         assert result.output["above_threshold"] is True
@@ -94,7 +95,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="check_threshold",
             parameters={"value": 25},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         assert result.output["above_threshold"] is False
@@ -105,7 +106,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 10},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         assert result.law_id == "test_law_a"
@@ -125,7 +126,7 @@ class TestCrossLawURICalls:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 25},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # test_law_a returns: 100 + 25 = 125
@@ -139,14 +140,14 @@ class TestCrossLawURICalls:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 10},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         result2 = test_service.evaluate_law_endpoint(
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 50},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # (100 + 10) * 2 = 220
@@ -161,7 +162,7 @@ class TestCrossLawURICalls:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 20},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # Should have resolved the input from cross-law call
@@ -172,7 +173,9 @@ class TestCrossLawURICalls:
 class TestInternalReferences:
     """Test internal references within same law"""
 
-    @pytest.mark.skip(reason="Internal references with article/ref pattern need additional implementation")
+    @pytest.mark.skip(
+        reason="Internal references with article/ref pattern need additional implementation"
+    )
     def test_article_references_another_article_in_same_law(self, test_service):
         """Article can reference another article in same law"""
         # test_law_b article 2 references article 1 internally
@@ -181,7 +184,7 @@ class TestInternalReferences:
             law_id="test_law_b",
             endpoint="internal_ref_test",
             parameters={"my_value": 15},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # Article 1 returns: (100 + 15) * 2 = 230
@@ -199,7 +202,7 @@ class TestEngineCaching:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 10},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # Check engine is cached (cache key is just (law_id, endpoint))
@@ -213,7 +216,7 @@ class TestEngineCaching:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 20},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # Same engine instance should be in cache
@@ -225,14 +228,14 @@ class TestEngineCaching:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 10},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         test_service.evaluate_law_endpoint(
             law_id="test_law_a",
             endpoint="check_threshold",
             parameters={"value": 50},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # Should have two different cache entries
@@ -257,7 +260,7 @@ class TestURIResultCaching:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 30},
-            reference_date="2025-01-01"
+            reference_date="2025-01-01",
         )
 
         # Result should be correct even with caching
@@ -275,7 +278,7 @@ class TestErrorHandling:
                 law_id="test_law_error",
                 endpoint="divide_by_zero",
                 parameters={},
-                reference_date="2025-01-01"
+                reference_date="2025-01-01",
             )
 
     def test_missing_law_in_uri_raises_error(self, test_service):
@@ -285,7 +288,7 @@ class TestErrorHandling:
                 law_id="test_law_error",
                 endpoint="call_missing_law",
                 parameters={},
-                reference_date="2025-01-01"
+                reference_date="2025-01-01",
             )
 
     def test_invalid_law_id_raises_error(self, test_service):
@@ -295,7 +298,7 @@ class TestErrorHandling:
                 law_id="nonexistent_law",
                 endpoint="some_endpoint",
                 parameters={},
-                reference_date="2025-01-01"
+                reference_date="2025-01-01",
             )
 
     def test_invalid_endpoint_raises_error(self, test_service):
@@ -305,7 +308,7 @@ class TestErrorHandling:
                 law_id="test_law_a",
                 endpoint="nonexistent_endpoint",
                 parameters={},
-                reference_date="2025-01-01"
+                reference_date="2025-01-01",
             )
 
 
