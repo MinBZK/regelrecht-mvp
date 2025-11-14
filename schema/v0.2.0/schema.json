@@ -88,6 +88,32 @@
       "type": "string",
       "description": "Organization responsible (for implementation policies without official IDs)"
     },
+    "grondslag": {
+      "type": "array",
+      "description": "Legal basis - articles from higher-level laws that authorize this regulation",
+      "items": {
+        "type": "object",
+        "required": [
+          "law_id",
+          "article"
+        ],
+        "properties": {
+          "law_id": {
+            "type": "string",
+            "description": "Identifier of the law that provides authority"
+          },
+          "article": {
+            "type": "string",
+            "description": "Article number that authorizes this regulation"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional explanation of the legal relationship"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "articles": {
       "type": "array",
       "description": "Articles of this law/regulation",
@@ -423,7 +449,8 @@
     },
     "variableReference": {
       "type": "string",
-      "pattern": "^\\$[A-Z_][A-Z0-9_]*(?:\\.[A-Z_][A-Z0-9_]*)*$"
+      "pattern": "^\\$[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Variable reference starting with $ (e.g., $standaardpremie, $referencedate.year). Supports dot notation for property access."
     },
     "parameterField": {
       "allOf": [
@@ -638,6 +665,47 @@
             ],
             "additionalProperties": false
           }
+        },
+        "resolve": {
+          "type": "object",
+          "description": "Resolve output from ministeriele regeling based on grondslag",
+          "required": [
+            "type",
+            "output"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "ministeriele_regeling"
+              ],
+              "description": "Type of regulation to resolve from"
+            },
+            "output": {
+              "type": "string",
+              "description": "Output field to extract from the matching regeling"
+            },
+            "match": {
+              "type": "object",
+              "description": "Criteria to match the correct regeling",
+              "required": [
+                "output",
+                "value"
+              ],
+              "properties": {
+                "output": {
+                  "type": "string",
+                  "description": "Output field from regeling to match against"
+                },
+                "value": {
+                  "$ref": "#/definitions/operationValue",
+                  "description": "Expected value (can be variable reference)"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"

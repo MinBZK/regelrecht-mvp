@@ -119,7 +119,7 @@ articles:
           article: algemene_wet_inkomensafhankelijke_regelingen.toetsingsinkomen
         type_spec:
           unit: eurocent
-      - name: STANDAARDPREMIE
+      - name: standaardpremie
         type: amount
         source:
           article: regeling_standaardpremie.standaardpremie
@@ -143,7 +143,7 @@ articles:
         - 0
         - operation: SUBTRACT
           values:
-          - $STANDAARDPREMIE
+          - $standaardpremie
           - operation: ADD
             values:
             - operation: MULTIPLY
@@ -265,6 +265,27 @@ articles:
 
     '
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4
+  machine_readable:
+    public: true
+    endpoint: zorgtoeslagwet.get_standaardpremie
+    execution:
+      parameters:
+      - name: reference_year
+        type: number
+        required: false
+      output:
+      - name: standaardpremie
+        type: amount
+        type_spec:
+          unit: eurocent
+      actions:
+      - output: standaardpremie
+        resolve:
+          type: ministeriele_regeling
+          output: standaardpremie
+          match:
+            output: berekeningsjaar
+            value: $referencedate.year
 - number: 4a
   text: 'Voor de persoon, bedoeld in artikel 69 van de Zorgverzekeringswet, wordt de
 

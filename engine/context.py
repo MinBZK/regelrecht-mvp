@@ -7,6 +7,7 @@ Manages state and value resolution during article execution.
 from dataclasses import dataclass, field
 from typing import Any, Optional
 import copy
+from datetime import datetime
 
 from engine.logging_config import logger
 
@@ -48,7 +49,7 @@ class RuleContext:
             definitions: Article-level definitions
             parameters: Input parameters (e.g., {"BSN": "123456789"})
             service_provider: Service for resolving URIs
-            calculation_date: Reference date for calculations
+            calculation_date: Reference date for calculations (YYYY-MM-DD)
             input_specs: Input specifications from execution section
             output_specs: Output specifications from execution section
             current_law: The law being executed (for resolving # references)
@@ -60,6 +61,15 @@ class RuleContext:
         self.input_specs = input_specs or []
         self.output_specs = output_specs or []
         self.current_law = current_law
+
+        # Parse calculation date as datetime object for use as $referencedate context variable
+        try:
+            self.reference_date = datetime.strptime(calculation_date, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            logger.warning(
+                f"Invalid calculation_date format: {calculation_date}, using current date"
+            )
+            self.reference_date = datetime.now()
 
         # Execution state
         self.outputs: dict[str, Any] = {}
@@ -101,40 +111,62 @@ class RuleContext:
         Resolve a variable reference
 
         Resolution priority:
-        1. Local scope (loop variables)
-        2. Outputs (calculated values)
-        3. Resolved inputs
-        4. Definitions (constants)
-        5. Parameters (direct inputs)
-        6. Input with source.url (cross-law reference)
+        1. Context variables (referencedate)
+        2. Local scope (loop variables)
+        3. Outputs (calculated values)
+        4. Resolved inputs
+        5. Definitions (constants)
+        6. Parameters (direct inputs)
+        7. Input with source.url (cross-law reference)
+
+        Supports dot notation for property access (e.g., referencedate.year)
 
         Args:
-            path: Variable name
+            path: Variable name or path (e.g., "referencedate.year")
 
         Returns:
             Resolved value or None
         """
-        # 1. Local scope (FOREACH loop variables)
+        # Handle dot notation for property access
+        if "." in path:
+            parts = path.split(".", 1)
+            base_var = parts[0]
+            property_path = parts[1]
+
+            # Resolve the base variable
+            base_value = self._resolve_value(base_var)
+            if base_value is None:
+                logger.warning(f"Could not resolve base variable: {base_var}")
+                return None
+
+            # Navigate the property path
+            return self._get_property(base_value, property_path)
+
+        # 1. Context variables (special built-in variables)
+        if path == "referencedate":
+            return self.reference_date
+
+        # 2. Local scope (FOREACH loop variables)
         if path in self.local:
             return self.local[path]
 
-        # 2. Outputs (calculated values)
+        # 3. Outputs (calculated values)
         if path in self.outputs:
             return self.outputs[path]
 
-        # 3. Resolved inputs (already fetched)
+        # 4. Resolved inputs (already fetched)
         if path in self.resolved_inputs:
             return self.resolved_inputs[path]
 
-        # 4. Definitions (constants)
+        # 5. Definitions (constants)
         if path in self.definitions:
             return self.definitions[path]
 
-        # 5. Parameters (direct inputs)
+        # 6. Parameters (direct inputs)
         if path in self.parameters:
             return self.parameters[path]
 
-        # 6. Input with source - need to resolve
+        # 7. Input with source - need to resolve
         input_spec = self._find_input_spec(path)
         if input_spec and "source" in input_spec:
             value = self._resolve_from_source(input_spec["source"], path)
@@ -143,6 +175,35 @@ class RuleContext:
 
         logger.warning(f"Could not resolve variable: {path}")
         return None
+
+    def _get_property(self, obj: Any, property_path: str) -> Any:
+        """
+        Get a property from an object, supporting nested properties
+
+        Args:
+            obj: Object to get property from
+            property_path: Property path (e.g., "year" or "date.year")
+
+        Returns:
+            Property value or None
+        """
+        if "." in property_path:
+            parts = property_path.split(".", 1)
+            first_prop = parts[0]
+            remaining = parts[1]
+            intermediate = self._get_property(obj, first_prop)
+            if intermediate is None:
+                return None
+            return self._get_property(intermediate, remaining)
+
+        # Get the property
+        if hasattr(obj, property_path):
+            return getattr(obj, property_path)
+        elif isinstance(obj, dict) and property_path in obj:
+            return obj[property_path]
+        else:
+            logger.warning(f"Property {property_path} not found on {type(obj)}")
+            return None
 
     def _resolve_from_source(self, source_spec: dict, input_name: str) -> Any:
         """
@@ -177,24 +238,15 @@ class RuleContext:
             if "." in article_ref:
                 law_id, endpoint = article_ref.rsplit(".", 1)
                 # Add input_name as field to extract from output
-                uri = f"regelrecht://{law_id}/{endpoint}#{input_name}"
+                from engine.uri_resolver import RegelrechtURIBuilder
+
+                uri = RegelrechtURIBuilder.build(law_id, endpoint, input_name)
             else:
                 # Just an endpoint name, assume internal reference
                 uri = f"#{article_ref}"
 
-        # Handle internal references (same-file): #output_name
-        if uri.startswith("#"):
-            output_name = uri[1:]  # Remove the # prefix
-            logger.debug(f"Resolving internal reference: {output_name}")
-
-            # Build full URI to current law's article that produces this output
-            # We need to find which article in the current law produces this output
-            full_uri = f"regulation/nl/{self.current_law.regulatory_layer.lower()}/{self.current_law.id}{uri}"
-            uri = full_uri
-
-        params_spec = source_spec.get("parameters", {})
-
         # Resolve parameter values ($BSN -> actual BSN value)
+        params_spec = source_spec.get("parameters", {})
         resolved_params = {}
         for key, value in params_spec.items():
             if isinstance(value, str) and value.startswith("$"):
@@ -202,6 +254,47 @@ class RuleContext:
             else:
                 resolved_params[key] = value
 
+        # Handle internal references (same-law): #endpoint
+        if uri.startswith("#"):
+            endpoint = uri[1:]  # Remove the # prefix
+            logger.debug(f"Resolving internal reference: #{endpoint}")
+
+            # Create cache key for internal reference (use original uri which includes #)
+            cache_key = self._make_cache_key(uri, resolved_params)
+
+            # Check cache
+            if cache_key in self._uri_cache:
+                logger.debug(f"Cache hit for internal reference #{endpoint}")
+                return self._uri_cache[cache_key]
+
+            # Find the article by endpoint in current law
+            article = self.current_law.find_article_by_endpoint(endpoint)
+            if not article:
+                logger.error(
+                    f"Internal reference #{endpoint} not found in law {self.current_law.id}"
+                )
+                return None
+
+            # Execute the article directly
+            from engine.engine import ArticleEngine
+
+            engine = ArticleEngine(article, self.current_law)
+            result = engine.evaluate(
+                parameters=resolved_params,
+                service_provider=self.service_provider,
+                calculation_date=self.calculation_date,
+                requested_output=endpoint,
+            )
+
+            # Extract the endpoint output
+            value = result.output.get(endpoint)
+
+            # Cache result
+            self._uri_cache[cache_key] = value
+            logger.debug(f"Resolved internal reference #{endpoint} -> {value}")
+            return value
+
+        # Handle external references (cross-law URIs)
         # Create cache key
         cache_key = self._make_cache_key(uri, resolved_params)
 

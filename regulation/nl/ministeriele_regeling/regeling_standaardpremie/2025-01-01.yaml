@@ -8,6 +8,12 @@ bwb_id: BWBR0050536
 url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
 name: '#wet_naam'
 competent_authority: 00000002003182447001
+grondslag:
+- law_id: zorgtoeslagwet
+  article: '4'
+- law_id: zvw
+  article: '2'
+  description: Standaardpremie also used in healthcare insurance law
 articles:
 - number: '1'
   text: 'De standaardpremie, bedoeld in artikel 4 van de Wet op de zorgtoeslag,
@@ -18,17 +24,17 @@ articles:
   url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1
   machine_readable:
     public: true
-    endpoint: regeling_standaardpremie.standaardpremie
+    endpoint: standaardpremie
     execution:
       output:
-      - name: STANDAARDPREMIE
+      - name: standaardpremie
         type: amount
-      - name: BEREKENINGSJAAR
+      - name: berekeningsjaar
         type: number
       actions:
-      - output: STANDAARDPREMIE
+      - output: standaardpremie
         value: 211200
-      - output: BEREKENINGSJAAR
+      - output: berekeningsjaar
         value: 2025
 - number: '2'
   text: 'Deze regeling treedt in werking met ingang van 1 januari 2025.
