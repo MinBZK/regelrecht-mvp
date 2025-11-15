@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Blockly workspace styling */
+.blocklyWorkspace {
+  background-color: #f9fafb !important;
+}
+
+.blocklyToolboxDiv {
+  background-color: #ffffff !important;
+  border-right: 1px solid #e5e7eb !important;
+}
+
+.blocklyFlyout {
+  background-color: #f3f4f6 !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

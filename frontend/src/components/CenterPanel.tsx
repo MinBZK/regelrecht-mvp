@@ -20,32 +20,42 @@ export default function CenterPanel() {
     syncYamlToBlockly,
   } = useEditorStore();
 
-  // Initialize Blockly workspace
+  // Initialize Blockly workspace when article is selected
   useEffect(() => {
-    if (!blocklyDiv.current) return;
+    // Only initialize if article is selected and div is available
+    if (!blocklyDiv.current || !currentArticle) {
+      return;
+    }
 
-    // Create workspace
-    const workspace = Blockly.inject(blocklyDiv.current, BLOCKLY_CONFIG);
-    workspaceRef.current = workspace;
-    setBlocklyWorkspace(workspace);
+    // Skip if workspace already exists
+    if (workspaceRef.current) {
+      return;
+    }
 
-    // Listen to workspace changes
-    workspace.addChangeListener((event) => {
-      // Auto-sync to YAML on block changes (with debouncing in production)
-      if (event.type === Blockly.Events.BLOCK_CHANGE ||
-          event.type === Blockly.Events.BLOCK_CREATE ||
-          event.type === Blockly.Events.BLOCK_DELETE ||
-          event.type === Blockly.Events.BLOCK_MOVE) {
-        // Trigger sync after changes
-        // In production, this should be debounced
-      }
-    });
+    console.log('Initializing Blockly workspace...');
 
-    // Cleanup
-    return () => {
-      workspace.dispose();
-    };
-  }, [setBlocklyWorkspace]);
+    try {
+      // Create workspace
+      const workspace = Blockly.inject(blocklyDiv.current, BLOCKLY_CONFIG);
+      workspaceRef.current = workspace;
+      setBlocklyWorkspace(workspace);
+      console.log('Blockly workspace initialized successfully');
+
+      // Listen to workspace changes
+      workspace.addChangeListener((event) => {
+        // Auto-sync to YAML on block changes (with debouncing in production)
+        if (event.type === Blockly.Events.BLOCK_CHANGE ||
+            event.type === Blockly.Events.BLOCK_CREATE ||
+            event.type === Blockly.Events.BLOCK_DELETE ||
+            event.type === Blockly.Events.BLOCK_MOVE) {
+          // Trigger sync after changes
+          // In production, this should be debounced
+        }
+      });
+    } catch (error) {
+      console.error('Failed to initialize Blockly:', error);
+    }
+  }, [currentArticle, setBlocklyWorkspace]);
 
   // Load article's machine-readable logic when article changes
   useEffect(() => {
@@ -57,37 +67,34 @@ export default function CenterPanel() {
       return;
     }
 
+    // Clear workspace first
+    workspaceRef.current.clear();
+
     // Load machine-readable execution into Blockly
     const machineReadable = currentArticle.machine_readable;
-    if (machineReadable) {
-      const execution = extractExecution(machineReadable);
-      if (execution) {
-        try {
-          deserializeOperationToWorkspace(execution, workspaceRef.current);
-        } catch (error) {
-          console.error('Failed to load execution into Blockly:', error);
+    if (machineReadable && machineReadable.execution) {
+      try {
+        // Check if execution has actions array (new format)
+        if (machineReadable.execution.actions && Array.isArray(machineReadable.execution.actions)) {
+          // For now, just load the first action's operation
+          const firstAction = machineReadable.execution.actions[0];
+          if (firstAction && firstAction.operation) {
+            console.log('Loading action into Blockly:', firstAction);
+            deserializeOperationToWorkspace(firstAction, workspaceRef.current);
+          }
         }
-      } else {
-        workspaceRef.current.clear();
+        // Check if execution is a simple operation (old format)
+        else if (machineReadable.execution.operation) {
+          console.log('Loading operation into Blockly:', machineReadable.execution);
+          deserializeOperationToWorkspace(machineReadable.execution, workspaceRef.current);
+        } else {
+          console.log('No displayable operation found in execution');
+        }
+      } catch (error) {
+        console.error('Failed to load execution into Blockly:', error);
       }
-    } else {
-      workspaceRef.current.clear();
     }
   }, [currentArticle]);
-
-  if (!currentArticle) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50">
-        <Blocks className="w-16 h-16 text-gray-400 mb-4" />
-        <h2 className="text-xl font-semibold text-gray-700 mb-2">
-          No Article Selected
-        </h2>
-        <p className="text-sm text-gray-600">
-          Select an article from the left panel to begin editing its logic.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -99,35 +106,51 @@ export default function CenterPanel() {
               <Blocks className="w-5 h-5 text-legal-blue" />
               Visual Logic Editor
             </h2>
-            <p className="text-xs text-gray-600 mt-1">
-              Article {currentArticle.number}
-            </p>
+            {currentArticle && (
+              <p className="text-xs text-gray-600 mt-1">
+                Article {currentArticle.number}
+              </p>
+            )}
           </div>
 
           {/* Sync Controls */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={syncYamlToBlockly}
-              className="px-3 py-1.5 bg-legal-amber text-white text-sm rounded hover:bg-amber-600 transition-colors flex items-center gap-1"
-              title="Load YAML into Blockly (overwrites current blocks)"
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-              YAML → Blocks
-            </button>
-            <button
-              onClick={syncBlocklyToYaml}
-              className="px-3 py-1.5 bg-legal-green text-white text-sm rounded hover:bg-green-700 transition-colors flex items-center gap-1"
-              title="Generate YAML from Blockly blocks"
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-              Blocks → YAML
-            </button>
-          </div>
+          {currentArticle && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={syncYamlToBlockly}
+                className="px-3 py-1.5 bg-legal-amber text-white text-sm rounded hover:bg-amber-600 transition-colors flex items-center gap-1"
+                title="Load YAML into Blockly (overwrites current blocks)"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+                YAML → Blocks
+              </button>
+              <button
+                onClick={syncBlocklyToYaml}
+                className="px-3 py-1.5 bg-legal-green text-white text-sm rounded hover:bg-green-700 transition-colors flex items-center gap-1"
+                title="Generate YAML from Blockly blocks"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+                Blocks → YAML
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Blockly Workspace */}
-      <div ref={blocklyDiv} className="flex-1" />
+      {/* Blockly Workspace OR Empty State */}
+      {!currentArticle ? (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50">
+          <Blocks className="w-16 h-16 text-gray-400 mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            No Article Selected
+          </h2>
+          <p className="text-sm text-gray-600">
+            Select an article from the left panel to begin editing its logic.
+          </p>
+        </div>
+      ) : (
+        <div ref={blocklyDiv} className="flex-1 bg-gray-50" style={{ minHeight: '400px' }} />
+      )}
 
       {/* Panel Footer with hints */}
       <div className="bg-gray-50 border-t border-gray-300 px-4 py-2">
