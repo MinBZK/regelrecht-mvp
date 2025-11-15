@@ -1,85 +1,202 @@
 /**
- * Main App component with three-panel layout:
- * - Left: Articles list with traditional legal styling
- * - Center: Blockly visual editor
- * - Right: YAML code preview with Monaco
+ * RegelRecht - Beautiful UX Design
+ * Tabbed interface with resizable panels, YAML/Blockly toggle, and sync proposals
  */
 
-import { useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, X, GripVertical } from 'lucide-react';
 import { useEditorStore } from './store/editorStore';
 import { initializeBlocklyBlocks } from './utils/blockly';
-import Header from './components/Header';
-import LeftPanel from './components/LeftPanel';
-import CenterPanel from './components/CenterPanel';
-import RightPanel from './components/RightPanel';
+import LawTabs from './components/LawTabs';
+import LeftPanel from './components/ArticleList';
+import MiddlePanel from './components/MiddlePanel';
+import RightPanel from './components/SyncPanel';
+
+// Law colors - beautiful palette
+const LAW_COLORS = [
+  '#3B82F6', // Blue
+  '#10B981', // Green
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+];
 
 function App() {
-  const { loadAvailableLaws, error, clearError } = useEditorStore();
+  const { loadAvailableLaws, availableLaws, currentLaw, selectLaw } = useEditorStore();
 
-  // Initialize on mount
+  const [openLaws, setOpenLaws] = useState<string[]>([]);
+  const [activeLawId, setActiveLawId] = useState<string | null>(null);
+
+  // Panel state with resizing
+  const [panels, setPanels] = useState({
+    left: { visible: true, width: 25 },
+    middle: { visible: true, width: 45 },
+    right: { visible: true, width: 30 }
+  });
+
+  const [isResizing, setIsResizing] = useState<'left' | 'right' | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize
   useEffect(() => {
-    // Initialize Blockly custom blocks
     initializeBlocklyBlocks();
-
-    // Load available laws from backend
     loadAvailableLaws();
   }, [loadAvailableLaws]);
 
+  // Auto-open first law
+  useEffect(() => {
+    if (availableLaws.length > 0 && openLaws.length === 0) {
+      const firstLaw = availableLaws[0];
+      setOpenLaws([firstLaw.uuid]);
+      setActiveLawId(firstLaw.uuid);
+      selectLaw(firstLaw.uuid);
+    }
+  }, [availableLaws, openLaws.length, selectLaw]);
+
+  // Handle law tab click
+  const handleLawTabClick = (uuid: string) => {
+    setActiveLawId(uuid);
+    selectLaw(uuid);
+  };
+
+  // Handle new law tab
+  const handleAddLaw = (uuid: string) => {
+    if (!openLaws.includes(uuid)) {
+      setOpenLaws([...openLaws, uuid]);
+    }
+    setActiveLawId(uuid);
+    selectLaw(uuid);
+  };
+
+  // Handle close law tab
+  const handleCloseLaw = (uuid: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newOpenLaws = openLaws.filter(id => id !== uuid);
+    setOpenLaws(newOpenLaws);
+
+    if (activeLawId === uuid && newOpenLaws.length > 0) {
+      const newActive = newOpenLaws[newOpenLaws.length - 1];
+      setActiveLawId(newActive);
+      selectLaw(newActive);
+    }
+  };
+
+  // Resize handling
+  const handleMouseDown = (divider: 'left' | 'right') => {
+    setIsResizing(divider);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !containerRef.current) return;
+
+      const container = containerRef.current;
+      const containerWidth = container.offsetWidth;
+      const mouseX = e.clientX - container.getBoundingClientRect().left;
+      const percentage = (mouseX / containerWidth) * 100;
+
+      if (isResizing === 'left') {
+        const newLeftWidth = Math.max(15, Math.min(40, percentage));
+        setPanels(prev => ({
+          ...prev,
+          left: { ...prev.left, width: newLeftWidth },
+          middle: { ...prev.middle, width: prev.middle.width + (prev.left.width - newLeftWidth) }
+        }));
+      } else {
+        const newRightWidth = Math.max(20, Math.min(50, 100 - percentage));
+        setPanels(prev => ({
+          ...prev,
+          middle: { ...prev.middle, width: 100 - prev.left.width - newRightWidth },
+          right: { ...prev.right, width: newRightWidth }
+        }));
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(null);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing]);
+
+  // Get law color
+  const getLawColor = (uuid: string) => {
+    const index = availableLaws.findIndex(law => law.uuid === uuid);
+    return LAW_COLORS[index % LAW_COLORS.length];
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header with law selector */}
-      <Header />
+      {/* Law Tabs Header */}
+      <LawTabs
+        openLaws={openLaws}
+        availableLaws={availableLaws}
+        activeLawId={activeLawId}
+        onTabClick={handleLawTabClick}
+        onCloseLaw={handleCloseLaw}
+        onAddLaw={handleAddLaw}
+        getLawColor={getLawColor}
+      />
 
-      {/* Error notification */}
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <svg
-                className="h-5 w-5 text-red-500 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-            <button
-              onClick={clearError}
-              className="text-red-500 hover:text-red-700"
+      {/* Main Content with Resizable Panels */}
+      <div ref={containerRef} className="flex flex-1 overflow-hidden relative">
+        {/* Left Panel - Article List */}
+        {panels.left.visible && (
+          <>
+            <div
+              style={{ width: `${panels.left.width}%` }}
+              className="border-r border-gray-300 overflow-hidden"
             >
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
+              <LeftPanel color={activeLawId ? getLawColor(activeLawId) : undefined} />
+            </div>
+
+            {/* Left Resize Handle */}
+            <div
+              className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize flex items-center justify-center group transition-colors"
+              onMouseDown={() => handleMouseDown('left')}
+            >
+              <GripVertical className="w-4 h-4 text-gray-400 group-hover:text-white" />
+            </div>
+          </>
+        )}
+
+        {/* Middle Panel - YAML/Blockly */}
+        {panels.middle.visible && (
+          <>
+            <div
+              style={{ width: `${panels.middle.width}%` }}
+              className="overflow-hidden"
+            >
+              <MiddlePanel color={activeLawId ? getLawColor(activeLawId) : undefined} />
+            </div>
+
+            {/* Right Resize Handle */}
+            <div
+              className="w-1 bg-gray-300 hover:bg-blue-500 cursor-col-resize flex items-center justify-center group transition-colors"
+              onMouseDown={() => handleMouseDown('right')}
+            >
+              <GripVertical className="w-4 h-4 text-gray-400 group-hover:text-white" />
+            </div>
+          </>
+        )}
+
+        {/* Right Panel - Sync Proposals */}
+        {panels.right.visible && (
+          <div
+            style={{ width: `${panels.right.width}%` }}
+            className="overflow-hidden bg-white border-l border-gray-200"
+          >
+            <RightPanel />
           </div>
-        </div>
-      )}
-
-      {/* Three-panel layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel: Articles */}
-        <div className="w-1/4 min-w-[250px] max-w-[400px] border-r border-gray-300 overflow-y-auto bg-parchment-50">
-          <LeftPanel />
-        </div>
-
-        {/* Center Panel: Blockly Editor */}
-        <div className="flex-1 min-w-[400px] bg-white">
-          <CenterPanel />
-        </div>
-
-        {/* Right Panel: YAML Preview */}
-        <div className="w-1/3 min-w-[300px] max-w-[500px] border-l border-gray-300 bg-gray-900">
-          <RightPanel />
-        </div>
+        )}
       </div>
     </div>
   );
