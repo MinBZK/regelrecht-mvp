@@ -19,19 +19,19 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1"
 
     machine_readable:
-      public: true
       endpoint: "standaardpremie"
 
-      actions:
-        - output: "standaardpremie"
-          type: "amount"
-          type_spec:
-            unit: "eurocent"
-          value: 211200
+      execution:
+        actions:
+          - output: "standaardpremie"
+            type: "amount"
+            type_spec:
+              unit: "eurocent"
+            value: 211200
 
-        - output: "berekeningsjaar"
-          type: "number"
-          value: 2025
+          - output: "berekeningsjaar"
+            type: "number"
+            value: 2025
 
   - number: "2"
     text: |
@@ -39,9 +39,10 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel2"
 
     machine_readable:
-      actions:
-        - output: "datum_inwerkingtreding"
-          value: "2025-01-01"
+      execution:
+        actions:
+          - output: "datum_inwerkingtreding"
+            value: "2025-01-01"
 
   - number: "3"
     text: |
@@ -50,6 +51,7 @@ articles:
 
     machine_readable:
 
-      actions:
-        - output: "wet_naam"
-          value: "Regeling standaardpremie zorgverzekering 2025"
+      execution:
+        actions:
+          - output: "wet_naam"
+            value: "Regeling standaardpremie zorgverzekering 2025"
