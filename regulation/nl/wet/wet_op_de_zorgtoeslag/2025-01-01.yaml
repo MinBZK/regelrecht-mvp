@@ -1,10 +1,15 @@
-$id: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$id: "zorgtoeslagwet"
 uuid: 60e71675-38bc-4297-87ac-0c145613e481
 regulatory_layer: "WET"
 publication_date: "2024-12-20"
+effective_date: "2025-01-01"
+name: "#wet_naam"
+competent_authority: "#bevoegd_gezag"
 
-bwb_id: "BWBR0018451"
-url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01"
+identifiers:
+  bwb_id: "BWBR0018451"
+  url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01"
 
 articles:
   - number: "1"
@@ -17,18 +22,6 @@ articles:
       d. normpremie: de premie, berekend overeenkomstig artikel 2;
       e. standaardpremie: de premie, bedoeld in artikel 4.
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel1"
-
-    machine_readable:
-      requires:
-        - law: "Zorgverzekeringswet"
-          values: ["verzekerde"]
-        - law: "Wet inkomstenbelasting 2001"
-          article: "2.18"
-          values: ["verzamelinkomen"]
-        - article: "2"
-          values: ["drempelinkomen", "normpremie"]
-        - article: "4"
-          values: ["standaardpremie"]
 
   - number: "1a"
     text: |
@@ -72,18 +65,6 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2"
 
     machine_readable:
-      public: true
-      competent_authority: "Dienst Toeslagen"
-      endpoint: "zorgtoeslagwet.bereken_zorgtoeslag"
-
-      requires:
-        - article: "1"
-          values: ["verzekerde", "toetsingsinkomen"]
-        - article: "3"
-          values: ["vermogen_onder_grens"]
-        - regeling: "regeling_standaardpremie"
-          values: ["standaardpremie"]
-
       definitions:
         DREMPELINKOMEN_ALLEENSTAANDE:
           value: 3971900
@@ -114,43 +95,46 @@ articles:
           - name: "LEEFTIJD"
             type: "number"
             source:
-              article: "wet_brp.leeftijd"
-              field: "leeftijd"
+              ref: "regulation/nl/wet/wet_brp#leeftijd"
+              parameters:
+                BSN: "$BSN"
 
           - name: "IS_VERZEKERDE"
             type: "boolean"
             source:
-              article: "zvw.is_verzekerd"
-              field: "is_verzekerd"
+              ref: "regulation/nl/wet/zvw#is_verzekerd"
+              parameters:
+                BSN: "$BSN"
 
           - name: "HEEFT_TOESLAGPARTNER"
             type: "boolean"
             source:
-              article: "awir.toeslagpartner"
-              field: "heeft_toeslagpartner"
+              ref: "regulation/nl/wet/awir#heeft_toeslagpartner"
+              parameters:
+                BSN: "$BSN"
 
           - name: "TOETSINGSINKOMEN"
             type: "amount"
             source:
-              article: "awir.verzamelinkomen"
-              field: "toetsingsinkomen"
+              ref: "regulation/nl/wet/awir#toetsingsinkomen"
+              parameters:
+                BSN: "$BSN"
             type_spec:
               unit: "eurocent"
 
           - name: "STANDAARDPREMIE"
             type: "amount"
             source:
-              regeling: "regeling_standaardpremie"
-              article: "1"
-              field: "standaardpremie"
+              ref: "#standaardpremie"
             type_spec:
               unit: "eurocent"
 
           - name: "VERMOGEN_ONDER_GRENS"
             type: "boolean"
             source:
-              article: "3"
-              field: "vermogen_onder_grens"
+              ref: "#vermogen_onder_grens"
+              parameters:
+                BSN: "$BSN"
 
         output:
           - name: "heeft_recht_op_zorgtoeslag"
@@ -235,12 +219,6 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3"
 
     machine_readable:
-      competent_authority: "Dienst Toeslagen"
-
-      requires:
-        - article: "1"
-          values: ["verzekerde"]
-
       definitions:
         VERMOGENSGRENS_ALLEENSTAAND:
           value: 14189600
@@ -262,16 +240,18 @@ articles:
           - name: "VERMOGEN"
             type: "amount"
             source:
-              article: "belastingdienst.rendementsgrondslag"
-              field: "rendementsgrondslag"
+              ref: "regulation/nl/wet/inkomstenbelasting#rendementsgrondslag"
+              parameters:
+                BSN: $BSN
             type_spec:
               unit: "eurocent"
 
           - name: "HEEFT_TOESLAGPARTNER"
             type: "boolean"
             source:
-              article: "awir.toeslagpartner"
-              field: "heeft_toeslagpartner"
+              ref: "regulation/nl/wet/toeslagpartner#heeft_toeslagpartner"
+              parameters:
+                BSN: $BSN
 
         output:
           - name: "vermogen_onder_grens"
@@ -301,9 +281,16 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4"
 
     machine_readable:
-      requires:
-        - regeling: "regeling_standaardpremie"
-          values: ["standaardpremie"]
+
+      actions:
+        - output: standaardpremie
+          resolve:
+            type: ministeriele_regeling
+            id: standaardpremie_zorgtoeslag
+            output: "standaardpremie"
+            match:
+              output: "berekeningsjaar"
+              value: "$reference_year"
 
   - number: "4a"
     text: |
@@ -323,8 +310,10 @@ articles:
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel5"
 
     machine_readable:
-      definitions:
-        uitvoerende_organisatie: "Dienst Toeslagen"
+
+      actions:
+        - output: "bevoegd_gezag"
+          value: "00000002003214394003"
 
   - number: "6"
     text: |
@@ -338,16 +327,13 @@ articles:
       Deze wet treedt in werking op een bij koninklijk besluit te bepalen tijdstip.
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel7"
 
-    machine_readable:
-      requires:
-        - koninklijk_besluit: "KB inwerkingtreding Wet op de zorgtoeslag"
-          values: ["datum_inwerkingtreding"]
-
   - number: "8"
     text: |
       Deze wet wordt aangehaald als: Wet op de zorgtoeslag.
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel8"
 
     machine_readable:
-      definitions:
-        citeertitel: "Wet op de zorgtoeslag"
+
+      actions:
+        - output: "wet_naam"
+          value: "Wet op de zorgtoeslag"
