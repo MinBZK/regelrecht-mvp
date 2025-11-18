@@ -39,3 +39,7 @@ htmlcov/
 
 # Logs
 *.log
+
+# Claude Code
+.claude/*.local.*
+.claude/settings.local.json
