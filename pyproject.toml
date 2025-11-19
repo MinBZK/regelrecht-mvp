@@ -17,6 +17,7 @@ dev = [
     "pytest-cov>=7.0.0",
     "pytest>=9.0.1",
     "ruff>=0.14.4",
+    "ty>=0.0.1a7",
 ]
 
 [tool.pytest.ini_options]
@@ -36,3 +37,14 @@ markers = [
     "unit: Unit tests for individual components",
     "integration: Integration tests for component interaction",
 ]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+include = ["engine", "script", "tests", "features", "main.py"]
+exclude = ["frontend"]
+
+[tool.ty.terminal]
+error-on-warning = false
+output-format = "full"
