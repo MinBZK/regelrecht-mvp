@@ -9,6 +9,10 @@ import sys
 from pathlib import Path
 import yaml
 
+# Configure UTF-8 encoding for emoji support on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 
 def fix_source_format(source):
     """
@@ -102,6 +106,15 @@ def fix_machine_readable_structure(article):
         for input_field in mr["execution"]["input"]:
             if "source" in input_field:
                 input_field["source"] = fix_source_format(input_field["source"])
+
+    # Remove deprecated 'public' field (presence of endpoint determines if article is public)
+    if "public" in mr:
+        mr.pop("public")
+
+    # Fix endpoint format: strip law_id prefix if present (should be local name only)
+    # e.g., "zorgtoeslagwet.bereken_zorgtoeslag" -> "bereken_zorgtoeslag"
+    if "endpoint" in mr and "." in mr["endpoint"]:
+        mr["endpoint"] = mr["endpoint"].split(".")[-1]
 
     return article
 

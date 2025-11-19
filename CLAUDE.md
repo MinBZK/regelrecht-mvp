@@ -66,28 +66,28 @@ Hooks are automatically installed with `uv run pre-commit install` and run on ev
 
 ### Law Format
 
-Laws are stored as article-based YAML files following this structure:
+Laws are stored as article-based YAML files. **All law YAML files must conform to the official JSON schema** defined at:
+- Schema: `https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json`
+- Validation: Use `uv run python script/validate.py <yaml_file>` to validate law files against the schema
+
+The schema defines the required structure for machine-readable laws:
 
 ```yaml
-$schema: https://...
-$id: "law_identifier"  # Slug for referencing
-uuid: "..."
-regulatory_layer: "WET" | "MINISTERIELE_REGELING"
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$id: "law_identifier"  # Slug for referencing (e.g., "zorgtoeslagwet")
+uuid: "..."  # UUID v4
+regulatory_layer: "WET" | "MINISTERIELE_REGELING" | "AMVB"
 publication_date: "YYYY-MM-DD"
-
-identifiers:
-  bwb_id: "BWBRXXXXXXX"
-  url: "https://wetten.overheid.nl/..."
+bwb_id: "BWBRXXXXXXX"  # BWB identifier
+url: "https://wetten.overheid.nl/..."  # Official government URL
 
 articles:
   - number: "1"
-    text: |
-      Legal text in Dutch...
-    url: "https://..."
+    text: "Legal text in Dutch (verbatim from official source)..."
+    url: "https://wetten.overheid.nl/...#Artikel1"
 
     machine_readable:
-      public: true  # Is this article publicly callable?
-      endpoint: "endpoint_name"  # API endpoint name
+      endpoint: "endpoint_name"  # Presence of endpoint makes article publicly callable
 
       definitions:
         CONSTANT_NAME:
@@ -103,16 +103,16 @@ articles:
           - name: "INPUT_NAME"
             type: "number"
             source:
-              url: "regelrecht://other_law/endpoint#field"
+              article: "other_law.endpoint"  # Reference format: law_id.endpoint
               parameters:
                 BSN: "$BSN"
 
         output:
-          - name: "output_name"
+          - name: "OUTPUT_NAME"
             type: "boolean"
 
         actions:
-          - output: "output_name"
+          - output: "OUTPUT_NAME"
             operation: "EQUALS"
             subject: "$INPUT_NAME"
             value: 18
