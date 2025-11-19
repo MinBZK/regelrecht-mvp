@@ -1,0 +1,67 @@
+$schema: https://example.com/schema/v0.1.0/schema.json
+$id: test_law_b
+uuid: 22222222-2222-2222-2222-222222222222
+regulatory_layer: WET
+publication_date: "2025-01-01"
+
+identifiers:
+  bwb_id: BWBRTEST002
+  url: https://example.com/test_law_b
+
+articles:
+  - number: "1"
+    text: "Article that calls test_law_a via URI"
+    url: https://example.com/test_law_b#1
+    machine_readable:
+      public: true
+      endpoint: call_other_law
+      execution:
+        parameters:
+          - name: my_value
+            type: number
+            required: true
+        input:
+          - name: result_from_a
+            type: number
+            source:
+              url: regelrecht://test_law_a/add_numbers#result
+              parameters:
+                input_value: $my_value
+        output:
+          - name: doubled_result
+            type: number
+        actions:
+          - output: doubled_result
+            operation: MULTIPLY
+            values:
+              - $result_from_a
+              - 2
+
+  - number: "2"
+    text: "Article with internal reference"
+    url: https://example.com/test_law_b#2
+    machine_readable:
+      public: true
+      endpoint: internal_ref_test
+      execution:
+        parameters:
+          - name: my_value
+            type: number
+            required: true
+        input:
+          - name: from_article_1
+            type: number
+            source:
+              ref: "#doubled_result"
+              article: "1"
+              parameters:
+                my_value: $my_value
+        output:
+          - name: final_result
+            type: number
+        actions:
+          - output: final_result
+            operation: ADD
+            values:
+              - $from_article_1
+              - 10

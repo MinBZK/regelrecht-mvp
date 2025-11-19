@@ -1,0 +1,59 @@
+$schema: https://example.com/schema/v0.1.0/schema.json
+$id: test_law_a
+uuid: 11111111-1111-1111-1111-111111111111
+regulatory_layer: WET
+publication_date: "2025-01-01"
+
+identifiers:
+  bwb_id: BWBRTEST001
+  url: https://example.com/test_law_a
+
+articles:
+  - number: "1"
+    text: "Simple arithmetic test article"
+    url: https://example.com/test_law_a#1
+    machine_readable:
+      public: true
+      endpoint: add_numbers
+      definitions:
+        BASE_VALUE: 100
+      execution:
+        parameters:
+          - name: input_value
+            type: number
+            required: true
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            operation: ADD
+            values:
+              - $BASE_VALUE
+              - $input_value
+
+  - number: "2"
+    text: "Test article with conditional logic"
+    url: https://example.com/test_law_a#2
+    machine_readable:
+      public: true
+      endpoint: check_threshold
+      definitions:
+        THRESHOLD: 50
+      execution:
+        parameters:
+          - name: value
+            type: number
+            required: true
+        output:
+          - name: above_threshold
+            type: boolean
+        actions:
+          - output: above_threshold
+            operation: IF
+            test:
+              operation: GREATER_THAN
+              subject: $value
+              value: $THRESHOLD
+            then: true
+            else: false
