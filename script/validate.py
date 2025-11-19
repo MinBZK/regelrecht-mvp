@@ -14,6 +14,10 @@ import yaml
 from jsonschema import validate, ValidationError
 import requests
 
+# Configure UTF-8 encoding for emoji support on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 
 def load_schema(schema_path_or_url: str) -> dict:
     """Load JSON schema from file or URL."""

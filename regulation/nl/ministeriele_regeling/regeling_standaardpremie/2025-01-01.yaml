@@ -17,8 +17,7 @@ articles:
     '
   url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1
   machine_readable:
-    public: true
-    endpoint: regeling_standaardpremie.standaardpremie
+    endpoint: standaardpremie
     execution:
       output:
       - name: STANDAARDPREMIE

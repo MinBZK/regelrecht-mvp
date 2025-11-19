@@ -79,8 +79,7 @@ articles:
     '
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2
   machine_readable:
-    public: true
-    endpoint: zorgtoeslagwet.bereken_zorgtoeslag
+    endpoint: bereken_zorgtoeslag
     definitions:
       DREMPELINKOMEN_ALLEENSTAANDE:
         value: 3971900

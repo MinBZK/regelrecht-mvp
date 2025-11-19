@@ -37,14 +37,12 @@ class Article:
         return self.machine_readable.get("requires", [])
 
     def get_endpoint(self) -> str | None:
-        """Get the endpoint name if this article is public"""
-        if self.machine_readable.get("public"):
-            return self.machine_readable.get("endpoint")
-        return None
+        """Get the endpoint name for this article"""
+        return self.machine_readable.get("endpoint")
 
     def is_public(self) -> bool:
-        """Check if this article is publicly callable"""
-        return self.machine_readable.get("public", False)
+        """Check if this article is publicly callable (has an endpoint)"""
+        return self.get_endpoint() is not None
 
     def get_competent_authority(self) -> str | None:
         """Get the competent authority for this article"""
@@ -72,6 +70,8 @@ class ArticleBasedLaw:
         self.effective_date = yaml_data.get("effective_date")
         self.name = yaml_data.get("name")
         self.competent_authority = yaml_data.get("competent_authority")
+        self.bwb_id = yaml_data.get("bwb_id")
+        self.url = yaml_data.get("url")
         self.identifiers = yaml_data.get("identifiers", {})
         self.articles = [Article(art) for art in yaml_data.get("articles", [])]
 
@@ -112,8 +112,10 @@ class ArticleBasedLaw:
 
     def get_bwb_id(self) -> str | None:
         """Get BWB identifier if available"""
-        return self.identifiers.get("bwb_id")
+        # Support both top-level bwb_id and identifiers.bwb_id
+        return self.bwb_id or self.identifiers.get("bwb_id")
 
     def get_url(self) -> str | None:
         """Get official URL if available"""
-        return self.identifiers.get("url") or self.identifiers.get("ref")
+        # Support both top-level url and identifiers.url/ref
+        return self.url or self.identifiers.get("url") or self.identifiers.get("ref")
