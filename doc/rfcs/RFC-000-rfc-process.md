@@ -24,7 +24,7 @@ We adopt an RFC (Request for Comments) process where significant design decision
 ```markdown
 # RFC-NNN: Title
 
-**Status:** [Proposed | Accepted | Rejected | Superseded]
+**Status:** [Draft | Proposed | Accepted | Rejected | Superseded]
 **Date:** YYYY-MM-DD
 **Authors:** Name(s)
 
@@ -32,13 +32,10 @@ We adopt an RFC (Request for Comments) process where significant design decision
 Why is this decision necessary? What problem does it solve?
 
 ## Decision
-What did we decide to do?
+What was decided?
 
 ## Why
-- What are the benefits of this approach?
-- What are the tradeoffs?
-- What alternatives did we consider?
-- Why did we choose this over alternatives?
+Benefits, tradeoffs, alternatives
 ```
 
 ### Numbering Convention
@@ -49,6 +46,7 @@ What did we decide to do?
 
 ### Status Values
 
+- **Draft**: Work in progress, not yet ready for discussion
 - **Proposed**: Under discussion, not yet decided
 - **Accepted**: Decision is made and should be followed
 - **Rejected**: Proposal was considered but not accepted

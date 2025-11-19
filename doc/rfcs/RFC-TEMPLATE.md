@@ -15,7 +15,7 @@ Provide background information that helps readers understand:
 
 ## Decision
 
-What did we decide to do?
+What was decided?
 
 State the decision clearly and concisely. This should be a direct statement of what will be done.
 
