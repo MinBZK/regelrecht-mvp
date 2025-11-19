@@ -102,19 +102,19 @@ articles:
       - name: leeftijd
         type: number
         source:
-          article: wet_brp.leeftijd
+          article: wet_basisregistratie_personen.leeftijd
       - name: is_verzekerde
         type: boolean
         source:
-          article: zvw.is_verzekerd
+          article: zorgverzekeringswet.is_verzekerd
       - name: heeft_toeslagpartner
         type: boolean
         source:
-          article: awir.heeft_toeslagpartner
+          article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
       - name: toetsingsinkomen
         type: amount
         source:
-          article: awir.toetsingsinkomen
+          article: algemene_wet_inkomensafhankelijke_regelingen.toetsingsinkomen
         type_spec:
           unit: eurocent
       - name: standaardpremie
@@ -229,13 +229,13 @@ articles:
       - name: vermogen
         type: amount
         source:
-          article: inkomstenbelasting.rendementsgrondslag
+          article: wet_inkomstenbelasting_2001.rendementsgrondslag
         type_spec:
           unit: eurocent
       - name: heeft_toeslagpartner
         type: boolean
         source:
-          article: toeslagpartner.heeft_toeslagpartner
+          article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
       output:
       - name: vermogen_onder_grens
         type: boolean

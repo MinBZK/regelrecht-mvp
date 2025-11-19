@@ -11,7 +11,7 @@ competent_authority: 00000002003182447001
 grondslag:
 - law_id: zorgtoeslagwet
   article: '4'
-- law_id: zvw
+- law_id: zorgverzekeringswet
   article: '2'
   description: Standaardpremie also used in healthcare insurance law
 articles:
