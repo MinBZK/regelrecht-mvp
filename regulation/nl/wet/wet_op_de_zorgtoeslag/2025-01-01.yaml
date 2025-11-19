@@ -25,8 +25,7 @@ articles:
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel1a
   machine_readable:
     definitions:
-      VERANTWOORDELIJKE_AUTORITEIT:
-        value: Minister van Volksgezondheid, Welzijn en Sport
+      verantwoordelijke_autoriteit: Minister van Volksgezondheid, Welzijn en Sport
 - number: '2'
   text: '1. Indien de normpremie voor een verzekerde in het berekeningsjaar minder bedraagt
 
@@ -81,68 +80,68 @@ articles:
   machine_readable:
     endpoint: bereken_zorgtoeslag
     definitions:
-      DREMPELINKOMEN_ALLEENSTAANDE:
+      drempelinkomen_alleenstaande:
         value: 3971900
-      DREMPELINKOMEN_AANVRAGER_MET_TOESLAGPARTNER:
+      drempelinkomen_aanvrager_met_toeslagpartner:
         value: 5587500
-      PERCENTAGE_DREMPELINKOMEN_ALLEENSTAANDE:
+      percentage_drempelinkomen_alleenstaande:
         value: 0.01896
-      PERCENTAGE_DREMPELINKOMEN_PARTNER:
+      percentage_drempelinkomen_partner:
         value: 0.04273
-      PERCENTAGE_TOETSINGSINKOMEN:
+      percentage_toetsingsinkomen:
         value: 0.137
     execution:
       produces:
         legal_character: BESCHIKKING
         decision_type: TOEKENNING
       parameters:
-      - name: BSN
+      - name: bsn
         type: string
         required: true
       input:
-      - name: LEEFTIJD
+      - name: leeftijd
         type: number
         source:
           article: wet_basisregistratie_personen.leeftijd
-      - name: IS_VERZEKERDE
+      - name: is_verzekerde
         type: boolean
         source:
           article: zorgverzekeringswet.is_verzekerd
-      - name: HEEFT_TOESLAGPARTNER
+      - name: heeft_toeslagpartner
         type: boolean
         source:
           article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
-      - name: TOETSINGSINKOMEN
+      - name: toetsingsinkomen
         type: amount
         source:
           article: algemene_wet_inkomensafhankelijke_regelingen.toetsingsinkomen
         type_spec:
           unit: eurocent
-      - name: STANDAARDPREMIE
+      - name: standaardpremie
         type: amount
         source:
           article: regeling_standaardpremie.standaardpremie
         type_spec:
           unit: eurocent
-      - name: VERMOGEN_ONDER_GRENS
+      - name: vermogen_onder_grens
         type: boolean
         source:
           article: '#vermogen_onder_grens'
       output:
-      - name: HEEFT_RECHT_OP_ZORGTOESLAG
+      - name: heeft_recht_op_zorgtoeslag
         type: boolean
-      - name: HOOGTE_ZORGTOESLAG
+      - name: hoogte_zorgtoeslag
         type: amount
         type_spec:
           unit: eurocent
       actions:
-      - output: HOOGTE_ZORGTOESLAG
+      - output: hoogte_zorgtoeslag
         operation: MAX
         values:
         - 0
         - operation: SUBTRACT
           values:
-          - $STANDAARDPREMIE
+          - $standaardpremie
           - operation: ADD
             values:
             - operation: MULTIPLY
@@ -150,17 +149,17 @@ articles:
               - operation: IF
                 test:
                   operation: EQUALS
-                  subject: $HEEFT_TOESLAGPARTNER
+                  subject: $heeft_toeslagpartner
                   value: true
-                then: $DREMPELINKOMEN_AANVRAGER_MET_TOESLAGPARTNER
-                else: $DREMPELINKOMEN_ALLEENSTAANDE
+                then: $drempelinkomen_aanvrager_met_toeslagpartner
+                else: $drempelinkomen_alleenstaande
               - operation: IF
                 test:
                   operation: EQUALS
-                  subject: $HEEFT_TOESLAGPARTNER
+                  subject: $heeft_toeslagpartner
                   value: true
-                then: $PERCENTAGE_DREMPELINKOMEN_PARTNER
-                else: $PERCENTAGE_DREMPELINKOMEN_ALLEENSTAANDE
+                then: $percentage_drempelinkomen_partner
+                else: $percentage_drempelinkomen_alleenstaande
             - operation: MULTIPLY
               values:
               - operation: MAX
@@ -168,31 +167,31 @@ articles:
                 - 0
                 - operation: SUBTRACT
                   values:
-                  - $TOETSINGSINKOMEN
+                  - $toetsingsinkomen
                   - operation: IF
                     test:
                       operation: EQUALS
-                      subject: $HEEFT_TOESLAGPARTNER
+                      subject: $heeft_toeslagpartner
                       value: true
-                    then: $DREMPELINKOMEN_AANVRAGER_MET_TOESLAGPARTNER
-                    else: $DREMPELINKOMEN_ALLEENSTAANDE
-              - $PERCENTAGE_TOETSINGSINKOMEN
-      - output: HEEFT_RECHT_OP_ZORGTOESLAG
+                    then: $drempelinkomen_aanvrager_met_toeslagpartner
+                    else: $drempelinkomen_alleenstaande
+              - $percentage_toetsingsinkomen
+      - output: heeft_recht_op_zorgtoeslag
         conditions:
         - test:
             operation: AND
             conditions:
             - operation: GREATER_THAN_OR_EQUAL
-              subject: $LEEFTIJD
+              subject: $leeftijd
               value: 18
             - operation: EQUALS
-              subject: $IS_VERZEKERDE
+              subject: $is_verzekerde
               value: true
             - operation: EQUALS
-              subject: $VERMOGEN_ONDER_GRENS
+              subject: $vermogen_onder_grens
               value: true
             - operation: GREATER_THAN
-              subject: $HOOGTE_ZORGTOESLAG
+              subject: $hoogte_zorgtoeslag
               value: 0
           then: true
           else: false
@@ -212,49 +211,48 @@ articles:
     '
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3
   machine_readable:
-    public: true
-    endpoint: zorgtoeslagwet.vermogen_onder_grens
+    endpoint: vermogen_onder_grens
     definitions:
-      VERMOGENSGRENS_ALLEENSTAAND:
+      vermogensgrens_alleenstaand:
         value: 14189600
-      VERMOGENSGRENS_AANVRAGER_MET_TOESLAGPARTNER:
+      vermogensgrens_aanvrager_met_toeslagpartner:
         value: 17942900
     execution:
       produces:
         legal_character: TOETS
         decision_type: GOEDKEURING
       parameters:
-      - name: BSN
+      - name: bsn
         type: string
         required: true
       input:
-      - name: VERMOGEN
+      - name: vermogen
         type: amount
         source:
           article: wet_inkomstenbelasting_2001.rendementsgrondslag
         type_spec:
           unit: eurocent
-      - name: HEEFT_TOESLAGPARTNER
+      - name: heeft_toeslagpartner
         type: boolean
         source:
           article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
       output:
-      - name: VERMOGEN_ONDER_GRENS
+      - name: vermogen_onder_grens
         type: boolean
       actions:
-      - output: VERMOGEN_ONDER_GRENS
+      - output: vermogen_onder_grens
         conditions:
         - test:
             operation: LESS_THAN_OR_EQUAL
-            subject: $VERMOGEN
+            subject: $vermogen
             value:
               operation: IF
               test:
                 operation: EQUALS
-                subject: $HEEFT_TOESLAGPARTNER
+                subject: $heeft_toeslagpartner
                 value: true
-              then: $VERMOGENSGRENS_AANVRAGER_MET_TOESLAGPARTNER
-              else: $VERMOGENSGRENS_ALLEENSTAAND
+              then: $vermogensgrens_aanvrager_met_toeslagpartner
+              else: $vermogensgrens_alleenstaand
           then: true
           else: false
 - number: '4'
@@ -264,6 +262,26 @@ articles:
 
     '
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4
+  machine_readable:
+    endpoint: get_standaardpremie
+    execution:
+      parameters:
+      - name: reference_year
+        type: number
+        required: false
+      output:
+      - name: standaardpremie
+        type: amount
+        type_spec:
+          unit: eurocent
+      actions:
+      - output: standaardpremie
+        resolve:
+          type: ministeriele_regeling
+          output: standaardpremie
+          match:
+            output: berekeningsjaar
+            value: $referencedate.year
 - number: 4a
   text: 'Voor de persoon, bedoeld in artikel 69 van de Zorgverzekeringswet, wordt de
 
@@ -288,11 +306,8 @@ articles:
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel5
   machine_readable:
     execution:
-      output:
-      - name: BEVOEGD_GEZAG
-        type: string
       actions:
-      - output: BEVOEGD_GEZAG
+      - output: bevoegd_gezag
         value: 00000002003214394003
 - number: '6'
   text: 'Onze Minister zendt binnen vier jaar na de inwerkingtreding van deze wet, en
@@ -315,9 +330,6 @@ articles:
   url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel8
   machine_readable:
     execution:
-      output:
-      - name: WET_NAAM
-        type: string
       actions:
-      - output: WET_NAAM
+      - output: wet_naam
         value: Wet op de zorgtoeslag

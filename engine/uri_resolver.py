@@ -1,7 +1,7 @@
 """
 URI Resolution for regelrecht:// URIs and file path references
 
-Parses and resolves references to law articles and fields.
+Parses and constructs references to law articles and fields.
 
 Supported formats:
 1. regelrecht:// URI: regelrecht://{law_id}/{endpoint}#{field}
@@ -14,6 +14,37 @@ Examples:
 """
 
 from dataclasses import dataclass
+
+
+class RegelrechtURIBuilder:
+    """Builder for constructing regelrecht:// URIs in a type-safe way"""
+
+    @staticmethod
+    def build(law_id: str, endpoint: str, field: str | None = None) -> str:
+        """
+        Build a regelrecht:// URI from components
+
+        This is the counterpart to RegelrechtURI parser - constructs URIs
+        in a type-safe way instead of using f-strings.
+
+        Args:
+            law_id: Law identifier (e.g., "zorgtoeslagwet")
+            endpoint: Endpoint name (e.g., "bereken_zorgtoeslag")
+            field: Optional field name for fragment (e.g., "heeft_recht_op_zorgtoeslag")
+
+        Returns:
+            Formatted regelrecht:// URI string
+
+        Examples:
+            >>> RegelrechtURIBuilder.build("zorgtoeslagwet", "bereken_zorgtoeslag")
+            'regelrecht://zorgtoeslagwet/bereken_zorgtoeslag'
+            >>> RegelrechtURIBuilder.build("zvw", "is_verzekerd", "is_verzekerd")
+            'regelrecht://zvw/is_verzekerd#is_verzekerd'
+        """
+        uri = f"regelrecht://{law_id}/{endpoint}"
+        if field:
+            uri += f"#{field}"
+        return uri
 
 
 @dataclass

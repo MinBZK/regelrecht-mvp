@@ -11,6 +11,7 @@ import yaml
 
 from engine.article_loader import ArticleBasedLaw, Article
 from engine.uri_resolver import RegelrechtURI
+from engine.logging_config import logger
 
 
 class RuleResolver:
@@ -26,6 +27,9 @@ class RuleResolver:
         self.regulation_dir = Path(regulation_dir)
         self._law_registry: dict[str, ArticleBasedLaw] = {}
         self._endpoint_index: dict[tuple[str, str], Article] = {}
+        self._grondslag_index: dict[
+            tuple[str, str], list[str]
+        ] = {}  # (law_id, article) -> [regeling_ids]
         self._yaml_cache: dict[str, dict] = {}
 
         # Load all laws
@@ -53,7 +57,7 @@ class RuleResolver:
                 try:
                     self._load_law_file(item)
                 except Exception as e:
-                    print(f"Warning: Failed to load {item}: {e}")
+                    logger.warning(f"Failed to load {item}: {e}")
 
     def _load_law_file(self, file_path: Path):
         """Load a single law file"""
@@ -65,7 +69,7 @@ class RuleResolver:
 
         # Register by $id
         if law.id in self._law_registry:
-            print(f"Warning: Duplicate law ID '{law.id}', overwriting previous")
+            logger.warning(f"Duplicate law ID '{law.id}', overwriting previous")
 
         self._law_registry[law.id] = law
 
@@ -78,10 +82,35 @@ class RuleResolver:
 
             key = (law.id, local_endpoint)
             if key in self._endpoint_index:
-                print(
-                    f"Warning: Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
+                logger.warning(
+                    f"Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
                 )
             self._endpoint_index[key] = article
+
+        # Index by grondslag if present (all regulatory layers)
+        if "grondslag" in yaml_data:
+            grondslag_data = yaml_data["grondslag"]
+
+            # Support both single grondslag (dict) and multiple grondslag (list)
+            grondslag_list = []
+            if isinstance(grondslag_data, dict):
+                # Single grondslag - convert to list
+                grondslag_list = [grondslag_data]
+            elif isinstance(grondslag_data, list):
+                # Multiple grondslag - use as is
+                grondslag_list = grondslag_data
+
+            # Index each grondslag entry
+            for grondslag in grondslag_list:
+                if (
+                    isinstance(grondslag, dict)
+                    and "law_id" in grondslag
+                    and "article" in grondslag
+                ):
+                    grondslag_key = (grondslag["law_id"], grondslag["article"])
+                    if grondslag_key not in self._grondslag_index:
+                        self._grondslag_index[grondslag_key] = []
+                    self._grondslag_index[grondslag_key].append(law)
 
     def _load_yaml(self, file_path: Path) -> dict:
         """Load YAML file with caching"""
@@ -133,17 +162,17 @@ class RuleResolver:
         try:
             parsed = RegelrechtURI(uri)
         except ValueError as e:
-            print(f"Invalid URI: {e}")
+            logger.error(f"Invalid URI: {e}")
             return (None, None, None)
 
         law = self.get_law_by_id(parsed.law_id)
         if not law:
-            print(f"Law not found: {parsed.law_id}")
+            logger.error(f"Law not found: {parsed.law_id}")
             return (None, None, None)
 
         article = law.find_article_by_endpoint(parsed.endpoint)
         if not article:
-            print(f"Endpoint not found: {parsed.law_id}/{parsed.endpoint}")
+            logger.error(f"Endpoint not found: {parsed.law_id}/{parsed.endpoint}")
             return (None, None, None)
 
         return (law, article, parsed.field)
@@ -159,6 +188,29 @@ class RuleResolver:
     def get_law_count(self) -> int:
         """Get number of loaded laws"""
         return len(self._law_registry)
+
+    def find_regelingen_by_grondslag(
+        self, law_id: str, article: str
+    ) -> list[ArticleBasedLaw]:
+        """
+        Find ministeriele regelingen that declare a specific law article as their grondslag
+
+        All law types are indexed, but only ministeriele regelingen
+        (regulatory_layer == "MINISTERIELE_REGELING") are returned.
+
+        Args:
+            law_id: The law ID (e.g., "zorgtoeslagwet")
+            article: The article number (e.g., "4")
+
+        Returns:
+            List of ministeriele regeling ArticleBasedLaw objects with this grondslag
+        """
+        grondslag_key = (law_id, article)
+        all_laws = self._grondslag_index.get(grondslag_key, [])
+        # Filter to only return ministeriele regelingen
+        return [
+            law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"
+        ]
 
     def get_endpoint_count(self) -> int:
         """Get number of indexed endpoints"""

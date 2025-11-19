@@ -22,18 +22,18 @@ class LawExecutionService:
         Args:
             regulation_dir: Path to regulation directory
         """
-        self.resolver = RuleResolver(regulation_dir)
+        self.rule_resolver = RuleResolver(regulation_dir)
         self.engine_cache: dict[tuple[str, str], ArticleEngine] = {}
 
         logger.info(
-            f"Loaded {self.resolver.get_law_count()} laws with {self.resolver.get_endpoint_count()} endpoints"
+            f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_endpoint_count()} endpoints"
         )
 
     def evaluate_uri(
         self,
         uri: str,
         parameters: dict,
-        reference_date: Optional[str] = None,
+        calculation_date: Optional[str] = None,
         requested_output: Optional[str] = None,
     ) -> ArticleResult:
         """
@@ -42,7 +42,7 @@ class LawExecutionService:
         Args:
             uri: regelrecht:// URI to evaluate
             parameters: Input parameters (e.g., {"BSN": "123456789"})
-            reference_date: Reference date for calculations (defaults to today)
+            calculation_date: Date for which calculations are performed (defaults to today)
             requested_output: Specific output field to calculate (optional)
 
         Returns:
@@ -53,12 +53,12 @@ class LawExecutionService:
         """
         logger.info(f"Evaluating URI: {uri}")
 
-        # Default reference date to today
-        if reference_date is None:
-            reference_date = datetime.now().date().isoformat()
+        # Default calculation date to today
+        if calculation_date is None:
+            calculation_date = datetime.now().date().isoformat()
 
         # Resolve URI to law, article, field
-        law, article, field = self.resolver.resolve_uri(uri)
+        law, article, field = self.rule_resolver.resolve_uri(uri)
 
         if not law or not article:
             raise ValueError(f"Could not resolve URI: {uri}")
@@ -73,9 +73,15 @@ class LawExecutionService:
 
         engine = self.engine_cache[cache_key]
 
+        # Determine what to calculate
+        output_to_calculate = requested_output
+        if output_to_calculate is None:
+            # Use field from URI if no requested_output specified
+            output_to_calculate = field
+
         # Execute article
         result = engine.evaluate(
-            parameters, self, reference_date, requested_output or field
+            parameters, self, calculation_date, output_to_calculate
         )
 
         return result
@@ -85,7 +91,7 @@ class LawExecutionService:
         law_id: str,
         endpoint: str,
         parameters: dict,
-        reference_date: Optional[str] = None,
+        calculation_date: Optional[str] = None,
     ) -> ArticleResult:
         """
         Evaluate by law ID and endpoint directly
@@ -94,21 +100,23 @@ class LawExecutionService:
             law_id: Law identifier (e.g., "zorgtoeslagwet")
             endpoint: Endpoint name (e.g., "bereken_zorgtoeslag")
             parameters: Input parameters
-            reference_date: Reference date for calculations
+            calculation_date: Date for which calculations are performed
 
         Returns:
             ArticleResult with outputs
         """
-        uri = f"regelrecht://{law_id}/{endpoint}"
-        return self.evaluate_uri(uri, parameters, reference_date)
+        from engine.uri_resolver import RegelrechtURIBuilder
+
+        uri = RegelrechtURIBuilder.build(law_id, endpoint)
+        return self.evaluate_uri(uri, parameters, calculation_date)
 
     def list_available_laws(self) -> list[str]:
         """Get list of all loaded law IDs"""
-        return self.resolver.list_all_laws()
+        return self.rule_resolver.list_all_laws()
 
     def list_available_endpoints(self) -> list[tuple[str, str]]:
         """Get list of all (law_id, endpoint) pairs"""
-        return self.resolver.list_all_endpoints()
+        return self.rule_resolver.list_all_endpoints()
 
     def get_law_info(self, law_id: str) -> dict:
         """
@@ -120,7 +128,7 @@ class LawExecutionService:
         Returns:
             Dictionary with law metadata
         """
-        law = self.resolver.get_law_by_id(law_id)
+        law = self.rule_resolver.get_law_by_id(law_id)
         if not law:
             return {}
 

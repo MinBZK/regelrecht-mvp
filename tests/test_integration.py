@@ -48,7 +48,7 @@ class TestLawLoading:
 
     def test_service_can_retrieve_law_by_id(self, test_service):
         """Service can retrieve law by ID"""
-        law = test_service.resolver.get_law_by_id("test_law_a")
+        law = test_service.rule_resolver.get_law_by_id("test_law_a")
 
         assert law is not None
         assert law.id == "test_law_a"
@@ -56,7 +56,7 @@ class TestLawLoading:
 
     def test_service_returns_none_for_invalid_law_id(self, test_service):
         """Service returns None for non-existent law"""
-        law = test_service.resolver.get_law_by_id("nonexistent_law")
+        law = test_service.rule_resolver.get_law_by_id("nonexistent_law")
 
         assert law is None
 
@@ -70,7 +70,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 50},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         assert isinstance(result, ArticleResult)
@@ -85,7 +85,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="check_threshold",
             parameters={"value": 75},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         assert result.output["above_threshold"] is True
@@ -95,7 +95,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="check_threshold",
             parameters={"value": 25},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         assert result.output["above_threshold"] is False
@@ -106,7 +106,7 @@ class TestBasicExecution:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 10},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         assert result.law_id == "test_law_a"
@@ -126,7 +126,7 @@ class TestCrossLawURICalls:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 25},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # test_law_a returns: 100 + 25 = 125
@@ -140,14 +140,14 @@ class TestCrossLawURICalls:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 10},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         result2 = test_service.evaluate_law_endpoint(
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 50},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # (100 + 10) * 2 = 220
@@ -162,7 +162,7 @@ class TestCrossLawURICalls:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 20},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # Should have resolved the input from cross-law call
@@ -184,7 +184,7 @@ class TestInternalReferences:
             law_id="test_law_b",
             endpoint="internal_ref_test",
             parameters={"my_value": 15},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # Article 1 returns: (100 + 15) * 2 = 230
@@ -202,7 +202,7 @@ class TestEngineCaching:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 10},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # Check engine is cached (cache key is just (law_id, endpoint))
@@ -216,7 +216,7 @@ class TestEngineCaching:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 20},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # Same engine instance should be in cache
@@ -228,14 +228,14 @@ class TestEngineCaching:
             law_id="test_law_a",
             endpoint="add_numbers",
             parameters={"input_value": 10},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         test_service.evaluate_law_endpoint(
             law_id="test_law_a",
             endpoint="check_threshold",
             parameters={"value": 50},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # Should have two different cache entries
@@ -260,7 +260,7 @@ class TestURIResultCaching:
             law_id="test_law_b",
             endpoint="call_other_law",
             parameters={"my_value": 30},
-            reference_date="2025-01-01",
+            calculation_date="2025-01-01",
         )
 
         # Result should be correct even with caching
@@ -278,7 +278,7 @@ class TestErrorHandling:
                 law_id="test_law_error",
                 endpoint="divide_by_zero",
                 parameters={},
-                reference_date="2025-01-01",
+                calculation_date="2025-01-01",
             )
 
     def test_missing_law_in_uri_raises_error(self, test_service):
@@ -288,7 +288,7 @@ class TestErrorHandling:
                 law_id="test_law_error",
                 endpoint="call_missing_law",
                 parameters={},
-                reference_date="2025-01-01",
+                calculation_date="2025-01-01",
             )
 
     def test_invalid_law_id_raises_error(self, test_service):
@@ -298,7 +298,7 @@ class TestErrorHandling:
                 law_id="nonexistent_law",
                 endpoint="some_endpoint",
                 parameters={},
-                reference_date="2025-01-01",
+                calculation_date="2025-01-01",
             )
 
     def test_invalid_endpoint_raises_error(self, test_service):
@@ -308,7 +308,7 @@ class TestErrorHandling:
                 law_id="test_law_a",
                 endpoint="nonexistent_endpoint",
                 parameters={},
-                reference_date="2025-01-01",
+                calculation_date="2025-01-01",
             )
 
 
@@ -350,6 +350,6 @@ class TestServiceMetadata:
 
     def test_count_loaded_laws(self, test_service):
         """Service correctly counts loaded laws"""
-        count = test_service.resolver.get_law_count()
+        count = test_service.rule_resolver.get_law_count()
 
         assert count >= 3  # At least our 3 test laws
