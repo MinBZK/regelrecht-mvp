@@ -38,8 +38,8 @@ class RuleContext:
         parameters: dict[str, Any],
         service_provider: Any,
         calculation_date: str,
-        input_specs: list[dict] = None,
-        output_specs: list[dict] = None,
+        input_specs: list[dict] | None = None,
+        output_specs: list[dict] | None = None,
         current_law: Any = None,
     ):
         """
