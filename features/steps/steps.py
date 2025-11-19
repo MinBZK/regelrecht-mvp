@@ -2,11 +2,11 @@
 Step definitions for healthcare allowance (zorgtoeslag) feature
 """
 
-from behave import given, when, then
-from mock_data_service import MockDataService
+from behave import given, when, then  # type: ignore[import-untyped]
+from .mock_data_service import MockDataService
 
 
-@given('the following {service} "{datasource}" data:')
+@given('the following {service} "{datasource}" data:')  # type: ignore[misc]
 def step_given_service_datasource_data(context, service, datasource):
     """
     Generic step to store service datasource data from table
@@ -41,7 +41,7 @@ def step_given_service_datasource_data(context, service, datasource):
         context.bsn = row["bsn"]
 
 
-@when("the healthcare allowance law is executed")
+@when("the healthcare allowance law is executed")  # type: ignore[misc]
 def step_when_healthcare_allowance_executed(context):
     """Execute the healthcare allowance law with mock data"""
     from engine.service import LawExecutionService
@@ -80,7 +80,7 @@ def step_when_healthcare_allowance_executed(context):
         raise
 
 
-@when("I request the standard premium for year {year:d}")
+@when("I request the standard premium for year {year:d}")  # type: ignore[misc]
 def step_when_request_standard_premium(context, year):
     """Request the standard premium for a specific year"""
     from engine.service import LawExecutionService
@@ -105,7 +105,7 @@ def step_when_request_standard_premium(context, year):
         # Don't raise - let the Then step verify the error
 
 
-@then('the standard premium is "{amount}" eurocent')
+@then('the standard premium is "{amount}" eurocent')  # type: ignore[misc]
 def step_then_standard_premium(context, amount):
     """Verify the standard premium amount"""
     if hasattr(context, "error"):
@@ -129,7 +129,7 @@ def step_then_standard_premium(context, amount):
         )
 
 
-@then('the standard premium calculation should fail with "{error_message}"')
+@then('the standard premium calculation should fail with "{error_message}"')  # type: ignore[misc]
 def step_then_standard_premium_fails(context, error_message):
     """Verify that the calculation failed with expected error"""
     if not hasattr(context, "error"):
@@ -143,7 +143,7 @@ def step_then_standard_premium_fails(context, error_message):
         )
 
 
-@then('the allowance amount is "{amount}" euro')
+@then('the allowance amount is "{amount}" euro')  # type: ignore[misc]
 def step_then_allowance_amount(context, amount):
     """Verify the calculated allowance amount"""
     if hasattr(context, "error"):
