@@ -28,8 +28,8 @@ class RuleResolver:
         self._law_registry: dict[str, ArticleBasedLaw] = {}
         self._endpoint_index: dict[tuple[str, str], Article] = {}
         self._grondslag_index: dict[
-            tuple[str, str], list[str]
-        ] = {}  # (law_id, article) -> [regeling_ids]
+            tuple[str, str], list[ArticleBasedLaw]
+        ] = {}  # (law_id, article) -> [regelingen]
         self._yaml_cache: dict[str, dict] = {}
 
         # Load all laws

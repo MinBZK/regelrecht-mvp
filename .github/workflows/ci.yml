@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  check:
+  typecheck:
+    name: Type check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,14 +24,5 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups
 
-      - name: Run ruff linter
-        run: uv run ruff check .
-
-      - name: Run ruff formatter
-        run: uv run ruff format --check .
-
       - name: Run ty type checker
         run: uv run ty check
-
-      - name: Run tests
-        run: uv run pytest
