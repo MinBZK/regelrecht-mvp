@@ -26,16 +26,16 @@ articles:
     endpoint: standaardpremie
     execution:
       output:
-      - name: STANDAARDPREMIE
+      - name: standaardpremie
         type: amount
         type_spec:
           unit: eurocent
-      - name: BEREKENINGSJAAR
+      - name: berekeningsjaar
         type: number
       actions:
-      - output: STANDAARDPREMIE
+      - output: standaardpremie
         value: 211200
-      - output: BEREKENINGSJAAR
+      - output: berekeningsjaar
         value: 2025
 - number: '2'
   text: 'Deze regeling treedt in werking met ingang van 1 januari 2025.
@@ -45,10 +45,10 @@ articles:
   machine_readable:
     execution:
       output:
-      - name: DATUM_INWERKINGTREDING
+      - name: datum_inwerkingtreding
         type: string
       actions:
-      - output: DATUM_INWERKINGTREDING
+      - output: datum_inwerkingtreding
         value: '2025-01-01'
 - number: '3'
   text: 'Deze regeling wordt aangehaald als: Regeling standaardpremie zorgverzekering 2025.
@@ -58,8 +58,8 @@ articles:
   machine_readable:
     execution:
       output:
-      - name: WET_NAAM
+      - name: wet_naam
         type: string
       actions:
-      - output: WET_NAAM
+      - output: wet_naam
         value: Regeling standaardpremie zorgverzekering 2025
