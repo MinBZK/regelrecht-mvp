@@ -148,6 +148,30 @@ The engine automatically resolves these URIs by:
 3. Executing the article's logic
 4. Extracting the requested `field` from outputs
 
+## RFC Process
+
+This project uses an RFC (Request for Comments) process for documenting significant design decisions and architectural choices.
+
+- **Location**: `doc/rfcs/`
+- **Process document**: See `doc/rfcs/RFC-000-rfc-process.md` for full details
+- **Template**: Use `doc/rfcs/RFC-TEMPLATE.md` to create new RFCs
+
+### When to Write an RFC
+
+Write an RFC for:
+- Law representation format changes
+- Execution engine architecture changes
+- Cross-cutting design patterns
+- Integration patterns between components
+
+### RFC Workflow
+
+1. Copy `RFC-TEMPLATE.md` to `RFC-NNN-title.md` (increment number)
+2. Fill in Context, Decision, and Why sections
+3. Set Status to "Proposed"
+4. Create PR for discussion
+5. Update Status to "Accepted" once approved
+
 ## Technology Stack
 
 - **Language**: Python 3.12+
