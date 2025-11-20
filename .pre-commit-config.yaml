@@ -43,3 +43,10 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+
+      - id: validate-law-yaml
+        name: validate law YAML files
+        entry: uv run python script/validate.py
+        language: system
+        files: ^regulation/nl/.*\.yaml$
+        pass_filenames: true
