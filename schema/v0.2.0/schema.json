@@ -114,6 +114,28 @@
         "additionalProperties": false
       }
     },
+    "preamble": {
+      "type": "object",
+      "description": "Preamble/Aanhef section that appears before Article 1",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Preamble text in markdown format, preserving original formatting from official publication"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the preamble in the official publication (if available)"
+        },
+        "machine_readable": {
+          "$ref": "#/definitions/machineReadableSection"
+        }
+      },
+      "additionalProperties": false
+    },
     "articles": {
       "type": "array",
       "description": "Articles of this law/regulation",
@@ -139,126 +161,7 @@
             "description": "URL to this specific article"
           },
           "machine_readable": {
-            "type": "object",
-            "description": "Machine-readable interpretation of this article",
-            "properties": {
-              "public": {
-                "type": "boolean",
-                "description": "Whether this article provides a public API endpoint"
-              },
-              "endpoint": {
-                "type": "string",
-                "pattern": "^[a-z0-9_]+$",
-                "description": "Addressable endpoint (if public)"
-              },
-              "competent_authority": {
-                "type": "string",
-                "description": "Bevoegd gezag - authority whose execution produces binding decisions"
-              },
-              "requires": {
-                "type": "array",
-                "description": "Dependencies on other articles, regelingen, or external sources",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "article": {
-                      "type": "string",
-                      "description": "Article number within this law"
-                    },
-                    "law": {
-                      "type": "string",
-                      "description": "Name of external law"
-                    },
-                    "regeling": {
-                      "type": "string",
-                      "description": "Name of ministerial regulation"
-                    },
-                    "koninklijk_besluit": {
-                      "type": "string",
-                      "description": "Name of royal decree"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Values/outputs required from the dependency"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              },
-              "definitions": {
-                "type": "object",
-                "description": "Definitions and constants for this article",
-                "additionalProperties": true
-              },
-              "execution": {
-                "type": "object",
-                "description": "Executable logic for this article",
-                "properties": {
-                  "produces": {
-                    "type": "object",
-                    "properties": {
-                      "legal_character": {
-                        "type": "string",
-                        "enum": [
-                          "BESCHIKKING",
-                          "TOETS",
-                          "WAARDEBEPALING",
-                          "BESLUIT_VAN_ALGEMENE_STREKKING"
-                        ],
-                        "description": "Legal character of the output"
-                      },
-                      "decision_type": {
-                        "type": "string",
-                        "enum": [
-                          "TOEKENNING",
-                          "AFWIJZING",
-                          "GOEDKEURING",
-                          "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
-                          "BELEIDSREGEL",
-                          "VOORBEREIDINGSBESLUIT",
-                          "ANDERE_HANDELING",
-                          "AANSLAG"
-                        ],
-                        "description": "Type of decision produced"
-                      }
-                    }
-                  },
-                  "parameters": {
-                    "type": "array",
-                    "description": "Input parameters required to execute this article",
-                    "items": {
-                      "$ref": "#/definitions/parameterField"
-                    }
-                  },
-                  "input": {
-                    "type": "array",
-                    "description": "Input values from other sources/articles",
-                    "items": {
-                      "$ref": "#/definitions/inputField"
-                    }
-                  },
-                  "output": {
-                    "type": "array",
-                    "description": "Output values produced by this article",
-                    "items": {
-                      "$ref": "#/definitions/outputField"
-                    }
-                  },
-                  "actions": {
-                    "type": "array",
-                    "description": "Actions that compute outputs or make decisions",
-                    "items": {
-                      "$ref": "#/definitions/action"
-                    }
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/definitions/machineReadableSection"
           }
         },
         "additionalProperties": false
@@ -750,6 +653,128 @@
         "explanation": {
           "type": "string",
           "description": "Dutch explanation of how this element relates to the law text"
+        }
+      },
+      "additionalProperties": false
+    },
+    "machineReadableSection": {
+      "type": "object",
+      "description": "Machine-readable interpretation of legal text",
+      "properties": {
+        "public": {
+          "type": "boolean",
+          "description": "Whether this provides a public API endpoint"
+        },
+        "endpoint": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "Addressable endpoint (if public)"
+        },
+        "competent_authority": {
+          "type": "string",
+          "description": "Bevoegd gezag - authority whose execution produces binding decisions"
+        },
+        "requires": {
+          "type": "array",
+          "description": "Dependencies on other articles, regelingen, or external sources",
+          "items": {
+            "type": "object",
+            "properties": {
+              "article": {
+                "type": "string",
+                "description": "Article number within this law"
+              },
+              "law": {
+                "type": "string",
+                "description": "Name of external law"
+              },
+              "regeling": {
+                "type": "string",
+                "description": "Name of ministerial regulation"
+              },
+              "koninklijk_besluit": {
+                "type": "string",
+                "description": "Name of royal decree"
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Values/outputs required from the dependency"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "definitions": {
+          "type": "object",
+          "description": "Definitions and constants",
+          "additionalProperties": true
+        },
+        "execution": {
+          "type": "object",
+          "description": "Executable logic",
+          "properties": {
+            "produces": {
+              "type": "object",
+              "properties": {
+                "legal_character": {
+                  "type": "string",
+                  "enum": [
+                    "BESCHIKKING",
+                    "TOETS",
+                    "WAARDEBEPALING",
+                    "BESLUIT_VAN_ALGEMENE_STREKKING"
+                  ],
+                  "description": "Legal character of the output"
+                },
+                "decision_type": {
+                  "type": "string",
+                  "enum": [
+                    "TOEKENNING",
+                    "AFWIJZING",
+                    "GOEDKEURING",
+                    "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
+                    "BELEIDSREGEL",
+                    "VOORBEREIDINGSBESLUIT",
+                    "ANDERE_HANDELING",
+                    "AANSLAG"
+                  ],
+                  "description": "Type of decision produced"
+                }
+              }
+            },
+            "parameters": {
+              "type": "array",
+              "description": "Input parameters required to execute",
+              "items": {
+                "$ref": "#/definitions/parameterField"
+              }
+            },
+            "input": {
+              "type": "array",
+              "description": "Input values from other sources/articles",
+              "items": {
+                "$ref": "#/definitions/inputField"
+              }
+            },
+            "output": {
+              "type": "array",
+              "description": "Output values produced",
+              "items": {
+                "$ref": "#/definitions/outputField"
+              }
+            },
+            "actions": {
+              "type": "array",
+              "description": "Actions that compute outputs or make decisions",
+              "items": {
+                "$ref": "#/definitions/action"
+              }
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

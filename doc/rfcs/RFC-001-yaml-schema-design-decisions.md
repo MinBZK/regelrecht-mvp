@@ -36,6 +36,17 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 **Tradeoffs:** None significant
 **Alternatives rejected:** Plain text (loses structure), HTML (too verbose), `|-`/`|+` styles (inconsistent)
 
+### 3. Preamble Structure: Include Aanhef Section
+
+- **Structure:** Add optional `preamble` object with `text` and `url` fields
+- **Format:** Markdown text preserving original formatting from official publication
+- **Content:** Complete preamble/aanhef text that appears before Article 1 in the source document
+- **Location:** Between metadata and articles section
+
+**Benefits:** Preserves complete law structure, captures preamble information (minister, legal basis, etc.)
+**Tradeoffs:** Adds optional field (not required for all laws)
+**Alternatives rejected:** Omitting preamble (loses important context), storing as Article 0 (not semantically correct)
+
 ## Why
 
 ## References
