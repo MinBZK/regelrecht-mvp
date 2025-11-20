@@ -20,11 +20,11 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 **Tradeoffs:** Endpoint name alone doesn't show which law it belongs to (acceptable given file context)
 **Alternatives rejected:** Prefixed format (redundant), allowing both (inconsistent)
 
-### 2. Article Text Format: Use Markdown
+### 2. Article Text Format: Use Markdown with `|` Style
 
 - **Format:** Article `text` field uses markdown to preserve original law formatting
+- **YAML Style:** Use `|` (literal block scalar) for multiline text
 - **Goal:** Make YAML representation match official law publication as closely as possible
-- **Reason:** Maintains fidelity to source material, enables better rendering in editors/tools
 
 **What to preserve:**
 - Numbered lists (1., 2., 3.) for article paragraphs (leden)
@@ -32,9 +32,9 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 - Original paragraph structure and line breaks
 - Plain formatting (no bold/italic unless in source)
 
-**Benefits:** Readable, preserves official formatting, backwards compatible (plain text is valid markdown)
-**Tradeoffs:** None significant - markdown is widely supported
-**Alternatives rejected:** Plain text (loses structure), HTML (too verbose), custom format (non-standard)
+**Benefits:** Readable, preserves official formatting, backwards compatible, consistent YAML formatting
+**Tradeoffs:** None significant
+**Alternatives rejected:** Plain text (loses structure), HTML (too verbose), `|-`/`|+` styles (inconsistent)
 
 ## Why
 
