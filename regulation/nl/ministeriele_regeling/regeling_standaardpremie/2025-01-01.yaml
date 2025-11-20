@@ -16,11 +16,8 @@ grondslag:
   description: Standaardpremie also used in healthcare insurance law
 articles:
 - number: '1'
-  text: 'De standaardpremie, bedoeld in artikel 4 van de Wet op de zorgtoeslag,
-
-    bedraagt voor het berekeningsjaar 2025: € 2.112.
-
-    '
+  text: |
+    De standaardpremie, bedoeld in [artikel 4 van de Wet op de zorgtoeslag](https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4), bedraagt voor het berekeningsjaar 2025: € 2.112,–.
   url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1
   machine_readable:
     endpoint: standaardpremie
@@ -38,9 +35,8 @@ articles:
       - output: berekeningsjaar
         value: 2025
 - number: '2'
-  text: 'Deze regeling treedt in werking met ingang van 1 januari 2025.
-
-    '
+  text: |
+    Deze regeling treedt in werking met ingang van 1 januari 2025.
   url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel2
   machine_readable:
     execution:
@@ -51,9 +47,8 @@ articles:
       - output: datum_inwerkingtreding
         value: '2025-01-01'
 - number: '3'
-  text: 'Deze regeling wordt aangehaald als: Regeling standaardpremie zorgverzekering 2025.
-
-    '
+  text: |
+    Deze regeling wordt aangehaald als: Regeling standaardpremie zorgverzekering 2025.
   url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel3
   machine_readable:
     execution:

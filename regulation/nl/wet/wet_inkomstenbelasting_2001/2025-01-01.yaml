@@ -16,12 +16,11 @@ articles:
 
     [TODO: Full legal text to be downloaded]
 
-    De rendementsgrondslag is de waarde van de bezittingen verminderd met de
-    schulden, zoals bepaald in Box 3 van de inkomstenbelasting.
+    De rendementsgrondslag is de waarde van de bezittingen verminderd met de schulden, zoals bepaald in Box 3 van de inkomstenbelasting.
   url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel5.2
   machine_readable:
     public: true
-    endpoint: wet_inkomstenbelasting_2001.rendementsgrondslag
+    endpoint: rendementsgrondslag
     execution:
       parameters:
       - name: BSN
@@ -42,7 +41,5 @@ articles:
 
     [TODO: Full legal text to be downloaded]
 
-    Het verzamelinkomen is de som van het belastbare inkomen uit werk en woning,
-    het belastbare inkomen uit aanmerkelijk belang, en het belastbare inkomen
-    uit sparen en beleggen.
+    Het verzamelinkomen is de som van het belastbare inkomen uit werk en woning, het belastbare inkomen uit aanmerkelijk belang, en het belastbare inkomen uit sparen en beleggen.
   url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
