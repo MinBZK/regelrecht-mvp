@@ -1,16 +1,17 @@
+---
 $schema: https://example.com/schema/v0.1.0/schema.json
 $id: test_law_b
 uuid: 22222222-2222-2222-2222-222222222222
 regulatory_layer: WET
-publication_date: "2025-01-01"
+publication_date: '2025-01-01'
 
 identifiers:
   bwb_id: BWBRTEST002
   url: https://example.com/test_law_b
 
 articles:
-  - number: "1"
-    text: "Article that calls test_law_a via URI"
+  - number: '1'
+    text: Article that calls test_law_a via URI
     url: https://example.com/test_law_b#1
     machine_readable:
       public: true
@@ -37,8 +38,8 @@ articles:
               - $result_from_a
               - 2
 
-  - number: "2"
-    text: "Article with internal reference"
+  - number: '2'
+    text: Article with internal reference
     url: https://example.com/test_law_b#2
     machine_readable:
       public: true
@@ -52,8 +53,8 @@ articles:
           - name: from_article_1
             type: number
             source:
-              ref: "#doubled_result"
-              article: "1"
+              ref: '#doubled_result'
+              article: '1'
               parameters:
                 my_value: $my_value
         output:

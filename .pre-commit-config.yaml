@@ -1,3 +1,4 @@
+---
 ci:
   autofix_prs: false
   skip: [ty-check]  # ty runs in GitHub Actions (needs full venv)
@@ -26,6 +27,13 @@ repos:
         exclude: ^script/download_law\.py$
       - id: ruff-format
         exclude: ^script/download_law\.py$
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [--strict]
+        types: [yaml]
 
   - repo: local
     hooks:
