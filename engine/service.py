@@ -65,6 +65,9 @@ class LawExecutionService:
 
         # Get or create engine for this article
         endpoint = article.get_endpoint()
+        if endpoint is None:
+            raise ValueError(f"Article has no endpoint: {article.number}")
+
         cache_key = (law.id, endpoint)
 
         if cache_key not in self.engine_cache:

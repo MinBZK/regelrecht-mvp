@@ -41,9 +41,25 @@ uv run pre-commit run --all-files
 ### Pre-commit Hooks
 This repository uses pre-commit hooks for code quality:
 - **Ruff**: Fast Python linter and formatter
+- **ty**: Type checker (from Astral, same creators as Ruff)
 - **Standard hooks**: Trailing whitespace, end-of-file fixer, YAML checks, etc.
 
 Hooks are automatically installed with `uv run pre-commit install` and run on every commit.
+
+### Type Checking
+This project uses **ty** for Python type checking. All code must pass type checks.
+
+```bash
+# Run type checker
+uv run ty check
+
+# Type hints are enforced via pre-commit hooks
+```
+
+When adding type hints:
+- Use modern Python 3.12+ syntax: `str | None` instead of `Optional[str]`
+- Use `list[dict]` instead of `List[Dict]`
+- Add `# type: ignore[rule-name]` comments sparingly for dynamic code
 
 ## Architecture Notes
 
@@ -136,7 +152,7 @@ The engine automatically resolves these URIs by:
 
 - **Language**: Python 3.12+
 - **Package Manager**: uv
-- **Code Quality**: Ruff (linting and formatting), pre-commit hooks
+- **Code Quality**: Ruff (linting and formatting), ty (type checking), pre-commit hooks
 
 ## Future Development
 

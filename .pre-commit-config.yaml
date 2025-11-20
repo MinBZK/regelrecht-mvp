@@ -1,5 +1,6 @@
 ci:
   autofix_prs: false
+  skip: [ty-check]  # ty runs in GitHub Actions (needs full venv)
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -25,3 +26,12 @@ repos:
         exclude: ^script/download_law\.py$
       - id: ruff-format
         exclude: ^script/download_law\.py$
+
+  - repo: local
+    hooks:
+      - id: ty-check
+        name: ty type checker
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false

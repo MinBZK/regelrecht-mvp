@@ -14,7 +14,7 @@ class Article:
 
     number: str
     text: str
-    url: str
+    url: str | None
     machine_readable: dict[str, Any]
 
     def __init__(self, article_data: dict):
