@@ -557,7 +557,6 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "ty" },
-    { name = "yamllint" },
 ]
 
 [package.metadata]
@@ -576,7 +575,6 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "ruff", specifier = ">=0.14.4" },
     { name = "ty", specifier = ">=0.0.1a7" },
-    { name = "yamllint", specifier = ">=1.35.0" },
 ]
 
 [[package]]

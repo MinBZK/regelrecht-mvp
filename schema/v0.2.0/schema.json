@@ -148,7 +148,7 @@
               },
               "endpoint": {
                 "type": "string",
-                "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+$",
+                "pattern": "^[a-z0-9_]+$",
                 "description": "Addressable endpoint (if public)"
               },
               "competent_authority": {
