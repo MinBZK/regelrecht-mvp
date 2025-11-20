@@ -18,6 +18,7 @@ dev = [
     "pytest>=9.0.1",
     "ruff>=0.14.4",
     "ty>=0.0.1a7",
+    "yamllint>=1.35.0",
 ]
 
 [tool.pytest.ini_options]
@@ -49,3 +50,6 @@ exclude = ["frontend"]
 [tool.ty.terminal]
 error-on-warning = false
 output-format = "full"
+
+[tool.ruff]
+exclude = ["frontend"]

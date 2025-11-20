@@ -1,16 +1,17 @@
+---
 $schema: https://example.com/schema/v0.1.0/schema.json
 $id: test_law_error
 uuid: 33333333-3333-3333-3333-333333333333
 regulatory_layer: WET
-publication_date: "2025-01-01"
+publication_date: '2025-01-01'
 
 identifiers:
   bwb_id: BWBRTEST003
   url: https://example.com/test_law_error
 
 articles:
-  - number: "1"
-    text: "Article that causes division by zero"
+  - number: '1'
+    text: Article that causes division by zero
     url: https://example.com/test_law_error#1
     machine_readable:
       public: true
@@ -26,8 +27,8 @@ articles:
               - 100
               - 0
 
-  - number: "2"
-    text: "Article that calls non-existent law"
+  - number: '2'
+    text: Article that calls non-existent law
     url: https://example.com/test_law_error#2
     machine_readable:
       public: true
