@@ -16,11 +16,27 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 - **Not:** `^[a-z0-9_]+\.[a-z0-9_]+$` (e.g., `awir.toetsingsinkomen`)
 - **Reason:** Law context is implicit from file's `$id` field; simpler naming reduces redundancy
 
-## Why
-
 **Benefits:** Less verbose, law context clear from file structure
 **Tradeoffs:** Endpoint name alone doesn't show which law it belongs to (acceptable given file context)
 **Alternatives rejected:** Prefixed format (redundant), allowing both (inconsistent)
+
+### 2. Article Text Format: Use Markdown
+
+- **Format:** Article `text` field uses markdown to preserve original law formatting
+- **Goal:** Make YAML representation match official law publication as closely as possible
+- **Reason:** Maintains fidelity to source material, enables better rendering in editors/tools
+
+**What to preserve:**
+- Numbered lists (1., 2., 3.) for article paragraphs (leden)
+- Links to referenced laws/articles
+- Original paragraph structure and line breaks
+- Plain formatting (no bold/italic unless in source)
+
+**Benefits:** Readable, preserves official formatting, backwards compatible (plain text is valid markdown)
+**Tradeoffs:** None significant - markdown is widely supported
+**Alternatives rejected:** Plain text (loses structure), HTML (too verbose), custom format (non-standard)
+
+## Why
 
 ## References
 

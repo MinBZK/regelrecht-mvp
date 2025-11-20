@@ -131,7 +131,7 @@
           },
           "text": {
             "type": "string",
-            "description": "Verbatim text of the article from the law"
+            "description": "Article text in markdown format, preserving original formatting from official publication (numbered lists, links, paragraph structure)"
           },
           "url": {
             "type": "string",
