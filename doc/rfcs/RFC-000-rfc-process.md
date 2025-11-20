@@ -95,10 +95,3 @@ We accept these tradeoffs because the benefits of documented decisions outweigh 
 3. **GitHub Issues**: Good for discussions, but not structured for long-term documentation
 4. **ADRs (Architecture Decision Records)**: Very similar to RFCs; we chose "RFC" terminology as it's more familiar in open source
 
-## Examples
-
-- **RFC-001**: Law URI resolution strategy (`regelrecht://` format)
-- **RFC-002**: Cross-law parameter passing conventions
-- **RFC-003**: Article execution context and state management
-
-(These are example titles - actual RFCs would be written as separate documents)
