@@ -1966,8 +1966,6 @@ articles:
       programmatic access to BRP data for other laws that need age information.
     url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-1
     machine_readable:
-      public: true
-      endpoint: leeftijd
       execution:
         parameters:
           - name: BSN

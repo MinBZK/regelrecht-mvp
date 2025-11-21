@@ -615,8 +615,6 @@ articles:
       information.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#API-1
     machine_readable:
-      public: true
-      endpoint: heeft_toeslagpartner
       execution:
         parameters:
           - name: BSN
@@ -639,8 +637,6 @@ articles:
       programmatic access to income data for other laws that need this information.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#API-2
     machine_readable:
-      public: true
-      endpoint: toetsingsinkomen
       execution:
         parameters:
           - name: BSN

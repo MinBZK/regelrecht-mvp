@@ -2242,8 +2242,6 @@ articles:
       information.
     url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#API-1
     machine_readable:
-      public: true
-      endpoint: is_verzekerd
       execution:
         parameters:
           - name: BSN

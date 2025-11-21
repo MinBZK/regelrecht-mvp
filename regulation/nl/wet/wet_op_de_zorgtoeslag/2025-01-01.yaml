@@ -54,7 +54,6 @@ articles:
       weken voor de vaststelling aan beide kamers der Staten-Generaal.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2
     machine_readable:
-      endpoint: bereken_zorgtoeslag
       definitions:
         drempelinkomen_alleenstaande:
           value: 3971900
@@ -179,7 +178,6 @@ articles:
       verzekerde zonder toeslagpartner, onderscheidenlijk € 179.429 voor een verzekerde met een toeslagpartner.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3
     machine_readable:
-      endpoint: vermogen_onder_grens
       definitions:
         vermogensgrens_alleenstaand:
           value: 14189600
@@ -229,7 +227,6 @@ articles:
       het berekeningsjaar vast.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4
     machine_readable:
-      endpoint: get_standaardpremie
       execution:
         parameters:
           - name: reference_year
