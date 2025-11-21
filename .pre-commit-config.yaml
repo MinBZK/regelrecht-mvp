@@ -1,7 +1,7 @@
 ---
 ci:
   autofix_prs: false
-  skip: [ty-check]  # ty runs in GitHub Actions (needs full venv)
+  skip: [ty-check, validate-law-yaml]  # these need uv, run in GitHub Actions instead
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
