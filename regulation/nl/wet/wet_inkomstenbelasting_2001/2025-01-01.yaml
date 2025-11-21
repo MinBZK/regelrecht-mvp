@@ -21,8 +21,6 @@ articles:
       inkomstenbelasting.
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel5.2
     machine_readable:
-      public: true
-      endpoint: rendementsgrondslag
       execution:
         parameters:
           - name: BSN

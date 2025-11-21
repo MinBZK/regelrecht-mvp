@@ -10,28 +10,11 @@ url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
 name: '#wet_naam'
 competent_authority: 00000002003182447001
 grondslag:
-- law_id: zorgtoeslagwet
-  article: '4'
-- law_id: zorgverzekeringswet
-  article: '2'
-  description: Standaardpremie also used in healthcare insurance law
-preamble:
-  text: |
-    Regeling van de Minister van Volksgezondheid, Welzijn en Sport van 19 november 2024, kenmerk 3973534-1072564-Z, houdende vaststelling van de standaardpremie en de bestuursrechtelijke premies voor 2025
-
-    De Minister van Volksgezondheid, Welzijn en Sport,
-
-    **Gelet op:**
-
-    [artikel 4 van de Wet op de zorgtoeslag](https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4)
-
-    [artikelen 18d, eerste lid, en 18e, tweede lid, van de Zorgverzekeringswet](https://wetten.overheid.nl/BWBR0018065)
-
-    **Besluit:**
-  url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
-  machine_readable:
-    definitions:
-      verantwoordelijke_minister: Minister van Volksgezondheid, Welzijn en Sport
+  - law_id: zorgtoeslagwet
+    article: '4'
+  - law_id: zorgverzekeringswet
+    article: '2'
+    description: Standaardpremie also used in healthcare insurance law
 articles:
   - number: '1'
     text: |-
@@ -40,7 +23,6 @@ articles:
       2.112,–.
     url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel1
     machine_readable:
-      endpoint: standaardpremie
       execution:
         output:
           - name: standaardpremie

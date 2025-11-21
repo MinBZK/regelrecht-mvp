@@ -10,15 +10,11 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 
 ## Decision
 
-### 1. Endpoint Naming: Use Simple Names
+### 1. Endpoints: All Outputs Are Public
 
-- **Pattern:** `^[a-z0-9_]+$` (e.g., `toetsingsinkomen`)
-- **Not:** `^[a-z0-9_]+\.[a-z0-9_]+$` (e.g., `awir.toetsingsinkomen`)
-- **Reason:** Law context is implicit from file's `$id` field; simpler naming reduces redundancy
-
-**Benefits:** Less verbose, law context clear from file structure
-**Tradeoffs:** Endpoint name alone doesn't show which law it belongs to (acceptable given file context)
-**Alternatives rejected:** Prefixed format (redundant), allowing both (inconsistent)
+- All outputs defined in `machine_readable` sections are publicly accessible
+- No separate endpoint definition needed - every output is an endpoint
+- **Naming pattern:** `^[a-z0-9_]+$` (e.g., `toetsingsinkomen`)
 
 ### 2. Article Text Format: Use Markdown with `|` Style
 
