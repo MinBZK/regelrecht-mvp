@@ -45,7 +45,8 @@ root = [".", "features/steps"]
 
 [tool.ty.src]
 include = ["engine", "script", "tests", "features", "main.py"]
-exclude = ["frontend"]
+# script/download_law.py is a symlink that appears as a text file on Windows
+exclude = ["frontend", "script/download_law.py"]
 
 [tool.ty.terminal]
 error-on-warning = false

@@ -661,15 +661,6 @@
       "type": "object",
       "description": "Machine-readable interpretation of legal text",
       "properties": {
-        "public": {
-          "type": "boolean",
-          "description": "Whether this provides a public API endpoint"
-        },
-        "endpoint": {
-          "type": "string",
-          "pattern": "^[a-z0-9_]+$",
-          "description": "Addressable endpoint (if public)"
-        },
         "competent_authority": {
           "type": "string",
           "description": "Bevoegd gezag - authority whose execution produces binding decisions"

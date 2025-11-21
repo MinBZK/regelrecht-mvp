@@ -9,16 +9,6 @@ bwb_id: BWBR0018451
 url: https://wetten.overheid.nl/BWBR0018451/2025-01-01
 name: '#wet_naam'
 competent_authority: '#bevoegd_gezag'
-preamble:
-  text: |
-    Wij Beatrix, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz. enz. enz.
-
-    Allen, die deze zullen zien of horen lezen, saluut! doen te weten:
-
-    Alzo Wij in overweging genomen hebben, dat het wenselijk is regels te stellen op grond waarvan aan personen van wie de premie voor een zorgverzekering in vergelijking met hun inkomen te hoog is een tegemoetkoming wordt verstrekt;
-
-    Zo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben goedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:
-  url: https://wetten.overheid.nl/BWBR0018451/2025-01-01
 articles:
   - number: '1'
     text: |-
@@ -64,7 +54,6 @@ articles:
       weken voor de vaststelling aan beide kamers der Staten-Generaal.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2
     machine_readable:
-      endpoint: bereken_zorgtoeslag
       definitions:
         drempelinkomen_alleenstaande:
           value: 3971900
@@ -189,7 +178,6 @@ articles:
       verzekerde zonder toeslagpartner, onderscheidenlijk € 179.429 voor een verzekerde met een toeslagpartner.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3
     machine_readable:
-      endpoint: vermogen_onder_grens
       definitions:
         vermogensgrens_alleenstaand:
           value: 14189600
@@ -239,7 +227,6 @@ articles:
       het berekeningsjaar vast.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4
     machine_readable:
-      endpoint: get_standaardpremie
       execution:
         parameters:
           - name: reference_year
