@@ -92,6 +92,7 @@ articles:
       totdat op die aanvraag, dat bezwaar of dat beroep is beslist.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel2.1.1
     machine_readable:
+      competent_authority: '#2_1_3_bevoegd_gezag'
       execution:
         parameters:
           - name: bsn
@@ -136,6 +137,7 @@ articles:
       organisatie de wetgeving van een andere mogendheid van toepassing is.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel2.1.2
     machine_readable:
+      competent_authority: '#2_1_3_bevoegd_gezag'
       execution:
         parameters:
           - name: bsn
@@ -145,7 +147,7 @@ articles:
           - name: is_verzekerd_basis
             type: boolean
             source:
-              article: '#2.1.1.is_verzekerd_wlz'
+              article: '#is_verzekerd_wlz'
           - name: verzekerd_via_verdrag
             type: boolean
             source:
@@ -183,35 +185,11 @@ articles:
       het verzekerd zijn ingevolge deze wet.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel2.1.3
     machine_readable:
-      competent_authority: Sociale verzekeringsbank
       execution:
-        produces:
-          legal_character: BESCHIKKING
-          decision_type: TOEKENNING
-        parameters:
-          - name: bsn
-            type: string
-            required: true
-        input:
-          - name: is_verzekerd_wlz
-            type: boolean
-            source:
-              article: '#2.1.2.is_verzekerd_wlz_inclusief_verdrag'
         output:
-          - name: vaststelling_verzekerd_wlz
-            type: boolean
-            description: Formele vaststelling door SVB of persoon verzekerd is onder WLZ
           - name: bevoegd_gezag
             type: string
         actions:
-          - output: vaststelling_verzekerd_wlz
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $is_verzekerd_wlz
-                  value: true
-                then: true
-                else: false
           - output: bevoegd_gezag
             value: Sociale verzekeringsbank
   - number: 3.1.1
