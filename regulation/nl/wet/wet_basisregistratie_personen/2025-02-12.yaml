@@ -6,6 +6,7 @@ regulatory_layer: WET
 publication_date: '2021-08-26'
 bwb_id: BWBR0033715
 url: https://wetten.overheid.nl/BWBR0033715/2025-02-12
+name: '#wet_naam'
 articles:
   - number: Artikel 1.1
     text: |-
@@ -1958,6 +1959,14 @@ articles:
     text: |-
       Artikel 4.21 Deze wet wordt aangehaald als: Wet basisregistratie personen.
     url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#ArtikelArtikel 4.21
+    machine_readable:
+      execution:
+        output:
+          - name: wet_naam
+            type: string
+        actions:
+          - output: wet_naam
+            value: Wet basisregistratie personen
   - number: API-1
     text: |-
       SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining a person's age

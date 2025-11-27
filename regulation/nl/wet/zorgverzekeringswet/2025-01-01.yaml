@@ -6,6 +6,7 @@ regulatory_layer: WET
 publication_date: '2020-02-24'
 bwb_id: BWBR0018450
 url: https://wetten.overheid.nl/BWBR0018450/2025-01-01
+name: '#wet_naam'
 articles:
   - number: Artikel 1
     text: |-
@@ -2233,6 +2234,14 @@ articles:
     text: |-
       Artikel 128 Deze wet wordt aangehaald als: Zorgverzekeringswet.
     url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#ArtikelArtikel 128
+    machine_readable:
+      execution:
+        output:
+          - name: wet_naam
+            type: string
+        actions:
+          - output: wet_naam
+            value: Zorgverzekeringswet
   - number: API-1
     text: |-
       SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining whether a person
