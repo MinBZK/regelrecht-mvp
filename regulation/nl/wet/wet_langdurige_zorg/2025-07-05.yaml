@@ -187,10 +187,10 @@ articles:
     machine_readable:
       execution:
         output:
-          - name: bevoegd_gezag
+          - name: 2_1_3_bevoegd_gezag
             type: string
         actions:
-          - output: bevoegd_gezag
+          - output: 2_1_3_bevoegd_gezag
             value: Sociale verzekeringsbank
   - number: 3.1.1
     text: |-
