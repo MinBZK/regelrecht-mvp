@@ -1,7 +1,6 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: wet_basisregistratie_personen
-uuid: 8b8f579e-de73-4ec3-8ebe-1e8788f4ea2f
 regulatory_layer: WET
 publication_date: '2021-08-26'
 bwb_id: BWBR0033715

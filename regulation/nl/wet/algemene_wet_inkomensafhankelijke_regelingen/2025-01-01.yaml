@@ -1,7 +1,6 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: algemene_wet_inkomensafhankelijke_regelingen
-uuid: b974bfb2-19d3-441e-9795-d78591341ba3
 regulatory_layer: WET
 publication_date: '2022-12-27'
 bwb_id: BWBR0018472

@@ -1,7 +1,6 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: regeling_standaardpremie
-uuid: ac962262-6628-49bf-a465-5d831271936a
 regulatory_layer: MINISTERIELE_REGELING
 publication_date: '2024-11-19'
 effective_date: '#datum_inwerkingtreding'

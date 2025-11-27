@@ -1,7 +1,6 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: zorgtoeslagwet
-uuid: 60e71675-38bc-4297-87ac-0c145613e481
 regulatory_layer: WET
 publication_date: '2024-12-20'
 effective_date: '2025-01-01'

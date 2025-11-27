@@ -1,7 +1,6 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: zorgverzekeringswet
-uuid: 11750e71-4ec1-422d-af74-eccff00a5464
 regulatory_layer: WET
 publication_date: '2020-02-24'
 bwb_id: BWBR0018450

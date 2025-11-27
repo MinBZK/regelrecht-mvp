@@ -5,18 +5,12 @@
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations",
   "type": "object",
   "required": [
-    "uuid",
     "regulatory_layer",
     "publication_date",
     "url",
     "articles"
   ],
   "properties": {
-    "uuid": {
-      "type": "string",
-      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-      "description": "Unique identifier (UUID v4) for this law/regulation version"
-    },
     "publication_date": {
       "type": "string",
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
