@@ -91,6 +91,22 @@ temporal:
 
 POC v0.1.6 had `immutable_after: "P2Y"` to indicate when values become final (e.g., herzieningstermijn). This is removed because immutability/finality should be modeled as explicit rules in laws (e.g., AWIR).
 
+### 7. Article Numbering: Free-Form
+
+- **Field:** `articles[].number` is a free-form string
+- **No separate identifier needed** - `number` serves as both display name and identifier
+
+**Rationale:** Laws have varying article structures:
+- Simple: "1", "2", "3"
+- With paragraphs: "2.1", "2.2"
+- Nested: "1.1.1", "2.1.3", "14.1.1"
+- With letters: "2a", "2.1.a"
+
+By keeping `number` free-form:
+- Authors can model at any granularity (whole article, per lid, per onderdeel)
+- No schema changes needed for different law structures
+- Formatting conventions can be agreed on separately if needed
+
 ## References
 
 - Issue #7: Good enough Language for 1st fase Editor and Engine
