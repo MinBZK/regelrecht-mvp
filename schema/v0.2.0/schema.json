@@ -332,10 +332,6 @@
                   "$ref": "#/definitions/variableReference"
                 }
               ]
-            },
-            "immutable_after": {
-              "type": "string",
-              "pattern": "^P[0-9]+[YMD]$"
             }
           }
         },
