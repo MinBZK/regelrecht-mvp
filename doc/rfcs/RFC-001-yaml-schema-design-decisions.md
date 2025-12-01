@@ -143,9 +143,9 @@ Several v0.1.6 definitions were consolidated or simplified in v0.2.0:
 
 | POC v0.1.6 Definition | v0.2.0 Status | Notes |
 |-----------------------|---------------|-------|
-| `sourceField` | **Merged** into `inputField` | Input sources now use `source.article` or `source.regeling` |
-| `sourceReference` | **Removed** | Database/table references replaced by article references |
-| `serviceReference` | **Removed** | Cross-law calls use `source.article: "law_id.endpoint"` format |
+| `sourceField` | **Merged** into `inputField` | Input sources now use `source.regulation` + `source.field` |
+| `sourceReference` | **Removed** | Database/table references replaced by regulation references |
+| `serviceReference` | **Removed** | Cross-law calls use `source.regulation` + `source.field` |
 | `valueOperation` | **Merged** into `operation` | Single operation definition handles all value operations |
 | `requirement` (all/any/or) | **Removed** | Replaced by `operation` with `AND`/`OR`/`NOT` operators |
 
@@ -157,14 +157,17 @@ The v0.1.6 schema had three separate mechanisms for input:
 
 In v0.2.0, all inputs use `inputField.source` with a unified format:
 ```yaml
+# External reference (to another law or regulation)
 source:
-  article: "zvw.is_verzekerd"  # Cross-law: law_id.endpoint
-  # OR
-  article: "3"                  # Internal: article number
-  # OR
-  regeling: "regeling_zorgverzekering"
-  field: "standaardpremie"
+  regulation: zorgverzekeringswet
+  field: is_verzekerd
+
+# Internal reference (within same law, regulation is omitted)
+source:
+  field: vermogen_onder_grens
 ```
+
+All regulations (wetten, ministeriele regelingen, etc.) are referenced by their unique name. The type distinction (wet vs regeling) is not needed in the reference - it comes from the regulation's own `regulatory_layer` field.
 
 **Why remove requirement definition?**
 

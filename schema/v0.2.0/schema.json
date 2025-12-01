@@ -388,25 +388,18 @@
           "properties": {
             "source": {
               "type": "object",
-              "description": "Reference to where this input comes from (must specify article or regeling)",
+              "description": "Reference to where this input comes from",
+              "required": ["field"],
               "properties": {
-                "article": {
+                "regulation": {
                   "type": "string",
-                  "description": "Article reference (e.g., 'zvw.is_verzekerd' or '3' for internal)"
-                },
-                "regeling": {
-                  "type": "string",
-                  "description": "Ministerial regulation reference"
+                  "description": "Name of external law/regulation (omit for internal reference within same law)"
                 },
                 "field": {
                   "type": "string",
                   "description": "Field name to retrieve"
                 }
               },
-              "anyOf": [
-                { "required": ["article"] },
-                { "required": ["regeling"] }
-              ],
               "additionalProperties": false
             }
           },

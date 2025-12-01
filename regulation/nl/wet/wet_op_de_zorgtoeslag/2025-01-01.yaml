@@ -76,31 +76,36 @@ articles:
           - name: leeftijd
             type: number
             source:
-              article: wet_basisregistratie_personen.leeftijd
+              regulation: wet_basisregistratie_personen
+              field: leeftijd
           - name: is_verzekerde
             type: boolean
             source:
-              article: zorgverzekeringswet.is_verzekerd
+              regulation: zorgverzekeringswet
+              field: is_verzekerd
           - name: heeft_toeslagpartner
             type: boolean
             source:
-              article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
+              regulation: algemene_wet_inkomensafhankelijke_regelingen
+              field: heeft_toeslagpartner
           - name: toetsingsinkomen
             type: amount
             source:
-              article: algemene_wet_inkomensafhankelijke_regelingen.toetsingsinkomen
+              regulation: algemene_wet_inkomensafhankelijke_regelingen
+              field: toetsingsinkomen
             type_spec:
               unit: eurocent
           - name: standaardpremie
             type: amount
             source:
-              article: regeling_standaardpremie.standaardpremie
+              regulation: regeling_standaardpremie
+              field: standaardpremie
             type_spec:
               unit: eurocent
           - name: vermogen_onder_grens
             type: boolean
             source:
-              article: '#vermogen_onder_grens'
+              field: vermogen_onder_grens
         output:
           - name: heeft_recht_op_zorgtoeslag
             type: boolean
@@ -194,13 +199,15 @@ articles:
           - name: vermogen
             type: amount
             source:
-              article: wet_inkomstenbelasting_2001.rendementsgrondslag
+              regulation: wet_inkomstenbelasting_2001
+              field: rendementsgrondslag
             type_spec:
               unit: eurocent
           - name: heeft_toeslagpartner
             type: boolean
             source:
-              article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
+              regulation: algemene_wet_inkomensafhankelijke_regelingen
+              field: heeft_toeslagpartner
         output:
           - name: vermogen_onder_grens
             type: boolean
