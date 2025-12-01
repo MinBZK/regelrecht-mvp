@@ -29,8 +29,6 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 - Plain formatting (no bold/italic unless in source)
 
 **Benefits:** Readable, preserves official formatting, backwards compatible, consistent YAML formatting
-**Tradeoffs:** None significant
-**Alternatives rejected:** Plain text (loses structure), HTML (too verbose), `|-`/`|+` styles (inconsistent)
 
 ### 3. Preamble Structure: Include Aanhef Section
 
@@ -40,8 +38,6 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 - **Location:** Between metadata and articles section
 
 **Benefits:** Preserves complete law structure, captures preamble information (minister, legal basis, etc.)
-**Tradeoffs:** Adds optional field (not required for all laws)
-**Alternatives rejected:** Omitting preamble (loses important context), storing as Article 0 (not semantically correct)
 
 ### 4. POC v0.1.6 Service Discovery Fields Migration
 
@@ -59,6 +55,17 @@ The POC v0.1.6 schema had several top-level "service discovery" fields. This sec
 - Laws contain multiple articles with different legal effects
 - Article 2 may produce a BESCHIKKING (toekenning) while Article 3 produces a TOETS (goedkeuring)
 - This matches the legal reality better than a single service-level classification
+
+**Open question: Single vs multiple executions per article?**
+
+Currently `execution` is an object (one per article). Should we allow multiple executions per article?
+
+The `execution.produces` property could enable different outcomes from the same execution:
+- Different `legal_character` values (BESCHIKKING vs TOETS)
+
+This raises the question: should `produces` be an array to support multiple distinct outcomes from one article's logic?
+
+**Alternative:** Move `produces` to action level instead of execution level. This way, different actions within one execution can produce different legal outcomes without needing multiple executions.
 
 ### 5. UUID Field: Removed
 
@@ -106,6 +113,110 @@ By keeping `number` free-form:
 - Authors can model at any granularity (whole article, per lid, per onderdeel)
 - No schema changes needed for different law structures
 - Formatting conventions can be agreed on separately if needed
+
+### 8. Metadata Field Migrations
+
+POC v0.1.6 had several top-level metadata fields. This section documents how each is handled in v0.2.0:
+
+| POC v0.1.6 Field | v0.2.0 Status | Notes |
+|------------------|---------------|-------|
+| `name` (top-level) | **Kept** | Now supports plain text or internal `#` reference |
+| `name` (in fields) | **Kept** | Still used in `baseField` for field names (parameters, input, output) |
+| `law` | **Removed** | Replaced by `bwb_id` + `officiele_titel` for proper identification |
+| `description` | **Removed** | Article `text` field is self-describing |
+| `valid_from` | **Kept** | Inwerkingtredingsdatum (when law becomes effective) |
+| - | **Added** `publication_date` | Publicatiedatum (when law was published) |
+| `references` | **Replaced** by `requires` | Now in `machineReadableSection` with structured format |
+| `legal_basis` (top-level) | **Replaced** by `grondslag` | New array structure: `[{law_id, article, description}]` |
+
+**Note on internal references (`#` notation):**
+
+String fields like `name` and `competent_authority` support both plain text and internal references:
+- Plain text: `name: "Zorgverzekeringswet"` or `competent_authority: "Minister van VWS"`
+- Internal reference: `name: '#wet_naam'` or `competent_authority: '#2_1_3_bevoegd_gezag'`
+
+The `#` prefix indicates a reference to a named output within the same law. This is a convention, not enforced by the schema.
+
+### 9. Definition Consolidation
+
+Several v0.1.6 definitions were consolidated or simplified in v0.2.0:
+
+| POC v0.1.6 Definition | v0.2.0 Status | Notes |
+|-----------------------|---------------|-------|
+| `sourceField` | **Merged** into `inputField` | Input sources now use `source.article` or `source.regeling` |
+| `sourceReference` | **Removed** | Database/table references replaced by article references |
+| `serviceReference` | **Removed** | Cross-law calls use `source.article: "law_id.endpoint"` format |
+| `valueOperation` | **Merged** into `operation` | Single operation definition handles all value operations |
+| `requirement` (all/any/or) | **Removed** | Replaced by `operation` with `AND`/`OR`/`NOT` operators |
+
+**Why simplify input sources?**
+
+The v0.1.6 schema had three separate mechanisms for input:
+- `sourceField` with `sourceReference` (database lookups)
+- `inputField` with `serviceReference` (cross-law calls)
+
+In v0.2.0, all inputs use `inputField.source` with a unified format:
+```yaml
+source:
+  article: "zvw.is_verzekerd"  # Cross-law: law_id.endpoint
+  # OR
+  article: "3"                  # Internal: article number
+  # OR
+  regeling: "regeling_zorgverzekering"
+  field: "standaardpremie"
+```
+
+**Why remove requirement definition?**
+
+The v0.1.6 `requirement` definition supported `all`, `any`, and `or` combinators:
+```yaml
+# v0.1.6 requirement
+all:
+  - operation: EQUALS
+    subject: $age
+    value: 18
+  - operation: GREATER_THAN
+    subject: $income
+    value: 0
+```
+
+In v0.2.0, this is handled by the `operation` definition with logical operators:
+```yaml
+# v0.2.0 operation
+operation: AND
+values:
+  - operation: EQUALS
+    subject: $age
+    value: 18
+  - operation: GREATER_THAN
+    subject: $income
+    value: 0
+```
+
+This reduces schema complexity while maintaining full expressiveness.
+
+### 10. Operation and Type Changes
+
+Minor changes to operations and types between v0.1.6 and v0.2.0:
+
+**Operation enum renames (for clarity):**
+
+| v0.1.6 | v0.2.0 |
+|--------|--------|
+| `GREATER_OR_EQUAL` | `GREATER_THAN_OR_EQUAL` |
+| `LESS_OR_EQUAL` | `LESS_THAN_OR_EQUAL` |
+
+**Type specification additions:**
+
+| Field | Change |
+|-------|--------|
+| `type_spec.unit` | Added `"days"` unit |
+| `variableReference` | Now allows lowercase (`$name` in addition to `$NAME`) |
+
+**Rationale:**
+- Operation renames: More explicit naming matches common programming conventions
+- Days unit: Needed for laws that specify durations in days (e.g., termijnen)
+- Lowercase variables: Allows more natural naming (e.g., `$standaardpremie` vs `$STANDAARDPREMIE`)
 
 ## References
 
