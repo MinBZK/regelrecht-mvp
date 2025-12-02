@@ -19,7 +19,7 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 ### 2. Article Text Format: Use Markdown with `|` Style
 
 - **Format:** Article `text` field uses markdown to preserve original law formatting
-- **YAML Style:** Use `|` (literal block scalar) for multiline text
+- **YAML Style:** Use `|-` (literal block scalar) for multiline text
 - **Goal:** Make YAML representation match official law publication as closely as possible
 
 **What to preserve:**
@@ -28,16 +28,12 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 - Original paragraph structure and line breaks
 - Plain formatting (no bold/italic unless in source)
 
-**Benefits:** Readable, preserves official formatting, backwards compatible, consistent YAML formatting
-
 ### 3. Preamble Structure: Include Aanhef Section
 
 - **Structure:** Add optional `preamble` object with `text` and `url` fields
 - **Format:** Markdown text preserving original formatting from official publication
 - **Content:** Complete preamble/aanhef text that appears before Article 1 in the source document
 - **Location:** Between metadata and articles section
-
-**Benefits:** Preserves complete law structure, captures preamble information (minister, legal basis, etc.)
 
 ### 4. POC v0.1.6 Service Discovery Fields Migration
 
@@ -144,7 +140,7 @@ Several v0.1.6 definitions were consolidated or simplified in v0.2.0:
 | POC v0.1.6 Definition | v0.2.0 Status | Notes |
 |-----------------------|---------------|-------|
 | `sourceField` | **Merged** into `inputField` | Input sources now use `source.regulation` + `source.field` |
-| `sourceReference` | **Removed** | Database/table references replaced by regulation references |
+| `sourceReference` | **Simplified** | Database/table details removed; external sources use `source.field` without `regulation` |
 | `serviceReference` | **Removed** | Cross-law calls use `source.regulation` + `source.field` |
 | `valueOperation` | **Merged** into `operation` | Single operation definition handles all value operations |
 | `requirement` (all/any/or) | **Removed** | Replaced by `operation` with `AND`/`OR`/`NOT` operators |
@@ -157,15 +153,31 @@ The v0.1.6 schema had three separate mechanisms for input:
 
 In v0.2.0, all inputs use `inputField.source` with a unified format:
 ```yaml
-# External reference (to another law or regulation)
+# Reference to another law or regulation (with parameters)
 source:
-  regulation: zorgverzekeringswet
-  field: is_verzekerd
+  regulation: wet_basisregistratie_personen
+  field: leeftijd
+  parameters:
+    bsn: $bsn
+  description: "Leeftijd conform BRP"
 
 # Internal reference (within same law, regulation is omitted)
 source:
   field: vermogen_onder_grens
+
+# External data source (no regulation - must be resolved outside YAML)
+source:
+  field: verkiezingsdatum_tweede_kamer
+  parameters:
+    bsn: $bsn
+  description: "Datum van de Tweede Kamerverkiezingen"
 ```
+
+**Source properties:**
+- `field` (required): Technical field identifier
+- `regulation` (optional): Name of external law/regulation. If omitted, it's either an internal reference or an external data source that must be resolved outside the YAML.
+- `parameters` (optional): Parameters to pass when calling the source (e.g., `bsn: $bsn`)
+- `description` (optional): Human-readable description or legal reference
 
 All regulations (wetten, ministeriele regelingen, etc.) are referenced by their unique name. The type distinction (wet vs regeling) is not needed in the reference - it comes from the regulation's own `regulatory_layer` field.
 

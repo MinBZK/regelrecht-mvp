@@ -393,11 +393,22 @@
               "properties": {
                 "regulation": {
                   "type": "string",
-                  "description": "Name of external law/regulation (omit for internal reference within same law)"
+                  "description": "Name of external law/regulation. Omit for external data sources that must be resolved outside the YAML."
                 },
                 "field": {
                   "type": "string",
                   "description": "Field name to retrieve"
+                },
+                "parameters": {
+                  "type": "object",
+                  "description": "Parameters to pass when calling the source regulation (e.g., bsn: $bsn)",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Human-readable description or legal reference for this data source"
                 }
               },
               "additionalProperties": false
