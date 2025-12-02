@@ -7,13 +7,14 @@ effective_date: '#datum_inwerkingtreding'
 bwb_id: BWBR0050536
 url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
 name: '#wet_naam'
-competent_authority: 00000002003182447001
+competent_authority: Minister van Volksgezondheid, Welzijn en Sport
 grondslag:
   - law_id: zorgtoeslagwet
     article: '4'
   - law_id: zorgverzekeringswet
-    article: '2'
-    description: Standaardpremie also used in healthcare insurance law
+    article: 18d
+  - law_id: zorgverzekeringswet
+    article: 18e
 articles:
   - number: '1'
     text: |-
@@ -37,8 +38,12 @@ articles:
             value: 2025
   - number: '2'
     text: |-
-      Deze regeling treedt in werking met ingang van 1 januari 2025.
+      [Red: Wijzigt de Regeling zorgverzekering.]
     url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel2
+  - number: '3'
+    text: |-
+      Deze regeling treedt in werking met ingang van 1 januari 2025.
+    url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel3
     machine_readable:
       execution:
         output:
@@ -47,10 +52,10 @@ articles:
         actions:
           - output: datum_inwerkingtreding
             value: '2025-01-01'
-  - number: '3'
+  - number: '4'
     text: |-
-      Deze regeling wordt aangehaald als: Regeling standaardpremie zorgverzekering 2025.
-    url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel3
+      Deze regeling wordt aangehaald als: Regeling vaststelling standaardpremie en bestuursrechtelijke premies 2025.
+    url: https://wetten.overheid.nl/BWBR0050536/2025-01-01#Artikel4
     machine_readable:
       execution:
         output:
@@ -58,4 +63,4 @@ articles:
             type: string
         actions:
           - output: wet_naam
-            value: Regeling standaardpremie zorgverzekering 2025
+            value: Regeling vaststelling standaardpremie en bestuursrechtelijke premies 2025

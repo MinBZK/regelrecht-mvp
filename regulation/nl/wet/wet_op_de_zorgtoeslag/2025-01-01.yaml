@@ -88,6 +88,8 @@ articles:
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
               field: heeft_toeslagpartner
+          # NB: Wet zorgtoeslag art. 1 verwijst direct naar WIB 2001 art. 2.18 voor toetsingsinkomen.
+          # AWIR als bron is een indirecte aanname (AWIR verwijst ook naar WIB 2001 art. 2.18).
           - name: toetsingsinkomen
             type: amount
             source:
