@@ -269,7 +269,9 @@ articles:
       indicatiebesluit.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.3
     machine_readable:
-      competent_authority: CIZ
+      competent_authority:
+        name: CIZ
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -329,7 +331,9 @@ articles:
       regels kunnen voor verschillende categorieën van verzekerden verschillend worden vastgesteld.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.3.3
     machine_readable:
-      competent_authority: Zorgkantoor
+      competent_authority:
+        name: Zorgkantoor
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -361,7 +365,9 @@ articles:
       vier weken nadat het ontwerp aan beide kamers der Staten-Generaal is overgelegd.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel4.2.1
     machine_readable:
-      competent_authority: Wlz-uitvoerder
+      competent_authority:
+        name: Wlz-uitvoerder
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -393,7 +399,9 @@ articles:
       4.2.2 bepaalde zijn gesloten, zijn nietig.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel4.2.4
     machine_readable:
-      competent_authority: Zorgkantoor
+      competent_authority:
+        name: Zorgkantoor
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -416,7 +424,9 @@ articles:
       uitvoering van deze wet beleidsregels stellen voor de Wlz-uitvoerders en voor het CAK.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel5.1.1
     machine_readable:
-      competent_authority: Zorginstituut Nederland
+      competent_authority:
+        name: Zorginstituut Nederland
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -438,7 +448,9 @@ articles:
       toepassing.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel6.1.1
     machine_readable:
-      competent_authority: CAK
+      competent_authority:
+        name: CAK
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -460,7 +472,9 @@ articles:
       toepassing.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel7.1.1
     machine_readable:
-      competent_authority: CIZ
+      competent_authority:
+        name: CIZ
+        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag

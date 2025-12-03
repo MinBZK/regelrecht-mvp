@@ -8,10 +8,6 @@
 
 When representing laws and regulations in machine-readable format, we need to capture who has the authority (bevoegdheid) to make binding decisions.
 
-### Terminology
-
-The focus should be on **bevoegdheid** (authority/power), not roles. Dutch constitutional law is based on the *legaliteitsbeginsel* - government may only act based on explicit legal authority. A bevoegdheid is created by law and assigned to a *bestuursorgaan* (administrative body, defined in Art. 1:1 Awb).
-
 ### Observed Patterns
 
 **In Wet op de Zorgtoeslag (BWBR0018451):**
@@ -20,6 +16,15 @@ The focus should be on **bevoegdheid** (authority/power), not roles. Dutch const
 
 **In Regeling Standaardpremie (BWBR0050536):**
 - Preamble defines the Minister as both issuer and executor
+
+**In Wet langdurige zorg (BWBR0035917):**
+- Article 2.1.3: Sociale verzekeringsbank (vaststelling verzekering)
+- Article 3.2.3: CIZ (indicatiebesluit)
+- Article 3.3.3: Zorgkantoor (persoonsgebonden budget)
+- Article 4.2.1: Wlz-uitvoerder (zorgplicht)
+- Article 5.1.1: Zorginstituut Nederland (toezicht)
+- Article 6.1.1: CAK
+- Article 7.1.1: CIZ
 
 ### The Problem
 
@@ -32,40 +37,53 @@ Additionally, some authorities are **categorical** rather than specific. For exa
 
 ## Decision
 
-Define `competent_authority` at the **action level**, not at document top-level.
+### 1. Article Level
+
+Define `competent_authority` at the **article level** (in `machine_readable`), not at document top-level.
+
+### 2. Object Structure
+
+`competent_authority` is an object with:
+- `name`: name of the authority (required)
+- `type`: enum `INSTANCE` or `CATEGORY` (required)
 
 ```yaml
-articles:
-  - number: '5'
-    machine_readable:
-      execution:
-        actions:
-          - output: besluit
-            competent_authority: "Dienst Toeslagen"
-            ...
+# Specific authority (instance)
+competent_authority:
+  name: "Dienst Toeslagen"
+  type: INSTANCE
+
+# Categorical authority
+competent_authority:
+  name: "college van burgemeester en wethouders"
+  type: CATEGORY
 ```
 
-### Guidelines
+### 3. Type Definitions
 
-1. **Action level**: Declare authority where the law grants it, as part of individual actions
-2. **Name only**: Use entity name for now, skip identifiers (OIN, TOOI, etc.) until we have clearer requirements
+- **`INSTANCE`**: A specific organization (Dienst Toeslagen, CIZ, CAK, Sociale verzekeringsbank)
+- **`CATEGORY`**: A category that must be resolved per context (college van B&W, gemeenteraad, gedeputeerde staten)
 
 ## Why
 
-**Action-level authority makes sense because:**
+**Article-level authority makes sense because:**
 - One law can have 0..n competent authorities
-- Different actions may have different authorities
+- Different articles may have different authorities
 - The law text itself defines where authority is granted
 
-**Skip identifiers for now because:**
-- Multiple identifier systems exist (OIN, TOOI, organisaties.overheid.nl)
-- Can't be sure what will work for our use cases
+**Object structure with type because:**
+- Distinguishes between specific instances and categories
+- Explicit about what needs runtime resolution
+
+**Skip identifiers (OIN, TOOI) for now because:**
+- Multiple identifier systems exist
 - Name is sufficient for MVP
+- Can add identifiers later when requirements are clearer
 
 ## Open Questions
 
-- How to handle categorical authorities (e.g., "het college van B&W" which applies to all municipalities)?
 - When do we need identifiers, and which system to use?
+- How to handle mandaat/delegatie (authority delegation)?
 
 ## References
 

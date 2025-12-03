@@ -7,7 +7,9 @@ effective_date: '2025-01-01'
 bwb_id: BWBR0011353
 url: https://wetten.overheid.nl/BWBR0011353/2025-01-01
 name: Wet inkomstenbelasting 2001
-competent_authority: TODO
+competent_authority:
+  name: TODO
+  type: INSTANCE
 
 articles:
   - number: '5.2'

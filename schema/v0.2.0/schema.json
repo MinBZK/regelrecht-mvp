@@ -442,6 +442,7 @@
         "NOT",
         "EQUALS",
         "NOT_EQUALS",
+        "NOT_NULL",
         "GREATER_THAN",
         "LESS_THAN",
         "GREATER_THAN_OR_EQUAL",
@@ -670,8 +671,29 @@
       "description": "Machine-readable interpretation of legal text",
       "properties": {
         "competent_authority": {
-          "type": "string",
-          "description": "Bevoegd gezag - authority whose execution produces binding decisions"
+          "description": "Bevoegd gezag - authority whose execution produces binding decisions",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^#",
+              "description": "Internal reference to output (e.g., '#bevoegd_gezag')"
+            },
+            {
+              "type": "object",
+              "required": ["name", "type"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the authority"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["INSTANCE", "CATEGORY"],
+                  "description": "INSTANCE = specific organization, CATEGORY = must be resolved per context"
+                }
+              }
+            }
+          ]
         },
         "requires": {
           "type": "array",
