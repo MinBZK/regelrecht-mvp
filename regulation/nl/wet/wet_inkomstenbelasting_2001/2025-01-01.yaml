@@ -9,7 +9,6 @@ url: https://wetten.overheid.nl/BWBR0011353/2025-01-01
 name: Wet inkomstenbelasting 2001
 competent_authority:
   name: TODO
-  type: INSTANCE
 
 articles:
   - number: '5.2'

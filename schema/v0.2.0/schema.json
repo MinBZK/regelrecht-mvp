@@ -680,7 +680,7 @@
             },
             {
               "type": "object",
-              "required": ["name", "type"],
+              "required": ["name"],
               "properties": {
                 "name": {
                   "type": "string",
@@ -689,7 +689,8 @@
                 "type": {
                   "type": "string",
                   "enum": ["INSTANCE", "CATEGORY"],
-                  "description": "INSTANCE = specific organization, CATEGORY = must be resolved per context"
+                  "default": "INSTANCE",
+                  "description": "INSTANCE = specific organization (default), CATEGORY = must be resolved per context"
                 }
               }
             }

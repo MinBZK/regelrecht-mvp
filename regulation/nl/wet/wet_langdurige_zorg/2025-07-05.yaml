@@ -271,7 +271,6 @@ articles:
     machine_readable:
       competent_authority:
         name: CIZ
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -333,7 +332,6 @@ articles:
     machine_readable:
       competent_authority:
         name: Zorgkantoor
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -367,7 +365,6 @@ articles:
     machine_readable:
       competent_authority:
         name: Wlz-uitvoerder
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -401,7 +398,6 @@ articles:
     machine_readable:
       competent_authority:
         name: Zorgkantoor
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -426,7 +422,6 @@ articles:
     machine_readable:
       competent_authority:
         name: Zorginstituut Nederland
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -450,7 +445,6 @@ articles:
     machine_readable:
       competent_authority:
         name: CAK
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag
@@ -474,7 +468,6 @@ articles:
     machine_readable:
       competent_authority:
         name: CIZ
-        type: INSTANCE
       execution:
         output:
           - name: bevoegd_gezag

@@ -45,15 +45,14 @@ Define `competent_authority` at the **article level** (in `machine_readable`), n
 
 `competent_authority` is an object with:
 - `name`: name of the authority (required)
-- `type`: enum `INSTANCE` or `CATEGORY` (required)
+- `type`: enum `INSTANCE` or `CATEGORY` (optional, defaults to `INSTANCE`)
 
 ```yaml
-# Specific authority (instance)
+# Specific authority (instance) - type can be omitted
 competent_authority:
   name: "Dienst Toeslagen"
-  type: INSTANCE
 
-# Categorical authority
+# Categorical authority - type must be explicit
 competent_authority:
   name: "college van burgemeester en wethouders"
   type: CATEGORY
@@ -82,8 +81,8 @@ competent_authority:
 
 ## Open Questions
 
-- When do we need identifiers, and which system to use?
 - How to handle mandaat/delegatie (authority delegation)?
+- How to handle `#` references for `competent_authority`? When `competent_authority: '#bevoegd_gezag'` references an output, the `type` (INSTANCE/CATEGORY) must be specified separately. This is awkward because the type isn't part of the law being modeled - it's metadata we're adding.
 
 ## References
 

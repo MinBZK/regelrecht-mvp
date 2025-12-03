@@ -1,6 +1,6 @@
 # RFC-001: YAML Schema Design Decisions
 
-**Status:** Draft
+**Status:** Proposed
 **Date:** 2025-11-20
 **Authors:** regelrecht-mvp team
 
