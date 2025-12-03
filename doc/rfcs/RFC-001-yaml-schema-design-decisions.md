@@ -16,7 +16,7 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 - No separate endpoint definition needed - every output is an endpoint
 - **Naming pattern:** `^[a-z0-9_]+$` (e.g., `toetsingsinkomen`)
 
-### 2. Article Text Format: Use Markdown with `|` Style
+### 2. Article Text Format: Use Markdown with `|-` Style
 
 - **Format:** Article `text` field uses markdown to preserve original law formatting
 - **YAML Style:** Use `|-` (literal block scalar) for multiline text
@@ -30,14 +30,14 @@ As we stabilize the YAML schema (issue #7), we need to document small design dec
 
 ### 3. Preamble Structure: Include Aanhef Section
 
-- **Structure:** Add optional `preamble` object with `text` and `url` fields
+- **Structure:** Preamble behaves as an article, including optional `machine_readable` section
 - **Format:** Markdown text preserving original formatting from official publication
-- **Content:** Complete preamble/aanhef text that appears before Article 1 in the source document
+- **Content:** Complete preamble/aanhef text as it appears in the source document
 - **Location:** Between metadata and articles section
 
-### 4. POC v0.1.6 Service Discovery Fields Migration
+### 4. POC v0.1.6 Regulation Discovery Fields Migration
 
-The POC v0.1.6 schema had several top-level "service discovery" fields. This section documents how each is handled in v0.2.0:
+The POC v0.1.6 schema had several top-level "regulation discovery" fields. This section documents how each is handled in v0.2.0:
 
 | POC v0.1.6 Field | v0.2.0 Status | Notes |
 |------------------|---------------|-------|
@@ -63,14 +63,49 @@ This raises the question: should `produces` be an array to support multiple dist
 
 **Alternative:** Move `produces` to action level instead of execution level. This way, different actions within one execution can produce different legal outcomes without needing multiple executions.
 
-### 5. UUID Field: Removed
+### 5. Metadata Field Migrations
+
+POC v0.1.6 had several top-level metadata fields. This section documents how each is handled in v0.2.0:
+
+| POC v0.1.6 Field | v0.2.0 Status | Notes |
+|------------------|---------------|-------|
+| `name` (top-level) | **Kept** | Now supports plain text or internal `#` reference |
+| `name` (in fields) | **Kept** | Still used in `baseField` for field names (parameters, input, output) |
+| `law` | **Removed** | Replaced by `bwb_id` + `officiele_titel` for proper identification |
+| `description` | **Removed** | Article `text` field is self-describing |
+| `valid_from` | **Kept** | Inwerkingtredingsdatum (when law becomes effective) |
+| - | **Added** `publication_date` | Publicatiedatum (when law was published) |
+| `references` | **Replaced** by `requires` | Now in `machineReadableSection` with structured format |
+| `legal_basis` (top-level) | **Replaced** by `grondslag` | New array structure: `[{law_id, article, description}]` |
+
+### 6. Reference and Variable Notation
+
+Two prefix conventions distinguish input from output references:
+
+**`$` prefix - References to input (what you read):**
+- Parameters: `$bsn`
+- Input fields: `$leeftijd_op_verkiezingsdatum`
+- Definitions: `$MINIMUM_LEEFTIJD`
+
+Used in execution context (actions, conditions, source parameters).
+
+**`#` prefix - References to output (what is produced):**
+- References named outputs within the same law
+- Used in metadata fields like `name` and `competent_authority`
+- Example: `name: '#wet_naam'` or `competent_authority: '#bevoegd_gezag'`
+
+**Reason:** Make properties traceable to the source.
+
+This is a convention, not enforced by the schema.
+
+### 7. UUID Field: Removed
 
 - **POC v0.1.6:** Required UUIDv4 field at top level
 - **v0.2.0:** Removed
 
 **Rationale:** No clear purpose identified. Can be reintroduced when a concrete use case emerges (e.g., signature hashes, content verification).
 
-### 6. Temporal Specifications
+### 8. Temporal Specifications
 
 Field values can have temporal metadata describing how they relate to time.
 
@@ -94,60 +129,9 @@ temporal:
 
 POC v0.1.6 had `immutable_after: "P2Y"` to indicate when values become final (e.g., herzieningstermijn). This is removed because immutability/finality should be modeled as explicit rules in laws (e.g., AWIR).
 
-### 7. Article Numbering: Free-Form
+### 9. Input Source Consolidation
 
-- **Field:** `articles[].number` is a free-form string
-- **No separate identifier needed** - `number` serves as both display name and identifier
-
-**Rationale:** Laws have varying article structures:
-- Simple: "1", "2", "3"
-- With paragraphs: "2.1", "2.2"
-- Nested: "1.1.1", "2.1.3", "14.1.1"
-- With letters: "2a", "2.1.a"
-
-By keeping `number` free-form:
-- Authors can model at any granularity (whole article, per lid, per onderdeel)
-- No schema changes needed for different law structures
-- Formatting conventions can be agreed on separately if needed
-
-### 8. Metadata Field Migrations
-
-POC v0.1.6 had several top-level metadata fields. This section documents how each is handled in v0.2.0:
-
-| POC v0.1.6 Field | v0.2.0 Status | Notes |
-|------------------|---------------|-------|
-| `name` (top-level) | **Kept** | Now supports plain text or internal `#` reference |
-| `name` (in fields) | **Kept** | Still used in `baseField` for field names (parameters, input, output) |
-| `law` | **Removed** | Replaced by `bwb_id` + `officiele_titel` for proper identification |
-| `description` | **Removed** | Article `text` field is self-describing |
-| `valid_from` | **Kept** | Inwerkingtredingsdatum (when law becomes effective) |
-| - | **Added** `publication_date` | Publicatiedatum (when law was published) |
-| `references` | **Replaced** by `requires` | Now in `machineReadableSection` with structured format |
-| `legal_basis` (top-level) | **Replaced** by `grondslag` | New array structure: `[{law_id, article, description}]` |
-
-**Note on internal references (`#` notation):**
-
-String fields like `name` and `competent_authority` support both plain text and internal references:
-- Plain text: `name: "Zorgverzekeringswet"` or `competent_authority: "Minister van VWS"`
-- Internal reference: `name: '#wet_naam'` or `competent_authority: '#2_1_3_bevoegd_gezag'`
-
-The `#` prefix indicates a reference to a named output within the same law. This is a convention, not enforced by the schema.
-
-### 9. Definition Consolidation
-
-Several v0.1.6 definitions were consolidated or simplified in v0.2.0:
-
-| POC v0.1.6 Definition | v0.2.0 Status | Notes |
-|-----------------------|---------------|-------|
-| `sourceField` | **Merged** into `inputField` | Input sources now use `source.regulation` + `source.field` |
-| `sourceReference` | **Simplified** | Database/table details removed; external sources use `source.field` without `regulation` |
-| `serviceReference` | **Removed** | Cross-law calls use `source.regulation` + `source.field` |
-| `valueOperation` | **Merged** into `operation` | Single operation definition handles all value operations |
-| `requirement` (all/any/or) | **Removed** | Replaced by `operation` with `AND`/`OR`/`NOT` operators |
-
-**Why simplify input sources?**
-
-The v0.1.6 schema had three separate mechanisms for input:
+The v0.1.6 schema had two separate mechanisms for external input:
 - `sourceField` with `sourceReference` (database lookups)
 - `inputField` with `serviceReference` (cross-law calls)
 
@@ -179,38 +163,29 @@ source:
 - `parameters` (optional): Parameters to pass when calling the source (e.g., `bsn: $bsn`)
 - `description` (optional): Human-readable description or legal reference
 
-All regulations (wetten, ministeriele regelingen, etc.) are referenced by their unique name. The type distinction (wet vs regeling) is not needed in the reference - it comes from the regulation's own `regulatory_layer` field.
+### 10. Article Numbering: Free-Form
 
-**Why remove requirement definition?**
+- **Field:** `articles[].number` is a free-form string
+- **No separate identifier needed** - `number` serves as both display name and identifier
 
-The v0.1.6 `requirement` definition supported `all`, `any`, and `or` combinators:
-```yaml
-# v0.1.6 requirement
-all:
-  - operation: EQUALS
-    subject: $age
-    value: 18
-  - operation: GREATER_THAN
-    subject: $income
-    value: 0
-```
+**Rationale:** Laws have varying article structures:
+- Simple: "1", "2", "3"
+- With paragraphs: "2.1", "2.2"
+- Nested: "1.1.1", "2.1.3", "14.1.1"
+- With letters: "2a", "2.1.a"
 
-In v0.2.0, this is handled by the `operation` definition with logical operators:
-```yaml
-# v0.2.0 operation
-operation: AND
-values:
-  - operation: EQUALS
-    subject: $age
-    value: 18
-  - operation: GREATER_THAN
-    subject: $income
-    value: 0
-```
+By keeping `number` free-form:
+- Authors can model at any granularity (whole article, per lid, per onderdeel)
+- No schema changes needed for different law structures
+- Formatting conventions can be agreed on separately if needed
 
-This reduces schema complexity while maintaining full expressiveness.
+### 11. Removal of Requirement Property
 
-### 10. Operation and Type Changes
+The v0.1.6 `requirements` property is removed in v0.2.0.
+
+**Reason:** Obsolete - requirements can be inferred from actions during execution.
+
+### 12. Operation and Type Changes
 
 Minor changes to operations and types between v0.1.6 and v0.2.0:
 
