@@ -103,17 +103,17 @@ articles:
             type: boolean
             source:
               regulation: wet_basisregistratie_personen
-              field: is_ingezetene
+              output: is_ingezetene
           - name: betaalt_loonbelasting_nederland
             type: boolean
             source:
               regulation: wet_inkomstenbelasting_2001
-              field: betaalt_loonbelasting
+              output: betaalt_loonbelasting
           - name: heeft_rechtmatig_verblijf
             type: boolean
             source:
               regulation: vreemdelingenwet_2000
-              field: heeft_rechtmatig_verblijf
+              output: heeft_rechtmatig_verblijf
         output:
           - name: is_verzekerd_wlz
             type: boolean
@@ -150,17 +150,17 @@ articles:
           - name: is_verzekerd_basis
             type: boolean
             source:
-              field: is_verzekerd_wlz
+              output: is_verzekerd_wlz
           - name: verzekerd_via_verdrag
             type: boolean
             source:
               regulation: externe_bron
-              field: verzekerd_via_verdrag
+              output: verzekerd_via_verdrag
           - name: wetgeving_andere_mogendheid
             type: boolean
             source:
               regulation: externe_bron
-              field: wetgeving_andere_mogendheid
+              output: wetgeving_andere_mogendheid
         output:
           - name: is_verzekerd_wlz_inclusief_verdrag
             type: boolean

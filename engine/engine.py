@@ -342,8 +342,8 @@ class ArticleEngine:
         """
         Evaluate a resolve action - find and call a law/regulation matching criteria
 
-        This uses grondslag-based resolution: it finds regelingen that explicitly
-        declare the current article as their legal basis (grondslag).
+        This uses legal_basis-based resolution: it finds regelingen that explicitly
+        declare the current article as their legal basis.
 
         Args:
             resolve_spec: Resolve specification with:
@@ -360,31 +360,31 @@ class ArticleEngine:
         match_criteria = resolve_spec.get("match", {})
 
         logger.debug(
-            f"Resolving from grondslag: type={resolve_type}, current_law={self.law.id}, "
+            f"Resolving from legal_basis: type={resolve_type}, current_law={self.law.id}, "
             f"current_article={self.article.number}, output={output_field}, match={match_criteria}"
         )
 
-        # Find regelingen that have this article as their grondslag
+        # Find regelingen that have this article as their legal_basis
         # Access the rule_resolver through the service_provider
         if not hasattr(context.service_provider, "rule_resolver"):
             logger.error("Service provider does not have rule_resolver")
             return None
 
         regelingen = (
-            context.service_provider.rule_resolver.find_regelingen_by_grondslag(
+            context.service_provider.rule_resolver.find_regelingen_by_legal_basis(
                 law_id=self.law.id, article=self.article.number
             )
         )
 
         if not regelingen:
             logger.warning(
-                f"No regelingen found with grondslag {self.law.id} article {self.article.number}"
+                f"No regelingen found with legal_basis {self.law.id} article {self.article.number}"
             )
             return None
 
         regeling_ids = [law.id for law in regelingen]
         logger.debug(
-            f"Found {len(regelingen)} regelingen with matching grondslag: {regeling_ids}"
+            f"Found {len(regelingen)} regelingen with matching legal_basis: {regeling_ids}"
         )
 
         # Evaluate expected match value if it's a variable reference

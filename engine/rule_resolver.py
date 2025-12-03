@@ -27,7 +27,7 @@ class RuleResolver:
         self.regulation_dir = Path(regulation_dir)
         self._law_registry: dict[str, ArticleBasedLaw] = {}
         self._endpoint_index: dict[tuple[str, str], Article] = {}
-        self._grondslag_index: dict[
+        self._legal_basis_index: dict[
             tuple[str, str], list[ArticleBasedLaw]
         ] = {}  # (law_id, article) -> [regelingen]
         self._yaml_cache: dict[str, dict] = {}
@@ -87,30 +87,30 @@ class RuleResolver:
                 )
             self._endpoint_index[key] = article
 
-        # Index by grondslag if present (all regulatory layers)
-        if "grondslag" in yaml_data:
-            grondslag_data = yaml_data["grondslag"]
+        # Index by legal_basis if present (all regulatory layers)
+        if "legal_basis" in yaml_data:
+            legal_basis_data = yaml_data["legal_basis"]
 
-            # Support both single grondslag (dict) and multiple grondslag (list)
-            grondslag_list = []
-            if isinstance(grondslag_data, dict):
-                # Single grondslag - convert to list
-                grondslag_list = [grondslag_data]
-            elif isinstance(grondslag_data, list):
-                # Multiple grondslag - use as is
-                grondslag_list = grondslag_data
+            # Support both single legal_basis (dict) and multiple legal_basis (list)
+            legal_basis_list = []
+            if isinstance(legal_basis_data, dict):
+                # Single legal_basis - convert to list
+                legal_basis_list = [legal_basis_data]
+            elif isinstance(legal_basis_data, list):
+                # Multiple legal_basis - use as is
+                legal_basis_list = legal_basis_data
 
-            # Index each grondslag entry
-            for grondslag in grondslag_list:
+            # Index each legal_basis entry
+            for legal_basis in legal_basis_list:
                 if (
-                    isinstance(grondslag, dict)
-                    and "law_id" in grondslag
-                    and "article" in grondslag
+                    isinstance(legal_basis, dict)
+                    and "law_id" in legal_basis
+                    and "article" in legal_basis
                 ):
-                    grondslag_key = (grondslag["law_id"], grondslag["article"])
-                    if grondslag_key not in self._grondslag_index:
-                        self._grondslag_index[grondslag_key] = []
-                    self._grondslag_index[grondslag_key].append(law)
+                    basis_key = (legal_basis["law_id"], legal_basis["article"])
+                    if basis_key not in self._legal_basis_index:
+                        self._legal_basis_index[basis_key] = []
+                    self._legal_basis_index[basis_key].append(law)
 
     def _load_yaml(self, file_path: Path) -> dict:
         """Load YAML file with caching"""
@@ -189,11 +189,11 @@ class RuleResolver:
         """Get number of loaded laws"""
         return len(self._law_registry)
 
-    def find_regelingen_by_grondslag(
+    def find_regelingen_by_legal_basis(
         self, law_id: str, article: str
     ) -> list[ArticleBasedLaw]:
         """
-        Find ministeriele regelingen that declare a specific law article as their grondslag
+        Find ministeriele regelingen that declare a specific law article as their legal basis
 
         All law types are indexed, but only ministeriele regelingen
         (regulatory_layer == "MINISTERIELE_REGELING") are returned.
@@ -203,10 +203,10 @@ class RuleResolver:
             article: The article number (e.g., "4")
 
         Returns:
-            List of ministeriele regeling ArticleBasedLaw objects with this grondslag
+            List of ministeriele regeling ArticleBasedLaw objects with this legal basis
         """
-        grondslag_key = (law_id, article)
-        all_laws = self._grondslag_index.get(grondslag_key, [])
+        basis_key = (law_id, article)
+        all_laws = self._legal_basis_index.get(basis_key, [])
         # Filter to only return ministeriele regelingen
         return [
             law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"

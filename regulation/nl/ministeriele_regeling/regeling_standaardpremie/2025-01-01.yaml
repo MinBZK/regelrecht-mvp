@@ -9,7 +9,7 @@ url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
 name: '#wet_naam'
 competent_authority:
   name: Minister van Volksgezondheid, Welzijn en Sport
-grondslag:
+legal_basis:
   - law_id: zorgtoeslagwet
     article: '4'
   - law_id: zorgverzekeringswet

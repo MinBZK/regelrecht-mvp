@@ -76,7 +76,7 @@ POC v0.1.6 had several top-level metadata fields. This section documents how eac
 | `valid_from` | **Kept** | Inwerkingtredingsdatum (when law becomes effective) |
 | - | **Added** `publication_date` | Publicatiedatum (when law was published) |
 | `references` | **Replaced** by `requires` | Now in `machineReadableSection` with structured format |
-| `legal_basis` (top-level) | **Replaced** by `grondslag` | New array structure: `[{law_id, article, description}]` |
+| `legal_basis` (top-level) | **Kept** | Array structure: `[{law_id, article, description}]` |
 
 ### 6. Reference and Variable Notation
 
@@ -140,25 +140,25 @@ In v0.2.0, all inputs use `inputField.source` with a unified format:
 # Reference to another law or regulation (with parameters)
 source:
   regulation: wet_basisregistratie_personen
-  field: leeftijd
+  output: leeftijd
   parameters:
     bsn: $bsn
   description: "Leeftijd conform BRP"
 
 # Internal reference (within same law, regulation is omitted)
 source:
-  field: vermogen_onder_grens
+  output: vermogen_onder_grens
 
 # External data source (no regulation - must be resolved outside YAML)
 source:
-  field: verkiezingsdatum_tweede_kamer
+  output: verkiezingsdatum_tweede_kamer
   parameters:
     bsn: $bsn
   description: "Datum van de Tweede Kamerverkiezingen"
 ```
 
 **Source properties:**
-- `field` (required): Technical field identifier
+- `output` (required): Output name to retrieve from the source
 - `regulation` (optional): Name of external law/regulation. If omitted, it's either an internal reference or an external data source that must be resolved outside the YAML.
 - `parameters` (optional): Parameters to pass when calling the source (e.g., `bsn: $bsn`)
 - `description` (optional): Human-readable description or legal reference

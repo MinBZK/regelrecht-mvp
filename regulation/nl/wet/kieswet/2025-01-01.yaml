@@ -35,13 +35,13 @@ articles:
           - name: verkiezingsdatum
             type: date
             source:
-              field: verkiezingsdatum_tweede_kamer
+              output: verkiezingsdatum_tweede_kamer
               description: Datum van de Tweede Kamerverkiezingen
           - name: leeftijd_op_verkiezingsdatum
             type: number
             source:
               regulation: wet_basisregistratie_personen
-              field: leeftijd
+              output: leeftijd
               parameters:
                 bsn: $bsn
               description: Leeftijd op de dag van de stemming conform art. B1 lid 1
@@ -49,14 +49,14 @@ articles:
             type: boolean
             source:
               regulation: wet_basisregistratie_personen
-              field: heeft_nederlandse_nationaliteit
+              output: heeft_nederlandse_nationaliteit
               parameters:
                 bsn: $bsn
               description: Nationaliteit op de dag van de kandidaatstelling conform art. B1 lid 1
           - name: heeft_kiesrecht_uitsluiting
             type: boolean
             source:
-              field: kiesrecht_uitsluiting
+              output: kiesrecht_uitsluiting
               parameters:
                 bsn: $bsn
               description: Uitsluiting van kiesrecht door rechterlijke uitspraak (art. B5 Kieswet)

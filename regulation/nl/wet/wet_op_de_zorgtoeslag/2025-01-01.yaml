@@ -77,37 +77,37 @@ articles:
             type: number
             source:
               regulation: wet_basisregistratie_personen
-              field: leeftijd
+              output: leeftijd
           - name: is_verzekerde
             type: boolean
             source:
               regulation: zorgverzekeringswet
-              field: is_verzekerd
+              output: is_verzekerd
           - name: heeft_toeslagpartner
             type: boolean
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
-              field: heeft_toeslagpartner
+              output: heeft_toeslagpartner
           # NB: Wet zorgtoeslag art. 1 verwijst direct naar WIB 2001 art. 2.18 voor toetsingsinkomen.
           # AWIR als bron is een indirecte aanname (AWIR verwijst ook naar WIB 2001 art. 2.18).
           - name: toetsingsinkomen
             type: amount
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
-              field: toetsingsinkomen
+              output: toetsingsinkomen
             type_spec:
               unit: eurocent
           - name: standaardpremie
             type: amount
             source:
               regulation: regeling_standaardpremie
-              field: standaardpremie
+              output: standaardpremie
             type_spec:
               unit: eurocent
           - name: vermogen_onder_grens
             type: boolean
             source:
-              field: vermogen_onder_grens
+              output: vermogen_onder_grens
         output:
           - name: heeft_recht_op_zorgtoeslag
             type: boolean
@@ -202,14 +202,14 @@ articles:
             type: amount
             source:
               regulation: wet_inkomstenbelasting_2001
-              field: rendementsgrondslag
+              output: rendementsgrondslag
             type_spec:
               unit: eurocent
           - name: heeft_toeslagpartner
             type: boolean
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
-              field: heeft_toeslagpartner
+              output: heeft_toeslagpartner
         output:
           - name: vermogen_onder_grens
             type: boolean

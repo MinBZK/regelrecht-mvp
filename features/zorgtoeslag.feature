@@ -3,7 +3,7 @@ Feature: Healthcare allowance calculation
   I want to know if I am entitled to healthcare allowance
   So that I can reduce my healthcare costs
 
-  # Temporary: Test Article 4 grondslag-based resolution
+  # Temporary: Test Article 4 legal_basis-based resolution
   # This scenario should be removed once Article 2 uses Article 4 internally
   Scenario: Get standard premium from Article 4 for 2025
     When I request the standard premium for year 2025

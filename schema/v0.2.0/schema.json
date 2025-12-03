@@ -91,7 +91,7 @@
       "type": "string",
       "description": "Organization responsible (for implementation policies without official IDs)"
     },
-    "grondslag": {
+    "legal_basis": {
       "type": "array",
       "description": "Legal basis - articles from higher-level laws that authorize this regulation",
       "items": {
@@ -389,15 +389,15 @@
             "source": {
               "type": "object",
               "description": "Reference to where this input comes from",
-              "required": ["field"],
+              "required": ["output"],
               "properties": {
                 "regulation": {
                   "type": "string",
                   "description": "Name of external law/regulation. Omit for external data sources that must be resolved outside the YAML."
                 },
-                "field": {
+                "output": {
                   "type": "string",
-                  "description": "Field name to retrieve"
+                  "description": "Output name to retrieve from the source"
                 },
                 "parameters": {
                   "type": "object",
@@ -580,7 +580,7 @@
         },
         "resolve": {
           "type": "object",
-          "description": "Resolve output from ministeriele regeling based on grondslag",
+          "description": "Resolve output from ministeriele regeling based on legal_basis",
           "required": [
             "type",
             "output"
