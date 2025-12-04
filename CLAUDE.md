@@ -172,6 +172,24 @@ Write an RFC for:
 4. Create PR for discussion
 5. Update Status to "Accepted" once approved
 
+## Code Reviews
+
+After completing significant code changes (new features, refactors, bug fixes), proactively use the `code-reviewer` skill to review the changes before committing.
+
+**Important:** Run the code review in a subagent using the Task tool with `subagent_type: "general-purpose"`. This keeps the review isolated and returns a summary to the main conversation.
+
+Example prompt for the subagent:
+```
+Review the code changes in the current working directory using the code-reviewer skill.
+Focus on: {specific areas if relevant}
+Return: verdict, critical/important issues, and recommendations.
+```
+
+This ensures:
+- Critical issues are caught before committing
+- Reviews don't clutter the main conversation
+- You get a structured summary of findings
+
 ## Technology Stack
 
 - **Language**: Python 3.12+

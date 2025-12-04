@@ -4,7 +4,7 @@ $id: kieswet
 uuid: 96d926a0-b45f-4cf3-92af-01b167221a00
 regulatory_layer: WET
 publication_date: '2024-01-01'
-effective_date: '2025-01-01'
+valid_from: '2025-01-01'
 bwb_id: BWBR0004627
 url: https://wetten.overheid.nl/BWBR0004627/2025-02-12
 name: Kieswet

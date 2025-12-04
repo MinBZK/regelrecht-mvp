@@ -323,16 +323,16 @@ class ArticleEngine:
     def _evaluate_logical(self, operation: dict, context: RuleContext) -> bool:
         """Evaluate logical operation (AND, OR)"""
         op_type = operation["operation"]
-        conditions = operation.get("conditions", [])
+        values = operation.get("values", [])
 
         if op_type == "AND":
-            for condition in conditions:
-                if not self._evaluate_operation(condition, context):
+            for value in values:
+                if not self._evaluate_operation(value, context):
                     return False
             return True
         elif op_type == "OR":
-            for condition in conditions:
-                if self._evaluate_operation(condition, context):
+            for value in values:
+                if self._evaluate_operation(value, context):
                     return True
             return False
 

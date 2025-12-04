@@ -3,7 +3,7 @@ $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/mai
 $id: wet_inkomstenbelasting_2001
 regulatory_layer: WET
 publication_date: '2001-12-15'
-effective_date: '2025-01-01'
+valid_from: '2025-01-01'
 bwb_id: BWBR0011353
 url: https://wetten.overheid.nl/BWBR0011353/2025-01-01
 name: Wet inkomstenbelasting 2001

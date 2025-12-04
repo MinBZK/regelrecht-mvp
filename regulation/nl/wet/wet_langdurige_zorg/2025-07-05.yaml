@@ -3,7 +3,7 @@ $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/mai
 $id: wet_langdurige_zorg
 regulatory_layer: WET
 publication_date: '2014-12-12'
-effective_date: '2025-07-05'
+valid_from: '2025-07-05'
 bwb_id: BWBR0035917
 url: https://wetten.overheid.nl/BWBR0035917/2025-07-05
 name: '#wet_naam'

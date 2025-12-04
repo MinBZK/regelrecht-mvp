@@ -67,7 +67,7 @@ class ArticleBasedLaw:
         self.uuid = yaml_data["uuid"]
         self.regulatory_layer = yaml_data["regulatory_layer"]
         self.publication_date = yaml_data["publication_date"]
-        self.effective_date = yaml_data.get("effective_date")
+        self.valid_from = yaml_data.get("valid_from")
         self.name = yaml_data.get("name")
         self.competent_authority = yaml_data.get("competent_authority")
         self.bwb_id = yaml_data.get("bwb_id")
