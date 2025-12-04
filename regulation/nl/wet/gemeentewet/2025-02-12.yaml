@@ -1,0 +1,94 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$id: gemeentewet
+regulatory_layer: WET
+publication_date: '1992-03-12'
+effective_date: '2025-02-12'
+bwb_id: BWBR0005416
+url: https://wetten.overheid.nl/BWBR0005416/2025-02-12
+name: Gemeentewet
+articles:
+  - number: 228a
+    text: |-
+      1. Onder de naam rioolheffing kan een belasting worden geheven ter bestrijding van de kosten
+      die voor de gemeente verbonden zijn aan:
+      a. de inzameling en het transport van huishoudelijk afvalwater en bedrijfsafvalwater, alsmede
+      de zuivering van huishoudelijk afvalwater en
+      b. de inzameling van afvloeiend hemelwater en de verwerking van het ingezamelde hemelwater,
+      alsmede het treffen van maatregelen teneinde structureel nadelige gevolgen van de
+      grondwaterstand voor de aan de grond gegeven bestemming zoveel mogelijk te voorkomen of
+      te beperken.
+
+      2. Ter zake van de kosten, bedoeld in het eerste lid, onderdelen a en b, kunnen twee
+      afzonderlijke belastingen worden geheven.
+
+      3. Onder de kosten, bedoeld in het eerste lid, wordt mede verstaan de omzetbelasting die als
+      gevolg van de Wet op het BTW-compensatiefonds recht geeft op een bijdrage uit dat fonds.
+    url: https://wetten.overheid.nl/BWBR0005416/2025-02-12#TiteldeelIV_HoofdstukXV_Paragraaf3_Artikel228a
+    machine_readable:
+      enables:
+        - regulatory_layer: GEMEENTELIJKE_VERORDENING
+          subject: rioolheffing
+  - number: '229'
+    text: |-
+      1. Rechten kunnen worden geheven ter zake van:
+      a. het gebruik overeenkomstig de bestemming van voor de openbare dienst bestemde
+      gemeentebezittingen of van voor de openbare dienst bestemde werken of inrichtingen die
+      bij de gemeente in beheer of in onderhoud zijn;
+      b. het genot van door of vanwege het gemeentebestuur verstrekte diensten;
+      c. het geven van vermakelijkheden waarbij gebruik wordt gemaakt van door of met medewerking
+      van het gemeentebestuur tot stand gebrachte of in stand gehouden voorzieningen of waarbij
+      een bijzondere voorziening in de vorm van toezicht of anderszins van de zijde van het
+      gemeentebestuur getroffen wordt.
+
+      2. Geen rechten kunnen worden geheven ter zake van het gebruik van voorzieningen en het
+      genot van diensten waarvan de kosten kunnen worden bestreden door het heffen van een
+      belasting als bedoeld in artikel 228a, zulks met uitzondering van het aanbrengen van een
+      aansluiting op een voorziening voor de inzameling en het transport van stedelijk afvalwater
+      als bedoeld in artikel 2.16, eerste lid, onder a, onder 3°, van de Omgevingswet of op een
+      ander passend systeem als bedoeld in artikel 2.16, derde lid, van de Omgevingswet.
+
+      3. Voor de toepassing van deze paragraaf en de eerste en vierde paragraaf van dit hoofdstuk
+      worden de in het eerste lid bedoelde rechten aangemerkt als gemeentelijke belastingen.
+    url: https://wetten.overheid.nl/BWBR0005416/2025-02-12#TiteldeelIV_HoofdstukXV_Paragraaf3_Artikel229
+  - number: 229b
+    text: |-
+      1. In verordeningen op grond waarvan rechten als bedoeld in artikel 229, eerste lid, onder a
+      en b, worden geheven, worden de tarieven zodanig vastgesteld dat de geraamde baten van de
+      rechten niet uitgaan boven de geraamde lasten ter zake.
+
+      2. Onder de in het eerste lid bedoelde lasten worden mede verstaan:
+      a. bijdragen aan bestemmingsreserves en voorzieningen voor noodzakelijke vervanging van de
+      betrokken activa;
+      b. de omzetbelasting die ingevolge de Wet op het BTW-compensatiefonds recht geeft op een
+      bijdrage uit het fonds.
+    url: https://wetten.overheid.nl/BWBR0005416/2025-02-12#TiteldeelIV_HoofdstukXV_Paragraaf3_Artikel229b
+    machine_readable:
+      # Kostendekkingslimiet: tarieven mogen niet meer opbrengen dan de kosten
+      execution:
+        parameters:
+          - name: geraamde_baten
+            type: amount
+            required: true
+            description: Geraamde opbrengsten van de rechten
+            type_spec:
+              unit: eurocent
+          - name: geraamde_lasten
+            type: amount
+            required: true
+            description: Geraamde kosten inclusief reserves en BTW-compensatie
+            type_spec:
+              unit: eurocent
+        output:
+          - name: tarieven_rechtmatig
+            type: boolean
+            description: Tarieven voldoen aan kostendekkingslimiet (baten <= lasten)
+        actions:
+          - output: tarieven_rechtmatig
+            conditions:
+              - test:
+                  operation: LESS_THAN_OR_EQUAL
+                  subject: $geraamde_baten
+                  value: $geraamde_lasten
+                then: true
+                else: false
