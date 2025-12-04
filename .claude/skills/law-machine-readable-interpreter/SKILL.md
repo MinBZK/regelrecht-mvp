@@ -522,13 +522,27 @@ For each article that needs a `machine_readable` section:
 3. Add comments for TODOs and clarifications
 4. Convert all monetary amounts to eurocent
 
-### Step 13: Validate Against Schema
+### Step 13: Validate Against Schema and Lint
 
 Before reporting, validate the updated YAML:
 
+**Step 13a: Run YAML linting**
+```bash
+uv run yamllint {LAW_FILE_PATH}
+```
+
+This checks for:
+- Line length (max 125 chars - wrap long text!)
+- Proper indentation
+- Quote usage
+- YAML formatting
+
+**Step 13b: Run schema validation**
 ```bash
 uv run python script/validate.py {LAW_FILE_PATH}
 ```
+
+This validates against the JSON schema.
 
 **If validation fails:**
 - Review schema errors carefully
@@ -538,7 +552,7 @@ uv run python script/validate.py {LAW_FILE_PATH}
   - Missing required fields in parameters/input/output
   - Incorrect nesting or indentation
 - Fix errors and re-validate
-- Continue until validation passes
+- Continue until both lint and validation pass
 
 ### Step 14: Reverse Validation (Hallucination Check)
 
