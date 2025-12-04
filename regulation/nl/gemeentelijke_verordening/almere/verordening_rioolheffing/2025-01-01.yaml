@@ -1,0 +1,114 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$id: verordening_rioolheffing_almere_2025
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2024-11-28'
+effective_date: '2025-01-01'
+gemeente_code: GM0034
+officiele_titel: Verordening op de heffing en invordering van rioolheffing 2025
+url: https://lokaleregelgeving.overheid.nl/CVDR732594
+name: Verordening rioolheffing 2025
+legal_basis:
+  - law_id: gemeentewet
+    article: 228a
+articles:
+  - number: '1'
+    text: |-
+      Begripsomschrijvingen
+
+      In deze verordening wordt verstaan onder:
+      a. perceel: een roerende of onroerende zaak of een zelfstandig gedeelte daarvan;
+      b. gemeentelijke riolering: een voorziening of combinatie van voorzieningen voor
+      inzameling, verwerking, zuivering of transport van afvalwater, hemelwater of grondwater,
+      in eigendom, beheer of onderhoud bij de gemeente;
+      c. water: huishoudelijk afvalwater, bedrijfsafvalwater, hemelwater of grondwater.
+    url: https://lokaleregelgeving.overheid.nl/CVDR732594#Artikel1
+  - number: '2'
+    text: |-
+      Aard van de belasting
+
+      Onder de naam rioolheffing wordt een directe belasting geheven ter bestrijding van de
+      kosten die voor de gemeente verbonden zijn aan:
+      a. de inzameling en het transport van huishoudelijk afvalwater en bedrijfsafvalwater,
+      alsmede de zuivering van huishoudelijk afvalwater; en
+      b. de inzameling van afvloeiend hemelwater en de verwerking van het ingezamelde
+      hemelwater, alsmede het treffen van maatregelen teneinde structureel nadelige gevolgen
+      van de grondwaterstand voor de aan de grond gegeven bestemming zoveel mogelijk te
+      voorkomen of te beperken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR732594#Artikel2
+  - number: '3'
+    text: |-
+      Belastbaar feit en belastingplicht
+
+      De belasting wordt geheven van degene die bij het begin van het belastingjaar het genot
+      heeft krachtens eigendom, bezit of beperkt recht van een perceel dat direct of indirect
+      is aangesloten op de gemeentelijke riolering.
+    url: https://lokaleregelgeving.overheid.nl/CVDR732594#Artikel3
+  - number: '5'
+    text: |-
+      Maatstaf van heffing
+
+      De belasting wordt geheven naar een vast bedrag per perceel.
+    url: https://lokaleregelgeving.overheid.nl/CVDR732594#Artikel5
+  - number: '6'
+    text: |-
+      Tarief
+
+      De belasting bedraagt per perceel per belastingjaar EUR 249,18.
+    url: https://lokaleregelgeving.overheid.nl/CVDR732594#Artikel6
+    machine_readable:
+      definitions:
+        TARIEF:
+          value: 24918
+          description: Tarief per perceel per jaar in eurocent
+      execution:
+        output:
+          - name: rioolheffing_bedrag
+            type: amount
+            type_spec:
+              unit: eurocent
+            description: Verschuldigde rioolheffing in eurocent
+        actions:
+          - output: rioolheffing_bedrag
+            value: $TARIEF
+  - number: '9'
+    text: |-
+      Vrijstellingen
+
+      1. De belasting wordt niet geheven ter zake van percelen waarvan de WOZ-waarde niet
+      meer bedraagt dan EUR 40.000.
+      2. De belasting wordt niet geheven ter zake van percelen met een hemelwaterretentie-
+      voorziening met een capaciteit van ten minste 80 mm per vierkante meter.
+    url: https://lokaleregelgeving.overheid.nl/CVDR732594#Artikel9
+    machine_readable:
+      definitions:
+        WOZ_VRIJSTELLING_GRENS:
+          value: 4000000
+          description: WOZ-waarde grens voor vrijstelling in eurocent
+        HEMELWATER_RETENTIE_MINIMUM:
+          value: 80
+          description: Minimale hemelwaterretentie in mm/m2 voor vrijstelling
+      execution:
+        parameters:
+          - name: woz_waarde
+            type: amount
+            required: true
+            description: WOZ-waarde van het perceel
+          - name: hemelwater_retentie_capaciteit
+            type: number
+            required: false
+            description: Capaciteit hemelwaterretentie in mm/m2
+        output:
+          - name: is_vrijgesteld
+            type: boolean
+            description: Of het perceel is vrijgesteld van rioolheffing
+        actions:
+          - output: is_vrijgesteld
+            operation: OR
+            values:
+              - operation: LESS_THAN_OR_EQUAL
+                subject: $woz_waarde
+                value: $WOZ_VRIJSTELLING_GRENS
+              - operation: GREATER_THAN_OR_EQUAL
+                subject: $hemelwater_retentie_capaciteit
+                value: $HEMELWATER_RETENTIE_MINIMUM
