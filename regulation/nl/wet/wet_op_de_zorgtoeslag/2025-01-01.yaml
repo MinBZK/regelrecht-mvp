@@ -1,10 +1,9 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: zorgtoeslagwet
-uuid: 60e71675-38bc-4297-87ac-0c145613e481
 regulatory_layer: WET
 publication_date: '2024-12-20'
-effective_date: '2025-01-01'
+valid_from: '2025-01-01'
 bwb_id: BWBR0018451
 url: https://wetten.overheid.nl/BWBR0018451/2025-01-01
 name: '#wet_naam'
@@ -54,7 +53,6 @@ articles:
       weken voor de vaststelling aan beide kamers der Staten-Generaal.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2
     machine_readable:
-      endpoint: bereken_zorgtoeslag
       definitions:
         drempelinkomen_alleenstaande:
           value: 3971900
@@ -78,31 +76,38 @@ articles:
           - name: leeftijd
             type: number
             source:
-              article: wet_basisregistratie_personen.leeftijd
+              regulation: wet_basisregistratie_personen
+              output: leeftijd
           - name: is_verzekerde
             type: boolean
             source:
-              article: zorgverzekeringswet.is_verzekerd
+              regulation: zorgverzekeringswet
+              output: is_verzekerd
           - name: heeft_toeslagpartner
             type: boolean
             source:
-              article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
+              regulation: algemene_wet_inkomensafhankelijke_regelingen
+              output: heeft_toeslagpartner
+          # NB: Wet zorgtoeslag art. 1 verwijst direct naar WIB 2001 art. 2.18 voor toetsingsinkomen.
+          # AWIR als bron is een indirecte aanname (AWIR verwijst ook naar WIB 2001 art. 2.18).
           - name: toetsingsinkomen
             type: amount
             source:
-              article: algemene_wet_inkomensafhankelijke_regelingen.toetsingsinkomen
+              regulation: algemene_wet_inkomensafhankelijke_regelingen
+              output: toetsingsinkomen
             type_spec:
               unit: eurocent
           - name: standaardpremie
             type: amount
             source:
-              article: regeling_standaardpremie.standaardpremie
+              regulation: regeling_standaardpremie
+              output: standaardpremie
             type_spec:
               unit: eurocent
           - name: vermogen_onder_grens
             type: boolean
             source:
-              article: '#vermogen_onder_grens'
+              output: vermogen_onder_grens
         output:
           - name: heeft_recht_op_zorgtoeslag
             type: boolean
@@ -179,7 +184,6 @@ articles:
       verzekerde zonder toeslagpartner, onderscheidenlijk € 179.429 voor een verzekerde met een toeslagpartner.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3
     machine_readable:
-      endpoint: vermogen_onder_grens
       definitions:
         vermogensgrens_alleenstaand:
           value: 14189600
@@ -197,13 +201,15 @@ articles:
           - name: vermogen
             type: amount
             source:
-              article: wet_inkomstenbelasting_2001.rendementsgrondslag
+              regulation: wet_inkomstenbelasting_2001
+              output: rendementsgrondslag
             type_spec:
               unit: eurocent
           - name: heeft_toeslagpartner
             type: boolean
             source:
-              article: algemene_wet_inkomensafhankelijke_regelingen.heeft_toeslagpartner
+              regulation: algemene_wet_inkomensafhankelijke_regelingen
+              output: heeft_toeslagpartner
         output:
           - name: vermogen_onder_grens
             type: boolean
@@ -229,7 +235,6 @@ articles:
       het berekeningsjaar vast.
     url: https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel4
     machine_readable:
-      endpoint: get_standaardpremie
       execution:
         parameters:
           - name: reference_year
@@ -266,7 +271,7 @@ articles:
       execution:
         actions:
           - output: bevoegd_gezag
-            value: 00000002003214394003
+            value: Dienst Toeslagen
   - number: '6'
     text: |-
       Onze Minister zendt binnen vier jaar na de inwerkingtreding van deze wet, en vervolgens telkens na vier jaar, aan

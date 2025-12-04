@@ -19,25 +19,74 @@ Analyzes legal text in YAML files and generates complete machine_readable execut
    - Cross-references to other laws/articles
    - Output values
 4. Generates complete `machine_readable` sections with:
-   - `public: true/false` flags
-   - `endpoint` names
-   - `parameters` definitions
-   - `input` sources (with cross-law references)
-   - `definitions` (constants)
-   - `actions` (operations and logic)
-   - `output` specifications
-5. Converts monetary amounts to eurocent (€795.47 → 79547)
+   - `competent_authority` - who has binding authority
+   - `requires` - dependencies on other laws/regulations
+   - `definitions` - constants and fixed values
+   - `execution` section containing:
+     - `produces` - legal character and decision type
+     - `parameters` - caller-provided inputs
+     - `input` - data from other sources
+     - `output` - what this article produces
+     - `actions` - operations and logic
+5. Converts monetary amounts to eurocent (€ 795,47 → 79547)
 6. Creates TODO comments for missing external law references
 7. Uses aggressive AI interpretation (full automation)
 
 ## Important Principles
 
 - **Aggressive interpretation**: Generate complete logic even if uncertain
-- **Eurocent conversion**: Convert all monetary amounts (€X,XX → eurocent)
+- **Eurocent conversion**: Convert all monetary amounts (€ X,XX → eurocent)
 - **Cross-references**: Detect references to other laws/articles
 - **TODOs for missing refs**: Add TODO comments when external laws don't exist in repo
-- **Internal references**: Use `#output_name` for same-file references
-- **Public endpoints**: Mark articles as public if they provide calculable results
+- **legal_basis**: Add traceability to specific law text where applicable
+
+## Schema Structure Overview
+
+The schema has NO `public` or `endpoint` fields. The `machine_readable` section structure is:
+
+```yaml
+machine_readable:
+  competent_authority:        # Who has binding authority
+    name: "Belastingdienst"
+    type: "INSTANCE"          # or "CATEGORY" (default: INSTANCE)
+
+  requires:                   # Dependencies (optional)
+    - law: "Zorgverzekeringswet"
+      values: ["is_verzekerd"]
+
+  definitions:                # Constants (optional)
+    VERMOGENSGRENS:
+      value: 15485900
+
+  execution:
+    produces:                 # Legal character (optional)
+      legal_character: "BESCHIKKING"  # or TOETS, WAARDEBEPALING, BESLUIT_VAN_ALGEMENE_STREKKING
+      decision_type: "TOEKENNING"     # or AFWIJZING, GOEDKEURING, AANSLAG, etc.
+
+    parameters:               # Caller-provided inputs
+      - name: "bsn"
+        type: "string"
+        required: true
+
+    input:                    # Data from other sources
+      - name: "toetsingsinkomen"
+        type: "amount"
+        source:
+          regulation: "awir"          # Name of the law/regulation
+          output: "toetsingsinkomen"  # Output field to retrieve
+          parameters:
+            bsn: "$bsn"
+
+    output:                   # What this produces
+      - name: "heeft_recht"
+        type: "boolean"
+
+    actions:                  # Computation logic
+      - output: "heeft_recht"
+        operation: "GREATER_THAN_OR_EQUAL"
+        subject: "$leeftijd"
+        value: 18
+```
 
 ## Step-by-Step Instructions
 
@@ -57,8 +106,8 @@ For each article in the `articles` array:
 2. **Identify if it's executable:**
    - Does it define a calculation, condition, or decision?
    - Does it provide a concrete output value?
-   - If YES → Add `machine_readable` section with `public: true`
-   - If NO (just definitions) → Skip or add `public: false`
+   - If YES → Add `machine_readable` section
+   - If NO (just definitions) → Skip or add minimal section
 
 3. **Extract key elements:**
    - **Parameters**: What inputs are needed? (BSN, dates, amounts, etc.)
@@ -68,44 +117,43 @@ For each article in the `articles` array:
    - **References**: Mentions of other articles/laws
    - **Outputs**: What the article calculates/determines
 
-### Step 3: Generate Endpoint Names
+### Step 3: Identify Competent Authority
 
-For each executable article, create a descriptive endpoint name:
+Determine who has binding authority for the decision:
 
-**Pattern**: `{verb}_{noun}`
+```yaml
+competent_authority:
+  name: "Belastingdienst/Toeslagen"
+  type: "INSTANCE"   # Specific organization
+```
 
-**Examples:**
-- Article calculating age → `bepaal_leeftijd`
-- Article checking insurance → `controleer_verzekering`
-- Article calculating allowance → `bereken_zorgtoeslag`
-- Article determining eligibility → `bepaal_recht`
-- Article checking asset limit → `vermogen_onder_grens`
-
-**Rules:**
-- Use Dutch verbs: bereken, bepaal, controleer, toets
-- Use snake_case
-- Be descriptive but concise
+Or for categories (must be resolved per context):
+```yaml
+competent_authority:
+  name: "gemeente"
+  type: "CATEGORY"   # Abstract category, resolved at runtime
+```
 
 ### Step 4: Identify and Define Parameters
 
 Look for inputs that must be provided by the caller:
 
 **Common parameters:**
-- `BSN` (string) - Citizen service number
+- `bsn` (string) - Citizen service number
 - `peildatum` (date) - Reference date
-- `jaar` (integer) - Year
-- `bedrag` (number) - Amount
+- `jaar` (number) - Year
+- `bedrag` (amount) - Amount
 
 **Example from text:**
 ```
 "Een persoon heeft recht op zorgtoeslag indien hij de leeftijd van 18 jaar heeft bereikt"
 ```
-→ Needs `BSN` to look up person's age
+→ Needs `bsn` to look up person's age
 
 **YAML output:**
 ```yaml
 parameters:
-  - name: "BSN"
+  - name: "bsn"
     type: "string"
     required: true
     description: "Burgerservicenummer van de persoon"
@@ -129,12 +177,12 @@ definitions:
 ```
 
 **Monetary Conversion Rules:**
-- €154.859 → 15485900 (eurocent)
-- €2.112 → 211200 (eurocent)
-- €795,47 → 79547 (eurocent)
+- € 154.859 → 15485900 (eurocent)
+- € 2.112 → 211200 (eurocent)
+- € 795,47 → 79547 (eurocent)
 - Always use integer eurocent values
 
-### Step 6: Identify Cross-Law References
+### Step 6: Identify Cross-Law References (Input Sources)
 
 Look for references to other laws or articles:
 
@@ -144,201 +192,328 @@ Look for references to other laws or articles:
 - "genoemd in [regulation]"
 - Markdown links: `[text](https://wetten.overheid.nl/BWBR...)`
 
-**Types of references:**
-
-**A. External Law (Not in Repo):**
-```
-"verzekerd is ingevolge de Zorgverzekeringswet"
-```
-
-→ Check if `regulation/nl/wet/zorgverzekeringswet/*.yaml` exists
-→ If NO, create TODO comment:
-
+**Source Structure:**
 ```yaml
 input:
   - name: "is_verzekerd"
     type: "boolean"
     source:
-      # TODO: Implement Zorgverzekeringswet
-      # Should reference: regulation/nl/wet/zorgverzekeringswet#is_verzekerd
-      # For now, must be provided as parameter
-      url: "TODO_zorgverzekeringswet"
+      regulation: "zorgverzekeringswet"  # Law identifier
+      output: "is_verzekerd"             # Output field name
       parameters:
-        BSN: "$BSN"
+        bsn: "$bsn"
+      description: "Verzekerd ingevolge de Zorgverzekeringswet"
 ```
 
-**B. Internal Reference (Same File):**
-```
-"het vermogen niet meer bedraagt dan de in artikel 3 genoemde grens"
-```
-
-→ If article 3 has endpoint `vermogen_onder_grens`:
-
+**For external data (not from another law):**
 ```yaml
 input:
-  - name: "vermogen_onder_grens"
+  - name: "geboortedatum"
+    type: "date"
+    source:
+      output: "geboortedatum"  # No regulation = external data source
+      description: "Geboortedatum uit BRP"
+```
+
+**If external law not found in repo:**
+```yaml
+input:
+  - name: "is_verzekerd"
     type: "boolean"
     source:
-      url: "#vermogen_onder_grens"
+      # TODO: Implement zorgverzekeringswet
+      regulation: "zorgverzekeringswet"
+      output: "is_verzekerd"
       parameters:
-        BSN: "$BSN"
+        bsn: "$bsn"
 ```
 
-**C. External Law (In Repo):**
-```
-"de standaardpremie, bedoeld in de Regeling standaardpremie"
-```
+### Step 7: Define Outputs
 
-→ Check if `regulation/nl/ministeriele_regeling/regeling_standaardpremie/*.yaml` exists
-→ If YES:
+Identify what the article produces:
 
+**Data types available:**
+- `string` - Text values
+- `number` - Numeric values
+- `boolean` - True/false
+- `amount` - Monetary values (in eurocent)
+- `date` - Date values
+- `object` - Complex structures
+- `array` - Lists
+
+**With type specifications:**
 ```yaml
-input:
-  - name: "standaardpremie"
-    type: "number"
-    source:
-      url: "regulation/nl/ministeriele_regeling/regeling_standaardpremie#standaardpremie"
+output:
+  - name: "zorgtoeslag_bedrag"
+    type: "amount"
+    type_spec:
+      unit: "eurocent"
+    description: "Het bedrag van de zorgtoeslag"
 ```
 
-### Step 7: Interpret Conditions and Logic
+**With temporal metadata:**
+```yaml
+output:
+  - name: "toetsingsinkomen"
+    type: "amount"
+    temporal:
+      type: "period"
+      period_type: "year"
+```
+
+### Step 8: Interpret Conditions and Logic (Actions)
 
 Convert legal conditions to operations:
+
+**Available Operations:**
+
+| Category | Operations |
+|----------|------------|
+| Arithmetic | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `MIN`, `MAX` |
+| Comparison | `EQUALS`, `NOT_EQUALS`, `GREATER_THAN`, `LESS_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL` |
+| Logical | `AND`, `OR`, `NOT` |
+| Membership | `IN`, `NOT_IN` |
+| Null check | `NOT_NULL` |
+| Conditional | `IF` |
+| Iteration | `FOREACH` |
+| Date | `SUBTRACT_DATE` |
+| String | `CONCAT` |
 
 **Common Legal Patterns → Operations:**
 
 | Legal Text | Operation |
 |------------|-----------|
-| "heeft bereikt de leeftijd van 18 jaar" | `GREATER_THAN_OR_EQUAL`, subject: leeftijd, value: 18 |
-| "niet meer bedraagt dan X" | `LESS_THAN_OR_EQUAL`, subject: amount, value: X |
+| "heeft bereikt de leeftijd van 18 jaar" | `GREATER_THAN_OR_EQUAL`, subject: $leeftijd, value: 18 |
+| "niet meer bedraagt dan X" | `LESS_THAN_OR_EQUAL` |
 | "ten minste X" | `GREATER_THAN_OR_EQUAL` |
-| "indien ... en ..." | `AND` operation with multiple conditions |
-| "indien ... of ..." | `OR` operation |
-| "niet ..." | `NOT` operation |
+| "indien ... en ..." | `AND` with values array |
+| "indien ... of ..." | `OR` with values array |
+| "niet ..." | `NOT` |
 | "gelijk aan" | `EQUALS` |
-| "vermenigvuldigd met" | `MULTIPLY` |
-| "opgeteld bij" | `ADD` |
-| "verminderd met" | `SUBTRACT` |
 
-**Example Conversion:**
-
-**Legal text:**
-```
-"Een persoon heeft recht indien hij:
-a. de leeftijd van 18 jaar heeft bereikt;
-b. verzekerd is ingevolge de Zorgverzekeringswet"
+**Simple comparison:**
+```yaml
+actions:
+  - output: "is_volwassen"
+    operation: "GREATER_THAN_OR_EQUAL"
+    subject: "$leeftijd"
+    value: 18
 ```
 
-**YAML output:**
+**Multiple conditions (AND/OR):**
+```yaml
+actions:
+  - output: "voldoet_aan_voorwaarden"
+    operation: "AND"
+    values:
+      - operation: "EQUALS"
+        subject: "$is_verzekerd"
+        value: true
+      - operation: "GREATER_THAN_OR_EQUAL"
+        subject: "$leeftijd"
+        value: 18
+```
+
+**Conditional with if-then-else (using conditions array):**
+```yaml
+actions:
+  - output: "toeslag_percentage"
+    conditions:
+      - test:
+          operation: "EQUALS"
+          subject: "$huishouden_type"
+          value: "alleenstaand"
+        then: 100
+        else: 50
+```
+
+**Conditional with IF operation:**
+```yaml
+actions:
+  - output: "resultaat"
+    operation: "IF"
+    test:
+      operation: "GREATER_THAN"
+      subject: "$inkomen"
+      value: 50000
+    then: 0
+    else: "$berekend_bedrag"
+```
+
+**Calculation chain:**
+```yaml
+actions:
+  - output: "premie_basis"
+    operation: "MULTIPLY"
+    values:
+      - "$standaardpremie"
+      - "$percentage"
+
+  - output: "premie_na_korting"
+    operation: "SUBTRACT"
+    values:
+      - "$premie_basis"
+      - "$korting"
+```
+
+**Date calculation:**
+```yaml
+actions:
+  - output: "leeftijd"
+    operation: "SUBTRACT_DATE"
+    values:
+      - "$peildatum"
+      - "$geboortedatum"
+```
+
+**Resolve from ministeriele regeling:**
+```yaml
+actions:
+  - output: "standaardpremie"
+    resolve:
+      type: "ministeriele_regeling"
+      output: "standaardpremie"
+      match:
+        output: "jaar"
+        value: "$jaar"
+```
+
+### Step 9: Add Legal Basis (Traceability)
+
+For important computations, add legal_basis to trace back to the law:
+
 ```yaml
 actions:
   - output: "heeft_recht"
     operation: "AND"
-    conditions:
-      - operation: "GREATER_THAN_OR_EQUAL"
-        subject: "$leeftijd"
-        value: 18
-      - operation: "EQUALS"
-        subject: "$is_verzekerd"
-        value: true
+    values:
+      - "$is_verzekerd"
+      - "$is_volwassen"
+    legal_basis:
+      law: "Wet op de zorgtoeslag"
+      bwb_id: "BWBR0018451"
+      article: "2"
+      paragraph: "1"
+      url: "https://wetten.overheid.nl/BWBR0018451#Artikel2"
+      explanation: "Lid 1 bepaalt de voorwaarden voor recht op zorgtoeslag"
 ```
 
-### Step 8: Handle Complex Calculations
+### Step 10: Set Produces (Legal Character)
 
-For articles with formulas:
+If the article produces a formal decision:
+
+```yaml
+execution:
+  produces:
+    legal_character: "BESCHIKKING"  # Individual decision
+    decision_type: "TOEKENNING"     # Grant/approval
+```
+
+**Legal character options:**
+- `BESCHIKKING` - Individual administrative decision
+- `TOETS` - Check/verification
+- `WAARDEBEPALING` - Value determination
+- `BESLUIT_VAN_ALGEMENE_STREKKING` - General binding decision
+
+**Decision type options:**
+- `TOEKENNING` - Grant
+- `AFWIJZING` - Rejection
+- `GOEDKEURING` - Approval
+- `AANSLAG` - Tax assessment
+- `ALGEMEEN_VERBINDEND_VOORSCHRIFT` - General binding regulation
+- `BELEIDSREGEL` - Policy rule
+- `VOORBEREIDINGSBESLUIT` - Preparatory decision
+- `ANDERE_HANDELING` - Other action
+
+### Step 11: Complete Example
 
 **Legal text:**
 ```
-"De zorgtoeslag bedraagt de standaardpremie vermenigvuldigd met het normpremiepercentage,
-verminderd met de inkomensafhankelijke bijdrage"
+Artikel 2
+1. Een persoon heeft recht op zorgtoeslag indien hij:
+   a. de leeftijd van 18 jaar heeft bereikt;
+   b. verzekerd is ingevolge de Zorgverzekeringswet.
 ```
 
-**YAML output:**
-```yaml
-actions:
-  - output: "premie_na_percentage"
-    operation: "MULTIPLY"
-    subject: "$standaardpremie"
-    value: "$normpremiepercentage"
-
-  - output: "zorgtoeslag"
-    operation: "SUBTRACT"
-    subject: "$premie_na_percentage"
-    value: "$inkomensafhankelijke_bijdrage"
-```
-
-**Key principle**: Break complex formulas into sequential steps, each with its own output.
-
-### Step 9: Define Outputs
-
-Identify what the article produces:
-
-**Simple boolean output:**
-```yaml
-output:
-  - name: "heeft_recht"
-    type: "boolean"
-    description: "Geeft aan of de persoon recht heeft op zorgtoeslag"
-```
-
-**Numeric output (in eurocent):**
-```yaml
-output:
-  - name: "zorgtoeslag_bedrag"
-    type: "number"
-    description: "Het bedrag van de zorgtoeslag in eurocenten"
-```
-
-**Multiple outputs:**
-```yaml
-output:
-  - name: "is_gehuwd"
-    type: "boolean"
-  - name: "aantal_kinderen"
-    type: "integer"
-```
-
-### Step 10: Complete Machine-Readable Section Structure
-
-**Full template:**
-
+**Complete machine_readable section:**
 ```yaml
 machine_readable:
-  public: true  # or false if not meant to be called externally
-  endpoint: "endpoint_name"
+  competent_authority:
+    name: "Belastingdienst/Toeslagen"
 
-  definitions:  # Optional - constants
-    CONSTANT_NAME:
-      value: 12345
-      description: "Description of constant"
+  requires:
+    - law: "Zorgverzekeringswet"
+      values: ["is_verzekerd"]
 
   execution:
-    parameters:  # Required inputs from caller
-      - name: "BSN"
+    produces:
+      legal_character: "BESCHIKKING"
+      decision_type: "TOEKENNING"
+
+    parameters:
+      - name: "bsn"
         type: "string"
         required: true
         description: "Burgerservicenummer"
 
-    input:  # Data from other sources
-      - name: "input_name"
-        type: "type"
+      - name: "peildatum"
+        type: "date"
+        required: true
+        description: "Datum waarop het recht wordt getoetst"
+
+    input:
+      - name: "geboortedatum"
+        type: "date"
         source:
-          url: "regulation/nl/path/law_id#field"  # or "#field" for internal
+          output: "geboortedatum"
+          description: "Geboortedatum uit BRP"
+
+      - name: "is_verzekerd"
+        type: "boolean"
+        source:
+          # TODO: Implement zorgverzekeringswet
+          regulation: "zorgverzekeringswet"
+          output: "is_verzekerd"
           parameters:
-            BSN: "$BSN"
+            bsn: "$bsn"
 
-    output:  # What this article produces
-      - name: "output_name"
-        type: "type"
-        description: "Description"
+    output:
+      - name: "leeftijd"
+        type: "number"
+        type_spec:
+          unit: "years"
 
-    actions:  # The actual logic
-      - output: "output_name"
-        operation: "OPERATION_TYPE"
-        subject: "$variable"
-        value: 123  # or "$other_variable"
+      - name: "heeft_recht"
+        type: "boolean"
+        description: "Geeft aan of de persoon recht heeft op zorgtoeslag"
+
+    actions:
+      - output: "leeftijd"
+        operation: "SUBTRACT_DATE"
+        values:
+          - "$peildatum"
+          - "$geboortedatum"
+        legal_basis:
+          article: "2"
+          paragraph: "1"
+          explanation: "Leeftijd bepaald op peildatum"
+
+      - output: "heeft_recht"
+        operation: "AND"
+        values:
+          - operation: "GREATER_THAN_OR_EQUAL"
+            subject: "$leeftijd"
+            value: 18
+          - operation: "EQUALS"
+            subject: "$is_verzekerd"
+            value: true
+        legal_basis:
+          article: "2"
+          paragraph: "1"
+          explanation: "Voorwaarden a en b van lid 1"
 ```
 
-### Step 11: Apply Changes to YAML
+### Step 12: Apply Changes to YAML
 
 For each article that needs a `machine_readable` section:
 
@@ -347,21 +522,7 @@ For each article that needs a `machine_readable` section:
 3. Add comments for TODOs and clarifications
 4. Convert all monetary amounts to eurocent
 
-**Example edit:**
-
-```yaml
-articles:
-  - number: "2"
-    text: |
-      Legal text here...
-    url: "https://wetten.overheid.nl/..."
-    machine_readable:
-      public: true
-      endpoint: "bereken_zorgtoeslag"
-      # ... rest of machine_readable section
-```
-
-### Step 12: Validate Against Schema
+### Step 13: Validate Against Schema
 
 Before reporting, validate the updated YAML:
 
@@ -372,72 +533,114 @@ uv run python script/validate.py {LAW_FILE_PATH}
 **If validation fails:**
 - Review schema errors carefully
 - Common issues with machine_readable sections:
-  - Misspelled operation types
-  - Wrong type values (must match schema enum)
+  - Missing required `output` field in source
+  - Wrong operation types (check enum values)
   - Missing required fields in parameters/input/output
   - Incorrect nesting or indentation
 - Fix errors and re-validate
 - Continue until validation passes
 
-### Step 13: Report Results
+### Step 14: Reverse Validation (Hallucination Check)
+
+After schema validation passes, verify that every element in the `machine_readable` section can be traced back to the original legal text.
+
+**For each element, check:**
+
+1. **Definitions/Constants:**
+   - Is this value explicitly mentioned in the article text?
+   - If NOT → Remove it from the YAML
+   - If needed for logic but not in text → Add to "Assumptions" in report
+
+2. **Input fields:**
+   - Is this data source referenced in the article text?
+   - Look for phrases like "ingevolge", "bedoeld in", "genoemd in"
+   - If NOT traceable → Remove or mark as assumption
+
+3. **Output fields:**
+   - Does the article actually produce this output?
+   - Is it stated or clearly implied in the legal text?
+   - If NOT → Remove it
+
+4. **Actions/Operations:**
+   - Does the legal text contain the logic for this operation?
+   - Can you point to specific sentences that justify this action?
+   - If NOT → Remove or simplify
+
+5. **Conditions:**
+   - Are these conditions explicitly stated in the article?
+   - Watch for invented edge cases not in the law
+   - If NOT → Remove
+
+**Decision matrix:**
+
+| Traceable in text? | Needed for logic? | Action |
+|-------------------|-------------------|--------|
+| YES | YES | Keep |
+| YES | NO | Keep (may be informational) |
+| NO | YES | Report as assumption |
+| NO | NO | **Remove** |
+
+**Example check:**
+
+```yaml
+# Article text: "Een persoon heeft recht indien hij 18 jaar is"
+
+# GOOD - traceable:
+- output: "heeft_recht"        # ✓ "heeft recht" in text
+  operation: "GREATER_THAN_OR_EQUAL"
+  subject: "$leeftijd"
+  value: 18                    # ✓ "18 jaar" in text
+
+# BAD - not traceable (hallucinated):
+- output: "woont_in_nederland"  # ✗ Not mentioned in article
+  operation: "EQUALS"
+  subject: "$woonland"
+  value: "NL"
+# → REMOVE THIS
+```
+
+**After reverse validation:**
+- Remove all non-traceable elements that aren't needed
+- Add "Assumptions" section to report for elements that are:
+  - Not explicitly in text
+  - But required to make the logic complete
+  - These need user review
+
+### Step 15: Report Results
 
 After successful validation:
 
 1. **Count processed articles:**
    - How many articles total?
    - How many now have machine_readable sections?
-   - How many are marked public?
 
 2. **List TODOs:**
    - Which external laws need to be downloaded?
    - Any ambiguous interpretations?
 
-3. **Report to user:**
+3. **List Assumptions (from reverse validation):**
+   - Elements not explicitly in text but needed for logic
+   - These require user verification
+
+4. **Report to user:**
 ```
-✓ Interpreted {LAW_NAME}
+Interpreted {LAW_NAME}
 
   Articles processed: {TOTAL}
   Made executable: {EXECUTABLE_COUNT}
-  Public endpoints: {PUBLIC_COUNT}
-  ✅ Schema validation: PASSED
+  Schema validation: PASSED
+  Reverse validation: PASSED
 
-  Public endpoints available:
-  - {endpoint_1}
-  - {endpoint_2}
+  Assumptions (need review):
+  - Article 2: Added "peildatum" parameter (implied but not stated)
+  - Article 3: Assumed "inkomen" refers to toetsingsinkomen
 
   TODOs remaining:
   - Download and interpret: {external_law_1}
   - Clarify calculation in article {X}
 
   The law is now executable via the engine!
-  Use: service.evaluate_law_endpoint("{law_id}", "{endpoint}", {"BSN": "..."})
 ```
-
-## Available Operations
-
-Use these operation types in `actions`:
-
-**Comparison:**
-- `EQUALS`
-- `NOT_EQUALS`
-- `GREATER_THAN`
-- `GREATER_THAN_OR_EQUAL`
-- `LESS_THAN`
-- `LESS_THAN_OR_EQUAL`
-
-**Logical:**
-- `AND` (with `conditions` array)
-- `OR` (with `conditions` array)
-- `NOT` (with `condition` object)
-
-**Arithmetic:**
-- `ADD`
-- `SUBTRACT`
-- `MULTIPLY`
-- `DIVIDE`
-
-**Other:**
-- `IF_THEN_ELSE` (with `condition`, `then_value`, `else_value`)
 
 ## Common Patterns
 
@@ -447,14 +650,15 @@ input:
   - name: "geboortedatum"
     type: "date"
     source:
-      url: "regulation/nl/wet/wet_brp#geboortedatum"
-      parameters:
-        BSN: "$BSN"
+      output: "geboortedatum"
+      description: "Geboortedatum uit BRP"
 
 actions:
   - output: "leeftijd"
-    operation: "CALCULATE_AGE"  # Special operation
-    subject: "$geboortedatum"
+    operation: "SUBTRACT_DATE"
+    values:
+      - "$peildatum"
+      - "$geboortedatum"
 
   - output: "is_volwassen"
     operation: "GREATER_THAN_OR_EQUAL"
@@ -466,14 +670,17 @@ actions:
 ```yaml
 definitions:
   INKOMENSGRENS:
-    value: 7954700  # €79,547 in eurocent
+    value: 7954700  # € 79.547 in eurocent
 
 input:
   - name: "toetsingsinkomen"
-    type: "number"
+    type: "amount"
     source:
-      # TODO: Implement AWIR
-      url: "TODO_awir"
+      regulation: "awir"
+      output: "toetsingsinkomen"
+      parameters:
+        bsn: "$bsn"
+        jaar: "$jaar"
 
 actions:
   - output: "onder_inkomensgrens"
@@ -487,7 +694,7 @@ actions:
 actions:
   - output: "voldoet_aan_voorwaarden"
     operation: "AND"
-    conditions:
+    values:
       - operation: "EQUALS"
         subject: "$is_verzekerd"
         value: true
@@ -504,19 +711,46 @@ actions:
 actions:
   - output: "premie_basis"
     operation: "MULTIPLY"
-    subject: "$standaardpremie"
-    value: "$percentage"
+    values:
+      - "$standaardpremie"
+      - "$percentage"
 
   - output: "premie_na_korting"
     operation: "SUBTRACT"
-    subject: "$premie_basis"
-    value: "$korting"
+    values:
+      - "$premie_basis"
+      - "$korting"
 
   - output: "premie_finaal"
-    operation: "MAX"  # Take maximum of 0 and result
+    operation: "MAX"
     values:
       - 0
       - "$premie_na_korting"
+```
+
+### Pattern 5: Conditional Value
+```yaml
+actions:
+  - output: "vermogensgrens"
+    conditions:
+      - test:
+          operation: "EQUALS"
+          subject: "$heeft_partner"
+          value: true
+        then: "$VERMOGENSGRENS_PARTNERS"
+        else: "$VERMOGENSGRENS_ALLEENSTAANDE"
+```
+
+### Pattern 6: Lookup from Ministeriele Regeling
+```yaml
+actions:
+  - output: "standaardpremie"
+    resolve:
+      type: "ministeriele_regeling"
+      output: "standaardpremie"
+      match:
+        output: "jaar"
+        value: "$jaar"
 ```
 
 ## Tips for Success
@@ -528,9 +762,9 @@ actions:
 5. **Break down complex logic**: Multiple simple actions > one complex action
 6. **Add descriptions**: Help future readers understand the logic
 7. **Mark TODOs clearly**: Use `# TODO:` comments for missing refs
-8. **Test cross-references**: Verify internal `#field` references exist
-9. **Validate types**: Ensure type consistency (boolean, number, string, date)
-10. **Document assumptions**: Add comments when interpretation is unclear
+8. **Validate types**: Ensure type consistency (boolean, number, string, date, amount)
+9. **Document assumptions**: Add comments when interpretation is unclear
+10. **Add legal_basis**: Trace important computations back to the law text
 
 ## Error Handling
 
@@ -540,7 +774,7 @@ actions:
 - Suggest manual review
 
 **If external law not found:**
-- Create TODO placeholder
+- Create TODO placeholder in source
 - Add to list of missing dependencies
 - Continue with other articles
 

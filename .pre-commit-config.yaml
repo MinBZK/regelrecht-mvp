@@ -1,7 +1,7 @@
 ---
 ci:
   autofix_prs: false
-  skip: [ty-check]  # ty runs in GitHub Actions (needs full venv)
+  skip: [ty-check, validate-law-yaml]  # these need uv, run in GitHub Actions instead
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -43,3 +43,10 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+
+      - id: validate-law-yaml
+        name: validate law YAML files
+        entry: uv run python script/validate.py
+        language: system
+        files: ^regulation/nl/.*\.yaml$
+        pass_filenames: true

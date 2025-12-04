@@ -1,11 +1,11 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: algemene_wet_inkomensafhankelijke_regelingen
-uuid: b974bfb2-19d3-441e-9795-d78591341ba3
 regulatory_layer: WET
 publication_date: '2022-12-27'
 bwb_id: BWBR0018472
 url: https://wetten.overheid.nl/BWBR0018472/2025-01-01
+name: '#wet_naam'
 articles:
   - number: Artikel 1
     text: |-
@@ -606,6 +606,14 @@ articles:
     text: |-
       Artikel 51. Citeertitel Deze wet wordt aangehaald als: Algemene wet inkomensafhankelijke regelingen.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#ArtikelArtikel 51
+    machine_readable:
+      execution:
+        output:
+          - name: wet_naam
+            type: string
+        actions:
+          - output: wet_naam
+            value: Algemene wet inkomensafhankelijke regelingen
   - number: API-1
     text: |-
       SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining whether a person
@@ -615,8 +623,6 @@ articles:
       information.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#API-1
     machine_readable:
-      public: true
-      endpoint: heeft_toeslagpartner
       execution:
         parameters:
           - name: BSN
@@ -639,8 +645,6 @@ articles:
       programmatic access to income data for other laws that need this information.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#API-2
     machine_readable:
-      public: true
-      endpoint: toetsingsinkomen
       execution:
         parameters:
           - name: BSN

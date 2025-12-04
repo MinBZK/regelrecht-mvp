@@ -1,14 +1,14 @@
 ---
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: wet_inkomstenbelasting_2001
-uuid: af346e90-acbf-46d9-8e29-2ebb75e6610f
 regulatory_layer: WET
 publication_date: '2001-12-15'
-effective_date: '2025-01-01'
+valid_from: '2025-01-01'
 bwb_id: BWBR0011353
 url: https://wetten.overheid.nl/BWBR0011353/2025-01-01
 name: Wet inkomstenbelasting 2001
-competent_authority: TODO
+competent_authority:
+  name: TODO
 
 articles:
   - number: '5.2'
@@ -21,8 +21,6 @@ articles:
       inkomstenbelasting.
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel5.2
     machine_readable:
-      public: true
-      endpoint: rendementsgrondslag
       execution:
         parameters:
           - name: BSN
