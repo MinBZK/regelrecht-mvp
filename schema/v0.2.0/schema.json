@@ -696,6 +696,51 @@
             }
           ]
         },
+        "enables": {
+          "type": "array",
+          "description": "What this article enables - e.g., authority to create lower-level regulations",
+          "items": {
+            "type": "object",
+            "required": ["regulatory_layer", "subject"],
+            "properties": {
+              "regulatory_layer": {
+                "type": "string",
+                "enum": [
+                  "GRONDWET",
+                  "WET",
+                  "AMVB",
+                  "MINISTERIELE_REGELING",
+                  "BELEIDSREGEL",
+                  "EU_VERORDENING",
+                  "EU_RICHTLIJN",
+                  "VERDRAG",
+                  "UITVOERINGSBELEID",
+                  "GEMEENTELIJKE_VERORDENING",
+                  "PROVINCIALE_VERORDENING"
+                ],
+                "description": "Type of regulation this article enables"
+              },
+              "subject": {
+                "type": "string",
+                "description": "Subject matter of the enabled regulation (e.g., 'rioolheffing')"
+              },
+              "for": {
+                "type": "object",
+                "description": "Who is granted the authority (optional - often implied by regulatory_layer)",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["INSTANCE", "CATEGORY"]
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "requires": {
           "type": "array",
           "description": "Dependencies on other articles, regelingen, or external sources",
