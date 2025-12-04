@@ -1,0 +1,132 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$id: afstemmingsverordening_participatiewet_diemen
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2014-12-18'
+valid_from: '2015-01-01'
+gemeente_code: GM0384
+officiele_titel: Afstemmingsverordening Participatiewet, IOAW en IOAZ Diemen 2015
+url: https://lokaleregelgeving.overheid.nl/CVDR345917/1
+name: Afstemmingsverordening Participatiewet Diemen 2015
+
+# Note: This YAML contains only articles 7 and 9 for the proof of concept.
+# The full verordening contains 20 articles.
+
+# Grondslag: Participatiewet artikel 8, eerste lid, onderdeel a
+# (gedelegeerd via artikel 18)
+legal_basis:
+  - law_id: participatiewet
+    article: '8'
+    description: Artikel 8, eerste lid, onderdeel a - gemeentelijke verordening over verlaging bijstand
+
+articles:
+  - number: '7'
+    text: |-
+      **Gedragingen Participatiewet**
+
+      Gedragingen van een belanghebbende waardoor de verplichting op grond van artikel 9, eerste lid, van de
+      Participatiewet niet of onvoldoende is nagekomen worden onderscheiden in de volgende categorieën:
+
+         a. eerste categorie: het zich niet tijdig laten registreren als werkzoekende bij het Uitvoeringsinstituut
+         werknemersverzekeringen;
+
+         b. tweede categorie:
+            1. het niet of onvoldoende meewerken aan het opstellen, uitvoeren en evalueren van een plan van aanpak als
+            bedoeld in artikel 44a van de Participatiewet;
+            2. het niet binnen vier weken na melding als bedoeld in artikel 43, vierde en vijfde lid, van de
+            Participatiewet voldoende meewerken aan het onderzoek naar de mogelijkheden tot arbeidsinschakeling of
+            sociale activering als dit een persoon jonger dan 27 jaar betreft;
+            3. het als alleenstaande ouder niet naar vermogen trachten arbeid in deeltijd te verkrijgen;
+            4. het niet of onvoldoende verrichten van de door het college opgedragen tegenprestatie als bedoeld in
+            artikel 9, eerste lid, onderdeel c, van de Participatiewet;
+
+         c. derde categorie: het niet naar vermogen proberen algemeen geaccepteerde arbeid te verkrijgen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR345917/1#Artikel7
+
+  - number: '9'
+    text: |-
+      **Hoogte en duur van de verlaging**
+
+      1. De verlaging bij gedragingen als bedoeld in de artikelen 7 en 8 bedraagt:
+         a. eerste categorie: 5 procent van de bijstandsnorm gedurende 1 maand;
+         b. tweede categorie: 30 procent van de bijstandsnorm gedurende 1 maand;
+         c. derde categorie: 100 procent van de bijstandsnorm gedurende 1 maand.
+
+      2. Het college kan de verlaging afwijkend vaststellen, met een minimum van 5% en een maximum van 100% van de
+      bijstandsnorm, als de ernst van de gedraging, de mate van verwijtbaarheid of de individuele omstandigheden van de
+      belanghebbende daartoe aanleiding geven.
+    url: https://lokaleregelgeving.overheid.nl/CVDR345917/1#Artikel9
+    machine_readable:
+      definitions:
+        verlaging_percentage_categorie_1:
+          value: 5
+        verlaging_percentage_categorie_2:
+          value: 30
+        verlaging_percentage_categorie_3:
+          value: 100
+        duur_verlaging_maanden:
+          value: 1
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        input:
+          - name: gedragscategorie
+            type: number
+            description: Categorie van de gedraging (1, 2, of 3) conform artikel 7
+            source:
+              # Gedraging wordt vastgesteld door gemeente op basis van artikel 7
+              regulation: afstemmingsverordening_participatiewet_diemen
+              output: gedragscategorie
+          - name: normbedrag
+            type: amount
+            source:
+              regulation: participatiewet
+              output: normbedrag_artikel_21
+        output:
+          - name: verlaging_percentage
+            type: number
+            description: Percentage waarmee de bijstand wordt verlaagd
+          - name: verlaging_bedrag
+            type: amount
+            type_spec:
+              unit: eurocent
+            description: Bedrag waarmee de bijstand wordt verlaagd
+          - name: duur_maanden
+            type: number
+            description: Aantal maanden dat de verlaging duurt
+        actions:
+          # Bepaal verlaging_percentage op basis van gedragscategorie
+          - output: verlaging_percentage
+            conditions:
+              - test:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 1
+                then: $verlaging_percentage_categorie_1
+              - test:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 2
+                then: $verlaging_percentage_categorie_2
+              - test:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 3
+                then: $verlaging_percentage_categorie_3
+          # Bereken verlaging_bedrag
+          - output: verlaging_bedrag
+            operation: MULTIPLY
+            values:
+              - operation: DIVIDE
+                values:
+                  - $normbedrag
+                  - 100
+              - $verlaging_percentage
+          # Duur is altijd 1 maand (lid 1)
+          - output: duur_maanden
+            value: $duur_verlaging_maanden
