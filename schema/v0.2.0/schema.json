@@ -389,7 +389,6 @@
             "source": {
               "type": "object",
               "description": "Reference to where this input comes from",
-              "required": ["output"],
               "properties": {
                 "regulation": {
                   "type": "string",
@@ -409,6 +408,29 @@
                 "description": {
                   "type": "string",
                   "description": "Human-readable description or legal reference for this data source"
+                },
+                "delegation": {
+                  "type": "object",
+                  "description": "Reference to a delegated regulation (e.g., gemeentelijke verordening)",
+                  "required": ["law_id", "article", "gemeente_code"],
+                  "properties": {
+                    "law_id": {
+                      "type": "string",
+                      "description": "ID of the delegating law (e.g., 'participatiewet')"
+                    },
+                    "article": {
+                      "type": "string",
+                      "description": "Article number that delegates the authority (e.g., '8')"
+                    },
+                    "gemeente_code": {
+                      "type": "string",
+                      "description": "Municipality code or $variable reference (e.g., 'GM0384' or '$gemeente_code')"
+                    }
+                  }
+                },
+                "endpoint": {
+                  "type": "string",
+                  "description": "Endpoint to call on the delegated regulation"
                 }
               },
               "additionalProperties": false
@@ -670,6 +692,10 @@
       "type": "object",
       "description": "Machine-readable interpretation of legal text",
       "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "Named endpoint for this article, making it callable from other regulations"
+        },
         "competent_authority": {
           "description": "Bevoegd gezag - authority whose execution produces binding decisions",
           "oneOf": [
@@ -734,6 +760,51 @@
                   "type": {
                     "type": "string",
                     "enum": ["INSTANCE", "CATEGORY"]
+                  }
+                }
+              },
+              "interface": {
+                "type": "object",
+                "description": "Interface contract that implementing regulations must follow",
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "description": "Required endpoint name for implementations"
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "description": "Required parameters for the interface",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "required": { "type": "boolean" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  },
+                  "output": {
+                    "type": "array",
+                    "description": "Required output fields for the interface",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "defaults": {
+                "type": "object",
+                "description": "Default execution logic if no implementing regulation is found",
+                "properties": {
+                  "actions": {
+                    "type": "array",
+                    "description": "Default actions to execute"
                   }
                 }
               }

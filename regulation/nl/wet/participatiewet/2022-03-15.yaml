@@ -64,6 +64,41 @@ articles:
       3. De regels, bedoeld in het eerste lid, hebben voor zover het gaat om het eerste lid, onderdeel c, in ieder geval
       betrekking op de hoogte en de frequentie van de betaling van de individuele studietoeslag.
     url: https://wetten.overheid.nl/BWBR0015703/2022-03-15#Artikel8
+    machine_readable:
+      # Dit artikel delegeert bevoegdheid naar gemeenten om verordeningen te maken
+      # over het verlagen van bijstand. Elke gemeente moet deze interface implementeren.
+      legal_foundation_for:
+        - regulatory_layer: GEMEENTELIJKE_VERORDENING
+          subject: afstemming_bijstand
+          # Interface die elke gemeentelijke verordening moet implementeren:
+          # Outputs zijn de publieke endpoints (geen apart endpoint veld nodig)
+          delegation_interface:
+            parameters:
+              - name: gedragscategorie
+                type: number
+                required: true
+                description: Categorie van de gedraging (0=geen, 1/2/3=categorie)
+            output:
+              - name: verlaging_percentage
+                type: number
+                description: Percentage waarmee bijstand wordt verlaagd
+              - name: duur_maanden
+                type: number
+                description: Duur van de verlaging in maanden
+          # Default waarden als gemeente geen verordening heeft:
+          defaults:
+            actions:
+              # Art. 18 lid 5: bij niet nakomen verplichtingen -> 100% verlaging
+              - output: verlaging_percentage
+                conditions:
+                  - test:
+                      operation: GREATER_THAN_OR_EQUAL
+                      subject: $gedragscategorie
+                      value: 1
+                    then: 100
+                  - else: 0
+              - output: duur_maanden
+                value: 1
 
   - number: '11'
     text: |-
@@ -181,29 +216,24 @@ articles:
           - name: bsn
             type: string
             required: true
-        input:
+          # TODO: Deze gegevens komen uit wet_basisregistratie_personen (BRP)
           - name: leeftijd
             type: number
-            source:
-              regulation: wet_basisregistratie_personen
-              output: leeftijd
-          - name: heeft_pensioengerechtigde_leeftijd_bereikt
-            type: boolean
-            source:
-              # TODO: implement AOW pensioenleeftijd check
-              regulation: algemene_ouderdomswet
-              output: heeft_pensioengerechtigde_leeftijd_bereikt
+            required: true
+            description: 'Leeftijd in jaren (bron: BRP)'
           - name: is_alleenstaande
             type: boolean
-            source:
-              regulation: wet_basisregistratie_personen
-              output: is_alleenstaande
+            required: true
+            description: 'Is alleenstaande (bron: BRP)'
           - name: heeft_kostendelende_medebewoners
             type: boolean
-            source:
-              # TODO: implement kostendelers check (gemeentelijke registratie)
-              regulation: wet_basisregistratie_personen
-              output: heeft_kostendelende_medebewoners
+            required: false
+            description: 'Heeft kostendelende medebewoners (bron: BRP)'
+          # TODO: Dit moet uit algemene_ouderdomswet komen (AOW pensioenleeftijd check)
+          - name: heeft_pensioengerechtigde_leeftijd_bereikt
+            type: boolean
+            required: false
+            description: 'Heeft AOW-leeftijd bereikt (bron: AOW)'
         output:
           - name: normbedrag_artikel_21
             type: amount
@@ -327,6 +357,7 @@ articles:
       # 3. Berekent normbedrag (art. 21)
       # 4. Past eventuele verlaging toe (Afstemmingsverordening)
       # 5. Berekent finale uitkering
+      # Outputs zoals heeft_recht_op_bijstand, uitkering_bedrag zijn de publieke endpoints
       execution:
         produces:
           legal_character: BESCHIKKING
@@ -337,73 +368,83 @@ articles:
             type: string
             required: true
             description: Burgerservicenummer van de aanvrager
+
+          # TODO: gemeente_code komt uit wet_basisregistratie_personen (BRP)
+          - name: gemeente_code
+            type: string
+            required: true
+            description: 'Gemeentecode waar aanvrager woont (bron: BRP, bijv. GM0384 voor Diemen)'
+
           # Gedragscategorie - bepaalt of er een verlaging wordt toegepast
           # 0 = geen overtreding, 1/2/3 = gedragscategorie conform Afstemmingsverordening
           - name: gedragscategorie
             type: number
             required: false
             description: Gedragscategorie (0=geen, 1=registratie, 2=plan van aanpak, 3=sollicitatieplicht)
-        input:
-          # === Gegevens van UWV ===
+
+          # TODO: Deze gegevens komen uit UWV werkzoekendenregistratie
           - name: is_geregistreerd_als_werkzoekende
             type: boolean
-            description: Is de aanvrager geregistreerd als werkzoekende bij UWV?
-            source:
-              regulation: uwv_werkzoekenden_registratie
-              output: is_geregistreerd
-          # === Gegevens uit BRP (Basisregistratie Personen) ===
+            required: true
+            description: 'Is geregistreerd als werkzoekende bij UWV (bron: UWV)'
+
+          # TODO: Deze gegevens komen uit wet_basisregistratie_personen (BRP)
           - name: is_nederlander
             type: boolean
-            description: Heeft de aanvrager de Nederlandse nationaliteit?
-            source:
-              regulation: wet_basisregistratie_personen
-              output: is_nederlander
+            required: true
+            description: 'Heeft Nederlandse nationaliteit (bron: BRP)'
           - name: is_gelijkgestelde_vreemdeling
             type: boolean
-            description: Is de aanvrager een gelijkgestelde vreemdeling (art. 11 lid 2)?
-            source:
-              regulation: wet_basisregistratie_personen
-              output: is_gelijkgestelde_vreemdeling
+            required: false
+            description: 'Is gelijkgestelde vreemdeling art. 11 lid 2 (bron: BRP)'
           - name: woont_in_nederland
             type: boolean
-            description: Woont de aanvrager in Nederland?
-            source:
-              regulation: wet_basisregistratie_personen
-              output: woont_in_nederland
+            required: true
+            description: 'Woont in Nederland (bron: BRP)'
           - name: leeftijd
             type: number
-            description: Leeftijd van de aanvrager in jaren
-            source:
-              regulation: wet_basisregistratie_personen
-              output: leeftijd
+            required: true
+            description: 'Leeftijd in jaren (bron: BRP)'
           - name: is_alleenstaande
             type: boolean
-            description: Is de aanvrager alleenstaande (niet gehuwd/samenwonend)?
-            source:
-              regulation: wet_basisregistratie_personen
-              output: is_alleenstaande
+            required: true
+            description: 'Is alleenstaande (bron: BRP)'
           - name: heeft_kostendelende_medebewoners
             type: boolean
-            description: Heeft de aanvrager kostendelende medebewoners?
-            source:
-              regulation: wet_basisregistratie_personen
-              output: heeft_kostendelende_medebewoners
-          # === Gegevens AOW (pensioenleeftijd) ===
+            required: false
+            description: 'Heeft kostendelende medebewoners (bron: BRP)'
+
+          # TODO: Dit moet uit algemene_ouderdomswet komen
           - name: heeft_pensioengerechtigde_leeftijd_bereikt
             type: boolean
-            description: Heeft de aanvrager de AOW-leeftijd bereikt?
-            source:
-              regulation: algemene_ouderdomswet
-              output: heeft_pensioengerechtigde_leeftijd_bereikt
-          # === Middelentoets ===
+            required: false
+            description: 'Heeft AOW-leeftijd bereikt (bron: AOW)'
+
+          # TODO: Dit moet uit participatiewet_middelentoets komen (complexe berekening)
           - name: heeft_voldoende_middelen
             type: boolean
-            description: Beschikt de aanvrager over voldoende middelen voor levensonderhoud?
+            required: true
+            description: 'Heeft voldoende middelen voor levensonderhoud (bron: middelentoets)'
+
+        # Input opgehaald uit gemeentelijke verordening via delegatie
+        input:
+          - name: verlaging_info
+            type: object
+            description: Verlagingsinformatie uit gemeentelijke afstemmingsverordening
             source:
-              # Dit zou via een inkomenstoets moeten worden bepaald
-              # Voor nu placeholder - in werkelijkheid complexe berekening
-              regulation: participatiewet_middelentoets
-              output: heeft_voldoende_middelen
+              # Haalt verlaging op uit de gemeentelijke verordening die:
+              # - legal_basis heeft naar participatiewet artikel 8
+              # - gemeente_code matcht met $gemeente_code parameter
+              # Als geen verordening gevonden: gebruikt defaults uit Art. 8
+              delegation:
+                law_id: participatiewet
+                article: '8'
+                gemeente_code: $gemeente_code
+              # Output name is the endpoint (verlaging_percentage is defined in the interface)
+              output: verlaging_percentage
+              parameters:
+                gedragscategorie: $gedragscategorie
+
         output:
           # === Procesuitkomsten ===
           - name: voldoet_aan_uwv_registratie
@@ -573,35 +614,22 @@ articles:
                 then: 109171  # € 1.091,71
                 else: 155958  # € 1.559,58 (gehuwden)
 
-          # === Stap 9: Bepaal verlagingspercentage (Afstemmingsverordening) ===
+          # === Stap 9: Verlagingspercentage uit gemeentelijke verordening ===
+          # De verlaging komt uit de Afstemmingsverordening van de gemeente
+          # waar de aanvrager woont (via delegation in input sectie)
           - output: verlaging_percentage
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 1
-                then: 5
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 2
-                then: 30
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 3
-                then: 100
-                else: 0  # geen verlaging
+            value: $verlaging_info.verlaging_percentage
 
           # === Stap 10: Bereken verlagingsbedrag ===
+          # Verlagingsbedrag = normbedrag * verlaging_percentage / 100
           - output: verlaging_bedrag
-            operation: MULTIPLY
+            operation: DIVIDE
             values:
-              - operation: DIVIDE
+              - operation: MULTIPLY
                 values:
                   - $normbedrag
-                  - 100
-              - $verlaging_percentage
+                  - $verlaging_percentage
+              - 100
 
           # === Stap 11: Bereken finale uitkering ===
           - output: uitkering_bedrag

@@ -57,6 +57,7 @@ articles:
       belanghebbende daartoe aanleiding geven.
     url: https://lokaleregelgeving.overheid.nl/CVDR345917/1#Artikel9
     machine_readable:
+      # Outputs zoals verlaging_percentage zijn de publieke endpoints
       definitions:
         verlaging_percentage_categorie_1:
           value: 5
@@ -73,29 +74,16 @@ articles:
         parameters:
           - name: bsn
             type: string
-            required: true
-        input:
+            required: false
+          # Interface parameters conform Art. 8 Participatiewet:
           - name: gedragscategorie
             type: number
-            description: Categorie van de gedraging (1, 2, of 3) conform artikel 7
-            source:
-              # Gedraging wordt vastgesteld door gemeente op basis van artikel 7
-              regulation: afstemmingsverordening_participatiewet_diemen
-              output: gedragscategorie
-          - name: normbedrag
-            type: amount
-            source:
-              regulation: participatiewet
-              output: normbedrag_artikel_21
+            required: true
+            description: Categorie van de gedraging (0=geen, 1/2/3=categorieën) conform artikel 7
         output:
           - name: verlaging_percentage
             type: number
             description: Percentage waarmee de bijstand wordt verlaagd
-          - name: verlaging_bedrag
-            type: amount
-            type_spec:
-              unit: eurocent
-            description: Bedrag waarmee de bijstand wordt verlaagd
           - name: duur_maanden
             type: number
             description: Aantal maanden dat de verlaging duurt
@@ -118,15 +106,12 @@ articles:
                   subject: $gedragscategorie
                   value: 3
                 then: $verlaging_percentage_categorie_3
-          # Bereken verlaging_bedrag
-          - output: verlaging_bedrag
-            operation: MULTIPLY
-            values:
-              - operation: DIVIDE
-                values:
-                  - $normbedrag
-                  - 100
-              - $verlaging_percentage
+              # Default: geen verlaging als gedragscategorie 0
+              - test:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 0
+                then: 0
           # Duur is altijd 1 maand (lid 1)
           - output: duur_maanden
             value: $duur_verlaging_maanden

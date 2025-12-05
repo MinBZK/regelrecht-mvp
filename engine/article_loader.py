@@ -37,12 +37,18 @@ class Article:
         return self.machine_readable.get("requires", [])
 
     def get_endpoint(self) -> str | None:
-        """Get the endpoint name for this article"""
+        """Get the endpoint name for this article (deprecated - use get_output_names)"""
         return self.machine_readable.get("endpoint")
 
+    def get_output_names(self) -> list[str]:
+        """Get all output names from this article - these are the public endpoints"""
+        execution = self.machine_readable.get("execution", {})
+        outputs = execution.get("output", [])
+        return [o.get("name") for o in outputs if o.get("name")]
+
     def is_public(self) -> bool:
-        """Check if this article is publicly callable (has an endpoint)"""
-        return self.get_endpoint() is not None
+        """Check if this article is publicly callable (has outputs or legacy endpoint)"""
+        return len(self.get_output_names()) > 0 or self.get_endpoint() is not None
 
     def get_competent_authority(self) -> str | None:
         """Get the competent authority for this article"""
@@ -55,7 +61,7 @@ class ArticleBasedLaw:
 
     schema: str
     id: str
-    uuid: str
+    uuid: str | None
     regulatory_layer: str
     publication_date: str
     identifiers: dict[str, str]
@@ -64,7 +70,7 @@ class ArticleBasedLaw:
     def __init__(self, yaml_data: dict):
         self.schema = yaml_data.get("$schema", "")
         self.id = yaml_data["$id"]
-        self.uuid = yaml_data["uuid"]
+        self.uuid = yaml_data.get("uuid")  # Optional per RFC-001
         self.regulatory_layer = yaml_data["regulatory_layer"]
         self.publication_date = yaml_data["publication_date"]
         self.valid_from = yaml_data.get("valid_from")
@@ -73,11 +79,19 @@ class ArticleBasedLaw:
         self.bwb_id = yaml_data.get("bwb_id")
         self.url = yaml_data.get("url")
         self.identifiers = yaml_data.get("identifiers", {})
+        # For gemeentelijke verordeningen
+        self.gemeente_code = yaml_data.get("gemeente_code")
+        self.officiele_titel = yaml_data.get("officiele_titel")
         self.articles = [Article(art) for art in yaml_data.get("articles", [])]
 
     def find_article_by_endpoint(self, endpoint: str) -> Article | None:
-        """Find article with given endpoint (local name)"""
+        """Find article with given endpoint (output name or legacy endpoint)"""
         for article in self.articles:
+            # First check output names (new convention: outputs are endpoints)
+            if endpoint in article.get_output_names():
+                return article
+
+            # Fallback to legacy endpoint field
             article_endpoint = article.get_endpoint()
             if article_endpoint:
                 # Extract local endpoint name (after dot)

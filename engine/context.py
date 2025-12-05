@@ -210,12 +210,17 @@ class RuleContext:
         Resolve value from source specification
 
         Args:
-            source_spec: Source specification with regulation/output or url/ref
+            source_spec: Source specification with regulation/output, delegation, or url/ref
             input_name: Name of the input being resolved
 
         Returns:
             Resolved value from regulation call or external source
         """
+        # Check for delegation source (gemeentelijke verordening)
+        delegation = source_spec.get("delegation")
+        if delegation:
+            return self._resolve_from_delegation(source_spec, input_name)
+
         # Schema v0.2.0 format: regulation + output
         regulation = source_spec.get("regulation")
         output_name = source_spec.get("output")
@@ -350,6 +355,160 @@ class RuleContext:
         """Create cache key for URI call"""
         param_str = ",".join(f"{k}:{v}" for k, v in sorted(parameters.items()))
         return f"{uri}({param_str},{self.calculation_date})"
+
+    def _resolve_from_delegation(self, source_spec: dict, input_name: str) -> Any:
+        """
+        Resolve value from delegation source (gemeentelijke verordening)
+
+        Delegation sources reference municipal regulations that implement
+        a delegated authority from a national law (e.g., Participatiewet art. 8
+        delegates to municipalities for creating afstemmingsverordeningen).
+
+        Args:
+            source_spec: Source specification with delegation, output, and parameters
+            input_name: Name of the input being resolved
+
+        Returns:
+            Resolved value from gemeentelijke verordening or defaults from delegating article
+        """
+        delegation = source_spec["delegation"]
+        law_id = delegation.get("law_id")
+        article = delegation.get("article")
+        gemeente_code_ref = delegation.get("gemeente_code")
+        # Output name is the endpoint (outputs are public endpoints per RFC-001)
+        output_name = source_spec.get("output") or source_spec.get(
+            "endpoint"
+        )  # fallback for legacy
+        params_spec = source_spec.get("parameters", {})
+
+        # Resolve gemeente_code (it's a $variable reference)
+        if isinstance(gemeente_code_ref, str) and gemeente_code_ref.startswith("$"):
+            gemeente_code = self._resolve_value(gemeente_code_ref[1:])
+        else:
+            gemeente_code = gemeente_code_ref
+
+        if not gemeente_code:
+            logger.error(
+                f"Could not resolve gemeente_code for delegation: {delegation}"
+            )
+            return None
+
+        logger.debug(
+            f"Resolving delegation: {law_id}.{article} for gemeente {gemeente_code}"
+        )
+
+        # Resolve parameter values
+        resolved_params = {}
+        for key, value in params_spec.items():
+            if isinstance(value, str) and value.startswith("$"):
+                resolved_params[key] = self._resolve_value(value[1:])
+            else:
+                resolved_params[key] = value
+
+        # Find the gemeentelijke verordening
+        rule_resolver = self.service_provider.rule_resolver
+        verordening = rule_resolver.find_gemeentelijke_verordening(
+            law_id, article, gemeente_code
+        )
+
+        if verordening:
+            # Execute the verordening - find article by output name (outputs are endpoints)
+            logger.debug(
+                f"Found verordening: {verordening.id}, finding article with output {output_name}"
+            )
+            article_obj = verordening.find_article_by_endpoint(output_name)
+
+            if article_obj:
+                from engine.engine import ArticleEngine
+
+                engine = ArticleEngine(article_obj, verordening)
+                result = engine.evaluate(
+                    parameters=resolved_params,
+                    service_provider=self.service_provider,
+                    calculation_date=self.calculation_date,
+                )
+
+                # Return the full output as a dict (the input is an object type)
+                logger.debug(f"Delegation result: {result.output}")
+                return result.output
+            else:
+                logger.warning(
+                    f"Output {output_name} not found in verordening {verordening.id}"
+                )
+
+        # No verordening found - use defaults from delegating article
+        logger.info(
+            f"No verordening found for {gemeente_code}, using defaults from {law_id}.{article}"
+        )
+
+        # Find the delegating article and get defaults from legal_foundation_for section
+        delegating_law = rule_resolver.get_law_by_id(law_id)
+        if delegating_law:
+            for art in delegating_law.articles:
+                if art.number == article:
+                    legal_foundations = art.machine_readable.get(
+                        "legal_foundation_for", []
+                    )
+                    for foundation in legal_foundations:
+                        # Check if output_name is in the delegation_interface's outputs
+                        interface = foundation.get("delegation_interface", {})
+                        interface_outputs = [
+                            o.get("name") for o in interface.get("output", [])
+                        ]
+                        if output_name in interface_outputs:
+                            defaults = foundation.get("defaults", {})
+                            if defaults:
+                                # Execute the default actions
+                                return self._execute_defaults(defaults, resolved_params)
+
+        logger.warning(f"No defaults found for delegation {law_id}.{article}")
+        return None
+
+    def _execute_defaults(self, defaults: dict, params: dict) -> dict:
+        """
+        Execute default actions from a legal_foundation_for.defaults section
+
+        Args:
+            defaults: The defaults section with actions
+            params: Parameters for the execution
+
+        Returns:
+            Dict of output values
+        """
+        from engine.engine import ArticleEngine
+
+        # Create a minimal Article-like structure for the defaults
+        class DefaultArticle:
+            def __init__(self, defaults_spec: dict):
+                self.number = "defaults"
+                self.text = "Default values"
+                self.url = None
+                self.machine_readable = {"execution": defaults_spec}
+
+            def get_execution_spec(self) -> dict:
+                return self.machine_readable.get("execution", {})
+
+            def get_definitions(self) -> dict:
+                return {}
+
+        # Create a minimal law-like structure
+        class DefaultLaw:
+            def __init__(self):
+                self.id = "defaults"
+                self.uuid = None  # Required by ArticleBasedLaw interface
+
+        default_article = DefaultArticle(defaults)
+        default_law = DefaultLaw()
+
+        # type: ignore because DefaultArticle/DefaultLaw are duck-typed implementations
+        engine = ArticleEngine(default_article, default_law)  # type: ignore[arg-type]
+        result = engine.evaluate(
+            parameters=params,
+            service_provider=self.service_provider,
+            calculation_date=self.calculation_date,
+        )
+
+        return result.output
 
     def set_output(self, name: str, value: Any):
         """Set an output value"""
