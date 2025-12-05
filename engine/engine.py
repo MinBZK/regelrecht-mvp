@@ -20,7 +20,7 @@ class ArticleResult:
     input: dict[str, Any]
     article_number: str
     law_id: str
-    law_uuid: str
+    law_uuid: str | None
     path: Optional[PathNode] = None
 
 
@@ -325,14 +325,24 @@ class ArticleEngine:
         op_type = operation["operation"]
         values = operation.get("values", [])
 
+        def evaluate_logical_value(value: Any) -> bool:
+            """Evaluate a single value in a logical operation"""
+            if isinstance(value, dict) and "operation" in value:
+                # Nested operation (e.g., {operation: EQUALS, ...})
+                return bool(self._evaluate_operation(value, context))
+            else:
+                # Variable reference or literal (e.g., $voldoet_aan_nationaliteit or True)
+                resolved = self._evaluate_value(value, context)
+                return bool(resolved)
+
         if op_type == "AND":
             for value in values:
-                if not self._evaluate_operation(value, context):
+                if not evaluate_logical_value(value):
                     return False
             return True
         elif op_type == "OR":
             for value in values:
-                if self._evaluate_operation(value, context):
+                if evaluate_logical_value(value):
                     return True
             return False
 
@@ -508,7 +518,11 @@ class ArticleEngine:
                 test_result = self._evaluate_test(condition["test"], context)
                 if test_result:
                     return self._evaluate_value(condition["then"], context)
+                elif "else" in condition:
+                    # Condition has both test and else - use else if test fails
+                    return self._evaluate_value(condition["else"], context)
             elif "else" in condition:
+                # Standalone else (catch-all)
                 return self._evaluate_value(condition["else"], context)
 
         return None

@@ -42,8 +42,8 @@ class RuleResolver:
                 f"Regulation directory not found: {self.regulation_dir}"
             )
 
-        # Scan wet/ and ministeriele_regeling/ directories
-        for category in ["wet", "ministeriele_regeling"]:
+        # Scan wet/, ministeriele_regeling/, and gemeentelijke_verordening/ directories
+        for category in ["wet", "ministeriele_regeling", "gemeentelijke_verordening"]:
             category_dir = self.regulation_dir / category
             if category_dir.exists():
                 self._load_laws_from_directory(category_dir)
@@ -210,6 +210,61 @@ class RuleResolver:
         # Filter to only return ministeriele regelingen
         return [
             law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"
+        ]
+
+    def find_gemeentelijke_verordening(
+        self, law_id: str, article: str, gemeente_code: str
+    ) -> Optional[ArticleBasedLaw]:
+        """
+        Find a gemeentelijke verordening that:
+        - Has the specified law article as legal basis
+        - Belongs to the specified gemeente
+
+        This is used for resolving delegated legislation, where a national law
+        (like Participatiewet art. 8) delegates authority to municipalities
+        to create their own regulations.
+
+        Args:
+            law_id: The delegating law ID (e.g., "participatiewet")
+            article: The delegating article number (e.g., "8")
+            gemeente_code: Municipality code (e.g., "GM0384" for Diemen)
+
+        Returns:
+            The matching ArticleBasedLaw or None if not found
+        """
+        basis_key = (law_id, article)
+        all_laws = self._legal_basis_index.get(basis_key, [])
+
+        # Filter to gemeentelijke verordeningen with matching gemeente_code
+        for law in all_laws:
+            if (
+                law.regulatory_layer == "GEMEENTELIJKE_VERORDENING"
+                and law.gemeente_code == gemeente_code
+            ):
+                return law
+
+        return None
+
+    def find_all_gemeentelijke_verordeningen(
+        self, law_id: str, article: str
+    ) -> list[ArticleBasedLaw]:
+        """
+        Find all gemeentelijke verordeningen that declare a specific law article
+        as their legal basis.
+
+        Args:
+            law_id: The delegating law ID (e.g., "participatiewet")
+            article: The delegating article number (e.g., "8")
+
+        Returns:
+            List of gemeentelijke verordening ArticleBasedLaw objects
+        """
+        basis_key = (law_id, article)
+        all_laws = self._legal_basis_index.get(basis_key, [])
+        return [
+            law
+            for law in all_laws
+            if law.regulatory_layer == "GEMEENTELIJKE_VERORDENING"
         ]
 
     def get_endpoint_count(self) -> int:
