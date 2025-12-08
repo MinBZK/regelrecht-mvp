@@ -11,6 +11,7 @@ from pathlib import Path
 
 from engine.service import LawExecutionService
 from engine.engine import ArticleResult
+from engine.context import NoLegalBasisError
 
 
 @pytest.fixture
@@ -196,7 +197,7 @@ class TestEngineCaching:
     """Test that engines are cached and reused"""
 
     def test_engines_are_cached_per_endpoint(self, test_service):
-        """Engines are cached by (law_id, endpoint) key"""
+        """Engines are cached by (law_id, output_name) key"""
         # First call creates engine
         test_service.evaluate_law_endpoint(
             law_id="test_law_a",
@@ -205,8 +206,9 @@ class TestEngineCaching:
             calculation_date="2025-01-01",
         )
 
-        # Check engine is cached (cache key is just (law_id, endpoint))
-        cache_key = ("test_law_a", "add_numbers")
+        # Check engine is cached (cache key is (law_id, first_output_name))
+        # test_law_a's add_numbers article has output "result"
+        cache_key = ("test_law_a", "result")
         assert cache_key in test_service.engine_cache
 
         # Second call should reuse cached engine
@@ -238,9 +240,11 @@ class TestEngineCaching:
             calculation_date="2025-01-01",
         )
 
-        # Should have two different cache entries
-        key1 = ("test_law_a", "add_numbers")
-        key2 = ("test_law_a", "check_threshold")
+        # Should have two different cache entries (cache key uses first output name)
+        # add_numbers article has output "result"
+        # check_threshold article has output "above_threshold"
+        key1 = ("test_law_a", "result")
+        key2 = ("test_law_a", "above_threshold")
 
         assert key1 in test_service.engine_cache
         assert key2 in test_service.engine_cache
@@ -353,3 +357,89 @@ class TestServiceMetadata:
         count = test_service.rule_resolver.get_law_count()
 
         assert count >= 3  # At least our 3 test laws
+
+
+class TestDelegationPatterns:
+    """Test delegation patterns between rijkswet and gemeentelijke verordeningen"""
+
+    def test_mandatory_delegation_with_verordening(self, test_service):
+        """Mandatory delegation works when gemeente has verordening"""
+        # GM9997 (testgemeente2) has a verordening for test_delegation_law
+        # The verordening multiplies by 3
+        result = test_service.evaluate_law_endpoint(
+            law_id="test_delegation_law",
+            endpoint="final_result",
+            parameters={"gemeente_code": "GM9997", "input_value": 10},
+            calculation_date="2025-01-01",
+        )
+
+        # verordening: 10 * 3 = 30
+        # orchestrator: 1000 + 30 = 1030
+        assert result.output["final_result"] == 1030
+
+    def test_mandatory_delegation_without_verordening_raises_error(self, test_service):
+        """Mandatory delegation raises NoLegalBasisError when gemeente has no verordening"""
+        # GM9999 has NO verordening for test_delegation_law (mandatory delegation)
+        # The legal_foundation_for has NO defaults section
+        with pytest.raises(NoLegalBasisError) as exc_info:
+            test_service.evaluate_law_endpoint(
+                law_id="test_delegation_law",
+                endpoint="final_result",
+                parameters={"gemeente_code": "GM9999", "input_value": 10},
+                calculation_date="2025-01-01",
+            )
+
+        # Verify the error contains the right info
+        error = exc_info.value
+        assert isinstance(error, NoLegalBasisError)
+        assert error.gemeente_code == "GM9999"
+        assert error.law_id == "test_delegation_law"
+        assert error.article == "1"
+        assert "Geen gemeentelijke verordening" in str(error)
+
+    def test_optional_delegation_with_verordening(self, test_service):
+        """Optional delegation uses gemeente verordening when available"""
+        # GM9998 (testgemeente) has a verordening for test_optional_delegation_law
+        # The verordening multiplies by 5 (instead of default 10)
+        result = test_service.evaluate_law_endpoint(
+            law_id="test_optional_delegation_law",
+            endpoint="final_result",
+            parameters={"gemeente_code": "GM9998", "input_value": 10},
+            calculation_date="2025-01-01",
+        )
+
+        # verordening: 10 * 5 = 50
+        # orchestrator: 1000 + 50 = 1050
+        assert result.output["final_result"] == 1050
+
+    def test_optional_delegation_without_verordening_uses_defaults(self, test_service):
+        """Optional delegation uses rijkswet defaults when gemeente has no verordening"""
+        # GM9999 has NO verordening for test_optional_delegation_law
+        # But the legal_foundation_for HAS a defaults section (multiplier = 10)
+        result = test_service.evaluate_law_endpoint(
+            law_id="test_optional_delegation_law",
+            endpoint="final_result",
+            parameters={"gemeente_code": "GM9999", "input_value": 10},
+            calculation_date="2025-01-01",
+        )
+
+        # defaults: 10 * 10 = 100
+        # orchestrator: 1000 + 100 = 1100
+        assert result.output["final_result"] == 1100
+
+    def test_no_legal_basis_error_attributes(self, test_service):
+        """NoLegalBasisError contains correct attributes for debugging"""
+        try:
+            test_service.evaluate_law_endpoint(
+                law_id="test_delegation_law",
+                endpoint="final_result",
+                parameters={"gemeente_code": "GM0000", "input_value": 5},
+                calculation_date="2025-01-01",
+            )
+            pytest.fail("Expected NoLegalBasisError")
+        except NoLegalBasisError as e:
+            assert e.gemeente_code == "GM0000"
+            assert e.law_id == "test_delegation_law"
+            assert e.article == "1"
+            # Error message should be in Dutch as it's for Dutch law system
+            assert "grondslag" in str(e).lower()

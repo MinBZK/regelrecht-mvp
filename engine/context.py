@@ -12,6 +12,30 @@ from datetime import datetime
 from engine.logging_config import logger
 
 
+class NoLegalBasisError(Exception):
+    """
+    Raised when there is no legal basis for a decision.
+
+    This occurs when a national law delegates authority to municipalities
+    (verplichte delegatie) but no municipal regulation exists for the
+    given gemeente_code.
+
+    Example: Participatiewet art. 8 requires municipalities to create
+    an afstemmingsverordening. If a municipality has no such regulation,
+    there is no legal basis for determining benefit reductions.
+    """
+
+    def __init__(self, gemeente_code: str, law_id: str, article: str):
+        self.gemeente_code = gemeente_code
+        self.law_id = law_id
+        self.article = article
+        super().__init__(
+            f"Geen gemeentelijke verordening gevonden voor gemeente {gemeente_code} "
+            f"(grondslag: {law_id} artikel {article}). "
+            f"Geen juridische grondslag voor besluit."
+        )
+
+
 @dataclass
 class PathNode:
     """Represents a node in the execution trace"""
@@ -436,12 +460,12 @@ class RuleContext:
                     f"Output {output_name} not found in verordening {verordening.id}"
                 )
 
-        # No verordening found - use defaults from delegating article
+        # No verordening found - check if delegation is optional (has defaults) or mandatory
         logger.info(
-            f"No verordening found for {gemeente_code}, using defaults from {law_id}.{article}"
+            f"No verordening found for {gemeente_code}, checking delegation type for {law_id}.{article}"
         )
 
-        # Find the delegating article and get defaults from legal_foundation_for section
+        # Find the delegating article and get legal_foundation_for section
         delegating_law = rule_resolver.get_law_by_id(law_id)
         if delegating_law:
             for art in delegating_law.articles:
@@ -458,10 +482,23 @@ class RuleContext:
                         if output_name in interface_outputs:
                             defaults = foundation.get("defaults", {})
                             if defaults:
-                                # Execute the default actions
+                                # OPTIONAL delegation: use defaults from rijkswet
+                                logger.info(
+                                    f"Using defaults from {law_id}.{article} (optional delegation)"
+                                )
                                 return self._execute_defaults(defaults, resolved_params)
+                            else:
+                                # MANDATORY delegation: no defaults means no legal basis
+                                logger.error(
+                                    f"No verordening for mandatory delegation {law_id}.{article} "
+                                    f"in gemeente {gemeente_code}"
+                                )
+                                raise NoLegalBasisError(gemeente_code, law_id, article)
 
-        logger.warning(f"No defaults found for delegation {law_id}.{article}")
+        # No matching legal_foundation_for found at all
+        logger.warning(
+            f"No legal_foundation_for found for delegation {law_id}.{article}"
+        )
         return None
 
     def _execute_defaults(self, defaults: dict, params: dict) -> dict:
@@ -483,13 +520,21 @@ class RuleContext:
                 self.number = "defaults"
                 self.text = "Default values"
                 self.url = None
-                self.machine_readable = {"execution": defaults_spec}
+                # Store definitions separately for get_definitions()
+                self._definitions = defaults_spec.get("definitions", {})
+                # Build execution spec with just actions and output
+                self.machine_readable = {
+                    "execution": {
+                        "actions": defaults_spec.get("actions", []),
+                        "output": defaults_spec.get("output", []),
+                    }
+                }
 
             def get_execution_spec(self) -> dict:
                 return self.machine_readable.get("execution", {})
 
             def get_definitions(self) -> dict:
-                return {}
+                return self._definitions
 
         # Create a minimal law-like structure
         class DefaultLaw:
