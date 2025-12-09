@@ -22,7 +22,7 @@ articles:
         - regulatory_layer: GEMEENTELIJKE_VERORDENING
           subject: test_optional
 
-          delegation_interface:
+          contract:
             parameters:
               - name: input_value
                 type: number

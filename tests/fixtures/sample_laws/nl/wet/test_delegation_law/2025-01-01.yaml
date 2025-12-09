@@ -18,7 +18,7 @@ articles:
       legal_foundation_for:
         - regulatory_layer: GEMEENTELIJKE_VERORDENING
           subject: test_delegation
-          delegation_interface:
+          contract:
             parameters:
               - name: input_value
                 type: number

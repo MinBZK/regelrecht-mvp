@@ -23,7 +23,7 @@ De vraag is: hoe vindt de engine automatisch de juiste lagere regelgeving?
 machine_readable:
   legal_foundation_for:
     - regulatory_layer: GEMEENTELIJKE_VERORDENING  # of andere laag
-      delegation_interface:
+      contract:
         parameters:
           - name: input_param
             type: number

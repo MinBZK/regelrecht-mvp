@@ -158,11 +158,11 @@ Feature: Bijstandsaanvraag via Participatiewet
     Then the citizen does not have the right to bijstand
     And the reden_afwijzing contains "werkzoekende"
 
-  # === Fallback scenario: gemeente zonder afstemmingsverordening ===
+  # === Foutscenario: gemeente zonder afstemmingsverordening ===
 
-  Scenario: Burger uit gemeente zonder verordening krijgt default verlaging
+  Scenario: Burger uit gemeente zonder verordening krijgt foutmelding
     # Gemeente GM9999 heeft geen afstemmingsverordening
-    # Fallback naar defaults uit Participatiewet art. 8: 100% verlaging bij gedragscategorie >= 1
+    # Participatiewet art. 8 is een mandatory delegation - zonder verordening geen wettelijke basis
     Given a citizen with the following data:
       | gemeente_code                          | GM9999       |
       | leeftijd                               | 35           |
@@ -175,5 +175,4 @@ Feature: Bijstandsaanvraag via Participatiewet
       | heeft_voldoende_middelen               | false        |
       | gedragscategorie                       | 1            |
     When the bijstandsaanvraag is executed for participatiewet article 43
-    Then the citizen has the right to bijstand
-    And the uitkering_bedrag is "0" eurocent
+    Then the execution fails with "No regulation found for mandatory delegation"

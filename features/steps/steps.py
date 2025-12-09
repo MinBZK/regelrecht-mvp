@@ -72,7 +72,7 @@ def step_when_bijstandsaanvraag_executed(context, article):
     parameters = context.citizen_data.copy()
 
     try:
-        # Call the Article 43 via one of its outputs (outputs are endpoints per RFC-001)
+        # Call Article 43 via one of its outputs
         result = service.evaluate_law_endpoint(
             law_id="participatiewet",
             endpoint="heeft_recht_op_bijstand",
@@ -190,6 +190,21 @@ def step_then_reden_afwijzing_contains(context, text):
         )
 
 
+@then('the execution fails with "{error_text}"')  # type: ignore[misc]
+def step_then_execution_fails_with(context, error_text):
+    """Verify that the execution failed with expected error message"""
+    if not context.error:
+        raise AssertionError(
+            f"Expected execution to fail with '{error_text}', but it succeeded"
+        )
+
+    error_str = str(context.error)
+    if error_text.lower() not in error_str.lower():
+        raise AssertionError(
+            f"Expected error to contain '{error_text}', but got: {error_str}"
+        )
+
+
 # === Zorgtoeslag step definitions ===
 
 
@@ -255,7 +270,7 @@ def step_when_healthcare_allowance_executed(context):
     parameters = {"bsn": context.bsn}
 
     try:
-        # Call the heeft_recht_op_zorgtoeslag output (Article 2) - outputs are endpoints per RFC-001
+        # Call the heeft_recht_op_zorgtoeslag output (Article 2)
         result = service.evaluate_law_endpoint(
             law_id="zorgtoeslagwet",
             endpoint="heeft_recht_op_zorgtoeslag",
@@ -279,7 +294,7 @@ def step_when_request_standard_premium(context, year):
     calculation_date = f"{year}-01-01"
 
     try:
-        # Call the standaardpremie output (Article 4) - outputs are endpoints per RFC-001
+        # Call the standaardpremie output (Article 4)
         result = service.evaluate_law_endpoint(
             law_id="zorgtoeslagwet",
             endpoint="standaardpremie",
@@ -353,4 +368,95 @@ def step_then_allowance_amount(context, amount):
     if abs(actual_amount_euro - expected_amount) > 0.01:
         raise AssertionError(
             f"Expected allowance of €{expected_amount:.2f}, but got €{actual_amount_euro:.2f}"
+        )
+
+
+# === Erfgrensbeplanting step definitions ===
+
+
+@given("a query with the following data:")  # type: ignore[misc]
+def step_given_query_data(context):
+    """Store query data from table (key | value format)"""
+    context.query_data = {}
+
+    def convert_value(val):
+        """Convert string value to appropriate type"""
+        if val == "true":
+            return True
+        elif val == "false":
+            return False
+        elif val == "null":
+            return None
+        else:
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    return val
+
+    if len(context.table.headings) == 2:
+        key = context.table.headings[0]
+        value = convert_value(context.table.headings[1])
+        context.query_data[key] = value
+
+    for row in context.table:
+        key = row[0]
+        value = convert_value(row[1])
+        context.query_data[key] = value
+
+
+@when("the erfgrensbeplanting is requested for {law_id} article {article}")  # type: ignore[misc]
+def step_when_erfgrensbeplanting_requested(context, law_id, article):
+    """Execute the erfgrensbeplanting query"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2024-01-01")
+    parameters = context.query_data.copy()
+
+    try:
+        result = service.evaluate_law_endpoint(
+            law_id=law_id,
+            endpoint="minimale_afstand_cm",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@then('the minimale_afstand_cm is "{amount}"')  # type: ignore[misc]
+def step_then_minimale_afstand_cm(context, amount):
+    """Verify the minimale afstand in centimeters"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("minimale_afstand_cm")
+    expected = int(amount)
+
+    if actual != expected:
+        raise AssertionError(
+            f"Expected minimale_afstand_cm {expected}, but got {actual}"
+        )
+
+
+@then('the minimale_afstand_m is "{amount}"')  # type: ignore[misc]
+def step_then_minimale_afstand_m(context, amount):
+    """Verify the minimale afstand in meters"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("minimale_afstand_m")
+    expected = float(amount)
+
+    if abs(actual - expected) > 0.01:
+        raise AssertionError(
+            f"Expected minimale_afstand_m {expected}, but got {actual}"
         )

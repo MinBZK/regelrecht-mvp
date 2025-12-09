@@ -65,40 +65,21 @@ articles:
       betrekking op de hoogte en de frequentie van de betaling van de individuele studietoeslag.
     url: https://wetten.overheid.nl/BWBR0015703/2022-03-15#Artikel8
     machine_readable:
-      # Dit artikel delegeert bevoegdheid naar gemeenten om verordeningen te maken
-      # over het verlagen van bijstand. Elke gemeente moet deze interface implementeren.
       legal_foundation_for:
         - regulatory_layer: GEMEENTELIJKE_VERORDENING
           subject: afstemming_bijstand
-          # Interface die elke gemeentelijke verordening moet implementeren:
-          # Outputs zijn de publieke endpoints (geen apart endpoint veld nodig)
-          delegation_interface:
+          contract:
             parameters:
               - name: gedragscategorie
                 type: number
-                required: true
-                description: Categorie van de gedraging (0=geen, 1/2/3=categorie)
+                description: Gedragscategorie (1, 2 of 3) conform gemeentelijke verordening
             output:
               - name: verlaging_percentage
                 type: number
-                description: Percentage waarmee bijstand wordt verlaagd
+                description: Verlagingspercentage van de bijstandsnorm
               - name: duur_maanden
                 type: number
                 description: Duur van de verlaging in maanden
-          # Default waarden als gemeente geen verordening heeft:
-          defaults:
-            actions:
-              # Art. 18 lid 5: bij niet nakomen verplichtingen -> 100% verlaging
-              - output: verlaging_percentage
-                conditions:
-                  - test:
-                      operation: GREATER_THAN_OR_EQUAL
-                      subject: $gedragscategorie
-                      value: 1
-                    then: 100
-                  - else: 0
-              - output: duur_maanden
-                value: 1
 
   - number: '11'
     text: |-
@@ -190,6 +171,30 @@ articles:
 
       12. Bij de toepassing van dit artikel wordt onder belanghebbende mede verstaan het gezin.
     url: https://wetten.overheid.nl/BWBR0015703/2022-03-15#Artikel18
+    machine_readable:
+      definitions:
+        PERCENTAGE_LID_5:
+          value: 100
+      execution:
+        parameters:
+          - name: is_lid_4_5_situatie
+            type: boolean
+            required: true
+            description: Betreft het niet nakomen van verplichtingen uit lid 4?
+        output:
+          - name: verlaging_percentage
+            type: number
+            description: Verlagingspercentage conform art. 18 lid 5 (100%)
+        actions:
+          - output: verlaging_percentage
+            conditions:
+              - test:
+                  operation: EQUALS
+                  subject: $is_lid_4_5_situatie
+                  value: true
+                then: $PERCENTAGE_LID_5
+                else: 0
+
   - number: '21'
     text: |-
       **Normen 21–pensioengerechtigde leeftijd**
@@ -369,11 +374,10 @@ articles:
             required: true
             description: Burgerservicenummer van de aanvrager
 
-          # TODO: gemeente_code komt uit wet_basisregistratie_personen (BRP)
           - name: gemeente_code
             type: string
             required: true
-            description: 'Gemeentecode waar aanvrager woont (bron: BRP, bijv. GM0384 voor Diemen)'
+            description: Gemeentecode van de gemeente die de aanvraag behandelt (bijv. GM0384 voor Diemen)
 
           # Gedragscategorie - bepaalt of er een verlaging wordt toegepast
           # 0 = geen overtreding, 1/2/3 = gedragscategorie conform Afstemmingsverordening
@@ -426,22 +430,18 @@ articles:
             required: true
             description: 'Heeft voldoende middelen voor levensonderhoud (bron: middelentoets)'
 
-        # Input opgehaald uit gemeentelijke verordening via delegatie
         input:
           - name: verlaging_info
             type: object
-            description: Verlagingsinformatie uit gemeentelijke afstemmingsverordening
+            description: Verlagingspercentage en duur uit gemeentelijke afstemmingsverordening
             source:
-              # Haalt verlaging op uit de gemeentelijke verordening die:
-              # - legal_basis heeft naar participatiewet artikel 8
-              # - gemeente_code matcht met $gemeente_code parameter
-              # Als geen verordening gevonden: gebruikt defaults uit Art. 8
               delegation:
                 law_id: participatiewet
                 article: '8'
                 gemeente_code: $gemeente_code
-              # Output name is the endpoint (verlaging_percentage is defined in the interface)
-              output: verlaging_percentage
+              output:
+                - verlaging_percentage
+                - duur_maanden
               parameters:
                 gedragscategorie: $gedragscategorie
 
@@ -476,7 +476,10 @@ articles:
             description: Normbedrag op basis van artikel 21
           - name: verlaging_percentage
             type: number
-            description: Verlagingspercentage op basis van gedragscategorie
+            description: Verlagingspercentage (100% conform art. 18 lid 5)
+          - name: duur_maanden
+            type: number
+            description: Duur van de verlaging in maanden (uit gemeentelijke verordening)
           - name: verlaging_bedrag
             type: amount
             type_spec:
@@ -615,10 +618,24 @@ articles:
                 else: 155958  # € 1.559,58 (gehuwden)
 
           # === Stap 9: Verlagingspercentage uit gemeentelijke verordening ===
-          # De verlaging komt uit de Afstemmingsverordening van de gemeente
-          # waar de aanvrager woont (via delegation in input sectie)
           - output: verlaging_percentage
-            value: $verlaging_info.verlaging_percentage
+            conditions:
+              - test:
+                  operation: GREATER_THAN_OR_EQUAL
+                  subject: $gedragscategorie
+                  value: 1
+                then: $verlaging_info.verlaging_percentage
+              - else: 0
+
+          # === Stap 9b: Duur uit gemeentelijke verordening ===
+          - output: duur_maanden
+            conditions:
+              - test:
+                  operation: GREATER_THAN_OR_EQUAL
+                  subject: $gedragscategorie
+                  value: 1
+                then: $verlaging_info.duur_maanden
+              - else: 0
 
           # === Stap 10: Bereken verlagingsbedrag ===
           # Verlagingsbedrag = normbedrag * verlaging_percentage / 100

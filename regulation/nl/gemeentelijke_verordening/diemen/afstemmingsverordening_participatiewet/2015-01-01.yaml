@@ -57,61 +57,49 @@ articles:
       belanghebbende daartoe aanleiding geven.
     url: https://lokaleregelgeving.overheid.nl/CVDR345917/1#Artikel9
     machine_readable:
-      # Outputs zoals verlaging_percentage zijn de publieke endpoints
       definitions:
-        verlaging_percentage_categorie_1:
+        PERCENTAGE_CATEGORIE_1:
           value: 5
-        verlaging_percentage_categorie_2:
+        PERCENTAGE_CATEGORIE_2:
           value: 30
-        verlaging_percentage_categorie_3:
+        # Categorie 3: percentage is vastgelegd in Participatiewet art. 18 lid 5
+        PERCENTAGE_CATEGORIE_3:
           value: 100
-        duur_verlaging_maanden:
+        DUUR_MAANDEN:
           value: 1
       execution:
         produces:
           legal_character: BESCHIKKING
           decision_type: ANDERE_HANDELING
         parameters:
-          - name: bsn
-            type: string
-            required: false
-          # Interface parameters conform Art. 8 Participatiewet:
           - name: gedragscategorie
             type: number
             required: true
-            description: Categorie van de gedraging (0=geen, 1/2/3=categorieën) conform artikel 7
+            description: Gedragscategorie (1, 2 of 3)
         output:
           - name: verlaging_percentage
             type: number
-            description: Percentage waarmee de bijstand wordt verlaagd
+            description: Verlagingspercentage conform art. 9 lid 1
           - name: duur_maanden
             type: number
             description: Aantal maanden dat de verlaging duurt
         actions:
-          # Bepaal verlaging_percentage op basis van gedragscategorie
           - output: verlaging_percentage
             conditions:
               - test:
                   operation: EQUALS
                   subject: $gedragscategorie
                   value: 1
-                then: $verlaging_percentage_categorie_1
+                then: $PERCENTAGE_CATEGORIE_1
               - test:
                   operation: EQUALS
                   subject: $gedragscategorie
                   value: 2
-                then: $verlaging_percentage_categorie_2
+                then: $PERCENTAGE_CATEGORIE_2
               - test:
                   operation: EQUALS
                   subject: $gedragscategorie
                   value: 3
-                then: $verlaging_percentage_categorie_3
-              # Default: geen verlaging als gedragscategorie 0
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 0
-                then: 0
-          # Duur is altijd 1 maand (lid 1)
+                then: $PERCENTAGE_CATEGORIE_3
           - output: duur_maanden
-            value: $duur_verlaging_maanden
+            value: $DUUR_MAANDEN

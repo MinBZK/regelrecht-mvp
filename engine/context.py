@@ -375,7 +375,7 @@ class RuleContext:
         law_id = delegation.get("law_id")
         article = delegation.get("article")
         gemeente_code_ref = delegation.get("gemeente_code")
-        # Output name is the endpoint (outputs are public endpoints per RFC-001)
+        # Output name to retrieve from the verordening
         output_name = source_spec.get("output") or source_spec.get(
             "endpoint"
         )  # fallback for legacy
@@ -412,7 +412,7 @@ class RuleContext:
         )
 
         if verordening:
-            # Execute the verordening - find article by output name (outputs are endpoints)
+            # Execute the verordening - find article by output name
             logger.debug(
                 f"Found verordening: {verordening.id}, finding article with output {output_name}"
             )
@@ -450,12 +450,19 @@ class RuleContext:
                         "legal_foundation_for", []
                     )
                     for foundation in legal_foundations:
-                        # Check if output_name is in the delegation_interface's outputs
-                        interface = foundation.get("delegation_interface", {})
+                        # Check if output_name(s) are in the contract's outputs
+                        interface = foundation.get("contract", {})
                         interface_outputs = [
                             o.get("name") for o in interface.get("output", [])
                         ]
-                        if output_name in interface_outputs:
+                        # Support both single output and list of outputs
+                        if isinstance(output_name, list):
+                            outputs_match = all(
+                                o in interface_outputs for o in output_name
+                            )
+                        else:
+                            outputs_match = output_name in interface_outputs
+                        if outputs_match:
                             defaults = foundation.get("defaults", {})
                             if defaults:
                                 # OPTIONAL delegation: use defaults from rijkswet

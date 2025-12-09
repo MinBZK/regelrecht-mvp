@@ -38,6 +38,7 @@ class Article:
 
     def get_endpoint(self) -> str | None:
         """Get the endpoint name for this article (deprecated - use get_output_names)"""
+        # TODO: remove remaining endpoint code
         return self.machine_readable.get("endpoint")
 
     def get_output_names(self) -> list[str]:
@@ -70,7 +71,7 @@ class ArticleBasedLaw:
     def __init__(self, yaml_data: dict):
         self.schema = yaml_data.get("$schema", "")
         self.id = yaml_data["$id"]
-        self.uuid = yaml_data.get("uuid")  # Optional per RFC-001
+        self.uuid = yaml_data.get("uuid")
         self.regulatory_layer = yaml_data["regulatory_layer"]
         self.publication_date = yaml_data["publication_date"]
         self.valid_from = yaml_data.get("valid_from")
@@ -84,24 +85,38 @@ class ArticleBasedLaw:
         self.officiele_titel = yaml_data.get("officiele_titel")
         self.articles = [Article(art) for art in yaml_data.get("articles", [])]
 
-    def find_article_by_endpoint(self, endpoint: str) -> Article | None:
-        """Find article with given endpoint (output name or legacy endpoint)"""
+    def find_article_by_endpoint(self, endpoint: str | list[str]) -> Article | None:
+        """Find article with given endpoint (output name or legacy endpoint)
+
+        Args:
+            endpoint: Single output name string, or list of output names.
+                      If a list is provided, finds article that has ALL of those outputs.
+        """
+        # Normalize to list for uniform handling
+        if isinstance(endpoint, str):
+            requested_outputs = [endpoint]
+        else:
+            requested_outputs = endpoint
+
         for article in self.articles:
-            # First check output names (new convention: outputs are endpoints)
-            if endpoint in article.get_output_names():
+            article_outputs = article.get_output_names()
+
+            # Check if article has all requested outputs
+            if all(out in article_outputs for out in requested_outputs):
                 return article
 
-            # Fallback to legacy endpoint field
-            article_endpoint = article.get_endpoint()
-            if article_endpoint:
-                # Extract local endpoint name (after dot)
-                local_name = (
-                    article_endpoint.split(".")[-1]
-                    if "." in article_endpoint
-                    else article_endpoint
-                )
-                if local_name == endpoint:
-                    return article
+            # Fallback to legacy endpoint field (only for single endpoint)
+            if len(requested_outputs) == 1:
+                article_endpoint = article.get_endpoint()
+                if article_endpoint:
+                    # Extract local endpoint name (after dot)
+                    local_name = (
+                        article_endpoint.split(".")[-1]
+                        if "." in article_endpoint
+                        else article_endpoint
+                    )
+                    if local_name == requested_outputs[0]:
+                        return article
         return None
 
     def find_article_by_number(self, number: str) -> Article | None:
