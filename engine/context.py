@@ -12,30 +12,6 @@ from datetime import datetime
 from engine.logging_config import logger
 
 
-class NoLegalBasisError(Exception):
-    """
-    Raised when there is no legal basis for a decision.
-
-    This occurs when a national law delegates authority to municipalities
-    (verplichte delegatie) but no municipal regulation exists for the
-    given gemeente_code.
-
-    Example: Participatiewet art. 8 requires municipalities to create
-    an afstemmingsverordening. If a municipality has no such regulation,
-    there is no legal basis for determining benefit reductions.
-    """
-
-    def __init__(self, gemeente_code: str, law_id: str, article: str):
-        self.gemeente_code = gemeente_code
-        self.law_id = law_id
-        self.article = article
-        super().__init__(
-            f"Geen gemeentelijke verordening gevonden voor gemeente {gemeente_code} "
-            f"(grondslag: {law_id} artikel {article}). "
-            f"Geen juridische grondslag voor besluit."
-        )
-
-
 @dataclass
 class PathNode:
     """Represents a node in the execution trace"""
@@ -489,11 +465,13 @@ class RuleContext:
                                 return self._execute_defaults(defaults, resolved_params)
                             else:
                                 # MANDATORY delegation: no defaults means no legal basis
-                                logger.error(
-                                    f"No verordening for mandatory delegation {law_id}.{article} "
-                                    f"in gemeente {gemeente_code}"
+                                msg = (
+                                    f"No regulation found for mandatory delegation "
+                                    f"{law_id} article {article} in jurisdiction {gemeente_code}. "
+                                    f"No legal basis for decision."
                                 )
-                                raise NoLegalBasisError(gemeente_code, law_id, article)
+                                logger.error(msg)
+                                raise ValueError(msg)
 
         # No matching legal_foundation_for found at all
         logger.warning(

@@ -11,7 +11,6 @@ from pathlib import Path
 
 from engine.service import LawExecutionService
 from engine.engine import ArticleResult
-from engine.context import NoLegalBasisError
 
 
 @pytest.fixture
@@ -378,24 +377,18 @@ class TestDelegationPatterns:
         assert result.output["final_result"] == 1030
 
     def test_mandatory_delegation_without_verordening_raises_error(self, test_service):
-        """Mandatory delegation raises NoLegalBasisError when gemeente has no verordening"""
+        """Mandatory delegation raises ValueError when gemeente has no verordening"""
         # GM9999 has NO verordening for test_delegation_law (mandatory delegation)
         # The legal_foundation_for has NO defaults section
-        with pytest.raises(NoLegalBasisError) as exc_info:
+        with pytest.raises(
+            ValueError, match="No regulation found for mandatory delegation"
+        ):
             test_service.evaluate_law_endpoint(
                 law_id="test_delegation_law",
                 endpoint="final_result",
                 parameters={"gemeente_code": "GM9999", "input_value": 10},
                 calculation_date="2025-01-01",
             )
-
-        # Verify the error contains the right info
-        error = exc_info.value
-        assert isinstance(error, NoLegalBasisError)
-        assert error.gemeente_code == "GM9999"
-        assert error.law_id == "test_delegation_law"
-        assert error.article == "1"
-        assert "Geen gemeentelijke verordening" in str(error)
 
     def test_optional_delegation_with_verordening(self, test_service):
         """Optional delegation uses gemeente verordening when available"""
@@ -427,19 +420,18 @@ class TestDelegationPatterns:
         # orchestrator: 1000 + 100 = 1100
         assert result.output["final_result"] == 1100
 
-    def test_no_legal_basis_error_attributes(self, test_service):
-        """NoLegalBasisError contains correct attributes for debugging"""
-        try:
+    def test_mandatory_delegation_error_message_contains_details(self, test_service):
+        """ValueError message contains jurisdiction, law_id, and article for debugging"""
+        with pytest.raises(ValueError) as exc_info:
             test_service.evaluate_law_endpoint(
                 law_id="test_delegation_law",
                 endpoint="final_result",
                 parameters={"gemeente_code": "GM0000", "input_value": 5},
                 calculation_date="2025-01-01",
             )
-            pytest.fail("Expected NoLegalBasisError")
-        except NoLegalBasisError as e:
-            assert e.gemeente_code == "GM0000"
-            assert e.law_id == "test_delegation_law"
-            assert e.article == "1"
-            # Error message should be in Dutch as it's for Dutch law system
-            assert "grondslag" in str(e).lower()
+
+        error_msg = str(exc_info.value)
+        assert "GM0000" in error_msg
+        assert "test_delegation_law" in error_msg
+        assert "article 1" in error_msg
+        assert "No legal basis" in error_msg
