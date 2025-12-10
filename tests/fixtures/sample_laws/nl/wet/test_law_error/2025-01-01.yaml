@@ -15,13 +15,12 @@ articles:
     url: https://example.com/test_law_error#1
     machine_readable:
       public: true
-      endpoint: divide_by_zero
       execution:
         output:
-          - name: result
+          - name: divide_by_zero
             type: number
         actions:
-          - output: result
+          - output: divide_by_zero
             operation: DIVIDE
             values:
               - 100
@@ -32,16 +31,15 @@ articles:
     url: https://example.com/test_law_error#2
     machine_readable:
       public: true
-      endpoint: call_missing_law
       execution:
         input:
           - name: missing_data
             type: number
             source:
-              url: regelrecht://nonexistent_law/some_endpoint#result
+              url: regelrecht://nonexistent_law/some_output#some_output
         output:
-          - name: result
+          - name: call_missing_law
             type: number
         actions:
-          - output: result
+          - output: call_missing_law
             value: $missing_data

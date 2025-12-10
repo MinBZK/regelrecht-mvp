@@ -36,10 +36,11 @@ class Article:
         """Get required URI dependencies"""
         return self.machine_readable.get("requires", [])
 
-    def get_endpoint(self) -> str | None:
-        """Get the endpoint name for this article (deprecated - use get_output_names)"""
-        # TODO: remove remaining endpoint code
-        return self.machine_readable.get("endpoint")
+    def get_output_names(self) -> list[str]:
+        """Get list of output names for this article"""
+        execution = self.machine_readable.get("execution", {})
+        outputs = execution.get("output", [])
+        return [o.get("name") for o in outputs if o.get("name")]
 
     def get_output_names(self) -> list[str]:
         """Get all output names from this article - these are the public endpoints"""
@@ -48,8 +49,8 @@ class Article:
         return [o.get("name") for o in outputs if o.get("name")]
 
     def is_public(self) -> bool:
-        """Check if this article is publicly callable (has outputs or legacy endpoint)"""
-        return len(self.get_output_names()) > 0 or self.get_endpoint() is not None
+        """Check if this article is publicly callable (has outputs)"""
+        return len(self.get_output_names()) > 0
 
     def get_competent_authority(self) -> str | None:
         """Get the competent authority for this article"""
@@ -87,38 +88,11 @@ class ArticleBasedLaw:
         self.jaar = yaml_data.get("jaar")
         self.articles = [Article(art) for art in yaml_data.get("articles", [])]
 
-    def find_article_by_endpoint(self, endpoint: str | list[str]) -> Article | None:
-        """Find article with given endpoint (output name or legacy endpoint)
-
-        Args:
-            endpoint: Single output name string, or list of output names.
-                      If a list is provided, finds article that has ALL of those outputs.
-        """
-        # Normalize to list for uniform handling
-        if isinstance(endpoint, str):
-            requested_outputs = [endpoint]
-        else:
-            requested_outputs = endpoint
-
+    def find_article_by_output(self, output_name: str) -> Article | None:
+        """Find article that produces the given output"""
         for article in self.articles:
-            article_outputs = article.get_output_names()
-
-            # Check if article has all requested outputs
-            if all(out in article_outputs for out in requested_outputs):
+            if output_name in article.get_output_names():
                 return article
-
-            # Fallback to legacy endpoint field (only for single endpoint)
-            if len(requested_outputs) == 1:
-                article_endpoint = article.get_endpoint()
-                if article_endpoint:
-                    # Extract local endpoint name (after dot)
-                    local_name = (
-                        article_endpoint.split(".")[-1]
-                        if "." in article_endpoint
-                        else article_endpoint
-                    )
-                    if local_name == requested_outputs[0]:
-                        return article
         return None
 
     def find_article_by_number(self, number: str) -> Article | None:
@@ -128,14 +102,13 @@ class ArticleBasedLaw:
                 return article
         return None
 
-    def get_all_endpoints(self) -> dict[str, Article]:
-        """Get mapping of endpoint names to articles"""
-        endpoints = {}
+    def get_all_outputs(self) -> dict[str, Article]:
+        """Get mapping of output names to articles"""
+        outputs = {}
         for article in self.articles:
-            endpoint = article.get_endpoint()
-            if endpoint:
-                endpoints[endpoint] = article
-        return endpoints
+            for output_name in article.get_output_names():
+                outputs[output_name] = article
+        return outputs
 
     def get_public_articles(self) -> list[Article]:
         """Get all publicly callable articles"""

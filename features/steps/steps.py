@@ -285,10 +285,10 @@ def step_when_healthcare_allowance_executed(context):
     parameters = {"bsn": context.bsn}
 
     try:
-        # Call the heeft_recht_op_zorgtoeslag output (Article 2)
-        result = service.evaluate_law_endpoint(
+        # Call the zorgtoeslag calculation output
+        result = service.evaluate_law_output(
             law_id="zorgtoeslagwet",
-            endpoint="heeft_recht_op_zorgtoeslag",
+            output_name="bereken_zorgtoeslag",
             parameters=parameters,
         )
         context.result = result
@@ -309,10 +309,10 @@ def step_when_request_standard_premium(context, year):
     calculation_date = f"{year}-01-01"
 
     try:
-        # Call the standaardpremie output (Article 4)
-        result = service.evaluate_law_endpoint(
+        # Call the get_standaardpremie output (Article 4)
+        result = service.evaluate_law_output(
             law_id="zorgtoeslagwet",
-            endpoint="standaardpremie",
+            output_name="get_standaardpremie",
             parameters={},
             calculation_date=calculation_date,
         )

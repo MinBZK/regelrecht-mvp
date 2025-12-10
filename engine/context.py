@@ -285,24 +285,24 @@ class RuleContext:
             else:
                 resolved_params[key] = value
 
-        # Handle internal references (same-law): #endpoint
+        # Handle internal references (same-law): #output_name
         if uri.startswith("#"):
-            endpoint = uri[1:]  # Remove the # prefix
-            logger.debug(f"Resolving internal reference: #{endpoint}")
+            output_name = uri[1:]  # Remove the # prefix
+            logger.debug(f"Resolving internal reference: #{output_name}")
 
             # Create cache key for internal reference (use original uri which includes #)
             cache_key = self._make_cache_key(uri, resolved_params)
 
             # Check cache
             if cache_key in self._uri_cache:
-                logger.debug(f"Cache hit for internal reference #{endpoint}")
+                logger.debug(f"Cache hit for internal reference #{output_name}")
                 return self._uri_cache[cache_key]
 
-            # Find the article by endpoint in current law
-            article = self.current_law.find_article_by_endpoint(endpoint)
+            # Find the article by output name in current law
+            article = self.current_law.find_article_by_output(output_name)
             if not article:
                 logger.error(
-                    f"Internal reference #{endpoint} not found in law {self.current_law.id}"
+                    f"Internal reference #{output_name} not found in law {self.current_law.id}"
                 )
                 return None
 
@@ -314,15 +314,15 @@ class RuleContext:
                 parameters=resolved_params,
                 service_provider=self.service_provider,
                 calculation_date=self.calculation_date,
-                requested_output=endpoint,
+                requested_output=output_name,
             )
 
-            # Extract the endpoint output
-            value = result.output.get(endpoint)
+            # Extract the output
+            value = result.output.get(output_name)
 
             # Cache result
             self._uri_cache[cache_key] = value
-            logger.debug(f"Resolved internal reference #{endpoint} -> {value}")
+            logger.debug(f"Resolved internal reference #{output_name} -> {value}")
             return value
 
         # Handle external references (cross-law URIs)

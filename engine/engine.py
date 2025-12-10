@@ -413,10 +413,10 @@ class ArticleEngine:
             regeling_id = regeling_law.id
 
             # Find the article that produces the requested output
-            regeling_article = regeling_law.find_article_by_endpoint(output_field)
+            regeling_article = regeling_law.find_article_by_output(output_field)
             if not regeling_article:
                 logger.warning(
-                    f"Regeling {regeling_id}: No article found with endpoint '{output_field}'"
+                    f"Regeling {regeling_id}: No article found with output '{output_field}'"
                 )
                 continue  # Try next regeling
 
