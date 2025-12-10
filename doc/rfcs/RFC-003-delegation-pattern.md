@@ -90,9 +90,6 @@ delegation:
 2. **Uitbreidbaar** - Meerdere selectiecriteria mogelijk
 3. **Toekomstbestendig** - Klaar voor andere jurisdicties (provincies, waterschappen)
 
-**Backward compatibility:** De oude `gemeente_code: $gemeente_code` syntax blijft werken
-voor bestaande YAMLs tijdens migratie.
-
 ### Twee patronen
 
 | Patroon | `defaults` aanwezig? | Zonder lagere regelgeving |

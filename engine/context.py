@@ -420,16 +420,6 @@ class RuleContext:
 
             resolved_criteria.append({"name": name, "value": value})
 
-        # BACKWARD COMPATIBILITY: support legacy gemeente_code property
-        gemeente_code_ref = delegation.get("gemeente_code")
-        if gemeente_code_ref and not select_on:
-            # Convert legacy format to select_on criteria
-            if isinstance(gemeente_code_ref, str) and gemeente_code_ref.startswith("$"):
-                gemeente_code = self._resolve_value(gemeente_code_ref[1:])
-            else:
-                gemeente_code = gemeente_code_ref
-            resolved_criteria = [{"name": "gemeente_code", "value": gemeente_code}]
-
         if not resolved_criteria:
             logger.error(f"No selection criteria for delegation: {delegation}")
             return None

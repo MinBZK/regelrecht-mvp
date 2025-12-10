@@ -422,10 +422,6 @@
                       "type": "string",
                       "description": "Article number that delegates the authority (e.g., '8')"
                     },
-                    "gemeente_code": {
-                      "type": "string",
-                      "description": "DEPRECATED: Use select_on instead. Municipality code or $variable reference"
-                    },
                     "select_on": {
                       "type": "array",
                       "description": "Generic criteria for selecting delegated regulation",
@@ -445,10 +441,7 @@
                       }
                     }
                   },
-                  "anyOf": [
-                    { "required": ["gemeente_code"] },
-                    { "required": ["select_on"] }
-                  ]
+                  "required": ["select_on"]
                 },
                 "endpoint": {
                   "type": "string",
