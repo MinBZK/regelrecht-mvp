@@ -20,22 +20,51 @@ This is a Python project managed with **uv** (https://github.com/astral-sh/uv).
 uv sync
 ```
 
-### Common Commands
+### Just Commands (Required for Claude Code)
+
+This project uses [just](https://github.com/casey/just) as a command runner.
+
+**IMPORTANT FOR CLAUDE CODE:** All `just` commands have pre-authorized permissions configured in the project settings. This means Claude Code can run these commands **without asking the user for permission each time**. Always use `just` commands instead of raw `uv run` commands when available to avoid unnecessary permission prompts.
+
+```bash
+# List all available commands
+just
+
+# Run pytest
+just test
+
+# Run behave BDD tests
+just behave
+
+# Run all tests (pytest + behave)
+just test-all
+
+# Lint with ruff
+just lint
+
+# Format with ruff
+just format
+
+# Type check with ty
+just typecheck
+
+# Run pre-commit hooks
+just pre-commit
+
+# Sync dependencies
+just sync
+```
+
+### Manual Commands
 ```bash
 # Run Python scripts
 uv run python script.py
-
-# Run the main application
-uv run python main.py
 
 # Add a new dependency
 uv add package-name
 
 # Add a development dependency
 uv add --dev package-name
-
-# Run pre-commit hooks manually
-uv run pre-commit run --all-files
 ```
 
 ### Pre-commit Hooks
@@ -45,6 +74,17 @@ This repository uses pre-commit hooks for code quality:
 - **Standard hooks**: Trailing whitespace, end-of-file fixer, YAML checks, etc.
 
 Hooks are automatically installed with `uv run pre-commit install` and run on every commit.
+
+**NEVER use `--no-verify` when committing.** Pre-commit hooks exist to catch issues early. If hooks fail, fix the underlying problem instead of bypassing them.
+
+### Git Worktrees
+
+When using git worktrees, create them **inside the project folder** (e.g., `.worktrees/`). This ensures Claude Code retains file access permissions without requiring re-authorization for each worktree.
+
+```bash
+# Create worktree inside project
+git worktree add .worktrees/feature-branch feature-branch
+```
 
 ### Type Checking
 This project uses **ty** for Python type checking. All code must pass type checks.
@@ -91,7 +131,6 @@ The schema defines the required structure for machine-readable laws:
 ```yaml
 $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
 $id: "law_identifier"  # Slug for referencing (e.g., "zorgtoeslagwet")
-uuid: "..."  # UUID v4
 regulatory_layer: "WET" | "MINISTERIELE_REGELING" | "AMVB"
 publication_date: "YYYY-MM-DD"
 bwb_id: "BWBRXXXXXXX"  # BWB identifier
