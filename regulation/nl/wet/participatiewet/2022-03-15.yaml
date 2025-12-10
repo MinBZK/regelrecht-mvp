@@ -445,45 +445,12 @@ articles:
                 bsn: $bsn
 
         output:
-          # === Procesuitkomsten ===
-          - name: voldoet_aan_uwv_registratie
-            type: boolean
-            description: Voldoet aan de eis van UWV-registratie
-          - name: voldoet_aan_nationaliteit
-            type: boolean
-            description: Voldoet aan nationaliteitseis (Nederlander of gelijkgesteld)
-          - name: voldoet_aan_woonplaats
-            type: boolean
-            description: Woont in Nederland
-          - name: voldoet_aan_leeftijd
-            type: boolean
-            description: Voldoet aan leeftijdseis (21+ en onder pensioenleeftijd)
-          - name: heeft_onvoldoende_middelen
-            type: boolean
-            description: Heeft onvoldoende middelen (nodig voor recht)
-          # === Einduitkomsten ===
           - name: heeft_recht_op_bijstand
             type: boolean
             description: Heeft de aanvrager recht op bijstand?
           - name: reden_afwijzing
             type: string
             description: Reden van afwijzing indien geen recht
-          - name: normbedrag
-            type: amount
-            type_spec:
-              unit: eurocent
-            description: Normbedrag op basis van artikel 21
-          - name: verlaging_percentage
-            type: number
-            description: Verlagingspercentage (100% conform art. 18 lid 5)
-          - name: duur_maanden
-            type: number
-            description: Duur van de verlaging in maanden (uit gemeentelijke verordening)
-          - name: verlaging_bedrag
-            type: amount
-            type_spec:
-              unit: eurocent
-            description: Bedrag van de verlaging
           - name: uitkering_bedrag
             type: amount
             type_spec:
