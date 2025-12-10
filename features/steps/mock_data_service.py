@@ -132,7 +132,6 @@ class MockDataService:
         return ArticleResult(
             article_number="mock",
             law_id="mock",
-            law_uuid="mock-uuid",
             output=outputs,
             input={},
             path=None,

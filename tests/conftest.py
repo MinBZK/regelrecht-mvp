@@ -11,7 +11,6 @@ def sample_law_data():
     """Sample law YAML data for testing"""
     return {
         "$id": "test_law",
-        "uuid": "12345678-1234-4234-8234-123456789012",
         "regulatory_layer": "WET",
         "publication_date": "2025-01-01",
         "url": "https://example.com/test",
@@ -55,7 +54,6 @@ def minimal_law():
     return ArticleBasedLaw(
         {
             "$id": "test_law",
-            "uuid": "test-uuid-12345",
             "regulatory_layer": "WET",
             "publication_date": "2025-01-01",
             "articles": [],

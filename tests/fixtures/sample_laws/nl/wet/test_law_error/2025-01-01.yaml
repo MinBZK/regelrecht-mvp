@@ -1,7 +1,6 @@
 ---
 $schema: https://example.com/schema/v0.1.0/schema.json
 $id: test_law_error
-uuid: 33333333-3333-3333-3333-333333333333
 regulatory_layer: WET
 publication_date: '2025-01-01'
 

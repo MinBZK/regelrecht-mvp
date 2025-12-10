@@ -9,12 +9,11 @@ from engine.engine import ArticleEngine
 from engine.article_loader import Article, ArticleBasedLaw
 
 
-def make_minimal_law(law_id="test_law", uuid="test-uuid"):
+def make_minimal_law(law_id="test_law"):
     """Helper to create minimal law for testing"""
     return ArticleBasedLaw(
         {
             "$id": law_id,
-            "uuid": uuid,
             "regulatory_layer": "WET",
             "publication_date": "2025-01-01",
             "articles": [],
@@ -1690,14 +1689,13 @@ class TestActionExecution:
                 },
             }
         )
-        law = make_minimal_law("test_law", "test-uuid-12345")
+        law = make_minimal_law("test_law")
         engine = ArticleEngine(article, law)
 
         result = engine.evaluate({}, Mock(), "2025-01-01")
 
         assert result.article_number == "42"
         assert result.law_id == "test_law"
-        assert result.law_uuid == "test-uuid-12345"
         assert isinstance(result.output, dict)
         assert isinstance(result.input, dict)
 
