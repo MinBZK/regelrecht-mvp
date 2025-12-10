@@ -397,10 +397,28 @@ class RuleContext:
         resolved_criteria = []
 
         for criterion in select_on:
-            value = criterion["value"]
+            # Validate criterion structure
+            name = criterion.get("name")
+            value = criterion.get("value")
+
+            if not name:
+                logger.warning(f"Invalid criterion missing 'name': {criterion}")
+                continue
+
+            if value is None:
+                logger.warning(f"Invalid criterion missing 'value': {criterion}")
+                continue
+
+            # Resolve variable references
             if isinstance(value, str) and value.startswith("$"):
                 value = self._resolve_value(value[1:])
-            resolved_criteria.append({"name": criterion["name"], "value": value})
+                if value is None:
+                    logger.error(
+                        f"Could not resolve variable in criterion '{name}': {criterion}"
+                    )
+                    continue
+
+            resolved_criteria.append({"name": name, "value": value})
 
         # BACKWARD COMPATIBILITY: support legacy gemeente_code property
         gemeente_code_ref = delegation.get("gemeente_code")
