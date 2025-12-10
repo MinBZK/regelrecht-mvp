@@ -43,8 +43,9 @@ articles:
             type: number
             required: true
         input:
-          - name: delegated_data
-            type: object
+          # When output: X is specified, delegation returns just the value (not a dict)
+          - name: delegated_result_value
+            type: number
             source:
               delegation:
                 law_id: test_delegation_law
@@ -61,4 +62,4 @@ articles:
             operation: ADD
             values:
               - 1000
-              - $delegated_data.delegated_result
+              - $delegated_result_value

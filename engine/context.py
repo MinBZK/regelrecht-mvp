@@ -372,6 +372,10 @@ class RuleContext:
         a delegated authority from a national law (e.g., Participatiewet art. 8
         delegates to municipalities for creating afstemmingsverordeningen).
 
+        Supports both:
+        - New generic `select_on` format: [{name: "gemeente_code", value: "$gemeente_code"}]
+        - Legacy `gemeente_code` property (for backward compatibility)
+
         Args:
             source_spec: Source specification with delegation, output, and parameters
             input_name: Name of the input being resolved
@@ -382,27 +386,38 @@ class RuleContext:
         delegation = source_spec["delegation"]
         law_id = delegation.get("law_id")
         article = delegation.get("article")
-        gemeente_code_ref = delegation.get("gemeente_code")
         # Output name to retrieve from the verordening
         output_name = source_spec.get("output") or source_spec.get(
             "endpoint"
         )  # fallback for legacy
         params_spec = source_spec.get("parameters", {})
 
-        # Resolve gemeente_code (it's a $variable reference)
-        if isinstance(gemeente_code_ref, str) and gemeente_code_ref.startswith("$"):
-            gemeente_code = self._resolve_value(gemeente_code_ref[1:])
-        else:
-            gemeente_code = gemeente_code_ref
+        # Process select_on criteria (generic mechanism)
+        select_on = delegation.get("select_on", [])
+        resolved_criteria = []
 
-        if not gemeente_code:
-            logger.error(
-                f"Could not resolve gemeente_code for delegation: {delegation}"
-            )
+        for criterion in select_on:
+            value = criterion["value"]
+            if isinstance(value, str) and value.startswith("$"):
+                value = self._resolve_value(value[1:])
+            resolved_criteria.append({"name": criterion["name"], "value": value})
+
+        # BACKWARD COMPATIBILITY: support legacy gemeente_code property
+        gemeente_code_ref = delegation.get("gemeente_code")
+        if gemeente_code_ref and not select_on:
+            # Convert legacy format to select_on criteria
+            if isinstance(gemeente_code_ref, str) and gemeente_code_ref.startswith("$"):
+                gemeente_code = self._resolve_value(gemeente_code_ref[1:])
+            else:
+                gemeente_code = gemeente_code_ref
+            resolved_criteria = [{"name": "gemeente_code", "value": gemeente_code}]
+
+        if not resolved_criteria:
+            logger.error(f"No selection criteria for delegation: {delegation}")
             return None
 
         logger.debug(
-            f"Resolving delegation: {law_id}.{article} for gemeente {gemeente_code}"
+            f"Resolving delegation: {law_id}.{article} with criteria {resolved_criteria}"
         )
 
         # Resolve parameter values
@@ -413,10 +428,10 @@ class RuleContext:
             else:
                 resolved_params[key] = value
 
-        # Find the gemeentelijke verordening
+        # Find the delegated regulation using select_on criteria
         rule_resolver = self.service_provider.rule_resolver
-        verordening = rule_resolver.find_gemeentelijke_verordening(
-            law_id, article, gemeente_code
+        verordening = rule_resolver.find_delegated_regulation(
+            law_id, article, resolved_criteria
         )
 
         if verordening:
@@ -456,7 +471,7 @@ class RuleContext:
 
         # No verordening found - check if delegation is optional (has defaults) or mandatory
         logger.info(
-            f"No verordening found for {gemeente_code}, checking delegation type for {law_id}.{article}"
+            f"No verordening found for criteria {resolved_criteria}, checking delegation type for {law_id}.{article}"
         )
 
         # Find the delegating article and get legal_basis_for section
@@ -504,7 +519,7 @@ class RuleContext:
                                 # MANDATORY delegation: no defaults means no legal basis
                                 msg = (
                                     f"No regulation found for mandatory delegation "
-                                    f"{law_id} article {article} in jurisdiction {gemeente_code}. "
+                                    f"{law_id} article {article} with criteria {resolved_criteria}. "
                                     f"No legal basis for decision."
                                 )
                                 logger.error(msg)

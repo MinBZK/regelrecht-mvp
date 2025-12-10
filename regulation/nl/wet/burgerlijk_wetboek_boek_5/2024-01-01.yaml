@@ -89,7 +89,10 @@ articles:
               delegation:
                 law_id: burgerlijk_wetboek_boek_5
                 article: '42'
-                gemeente_code: $gemeente_code
+                # Generic select_on mechanism for finding delegated regulation
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
               output: minimale_afstand_cm
               parameters:
                 type_beplanting: $type_beplanting

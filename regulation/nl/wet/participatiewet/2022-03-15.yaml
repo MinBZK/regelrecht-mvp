@@ -422,7 +422,10 @@ articles:
               delegation:
                 law_id: participatiewet
                 article: '8'
-                gemeente_code: $gemeente_code
+                # Generic select_on mechanism for finding delegated regulation
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
               output: verlaging_percentage
               parameters:
                 bsn: $bsn
@@ -434,7 +437,9 @@ articles:
               delegation:
                 law_id: participatiewet
                 article: '8'
-                gemeente_code: $gemeente_code
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
               output: duur_maanden
               parameters:
                 bsn: $bsn

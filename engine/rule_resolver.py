@@ -212,6 +212,51 @@ class RuleResolver:
             law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"
         ]
 
+    def find_delegated_regulation(
+        self, law_id: str, article: str, select_criteria: list[dict]
+    ) -> Optional[ArticleBasedLaw]:
+        """
+        Find a regulation that implements delegated authority from a specific article.
+
+        Uses a generic select_on mechanism to match regulations based on arbitrary
+        criteria (e.g., gemeente_code, provincie_code, jaar).
+
+        Args:
+            law_id: The delegating law ID (e.g., "participatiewet")
+            article: The delegating article number (e.g., "8")
+            select_criteria: List of {name: str, value: Any} criteria to match
+
+        Returns:
+            The matching ArticleBasedLaw or None if not found
+        """
+        basis_key = (law_id, article)
+        candidates = self._legal_basis_index.get(basis_key, [])
+
+        for law in candidates:
+            if self._matches_all_criteria(law, select_criteria):
+                return law
+
+        return None
+
+    def _matches_all_criteria(self, law: ArticleBasedLaw, criteria: list[dict]) -> bool:
+        """
+        Check if a law matches all selection criteria.
+
+        Args:
+            law: Law to check
+            criteria: List of {name: str, value: Any} criteria
+
+        Returns:
+            True if law matches all criteria
+        """
+        for criterion in criteria:
+            prop_name = criterion["name"]
+            expected = criterion["value"]
+            actual = getattr(law, prop_name, None)
+            if actual != expected:
+                return False
+        return True
+
     def find_gemeentelijke_verordening(
         self, law_id: str, article: str, gemeente_code: str
     ) -> Optional[ArticleBasedLaw]:
@@ -224,6 +269,8 @@ class RuleResolver:
         (like Participatiewet art. 8) delegates authority to municipalities
         to create their own regulations.
 
+        DEPRECATED: Use find_delegated_regulation() with select_on criteria instead.
+
         Args:
             law_id: The delegating law ID (e.g., "participatiewet")
             article: The delegating article number (e.g., "8")
@@ -232,18 +279,10 @@ class RuleResolver:
         Returns:
             The matching ArticleBasedLaw or None if not found
         """
-        basis_key = (law_id, article)
-        all_laws = self._legal_basis_index.get(basis_key, [])
-
-        # Filter to gemeentelijke verordeningen with matching gemeente_code
-        for law in all_laws:
-            if (
-                law.regulatory_layer == "GEMEENTELIJKE_VERORDENING"
-                and law.gemeente_code == gemeente_code
-            ):
-                return law
-
-        return None
+        # Delegate to generic method with gemeente_code criterion
+        return self.find_delegated_regulation(
+            law_id, article, [{"name": "gemeente_code", "value": gemeente_code}]
+        )
 
     def find_all_gemeentelijke_verordeningen(
         self, law_id: str, article: str

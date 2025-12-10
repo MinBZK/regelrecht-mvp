@@ -1,0 +1,67 @@
+---
+$schema: https://example.com/schema/v0.1.0/schema.json
+$id: test_select_on_law
+uuid: aabbccdd-aabb-aabb-aabb-aabbccddee01
+regulatory_layer: WET
+publication_date: '2025-01-01'
+
+identifiers:
+  bwb_id: BWBRTEST006
+  url: https://example.com/test_select_on_law
+
+articles:
+  # Article that defines delegation interface using select_on
+  - number: '1'
+    text: Test grondslag voor select_on mechanisme
+    url: https://example.com/test_select_on_law#1
+    machine_readable:
+      legal_basis_for:
+        - regulatory_layer: GEMEENTELIJKE_VERORDENING
+          subject: test_select_on
+          contract:
+            parameters:
+              - name: input_value
+                type: number
+                required: true
+            output:
+              - name: calculated_result
+                type: number
+
+  # Article that uses delegation with NEW select_on syntax
+  - number: '2'
+    text: Artikel dat select_on syntax gebruikt ipv gemeente_code
+    url: https://example.com/test_select_on_law#2
+    machine_readable:
+      public: true
+      endpoint: final_calculation
+      execution:
+        parameters:
+          - name: gemeente_code
+            type: string
+            required: true
+          - name: input_value
+            type: number
+            required: true
+        input:
+          # NEW: Using select_on instead of gemeente_code property
+          - name: delegated_value
+            type: number
+            source:
+              delegation:
+                law_id: test_select_on_law
+                article: '1'
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
+              output: calculated_result
+              parameters:
+                input_value: $input_value
+        output:
+          - name: final_calculation
+            type: number
+        actions:
+          - output: final_calculation
+            operation: ADD
+            values:
+              - 500
+              - $delegated_value

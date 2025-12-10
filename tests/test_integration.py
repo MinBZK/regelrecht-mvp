@@ -435,3 +435,31 @@ class TestDelegationPatterns:
         assert "test_delegation_law" in error_msg
         assert "article 1" in error_msg
         assert "No legal basis" in error_msg
+
+    def test_select_on_mechanism_finds_verordening(self, test_service):
+        """New select_on syntax works for delegation lookup"""
+        # GM9996 (testgemeente3) has a verordening using select_on
+        # The verordening multiplies by 4
+        result = test_service.evaluate_law_endpoint(
+            law_id="test_select_on_law",
+            endpoint="final_calculation",
+            parameters={"gemeente_code": "GM9996", "input_value": 10},
+            calculation_date="2025-01-01",
+        )
+
+        # verordening: 10 * 4 = 40
+        # orchestrator: 500 + 40 = 540
+        assert result.output["final_calculation"] == 540
+
+    def test_select_on_mechanism_with_no_match(self, test_service):
+        """select_on with no matching verordening raises error (mandatory delegation)"""
+        # GM0001 has NO verordening for test_select_on_law
+        with pytest.raises(
+            ValueError, match="No regulation found for mandatory delegation"
+        ):
+            test_service.evaluate_law_endpoint(
+                law_id="test_select_on_law",
+                endpoint="final_calculation",
+                parameters={"gemeente_code": "GM0001", "input_value": 10},
+                calculation_date="2025-01-01",
+            )

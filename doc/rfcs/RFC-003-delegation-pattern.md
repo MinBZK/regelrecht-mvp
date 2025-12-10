@@ -52,7 +52,7 @@ articles:
           - name: result_value  # matcht interface
 ```
 
-**Aanroep via delegation source**:
+**Aanroep via delegation source** (met `select_on`):
 ```yaml
 input:
   - name: data
@@ -60,11 +60,38 @@ input:
       delegation:
         law_id: delegerende_wet
         article: '8'
-        gemeente_code: $gemeente_code
+        # Generic select_on mechanism - niet gebonden aan specifieke property
+        select_on:
+          - name: gemeente_code
+            value: $gemeente_code
       output: result_value  # of lijst: [result_value, other_value]
       parameters:
         input_param: $value
 ```
+
+### select_on Mechanisme
+
+Het `select_on` mechanisme biedt een generieke manier om gedelegeerde regelgeving te
+vinden op basis van arbitraire criteria:
+
+```yaml
+delegation:
+  law_id: delegerende_wet
+  article: '8'
+  select_on:
+    - name: gemeente_code
+      value: $gemeente_code
+    - name: jaar            # Optioneel: meerdere criteria
+      value: 2024
+```
+
+**Voordelen:**
+1. **Generiek** - Niet gebonden aan specifieke property naam
+2. **Uitbreidbaar** - Meerdere selectiecriteria mogelijk
+3. **Toekomstbestendig** - Klaar voor andere jurisdicties (provincies, waterschappen)
+
+**Backward compatibility:** De oude `gemeente_code: $gemeente_code` syntax blijft werken
+voor bestaande YAMLs tijdens migratie.
 
 ### Twee patronen
 
@@ -90,4 +117,4 @@ input:
 ## References
 
 - `engine/context.py`: `_resolve_from_delegation()`
-- `engine/rule_resolver.py`: `find_gemeentelijke_verordening()`
+- `engine/rule_resolver.py`: `find_delegated_regulation()` (generic), `find_gemeentelijke_verordening()` (deprecated)
