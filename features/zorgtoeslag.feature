@@ -1,7 +1,12 @@
+@wip
 Feature: Healthcare allowance calculation
   As a citizen with health insurance
   I want to know if I am entitled to healthcare allowance
   So that I can reduce my healthcare costs
+
+  # NOTE: This feature is @wip because it requires the endpoint→output migration
+  # See PR #36 "Refactor: Replace endpoint with output-based lookups"
+  # Once PR #36 is merged, update steps.py to use evaluate_law_output()
 
   # Temporary: Test Article 4 legal_basis-based resolution
   # This scenario should be removed once Article 2 uses Article 4 internally

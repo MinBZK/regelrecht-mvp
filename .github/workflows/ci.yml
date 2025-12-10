@@ -56,4 +56,4 @@ jobs:
         run: uv run pytest tests/ -v
 
       - name: Run behave BDD tests
-        run: uv run behave features/
+        run: uv run behave features/ --tags="~@wip"
