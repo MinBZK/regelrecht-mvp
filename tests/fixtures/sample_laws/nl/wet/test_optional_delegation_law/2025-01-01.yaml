@@ -67,7 +67,9 @@ articles:
               delegation:
                 law_id: test_optional_delegation_law
                 article: '1'
-                gemeente_code: $gemeente_code
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
               output: result_value
               parameters:
                 input_value: $input_value

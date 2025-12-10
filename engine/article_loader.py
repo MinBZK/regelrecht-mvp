@@ -83,6 +83,8 @@ class ArticleBasedLaw:
         # For gemeentelijke verordeningen
         self.gemeente_code = yaml_data.get("gemeente_code")
         self.officiele_titel = yaml_data.get("officiele_titel")
+        # For versioned regulations (e.g., tariffs that change per year)
+        self.jaar = yaml_data.get("jaar")
         self.articles = [Article(art) for art in yaml_data.get("articles", [])]
 
     def find_article_by_endpoint(self, endpoint: str | list[str]) -> Article | None:

@@ -257,33 +257,6 @@ class RuleResolver:
                 return False
         return True
 
-    def find_gemeentelijke_verordening(
-        self, law_id: str, article: str, gemeente_code: str
-    ) -> Optional[ArticleBasedLaw]:
-        """
-        Find a gemeentelijke verordening that:
-        - Has the specified law article as legal basis
-        - Belongs to the specified gemeente
-
-        This is used for resolving delegated legislation, where a national law
-        (like Participatiewet art. 8) delegates authority to municipalities
-        to create their own regulations.
-
-        DEPRECATED: Use find_delegated_regulation() with select_on criteria instead.
-
-        Args:
-            law_id: The delegating law ID (e.g., "participatiewet")
-            article: The delegating article number (e.g., "8")
-            gemeente_code: Municipality code (e.g., "GM0384" for Diemen)
-
-        Returns:
-            The matching ArticleBasedLaw or None if not found
-        """
-        # Delegate to generic method with gemeente_code criterion
-        return self.find_delegated_regulation(
-            law_id, article, [{"name": "gemeente_code", "value": gemeente_code}]
-        )
-
     def find_all_gemeentelijke_verordeningen(
         self, law_id: str, article: str
     ) -> list[ArticleBasedLaw]:

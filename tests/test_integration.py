@@ -463,3 +463,95 @@ class TestDelegationPatterns:
                 parameters={"gemeente_code": "GM0001", "input_value": 10},
                 calculation_date="2025-01-01",
             )
+
+    def test_multi_criteria_select_on_finds_correct_jaar(self, test_service):
+        """Multiple select_on criteria (gemeente_code + jaar) select correct regulation"""
+        # GM9997 (testgemeente4) has two verordeningen:
+        # - 2024: tarief 0.10 (10%)
+        # - 2025: tarief 0.15 (15%)
+
+        # Test 2024 tarief
+        result_2024 = test_service.evaluate_law_endpoint(
+            law_id="test_multi_criteria_law",
+            endpoint="bereken_tarief",
+            parameters={"gemeente_code": "GM9997", "jaar": 2024, "basis_bedrag": 1000},
+            calculation_date="2025-01-01",
+        )
+
+        # 1000 * 0.10 = 100
+        assert result_2024.output["berekend_bedrag"] == 100
+
+        # Test 2025 tarief
+        result_2025 = test_service.evaluate_law_endpoint(
+            law_id="test_multi_criteria_law",
+            endpoint="bereken_tarief",
+            parameters={"gemeente_code": "GM9997", "jaar": 2025, "basis_bedrag": 1000},
+            calculation_date="2025-01-01",
+        )
+
+        # 1000 * 0.15 = 150
+        assert result_2025.output["berekend_bedrag"] == 150
+
+    def test_multi_criteria_select_on_no_match_for_jaar(self, test_service):
+        """Multiple criteria with no match for jaar raises error"""
+        # GM9997 only has verordeningen for 2024 and 2025, not 2023
+        with pytest.raises(
+            ValueError, match="No regulation found for mandatory delegation"
+        ):
+            test_service.evaluate_law_endpoint(
+                law_id="test_multi_criteria_law",
+                endpoint="bereken_tarief",
+                parameters={
+                    "gemeente_code": "GM9997",
+                    "jaar": 2023,
+                    "basis_bedrag": 1000,
+                },
+                calculation_date="2025-01-01",
+            )
+
+    def test_multi_criteria_select_on_no_match_for_gemeente(self, test_service):
+        """Multiple criteria with no match for gemeente raises error"""
+        # GM0000 has no verordening at all
+        with pytest.raises(
+            ValueError, match="No regulation found for mandatory delegation"
+        ):
+            test_service.evaluate_law_endpoint(
+                law_id="test_multi_criteria_law",
+                endpoint="bereken_tarief",
+                parameters={
+                    "gemeente_code": "GM0000",
+                    "jaar": 2024,
+                    "basis_bedrag": 1000,
+                },
+                calculation_date="2025-01-01",
+            )
+
+
+class TestBackwardCompatibility:
+    """Test backward compatibility for legacy YAML syntax"""
+
+    def test_legacy_gemeente_code_syntax_still_works(self, test_service):
+        """Old gemeente_code property (without select_on) still works for delegation
+
+        This tests that YAMLs using the old syntax:
+            delegation:
+              gemeente_code: $gemeente_code
+
+        Still work, even though the preferred syntax is now:
+            delegation:
+              select_on:
+                - name: gemeente_code
+                  value: $gemeente_code
+        """
+        # GM9995 (testgemeente5) has a verordening for test_legacy_gemeente_code_law
+        # The verordening multiplies by 7
+        result = test_service.evaluate_law_endpoint(
+            law_id="test_legacy_gemeente_code_law",
+            endpoint="legacy_calculation",
+            parameters={"gemeente_code": "GM9995", "input_value": 10},
+            calculation_date="2025-01-01",
+        )
+
+        # verordening: 10 * 7 = 70
+        # orchestrator: 999 + 70 = 1069
+        assert result.output["legacy_calculation"] == 1069

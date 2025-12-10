@@ -117,4 +117,4 @@ voor bestaande YAMLs tijdens migratie.
 ## References
 
 - `engine/context.py`: `_resolve_from_delegation()`
-- `engine/rule_resolver.py`: `find_delegated_regulation()` (generic), `find_gemeentelijke_verordening()` (deprecated)
+- `engine/rule_resolver.py`: `find_delegated_regulation()`
