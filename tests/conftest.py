@@ -21,8 +21,6 @@ def sample_law_data():
                 "text": "Test article text",
                 "url": "https://example.com/test#1",
                 "machine_readable": {
-                    "public": True,
-                    "endpoint": "test_law.test_endpoint",
                     "execution": {
                         "output": [{"name": "test_output", "type": "number"}],
                         "actions": [{"output": "test_output", "value": 42}],

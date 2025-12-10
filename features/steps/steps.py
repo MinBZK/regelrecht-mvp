@@ -85,9 +85,9 @@ def step_when_bijstandsaanvraag_executed(context, article):
 
     try:
         # Call Article 43 via one of its outputs
-        result = service.evaluate_law_endpoint(
+        result = service.evaluate_law_output(
             law_id="participatiewet",
-            endpoint="heeft_recht_op_bijstand",
+            output_name="heeft_recht_op_bijstand",
             parameters=parameters,
             calculation_date=calculation_date,
         )
@@ -432,9 +432,9 @@ def step_when_erfgrensbeplanting_requested(context, law_id, article):
     parameters = context.query_data.copy()
 
     try:
-        result = service.evaluate_law_endpoint(
+        result = service.evaluate_law_output(
             law_id=law_id,
-            endpoint="minimale_afstand_cm",
+            output_name="minimale_afstand_cm",
             parameters=parameters,
             calculation_date=calculation_date,
         )

@@ -17,9 +17,9 @@ Interpret the Wet op de Zorgtoeslag
 2. **Read and analyze:** Find 23 articles
 
 3. **Process each article:**
-   - Article 1: Definitions only → Skip (or `public: false`)
-   - Article 2: Eligibility check → Add machine_readable, `public: true`, endpoint: `bereken_zorgtoeslag`
-   - Article 3: Asset limit → Add machine_readable, `public: true`, endpoint: `vermogen_onder_grens`
+   - Article 1: Definitions only → Skip
+   - Article 2: Eligibility check → Add machine_readable with output `bereken_zorgtoeslag`
+   - Article 3: Asset limit → Add machine_readable with output `vermogen_onder_grens`
    - ... continue for all articles
 
 4. **Report:**
@@ -28,9 +28,9 @@ Interpret the Wet op de Zorgtoeslag
 
      Articles processed: 23
      Made executable: 15
-     Public endpoints: 2
+     Public outputs: 2
 
-     Public endpoints available:
+     Public outputs available:
      - bereken_zorgtoeslag
      - vermogen_onder_grens
 
@@ -41,7 +41,7 @@ Interpret the Wet op de Zorgtoeslag
      - Download and interpret: Belastingdienst (vermogen)
 
      The law is now executable via the engine!
-     Use: service.evaluate_law_endpoint("zorgtoeslagwet", "bereken_zorgtoeslag", {"BSN": "..."})
+     Use: service.evaluate_law_output("zorgtoeslagwet", "bereken_zorgtoeslag", {"BSN": "..."})
    ```
 
 ---
@@ -65,9 +65,6 @@ articles:
       De standaardpremie bedraagt € 2.112 per jaar.
     url: "https://wetten.overheid.nl/BWBR0020307/2025-01-01#Artikel1"
     machine_readable:
-      public: true
-      endpoint: "standaardpremie"
-
       definitions:
         STANDAARDPREMIE:
           value: 211200  # €2.112 converted to eurocent
@@ -88,7 +85,7 @@ articles:
 
 **Key Changes:**
 - Monetary amount converted: €2.112 → 211200 eurocent
-- Public endpoint created: `standaardpremie`
+- Public output created: `standaardpremie`
 - Simple constant definition
 - Direct assignment action
 
@@ -123,9 +120,6 @@ articles:
       d. rechtmatig in Nederland verblijft.
     url: "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2"
     machine_readable:
-      public: true
-      endpoint: "bereken_zorgtoeslag"
-
       execution:
         parameters:
           - name: "BSN"
@@ -193,7 +187,7 @@ articles:
 
 **Key Changes:**
 - Text preserved exactly (including markdown links)
-- Public endpoint: `bereken_zorgtoeslag`
+- Public output: `bereken_zorgtoeslag`
 - BSN parameter identified
 - Four external data sources with TODO comments
 - AND operation combining all conditions

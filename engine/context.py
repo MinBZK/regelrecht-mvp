@@ -258,22 +258,22 @@ class RuleContext:
                 return None
 
             # Convert article reference format to URI format
-            # article: "law_id.endpoint" -> regelrecht://law_id/endpoint#input_name
+            # article: "law_id.output" -> regelrecht://law_id/output#input_name
             if (
                 article_ref
                 and not uri.startswith("#")
                 and not uri.startswith("regelrecht://")
                 and not uri.startswith("regulation/")
             ):
-                # Parse article reference: "law_id.endpoint"
+                # Parse article reference: "law_id.output"
                 if "." in article_ref:
-                    law_id, endpoint = article_ref.rsplit(".", 1)
+                    law_id, output = article_ref.rsplit(".", 1)
                     # Add input_name as field to extract from output
                     from engine.uri_resolver import RegelrechtURIBuilder
 
-                    uri = RegelrechtURIBuilder.build(law_id, endpoint, input_name)
+                    uri = RegelrechtURIBuilder.build(law_id, output, input_name)
                 else:
-                    # Just an endpoint name, assume internal reference
+                    # Just an output name, assume internal reference
                     uri = f"#{article_ref}"
 
         # Resolve parameter values ($BSN -> actual BSN value)
