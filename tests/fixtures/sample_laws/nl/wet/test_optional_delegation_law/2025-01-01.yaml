@@ -18,7 +18,7 @@ articles:
       Als gemeente geen verordening heeft, gelden de defaults uit deze wet.
     url: https://example.com/test_optional_delegation_law#1
     machine_readable:
-      legal_foundation_for:
+      legal_basis_for:
         - regulatory_layer: GEMEENTELIJKE_VERORDENING
           subject: test_optional
 

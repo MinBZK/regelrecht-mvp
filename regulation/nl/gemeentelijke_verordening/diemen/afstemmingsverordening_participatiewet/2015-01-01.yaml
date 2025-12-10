@@ -58,13 +58,12 @@ articles:
     url: https://lokaleregelgeving.overheid.nl/CVDR345917/1#Artikel9
     machine_readable:
       definitions:
+        # Categorie 1 en 2: gemeente bepaalt percentage
         PERCENTAGE_CATEGORIE_1:
           value: 5
         PERCENTAGE_CATEGORIE_2:
           value: 30
-        # Categorie 3: percentage is vastgelegd in Participatiewet art. 18 lid 5
-        PERCENTAGE_CATEGORIE_3:
-          value: 100
+        # Categorie 3: percentage komt uit Participatiewet art. 18 lid 5 (zie input)
         DUUR_MAANDEN:
           value: 1
       execution:
@@ -72,10 +71,24 @@ articles:
           legal_character: BESCHIKKING
           decision_type: ANDERE_HANDELING
         parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: BSN van de belanghebbende
           - name: gedragscategorie
             type: number
-            required: true
-            description: Gedragscategorie (1, 2 of 3)
+            required: false
+            description: Gedragscategorie (0=geen, 1, 2 of 3)
+        input:
+          # Categorie 3 percentage is vastgelegd in Participatiewet art. 18 lid 5
+          # Dit is GEEN gemeentelijke bevoegdheid - de rijkswet schrijft 100% voor
+          - name: percentage_categorie_3
+            type: number
+            description: Verlagingspercentage voor categorie 3 uit Participatiewet art. 18 lid 5
+            source:
+              regulation: participatiewet
+              output: verlaging_percentage_lid_5
+
         output:
           - name: verlaging_percentage
             type: number
@@ -86,6 +99,11 @@ articles:
         actions:
           - output: verlaging_percentage
             conditions:
+              - test:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 0
+                then: 0
               - test:
                   operation: EQUALS
                   subject: $gedragscategorie
@@ -100,6 +118,16 @@ articles:
                   operation: EQUALS
                   subject: $gedragscategorie
                   value: 3
-                then: $PERCENTAGE_CATEGORIE_3
+                then: $percentage_categorie_3
           - output: duur_maanden
-            value: $DUUR_MAANDEN
+            conditions:
+              - test:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 0
+                then: 0
+              - test:
+                  operation: GREATER_THAN_OR_EQUAL
+                  subject: $gedragscategorie
+                  value: 1
+                then: $DUUR_MAANDEN

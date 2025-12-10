@@ -3,6 +3,20 @@ Feature: Bijstandsaanvraag via Participatiewet
   Wil ik bijstand kunnen aanvragen bij mijn gemeente
   Zodat ik in mijn levensonderhoud kan voorzien
 
+  # Keten: Participatiewet (Rijkswet) + Afstemmingsverordening (Gemeente)
+  #
+  # Art. 11: Rechthebbenden - Nederlanders zonder middelen
+  # Art. 21: Normbedragen - €1.091,71 (alleenstaand) / €1.559,58 (gehuwd)
+  # Art. 8:  Delegatie - gemeente stelt verordening vast
+  # Art. 18: Verlaging - bij niet nakomen verplichtingen
+  #
+  # Afstemmingsverordening Diemen (GM0384):
+  #   Categorie 1: 5%   - niet tijdig registreren UWV
+  #   Categorie 2: 30%  - niet meewerken plan van aanpak
+  #   Categorie 3: 100% - niet naar vermogen werk zoeken
+  #
+  # Formule: uitkering = normbedrag - (normbedrag × verlaging%)
+
   Background:
     Given the calculation date is "2024-06-01"
 

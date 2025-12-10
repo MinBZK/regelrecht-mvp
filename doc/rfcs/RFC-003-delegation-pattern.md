@@ -21,7 +21,7 @@ De vraag is: hoe vindt de engine automatisch de juiste lagere regelgeving?
 **Delegerende wet** (hoger niveau):
 ```yaml
 machine_readable:
-  legal_foundation_for:
+  legal_basis_for:
     - regulatory_layer: GEMEENTELIJKE_VERORDENING  # of andere laag
       contract:
         parameters:
@@ -61,7 +61,7 @@ input:
         law_id: delegerende_wet
         article: '8'
         gemeente_code: $gemeente_code
-      output: result_value
+      output: result_value  # of lijst: [result_value, other_value]
       parameters:
         input_param: $value
 ```
@@ -70,7 +70,7 @@ input:
 
 | Patroon | `defaults` aanwezig? | Zonder lagere regelgeving |
 |---------|---------------------|---------------------------|
-| **Verplicht** | Nee | `NoLegalBasisError` |
+| **Verplicht** | Nee | `ValueError` (no legal basis) |
 | **Optioneel** | Ja | Defaults uit hogere wet |
 
 ## Why
@@ -80,11 +80,11 @@ input:
 - Automatische lookup van lagere regelgeving op basis van jurisdictie
 - Expliciete foutmelding bij ontbrekende verplichte regelgeving
 - Fallback naar defaults bij optionele delegatie
-- Juridische traceerbaarheid via `legal_basis` ↔ `legal_foundation_for`
+- Juridische traceerbaarheid via `legal_basis` ↔ `legal_basis_for`
 
 ### Tradeoffs
 
-- `legal_basis` moet exact matchen met `legal_foundation_for`
+- `legal_basis` moet exact matchen met `legal_basis_for`
 - Lagere regelgeving moet juiste `regulatory_layer` en identificatie hebben
 
 ## References

@@ -173,6 +173,14 @@ class RuleContext:
             self.resolved_inputs[path] = value
             return value
 
+        # 8. Uitvoerder data - resolve from service provider
+        # TODO: Dit is een tijdelijke hardcoded oplossing voor gedragscategorie
+        # Later vervangen door generiek mechanisme
+        if path == "gedragscategorie":
+            value = self._resolve_from_uitvoerder(path)
+            if value is not None:
+                return value
+
         logger.warning(f"Could not resolve variable: {path}")
         return None
 
@@ -428,9 +436,19 @@ class RuleContext:
                     calculation_date=self.calculation_date,
                 )
 
-                # Return the full output as a dict (the input is an object type)
                 logger.debug(f"Delegation result: {result.output}")
-                return result.output
+
+                # Extract specific output if single output requested
+                if isinstance(output_name, str) and output_name in result.output:
+                    return result.output[output_name]
+                elif isinstance(output_name, list):
+                    # Return dict with requested outputs only
+                    return {
+                        k: result.output[k] for k in output_name if k in result.output
+                    }
+                else:
+                    # Fallback: return full output dict
+                    return result.output
             else:
                 logger.warning(
                     f"Output {output_name} not found in verordening {verordening.id}"
@@ -441,14 +459,12 @@ class RuleContext:
             f"No verordening found for {gemeente_code}, checking delegation type for {law_id}.{article}"
         )
 
-        # Find the delegating article and get legal_foundation_for section
+        # Find the delegating article and get legal_basis_for section
         delegating_law = rule_resolver.get_law_by_id(law_id)
         if delegating_law:
             for art in delegating_law.articles:
                 if art.number == article:
-                    legal_foundations = art.machine_readable.get(
-                        "legal_foundation_for", []
-                    )
+                    legal_foundations = art.machine_readable.get("legal_basis_for", [])
                     for foundation in legal_foundations:
                         # Check if output_name(s) are in the contract's outputs
                         interface = foundation.get("contract", {})
@@ -469,7 +485,21 @@ class RuleContext:
                                 logger.info(
                                     f"Using defaults from {law_id}.{article} (optional delegation)"
                                 )
-                                return self._execute_defaults(defaults, resolved_params)
+                                result = self._execute_defaults(
+                                    defaults, resolved_params
+                                )
+                                # Extract specific output if single output requested
+                                if (
+                                    isinstance(output_name, str)
+                                    and output_name in result
+                                ):
+                                    return result[output_name]
+                                elif isinstance(output_name, list):
+                                    return {
+                                        k: result[k] for k in output_name if k in result
+                                    }
+                                else:
+                                    return result
                             else:
                                 # MANDATORY delegation: no defaults means no legal basis
                                 msg = (
@@ -480,15 +510,13 @@ class RuleContext:
                                 logger.error(msg)
                                 raise ValueError(msg)
 
-        # No matching legal_foundation_for found at all
-        logger.warning(
-            f"No legal_foundation_for found for delegation {law_id}.{article}"
-        )
+        # No matching legal_basis_for found at all
+        logger.warning(f"No legal_basis_for found for delegation {law_id}.{article}")
         return None
 
     def _execute_defaults(self, defaults: dict, params: dict) -> dict:
         """
-        Execute default actions from a legal_foundation_for.defaults section
+        Execute default actions from a legal_basis_for.defaults section
 
         Args:
             defaults: The defaults section with actions
@@ -539,6 +567,49 @@ class RuleContext:
         )
 
         return result.output
+
+    def _resolve_from_uitvoerder(self, var_name: str) -> Any:
+        """
+        Resolve a variable from uitvoerder (execution organization) data
+
+        TODO: Dit is een tijdelijke hardcoded oplossing.
+        Later vervangen door generiek mechanisme met service providers.
+
+        Args:
+            var_name: Variable name to resolve
+
+        Returns:
+            Resolved value or None
+        """
+        # We need bsn to look up uitvoerder data
+        bsn = self.parameters.get("bsn")
+        if not bsn:
+            logger.debug(f"Cannot resolve {var_name} from uitvoerder: missing bsn")
+            return None
+
+        # Get gemeente_code from parameters OR from the current law (if it's a verordening)
+        gemeente_code = self.parameters.get("gemeente_code")
+        if not gemeente_code and self.current_law:
+            # Gemeentelijke verordeningen have gemeente_code in their metadata
+            gemeente_code = getattr(self.current_law, "gemeente_code", None)
+
+        if not gemeente_code:
+            logger.debug(
+                f"Cannot resolve {var_name} from uitvoerder: missing gemeente_code"
+            )
+            return None
+
+        # Hardcoded lookup for gedragscategorie
+        if var_name == "gedragscategorie":
+            from engine.service import LawExecutionService
+
+            value = LawExecutionService.get_gedragscategorie(bsn, gemeente_code)
+            logger.debug(
+                f"Resolved {var_name} from uitvoerder {gemeente_code}: {value}"
+            )
+            return value
+
+        return None
 
     def set_output(self, name: str, value: Any):
         """Set an output value"""

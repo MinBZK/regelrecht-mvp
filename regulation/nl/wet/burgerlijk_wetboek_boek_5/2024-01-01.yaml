@@ -31,7 +31,7 @@ articles:
     machine_readable:
       # Dit artikel machtigt gemeenten om bij verordening kleinere afstanden toe te staan
       # Dit is het OPTIONELE delegatiepatroon: rijkswet heeft defaults, gemeente KAN afwijken
-      legal_foundation_for:
+      legal_basis_for:
         - regulatory_layer: GEMEENTELIJKE_VERORDENING
           subject: erfgrens_beplanting
 
@@ -81,9 +81,10 @@ articles:
             description: Type beplanting - "boom" of "heg_of_heester"
 
         input:
-          - name: afstand_info
-            type: object
-            description: Afstandsinformatie uit gemeentelijke verordening of rijkswet defaults
+          # Minimale afstand uit gemeentelijke verordening of rijkswet defaults
+          - name: minimale_afstand_uit_verordening
+            type: number
+            description: Minimale afstand uit gemeentelijke verordening of rijkswet defaults
             source:
               delegation:
                 law_id: burgerlijk_wetboek_boek_5
@@ -102,9 +103,9 @@ articles:
             description: De geldende minimale afstand tot de erfgrens in meters
 
         actions:
-          # Haal afstand op (uit gemeente of defaults)
+          # Afstand uit verordening of defaults
           - output: minimale_afstand_cm
-            value: $afstand_info.minimale_afstand_cm
+            value: $minimale_afstand_uit_verordening
 
           # Bereken afstand in meters
           - output: minimale_afstand_m

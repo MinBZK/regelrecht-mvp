@@ -71,6 +71,18 @@ def step_when_bijstandsaanvraag_executed(context, article):
     # Build parameters from citizen data
     parameters = context.citizen_data.copy()
 
+    # Ensure BSN is present (generate test BSN if not provided)
+    if "bsn" not in parameters:
+        parameters["bsn"] = "123456789"
+
+    # Set gedragscategorie in uitvoerder data (not as direct parameter)
+    # The engine will resolve this from uitvoerder data
+    gemeente_code = parameters.get("gemeente_code", "")
+    gedragscategorie = parameters.pop("gedragscategorie", 0)
+    LawExecutionService.set_gedragscategorie(
+        parameters["bsn"], gemeente_code, gedragscategorie
+    )
+
     try:
         # Call Article 43 via one of its outputs
         result = service.evaluate_law_endpoint(
@@ -84,6 +96,9 @@ def step_when_bijstandsaanvraag_executed(context, article):
     except Exception as e:
         context.error = e
         context.result = None
+    finally:
+        # Clean up uitvoerder data
+        LawExecutionService.clear_uitvoerder_data()
 
 
 @then("the citizen has the right to bijstand")  # type: ignore[misc]

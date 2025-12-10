@@ -379,7 +379,7 @@ class TestDelegationPatterns:
     def test_mandatory_delegation_without_verordening_raises_error(self, test_service):
         """Mandatory delegation raises ValueError when gemeente has no verordening"""
         # GM9999 has NO verordening for test_delegation_law (mandatory delegation)
-        # The legal_foundation_for has NO defaults section
+        # The legal_basis_for has NO defaults section
         with pytest.raises(
             ValueError, match="No regulation found for mandatory delegation"
         ):
@@ -408,7 +408,7 @@ class TestDelegationPatterns:
     def test_optional_delegation_without_verordening_uses_defaults(self, test_service):
         """Optional delegation uses rijkswet defaults when gemeente has no verordening"""
         # GM9999 has NO verordening for test_optional_delegation_law
-        # But the legal_foundation_for HAS a defaults section (multiplier = 10)
+        # But the legal_basis_for HAS a defaults section (multiplier = 10)
         result = test_service.evaluate_law_endpoint(
             law_id="test_optional_delegation_law",
             endpoint="final_result",

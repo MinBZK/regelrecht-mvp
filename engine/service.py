@@ -147,3 +147,41 @@ class LawExecutionService:
             "endpoints": list(law.get_all_endpoints().keys()),
             "article_count": len(law.articles),
         }
+
+    # TODO: Generiek mechanisme voor uitvoerder data - nu hardcoded voor Diemen
+    # Dit moet later vervangen worden door een service provider pattern
+    _uitvoerder_data: dict[str, dict[str, int]] = {}
+
+    @classmethod
+    def set_gedragscategorie(cls, bsn: str, gemeente_code: str, categorie: int) -> None:
+        """
+        Set gedragscategorie for a BSN (test/mock data)
+
+        Args:
+            bsn: Burgerservicenummer
+            gemeente_code: Gemeente code (e.g., "GM0384")
+            categorie: Gedragscategorie (0, 1, 2, or 3)
+        """
+        key = f"{gemeente_code}:{bsn}"
+        cls._uitvoerder_data[key] = {"gedragscategorie": categorie}
+
+    @classmethod
+    def get_gedragscategorie(cls, bsn: str, gemeente_code: str) -> int:
+        """
+        Get gedragscategorie for a BSN from uitvoerder data
+
+        Args:
+            bsn: Burgerservicenummer
+            gemeente_code: Gemeente code (e.g., "GM0384")
+
+        Returns:
+            Gedragscategorie (0 if not set)
+        """
+        key = f"{gemeente_code}:{bsn}"
+        data = cls._uitvoerder_data.get(key, {})
+        return data.get("gedragscategorie", 0)
+
+    @classmethod
+    def clear_uitvoerder_data(cls) -> None:
+        """Clear all uitvoerder test data"""
+        cls._uitvoerder_data = {}
