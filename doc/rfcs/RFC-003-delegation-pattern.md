@@ -64,7 +64,7 @@ input:
         select_on:
           - name: gemeente_code
             value: $gemeente_code
-      output: result_value  # of lijst: [result_value, other_value]
+      output: result_value
       parameters:
         input_param: $value
 ```
