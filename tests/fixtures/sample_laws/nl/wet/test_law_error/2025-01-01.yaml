@@ -14,7 +14,6 @@ articles:
     text: Article that causes division by zero
     url: https://example.com/test_law_error#1
     machine_readable:
-      public: true
       execution:
         output:
           - name: divide_by_zero
@@ -30,7 +29,6 @@ articles:
     text: Article that calls non-existent law
     url: https://example.com/test_law_error#2
     machine_readable:
-      public: true
       execution:
         input:
           - name: missing_data

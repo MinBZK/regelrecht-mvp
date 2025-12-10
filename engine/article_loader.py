@@ -37,12 +37,6 @@ class Article:
         return self.machine_readable.get("requires", [])
 
     def get_output_names(self) -> list[str]:
-        """Get list of output names for this article"""
-        execution = self.machine_readable.get("execution", {})
-        outputs = execution.get("output", [])
-        return [o.get("name") for o in outputs if o.get("name")]
-
-    def get_output_names(self) -> list[str]:
         """Get all output names from this article - these are the public endpoints"""
         execution = self.machine_readable.get("execution", {})
         outputs = execution.get("output", [])

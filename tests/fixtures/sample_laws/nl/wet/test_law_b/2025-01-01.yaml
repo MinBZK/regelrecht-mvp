@@ -14,7 +14,6 @@ articles:
     text: Article that calls test_law_a via URI
     url: https://example.com/test_law_b#1
     machine_readable:
-      public: true
       execution:
         parameters:
           - name: my_value
@@ -41,7 +40,6 @@ articles:
     text: Article with internal reference
     url: https://example.com/test_law_b#2
     machine_readable:
-      public: true
       execution:
         parameters:
           - name: my_value

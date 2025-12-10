@@ -14,7 +14,6 @@ articles:
     text: Simple arithmetic test article
     url: https://example.com/test_law_a#1
     machine_readable:
-      public: true
       definitions:
         BASE_VALUE: 100
       execution:
@@ -36,7 +35,6 @@ articles:
     text: Test article with conditional logic
     url: https://example.com/test_law_a#2
     machine_readable:
-      public: true
       definitions:
         THRESHOLD: 50
       execution:
