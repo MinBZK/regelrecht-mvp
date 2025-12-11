@@ -77,6 +77,8 @@ Hooks are automatically installed with `uv run pre-commit install` and run on ev
 
 **NEVER use `--no-verify` when committing.** Pre-commit hooks exist to catch issues early. If hooks fail, fix the underlying problem instead of bypassing them.
 
+**No branding in commits.** Do not add "Generated with Claude Code" or "Co-Authored-By: Claude" lines to commit messages.
+
 ### Git Worktrees
 
 When using git worktrees, create them **inside the project folder** (e.g., `.worktrees/`). This ensures Claude Code retains file access permissions without requiring re-authorization for each worktree.
