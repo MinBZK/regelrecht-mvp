@@ -2252,14 +2252,14 @@ articles:
     machine_readable:
       execution:
         parameters:
-          - name: BSN
+          - name: bsn
             type: string
             required: true
             description: Burgerservicenummer van de persoon
         output:
-          - name: IS_VERZEKERD
+          - name: is_verzekerd
             type: boolean
             description: Geeft aan of de persoon verzekerd is onder de ZVW
         actions:
-          - output: IS_VERZEKERD
+          - output: is_verzekerd
             value: true

@@ -288,7 +288,7 @@ def step_when_healthcare_allowance_executed(context):
         # Call the zorgtoeslag calculation output
         result = service.evaluate_law_output(
             law_id="zorgtoeslagwet",
-            output_name="bereken_zorgtoeslag",
+            output_name="hoogte_zorgtoeslag",
             parameters=parameters,
         )
         context.result = result
@@ -312,7 +312,7 @@ def step_when_request_standard_premium(context, year):
         # Call the get_standaardpremie output (Article 4)
         result = service.evaluate_law_output(
             law_id="zorgtoeslagwet",
-            output_name="get_standaardpremie",
+            output_name="standaardpremie",
             parameters={},
             calculation_date=calculation_date,
         )
