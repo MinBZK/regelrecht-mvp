@@ -26,7 +26,7 @@ class LawExecutionService:
         self.engine_cache: dict[tuple[str, str], ArticleEngine] = {}
 
         logger.info(
-            f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_endpoint_count()} endpoints"
+            f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_output_count()} outputs"
         )
 
     def evaluate_uri(
@@ -64,16 +64,15 @@ class LawExecutionService:
             raise ValueError(f"Could not resolve URI: {uri}")
 
         # Get or create engine for this article
-        # Use first output name as cache key, or legacy endpoint if no outputs
         output_names = article.get_output_names()
-        cache_key_name = output_names[0] if output_names else article.get_endpoint()
-        if cache_key_name is None:
-            raise ValueError(f"Article has no outputs/endpoint: {article.number}")
+        if not output_names:
+            raise ValueError(f"Article has no outputs: {article.number}")
 
-        cache_key = (law.id, cache_key_name)
+        # Use first output name as cache key
+        cache_key = (law.id, output_names[0])
 
         if cache_key not in self.engine_cache:
-            logger.debug(f"Creating engine for {law.id}/{cache_key_name}")
+            logger.debug(f"Creating engine for {law.id}/{output_names[0]}")
             self.engine_cache[cache_key] = ArticleEngine(article, law)
 
         engine = self.engine_cache[cache_key]
@@ -91,19 +90,19 @@ class LawExecutionService:
 
         return result
 
-    def evaluate_law_endpoint(
+    def evaluate_law_output(
         self,
         law_id: str,
-        endpoint: str,
+        output_name: str,
         parameters: dict,
         calculation_date: Optional[str] = None,
     ) -> ArticleResult:
         """
-        Evaluate by law ID and endpoint directly
+        Evaluate by law ID and output name directly
 
         Args:
             law_id: Law identifier (e.g., "zorgtoeslagwet")
-            endpoint: Endpoint name (e.g., "bereken_zorgtoeslag")
+            output_name: Output name (e.g., "bereken_zorgtoeslag")
             parameters: Input parameters
             calculation_date: Date for which calculations are performed
 
@@ -112,16 +111,16 @@ class LawExecutionService:
         """
         from engine.uri_resolver import RegelrechtURIBuilder
 
-        uri = RegelrechtURIBuilder.build(law_id, endpoint)
+        uri = RegelrechtURIBuilder.build(law_id, output_name)
         return self.evaluate_uri(uri, parameters, calculation_date)
 
     def list_available_laws(self) -> list[str]:
         """Get list of all loaded law IDs"""
         return self.rule_resolver.list_all_laws()
 
-    def list_available_endpoints(self) -> list[tuple[str, str]]:
-        """Get list of all (law_id, endpoint) pairs"""
-        return self.rule_resolver.list_all_endpoints()
+    def list_available_outputs(self) -> list[tuple[str, str]]:
+        """Get list of all (law_id, output_name) pairs"""
+        return self.rule_resolver.list_all_outputs()
 
     def get_law_info(self, law_id: str) -> dict:
         """
@@ -144,7 +143,7 @@ class LawExecutionService:
             "publication_date": law.publication_date,
             "bwb_id": law.get_bwb_id(),
             "url": law.get_url(),
-            "endpoints": list(law.get_all_endpoints().keys()),
+            "outputs": list(law.get_all_outputs().keys()),
             "article_count": len(law.articles),
         }
 

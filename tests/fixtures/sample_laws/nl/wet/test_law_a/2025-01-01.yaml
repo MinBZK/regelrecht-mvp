@@ -14,8 +14,6 @@ articles:
     text: Simple arithmetic test article
     url: https://example.com/test_law_a#1
     machine_readable:
-      public: true
-      endpoint: add_numbers
       definitions:
         BASE_VALUE: 100
       execution:
@@ -24,10 +22,10 @@ articles:
             type: number
             required: true
         output:
-          - name: result
+          - name: add_numbers
             type: number
         actions:
-          - output: result
+          - output: add_numbers
             operation: ADD
             values:
               - $BASE_VALUE
@@ -37,8 +35,6 @@ articles:
     text: Test article with conditional logic
     url: https://example.com/test_law_a#2
     machine_readable:
-      public: true
-      endpoint: check_threshold
       definitions:
         THRESHOLD: 50
       execution:
@@ -47,10 +43,10 @@ articles:
             type: number
             required: true
         output:
-          - name: above_threshold
+          - name: check_threshold
             type: boolean
         actions:
-          - output: above_threshold
+          - output: check_threshold
             operation: IF
             test:
               operation: GREATER_THAN

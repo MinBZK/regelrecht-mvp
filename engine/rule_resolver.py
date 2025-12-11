@@ -2,7 +2,7 @@
 Rule Resolver - Law discovery and loading
 
 Handles loading article-based laws from the regulation directory
-and indexing them by $id and endpoint.
+and indexing them by $id and output names.
 """
 
 from pathlib import Path
@@ -26,7 +26,7 @@ class RuleResolver:
         """
         self.regulation_dir = Path(regulation_dir)
         self._law_registry: dict[str, ArticleBasedLaw] = {}
-        self._endpoint_index: dict[tuple[str, str], Article] = {}
+        self._output_index: dict[tuple[str, str], Article] = {}
         self._legal_basis_index: dict[
             tuple[str, str], list[ArticleBasedLaw]
         ] = {}  # (law_id, article) -> [regelingen]
@@ -73,19 +73,14 @@ class RuleResolver:
 
         self._law_registry[law.id] = law
 
-        # Index endpoints
-        for endpoint, article in law.get_all_endpoints().items():
-            # Extract local endpoint name (after dot) for indexing
-            # Endpoints in YAML are fully qualified like "law_id.endpoint_name"
-            # but URIs use "law_id/endpoint_name" format
-            local_endpoint = endpoint.split(".")[-1] if "." in endpoint else endpoint
-
-            key = (law.id, local_endpoint)
-            if key in self._endpoint_index:
+        # Index outputs
+        for output_name, article in law.get_all_outputs().items():
+            key = (law.id, output_name)
+            if key in self._output_index:
                 logger.warning(
-                    f"Duplicate endpoint '{law.id}/{local_endpoint}', overwriting"
+                    f"Duplicate output '{law.id}/{output_name}', overwriting"
                 )
-            self._endpoint_index[key] = article
+            self._output_index[key] = article
 
         # Index by legal_basis if present (all regulatory layers)
         if "legal_basis" in yaml_data:
@@ -134,18 +129,18 @@ class RuleResolver:
         """
         return self._law_registry.get(law_id)
 
-    def get_article_by_endpoint(self, law_id: str, endpoint: str) -> Optional[Article]:
+    def get_article_by_output(self, law_id: str, output_name: str) -> Optional[Article]:
         """
-        Get article by law ID and endpoint
+        Get article by law ID and output name
 
         Args:
             law_id: Law identifier
-            endpoint: Endpoint name
+            output_name: Output name
 
         Returns:
             Article or None if not found
         """
-        return self._endpoint_index.get((law_id, endpoint))
+        return self._output_index.get((law_id, output_name))
 
     def resolve_uri(
         self, uri: str
@@ -170,9 +165,9 @@ class RuleResolver:
             logger.error(f"Law not found: {parsed.law_id}")
             return (None, None, None)
 
-        article = law.find_article_by_endpoint(parsed.endpoint)
+        article = law.find_article_by_output(parsed.output)
         if not article:
-            logger.error(f"Endpoint not found: {parsed.law_id}/{parsed.endpoint}")
+            logger.error(f"Output not found: {parsed.law_id}/{parsed.output}")
             return (None, None, None)
 
         return (law, article, parsed.field)
@@ -181,9 +176,9 @@ class RuleResolver:
         """Get list of all loaded law IDs"""
         return list(self._law_registry.keys())
 
-    def list_all_endpoints(self) -> list[tuple[str, str]]:
-        """Get list of all (law_id, endpoint) pairs"""
-        return list(self._endpoint_index.keys())
+    def list_all_outputs(self) -> list[tuple[str, str]]:
+        """Get list of all (law_id, output_name) pairs"""
+        return list(self._output_index.keys())
 
     def get_law_count(self) -> int:
         """Get number of loaded laws"""
@@ -212,73 +207,6 @@ class RuleResolver:
             law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"
         ]
 
-    def find_delegated_regulation(
-        self, law_id: str, article: str, select_criteria: list[dict]
-    ) -> Optional[ArticleBasedLaw]:
-        """
-        Find a regulation that implements delegated authority from a specific article.
-
-        Uses a generic select_on mechanism to match regulations based on arbitrary
-        criteria (e.g., gemeente_code, provincie_code, jaar).
-
-        Args:
-            law_id: The delegating law ID (e.g., "participatiewet")
-            article: The delegating article number (e.g., "8")
-            select_criteria: List of {name: str, value: Any} criteria to match
-
-        Returns:
-            The matching ArticleBasedLaw or None if not found
-        """
-        basis_key = (law_id, article)
-        candidates = self._legal_basis_index.get(basis_key, [])
-
-        for law in candidates:
-            if self._matches_all_criteria(law, select_criteria):
-                return law
-
-        return None
-
-    def _matches_all_criteria(self, law: ArticleBasedLaw, criteria: list[dict]) -> bool:
-        """
-        Check if a law matches all selection criteria.
-
-        Args:
-            law: Law to check
-            criteria: List of {name: str, value: Any} criteria
-
-        Returns:
-            True if law matches all criteria
-        """
-        for criterion in criteria:
-            prop_name = criterion["name"]
-            expected = criterion["value"]
-            actual = getattr(law, prop_name, None)
-            if actual != expected:
-                return False
-        return True
-
-    def find_all_gemeentelijke_verordeningen(
-        self, law_id: str, article: str
-    ) -> list[ArticleBasedLaw]:
-        """
-        Find all gemeentelijke verordeningen that declare a specific law article
-        as their legal basis.
-
-        Args:
-            law_id: The delegating law ID (e.g., "participatiewet")
-            article: The delegating article number (e.g., "8")
-
-        Returns:
-            List of gemeentelijke verordening ArticleBasedLaw objects
-        """
-        basis_key = (law_id, article)
-        all_laws = self._legal_basis_index.get(basis_key, [])
-        return [
-            law
-            for law in all_laws
-            if law.regulatory_layer == "GEMEENTELIJKE_VERORDENING"
-        ]
-
-    def get_endpoint_count(self) -> int:
-        """Get number of indexed endpoints"""
-        return len(self._endpoint_index)
+    def get_output_count(self) -> int:
+        """Get number of indexed outputs"""
+        return len(self._output_index)

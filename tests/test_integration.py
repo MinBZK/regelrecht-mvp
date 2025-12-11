@@ -37,14 +37,14 @@ class TestLawLoading:
         assert "test_law_b" in laws
         assert "test_law_error" in laws
 
-    def test_service_builds_endpoint_index(self, test_service):
-        """Service builds correct endpoint index"""
-        endpoints = test_service.list_available_endpoints()
+    def test_service_builds_output_index(self, test_service):
+        """Service builds correct output index"""
+        outputs = test_service.list_available_outputs()
 
-        # Endpoints are returned as tuples (law_id, endpoint)
-        assert ("test_law_a", "add_numbers") in endpoints
-        assert ("test_law_a", "check_threshold") in endpoints
-        assert ("test_law_b", "call_other_law") in endpoints
+        # Outputs are returned as tuples (law_id, output_name)
+        assert ("test_law_a", "add_numbers") in outputs
+        assert ("test_law_a", "check_threshold") in outputs
+        assert ("test_law_b", "call_other_law") in outputs
 
     def test_service_can_retrieve_law_by_id(self, test_service):
         """Service can retrieve law by ID"""
@@ -66,9 +66,9 @@ class TestBasicExecution:
 
     def test_execute_simple_arithmetic_article(self, test_service):
         """Execute article with simple arithmetic"""
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="add_numbers",
+            output_name="add_numbers",
             parameters={"input_value": 50},
             calculation_date="2025-01-01",
         )
@@ -76,35 +76,37 @@ class TestBasicExecution:
         assert isinstance(result, ArticleResult)
         assert result.law_id == "test_law_a"
         assert result.article_number == "1"
-        assert result.output["result"] == 150  # BASE_VALUE (100) + input_value (50)
+        assert (
+            result.output["add_numbers"] == 150
+        )  # BASE_VALUE (100) + input_value (50)
 
     def test_execute_conditional_article(self, test_service):
         """Execute article with conditional logic"""
         # Test with value above threshold
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="check_threshold",
+            output_name="check_threshold",
             parameters={"value": 75},
             calculation_date="2025-01-01",
         )
 
-        assert result.output["above_threshold"] is True
+        assert result.output["check_threshold"] is True
 
         # Test with value below threshold
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="check_threshold",
+            output_name="check_threshold",
             parameters={"value": 25},
             calculation_date="2025-01-01",
         )
 
-        assert result.output["above_threshold"] is False
+        assert result.output["check_threshold"] is False
 
     def test_article_metadata_in_result(self, test_service):
         """ArticleResult contains correct metadata"""
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="add_numbers",
+            output_name="add_numbers",
             parameters={"input_value": 10},
             calculation_date="2025-01-01",
         )
@@ -122,45 +124,45 @@ class TestCrossLawURICalls:
     def test_article_calls_another_law_via_uri(self, test_service):
         """Article in law_b calls law_a via URI"""
         # test_law_b article 1 calls test_law_a with input, then doubles the result
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_b",
-            endpoint="call_other_law",
+            output_name="call_other_law",
             parameters={"my_value": 25},
             calculation_date="2025-01-01",
         )
 
         # test_law_a returns: 100 + 25 = 125
         # test_law_b doubles it: 125 * 2 = 250
-        assert result.output["doubled_result"] == 250
+        assert result.output["call_other_law"] == 250
 
     def test_parameters_flow_through_uri_calls(self, test_service):
         """Parameters are correctly passed through URI calls"""
         # Test with different input values
-        result1 = test_service.evaluate_law_endpoint(
+        result1 = test_service.evaluate_law_output(
             law_id="test_law_b",
-            endpoint="call_other_law",
+            output_name="call_other_law",
             parameters={"my_value": 10},
             calculation_date="2025-01-01",
         )
 
-        result2 = test_service.evaluate_law_endpoint(
+        result2 = test_service.evaluate_law_output(
             law_id="test_law_b",
-            endpoint="call_other_law",
+            output_name="call_other_law",
             parameters={"my_value": 50},
             calculation_date="2025-01-01",
         )
 
         # (100 + 10) * 2 = 220
-        assert result1.output["doubled_result"] == 220
+        assert result1.output["call_other_law"] == 220
 
         # (100 + 50) * 2 = 300
-        assert result2.output["doubled_result"] == 300
+        assert result2.output["call_other_law"] == 300
 
     def test_resolved_inputs_in_article_result(self, test_service):
         """ArticleResult contains resolved inputs from URI calls"""
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_b",
-            endpoint="call_other_law",
+            output_name="call_other_law",
             parameters={"my_value": 20},
             calculation_date="2025-01-01",
         )
@@ -180,42 +182,41 @@ class TestInternalReferences:
         """Article can reference another article in same law"""
         # test_law_b article 2 references article 1 internally
         # TODO: Internal references using article + ref pattern need proper URI construction
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_b",
-            endpoint="internal_ref_test",
+            output_name="internal_ref_test",
             parameters={"my_value": 15},
             calculation_date="2025-01-01",
         )
 
         # Article 1 returns: (100 + 15) * 2 = 230
         # Article 2 returns: 230 + 10 = 240
-        assert result.output["final_result"] == 240
+        assert result.output["internal_ref_test"] == 240
 
 
 class TestEngineCaching:
     """Test that engines are cached and reused"""
 
-    def test_engines_are_cached_per_endpoint(self, test_service):
+    def test_engines_are_cached_per_output(self, test_service):
         """Engines are cached by (law_id, output_name) key"""
         # First call creates engine
-        test_service.evaluate_law_endpoint(
+        test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="add_numbers",
+            output_name="add_numbers",
             parameters={"input_value": 10},
             calculation_date="2025-01-01",
         )
 
-        # Check engine is cached (cache key is (law_id, first_output_name))
-        # test_law_a's add_numbers article has output "result"
-        cache_key = ("test_law_a", "result")
+        # Check engine is cached (cache key is just (law_id, output_name))
+        cache_key = ("test_law_a", "add_numbers")
         assert cache_key in test_service.engine_cache
 
         # Second call should reuse cached engine
         cached_engine = test_service.engine_cache[cache_key]
 
-        test_service.evaluate_law_endpoint(
+        test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="add_numbers",
+            output_name="add_numbers",
             parameters={"input_value": 20},
             calculation_date="2025-01-01",
         )
@@ -223,18 +224,18 @@ class TestEngineCaching:
         # Same engine instance should be in cache
         assert test_service.engine_cache[cache_key] is cached_engine
 
-    def test_different_endpoints_have_different_engines(self, test_service):
-        """Different endpoints get separate engine instances"""
-        test_service.evaluate_law_endpoint(
+    def test_different_outputs_have_different_engines(self, test_service):
+        """Different outputs get separate engine instances"""
+        test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="add_numbers",
+            output_name="add_numbers",
             parameters={"input_value": 10},
             calculation_date="2025-01-01",
         )
 
-        test_service.evaluate_law_endpoint(
+        test_service.evaluate_law_output(
             law_id="test_law_a",
-            endpoint="check_threshold",
+            output_name="check_threshold",
             parameters={"value": 50},
             calculation_date="2025-01-01",
         )
@@ -259,16 +260,16 @@ class TestURIResultCaching:
         # The caching happens inside RuleContext._resolve_from_source
         # We verify it by checking that the result is correct (proving cache works)
 
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_law_b",
-            endpoint="call_other_law",
+            output_name="call_other_law",
             parameters={"my_value": 30},
             calculation_date="2025-01-01",
         )
 
         # Result should be correct even with caching
         # (100 + 30) * 2 = 260
-        assert result.output["doubled_result"] == 260
+        assert result.output["call_other_law"] == 260
 
 
 class TestErrorHandling:
@@ -277,9 +278,9 @@ class TestErrorHandling:
     def test_division_by_zero_raises_error(self, test_service):
         """Division by zero in article raises ZeroDivisionError"""
         with pytest.raises(ZeroDivisionError):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_law_error",
-                endpoint="divide_by_zero",
+                output_name="divide_by_zero",
                 parameters={},
                 calculation_date="2025-01-01",
             )
@@ -287,9 +288,9 @@ class TestErrorHandling:
     def test_missing_law_in_uri_raises_error(self, test_service):
         """URI referencing non-existent law raises ValueError"""
         with pytest.raises(ValueError, match="Could not resolve URI"):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_law_error",
-                endpoint="call_missing_law",
+                output_name="call_missing_law",
                 parameters={},
                 calculation_date="2025-01-01",
             )
@@ -297,19 +298,19 @@ class TestErrorHandling:
     def test_invalid_law_id_raises_error(self, test_service):
         """Evaluating non-existent law raises ValueError"""
         with pytest.raises(ValueError, match="Could not resolve URI"):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="nonexistent_law",
-                endpoint="some_endpoint",
+                output_name="some_output",
                 parameters={},
                 calculation_date="2025-01-01",
             )
 
-    def test_invalid_endpoint_raises_error(self, test_service):
-        """Evaluating non-existent endpoint raises ValueError"""
+    def test_invalid_output_raises_error(self, test_service):
+        """Evaluating non-existent output raises ValueError"""
         with pytest.raises(ValueError, match="Could not resolve URI"):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_law_a",
-                endpoint="nonexistent_endpoint",
+                output_name="nonexistent_output",
                 parameters={},
                 calculation_date="2025-01-01",
             )
@@ -326,14 +327,14 @@ class TestServiceMetadata:
         assert "test_law_a" in laws
         assert "test_law_b" in laws
 
-    def test_list_available_endpoints(self, test_service):
-        """list_available_endpoints returns all public endpoints"""
-        endpoints = test_service.list_available_endpoints()
+    def test_list_available_outputs(self, test_service):
+        """list_available_outputs returns all public outputs"""
+        outputs = test_service.list_available_outputs()
 
-        assert isinstance(endpoints, list)
-        assert len(endpoints) >= 5
-        assert ("test_law_a", "add_numbers") in endpoints
-        assert ("test_law_b", "call_other_law") in endpoints
+        assert isinstance(outputs, list)
+        assert len(outputs) >= 5
+        assert ("test_law_a", "add_numbers") in outputs
+        assert ("test_law_b", "call_other_law") in outputs
 
     def test_get_law_info(self, test_service):
         """get_law_info returns law metadata"""

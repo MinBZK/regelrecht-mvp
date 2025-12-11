@@ -14,8 +14,6 @@ articles:
     text: Article that calls test_law_a via URI
     url: https://example.com/test_law_b#1
     machine_readable:
-      public: true
-      endpoint: call_other_law
       execution:
         parameters:
           - name: my_value
@@ -25,14 +23,14 @@ articles:
           - name: result_from_a
             type: number
             source:
-              url: regelrecht://test_law_a/add_numbers#result
+              url: regelrecht://test_law_a/add_numbers#add_numbers
               parameters:
                 input_value: $my_value
         output:
-          - name: doubled_result
+          - name: call_other_law
             type: number
         actions:
-          - output: doubled_result
+          - output: call_other_law
             operation: MULTIPLY
             values:
               - $result_from_a
@@ -42,8 +40,6 @@ articles:
     text: Article with internal reference
     url: https://example.com/test_law_b#2
     machine_readable:
-      public: true
-      endpoint: internal_ref_test
       execution:
         parameters:
           - name: my_value
@@ -53,15 +49,15 @@ articles:
           - name: from_article_1
             type: number
             source:
-              ref: '#doubled_result'
+              ref: '#call_other_law'
               article: '1'
               parameters:
                 my_value: $my_value
         output:
-          - name: final_result
+          - name: internal_ref_test
             type: number
         actions:
-          - output: final_result
+          - output: internal_ref_test
             operation: ADD
             values:
               - $from_article_1

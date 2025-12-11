@@ -6,9 +6,6 @@
 
 ```yaml
 machine_readable:
-  public: boolean              # Is this article publicly callable?
-  endpoint: string             # API endpoint name (snake_case)
-
   definitions:                 # Optional: Constants
     CONSTANT_NAME:
       value: any               # Constant value (number, string, boolean)
@@ -378,9 +375,6 @@ De standaardpremie bedraagt € 2.112.
 **Interpretation:**
 ```yaml
 machine_readable:
-  public: true
-  endpoint: "standaardpremie"
-
   definitions:
     STANDAARDPREMIE:
       value: 211200  # €2.112 in eurocent
@@ -409,9 +403,6 @@ Een persoon heeft recht indien hij de leeftijd van 18 jaar heeft bereikt.
 **Interpretation:**
 ```yaml
 machine_readable:
-  public: true
-  endpoint: "controleer_leeftijd"
-
   execution:
     parameters:
       - name: "BSN"
@@ -457,9 +448,6 @@ c. in Nederland woont.
 **Interpretation:**
 ```yaml
 machine_readable:
-  public: true
-  endpoint: "bepaal_recht_op_zorgtoeslag"
-
   execution:
     parameters:
       - name: "BSN"
@@ -490,12 +478,12 @@ machine_readable:
             BSN: "$BSN"
 
     output:
-      - name: "heeft_recht"
+      - name: "bepaal_recht_op_zorgtoeslag"
         type: "boolean"
         description: "Heeft recht op zorgtoeslag"
 
     actions:
-      - output: "heeft_recht"
+      - output: "bepaal_recht_op_zorgtoeslag"
         operation: "AND"
         conditions:
           - operation: "GREATER_THAN_OR_EQUAL"
@@ -520,9 +508,6 @@ vermenigvuldigd met het normpremiepercentage van 6,68%.
 **Interpretation:**
 ```yaml
 machine_readable:
-  public: false  # This is a condition check, not main endpoint
-  endpoint: "toets_inkomen"
-
   definitions:
     NORMPREMIEPERCENTAGE:
       value: 6.68
@@ -581,9 +566,6 @@ De grens bedraagt € 154.859 voor een alleenstaande.
 **Interpretation (Article 2):**
 ```yaml
 machine_readable:
-  public: true
-  endpoint: "bepaal_recht"
-
   execution:
     parameters:
       - name: "BSN"
@@ -599,11 +581,11 @@ machine_readable:
             BSN: "$BSN"
 
     output:
-      - name: "heeft_recht"
+      - name: "bepaal_recht"
         type: "boolean"
 
     actions:
-      - output: "heeft_recht"
+      - output: "bepaal_recht"
         operation: "EQUALS"
         subject: "$vermogen_onder_grens"
         value: true
@@ -612,9 +594,6 @@ machine_readable:
 **Interpretation (Article 3):**
 ```yaml
 machine_readable:
-  public: true
-  endpoint: "vermogen_onder_grens"
-
   definitions:
     VERMOGENSGRENS:
       value: 15485900  # €154.859 in eurocent

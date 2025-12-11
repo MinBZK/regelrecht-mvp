@@ -108,7 +108,7 @@ When adding type hints:
 - **engine/** - Article-based law execution engine
   - `article_loader.py` - Loads and parses article-based YAML laws
   - `uri_resolver.py` - Parses `regelrecht://` URIs
-  - `rule_resolver.py` - Discovers and indexes laws by ID and endpoint
+  - `rule_resolver.py` - Discovers and indexes laws by ID and output names
   - `context.py` - Execution context and value resolution
   - `engine.py` - Core article execution engine
   - `service.py` - Top-level law execution service
@@ -142,8 +142,6 @@ articles:
     url: "https://wetten.overheid.nl/...#Artikel1"
 
     machine_readable:
-      endpoint: "endpoint_name"  # Presence of endpoint makes article publicly callable
-
       definitions:
         CONSTANT_NAME:
           value: 123
@@ -158,12 +156,13 @@ articles:
           - name: "INPUT_NAME"
             type: "number"
             source:
-              article: "other_law.endpoint"  # Reference format: law_id.endpoint
+              regulation: "other_law"
+              output: "output_name"  # Reference format: regulation + output
               parameters:
                 BSN: "$BSN"
 
         output:
-          - name: "OUTPUT_NAME"
+          - name: "OUTPUT_NAME"  # Output names make article publicly callable
             type: "boolean"
 
         actions:
@@ -177,13 +176,13 @@ articles:
 
 Laws reference each other using `regelrecht://` URIs:
 
-**Format:** `regelrecht://{law_id}/{endpoint}#{field}`
+**Format:** `regelrecht://{law_id}/{output_name}#{field}`
 
-**Example:** `regelrecht://zorgtoeslagwet/bereken_zorgtoeslag#heeft_recht_op_zorgtoeslag`
+**Example:** `regelrecht://zorgtoeslagwet/heeft_recht_op_zorgtoeslag#heeft_recht_op_zorgtoeslag`
 
 The engine automatically resolves these URIs by:
 1. Finding the law by `$id` slug
-2. Finding the article by `endpoint` name
+2. Finding the article by output name
 3. Executing the article's logic
 4. Extracting the requested `field` from outputs
 
