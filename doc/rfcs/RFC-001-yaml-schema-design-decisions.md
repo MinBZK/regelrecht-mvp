@@ -208,6 +208,45 @@ Minor changes to operations and types between v0.1.6 and v0.2.0:
 - Days unit: Needed for laws that specify durations in days (e.g., termijnen)
 - Lowercase variables: Allows more natural naming (e.g., `$standaardpremie` vs `$STANDAARDPREMIE`)
 
+### 13. Semantic Operation Syntax: `conditions` vs `values`
+
+Operations use different property names based on their semantic purpose:
+
+| Operation Type | Property | Rationale |
+|----------------|----------|-----------|
+| **Logical** (AND, OR) | `conditions` | Combines boolean conditions |
+| **Numeric** (ADD, SUBTRACT, MULTIPLY, DIVIDE, MIN, MAX) | `values` | Combines numeric values |
+| **Conditional** (IF) | `test`, `then`, `else` | Tests a condition and branches |
+
+**Example - Logical operation:**
+```yaml
+operation: AND
+conditions:
+  - operation: GREATER_THAN_OR_EQUAL
+    subject: $leeftijd
+    value: 18
+  - operation: EQUALS
+    subject: $is_nederlander
+    value: true
+```
+
+**Example - Numeric operation:**
+```yaml
+operation: ADD
+values:
+  - $bedrag_a
+  - $bedrag_b
+  - 1000
+```
+
+**Rationale:**
+- AND/OR combine boolean results (conditions), not arbitrary values
+- Arithmetic operations combine numbers (values)
+- This semantic distinction makes YAML more readable and self-documenting
+- The schema enforces this through conditional validation (`if/then` rules)
+
+**Note:** This differs from the POC (v0.1.6) which used `values` for all operations. The v0.2.0 approach is semantically more correct.
+
 ## References
 
 - Issue #7: Good enough Language for 1st fase Editor and Engine

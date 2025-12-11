@@ -243,7 +243,7 @@ articles:
             conditions:
               - test:
                   operation: AND
-                  values:
+                  conditions:
                     - operation: GREATER_THAN_OR_EQUAL
                       subject: $leeftijd
                       value: 21
@@ -472,7 +472,7 @@ articles:
             conditions:
               - test:
                   operation: OR
-                  values:
+                  conditions:
                     - operation: EQUALS
                       subject: $is_nederlander
                       value: true
@@ -497,7 +497,7 @@ articles:
             conditions:
               - test:
                   operation: AND
-                  values:
+                  conditions:
                     - operation: GREATER_THAN_OR_EQUAL
                       subject: $leeftijd
                       value: 21
@@ -525,7 +525,7 @@ articles:
             conditions:
               - test:
                   operation: AND
-                  values:
+                  conditions:
                     - $voldoet_aan_uwv_registratie
                     - $voldoet_aan_nationaliteit
                     - $voldoet_aan_woonplaats

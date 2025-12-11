@@ -843,7 +843,7 @@ class TestLogicalOperations:
                             {
                                 "output": "result",
                                 "operation": "AND",
-                                "values": [
+                                "conditions": [
                                     {"operation": "EQUALS", "subject": 10, "value": 10},
                                     {
                                         "operation": "GREATER_THAN",
@@ -877,7 +877,7 @@ class TestLogicalOperations:
                             {
                                 "output": "result",
                                 "operation": "AND",
-                                "values": [
+                                "conditions": [
                                     {"operation": "EQUALS", "subject": 10, "value": 10},
                                     {
                                         "operation": "GREATER_THAN",
@@ -911,7 +911,7 @@ class TestLogicalOperations:
                             {
                                 "output": "result",
                                 "operation": "AND",
-                                "values": [
+                                "conditions": [
                                     {"operation": "EQUALS", "subject": 10, "value": 20},
                                     {
                                         "operation": "GREATER_THAN",
@@ -945,7 +945,7 @@ class TestLogicalOperations:
                             {
                                 "output": "result",
                                 "operation": "OR",
-                                "values": [
+                                "conditions": [
                                     {"operation": "EQUALS", "subject": 10, "value": 20},
                                     {
                                         "operation": "GREATER_THAN",
@@ -979,7 +979,7 @@ class TestLogicalOperations:
                             {
                                 "output": "result",
                                 "operation": "OR",
-                                "values": [
+                                "conditions": [
                                     {"operation": "EQUALS", "subject": 10, "value": 20},
                                     {
                                         "operation": "GREATER_THAN",
@@ -1013,7 +1013,7 @@ class TestLogicalOperations:
                             {
                                 "output": "result",
                                 "operation": "OR",
-                                "values": [
+                                "conditions": [
                                     {"operation": "EQUALS", "subject": 10, "value": 10},
                                     {
                                         "operation": "GREATER_THAN",

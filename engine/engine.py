@@ -323,26 +323,26 @@ class ArticleEngine:
     def _evaluate_logical(self, operation: dict, context: RuleContext) -> bool:
         """Evaluate logical operation (AND, OR)"""
         op_type = operation["operation"]
-        values = operation.get("values", [])
+        conditions = operation.get("conditions", [])
 
-        def evaluate_logical_value(value: Any) -> bool:
-            """Evaluate a single value in a logical operation"""
-            if isinstance(value, dict) and "operation" in value:
+        def evaluate_condition(condition: Any) -> bool:
+            """Evaluate a single condition in a logical operation"""
+            if isinstance(condition, dict) and "operation" in condition:
                 # Nested operation (e.g., {operation: EQUALS, ...})
-                return bool(self._evaluate_operation(value, context))
+                return bool(self._evaluate_operation(condition, context))
             else:
                 # Variable reference or literal (e.g., $voldoet_aan_nationaliteit or True)
-                resolved = self._evaluate_value(value, context)
+                resolved = self._evaluate_value(condition, context)
                 return bool(resolved)
 
         if op_type == "AND":
-            for value in values:
-                if not evaluate_logical_value(value):
+            for condition in conditions:
+                if not evaluate_condition(condition):
                     return False
             return True
         elif op_type == "OR":
-            for value in values:
-                if evaluate_logical_value(value):
+            for condition in conditions:
+                if evaluate_condition(condition):
                     return True
             return False
 

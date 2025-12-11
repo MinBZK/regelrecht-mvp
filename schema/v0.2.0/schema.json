@@ -504,7 +504,7 @@
         },
         "values": {
           "type": "array",
-          "description": "Operands for multi-value operations (ADD, AND, OR, etc.)",
+          "description": "Operands for numeric operations (ADD, SUBTRACT, MULTIPLY, DIVIDE, MIN, MAX)",
           "items": {
             "$ref": "#/definitions/operationValue"
           }
@@ -531,16 +531,48 @@
         },
         "conditions": {
           "type": "array",
-          "description": "Multiple test-then-else branches",
+          "description": "Operands for logical operations (AND, OR) - each item can be an operation, variable reference, or boolean literal",
           "items": {
-            "$ref": "#/definitions/operation"
+            "$ref": "#/definitions/operationValue"
           }
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": { "enum": ["AND", "OR"] }
+            }
+          },
+          "then": {
+            "required": ["conditions"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": { "enum": ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MIN", "MAX"] }
+            }
+          },
+          "then": {
+            "required": ["values"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": { "const": "IF" }
+            }
+          },
+          "then": {
+            "required": ["test", "then"]
+          }
+        }
+      ]
     },
     "operationValue": {
       "oneOf": [
