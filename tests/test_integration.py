@@ -52,6 +52,7 @@ class TestLawLoading:
 
         assert law is not None
         assert law.id == "test_law_a"
+        assert law.uuid == "11111111-1111-1111-1111-111111111111"
 
     def test_service_returns_none_for_invalid_law_id(self, test_service):
         """Service returns None for non-existent law"""
@@ -111,6 +112,7 @@ class TestBasicExecution:
         )
 
         assert result.law_id == "test_law_a"
+        assert result.law_uuid == "11111111-1111-1111-1111-111111111111"
         assert result.article_number == "1"
         assert isinstance(result.output, dict)
         assert isinstance(result.input, dict)
@@ -340,6 +342,7 @@ class TestServiceMetadata:
 
         assert info is not None
         assert info["id"] == "test_law_a"
+        assert info["uuid"] == "11111111-1111-1111-1111-111111111111"
         assert info["regulatory_layer"] == "WET"
         assert info["publication_date"] == "2025-01-01"
 
