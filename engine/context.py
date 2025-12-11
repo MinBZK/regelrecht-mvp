@@ -447,7 +447,7 @@ class RuleContext:
             logger.debug(
                 f"Found verordening: {verordening.id}, finding article with output {output_name}"
             )
-            article_obj = verordening.find_article_by_endpoint(output_name)
+            article_obj = verordening.find_article_by_output(output_name)
 
             if article_obj:
                 from engine.engine import ArticleEngine

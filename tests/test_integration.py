@@ -52,7 +52,6 @@ class TestLawLoading:
 
         assert law is not None
         assert law.id == "test_law_a"
-        assert law.uuid == "11111111-1111-1111-1111-111111111111"
 
     def test_service_returns_none_for_invalid_law_id(self, test_service):
         """Service returns None for non-existent law"""
@@ -112,7 +111,6 @@ class TestBasicExecution:
         )
 
         assert result.law_id == "test_law_a"
-        assert result.law_uuid == "11111111-1111-1111-1111-111111111111"
         assert result.article_number == "1"
         assert isinstance(result.output, dict)
         assert isinstance(result.input, dict)
@@ -241,10 +239,10 @@ class TestEngineCaching:
         )
 
         # Should have two different cache entries (cache key uses first output name)
-        # add_numbers article has output "result"
-        # check_threshold article has output "above_threshold"
-        key1 = ("test_law_a", "result")
-        key2 = ("test_law_a", "above_threshold")
+        # Cache key uses the requested output_name
+        # Each output gets its own engine instance
+        key1 = ("test_law_a", "add_numbers")
+        key2 = ("test_law_a", "check_threshold")
 
         assert key1 in test_service.engine_cache
         assert key2 in test_service.engine_cache
@@ -342,7 +340,7 @@ class TestServiceMetadata:
 
         assert info is not None
         assert info["id"] == "test_law_a"
-        assert info["uuid"] == "11111111-1111-1111-1111-111111111111"
+        assert info.get("uuid") is None  # uuid removed from fixture
         assert info["regulatory_layer"] == "WET"
         assert info["publication_date"] == "2025-01-01"
 
@@ -366,9 +364,9 @@ class TestDelegationPatterns:
         """Mandatory delegation works when gemeente has verordening"""
         # GM9997 (testgemeente2) has a verordening for test_delegation_law
         # The verordening multiplies by 3
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_delegation_law",
-            endpoint="final_result",
+            output_name="final_result",
             parameters={"gemeente_code": "GM9997", "input_value": 10},
             calculation_date="2025-01-01",
         )
@@ -384,9 +382,9 @@ class TestDelegationPatterns:
         with pytest.raises(
             ValueError, match="No regulation found for mandatory delegation"
         ):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_delegation_law",
-                endpoint="final_result",
+                output_name="final_result",
                 parameters={"gemeente_code": "GM9999", "input_value": 10},
                 calculation_date="2025-01-01",
             )
@@ -395,9 +393,9 @@ class TestDelegationPatterns:
         """Optional delegation uses gemeente verordening when available"""
         # GM9998 (testgemeente) has a verordening for test_optional_delegation_law
         # The verordening multiplies by 5 (instead of default 10)
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_optional_delegation_law",
-            endpoint="final_result",
+            output_name="final_result",
             parameters={"gemeente_code": "GM9998", "input_value": 10},
             calculation_date="2025-01-01",
         )
@@ -410,9 +408,9 @@ class TestDelegationPatterns:
         """Optional delegation uses rijkswet defaults when gemeente has no verordening"""
         # GM9999 has NO verordening for test_optional_delegation_law
         # But the legal_basis_for HAS a defaults section (multiplier = 10)
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_optional_delegation_law",
-            endpoint="final_result",
+            output_name="final_result",
             parameters={"gemeente_code": "GM9999", "input_value": 10},
             calculation_date="2025-01-01",
         )
@@ -424,9 +422,9 @@ class TestDelegationPatterns:
     def test_mandatory_delegation_error_message_contains_details(self, test_service):
         """ValueError message contains jurisdiction, law_id, and article for debugging"""
         with pytest.raises(ValueError) as exc_info:
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_delegation_law",
-                endpoint="final_result",
+                output_name="final_result",
                 parameters={"gemeente_code": "GM0000", "input_value": 5},
                 calculation_date="2025-01-01",
             )
@@ -441,9 +439,9 @@ class TestDelegationPatterns:
         """New select_on syntax works for delegation lookup"""
         # GM9996 (testgemeente3) has a verordening using select_on
         # The verordening multiplies by 4
-        result = test_service.evaluate_law_endpoint(
+        result = test_service.evaluate_law_output(
             law_id="test_select_on_law",
-            endpoint="final_calculation",
+            output_name="final_calculation",
             parameters={"gemeente_code": "GM9996", "input_value": 10},
             calculation_date="2025-01-01",
         )
@@ -458,9 +456,9 @@ class TestDelegationPatterns:
         with pytest.raises(
             ValueError, match="No regulation found for mandatory delegation"
         ):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_select_on_law",
-                endpoint="final_calculation",
+                output_name="final_calculation",
                 parameters={"gemeente_code": "GM0001", "input_value": 10},
                 calculation_date="2025-01-01",
             )
@@ -472,26 +470,26 @@ class TestDelegationPatterns:
         # - 2025: tarief 0.15 (15%)
 
         # Test 2024 tarief
-        result_2024 = test_service.evaluate_law_endpoint(
+        result_2024 = test_service.evaluate_law_output(
             law_id="test_multi_criteria_law",
-            endpoint="bereken_tarief",
+            output_name="bereken_tarief",
             parameters={"gemeente_code": "GM9997", "jaar": 2024, "basis_bedrag": 1000},
             calculation_date="2025-01-01",
         )
 
         # 1000 * 0.10 = 100
-        assert result_2024.output["berekend_bedrag"] == 100
+        assert result_2024.output["bereken_tarief"] == 100
 
         # Test 2025 tarief
-        result_2025 = test_service.evaluate_law_endpoint(
+        result_2025 = test_service.evaluate_law_output(
             law_id="test_multi_criteria_law",
-            endpoint="bereken_tarief",
+            output_name="bereken_tarief",
             parameters={"gemeente_code": "GM9997", "jaar": 2025, "basis_bedrag": 1000},
             calculation_date="2025-01-01",
         )
 
         # 1000 * 0.15 = 150
-        assert result_2025.output["berekend_bedrag"] == 150
+        assert result_2025.output["bereken_tarief"] == 150
 
     def test_multi_criteria_select_on_no_match_for_jaar(self, test_service):
         """Multiple criteria with no match for jaar raises error"""
@@ -499,9 +497,9 @@ class TestDelegationPatterns:
         with pytest.raises(
             ValueError, match="No regulation found for mandatory delegation"
         ):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_multi_criteria_law",
-                endpoint="bereken_tarief",
+                output_name="bereken_tarief",
                 parameters={
                     "gemeente_code": "GM9997",
                     "jaar": 2023,
@@ -516,9 +514,9 @@ class TestDelegationPatterns:
         with pytest.raises(
             ValueError, match="No regulation found for mandatory delegation"
         ):
-            test_service.evaluate_law_endpoint(
+            test_service.evaluate_law_output(
                 law_id="test_multi_criteria_law",
-                endpoint="bereken_tarief",
+                output_name="bereken_tarief",
                 parameters={
                     "gemeente_code": "GM0000",
                     "jaar": 2024,

@@ -138,7 +138,6 @@ class LawExecutionService:
 
         return {
             "id": law.id,
-            "uuid": law.uuid,
             "regulatory_layer": law.regulatory_layer,
             "publication_date": law.publication_date,
             "bwb_id": law.get_bwb_id(),
