@@ -210,3 +210,61 @@ class RuleResolver:
     def get_output_count(self) -> int:
         """Get number of indexed outputs"""
         return len(self._output_index)
+
+    def find_delegated_regulation(
+        self, law_id: str, article: str, criteria: list[dict]
+    ) -> Optional[ArticleBasedLaw]:
+        """
+        Find a delegated regulation that matches the given criteria.
+
+        Searches through all regulations that declare the specified law+article
+        as their legal basis, and returns the first one that matches ALL criteria.
+
+        Criteria are matched against properties on the law object (e.g., gemeente_code, jaar).
+
+        Args:
+            law_id: The delegating law ID (e.g., "test_delegation_law")
+            article: The article number in the delegating law (e.g., "1")
+            criteria: List of criteria dicts with 'name' and 'value' keys
+                     e.g., [{"name": "gemeente_code", "value": "GM0384"}]
+
+        Returns:
+            Matching ArticleBasedLaw or None if no match found
+        """
+        basis_key = (law_id, article)
+        candidates = self._legal_basis_index.get(basis_key, [])
+
+        logger.debug(
+            f"Finding delegated regulation for {law_id}.{article} with criteria {criteria}"
+        )
+        logger.debug(f"Found {len(candidates)} candidate regulations")
+
+        for law in candidates:
+            # Check if ALL criteria match
+            all_match = True
+            for criterion in criteria:
+                crit_name: str | None = criterion.get("name")
+                crit_value = criterion.get("value")
+
+                # Skip invalid criteria without name
+                if crit_name is None:
+                    all_match = False
+                    break
+
+                # Get property from law object
+                law_value = getattr(law, crit_name, None)
+
+                logger.debug(
+                    f"Checking {crit_name}: law has {law_value}, looking for {crit_value}"
+                )
+
+                if law_value != crit_value:
+                    all_match = False
+                    break
+
+            if all_match:
+                logger.debug(f"Found matching regulation: {law.id}")
+                return law
+
+        logger.debug("No matching regulation found")
+        return None

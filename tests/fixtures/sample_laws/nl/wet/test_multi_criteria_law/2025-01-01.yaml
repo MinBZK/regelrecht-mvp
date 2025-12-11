@@ -64,10 +64,10 @@ articles:
               parameters:
                 basis_bedrag: $basis_bedrag
         output:
-          - name: berekend_bedrag
+          - name: bereken_tarief
             type: number
         actions:
-          - output: berekend_bedrag
+          - output: bereken_tarief
             operation: MULTIPLY
             values:
               - $basis_bedrag
