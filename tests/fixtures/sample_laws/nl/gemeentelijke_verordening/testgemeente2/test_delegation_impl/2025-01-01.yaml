@@ -1,0 +1,39 @@
+---
+$schema: https://example.com/schema/v0.1.0/schema.json
+$id: test_delegation_impl_testgemeente2
+uuid: 99999999-9999-9999-9999-999999999999
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2025-01-01'
+gemeente_code: GM9997
+
+identifiers:
+  url: https://example.com/testgemeente2/test_delegation_impl
+
+legal_basis:
+  - law_id: test_delegation_law
+    article: '1'
+
+articles:
+  - number: '1'
+    text: |
+      Implementatie van de verplichte delegation uit test_delegation_law.
+      Deze gemeente heeft een verordening, dus er is juridische grondslag.
+    url: https://example.com/testgemeente2/test_delegation_impl#1
+    machine_readable:
+      public: true
+      endpoint: delegated_result
+      execution:
+        parameters:
+          - name: input_value
+            type: number
+            required: true
+        output:
+          - name: delegated_result
+            type: number
+        actions:
+          # Testgemeente2 vermenigvuldigt met 3
+          - output: delegated_result
+            operation: MULTIPLY
+            values:
+              - $input_value
+              - 3

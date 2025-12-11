@@ -389,7 +389,6 @@
             "source": {
               "type": "object",
               "description": "Reference to where this input comes from",
-              "required": ["output"],
               "properties": {
                 "regulation": {
                   "type": "string",
@@ -409,6 +408,44 @@
                 "description": {
                   "type": "string",
                   "description": "Human-readable description or legal reference for this data source"
+                },
+                "delegation": {
+                  "type": "object",
+                  "description": "Reference to a delegated regulation (e.g., gemeentelijke verordening)",
+                  "required": ["law_id", "article"],
+                  "properties": {
+                    "law_id": {
+                      "type": "string",
+                      "description": "ID of the delegating law (e.g., 'participatiewet')"
+                    },
+                    "article": {
+                      "type": "string",
+                      "description": "Article number that delegates the authority (e.g., '8')"
+                    },
+                    "select_on": {
+                      "type": "array",
+                      "description": "Generic criteria for selecting delegated regulation",
+                      "items": {
+                        "type": "object",
+                        "required": ["name", "value"],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "Property name to match (e.g., 'gemeente_code')"
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "Value or $variable reference to match"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": ["select_on"]
+                },
+                "endpoint": {
+                  "type": "string",
+                  "description": "Endpoint to call on the delegated regulation"
                 }
               },
               "additionalProperties": false
@@ -670,6 +707,10 @@
       "type": "object",
       "description": "Machine-readable interpretation of legal text",
       "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "Named endpoint for this article, making it callable from other regulations"
+        },
         "competent_authority": {
           "description": "Bevoegd gezag - authority whose execution produces binding decisions",
           "oneOf": [
@@ -695,6 +736,174 @@
               }
             }
           ]
+        },
+        "enables": {
+          "type": "array",
+          "description": "What this article enables - e.g., authority to create lower-level regulations",
+          "items": {
+            "type": "object",
+            "required": ["regulatory_layer", "subject"],
+            "properties": {
+              "regulatory_layer": {
+                "type": "string",
+                "enum": [
+                  "GRONDWET",
+                  "WET",
+                  "AMVB",
+                  "MINISTERIELE_REGELING",
+                  "BELEIDSREGEL",
+                  "EU_VERORDENING",
+                  "EU_RICHTLIJN",
+                  "VERDRAG",
+                  "UITVOERINGSBELEID",
+                  "GEMEENTELIJKE_VERORDENING",
+                  "PROVINCIALE_VERORDENING"
+                ],
+                "description": "Type of regulation this article enables"
+              },
+              "subject": {
+                "type": "string",
+                "description": "Subject matter of the enabled regulation (e.g., 'rioolheffing')"
+              },
+              "for": {
+                "type": "object",
+                "description": "Who is granted the authority (optional - often implied by regulatory_layer)",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["INSTANCE", "CATEGORY"]
+                  }
+                }
+              },
+              "interface": {
+                "type": "object",
+                "description": "Interface contract that implementing regulations must follow",
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "description": "Required endpoint name for implementations"
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "description": "Required parameters for the interface",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "required": { "type": "boolean" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  },
+                  "output": {
+                    "type": "array",
+                    "description": "Required output fields for the interface",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "defaults": {
+                "type": "object",
+                "description": "Default execution logic if no implementing regulation is found",
+                "properties": {
+                  "actions": {
+                    "type": "array",
+                    "description": "Default actions to execute"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "legal_basis_for": {
+          "type": "array",
+          "description": "Delegation pattern - this article provides legal basis for lower-level regulations",
+          "items": {
+            "type": "object",
+            "required": ["regulatory_layer"],
+            "properties": {
+              "regulatory_layer": {
+                "type": "string",
+                "enum": [
+                  "GRONDWET",
+                  "WET",
+                  "AMVB",
+                  "MINISTERIELE_REGELING",
+                  "BELEIDSREGEL",
+                  "EU_VERORDENING",
+                  "EU_RICHTLIJN",
+                  "VERDRAG",
+                  "UITVOERINGSBELEID",
+                  "GEMEENTELIJKE_VERORDENING",
+                  "PROVINCIALE_VERORDENING"
+                ],
+                "description": "Type of regulation this article provides basis for"
+              },
+              "subject": {
+                "type": "string",
+                "description": "Subject matter (e.g., 'afstemming_bijstand', 'erfgrens_beplanting')"
+              },
+              "contract": {
+                "type": "object",
+                "description": "Interface contract that implementing regulations must follow",
+                "properties": {
+                  "parameters": {
+                    "type": "array",
+                    "description": "Required parameters for the contract",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "required": { "type": "boolean" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  },
+                  "output": {
+                    "type": "array",
+                    "description": "Required output fields for the contract",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "defaults": {
+                "type": "object",
+                "description": "Default execution logic if no implementing regulation is found (makes delegation optional)",
+                "properties": {
+                  "definitions": {
+                    "type": "object",
+                    "description": "Definitions and constants for defaults",
+                    "additionalProperties": true
+                  },
+                  "actions": {
+                    "type": "array",
+                    "description": "Default actions to execute"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
         },
         "requires": {
           "type": "array",
@@ -747,7 +956,8 @@
                     "BESCHIKKING",
                     "TOETS",
                     "WAARDEBEPALING",
-                    "BESLUIT_VAN_ALGEMENE_STREKKING"
+                    "BESLUIT_VAN_ALGEMENE_STREKKING",
+                    "INFORMATIEF"
                   ],
                   "description": "Legal character of the output"
                 },
@@ -757,6 +967,7 @@
                     "TOEKENNING",
                     "AFWIJZING",
                     "GOEDKEURING",
+                    "GEEN_BESLUIT",
                     "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
                     "BELEIDSREGEL",
                     "VOORBEREIDINGSBESLUIT",

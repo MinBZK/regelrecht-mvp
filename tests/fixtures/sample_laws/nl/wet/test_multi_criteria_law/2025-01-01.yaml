@@ -1,0 +1,74 @@
+---
+$schema: https://example.com/schema/v0.1.0/schema.json
+$id: test_multi_criteria_law
+uuid: aabbccdd-aabb-aabb-aabb-aabbccddee10
+regulatory_layer: WET
+publication_date: '2025-01-01'
+
+identifiers:
+  bwb_id: BWBRTEST010
+  url: https://example.com/test_multi_criteria_law
+
+articles:
+  # Article that defines delegation interface with multiple criteria
+  - number: '1'
+    text: |
+      Grondslag voor multi-criteria select_on mechanisme.
+      Gemeenten kunnen per jaar afwijkende tarieven vaststellen.
+    url: https://example.com/test_multi_criteria_law#1
+    machine_readable:
+      legal_basis_for:
+        - regulatory_layer: GEMEENTELIJKE_VERORDENING
+          subject: test_multi_criteria
+          contract:
+            parameters:
+              - name: basis_bedrag
+                type: number
+                required: true
+            output:
+              - name: tarief_percentage
+                type: number
+
+  # Article that uses delegation with MULTIPLE select_on criteria
+  - number: '2'
+    text: Artikel dat meerdere select_on criteria gebruikt (gemeente_code + jaar)
+    url: https://example.com/test_multi_criteria_law#2
+    machine_readable:
+      public: true
+      endpoint: bereken_tarief
+      execution:
+        parameters:
+          - name: gemeente_code
+            type: string
+            required: true
+          - name: jaar
+            type: number
+            required: true
+          - name: basis_bedrag
+            type: number
+            required: true
+        input:
+          # MULTI-CRITERIA: Using both gemeente_code AND jaar
+          - name: gemeente_tarief
+            type: number
+            source:
+              delegation:
+                law_id: test_multi_criteria_law
+                article: '1'
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
+                  - name: jaar
+                    value: $jaar
+              output: tarief_percentage
+              parameters:
+                basis_bedrag: $basis_bedrag
+        output:
+          - name: berekend_bedrag
+            type: number
+        actions:
+          - output: berekend_bedrag
+            operation: MULTIPLY
+            values:
+              - $basis_bedrag
+              - $gemeente_tarief

@@ -37,12 +37,19 @@ class Article:
         return self.machine_readable.get("requires", [])
 
     def get_endpoint(self) -> str | None:
-        """Get the endpoint name for this article"""
+        """Get the endpoint name for this article (deprecated - use get_output_names)"""
+        # TODO: remove remaining endpoint code
         return self.machine_readable.get("endpoint")
 
+    def get_output_names(self) -> list[str]:
+        """Get all output names from this article - these are the public endpoints"""
+        execution = self.machine_readable.get("execution", {})
+        outputs = execution.get("output", [])
+        return [o.get("name") for o in outputs if o.get("name")]
+
     def is_public(self) -> bool:
-        """Check if this article is publicly callable (has an endpoint)"""
-        return self.get_endpoint() is not None
+        """Check if this article is publicly callable (has outputs or legacy endpoint)"""
+        return len(self.get_output_names()) > 0 or self.get_endpoint() is not None
 
     def get_competent_authority(self) -> str | None:
         """Get the competent authority for this article"""
@@ -55,7 +62,7 @@ class ArticleBasedLaw:
 
     schema: str
     id: str
-    uuid: str
+    uuid: str | None
     regulatory_layer: str
     publication_date: str
     identifiers: dict[str, str]
@@ -64,7 +71,7 @@ class ArticleBasedLaw:
     def __init__(self, yaml_data: dict):
         self.schema = yaml_data.get("$schema", "")
         self.id = yaml_data["$id"]
-        self.uuid = yaml_data["uuid"]
+        self.uuid = yaml_data.get("uuid")
         self.regulatory_layer = yaml_data["regulatory_layer"]
         self.publication_date = yaml_data["publication_date"]
         self.valid_from = yaml_data.get("valid_from")
@@ -73,21 +80,45 @@ class ArticleBasedLaw:
         self.bwb_id = yaml_data.get("bwb_id")
         self.url = yaml_data.get("url")
         self.identifiers = yaml_data.get("identifiers", {})
+        # For gemeentelijke verordeningen
+        self.gemeente_code = yaml_data.get("gemeente_code")
+        self.officiele_titel = yaml_data.get("officiele_titel")
+        # For versioned regulations (e.g., tariffs that change per year)
+        self.jaar = yaml_data.get("jaar")
         self.articles = [Article(art) for art in yaml_data.get("articles", [])]
 
-    def find_article_by_endpoint(self, endpoint: str) -> Article | None:
-        """Find article with given endpoint (local name)"""
+    def find_article_by_endpoint(self, endpoint: str | list[str]) -> Article | None:
+        """Find article with given endpoint (output name or legacy endpoint)
+
+        Args:
+            endpoint: Single output name string, or list of output names.
+                      If a list is provided, finds article that has ALL of those outputs.
+        """
+        # Normalize to list for uniform handling
+        if isinstance(endpoint, str):
+            requested_outputs = [endpoint]
+        else:
+            requested_outputs = endpoint
+
         for article in self.articles:
-            article_endpoint = article.get_endpoint()
-            if article_endpoint:
-                # Extract local endpoint name (after dot)
-                local_name = (
-                    article_endpoint.split(".")[-1]
-                    if "." in article_endpoint
-                    else article_endpoint
-                )
-                if local_name == endpoint:
-                    return article
+            article_outputs = article.get_output_names()
+
+            # Check if article has all requested outputs
+            if all(out in article_outputs for out in requested_outputs):
+                return article
+
+            # Fallback to legacy endpoint field (only for single endpoint)
+            if len(requested_outputs) == 1:
+                article_endpoint = article.get_endpoint()
+                if article_endpoint:
+                    # Extract local endpoint name (after dot)
+                    local_name = (
+                        article_endpoint.split(".")[-1]
+                        if "." in article_endpoint
+                        else article_endpoint
+                    )
+                    if local_name == requested_outputs[0]:
+                        return article
         return None
 
     def find_article_by_number(self, number: str) -> Article | None:

@@ -173,6 +173,14 @@ class RuleContext:
             self.resolved_inputs[path] = value
             return value
 
+        # 8. Uitvoerder data - resolve from service provider
+        # TODO: Dit is een tijdelijke hardcoded oplossing voor gedragscategorie
+        # Later vervangen door generiek mechanisme
+        if path == "gedragscategorie":
+            value = self._resolve_from_uitvoerder(path)
+            if value is not None:
+                return value
+
         logger.warning(f"Could not resolve variable: {path}")
         return None
 
@@ -210,12 +218,17 @@ class RuleContext:
         Resolve value from source specification
 
         Args:
-            source_spec: Source specification with regulation/output or url/ref
+            source_spec: Source specification with regulation/output, delegation, or url/ref
             input_name: Name of the input being resolved
 
         Returns:
             Resolved value from regulation call or external source
         """
+        # Check for delegation source (gemeentelijke verordening)
+        delegation = source_spec.get("delegation")
+        if delegation:
+            return self._resolve_from_delegation(source_spec, input_name)
+
         # Schema v0.2.0 format: regulation + output
         regulation = source_spec.get("regulation")
         output_name = source_spec.get("output")
@@ -350,6 +363,276 @@ class RuleContext:
         """Create cache key for URI call"""
         param_str = ",".join(f"{k}:{v}" for k, v in sorted(parameters.items()))
         return f"{uri}({param_str},{self.calculation_date})"
+
+    def _resolve_from_delegation(self, source_spec: dict, input_name: str) -> Any:
+        """
+        Resolve value from delegation source (gemeentelijke verordening)
+
+        Delegation sources reference municipal regulations that implement
+        a delegated authority from a national law (e.g., Participatiewet art. 8
+        delegates to municipalities for creating afstemmingsverordeningen).
+
+        Supports both:
+        - New generic `select_on` format: [{name: "gemeente_code", value: "$gemeente_code"}]
+        - Legacy `gemeente_code` property (for backward compatibility)
+
+        Args:
+            source_spec: Source specification with delegation, output, and parameters
+            input_name: Name of the input being resolved
+
+        Returns:
+            Resolved value from gemeentelijke verordening or defaults from delegating article
+        """
+        delegation = source_spec["delegation"]
+        law_id = delegation.get("law_id")
+        article = delegation.get("article")
+        # Output name to retrieve from the verordening
+        output_name = source_spec.get("output") or source_spec.get(
+            "endpoint"
+        )  # fallback for legacy
+        params_spec = source_spec.get("parameters", {})
+
+        # Process select_on criteria (generic mechanism)
+        select_on = delegation.get("select_on", [])
+        resolved_criteria = []
+
+        for criterion in select_on:
+            # Validate criterion structure
+            name = criterion.get("name")
+            value = criterion.get("value")
+
+            if not name:
+                logger.warning(f"Invalid criterion missing 'name': {criterion}")
+                continue
+
+            if value is None:
+                logger.warning(f"Invalid criterion missing 'value': {criterion}")
+                continue
+
+            # Resolve variable references
+            if isinstance(value, str) and value.startswith("$"):
+                value = self._resolve_value(value[1:])
+                if value is None:
+                    logger.error(
+                        f"Could not resolve variable in criterion '{name}': {criterion}"
+                    )
+                    continue
+
+            resolved_criteria.append({"name": name, "value": value})
+
+        if not resolved_criteria:
+            logger.error(f"No selection criteria for delegation: {delegation}")
+            return None
+
+        logger.debug(
+            f"Resolving delegation: {law_id}.{article} with criteria {resolved_criteria}"
+        )
+
+        # Resolve parameter values
+        resolved_params = {}
+        for key, value in params_spec.items():
+            if isinstance(value, str) and value.startswith("$"):
+                resolved_params[key] = self._resolve_value(value[1:])
+            else:
+                resolved_params[key] = value
+
+        # Find the delegated regulation using select_on criteria
+        rule_resolver = self.service_provider.rule_resolver
+        verordening = rule_resolver.find_delegated_regulation(
+            law_id, article, resolved_criteria
+        )
+
+        if verordening:
+            # Execute the verordening - find article by output name
+            logger.debug(
+                f"Found verordening: {verordening.id}, finding article with output {output_name}"
+            )
+            article_obj = verordening.find_article_by_endpoint(output_name)
+
+            if article_obj:
+                from engine.engine import ArticleEngine
+
+                engine = ArticleEngine(article_obj, verordening)
+                result = engine.evaluate(
+                    parameters=resolved_params,
+                    service_provider=self.service_provider,
+                    calculation_date=self.calculation_date,
+                )
+
+                logger.debug(f"Delegation result: {result.output}")
+
+                # Extract specific output if single output requested
+                if isinstance(output_name, str) and output_name in result.output:
+                    return result.output[output_name]
+                elif isinstance(output_name, list):
+                    # Return dict with requested outputs only
+                    return {
+                        k: result.output[k] for k in output_name if k in result.output
+                    }
+                else:
+                    # Fallback: return full output dict
+                    return result.output
+            else:
+                logger.warning(
+                    f"Output {output_name} not found in verordening {verordening.id}"
+                )
+
+        # No verordening found - check if delegation is optional (has defaults) or mandatory
+        logger.info(
+            f"No verordening found for criteria {resolved_criteria}, checking delegation type for {law_id}.{article}"
+        )
+
+        # Find the delegating article and get legal_basis_for section
+        delegating_law = rule_resolver.get_law_by_id(law_id)
+        if delegating_law:
+            for art in delegating_law.articles:
+                if art.number == article:
+                    legal_foundations = art.machine_readable.get("legal_basis_for", [])
+                    for foundation in legal_foundations:
+                        # Check if output_name(s) are in the contract's outputs
+                        interface = foundation.get("contract", {})
+                        interface_outputs = [
+                            o.get("name") for o in interface.get("output", [])
+                        ]
+                        # Support both single output and list of outputs
+                        if isinstance(output_name, list):
+                            outputs_match = all(
+                                o in interface_outputs for o in output_name
+                            )
+                        else:
+                            outputs_match = output_name in interface_outputs
+                        if outputs_match:
+                            defaults = foundation.get("defaults", {})
+                            if defaults:
+                                # OPTIONAL delegation: use defaults from rijkswet
+                                logger.info(
+                                    f"Using defaults from {law_id}.{article} (optional delegation)"
+                                )
+                                result = self._execute_defaults(
+                                    defaults, resolved_params
+                                )
+                                # Extract specific output if single output requested
+                                if (
+                                    isinstance(output_name, str)
+                                    and output_name in result
+                                ):
+                                    return result[output_name]
+                                elif isinstance(output_name, list):
+                                    return {
+                                        k: result[k] for k in output_name if k in result
+                                    }
+                                else:
+                                    return result
+                            else:
+                                # MANDATORY delegation: no defaults means no legal basis
+                                msg = (
+                                    f"No regulation found for mandatory delegation "
+                                    f"{law_id} article {article} with criteria {resolved_criteria}. "
+                                    f"No legal basis for decision."
+                                )
+                                logger.error(msg)
+                                raise ValueError(msg)
+
+        # No matching legal_basis_for found at all
+        logger.warning(f"No legal_basis_for found for delegation {law_id}.{article}")
+        return None
+
+    def _execute_defaults(self, defaults: dict, params: dict) -> dict:
+        """
+        Execute default actions from a legal_basis_for.defaults section
+
+        Args:
+            defaults: The defaults section with actions
+            params: Parameters for the execution
+
+        Returns:
+            Dict of output values
+        """
+        from engine.engine import ArticleEngine
+
+        # Create a minimal Article-like structure for the defaults
+        class DefaultArticle:
+            def __init__(self, defaults_spec: dict):
+                self.number = "defaults"
+                self.text = "Default values"
+                self.url = None
+                # Store definitions separately for get_definitions()
+                self._definitions = defaults_spec.get("definitions", {})
+                # Build execution spec with just actions and output
+                self.machine_readable = {
+                    "execution": {
+                        "actions": defaults_spec.get("actions", []),
+                        "output": defaults_spec.get("output", []),
+                    }
+                }
+
+            def get_execution_spec(self) -> dict:
+                return self.machine_readable.get("execution", {})
+
+            def get_definitions(self) -> dict:
+                return self._definitions
+
+        # Create a minimal law-like structure
+        class DefaultLaw:
+            def __init__(self):
+                self.id = "defaults"
+                self.uuid = None  # Required by ArticleBasedLaw interface
+
+        default_article = DefaultArticle(defaults)
+        default_law = DefaultLaw()
+
+        # type: ignore because DefaultArticle/DefaultLaw are duck-typed implementations
+        engine = ArticleEngine(default_article, default_law)  # type: ignore[arg-type]
+        result = engine.evaluate(
+            parameters=params,
+            service_provider=self.service_provider,
+            calculation_date=self.calculation_date,
+        )
+
+        return result.output
+
+    def _resolve_from_uitvoerder(self, var_name: str) -> Any:
+        """
+        Resolve a variable from uitvoerder (execution organization) data
+
+        TODO: Dit is een tijdelijke hardcoded oplossing.
+        Later vervangen door generiek mechanisme met service providers.
+
+        Args:
+            var_name: Variable name to resolve
+
+        Returns:
+            Resolved value or None
+        """
+        # We need bsn to look up uitvoerder data
+        bsn = self.parameters.get("bsn")
+        if not bsn:
+            logger.debug(f"Cannot resolve {var_name} from uitvoerder: missing bsn")
+            return None
+
+        # Get gemeente_code from parameters OR from the current law (if it's a verordening)
+        gemeente_code = self.parameters.get("gemeente_code")
+        if not gemeente_code and self.current_law:
+            # Gemeentelijke verordeningen have gemeente_code in their metadata
+            gemeente_code = getattr(self.current_law, "gemeente_code", None)
+
+        if not gemeente_code:
+            logger.debug(
+                f"Cannot resolve {var_name} from uitvoerder: missing gemeente_code"
+            )
+            return None
+
+        # Hardcoded lookup for gedragscategorie
+        if var_name == "gedragscategorie":
+            from engine.service import LawExecutionService
+
+            value = LawExecutionService.get_gedragscategorie(bsn, gemeente_code)
+            logger.debug(
+                f"Resolved {var_name} from uitvoerder {gemeente_code}: {value}"
+            )
+            return value
+
+        return None
 
     def set_output(self, name: str, value: Any):
         """Set an output value"""

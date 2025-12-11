@@ -64,14 +64,16 @@ class LawExecutionService:
             raise ValueError(f"Could not resolve URI: {uri}")
 
         # Get or create engine for this article
-        endpoint = article.get_endpoint()
-        if endpoint is None:
-            raise ValueError(f"Article has no endpoint: {article.number}")
+        # Use first output name as cache key, or legacy endpoint if no outputs
+        output_names = article.get_output_names()
+        cache_key_name = output_names[0] if output_names else article.get_endpoint()
+        if cache_key_name is None:
+            raise ValueError(f"Article has no outputs/endpoint: {article.number}")
 
-        cache_key = (law.id, endpoint)
+        cache_key = (law.id, cache_key_name)
 
         if cache_key not in self.engine_cache:
-            logger.debug(f"Creating engine for {law.id}/{endpoint}")
+            logger.debug(f"Creating engine for {law.id}/{cache_key_name}")
             self.engine_cache[cache_key] = ArticleEngine(article, law)
 
         engine = self.engine_cache[cache_key]
@@ -145,3 +147,41 @@ class LawExecutionService:
             "endpoints": list(law.get_all_endpoints().keys()),
             "article_count": len(law.articles),
         }
+
+    # TODO: Generiek mechanisme voor uitvoerder data - nu hardcoded voor Diemen
+    # Dit moet later vervangen worden door een service provider pattern
+    _uitvoerder_data: dict[str, dict[str, int]] = {}
+
+    @classmethod
+    def set_gedragscategorie(cls, bsn: str, gemeente_code: str, categorie: int) -> None:
+        """
+        Set gedragscategorie for a BSN (test/mock data)
+
+        Args:
+            bsn: Burgerservicenummer
+            gemeente_code: Gemeente code (e.g., "GM0384")
+            categorie: Gedragscategorie (0, 1, 2, or 3)
+        """
+        key = f"{gemeente_code}:{bsn}"
+        cls._uitvoerder_data[key] = {"gedragscategorie": categorie}
+
+    @classmethod
+    def get_gedragscategorie(cls, bsn: str, gemeente_code: str) -> int:
+        """
+        Get gedragscategorie for a BSN from uitvoerder data
+
+        Args:
+            bsn: Burgerservicenummer
+            gemeente_code: Gemeente code (e.g., "GM0384")
+
+        Returns:
+            Gedragscategorie (0 if not set)
+        """
+        key = f"{gemeente_code}:{bsn}"
+        data = cls._uitvoerder_data.get(key, {})
+        return data.get("gedragscategorie", 0)
+
+    @classmethod
+    def clear_uitvoerder_data(cls) -> None:
+        """Clear all uitvoerder test data"""
+        cls._uitvoerder_data = {}
