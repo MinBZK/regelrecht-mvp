@@ -625,16 +625,16 @@ articles:
     machine_readable:
       execution:
         parameters:
-          - name: BSN
+          - name: bsn
             type: string
             required: true
             description: Burgerservicenummer van de persoon
         output:
-          - name: HEEFT_TOESLAGPARTNER
+          - name: heeft_toeslagpartner
             type: boolean
             description: Geeft aan of de persoon een toeslagpartner heeft
         actions:
-          - output: HEEFT_TOESLAGPARTNER
+          - output: heeft_toeslagpartner
             value: false
   - number: API-2
     text: |-
@@ -647,14 +647,14 @@ articles:
     machine_readable:
       execution:
         parameters:
-          - name: BSN
+          - name: bsn
             type: string
             required: true
             description: Burgerservicenummer van de persoon
         output:
-          - name: TOETSINGSINKOMEN
+          - name: toetsingsinkomen
             type: amount
             description: Toetsingsinkomen in eurocent
         actions:
-          - output: TOETSINGSINKOMEN
+          - output: toetsingsinkomen
             value: 0
