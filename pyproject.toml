@@ -33,6 +33,7 @@ addopts = [
     "--verbose",
     "--strict-markers",
     "--cov=engine",
+    "--cov=harvester",
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
