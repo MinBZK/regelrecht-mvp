@@ -158,24 +158,21 @@ articles:
                                     else: $drempelinkomen_alleenstaande
                           - $percentage_toetsingsinkomen
           - output: heeft_recht_op_zorgtoeslag
-            conditions:
-              - test:
-                  operation: AND
-                  conditions:
-                    - operation: GREATER_THAN_OR_EQUAL
-                      subject: $leeftijd
-                      value: 18
-                    - operation: EQUALS
-                      subject: $is_verzekerde
-                      value: true
-                    - operation: EQUALS
-                      subject: $vermogen_onder_grens
-                      value: true
-                    - operation: GREATER_THAN
-                      subject: $hoogte_zorgtoeslag
-                      value: 0
-                then: true
-                else: false
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: 18
+                - operation: EQUALS
+                  subject: $is_verzekerde
+                  value: true
+                - operation: EQUALS
+                  subject: $vermogen_onder_grens
+                  value: true
+                - operation: GREATER_THAN
+                  subject: $hoogte_zorgtoeslag
+                  value: 0
   - number: '3'
     text: |-
       Een verzekerde heeft geen aanspraak op zorgtoeslag indien de rendementsgrondslag, bedoeld in artikel 5.2 van de Wet
@@ -215,20 +212,17 @@ articles:
             type: boolean
         actions:
           - output: vermogen_onder_grens
-            conditions:
-              - test:
-                  operation: LESS_THAN_OR_EQUAL
-                  subject: $vermogen
-                  value:
-                    operation: IF
-                    test:
-                      operation: EQUALS
-                      subject: $heeft_toeslagpartner
-                      value: true
-                    then: $vermogensgrens_aanvrager_met_toeslagpartner
-                    else: $vermogensgrens_alleenstaand
-                then: true
-                else: false
+            value:
+              operation: LESS_THAN_OR_EQUAL
+              subject: $vermogen
+              value:
+                operation: IF
+                test:
+                  operation: EQUALS
+                  subject: $heeft_toeslagpartner
+                  value: true
+                then: $vermogensgrens_aanvrager_met_toeslagpartner
+                else: $vermogensgrens_alleenstaand
   - number: '4'
     text: |-
       Onze Minister stelt uiterlijk 22 dagen voorafgaande aan het berekeningsjaar bij regeling de standaardpremie voor

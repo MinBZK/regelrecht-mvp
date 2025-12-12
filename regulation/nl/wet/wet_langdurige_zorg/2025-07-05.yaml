@@ -119,18 +119,15 @@ articles:
             type: boolean
         actions:
           - output: is_verzekerd_wlz
-            conditions:
-              - test:
-                  operation: OR
-                  conditions:
-                    - operation: EQUALS
-                      subject: $is_ingezetene
-                      value: true
-                    - operation: EQUALS
-                      subject: $betaalt_loonbelasting_nederland
-                      value: true
-                then: true
-                else: false
+            value:
+              operation: OR
+              conditions:
+                - operation: EQUALS
+                  subject: $is_ingezetene
+                  value: true
+                - operation: EQUALS
+                  subject: $betaalt_loonbelasting_nederland
+                  value: true
   - number: 2.1.2
     text: |-
       Zo nodig in afwijking van artikel 2.1.1 en de daarop berustende bepalingen: a. wordt als verzekerde

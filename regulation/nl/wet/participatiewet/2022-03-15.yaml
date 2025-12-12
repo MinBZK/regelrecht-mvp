@@ -456,80 +456,62 @@ articles:
         actions:
           # === Stap 1: Controleer UWV-registratie ===
           - output: voldoet_aan_uwv_registratie
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $is_geregistreerd_als_werkzoekende
-                  value: true
-                then: true
-                else: false
+            value:
+              operation: EQUALS
+              subject: $is_geregistreerd_als_werkzoekende
+              value: true
 
           # === Stap 2: Controleer nationaliteit (art. 11 lid 1-2) ===
           - output: voldoet_aan_nationaliteit
-            conditions:
-              - test:
-                  operation: OR
-                  conditions:
-                    - operation: EQUALS
-                      subject: $is_nederlander
-                      value: true
-                    - operation: EQUALS
-                      subject: $is_gelijkgestelde_vreemdeling
-                      value: true
-                then: true
-                else: false
+            value:
+              operation: OR
+              conditions:
+                - operation: EQUALS
+                  subject: $is_nederlander
+                  value: true
+                - operation: EQUALS
+                  subject: $is_gelijkgestelde_vreemdeling
+                  value: true
 
           # === Stap 3: Controleer woonplaats (art. 11 lid 1) ===
           - output: voldoet_aan_woonplaats
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $woont_in_nederland
-                  value: true
-                then: true
-                else: false
+            value:
+              operation: EQUALS
+              subject: $woont_in_nederland
+              value: true
 
           # === Stap 4: Controleer leeftijd (art. 21: 21+ en < pensioen) ===
           - output: voldoet_aan_leeftijd
-            conditions:
-              - test:
-                  operation: AND
-                  conditions:
-                    - operation: GREATER_THAN_OR_EQUAL
-                      subject: $leeftijd
-                      value: 21
-                    - operation: EQUALS
-                      subject: $heeft_pensioengerechtigde_leeftijd_bereikt
-                      value: false
-                    - operation: EQUALS
-                      subject: $heeft_kostendelende_medebewoners
-                      value: false
-                then: true
-                else: false
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: 21
+                - operation: EQUALS
+                  subject: $heeft_pensioengerechtigde_leeftijd_bereikt
+                  value: false
+                - operation: EQUALS
+                  subject: $heeft_kostendelende_medebewoners
+                  value: false
 
           # === Stap 5: Controleer middelen (art. 11: geen middelen) ===
           - output: heeft_onvoldoende_middelen
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $heeft_voldoende_middelen
-                  value: false
-                then: true
-                else: false
+            value:
+              operation: EQUALS
+              subject: $heeft_voldoende_middelen
+              value: false
 
           # === Stap 6: Bepaal recht op bijstand ===
           - output: heeft_recht_op_bijstand
-            conditions:
-              - test:
-                  operation: AND
-                  conditions:
-                    - $voldoet_aan_uwv_registratie
-                    - $voldoet_aan_nationaliteit
-                    - $voldoet_aan_woonplaats
-                    - $voldoet_aan_leeftijd
-                    - $heeft_onvoldoende_middelen
-                then: true
-                else: false
+            value:
+              operation: AND
+              conditions:
+                - $voldoet_aan_uwv_registratie
+                - $voldoet_aan_nationaliteit
+                - $voldoet_aan_woonplaats
+                - $voldoet_aan_leeftijd
+                - $heeft_onvoldoende_middelen
 
           # === Stap 7: Bepaal reden afwijzing indien geen recht ===
           - output: reden_afwijzing
