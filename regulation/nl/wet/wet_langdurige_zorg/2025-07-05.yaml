@@ -163,23 +163,25 @@ articles:
             type: boolean
         actions:
           - output: is_verzekerd_wlz_inclusief_verdrag
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $wetgeving_andere_mogendheid
-                  value: true
-                then: false
-              - test:
-                  operation: EQUALS
-                  subject: $verzekerd_via_verdrag
-                  value: true
-                then: true
-              - test:
-                  operation: EQUALS
-                  subject: $is_verzekerd_basis
-                  value: true
-                then: true
-                else: false
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $wetgeving_andere_mogendheid
+                    value: true
+                  then: false
+                - when:
+                    operation: EQUALS
+                    subject: $verzekerd_via_verdrag
+                    value: true
+                  then: true
+                - when:
+                    operation: EQUALS
+                    subject: $is_verzekerd_basis
+                    value: true
+                  then: true
+              default: false
   - number: 2.1.3
     text: |-
       De Sociale verzekeringsbank stelt ambtshalve en, desgevraagd, op aanvraag vast of een natuurlijke

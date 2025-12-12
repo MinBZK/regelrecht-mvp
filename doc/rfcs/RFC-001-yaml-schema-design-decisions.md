@@ -217,6 +217,7 @@ Operations use different property names based on their semantic purpose:
 | **Logical** (AND, OR) | `conditions` | Combines boolean conditions |
 | **Numeric** (ADD, SUBTRACT, MULTIPLY, DIVIDE, MIN, MAX) | `values` | Combines numeric values |
 | **Conditional** (IF) | `test`, `then`, `else` | Tests a condition and branches |
+| **Multi-branch** (SWITCH) | `cases`, `default` | Multiple conditional branches (see Section 14) |
 
 **Example - Logical operation:**
 ```yaml
@@ -246,6 +247,94 @@ values:
 - The schema enforces this through conditional validation (`if/then` rules)
 
 **Note:** This differs from the POC (v0.1.6) which used `values` for all operations. The v0.2.0 approach is semantically more correct.
+
+### 14. SWITCH Operation: Explicit Multi-Branch Logic
+
+**Context:** De oude syntax had action-niveau `conditions` als een speciale structuur die geen echte operatie was:
+
+```yaml
+# OUD (verwijderd): action-niveau conditions
+- output: reden_afwijzing
+  conditions:
+    - test: { operation: EQUALS, subject: $a, value: true }
+      then: "Reden A"
+    - test: { operation: EQUALS, subject: $b, value: true }
+      then: "Reden B"
+    - else: "Onbekend"
+```
+
+Dit had twee problemen:
+1. **Inconsistentie:** `conditions` was geen operatie, maar een speciale action-property
+2. **Verwarring:** `conditions` betekende iets anders in AND/OR operations (operanden) dan in actions (if-then-else branches)
+
+**Oplossing:** De SWITCH operatie vervangt action-niveau `conditions` met een echte operatie:
+
+```yaml
+# NIEUW: SWITCH als echte operatie
+- output: reden_afwijzing
+  value:
+    operation: SWITCH
+    cases:
+      - when: { operation: EQUALS, subject: $a, value: true }
+        then: "Reden A"
+      - when: { operation: EQUALS, subject: $b, value: true }
+        then: "Reden B"
+    default: "Onbekend"
+```
+
+**Voordelen:**
+- **Uniformiteit:** Alle logica loopt via operaties - geen speciale action-properties meer
+- **Expliciet:** SWITCH maakt duidelijk dat dit een multi-branch keuze is
+- **Geen diepe nesting:** Vermijdt geneste IF-operaties voor if-elif-else ketens
+- **Consistente naamgeving:** `when`/`then` in SWITCH vs `test`/`then` in IF (beide zijn duidelijk)
+
+**Wanneer IF vs SWITCH gebruiken:**
+- **IF:** Eén test met twee mogelijke uitkomsten (if-else)
+- **SWITCH:** Meerdere tests die in volgorde worden geëvalueerd (if-elif-elif-else)
+
+**Schema structuur:**
+```json
+"switchOperation": {
+  "properties": {
+    "operation": { "const": "SWITCH" },
+    "cases": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "when": { "$ref": "#/definitions/operationValue" },
+          "then": { "$ref": "#/definitions/operationValue" }
+        }
+      }
+    },
+    "default": { "$ref": "#/definitions/operationValue" }
+  }
+}
+```
+
+### 15. Uniforme Action Structuur
+
+Met de introductie van SWITCH is de action structuur vereenvoudigd. Actions hebben nu één manier om waarden te berekenen:
+
+```yaml
+# Alle actions gebruiken nu 'value' met een operationValue
+- output: resultaat
+  value: <literal | $variabele | { operation: ..., ... }>
+```
+
+**Verwijderd uit action:**
+- `conditions` property (vervangen door SWITCH operatie)
+
+**Nog aanwezig (legacy, wordt later geuniformeerd):**
+- Losse `operation` + `values` op action niveau (kan later ook naar `value: { operation: ..., values: [...] }`)
+
+**Toekomstige uniformering:** De action heeft nu twee manieren om operaties te specificeren:
+1. `value: { operation: ..., ... }` (nieuw, uniform)
+2. `operation: X` + `values: [...]` (oud, los)
+
+Na volledige uniformering kan de action definitie vereenvoudigd worden tot alleen:
+- `output` (required)
+- `value` (operationValue)
+- `resolve` (voor delegatie)
 
 ## References
 

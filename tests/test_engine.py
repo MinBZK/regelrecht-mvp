@@ -1236,8 +1236,8 @@ class TestConditionalOperations:
 
         assert result.output["result"] == 50
 
-    def test_conditions_first_true(self):
-        """Conditions (IF-THEN-ELSE chain) - first condition true"""
+    def test_switch_first_case_matches(self):
+        """SWITCH operation - first case matches"""
         article = Article(
             {
                 "number": "1",
@@ -1248,27 +1248,31 @@ class TestConditionalOperations:
                         "actions": [
                             {
                                 "output": "result",
-                                "conditions": [
-                                    {
-                                        "test": {
-                                            "operation": "EQUALS",
-                                            "subject": 10,
-                                            "value": 10,
+                                "value": {
+                                    "operation": "SWITCH",
+                                    "cases": [
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 10,
+                                            },
+                                            "then": "first",
                                         },
-                                        "then": "first",
-                                    },
-                                    {
-                                        "test": {
-                                            "operation": "EQUALS",
-                                            "subject": 20,
-                                            "value": 20,
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 20,
+                                            },
+                                            "then": "second",
                                         },
-                                        "then": "second",
-                                    },
-                                    {"else": "none"},
-                                ],
+                                    ],
+                                    "default": "none",
+                                },
                             }
                         ],
+                        "parameters": [{"name": "x", "type": "number"}],
                     }
                 },
             }
@@ -1276,12 +1280,12 @@ class TestConditionalOperations:
         law = make_minimal_law()
         engine = ArticleEngine(article, law)
 
-        result = engine.evaluate({}, Mock(), "2025-01-01")
+        result = engine.evaluate({"x": 10}, Mock(), "2025-01-01")
 
         assert result.output["result"] == "first"
 
-    def test_conditions_second_true(self):
-        """Conditions - second condition true"""
+    def test_switch_second_case_matches(self):
+        """SWITCH operation - second case matches"""
         article = Article(
             {
                 "number": "1",
@@ -1292,27 +1296,31 @@ class TestConditionalOperations:
                         "actions": [
                             {
                                 "output": "result",
-                                "conditions": [
-                                    {
-                                        "test": {
-                                            "operation": "EQUALS",
-                                            "subject": 10,
-                                            "value": 20,
+                                "value": {
+                                    "operation": "SWITCH",
+                                    "cases": [
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 10,
+                                            },
+                                            "then": "first",
                                         },
-                                        "then": "first",
-                                    },
-                                    {
-                                        "test": {
-                                            "operation": "EQUALS",
-                                            "subject": 20,
-                                            "value": 20,
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 20,
+                                            },
+                                            "then": "second",
                                         },
-                                        "then": "second",
-                                    },
-                                    {"else": "none"},
-                                ],
+                                    ],
+                                    "default": "none",
+                                },
                             }
                         ],
+                        "parameters": [{"name": "x", "type": "number"}],
                     }
                 },
             }
@@ -1320,12 +1328,12 @@ class TestConditionalOperations:
         law = make_minimal_law()
         engine = ArticleEngine(article, law)
 
-        result = engine.evaluate({}, Mock(), "2025-01-01")
+        result = engine.evaluate({"x": 20}, Mock(), "2025-01-01")
 
         assert result.output["result"] == "second"
 
-    def test_conditions_all_false(self):
-        """Conditions - all conditions false, returns else"""
+    def test_switch_default_when_no_match(self):
+        """SWITCH operation - no case matches, returns default"""
         article = Article(
             {
                 "number": "1",
@@ -1336,27 +1344,31 @@ class TestConditionalOperations:
                         "actions": [
                             {
                                 "output": "result",
-                                "conditions": [
-                                    {
-                                        "test": {
-                                            "operation": "EQUALS",
-                                            "subject": 10,
-                                            "value": 20,
+                                "value": {
+                                    "operation": "SWITCH",
+                                    "cases": [
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 10,
+                                            },
+                                            "then": "first",
                                         },
-                                        "then": "first",
-                                    },
-                                    {
-                                        "test": {
-                                            "operation": "EQUALS",
-                                            "subject": 20,
-                                            "value": 30,
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 20,
+                                            },
+                                            "then": "second",
                                         },
-                                        "then": "second",
-                                    },
-                                    {"else": "none"},
-                                ],
+                                    ],
+                                    "default": "none",
+                                },
                             }
                         ],
+                        "parameters": [{"name": "x", "type": "number"}],
                     }
                 },
             }
@@ -1364,9 +1376,92 @@ class TestConditionalOperations:
         law = make_minimal_law()
         engine = ArticleEngine(article, law)
 
-        result = engine.evaluate({}, Mock(), "2025-01-01")
+        result = engine.evaluate({"x": 99}, Mock(), "2025-01-01")
 
         assert result.output["result"] == "none"
+
+    def test_switch_without_default_returns_none(self):
+        """SWITCH operation without default returns None when no case matches"""
+        article = Article(
+            {
+                "number": "1",
+                "text": "Test",
+                "machine_readable": {
+                    "execution": {
+                        "output": [{"name": "result", "type": "string"}],
+                        "actions": [
+                            {
+                                "output": "result",
+                                "value": {
+                                    "operation": "SWITCH",
+                                    "cases": [
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 10,
+                                            },
+                                            "then": "first",
+                                        },
+                                    ],
+                                },
+                            }
+                        ],
+                        "parameters": [{"name": "x", "type": "number"}],
+                    }
+                },
+            }
+        )
+        law = make_minimal_law()
+        engine = ArticleEngine(article, law)
+
+        result = engine.evaluate({"x": 99}, Mock(), "2025-01-01")
+
+        assert result.output["result"] is None
+
+    def test_switch_with_nested_operation_in_then(self):
+        """SWITCH operation with nested operation in then value"""
+        article = Article(
+            {
+                "number": "1",
+                "text": "Test",
+                "machine_readable": {
+                    "definitions": {"BASE": 100},
+                    "execution": {
+                        "output": [{"name": "result", "type": "number"}],
+                        "actions": [
+                            {
+                                "output": "result",
+                                "value": {
+                                    "operation": "SWITCH",
+                                    "cases": [
+                                        {
+                                            "when": {
+                                                "operation": "EQUALS",
+                                                "subject": "$x",
+                                                "value": 1,
+                                            },
+                                            "then": {
+                                                "operation": "MULTIPLY",
+                                                "values": ["$BASE", 2],
+                                            },
+                                        },
+                                    ],
+                                    "default": "$BASE",
+                                },
+                            }
+                        ],
+                        "parameters": [{"name": "x", "type": "number"}],
+                    },
+                },
+            }
+        )
+        law = make_minimal_law()
+        engine = ArticleEngine(article, law)
+
+        result = engine.evaluate({"x": 1}, Mock(), "2025-01-01")
+
+        assert result.output["result"] == 200
 
 
 class TestNestedOperations:

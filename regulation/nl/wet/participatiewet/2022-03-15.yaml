@@ -254,13 +254,14 @@ articles:
                   value: false
           # Calculate the norm based on household type
           - output: normbedrag_artikel_21
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $is_alleenstaande
-                  value: true
-                then: $norm_alleenstaande
-                else: $norm_gehuwden
+            value:
+              operation: IF
+              test:
+                operation: EQUALS
+                subject: $is_alleenstaande
+                value: true
+              then: $norm_alleenstaande
+              else: $norm_gehuwden
   - number: '22'
     text: |-
       **Normen pensioengerechtigden**
@@ -515,52 +516,56 @@ articles:
 
           # === Stap 7: Bepaal reden afwijzing indien geen recht ===
           - output: reden_afwijzing
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $heeft_recht_op_bijstand
-                  value: true
-                then: null
-              - test:
-                  operation: EQUALS
-                  subject: $voldoet_aan_uwv_registratie
-                  value: false
-                then: Niet geregistreerd als werkzoekende bij UWV
-              - test:
-                  operation: EQUALS
-                  subject: $voldoet_aan_nationaliteit
-                  value: false
-                then: Geen Nederlander of gelijkgestelde vreemdeling
-              - test:
-                  operation: EQUALS
-                  subject: $voldoet_aan_woonplaats
-                  value: false
-                then: Woont niet in Nederland
-              - test:
-                  operation: EQUALS
-                  subject: $voldoet_aan_leeftijd
-                  value: false
-                then: Voldoet niet aan leeftijdseis (21+ en onder pensioenleeftijd, geen kostendelers)
-              - test:
-                  operation: EQUALS
-                  subject: $heeft_onvoldoende_middelen
-                  value: false
-                then: Beschikt over voldoende middelen
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $heeft_recht_op_bijstand
+                    value: true
+                  then: null
+                - when:
+                    operation: EQUALS
+                    subject: $voldoet_aan_uwv_registratie
+                    value: false
+                  then: Niet geregistreerd als werkzoekende bij UWV
+                - when:
+                    operation: EQUALS
+                    subject: $voldoet_aan_nationaliteit
+                    value: false
+                  then: Geen Nederlander of gelijkgestelde vreemdeling
+                - when:
+                    operation: EQUALS
+                    subject: $voldoet_aan_woonplaats
+                    value: false
+                  then: Woont niet in Nederland
+                - when:
+                    operation: EQUALS
+                    subject: $voldoet_aan_leeftijd
+                    value: false
+                  then: Voldoet niet aan leeftijdseis (21+ en onder pensioenleeftijd, geen kostendelers)
+                - when:
+                    operation: EQUALS
+                    subject: $heeft_onvoldoende_middelen
+                    value: false
+                  then: Beschikt over voldoende middelen
 
           # === Stap 8: Bepaal normbedrag (art. 21) ===
           - output: normbedrag
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $heeft_recht_op_bijstand
-                  value: false
-                then: 0
-              - test:
-                  operation: EQUALS
-                  subject: $is_alleenstaande
-                  value: true
-                then: 109171  # € 1.091,71
-                else: 155958  # € 1.559,58 (gehuwden)
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $heeft_recht_op_bijstand
+                    value: false
+                  then: 0
+                - when:
+                    operation: EQUALS
+                    subject: $is_alleenstaande
+                    value: true
+                  then: 109171  # € 1.091,71
+              default: 155958  # € 1.559,58 (gehuwden)
 
           # === Stap 9: Verlagingspercentage uit gemeentelijke verordening ===
           # De verordening bepaalt intern of en welke verlaging van toepassing is

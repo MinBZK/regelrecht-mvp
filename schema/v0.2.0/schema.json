@@ -558,6 +558,44 @@
       },
       "additionalProperties": false
     },
+    "switchOperation": {
+      "type": "object",
+      "description": "Switch/case operation for multiple conditional branches",
+      "required": ["operation", "cases"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "SWITCH"
+        },
+        "cases": {
+          "type": "array",
+          "description": "List of when/then pairs evaluated in order",
+          "items": {
+            "type": "object",
+            "required": ["when", "then"],
+            "properties": {
+              "when": {
+                "$ref": "#/definitions/operationValue",
+                "description": "Condition to test"
+              },
+              "then": {
+                "$ref": "#/definitions/operationValue",
+                "description": "Value if condition is true"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "default": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value if no case matches"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
     "otherOperation": {
       "type": "object",
       "description": "Other operations (NOT, FOREACH) - fallback with flexible properties",
@@ -597,6 +635,7 @@
         "NOT_IN",
         "CONCAT",
         "IF",
+        "SWITCH",
         "FOREACH",
         "SUBTRACT_DATE"
       ]
@@ -608,6 +647,7 @@
         { "$ref": "#/definitions/logicalOperation" },
         { "$ref": "#/definitions/comparisonOperation" },
         { "$ref": "#/definitions/conditionalOperation" },
+        { "$ref": "#/definitions/switchOperation" },
         { "$ref": "#/definitions/otherOperation" }
       ]
     },
@@ -656,32 +696,6 @@
           "description": "Operands for the operation",
           "items": {
             "$ref": "#/definitions/operationValue"
-          }
-        },
-        "conditions": {
-          "type": "array",
-          "description": "Conditional logic (if-then-else)",
-          "items": {
-            "type": "object",
-            "properties": {
-              "test": {
-                "$ref": "#/definitions/operation"
-              },
-              "then": {
-                "$ref": "#/definitions/operationValue"
-              },
-              "else": {
-                "$ref": "#/definitions/operationValue"
-              },
-              "legal_basis": {
-                "$ref": "#/definitions/legalBasis"
-              }
-            },
-            "required": [
-              "test",
-              "then"
-            ],
-            "additionalProperties": false
           }
         },
         "resolve": {

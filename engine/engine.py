@@ -148,10 +148,6 @@ class ArticleEngine:
         if "operation" in action:
             return self._evaluate_operation(action, context)
 
-        # Check for conditions (IF-THEN-ELSE)
-        if "conditions" in action:
-            return self._evaluate_conditions(action["conditions"], context)
-
         # Check for resolve (cross-law reference with matching)
         if "resolve" in action:
             return self._evaluate_resolve(action["resolve"], context)
@@ -198,6 +194,10 @@ class ArticleEngine:
         if op_type == "IF":
             return self._evaluate_if(operation, context)
 
+        # SWITCH operation
+        if op_type == "SWITCH":
+            return self._evaluate_switch(operation, context)
+
         # Comparison operations
         if op_type in [
             "EQUALS",
@@ -232,13 +232,26 @@ class ArticleEngine:
         if test_result:
             return self._evaluate_value(operation["then"], context)
         else:
-            return self._evaluate_value(operation["else"], context)
+            return self._evaluate_value(operation.get("else"), context)
 
-    def _evaluate_test(self, test: dict, context: RuleContext) -> bool:
-        """Evaluate a test condition"""
-        if "operation" in test:
-            return self._evaluate_operation(test, context)
-        return bool(test)
+    def _evaluate_switch(self, operation: dict, context: RuleContext) -> Any:
+        """Evaluate SWITCH operation (multiple conditional branches)"""
+        cases = operation.get("cases", [])
+        for case in cases:
+            when_result = self._evaluate_value(case["when"], context)
+            # Evaluate the when clause as a boolean test
+            if isinstance(when_result, dict) and "operation" in when_result:
+                when_result = self._evaluate_operation(when_result, context)
+            if when_result:
+                return self._evaluate_value(case["then"], context)
+        # No case matched, return default
+        return self._evaluate_value(operation.get("default"), context)
+
+    def _evaluate_test(self, test: Any, context: RuleContext) -> bool:
+        """Evaluate a test condition (can be operation, variable reference, or literal)"""
+        # First evaluate the test value (handles variable references and nested operations)
+        result = self._evaluate_value(test, context)
+        return bool(result)
 
     def _evaluate_comparison(self, operation: dict, context: RuleContext) -> bool:
         """Evaluate comparison operation"""
@@ -510,19 +523,3 @@ class ArticleEngine:
             f"Successfully resolved to unique regeling: {first_match['law'].id}"
         )
         return first_match["result"]
-
-    def _evaluate_conditions(self, conditions: list, context: RuleContext) -> Any:
-        """Evaluate conditions list (IF-THEN-ELSE chain)"""
-        for condition in conditions:
-            if "test" in condition:
-                test_result = self._evaluate_test(condition["test"], context)
-                if test_result:
-                    return self._evaluate_value(condition["then"], context)
-                elif "else" in condition:
-                    # Condition has both test and else - use else if test fails
-                    return self._evaluate_value(condition["else"], context)
-            elif "else" in condition:
-                # Standalone else (catch-all)
-                return self._evaluate_value(condition["else"], context)
-
-        return None
