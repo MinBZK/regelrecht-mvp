@@ -240,21 +240,18 @@ articles:
         actions:
           # Check eligibility conditions
           - output: voldoet_aan_voorwaarden_artikel_21
-            conditions:
-              - test:
-                  operation: AND
-                  conditions:
-                    - operation: GREATER_THAN_OR_EQUAL
-                      subject: $leeftijd
-                      value: 21
-                    - operation: EQUALS
-                      subject: $heeft_pensioengerechtigde_leeftijd_bereikt
-                      value: false
-                    - operation: EQUALS
-                      subject: $heeft_kostendelende_medebewoners
-                      value: false
-                then: true
-                else: false
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: 21
+                - operation: EQUALS
+                  subject: $heeft_pensioengerechtigde_leeftijd_bereikt
+                  value: false
+                - operation: EQUALS
+                  subject: $heeft_kostendelende_medebewoners
+                  value: false
           # Calculate the norm based on household type
           - output: normbedrag_artikel_21
             conditions:
