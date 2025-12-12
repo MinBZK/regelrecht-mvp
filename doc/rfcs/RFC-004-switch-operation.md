@@ -1,6 +1,6 @@
 # RFC-004: SWITCH Operation for Multi-Branch Logic
 
-**Status:** Accepted
+**Status:** Proposed
 **Date:** 2025-12-12
 **Authors:** regelrecht-mvp team
 
