@@ -98,36 +98,40 @@ articles:
             description: Aantal maanden dat de verlaging duurt
         actions:
           - output: verlaging_percentage
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 0
-                then: 0
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 1
-                then: $PERCENTAGE_CATEGORIE_1
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 2
-                then: $PERCENTAGE_CATEGORIE_2
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 3
-                then: $percentage_categorie_3
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 0
+                  then: 0
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 1
+                  then: $PERCENTAGE_CATEGORIE_1
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 2
+                  then: $PERCENTAGE_CATEGORIE_2
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 3
+                  then: $percentage_categorie_3
           - output: duur_maanden
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 0
-                then: 0
-              - test:
-                  operation: GREATER_THAN_OR_EQUAL
-                  subject: $gedragscategorie
-                  value: 1
-                then: $DUUR_MAANDEN
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 0
+                  then: 0
+                - when:
+                    operation: GREATER_THAN_OR_EQUAL
+                    subject: $gedragscategorie
+                    value: 1
+                  then: $DUUR_MAANDEN

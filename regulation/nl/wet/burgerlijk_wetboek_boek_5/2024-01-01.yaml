@@ -56,13 +56,14 @@ articles:
                 value: 50  # 0,5 meter voor heesters en heggen
             actions:
               - output: minimale_afstand_cm
-                conditions:
-                  - test:
-                      operation: EQUALS
-                      subject: $type_beplanting
-                      value: boom
-                    then: $AFSTAND_BOOM_CM
-                  - else: $AFSTAND_HEG_OF_HEESTER_CM
+                value:
+                  operation: IF
+                  test:
+                    operation: EQUALS
+                    subject: $type_beplanting
+                    value: boom
+                  then: $AFSTAND_BOOM_CM
+                  else: $AFSTAND_HEG_OF_HEESTER_CM
 
       # Publiek endpoint om de minimale afstand te bepalen
       execution:
