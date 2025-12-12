@@ -239,12 +239,8 @@ class ArticleEngine:
         cases = operation.get("cases", [])
         for case in cases:
             when_result = self._evaluate_value(case["when"], context)
-            # Evaluate the when clause as a boolean test
-            if isinstance(when_result, dict) and "operation" in when_result:
-                when_result = self._evaluate_operation(when_result, context)
             if when_result:
                 return self._evaluate_value(case["then"], context)
-        # No case matched, return default
         return self._evaluate_value(operation.get("default"), context)
 
     def _evaluate_test(self, test: Any, context: RuleContext) -> bool:

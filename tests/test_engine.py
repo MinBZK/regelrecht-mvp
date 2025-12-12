@@ -1463,6 +1463,63 @@ class TestConditionalOperations:
 
         assert result.output["result"] == 200
 
+    def test_switch_with_boolean_variable_in_when(self):
+        """SWITCH operation with boolean variable reference in when clause"""
+        article = Article(
+            {
+                "number": "1",
+                "text": "Test",
+                "machine_readable": {
+                    "execution": {
+                        "output": [{"name": "result", "type": "string"}],
+                        "actions": [
+                            {
+                                "output": "result",
+                                "value": {
+                                    "operation": "SWITCH",
+                                    "cases": [
+                                        {
+                                            "when": "$is_eligible",
+                                            "then": "eligible",
+                                        },
+                                        {
+                                            "when": "$is_fallback",
+                                            "then": "fallback",
+                                        },
+                                    ],
+                                    "default": "none",
+                                },
+                            }
+                        ],
+                        "parameters": [
+                            {"name": "is_eligible", "type": "boolean"},
+                            {"name": "is_fallback", "type": "boolean"},
+                        ],
+                    },
+                },
+            }
+        )
+        law = make_minimal_law()
+        engine = ArticleEngine(article, law)
+
+        # First case matches
+        result = engine.evaluate(
+            {"is_eligible": True, "is_fallback": False}, Mock(), "2025-01-01"
+        )
+        assert result.output["result"] == "eligible"
+
+        # Second case matches
+        result = engine.evaluate(
+            {"is_eligible": False, "is_fallback": True}, Mock(), "2025-01-01"
+        )
+        assert result.output["result"] == "fallback"
+
+        # No case matches, use default
+        result = engine.evaluate(
+            {"is_eligible": False, "is_fallback": False}, Mock(), "2025-01-01"
+        )
+        assert result.output["result"] == "none"
+
 
 class TestNestedOperations:
     """Test nested operations"""
