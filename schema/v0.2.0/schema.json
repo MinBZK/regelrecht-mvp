@@ -541,8 +541,8 @@
           "const": "IF"
         },
         "test": {
-          "$ref": "#/definitions/operation",
-          "description": "Condition to test"
+          "$ref": "#/definitions/operationValue",
+          "description": "Condition to test - can be a boolean variable, literal, or operation"
         },
         "then": {
           "$ref": "#/definitions/operationValue",
