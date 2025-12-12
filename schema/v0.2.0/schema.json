@@ -464,9 +464,118 @@
         }
       ]
     },
+    "arithmeticOperation": {
+      "type": "object",
+      "description": "Arithmetic operations that compute numeric values",
+      "required": ["operation", "values"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MIN", "MAX", "CONCAT", "SUBTRACT_DATE"]
+        },
+        "values": {
+          "type": "array",
+          "description": "Operands for the operation",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logicalOperation": {
+      "type": "object",
+      "description": "Logical operations that combine boolean conditions",
+      "required": ["operation", "conditions"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["AND", "OR"]
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to combine - each item can be an operation, variable reference, or boolean literal",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "comparisonOperation": {
+      "type": "object",
+      "description": "Comparison operations that compare values",
+      "required": ["operation", "subject"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["EQUALS", "NOT_EQUALS", "NOT_NULL", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN_OR_EQUAL", "IN", "NOT_IN"]
+        },
+        "subject": {
+          "$ref": "#/definitions/variableReference",
+          "description": "Variable to compare"
+        },
+        "value": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value to compare against"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalOperation": {
+      "type": "object",
+      "description": "Conditional operation (IF-THEN-ELSE)",
+      "required": ["operation", "test", "then"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "IF"
+        },
+        "test": {
+          "$ref": "#/definitions/operation",
+          "description": "Condition to test"
+        },
+        "then": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when test is true"
+        },
+        "else": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when test is false"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "otherOperation": {
+      "type": "object",
+      "description": "Other operations (NOT, FOREACH) - fallback with flexible properties",
+      "required": ["operation"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["NOT", "FOREACH"]
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": true
+    },
     "operationType": {
       "type": "string",
-      "description": "Type of operation to perform",
+      "description": "Operation type identifier used in action definitions",
       "enum": [
         "ADD",
         "SUBTRACT",
@@ -493,85 +602,13 @@
       ]
     },
     "operation": {
-      "type": "object",
       "description": "Executable operation that computes a value",
-      "required": [
-        "operation"
-      ],
-      "properties": {
-        "operation": {
-          "$ref": "#/definitions/operationType"
-        },
-        "values": {
-          "type": "array",
-          "description": "Operands for numeric operations (ADD, SUBTRACT, MULTIPLY, DIVIDE, MIN, MAX)",
-          "items": {
-            "$ref": "#/definitions/operationValue"
-          }
-        },
-        "subject": {
-          "$ref": "#/definitions/variableReference",
-          "description": "Variable to compare (for comparison operations)"
-        },
-        "value": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Single value operand (for comparison operations)"
-        },
-        "test": {
-          "$ref": "#/definitions/operation",
-          "description": "Condition to test (for IF operations)"
-        },
-        "then": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Value when test is true (for IF operations)"
-        },
-        "else": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Value when test is false (for IF operations)"
-        },
-        "conditions": {
-          "type": "array",
-          "description": "Operands for logical operations (AND, OR) - each item can be an operation, variable reference, or boolean literal",
-          "items": {
-            "$ref": "#/definitions/operationValue"
-          }
-        },
-        "legal_basis": {
-          "$ref": "#/definitions/legalBasis"
-        }
-      },
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "operation": { "enum": ["AND", "OR"] }
-            }
-          },
-          "then": {
-            "required": ["conditions"]
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "operation": { "enum": ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MIN", "MAX"] }
-            }
-          },
-          "then": {
-            "required": ["values"]
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "operation": { "const": "IF" }
-            }
-          },
-          "then": {
-            "required": ["test", "then"]
-          }
-        }
+      "oneOf": [
+        { "$ref": "#/definitions/arithmeticOperation" },
+        { "$ref": "#/definitions/logicalOperation" },
+        { "$ref": "#/definitions/comparisonOperation" },
+        { "$ref": "#/definitions/conditionalOperation" },
+        { "$ref": "#/definitions/otherOperation" }
       ]
     },
     "operationValue": {
