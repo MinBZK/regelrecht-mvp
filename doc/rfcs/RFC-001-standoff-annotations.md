@@ -239,6 +239,9 @@ Fuzzy matching door een hele wet kan kostbaar zijn. Aanbevolen strategie:
    als optimalisatie. Hints worden in volgorde geprobeerd. Ze zijn niet-autoritatief:
    als de tekst daar niet matcht, probeer de volgende hint of zoek in de hele wet.
 
+   Positie-offsets zijn relatief aan een artikel, niet aan de hele wet. Gebruik
+   daarom `refinedBy` om een TextPositionSelector te combineren met een CssSelector:
+
    ```json
    {
      "type": "TextQuoteSelector",
@@ -247,22 +250,26 @@ Fuzzy matching door een hele wet kan kostbaar zijn. Aanbevolen strategie:
      "suffix": " ter grootte",
      "regelrecht:hints": [
        {
-         "type": "TextPositionSelector",
-         "start": 245,
-         "end": 256
-       },
-       {
          "type": "CssSelector",
-         "value": "article[number='2']"
+         "value": "article[number='2']",
+         "refinedBy": {
+           "type": "TextPositionSelector",
+           "start": 45,
+           "end": 56
+         }
        }
      ]
    }
    ```
 
+   Dit zegt: "kijk eerst in artikel 2 op positie 45-56". Als dat niet klopt
+   (artikel hernummerd of tekst gewijzigd), zoek dan in de hele wet.
+
    **Resolutie-algoritme met hints:**
-   1. Probeer eerste hint (positie) → zoek TextQuoteSelector daar
-   2. Niet gevonden? → probeer tweede hint (artikel)
-   3. Nog steeds niet? → zoek in hele wet (alle hints waren verouderd)
+   1. Evalueer eerste hint (artikel 2, positie 45-56)
+   2. Zoek TextQuoteSelector binnen die zoekruimte
+   3. Niet gevonden? → probeer volgende hint (indien aanwezig)
+   4. Nog steeds niet? → zoek in hele wet (alle hints waren verouderd)
 
 3. **Caching** - Cache resolved posities per `(annotatie_id, wet_versie)`.
    Invalideer alleen bij nieuwe wet-versie.
