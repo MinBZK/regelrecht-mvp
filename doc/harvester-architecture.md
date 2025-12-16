@@ -109,7 +109,7 @@ harvester/
 ├── parsers/
 │   ├── __init__.py
 │   ├── wti_parser.py   # Metadata parsing
-│   └── toestand_parser.py  # Artikel extractie
+│   └── content_parser.py   # Artikel extractie
 └── storage/
     ├── __init__.py
     └── yaml_writer.py  # YAML generatie en opslag
@@ -130,10 +130,10 @@ harvester/
    - `parse_wti_metadata(wti_tree: etree.Element) -> LawMetadata`
    - Code basis: `script/download_law.py`
 
-4. **Toestand parser bouwen** (`parsers/toestand_parser.py`)
-   - `download_toestand(bwb_id: str, date: str) -> etree.Element`
+4. **Content parser bouwen** (`parsers/content_parser.py`)
+   - `download_content(bwb_id: str, date: str) -> etree.Element`
    - `extract_text_from_element(elem: etree.Element) -> str`
-   - `parse_articles(toestand_tree: etree.Element, bwb_id: str, date: str) -> list[Article]`
+   - `parse_articles(content_tree: etree.Element, bwb_id: str, date: str) -> list[Article]`
    - Code basis: `script/download_law.py`
 
 5. **YAML writer bouwen** (`storage/yaml_writer.py`)

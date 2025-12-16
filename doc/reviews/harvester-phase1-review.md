@@ -31,13 +31,13 @@ De code werkt en is van goede kwaliteit, maar **ontbreken van tests is een block
 
 ## Important Issues
 
-### 1. Publicatiemetadata vervuilt artikeltekst (`harvester/parsers/toestand_parser.py:131`)
+### 1. Publicatiemetadata vervuilt artikeltekst (`harvester/parsers/content_parser.py:131`)
 
 - **Problem:** Artikeltekst bevat publicatiedata aan het einde (bijv. "2005 369 26-07-2005...")
 - **Impact:** Data kwaliteit, tekst is niet bruikbaar zonder opschoning
 - **Fix:** Filter publicatiemetadata uit bij text extractie (bekend als TODO, maar significant)
 
-### 2. Duplicate constant (`harvester/parsers/wti_parser.py:9` en `toestand_parser.py:9`)
+### 2. Duplicate constant (`harvester/parsers/wti_parser.py:9` en `content_parser.py:9`)
 
 - **Problem:** `BWB_REPOSITORY_URL` is gedefinieerd in beide parser bestanden
 - **Impact:** DRY violation, risico op inconsistentie

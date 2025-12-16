@@ -9,6 +9,10 @@ default:
 test:
     uv run pytest
 
+# Run pytest with optional test filter (e.g. just test-filter test_article_builder)
+test-filter filter="":
+    uv run pytest {{ if filter != "" { "-k " + filter } else { "" } }} -v
+
 # Run behave BDD tests
 behave:
     uv run behave
@@ -50,3 +54,15 @@ pre-commit:
 # Sync dependencies
 sync:
     uv sync
+
+# Download fresh XML fixtures from BWB repository (all fixtures)
+download-harvester-fixtures:
+    uv run python script/download_harvester_fixtures.py
+
+# Download specific law fixture from BWB repository
+download-harvester-fixture law:
+    uv run python script/download_harvester_fixtures.py --law {{law}}
+
+# Update harvester test fixtures (regenerate expected YAML from input XML)
+update-harvester-fixtures:
+    uv run python script/update_harvester_fixtures.py

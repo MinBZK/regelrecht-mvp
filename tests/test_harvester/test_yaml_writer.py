@@ -19,15 +19,17 @@ class TestGenerateYamlDict:
             regulatory_layer=RegulatoryLayer.WET,
             publication_date="2005-07-26",
         )
-        law = Law(metadata=metadata, uuid="test-uuid-1234")
+        law = Law(metadata=metadata)
 
         result = generate_yaml_dict(law, "2025-01-01")
 
         assert result["$schema"] == SCHEMA_URL
         assert result["$id"] == "wet_op_de_zorgtoeslag"
-        assert result["uuid"] == "test-uuid-1234"
+        # RFC-001 Decision 7: uuid field removed
+        assert "uuid" not in result
         assert result["regulatory_layer"] == "WET"
         assert result["publication_date"] == "2005-07-26"
+        assert result["valid_from"] == "2025-01-01"
         assert result["bwb_id"] == "BWBR0018451"
         assert result["url"] == "https://wetten.overheid.nl/BWBR0018451/2025-01-01"
         assert result["articles"] == []
@@ -138,7 +140,7 @@ class TestSaveYaml:
         articles = [
             Article(number="1", text="Test text", url="http://example.com"),
         ]
-        law = Law(metadata=metadata, articles=articles, uuid="test-uuid-1234")
+        law = Law(metadata=metadata, articles=articles)
 
         output_path = save_yaml(law, "2025-01-01", output_base=tmp_path)
 
@@ -147,8 +149,10 @@ class TestSaveYaml:
 
         assert loaded["$schema"] == SCHEMA_URL
         assert loaded["$id"] == "wet_op_de_zorgtoeslag"
-        assert loaded["uuid"] == "test-uuid-1234"
+        # RFC-001 Decision 7: uuid field removed
+        assert "uuid" not in loaded
         assert loaded["regulatory_layer"] == "WET"
+        assert loaded["valid_from"] == "2025-01-01"
         assert len(loaded["articles"]) == 1
         assert loaded["articles"][0]["number"] == "1"
 
