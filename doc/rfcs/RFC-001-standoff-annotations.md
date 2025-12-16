@@ -235,17 +235,44 @@ Fuzzy matching door een hele wet kan kostbaar zijn. Aanbevolen strategie:
 1. **Exacte match eerst** - Zoek `prefix + exact + suffix` als simpele substring.
    Dit slaagt in 99% van de gevallen en is O(n).
 
-2. **Optionele hint** - Voeg een niet-autoritatieve hint toe om de zoekruimte te beperken:
+2. **Optionele hint** - Voeg een `regelrecht:hint` toe met een W3C selector als
+   optimalisatie. De hint is niet-autoritatief: als de tekst daar niet matcht,
+   zoek verder in de hele wet.
+
+   Met positie-hint (snel, maar breekt bij tekstwijzigingen):
    ```json
    {
      "type": "TextQuoteSelector",
      "exact": "zorgtoeslag",
-     "prefix": "...",
-     "suffix": "...",
-     "hint": { "article": "2" }
+     "prefix": "aanspraak op een ",
+     "suffix": " ter grootte",
+     "regelrecht:hint": {
+       "type": "TextPositionSelector",
+       "start": 245,
+       "end": 256
+     }
    }
    ```
-   Als de hint faalt (artikel hernummerd), zoek alsnog in de hele wet.
+
+   Met structurele hint (breekt bij hernummering, maar niet bij tekstwijzigingen):
+   ```json
+   {
+     "type": "TextQuoteSelector",
+     "exact": "zorgtoeslag",
+     "prefix": "aanspraak op een ",
+     "suffix": " ter grootte",
+     "regelrecht:hint": {
+       "type": "CssSelector",
+       "value": "article[number='2']"
+     }
+   }
+   ```
+
+   **Resolutie-algoritme met hint:**
+   1. Evalueer de hint-selector → geeft een zoekruimte
+   2. Zoek TextQuoteSelector binnen die zoekruimte
+   3. Gevonden? → klaar
+   4. Niet gevonden? → zoek in hele wet (hint was verouderd)
 
 3. **Caching** - Cache resolved posities per `(annotatie_id, wet_versie)`.
    Invalideer alleen bij nieuwe wet-versie.
