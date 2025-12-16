@@ -1,4 +1,4 @@
-# RFC-001: Stand-off Annotaties voor Wetteksten
+# RFC-001: Stand-off Annotations for Legal Texts
 
 **Status:** Proposed
 **Date:** 2025-12-16
@@ -6,15 +6,15 @@
 
 ## Context
 
-Wetteksten worden opgeslagen als verbatim tekst in YAML-bestanden. We willen annotaties
-toevoegen op woord- of karakterniveau, zonder de wettekst zelf te wijzigen. Annotaties
-moeten version-resilient zijn: als de tekst wijzigt of verplaatst, moet een annotatie
-automatisch de nieuwe locatie kunnen vinden.
+Legal texts are stored as verbatim text in YAML files. We want to add annotations
+at word or character level, without modifying the legal text itself. Annotations
+must be version-resilient: when text changes or moves, an annotation should
+automatically find its new location.
 
 ## Decision
 
-We gebruiken het **W3C Web Annotation** formaat met **TextQuoteSelector** als selector.
-De selector verwijst naar tekst via een exact citaat plus context (prefix/suffix).
+We use the **W3C Web Annotation** format with **TextQuoteSelector** as the selector.
+The selector refers to text via an exact quote plus context (prefix/suffix).
 
 ```json
 {
@@ -27,29 +27,29 @@ De selector verwijst naar tekst via een exact citaat plus context (prefix/suffix
 }
 ```
 
-### Waarom dit werkt
+### Why This Works
 
-De TextQuoteSelector is **zelf-localiserend**: de tekst zelf (met context) is de identifier,
-niet een artikelnummer of karakterpositie.
+The TextQuoteSelector is **self-locating**: the text itself (with context) is the
+identifier, not an article number or character position.
 
-**Scenario: Artikel wordt hernummerd**
+**Scenario: Article is renumbered**
 
-Een nieuw artikel 1a wordt ingevoegd, waardoor artikel 2 hernummerd wordt naar artikel 3.
-De inhoud van het artikel blijft identiek.
+A new article 1a is inserted, causing article 2 to be renumbered to article 3.
+The content of the article remains identical.
 
-| Selector type | Wat gebeurt er? |
-|---------------|-----------------|
-| `article[number='2']` | ❌ Breekt - artikel 2 bestaat niet meer |
-| `TextPositionSelector(start=245)` | ❌ Breekt - posities zijn verschoven |
-| `TextQuoteSelector("zorgtoeslag", prefix="aanspraak op een ")` | ✅ Vindt de tekst in artikel 3 |
+| Selector type | What happens? |
+|---------------|---------------|
+| `article[number='2']` | ❌ Breaks - article 2 no longer exists |
+| `TextPositionSelector(start=245)` | ❌ Breaks - positions have shifted |
+| `TextQuoteSelector("zorgtoeslag", prefix="aanspraak op een ")` | ✅ Finds the text in article 3 |
 
-De TextQuoteSelector zoekt naar de tekst in het hele document. Het maakt niet uit
-waar die tekst staat - als de prefix/suffix/exact combinatie uniek is, wordt de
-annotatie correct geresolved.
+The TextQuoteSelector searches for text in the entire document. It doesn't matter
+where that text is located - if the prefix/suffix/exact combination is unique,
+the annotation resolves correctly.
 
-### Voorbeeld wettekst
+### Example Legal Text
 
-Gegeven dit fragment uit Zorgtoeslagwet artikel 2:
+Given this fragment from Zorgtoeslagwet article 2:
 
 ```yaml
 - number: '2'
@@ -59,9 +59,9 @@ Gegeven dit fragment uit Zorgtoeslagwet artikel 2:
     op een zorgtoeslag ter grootte van dat verschil.
 ```
 
-### Voorbeeld 1: Tekstueel commentaar
+### Example 1: Textual Comment
 
-Een jurist legt uit wat "zorgtoeslag" betekent:
+A legal expert explains what "zorgtoeslag" means:
 
 ```json
 {
@@ -79,16 +79,16 @@ Een jurist legt uit wat "zorgtoeslag" betekent:
   },
   "body": {
     "type": "TextualBody",
-    "value": "Dit is de maandelijkse tegemoetkoming in de kosten van de zorgverzekering.",
+    "value": "This is the monthly allowance for health insurance costs.",
     "format": "text/plain",
-    "language": "nl"
+    "language": "en"
   }
 }
 ```
 
-### Voorbeeld 2: Link naar machine-readable uitvoering
+### Example 2: Link to Machine-Readable Execution
 
-De interpreter linkt tekst aan de berekening:
+The interpreter links text to the calculation:
 
 ```json
 {
@@ -111,9 +111,9 @@ De interpreter linkt tekst aan de berekening:
 }
 ```
 
-### Voorbeeld 3: Tag/classificatie
+### Example 3: Tag/Classification
 
-Een analist classificeert juridische concepten:
+An analyst classifies legal concepts:
 
 ```json
 {
@@ -131,7 +131,7 @@ Een analist classificeert juridische concepten:
   },
   "body": {
     "type": "TextualBody",
-    "value": "rechtssubject",
+    "value": "legal-subject",
     "purpose": "tagging"
   }
 }
@@ -139,108 +139,108 @@ Een analist classificeert juridische concepten:
 
 ## Fuzzy Matching
 
-Wanneer de exacte tekst niet meer gevonden wordt (bijvoorbeeld door een kleine
-tekstuele wijziging), kan fuzzy matching de annotatie alsnog resolven.
+When the exact text is no longer found (e.g., due to a minor textual change),
+fuzzy matching can still resolve the annotation.
 
-### Hoe het werkt
+### How It Works
 
-1. **Exacte match** - Zoek `prefix + exact + suffix` letterlijk in de tekst
-2. **Fuzzy match** - Als exacte match faalt, zoek met similarity scoring
+1. **Exact match** - Search for `prefix + exact + suffix` literally in the text
+2. **Fuzzy match** - If exact match fails, search with similarity scoring
 
-### Voorbeeld
+### Example
 
-**Originele tekst:**
+**Original text:**
 ```
 heeft de verzekerde aanspraak op een zorgtoeslag ter grootte van dat verschil
 ```
 
-**Gewijzigde tekst (na amendement):**
+**Changed text (after amendment):**
 ```
 heeft de verzekerde recht op een zorgtoeslag ter grootte van het verschil
 ```
 
-De annotatie zoekt naar:
+The annotation searches for:
 - prefix: `"heeft de verzekerde "`
 - exact: `"aanspraak op een zorgtoeslag"`
 - suffix: `" ter grootte van dat verschil"`
 
-**Fuzzy matching vindt de beste kandidaat:**
+**Fuzzy matching finds the best candidate:**
 
 ```
-Kandidaat: "recht op een zorgtoeslag"
+Candidate: "recht op een zorgtoeslag"
            ─────────────────────────
-Score berekening:
+Score calculation:
   - exact similarity:  "aanspraak op een zorgtoeslag" vs "recht op een zorgtoeslag"
                        Levenshtein: 9 edits / 28 chars = 0.68 similarity
   - prefix match:      "heeft de verzekerde " ✓ (exact match = 1.0)
   - suffix similarity: "ter grootte van dat verschil" vs "ter grootte van het verschil"
                        Levenshtein: 1 edit / 29 chars = 0.97 similarity
 
-Gewogen score: (0.68 × 0.5) + (1.0 × 0.25) + (0.97 × 0.25) = 0.83
+Weighted score: (0.68 × 0.5) + (1.0 × 0.25) + (0.97 × 0.25) = 0.83
 ```
 
-Met een threshold van 0.7 wordt deze match geaccepteerd.
+With a threshold of 0.7, this match is accepted.
 
 ### Pseudocode
 
 ```python
 def resolve_annotation(text: str, selector: TextQuoteSelector) -> Match | None:
-    # Stap 1: Probeer exacte match
+    # Step 1: Try exact match
     pattern = selector.prefix + selector.exact + selector.suffix
     if pattern in text:
         start = text.index(pattern) + len(selector.prefix)
         return Match(start=start, end=start + len(selector.exact), confidence=1.0)
 
-    # Stap 2: Fuzzy matching
+    # Step 2: Fuzzy matching
     best_match = None
     best_score = 0
 
     for candidate in find_candidates(text, selector.exact):
-        # Haal context rond de kandidaat
+        # Get context around the candidate
         prefix_in_text = text[candidate.start - len(selector.prefix):candidate.start]
         suffix_in_text = text[candidate.end:candidate.end + len(selector.suffix)]
 
-        # Bereken similarity scores
+        # Calculate similarity scores
         exact_score = levenshtein_similarity(selector.exact, candidate.text)
         prefix_score = levenshtein_similarity(selector.prefix, prefix_in_text)
         suffix_score = levenshtein_similarity(selector.suffix, suffix_in_text)
 
-        # Gewogen score: exact telt zwaarder dan context
+        # Weighted score: exact counts more than context
         score = (exact_score * 0.5) + (prefix_score * 0.25) + (suffix_score * 0.25)
 
         if score > best_score:
             best_score = score
             best_match = candidate
 
-    if best_score >= THRESHOLD:  # bijvoorbeeld 0.7
+    if best_score >= THRESHOLD:  # e.g., 0.7
         return Match(start=best_match.start, end=best_match.end, confidence=best_score)
 
-    return None  # Annotatie kon niet geresolved worden
+    return None  # Annotation could not be resolved
 ```
 
-### Wanneer fuzzy matching faalt
+### When Fuzzy Matching Fails
 
-Bij grote tekstwijzigingen (score < threshold) wordt de annotatie als "orphaned"
-gemarkeerd. De annotatie blijft bewaard met de originele context, zodat:
-- Gebruikers kunnen zien wat er geannoteerd was
-- Handmatige herplaatsing mogelijk is
-- De annotatie-geschiedenis behouden blijft
+For large text changes (score < threshold), the annotation is marked as "orphaned".
+The annotation is preserved with its original context, so that:
+- Users can see what was annotated
+- Manual re-anchoring is possible
+- The annotation history is preserved
 
 ## Implementation Notes
 
 ### Performance
 
-Fuzzy matching door een hele wet kan kostbaar zijn. Aanbevolen strategie:
+Fuzzy matching through an entire law can be expensive. Recommended strategy:
 
-1. **Exacte match eerst** - Zoek `prefix + exact + suffix` als simpele substring.
-   Dit slaagt in 99% van de gevallen en is O(n).
+1. **Exact match first** - Search for `prefix + exact + suffix` as a simple substring.
+   This succeeds in 99% of cases and is O(n).
 
-2. **Optionele hint** - Voeg `regelrecht:hint` toe met een W3C selector als
-   optimalisatie. De hint is niet-autoritatief: als de tekst daar niet matcht,
-   zoek verder in de hele wet.
+2. **Optional hint** - Add `regelrecht:hint` with a W3C selector as optimization.
+   The hint is non-authoritative: if the text doesn't match there, search the
+   entire law.
 
-   Positie-offsets zijn relatief aan een artikel, niet aan de hele wet. Gebruik
-   daarom `refinedBy` om een TextPositionSelector te combineren met een CssSelector:
+   Position offsets are relative to an article, not the entire law. Therefore,
+   use `refinedBy` to combine a TextPositionSelector with a CssSelector:
 
    ```json
    {
@@ -260,62 +260,62 @@ Fuzzy matching door een hele wet kan kostbaar zijn. Aanbevolen strategie:
    }
    ```
 
-   Dit zegt: "kijk eerst in artikel 2 op positie 45-56". Als dat niet klopt
-   (artikel hernummerd of tekst gewijzigd), zoek dan in de hele wet.
+   This says: "look first in article 2 at position 45-56". If that doesn't match
+   (article renumbered or text changed), then search the entire law.
 
-   **Resolutie-algoritme met hint:**
-   1. Evalueer de hint (artikel 2, positie 45-56)
-   2. Zoek TextQuoteSelector binnen die zoekruimte
-   3. Niet gevonden? → zoek in hele wet (hint was verouderd)
+   **Resolution algorithm with hint:**
+   1. Evaluate the hint (article 2, position 45-56)
+   2. Search for TextQuoteSelector within that search space
+   3. Not found? → search entire law (hint was outdated)
 
-3. **Caching** - Cache resolved posities per `(annotatie_id, wet_versie)`.
-   Invalideer alleen bij nieuwe wet-versie.
+3. **Caching** - Cache resolved positions per `(annotation_id, law_version)`.
+   Invalidate only when a new law version is published.
 
-### Uniciteit
+### Uniqueness
 
-Een selector moet uniek matchen binnen de wet. Bij meerdere matches is de
-annotatie ambigue en niet betrouwbaar te resolven.
+A selector must match uniquely within the law. Multiple matches make the
+annotation ambiguous and unreliable to resolve.
 
-**Bij het aanmaken van een annotatie:**
-- Valideer dat de selector uniek is in de huidige wet-versie
-- Zo niet: foutmelding "voeg meer context toe aan prefix/suffix"
+**When creating an annotation:**
+- Validate that the selector is unique in the current law version
+- If not: error message "add more context to prefix/suffix"
 
-**Bij het resolven van een annotatie:**
-- Als er meerdere matches zijn met gelijke score: markeer als "ambiguous"
-- Laat de gebruiker kiezen of de annotatie handmatig herplaatsen
+**When resolving an annotation:**
+- If there are multiple matches with equal score: mark as "ambiguous"
+- Let the user choose or manually re-anchor the annotation
 
-**Vuistregel:** prefix en suffix van ~30-50 karakters zijn meestal voldoende
-om uniek te zijn, zelfs voor veelvoorkomende woorden.
+**Rule of thumb:** prefix and suffix of ~30-50 characters are usually sufficient
+to be unique, even for common words.
 
 ## Why
 
 ### Benefits
 
-1. **Version resilience**: TextQuoteSelector vindt tekst ongeacht waar die staat
-2. **Hernummering-proof**: Artikelnummers kunnen wijzigen zonder dat annotaties breken
-3. **Fuzzy matching**: Kleine tekstwijzigingen worden automatisch opgevangen
-4. **Geen wijzigingen aan wettekst**: Annotaties staan volledig los van de brontekst
-5. **W3C standaard**: Interoperabel met bestaande annotatie-tools (Hypothesis, etc.)
-6. **Simpel**: Eén selector type, geen complexe fallback-logica nodig
+1. **Version resilience**: TextQuoteSelector finds text regardless of where it is
+2. **Renumbering-proof**: Article numbers can change without breaking annotations
+3. **Fuzzy matching**: Minor text changes are automatically handled
+4. **No changes to legal text**: Annotations are completely separate from source text
+5. **W3C standard**: Interoperable with existing annotation tools (Hypothesis, etc.)
+6. **Simple**: One selector type, no complex fallback logic needed
 
 ### Tradeoffs
 
-- Prefix/suffix moeten lang genoeg zijn om uniek te zijn binnen de wet (~20-50 karakters)
-- Fuzzy matching kan bij grote wijzigingen falen (annotatie wordt dan "orphaned")
-- Resolution vereist zoeken door de hele tekst (geen directe lookup)
+- Prefix/suffix must be long enough to be unique within the law (~20-50 characters)
+- Fuzzy matching can fail for large changes (annotation becomes "orphaned")
+- Resolution requires searching through the entire text (no direct lookup)
 
 ### Alternatives Considered
 
-**CssSelector voor artikel-scope**
-- Breekt bij hernummering van artikelen
-- Voegt geen waarde toe als TextQuoteSelector al uniek is
+**CssSelector for article scope**
+- Breaks when articles are renumbered
+- Adds no value if TextQuoteSelector is already unique
 
-**TextPositionSelector (karakter offsets)**
-- Te breekbaar: elke tekstwijziging breekt alle annotaties
-- Geen fuzzy matching mogelijk
+**TextPositionSelector (character offsets)**
+- Too brittle: any text change breaks all annotations
+- No fuzzy matching possible
 
-**Inline ankers in de tekst**
-- Wijzigt de verbatim wettekst, niet acceptabel
+**Inline anchors in the text**
+- Modifies the verbatim legal text, not acceptable
 
 ## References
 
