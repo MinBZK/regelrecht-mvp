@@ -226,6 +226,46 @@ gemarkeerd. De annotatie blijft bewaard met de originele context, zodat:
 - Handmatige herplaatsing mogelijk is
 - De annotatie-geschiedenis behouden blijft
 
+## Implementation Notes
+
+### Performance
+
+Fuzzy matching door een hele wet kan kostbaar zijn. Aanbevolen strategie:
+
+1. **Exacte match eerst** - Zoek `prefix + exact + suffix` als simpele substring.
+   Dit slaagt in 99% van de gevallen en is O(n).
+
+2. **Optionele hint** - Voeg een niet-autoritatieve hint toe om de zoekruimte te beperken:
+   ```json
+   {
+     "type": "TextQuoteSelector",
+     "exact": "zorgtoeslag",
+     "prefix": "...",
+     "suffix": "...",
+     "hint": { "article": "2" }
+   }
+   ```
+   Als de hint faalt (artikel hernummerd), zoek alsnog in de hele wet.
+
+3. **Caching** - Cache resolved posities per `(annotatie_id, wet_versie)`.
+   Invalideer alleen bij nieuwe wet-versie.
+
+### Uniciteit
+
+Een selector moet uniek matchen binnen de wet. Bij meerdere matches is de
+annotatie ambigue en niet betrouwbaar te resolven.
+
+**Bij het aanmaken van een annotatie:**
+- Valideer dat de selector uniek is in de huidige wet-versie
+- Zo niet: foutmelding "voeg meer context toe aan prefix/suffix"
+
+**Bij het resolven van een annotatie:**
+- Als er meerdere matches zijn met gelijke score: markeer als "ambiguous"
+- Laat de gebruiker kiezen of de annotatie handmatig herplaatsen
+
+**Vuistregel:** prefix en suffix van ~30-50 karakters zijn meestal voldoende
+om uniek te zijn, zelfs voor veelvoorkomende woorden.
+
 ## Why
 
 ### Benefits
