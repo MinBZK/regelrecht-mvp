@@ -15,7 +15,12 @@ versions - without requiring migration logic or change tracking.
 
 ## Decision
 
-We use the **W3C Web Annotation** format with **TextQuoteSelector** as the selector.
+We adopt the [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/), a
+W3C Recommendation since 2017. This standard defines a common format for annotations
+on the web, used by tools like Hypothesis, Apache Annotator, and Recogito.
+
+Specifically, we use **TextQuoteSelector** from the
+[W3C Selectors and States](https://www.w3.org/TR/selectors-states/) specification.
 The selector refers to text via an exact quote plus context (prefix/suffix).
 
 ```yaml
