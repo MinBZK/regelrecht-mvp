@@ -18,15 +18,12 @@ versions - without requiring migration logic or change tracking.
 We use the **W3C Web Annotation** format with **TextQuoteSelector** as the selector.
 The selector refers to text via an exact quote plus context (prefix/suffix).
 
-```json
-{
-  "selector": {
-    "type": "TextQuoteSelector",
-    "exact": "zorgtoeslag",
-    "prefix": "heeft de verzekerde aanspraak op een ",
-    "suffix": " ter grootte van dat verschil"
-  }
-}
+```yaml
+selector:
+  type: TextQuoteSelector
+  exact: zorgtoeslag
+  prefix: "heeft de verzekerde aanspraak op een "
+  suffix: " ter grootte van dat verschil"
 ```
 
 ### Why This Works
@@ -81,78 +78,60 @@ Given this fragment from Zorgtoeslagwet article 2:
 
 A legal expert explains what "zorgtoeslag" means:
 
-```json
-{
-  "@context": "http://www.w3.org/ns/anno.jsonld",
-  "type": "Annotation",
-  "motivation": "commenting",
-  "target": {
-    "source": "regelrecht://zorgtoeslagwet",
-    "selector": {
-      "type": "TextQuoteSelector",
-      "exact": "zorgtoeslag",
-      "prefix": "heeft de verzekerde aanspraak op een ",
-      "suffix": " ter grootte van dat verschil"
-    }
-  },
-  "body": {
-    "type": "TextualBody",
-    "value": "This is the monthly allowance for health insurance costs.",
-    "format": "text/plain",
-    "language": "en"
-  }
-}
+```yaml
+type: Annotation
+motivation: commenting
+target:
+  source: regelrecht://zorgtoeslagwet
+  selector:
+    type: TextQuoteSelector
+    exact: zorgtoeslag
+    prefix: "heeft de verzekerde aanspraak op een "
+    suffix: " ter grootte van dat verschil"
+body:
+  type: TextualBody
+  value: "This is the monthly allowance for health insurance costs."
+  format: text/plain
+  language: en
 ```
 
 ### Example 2: Link to Machine-Readable Execution
 
 The interpreter links text to the calculation:
 
-```json
-{
-  "@context": "http://www.w3.org/ns/anno.jsonld",
-  "type": "Annotation",
-  "motivation": "linking",
-  "target": {
-    "source": "regelrecht://zorgtoeslagwet",
-    "selector": {
-      "type": "TextQuoteSelector",
-      "exact": "zorgtoeslag ter grootte van dat verschil",
-      "prefix": "heeft de verzekerde aanspraak op een ",
-      "suffix": ". Voor een verzekerde"
-    }
-  },
-  "body": {
-    "type": "SpecificResource",
-    "source": "regelrecht://zorgtoeslagwet/bereken_zorgtoeslag#hoogte_zorgtoeslag"
-  }
-}
+```yaml
+type: Annotation
+motivation: linking
+target:
+  source: regelrecht://zorgtoeslagwet
+  selector:
+    type: TextQuoteSelector
+    exact: zorgtoeslag ter grootte van dat verschil
+    prefix: "heeft de verzekerde aanspraak op een "
+    suffix: ". Voor een verzekerde"
+body:
+  type: SpecificResource
+  source: regelrecht://zorgtoeslagwet/bereken_zorgtoeslag#hoogte_zorgtoeslag
 ```
 
 ### Example 3: Tag/Classification
 
 An analyst classifies legal concepts:
 
-```json
-{
-  "@context": "http://www.w3.org/ns/anno.jsonld",
-  "type": "Annotation",
-  "motivation": "tagging",
-  "target": {
-    "source": "regelrecht://zorgtoeslagwet",
-    "selector": {
-      "type": "TextQuoteSelector",
-      "exact": "verzekerde",
-      "prefix": "heeft de ",
-      "suffix": " aanspraak op een zorgtoeslag"
-    }
-  },
-  "body": {
-    "type": "TextualBody",
-    "value": "legal-subject",
-    "purpose": "tagging"
-  }
-}
+```yaml
+type: Annotation
+motivation: tagging
+target:
+  source: regelrecht://zorgtoeslagwet
+  selector:
+    type: TextQuoteSelector
+    exact: verzekerde
+    prefix: "heeft de "
+    suffix: " aanspraak op een zorgtoeslag"
+body:
+  type: TextualBody
+  value: legal-subject
+  purpose: tagging
 ```
 
 ## Fuzzy Matching
@@ -260,22 +239,18 @@ Fuzzy matching through an entire law can be expensive. Recommended strategy:
    Position offsets are relative to an article, not the entire law. Therefore,
    use `refinedBy` to combine a TextPositionSelector with a CssSelector:
 
-   ```json
-   {
-     "type": "TextQuoteSelector",
-     "exact": "zorgtoeslag",
-     "prefix": "aanspraak op een ",
-     "suffix": " ter grootte",
-     "regelrecht:hint": {
-       "type": "CssSelector",
-       "value": "article[number='2']",
-       "refinedBy": {
-         "type": "TextPositionSelector",
-         "start": 45,
-         "end": 56
-       }
-     }
-   }
+   ```yaml
+   type: TextQuoteSelector
+   exact: zorgtoeslag
+   prefix: "aanspraak op een "
+   suffix: " ter grootte"
+   regelrecht:hint:
+     type: CssSelector
+     value: "article[number='2']"
+     refinedBy:
+       type: TextPositionSelector
+       start: 45
+       end: 56
    ```
 
    This says: "look first in article 2 at position 45-56". If that doesn't match
