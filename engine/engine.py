@@ -238,8 +238,8 @@ class ArticleEngine:
         """Evaluate SWITCH operation (multiple conditional branches)"""
         cases = operation.get("cases", [])
         for case in cases:
-            when_result = self._evaluate_value(case["when"], context)
-            if when_result:
+            test_result = self._evaluate_value(case["test"], context)
+            if test_result:
                 return self._evaluate_value(case["then"], context)
         return self._evaluate_value(operation.get("default"), context)
 

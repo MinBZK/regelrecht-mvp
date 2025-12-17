@@ -101,22 +101,22 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $gedragscategorie
                     value: 0
                   then: 0
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $gedragscategorie
                     value: 1
                   then: $PERCENTAGE_CATEGORIE_1
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $gedragscategorie
                     value: 2
                   then: $PERCENTAGE_CATEGORIE_2
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $gedragscategorie
                     value: 3
@@ -125,12 +125,12 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $gedragscategorie
                     value: 0
                   then: 0
-                - when:
+                - test:
                     operation: GREATER_THAN_OR_EQUAL
                     subject: $gedragscategorie
                     value: 1

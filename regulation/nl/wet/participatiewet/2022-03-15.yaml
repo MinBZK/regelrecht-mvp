@@ -519,32 +519,32 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $heeft_recht_op_bijstand
                     value: true
                   then: null
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $voldoet_aan_uwv_registratie
                     value: false
                   then: Niet geregistreerd als werkzoekende bij UWV
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $voldoet_aan_nationaliteit
                     value: false
                   then: Geen Nederlander of gelijkgestelde vreemdeling
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $voldoet_aan_woonplaats
                     value: false
                   then: Woont niet in Nederland
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $voldoet_aan_leeftijd
                     value: false
                   then: Voldoet niet aan leeftijdseis (21+ en onder pensioenleeftijd, geen kostendelers)
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $heeft_onvoldoende_middelen
                     value: false
@@ -555,12 +555,12 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $heeft_recht_op_bijstand
                     value: false
                   then: 0
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $is_alleenstaande
                     value: true

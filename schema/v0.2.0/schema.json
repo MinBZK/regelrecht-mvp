@@ -569,12 +569,12 @@
         },
         "cases": {
           "type": "array",
-          "description": "List of when/then pairs evaluated in order",
+          "description": "List of test/then pairs evaluated in order",
           "items": {
             "type": "object",
-            "required": ["when", "then"],
+            "required": ["test", "then"],
             "properties": {
-              "when": {
+              "test": {
                 "$ref": "#/definitions/operationValue",
                 "description": "Condition to test"
               },

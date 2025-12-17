@@ -135,7 +135,7 @@ class TestComparisonOperations:
     """Test comparison operations (used in IF/conditions)"""
 
     def test_equals_true(self):
-        """EQUALS comparison returns true when equal"""
+        """EQUALS comparison returns true test equal"""
         # Comparisons are typically used in IF operations or conditions
         article = Article(
             {
@@ -169,7 +169,7 @@ class TestComparisonOperations:
         assert result.output["result"] == "equal"
 
     def test_equals_false(self):
-        """EQUALS comparison returns false when not equal"""
+        """EQUALS comparison returns false test not equal"""
         article = Article(
             {
                 "number": "1",
@@ -1252,7 +1252,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1260,7 +1260,7 @@ class TestConditionalOperations:
                                             "then": "first",
                                         },
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 20,
@@ -1300,7 +1300,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1308,7 +1308,7 @@ class TestConditionalOperations:
                                             "then": "first",
                                         },
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 20,
@@ -1332,7 +1332,7 @@ class TestConditionalOperations:
 
         assert result.output["result"] == "second"
 
-    def test_switch_default_when_no_match(self):
+    def test_switch_default_test_no_match(self):
         """SWITCH operation - no case matches, returns default"""
         article = Article(
             {
@@ -1348,7 +1348,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1356,7 +1356,7 @@ class TestConditionalOperations:
                                             "then": "first",
                                         },
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 20,
@@ -1381,7 +1381,7 @@ class TestConditionalOperations:
         assert result.output["result"] == "none"
 
     def test_switch_without_default_returns_none(self):
-        """SWITCH operation without default returns None when no case matches"""
+        """SWITCH operation without default returns None test no case matches"""
         article = Article(
             {
                 "number": "1",
@@ -1396,7 +1396,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1436,7 +1436,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "when": {
+                                            "test": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 1,
@@ -1463,8 +1463,8 @@ class TestConditionalOperations:
 
         assert result.output["result"] == 200
 
-    def test_switch_with_boolean_variable_in_when(self):
-        """SWITCH operation with boolean variable reference in when clause"""
+    def test_switch_with_boolean_variable_in_test(self):
+        """SWITCH operation with boolean variable reference in test clause"""
         article = Article(
             {
                 "number": "1",
@@ -1479,11 +1479,11 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "when": "$is_eligible",
+                                            "test": "$is_eligible",
                                             "then": "eligible",
                                         },
                                         {
-                                            "when": "$is_fallback",
+                                            "test": "$is_fallback",
                                             "then": "fallback",
                                         },
                                     ],

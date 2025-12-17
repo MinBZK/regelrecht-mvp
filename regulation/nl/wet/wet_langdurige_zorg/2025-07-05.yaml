@@ -166,17 +166,17 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $wetgeving_andere_mogendheid
                     value: true
                   then: false
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $verzekerd_via_verdrag
                     value: true
                   then: true
-                - when:
+                - test:
                     operation: EQUALS
                     subject: $is_verzekerd_basis
                     value: true

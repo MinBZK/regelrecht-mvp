@@ -35,7 +35,7 @@ Operations now use different property names based on their semantic purpose:
 | **Logical** (AND, OR) | `conditions` | Combines boolean conditions |
 | **Numeric** (ADD, SUBTRACT, MULTIPLY, DIVIDE, MIN, MAX) | `values` | Combines numeric values |
 | **Conditional** (IF) | `test`, `then`, `else` | Tests a condition and branches |
-| **Multi-branch** (SWITCH) | `cases`, `default` | Multiple conditional branches |
+| **Multi-branch** (SWITCH) | `cases` (with `test`/`then`), `default` | Multiple conditional branches |
 
 **Example - Logical operation:**
 ```yaml
@@ -68,9 +68,9 @@ The old action-level `conditions` property is replaced by the SWITCH operation:
   value:
     operation: SWITCH
     cases:
-      - when: { operation: EQUALS, subject: $a, value: true }
+      - test: { operation: EQUALS, subject: $a, value: true }
         then: "Reason A"
-      - when: { operation: EQUALS, subject: $b, value: true }
+      - test: { operation: EQUALS, subject: $b, value: true }
         then: "Reason B"
     default: "Unknown"
 ```
@@ -86,9 +86,9 @@ The old action-level `conditions` property is replaced by the SWITCH operation:
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["when", "then"],
+        "required": ["test", "then"],
         "properties": {
-          "when": { "$ref": "#/definitions/operationValue" },
+          "test": { "$ref": "#/definitions/operationValue" },
           "then": { "$ref": "#/definitions/operationValue" }
         }
       }
