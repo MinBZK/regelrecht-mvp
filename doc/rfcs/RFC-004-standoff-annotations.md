@@ -47,6 +47,22 @@ The TextQuoteSelector searches for text in the entire document. It doesn't matte
 where that text is located - if the prefix/suffix/exact combination is unique,
 the annotation resolves correctly.
 
+**Scenario: Viewing annotations across law versions**
+
+An annotation created today should also be visible when viewing an older version
+of the law (e.g., the 2020 version), as long as the annotated text existed then.
+
+| Approach | Annotation today → view on 2020 version | Complexity |
+|----------|----------------------------------------|------------|
+| Article + version + change tracking | ❌ Requires reverse migration of all changes | High |
+| TextQuoteSelector | ✅ Automatic - just search for the text | Low |
+
+TextQuoteSelector is **content-addressed**: the annotation finds text by its
+content, not by its structural location. This means:
+- An annotation made today automatically resolves on older law versions (if the text existed)
+- No migration logic needed when laws change
+- Works bidirectionally in time without extra effort
+
 ### Example Legal Text
 
 Given this fragment from Zorgtoeslagwet article 2:
@@ -305,6 +321,11 @@ to be unique, even for common words.
 - Resolution requires searching through the entire text (no direct lookup)
 
 ### Alternatives Considered
+
+**Article + version with change tracking**
+- Requires explicitly modeling every type of legal change (renumbering, amendments, etc.)
+- Annotations become version-bound; viewing across versions requires migration logic
+- Higher complexity for a problem TextQuoteSelector solves automatically
 
 **CssSelector for article scope**
 - Breaks when articles are renumbered
