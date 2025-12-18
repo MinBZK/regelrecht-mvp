@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
 $id: burgerlijk_wetboek_boek_5
 uuid: 5a42b000-5a42-5a42-5a42-5a42b0000042
 regulatory_layer: WET
@@ -56,13 +56,14 @@ articles:
                 value: 50  # 0,5 meter voor heesters en heggen
             actions:
               - output: minimale_afstand_cm
-                conditions:
-                  - test:
-                      operation: EQUALS
-                      subject: $type_beplanting
-                      value: boom
-                    then: $AFSTAND_BOOM_CM
-                  - else: $AFSTAND_HEG_OF_HEESTER_CM
+                value:
+                  operation: IF
+                  when:
+                    operation: EQUALS
+                    subject: $type_beplanting
+                    value: boom
+                  then: $AFSTAND_BOOM_CM
+                  else: $AFSTAND_HEG_OF_HEESTER_CM
 
       # Publiek endpoint om de minimale afstand te bepalen
       execution:

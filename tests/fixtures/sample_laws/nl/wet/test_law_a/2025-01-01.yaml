@@ -47,7 +47,7 @@ articles:
         actions:
           - output: check_threshold
             operation: IF
-            test:
+            when:
               operation: GREATER_THAN
               subject: $value
               value: $THRESHOLD

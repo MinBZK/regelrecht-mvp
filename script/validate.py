@@ -2,6 +2,9 @@
 """
 Validate regelrecht YAML law files against the JSON schema.
 
+The schema version is read from the $schema property in each YAML file,
+allowing files to declare which schema version they conform to.
+
 Usage:
     uv run python script/validate.py regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml
     uv run python script/validate.py regulation/nl/**/*.yaml
@@ -18,23 +21,48 @@ import requests
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
 
+# Cache for loaded schemas
+_schema_cache: dict[str, dict] = {}
+
 
 def load_schema(schema_path_or_url: str) -> dict:
-    """Load JSON schema from file or URL."""
+    """Load JSON schema from file or URL, with caching."""
+    if schema_path_or_url in _schema_cache:
+        return _schema_cache[schema_path_or_url]
+
     if schema_path_or_url.startswith("http://") or schema_path_or_url.startswith(
         "https://"
     ):
         response = requests.get(schema_path_or_url)
         response.raise_for_status()
-        return response.json()
+        schema = response.json()
     else:
         with open(schema_path_or_url, "r") as f:
-            return json.load(f)
+            schema = json.load(f)
+
+    _schema_cache[schema_path_or_url] = schema
+    return schema
 
 
-def validate_law_file(yaml_path: Path, schema: dict) -> tuple[bool, list[str]]:
+def get_local_schema_path(schema_url: str) -> Path | None:
     """
-    Validate a YAML law file against the schema.
+    Try to find a local schema file based on the URL.
+
+    Example: https://.../schema/v0.3.0/schema.json -> schema/v0.3.0/schema.json
+    """
+    if "/schema/" in schema_url:
+        # Extract the schema path from the URL
+        parts = schema_url.split("/schema/")
+        if len(parts) == 2:
+            local_path = Path("schema") / parts[1]
+            if local_path.exists():
+                return local_path
+    return None
+
+
+def validate_law_file(yaml_path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate a YAML law file against the schema declared in its $schema property.
 
     Returns:
         (is_valid, errors) tuple
@@ -45,6 +73,19 @@ def validate_law_file(yaml_path: Path, schema: dict) -> tuple[bool, list[str]]:
         # Load YAML file
         with open(yaml_path, "r", encoding="utf-8") as f:
             law_data = yaml.safe_load(f)
+
+        # Get schema URL from the file
+        schema_url = law_data.get("$schema")
+        if not schema_url:
+            errors.append("No $schema property found in YAML file")
+            return (False, errors)
+
+        # Try to load schema locally first, fall back to URL
+        local_path = get_local_schema_path(schema_url)
+        if local_path:
+            schema = load_schema(str(local_path))
+        else:
+            schema = load_schema(schema_url)
 
         # Validate against schema
         validate(instance=law_data, schema=schema)
@@ -62,6 +103,10 @@ def validate_law_file(yaml_path: Path, schema: dict) -> tuple[bool, list[str]]:
             errors.append(f"  At: {path_str}")
         return (False, errors)
 
+    except requests.RequestException as e:
+        errors.append(f"Failed to load schema: {e}")
+        return (False, errors)
+
     except Exception as e:
         errors.append(f"Unexpected error: {e}")
         return (False, errors)
@@ -76,23 +121,11 @@ def main():
             "  uv run python script/validate.py regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml"
         )
         print('  uv run python script/validate.py "regulation/nl/**/*.yaml"')
+        print()
+        print(
+            "Note: Schema version is read from the $schema property in each YAML file."
+        )
         sys.exit(1)
-
-    # Load schema
-    schema_url = "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json"
-
-    # Check if schema exists locally first
-    local_schema = Path("schema/v0.2.0/schema.json")
-    if local_schema.exists():
-        print(f"📋 Loading schema from: {local_schema}")
-        schema = load_schema(str(local_schema))
-    else:
-        print(f"📋 Loading schema from: {schema_url}")
-        try:
-            schema = load_schema(schema_url)
-        except Exception as e:
-            print(f"❌ Failed to load schema: {e}")
-            sys.exit(1)
 
     # Find YAML files to validate
     pattern = sys.argv[1]
@@ -132,7 +165,7 @@ def main():
             invalid_count += 1
             continue
 
-        is_valid, errors = validate_law_file(yaml_file, schema)
+        is_valid, errors = validate_law_file(yaml_file)
 
         if is_valid:
             print(f"✅ {yaml_file}: Valid")

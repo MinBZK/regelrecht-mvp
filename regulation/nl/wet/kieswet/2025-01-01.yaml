@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
 $id: kieswet
 uuid: 96d926a0-b45f-4cf3-92af-01b167221a00
 regulatory_layer: WET
@@ -65,21 +65,18 @@ articles:
             type: boolean
         actions:
           - output: heeft_kiesrecht_tweede_kamer
-            conditions:
-              - test:
-                  operation: AND
-                  conditions:
-                    - operation: EQUALS
-                      subject: $heeft_nederlandse_nationaliteit
-                      value: true
-                    - operation: GREATER_THAN_OR_EQUAL
-                      subject: $leeftijd_op_verkiezingsdatum
-                      value: $MINIMUM_LEEFTIJD
-                    - operation: EQUALS
-                      subject: $heeft_kiesrecht_uitsluiting
-                      value: false
-                then: true
-                else: false
+            value:
+              operation: AND
+              conditions:
+                - operation: EQUALS
+                  subject: $heeft_nederlandse_nationaliteit
+                  value: true
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd_op_verkiezingsdatum
+                  value: $MINIMUM_LEEFTIJD
+                - operation: EQUALS
+                  subject: $heeft_kiesrecht_uitsluiting
+                  value: false
   - number: B5
     text: |-
       Van het kiesrecht zijn uitgesloten zij die bij onherroepelijke rechterlijke uitspraak van het kiesrecht zijn

@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
 $id: afstemmingsverordening_participatiewet_diemen
 regulatory_layer: GEMEENTELIJKE_VERORDENING
 publication_date: '2014-12-18'
@@ -98,36 +98,40 @@ articles:
             description: Aantal maanden dat de verlaging duurt
         actions:
           - output: verlaging_percentage
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 0
-                then: 0
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 1
-                then: $PERCENTAGE_CATEGORIE_1
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 2
-                then: $PERCENTAGE_CATEGORIE_2
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 3
-                then: $percentage_categorie_3
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 0
+                  then: 0
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 1
+                  then: $PERCENTAGE_CATEGORIE_1
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 2
+                  then: $PERCENTAGE_CATEGORIE_2
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 3
+                  then: $percentage_categorie_3
           - output: duur_maanden
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $gedragscategorie
-                  value: 0
-                then: 0
-              - test:
-                  operation: GREATER_THAN_OR_EQUAL
-                  subject: $gedragscategorie
-                  value: 1
-                then: $DUUR_MAANDEN
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie
+                    value: 0
+                  then: 0
+                - when:
+                    operation: GREATER_THAN_OR_EQUAL
+                    subject: $gedragscategorie
+                    value: 1
+                  then: $DUUR_MAANDEN

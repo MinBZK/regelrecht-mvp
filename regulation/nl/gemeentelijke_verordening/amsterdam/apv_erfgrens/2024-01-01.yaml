@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
 $id: apv_erfgrens_amsterdam
 uuid: a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a00363
 regulatory_layer: GEMEENTELIJKE_VERORDENING
@@ -45,14 +45,11 @@ articles:
         actions:
           # Amsterdam: 1 meter voor bomen, 0,5 meter voor heggen
           - output: minimale_afstand_cm
-            conditions:
-              - test:
-                  operation: EQUALS
-                  subject: $type_beplanting
-                  value: boom
-                then: 100  # 1 meter voor bomen (ipv 2 meter uit BW)
-              - test:
-                  operation: NOT_EQUALS
-                  subject: $type_beplanting
-                  value: boom
-                then: 50  # 0,5 meter voor heggen (zelfde als BW)
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $type_beplanting
+                value: boom
+              then: 100  # 1 meter voor bomen (ipv 2 meter uit BW)
+              else: 50  # 0,5 meter voor heggen (zelfde als BW)
