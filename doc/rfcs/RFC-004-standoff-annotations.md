@@ -13,6 +13,11 @@ automatically find its new location. Crucially, annotations should resolve on
 **any version** of a law where the annotated text exists - both older and newer
 versions - without requiring migration logic or change tracking.
 
+**Scope:** This RFC defines the annotation *format*, not storage. Annotations
+could be stored in a central database, distributed across systems, or provided
+by external parties ("bring your own annotations"). The format is intentionally
+storage-agnostic.
+
 ## Decision
 
 We adopt the [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/), a
