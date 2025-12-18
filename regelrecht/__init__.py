@@ -6,32 +6,42 @@ This library provides:
 - W3C Web Annotation TextQuoteSelector for text annotations
 - Fuzzy matching for version-resilient annotation resolution
 
+Import patterns:
+
+    # Primary API (recommended)
+    from regelrecht import TextQuoteSelector, Article, Law
+
+    # Full submodule imports (for internal types)
+    from regelrecht.models import Article, Law
+    from regelrecht.selectors import TextQuoteSelector, MatchResult, Match, MatchStatus
+
 Example usage:
-    from regelrecht import TextQuoteSelector, Law, Article
 
-    # Create law with articles
-    law = Law(id="zorgtoeslagwet", articles=[
-        Article(number="2", text="...")
-    ])
+    from regelrecht import TextQuoteSelector, Article
 
-    # Create selector and locate
+    # Create selector
     selector = TextQuoteSelector(exact="zorgtoeslag", prefix="op een ")
-    result = selector.locate(law)
+
+    # Locate in articles
+    articles = [Article(number="2", text="...zorgtoeslag...")]
+    result = selector.locate(articles)
 
     if result.found:
         print(result.match.article_number)
+    elif result.ambiguous:
+        print(f"{len(result.matches)} matches found")
 """
 
 from regelrecht.models import Article, Law
-from regelrecht.selectors import Match, MatchResult, MatchStatus, TextQuoteSelector
+from regelrecht.selectors import MatchResult, TextQuoteSelector
 
+# Primary public API - most commonly used types
 __all__ = [
-    # Core models
     "Article",
     "Law",
-    # Selector and matching
     "TextQuoteSelector",
-    "Match",
     "MatchResult",
-    "MatchStatus",
 ]
+
+# Note: For Match and MatchStatus, use:
+#   from regelrecht.selectors import Match, MatchStatus

@@ -7,7 +7,8 @@ These tests verify RFC-004: Stand-off Annotations for Legal Texts.
 import yaml
 from behave import given, then, when  # type: ignore[import-untyped]
 
-from regelrecht import Article, MatchResult, MatchStatus, TextQuoteSelector
+from regelrecht import Article, MatchResult, TextQuoteSelector
+from regelrecht.selectors import MatchStatus
 
 
 # === Law Setup ===
