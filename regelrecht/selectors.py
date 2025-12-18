@@ -8,8 +8,9 @@ for TextQuoteSelector-based annotations as specified in RFC-004.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
+import yaml
 from pydantic import BaseModel, computed_field
 
 from regelrecht.matcher import find_fuzzy_matches
@@ -111,6 +112,30 @@ class TextQuoteSelector(BaseModel):
     exact: str
     prefix: str = ""
     suffix: str = ""
+
+    @classmethod
+    def from_annotation(cls, yaml_text: str) -> Self:
+        """
+        Load a TextQuoteSelector from W3C Web Annotation YAML.
+
+        Parses the target.selector from an annotation body.
+
+        Example:
+            selector = TextQuoteSelector.from_annotation('''
+                target:
+                  selector:
+                    type: TextQuoteSelector
+                    exact: "zorgtoeslag"
+                    prefix: "op een "
+            ''')
+        """
+        data = yaml.safe_load(yaml_text)
+        selector_data = data.get("target", {}).get("selector", {})
+        return cls(
+            exact=selector_data.get("exact", ""),
+            prefix=selector_data.get("prefix", ""),
+            suffix=selector_data.get("suffix", ""),
+        )
 
     def locate(
         self,

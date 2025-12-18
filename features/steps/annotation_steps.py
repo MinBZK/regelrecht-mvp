@@ -4,10 +4,9 @@ Step definitions for TextQuoteSelector annotation resolution tests.
 These tests verify RFC-004: Stand-off Annotations for Legal Texts.
 """
 
-import yaml
 from behave import given, then, when  # type: ignore[import-untyped]
 
-from regelrecht.models import Article
+from regelrecht.models import Law
 from regelrecht.selectors import MatchResult, MatchStatus, TextQuoteSelector
 
 
@@ -34,16 +33,10 @@ def step_given_law_ambiguous(context, version):
 
 def _store_law_version(context, version, yaml_text):
     """Store a law version from YAML text."""
-    if not hasattr(context, "articles"):
-        context.articles = {}
+    if not hasattr(context, "laws"):
+        context.laws = {}
 
-    law = yaml.safe_load(yaml_text)
-    articles_data = law.get("articles", [])
-
-    context.articles[version] = [
-        Article(number=str(a.get("number", "")), text=a.get("text", ""))
-        for a in articles_data
-    ]
+    context.laws[version] = Law.from_yaml(yaml_text)
     context.current_version = version
 
 
@@ -53,13 +46,13 @@ def _store_law_version(context, version, yaml_text):
 @given("annotation:")  # type: ignore[misc]
 def step_given_annotation(context):
     """Parse annotation from YAML format."""
-    context.selector = _parse_annotation_yaml(context.text)
+    context.selector = TextQuoteSelector.from_annotation(context.text)
 
 
 @given('annotation created on version "{version}" targeting article "{article}":')  # type: ignore[misc]
 def step_given_annotation_versioned(context, version, article):
     """Parse annotation with version info."""
-    context.selector = _parse_annotation_yaml(context.text)
+    context.selector = TextQuoteSelector.from_annotation(context.text)
     context.annotation_source_version = version
     context.annotation_target_article = article
 
@@ -67,26 +60,14 @@ def step_given_annotation_versioned(context, version, article):
 @given('annotation created on version "{version}":')  # type: ignore[misc]
 def step_given_annotation_on_version(context, version):
     """Parse annotation on specific version."""
-    context.selector = _parse_annotation_yaml(context.text)
+    context.selector = TextQuoteSelector.from_annotation(context.text)
     context.annotation_source_version = version
 
 
 @given("annotation with insufficient context:")  # type: ignore[misc]
 def step_given_annotation_insufficient(context):
     """Parse annotation with minimal context (likely ambiguous)."""
-    context.selector = _parse_annotation_yaml(context.text)
-
-
-def _parse_annotation_yaml(yaml_text):
-    """Parse TextQuoteSelector from annotation YAML."""
-    annotation = yaml.safe_load(yaml_text)
-    selector_data = annotation.get("target", {}).get("selector", {})
-
-    return TextQuoteSelector(
-        exact=selector_data.get("exact", ""),
-        prefix=selector_data.get("prefix", ""),
-        suffix=selector_data.get("suffix", ""),
-    )
+    context.selector = TextQuoteSelector.from_annotation(context.text)
 
 
 # === Resolution Actions ===
@@ -97,9 +78,9 @@ def step_when_resolve(context):
     """Resolve annotation against current version using selector.locate()."""
     if hasattr(context, "full_text"):
         context.result = context.selector.locate(context.full_text)
-    elif hasattr(context, "articles") and context.current_version in context.articles:
-        articles = context.articles[context.current_version]
-        context.result = context.selector.locate(articles)
+    elif hasattr(context, "laws") and context.current_version in context.laws:
+        law = context.laws[context.current_version]
+        context.result = context.selector.locate(law)
     else:
         context.result = MatchResult(status=MatchStatus.ORPHANED, matches=[])
 
@@ -107,9 +88,9 @@ def step_when_resolve(context):
 @when('I resolve the annotation against version "{version}"')  # type: ignore[misc]
 def step_when_resolve_version(context, version):
     """Resolve annotation against specific version using selector.locate()."""
-    if hasattr(context, "articles") and version in context.articles:
-        articles = context.articles[version]
-        context.result = context.selector.locate(articles)
+    if hasattr(context, "laws") and version in context.laws:
+        law = context.laws[version]
+        context.result = context.selector.locate(law)
     else:
         context.result = MatchResult(status=MatchStatus.ORPHANED, matches=[])
 
