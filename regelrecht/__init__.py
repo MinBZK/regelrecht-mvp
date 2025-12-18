@@ -7,28 +7,31 @@ This library provides:
 - Fuzzy matching for version-resilient annotation resolution
 
 Example usage:
-    from regelrecht import Article, Law, TextQuoteSelector, resolve_selector, MatchResult
+    from regelrecht import TextQuoteSelector, Law, Article
 
     # Create law with articles
     law = Law(id="zorgtoeslagwet", articles=[
         Article(number="2", text="...")
     ])
 
-    # Create selector and resolve
+    # Create selector and locate
     selector = TextQuoteSelector(exact="zorgtoeslag", prefix="op een ")
-    result, matches = resolve_selector("", selector, articles=law.articles)
+    result = selector.locate(law)
+
+    if result.found:
+        print(result.match.article_number)
 """
 
 from regelrecht.models import Article, Law
-from regelrecht.selectors import Match, MatchResult, TextQuoteSelector, resolve_selector
+from regelrecht.selectors import Match, MatchResult, MatchStatus, TextQuoteSelector
 
 __all__ = [
     # Core models
     "Article",
     "Law",
-    # Annotation/selector
+    # Selector and matching
     "TextQuoteSelector",
     "Match",
     "MatchResult",
-    "resolve_selector",
+    "MatchStatus",
 ]

@@ -5,45 +5,30 @@ This module provides the core data structures and resolution algorithm
 for TextQuoteSelector-based annotations as specified in RFC-004.
 """
 
-from enum import Enum
+from __future__ import annotations
 
-from pydantic import BaseModel
+from enum import Enum
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, computed_field
 
 from regelrecht.matcher import find_fuzzy_matches
-from regelrecht.models import Article
+
+if TYPE_CHECKING:
+    from regelrecht.models import Article, Law
 
 
-class MatchResult(str, Enum):
-    """Result type for annotation resolution."""
+class MatchStatus(str, Enum):
+    """Status of a selector match attempt."""
 
     FOUND = "found"
     ORPHANED = "orphaned"
     AMBIGUOUS = "ambiguous"
 
 
-class TextQuoteSelector(BaseModel):
-    """
-    W3C Web Annotation TextQuoteSelector.
-
-    Selects text by specifying an exact quote with optional prefix/suffix context.
-    The prefix and suffix help disambiguate when the exact text appears multiple times.
-
-    Attributes:
-        type: Selector type identifier (always "TextQuoteSelector")
-        exact: The exact text to match
-        prefix: Optional text that appears before the exact match
-        suffix: Optional text that appears after the exact match
-    """
-
-    type: str = "TextQuoteSelector"
-    exact: str
-    prefix: str = ""
-    suffix: str = ""
-
-
 class Match(BaseModel):
     """
-    Result of resolving a TextQuoteSelector against text.
+    A single match location in text.
 
     Attributes:
         start: Character offset where the match begins
@@ -60,50 +45,119 @@ class Match(BaseModel):
     matched_text: str = ""
 
 
-def resolve_selector(
-    text: str,
-    selector: TextQuoteSelector,
-    articles: list[Article] | None = None,
-    fuzzy_threshold: float = 0.7,
-) -> tuple[MatchResult, list[Match]]:
+class MatchResult(BaseModel):
     """
-    Resolve a TextQuoteSelector against text.
+    Result of locating a selector in text.
 
-    This implements the resolution algorithm from RFC-004:
-    1. Try exact match first (prefix + exact + suffix)
-    2. Fall back to fuzzy matching if exact match fails
-    3. Return orphaned if no match found above threshold
-    4. Return ambiguous if multiple equally-good matches found
+    Use the boolean properties for clean result handling:
 
-    Args:
-        text: The full text to search in (concatenated if no articles provided)
-        selector: The TextQuoteSelector to resolve
-        articles: Optional list of articles to search individually
-        fuzzy_threshold: Minimum confidence for fuzzy matches (default 0.7)
-
-    Returns:
-        Tuple of (MatchResult, list of Match objects)
-        - FOUND with single match: unique match found
-        - AMBIGUOUS with multiple matches: multiple equally-good matches
-        - ORPHANED with empty list: no match found
+        result = selector.locate(text)
+        if result.found:
+            print(result.match.matched_text)
+        elif result.ambiguous:
+            print(f"Found {len(result.matches)} matches")
+        elif result.orphaned:
+            print("Not found")
     """
-    if articles:
-        return _resolve_in_articles(articles, selector, fuzzy_threshold)
-    return _resolve_in_text(text, selector, fuzzy_threshold)
+
+    status: MatchStatus
+    matches: list[Match] = []
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def found(self) -> bool:
+        """True if exactly one match was found."""
+        return self.status == MatchStatus.FOUND
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def orphaned(self) -> bool:
+        """True if no match was found."""
+        return self.status == MatchStatus.ORPHANED
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ambiguous(self) -> bool:
+        """True if multiple matches were found."""
+        return self.status == MatchStatus.AMBIGUOUS
+
+    @property
+    def match(self) -> Match | None:
+        """The single match (only valid when found=True)."""
+        return self.matches[0] if self.matches else None
 
 
-def _resolve_in_text(
+class TextQuoteSelector(BaseModel):
+    """
+    W3C Web Annotation TextQuoteSelector.
+
+    Selects text by specifying an exact quote with optional prefix/suffix context.
+    The prefix and suffix help disambiguate when the exact text appears multiple times.
+
+    Example:
+        selector = TextQuoteSelector(exact="zorgtoeslag", prefix="op een ")
+        result = selector.locate(law)
+        if result.found:
+            print(result.match.article_number)
+
+    Attributes:
+        type: Selector type identifier (always "TextQuoteSelector")
+        exact: The exact text to match
+        prefix: Optional text that appears before the exact match
+        suffix: Optional text that appears after the exact match
+    """
+
+    type: str = "TextQuoteSelector"
+    exact: str
+    prefix: str = ""
+    suffix: str = ""
+
+    def locate(
+        self,
+        target: str | Law | list[Article],
+        fuzzy_threshold: float = 0.7,
+    ) -> MatchResult:
+        """
+        Locate this selector in text, a law, or articles.
+
+        This implements the resolution algorithm from RFC-004:
+        1. Try exact match first (prefix + exact + suffix)
+        2. Fall back to fuzzy matching if exact match fails
+        3. Return orphaned if no match found above threshold
+        4. Return ambiguous if multiple equally-good matches found
+
+        Args:
+            target: Text string, Law object, or list of Articles to search
+            fuzzy_threshold: Minimum confidence for fuzzy matches (default 0.7)
+
+        Returns:
+            MatchResult with status and matches
+        """
+        from regelrecht.models import Article, Law
+
+        if isinstance(target, str):
+            return _locate_in_text(target, self, fuzzy_threshold)
+        elif isinstance(target, Law):
+            return _locate_in_articles(target.articles, self, fuzzy_threshold)
+        elif isinstance(target, list) and all(isinstance(a, Article) for a in target):
+            return _locate_in_articles(target, self, fuzzy_threshold)
+        else:
+            msg = f"target must be str, Law, or list[Article], got {type(target)}"
+            raise TypeError(msg)
+
+
+def _locate_in_text(
     text: str,
     selector: TextQuoteSelector,
     fuzzy_threshold: float,
-) -> tuple[MatchResult, list[Match]]:
-    """Resolve selector against a single text body."""
+) -> MatchResult:
+    """Locate selector in a single text body."""
     # Step 1: Try exact match
     exact_matches = _find_exact_matches(text, selector)
     if exact_matches:
         if len(exact_matches) == 1:
-            return MatchResult.FOUND, exact_matches
-        return MatchResult.AMBIGUOUS, exact_matches
+            return MatchResult(status=MatchStatus.FOUND, matches=exact_matches)
+        return MatchResult(status=MatchStatus.AMBIGUOUS, matches=exact_matches)
 
     # Step 2: Try fuzzy matching
     fuzzy_matches = find_fuzzy_matches(text, selector, fuzzy_threshold)
@@ -111,14 +165,55 @@ def _resolve_in_text(
         # Deduplicate overlapping matches - keep the best match for each region
         deduped = _deduplicate_overlapping_matches(fuzzy_matches)
         if len(deduped) == 1:
-            return MatchResult.FOUND, deduped
+            return MatchResult(status=MatchStatus.FOUND, matches=deduped)
         # If best match is significantly better than second-best, return it
         if len(deduped) > 1 and deduped[0].confidence - deduped[1].confidence > 0.1:
-            return MatchResult.FOUND, [deduped[0]]
-        return MatchResult.AMBIGUOUS, deduped
+            return MatchResult(status=MatchStatus.FOUND, matches=[deduped[0]])
+        return MatchResult(status=MatchStatus.AMBIGUOUS, matches=deduped)
 
     # Step 3: No match found
-    return MatchResult.ORPHANED, []
+    return MatchResult(status=MatchStatus.ORPHANED, matches=[])
+
+
+def _locate_in_articles(
+    articles: list[Article],
+    selector: TextQuoteSelector,
+    fuzzy_threshold: float,
+) -> MatchResult:
+    """Locate selector across multiple articles."""
+    all_matches: list[Match] = []
+
+    for article in articles:
+        # Try exact match in this article
+        exact_matches = _find_exact_matches(article.text, selector)
+        for match in exact_matches:
+            match.article_number = article.number
+            all_matches.append(match)
+
+    # If we found exact matches, return them
+    if all_matches:
+        if len(all_matches) == 1:
+            return MatchResult(status=MatchStatus.FOUND, matches=all_matches)
+        return MatchResult(status=MatchStatus.AMBIGUOUS, matches=all_matches)
+
+    # Try fuzzy matching across articles
+    for article in articles:
+        fuzzy_matches = find_fuzzy_matches(article.text, selector, fuzzy_threshold)
+        for match in fuzzy_matches:
+            match.article_number = article.number
+            all_matches.append(match)
+
+    if all_matches:
+        # Deduplicate overlapping matches within each article
+        deduped = _deduplicate_overlapping_matches(all_matches)
+        if len(deduped) == 1:
+            return MatchResult(status=MatchStatus.FOUND, matches=deduped)
+        # If best match is significantly better than second-best, return it
+        if len(deduped) > 1 and deduped[0].confidence - deduped[1].confidence > 0.1:
+            return MatchResult(status=MatchStatus.FOUND, matches=[deduped[0]])
+        return MatchResult(status=MatchStatus.AMBIGUOUS, matches=deduped)
+
+    return MatchResult(status=MatchStatus.ORPHANED, matches=[])
 
 
 def _deduplicate_overlapping_matches(matches: list[Match]) -> list[Match]:
@@ -142,47 +237,6 @@ def _deduplicate_overlapping_matches(matches: list[Match]) -> list[Match]:
             result.append(match)
 
     return result
-
-
-def _resolve_in_articles(
-    articles: list[Article],
-    selector: TextQuoteSelector,
-    fuzzy_threshold: float,
-) -> tuple[MatchResult, list[Match]]:
-    """Resolve selector across multiple articles."""
-    all_matches: list[Match] = []
-
-    for article in articles:
-        # Try exact match in this article
-        exact_matches = _find_exact_matches(article.text, selector)
-        for match in exact_matches:
-            match.article_number = article.number
-            all_matches.append(match)
-
-    # If we found exact matches, return them
-    if all_matches:
-        if len(all_matches) == 1:
-            return MatchResult.FOUND, all_matches
-        return MatchResult.AMBIGUOUS, all_matches
-
-    # Try fuzzy matching across articles
-    for article in articles:
-        fuzzy_matches = find_fuzzy_matches(article.text, selector, fuzzy_threshold)
-        for match in fuzzy_matches:
-            match.article_number = article.number
-            all_matches.append(match)
-
-    if all_matches:
-        # Deduplicate overlapping matches within each article
-        deduped = _deduplicate_overlapping_matches(all_matches)
-        if len(deduped) == 1:
-            return MatchResult.FOUND, deduped
-        # If best match is significantly better than second-best, return it
-        if len(deduped) > 1 and deduped[0].confidence - deduped[1].confidence > 0.1:
-            return MatchResult.FOUND, [deduped[0]]
-        return MatchResult.AMBIGUOUS, deduped
-
-    return MatchResult.ORPHANED, []
 
 
 def _find_exact_matches(text: str, selector: TextQuoteSelector) -> list[Match]:

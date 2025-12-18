@@ -7,7 +7,7 @@ These tests verify RFC-004: Stand-off Annotations for Legal Texts.
 import yaml
 from behave import given, then, when  # type: ignore[import-untyped]
 
-from regelrecht import Article, MatchResult, TextQuoteSelector, resolve_selector
+from regelrecht import Article, MatchResult, MatchStatus, TextQuoteSelector
 
 
 # === Law Setup ===
@@ -93,32 +93,24 @@ def _parse_annotation_yaml(yaml_text):
 
 @when("I resolve the annotation")  # type: ignore[misc]
 def step_when_resolve(context):
-    """Resolve annotation against current version."""
+    """Resolve annotation against current version using selector.locate()."""
     if hasattr(context, "full_text"):
-        context.result, context.matches = resolve_selector(
-            context.full_text, context.selector
-        )
+        context.result = context.selector.locate(context.full_text)
     elif hasattr(context, "articles") and context.current_version in context.articles:
         articles = context.articles[context.current_version]
-        context.result, context.matches = resolve_selector(
-            "", context.selector, articles=articles
-        )
+        context.result = context.selector.locate(articles)
     else:
-        context.result = MatchResult.ORPHANED
-        context.matches = []
+        context.result = MatchResult(status=MatchStatus.ORPHANED, matches=[])
 
 
 @when('I resolve the annotation against version "{version}"')  # type: ignore[misc]
 def step_when_resolve_version(context, version):
-    """Resolve annotation against specific version."""
+    """Resolve annotation against specific version using selector.locate()."""
     if hasattr(context, "articles") and version in context.articles:
         articles = context.articles[version]
-        context.result, context.matches = resolve_selector(
-            "", context.selector, articles=articles
-        )
+        context.result = context.selector.locate(articles)
     else:
-        context.result = MatchResult.ORPHANED
-        context.matches = []
+        context.result = MatchResult(status=MatchStatus.ORPHANED, matches=[])
 
 
 # === Assertions ===
@@ -127,11 +119,11 @@ def step_when_resolve_version(context, version):
 @then("the result is FOUND with confidence {confidence:f}")  # type: ignore[misc]
 def step_then_found_confidence(context, confidence):
     """Assert match was found with expected confidence."""
-    assert context.result == MatchResult.FOUND, (
-        f"Expected FOUND but got {context.result}"
+    assert context.result.found, f"Expected found but got {context.result.status}"
+    assert len(context.result.matches) == 1, (
+        f"Expected 1 match but got {len(context.result.matches)}"
     )
-    assert len(context.matches) == 1, f"Expected 1 match but got {len(context.matches)}"
-    actual = context.matches[0].confidence
+    actual = context.result.match.confidence
     assert abs(actual - confidence) < 0.01, (
         f"Expected confidence {confidence} but got {actual}"
     )
@@ -140,27 +132,25 @@ def step_then_found_confidence(context, confidence):
 @then("the result is FOUND with confidence above {threshold:f}")  # type: ignore[misc]
 def step_then_found_above(context, threshold):
     """Assert match was found with confidence above threshold."""
-    assert context.result == MatchResult.FOUND, (
-        f"Expected FOUND but got {context.result}"
-    )
-    assert len(context.matches) >= 1, "Expected at least 1 match"
-    actual = context.matches[0].confidence
+    assert context.result.found, f"Expected found but got {context.result.status}"
+    assert len(context.result.matches) >= 1, "Expected at least 1 match"
+    actual = context.result.match.confidence
     assert actual > threshold, f"Expected confidence above {threshold} but got {actual}"
 
 
 @then('the match is in article "{article_num}"')  # type: ignore[misc]
 def step_then_match_in_article(context, article_num):
     """Assert match was found in expected article."""
-    assert len(context.matches) >= 1, "No matches found"
-    actual = context.matches[0].article_number
+    assert len(context.result.matches) >= 1, "No matches found"
+    actual = context.result.match.article_number
     assert actual == article_num, f"Expected article {article_num} but got {actual}"
 
 
 @then('the matched text contains "{expected_text}"')  # type: ignore[misc]
 def step_then_matched_text_contains(context, expected_text):
     """Assert matched text contains expected substring."""
-    assert len(context.matches) >= 1, "No matches found"
-    actual = context.matches[0].matched_text
+    assert len(context.result.matches) >= 1, "No matches found"
+    actual = context.result.match.matched_text
     assert expected_text in actual, (
         f"Expected '{expected_text}' in matched text but got '{actual}'"
     )
@@ -169,38 +159,36 @@ def step_then_matched_text_contains(context, expected_text):
 @then("the result is ORPHANED")  # type: ignore[misc]
 def step_then_orphaned(context):
     """Assert annotation could not be resolved."""
-    assert context.result == MatchResult.ORPHANED, (
-        f"Expected ORPHANED but got {context.result}"
-    )
+    assert context.result.orphaned, f"Expected orphaned but got {context.result.status}"
 
 
 @then("no match is found")  # type: ignore[misc]
 def step_then_no_match(context):
     """Assert no matches were found."""
-    assert len(context.matches) == 0, (
-        f"Expected no matches but got {len(context.matches)}"
+    assert len(context.result.matches) == 0, (
+        f"Expected no matches but got {len(context.result.matches)}"
     )
 
 
 @then("the result is AMBIGUOUS")  # type: ignore[misc]
 def step_then_ambiguous(context):
     """Assert annotation has multiple matches."""
-    assert context.result == MatchResult.AMBIGUOUS, (
-        f"Expected AMBIGUOUS but got {context.result}"
+    assert context.result.ambiguous, (
+        f"Expected ambiguous but got {context.result.status}"
     )
 
 
 @then("multiple matches are found")  # type: ignore[misc]
 def step_then_multiple_matches(context):
     """Assert multiple matches were found."""
-    assert len(context.matches) > 1, (
-        f"Expected multiple matches but got {len(context.matches)}"
+    assert len(context.result.matches) > 1, (
+        f"Expected multiple matches but got {len(context.result.matches)}"
     )
 
 
 @then("exactly {count:d} match is found")  # type: ignore[misc]
 def step_then_exact_matches(context, count):
     """Assert exact number of matches."""
-    assert len(context.matches) == count, (
-        f"Expected {count} matches but got {len(context.matches)}"
+    assert len(context.result.matches) == count, (
+        f"Expected {count} matches but got {len(context.result.matches)}"
     )
