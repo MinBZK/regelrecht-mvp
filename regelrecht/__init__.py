@@ -33,15 +33,16 @@ Example usage:
 """
 
 from regelrecht.models import Article, Law
-from regelrecht.selectors import MatchResult, TextQuoteSelector
+from regelrecht.selectors import MatchResult, MatchStatus, TextQuoteSelector
 
-# Primary public API - most commonly used types
+# Primary public API
 __all__ = [
     "Article",
     "Law",
     "TextQuoteSelector",
     "MatchResult",
+    "MatchStatus",
 ]
 
-# Note: For Match and MatchStatus, use:
-#   from regelrecht.selectors import Match, MatchStatus
+# Note: For Match (individual match details), use:
+#   from regelrecht.selectors import Match
