@@ -12,7 +12,9 @@ from lxml import etree
 from harvester.models import Article
 from harvester.parsers.content_parser import (
     SKIP_TAGS,
-    convert_jci_to_url,
+    format_extref,
+    format_intref,
+    format_nadruk,
     get_tag_name,
 )
 
@@ -64,30 +66,13 @@ def extract_inline_text(elem: etree._Element) -> str:
         child_tag = get_tag_name(child)
 
         if child_tag == "extref":
-            ref_text = child.text or ""
-            ref_url = child.get("doc", "")
-            if ref_url:
-                converted_url = convert_jci_to_url(ref_url)
-                parts.append(f"[{ref_text}]({converted_url})")
-            else:
-                parts.append(ref_text)
+            parts.append(format_extref(child))
 
         elif child_tag == "intref":
-            ref_text = child.text or ""
-            ref_url = child.get("doc", "")
-            if ref_url:
-                converted_url = convert_jci_to_url(ref_url)
-                parts.append(f"[{ref_text}]({converted_url})")
-            else:
-                parts.append(ref_text)
+            parts.append(format_intref(child))
 
         elif child_tag == "nadruk":
-            child_text = child.text or ""
-            nadruk_type = child.get("type", "")
-            if nadruk_type == "vet":
-                parts.append(f"**{child_text}**")
-            else:
-                parts.append(f"*{child_text}*")
+            parts.append(format_nadruk(child))
 
         elif child_tag not in SKIP_TAGS and child_tag not in {
             "lid",
@@ -427,6 +412,63 @@ def walk_artikel(
     return components
 
 
+def extract_aanhef(
+    content_tree: etree._Element,
+    bwb_id: str,
+    date: str,
+) -> Article | None:
+    """Extract the aanhef (preamble) as an article.
+
+    The aanhef contains the royal introduction ("Wij Beatrix..."),
+    considerans (considerations), and afkondiging (proclamation).
+
+    Args:
+        content_tree: Parsed content XML element
+        bwb_id: BWB identifier
+        date: Effective date in YYYY-MM-DD format
+
+    Returns:
+        Article with number "aanhef", or None if no aanhef found
+    """
+    aanhef_elem = content_tree.find(".//aanhef")
+    if aanhef_elem is None:
+        return None
+
+    parts: list[str] = []
+
+    # Extract <wij> element
+    wij_elem = aanhef_elem.find("wij")
+    if wij_elem is not None and wij_elem.text:
+        parts.append(wij_elem.text.strip())
+
+    # Extract <considerans> elements
+    considerans_elem = aanhef_elem.find("considerans")
+    if considerans_elem is not None:
+        for al in considerans_elem.findall(".//considerans.al"):
+            if al.text:
+                parts.append(al.text.strip())
+
+    # Extract <afkondiging> element
+    afkondiging_elem = aanhef_elem.find("afkondiging")
+    if afkondiging_elem is not None:
+        for al in afkondiging_elem.findall(".//al"):
+            al_text = extract_inline_text(al)
+            if al_text:
+                parts.append(al_text)
+
+    if not parts:
+        return None
+
+    aanhef_text = "\n\n".join(parts)
+    aanhef_url = f"https://wetten.overheid.nl/{bwb_id}/{date}#Aanhef"
+
+    return Article(
+        number="aanhef",
+        text=aanhef_text,
+        url=aanhef_url,
+    )
+
+
 def build_articles_from_content(
     content_tree: etree._Element,
     bwb_id: str,
@@ -436,7 +478,8 @@ def build_articles_from_content(
 
     This is the main entry point for the article builder. It walks all
     artikel elements and extracts the lowest-level components as separate
-    Article objects.
+    Article objects. The aanhef (preamble) is included as the first article
+    with number "aanhef".
 
     Args:
         content_tree: Parsed content XML element
@@ -448,6 +491,12 @@ def build_articles_from_content(
     """
     articles: list[Article] = []
 
+    # Extract aanhef first
+    aanhef = extract_aanhef(content_tree, bwb_id, date)
+    if aanhef:
+        articles.append(aanhef)
+
+    # Then extract all artikel elements
     artikel_elements = content_tree.findall(".//artikel")
 
     for artikel in artikel_elements:

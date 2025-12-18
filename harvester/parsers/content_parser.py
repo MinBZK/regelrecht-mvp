@@ -67,6 +67,56 @@ def get_tag_name(elem: etree._Element) -> str:
     return elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
 
 
+def format_extref(elem: etree._Element) -> str:
+    """Format an extref (external reference) element as markdown link.
+
+    Args:
+        elem: The <extref> element
+
+    Returns:
+        Markdown link like [text](url) or just text if no URL
+    """
+    ref_text = elem.text or ""
+    ref_url = elem.get("doc", "")
+    if ref_url:
+        converted_url = convert_jci_to_url(ref_url)
+        return f"[{ref_text}]({converted_url})"
+    return ref_text
+
+
+def format_intref(elem: etree._Element) -> str:
+    """Format an intref (internal reference) element as markdown link.
+
+    Args:
+        elem: The <intref> element
+
+    Returns:
+        Markdown link like [text](url) or just text if no URL
+    """
+    ref_text = elem.text or ""
+    ref_url = elem.get("doc", "")
+    if ref_url:
+        converted_url = convert_jci_to_url(ref_url)
+        return f"[{ref_text}]({converted_url})"
+    return ref_text
+
+
+def format_nadruk(elem: etree._Element) -> str:
+    """Format a nadruk (emphasis) element as markdown.
+
+    Args:
+        elem: The <nadruk> element
+
+    Returns:
+        Markdown emphasis: **text** for bold (vet), *text* for italic
+    """
+    child_text = elem.text or ""
+    nadruk_type = elem.get("type", "")
+    if nadruk_type == "vet":
+        return f"**{child_text}**"
+    return f"*{child_text}*"
+
+
 def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> str:
     """Extract text from XML element, preserving structure as markdown.
 
@@ -150,33 +200,13 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
             child_tag = get_tag_name(child)
 
             if child_tag == "extref":
-                # External reference - convert to markdown link
-                ref_text = child.text or ""
-                ref_url = child.get("doc", "")
-                if ref_url:
-                    converted_url = convert_jci_to_url(ref_url)
-                    parts.append(f"[{ref_text}]({converted_url})")
-                else:
-                    parts.append(ref_text)
+                parts.append(format_extref(child))
 
             elif child_tag == "intref":
-                # Internal reference - convert to markdown link
-                ref_text = child.text or ""
-                ref_url = child.get("doc", "")
-                if ref_url:
-                    converted_url = convert_jci_to_url(ref_url)
-                    parts.append(f"[{ref_text}]({converted_url})")
-                else:
-                    parts.append(ref_text)
+                parts.append(format_intref(child))
 
             elif child_tag == "nadruk":
-                # Emphasis
-                child_text = child.text or ""
-                nadruk_type = child.get("type", "")
-                if nadruk_type == "vet":
-                    parts.append(f"**{child_text}**")
-                else:
-                    parts.append(f"*{child_text}*")
+                parts.append(format_nadruk(child))
 
             elif child_tag not in SKIP_TAGS:
                 # Other inline elements
@@ -191,30 +221,13 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
         return "".join(parts)
 
     elif tag_name == "nadruk":
-        # Emphasis (standalone)
-        child_text = elem.text or ""
-        nadruk_type = elem.get("type", "")
-        if nadruk_type == "vet":
-            return f"**{child_text}**"
-        return f"*{child_text}*"
+        return format_nadruk(elem)
 
     elif tag_name == "extref":
-        # External reference (standalone)
-        ref_text = elem.text or ""
-        ref_url = elem.get("doc", "")
-        if ref_url:
-            converted_url = convert_jci_to_url(ref_url)
-            return f"[{ref_text}]({converted_url})"
-        return ref_text
+        return format_extref(elem)
 
     elif tag_name == "intref":
-        # Internal reference (standalone)
-        ref_text = elem.text or ""
-        ref_url = elem.get("doc", "")
-        if ref_url:
-            converted_url = convert_jci_to_url(ref_url)
-            return f"[{ref_text}]({converted_url})"
-        return ref_text
+        return format_intref(elem)
 
     else:
         # Generic element - process children
