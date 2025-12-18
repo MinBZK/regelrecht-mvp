@@ -368,12 +368,32 @@ properties:
 ```yaml
 # JSON Schema for Annotation
 type: object
-required: [type, target]
+required: [type, target, purpose]
 properties:
   type:
     const: Annotation
+  purpose:
+    type: string
+    description: Why this annotation exists (required)
+    enum:
+      - commenting      # Human explanation or note
+      - linking         # Link to machine-readable execution
+      - tagging         # Classification/categorization
+      - describing      # Metadata description
+      - questioning     # Open question or issue
+      - reviewing       # Review feedback
+  state:
+    type: string
+    description: Current status of the annotation
+    enum:
+      - active          # Annotation is current and valid
+      - resolved        # Issue/question has been addressed
+      - orphaned        # Text no longer found in law
+      - deprecated      # Superseded by another annotation
+    default: active
   motivation:
     enum: [commenting, linking, tagging, describing, classifying]
+    description: W3C motivation (for compatibility)
   target:
     type: object
     required: [source, selector]
@@ -396,6 +416,15 @@ properties:
         properties:
           type: { const: SpecificResource }
           source: { type: string, format: uri }
+```
+
+### State Transitions
+
+```
+active → resolved     (issue addressed)
+active → orphaned     (text not found after law change)
+active → deprecated   (superseded by new annotation)
+orphaned → active     (text found again after re-anchoring)
 ```
 
 ## References
