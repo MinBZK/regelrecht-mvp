@@ -356,10 +356,25 @@ articles:
             type: string
             required: true
             description: Burgerservicenummer van de persoon
+          - name: peildatum
+            type: date
+            required: true
+            description: Peildatum voor berekening leeftijd
+          - name: geboortedatum
+            type: date
+            required: true
+            description: Geboortedatum van de persoon (uit BRP registratie)
         output:
           - name: leeftijd
             type: number
             description: Leeftijd van de persoon in jaren, berekend uit geboortedatum
+        actions:
+          - output: leeftijd
+            value:
+              operation: SUBTRACT_DATE
+              values:
+                - $peildatum
+                - $geboortedatum
   - number: Artikel 2.8
     text: |-
       Artikel 2.8 1 De gegevens over de burgerlijke staat worden, indien zij feiten betreffen die zich in Nederland
@@ -398,16 +413,31 @@ articles:
       heeft opgemaakt die ten doel heeft tot bewijs te dienen van het desbetreffende feit, ontleend aan die akte.
     url: https://wetten.overheid.nl/BWBR0033715/2025-01-01#ArtikelArtikel 2.8
     machine_readable:
+      definitions:
+        GELDIGE_PARTNERTYPEN:
+          value:
+            - HUWELIJK
+            - GEREGISTREERD_PARTNERSCHAP
       execution:
         parameters:
           - name: bsn
             type: string
             required: true
             description: Burgerservicenummer van de persoon
+          - name: partnertype
+            type: string
+            required: false
+            description: Type partnerschap uit BRP (HUWELIJK, GEREGISTREERD_PARTNERSCHAP, of null)
         output:
           - name: heeft_partner
             type: boolean
             description: Heeft de persoon een partner volgens BRP (huwelijk of geregistreerd partnerschap)
+        actions:
+          - output: heeft_partner
+            value:
+              operation: IN
+              subject: $partnertype
+              value: $GELDIGE_PARTNERTYPEN
   - number: Artikel 2.9
     text: |-
       Artikel 2.9 1 Aan een geschrift als bedoeld in artikel 2.8, tweede lid, onder c, d, of e , dan wel artikel 2.8,
@@ -1988,24 +2018,3 @@ articles:
         actions:
           - output: wet_naam
             value: Wet basisregistratie personen
-  - number: API-1
-    text: |-
-      SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining a person's age
-      based on their BSN (Burgerservicenummer). The geboortedatum (date of birth) is retrieved from the BRP registration
-      and used to calculate current age in years. NOTE: This is not part of the original Wet BRP text, but provides
-      programmatic access to BRP data for other laws that need age information.
-    url: https://wetten.overheid.nl/BWBR0033715/2025-01-01#API-1
-    machine_readable:
-      execution:
-        parameters:
-          - name: bsn
-            type: string
-            required: true
-            description: Burgerservicenummer van de persoon
-        output:
-          - name: leeftijd
-            type: number
-            description: Leeftijd in hele jaren
-        actions:
-          - output: leeftijd
-            value: 0

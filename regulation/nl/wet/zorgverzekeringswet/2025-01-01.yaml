@@ -191,16 +191,35 @@ articles:
       verzekerd is.'
     url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#ArtikelArtikel 2
     machine_readable:
+      definitions:
+        ACTIEVE_POLIS_STATUSSEN:
+          value:
+            - ACTIEF
+            - GESCHORST_MET_TERUGWERKENDE_KRACHT
       execution:
         parameters:
           - name: bsn
             type: string
             required: true
             description: Burgerservicenummer van de persoon
+          - name: verzekeringspolis
+            type: string
+            required: false
+            description: Status van de zorgverzekeringspolis (uit verzekeringsregistratie)
         output:
           - name: heeft_verzekering
             type: boolean
             description: Heeft de persoon een Nederlandse zorgverzekering conform artikel 2
+        actions:
+          - output: heeft_verzekering
+            value:
+              operation: AND
+              conditions:
+                - operation: NOT_NULL
+                  subject: $verzekeringspolis
+                - operation: IN
+                  subject: $verzekeringspolis
+                  value: $ACTIEVE_POLIS_STATUSSEN
   - number: Artikel 3
     text: 'Artikel 3 1 Een zorgverzekeraar is verplicht met of ten behoeve van iedere verzekeringsplichtige
       die in zijn
@@ -2370,16 +2389,45 @@ articles:
       uitvoeren.'
     url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#ArtikelArtikel 69
     machine_readable:
+      definitions:
+        GELDIGE_VERDRAGSLANDEN:
+          value:
+            - BELGIE
+            - DUITSLAND
+            - FRANKRIJK
+            - VERENIGD_KONINKRIJK
+            - ZWITSERLAND
       execution:
         parameters:
           - name: bsn
             type: string
             required: true
             description: Burgerservicenummer van de persoon
+          - name: verdragsinschrijving
+            type: string
+            required: false
+            description: Status van de verdragsinschrijving (uit CVZ/CAK registratie)
+          - name: verblijfsland
+            type: string
+            required: false
+            description: Land van verblijf van de persoon
         output:
           - name: heeft_verdragsverzekering
             type: boolean
             description: Heeft de persoon een verdragsverzekering conform artikel 69
+        actions:
+          - output: heeft_verdragsverzekering
+            value:
+              operation: AND
+              conditions:
+                - operation: NOT_NULL
+                  subject: $verdragsinschrijving
+                - operation: IN
+                  subject: $verblijfsland
+                  value: $GELDIGE_VERDRAGSLANDEN
+                - operation: EQUALS
+                  subject: $verdragsinschrijving
+                  value: ACTIEF
   - number: Artikel 70
     text: 'Artikel 70 1 Het College zorgverzekeringen opent voor iedere gemoedsbezwaarde, bedoeld in artikel
       2, tweede lid,
@@ -4099,32 +4147,3 @@ articles:
         actions:
           - output: wet_naam
             value: Zorgverzekeringswet
-  - number: API-1
-    text: 'SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining
-      whether a person
-
-      is insured (verzekerd) under the Zorgverzekeringswet based on their BSN. According to the ZVW, nearly
-      all residents
-
-      of the Netherlands are required to have health insurance. This endpoint checks insurance status.
-      NOTE: This is not
-
-      part of the original ZVW text, but provides programmatic access to insurance status for other laws
-      that need this
-
-      information.'
-    url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#API-1
-    machine_readable:
-      execution:
-        parameters:
-          - name: bsn
-            type: string
-            required: true
-            description: Burgerservicenummer van de persoon
-        output:
-          - name: is_verzekerd
-            type: boolean
-            description: Geeft aan of de persoon verzekerd is onder de ZVW
-        actions:
-          - output: is_verzekerd
-            value: true

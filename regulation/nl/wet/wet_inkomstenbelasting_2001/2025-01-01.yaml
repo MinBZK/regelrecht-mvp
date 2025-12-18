@@ -1483,6 +1483,69 @@ articles:
   - number: '2.18'
     text: 'Verzamelinkomen is het gezamenlijke bedrag van:'
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: BSN van de persoon
+          - name: box1_inkomen
+            type: amount
+            required: true
+            description: Inkomen uit werk en woning (box 1)
+          - name: box2_inkomen
+            type: amount
+            required: true
+            description: Inkomen uit aanmerkelijk belang (box 2)
+          - name: box3_inkomen
+            type: amount
+            required: true
+            description: Inkomen uit sparen en beleggen (box 3)
+          - name: buitenlands_inkomen
+            type: amount
+            required: false
+            description: Niet in Nederland belastbaar inkomen
+          - name: partner_box1_inkomen
+            type: amount
+            required: false
+            description: Partner inkomen uit werk en woning
+          - name: partner_box2_inkomen
+            type: amount
+            required: false
+            description: Partner inkomen uit aanmerkelijk belang
+          - name: partner_box3_inkomen
+            type: amount
+            required: false
+            description: Partner inkomen uit sparen en beleggen
+          - name: partner_buitenlands_inkomen
+            type: amount
+            required: false
+            description: Partner niet in Nederland belastbaar inkomen
+        output:
+          - name: inkomen
+            type: amount
+            description: Toetsingsinkomen (verzamelinkomen)
+          - name: partner_inkomen
+            type: amount
+            description: Toetsingsinkomen van de partner
+        actions:
+          - output: inkomen
+            value:
+              operation: ADD
+              values:
+                - $box1_inkomen
+                - $box2_inkomen
+                - $box3_inkomen
+                - $buitenlands_inkomen
+          - output: partner_inkomen
+            value:
+              operation: ADD
+              values:
+                - $partner_box1_inkomen
+                - $partner_box2_inkomen
+                - $partner_box3_inkomen
+                - $partner_buitenlands_inkomen
   - number: 2.18.a
     text: het inkomen uit werk en woning;
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
