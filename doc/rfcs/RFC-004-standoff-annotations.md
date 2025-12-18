@@ -320,6 +320,84 @@ to be unique, even for common words.
 **Inline anchors in the text**
 - Modifies the verbatim legal text, not acceptable
 
+## Schema
+
+### TextQuoteSelector
+
+```yaml
+# JSON Schema for TextQuoteSelector with regelrecht:hint extension
+type: object
+required: [type, exact]
+properties:
+  type:
+    const: TextQuoteSelector
+  exact:
+    type: string
+    description: The exact text to match
+  prefix:
+    type: string
+    description: Text immediately before the exact match (for disambiguation)
+  suffix:
+    type: string
+    description: Text immediately after the exact match (for disambiguation)
+  regelrecht:hint:
+    type: object
+    description: Optional performance hint (non-authoritative)
+    properties:
+      type:
+        const: CssSelector
+      value:
+        type: string
+        pattern: "^article\\[number='[^']+']$"
+        description: CSS selector for the article (e.g., "article[number='2']")
+      refinedBy:
+        type: object
+        properties:
+          type:
+            const: TextPositionSelector
+          start:
+            type: integer
+            minimum: 0
+          end:
+            type: integer
+            minimum: 0
+```
+
+### Annotation
+
+```yaml
+# JSON Schema for Annotation
+type: object
+required: [type, target]
+properties:
+  type:
+    const: Annotation
+  motivation:
+    enum: [commenting, linking, tagging, describing, classifying]
+  target:
+    type: object
+    required: [source, selector]
+    properties:
+      source:
+        type: string
+        format: uri
+        description: URI of the law (e.g., regelrecht://zorgtoeslagwet)
+      selector:
+        $ref: "#/TextQuoteSelector"
+  body:
+    oneOf:
+      - type: object  # TextualBody
+        properties:
+          type: { const: TextualBody }
+          value: { type: string }
+          format: { type: string }
+          language: { type: string }
+      - type: object  # SpecificResource (link)
+        properties:
+          type: { const: SpecificResource }
+          source: { type: string, format: uri }
+```
+
 ## References
 
 - [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/)
