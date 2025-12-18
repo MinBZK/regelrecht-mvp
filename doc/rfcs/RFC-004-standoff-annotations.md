@@ -373,20 +373,21 @@ properties:
 ```yaml
 # JSON Schema for Annotation
 type: object
-required: [type, target, purpose]
+required: [type, target, motivation]
 properties:
   type:
     const: Annotation
-  purpose:
+  motivation:
     type: string
-    description: Why this annotation exists (required)
+    description: W3C motivation - why this annotation exists (required)
     enum:
       - commenting      # Human explanation or note
       - linking         # Link to machine-readable execution
       - tagging         # Classification/categorization
       - describing      # Metadata description
-      - questioning     # Open question or issue
-      - reviewing       # Review feedback
+      - classifying     # Formal classification
+      - questioning     # Open question or issue (regelrecht extension)
+      - reviewing       # Review feedback (regelrecht extension)
   resolution:
     type: string
     description: Whether the selector found the text
@@ -396,14 +397,11 @@ properties:
     default: found
   workflow:
     type: string
-    description: Workflow status (for questioning/reviewing purposes)
+    description: Workflow status (for questioning/reviewing motivations)
     enum:
       - open            # Needs attention
       - resolved        # Issue addressed
     default: open
-  motivation:
-    enum: [commenting, linking, tagging, describing, classifying]
-    description: W3C motivation (for compatibility)
   target:
     type: object
     required: [source, selector]
@@ -432,10 +430,13 @@ properties:
 
 | Field | Dimension | Values | Description |
 |-------|-----------|--------|-------------|
+| `motivation` | Intent | commenting, linking, tagging, ... | W3C standard: why does this annotation exist? |
 | `resolution` | Technical | found, orphaned | Can the selector locate the text? |
 | `workflow` | Process | open, resolved | Has the issue been addressed? |
 
-These are orthogonal: an annotation can be `found` + `open`, or `orphaned` + `resolved`.
+`motivation` follows the [W3C Web Annotation motivation](https://www.w3.org/TR/annotation-model/#motivation-and-purpose) vocabulary, extended with `questioning` and `reviewing` for legal review workflows.
+
+`resolution` and `workflow` are orthogonal: an annotation can be `orphaned` + `resolved`.
 
 ## References
 
