@@ -34,8 +34,8 @@ Operations now use different property names based on their semantic purpose:
 |----------------|----------|-----------|
 | **Logical** (AND, OR) | `conditions` | Combines boolean conditions |
 | **Numeric** (ADD, SUBTRACT, MULTIPLY, DIVIDE, MIN, MAX) | `values` | Combines numeric values |
-| **Conditional** (IF) | `test`, `then`, `else` | Tests a condition and branches |
-| **Multi-branch** (SWITCH) | `cases` (with `test`/`then`), `default` | Multiple conditional branches |
+| **Conditional** (IF) | `when`, `then`, `else` | When condition is true, returns then; otherwise else |
+| **Multi-branch** (SWITCH) | `cases` (with `when`/`then`), `default` | Multiple conditional branches |
 
 **Example - Logical operation:**
 ```yaml
@@ -68,9 +68,9 @@ The old action-level `conditions` property is replaced by the SWITCH operation:
   value:
     operation: SWITCH
     cases:
-      - test: { operation: EQUALS, subject: $a, value: true }
+      - when: { operation: EQUALS, subject: $a, value: true }
         then: "Reason A"
-      - test: { operation: EQUALS, subject: $b, value: true }
+      - when: { operation: EQUALS, subject: $b, value: true }
         then: "Reason B"
     default: "Unknown"
 ```
@@ -86,9 +86,9 @@ The old action-level `conditions` property is replaced by the SWITCH operation:
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["test", "then"],
+        "required": ["when", "then"],
         "properties": {
-          "test": { "$ref": "#/definitions/operationValue" },
+          "when": { "$ref": "#/definitions/operationValue" },
           "then": { "$ref": "#/definitions/operationValue" }
         }
       }
@@ -100,8 +100,19 @@ The old action-level `conditions` property is replaced by the SWITCH operation:
 
 ### 3. When to Use IF vs SWITCH
 
-- **IF:** Single test with two possible outcomes (if-else)
-- **SWITCH:** Multiple tests evaluated in order (if-elif-elif-else)
+- **IF:** Single condition with two possible outcomes (when-then-else)
+- **SWITCH:** Multiple conditions evaluated in order (when-then chains with default)
+
+**Example - IF operation:**
+```yaml
+operation: IF
+when:
+  operation: GREATER_THAN_OR_EQUAL
+  subject: $leeftijd
+  value: 18
+then: $bedrag_volwassene
+else: $bedrag_minderjarige
+```
 
 ### 4. Simplified Action Structure
 
@@ -141,4 +152,4 @@ SWITCH makes multi-branch logic explicit. The operation name describes what happ
 ## References
 
 - Schema: `schema/v0.2.0/schema.json`
-- Engine: `engine/engine.py` (`_evaluate_switch()`, `_evaluate_logical()`)
+- Engine: `engine/engine.py` (`_evaluate_if()`, `_evaluate_switch()`, `_evaluate_when()`, `_evaluate_logical()`)

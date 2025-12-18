@@ -256,7 +256,7 @@ articles:
           - output: normbedrag_artikel_21
             value:
               operation: IF
-              test:
+              when:
                 operation: EQUALS
                 subject: $is_alleenstaande
                 value: true
@@ -519,32 +519,32 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $heeft_recht_op_bijstand
                     value: true
                   then: null
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $voldoet_aan_uwv_registratie
                     value: false
                   then: Niet geregistreerd als werkzoekende bij UWV
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $voldoet_aan_nationaliteit
                     value: false
                   then: Geen Nederlander of gelijkgestelde vreemdeling
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $voldoet_aan_woonplaats
                     value: false
                   then: Woont niet in Nederland
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $voldoet_aan_leeftijd
                     value: false
                   then: Voldoet niet aan leeftijdseis (21+ en onder pensioenleeftijd, geen kostendelers)
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $heeft_onvoldoende_middelen
                     value: false
@@ -555,12 +555,12 @@ articles:
             value:
               operation: SWITCH
               cases:
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $heeft_recht_op_bijstand
                     value: false
                   then: 0
-                - test:
+                - when:
                     operation: EQUALS
                     subject: $is_alleenstaande
                     value: true

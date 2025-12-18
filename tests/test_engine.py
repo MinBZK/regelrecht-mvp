@@ -135,7 +135,7 @@ class TestComparisonOperations:
     """Test comparison operations (used in IF/conditions)"""
 
     def test_equals_true(self):
-        """EQUALS comparison returns true test equal"""
+        """EQUALS comparison returns true when equal"""
         # Comparisons are typically used in IF operations or conditions
         article = Article(
             {
@@ -148,7 +148,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 10,
@@ -169,7 +169,7 @@ class TestComparisonOperations:
         assert result.output["result"] == "equal"
 
     def test_equals_false(self):
-        """EQUALS comparison returns false test not equal"""
+        """EQUALS comparison returns false when not equal"""
         article = Article(
             {
                 "number": "1",
@@ -181,7 +181,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 20,
@@ -214,7 +214,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "NOT_EQUALS",
                                     "subject": 10,
                                     "value": 20,
@@ -247,7 +247,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "GREATER_THAN",
                                     "subject": 20,
                                     "value": 10,
@@ -280,7 +280,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "LESS_THAN",
                                     "subject": 10,
                                     "value": 20,
@@ -313,7 +313,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "GREATER_THAN_OR_EQUAL",
                                     "subject": 10,
                                     "value": 10,
@@ -346,7 +346,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "LESS_THAN_OR_EQUAL",
                                     "subject": 10,
                                     "value": 10,
@@ -380,7 +380,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "GREATER_THAN",
                                     "subject": "$THRESHOLD",
                                     "value": 15,
@@ -413,7 +413,7 @@ class TestComparisonOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": "$UNDEFINED",
                                     "value": None,
@@ -1051,7 +1051,7 @@ class TestConditionalOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 10,
@@ -1084,7 +1084,7 @@ class TestConditionalOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 20,
@@ -1117,7 +1117,7 @@ class TestConditionalOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 20,
@@ -1150,7 +1150,7 @@ class TestConditionalOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "GREATER_THAN",
                                     "subject": {"operation": "ADD", "values": [10, 20]},
                                     "value": 25,
@@ -1183,7 +1183,7 @@ class TestConditionalOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 10,
@@ -1216,7 +1216,7 @@ class TestConditionalOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "EQUALS",
                                     "subject": 10,
                                     "value": 20,
@@ -1252,7 +1252,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1260,7 +1260,7 @@ class TestConditionalOperations:
                                             "then": "first",
                                         },
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 20,
@@ -1300,7 +1300,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1308,7 +1308,7 @@ class TestConditionalOperations:
                                             "then": "first",
                                         },
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 20,
@@ -1348,7 +1348,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1356,7 +1356,7 @@ class TestConditionalOperations:
                                             "then": "first",
                                         },
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 20,
@@ -1381,7 +1381,7 @@ class TestConditionalOperations:
         assert result.output["result"] == "none"
 
     def test_switch_without_default_returns_none(self):
-        """SWITCH operation without default returns None test no case matches"""
+        """SWITCH operation without default returns None when no case matches"""
         article = Article(
             {
                 "number": "1",
@@ -1396,7 +1396,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 10,
@@ -1436,7 +1436,7 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "test": {
+                                            "when": {
                                                 "operation": "EQUALS",
                                                 "subject": "$x",
                                                 "value": 1,
@@ -1464,7 +1464,7 @@ class TestConditionalOperations:
         assert result.output["result"] == 200
 
     def test_switch_with_boolean_variable_in_test(self):
-        """SWITCH operation with boolean variable reference in test clause"""
+        """SWITCH operation with boolean variable reference in when clause"""
         article = Article(
             {
                 "number": "1",
@@ -1479,11 +1479,11 @@ class TestConditionalOperations:
                                     "operation": "SWITCH",
                                     "cases": [
                                         {
-                                            "test": "$is_eligible",
+                                            "when": "$is_eligible",
                                             "then": "eligible",
                                         },
                                         {
-                                            "test": "$is_fallback",
+                                            "when": "$is_fallback",
                                             "then": "fallback",
                                         },
                                     ],
@@ -1651,7 +1651,7 @@ class TestNestedOperations:
                             {
                                 "output": "result",
                                 "operation": "IF",
-                                "test": {
+                                "when": {
                                     "operation": "GREATER_THAN",
                                     "subject": {"operation": "ADD", "values": [10, 20]},
                                     "value": {

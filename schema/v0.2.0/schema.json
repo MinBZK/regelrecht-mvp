@@ -533,16 +533,16 @@
     },
     "conditionalOperation": {
       "type": "object",
-      "description": "Conditional operation (IF-THEN-ELSE)",
-      "required": ["operation", "test", "then"],
+      "description": "Conditional operation (IF-WHEN-THEN-ELSE)",
+      "required": ["operation", "when", "then"],
       "properties": {
         "operation": {
           "type": "string",
           "const": "IF"
         },
-        "test": {
+        "when": {
           "$ref": "#/definitions/operationValue",
-          "description": "Condition to test - can be a boolean variable, literal, or operation"
+          "description": "Condition to evaluate - can be a boolean variable, literal, or operation"
         },
         "then": {
           "$ref": "#/definitions/operationValue",
@@ -569,14 +569,14 @@
         },
         "cases": {
           "type": "array",
-          "description": "List of test/then pairs evaluated in order",
+          "description": "List of when/then pairs evaluated in order",
           "items": {
             "type": "object",
-            "required": ["test", "then"],
+            "required": ["when", "then"],
             "properties": {
-              "test": {
+              "when": {
                 "$ref": "#/definitions/operationValue",
-                "description": "Condition to test"
+                "description": "Condition to evaluate"
               },
               "then": {
                 "$ref": "#/definitions/operationValue",

@@ -128,14 +128,14 @@ articles:
                       - operation: MULTIPLY
                         values:
                           - operation: IF
-                            test:
+                            when:
                               operation: EQUALS
                               subject: $heeft_toeslagpartner
                               value: true
                             then: $drempelinkomen_aanvrager_met_toeslagpartner
                             else: $drempelinkomen_alleenstaande
                           - operation: IF
-                            test:
+                            when:
                               operation: EQUALS
                               subject: $heeft_toeslagpartner
                               value: true
@@ -150,7 +150,7 @@ articles:
                                 values:
                                   - $toetsingsinkomen
                                   - operation: IF
-                                    test:
+                                    when:
                                       operation: EQUALS
                                       subject: $heeft_toeslagpartner
                                       value: true
@@ -217,7 +217,7 @@ articles:
               subject: $vermogen
               value:
                 operation: IF
-                test:
+                when:
                   operation: EQUALS
                   subject: $heeft_toeslagpartner
                   value: true

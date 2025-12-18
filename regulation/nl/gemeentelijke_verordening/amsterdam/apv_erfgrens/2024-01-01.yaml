@@ -47,7 +47,7 @@ articles:
           - output: minimale_afstand_cm
             value:
               operation: IF
-              test:
+              when:
                 operation: EQUALS
                 subject: $type_beplanting
                 value: boom
