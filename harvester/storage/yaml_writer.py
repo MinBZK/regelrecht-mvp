@@ -3,22 +3,12 @@
 import textwrap
 from pathlib import Path
 
-import yaml
+import ruamel.yaml
 
 from harvester.models import Law
 
 # Schema URL for regelrecht YAML files
-SCHEMA_URL = "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json"
-
-
-class LiteralBlockDumper(yaml.SafeDumper):
-    """Custom YAML dumper that uses literal block style (|-) for multiline strings.
-
-    RFC-001 Decision 2: Article text uses literal block scalar for readability.
-    """
-
-    pass
-
+SCHEMA_URL = "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json"
 
 TEXT_WRAP_WIDTH = 100
 
@@ -28,20 +18,6 @@ def _wrap_text(text: str, width: int = TEXT_WRAP_WIDTH) -> str:
     paragraphs = text.split("\n\n")
     wrapped = [textwrap.fill(p, width=width) for p in paragraphs]
     return "\n\n".join(wrapped)
-
-
-def _literal_str_representer(dumper: yaml.SafeDumper, data: str) -> yaml.ScalarNode:
-    """Represent strings with literal block style (|-) for readability.
-
-    Uses literal block style for multiline strings (contain newlines).
-    Text wrapping is done in generate_yaml_dict() before serialization.
-    """
-    if "\n" in data:
-        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
-    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
-
-
-LiteralBlockDumper.add_representer(str, _literal_str_representer)
 
 
 def _should_wrap_text(text: str) -> bool:
@@ -118,15 +94,16 @@ def save_yaml(
     # Generate YAML content
     yaml_dict = generate_yaml_dict(law, effective_date)
 
-    with open(output_file, "w", encoding="utf-8") as f:
-        yaml.dump(
-            yaml_dict,
-            f,
-            Dumper=LiteralBlockDumper,
-            allow_unicode=True,
-            sort_keys=False,
-            default_flow_style=False,
-            width=100,
-        )
+    # Configure ruamel.yaml for proper formatting
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style = False
+    yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)  # indent-sequences: true
+    yaml.width = 100
+    yaml.explicit_start = True  # Add --- document start
+
+    # Write with Unix line endings
+    with open(output_file, "w", encoding="utf-8", newline="\n") as f:
+        yaml.dump(yaml_dict, f)
 
     return output_file

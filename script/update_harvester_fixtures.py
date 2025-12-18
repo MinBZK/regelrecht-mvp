@@ -6,13 +6,13 @@ from pathlib import Path
 # Add project root to path so we can import harvester
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import yaml
+import ruamel.yaml
 from lxml import etree
 
 from harvester.models import Law
 from harvester.parsers.content_parser import parse_articles_split
 from harvester.parsers.wti_parser import parse_wti_metadata
-from harvester.storage.yaml_writer import LiteralBlockDumper, generate_yaml_dict
+from harvester.storage.yaml_writer import generate_yaml_dict
 
 FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "test_harvester" / "fixtures"
 
@@ -44,16 +44,16 @@ def update_fixture(name: str, date: str) -> None:
     yaml_dict = generate_yaml_dict(law, date)
 
     output_path = FIXTURES_DIR / f"{name}_expected.yaml"
-    with open(output_path, "w", encoding="utf-8") as f:
-        yaml.dump(
-            yaml_dict,
-            f,
-            Dumper=LiteralBlockDumper,
-            allow_unicode=True,
-            default_flow_style=False,
-            sort_keys=False,
-            width=120,
-        )
+
+    # Configure ruamel.yaml for proper formatting
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style = False
+    yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.width = 100
+
+    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+        yaml.dump(yaml_dict, f)
     print(f"Updated {output_path} ({len(articles)} articles)")
 
 
