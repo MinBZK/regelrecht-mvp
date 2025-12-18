@@ -101,6 +101,7 @@ target:
 body:
   type: TextualBody
   value: "This is the monthly allowance for health insurance costs."
+  purpose: commenting
   format: text/plain
   language: en
 ```
@@ -122,6 +123,7 @@ target:
 body:
   type: SpecificResource
   source: regelrecht://zorgtoeslagwet/bereken_zorgtoeslag#hoogte_zorgtoeslag
+  purpose: linking
 ```
 
 ### Example 3: Tag/Classification
@@ -415,15 +417,24 @@ properties:
   body:
     oneOf:
       - type: object  # TextualBody
+        required: [type, value, purpose]
         properties:
           type: { const: TextualBody }
           value: { type: string }
+          purpose:
+            type: string
+            description: W3C purpose - role of this body
+            enum: [commenting, tagging, describing, classifying, questioning, reviewing]
           format: { type: string }
           language: { type: string }
       - type: object  # SpecificResource (link)
+        required: [type, source, purpose]
         properties:
           type: { const: SpecificResource }
           source: { type: string, format: uri }
+          purpose:
+            type: string
+            enum: [linking, identifying]
 ```
 
 ### Field Semantics
