@@ -179,7 +179,7 @@ def generate_yaml(metadata, articles, effective_date):
 
     # Create YAML structure
     law_data = {
-        "$schema": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json",
+        "$schema": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json",
         "$id": law_id,
         "uuid": str(uuid.uuid4()),
         "regulatory_layer": metadata.get("regulatory_layer", "WET"),

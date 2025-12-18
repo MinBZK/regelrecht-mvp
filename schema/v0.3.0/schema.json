@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.2.0",
+  "$id": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.3.0",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations",
   "type": "object",
   "required": [
@@ -464,9 +464,156 @@
         }
       ]
     },
+    "arithmeticOperation": {
+      "type": "object",
+      "description": "Arithmetic operations that compute numeric values",
+      "required": ["operation", "values"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MIN", "MAX", "CONCAT", "SUBTRACT_DATE"]
+        },
+        "values": {
+          "type": "array",
+          "description": "Operands for the operation",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logicalOperation": {
+      "type": "object",
+      "description": "Logical operations that combine boolean conditions",
+      "required": ["operation", "conditions"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["AND", "OR"]
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to combine - each item can be an operation, variable reference, or boolean literal",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "comparisonOperation": {
+      "type": "object",
+      "description": "Comparison operations that compare values",
+      "required": ["operation", "subject"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["EQUALS", "NOT_EQUALS", "NOT_NULL", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN_OR_EQUAL", "IN", "NOT_IN"]
+        },
+        "subject": {
+          "$ref": "#/definitions/variableReference",
+          "description": "Variable to compare"
+        },
+        "value": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value to compare against"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalOperation": {
+      "type": "object",
+      "description": "Conditional operation (IF-WHEN-THEN-ELSE)",
+      "required": ["operation", "when", "then"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "IF"
+        },
+        "when": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Condition to evaluate - can be a boolean variable, literal, or operation"
+        },
+        "then": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when test is true"
+        },
+        "else": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when test is false"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "switchOperation": {
+      "type": "object",
+      "description": "Switch/case operation for multiple conditional branches",
+      "required": ["operation", "cases"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "SWITCH"
+        },
+        "cases": {
+          "type": "array",
+          "description": "List of when/then pairs evaluated in order",
+          "items": {
+            "type": "object",
+            "required": ["when", "then"],
+            "properties": {
+              "when": {
+                "$ref": "#/definitions/operationValue",
+                "description": "Condition to evaluate"
+              },
+              "then": {
+                "$ref": "#/definitions/operationValue",
+                "description": "Value if condition is true"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "default": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value if no case matches"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "otherOperation": {
+      "type": "object",
+      "description": "Other operations (NOT, FOREACH) - fallback with flexible properties",
+      "required": ["operation"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": ["NOT", "FOREACH"]
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": true
+    },
     "operationType": {
       "type": "string",
-      "description": "Type of operation to perform",
+      "description": "Operation type identifier used in action definitions",
       "enum": [
         "ADD",
         "SUBTRACT",
@@ -488,59 +635,21 @@
         "NOT_IN",
         "CONCAT",
         "IF",
+        "SWITCH",
         "FOREACH",
         "SUBTRACT_DATE"
       ]
     },
     "operation": {
-      "type": "object",
       "description": "Executable operation that computes a value",
-      "required": [
-        "operation"
-      ],
-      "properties": {
-        "operation": {
-          "$ref": "#/definitions/operationType"
-        },
-        "values": {
-          "type": "array",
-          "description": "Operands for multi-value operations (ADD, AND, OR, etc.)",
-          "items": {
-            "$ref": "#/definitions/operationValue"
-          }
-        },
-        "subject": {
-          "$ref": "#/definitions/variableReference",
-          "description": "Variable to compare (for comparison operations)"
-        },
-        "value": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Single value operand (for comparison operations)"
-        },
-        "test": {
-          "$ref": "#/definitions/operation",
-          "description": "Condition to test (for IF operations)"
-        },
-        "then": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Value when test is true (for IF operations)"
-        },
-        "else": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Value when test is false (for IF operations)"
-        },
-        "conditions": {
-          "type": "array",
-          "description": "Multiple test-then-else branches",
-          "items": {
-            "$ref": "#/definitions/operation"
-          }
-        },
-        "legal_basis": {
-          "$ref": "#/definitions/legalBasis"
-        }
-      },
-      "additionalProperties": false
+      "oneOf": [
+        { "$ref": "#/definitions/arithmeticOperation" },
+        { "$ref": "#/definitions/logicalOperation" },
+        { "$ref": "#/definitions/comparisonOperation" },
+        { "$ref": "#/definitions/conditionalOperation" },
+        { "$ref": "#/definitions/switchOperation" },
+        { "$ref": "#/definitions/otherOperation" }
+      ]
     },
     "operationValue": {
       "oneOf": [
@@ -587,32 +696,6 @@
           "description": "Operands for the operation",
           "items": {
             "$ref": "#/definitions/operationValue"
-          }
-        },
-        "conditions": {
-          "type": "array",
-          "description": "Conditional logic (if-then-else)",
-          "items": {
-            "type": "object",
-            "properties": {
-              "test": {
-                "$ref": "#/definitions/operation"
-              },
-              "then": {
-                "$ref": "#/definitions/operationValue"
-              },
-              "else": {
-                "$ref": "#/definitions/operationValue"
-              },
-              "legal_basis": {
-                "$ref": "#/definitions/legalBasis"
-              }
-            },
-            "required": [
-              "test",
-              "then"
-            ],
-            "additionalProperties": false
           }
         },
         "resolve": {

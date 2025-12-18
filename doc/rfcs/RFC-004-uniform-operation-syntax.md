@@ -151,5 +151,5 @@ SWITCH makes multi-branch logic explicit. The operation name describes what happ
 
 ## References
 
-- Schema: `schema/v0.2.0/schema.json`
+- Schema: `schema/v0.3.0/schema.json`
 - Engine: `engine/engine.py` (`_evaluate_if()`, `_evaluate_switch()`, `_evaluate_when()`, `_evaluate_logical()`)
