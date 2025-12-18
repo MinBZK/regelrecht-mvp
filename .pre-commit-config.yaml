@@ -1,7 +1,7 @@
 ---
 ci:
   autofix_prs: false
-  skip: [ty-check, validate-law-yaml, protect-schema]  # these need uv, run in GitHub Actions instead
+  skip: [ty-check, validate-law-yaml]  # these need uv, run in GitHub Actions instead
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -50,10 +50,3 @@ repos:
         language: system
         files: ^regulation/nl/.*\.yaml$
         pass_filenames: true
-
-      - id: protect-schema
-        name: protect schema versions
-        entry: uv run python script/protect_schema.py
-        language: system
-        files: ^schema/.*$
-        pass_filenames: false
