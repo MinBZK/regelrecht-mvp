@@ -1,0 +1,185 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: wet_inkomstenbelasting_2001
+regulatory_layer: WET
+publication_date: '2024-12-23'
+valid_from: '2025-01-01'
+bwb_id: BWBR0011353
+url: https://wetten.overheid.nl/BWBR0011353/2025-01-01
+articles:
+  - number: '2.18'
+    text: 'Verzamelinkomen is het gezamenlijke bedrag van:'
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+  - number: 2.18.a
+    text: het inkomen uit werk en woning;
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+  - number: 2.18.b
+    text: het inkomen uit aanmerkelijk belang en
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+  - number: 2.18.c
+    text: het belastbare inkomen uit sparen en beleggen, verminderd met daarin begrepen te conserveren inkomen
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+    machine_readable:
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+            required: true
+            description: Burgerservicenummer van de belastingplichtige
+        input:
+          - name: inkomen_werk_en_woning
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: inkomen_werk_en_woning
+              parameters:
+                bsn: $BSN
+              description: Inkomen uit werk en woning (box 1) - artikel 3.1
+          - name: inkomen_aanmerkelijk_belang
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: inkomen_aanmerkelijk_belang
+              parameters:
+                bsn: $BSN
+              description: Inkomen uit aanmerkelijk belang (box 2) - artikel 4.1
+          - name: belastbaar_inkomen_sparen_beleggen
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: belastbaar_inkomen_sparen_beleggen
+              parameters:
+                bsn: $BSN
+              description: Belastbaar inkomen uit sparen en beleggen (box 3) - artikel 5.1
+        output:
+          - name: toetsingsinkomen
+            type: amount
+            description: Verzamelinkomen als bedoeld in artikel 2.18 (som van box 1, 2 en 3)
+        actions:
+          - output: toetsingsinkomen
+            value:
+              operation: ADD
+              values:
+                - $inkomen_werk_en_woning
+                - $inkomen_aanmerkelijk_belang
+                - $belastbaar_inkomen_sparen_beleggen
+  - number: 5.3.1
+    text: De rendementsgrondslag is de waarde van de bezittingen verminderd met de waarde van de schulden.
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel5.3
+    machine_readable:
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+            required: true
+            description: Burgerservicenummer van de belastingplichtige
+          - name: peildatum
+            type: date
+            required: false
+            description: Peildatum voor waardering (standaard 1 januari van het jaar)
+        input:
+          - name: bezittingen
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: bezittingen_box3
+              parameters:
+                bsn: $BSN
+                peildatum: $peildatum
+              description: Totale waarde van bezittingen box 3 (artikel 5.3 lid 2)
+          - name: schulden
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: schulden_box3
+              parameters:
+                bsn: $BSN
+                peildatum: $peildatum
+              description: Totale waarde van schulden box 3 (artikel 5.3 lid 3)
+          - name: heeft_partner
+            type: boolean
+            source:
+              regulation: wet_basisregistratie_personen
+              output: heeft_fiscaal_partner
+              parameters:
+                bsn: $BSN
+              description: Heeft de persoon een fiscaal partner
+          - name: partner_bsn
+            type: string
+            source:
+              regulation: wet_basisregistratie_personen
+              output: fiscaal_partner_bsn
+              parameters:
+                bsn: $BSN
+              description: BSN van de fiscaal partner indien aanwezig
+          - name: partner_bezittingen
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: bezittingen_box3
+              parameters:
+                bsn: $partner_bsn
+                peildatum: $peildatum
+              description: Totale waarde van bezittingen box 3 van partner
+          - name: partner_schulden
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: schulden_box3
+              parameters:
+                bsn: $partner_bsn
+                peildatum: $peildatum
+              description: Totale waarde van schulden box 3 van partner
+          - name: partner_toetsingsinkomen_raw
+            type: amount
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: toetsingsinkomen
+              parameters:
+                bsn: $partner_bsn
+              description: Verzamelinkomen van de fiscaal partner
+        output:
+          - name: vermogen
+            type: amount
+            description: Rendementsgrondslag - bezittingen minus schulden (artikel 5.3.1)
+          - name: toetsingsinkomen_partner
+            type: amount
+            description: Verzamelinkomen van de fiscaal partner
+          - name: gezamenlijk_vermogen
+            type: amount
+            description: Gezamenlijke rendementsgrondslag van belastingplichtige en partner
+        actions:
+          - output: vermogen
+            value:
+              operation: SUBTRACT
+              values:
+                - $bezittingen
+                - $schulden
+          - output: partner_vermogen
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $heeft_partner
+                value: true
+              then:
+                operation: SUBTRACT
+                values:
+                  - $partner_bezittingen
+                  - $partner_schulden
+              else: 0
+          - output: toetsingsinkomen_partner
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $heeft_partner
+                value: true
+              then: $partner_toetsingsinkomen_raw
+              else: 0
+          - output: gezamenlijk_vermogen
+            value:
+              operation: ADD
+              values:
+                - $vermogen
+                - $partner_vermogen

@@ -19,6 +19,7 @@ dev = [
     "pre-commit>=4.4.0",
     "pytest-cov>=7.0.0",
     "pytest>=9.0.1",
+    "ruamel-yaml>=0.18.17",
     "ruff>=0.14.4",
     "ty>=0.0.1a7",
     "yamllint>=1.35.0",
