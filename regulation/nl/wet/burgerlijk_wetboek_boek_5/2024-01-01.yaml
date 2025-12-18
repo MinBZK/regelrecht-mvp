@@ -113,7 +113,8 @@ articles:
 
           # Bereken afstand in meters
           - output: minimale_afstand_m
-            operation: DIVIDE
-            values:
-              - $minimale_afstand_cm
-              - 100
+            value:
+              operation: DIVIDE
+              values:
+                - $minimale_afstand_cm
+                - 100
