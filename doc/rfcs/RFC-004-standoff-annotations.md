@@ -381,15 +381,24 @@ properties:
     const: Annotation
   motivation:
     type: string
-    description: W3C motivation - why this annotation exists (required)
+    description: |
+      W3C motivation - why this annotation exists.
+      W3C: optional (SHOULD). Regelrecht: required.
     enum:
-      - commenting      # Human explanation or note
-      - linking         # Link to machine-readable execution
-      - tagging         # Classification/categorization
-      - describing      # Metadata description
+      # W3C standard vocabulary:
+      - assessing       # Quality assessment
+      - bookmarking     # Bookmark for later
       - classifying     # Formal classification
-      - questioning     # Open question or issue (regelrecht extension)
-      - reviewing       # Review feedback (regelrecht extension)
+      - commenting      # Human explanation or note
+      - describing      # Metadata description
+      - editing         # Request or suggest edit
+      - highlighting    # Visual emphasis
+      - identifying     # Identify the target
+      - linking         # Link to another resource
+      - moderating      # Moderation action
+      - questioning     # Open question
+      - replying        # Reply to another annotation
+      - tagging         # Classification tag
   resolution:
     type: string
     description: Whether the selector found the text
@@ -423,8 +432,12 @@ properties:
           value: { type: string }
           purpose:
             type: string
-            description: W3C purpose - role of this body
-            enum: [commenting, tagging, describing, classifying, questioning, reviewing]
+            description: |
+              W3C purpose - role of this body. Same vocabulary as motivation.
+              W3C: optional (MAY). Regelrecht: required.
+            enum: [assessing, bookmarking, classifying, commenting, describing,
+                   editing, highlighting, identifying, linking, moderating,
+                   questioning, replying, tagging]
           format: { type: string }
           language: { type: string }
       - type: object  # SpecificResource (link)
@@ -434,7 +447,10 @@ properties:
           source: { type: string, format: uri }
           purpose:
             type: string
-            enum: [linking, identifying]
+            description: W3C purpose - same vocabulary as motivation
+            enum: [assessing, bookmarking, classifying, commenting, describing,
+                   editing, highlighting, identifying, linking, moderating,
+                   questioning, replying, tagging]
 ```
 
 ### Field Semantics
@@ -445,7 +461,7 @@ properties:
 | `resolution` | Technical | found, orphaned | Can the selector locate the text? |
 | `workflow` | Process | open, resolved | Has the issue been addressed? |
 
-`motivation` follows the [W3C Web Annotation motivation](https://www.w3.org/TR/annotation-model/#motivation-and-purpose) vocabulary, extended with `questioning` and `reviewing` for legal review workflows.
+`motivation` and `purpose` use the [W3C Web Annotation vocabulary](https://www.w3.org/TR/annotation-model/#motivation-and-purpose) (13 values). W3C makes these optional; we require them for explicit intent.
 
 `resolution` and `workflow` are orthogonal: an annotation can be `orphaned` + `resolved`.
 
