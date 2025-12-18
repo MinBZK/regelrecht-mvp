@@ -1,4 +1,4 @@
-# RFC-004: Stand-off Annotations for Legal Texts
+# RFC-005: Stand-off Annotations for Legal Texts
 
 **Status:** Proposed
 **Date:** 2025-12-16
@@ -12,6 +12,11 @@ must be version-resilient: when text changes or moves, an annotation should
 automatically find its new location. Crucially, annotations should resolve on
 **any version** of a law where the annotated text exists - both older and newer
 versions - without requiring migration logic or change tracking.
+
+**Scope:** This RFC defines the annotation *format*, not storage. Annotations
+could be stored in a central database, distributed across systems, or provided
+by external parties ("bring your own annotations"). The format is intentionally
+storage-agnostic.
 
 ## Decision
 
@@ -96,6 +101,7 @@ target:
 body:
   type: TextualBody
   value: "This is the monthly allowance for health insurance costs."
+  purpose: commenting
   format: text/plain
   language: en
 ```
@@ -117,6 +123,7 @@ target:
 body:
   type: SpecificResource
   source: regelrecht://zorgtoeslagwet/bereken_zorgtoeslag#hoogte_zorgtoeslag
+  purpose: linking
 ```
 
 ### Example 3: Tag/Classification
@@ -319,6 +326,144 @@ to be unique, even for common words.
 
 **Inline anchors in the text**
 - Modifies the verbatim legal text, not acceptable
+
+## Schema
+
+### TextQuoteSelector
+
+```yaml
+# JSON Schema for TextQuoteSelector with regelrecht:hint extension
+type: object
+required: [type, exact]
+properties:
+  type:
+    const: TextQuoteSelector
+  exact:
+    type: string
+    description: The exact text to match
+  prefix:
+    type: string
+    description: Text immediately before the exact match (for disambiguation)
+  suffix:
+    type: string
+    description: Text immediately after the exact match (for disambiguation)
+  regelrecht:hint:
+    type: object
+    description: Optional performance hint (non-authoritative)
+    properties:
+      type:
+        const: CssSelector
+      value:
+        type: string
+        pattern: "^article\\[number='[^']+']$"
+        description: CSS selector for the article (e.g., "article[number='2']")
+      refinedBy:
+        type: object
+        properties:
+          type:
+            const: TextPositionSelector
+          start:
+            type: integer
+            minimum: 0
+          end:
+            type: integer
+            minimum: 0
+```
+
+### Annotation
+
+```yaml
+# JSON Schema for Annotation
+type: object
+required: [type, target, motivation]
+properties:
+  type:
+    const: Annotation
+  motivation:
+    type: string
+    description: |
+      W3C motivation - why this annotation exists.
+      W3C: optional (SHOULD). Regelrecht: required.
+    enum:
+      # W3C standard vocabulary:
+      - assessing       # Quality assessment
+      - bookmarking     # Bookmark for later
+      - classifying     # Formal classification
+      - commenting      # Human explanation or note
+      - describing      # Metadata description
+      - editing         # Request or suggest edit
+      - highlighting    # Visual emphasis
+      - identifying     # Identify the target
+      - linking         # Link to another resource
+      - moderating      # Moderation action
+      - questioning     # Open question
+      - replying        # Reply to another annotation
+      - tagging         # Classification tag
+  resolution:
+    type: string
+    description: Whether the selector found the text
+    enum:
+      - found           # Text located successfully
+      - orphaned        # Text not found in current law version
+    default: found
+  workflow:
+    type: string
+    description: Workflow status (for questioning/reviewing motivations)
+    enum:
+      - open            # Needs attention
+      - resolved        # Issue addressed
+    default: open
+  target:
+    type: object
+    required: [source, selector]
+    properties:
+      source:
+        type: string
+        format: uri
+        description: URI of the law (e.g., regelrecht://zorgtoeslagwet)
+      selector:
+        $ref: "#/TextQuoteSelector"
+  body:
+    oneOf:
+      - type: object  # TextualBody
+        required: [type, value, purpose]
+        properties:
+          type: { const: TextualBody }
+          value: { type: string }
+          purpose:
+            type: string
+            description: |
+              W3C purpose - role of this body. Same vocabulary as motivation.
+              W3C: optional (MAY). Regelrecht: required.
+            enum: [assessing, bookmarking, classifying, commenting, describing,
+                   editing, highlighting, identifying, linking, moderating,
+                   questioning, replying, tagging]
+          format: { type: string }
+          language: { type: string }
+      - type: object  # SpecificResource (link)
+        required: [type, source, purpose]
+        properties:
+          type: { const: SpecificResource }
+          source: { type: string, format: uri }
+          purpose:
+            type: string
+            description: W3C purpose - same vocabulary as motivation
+            enum: [assessing, bookmarking, classifying, commenting, describing,
+                   editing, highlighting, identifying, linking, moderating,
+                   questioning, replying, tagging]
+```
+
+### Field Semantics
+
+| Field | Dimension | Values | Description |
+|-------|-----------|--------|-------------|
+| `motivation` | Intent | commenting, linking, tagging, ... | W3C standard: why does this annotation exist? |
+| `resolution` | Technical | found, orphaned | Can the selector locate the text? |
+| `workflow` | Process | open, resolved | Has the issue been addressed? |
+
+`motivation` and `purpose` use the [W3C Web Annotation vocabulary](https://www.w3.org/TR/annotation-model/#motivation-and-purpose) (13 values). W3C makes these optional; we require them for explicit intent.
+
+`resolution` and `workflow` are orthogonal: an annotation can be `orphaned` + `resolved`.
 
 ## References
 
