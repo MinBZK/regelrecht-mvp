@@ -5,13 +5,15 @@ This module provides the core data structures and resolution algorithm
 for TextQuoteSelector-based annotations as specified in RFC-004.
 """
 
-from dataclasses import dataclass
 from enum import Enum
 
-from annotation.matcher import find_fuzzy_matches
+from pydantic import BaseModel
+
+from regelrecht.matcher import find_fuzzy_matches
+from regelrecht.models import Article
 
 
-class MatchResult(Enum):
+class MatchResult(str, Enum):
     """Result type for annotation resolution."""
 
     FOUND = "found"
@@ -19,22 +21,27 @@ class MatchResult(Enum):
     AMBIGUOUS = "ambiguous"
 
 
-@dataclass
-class TextQuoteSelector:
+class TextQuoteSelector(BaseModel):
     """
     W3C Web Annotation TextQuoteSelector.
 
     Selects text by specifying an exact quote with optional prefix/suffix context.
     The prefix and suffix help disambiguate when the exact text appears multiple times.
+
+    Attributes:
+        type: Selector type identifier (always "TextQuoteSelector")
+        exact: The exact text to match
+        prefix: Optional text that appears before the exact match
+        suffix: Optional text that appears after the exact match
     """
 
+    type: str = "TextQuoteSelector"
     exact: str
     prefix: str = ""
     suffix: str = ""
 
 
-@dataclass
-class Match:
+class Match(BaseModel):
     """
     Result of resolving a TextQuoteSelector against text.
 
@@ -51,14 +58,6 @@ class Match:
     confidence: float
     article_number: str | None = None
     matched_text: str = ""
-
-
-@dataclass
-class Article:
-    """Represents a law article with its number and text."""
-
-    number: str
-    text: str
 
 
 def resolve_selector(
@@ -123,7 +122,7 @@ def _resolve_in_text(
 
 
 def _deduplicate_overlapping_matches(matches: list[Match]) -> list[Match]:
-    """Remove overlapping matches, keeping only the highest-confidence one for each region."""
+    """Remove overlapping matches, keeping only the highest-confidence one."""
     if not matches:
         return []
 

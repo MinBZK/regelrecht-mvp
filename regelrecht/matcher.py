@@ -5,11 +5,10 @@ Uses difflib.SequenceMatcher for similarity scoring as specified in RFC-004.
 """
 
 from difflib import SequenceMatcher
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from annotation.selector import Match, TextQuoteSelector
+    from regelrecht.selectors import Match, TextQuoteSelector
 
 
 def similarity_score(s1: str, s2: str) -> float:
@@ -47,7 +46,7 @@ def find_fuzzy_matches(
     Returns:
         List of Match objects sorted by confidence (highest first)
     """
-    from annotation.selector import Match
+    from regelrecht.selectors import Match
 
     matches: list[Match] = []
 
