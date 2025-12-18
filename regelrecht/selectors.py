@@ -27,6 +27,24 @@ class MatchStatus(str, Enum):
     AMBIGUOUS = "ambiguous"
 
 
+class Hint(BaseModel):
+    """
+    Performance hint for TextQuoteSelector resolution.
+
+    Specifies where to look first (article number and optional character range).
+    If the text isn't found at the hinted location, the entire law is searched.
+
+    Attributes:
+        article: Article number to search first (e.g., "2", "4a")
+        start: Optional character offset where the match should begin
+        end: Optional character offset where the match should end
+    """
+
+    article: str
+    start: int | None = None
+    end: int | None = None
+
+
 class Match(BaseModel):
     """
     A single match location in text.
@@ -112,13 +130,15 @@ class TextQuoteSelector(BaseModel):
     exact: str
     prefix: str = ""
     suffix: str = ""
+    hint: Hint | None = None
 
     @classmethod
     def from_annotation(cls, yaml_text: str) -> Self:
         """
         Load a TextQuoteSelector from W3C Web Annotation YAML.
 
-        Parses the target.selector from an annotation body.
+        Parses the target.selector from an annotation body, including
+        optional regelrecht:hint for performance optimization.
 
         Example:
             selector = TextQuoteSelector.from_annotation('''
@@ -127,14 +147,28 @@ class TextQuoteSelector(BaseModel):
                     type: TextQuoteSelector
                     exact: "zorgtoeslag"
                     prefix: "op een "
+                    regelrecht:hint:
+                      type: CssSelector
+                      value: "article[number='2']"
+                      refinedBy:
+                        type: TextPositionSelector
+                        start: 45
+                        end: 56
             ''')
         """
         data = yaml.safe_load(yaml_text)
         selector_data = data.get("target", {}).get("selector", {})
+
+        hint = None
+        hint_data = selector_data.get("regelrecht:hint")
+        if hint_data:
+            hint = _parse_hint(hint_data)
+
         return cls(
             exact=selector_data.get("exact", ""),
             prefix=selector_data.get("prefix", ""),
             suffix=selector_data.get("suffix", ""),
+            hint=hint,
         )
 
     def locate(
@@ -146,10 +180,11 @@ class TextQuoteSelector(BaseModel):
         Locate this selector in text, a law, or articles.
 
         This implements the resolution algorithm from RFC-004:
-        1. Try exact match first (prefix + exact + suffix)
-        2. Fall back to fuzzy matching if exact match fails
-        3. Return orphaned if no match found above threshold
-        4. Return ambiguous if multiple equally-good matches found
+        1. If hint is present, try hinted article first
+        2. Try exact match (prefix + exact + suffix)
+        3. Fall back to fuzzy matching if exact match fails
+        4. Return orphaned if no match found above threshold
+        5. Return ambiguous if multiple equally-good matches found
 
         Args:
             target: Text string, Law object, or list of Articles to search
@@ -163,12 +198,47 @@ class TextQuoteSelector(BaseModel):
         if isinstance(target, str):
             return _locate_in_text(target, self, fuzzy_threshold)
         elif isinstance(target, Law):
-            return _locate_in_articles(target.articles, self, fuzzy_threshold)
+            return _locate_in_articles(
+                target.articles, self, fuzzy_threshold, self.hint
+            )
         elif isinstance(target, list) and all(isinstance(a, Article) for a in target):
-            return _locate_in_articles(target, self, fuzzy_threshold)
+            return _locate_in_articles(target, self, fuzzy_threshold, self.hint)
         else:
             msg = f"target must be str, Law, or list[Article], got {type(target)}"
             raise TypeError(msg)
+
+
+def _parse_hint(hint_data: dict) -> Hint | None:
+    """
+    Parse a regelrecht:hint from W3C selector format.
+
+    Expected format:
+        type: CssSelector
+        value: "article[number='2']"
+        refinedBy:
+          type: TextPositionSelector
+          start: 45
+          end: 56
+    """
+    import re
+
+    # Extract article number from CssSelector value
+    css_value = hint_data.get("value", "")
+    article_match = re.search(r"article\[number=['\"]([^'\"]+)['\"]\]", css_value)
+    if not article_match:
+        return None
+
+    article = article_match.group(1)
+
+    # Extract position from refinedBy (optional)
+    start = None
+    end = None
+    refined_by = hint_data.get("refinedBy", {})
+    if refined_by.get("type") == "TextPositionSelector":
+        start = refined_by.get("start")
+        end = refined_by.get("end")
+
+    return Hint(article=article, start=start, end=end)
 
 
 def _locate_in_text(
@@ -204,24 +274,36 @@ def _locate_in_articles(
     articles: list[Article],
     selector: TextQuoteSelector,
     fuzzy_threshold: float,
+    hint: Hint | None = None,
 ) -> MatchResult:
-    """Locate selector across multiple articles."""
+    """
+    Locate selector across multiple articles.
+
+    If a hint is provided, tries the hinted article first. If found there,
+    returns immediately. If not found, falls back to searching all articles.
+    """
+    # Step 0: If hint provided, try hinted article first
+    if hint:
+        result = _try_hint(articles, selector, fuzzy_threshold, hint)
+        if result.found:
+            return result
+        # Hint failed, fall through to full search
+
+    # Step 1: Try exact match across all articles
     all_matches: list[Match] = []
 
     for article in articles:
-        # Try exact match in this article
         exact_matches = _find_exact_matches(article.text, selector)
         for match in exact_matches:
             match.article_number = article.number
             all_matches.append(match)
 
-    # If we found exact matches, return them
     if all_matches:
         if len(all_matches) == 1:
             return MatchResult(status=MatchStatus.FOUND, matches=all_matches)
         return MatchResult(status=MatchStatus.AMBIGUOUS, matches=all_matches)
 
-    # Try fuzzy matching across articles
+    # Step 2: Try fuzzy matching across all articles
     for article in articles:
         fuzzy_matches = find_fuzzy_matches(article.text, selector, fuzzy_threshold)
         for match in fuzzy_matches:
@@ -229,16 +311,108 @@ def _locate_in_articles(
             all_matches.append(match)
 
     if all_matches:
-        # Deduplicate overlapping matches within each article
         deduped = _deduplicate_overlapping_matches(all_matches)
         if len(deduped) == 1:
             return MatchResult(status=MatchStatus.FOUND, matches=deduped)
-        # If best match is significantly better than second-best, return it
         if len(deduped) > 1 and deduped[0].confidence - deduped[1].confidence > 0.1:
             return MatchResult(status=MatchStatus.FOUND, matches=[deduped[0]])
         return MatchResult(status=MatchStatus.AMBIGUOUS, matches=deduped)
 
     return MatchResult(status=MatchStatus.ORPHANED, matches=[])
+
+
+def _try_hint(
+    articles: list[Article],
+    selector: TextQuoteSelector,
+    fuzzy_threshold: float,
+    hint: Hint,
+) -> MatchResult:
+    """
+    Try to find the selector at the hinted location.
+
+    If hint has position (start/end), checks that specific range first.
+    Otherwise searches the entire hinted article.
+    """
+    # Find the hinted article
+    hinted_article = None
+    for article in articles:
+        if article.number == hint.article:
+            hinted_article = article
+            break
+
+    if not hinted_article:
+        # Hinted article not found, return orphaned to trigger fallback
+        return MatchResult(status=MatchStatus.ORPHANED, matches=[])
+
+    # If hint has position, check that specific range first
+    if hint.start is not None and hint.end is not None:
+        text = hinted_article.text
+        if hint.start < len(text) and hint.end <= len(text):
+            hinted_text = text[hint.start : hint.end]
+            # Check if the exact text matches at the hinted position
+            if hinted_text == selector.exact:
+                # Verify prefix/suffix in context
+                match = _verify_match_at_position(
+                    text, selector, hint.start, hint.end, hinted_article.number
+                )
+                if match:
+                    return MatchResult(status=MatchStatus.FOUND, matches=[match])
+
+    # Position hint failed or wasn't provided - search entire hinted article
+    exact_matches = _find_exact_matches(hinted_article.text, selector)
+    for match in exact_matches:
+        match.article_number = hinted_article.number
+
+    if exact_matches:
+        if len(exact_matches) == 1:
+            return MatchResult(status=MatchStatus.FOUND, matches=exact_matches)
+        return MatchResult(status=MatchStatus.AMBIGUOUS, matches=exact_matches)
+
+    # Try fuzzy in hinted article
+    fuzzy_matches = find_fuzzy_matches(hinted_article.text, selector, fuzzy_threshold)
+    for match in fuzzy_matches:
+        match.article_number = hinted_article.number
+
+    if fuzzy_matches:
+        deduped = _deduplicate_overlapping_matches(fuzzy_matches)
+        if len(deduped) == 1:
+            return MatchResult(status=MatchStatus.FOUND, matches=deduped)
+        if len(deduped) > 1 and deduped[0].confidence - deduped[1].confidence > 0.1:
+            return MatchResult(status=MatchStatus.FOUND, matches=[deduped[0]])
+
+    # Not found in hinted article
+    return MatchResult(status=MatchStatus.ORPHANED, matches=[])
+
+
+def _verify_match_at_position(
+    text: str,
+    selector: TextQuoteSelector,
+    start: int,
+    end: int,
+    article_number: str,
+) -> Match | None:
+    """Verify that a match at a specific position has correct prefix/suffix."""
+    # Check prefix
+    if selector.prefix:
+        prefix_start = max(0, start - len(selector.prefix) - 1)
+        actual_prefix = text[prefix_start:start]
+        if selector.prefix.strip() not in actual_prefix.strip():
+            return None
+
+    # Check suffix
+    if selector.suffix:
+        suffix_end = min(len(text), end + len(selector.suffix) + 1)
+        actual_suffix = text[end:suffix_end]
+        if selector.suffix.strip() not in actual_suffix.strip():
+            return None
+
+    return Match(
+        start=start,
+        end=end,
+        confidence=1.0,
+        article_number=article_number,
+        matched_text=text[start:end],
+    )
 
 
 def _deduplicate_overlapping_matches(matches: list[Match]) -> list[Match]:

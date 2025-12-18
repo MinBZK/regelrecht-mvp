@@ -169,3 +169,65 @@ Feature: TextQuoteSelector annotation resolution
     When I resolve the annotation
     Then the result is FOUND with confidence 1.0
     And exactly 1 match is found
+
+  Scenario: Hint optimization - correct hint finds match immediately
+    # Performance hint points to correct article
+    Given law version "2025-01-01":
+      """
+      $id: zorgtoeslagwet
+      articles:
+        - number: '1'
+          text: Definities voor de wet.
+        - number: '2'
+          text: >-
+            De verzekerde heeft aanspraak op een zorgtoeslag ter grootte
+            van het verschil tussen normpremie en standaardpremie.
+        - number: '3'
+          text: Slotbepalingen.
+      """
+    And annotation:
+      """
+      target:
+        selector:
+          type: TextQuoteSelector
+          exact: zorgtoeslag
+          prefix: "aanspraak op een "
+          suffix: " ter grootte"
+          regelrecht:hint:
+            type: CssSelector
+            value: "article[number='2']"
+      """
+    When I resolve the annotation
+    Then the result is FOUND with confidence 1.0
+    And the match is in article "2"
+
+  Scenario: Hint fallback - outdated hint still finds match
+    # Hint points to article 3 but text is actually in article 2
+    Given law version "2025-01-01":
+      """
+      $id: zorgtoeslagwet
+      articles:
+        - number: '1'
+          text: Definities voor de wet.
+        - number: '2'
+          text: >-
+            De verzekerde heeft aanspraak op een zorgtoeslag ter grootte
+            van het verschil tussen normpremie en standaardpremie.
+        - number: '3'
+          text: Slotbepalingen.
+      """
+    And annotation:
+      """
+      target:
+        selector:
+          type: TextQuoteSelector
+          exact: zorgtoeslag
+          prefix: "aanspraak op een "
+          suffix: " ter grootte"
+          regelrecht:hint:
+            type: CssSelector
+            value: "article[number='3']"
+      """
+    When I resolve the annotation
+    Then the result is FOUND with confidence 1.0
+    And the match is in article "2"
