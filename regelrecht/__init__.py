@@ -33,7 +33,7 @@ Example usage:
 """
 
 from regelrecht.models import Article, Law
-from regelrecht.selectors import MatchResult, MatchStatus, TextQuoteSelector
+from regelrecht.selectors import MatchResult, TextQuoteSelector
 
 # Primary public API
 __all__ = [
@@ -41,8 +41,7 @@ __all__ = [
     "Law",
     "TextQuoteSelector",
     "MatchResult",
-    "MatchStatus",
 ]
 
-# Note: For Match (individual match details), use:
-#   from regelrecht.selectors import Match
+# Internal types (for tests/advanced usage):
+#   from regelrecht.selectors import Match, MatchStatus
