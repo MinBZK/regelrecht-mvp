@@ -382,15 +382,20 @@ properties:
       - describing      # Metadata description
       - questioning     # Open question or issue
       - reviewing       # Review feedback
-  state:
+  resolution:
     type: string
-    description: Current status of the annotation
+    description: Whether the selector found the text
     enum:
-      - active          # Annotation is current and valid
-      - resolved        # Issue/question has been addressed
-      - orphaned        # Text no longer found in law
-      - deprecated      # Superseded by another annotation
-    default: active
+      - found           # Text located successfully
+      - orphaned        # Text not found in current law version
+    default: found
+  workflow:
+    type: string
+    description: Workflow status (for questioning/reviewing purposes)
+    enum:
+      - open            # Needs attention
+      - resolved        # Issue addressed
+    default: open
   motivation:
     enum: [commenting, linking, tagging, describing, classifying]
     description: W3C motivation (for compatibility)
@@ -418,14 +423,14 @@ properties:
           source: { type: string, format: uri }
 ```
 
-### State Transitions
+### Field Semantics
 
-```
-active → resolved     (issue addressed)
-active → orphaned     (text not found after law change)
-active → deprecated   (superseded by new annotation)
-orphaned → active     (text found again after re-anchoring)
-```
+| Field | Dimension | Values | Description |
+|-------|-----------|--------|-------------|
+| `resolution` | Technical | found, orphaned | Can the selector locate the text? |
+| `workflow` | Process | open, resolved | Has the issue been addressed? |
+
+These are orthogonal: an annotation can be `found` + `open`, or `orphaned` + `resolved`.
 
 ## References
 
