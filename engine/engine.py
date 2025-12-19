@@ -282,6 +282,15 @@ class ArticleEngine:
             # Logical operations
             elif op_type in ["AND", "OR"]:
                 result = self._evaluate_logical(operation, context)
+            # Null checking operations
+            elif op_type in ["IS_NULL", "NOT_NULL"]:
+                result = self._evaluate_null_check(operation, context)
+            # Membership operations
+            elif op_type in ["IN", "NOT_IN"]:
+                result = self._evaluate_membership(operation, context)
+            # Date operations
+            elif op_type == "SUBTRACT_DATE":
+                result = self._evaluate_subtract_date(operation, context)
             else:
                 logger.warning(f"Unknown operation: {op_type}")
                 result = None
@@ -424,6 +433,86 @@ class ArticleEngine:
             return False
 
         return False
+
+    def _evaluate_null_check(self, operation: dict, context: RuleContext) -> bool:
+        """Evaluate null checking operation (IS_NULL, NOT_NULL)"""
+        op_type = operation["operation"]
+        subject = self._evaluate_value(operation["subject"], context)
+
+        is_null = subject is None
+        return is_null if op_type == "IS_NULL" else not is_null
+
+    def _evaluate_membership(self, operation: dict, context: RuleContext) -> bool:
+        """Evaluate membership operation (IN, NOT_IN)"""
+        op_type = operation["operation"]
+        subject = self._evaluate_value(operation["subject"], context)
+        values = operation.get("values", [])
+
+        # Evaluate all values in the list
+        evaluated_values = [self._evaluate_value(v, context) for v in values]
+
+        is_member = subject in evaluated_values
+        return is_member if op_type == "IN" else not is_member
+
+    def _evaluate_subtract_date(self, operation: dict, context: RuleContext) -> int:
+        """
+        Evaluate date subtraction operation
+
+        Returns the difference between two dates in the specified unit.
+
+        Args:
+            operation: Operation spec with values and unit (days, months, years)
+            context: Execution context
+
+        Returns:
+            Integer difference in the specified unit
+        """
+        from datetime import datetime, date
+
+        values = operation.get("values", [])
+        unit = operation.get("unit", "days")
+
+        if len(values) < 2:
+            logger.warning("SUBTRACT_DATE requires exactly 2 values")
+            return 0
+
+        date1 = self._evaluate_value(values[0], context)
+        date2 = self._evaluate_value(values[1], context)
+
+        # Convert strings to dates if needed
+        def to_date(val):
+            if isinstance(val, datetime):
+                return val.date()
+            elif isinstance(val, date):
+                return val
+            elif isinstance(val, str):
+                try:
+                    return datetime.strptime(val, "%Y-%m-%d").date()
+                except ValueError:
+                    logger.warning(f"Invalid date format: {val}")
+                    return None
+            return None
+
+        d1 = to_date(date1)
+        d2 = to_date(date2)
+
+        if d1 is None or d2 is None:
+            logger.warning(f"Could not parse dates: {date1}, {date2}")
+            return 0
+
+        delta = d1 - d2
+
+        if unit == "days":
+            return delta.days
+        elif unit == "months":
+            # Approximate months
+            return delta.days // 30
+        elif unit == "years":
+            # Approximate years
+            return delta.days // 365
+        else:
+            logger.warning(f"Unknown date unit: {unit}")
+            return delta.days
 
     def _evaluate_resolve(self, resolve_spec: dict, context: RuleContext) -> Any:
         """
