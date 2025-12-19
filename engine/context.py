@@ -82,6 +82,7 @@ class RuleContext:
         # Execution trace
         self.path: Optional[PathNode] = None
         self.current_path: Optional[PathNode] = None
+        self._path_stack: list[PathNode] = []  # Stack for parent tracking
 
     def _process_definitions(self, definitions: dict) -> dict:
         """
@@ -641,6 +642,43 @@ class RuleContext:
     def get_output(self, name: str) -> Any:
         """Get an output value"""
         return self.outputs.get(name)
+
+    # === Execution Trace Methods ===
+
+    def add_to_path(self, node: PathNode) -> None:
+        """
+        Add a node to the execution trace tree
+
+        The node becomes a child of the current path node, and
+        the current path is updated to point to the new node.
+
+        Args:
+            node: PathNode to add to the trace
+        """
+        if self.path is None:
+            # First node becomes the root
+            self.path = node
+            self.current_path = node
+        else:
+            # Add as child of current node
+            if self.current_path:
+                self.current_path.add_child(node)
+            # Push current to stack and update current
+            if self.current_path:
+                self._path_stack.append(self.current_path)
+            self.current_path = node
+
+    def pop_path(self) -> None:
+        """
+        Pop the current path node and return to parent
+
+        After this call, current_path points to the parent node.
+        """
+        if self._path_stack:
+            self.current_path = self._path_stack.pop()
+        else:
+            # At root level, keep current_path pointing to root
+            self.current_path = self.path
 
     def set_local(self, name: str, value: Any):
         """Set a local variable (for loops)"""

@@ -85,6 +85,18 @@ class ArticleEngine:
             current_law=self.law,
         )
 
+        # Create root path node for execution trace
+        root_node = PathNode(
+            type="root",
+            name=f"Evaluate {self.law.id} article {self.article.number}",
+            details={
+                "law_id": self.law.id,
+                "article": self.article.number,
+                "parameters": parameters,
+            },
+        )
+        context.add_to_path(root_node)
+
         # Execute actions
         self._execute_actions(context, requested_output)
 
@@ -124,10 +136,23 @@ class ArticleEngine:
                 if requested_output and output_name != requested_output:
                     continue
 
-                logger.debug(f"Executing action for output: {output_name}")
-                value = self._evaluate_action(action, context)
-                context.set_output(output_name, value)
-                logger.debug(f"Output {output_name} = {value}")
+                # Create action path node
+                action_node = PathNode(
+                    type="action",
+                    name=f"Calculate {output_name}",
+                    details={"output": output_name},
+                )
+                context.add_to_path(action_node)
+
+                with logger.indent_block(f"Action: {output_name}"):
+                    value = self._evaluate_action(action, context)
+                    context.set_output(output_name, value)
+
+                    # Update action node with result
+                    action_node.result = value
+                    logger.debug(f"Output {output_name} = {value}")
+
+                context.pop_path()
 
     def _evaluate_action(self, action: dict, context: RuleContext) -> Any:
         """
@@ -168,7 +193,21 @@ class ArticleEngine:
         """
         # Variable reference: $VARIABLE_NAME
         if isinstance(value, str) and value.startswith("$"):
-            return context._resolve_value(value[1:])
+            var_name = value[1:]
+            resolved = context._resolve_value(var_name)
+
+            # Create resolve path node
+            resolve_node = PathNode(
+                type="resolve",
+                name=f"${var_name}",
+                result=resolved,
+                resolve_type=self._get_resolve_type(var_name, context),
+                details={"variable": var_name},
+            )
+            context.add_to_path(resolve_node)
+            context.pop_path()
+
+            return resolved
 
         # Nested operation: {operation: ..., ...}
         if isinstance(value, dict) and "operation" in value:
@@ -176,6 +215,25 @@ class ArticleEngine:
 
         # Literal value
         return value
+
+    def _get_resolve_type(self, var_name: str, context: RuleContext) -> str:
+        """Determine how a variable was resolved"""
+        if var_name in context.parameters:
+            return "PARAMETER"
+        elif var_name in context.definitions:
+            return "DEFINITION"
+        elif var_name in context.outputs:
+            return "OUTPUT"
+        elif var_name in context.local:
+            return "LOCAL"
+        elif var_name in context.resolved_inputs:
+            return "URI_CALL"
+        else:
+            # Check if it's an input that needs resolution
+            input_spec = context._find_input_spec(var_name)
+            if input_spec and "source" in input_spec:
+                return "URI_CALL"
+            return "UNKNOWN"
 
     def _evaluate_operation(self, operation: dict, context: RuleContext) -> Any:
         """
@@ -190,39 +248,49 @@ class ArticleEngine:
         """
         op_type = operation["operation"]
 
-        # IF operation
-        if op_type == "IF":
-            return self._evaluate_if(operation, context)
+        # Create operation path node
+        op_node = PathNode(
+            type="operation",
+            name=op_type,
+            details={"operation": op_type},
+        )
+        context.add_to_path(op_node)
 
-        # SWITCH operation
-        if op_type == "SWITCH":
-            return self._evaluate_switch(operation, context)
+        try:
+            # IF operation
+            if op_type == "IF":
+                result = self._evaluate_if(operation, context)
+            # SWITCH operation
+            elif op_type == "SWITCH":
+                result = self._evaluate_switch(operation, context)
+            # Comparison operations
+            elif op_type in [
+                "EQUALS",
+                "NOT_EQUALS",
+                "GREATER_THAN",
+                "LESS_THAN",
+                "GREATER_THAN_OR_EQUAL",
+                "LESS_THAN_OR_EQUAL",
+            ]:
+                result = self._evaluate_comparison(operation, context)
+            # Arithmetic operations
+            elif op_type in ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"]:
+                result = self._evaluate_arithmetic(operation, context)
+            # Aggregate operations
+            elif op_type in ["MAX", "MIN"]:
+                result = self._evaluate_aggregate(operation, context)
+            # Logical operations
+            elif op_type in ["AND", "OR"]:
+                result = self._evaluate_logical(operation, context)
+            else:
+                logger.warning(f"Unknown operation: {op_type}")
+                result = None
 
-        # Comparison operations
-        if op_type in [
-            "EQUALS",
-            "NOT_EQUALS",
-            "GREATER_THAN",
-            "LESS_THAN",
-            "GREATER_THAN_OR_EQUAL",
-            "LESS_THAN_OR_EQUAL",
-        ]:
-            return self._evaluate_comparison(operation, context)
-
-        # Arithmetic operations
-        if op_type in ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"]:
-            return self._evaluate_arithmetic(operation, context)
-
-        # Aggregate operations
-        if op_type in ["MAX", "MIN"]:
-            return self._evaluate_aggregate(operation, context)
-
-        # Logical operations
-        if op_type in ["AND", "OR"]:
-            return self._evaluate_logical(operation, context)
-
-        logger.warning(f"Unknown operation: {op_type}")
-        return None
+            # Update node with result
+            op_node.result = result
+            return result
+        finally:
+            context.pop_path()
 
     def _evaluate_if(self, operation: dict, context: RuleContext) -> Any:
         """Evaluate IF-WHEN-THEN-ELSE operation"""
