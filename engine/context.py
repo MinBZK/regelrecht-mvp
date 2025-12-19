@@ -13,6 +13,74 @@ from engine.logging_config import logger
 
 
 @dataclass
+class TypeSpec:
+    """Specification for value types with enforcement capabilities"""
+
+    type: str | None = None
+    unit: str | None = None  # e.g., "eurocent", "EUR", "days", "years"
+    precision: int | None = None  # decimal places for rounding
+    min: int | float | None = None
+    max: int | float | None = None
+
+    def enforce(self, value: Any) -> Any:
+        """
+        Enforce type specifications on a value
+
+        Args:
+            value: Value to enforce type specs on
+
+        Returns:
+            Value with type specs enforced (rounded, bounded, etc.)
+        """
+        if value is None:
+            return value
+
+        # String type
+        if self.type == "string":
+            return str(value)
+
+        # Convert string to numeric if needed
+        if isinstance(value, str):
+            try:
+                value = float(value)
+            except ValueError:
+                return value
+
+        # For non-numeric types, return as-is
+        if not isinstance(value, int | float):
+            return value
+
+        # Apply min/max constraints
+        if self.min is not None:
+            value = max(value, self.min)
+        if self.max is not None:
+            value = min(value, self.max)
+
+        # Apply precision (rounding)
+        if self.precision is not None:
+            value = round(value, self.precision)
+
+        # Convert to int for cent units
+        if self.unit == "eurocent":
+            value = int(value)
+
+        return value
+
+    @classmethod
+    def from_spec(cls, spec: dict | None) -> "TypeSpec | None":
+        """Create TypeSpec from output specification dict"""
+        if not spec:
+            return None
+        return cls(
+            type=spec.get("type"),
+            unit=spec.get("unit"),
+            precision=spec.get("precision"),
+            min=spec.get("min"),
+            max=spec.get("max"),
+        )
+
+
+@dataclass
 class PathNode:
     """Represents a node in the execution trace"""
 
@@ -636,7 +704,24 @@ class RuleContext:
         return None
 
     def set_output(self, name: str, value: Any):
-        """Set an output value"""
+        """
+        Set an output value, applying TypeSpec enforcement if available
+
+        Args:
+            name: Output name
+            value: Value to set
+        """
+        # Find type_spec for this output
+        for spec in self.output_specs:
+            if spec.get("name") == name:
+                type_spec_dict = spec.get("type_spec")
+                if type_spec_dict:
+                    type_spec = TypeSpec.from_spec(type_spec_dict)
+                    if type_spec:
+                        value = type_spec.enforce(value)
+                        logger.debug(f"TypeSpec enforced for {name}: {value}")
+                break
+
         self.outputs[name] = value
 
     def get_output(self, name: str) -> Any:
