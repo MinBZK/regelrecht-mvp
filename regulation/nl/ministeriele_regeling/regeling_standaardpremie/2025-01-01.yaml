@@ -3,14 +3,14 @@ $schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/mai
 $id: regeling_standaardpremie
 regulatory_layer: MINISTERIELE_REGELING
 publication_date: '2024-11-19'
-valid_from: '#datum_inwerkingtreding'
+valid_from: '2025-01-01'
 bwb_id: BWBR0050536
 url: https://wetten.overheid.nl/BWBR0050536/2025-01-01
-name: '#wet_naam'
+name: Regeling standaardpremie
 competent_authority:
   name: Minister van Volksgezondheid, Welzijn en Sport
 legal_basis:
-  - law_id: zorgtoeslagwet
+  - law_id: wet_op_de_zorgtoeslag
     article: '4'
   - law_id: zorgverzekeringswet
     article: 18d

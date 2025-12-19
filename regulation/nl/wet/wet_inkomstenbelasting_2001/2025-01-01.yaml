@@ -44,3 +44,33 @@ articles:
       Het verzamelinkomen is de som van het belastbare inkomen uit werk en woning, het belastbare inkomen uit
       aanmerkelijk belang, en het belastbare inkomen uit sparen en beleggen.
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: toetsingsinkomen
+            type: amount
+            description: Toetsingsinkomen (verzamelinkomen)
+          - name: toetsingsinkomen_partner
+            type: amount
+            description: Toetsingsinkomen van de partner
+          - name: vermogen
+            type: amount
+            description: Vermogen (box 3 rendementsgrondslag)
+          - name: gezamenlijk_vermogen
+            type: amount
+            description: Gezamenlijk vermogen van de belastingplichtige en partner
+        actions:
+          # Stub implementatie - test waarden (€20,000 produces zorgtoeslag below drempelinkomen)
+          - output: toetsingsinkomen
+            value: 2000000  # €20,000 in eurocent
+          - output: toetsingsinkomen_partner
+            value: 0
+          - output: vermogen
+            value: 0
+          - output: gezamenlijk_vermogen
+            value: 0

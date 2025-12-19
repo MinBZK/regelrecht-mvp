@@ -287,8 +287,8 @@ def step_when_healthcare_allowance_executed(context):
     try:
         # Call the zorgtoeslag calculation output
         result = service.evaluate_law_output(
-            law_id="zorgtoeslagwet",
-            output_name="hoogte_zorgtoeslag",
+            law_id="wet_op_de_zorgtoeslag",
+            output_name="hoogte_toeslag",
             parameters=parameters,
         )
         context.result = result
@@ -309,9 +309,9 @@ def step_when_request_standard_premium(context, year):
     calculation_date = f"{year}-01-01"
 
     try:
-        # Call the get_standaardpremie output (Article 4)
+        # Call the get_standaardpremie output (from regeling_standaardpremie)
         result = service.evaluate_law_output(
-            law_id="zorgtoeslagwet",
+            law_id="regeling_standaardpremie",
             output_name="standaardpremie",
             parameters={},
             calculation_date=calculation_date,
@@ -370,11 +370,11 @@ def step_then_allowance_amount(context, amount):
     result = context.result
 
     # The output should be in eurocent, convert to euro
-    if "hoogte_zorgtoeslag" in result.output:
-        actual_amount_eurocent = result.output["hoogte_zorgtoeslag"]
+    if "hoogte_toeslag" in result.output:
+        actual_amount_eurocent = result.output["hoogte_toeslag"]
         actual_amount_euro = actual_amount_eurocent / 100
     else:
-        raise AssertionError(f"No 'hoogte_zorgtoeslag' in outputs: {result.output}")
+        raise AssertionError(f"No 'hoogte_toeslag' in outputs: {result.output}")
 
     # Compare with expected amount
     expected_amount = float(amount)

@@ -1,0 +1,40 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: penitentiaire_beginselenwet
+regulatory_layer: WET
+publication_date: '1998-12-18'
+valid_from: '2025-01-01'
+bwb_id: BWBR0009709
+url: https://wetten.overheid.nl/BWBR0009709/2025-01-01
+name: Penitentiaire beginselenwet
+competent_authority:
+  name: Minister van Justitie en Veiligheid
+
+articles:
+  - number: '1'
+    text: |-
+      Artikel 1 - Begripsbepalingen
+
+      [Stub wet voor detentie status bepaling]
+
+      Deze wet bevat regels omtrent de tenuitvoerlegging van vrijheidsbenemende straffen en maatregelen.
+    url: https://wetten.overheid.nl/BWBR0009709/2025-01-01#Artikel1
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: is_gedetineerd
+            type: boolean
+            description: Of de persoon gedetineerd is
+          - name: is_forensisch
+            type: boolean
+            description: Of de persoon in een forensische instelling verblijft
+        actions:
+          - output: is_gedetineerd
+            value: false
+          - output: is_forensisch
+            value: false
