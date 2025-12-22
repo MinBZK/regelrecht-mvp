@@ -7,15 +7,17 @@ from lxml import etree
 from harvester.parsers.article_builder import (
     ArticleComponent,
     build_articles_from_content,
+    walk_artikel,
+    walk_lid,
+    walk_lijst,
+)
+from harvester.parsers.text_extractor import (
     extract_inline_text,
     extract_li_text,
     get_intro_text,
     get_li_nr,
     get_lid_nr,
     has_lijst,
-    walk_artikel,
-    walk_lid,
-    walk_lijst,
 )
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
