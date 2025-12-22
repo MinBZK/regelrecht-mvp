@@ -50,3 +50,18 @@ pre-commit:
 # Sync dependencies
 sync:
     uv sync
+
+# Setup feature file links (creates junction for behave to find features in regulation folder)
+setup-links:
+    #!/usr/bin/env bash
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        # Windows: create junction
+        if [ ! -d "features/regulation" ]; then
+            cmd //c "mklink /J features\\regulation regulation\\nl"
+        fi
+    else
+        # Unix: create symlink
+        if [ ! -L "features/regulation" ]; then
+            ln -s ../regulation/nl features/regulation
+        fi
+    fi
