@@ -260,26 +260,95 @@ def step_given_service_datasource_data(context, service, datasource):
 
 @when("the healthcare allowance law is executed")  # type: ignore[misc]
 def step_when_healthcare_allowance_executed(context):
-    """Execute the healthcare allowance law with mock data"""
+    """Execute the healthcare allowance law with mock data via data sources"""
+    from datetime import datetime
     from engine.service import LawExecutionService
+    from engine.data_sources import DictDataSource
 
-    # Create a wrapper service that uses mocks for external calls
-    class MockLawExecutionService(LawExecutionService):
-        def __init__(self, regulation_dir, mock_service):
-            super().__init__(regulation_dir)
-            self.mock_service = mock_service
+    # Create service
+    service = LawExecutionService("regulation/nl")
 
-        def evaluate_uri(
-            self, uri, parameters, calculation_date=None, requested_output=None
-        ):
-            # All laws should now be real - no mocking needed!
-            # Just use the real engine for everything
-            return super().evaluate_uri(
-                uri, parameters, calculation_date, requested_output
+    # Convert mock data to data sources
+    if hasattr(context, "mock_service"):
+        mock = context.mock_service
+
+        # Helper to convert string values to appropriate types
+        def convert_value(v):
+            if v == "null" or v is None:
+                return None
+            if v == "true":
+                return True
+            if v == "false":
+                return False
+            # Try to convert to int or float
+            try:
+                if "." in str(v):
+                    return float(v)
+                return int(v)
+            except (ValueError, TypeError):
+                return v
+
+        # Create a single data source per service/datasource combination
+        for service_name, datasources in mock.services.items():
+            for datasource_name, bsn_data in datasources.items():
+                source_name = f"{service_name.lower()}_{datasource_name}"
+                source = DictDataSource(name=source_name, priority=100)
+
+                for bsn, record in bsn_data.items():
+                    # Convert string values to proper types
+                    converted_record = {k: convert_value(v) for k, v in record.items()}
+                    source.store(bsn, converted_record)
+
+                service.add_data_source(source)
+
+        # Add derived fields that zorgtoeslag needs directly
+        # (inputs that have NO source spec in the zorgtoeslag law)
+        derived = DictDataSource(name="derived", priority=200)
+
+        for bsn in [context.bsn]:
+            derived_record = {}
+
+            # LEEFTIJD - from personal_data (zorgtoeslag needs this directly)
+            personal = mock.services.get("RVIG", {}).get("personal_data", {}).get(bsn)
+            if personal and "geboortedatum" in personal:
+                birth_date = datetime.strptime(
+                    personal["geboortedatum"], "%Y-%m-%d"
+                ).date()
+                today = datetime.now().date()
+                age = (
+                    today.year
+                    - birth_date.year
+                    - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                )
+                derived_record["leeftijd"] = age
+
+            # HEEFT_VERZEKERING - from insurance data
+            insurance = mock.services.get("RVZ", {}).get("insurance", {}).get(bsn)
+            derived_record["heeft_verzekering"] = (
+                insurance.get("polis_status") == "ACTIEF" if insurance else False
             )
 
-    # Create service with mocks
-    service = MockLawExecutionService("regulation/nl", context.mock_service)
+            # HEEFT_VERDRAGSVERZEKERING, IS_GEDETINEERD, IS_FORENSISCH - defaults
+            derived_record["heeft_verdragsverzekering"] = False
+            derived_record["is_gedetineerd"] = False
+            derived_record["is_forensisch"] = False
+
+            # HEEFT_PARTNER - from relationship data
+            relationship = (
+                mock.services.get("RVIG", {}).get("relationship_data", {}).get(bsn)
+            )
+            derived_record["heeft_partner"] = (
+                relationship.get("partnerschap_type") != "GEEN"
+                if relationship
+                else False
+            )
+
+            # PARTNER_INKOMEN - 0 for tests without partner
+            derived_record["partner_inkomen"] = 0
+
+            derived.store(bsn, derived_record)
+
+        service.add_data_source(derived)
 
     # Execute the law
     parameters = {"bsn": context.bsn}

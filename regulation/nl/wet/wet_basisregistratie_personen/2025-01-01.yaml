@@ -412,10 +412,20 @@ articles:
           - name: heeft_partner
             type: boolean
             description: Heeft de persoon een partner (stub, returns false)
+          - name: heeft_fiscaal_partner
+            type: boolean
+            description: Heeft de persoon een fiscaal partner
+          - name: fiscaal_partner_bsn
+            type: string
+            description: BSN van de fiscaal partner
         actions:
           # Stub implementatie - retourneert false voor testing
           - output: heeft_partner
             value: false
+          - output: heeft_fiscaal_partner
+            value: false
+          - output: fiscaal_partner_bsn
+            value: null
   - number: Artikel 2.9
     text: |-
       Artikel 2.9 1 Aan een geschrift als bedoeld in artikel 2.8, tweede lid, onder c, d, of e , dan wel artikel 2.8,

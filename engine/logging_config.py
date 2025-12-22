@@ -4,6 +4,7 @@ Logging configuration for the regelrecht engine
 Includes IndentLogger for hierarchical tree-style execution visualization.
 """
 
+import io
 import logging
 import sys
 from contextlib import contextmanager
@@ -146,8 +147,9 @@ def setup_logging(level=logging.INFO):
     # Remove existing handlers
     base_logger.handlers = []
 
-    # Create console handler
-    handler = logging.StreamHandler(sys.stdout)
+    # Create console handler with UTF-8 encoding (fixes Windows cp1252 issues)
+    stream = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    handler = logging.StreamHandler(stream)
     handler.setLevel(level)
 
     # Create formatter (simple format for tree-style output)

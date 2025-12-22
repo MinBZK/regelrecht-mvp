@@ -161,7 +161,7 @@ articles:
           legal_character: BESCHIKKING
           decision_type: TOEKENNING
         parameters:
-          - name: bsn
+          - name: BSN
             type: string
             required: true
             description: BSN van de persoon
@@ -173,7 +173,7 @@ articles:
               regulation: wet_basisregistratie_personen
               output: leeftijd
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Leeftijd op 1 januari van het berekeningsjaar
             type_spec:
               unit: years
@@ -186,7 +186,7 @@ articles:
               regulation: wet_basisregistratie_personen
               output: heeft_partner
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Partner conform Awir
           - name: HEEFT_VERZEKERING
             type: boolean
@@ -195,7 +195,7 @@ articles:
               regulation: zorgverzekeringswet
               output: heeft_verzekering
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Verzekerd conform ZVW
             temporal:
               type: period
@@ -207,7 +207,7 @@ articles:
               regulation: zorgverzekeringswet
               output: heeft_verdragsverzekering
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Verdragsverzekering conform ZVW art. 69
             temporal:
               type: period
@@ -219,7 +219,7 @@ articles:
               regulation: penitentiaire_beginselenwet
               output: is_gedetineerd
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Gedetineerd conform Penitentiaire beginselenwet
           - name: IS_FORENSISCH
             type: boolean
@@ -228,7 +228,7 @@ articles:
               regulation: penitentiaire_beginselenwet
               output: is_forensisch
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Forensische zorg conform Wfz
           - name: INKOMEN
             type: amount
@@ -237,7 +237,7 @@ articles:
               regulation: wet_inkomstenbelasting_2001
               output: toetsingsinkomen
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Toetsingsinkomen conform Wet IB 2001
             type_spec:
               unit: eurocent
@@ -253,7 +253,7 @@ articles:
               regulation: wet_inkomstenbelasting_2001
               output: vermogen
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Rendementsgrondslag conform art. 5.3 Wet IB 2001
             type_spec:
               unit: eurocent
@@ -266,7 +266,7 @@ articles:
               regulation: wet_inkomstenbelasting_2001
               output: gezamenlijk_vermogen
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Gezamenlijke rendementsgrondslag met partner
             type_spec:
               unit: eurocent
@@ -279,7 +279,7 @@ articles:
               regulation: wet_inkomstenbelasting_2001
               output: toetsingsinkomen_partner
               parameters:
-                bsn: $bsn
+                bsn: $BSN
               description: Toetsingsinkomen van de partner
             type_spec:
               unit: eurocent

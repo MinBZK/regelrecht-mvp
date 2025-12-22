@@ -4,12 +4,13 @@ Law Execution Service
 Top-level service for executing article-based laws via URI resolution.
 """
 
-from typing import Optional
+from typing import Any, Optional
 from datetime import datetime
 
 from engine.rule_resolver import RuleResolver
 from engine.engine import ArticleEngine, ArticleResult
 from engine.logging_config import logger
+from engine.data_sources import DataSource, DataSourceRegistry, DictDataSource
 
 
 class LawExecutionService:
@@ -24,6 +25,7 @@ class LawExecutionService:
         """
         self.rule_resolver = RuleResolver(regulation_dir)
         self.engine_cache: dict[tuple[str, str], ArticleEngine] = {}
+        self.data_registry = DataSourceRegistry()
 
         logger.info(
             f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_output_count()} outputs"
@@ -85,7 +87,11 @@ class LawExecutionService:
 
         # Execute article
         result = engine.evaluate(
-            parameters, self, calculation_date, output_to_calculate
+            parameters,
+            self,
+            calculation_date,
+            output_to_calculate,
+            data_registry=self.data_registry,
         )
 
         return result
@@ -145,6 +151,40 @@ class LawExecutionService:
             "outputs": list(law.get_all_outputs().keys()),
             "article_count": len(law.articles),
         }
+
+    # === Data Source Management ===
+
+    def add_data_source(self, source: DataSource) -> None:
+        """
+        Add a data source to the registry
+
+        Args:
+            source: DataSource implementation to register
+        """
+        self.data_registry.register(source)
+
+    def add_dict_source(
+        self,
+        name: str,
+        data: dict[str, dict[str, Any]],
+        priority: int = 100,
+    ) -> None:
+        """
+        Add a dict-based data source
+
+        Args:
+            name: Unique name for the source
+            data: Dict of {key: {field: value}} records
+            priority: Priority for disambiguation (higher = preferred)
+        """
+        source = DictDataSource(name=name, priority=priority)
+        for key, record in data.items():
+            source.store(key, record)
+        self.data_registry.register(source)
+
+    def clear_data_sources(self) -> None:
+        """Remove all registered data sources"""
+        self.data_registry = DataSourceRegistry()
 
     # TODO: Generiek mechanisme voor uitvoerder data - nu hardcoded voor Diemen
     # Dit moet later vervangen worden door een service provider pattern

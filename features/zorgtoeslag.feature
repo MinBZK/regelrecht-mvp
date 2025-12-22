@@ -13,8 +13,7 @@ Feature: Healthcare allowance calculation
   #   Then the standard premium calculation should fail with "No matching regeling found"
 
   Scenario: Person over 18 is entitled to healthcare allowance
-    # Note: Mock data is not used - stub laws return fixed values
-    # With stub income of €20,000 (below drempelinkomen), person qualifies for zorgtoeslag
+    # Income of €20,000 = 2000000 eurocent (below drempelinkomen ~€26,831)
     Given the following RVIG "personal_data" data:
       | bsn       | geboortedatum | verblijfsadres | land_verblijf |
       | 999993653 | 2005-01-01    | Amsterdam      | NEDERLAND     |
@@ -26,7 +25,7 @@ Feature: Healthcare allowance calculation
       | 999993653 | ACTIEF       |
     And the following BELASTINGDIENST "box1" data:
       | bsn       | loon_uit_dienstbetrekking | uitkeringen_en_pensioenen | winst_uit_onderneming | resultaat_overige_werkzaamheden | eigen_woning |
-      | 999993653 | 20000                     | 0                         | 0                     | 0                               | 0            |
+      | 999993653 | 2000000                   | 0                         | 0                     | 0                               | 0            |
     And the following BELASTINGDIENST "box2" data:
       | bsn       | reguliere_voordelen | vervreemdingsvoordelen |
       | 999993653 | 0                   | 0                      |
@@ -35,3 +34,26 @@ Feature: Healthcare allowance calculation
       | 999993653 | 0         | 0           | 0              | 0        |
     When the healthcare allowance law is executed
     Then the allowance amount is "1732.80" euro
+
+  Scenario: POC-equivalent test with income 79547
+    # This scenario mirrors the POC test for trace comparison
+    Given the following RVIG "personal_data" data:
+      | bsn       | geboortedatum | verblijfsadres | land_verblijf |
+      | 999993653 | 2005-01-01    | Amsterdam      | NEDERLAND     |
+    And the following RVIG "relationship_data" data:
+      | bsn       | partnerschap_type | partner_bsn |
+      | 999993653 | GEEN              | null        |
+    And the following RVZ "insurance" data:
+      | bsn       | polis_status |
+      | 999993653 | ACTIEF       |
+    And the following BELASTINGDIENST "box1" data:
+      | bsn       | loon_uit_dienstbetrekking | uitkeringen_en_pensioenen | winst_uit_onderneming | resultaat_overige_werkzaamheden | eigen_woning |
+      | 999993653 | 79547                     | 0                         | 0                     | 0                               | 0            |
+    And the following BELASTINGDIENST "box2" data:
+      | bsn       | reguliere_voordelen | vervreemdingsvoordelen |
+      | 999993653 | 0                   | 0                      |
+    And the following BELASTINGDIENST "box3" data:
+      | bsn       | spaargeld | beleggingen | onroerend_goed | schulden |
+      | 999993653 | 0         | 0           | 0              | 0        |
+    When the healthcare allowance law is executed
+    Then the allowance amount is "2096.92" euro

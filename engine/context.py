@@ -5,11 +5,14 @@ Manages state and value resolution during article execution.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import copy
 from datetime import datetime
 
 from engine.logging_config import logger
+
+if TYPE_CHECKING:
+    from engine.data_sources import DataSourceRegistry
 
 
 @dataclass
@@ -109,6 +112,7 @@ class RuleContext:
         input_specs: list[dict] | None = None,
         output_specs: list[dict] | None = None,
         current_law: Any = None,
+        data_registry: "DataSourceRegistry | None" = None,
     ):
         """
         Initialize execution context
@@ -121,6 +125,7 @@ class RuleContext:
             input_specs: Input specifications from execution section
             output_specs: Output specifications from execution section
             current_law: The law being executed (for resolving # references)
+            data_registry: Registry for external data sources (optional)
         """
         self.definitions = self._process_definitions(definitions)
         self.parameters = parameters
@@ -151,6 +156,9 @@ class RuleContext:
         self.path: Optional[PathNode] = None
         self.current_path: Optional[PathNode] = None
         self._path_stack: list[PathNode] = []  # Stack for parent tracking
+
+        # Data source registry for external data resolution
+        self.data_registry = data_registry
 
     def _process_definitions(self, definitions: dict) -> dict:
         """
@@ -186,7 +194,12 @@ class RuleContext:
         4. Resolved inputs
         5. Definitions (constants)
         6. Parameters (direct inputs)
-        7. Input with source.url (cross-law reference)
+        7. Input with source (cross-law reference) - ALWAYS followed!
+        8. Data registry (for inputs WITHOUT source spec)
+        9. Uitvoerder data (gedragscategorie)
+
+        The key insight: outputs always come from their designated law.
+        Data sources only provide leaf-level inputs that have no source spec.
 
         Supports dot notation for property access (e.g., referencedate.year)
 
@@ -231,18 +244,38 @@ class RuleContext:
         if path in self.definitions:
             return self.definitions[path]
 
-        # 6. Parameters (direct inputs)
+        # 6. Parameters (direct inputs) - case-insensitive matching
         if path in self.parameters:
             return self.parameters[path]
+        # Try case-insensitive match
+        path_lower = path.lower()
+        for param_name, param_value in self.parameters.items():
+            if param_name.lower() == path_lower:
+                return param_value
 
-        # 7. Input with source - need to resolve
+        # 7. Input with source - ALWAYS resolve from cross-law reference
+        # Outputs must come from their designated law, not from data sources
         input_spec = self._find_input_spec(path)
         if input_spec and "source" in input_spec:
             value = self._resolve_from_source(input_spec["source"], path)
             self.resolved_inputs[path] = value
             return value
 
-        # 8. Uitvoerder data - resolve from service provider
+        # 8. Data registry - for inputs WITHOUT source spec (leaf-level data)
+        if self.data_registry:
+            # Normalize field name and build selection criteria from parameters
+            field_name = path.lower()
+            criteria = {k.lower(): v for k, v in self.parameters.items()}
+
+            match = self.data_registry.resolve(field_name, criteria)
+            if match:
+                logger.debug(
+                    f"Resolved {path} from data source {match.source_name}: {match.value}"
+                )
+                self.resolved_inputs[path] = match.value
+                return match.value
+
+        # 9. Uitvoerder data - resolve from service provider
         # TODO: Dit is een tijdelijke hardcoded oplossing voor gedragscategorie
         # Later vervangen door generiek mechanisme
         if path == "gedragscategorie":
@@ -384,6 +417,7 @@ class RuleContext:
                 service_provider=self.service_provider,
                 calculation_date=self.calculation_date,
                 requested_output=output_name,
+                data_registry=self.data_registry,
             )
 
             # Extract the output
@@ -526,6 +560,7 @@ class RuleContext:
                     parameters=resolved_params,
                     service_provider=self.service_provider,
                     calculation_date=self.calculation_date,
+                    data_registry=self.data_registry,
                 )
 
                 logger.debug(f"Delegation result: {result.output}")
@@ -656,6 +691,7 @@ class RuleContext:
             parameters=params,
             service_provider=self.service_provider,
             calculation_date=self.calculation_date,
+            data_registry=self.data_registry,
         )
 
         return result.output

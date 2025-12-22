@@ -5,11 +5,14 @@ Core engine for evaluating article-level machine_readable.execution sections.
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from engine.article_loader import Article, ArticleBasedLaw
 from engine.context import RuleContext, PathNode
 from engine.logging_config import logger
+
+if TYPE_CHECKING:
+    from engine.data_sources import DataSourceRegistry
 
 
 @dataclass
@@ -59,6 +62,7 @@ class ArticleEngine:
         service_provider: Any,
         calculation_date: str,
         requested_output: Optional[str] = None,
+        data_registry: Optional["DataSourceRegistry"] = None,
     ) -> ArticleResult:
         """
         Execute this article's logic
@@ -83,6 +87,7 @@ class ArticleEngine:
             input_specs=self.inputs,
             output_specs=self.outputs_spec,
             current_law=self.law,
+            data_registry=data_registry,
         )
 
         # Create root path node for execution trace
@@ -100,9 +105,18 @@ class ArticleEngine:
         # Execute actions
         self._execute_actions(context, requested_output)
 
+        # Filter outputs if requested_output is specified
+        # All actions execute (for dependencies), but only return requested output
+        if requested_output:
+            filtered_outputs = {
+                k: v for k, v in context.outputs.items() if k == requested_output
+            }
+        else:
+            filtered_outputs = context.outputs
+
         # Build result
         result = ArticleResult(
-            output=context.outputs,
+            output=filtered_outputs,
             input=context.resolved_inputs,
             article_number=self.article.number,
             law_id=self.law.id,
@@ -124,18 +138,14 @@ class ArticleEngine:
         Args:
             context: Execution context
             requested_output: Specific output to calculate (optional)
-        """
-        # If requested_output specified, only execute actions needed for that output
-        # For now, execute all actions in order
-        # TODO: Implement dependency analysis and topological sort
 
+        Note: All actions are executed because intermediate outputs may be
+        dependencies of the requested output. TODO: Implement proper
+        dependency analysis to only execute necessary actions.
+        """
         for action in self.actions:
             output_name = action.get("output")
             if output_name:
-                # Check if we need to calculate this output
-                if requested_output and output_name != requested_output:
-                    continue
-
                 # Create action path node
                 action_node = PathNode(
                     type="action",
