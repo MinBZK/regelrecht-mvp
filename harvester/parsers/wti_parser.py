@@ -3,10 +3,8 @@
 import requests
 from lxml import etree
 
+from harvester.config import BWB_REPOSITORY_URL
 from harvester.models import LawMetadata, RegulatoryLayer
-
-# Base URL for BWB repository
-BWB_REPOSITORY_URL = "https://repository.officiele-overheidspublicaties.nl/bwb"
 
 
 def download_wti(bwb_id: str) -> etree._Element:
@@ -43,12 +41,12 @@ def parse_wti_metadata(wti_tree: etree._Element) -> LawMetadata:
     title = ""
     citeertitel = wti_tree.find(".//citeertitel[@status='officieel']")
     if citeertitel is not None and citeertitel.text:
-        title = citeertitel.text
+        title = citeertitel.text.strip()
     else:
         # Fallback to any citeertitel
         citeertitel = wti_tree.find(".//citeertitel")
         if citeertitel is not None and citeertitel.text:
-            title = citeertitel.text
+            title = citeertitel.text.strip()
 
     # Regulatory layer from soort-regeling
     regulatory_layer = RegulatoryLayer.WET  # default

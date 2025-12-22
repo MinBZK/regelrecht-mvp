@@ -5,10 +5,9 @@ import re
 import requests
 from lxml import etree
 
+from harvester.config import BWB_REPOSITORY_URL
 from harvester.models import Article
 
-# Base URL for BWB repository
-BWB_REPOSITORY_URL = "https://repository.officiele-overheidspublicaties.nl/bwb"
 
 # Tags to skip when extracting text (contain metadata, not content)
 SKIP_TAGS = {"meta-data", "kop", "jcis", "jci", "brondata"}
