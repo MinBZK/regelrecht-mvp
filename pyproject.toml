@@ -9,6 +9,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
     "rich>=14.2.0",
+    "ruamel.yaml>=0.18.0",
     "typer>=0.20.0",
 ]
 
