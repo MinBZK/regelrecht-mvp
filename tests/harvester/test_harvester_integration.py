@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import jsonschema
-import yaml
+import ruamel.yaml
 from lxml import etree
 
 from harvester.models import Law
@@ -15,7 +15,7 @@ from harvester.parsers.wti_parser import parse_wti_metadata
 from harvester.storage.yaml_writer import generate_yaml_dict, save_yaml
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
-SCHEMA_DIR = Path(__file__).parent.parent.parent / "schema" / "v0.2.0"
+SCHEMA_DIR = Path(__file__).parent.parent.parent / "schema" / "v0.3.1"
 
 # Law fixtures with their effective dates
 LAW_FIXTURES = [
@@ -56,10 +56,16 @@ def run_pipeline(law_folder: str, effective_date: str) -> tuple[dict, list]:
 
 
 def load_expected(law_folder: str) -> dict:
-    """Load expected YAML output for a law fixture."""
+    """Load expected YAML output for a law fixture.
+
+    Uses ruamel.yaml to be consistent with how we write YAML,
+    avoiding PyYAML's sexagesimal interpretation (e.g., 8:41 -> 521).
+    """
     expected_path = FIXTURES_DIR / law_folder / "expected.yaml"
+    yaml = ruamel.yaml.YAML()
+    yaml.preserve_quotes = True
     with open(expected_path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return yaml.load(f)
 
 
 class TestLawPipeline:
@@ -156,7 +162,7 @@ class TestZorgtoeslag:
         assert output_path.suffix == ".yaml"
 
         with open(output_path, encoding="utf-8") as f:
-            loaded = yaml.safe_load(f)
+            loaded = ruamel.yaml.YAML().load(f)
 
         assert "zorgtoeslag" in loaded["$id"]
         assert loaded["regulatory_layer"] == "WET"
@@ -355,7 +361,7 @@ class TestEndToEndWithMockedDownload:
             assert output_path.exists()
 
             with open(output_path, encoding="utf-8") as f:
-                loaded = yaml.safe_load(f)
+                loaded = ruamel.yaml.YAML().load(f)
 
             schema = load_schema()
             jsonschema.validate(loaded, schema)

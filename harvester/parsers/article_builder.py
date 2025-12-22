@@ -5,13 +5,16 @@ components (onderdelen, leden, or full articles) as separate Article objects
 with dot-notation numbering (e.g., 1.1.a for artikel 1, lid 1, onderdeel a).
 """
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 
 from lxml import etree
 
-from harvester.models import Article
+from harvester.models import Article, Reference
 from harvester.parsers.content_parser import (
     SKIP_TAGS,
+    ReferenceCollector,
     format_extref,
     format_intref,
     format_nadruk,
@@ -26,21 +29,36 @@ class ArticleComponent:
     number_parts: list[str]  # e.g., ["1", "1", "a"] for artikel 1, lid 1, onderdeel a
     text: str
     base_url: str  # Base URL for the article (without fragment)
+    references: list[Reference] = field(default_factory=list)
 
     def to_number(self) -> str:
         """Convert number parts to dot notation."""
         return ".".join(self.number_parts)
 
     def to_article(self) -> Article:
-        """Convert to Article object."""
+        """Convert to Article object with reference definitions appended to text."""
+        text = self.text
+
+        # Append reference definitions if there are any references
+        if self.references:
+            ref_lines = []
+            for ref in self.references:
+                url = ref.to_wetten_url()
+                ref_lines.append(f"[{ref.id}]: {url}")
+            text = f"{text}\n\n" + "\n".join(ref_lines)
+
         return Article(
             number=self.to_number(),
-            text=self.text,
+            text=text,
             url=self.base_url,
+            references=self.references,
         )
 
 
-def extract_inline_text(elem: etree._Element) -> str:
+def extract_inline_text(
+    elem: etree._Element,
+    collector: ReferenceCollector | None = None,
+) -> str:
     """Extract inline text from an element without recursing into structural children.
 
     This extracts text content including extref/intref links and nadruk emphasis,
@@ -48,6 +66,7 @@ def extract_inline_text(elem: etree._Element) -> str:
 
     Args:
         elem: XML element to extract text from
+        collector: Optional reference collector for reference-style links
 
     Returns:
         Extracted text with markdown formatting for links and emphasis
@@ -66,10 +85,10 @@ def extract_inline_text(elem: etree._Element) -> str:
         child_tag = get_tag_name(child)
 
         if child_tag == "extref":
-            parts.append(format_extref(child))
+            parts.append(format_extref(child, collector))
 
         elif child_tag == "intref":
-            parts.append(format_intref(child))
+            parts.append(format_intref(child, collector))
 
         elif child_tag == "nadruk":
             parts.append(format_nadruk(child))
@@ -82,7 +101,7 @@ def extract_inline_text(elem: etree._Element) -> str:
             "li.nr",
         }:
             # Recurse into other inline elements
-            child_text = extract_inline_text(child)
+            child_text = extract_inline_text(child, collector)
             if child_text:
                 parts.append(child_text)
 
@@ -92,11 +111,15 @@ def extract_inline_text(elem: etree._Element) -> str:
     return "".join(parts).strip()
 
 
-def extract_li_text(li_elem: etree._Element) -> str:
+def extract_li_text(
+    li_elem: etree._Element,
+    collector: ReferenceCollector | None = None,
+) -> str:
     """Extract text from a list item, handling nested al elements.
 
     Args:
         li_elem: The <li> element
+        collector: Optional reference collector for reference-style links
 
     Returns:
         Combined text from all <al> children
@@ -106,7 +129,7 @@ def extract_li_text(li_elem: etree._Element) -> str:
     for child in li_elem:
         child_tag = get_tag_name(child)
         if child_tag == "al":
-            al_text = extract_inline_text(child)
+            al_text = extract_inline_text(child, collector)
             if al_text:
                 parts.append(al_text)
 
@@ -138,7 +161,10 @@ def has_lijst(elem: etree._Element) -> bool:
     return elem.find(".//lijst") is not None
 
 
-def get_intro_text(lid_elem: etree._Element) -> str:
+def get_intro_text(
+    lid_elem: etree._Element,
+    collector: ReferenceCollector | None = None,
+) -> str:
     """Get intro text before the lijst in a lid.
 
     This is text like "In deze wet wordt verstaan onder:" that appears
@@ -155,13 +181,13 @@ def get_intro_text(lid_elem: etree._Element) -> str:
             break
 
         if child_tag == "al":
-            al_text = extract_inline_text(child)
+            al_text = extract_inline_text(child, collector)
             if al_text:
                 intro_parts.append(al_text)
 
         # Skip lidnr and meta-data
         elif child_tag not in {"lidnr", "meta-data"}:
-            child_text = extract_inline_text(child)
+            child_text = extract_inline_text(child, collector)
             if child_text:
                 intro_parts.append(child_text)
 
@@ -177,6 +203,7 @@ def walk_lijst(
 
     Handles nested lists by recursing deeper.
     For unmarked lists (type="ongemarkeerd" with dashes), uses sequential numbering.
+    Each component gets its own collector for reference-style links.
 
     Args:
         lijst_elem: The <lijst> element
@@ -196,7 +223,7 @@ def walk_lijst(
         li_nr = get_li_nr(li)
 
         # For unmarked lists with dashes, use sequential numbering
-        if is_unmarked and (not li_nr or li_nr in {"–", "-", "—"}):
+        if is_unmarked and (not li_nr or li_nr in {"\u2013", "-", "\u2014"}):
             seq_counter += 1
             li_nr = str(seq_counter)
         elif not li_nr:
@@ -206,24 +233,27 @@ def walk_lijst(
         nested_lijst = li.find("lijst")
         if nested_lijst is not None:
             # Get any intro text in this li before the nested list
+            # Each intro gets its own collector
+            intro_collector = ReferenceCollector()
             li_intro = ""
             for child in li:
                 child_tag = get_tag_name(child)
                 if child_tag == "lijst":
                     break
                 if child_tag == "al":
-                    text = extract_inline_text(child)
+                    text = extract_inline_text(child, intro_collector)
                     if text:
                         li_intro = text
                         break
 
-            # If there's intro text, add it as a component
+            # If there's intro text, add it as a component with its references
             if li_intro:
                 components.append(
                     ArticleComponent(
                         number_parts=[*number_parts, li_nr],
                         text=li_intro,
                         base_url=base_url,
+                        references=intro_collector.references.copy(),
                     )
                 )
 
@@ -232,14 +262,16 @@ def walk_lijst(
                 walk_lijst(nested_lijst, [*number_parts, li_nr], base_url)
             )
         else:
-            # Leaf node - extract text
-            li_text = extract_li_text(li)
+            # Leaf node - extract text with its own collector
+            li_collector = ReferenceCollector()
+            li_text = extract_li_text(li, li_collector)
             if li_text:
                 components.append(
                     ArticleComponent(
                         number_parts=[*number_parts, li_nr],
                         text=li_text,
                         base_url=base_url,
+                        references=li_collector.references.copy(),
                     )
                 )
 
@@ -255,6 +287,7 @@ def walk_lid(
 
     If lid contains a lijst, extracts intro text separately and then
     each list item. Otherwise extracts the whole lid as one component.
+    Each component gets its own collector for reference-style links.
 
     Args:
         lid_elem: The <lid> element
@@ -275,30 +308,33 @@ def walk_lid(
     lijst_elem = lid_elem.find("lijst")
 
     if lijst_elem is not None:
-        # Has a list - extract intro text first
-        intro = get_intro_text(lid_elem)
+        # Has a list - extract intro text first with its own collector
+        intro_collector = ReferenceCollector()
+        intro = get_intro_text(lid_elem, intro_collector)
         if intro:
             components.append(
                 ArticleComponent(
                     number_parts=number_parts.copy(),
                     text=intro,
                     base_url=base_url,
+                    references=intro_collector.references.copy(),
                 )
             )
 
-        # Then walk the list
+        # Then walk the list (each item gets its own collector inside walk_lijst)
         components.extend(walk_lijst(lijst_elem, number_parts, base_url))
     else:
-        # No list - extract all text from lid
+        # No list - extract all text from lid with one collector
+        lid_collector = ReferenceCollector()
         lid_parts: list[str] = []
         for child in lid_elem:
             child_tag = get_tag_name(child)
             if child_tag == "al":
-                al_text = extract_inline_text(child)
+                al_text = extract_inline_text(child, lid_collector)
                 if al_text:
                     lid_parts.append(al_text)
             elif child_tag not in {"lidnr", "meta-data"}:
-                child_text = extract_inline_text(child)
+                child_text = extract_inline_text(child, lid_collector)
                 if child_text:
                     lid_parts.append(child_text)
 
@@ -309,6 +345,7 @@ def walk_lid(
                     number_parts=number_parts,
                     text=lid_text,
                     base_url=base_url,
+                    references=lid_collector.references.copy(),
                 )
             )
 
@@ -321,6 +358,8 @@ def walk_artikel(
     date: str,
 ) -> list[ArticleComponent]:
     """Walk an artikel element and extract all lowest-level components.
+
+    Each component gets its own collector for reference-style links.
 
     Args:
         artikel_elem: The <artikel> element
@@ -345,7 +384,7 @@ def walk_artikel(
     else:
         return components  # Skip articles without number
 
-    # Replace spaces with underscores in URL fragment (e.g., "A 1" → "A_1")
+    # Replace spaces with underscores in URL fragment (e.g., "A 1" -> "A_1")
     artikel_nr_url = artikel_nr.replace(" ", "_")
     base_url = f"https://wetten.overheid.nl/{bwb_id}/{date}#Artikel{artikel_nr_url}"
 
@@ -353,7 +392,7 @@ def walk_artikel(
     leden = artikel_elem.findall("lid")
 
     if leden:
-        # Has leden - walk each one
+        # Has leden - walk each one (each component gets its own collector inside)
         for lid in leden:
             components.extend(walk_lid(lid, artikel_nr, base_url))
     else:
@@ -362,14 +401,15 @@ def walk_artikel(
 
         if direct_lijst is not None:
             # Artikel has direct list (e.g., definition lists without leden)
-            # Get intro text before the list
+            # Get intro text before the list with its own collector
+            intro_collector = ReferenceCollector()
             intro_parts: list[str] = []
             for child in artikel_elem:
                 child_tag = get_tag_name(child)
                 if child_tag == "lijst":
                     break
                 if child_tag == "al":
-                    al_text = extract_inline_text(child)
+                    al_text = extract_inline_text(child, intro_collector)
                     if al_text:
                         intro_parts.append(al_text)
 
@@ -380,6 +420,7 @@ def walk_artikel(
                         number_parts=[artikel_nr],
                         text=intro_text,
                         base_url=base_url,
+                        references=intro_collector.references.copy(),
                     )
                 )
 
@@ -387,15 +428,16 @@ def walk_artikel(
             components.extend(walk_lijst(direct_lijst, [artikel_nr], base_url))
         else:
             # No leden and no list - treat whole article as single component
+            artikel_collector = ReferenceCollector()
             artikel_parts: list[str] = []
             for child in artikel_elem:
                 child_tag = get_tag_name(child)
                 if child_tag == "al":
-                    al_text = extract_inline_text(child)
+                    al_text = extract_inline_text(child, artikel_collector)
                     if al_text:
                         artikel_parts.append(al_text)
                 elif child_tag not in SKIP_TAGS:
-                    child_text = extract_inline_text(child)
+                    child_text = extract_inline_text(child, artikel_collector)
                     if child_text:
                         artikel_parts.append(child_text)
 
@@ -406,6 +448,7 @@ def walk_artikel(
                         number_parts=[artikel_nr],
                         text=artikel_text,
                         base_url=base_url,
+                        references=artikel_collector.references.copy(),
                     )
                 )
 
@@ -434,6 +477,8 @@ def extract_aanhef(
     if aanhef_elem is None:
         return None
 
+    # Create collector for aanhef
+    collector = ReferenceCollector()
     parts: list[str] = []
 
     # Extract <wij> element
@@ -452,7 +497,7 @@ def extract_aanhef(
     afkondiging_elem = aanhef_elem.find("afkondiging")
     if afkondiging_elem is not None:
         for al in afkondiging_elem.findall(".//al"):
-            al_text = extract_inline_text(al)
+            al_text = extract_inline_text(al, collector)
             if al_text:
                 parts.append(al_text)
 
@@ -462,10 +507,19 @@ def extract_aanhef(
     aanhef_text = "\n\n".join(parts)
     aanhef_url = f"https://wetten.overheid.nl/{bwb_id}/{date}#Aanhef"
 
+    # Add reference definitions if any references were collected
+    if collector.references:
+        ref_lines = []
+        for ref in collector.references:
+            url = ref.to_wetten_url()
+            ref_lines.append(f"[{ref.id}]: {url}")
+        aanhef_text = f"{aanhef_text}\n\n" + "\n".join(ref_lines)
+
     return Article(
         number="aanhef",
         text=aanhef_text,
         url=aanhef_url,
+        references=collector.references.copy(),
     )
 
 
@@ -480,6 +534,9 @@ def build_articles_from_content(
     artikel elements and extracts the lowest-level components as separate
     Article objects. The aanhef (preamble) is included as the first article
     with number "aanhef".
+
+    Each component gets its own reference collector, so reference-style
+    links work correctly with definitions included in each component.
 
     Args:
         content_tree: Parsed content XML element

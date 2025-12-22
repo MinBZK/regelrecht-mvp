@@ -14,7 +14,7 @@ from harvester.parsers.content_parser import parse_articles_split
 from harvester.parsers.wti_parser import parse_wti_metadata
 from harvester.storage.yaml_writer import generate_yaml_dict
 
-FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "test_harvester" / "fixtures"
+FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "harvester" / "fixtures"
 
 # Fixtures to regenerate: (name, effective_date)
 FIXTURES = [
@@ -23,27 +23,29 @@ FIXTURES = [
     ("wlz", "2025-07-05"),
     ("zvw", "2025-07-05"),
     ("awir", "2025-01-01"),
+    ("participatiewet", "2024-01-01"),
 ]
 
 
 def update_fixture(name: str, date: str) -> None:
     """Update expected YAML for a single fixture."""
-    wti_path = FIXTURES_DIR / f"{name}_wti.xml"
-    toestand_path = FIXTURES_DIR / f"{name}_toestand.xml"
+    fixture_dir = FIXTURES_DIR / name
+    wti_path = fixture_dir / "wti.xml"
+    content_path = fixture_dir / "content.xml"
 
-    if not wti_path.exists() or not toestand_path.exists():
+    if not wti_path.exists() or not content_path.exists():
         print(f"Skipping {name}: XML files not found")
         return
 
     wti_tree = etree.parse(str(wti_path))
-    toestand_tree = etree.parse(str(toestand_path))
+    content_tree = etree.parse(str(content_path))
 
     metadata = parse_wti_metadata(wti_tree.getroot())
-    articles = parse_articles_split(toestand_tree.getroot(), metadata.bwb_id, date)
+    articles = parse_articles_split(content_tree.getroot(), metadata.bwb_id, date)
     law = Law(metadata=metadata, articles=articles)
     yaml_dict = generate_yaml_dict(law, date)
 
-    output_path = FIXTURES_DIR / f"{name}_expected.yaml"
+    output_path = fixture_dir / "expected.yaml"
 
     # Configure ruamel.yaml for proper formatting
     yaml = ruamel.yaml.YAML()

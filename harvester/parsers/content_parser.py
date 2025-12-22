@@ -1,16 +1,70 @@
 """Parser for consolidated legal text (content) files."""
 
+from __future__ import annotations
+
 import re
+from dataclasses import dataclass, field
 
 import requests
 from lxml import etree
 
 from harvester.config import BWB_REPOSITORY_URL
-from harvester.models import Article
+from harvester.models import Article, Reference
+from harvester.parsers.reference_parser import (
+    get_reference_text,
+    parse_extref,
+    parse_intref,
+)
 
 
 # Tags to skip when extracting text (contain metadata, not content)
 SKIP_TAGS = {"meta-data", "kop", "jcis", "jci", "brondata"}
+
+
+@dataclass
+class ReferenceCollector:
+    """Collects references during text extraction."""
+
+    references: list[Reference] = field(default_factory=list)
+    _counter: int = field(default=0, repr=False)
+
+    def add_reference(self, elem: etree._Element, is_internal: bool = True) -> str:
+        """Add a reference and return the markdown reference ID.
+
+        Args:
+            elem: The intref or extref XML element
+            is_internal: True for intref, False for extref
+
+        Returns:
+            Reference ID like "ref1" for use in markdown
+        """
+        self._counter += 1
+        ref_id = f"ref{self._counter}"
+
+        parse_fn = parse_intref if is_internal else parse_extref
+        ref = parse_fn(elem, ref_id)
+
+        if ref:
+            self.references.append(ref)
+            return ref_id
+        return ""
+
+    def get_reference_definitions(self) -> str:
+        """Generate markdown reference definitions.
+
+        Returns:
+            Markdown reference definitions like:
+            [ref1]: https://wetten.overheid.nl/BWBR0018451#Artikel4
+            [ref2]: https://wetten.overheid.nl/BWBR0018450#Artikel1
+        """
+        if not self.references:
+            return ""
+
+        lines = []
+        for ref in self.references:
+            url = ref.to_wetten_url()
+            lines.append(f"[{ref.id}]: {url}")
+        return "\n".join(lines)
 
 
 def download_content(bwb_id: str, date: str) -> etree._Element:
@@ -66,16 +120,27 @@ def get_tag_name(elem: etree._Element) -> str:
     return elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
 
 
-def format_extref(elem: etree._Element) -> str:
+def format_extref(
+    elem: etree._Element, collector: ReferenceCollector | None = None
+) -> str:
     """Format an extref (external reference) element as markdown link.
 
     Args:
         elem: The <extref> element
+        collector: Optional reference collector for reference-style links
 
     Returns:
-        Markdown link like [text](url) or just text if no URL
+        Markdown link like [text][ref1] or [text](url) if no collector
     """
-    ref_text = elem.text or ""
+    ref_text = get_reference_text(elem)
+
+    if collector:
+        ref_id = collector.add_reference(elem, is_internal=False)
+        if ref_id:
+            return f"[{ref_text}][{ref_id}]"
+        return ref_text
+
+    # Fallback to inline links when no collector
     ref_url = elem.get("doc", "")
     if ref_url:
         converted_url = convert_jci_to_url(ref_url)
@@ -83,16 +148,27 @@ def format_extref(elem: etree._Element) -> str:
     return ref_text
 
 
-def format_intref(elem: etree._Element) -> str:
+def format_intref(
+    elem: etree._Element, collector: ReferenceCollector | None = None
+) -> str:
     """Format an intref (internal reference) element as markdown link.
 
     Args:
         elem: The <intref> element
+        collector: Optional reference collector for reference-style links
 
     Returns:
-        Markdown link like [text](url) or just text if no URL
+        Markdown link like [text][ref1] or [text](url) if no collector
     """
-    ref_text = elem.text or ""
+    ref_text = get_reference_text(elem)
+
+    if collector:
+        ref_id = collector.add_reference(elem, is_internal=True)
+        if ref_id:
+            return f"[{ref_text}][{ref_id}]"
+        return ref_text
+
+    # Fallback to inline links when no collector
     ref_url = elem.get("doc", "")
     if ref_url:
         converted_url = convert_jci_to_url(ref_url)
@@ -116,12 +192,17 @@ def format_nadruk(elem: etree._Element) -> str:
     return f"*{child_text}*"
 
 
-def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> str:
+def extract_text_from_element(
+    elem: etree._Element | None,
+    depth: int = 0,
+    collector: ReferenceCollector | None = None,
+) -> str:
     """Extract text from XML element, preserving structure as markdown.
 
     Args:
         elem: XML element to extract text from
         depth: Current nesting depth for indentation
+        collector: Optional reference collector for reference-style links
 
     Returns:
         Extracted text with markdown formatting
@@ -150,7 +231,7 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
         for child in elem:
             child_tag = get_tag_name(child)
             if child_tag != "lidnr":
-                child_text = extract_text_from_element(child, depth)
+                child_text = extract_text_from_element(child, depth, collector)
                 if child_text:
                     lid_parts.append(child_text)
 
@@ -163,7 +244,7 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
         # List - process each li item
         list_items: list[str] = []
         for li in elem.findall(".//li"):
-            li_text = extract_text_from_element(li, depth + 1)
+            li_text = extract_text_from_element(li, depth + 1, collector)
             if li_text:
                 list_items.append(li_text)
         return "\n".join(list_items)
@@ -182,7 +263,7 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
         for child in elem:
             child_tag = get_tag_name(child)
             if child_tag == "al":
-                al_text = extract_text_from_element(child, depth)
+                al_text = extract_text_from_element(child, depth, collector)
                 if al_text:
                     li_parts.append(al_text)
 
@@ -199,17 +280,17 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
             child_tag = get_tag_name(child)
 
             if child_tag == "extref":
-                parts.append(format_extref(child))
+                parts.append(format_extref(child, collector))
 
             elif child_tag == "intref":
-                parts.append(format_intref(child))
+                parts.append(format_intref(child, collector))
 
             elif child_tag == "nadruk":
                 parts.append(format_nadruk(child))
 
             elif child_tag not in SKIP_TAGS:
                 # Other inline elements
-                child_text = extract_text_from_element(child, depth)
+                child_text = extract_text_from_element(child, depth, collector)
                 if child_text:
                     parts.append(child_text)
 
@@ -223,10 +304,10 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
         return format_nadruk(elem)
 
     elif tag_name == "extref":
-        return format_extref(elem)
+        return format_extref(elem, collector)
 
     elif tag_name == "intref":
-        return format_intref(elem)
+        return format_intref(elem, collector)
 
     else:
         # Generic element - process children
@@ -235,7 +316,7 @@ def extract_text_from_element(elem: etree._Element | None, depth: int = 0) -> st
             parts.append(elem.text.strip())
 
         for child in elem:
-            child_text = extract_text_from_element(child, depth)
+            child_text = extract_text_from_element(child, depth, collector)
             if child_text:
                 parts.append(child_text)
 
@@ -282,7 +363,7 @@ def parse_articles(
         date: The effective date in YYYY-MM-DD format
 
     Returns:
-        List of Article objects
+        List of Article objects with references
     """
     articles: list[Article] = []
 
@@ -306,16 +387,24 @@ def parse_articles(
         if not article_number:
             continue
 
+        # Create reference collector for this article
+        collector = ReferenceCollector()
+
         # Extract text content (excluding kop and meta-data)
         content_parts: list[str] = []
         for child in artikel:
             child_tag = get_tag_name(child)
             if child_tag not in SKIP_TAGS:
-                child_text = extract_text_from_element(child)
+                child_text = extract_text_from_element(child, collector=collector)
                 if child_text:
                     content_parts.append(child_text)
 
         article_text = "\n\n".join(content_parts)
+
+        # Append reference definitions if any references were collected
+        ref_definitions = collector.get_reference_definitions()
+        if ref_definitions:
+            article_text = f"{article_text}\n\n{ref_definitions}"
 
         # Generate URL
         article_url = (
@@ -327,6 +416,7 @@ def parse_articles(
                 number=article_number,
                 text=article_text,
                 url=article_url,
+                references=collector.references,
             )
         )
 

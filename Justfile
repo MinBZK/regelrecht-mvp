@@ -66,3 +66,7 @@ download-harvester-fixture law:
 # Update harvester test fixtures (regenerate expected YAML from input XML)
 update-harvester-fixtures:
     uv run python script/update_harvester_fixtures.py
+
+# Download a law from BWB repository (harvester)
+harvest bwb_id date="2025-01-01" *args="":
+    uv run python -m harvester download {{bwb_id}} --date {{date}} {{args}}
