@@ -15,7 +15,6 @@ repos:
         exclude: ^script/download_law\.py$
       - id: check-yaml
       - id: check-added-large-files
-        exclude: ^tests/harvester/fixtures/
       - id: check-merge-conflict
       - id: check-case-conflict
 
@@ -35,7 +34,6 @@ repos:
       - id: yamllint
         args: [--strict]
         types: [yaml]
-        exclude: ^tests/harvester/fixtures/
 
   - repo: local
     hooks:

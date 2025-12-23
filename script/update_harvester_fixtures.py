@@ -1,5 +1,6 @@
 """Regenerate expected YAML output for harvester integration tests."""
 
+import io
 import sys
 from pathlib import Path
 
@@ -47,15 +48,23 @@ def update_fixture(name: str, date: str) -> None:
 
     output_path = fixture_dir / "expected.yaml"
 
-    # Configure ruamel.yaml for proper formatting
+    # Configure ruamel.yaml to match yaml_writer.py settings
     yaml = ruamel.yaml.YAML()
     yaml.default_flow_style = False
     yaml.preserve_quotes = True
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.width = 100
+    yaml.explicit_start = True  # Add --- document start
+
+    # Write to string buffer first, then strip trailing spaces
+    # (ruamel.yaml adds trailing spaces when wrapping long values)
+    buffer = io.StringIO()
+    yaml.dump(yaml_dict, buffer)
+    content = buffer.getvalue()
+    content = "\n".join(line.rstrip() for line in content.splitlines()) + "\n"
 
     with open(output_path, "w", encoding="utf-8", newline="\n") as f:
-        yaml.dump(yaml_dict, f)
+        f.write(content)
     print(f"Updated {output_path} ({len(articles)} articles)")
 
 

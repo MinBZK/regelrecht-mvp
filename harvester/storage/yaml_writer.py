@@ -1,5 +1,6 @@
 """YAML writer for law files."""
 
+import io
 import textwrap
 from pathlib import Path
 
@@ -176,8 +177,15 @@ def save_yaml(
     yaml.width = 100
     yaml.explicit_start = True  # Add --- document start
 
+    # Write to buffer first, then strip trailing spaces
+    # (ruamel.yaml adds trailing spaces when wrapping long values like $schema)
+    buffer = io.StringIO()
+    yaml.dump(yaml_dict, buffer)
+    content = buffer.getvalue()
+    content = "\n".join(line.rstrip() for line in content.splitlines()) + "\n"
+
     # Write with Unix line endings
     with open(output_file, "w", encoding="utf-8", newline="\n") as f:
-        yaml.dump(yaml_dict, f)
+        f.write(content)
 
     return output_file
