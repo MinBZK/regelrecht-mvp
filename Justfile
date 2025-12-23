@@ -55,18 +55,6 @@ pre-commit:
 sync:
     uv sync
 
-# Download fresh XML fixtures from BWB repository (all fixtures)
-download-harvester-fixtures:
-    uv run python script/download_harvester_fixtures.py
-
-# Download specific law fixture from BWB repository
-download-harvester-fixture law:
-    uv run python script/download_harvester_fixtures.py --law {{law}}
-
-# Update harvester test fixtures (regenerate expected YAML from input XML)
-update-harvester-fixtures:
-    uv run python script/update_harvester_fixtures.py
-
 # Download a law from BWB repository (harvester)
 harvest bwb_id date="2025-01-01" *args="":
     uv run python -m harvester download {{bwb_id}} --date {{date}} {{args}}
