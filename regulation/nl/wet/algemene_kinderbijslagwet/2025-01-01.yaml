@@ -1,0 +1,1613 @@
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: algemene_kinderbijslagwet
+regulatory_layer: WET
+publication_date: '2020-07-08'
+valid_from: '2025-01-01'
+bwb_id: BWBR0002368
+url: https://wetten.overheid.nl/BWBR0002368/2025-01-01
+articles:
+- number: aanhef
+  text: "Wij JULIANA, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz., enz.,\nenz.\n\nAllen, die deze zullen zien of horen lezen, saluut! doen te weten:\n\nAlzo Wij in overweging genomen hebben, dat het wenselijk is regelen vast te stellen inzake een\nalgemene, de gehele bevolking omvattende, verplichte kinderbijslagverzekering;\n\nZo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben\ngoedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Aanhef
+- number: '1'
+  text: "Voor de toepassing van deze wet en van de tot haar uitvoering genomen besluiten wordt verstaan\nonder:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel1
+- number: 1.a
+  text: 'Onze Minister: Onze Minister van Sociale Zaken en Werkgelegenheid;'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel1
+- number: 1.b
+  text: "lichamen: rechtspersonen, maat- en vennootschappen, samenwerkingsvormen zonder rechtspersoonlijkheid\ndie met verenigingen maatschappelijk gelijk kunnen worden gesteld, ondernemingen van\npubliekrechtelijke rechtspersonen en doelvermogens;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel1
+- number: 1.c
+  text: "vreemdeling: hetgeen daaronder wordt verstaan in de [Vreemdelingenwet 2000][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+- number: 1.d
+  text: "continentaal plat: de exclusieve economische zone van het Koninkrijk, bedoeld in [artikel 1 van de\nRijkswet instelling exclusieve economische zone][ref1], voor zover deze grenst aan de territoriale\nzee van Nederland;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0010480#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0010480
+    artikel: '1'
+- number: 1.e
+  text: "uitreiziger: persoon ten aanzien van wie op grond van een melding van de opsporingsdiensten of\ninlichtingen- en veiligheidsdiensten, gericht aan de Sociale verzekeringsbank, is gebleken dat het\ngegronde vermoeden bestaat dat deze persoon zich buiten Nederland bevindt met het doel om zich aan\nte sluiten bij een organisatie die is geplaatst op de lijst van organisaties, bedoeld in [artikel\n14, vierde lid, van de Rijkswet op het Nederlanderschap][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003738#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0003738
+    artikel: '14'
+- number: '2'
+  text: Ingezetene in de zin van deze wet is degene, die in Nederland woont.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel2
+- number: '3.1'
+  text: Waar iemand woont en waar een lichaam gevestigd is, wordt naar de omstandigheden beoordeeld.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel3
+- number: '3.2'
+  text: "Voor de toepassing van het eerste lid worden schepen welke in Nederland hun thuishaven hebben, ten\nopzichte van de bemanning als deel van Nederland beschouwd."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel3
+- number: '3.3'
+  text: "Hij die Nederland metterwoon heeft verlaten en binnen een jaar nadien metterwoon terugkeert zonder\ninmiddels in Aruba, Curaçao, Sint Maarten, de openbare lichamen Bonaire, Sint Eustatius en Saba, of\nop het grondgebied van een andere Mogendheid te hebben gewoond, wordt ook voor de duur van zijn\nafwezigheid geacht in Nederland te hebben gewoond."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel3
+- number: '4.1'
+  text: "In deze wet en de daarop berustende bepalingen wordt verstaan onder kind: eigen kind, aangehuwd kind\nof pleegkind."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+- number: '4.2'
+  text: Als eigen kind wordt beschouwd het kind
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+- number: 4.2.a
+  text: "van de vrouw die op grond van [artikel 198 van Boek 1 van het Burgerlijk Wetboek][ref1] als zijn\nmoeder wordt aangemerkt;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002656#Artikel198"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+  references:
+  - id: ref1
+    bwb_id: BWBR0002656
+    artikel: '198'
+- number: 4.2.b
+  text: "van de man die op grond van [artikel 199 van Boek 1 van het Burgerlijk Wetboek][ref1] als zijn vader\nwordt aangemerkt;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002656#Artikel199"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+  references:
+  - id: ref1
+    bwb_id: BWBR0002656
+    artikel: '199'
+- number: 4.2.c
+  text: "van de man die op grond van [artikel 394 van Boek 1 van het Burgerlijk Wetboek][ref1] verplicht is\nbij te dragen aan de kosten van verzorging en opvoeding, tenzij het kind reeds op grond van [artikel\n199 van Boek 1 van het Burgerlijk Wetboek][ref2] als eigen kind van een andere man wordt aangemerkt;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002656#Artikel394\n[ref2]: https://wetten.overheid.nl/BWBR0002656#Artikel199"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+  references:
+  - id: ref1
+    bwb_id: BWBR0002656
+    artikel: '394'
+  - id: ref2
+    bwb_id: BWBR0002656
+    artikel: '199'
+- number: 4.2.d
+  text: "van de man wiens biologisch vaderschap door middel van DNA-onderzoek is vastgesteld, mits de man het\nkind feitelijk in relevante mate onderhoudt en het kind niet reeds tot een andere man in een\nfamilierechtelijke vaderschapsrelatie staat;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+- number: 4.2.e
+  text: "van de man die na toepassing van Nederlands internationaal privaatrecht tot het kind in een\nfamilierechtelijke vaderschapsrelatie staat."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+- number: '4.3'
+  text: Als pleegkind wordt beschouwd het kind dat als eigen kind wordt onderhouden en opgevoed.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+- number: '4.4'
+  text: "Bij ministeriële regeling kan worden bepaald in welke gevallen een kind met een pleegkind wordt\ngelijkgesteld."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel4
+- number: '5'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel5
+- number: 5a
+  text: "Bij een besluit ingevolge de [artikelen 14, vierde lid][ref1], en [21][ref2] is mede belanghebbende\nhet Landelijk Bureau Inning Onderhoudsbijdragen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel14\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel5a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 5b
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel5b
+- number: '6.1'
+  text: Verzekerd overeenkomstig de bepalingen van deze wet is degene, die
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+- number: 6.1.a
+  text: ingezetene is;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+- number: 6.1.b
+  text: "geen ingezetene is, doch ter zake van in Nederland of op het continentaal plat in dienstbetrekking\nverrichte arbeid aan de loonbelasting is onderworpen."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+- number: '6.2'
+  text: "Niet verzekerd is de vreemdeling die niet rechtmatig in Nederland verblijf houdt in de zin van\n[artikel 8, onder a tot en met e en l, van de Vreemdelingenwet 2000][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+    artikel: '8'
+- number: '6.3'
+  text: "Bij of krachtens algemene maatregel van bestuur kan, in afwijking van het eerste en tweede lid,\nuitbreiding dan wel beperking worden gegeven aan de kring der verzekerden."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+- number: '6.4'
+  text: "Bij een maatregel, als bedoeld in het derde lid, kan worden bepaald dat bij een niet rechtmatig\nverblijf in Nederland in de zin van [artikel 8, onder a tot en met e en l][ref1], verzekerd zijn:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+    artikel: '8'
+- number: 6.4.a
+  text: vreemdelingen die rechtmatig in Nederland arbeid verrichten, dan wel hebben verricht;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+- number: 6.4.b
+  text: "vreemdelingen die, na rechtmatig verblijf te hebben gehouden in de zin van [artikel 8, onder a tot\nen met e en l, van de Vreemdelingenwet 2000][ref1], rechtmatig in Nederland verblijf hebben als\nbedoeld in [artikel 8, onder g of h, van de Vreemdelingenwet 2000][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel8\n[ref2]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+    artikel: '8'
+  - id: ref2
+    bwb_id: BWBR0011823
+    artikel: '8'
+- number: 6a
+  text: "Zo nodig in afwijking van [artikel 6][ref1] en de daarop berustende bepalingen:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel6"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '6'
+    hoofdstuk: II
+- number: 6a.a
+  text: "wordt als verzekerde aangemerkt de persoon van wie de verzekering op grond van deze wet voortvloeit\nuit de toepassing van bepalingen van een verdrag of van een besluit van een volkenrechtelijke\norganisatie;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6a
+- number: 6a.b
+  text: "wordt voor de toepassing van [hoofdstuk 3][ref1] van deze wet onder verzekerde mede verstaan de\nniet-verzekerde persoon die recht op kinderbijslag heeft verkregen op grond van Verordening (EG)\nnr. 883/2004 van het Europees Parlement en de Raad van de Europese Unie van 29 april 2004\nbetreffende de coördinatie van de socialezekerheidsstelsels (PbEU 2004, L 166);\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    hoofdstuk: III
+- number: 6a.c
+  text: "wordt niet als verzekerde aangemerkt de persoon op wie op grond van een verdrag of een besluit van\neen volkenrechtelijke organisatie de wetgeving van een andere mogendheid van toepassing is."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6a
+- number: 6b
+  text: "Voor de toepassing van deze paragraaf wordt onder centrum voor topsport verstaan een voorziening\nwaar een topsporter op tenminste toptalentniveau de mogelijkheid heeft op één locatie te trainen,\nwonen en studeren."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel6b
+- number: '7.1'
+  text: "De verzekerde heeft overeenkomstig de bepalingen van deze wet recht op kinderbijslag voor een kind\ndat jonger is dan 18 jaar en dat:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.1.a
+  text: tot zijn huishouden behoort, of
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.1.b
+  text: door hem wordt onderhouden.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.2'
+  text: 'De verzekerde heeft voor een kind van 16 of 17 jaar slechts recht op kinderbijslag indien:'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.2.a
+  text: "de verzekerde heeft voldaan aan de verplichtingen, bedoeld in de [artikelen 2, eerste lid][ref1], en\n[4a, eerste lid, van de Leerplichtwet 1969][ref2], dan wel daarvan op grond van die wet is\nvrijgesteld;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002628#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0002628#Artikel4a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0002628
+    artikel: '2'
+  - id: ref2
+    bwb_id: BWBR0002628
+    artikel: 4a
+- number: 7.2.b
+  text: "het kind als leerling, vavo-student of student als bedoeld in de [Wet educatie en\nberoepsonderwijs][ref1] van een met een school of instelling als bedoeld in [artikel 4a van de\nLeerplichtwet 1969][ref2] vergelijkbare inrichting van onderwijs buiten Nederland staat ingeschreven\nen deze inrichting geregeld bezoekt, dan wel met overeenkomstige toepassing van de\nvrijstellingsgronden van die wet van die verplichting is vrijgesteld;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0007625\n[ref2]: https://wetten.overheid.nl/BWBR0002628#Artikel4a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0007625
+  - id: ref2
+    bwb_id: BWBR0002628
+    artikel: 4a
+- number: 7.2.c
+  text: "het kind een startkwalificatie als bedoeld in [artikel 1, onderdeel f, van de Leerplichtwet\n1969][ref1] heeft behaald; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002628#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0002628
+    artikel: '1'
+- number: 7.2.d
+  text: "het kind een school of instelling als bedoeld in onderdeel b heeft afgerond op vergelijkbare wijze\nals bedoeld in onderdeel c."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.3'
+  text: "Het niet voldoen aan de verplichtingen, bedoeld in het tweede lid, onderdeel a, blijkt uit een\ndaartoe strekkende mededeling van het college van burgemeester en wethouders van de gemeente waar\nhet kind woont."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.4'
+  text: "Bij ministeriële regeling kunnen nadere regels worden gesteld met betrekking tot het tweede en derde\nlid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.5'
+  text: Vervallen.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.6'
+  text: "Het bedrag aan kinderbijslag, bedoeld in [artikel 12, eerste en tweede lid][ref1], wordt verdubbeld\nindien de verzekerde per kalenderkwartaal een bijdrage levert aan het onderhoud van het kind die\nmeer bedraagt dan een bij of krachtens algemene maatregel van bestuur te bepalen bedrag en het kind,\nbedoeld in het eerste lid, niet tot het huishouden van de verzekerde noch als eigen kind, aangehuwd\nkind of pleegkind tot het huishouden van een ander behoort:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 7.6.a
+  text: in verband met ziekte of gebreken van het kind; of
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.6.b
+  text: "in verband met het volgen van onderwijs of een beroepsopleiding aan een school of instelling in de\nzin van [artikel 1, onder b of c, van de Leerplichtwet 1969][ref1] waar het kind staat ingeschreven\nof in verband met het volgen van onderwijs, genoemd in [artikel 4a, eerste lid, van de Leerplichtwet\n1969][ref2] waar het kind overeenkomstig artikel 4a, eerste lid, van de Leerplichtwet 1969 staat\ningeschreven of in verband met het volgen van onderwijs aan een vergelijkbare inrichting van\nonderwijs buiten Nederland waar het kind staat ingeschreven, waarbij:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002628#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0002628#Artikel4a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0002628
+    artikel: '1'
+  - id: ref2
+    bwb_id: BWBR0002628
+    artikel: 4a
+- number: 7.6.b.1°
+  text: "de verzekerde aantoont dat het kind een bij ministeriële regeling te bepalen beroepsopleiding volgt\nof als toptalent op het gebied van dans en muziek dan wel als topsporter op tenminste\ntoptalentniveau een bij ministeriële regeling te bepalen school bezoekt voor het volgen van\nvoortgezet onderwijs of een opleiding volgt in het voorbereidend beroepsonderwijs of in het\nberoepsonderwijs en als topsporter op tenminste toptalentniveau een opleiding bij een bij\nministeriële regeling te bepalen centrum voor topsport volgt waardoor de afstand tussen het\nwoonadres van de verzekerde of het woonadres van de ander tot wiens huishouden het kind laatstelijk\nbehoorde en de dichtstbijzijnde instelling of school waar de beroepsopleiding of het voortgezet\nonderwijs wordt aangeboden meer bedraagt dan een bij ministeriële regeling te bepalen aantal\nkilometers; of"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.6.b.2°
+  text: de verzekerde een bij of krachtens algemene maatregel van bestuur te bepalen beroep uitoefent; of
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.6.b.3°
+  text: "de verzekerde of de ander tot wiens huishouden het kind laatstelijk behoorde in een bij of krachtens\nalgemene maatregel van bestuur te bepalen deel van Nederland woont, of de verzekerde aantoont dat\nhij of die ander in een gebied buiten Nederland woont waarbij niet verwacht kan worden dat het kind\nop basis van openbaar of eigen vervoer dagelijks heen en weer reist tussen school en het adres van\nde verzekerde of die ander; of"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.6.b.4°
+  text: "het het kind betreft van de verzekerde, bedoeld in [artikel 7b, vierde lid, onderdelen a en\nb][ref1]; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7b"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7b
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 7.6.b.5°
+  text: "de verzekerde aantoont dat het kind een bij ministeriële regeling te bepalen school bezoekt waarbij\nde afstand tussen het woonadres van de verzekerde of het woonadres van de ander tot wiens huishouden\nhet kind laatstelijk behoorde en de dichtstbijzijnde school waar het onderwijs wordt aangeboden meer\nbedraagt dan een bij ministeriële regeling te bepalen aantal kilometers, met dien verstande dat de\nafstandseis niet geldt als het kind verplicht is gedurende het schooljaar meer dan drie nachten per\nkalenderweek op een aan de school gelieerde locatie te overnachten."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.7'
+  text: "Indien de beroepsopleiding of de school, bedoeld in het zesde lid, onderdeel b, onder 1°, niet\nlanger is opgenomen in de ministeriële regeling, bedoeld in het zesde lid, onderdeel b, onder 1°,\ndan wel indien gedurende de beroepsopleiding of het voortgezet onderwijs, bedoeld in het zesde lid,\nonderdeel b, onder 1°, een gelijke opleiding of school in die ministeriële regeling wordt opgenomen\ndie valt binnen de afstand, bedoeld in het zesde lid, onderdeel b, onder 1°, blijft de verdubbeling\nvan de kinderbijslag, bedoeld in het zesde lid, van toepassing tot de dag waarop het kind de\nopleiding of het onderwijs, bedoeld in het zesde lid, onderdeel b, onder 1°, niet langer volgt."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.8'
+  text: "Bij of krachtens algemene maatregel van bestuur worden nadere regels gesteld met betrekking tot het\neerste lid, onderdeel b, en het zesde lid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.9'
+  text: "Voor de toepassing van dit artikel wordt het kind geacht het onderwijs of de beroepsopleiding eerst\nna de vakantie te hebben beëindigd, indien:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.9.a
+  text: "het onderwijs of de beroepsopleiding wordt beëindigd tijdens een door de Minister van Onderwijs,\nCultuur en Wetenschap, de school of instelling vastgestelde vakantie, dan wel"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.9.b
+  text: "het onderwijs of de beroepsopleiding wordt afgesloten met een eindexamen, dat kort voor het begin\nvan de laatste door de Minister van Cultuur, Onderwijs en Wetenschap, de school of instelling\nvastgestelde vakantie van het desbetreffende schooljaar wordt afgelegd."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: '7.10'
+  text: "In afwijking van het zesde lid, onderdeel b, sub 1°, is het woord «dichtstbijzijnde» niet van\ntoepassing wanneer:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+- number: 7.10.a
+  text: "het kind een beroepsopleiding volgt aan een niet uit ’s Rijks kas bekostigde instelling als bedoeld\nin [artikel 1.4.1 van de Wet educatie en beroepsonderwijs][ref1]; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0007625#Artikel1.4.1"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0007625
+    artikel: 1.4.1
+- number: 7.10.b
+  text: "het kind een beroepsopleiding volgt aan een uit ’s Rijks kas bekostigde instelling als bedoeld in\n[artikel 1.1.1 van de Wet educatie en beroepsonderwijs][ref1] en de dichtstbijzijnde instelling een\nniet uit ’s Rijks kas bekostigde instelling is als bedoeld in [artikel 1.4.1 van de Wet educatie en\nberoepsonderwijs][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0007625#Artikel1.1.1\n[ref2]: https://wetten.overheid.nl/BWBR0007625#Artikel1.4.1"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7
+  references:
+  - id: ref1
+    bwb_id: BWBR0007625
+    artikel: 1.1.1
+  - id: ref2
+    bwb_id: BWBR0007625
+    artikel: 1.4.1
+- number: 7a.1
+  text: "Een verzekerde heeft voor een tot zijn huishouden behorend kind dat drie jaar is of ouder, maar nog\nniet de leeftijd van 18 jaar heeft bereikt, recht op een verdubbeling van het bedrag aan\nkinderbijslag, genoemd in [artikel 12, eerste en tweede lid][ref1], indien het kind is aangewezen op\neen bij of krachtens algemene maatregel van bestuur te bepalen mate van intensieve zorg.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 7a.2
+  text: "Indien een verzekerde over een kalenderjaar tot uitbetaling gekomen recht heeft gehad op een\nverdubbeling van het bedrag aan kinderbijslag op grond van het eerste lid, en"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+- number: 7a.2.a
+  text: "met betrekking tot dat kalenderjaar, dan wel een gedeelte daarvan, geen partner heeft als bedoeld in\n[artikel 1.2 van de Wet inkomstenbelasting 2001][ref1]; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011353#Artikel1.2"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+  references:
+  - id: ref1
+    bwb_id: BWBR0011353
+    artikel: '1.2'
+- number: 7a.2.b
+  text: "met betrekking tot dat kalenderjaar een partner heeft als bedoeld in [artikel 1.2 van de Wet\ninkomstenbelasting 2001][ref1] en de verzekerde of diens partner in dat kalenderjaar belastbare\nwinst uit een of meer ondernemingen als bedoeld in [artikel 3.2 van de Wet inkomstenbelasting\n2001][ref2], belastbaar loon als bedoeld in [artikel 3.80 van de Wet inkomstenbelasting 2001][ref3]\nof belastbaar resultaat uit een of meer werkzaamheden als bedoeld in [artikel 3.90 van de Wet\ninkomstenbelasting 2001][ref4] heeft genoten dat niet meer is dan € 6.145;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011353#Artikel1.2\n[ref2]: https://wetten.overheid.nl/BWBR0011353#Artikel3.2\n[ref3]: https://wetten.overheid.nl/BWBR0011353#Artikel3.80\n[ref4]: https://wetten.overheid.nl/BWBR0011353#Artikel3.90"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+  references:
+  - id: ref1
+    bwb_id: BWBR0011353
+    artikel: '1.2'
+  - id: ref2
+    bwb_id: BWBR0011353
+    artikel: '3.2'
+  - id: ref3
+    bwb_id: BWBR0011353
+    artikel: '3.80'
+  - id: ref4
+    bwb_id: BWBR0011353
+    artikel: '3.90'
+- number: 7a.3
+  text: "Indien een verzekerde of diens partner voldoet aan de voorwaarden, bedoeld in het tweede lid, en\nrecht heeft op meer dan eenmaal de verdubbeling van de kinderbijslag, bedoeld in het eerste lid,\nheeft hij dan wel zijn partner recht op ten hoogste eenmaal het extra bedrag aan kinderbijslag,\nbedoeld in het tweede lid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+- number: 7a.4
+  text: "Indien twee personen die voor eenzelfde kind recht hebben op kinderbijslag als bedoeld in het eerste\nlid, dit kind op basis van een overeenkomst of rechterlijke beschikking overwegend in gelijke mate\nverzorgen en onderhouden zonder met elkaar een gemeenschappelijke huishouding te voeren, is voor de\nbeoordeling van het recht op het extra bedrag aan kinderbijslag, bedoeld in het tweede lid, de\nsituatie, bedoeld in het tweede lid, onderdeel a of b, van de ouder wiens recht op kinderbijslag\nwordt uitbetaald, bepalend."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+- number: 7a.5
+  text: "Bij het uitvoeren van de verdubbeling van het bedrag aan kinderbijslag, bedoeld in het eerste lid,\nkan de Sociale verzekeringsbank gezondheidsgegevens uitwisselen en verwerken."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+- number: 7a.6
+  text: "Bij of krachtens algemene maatregel van bestuur worden nadere regels gesteld met betrekking tot het\neerste, tweede en vijfde lid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7a
+- number: 7aa
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7aa
+- number: 7b.1
+  text: "Geen recht op kinderbijslag heeft de verzekerde ten behoeve van het kind, indien dat kind op de\neerste dag van een kalenderkwartaal niet in Nederland woont."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7b.2
+  text: "Het eerste lid is niet van toepassing indien dat kind op de eerste dag van een kalenderkwartaal\nwoont in een land waarin ten behoeve van hem op grond van verordening (EG) nr. 883/2004 van het\nEuropees Parlement en de Raad van 29 april 2004 betreffende de coördinatie van de\nsocialezekerheidsstelsels (PbEU L 166) recht op kinderbijslag bestaat."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7b.3
+  text: "Het eerste lid is niet van toepassing indien het kind op de eerste dag van een kalenderkwartaal niet\nin Nederland woont doch langer dan drie maanden onafgebroken in Nederland verblijft."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7b.4
+  text: "Bij of krachtens algemene maatregel van bestuur kan worden bepaald dat ten behoeve van het kind dat\nop de eerste dag van een kalenderkwartaal niet in Nederland woont, recht bestaat op kinderbijslag\nvoor:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7b.4.a
+  text: de verzekerde, die werkzaamheden verricht in het algemeen belang en niet in Nederland woont;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7b.4.b
+  text: "de verzekerde, die in Aruba, Curaçao, Sint Maarten of in de openbare lichamen Bonaire, Sint\nEustatius en Saba woont; of"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7b.4.c
+  text: de gezinsleden van de in de onderdelen a of b bedoelde verzekerde.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7b
+- number: 7c
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7c
+- number: 7d.1
+  text: "Geen recht op kinderbijslag overeenkomstig de bepalingen van deze wet heeft de verzekerde die een\nuitreiziger is."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7d
+- number: 7d.2
+  text: "De verzekerde heeft geen recht op kinderbijslag overeenkomstig de bepalingen van deze wet voor een\nkind dat een uitreiziger is."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel7d
+- number: '8'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel8
+- number: '9'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel9
+- number: '10'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel10
+- number: 10a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel10a
+- number: '11.1'
+  text: "Recht op kinderbijslag voor een kind ingevolge deze wet heeft slechts degene, die op de eerste dag\nvan een kalenderkwartaal verzekerd is."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel11
+- number: '11.2'
+  text: "Recht op kinderbijslag over een kalenderkwartaal voor een kind bestaat indien op de eerste dag van\ndat kalenderkwartaal is voldaan aan de voorwaarden, bedoeld in [artikel 7][ref1], en, indien van\ntoepassing, [artikel 7a][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel11
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '7'
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '11.3'
+  text: "Recht op kinderbijslag voor een kind ingevolge deze wet heeft slechts degene, die op de eerste dag\nvan een kalenderkwartaal verzekerd is en na toepassing van [artikel 7d][ref1] niet langer het\ngegronde vermoeden bestaat dat hij of het kind zich buiten Nederland bevindt met het doel om zich\naan te sluiten bij een organisatie als bedoeld in [artikel 1, onderdeel e][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7d\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel11
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7d
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '1'
+    hoofdstuk: I
+- number: '12.1'
+  text: Het basiskinderbijslagbedrag over een kalenderkwartaal bedraagt € 409,21 per kind.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: '12.2'
+  text: "Het basiskinderbijslagbedrag en het extra bedrag aan kinderbijslag, bedoeld in [artikel 7a, tweede\nlid][ref1], bedraagt voor een kind dat woont buiten Nederland, een van de andere lidstaten van de\nEuropese Unie, een andere staat die partij is bij de Overeenkomst betreffende de Europese\nEconomische Ruimte en Zwitserland, een bij ministeriële regeling vastgesteld percentage van het\nbedrag, genoemd in het eerste lid, respectievelijk artikel 7a, tweede lid. Het percentage wordt zo\nbepaald dat het een weergave is van de verhouding tussen het kostenniveau van het land waar het kind\nwoonachtig is en dat van Nederland. Het percentage bedraagt maximaal 100.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '12.3'
+  text: "Het aan een verzekerde over een kalenderkwartaal te betalen bedrag aan kinderbijslag bedraagt voor\neen kind, dat op de eerste dag van dat kwartaal:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: 12.3.a
+  text: 'jonger is dan 6 jaar: € 286,45'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: 12.3.b
+  text: '6 jaar of ouder, maar jonger is dan 12 jaar: € 347,83 en'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: 12.3.c
+  text: '12 jaar en ouder, maar jonger is dan 18 jaar: € 409,21'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: '12.4'
+  text: "De kinderbijslag op grond van het derde lid, onderdelen b en c, wordt betaald zonder dat dit bij\nbeschikking is vastgesteld."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: '12.5'
+  text: "Het tweede lid is niet van toepassing indien het kind op de eerste dag van een kalenderkwartaal niet\nin Nederland woont doch langer dan drie maanden onafgebroken in Nederland verblijft."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel12
+- number: '13.1'
+  text: "De bedragen, genoemd in de [artikelen 7a, tweede lid][ref1], en [12, eerste lid][ref2], worden al\nnaar gelang de ontwikkeling van het algemene prijsniveau verhoogd of verlaagd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '13.2'
+  text: "Het bedrag, genoemd in [artikel 7a, tweede lid, onderdeel b][ref1], wordt telkens gewijzigd met\ningang van 1 januari. Bij een wijziging met ingang van 1 januari wordt dit bedrag vermenigvuldigd\nmet de tabelcorrectiefactor, bedoeld in [artikel 10.2 van de Wet inkomstenbelasting 2001][ref2], en\nvervolgens wordt de nodig geachte afronding aangebracht. Indien in het voorafgaande kalenderjaar een\ndergelijke afronding is toegepast, wordt bij de wijziging uitgegaan van het afgeronde bedrag. Het\ngewijzigde bedrag wordt door of namens Onze Minister medegedeeld in de Staatscourant.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0011353#Artikel10.2"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0011353
+    artikel: '10.2'
+- number: '13.3'
+  text: "Het extra bedrag aan kinderbijslag, genoemd aan het slot van [artikel 7a, tweede lid][ref1], wordt\ntelkens gewijzigd met ingang van 1 januari. Bij een wijziging met ingang van 1 januari wordt dit\nbedrag verhoogd of verlaagd met hetzelfde percentage, als waarmee de consumentenprijsindex over de\nmaand oktober daaraan voorafgaande, naar boven of naar beneden afwijkt van de consumentenprijsindex,\nwaarop de laatste wijziging is gebaseerd. Het gewijzigde bedrag wordt door of namens Onze Minister\nmedegedeeld in de Staatscourant. In afwijking van de eerste zin blijft wijziging per 1 januari\nachterwege, indien de consumentenprijsindex over de maand oktober daaraan voorafgaande geen\nafwijking vertoont ten opzichte van de consumentenprijsindex, waarop de laatste wijziging is\ngebaseerd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '13.4'
+  text: "Het bedrag, genoemd in [artikel 12, eerste lid][ref1], wordt telkens gewijzigd met ingang van\n1 januari en 1 juli. Bij een wijziging met ingang van 1 januari onderscheidenlijk 1 juli wordt dit\nbedrag verhoogd of verlaagd met hetzelfde percentage, al waarmede de consumentenprijsindex over de\nmaand oktober daaraan voorafgaande onderscheidenlijk over de maand april daaraan voorafgaande, naar\nboven of naar beneden afwijkt van de consumentenprijsindex, waarop de laatste wijziging is\ngebaseerd. Het gewijzigde bedrag wordt door of namens Onze Minister medegedeeld in de Staatscourant.\nIn afwijking van de eerste zin blijft wijziging per 1 januari onderscheidenlijk per 1 juli\nachterwege, indien de consumentenprijsindex over de maand oktober onderscheidenlijk over de maand\napril daaraan voorafgaande geen afwijking vertoont ten opzichte van de consumentenprijsindex, waarop\nde laatste wijziging is gebaseerd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '13.5'
+  text: "Het overeenkomstig het tweede, derde of vierde lid gewijzigde bedrag treedt in de plaats van het\nbedrag, genoemd in [artikel 7a, tweede lid, onderdeel b][ref1], het extra bedrag aan kinderbijslag,\ngenoemd aan het slot van artikel 7a, tweede lid, onderscheidenlijk het bedrag, genoemd in\n[artikel 12, eerste lid][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '13.6'
+  text: "Indien daartoe naar Ons oordeel een bijzondere aanleiding bestaat, kan het extra bedrag aan\nkinderbijslag, genoemd aan het slot van [artikel 7a, tweede lid][ref1], of het bedrag, genoemd in\n[artikel 12, eerste lid][ref2], bij algemene maatregel van bestuur met ingang van een bij die\nalgemene maatregel van bestuur aan te geven datum worden verhoogd. De op grond van de vorige zin\nverhoogde bedragen treden in de plaats van het extra bedrag aan kinderbijslag, genoemd aan het slot\nvan artikel 7a, tweede lid, onderscheidenlijk het bedrag, genoemd in artikel 12, eerste lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '13.7'
+  text: "Indien een verhoging als bedoeld in het zesde lid samenvalt met een wijziging als bedoeld in het\nderde of het vierde lid, wordt het bedrag voorafgaande aan de verhoging gewijzigd en geschiedt de\nwijziging, in afwijking van het derde lid, onderscheidenlijk het vierde lid, bij de in het zesde lid\nbedoelde algemene maatregel van bestuur."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+- number: '13.8'
+  text: "Hetgeen onder consumentenprijsindex als bedoeld in het derde en vierde lid wordt verstaan, wordt\nnader bij algemene maatregel van bestuur geregeld."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+- number: '13.9'
+  text: "Indien het bedrag, genoemd in [artikel 12, eerste lid][ref1], wordt gewijzigd, worden de uit de\ntoepassing van artikel 12, derde lid, met betrekking tot dat bedrag voortvloeiende bedragen, samen\nmet de dag waarop de wijziging ingaat, door of namens Onze Minister medegedeeld in de Staatscourant.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '12'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '13.10'
+  text: "Een wijziging van de kinderbijslag op grond van dit artikel vindt plaats zonder dat dit bij\nbeschikking is vastgesteld."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+- number: '13.11'
+  text: "De Sociale verzekeringsbank betaalt de gewijzigde kinderbijslag, bedoeld in het tiende lid, bij de\neerstvolgende betaling van de kinderbijslag nadat de wijziging, bedoeld in het derde dan wel vierde\nlid, heeft plaatsgevonden."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13
+- number: 13a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel13a
+- number: '14.1'
+  text: 'De Sociale verzekeringsbank stelt:'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  machine_readable:
+    endpoint: kinderbijslag_gegevens
+    competent_authority:
+      name: Sociale Verzekeringsbank
+      type: INSTANCE
+    execution:
+      parameters:
+      - name: BSN
+        type: string
+        required: true
+        description: BSN van de ouder
+      output:
+      - name: ontvangt_kinderbijslag
+        type: boolean
+        description: Ontvangt kinderbijslag voor minimaal 1 kind
+      - name: aantal_kinderen
+        type: number
+        description: Aantal kinderen waarvoor kinderbijslag wordt ontvangen
+      - name: kinderen_leeftijden
+        type: array
+        description: Leeftijden van alle kinderen waarvoor kinderbijslag wordt ontvangen
+- number: 14.1.a
+  text: op aanvraag vast of een recht op kinderbijslag bestaat;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+- number: 14.1.b
+  text: "op aanvraag of, indien informatie is verschaft door het Centrum Indicatiestelling zorg, als bedoeld\nin artikel 9.1.3a, eerste lid, van de Wet langdurige zorg, ambtshalve op basis daarvan vast of een\nrecht op een verdubbeling van het bedrag aan kinderbijslag als bedoeld in [artikel 7a, eerste\nlid][ref2], bestaat; en\n\n\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  references:
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 14.1.c
+  text: "op aanvraag vast of een recht op het extra bedrag aan kinderbijslag, bedoeld in [artikel 7a, tweede\nlid][ref1], bestaat.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '14.2'
+  text: "Een aanvraag wordt ingediend door middel van een door de Sociale verzekeringsbank beschikbaar\ngesteld aanvraagformulier. Bij of krachtens algemene maatregel van bestuur worden nadere regels\ngesteld met betrekking tot de verder bij de aanvraag te verstrekken gegevens."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+- number: '14.3'
+  text: "De aanvraag om het extra bedrag aan kinderbijslag, bedoeld in [artikel 7a, tweede lid][ref1], wordt\ningediend voor 1 december van het kalenderjaar na het kalenderjaar waarover het recht op het extra\nbedrag aan kinderbijslag bestaat.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: '14.4'
+  text: "Indien de verzekerde nalaat een aanvraag om kinderbijslag in te dienen, kan deze aanvraag worden\ningediend door het Landelijk Bureau Inning Onderhoudsbijdragen, dat tevens adviseert aan wie de\nkinderbijslag wordt betaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+- number: '14.5'
+  text: "Het recht op kinderbijslag of een verdubbeling van het bedrag aan kinderbijslag, als bedoeld in\n[artikel 7a, eerste lid][ref1], gaat niet eerder in dan:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 14.5.a
+  text: "indien het kinderbijslag betreft, een jaar voorafgaand aan de eerste dag van het kalenderkwartaal\nwaarin de aanvraag om kinderbijslag werd ingediend; of"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+- number: 14.5.b
+  text: "indien het een verdubbeling van het bedrag aan kinderbijslag, als bedoeld in [artikel 7a, eerste\nlid][ref1], betreft, zes maanden voorafgaand aan de eerste dag van het kalenderkwartaal:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 14.5.b.1°
+  text: waarin de aanvraag om een verdubbeling van het bedrag aan kinderbijslag werd ingediend; of
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+- number: 14.5.b.2°
+  text: "waarin het recht op zorg aanvangt op grond van het indicatiebesluit, bedoeld in [artikel 3.2.3 van\nde Wet langdurige zorg][ref1], indien het recht op een verdubbeling van het bedrag aan kinderbijslag\nambtshalve wordt vastgesteld op basis van de informatie, bedoeld in het eerste lid, onderdeel b.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel3.2.3"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14
+  references:
+  - id: ref1
+    bwb_id: BWBR0035917
+    artikel: 3.2.3
+- number: 14a.1
+  text: "Onverminderd het elders in deze wet bepaalde terzake van herziening of intrekking van een besluit\ntot toekenning van kinderbijslag en terzake van weigering van kinderbijslag, herziet de Sociale\nverzekeringsbank een dergelijk besluit of trekt zij dat in:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14a
+- number: 14a.1.a
+  text: "indien het niet of niet behoorlijk nakomen van een verplichting op grond van [artikel 15][ref1] of\n[16][ref2] heeft geleid tot het ten onrechte of tot een te hoog bedrag verlenen van kinderbijslag;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel16"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '16'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 14a.1.b
+  text: indien anderszins de kinderbijslag ten onrechte of tot een te hoog bedrag is verleend;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14a
+- number: 14a.1.c
+  text: "indien het niet of niet behoorlijk nakomen van een verplichting op grond van [artikel 15][ref1] of\n[16][ref2] ertoe leidt dat niet kan worden vastgesteld of nog recht op kinderbijslag bestaat.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel16"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '16'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 14a.2
+  text: "Indien daarvoor dringende redenen aanwezig zijn kan de Sociale verzekeringsbank besluiten geheel of\ngedeeltelijk van herziening of intrekking als bedoeld in het eerste lid af te zien."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14a
+- number: 14a.3
+  text: "Indien de verzekerde of de persoon aan wie of de instelling waaraan op grond van [artikel 21][ref1]\nkinderbijslag wordt betaald niet op grond van [artikel 15a][ref2] desgevraagd aantoont dat is\nvoldaan aan artikel 15a, eerste lid, onderdelen a en b, en als gevolg hiervan niet kan worden\nvastgesteld tot wiens huishouden het kind behoort, wordt het recht op kinderbijslag vastgesteld,\nherzien of ingetrokken en het recht op kinderbijslag geldend gemaakt overeenkomstig [hoofdstuk III,\nparagraaf 1][ref3] en [2][ref4].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel15a\n[ref3]: https://wetten.overheid.nl/BWBR0002368\n[ref4]: https://wetten.overheid.nl/BWBR0002368"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel14a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: 15a
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0002368
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref4
+    bwb_id: BWBR0002368
+    hoofdstuk: III
+    paragraaf: '2'
+- number: '15.1'
+  text: "De verzekerde, alsmede de persoon aan wie of de instelling waaraan op grond van [artikel 21][ref1]\nkinderbijslag wordt betaald, zijn verplicht aan de Sociale verzekeringsbank op haar verzoek of\nonverwijld uit eigen beweging alle feiten en omstandigheden mee te delen, waarvan hem of haar\nredelijkerwijs duidelijk moet zijn dat zij van invloed kunnen zijn op het recht op kinderbijslag, de\nhoogte van de kinderbijslag, het geldend maken van het recht op kinderbijslag of op het bedrag van\nde kinderbijslag, dat wordt betaald.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '15.2'
+  text: "De verplichting van het eerste lid geldt niet indien: die feiten en omstandigheden door de Sociale\nverzekeringsbank kunnen worden vastgesteld op grond van bij wettelijk voorschrift als authentiek\naangemerkte gegevens of kunnen worden verkregen uit bij ministeriële regeling aan te wijzen\nadministraties. Bij ministeriële regeling wordt bepaald voor welke gegevens dit onderdeel van\ntoepassing is."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15
+- number: 15a.1
+  text: "In aanvulling op [artikel 15][ref1] kan de Sociale verzekeringsbank de verzekerde of de persoon aan\nwie of de instelling waaraan op grond van [artikel 21][ref2] kinderbijslag wordt betaald verzoeken\naan te tonen dat:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 15a.1.a
+  text: "ten aanzien van een kind als bedoeld in [artikel 7, eerste lid, onderdeel a, en tweede lid][ref1],\nwordt voldaan aan de voorwaarden, gesteld in artikel 7, eerste lid, onderdeel a, en tweede lid, of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '7'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 15a.1.b
+  text: "een kind als bedoeld in [artikel 7, zesde lid][ref1], niet tot het huishouden van de verzekerde noch\ntot het huishouden van een ander behoort.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '7'
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 15a.2
+  text: "Teneinde de verzekerde of de persoon aan wie of de instelling waaraan op grond van [artikel\n21][ref1] kinderbijslag wordt betaald daartoe in de gelegenheid te stellen, kan de Sociale\nverzekeringsbank bij dit verzoek aanbieden met de toestemming van de verzekerde of de bewoner van de\nwoning waar het kind woont, de woning van verzekerde onderscheidenlijk de woning waar het kind woont\nbinnen te treden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 15a.3
+  text: "Indien door het ontbreken van toestemming van de bewoner niet kan worden vastgesteld tot wiens\nhuishouden het kind behoort, heeft dit gevolgen voor het recht op en het geldend maken van het recht\nop kinderbijslag."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel15a
+- number: '16.1'
+  text: "De Sociale verzekeringsbank is bevoegd controlevoorschriften vast te stellen. Deze voorschriften\nmogen niet verder gaan dan strikt noodzakelijk is voor een juiste uitvoering van deze wet."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel16
+- number: '16.2'
+  text: "De verzekerde, alsmede de persoon aan wie of de instelling waaraan op grond van [artikel 21][ref1]\nkinderbijslag wordt betaald, zijn verplicht de voorschriften op te volgen en anderszins aan de\nSociale verzekeringsbank desgevraagd de medewerking te verlenen die redelijkerwijs nodig is voor de\nuitvoering van deze wet.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel16
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '16.3'
+  text: "De verzekerde, alsmede de persoon aan wie op grond van [artikel 21][ref1] kinderbijslag wordt\nbetaald, onthouden zich van zeer ernstige misdragingen jegens de met de uitvoering van deze wet\nbelaste personen en instanties tijdens het verrichten van hun werkzaamheden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel16
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '17.1'
+  text: "De Sociale verzekeringsbank weigert de kinderbijslag tijdelijk of blijvend, geheel of gedeeltelijk\nindien de verzekerde of de persoon aan wie op grond van [artikel 21][ref1] kinderbijslag wordt\nbetaald, een verplichting op grond van [artikel 16][ref2] opgelegd, of de verplichting, bedoeld in\n[artikel 55, tweede lid, van de Wet structuur uitvoeringsorganisatie werk en inkomen][ref3], niet of\nniet behoorlijk is nagekomen, dan wel de verplichting, bedoeld in [artikel 15][ref4] niet binnen de\ndoor de Sociale verzekeringsbank daarvoor vastgestelde termijn is nagekomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel16\n[ref3]: https://wetten.overheid.nl/BWBR0013060#Artikel55\n[ref4]: https://wetten.overheid.nl/BWBR0002368#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '16'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0013060
+    artikel: '55'
+  - id: ref4
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: '17.2'
+  text: "Een maatregel als bedoeld in het eerste lid wordt afgestemd op de ernst van de gedraging en de mate\nwaarin de verzekerde dan wel de persoon aan wie op grond van [artikel 21][ref1] kinderbijslag wordt\nbetaald, de gedraging verweten kan worden. Van het opleggen van een maatregel wordt in elk geval\nafgezien, indien elke vorm van verwijtbaarheid ontbreekt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '17.3'
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een maatregel als bedoeld in het eerste\nlid en volstaan met het geven van een schriftelijke waarschuwing ter zake van het niet tijdig\nnakomen van de verplichting, bedoeld in [artikel 15][ref1], indien het niet tijdig nakomen van de\nverplichting niet heeft geleid tot het ten onrechte of tot een te hoog bedrag verlenen van\nkinderbijslag, tenzij het niet tijdig nakomen van de verplichting plaatsvindt binnen een periode van\ntwee jaar te rekenen vanaf de datum waarop eerder aan de verzekerde, of de persoon aan wie op grond\nvan [artikel 21][ref2] kinderbijslag wordt betaald, een zodanige waarschuwing is gegeven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '17.4'
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een maatregel indien daarvoor dringende\nredenen aanwezig zijn."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17
+- number: '17.5'
+  text: "Het opleggen van een maatregel blijft achterwege indien voor dezelfde gedraging een bestuurlijke\nboete als bedoeld in [artikel 17a][ref1] wordt opgelegd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17a
+    hoofdstuk: III
+    paragraaf: '2'
+- number: '17.6'
+  text: "Bij of krachtens algemene maatregel van bestuur worden nadere regels gesteld met betrekking tot het\neerste en tweede lid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17
+- number: 17a.1
+  text: "De Sociale verzekeringsbank legt een bestuurlijke boete op van ten hoogste het benadelingsbedrag\nwegens het niet of niet behoorlijk nakomen door de verzekerde, of de persoon aan wie op grond van\n[artikel 21][ref1] kinderbijslag wordt betaald, van de verplichting, bedoeld in [artikel 15][ref2].\nIndien de feiten en omstandigheden, bedoeld in artikel 15, niet of niet behoorlijk zijn medegedeeld\nen deze overtreding opzettelijk is begaan, bedraagt de bestuurlijke boete ten hoogste het bedrag van\nde vijfde categorie, bedoeld in [artikel 23, vierde lid, van het Wetboek van Strafrecht][ref3].\nIndien de feiten en omstandigheden, bedoeld in artikel 15, niet of niet behoorlijk zijn medegedeeld\nen deze overtreding niet opzettelijk is begaan, bedraagt de bestuurlijke boete ten hoogste het\nbedrag van de derde categorie, bedoeld in artikel 23, vierde lid, van het Wetboek van Strafrecht.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref3]: https://wetten.overheid.nl/BWBR0001854#Artikel23"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0001854
+    artikel: '23'
+- number: 17a.2
+  text: "In dit artikel wordt onder benadelingsbedrag verstaan het brutobedrag dat als gevolg van het niet of\nniet behoorlijk nakomen van de verplichting, bedoeld in [artikel 15][ref1], ten onrechte of tot een\nte hoog bedrag aan kinderbijslag is verleend.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 17a.3
+  text: "Indien het niet of niet behoorlijk nakomen door de verzekerde, of de persoon aan wie op grond van\n[artikel 21][ref1] kinderbijslag wordt betaald, van de verplichting, bedoeld in [artikel 15][ref2],\nniet heeft geleid tot een benadelingsbedrag, legt de Sociale verzekeringsbank een bestuurlijke boete\nop van ten hoogste het bedrag van de tweede categorie, bedoeld in [artikel 23, vierde lid, van het\nWetboek van Strafrecht][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref3]: https://wetten.overheid.nl/BWBR0001854#Artikel23"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0001854
+    artikel: '23'
+- number: 17a.4
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een bestuurlijke boete en volstaan met\nhet geven van een schriftelijke waarschuwing wegens het niet of niet behoorlijk nakomen van de\nverplichting, bedoeld in [artikel 15][ref1], in situaties die bij algemene maatregel van bestuur\nworden bepaald, tenzij het niet of niet behoorlijk nakomen van de verplichting plaats vindt binnen\neen periode van twee jaar te rekenen vanaf de datum waarop eerder aan de verzekerde, of aan de\npersoon aan wie op grond van [artikel 21][ref2] kinderbijslag wordt betaald, een zodanige\nwaarschuwing is gegeven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 17a.5
+  text: "De Sociale verzekeringsbank legt een bestuurlijke boete op wegens het niet of niet behoorlijk\nnakomen door de verzekerde, of de persoon aan wie op grond van [artikel 21][ref1] kinderbijslag\nwordt betaald, van de verplichting, bedoeld in [artikel 15][ref2], als gevolg waarvan ten onrechte\nof tot een te hoog bedrag aan kinderbijslag is ontvangen, van ten hoogste 150 procent van het\nbenadelingsbedrag, met overeenkomstige toepassing van het eerste lid, indien binnen een tijdvak van\nvijf jaar voorafgaand aan de dag van het begaan van de overtreding een eerdere bestuurlijke boete of\nstrafrechtelijke sanctie is opgelegd wegens een eerdere overtreding, bestaande uit eenzelfde\ngedraging, die onherroepelijk is geworden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 17a.6
+  text: "In afwijking van het vijfde lid is het in dat lid genoemde tijdvak van vijf jaar tien jaar indien\nwegens de eerdere overtreding, bedoeld in het vijfde lid, de verzekerde, of de persoon aan wie op\ngrond van [artikel 21][ref1] kinderbijslag wordt betaald, is gestraft met een onvoorwaardelijke\ngevangenisstraf.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 17a.7
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een bestuurlijke boete indien daarvoor\ndringende redenen aanwezig zijn."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+- number: 17a.8
+  text: "Degene aan wie een bestuurlijke boete is opgelegd, is verplicht desgevraagd aan de Sociale\nverzekeringsbank de inlichtingen te verstrekken die voor de tenuitvoerlegging van de bestuurlijke\nboete van belang zijn."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+- number: 17a.9
+  text: "Bij algemene maatregel van bestuur worden nadere regels gesteld over de hoogte van de bestuurlijke\nboete."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+- number: 17a.10
+  text: "In afwijking van [artikel 8:69 van de Algemene wet bestuursrecht][ref1] kan de rechter in beroep of\nhoger beroep het bedrag waarop de bestuurlijke boete is vastgesteld ook ten nadele van de\nverzekerde, dan wel de persoon aan wie op grond van [artikel 21][ref2] kinderbijslag wordt betaald,\nwijzigen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel8:69\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: '8:69'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 17a.11
+  text: "Indien ten aanzien van een overtreding waarvoor een bestuurlijke boete is opgelegd geen sprake is\ngeweest van opzet of grove schuld, en voorts is gebleken dat binnen een jaar nadat de bestuurlijke\nboete is opgelegd niet nogmaals een overtreding wegens eenzelfde gedraging is begaan, is de Sociale\nverzekeringsbank bevoegd op verzoek van degene aan wie de bestuurlijke boete is opgelegd, de\nbestuurlijke boete geheel of gedeeltelijk kwijt te schelden bij medewerking aan een schuldregeling.\n[Artikel 24c, eerste, derde en vierde lid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel24c"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 24c
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 17a.12
+  text: "Het besluit tot kwijtschelding, bedoeld in het elfde lid, wordt ingetrokken of ten nadele van degene\naan wie de bestuurlijke boete is opgelegd herzien indien binnen vijf jaar na het besluit tot\nkwijtschelding wederom een overtreding wegens eenzelfde gedraging is begaan."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17a
+- number: 17b
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17b
+- number: 17c
+  text: "Bij ministeriële regeling kunnen regels worden gesteld omtrent de termijn waarvoor uitstel van\nbetaling van de bestuurlijke boete kan worden verleend alsmede omtrent de hoogte van het op grond\nvan [artikel 17g, eerste of tweede lid][ref1], te verrekenen bedrag en de termijn of termijnen\nwaarbinnen deze verrekening plaatsvindt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17g"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17g
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 17d
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17d
+- number: 17e
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17e
+- number: 17f
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17f
+- number: 17g.1
+  text: "De Sociale verzekeringsbank verrekent de bestuurlijke boete en een eerdere bestuurlijke boete wegens\neenzelfde gedraging als bedoeld in [artikel 17a, vijfde lid][ref1], met kinderbijslag op grond van\ndeze wet, ouderdomspensioen op grond van de [Algemene Ouderdomswet][ref2] of een uitkering op grond\nvan de [Algemene nabestaandenwet][ref3], die degene aan wie een bestuurlijke boete is opgelegd, dan\nwel degene met wie hij een huishouden vormt, ontvangt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17a\n[ref2]: https://wetten.overheid.nl/BWBR0002221\n[ref3]: https://wetten.overheid.nl/BWBR0007795"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17a
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+  - id: ref3
+    bwb_id: BWBR0007795
+- number: 17g.2
+  text: "Onverminderd het eerste lid kan de Sociale verzekeringsbank de bestuurlijke boete verrekenen met een\nvordering die degene aan wie de bestuurlijke boete is opgelegd op hem heeft."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+- number: 17g.3
+  text: "Het college van burgemeester en wethouders van de betrokken gemeente, onderscheidenlijk het\nUitvoeringsinstituut werknemersverzekeringen, betaalt het bedrag van de bestuurlijke boete, zonder\ndat daarvoor een machtiging nodig is, op haar verzoek aan de Sociale verzekeringsbank indien degene\naan wie een bestuurlijke boete is opgelegd, dan wel degene met wie hij een huishouden vormt, een\nuitkering ontvangt op grond van de [Participatiewet][ref1], de [Wet inkomensvoorziening oudere en\ngedeeltelijk arbeidsongeschikte werkloze werknemers][ref2], de [Wet inkomensvoorziening oudere en\ngedeeltelijk arbeidsongeschikte gewezen zelfstandigen][ref3], de [Wet inkomensvoorziening oudere\nwerklozen][ref4], de [Werkloosheidswet][ref5], de [Ziektewet][ref6], de [Wet\narbeidsongeschiktheidsverzekering zelfstandigen][ref7], de Wet arbeidsongeschiktheidsvoorziening\njonggehandicapten, de [Wet werk en inkomen naar arbeidsvermogen][ref8], de [Wet op de\narbeidsongeschiktheidsverzekering][ref9] of de [Wet arbeid en zorg][ref10] of een toeslag op grond\nvan de [Toeslagenwet][ref11].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n[ref2]: https://wetten.overheid.nl/BWBR0004044\n[ref3]: https://wetten.overheid.nl/BWBR0004163\n[ref4]: https://wetten.overheid.nl/BWBR0024394\n[ref5]: https://wetten.overheid.nl/BWBR0004045\n[ref6]: https://wetten.overheid.nl/BWBR0001888\n[ref7]: https://wetten.overheid.nl/BWBR0008656\n[ref8]: https://wetten.overheid.nl/BWBR0019057\n[ref9]: https://wetten.overheid.nl/BWBR0002524\n[ref10]: https://wetten.overheid.nl/BWBR0013008\n[ref11]: https://wetten.overheid.nl/BWBR0004043"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+  references:
+  - id: ref1
+    bwb_id: BWBR0015703
+  - id: ref2
+    bwb_id: BWBR0004044
+  - id: ref3
+    bwb_id: BWBR0004163
+  - id: ref4
+    bwb_id: BWBR0024394
+  - id: ref5
+    bwb_id: BWBR0004045
+  - id: ref6
+    bwb_id: BWBR0001888
+  - id: ref7
+    bwb_id: BWBR0008656
+  - id: ref8
+    bwb_id: BWBR0019057
+  - id: ref9
+    bwb_id: BWBR0002524
+  - id: ref10
+    bwb_id: BWBR0013008
+  - id: ref11
+    bwb_id: BWBR0004043
+- number: 17g.4
+  text: "De in [artikel 479g van het Wetboek van Burgerlijke Rechtsvordering][ref1] aan de raad voor de\nkinderbescherming toegekende bevoegdheid komt gelijkelijk toe aan de Sociale verzekeringsbank.\nIndien de Sociale verzekeringsbank gebruik maakt van deze bevoegdheid, geschiedt de bekendmaking van\nhet dwangbevel, in afwijking van [artikel 4:123, eerste lid, van de Algemene wet\nbestuursrecht][ref2], door middel van toezending per post aan degene aan wie de boete is opgelegd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel479g\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel4:123"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 479g
+  - id: ref2
+    bwb_id: BWBR0005537
+    artikel: '4:123'
+- number: 17g.5
+  text: "Zolang de verzekerde en degene met wie hij een huishouden vormt, dan wel de persoon aan wie op grond\nvan [artikel 21][ref1] kinderbijslag wordt betaald, zijn verplichting als bedoeld in [artikel 17a,\nachtste lid][ref2], niet of niet behoorlijk nakomt:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel17a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: 17a
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 17g.5.a
+  text: "is de Sociale verzekeringsbank, in afwijking van [artikel 4:93, vierde lid, van de Algemene wet\nbestuursrecht][ref1], bevoegd tot verrekening van de bestuurlijke boete voor zover beslag op de\nvordering van de schuldeiser nietig zou zijn;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel4:93"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: '4:93'
+- number: 17g.5.b
+  text: "geldt de beslagvrije voet, bedoeld in de [artikelen 475c tot en met 475e van het Wetboek van\nBurgerlijke Rechtsvordering][ref1], in afwijking van [artikel 4:116 van de Algemene wet\nbestuursrecht][ref2], niet bij de invordering van een bestuurlijke boete bij dwangbevel.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel475c\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel4:116"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17g
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 475c
+  - id: ref2
+    bwb_id: BWBR0005537
+    artikel: '4:116'
+- number: 17h
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel17h
+- number: '18.1'
+  text: 'De Sociale verzekeringsbank betaalt:'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: 18.1.a
+  text: "de kinderbijslag zo spoedig mogelijk, doch uiterlijk binnen drie maanden na afloop van het kwartaal\nwaarover recht op kinderbijslag bestaat, respectievelijk binnen drie maanden na indiening van de\naanvraag, bedoeld in [artikel 14, eerste lid, onderdeel a][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 18.1.b
+  text: "de verdubbeling van het bedrag aan kinderbijslag, bedoeld in [artikel 7a, eerste lid][ref1], zo\nspoedig mogelijk, doch uiterlijk binnen drie maanden na indiening van de aanvraag of ontvangst van\nde informatie, bedoeld in [artikel 14, eerste lid, onderdeel b][ref2]; en\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 18.1.c
+  text: "het extra bedrag aan kinderbijslag, bedoeld in [artikel 7a, tweede lid][ref1], zo spoedig mogelijk,\ndoch uiterlijk binnen drie maanden na indiening van de aanvraag, bedoeld in [artikel 14, eerste lid,\nonderdeel c][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: '18.2'
+  text: "Indien twee personen, die gezamenlijk een huishouden vormen, over eenzelfde tijdvak recht op\nkinderbijslag voor eenzelfde kind hebben, wordt de kinderbijslag uitbetaald aan degene van hen die\nzij gezamenlijk daartoe hebben aangewezen."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.3'
+  text: "Bij gebreke van een gezamenlijke aanwijzing als bedoeld in het tweede lid bepaalt de Sociale\nverzekeringsbank aan welke persoon de kinderbijslag wordt uitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.4'
+  text: "Indien twee of meer personen waaronder één persoon tot wiens huishouden het kind behoort, over\neenzelfde tijdvak recht op kinderbijslag voor eenzelfde kind hebben, wordt de kinderbijslag waarop\ndegene recht heeft, tot wiens huishouden dit kind niet behoort, niet betaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.5'
+  text: "Indien twee of meer personen over eenzelfde tijdvak recht hebben op kinderbijslag voor eenzelfde\nkind, in andere situaties dan bedoeld in het tweede en vierde lid, wordt betaald de kinderbijslag\nwaarop degene recht heeft die de hoogste bijdrage in het onderhoud van dit kind levert. Aan de\nandere personen wordt geen kinderbijslag uitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.6'
+  text: "Zolang de persoon aan wie op grond van het vierde of vijfde lid kinderbijslag zou moeten worden\nbetaald geen aanvraag daartoe heeft ingediend, blijft de kinderbijslag, in afwijking van het vierde\nen vijfde lid, betaald worden aan de persoon die daartoe wel een aanvraag heeft ingediend. Indien de\npersoon die geen aanvraag heeft ingediend, alsnog een aanvraag indient, wordt de kinderbijslag aan\ndie persoon betaald:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: 18.6.a
+  text: "na afloop van het kalenderkwartaal waarin de aanvraag is ingediend, indien deze is ingediend in de\neerste twee maanden van dat kalenderkwartaal; of"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: 18.6.b
+  text: "na afloop van het kalenderkwartaal volgend op het kalenderkwartaal waarin de aanvraag is ingediend,\nindien deze is ingediend in de laatste maand van dat kalenderkwartaal."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.7'
+  text: "Bij algemene maatregel van bestuur kunnen met betrekking tot situaties van samenloop, bedoeld in het\ntweede, vierde en vijfde lid, nadere en aanvullende regels worden gesteld waarbij bepaald kan worden\ndat aan een ander persoon de kinderbijslag wordt uitbetaald dan de persoon, bedoeld in het vierde en\nvijfde lid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.8'
+  text: "De kinderbijslag die op grond van het tweede tot en met vijfde en zevende lid aan een verzekerde\nwordt betaald, kan op verzoek van die verzekerde in gedeelten aan meer verzekerden worden betaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+- number: '18.9'
+  text: "Indien de kinderbijslag in het buitenland wordt uitbetaald, geschiedt de betaling in afwijking van\n[artikel 4:89, derde lid, van de Algemene wet bestuursrecht][ref1] op het tijdstip waarop de\nrekening van de daartoe door de schuldeiser aangewezen bank wordt gecrediteerd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel4:89"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel18
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: '4:89'
+- number: '19'
+  text: "De Sociale verzekeringsbank schort de betaling van de kinderbijslag op of schorst de betaling,\nindien zij op grond van duidelijke aanwijzingen van oordeel is of het gegronde vermoeden heeft, dat:"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19
+- number: 19.a
+  text: het recht op kinderbijslag niet of niet meer bestaat;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19
+- number: 19.b
+  text: recht op een lagere kinderbijslag bestaat, of
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19
+- number: 19.c
+  text: "de verzekerde, alsmede de persoon aan wie of de instelling aan welke op grond van [artikel 21][ref1]\nkinderbijslag wordt betaald, een verplichting hem of haar op grond van de [artikelen 15][ref2],\n[15a, eerste lid][ref3], en [16][ref4] opgelegd, niet is nagekomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref3]: https://wetten.overheid.nl/BWBR0002368#Artikel15a\n[ref4]: https://wetten.overheid.nl/BWBR0002368#Artikel16"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0002368
+    artikel: 15a
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref4
+    bwb_id: BWBR0002368
+    artikel: '16'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 19a.1
+  text: "De Sociale verzekeringsbank schort de betaling van de kinderbijslag op, indien blijkt dat het door\nde verzekerde verstrekte adres van hemzelf of van zijn kind afwijkt van het adres waaronder de\nverzekerde of het kind in de basisregistratie personen staat ingeschreven."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19a
+- number: 19a.2
+  text: 'Geen opschorting vindt plaats:'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19a
+- number: 19a.2.a
+  text: "indien de afwijking redelijkerwijs geen gevolgen kan hebben voor het recht op of de hoogte van de\nkinderbijslag;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19a
+- number: 19a.2.b
+  text: indien de belanghebbende van de afwijking redelijkerwijs geen verwijt kan worden gemaakt.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19a
+- number: 19a.3
+  text: De Sociale verzekeringsbank doet schriftelijk mededeling van de opschorting aan de verzekerde.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19a
+- number: 19a.4
+  text: "De opschorting wordt beëindigd zodra het aan de Sociale verzekeringsbank gebleken is dat de\nafwijking niet meer bestaat."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel19a
+- number: '20'
+  text: "Indien voor hetzelfde kind kinderbijslag of een naar aard en strekking daarmee overeenkomende\ngezinsbijslag is betaald, dan wel kan worden betaald ingevolge deze wet en ingevolge een rechtens\ngeldende regeling, bestaande in een ander land, of ingevolge een regeling van een volkenrechtelijke\norganisatie, kunnen bij ministeriële regeling regels worden gesteld ter voorkoming, verrekening en\nbeperking van samenloop met dergelijke gezinsbijslagen of ter voorkoming van dubbele kinderbijslag."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel20
+- number: '21'
+  text: "De Sociale verzekeringsbank is bevoegd, voor zover nodig na ingewonnen advies van het Landelijk\nBureau Inning Onderhoudsbijdragen de kinderbijslag voor een kind te betalen aan een ander dan de\nrechthebbende."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel21
+- number: 21a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel21a
+- number: '22'
+  text: "De kinderbijslag die niet in ontvangst is genomen of is ingevorderd binnen twee jaar na de dag van\nbetaalbaarstelling, wordt niet meer betaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel22
+- number: '23.1'
+  text: 'De kinderbijslag is:'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel23
+- number: 23.1.a
+  text: onvervreemdbaar;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel23
+- number: 23.1.b
+  text: niet vatbaar voor verpanding of belening;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel23
+- number: 23.1.c
+  text: "behoudens voor zoveel dit dient tot verhaal van een uitkering tot levensonderhoud van het kind, of\ntot terugvordering van onverschuldigd betaalde kinderbijslag als bedoeld in [artikel 24][ref1], niet\nvatbaar voor executoriaal of conservatoir beslag noch voor beslag ingevolge faillissement of\ntoepassing van de schuldsaneringsregeling natuurlijke personen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel24"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel23
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '24'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '23.2'
+  text: "Volmacht tot ontvangst van kinderbijslag, onder welke vorm of welke benaming ook door de verzekerde\nverleend, is steeds herroepelijk."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel23
+- number: '23.3'
+  text: Elk beding, strijdig met enige bepaling van dit artikel, is nietig.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel23
+- number: '24.1'
+  text: "De kinderbijslag die als gevolg van een besluit als bedoeld in [artikel 14a][ref1] onverschuldigd is\nbetaald, alsmede hetgeen anderszins onverschuldigd is betaald, wordt door de Sociale\nverzekeringsbank van de verzekerde, dan wel degene met wie hij een huishouding vormt, of de persoon\naan wie op grond van [artikel 21][ref2] kinderbijslag wordt betaald, teruggevorderd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel14a\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 14a
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: '24.2'
+  text: "In afwijking van het eerste lid kan de Sociale verzekeringsbank besluiten van terugvordering of van\nverdere terugvordering af te zien, indien de verzekerde, dan wel degene met wie hij een huishouding\nvormt, of de persoon aan wie op grond van [artikel 21][ref1] kinderbijslag wordt betaald:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 24.2.a
+  text: gedurende vijf jaar volledig aan zijn betalingsverplichtingen heeft voldaan;
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: 24.2.b
+  text: "gedurende vijf jaar niet volledig aan zijn betalingsverplichtingen heeft voldaan, maar het\nachterstallige bedrag over die periode, vermeerderd met de daarover verschuldigde wettelijke rente\nen de op de invordering betrekking hebbende kosten, alsnog heeft betaald;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: 24.2.c
+  text: "gedurende vijf jaar geen betalingen heeft verricht en niet aannemelijk is dat hij deze op enig\nmoment zal gaan verrichten; of"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: 24.2.d
+  text: een bedrag, overeenkomend met ten minste 50% van de restsom in één keer aflost.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: '24.3'
+  text: "De in het tweede lid, onderdelen a, b en c, genoemde termijn is tien jaar indien de terugvordering\nhet gevolg is van het niet of niet behoorlijk nakomen van de verplichting, bedoeld in\n[artikel 15][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: '24.4'
+  text: 'De in het tweede lid, onder a en b, genoemde termijn is drie jaar indien:'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: 24.4.a
+  text: "het gemiddeld inkomen van de belanghebbende in die periode de beslagvrije voet bedoeld in de\n[artikelen 475c tot en met 475e van het Wetboek van Burgerlijke Rechtsvordering][ref1] niet te boven\nis gegaan; en\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel475c"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 475c
+- number: 24.4.b
+  text: "de terugvordering niet het gevolg is van het niet of niet behoorlijk nakomen van de verplichting,\nbedoeld in [artikel 15][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: '24.5'
+  text: "Indien daarvoor dringende redenen aanwezig zijn kan de Sociale verzekeringsbank besluiten geheel of\ngedeeltelijk van terugvordering af te zien."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: '24.6'
+  text: "Degene van wie wordt teruggevorderd is verplicht desgevraagd aan de Sociale verzekeringsbank de\ninlichtingen te verstrekken die voor de terugvordering van belang zijn."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: '24.7'
+  text: "In afwijking van het eerste lid kan de Sociale verzekeringsbank, onder voorwaarden die Onze Minister\nkan stellen, besluiten van terugvordering af te zien indien het terug te vorderen bedrag een door\nOnze Minister vast te stellen bedrag niet te boven gaat."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24
+- number: 24a.1
+  text: "De Sociale verzekeringsbank kan de onverschuldigd betaalde kinderbijslag, bedoeld in [artikel 24,\neerste lid][ref1], invorderen bij dwangbevel.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel24"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '24'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 24a.2
+  text: "[Artikel 17g][ref1] is van overeenkomstige toepassing, met dien verstande dat:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17g"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17g
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 24a.2.a
+  text: "indien het gemiddeld inkomen van de belanghebbende gedurende drie jaar de beslagvrije voet bedoeld\nin de [artikelen 475c tot en met 475e van het Wetboek van Burgerlijke Rechtsvordering][ref1] niet te\nboven is gegaan, de Sociale verzekeringsbank de aflossingsbedragen lager vaststelt; en\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel475c"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24a
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 475c
+- number: 24a.2.b
+  text: "indien degene van wie wordt teruggevorderd, dan wel degene met wie hij een huishouden vormt,\nkinderbijslag op grond van deze wet ontvangt, in afwijking van [artikel 17g, eerste lid][ref1], het\nbesluit tot terugvordering ten uitvoer kan worden gelegd door verrekening met die bijslag.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17g"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17g
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 24b
+  text: "Bij ministeriële regeling kunnen regels worden gesteld met betrekking tot de wijze van\ntenuitvoerlegging van de beschikking waarbij is vastgesteld dat onverschuldigd is betaald."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24b
+- number: 24c.1
+  text: "In afwijking van [artikel 24, eerste lid][ref1], kan de Sociale verzekeringsbank, op verzoek van de\nverzekerde, dan wel degene met wie hij een huishouding vormt, of de persoon aan wie op grond van\n[artikel 21][ref2] kinderbijslag wordt betaald, besluiten gedeeltelijk van terugvordering of\ngedeeltelijk van verdere terugvordering af te zien bij medewerking aan een schuldregeling, indien:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel24\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '24'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 24c.1.a
+  text: "redelijkerwijs te voorzien is dat verzekerde, dan wel degene met wie hij een huishouding vormt, of\nde persoon aan wie op grond van [artikel 21][ref1] kinderbijslag wordt betaald niet zal kunnen\nvoortgaan met het betalen van zijn schulden of indien hij in de toestand verkeert dat hij heeft\nopgehouden te betalen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 24c.1.b
+  text: "redelijkerwijs te voorzien is dat een schuldregeling met betrekking tot alle vorderingen, behoudens\nde in het tweede lid bedoelde vorderingen, van de overige schuldeisers zonder een zodanig besluit\nniet tot stand zal komen;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+- number: 24c.1.c
+  text: "een naar het oordeel van de Sociale verzekeringsbank betrouwbaar voorstel voor een schuldregeling\ntot stand is gekomen door tussenkomst van een schuldhulpverlener als bedoeld in [artikel 48 van de\nWet op het consumentenkrediet][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0004815#Artikel48"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0004815
+    artikel: '48'
+- number: 24c.1.d
+  text: aannemelijk is dat medewerking aan een schuldregeling niet concurrentieverstorend werkt; en
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+- number: 24c.1.e
+  text: "uitdeling in het kader van de schuldregeling plaatsvindt overeenkomstig [artikel 349 van de\nFaillissementswet][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001860#Artikel349"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0001860
+    artikel: '349'
+- number: 24c.2
+  text: "Het eerste lid is niet van toepassing indien een vordering is ontstaan door het opzettelijk of door\ngrove schuld niet nakomen door de verzekerde, dan wel degene met wie hij een huishouding vormt, of\nde persoon aan wie op grond van [artikel 21][ref1] kinderbijslag wordt betaald, van de verplichting,\nbedoeld in [artikel 15][ref2], en hiervoor een boete als bedoeld in [artikel 17a][ref3] is opgelegd,\ndan wel met betrekking tot het niet naleven van die verplichting aangifte is gedaan op grond van het\n[Wetboek van Strafrecht][ref4].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel15\n[ref3]: https://wetten.overheid.nl/BWBR0002368#Artikel17a\n[ref4]: https://wetten.overheid.nl/BWBR0001854"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '15'
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0002368
+    artikel: 17a
+    hoofdstuk: III
+    paragraaf: '2'
+  - id: ref4
+    bwb_id: BWBR0001854
+- number: 24c.3
+  text: "Het besluit tot het afzien van terugvordering of van verdere terugvordering wordt ingetrokken of ten\nnadele van de verzekerde, dan wel degene met wie hij een huishouding vormt, of de persoon aan wie op\ngrond van [artikel 21][ref1] kinderbijslag wordt betaald gewijzigd indien:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 24c.3.a
+  text: "niet binnen twaalf maanden nadat dat besluit is bekendgemaakt, een schuldregeling tot stand is\ngekomen die voldoet aan de eisen, bedoeld in het eerste lid;"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+- number: 24c.3.b
+  text: "de verzekerde, dan wel degene met wie hij een huishouding vormt, of de persoon aan wie op grond van\n[artikel 21][ref1] kinderbijslag wordt betaald zijn schuld aan de Sociale verzekeringsbank niet\novereenkomstig de schuldregeling voldoet; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel21"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '21'
+    hoofdstuk: III
+    paragraaf: '3'
+- number: 24c.3.c
+  text: "onjuiste of onvolledige gegevens zijn verstrekt en de verstrekking van juiste of volledige gegevens\ntot een ander besluit zou hebben geleid."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+- number: 24c.4
+  text: "Bij ministeriële regeling kunnen met betrekking tot dit artikel nadere regels worden gesteld ten\naanzien van de bevoegdheid om mee te werken aan schuldregelingen."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24c
+- number: 24d
+  text: "Een vordering van de Sociale verzekeringsbank als bedoeld in de [artikelen 24][ref1] en [24c][ref2]\nis bevoorrecht en volgt onmiddellijk na de vorderingen, bedoeld in [artikel 288 van Boek 3 van het\nBurgerlijk Wetboek][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel24\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel24c\n[ref3]: https://wetten.overheid.nl/BWBR0005291#Artikel288"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel24d
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '24'
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: 24c
+    hoofdstuk: III
+    paragraaf: '3'
+  - id: ref3
+    bwb_id: BWBR0005291
+    artikel: '288'
+- number: '25'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel25
+- number: '26'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel26
+- number: 26a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel26a
+- number: '27'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel27
+- number: '28'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel28
+- number: '29'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29
+- number: 29a.1
+  text: "De Sociale verzekeringsbank beheert en administreert afzonderlijk de middelen tot dekking van de\nuitgaven, bedoeld in het derde lid, in de vorm van een Algemeen Kinderbijslagfonds dat deel uitmaakt\nvan de Sociale verzekeringsbank, alsmede door de met toepassing van [artikel 17a][ref1] verkregen\nboeten.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17a
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 29a.2
+  text: "In de middelen tot dekking van de uitgaven ten laste van het Algemeen Kinderbijslagfonds wordt\nvoorzien door het Rijk, onderscheidenlijk de afdracht van de boeten, bedoeld in [artikel 17a][ref1],\ndoor de Sociale verzekeringsbank.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel17a"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 17a
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 29a.3
+  text: "De ingevolge deze wet uit te keren kinderbijslagen en de aan de uitvoering van deze wet verbonden\nkosten komen ten laste van het Algemeen Kinderbijslagfonds."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29a
+- number: 29b
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29b
+- number: 29c.1
+  text: "Een beschikking op grond van deze wet en de daarop berustende bepalingen wordt gegeven binnen een\nredelijke termijn na ontvangst van de aanvraag of na ontvangst van de informatie, bedoeld in\n[artikel 14, eerste lid, onderdeel b][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 29c.2
+  text: "De redelijke termijn is in ieder geval verstreken wanneer binnen acht weken na ontvangst van de\naanvraag of na ontvangst van de informatie, bedoeld in [artikel 14, eerste lid, onderdeel b][ref1],\ngeen beschikking is gegeven, noch een kennisgeving als bedoeld in het derde lid is gedaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 29c.3
+  text: "Indien een beschikking niet binnen de termijn van acht weken kan worden gegeven, wordt die termijn\nmet een redelijke termijn verlengd en wordt de aanvrager of, indien geen sprake is van een\naanvrager, degene aan wie de kinderbijslag wordt uitbetaald daarvan schriftelijk in kennis gesteld."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29c
+- number: 29c.4
+  text: "Indien ambtshalve op basis van de verschafte informatie bedoeld in [artikel 14, eerste lid,\nonderdeel b][ref1], niet wordt overgegaan tot vaststelling van een recht op een verdubbeling van het\nbedrag aan kinderbijslag, wordt hiervan binnen een redelijke termijn schriftelijk in kennis gesteld:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '14'
+    hoofdstuk: III
+    paragraaf: '2'
+- number: 29c.4.a
+  text: degene aan wie de kinderbijslag wordt uitbetaald; of
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29c
+- number: 29c.4.b
+  text: "degene aan wie het indicatiebesluit, bedoeld in [artikel 3.2.3 van de Wet langdurige zorg][ref1], is\ngericht, als geen kinderbijslag wordt uitbetaald.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel3.2.3"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29c
+  references:
+  - id: ref1
+    bwb_id: BWBR0035917
+    artikel: 3.2.3
+- number: 29d
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel29d
+- number: '30'
+  text: "In afwijking van [artikel 7:10, eerste lid, van de Algemene wet bestuursrecht][ref1] beslist de\nSociale verzekeringsbank binnen dertien weken gerekend vanaf de dag na die waarop de termijn voor\nhet indienen van het bezwaarschrift is verstreken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel7:10"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel30
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: '7:10'
+- number: '31.1'
+  text: "Tegen uitspraken van de Centrale Raad van Beroep kan ieder der partijen beroep in cassatie instellen\nter zake van schending of verkeerde toepassing van het bepaalde bij of krachtens [artikel 2][ref1],\n[3][ref2] of [6][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel3\n[ref3]: https://wetten.overheid.nl/BWBR0002368#Artikel6"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel31
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: '2'
+    hoofdstuk: I
+  - id: ref2
+    bwb_id: BWBR0002368
+    artikel: '3'
+    hoofdstuk: I
+  - id: ref3
+    bwb_id: BWBR0002368
+    artikel: '6'
+    hoofdstuk: II
+- number: '31.2'
+  text: "Op dit beroep zijn de voorschriften betreffende het beroep in cassatie tegen uitspraken van de\ngerechtshoven inzake beroepen in belastingzaken van overeenkomstige toepassing, waarbij de Centrale\nRaad van Beroep de plaats inneemt van een gerechtshof."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel31
+- number: '32'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel32
+- number: '33'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel33
+- number: '34'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel34
+- number: '35'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel35
+- number: '36'
+  text: "Een gedraging die in strijd is met een krachtens deze wet uitgevaardigde algemene maatregel van\nbestuur, voor zover uitdrukkelijk als strafbaar feit in de zin van dit artikel aangeduid, wordt\ngestraft met hechtenis van ten hoogste een maand of geldboete van de tweede categorie, bedoeld in\n[artikel 23, vierde lid, van het Wetboek van Strafrecht][ref1]. Het feit wordt beschouwd als een\novertreding.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001854#Artikel23"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel36
+  references:
+  - id: ref1
+    bwb_id: BWBR0001854
+    artikel: '23'
+- number: '37'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel37
+- number: '38'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel38
+- number: '39'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel39
+- number: '40'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel40
+- number: '41'
+  text: Hetgeen nog ter uitvoering van deze wet nodig is, wordt geregeld bij ministeriële regeling.
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel41
+- number: 41a
+  text: "[Artikel 7a, tweede lid][ref1], zoals dat luidde op de dag voorafgaand aan de inwerkingtreding van\n[artikel I, onderdeel B, van de Verzamelwet SZW 2018][ref2], blijft van toepassing op een recht op\neen extra bedrag aan kinderbijslag over het kalenderjaar voorafgaand aan het kalenderjaar waarin\nartikel I, onderdeel B, van de Verzamelwet SZW 2018 in werking is getreden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7a\n[ref2]: https://wetten.overheid.nl/BWBR0040370#ArtikelI"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel41a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7a
+    hoofdstuk: III
+    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0040370
+    artikel: I
+- number: 41b.1
+  text: "Op de persoon die op grond van een verdrag, de voorlopige toepassing van een verdrag dan wel een\ndaarmee gelijk te stellen situatie in afwijking van [artikel 7b][ref1] recht heeft op kinderbijslag\nen wiens recht op kinderbijslag uitsluitend zou eindigen als gevolg van de opzegging of wijziging\nvan dat verdrag, de beëindiging van de voorlopige toepassing van dat verdrag dan wel de beëindiging\nvan een daarmee gelijk te stellen situatie, blijft artikel 7b gedurende de eerste twee\nkalenderkwartalen vanaf de buitenwerkingtreding van het verdrag, de inwerkingtreding van de\ndesbetreffende wijziging respectievelijk de beëindiging van de voorlopige toepassing of de\nbeëindiging van de daarmee gelijk te stellen situatie buiten toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel7b"
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel41b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002368
+    artikel: 7b
+    hoofdstuk: III
+    paragraaf: '1'
+- number: 41b.2
+  text: "Het eerste lid blijft van toepassing zolang het kind op de eerste dag van de in dat lid bedoelde\nkalenderkwartalen woont in hetzelfde land als waar hij op de eerste dag van het daaraan voorafgaande\nkalenderkwartaal woonde en de verzekerde blijft voldoen aan de overige voorwaarden voor het recht op\nkinderbijslag."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel41b
+- number: '42'
+  text: 'Deze wet kan worden aangehaald onder de titel: "Algemene Kinderbijslagwet".'
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel42
+- number: '43'
+  text: "De artikelen van deze wet treden in werking met ingang van een bij koninklijk besluit te bepalen\ntijdstip, dat voor de verschillende artikelen of onderdelen daarvan verschillend kan worden gesteld."
+  url: https://wetten.overheid.nl/BWBR0002368/2025-01-01#Artikel43

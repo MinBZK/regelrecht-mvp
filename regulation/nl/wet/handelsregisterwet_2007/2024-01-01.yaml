@@ -1,0 +1,2029 @@
+---
+$schema:
+  https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: handelsregisterwet_2007
+regulatory_layer: WET
+publication_date: '2025-07-15'
+valid_from: '2024-01-01'
+bwb_id: BWBR0021777
+url: https://wetten.overheid.nl/BWBR0021777/2024-01-01
+articles:
+  - number: aanhef
+    text: "Wij Beatrix, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz.
+      enz. enz.\n\nAllen, die deze zullen zien of horen lezen, saluut! doen te weten:\n\nAlzo Wij in overweging
+      genomen hebben, dat het ter bevordering van een goede vervulling van\npubliekrechtelijke taken wenselijk
+      is om het handelsregister uit te breiden en om te vormen tot een\nbasisregister van ondernemingen
+      en rechtspersonen;\n\nZo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal,
+      hebben\ngoedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Aanhef
+  - number: '1.1'
+    text: 'In deze wet en de daarop rustende bepalingen wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.a
+    text: 'Onze Minister: Onze Minister van Economische Zaken en Klimaat;'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.b
+    text: "onderneming: een onderneming als bedoeld in [artikel 5][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel5"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '5'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 1.1.c
+    text: "rechtspersoon: een rechtspersoon als bedoeld in [artikel 6][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 1.1.d
+    text: "publiekrechtelijke rechtspersoon: een publiekrechtelijke rechtspersoon als bedoeld in [artikel
+      1 van\nBoek 2 van het Burgerlijk Wetboek][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003045#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0003045
+        artikel: '1'
+  - number: 1.1.e
+    text: "kerkgenootschap: een kerkgenootschap als bedoeld in [artikel 2 van Boek 2 van het Burgerlijk\n\
+      Wetboek][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003045#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0003045
+        artikel: '2'
+  - number: 1.1.f
+    text: "basisregister: een verzameling gegevens waarvan bij wet is bepaald dat deze authentieke gegevens\n\
+      bevat;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.g
+    text: "authentiek gegeven: een in een basisregister opgenomen gegeven dat bij of krachtens wet als\n\
+      authentiek wordt aangemerkt;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.h
+    text: "handelsregister: het register, bedoeld in [artikel 2][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '2'
+        hoofdstuk: '2'
+        paragraaf: '2.1'
+  - number: 1.1.i
+    text: "Kamer: de Kamer van Koophandel, genoemd in [artikel 2 van de Wet op de Kamer van Koophandel][ref1];\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0034331#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0034331
+        artikel: '2'
+  - number: 1.1.j
+    text: "vestiging: een gebouw of complex van gebouwen waar duurzame uitoefening van de activiteiten
+      van een\nonderneming of rechtspersoon plaatsvindt;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.k
+    text: 'hoofdvestiging: een door een onderneming of een rechtspersoon als zodanig aangemerkte vestiging;'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.l
+    text: 'nevenvestiging: een vestiging niet zijnde de hoofdvestiging;'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.m
+    text: "hoofdnederzetting: een in Nederland gelegen nevenvestiging van een buiten Nederland gevestigde\n\
+      onderneming of rechtspersoon of, indien er meer nevenvestigingen zijn, de door een onderneming of\n\
+      rechtspersoon als hoofdnederzetting aangemerkte nevenvestiging;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.n
+    text: "verordening 2137/85: verordening (EEG) nr. 2137/85 van de Raad van de Europese Gemeenschappen
+      van 25\njuli 1985 tot instelling van Europese economische samenwerkingsverbanden (EESV) (PbEG L
+      199);"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.o
+    text: "verordening 2157/2001: verordening (EG) nr. 2157/2001 van de Raad van de Europese Unie van
+      8 oktober\n2001 betreffende het statuut van de Europese vennootschap (SE) (PbEG L 294);"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.p
+    text: "uiteindelijk belanghebbende: uiteindelijk belanghebbende als bedoeld in artikel 10a, eerste
+      lid, van\nde Wet ter voorkoming van witwassen en financieren van terrorisme;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: 1.1.q
+    text: "Financiële inlichtingen eenheid: de Financiële inlichtingen eenheid, bedoeld in [artikel 12,
+      eerste\nlid, van de Wet ter voorkoming van witwassen en financieren van terrorisme][ref1].\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0024282#Artikel12"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0024282
+        artikel: '12'
+  - number: '1.2'
+    text: "Onder publiekrechtelijke rechtspersoon wordt mede verstaan een Europese groepering voor territoriale\n\
+      samenwerking als bedoeld in artikel 1 van verordening (EG) nr. 1082/2006 van het Europees Parlement\n\
+      en de Raad van de Europese Unie van 5 juli 2006 betreffende een Europese groepering voor\nterritoriale
+      samenwerking (EGTS) (PbEU L 210)."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel1
+  - number: '2'
+    text: 'Er is een handelsregister van ondernemingen en rechtspersonen:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel2
+  - number: 2.a
+    text: ter bevordering van de rechtszekerheid in het economisch verkeer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel2
+  - number: 2.b
+    text: "voor de verstrekking van gegevens van algemene, feitelijke aard omtrent de samenstelling van\n\
+      ondernemingen en rechtspersonen ter bevordering van de economische belangen van handel, industrie,\n\
+      ambacht en dienstverlening;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel2
+  - number: 2.c
+    text: "voor het registreren van alle ondernemingen en rechtspersonen als onderdeel van de\ngegevenshuishouding
+      die bijdraagt aan het efficiënt functioneren van en de rechtshandhaving door de\noverheid;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel2
+  - number: 2.d
+    text: "voor het registreren van uiteindelijk belanghebbenden ter voorkoming van het gebruik van het\n\
+      financiële stelsel voor het witwassen van geld en terrorismefinanciering."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel2
+  - number: '3.1'
+    text: Het handelsregister wordt gehouden door de Kamer.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel3
+  - number: '3.2'
+    text: "Ten aanzien van verwerkingen ten behoeve van het handelsregister is de Kamer\nverwerkingsverantwoordelijke."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel3
+  - number: '3.3'
+    text: De Kamer kan met machtiging van Onze Minister werkzaamheden laten verrichten door een
+      verwerker.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel3
+  - number: '4.1'
+    text: "Onze Minister stelt bij ministeriële regeling een systeembeschrijving vast. De systeembeschrijving\n\
+      geeft de inrichting en werking van het handelsregister aan."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel4
+  - number: '4.2'
+    text: De Kamer draagt zorg voor een goede beschikbaarheid, werking en beveiliging van het
+      handelsregister.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel4
+  - number: '5'
+    text: 'In het handelsregister worden de volgende ondernemingen ingeschreven:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: 5.a
+    text: "een onderneming die in Nederland is gevestigd en die toebehoort aan een naamloze vennootschap,
+      een\nbesloten vennootschap met beperkte aansprakelijkheid, een vennootschap onder firma, een\ncommanditaire
+      vennootschap, een maatschap, een rederij, een coöperatie, een onderlinge\nwaarborgmaatschappij,
+      een vereniging, een stichting, een kerkgenootschap of een publiekrechtelijke\nrechtspersoon;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: 5.b
+    text: een onderneming die in Nederland gevestigd is en die toebehoort aan een natuurlijke
+      persoon;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: 5.c
+    text: "een onderneming die toebehoort aan een Europese naamloze vennootschap, een Europese coöperatieve\n\
+      vennootschap of een Europees economisch samenwerkingverband die volgens haar statuten haar zetel
+      in\nNederland heeft;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: 5.d
+    text: "een onderneming die toebehoort aan een buitenlandse rechtspersoon die een hoofd- of een\nnevenvestiging
+      in Nederland heeft;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: 5.e
+    text: "een onderneming die in Nederland is gevestigd en die toebehoort aan een ander dan genoemd in\n\
+      onderdeel a tot en met d;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: 5.f
+    text: "een onderneming die niet in Nederland is gevestigd en die toebehoort aan een in Nederland opgerichte\n\
+      maatschap, vennootschap onder firma, commanditaire vennootschap of rederij."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel5
+  - number: '6.1'
+    text: "In het handelsregister worden de volgende rechtspersonen die volgens hun statuten hun zetel
+      in\nNederland hebben ingeschreven:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: 6.1.a
+    text: "een naamloze vennootschap, een besloten vennootschap met beperkte aansprakelijkheid, een Europese\n\
+      naamloze vennootschap, een Europees economisch samenwerkingsverband, een Europese coöperatieve\n\
+      vennootschap, een coöperatie en een onderlinge waarborgmaatschappij;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: 6.1.b
+    text: "een vereniging met volledige rechtsbevoegdheid, een vereniging van eigenaars, een stichting
+      en\noverige privaatrechtelijke rechtspersonen;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: 6.1.c
+    text: "een publiekrechtelijke rechtspersoon, met dien verstande dat in plaats van de Staat de ministeries,\n\
+      bedoeld in [artikel 2.1, eerste lid, van de Comptabiliteitswet 2016][ref1] en de dienstonderdelen\n\
+      van een ministerie die overeenkomstig [artikel 2.20 van de Comptabiliteitswet 2016][ref2] zijn\n\
+      aangewezen worden ingeschreven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0039429#Artikel2.1\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0039429#Artikel2.20"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+    references:
+      - id: ref1
+        bwb_id: BWBR0039429
+        artikel: '2.1'
+      - id: ref2
+        bwb_id: BWBR0039429
+        artikel: '2.20'
+  - number: '6.2'
+    text: Een vereniging zonder volledige rechtsbevoegdheid kan worden ingeschreven.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: '6.3'
+    text: "Bij algemene maatregel van bestuur wordt bepaald op welke wijze de organisatie waarvan een
+      of meer\nkerkgenootschappen deel uitmaken, wordt ingeschreven in het handelsregister en tevens kan
+      worden\nbepaald of en in hoeverre zelfstandige onderdelen of lichamen waarin zij zijn verenigd moeten
+      worden\ningeschreven in het handelsregister."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: '6.4'
+    text: "De voordracht voor een krachtens het derde lid vast te stellen algemene maatregel van bestuur
+      wordt\nniet eerder gedaan dan vier weken nadat het ontwerp aan beide kamers der Staten-Generaal
+      is\novergelegd."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: '6.5'
+    text: "Bij algemene maatregel van bestuur kan worden bepaald dat, in aanvulling op het eerste lid,\n\
+      onderdeel c, onderdelen van een publiekrechtelijke rechtspersoon kunnen worden ingeschreven in het\n\
+      handelsregister."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel6
+  - number: '7'
+    text: "Indien aan een rechtspersoon als bedoeld in [artikel 6][ref1] een onderneming toebehoort die
+      als\nzodanig overeenkomstig [artikel 5][ref2] moet worden ingeschreven, geldt de inschrijving van
+      de\nonderneming tevens als inschrijving van de rechtspersoon.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel5"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel7
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '5'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '8'
+    text: 'Bij algemene maatregel van bestuur:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel8
+  - number: 8.a
+    text: "kunnen andere rechtspersonen worden aangewezen die worden ingeschreven in het handelsregister
+      indien\ndit noodzakelijk is voor het toereikend functioneren van het handelsregister;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel8
+  - number: 8.b
+    text: kan nader worden bepaald wanneer sprake is van een onderneming.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel8
+  - number: '9'
+    text: 'In het handelsregister worden over een onderneming opgenomen:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: 9.a
+    text: een door de Kamer toegekend uniek nummer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: 9.b
+    text: de handelsnaam of de handelsnamen;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: 9.c
+    text: de datum van aanvang, voortzetting of beëindiging;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: 9.d
+    text: degene aan wie de onderneming toebehoort;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: 9.e
+    text: de vestigingen;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: 9.f
+    text: "de identificatiecode voor juridische entiteiten (Legal Entity Identifier) volgens een door
+      Onze\nMinister aangewezen norm van het Nederlands Normalisatie-Instituut, die de Kamer of een andere
+      tot\nuitgifte van de LEI geaccrediteerde instantie uitgeeft aan een in het handelsregister ingeschreven\n\
+      onderneming."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel9
+  - number: '10.1'
+    text: "In het handelsregister worden over degene aan wie een onderneming toebehoort, indien deze een\n\
+      rechtspersoon is, de in [artikel 12][ref1] genoemde gegevens opgenomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel12"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '12'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '10.2'
+    text: "In het handelsregister worden over degene aan wie een onderneming toebehoort, indien deze een\n\
+      natuurlijke persoon is, opgenomen:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.2.a
+    text: "het burgerservicenummer, bedoeld in [artikel 1, onderdeel b, van de Wet algemene bepalingen\n\
+      burgerservicenummer][ref1], het geslacht, de geboorteplaats en het geboorteland;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022428#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0022428
+        artikel: '1'
+  - number: 10.2.b
+    text: de naam;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.2.c
+    text: het adres;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.2.d
+    text: de geboortedatum;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.2.e
+    text: de datum van overlijden.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: '10.3'
+    text: "In het handelsregister worden over degene aan wie een onderneming toebehoort, die geen rechtspersoon\n\
+      en geen natuurlijke persoon is, opgenomen:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.a
+    text: een door de Kamer toegekend uniek nummer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.b
+    text: de naam;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.c
+    text: de datum van aanvang, voortzetting of beëindiging;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.d
+    text: de rechtsvorm;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e
+    text: 'de leden, maten of vennoten, met uitzondering van de commanditaire vennoten, en:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.1°
+    text: indien deze natuurlijke personen zijn,
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.1°.–
+    text: "het burgerservicenummer, bedoeld in [artikel 1, onderdeel b, van de Wet algemene bepalingen\n\
+      burgerservicenummer][ref1], het geslacht, de geboorteplaats en het geboorteland,\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022428#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0022428
+        artikel: '1'
+  - number: 10.3.e.1°.–
+    text: de naam,
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.1°.–
+    text: het adres,
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.1°.–
+    text: de geboortedatum,
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.1°.–
+    text: de datum van overlijden;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.2°
+    text: indien deze geen natuurlijke personen zijn,
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.2°.–
+    text: een door een kamer toegekend uniek nummer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.2°.–
+    text: de naam;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.2°.–
+    text: de rechtsvorm en de statutaire zetel,
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: 10.3.e.2°.–
+    text: de datum van aanvang of beëindiging.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel10
+  - number: '11.1'
+    text: 'In het handelsregister worden over een vestiging van een onderneming opgenomen:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel11
+  - number: 11.1.a
+    text: een door de Kamer toegekend uniek nummer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel11
+  - number: 11.1.b
+    text: de handelsnaam of handelsnamen;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel11
+  - number: 11.1.c
+    text: het post- en bezoekadres;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel11
+  - number: 11.1.d
+    text: de datum van ingebruikname en beëindiging.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel11
+  - number: '11.2'
+    text: "Indien een onderneming meerdere vestigingen heeft, wordt in het handelsregister opgenomen welke\n\
+      vestiging de hoofdvestiging of de hoofdnederzetting is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel11
+  - number: '12'
+    text: 'In het handelsregister worden over een rechtspersoon opgenomen:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel12
+  - number: 12.a
+    text: een door de Kamer toegekend uniek nummer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel12
+  - number: 12.b
+    text: de naam;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel12
+  - number: 12.c
+    text: de rechtsvorm en de statutaire zetel;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel12
+  - number: 12.d
+    text: de datum van aanvang of beëindiging;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel12
+  - number: 12.e
+    text: "de identificatiecode voor juridische entiteiten (Legal Entity Identifier) volgens een door
+      Onze\nMinister aangewezen norm van het Nederlands Normalisatie-Instituut, die de Kamer of een andere
+      tot\nuitgifte van de LEI geaccrediteerde instantie uitgeeft aan een in het handelsregister ingeschreven\n\
+      rechtspersoon."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel12
+  - number: '13'
+    text: "In het handelsregister worden over een activiteit van een rechtspersoon waaraan geen onderneming\n\
+      toebehoort opgenomen:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel13
+  - number: 13.a
+    text: "een door de Kamer toegekend uniek nummer voor de activiteiten van de rechtspersoon, tenzij
+      er sprake\nis van een publiekrechtelijke rechtspersoon;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel13
+  - number: 13.b
+    text: de datum van aanvang, voortzetting of beëindiging;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel13
+  - number: 13.c
+    text: de vestigingen.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel13
+  - number: '14.1'
+    text: "In het handelsregister worden over een vestiging van een rechtspersoon waaraan geen onderneming\n\
+      toebehoort opgenomen:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel14
+  - number: 14.1.a
+    text: een door de Kamer toegekend uniek nummer;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel14
+  - number: 14.1.b
+    text: de naam;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel14
+  - number: 14.1.c
+    text: het post- en bezoekadres;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel14
+  - number: 14.1.d
+    text: de datum van ingebruikname of beëindiging.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel14
+  - number: '14.2'
+    text: "Indien een rechtspersoon meerdere vestigingen heeft, wordt in het handelsregister opgenomen
+      welke\nvestiging de hoofdvestiging of de hoofdnederzetting is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel14
+  - number: '15'
+    text: "De in [artikel 9 tot en met 14][ref1] genoemde gegevens zijn authentieke gegevens.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0021777#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 15a.1
+    text: "In het handelsregister wordt opgenomen wie de uiteindelijk belanghebbende is of de uiteindelijk\n\
+      belanghebbenden zijn van vennootschappen of andere juridische entiteiten als bedoeld in [artikel\n\
+      10a, tweede lid, van de Wet ter voorkoming van witwassen en financieren van terrorisme][ref1] die\n\
+      overeenkomstig de [artikelen 5][ref2] of [6, eerste of derde lid][ref3], zijn ingeschreven in het\n\
+      handelsregister, met uitzondering van verenigingen van eigenaars en overige privaatrechtelijke\n\
+      rechtspersonen als bedoeld in [artikel 6, eerste lid, onderdeel b][ref4].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0024282#Artikel10a\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel5\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel6\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0021777#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+    references:
+      - id: ref1
+        bwb_id: BWBR0024282
+        artikel: 10a
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '5'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref4
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 15a.2
+    text: 'In het handelsregister wordt over een uiteindelijk belanghebbende opgenomen:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.2.a
+    text: "het burgerservicenummer, bedoeld in [artikel 1, onderdeel b, van de Wet algemene bepalingen\n\
+      burgerservicenummer][ref1], indien dat aan hem is toegekend;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022428#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+    references:
+      - id: ref1
+        bwb_id: BWBR0022428
+        artikel: '1'
+  - number: 15a.2.b
+    text: "een fiscaal identificatienummer van een ander land dan Nederland waarvan hij ingezetene is,
+      indien\ndat door zijn woonstaat aan hem is toegekend;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.2.c
+    text: de naam, de geboortemaand en het geboortejaar, de woonstaat en de nationaliteit;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.2.d
+    text: de geboortedag, de geboorteplaats, het geboorteland en het woonadres;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.2.e
+    text: "de aard van het door de uiteindelijk belanghebbende gehouden economische belang en de omvang
+      van dit\nbelang, aangeduid in bij algemene maatregel van bestuur vast te stellen klassen."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.3
+    text: 'In het handelsregister worden ten aanzien van een uiteindelijk belanghebbende gedeponeerd:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.3.a
+    text: "afschriften van de documenten op grond waarvan de gegevens, bedoeld in het tweede lid, onderdelen
+      a,\nb, c en d, zijn geverifieerd;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: 15a.3.b
+    text: "afschriften van de documenten, behorende tot bij algemene maatregel van bestuur aan te wijzen\n\
+      categorieën, waaruit de aard en omvang van het economische belang, bedoeld in het tweede lid,\n\
+      onderdeel e, blijken."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel15a
+  - number: '16.1'
+    text: "In het handelsregister worden gegevens opgenomen die noodzakelijk zijn voor een goede vastlegging
+      en\nverstrekking van de in [artikel 9 tot en met 14][ref1] bedoelde gegevens en gegevens omtrent
+      de\nherkomst van die gegevens.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel16
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '16.2'
+    text: "In het handelsregister wordt indien een gegeven in onderzoek is, een aantekening opgenomen
+      dat het\ngegeven in onderzoek is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel16
+  - number: 16a.1
+    text: "In het handelsregister wordt de door een publiekrechtelijke rechtspersoon verleende volmacht
+      tot het\nverrichten van privaatrechtelijke rechtshandelingen opgenomen."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel16a
+  - number: 16a.2
+    text: "[Artikel 25][ref1] is niet van toepassing op de in het eerste lid bedoelde gegevens.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel25"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel16a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '25'
+        hoofdstuk: '4'
+        paragraaf: '4.3'
+  - number: 16b
+    text: Dit onderdeel is nog niet inwerking getreden
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel16b
+  - number: '17.1'
+    text: 'Bij algemene maatregel van bestuur kan worden bepaald:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel17
+  - number: 17.1.a
+    text: "dat andere gegevens dan de in [artikel 9 tot en met 14][ref1] genoemde gegevens in het\nhandelsregister
+      worden opgenomen of dat bescheiden bij het handelsregister worden gedeponeerd voor\nzover dit van
+      belang is voor de in [artikel 2][ref2] genoemde doelen en er geen gewichtige redenen\nzijn die zich
+      daartegen verzetten;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '2'
+        hoofdstuk: '2'
+        paragraaf: '2.1'
+  - number: 17.1.b
+    text: dat in het handelsregister opgenomen gegevens worden overgenomen uit een ander
+      basisregister;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel17
+  - number: 17.1.c
+    text: "dat voor de in [artikel 6, eerste lid, onderdeel c][ref1], en [artikel 6, derde lid][ref2],
+      bedoelde\nrechtspersonen bepaalde in [artikel 12][ref3], [13][ref4] en [14][ref5] bedoelde gegevens
+      niet\nbehoeven te worden ingeschreven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel6\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel12\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0021777#Artikel13\n[ref5]: https://wetten.overheid.nl/BWBR0021777#Artikel14"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '12'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref4
+        bwb_id: BWBR0021777
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref5
+        bwb_id: BWBR0021777
+        artikel: '14'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '17.2'
+    text: "De voordracht voor een krachtens het eerste lid vast te stellen algemene maatregel van bestuur
+      wordt\nniet eerder gedaan dan vier weken nadat het ontwerp aan beide kamers der Staten-Generaal
+      is\novergelegd."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel17
+  - number: '18.1'
+    text: "Tot het doen van opgave ter inschrijving in het handelsregister is verplicht degene aan wie
+      een\nonderneming toebehoort, of, indien het de inschrijving betreft van een rechtspersoon als bedoeld
+      in\n[artikel 6, eerste lid, onderdeel a en b, het tweede lid en derde lid][ref1], ieder der bestuurders\n\
+      van de rechtspersoon.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '18.2'
+    text: "Indien het eerste lid niet van toepassing is, is tot het doen van opgave ter inschrijving in
+      het\nhandelsregister verplicht degene die belast is met de dagelijkse leiding van een onderneming
+      of\nrechtspersoon."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel18
+  - number: '18.3'
+    text: "Indien geen van de in het eerste lid bedoelde personen in Nederland is gevestigd, is tot het
+      doen\nvan de opgave tevens verplicht degene die in Nederland belast is met de dagelijkse leiding
+      van een\nonderneming of rechtspersoon."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel18
+  - number: '18.4'
+    text: "Indien een onderneming of rechtspersoon buiten Nederland is gevestigd, is tot het doen van
+      de opgave\ntevens verplicht degene die belast is met de dagelijkse leiding van de hoofdnederzetting
+      of, indien\ndie er niet is, de door de onderneming of rechtspersoon aangewezen gevolmachtigde handelsagent."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel18
+  - number: '18.5'
+    text: "Tot het doen van opgave ter inschrijving in het handelsregister is een publiekrechtelijke\n\
+      rechtspersoon verplicht."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel18
+  - number: '18.6'
+    text: "Bij algemene maatregel van bestuur kunnen andere personen worden aangewezen die verplicht of
+      bevoegd\nzijn tot het doen van daarbij aangewezen opgaven."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel18
+  - number: '19.1'
+    text: "De daartoe verplichte personen doen, met inachtneming van het bij algemene maatregel van bestuur\n\
+      bepaalde, de opgaven die de Kamer nodig heeft om ervoor te zorgen dat de in [artikel 9 tot en met\n\
+      14][ref1], [15a, tweede lid][ref2], en [16a, eerste lid][ref3], genoemde en de in [artikel 17,\n\
+      onderdeel a][ref4], bedoelde gegevens te allen tijde juist en volledig in het handelsregister\n\
+      ingeschreven zijn.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel15a\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel16a\n[ref4]: https://wetten.overheid.nl/BWBR0021777#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: 16a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref4
+        bwb_id: BWBR0021777
+        artikel: '17'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '19.2'
+    text: Het eerste lid is van overeenkomstige toepassing op het deponeren van bescheiden.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+  - number: '19.3'
+    text: "Op berichtenverkeer met betrekking tot enige inschrijving of doorhaling in het handelsregister\n\
+      tussen de Kamer en een onderneming, niet zijnde een dienstverrichter als bedoeld in [artikel 1 van\n\
+      de Dienstenwet][ref1] die onder de reikwijdte van [die wet][ref2] valt, zijn de [paragrafen\n3.3][ref3],
+      [3.4][ref4] en [artikel 5, tweede lid, van de Dienstenwet][ref5] van overeenkomstige\ntoepassing.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0026759\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0026759\n[ref4]: https://wetten.overheid.nl/BWBR0026759\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0026759#Artikel5"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '1'
+      - id: ref2
+        bwb_id: BWBR0026759
+      - id: ref3
+        bwb_id: BWBR0026759
+        paragraaf: '3.3'
+      - id: ref4
+        bwb_id: BWBR0026759
+        paragraaf: '3.4'
+      - id: ref5
+        bwb_id: BWBR0026759
+        artikel: '5'
+  - number: '19.4'
+    text: "Regels die op grond van [artikel 5, derde lid, van de Dienstenwet][ref1] bij of krachtens algemene\n\
+      maatregel van bestuur zijn gesteld, zijn van overeenkomstige toepassing op berichtenverkeer als\n\
+      bedoeld in het derde lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel5"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '5'
+  - number: '19.5'
+    text: 'Het derde en vierde lid zijn niet van toepassing op:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+  - number: 19.5.a
+    text: "uitwisseling van gegevens of bescheiden die betrekking hebben op procedures van bezwaar, beroep
+      of\nandere rechterlijke procedures of vormen van geschilbeslechting;"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+  - number: 19.5.b
+    text: het verrichten van betalingen.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19
+  - number: 19a.1
+    text: "Bij algemene maatregel van bestuur wordt voor daarbij aangewezen rechtspersonen bepaald dat
+      voor\ndaarbij aangewezen bescheiden waarvan bij of krachtens de wet is voorgeschreven dat die bij
+      het\nhandelsregister worden gedeponeerd, deponering daarvan uitsluitend langs elektronische weg\n\
+      plaatsvindt en worden regels gesteld over de wijze waarop die deponering moet plaatsvinden."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19a
+  - number: 19a.2
+    text: "Voor aangewezen bescheiden als bedoeld in het eerste lid, waarvan de inhoud betrekking heeft
+      op enig\nboekjaar, wordt bij de in het eerste lid bedoelde algemene maatregel van bestuur tevens
+      bepaald\nvanaf welk boekjaar de in het eerste lid bedoelde verplichting daarop van toepassing is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19a
+  - number: 19a.3
+    text: "De Kamer draagt zorg voor het langs elektronische weg kunnen ontvangen van aangewezen bescheiden
+      als\nbedoeld in het eerste lid op de in dat lid genoemde algemene maatregel van bestuur vastgestelde\n\
+      wijze."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19a
+  - number: 19a.4
+    text: "Bij algemene maatregel van bestuur kan worden bepaald dat de Kamer ondersteunende voorzieningen\n\
+      beschikbaar stelt, voor zover dit ten behoeve van het deponeren van op grond van het eerste lid\n\
+      aangewezen bescheiden door op grond van het eerste lid aangewezen rechtspersonen noodzakelijk is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel19a
+  - number: '20.1'
+    text: "De opgave voor de eerste inschrijving van een onderneming wordt gedaan binnen een periode van
+      twee\nweken, die begint een week vóór en eindigt een week ná de aanvang van de bedrijfsuitoefening.
+      De\nopgave voor de eerste inschrijving van een rechtspersoon wordt gedaan binnen één week na het\n\
+      plaatsvinden van het feit ten gevolge waarvan de verplichting tot inschrijving ontstaat."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: '20.2'
+    text: "De andere voorgeschreven opgaven worden gedaan uiterlijk een week na het plaatsvinden van het
+      feit\nten gevolge waarvan de verplichting tot de opgave ontstaat."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: '20.3'
+    text: "De verplichting tot het doen van een opgave eindigt zodra die opgave is gedaan door iemand
+      anders\ndie daartoe verplicht of bevoegd was of, voor zover de Kamer bevoegd is tot het wijzigen
+      van\ngegevens, zodra de Kamer de desbetreffende wijziging heeft ingeschreven."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: '20.4'
+    text: 'Bij of krachtens algemene maatregel van bestuur worden regels gesteld over:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: 20.4.a
+    text: de wijze waarop gegevens in het handelsregister worden opgenomen;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: 20.4.b
+    text: de termijnen voor het opnemen van gegevens in het handelsregister;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: 20.4.c
+    text: de actualiteit van het overnemen van een gegeven uit een ander basisregister.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+  - number: '20.5'
+    text: "Met toepassing van [artikel 28, eerste lid, laatste zinsnede, van de Dienstenwet][ref1] is\n\
+      [paragraaf 4.1.3.3. van de Algemene wet bestuursrecht][ref2] niet van toepassing op een opgave ter\n\
+      inschrijving in het handelsregister.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel28\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel20
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '28'
+      - id: ref2
+        bwb_id: BWBR0005537
+        paragraaf: 4.1.3.3
+  - number: '21.1'
+    text: "De in de [artikelen 9][ref1], [10, met uitzondering van het tweede lid, onderdeel a en het
+      derde\nlid, onderdeel e, onder 1°, eerste gedachtestreepje][ref2], [11][ref3], [12][ref4], [13][ref5],\n\
+      [14][ref6], [15a, tweede lid, met uitzondering van de onderdelen a, b en d][ref7], [16, tweede\n\
+      lid][ref8], en [16a, eerste lid][ref9], genoemde gegevens, de in [artikel 17, eerste lid, onderdeel\n\
+      a][ref10], bedoelde gegevens, en de krachtens wettelijk voorschrift gedeponeerde bescheiden, met\n\
+      uitzondering van de bescheiden, bedoeld in [artikel 15a, derde lid][ref11], kunnen door een ieder\n\
+      worden ingezien.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel10\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel11\n[ref4]: https://wetten.overheid.nl/BWBR0021777#Artikel12\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0021777#Artikel13\n[ref6]: https://wetten.overheid.nl/BWBR0021777#Artikel14\n\
+      [ref7]: https://wetten.overheid.nl/BWBR0021777#Artikel15a\n[ref8]: https://wetten.overheid.nl/BWBR0021777#Artikel16\n\
+      [ref9]: https://wetten.overheid.nl/BWBR0021777#Artikel16a\n[ref10]: https://wetten.overheid.nl/BWBR0021777#Artikel17\n\
+      [ref11]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '10'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '11'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref4
+        bwb_id: BWBR0021777
+        artikel: '12'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref5
+        bwb_id: BWBR0021777
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref6
+        bwb_id: BWBR0021777
+        artikel: '14'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref7
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref8
+        bwb_id: BWBR0021777
+        artikel: '16'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref9
+        bwb_id: BWBR0021777
+        artikel: 16a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref10
+        bwb_id: BWBR0021777
+        artikel: '17'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref11
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '21.2'
+    text: Een handtekening kan niet in elektronische vorm worden ingezien.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel21
+  - number: '22.1'
+    text: "De Kamer verstrekt op elektronisch verzoek, indien gewenst in elektronische vorm, een afschrift
+      van\nof uittreksel uit de gegevens en bescheiden, bedoeld in [artikel 21][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel21"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '21'
+        hoofdstuk: '4'
+        paragraaf: '4.1'
+  - number: '22.2'
+    text: "De Kamer verstrekt op elektronisch verzoek gegevens van algemene, feitelijke aard omtrent de\n\
+      samenstelling van ondernemingen en rechtspersonen uit het handelsregister ter bevordering van de\n\
+      economische belangen van handel, industrie, ambacht en dienstverlening. Bij het verstrekken van\n\
+      gegevens omtrent de samenstelling van ondernemingen en rechtspersonen worden deze gegevens niet\n\
+      gerangschikt naar natuurlijke personen."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+  - number: '22.3'
+    text: "Een verzoek als bedoeld in het eerste of tweede lid wordt mede door de Kamer in behandeling
+      genomen\nindien het op andere dan elektronische wijze is gedaan."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+  - number: '22.4'
+    text: In afwijking van het eerste lid verstrekt de Kamer een handtekening niet in elektronische
+      vorm.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+  - number: '22.5'
+    text: Dit lid is nog niet in werking getreden.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+  - number: '22.6'
+    text: "De Kamer geeft een uiteindelijk belanghebbende op verzoek inzicht in het aantal keer dat zijn\n\
+      gegevens, bedoeld in [artikel 15a][ref1], zijn verstrekt, met uitzondering van verstrekkingen aan
+      de\nFinanciële inlichtingen eenheid en aan bevoegde autoriteiten als bedoeld in [artikel 28, tweede\n\
+      lid][ref2]. Bij ministeriële regeling kunnen regels worden gesteld over de wijze waarop de\nuiteindelijk
+      belanghebbende inzicht kan krijgen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel15a\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel28"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '28'
+        hoofdstuk: '5'
+        paragraaf: '5.1'
+  - number: '22.7'
+    text: Dit lid is nog niet in werking getreden.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel22
+  - number: '23'
+    text: "Bij algemene maatregel van bestuur kunnen ter bescherming van de persoonlijke levenssfeer van
+      de\npersonen die in het handelsregister staan ingeschreven voor daarbij aangewezen gegevens of\n\
+      bescheiden of categorieën van gegevens of bescheiden, beperkingen worden vastgesteld ten aanzien
+      van\nhet bepaalde in de [artikelen 21][ref1], [22][ref2] en [28][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel21\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel22\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel28"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel23
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '21'
+        hoofdstuk: '4'
+        paragraaf: '4.1'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '22'
+        hoofdstuk: '4'
+        paragraaf: '4.1'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '28'
+        hoofdstuk: '5'
+        paragraaf: '5.1'
+  - number: '24.1'
+    text: "Heeft de opgave van een gegeven ter inschrijving in het handelsregister betrekking op een naamloze\n\
+      vennootschap, een besloten vennootschap met beperkte aansprakelijkheid, een Europese naamloze\n\
+      vennootschap, een Europees economisch samenwerkingsverband, een Europese coöperatieve vennootschap\n\
+      of een andere bij algemene maatregel van bestuur aangewezen rechtspersoon of vennootschap, dan\n\
+      draagt de Kamer er zorg voor dat daarvan zo spoedig mogelijk mededeling wordt gedaan in een door\n\
+      Onze Minister aangewezen publicatieblad of een ander, even doeltreffend instrument, dat ten minste\n\
+      het gebruik van een systeem omvat dat in chronologische volgorde via een centraal elektronisch\n\
+      platform toegang tot de openbaar gemaakte informatie biedt."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel24
+  - number: '24.2'
+    text: "Het eerste lid is mede van toepassing op een wijziging van het ingeschrevene en op een deponering\n\
+      van bescheiden."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel24
+  - number: '24.3'
+    text: "Bij algemene maatregel van bestuur kunnen gegevens en bescheiden worden aangewezen waarvoor
+      het\neerste of tweede lid niet geldt."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel24
+  - number: '25.1'
+    text: "Op een feit dat door inschrijving of deponering moet worden bekendgemaakt, kan tegenover derden
+      die\ndaarvan onkundig waren geen beroep worden gedaan zolang de inschrijving of deponering en, voor
+      zover\nvan toepassing, de in [artikel 24][ref1] bedoelde mededeling niet hebben plaatsgevonden.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel24"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '24'
+        hoofdstuk: '4'
+        paragraaf: '4.2'
+  - number: '25.2'
+    text: "Indien de derde aantoont dat hij onmogelijk kennis heeft kunnen nemen van een mededeling als
+      bedoeld\nin [artikel 24][ref1] kan hij zich erop beroepen dat hij van het bekendgemaakte feit onkundig
+      was,\nmits dit beroep betrekking heeft op hetgeen heeft plaatsgevonden binnen vijftien dagen nadat
+      de\nmededeling was geschied. De [Algemene Termijnenwet][ref2] is op deze termijn niet van toepassing.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel24\n[ref2]: https://wetten.overheid.nl/BWBR0002448"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '24'
+        hoofdstuk: '4'
+        paragraaf: '4.2'
+      - id: ref2
+        bwb_id: BWBR0002448
+  - number: '25.3'
+    text: "Degene aan wie een onderneming toebehoort, de ingeschreven rechtspersoon of degene die enig
+      feit\nheeft opgegeven of verplicht is enig feit op te geven, kan aan derden die daarvan onkundig
+      waren\nniet de onjuistheid of onvolledigheid van de inschrijving of van de in [artikel 24][ref1]
+      bedoelde\nmededeling tegenwerpen. Met de inschrijving wordt de deponering van bescheiden gelijkgesteld.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel24"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '24'
+        hoofdstuk: '4'
+        paragraaf: '4.2'
+  - number: '25.4'
+    text: 'Dit artikel is niet van toepassing ten aanzien van:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+  - number: 25.4.a
+    text: artikel 811, tweede lid, van Boek 7 van het Burgerlijk Wetboek;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+  - number: 25.4.b
+    text: "opgaven betreffende aangelegenheden die ingevolge enig wettelijk voorschrift – niet zijnde
+      [Boek 2\nvan het Burgerlijk Wetboek][ref1], verordening 2137/85 of verordening 2157/2001 – ook op
+      andere\nwijze worden bekend gemaakt;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003045"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0003045
+  - number: 25.4.c
+    text: de bij algemene maatregel van bestuur aangewezen gegevens;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+  - number: 25.4.d
+    text: "de gegevens, bedoeld in [artikel 15a, tweede lid][ref1], en de bescheiden, bedoeld in artikel
+      15a,\nderde lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '26'
+    text: "De Kamer draagt zorg voor mededeling aan het Bureau voor officiële publicaties der Europese\n\
+      Gemeenschappen als bedoeld in artikel 39, tweede lid, van verordening 2137/85 en artikel 14, derde\n\
+      lid, van verordening 2157/2001."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel26
+  - number: '27.1'
+    text: "De volgende in het handelsregister ingeschreven ondernemingen of rechtspersonen zorgen ervoor
+      dat op\nalle van die onderneming of die rechtspersoon uitgaande brieven, orders, facturen, offertes
+      en\nandere aankondigingen, met uitzondering van reclames, is vermeld onder welk nummer deze in het\n\
+      handelsregister is ingeschreven:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+  - number: 27.1.a
+    text: "de in [artikel 5][ref1] en [6, eerste lid, onderdeel a][ref2], genoemde ondernemingen en\n\
+      rechtspersonen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel5\n[ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '5'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 27.1.b
+    text: "de in [artikel 6, eerste lid, onderdeel b][ref1], genoemde rechtspersonen, tenzij stukken uitgaan\n\
+      van een rechtspersoon waaraan geen onderneming toebehoort.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '27.2'
+    text: "Het in het eerste lid bedoelde nummer is het nummer, bedoeld in [artikel 9, onderdeel a][ref1],
+      of\nin [artikel 13, onderdeel a][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel9\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '27.3'
+    text: "Bij ministeriële regeling kan vrijstelling worden verleend van het in het eerste lid bepaalde.
+      Een\nvrijstelling kan niet worden verleend:"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+  - number: 27.3.a
+    text: aan Europese economische samenwerkingsverbanden;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+  - number: 27.3.b
+    text: "voor zover het betreft brieven en orders, aan naamloze vennootschappen, besloten vennootschappen
+      met\nbeperkte aansprakelijkheid en Europese naamloze vennootschappen."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel27
+  - number: '28.1'
+    text: "De in [artikel 10, tweede lid, onderdeel a, en derde lid, onderdeel e, onder 1°, eerste\ngedachtestreepje][ref1],
+      en [artikel 16, eerste lid][ref2], bedoelde gegevens kunnen worden ingezien\ndoor een bestuursorgaan
+      in het kader van de uitoefening van zijn wettelijke taak of bevoegdheid of\neen rechtspersoon met
+      een overheidstaak als bedoeld in [artikel 1, eerste lid, onderdeel a, van de\nWet bevordering integriteitsbeoordelingen
+      door het openbaar bestuur][ref3] in het kader van de\nuitoefening van zijn wettelijke bevoegdheid.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel10\n[ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel16\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0013798#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '10'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '16'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref3
+        bwb_id: BWBR0013798
+        artikel: '1'
+  - number: '28.2'
+    text: "De in [artikel 15a, tweede lid, onderdelen a, b en d][ref1], genoemde gegevens en de in artikel
+      15a,\nderde lid, genoemde bescheiden kunnen door de Financiële inlichtingen eenheid of een bij algemene\n\
+      maatregel van bestuur aangewezen bevoegde autoriteit worden ingezien.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '28.3'
+    text: "[Artikel 22][ref1] is van overeenkomstige toepassing op verstrekking van gegevens als bedoeld
+      in het\neerste of tweede lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel22"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '22'
+        hoofdstuk: '4'
+        paragraaf: '4.1'
+  - number: '28.4'
+    text: "Bij het verstrekken van gegevens omtrent de samenstelling van ondernemingen en rechtspersonen
+      aan\neen bestuursorgaan als bedoeld in [artikel 1:1, eerste lid, onderdeel a, van de Algemene wet\n\
+      bestuursrecht][ref1] of rechtspersoon met een overheidstaak als bedoeld in [artikel 1, onder a,
+      van\nde Wet bevordering integriteitsbeoordelingen door het openbaar bestuur][ref2] worden deze gegevens\n\
+      uitsluitend gerangschikt naar natuurlijke personen indien het verzoek daartoe wordt gedaan door:\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel1:1\n[ref2]: https://wetten.overheid.nl/BWBR0013798#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 1:1
+      - id: ref2
+        bwb_id: BWBR0013798
+        artikel: '1'
+  - number: 28.4.a
+    text: "Onze Minister van Veiligheid en Justitie ten behoeve van de taak, bedoeld in [artikel 2, eerste
+      lid,\nvan de Wet controle op rechtspersonen][ref1] of ten behoeve van de uitvoering van de\n[Vreemdelingenwet
+      2000][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015049#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0011823"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0015049
+        artikel: '2'
+      - id: ref2
+        bwb_id: BWBR0011823
+  - number: 28.4.b
+    text: een officier van justitie ten behoeve van de opsporing van strafbare feiten;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.c
+    text: de rijksbelastingdienst voor de uitvoering van zijn taken;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.d
+    text: "het Uitvoeringsinstituut werknemersverzekeringen of de Sociale verzekeringsbank, bedoeld in
+      de [Wet\nstructuur uitvoeringsorganisatie werk en inkomen][ref1], of Onze Minister van Sociale Zaken
+      en\nWerkgelegenheid voor de uitvoering van hun bij of krachtens wet opgedragen taken;\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0013060"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0013060
+  - number: 28.4.e
+    text: "burgemeesters en wethouders voor de uitvoering van de [Wet gemeentelijke schulphulpverlening][ref1],\n\
+      [Participatiewet][ref2], de [Wet inkomensvoorziening oudere en gedeeltelijk arbeidsongeschikte\n\
+      werkloze werknemers][ref3] en de [Wet inkomensvoorziening oudere en gedeeltelijk arbeidsongeschikte\n\
+      gewezen zelfstandigen][ref4];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0031331\n[ref2]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0004044\n[ref4]: https://wetten.overheid.nl/BWBR0004163"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0031331
+      - id: ref2
+        bwb_id: BWBR0015703
+      - id: ref3
+        bwb_id: BWBR0004044
+      - id: ref4
+        bwb_id: BWBR0004163
+  - number: 28.4.f
+    text: "het Bureau bevordering integriteitsbeoordelingen door het openbaar bestuur ten behoeve van
+      het geven\nvan een advies als bedoeld in [artikel 9 van de Wet bevordering integriteitsbeoordelingen
+      door het\nopenbaar bestuur][ref1] en een bestuursorgaan als bedoeld in [artikel 1:1, eerste lid,
+      onderdeel a,\nvan de Algemene wet bestuursrecht][ref2] of rechtspersoon met een overheidstaak als
+      bedoeld in\n[artikel 1, onder a, van die wet][ref3], in het geval waarin hij bevoegd is tot toepassing
+      van de\n[Wet bevordering integriteitsbeoordelingen door het openbaar bestuur][ref4];\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0013798#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel1:1\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0013798#Artikel1\n[ref4]: https://wetten.overheid.nl/BWBR0013798"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0013798
+        artikel: '9'
+      - id: ref2
+        bwb_id: BWBR0005537
+        artikel: 1:1
+      - id: ref3
+        bwb_id: BWBR0013798
+        artikel: '1'
+      - id: ref4
+        bwb_id: BWBR0013798
+  - number: 28.4.g
+    text: de Autoriteit Consument en Markt voor de uitvoering van haar taken;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.h
+    text: de raad van bestuur van de Autoriteit Financiële Markten voor de uitvoering van zijn
+      taken;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.i
+    text: vervallen;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.j
+    text: "Onze verantwoordelijke Minister als bedoeld in de [Uitvoeringswet screeningsverordening buitenlandse\n\
+      directe investeringen][ref1], indien deze op grond van [artikel 4, tweede lid, onderdeel a, van
+      die\nwet][ref2] gebruik maakt van gegevens uit het handelsregister;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0044449\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0044449#Artikel4"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0044449
+      - id: ref2
+        bwb_id: BWBR0044449
+        artikel: '4'
+  - number: 28.4.k
+    text: "Onze Minister van Sociale Zaken en Werkgelegenheid en de colleges van burgemeester en wethouders\n\
+      voor hun taak, bedoeld in [artikel 1.47a van de Wet kinderopvang][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0017017#Artikel1.47a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0017017
+        artikel: 1.47a
+  - number: 28.4.l
+    text: de Nederlandse Zorgautoriteit voor de uitvoering van haar taken;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.m
+    text: de Inspectie gezondheidszorg en jeugd voor de uitvoering van haar taken;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: 28.4.n
+    text: "Onze Minister van Economische Zaken en Klimaat, voor de uitvoering van de [Wet veiligheidstoets\n\
+      investeringen, fusies en overnames][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0046747"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0046747
+  - number: '28.5'
+    text: "Bij het verstrekken van gegevens en bescheiden omtrent de uiteindelijk belanghebbenden worden
+      deze\ngegevens uitsluitend gerangschikt naar natuurlijke personen, indien het verzoek daartoe wordt
+      gedaan\ndoor de Financiële inlichtingen eenheid of een krachtens het tweede lid aangewezen bevoegde\n\
+      autoriteit, voor zover de Financiële inlichtingen eenheid of die bevoegde autoriteit handelt in
+      het\nkader van de uitoefening van haar wettelijke taak of bevoegdheid."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+  - number: '28.6'
+    text: "De Kamer verstrekt de gegevens en bescheiden omtrent een uiteindelijk belanghebbende aan de\n\
+      Financiële inlichtingen eenheid of aan een krachtens het tweede lid aangewezen bevoegde autoriteit\n\
+      op een zodanige wijze dat de vennootschap of andere juridische entiteit, bedoeld in [artikel 15a,\n\
+      eerste lid][ref1], geen weet heeft van de verstrekking.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '29'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel29
+  - number: '30.1'
+    text: "Een bestuursorgaan als bedoeld in [artikel 1:1, eerste lid, onderdeel a, van de Algemene wet\n\
+      bestuursrecht][ref1] dat bij de vervulling van zijn taak informatie over een onderneming of\nrechtspersoon
+      nodig heeft die in de vorm van een authentiek gegeven beschikbaar is in het\nhandelsregister, gebruikt
+      voor die informatie dat gegeven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel1:1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel30
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 1:1
+  - number: '30.2'
+    text: 'Het eerste lid is niet van toepassing indien:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel30
+  - number: 30.2.a
+    text: in het handelsregister is opgenomen dat een gegeven in onderzoek is;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel30
+  - number: 30.2.b
+    text: "het bestuursorgaan een melding doet als bedoeld in [artikel 32, eerste lid][ref1];\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0021777#Artikel32"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel30
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '32'
+        hoofdstuk: '6'
+  - number: 30.2.c
+    text: bij wettelijk voorschrift anders is bepaald;
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel30
+  - number: 30.2.d
+    text: "een goede vervulling van de taak van het bestuursorgaan door de onverkorte toepassing van het
+      eerste\nlid wordt belet."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel30
+  - number: '31'
+    text: "Een onderneming of rechtspersoon aan wie door een bestuursorgaan als bedoeld in [artikel 1:1,
+      eerste\nlid, onderdeel a, van de Algemene wet bestuursrecht][ref1] een gegeven wordt gevraagd, waarop\n\
+      [artikel 30, eerste lid][ref2], van toepassing is, behoeft dat gegeven niet mede te delen, behoudens\n\
+      voor zover het gegeven noodzakelijk wordt geacht voor een deugdelijke vaststelling van de identiteit\n\
+      van de onderneming of rechtspersoon.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel1:1\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel30"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel31
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 1:1
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '30'
+        hoofdstuk: '5'
+        paragraaf: '5.2'
+  - number: '32.1'
+    text: "Een bestuursorgaan als bedoeld in [artikel 1:1, eerste lid, onderdeel a, van de Algemene wet\n\
+      bestuursrecht][ref1] dat gerede twijfel heeft over de juistheid van een authentiek gegeven dat hij\n\
+      verstrekt heeft gekregen uit het handelsregister, doet hiervan melding aan de Kamer.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0005537#Artikel1:1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel32
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 1:1
+  - number: '32.2'
+    text: "Een bestuursorgaan als bedoeld in [artikel 1:1, eerste lid, onderdeel a, van de Algemene wet\n\
+      bestuursrecht][ref1] dat gerede twijfel heeft over de juistheid van het ontbreken van een authentiek\n\
+      gegeven in het handelsregister, doet hiervan melding aan de Kamer.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel1:1"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel32
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 1:1
+  - number: '33'
+    text: "Indien de melding betrekking heeft op een gegeven dat ingevolge [artikel 17, onderdeel b][ref1],
+      uit\neen ander register is overgenomen, zendt de Kamer deze melding aan de beheerder van het register\n\
+      waaruit dit gegeven afkomstig is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel33
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '17'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '34.1'
+    text: "Indien een melding als bedoeld in [artikel 32, eerste lid][ref1], niet is doorgezonden naar
+      de\nbeheerder van een ander register, tekent de Kamer binnen een bij ministeriële regeling vastgestelde\n\
+      termijn aan dat het gegeven in onderzoek is, tenzij de Kamer binnen deze termijn beslist over de\n\
+      wijziging van dat gegeven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel32"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel34
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '32'
+        hoofdstuk: '6'
+  - number: '34.2'
+    text: Indien een gegeven in onderzoek is, beslist de Kamer over wijziging van dat gegeven.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel34
+  - number: '34.3'
+    text: "Indien een beslissing, bedoeld in het eerste of tweede lid, leidt tot wijziging van de gegevens,\n\
+      doet de Kamer onverwijld schriftelijk mededeling aan een tot opgave verplichte persoon."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel34
+  - number: '34.4'
+    text: "De Kamer verwijdert de aantekening dat een gegeven in onderzoek is indien een besluit als bedoeld
+      in\nhet tweede lid niet tot wijziging van gegevens leidt."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel34
+  - number: '35'
+    text: "De beslissing, bedoeld in [artikel 34, tweede lid][ref1], geldt als een besluit in de zin van
+      de\n[Algemene wet bestuursrecht][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel34\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel35
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '34'
+        hoofdstuk: '6'
+      - id: ref2
+        bwb_id: BWBR0005537
+  - number: '36.1'
+    text: "Indien tegen een beslissing, bedoeld in [artikel 34, eerste en tweede lid][ref1], bezwaar wordt\n\
+      gemaakt of beroep wordt ingesteld, tekent, voor zover dit nog niet het geval is, de Kamer in het\n\
+      handelsregister aan dat een gegeven in onderzoek is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel34"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel36
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '34'
+        hoofdstuk: '6'
+  - number: '36.2'
+    text: "Nadat op het bezwaar of beroep onherroepelijk is beslist, schrijft de Kamer indien nodig een\n\
+      wijziging in het handelsregister in en verwijdert de Kamer de aantekening dat een gegeven in\nonderzoek
+      is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel36
+  - number: '37'
+    text: "Op een melding als bedoeld in [artikel 32, tweede lid][ref1], zijn de [artikelen 33][ref2],
+      [34,\ntweede en derde lid][ref3], [35][ref4] en [36][ref5] van overeenkomstige toepassing.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel32\n[ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel33\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel34\n[ref4]: https://wetten.overheid.nl/BWBR0021777#Artikel35\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0021777#Artikel36"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel37
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '32'
+        hoofdstuk: '6'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '33'
+        hoofdstuk: '6'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '34'
+        hoofdstuk: '6'
+      - id: ref4
+        bwb_id: BWBR0021777
+        artikel: '35'
+        hoofdstuk: '6'
+      - id: ref5
+        bwb_id: BWBR0021777
+        artikel: '36'
+        hoofdstuk: '6'
+  - number: '38.1'
+    text: "Indien de Kamer gerede twijfel heeft over de juistheid van authentieke gegevens, zijn de [artikelen\n\
+      33 tot en met 36][ref1] van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel33"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '33'
+        hoofdstuk: '6'
+  - number: '38.2'
+    text: "Bij algemene maatregel van bestuur kunnen niet-authentieke gegevens worden aangewezen waarop
+      het\neerste lid van overeenkomstige toepassing is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38
+  - number: '38.3'
+    text: "Op een verzoek als bedoeld in de artikelen 16 en 17 van de Algemene verordening gegevensbescherming,\n\
+      zijn de [artikelen 33 tot en met 36][ref1] van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel33"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '33'
+        hoofdstuk: '6'
+  - number: 38a.1
+    text: "Een krachtens [artikel 28, tweede lid][ref1], aangewezen bevoegde autoriteit doet melding aan
+      de\nKamer van iedere discrepantie die zij aantreft tussen een gegeven omtrent een uiteindelijk\n\
+      belanghebbende dat zij verstrekt heeft gekregen uit het handelsregister en de informatie over die\n\
+      uiteindelijk belanghebbende waarover zij uit anderen hoofde beschikt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel28"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '28'
+        hoofdstuk: '5'
+        paragraaf: '5.1'
+  - number: 38a.2
+    text: "Het eerste lid is niet van toepassing indien nakoming van de in dat lid neergelegde verplichting
+      de\nuitoefening van de wettelijke taak of bevoegdheid van de betreffende bevoegde autoriteit onnodig
+      zou\ndoorkruisen."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38a
+  - number: 38a.3
+    text: "Op een melding als bedoeld in het eerste lid is het bepaalde bij of krachtens de [artikelen\n\
+      33][ref1], [34][ref2], [35][ref3] en [36][ref4] van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel33\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel34\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel35\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0021777#Artikel36"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '33'
+        hoofdstuk: '6'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '34'
+        hoofdstuk: '6'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '35'
+        hoofdstuk: '6'
+      - id: ref4
+        bwb_id: BWBR0021777
+        artikel: '36'
+        hoofdstuk: '6'
+  - number: 38a.4
+    text: "Bij een melding als bedoeld in het eerste lid verstrekt een aangewezen bevoegde autoriteit
+      de\ngegevens, bedoeld in [artikel 15a, tweede lid][ref1], waarover zij beschikt en kan zij de\n\
+      bescheiden, bedoeld in artikel 15a, derde lid, verstrekken waarover zij beschikt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 38a.5
+    text: De Kamer bepaalt de wijze waarop een melding als bedoeld in het eerste lid wordt gedaan.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel38a
+  - number: '39'
+    text: 'Bij of krachtens algemene maatregel van bestuur worden nadere regels gesteld met betrekking
+      tot:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+  - number: 39.a
+    text: "de melding, bedoeld in [artikel 32][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel32"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '32'
+        hoofdstuk: '6'
+  - number: 39.b
+    text: "de doorzending van de melding, bedoeld in [artikel 33][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel33"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '33'
+        hoofdstuk: '6'
+  - number: 39.c
+    text: "het plaatsen van de aantekening in onderzoek, bedoeld in [artikel 34, eerste lid][ref1];\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel34"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '34'
+        hoofdstuk: '6'
+  - number: 39.d
+    text: "het besluit over de melding, bedoeld in [artikel 34, tweede lid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel34"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '34'
+        hoofdstuk: '6'
+  - number: 39.e
+    text: "de gegevens die over de terugmelding en het onderzoek in het register worden opgenomen ingevolge\n\
+      [artikel 16, eerste lid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel16"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '16'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 39.f
+    text: de criteria om een inschrijving te weigeren.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel39
+  - number: '40'
+    text: "De Kamer treft maatregelen die ertoe strekken te waarborgen dat het handelsregister juist,
+      actueel\nen volledig is."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel40
+  - number: '41.1'
+    text: "De Kamer laat eens per drie jaar de uitvoering van deze wet alsmede de juistheid van de in
+      het\nhandelsregister opgenomen gegevens controleren door een accountant als bedoeld in [artikel
+      393 van\nBoek 2 van het Burgerlijk Wetboek][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003045#Artikel393"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0003045
+        artikel: '393'
+  - number: '41.2'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen nadere regels betreffende de controle
+      worden\ngesteld, waaronder regels omtrent de elementen die de controle moet bevatten."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+  - number: '41.3'
+    text: "De Kamer zendt aan Onze Minister een afschrift van de controleresultaten en maakt deze\ncontroleresultaten
+      openbaar. Onze Minister zendt een uittreksel van deze controleresultaten aan de\nAutoriteit persoonsgegevens."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+  - number: '41.4'
+    text: "Indien uit de controle, bedoeld in het eerste lid, blijkt dat niet voldaan wordt aan bij of\n\
+      krachtens algemene maatregel van bestuur te stellen voorwaarden, laat de Kamer binnen een jaar een\n\
+      hercontrole uitvoeren op die onderdelen die bij de eerdere controle niet voldeden aan de gestelde\n\
+      voorwaarden. Het tweede lid is van overeenkomstige toepassing."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+  - number: '41.5'
+    text: "De in het eerste lid bedoelde accountant heeft ten behoeve van een controle als bedoeld in
+      het\neerste of derde lid inzage in het handelsregister. De Kamer verleent hiertoe de nodige medewerking."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+  - number: '41.6'
+    text: "Eenieder die is betrokken bij een controle als bedoeld in het eerste of vierde lid is verplicht
+      tot\ngeheimhouding van de gegevens waarover hij de beschikking heeft gekregen, behoudens voor zover
+      enig\nwettelijk voorschrift hem tot mededeling verplicht of uit zijn taak de noodzaak tot mededeling\n\
+      voortvloeit."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+  - number: '41.7'
+    text: "Bij ministeriële regeling worden regels gesteld over de vergoeding van de kosten van de controle.\n\
+      Een hercontrole als bedoeld in het vierde lid wordt niet vergoed."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41
+  - number: 41a.1
+    text: 'De Kamer stelt een protocol op, dat betrekking heeft op:'
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+  - number: 41a.1.a
+    text: "de beschikbaarheid, werking en beveiliging van het handelsregister, bedoeld in [artikel 4,
+      tweede\nlid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel4"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '4'
+        hoofdstuk: '2'
+        paragraaf: '2.1'
+  - number: 41a.1.b
+    text: "de juistheid, actualiteit en volledigheid van het handelsregister, bedoeld in [artikel 40,
+      eerste\nlid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel40"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '40'
+        hoofdstuk: '7'
+  - number: 41a.1.c
+    text: "de controle, bedoeld in [artikel 41, eerste lid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel41"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '41'
+        hoofdstuk: '7'
+  - number: 41a.1.d
+    text: "de procedure voor de behandeling van klachten, bedoeld in [artikel 48][ref1].\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0021777#Artikel48"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '48'
+        hoofdstuk: '8'
+        paragraaf: '8.3'
+  - number: 41a.2
+    text: "Het protocol behoeft de goedkeuring van Onze Minister. Onze Minister handelt daarbij in\novereenstemming
+      met Onze Minister van Financiën en Onze Minister van Justitie en Veiligheid voor het\ndeel van het
+      handelsregister dat betrekking heeft op de gegevens en bescheiden omtrent uiteindelijk\nbelanghebbenden."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+  - number: 41a.3
+    text: De goedkeuring kan worden onthouden wegens strijd met het recht of het algemeen belang.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel41a
+  - number: '42'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel42
+  - number: '43'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel43
+  - number: '44'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel44
+  - number: '45'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel45
+  - number: '46'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel46
+  - number: '47'
+    text: "Het is verboden te handelen in strijd met dan wel niet te voldoen aan een bij of krachtens
+      deze wet\ngestelde verplichting tot het doen van een opgave ter inschrijving in het handelsregister."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel47
+  - number: 47a
+    text: "Onze Minister van Financiën kan een last onder dwangsom opleggen ter zake van overtreding van\n\
+      [artikel 47][ref1], indien er sprake is van het handelen in strijd met [artikel 19, eerste\nlid][ref2],
+      voor zover de daartoe verplichte persoon niet de opgave doet die de Kamer nodig heeft om\nervoor
+      te zorgen dat de in [artikel 15a, tweede lid][ref3], bedoelde gegevens te allen tijde juist\nen
+      volledig zijn ingeschreven in het handelsregister.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel47\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel19\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel47a
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '47'
+        hoofdstuk: '8'
+        paragraaf: '8.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '19'
+        hoofdstuk: '3'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 47b.1
+    text: "Onze Minister van Financiën kan een bestuurlijke boete opleggen ter zake van overtreding van\n\
+      [artikel 47][ref1], indien er sprake is van het handelen in strijd met [artikel 19, eerste\nlid][ref2],
+      voor zover de daartoe verplichte persoon niet de opgave doet die de Kamer nodig heeft om\nervoor
+      te zorgen dat de in [artikel 15a, tweede en derde lid][ref3], bedoelde gegevens en bescheiden\n\
+      te allen tijde juist en volledig zijn ingeschreven in het handelsregister.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel47\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel19\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel47b
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '47'
+        hoofdstuk: '8'
+        paragraaf: '8.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '19'
+        hoofdstuk: '3'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 47b.2
+    text: "De op grond van het eerste lid op te leggen bestuurlijke boete bedraagt ten hoogste het bedrag
+      dat\nis vastgesteld voor de vierde categorie, bedoeld in [artikel 23, vierde lid, van het Wetboek
+      van\nStrafrecht][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001854#Artikel23"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel47b
+    references:
+      - id: ref1
+        bwb_id: BWBR0001854
+        artikel: '23'
+  - number: 47c.1
+    text: "Onze Minister van Financiën is bevoegd van een vennootschap of andere juridische entiteit waarvan
+      op\ngrond van [artikel 15a, eerste lid][ref1], de uiteindelijk belanghebbenden zijn ingeschreven
+      in het\nhandelsregister, inlichtingen te vorderen die hij redelijkerwijs voor de vervulling van
+      zijn taak,\nbedoeld in de [artikelen 47a][ref2] en [47b][ref3], nodig heeft. De vennootschappen
+      en andere\njuridische entiteiten zijn verplicht aan Onze Minister van Financiën binnen de door hem
+      gestelde\nredelijke termijn alle medewerking te verlenen die deze redelijkerwijs kan vorderen bij
+      de\nuitvoering van deze bevoegdheid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel15a\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel47a\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel47b"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel47c
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: 47a
+        hoofdstuk: '8'
+        paragraaf: '8.2'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: 47b
+        hoofdstuk: '8'
+        paragraaf: '8.2'
+  - number: 47c.2
+    text: "Het eerste lid is van overeenkomstige toepassing op een instelling die een melding als bedoeld
+      in\n[artikel 10c, eerste lid, van de Wet ter voorkoming van witwassen en financieren van\nterrorisme][ref1]
+      heeft gedaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0024282#Artikel10c"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel47c
+    references:
+      - id: ref1
+        bwb_id: BWBR0024282
+        artikel: 10c
+  - number: '48'
+    text: "De Kamer draagt zorg voor een procedure voor de behandeling van klachten over de uitvoering
+      van deze\nwet. Bij de behandeling van klachten wordt de procedure, bedoeld in [titel 9.1 van de
+      Algemene wet\nbestuursrecht][ref1] gevolgd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel48
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+  - number: '49.1'
+    text: "Bij algemene maatregel van bestuur kan worden bepaald dat een onderneming of rechtspersoon
+      die een\nopgave doet tot eerste inschrijving in het handelsregister daarvoor eenmalig een vergoeding\n\
+      verschuldigd is (inschrijfvergoeding). De voordracht voor deze algemene maatregel van bestuur wordt\n\
+      niet eerder gedaan dan vier weken nadat het ontwerp aan beide kamers der Staten-Generaal is\novergelegd."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel49
+  - number: '49.2'
+    text: "Bij of krachtens algemene maatregel van bestuur worden voorschriften vastgesteld voor het bepalen\n\
+      van de hoogte van de inschrijfvergoeding waarbij rechtsvorm van de onderneming of rechtspersoon
+      en\nde wijze waarop opgave wordt gedaan in aanmerking kunnen worden genomen."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel49
+  - number: '49.3'
+    text: "Zelfstandige onderdelen van een kerkgenootschap en lichamen waarin zij zijn verenigd zijn de\n\
+      inschrijfvergoeding, bedoeld in het eerste lid, niet verschuldigd bij een opgave ter inschrijving\n\
+      ingevolge [artikel 6, derde lid][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel49
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '6'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '49.4'
+    text: De inschrijfvergoeding is verschuldigd zonder dat deze bij beschikking is vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel49
+  - number: '49.5'
+    text: Bij algemene maatregel van bestuur wordt de betalingstermijn vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel49
+  - number: '50.1'
+    text: "Voor de inzage of de verstrekking van gegevens is een bij of krachtens algemene maatregel van\n\
+      bestuur te bepalen vergoeding verschuldigd, welke kan variëren naar de wijze van inzage of\nverstrekking
+      van gegevens en de hoeveelheid gegevens."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50
+  - number: '50.2'
+    text: "[Artikel 9, derde lid, van de Wet hergebruik van overheidsinformatie][ref1] is van toepassing
+      op de\nvergoeding, bedoeld in het eerste lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0036795#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50
+    references:
+      - id: ref1
+        bwb_id: BWBR0036795
+        artikel: '9'
+  - number: '50.3'
+    text: "De verplichting tot betaling van een vergoeding als bedoeld in het eerste lid geldt niet indien
+      het\nverzoek om gegevens wordt gedaan door de directeur-generaal van de statistiek op grond van
+      [artikel\n33, vierde lid, van de Wet op het Centraal bureau voor de statistiek][ref1].\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0015926#Artikel33"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50
+    references:
+      - id: ref1
+        bwb_id: BWBR0015926
+        artikel: '33'
+  - number: '50.4'
+    text: "De in het eerste lid bedoelde vergoeding is verschuldigd zonder dat dit bij beschikking is\n\
+      vastgesteld."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50
+  - number: '50.5'
+    text: Bij algemene maatregel van bestuur wordt de betalingstermijn vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50
+  - number: '50.6'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen regels worden gesteld met betrekking
+      tot de\nbestuursorganen door wie, de gevallen waarin en de voorwaarden waaronder de vergoeding voor
+      de\ninzage of de verstrekking van gegevens door middel van een abonnement wordt voldaan."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50
+  - number: 50a
+    text: "De Kamer is bevoegd de betaling van een vergoeding of bijdrage af te dwingen door het uitvaardigen\n\
+      van een dwangbevel."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50a
+  - number: 50b.1
+    text: "Voor de identificatiecode voor juridische entiteiten (Legal Entity Identifier), bedoeld in
+      de\n[artikelen 9, onderdeel f][ref1], en [12, onderdeel e][ref2], welke door de Kamer wordt uitgegeven,\n\
+      is een bij of krachtens algemene maatregel van bestuur te bepalen eenmalige uitgiftevergoeding en\n\
+      een jaarlijkse vergoeding verschuldigd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel9\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel12"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50b
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '12'
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: 50b.2
+    text: "De in het eerste lid bedoelde vergoedingen zijn verschuldigd zonder dat deze bij beschikking
+      zijn\nvastgesteld."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50b
+  - number: 50b.3
+    text: Bij algemene maatregel van bestuur wordt de betalingstermijn vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel50b
+  - number: '51'
+    text: "Indien in deze wet geregelde of daarmee verband houdende onderwerpen in het belang van een
+      goede\nuitvoering van de wet of in het belang van de uitvoering van een bindend besluit van de Raad
+      van de\nEuropese Unie of de Commissie van de Europese Gemeenschappen regeling of nadere regeling
+      behoeven,\nkan deze geschieden bij algemene maatregel van bestuur."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel51
+  - number: 51a
+    text: "Het recht, bedoeld in [artikel 2, eerste lid, van de Databankenwet][ref1] is, ten aanzien van
+      het\nhandelsregister, voorbehouden aan de Kamer.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0010591#ArtikelI"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel51a
+    references:
+      - id: ref1
+        bwb_id: BWBR0010591
+        artikel: I
+  - number: '52'
+    text: "Onze Minister overlegt periodiek met een representatieve vertegenwoordiging van de gebruikers
+      van\nhet handelsregister over de inhoud, de inrichting, de werking en de beveiliging van het\nhandelsregister."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel52
+  - number: '53'
+    text: Wijzigt de Wet op de kamers van koophandel en fabrieken 1997.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel53
+  - number: '54'
+    text: Wijzigt de Wet op de economische delicten.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel54
+  - number: '55'
+    text: Wijzigt de Wet op de bedrijfsorganisatie.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55
+  - number: 55a
+    text: Wijzigt het Burgerlijk Wetboek Boek 2 en de Wet op de formeel buitenlandse
+      vennootschappen.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55a
+  - number: 55b
+    text: Wijzigt het Burgerlijk Wetboek Boek 6.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55b
+  - number: 55c
+    text: Wijzigt het Wetboek van Koophandel.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55c
+  - number: 55d
+    text: Wijzigt de Wet documentatie vennootschappen.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55d
+  - number: 55e
+    text: "Wijzigt de Uitvoeringswet verordening Europese coöperatieve vennootschap, de Uitvoeringswet\n\
+      verordening Europese vennootschap en de Uitvoeringswet Verordening tot instelling van Europese\n\
+      economische samenwerkingsverbanden."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55e
+  - number: 55f
+    text: Wijzigt de Kieswet.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55f
+  - number: 55g
+    text: Wijzigt de Wet nationaliteit zeeschepen in rompbevrachting.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55g
+  - number: 55h
+    text: Wijzigt de Uitvoeringswet Visserijverdrag 1967.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55h
+  - number: 55i
+    text: "Wijzigt de Wet inkomensvoorziening oudere en gedeeltelijk arbeidsongeschikte gewezen zelfstandigen,\n\
+      de Wet inkomensvoorziening oudere en gedeeltelijk arbeidsongeschikte werkloze werknemers, de Wet\n\
+      structuur uitvoeringsorganisatie werk en inkomen, de Wet werk en bijstand en de Wet werk en inkomen\n\
+      kunstenaars."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel55i
+  - number: '56'
+    text: "De [Handelsregisterwet 1996][ref1] vervalt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0007893"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel56
+    references:
+      - id: ref1
+        bwb_id: BWBR0007893
+  - number: '57.1'
+    text: "Opgaven ter inschrijving in het handelsregister en deponering van bescheiden waartoe de verplichting\n\
+      ontstaat als gevolg van de inwerkingtreding van deze wet, worden gedaan binnen 18 maanden na\ninwerkingtreding
+      van deze wet."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel57
+  - number: '57.2'
+    text: "Indien op het tijdstip van inwerkingtreding van deze wet in het handelsregister gegevens staan\n\
+      ingeschreven die niet op grond van een wettelijk voorschrift behoeven te worden ingeschreven, haalt\n\
+      de Kamer die gegevens binnen drie maanden na het eerder genoemde tijdstip door."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel57
+  - number: '57.3'
+    text: "In afwijking van [artikel 20, tweede lid][ref1], doen vennootschappen en andere juridische\n\
+      entiteiten die op het tijdstip van inwerkingtreding van de Implementatiewet registratie uiteindelijk\n\
+      belanghebbenden van vennootschappen en andere juridische entiteiten zijn ingeschreven in het\nhandelsregister,
+      de eerste opgave van gegevens en deponering van bescheiden als bedoeld in [artikel\n15a, tweede
+      en derde lid][ref3], binnen 18 maanden na dat tijdstip.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel20\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel15a"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel57
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '20'
+        hoofdstuk: '3'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: 15a
+        hoofdstuk: '2'
+        paragraaf: '2.2'
+  - number: '58'
+    text: "Bij ministeriële regeling kunnen, in overeenstemming met Onze betrokken Ministers, gegevens
+      worden\naangewezen die eenmalig worden gebruikt om ondernemingen en rechtspersonen die thans niet
+      in het\nhandelsregister zijn opgenomen, in te schrijven in het handelsregister."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel58
+  - number: '59.1'
+    text: "In afwijking van [artikel 30][ref1] kunnen gedurende zes jaar na de inwerkingtreding van artikel 30\n\
+      bij ministeriële regeling, in overeenstemming met Onze betrokken Ministers, bestuursorganen worden\n\
+      aangewezen voor wie de in artikel 30 genoemde verplichting uitsluitend geldt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel30"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel59
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '30'
+        hoofdstuk: '5'
+        paragraaf: '5.2'
+  - number: '59.2'
+    text: "In afwijking van [artikel 32][ref1] kunnen gedurende zes jaar na de inwerkingtreding van artikel
+      32\nbij ministeriële regeling, in overeenstemming met Onze betrokken Ministers, bestuursorganen
+      worden\naangewezen voor wie de in artikel 32 genoemde verplichting uitsluitend geldt.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0021777#Artikel32"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel59
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '32'
+        hoofdstuk: '6'
+  - number: '60'
+    text: "In afwijking van [artikel 41][ref1] geschiedt de controle, bedoeld in [artikel 41][ref2], gedurende\n\
+      zes jaar na de inwerkingtreding van [artikel 41][ref3], eens per twee jaar.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel41\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0021777#Artikel41\n[ref3]: https://wetten.overheid.nl/BWBR0021777#Artikel41"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel60
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '41'
+        hoofdstuk: '7'
+      - id: ref2
+        bwb_id: BWBR0021777
+        artikel: '41'
+        hoofdstuk: '7'
+      - id: ref3
+        bwb_id: BWBR0021777
+        artikel: '41'
+        hoofdstuk: '7'
+  - number: '61'
+    text: "Bij algemene maatregel van bestuur kan gedurende vier jaar na inwerkingtreding van [artikel\n\
+      2][ref1], met het oog op een goede invoering van deze wet regels stellen waarbij zo nodig kan worden\n\
+      afgeweken van het bepaalde bij en krachtens deze wet.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0021777#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel61
+    references:
+      - id: ref1
+        bwb_id: BWBR0021777
+        artikel: '2'
+        hoofdstuk: '2'
+        paragraaf: '2.1'
+  - number: '62'
+    text: Wijzigt deze wet.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel62
+  - number: 62a
+    text: Wijzigt de Postwet.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel62a
+  - number: 62b
+    text: Wijzigt kamerstuk 30536.
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel62b
+  - number: '63'
+    text: "Onze Minister zendt binnen vier jaar na de inwerkingtreding van deze wet aan de Staten-Generaal
+      een\nverslag over de doeltreffendheid en de effecten van deze wet in de praktijk."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel63
+  - number: '64'
+    text: "De artikelen van deze wet treden in werking op een bij koninklijk besluit te bepalen tijdstip,
+      dat\nvoor verschillende artikelen en onderdelen daarvan verschillend kan worden vastgesteld."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel64
+  - number: '65'
+    text: "Deze wet wordt aangehaald als: Handelsregisterwet met vermelding van het jaartal van het Staatsblad\n\
+      waarin zij zal worden geplaatst."
+    url: https://wetten.overheid.nl/BWBR0021777/2024-01-01#Artikel65

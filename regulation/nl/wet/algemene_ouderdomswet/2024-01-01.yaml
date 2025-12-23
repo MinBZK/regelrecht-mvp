@@ -1,0 +1,2514 @@
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: algemene_ouderdomswet
+regulatory_layer: WET
+publication_date: '2019-10-31'
+valid_from: '2024-01-01'
+bwb_id: BWBR0002221
+url: https://wetten.overheid.nl/BWBR0002221/2024-01-01
+articles:
+- number: aanhef
+  text: "Wij JULIANA, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz., enz.,\nenz.\n\nAllen, die deze zullen zien of horen lezen, saluut! doen te weten:\n\nAlzo Wij in overweging genomen hebben, dat het wenselijk is regelen vast te stellen inzake een\nalgemene, de gehele bevolking omvattende, verplichte verzekering tegen geldelijke gevolgen van\nouderdom;\n\nZo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben\ngoedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Aanhef
+- number: '1.1'
+  text: "Voor de toepassing van deze wet en van de tot haar uitvoering genomen besluiten wordt verstaan\nonder:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.1.a
+  text: 'Onze Minister: Onze Minister van Sociale Zaken en Werkgelegenheid;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.1.b
+  text: "lichamen: rechtspersonen, maat- en vennootschappen, samenwerkingsvormen zonder rechtspersoonlijkheid\ndie met verenigingen maatschappelijk gelijk kunnen worden gesteld, ondernemingen van\npubliekrechtelijke rechtspersonen en doelvermogens;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.1.c
+  text: "vreemdeling: hetgeen daaronder wordt verstaan in de [Vreemdelingenwet 2000][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+- number: 1.1.d
+  text: "bruto-minimumloon: het in [artikel 8, eerste lid, onderdeel b, van de Wet minimumloon en\nminimumvakantiebijslag][ref1] bedoelde bedrag;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002638#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0002638
+    artikel: '8'
+- number: 1.1.e
+  text: "rechtens zijn vrijheid is ontnomen: rechtens zijn vrijheid is ontnomen, behoudens de gevallen,\nbedoeld in de [Wet verplichte geestelijke gezondheidszorg][ref1] en in de [Wet zorg en dwang\npsychogeriatrische en verstandelijk gehandicapte cliënten][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040635\n[ref2]: https://wetten.overheid.nl/BWBR0040632"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0040635
+  - id: ref2
+    bwb_id: BWBR0040632
+- number: 1.1.f
+  text: "justitiële inrichting: een penitentiaire inrichting of een instelling voor de verpleging van ter\nbeschikking gestelden;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.1.g
+  text: "continentaal plat: de exclusieve economische zone van het Koninkrijk, bedoeld in [artikel 1 van de\nRijkswet instelling exclusieve economische zone][ref1], voor zover deze grenst aan de territoriale\nzee van Nederland;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0010480#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0010480
+    artikel: '1'
+- number: 1.1.h
+  text: "vrijheidsstraf of vrijheidsbenemende maatregel: een bij onherroepelijk geworden vonnis opgelegde\nvrijheidsstraf of vrijheidsbenemende maatregel als bedoeld in het [Wetboek van Strafrecht][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001854"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0001854
+- number: 1.1.i
+  text: "pensioengerechtigde leeftijd: leeftijd, bedoeld in [artikel 7a][ref1], waarop recht op\nouderdomspensioen ontstaat;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 7a
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 1.1.j
+  text: "aanvangsleeftijd: leeftijd, bedoeld in [artikel 7a][ref1], met ingang waarvan een niet verzekerd\ntijdvak leidt tot een korting op het ouderdomspensioen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel7a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 7a
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 1.1.k
+  text: "CBS: Centraal bureau voor de statistiek, bedoeld in [artikel 2, eerste lid, van de Wet op het\nCentraal bureau voor de statistiek][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015926#Artikel2"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0015926
+    artikel: '2'
+- number: 1.1.l
+  text: "uitreiziger: persoon ten aanzien van wie op grond van een melding van de opsporingsdiensten of\ninlichtingen- en veiligheidsdiensten, gericht aan de Sociale verzekeringsbank, is gebleken dat het\ngegronde vermoeden bestaat dat deze persoon zich buiten Nederland bevindt met het doel om zich aan\nte sluiten bij een organisatie die is geplaatst op de lijst van organisaties, bedoeld in [artikel\n14, vierde lid, van de Rijkswet op het Nederlanderschap][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003738#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0003738
+    artikel: '14'
+- number: '1.2'
+  text: 'In deze wet en de daarop berustende bepalingen wordt gelijkgesteld met:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.2.a
+  text: 'echtgenoot: geregistreerde partner;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.2.b
+  text: 'echtgenoten: geregistreerde partners;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.2.c
+  text: 'gehuwd: als partner geregistreerd;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.2.d
+  text: 'gehuwde: als partner geregistreerde.'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.3'
+  text: 'In deze wet en de daarop berustende bepalingen wordt:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.3.a
+  text: "als gehuwd of als echtgenoot mede aangemerkt de ongehuwde meerderjarige die met een andere ongehuwde\nmeerderjarige een gezamenlijke huishouding voert, tenzij het betreft een bloedverwant in de eerste\ngraad;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.3.b
+  text: "als ongehuwd mede aangemerkt degene die duurzaam gescheiden leeft van de persoon met wie hij gehuwd\nis."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.4'
+  text: "Van een gezamenlijke huishouding is sprake indien twee personen hun hoofdverblijf in dezelfde woning\nhebben en zij blijk geven zorg te dragen voor elkaar door middel van het leveren van een bijdrage in\nde kosten van de huishouding dan wel anderszins."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.5'
+  text: "Een gezamenlijke huishouding wordt in ieder geval aanwezig geacht indien de betrokkenen hun\nhoofdverblijf hebben in dezelfde woning en:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.5.a
+  text: "zij met elkaar gehuwd zijn geweest of eerder voor de toepassing van deze wet daarmee gelijk zijn\ngesteld;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.5.b
+  text: "uit hun relatie een kind is geboren of erkenning heeft plaatsgevonden van een kind van de een door\nde ander;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.5.c
+  text: "zij zich wederzijds verplicht hebben tot een bijdrage aan de huishouding krachtens een geldend\nsamenlevingscontract; of"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: 1.5.d
+  text: "zij op grond van een registratie worden aangemerkt als een gezamenlijke huishouding die naar aard en\nstrekking overeenkomt met de gezamenlijke huishouding, bedoeld in het vierde lid."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.6'
+  text: "Bij algemene maatregel van bestuur wordt vastgesteld welke registraties, en gedurende welk tijdvak,\nin aanmerking worden genomen voor de toepassing van het vijfde lid, onderdeel d."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.7'
+  text: "Bij algemene maatregel van bestuur kunnen regels worden gesteld ten aanzien van hetgeen wordt\nverstaan onder het hoofdverblijf in dezelfde woning hebben als bedoeld in het vierde en vijfde lid,\naanhef, en het blijk geven zorg te dragen voor een ander als bedoeld in het vierde lid."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.8'
+  text: "Onder bloedverwant in de eerste graad als bedoeld in het derde lid, onderdeel a, wordt mede verstaan\neen meerderjarig aangehuwd kind of een meerderjarig voormalig pleegkind van de ongehuwde\nmeerderjarige."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+- number: '1.9'
+  text: "Onder voormalig pleegkind als bedoeld in het achtste lid wordt verstaan een pleegkind voor wie de\nongehuwde meerderjarige een pleegvergoeding ontving of ontvangt op grond van de [Wet op de\njeugdzorg][ref1] of de [Jeugdwet][ref2], of kinderbijslag ontving op grond van de [Algemene\nKinderbijslagwet][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0016637\n[ref2]: https://wetten.overheid.nl/BWBR0034925\n[ref3]: https://wetten.overheid.nl/BWBR0002368"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel1
+  references:
+  - id: ref1
+    bwb_id: BWBR0016637
+  - id: ref2
+    bwb_id: BWBR0034925
+  - id: ref3
+    bwb_id: BWBR0002368
+- number: '2'
+  text: Ingezetene in de zin van deze wet is degene, die in Nederland woont.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel2
+- number: '3.1'
+  text: Waar iemand woont en waar een lichaam gevestigd is, wordt naar de omstandigheden beoordeeld.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel3
+- number: '3.2'
+  text: "Voor de toepassing van het eerste lid worden schepen welke in Nederland hun thuishaven hebben, ten\nopzichte van de bemanning als deel van Nederland beschouwd."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel3
+- number: '3.3'
+  text: "Hij die Nederland metterwoon heeft verlaten en binnen een jaar nadien metterwoon terugkeert zonder\ninmiddels in Aruba, Curaçao, Sint Maarten, de openbare lichamen Bonaire, Sint Eustatius en Saba, of\nop het grondgebied van een andere Mogendheid te hebben gewoond, wordt ook voor de duur van zijn\nafwezigheid geacht in Nederland te hebben gewoond."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel3
+- number: '4'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel4
+- number: '5'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel5
+- number: '6.1'
+  text: "Verzekerd overeenkomstig de bepalingen van deze wet is degene, die nog niet de pensioengerechtigde\nleeftijd heeft bereikt, en"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+- number: 6.1.a
+  text: ingezetene is;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+- number: 6.1.b
+  text: "geen ingezetene is, doch ter zake van in Nederland of op het continentaal plat in dienstbetrekking\nverrichte arbeid aan de loonbelasting is onderworpen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+- number: '6.2'
+  text: "Niet verzekerd is de vreemdeling die niet rechtmatig in Nederland verblijf houdt in de zin van\n[artikel 8, onder a tot en met e en l, van de Vreemdelingenwet 2000][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+    artikel: '8'
+- number: '6.3'
+  text: "Bij of krachtens algemene maatregel van bestuur kan, in afwijking van het eerste en tweede lid,\nuitbreiding dan wel beperking worden gegeven aan de kring der verzekerden."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+- number: '6.4'
+  text: "Bij een maatregel, als bedoeld in het derde lid, kan worden afgeweken van het tweede lid ten aanzien\nvan:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+- number: 6.4.a
+  text: vreemdelingen die rechtmatig in Nederland arbeid verrichten, dan wel hebben verricht;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+- number: 6.4.b
+  text: "vreemdelingen die, na rechtmatig verblijf te hebben gehouden in de zin van [artikel 8, onder a tot\nen met e en l, van de Vreemdelingenwet 2000][ref1], rechtmatig in Nederland verblijf hebben als\nbedoeld in artikel 8, onder g of h, van de Vreemdelingenwet 2000.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+    artikel: '8'
+- number: 6a
+  text: "Zo nodig in afwijking van [artikel 6][ref1] en de daarop berustende bepalingen:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel6"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '6'
+    hoofdstuk: II
+- number: 6a.a
+  text: "wordt als verzekerde aangemerkt de persoon van wie de verzekering op grond van deze wet voortvloeit\nuit de toepassing van bepalingen van een verdrag of van een besluit van een volkenrechtelijke\norganisatie;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6a
+- number: 6a.b
+  text: "wordt niet als verzekerde aangemerkt de persoon op wie op grond van een verdrag of een besluit van\neen volkenrechtelijke organisatie de wetgeving van een andere mogendheid van toepassing is."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel6a
+- number: '7.1'
+  text: Recht op ouderdomspensioen overeenkomstig de bepalingen van deze wet heeft degene, die
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7
+  machine_readable:
+    endpoint: aow_uitkering
+    competent_authority:
+      name: Sociale Verzekeringsbank
+      abbreviation: SVB
+      type: INSTANCE
+    definitions:
+      JAREN_VOOR_VOLLEDIG_PENSIOEN:
+        value: 50
+      OPBOUW_PER_JAAR:
+        value: 0.02
+      BASISBEDRAG_ALLEENSTAAND:
+        value: 138000
+      BASISBEDRAG_GEDEELD:
+        value: 95200
+      PARTNER_TOESLAG_MAXIMUM:
+        value: 25800
+      INKOMENSGRENS_PARTNER:
+        value: 280000
+      KORTINGSPERCENTAGE:
+        value: 0.02
+    execution:
+      parameters:
+      - name: BSN
+        type: string
+        required: true
+        description: BSN van de persoon
+      input:
+      - name: WOONACHTIGE_VERZEKERDE_JAREN
+        type: number
+        description: Aantal verzekerde jaren voor AOW-opbouw op basis van woonperiodes
+        source:
+          regulation: verzekerde_tijdvakken_bron
+          output: woonperiodes
+          parameters:
+            bsn: $BSN
+          description: Verzekerde jaren obv woonperiodes (externe bron)
+      - name: WERKZAME_VERZEKERDE_JAREN
+        type: number
+        description: Aantal verzekerde jaren voor AOW-opbouw op basis van werk en uitkeringen
+        source:
+          regulation: wet_structuur_uitvoeringsorganisatie_werk_en_inkomen
+          output: verzekerde_jaren
+          parameters:
+            bsn: $BSN
+          description: Verzekerde jaren obv werk (UWV)
+      - name: GEBOORTEDATUM
+        type: date
+        description: Geboortedatum van de aanvrager
+        source:
+          regulation: wet_basisregistratie_personen
+          output: geboortedatum
+          parameters:
+            bsn: $BSN
+          description: Geboortedatum uit BRP
+      - name: LEEFTIJD
+        type: number
+        description: Leeftijd van de aanvrager
+        source:
+          regulation: wet_basisregistratie_personen
+          output: leeftijd
+          parameters:
+            bsn: $BSN
+          description: Leeftijd uit BRP
+      - name: HEEFT_PARTNER
+        type: boolean
+        description: Heeft de persoon een partner volgens BRP
+        source:
+          regulation: wet_basisregistratie_personen
+          output: heeft_partner
+          parameters:
+            bsn: $BSN
+          description: Partnerstatus uit BRP
+      - name: PARTNER_BSN
+        type: string
+        description: BSN van de partner
+        source:
+          regulation: wet_basisregistratie_personen
+          output: partner_bsn
+          parameters:
+            bsn: $BSN
+          description: Partner BSN uit BRP
+      - name: PARTNER_GEBOORTEDATUM
+        type: date
+        description: Geboortedatum van de partner
+        source:
+          regulation: wet_basisregistratie_personen
+          output: partner_geboortedatum
+          parameters:
+            bsn: $BSN
+          description: Partner geboortedatum uit BRP
+      - name: PARTNER_LEEFTIJD
+        type: number
+        description: Leeftijd van de partner
+        source:
+          regulation: wet_basisregistratie_personen
+          output: leeftijd
+          parameters:
+            bsn: $PARTNER_BSN
+          description: Partner leeftijd uit BRP
+      - name: INKOMEN
+        type: amount
+        description: Toetsingsinkomen
+        source:
+          regulation: wet_inkomstenbelasting_2001
+          output: inkomen
+          parameters:
+            bsn: $BSN
+          description: Toetsingsinkomen uit Belastingdienst
+      - name: PARTNER_INKOMEN
+        type: amount
+        description: Toetsingsinkomen partner
+        source:
+          regulation: wet_inkomstenbelasting_2001
+          output: inkomen
+          parameters:
+            bsn: $PARTNER_BSN
+          description: Partner toetsingsinkomen uit Belastingdienst
+      - name: PENSIOENLEEFTIJD
+        type: number
+        description: AOW-leeftijd voor deze persoon
+        source:
+          regulation: algemene_ouderdomswet
+          output: pensioenleeftijd
+          parameters:
+            geboortedatum: $GEBOORTEDATUM
+          description: Pensioenleeftijd obv geboortedatum (artikel 7a)
+      - name: PARTNER_PENSIOENLEEFTIJD
+        type: number
+        description: AOW-leeftijd voor de partner
+        source:
+          regulation: algemene_ouderdomswet
+          output: pensioenleeftijd
+          parameters:
+            geboortedatum: $PARTNER_GEBOORTEDATUM
+          description: Partner pensioenleeftijd obv geboortedatum (artikel 7a)
+      output:
+      - name: is_gerechtigd
+        type: boolean
+        description: Heeft de persoon recht op AOW
+      - name: basisbedrag
+        type: amount
+        description: Basis AOW-bedrag voor opbouw
+      - name: opbouwpercentage
+        type: number
+        description: Opbouwpercentage AOW
+      - name: totaal_verzekerde_jaren
+        type: number
+        description: Som van woonachtige en werkzame verzekerde jaren
+      - name: partner_toeslag_factor
+        type: number
+        description: Factor voor partnertoeslag berekening
+      - name: pensioenbedrag
+        type: amount
+        description: Uiteindelijke AOW-uitkering
+      actions:
+      - output: totaal_verzekerde_jaren
+        value:
+          operation: ADD
+          values:
+          - $WOONACHTIGE_VERZEKERDE_JAREN
+          - $WERKZAME_VERZEKERDE_JAREN
+      - output: is_gerechtigd
+        value:
+          operation: IF
+          when:
+            operation: AND
+            conditions:
+            - operation: GREATER_THAN_OR_EQUAL
+              subject: $LEEFTIJD
+              value: $PENSIOENLEEFTIJD
+            - operation: GREATER_THAN
+              subject: $totaal_verzekerde_jaren
+              value: 0
+          then: true
+          else: false
+      - output: basisbedrag
+        value:
+          operation: IF
+          when:
+            operation: EQUALS
+            subject: $HEEFT_PARTNER
+            value: true
+          then: $BASISBEDRAG_GEDEELD
+          else: $BASISBEDRAG_ALLEENSTAAND
+      - output: opbouwpercentage
+        value:
+          operation: DIVIDE
+          values:
+          - operation: MIN
+            values:
+            - $totaal_verzekerde_jaren
+            - $JAREN_VOOR_VOLLEDIG_PENSIOEN
+          - $JAREN_VOOR_VOLLEDIG_PENSIOEN
+      - output: partner_toeslag_factor
+        value:
+          operation: IF
+          when:
+            operation: EQUALS
+            subject: $HEEFT_PARTNER
+            value: true
+          then:
+            operation: ADD
+            values:
+            - 1
+            - operation: IF
+              when:
+                operation: AND
+                conditions:
+                - operation: LESS_THAN
+                  subject: $PARTNER_LEEFTIJD
+                  value: $PARTNER_PENSIOENLEEFTIJD
+                - operation: LESS_THAN
+                  subject: $PARTNER_INKOMEN
+                  value: $INKOMENSGRENS_PARTNER
+              then:
+                operation: MIN
+                values:
+                - operation: DIVIDE
+                  values:
+                  - $PARTNER_TOESLAG_MAXIMUM
+                  - $BASISBEDRAG_GEDEELD
+                - operation: MULTIPLY
+                  values:
+                  - operation: SUBTRACT
+                    values:
+                    - $INKOMENSGRENS_PARTNER
+                    - $PARTNER_INKOMEN
+                  - $KORTINGSPERCENTAGE
+              else: 0
+          else: 1
+      - output: pensioenbedrag
+        value:
+          operation: MULTIPLY
+          values:
+          - $basisbedrag
+          - $opbouwpercentage
+          - $partner_toeslag_factor
+- number: 7.1.a
+  text: de pensioengerechtigde leeftijd heeft bereikt, en
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7
+- number: 7.1.b
+  text: "ingevolge deze wet minimaal één kalenderjaar verzekerd is geweest in het tijdvak, aanvangende met de\ndag waarop de aanvangsleeftijd is bereikt en eindigende met de dag voorafgaande aan de dag waarop de\npensioengerechtigde leeftijd is bereikt."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7
+- number: '7.2'
+  text: "Bij ministeriële regeling worden regels gesteld omtrent de herleiding van gedeelten van\nkalenderjaren tot gehele kalenderjaren."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7
+- number: 7a.1
+  text: 'De pensioengerechtigde leeftijd en de aanvangsleeftijd zijn:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.a
+  text: 'vóór 1 januari 2013: 65, respectievelijk 15 jaar;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.b
+  text: 'in 2013: 65 jaar en één maand, respectievelijk 15 jaar en één maand;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.c
+  text: 'in 2014: 65 jaar en twee maanden, respectievelijk 15 jaar en twee maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.d
+  text: 'in 2015: 65 jaar en drie maanden, respectievelijk 15 jaar en drie maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.e
+  text: 'in 2016: 65 jaar en zes maanden, respectievelijk 15 jaar en zes maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.f
+  text: 'in 2017: 65 jaar en negen maanden, respectievelijk 15 jaar en negen maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.g
+  text: 'in 2018: 66 jaar, respectievelijk 16 jaar;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.h
+  text: 'in 2019: 66 jaar en vier maanden, respectievelijk 16 jaar en vier maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.i
+  text: 'in 2020: 66 jaar en vier maanden, respectievelijk 16 jaar en vier maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.j
+  text: 'in 2021: 66 jaar en vier maanden, respectievelijk 16 jaar en vier maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.k
+  text: 'in 2022: 66 jaar en zeven maanden, respectievelijk 16 jaar en zeven maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.l
+  text: 'in 2023: 66 jaar en tien maanden, respectievelijk 16 jaar en tien maanden;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.m
+  text: 'in 2024: 67 jaar, respectievelijk 17 jaar;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.n
+  text: 'in 2025: 67 jaar, respectievelijk 17 jaar;'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.1.o
+  text: "in 2026 en de kalenderjaren daarna: de pensioengerechtigde leeftijd en de aanvangsleeftijd, die\njaarlijks op basis van de verhoging van de pensioengerechtigde leeftijd en de aanvangsleeftijd op\ngrond van het tweede lid worden vastgesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.2
+  text: "De verhoging van de pensioengerechtigde leeftijd en de aanvangsleeftijd in 2026 en de kalenderjaren\ndaarna wordt jaarlijks, voor de eerste maal uiterlijk op 1 januari 2021 voor het jaar 2026,\nvastgesteld volgens de formule: V = 2/3 * (L – 20,64) – (P – 67) waarbij: V staat voor de periode\nwaarmee de pensioengerechtigde leeftijd respectievelijk aanvangsleeftijd wordt verhoogd, uitgedrukt\nin perioden van een jaar; L staat voor de geraamde macro gemiddelde resterende levensverwachting op\n65-jarige leeftijd in het kalenderjaar van verhoging; P staat voor de pensioengerechtigde leeftijd\nin het kalenderjaar voorafgaande aan het kalenderjaar van verhoging. Indien V negatief is of minder\ndan 0,25 bedraagt, wordt deze gesteld op 0. Indien V 0,25 of meer bedraagt, wordt deze gesteld op\ndrie maanden. De volgens de formule vastgestelde verdere verhoging van de pensioengerechtigde\nleeftijd en de aanvangsleeftijd wordt door of namens Onze Minister medegedeeld in de Staatscourant."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.3
+  text: "De verhoging, bedoeld in het tweede lid, treedt telkens in werking vijf jaar na de uiterste datum\nvan vaststelling, bedoeld in het tweede lid, voor de eerste maal met ingang van 1 januari 2026."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: 7a.4
+  text: "De ramingen van de macro gemiddelde resterende levensverwachting, bedoeld in het tweede lid, worden\nuitgevoerd en bekendgemaakt door het CBS."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel7a
+- number: '8.1'
+  text: "De pensioengerechtigde die voor 1 januari 2015 is gehuwd en voor die datum recht heeft op\nouderdomspensioen en van wie de echtgenoot jonger is dan de pensioengerechtigde leeftijd, heeft\novereenkomstig de bepalingen van deze wet recht op een toeslag, tenzij, met inachtneming van\n[artikel 11][ref1], het inkomen uit arbeid of overig inkomen van die echtgenoot meer bedraagt dan de\nvolledige bruto-toeslag.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel11"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '11'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '8.2'
+  text: "In afwijking van het eerste lid ontstaat op of na 1 januari 2015, geen recht meer op toeslag als\ngevolg van:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+- number: 8.2.a
+  text: wijziging van het inkomen, bedoeld in het eerste lid;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+- number: 8.2.b
+  text: "wijziging van de leefvorm, waardoor niet langer sprake is van een ongehuwde als bedoeld in\n[artikel 1, tweede en derde lid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '1'
+    hoofdstuk: I
+- number: 8.2.c
+  text: "het gaan wonen in Nederland of in een land waarmee een verdrag in werking is getreden dan wel een\nbesluit van een volkenrechtelijke organisatie van kracht is geworden, op grond waarvan recht op\ntoeslag kan bestaan;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+- number: 8.2.d
+  text: "een invrijheidstelling als bedoeld in [artikel 8b, derde lid][ref1]; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8b"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8b
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8.2.e
+  text: "het zich niet langer onttrekken aan de tenuitvoerlegging van een vrijheidsstraf of\nvrijheidsbenemende maatregel als bedoeld in [artikel 8c, derde lid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8c
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8.2.f
+  text: "het niet langer bestaan van het gegronde vermoeden dat de pensioengerechtigde dan wel diens partner\nzich buiten Nederland bevindt met het doel zich aan te sluiten bij een organisatie als bedoeld in\n[artikel 1, eerste lid, onderdeel l][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '1'
+    hoofdstuk: I
+- number: '8.3'
+  text: "Indien het recht op toeslag is geëindigd uitsluitend als gevolg van een incidentele stijging van het\ninkomen, bedoeld in het eerste lid, kan, in afwijking van het tweede lid, het recht op toeslag\nherleven."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+- number: '8.4'
+  text: "Waar in deze wet en in de tot haar uitvoering genomen besluiten wordt gesproken van\nouderdomspensioen wordt daaronder mede verstaan de in het eerste lid bedoelde toeslag, voor zover\nniet anders is bepaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8
+- number: 8a.1
+  text: "Geen recht op toeslag heeft de pensioengerechtigde, bedoeld in [artikel 8, eerste lid][ref1], die\nniet in Nederland woont.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8a.2
+  text: "Het eerste lid is niet van toepassing indien de pensioengerechtigde woont in een land waarin op\ngrond van een verdrag of een besluit van een volkenrechtelijke organisatie recht op toeslag kan\nbestaan."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+- number: 8a.3
+  text: 'Bij of krachtens algemene maatregel van bestuur kan worden bepaald dat recht heeft op toeslag:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+- number: 8a.3.a
+  text: "de pensioengerechtigde, bedoeld in [artikel 8, eerste lid][ref1], die werkzaamheden verricht in het\nalgemeen belang en niet in Nederland woont;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8a.3.b
+  text: "de pensioengerechtigde, bedoeld in [artikel 8, eerste lid][ref1], die in Aruba, Curaçao, Sint\nMaarten of in de openbare lichamen Bonaire, Sint Eustatius en Saba woont; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8a.3.c
+  text: de gezinsleden van de in de onderdelen a of b bedoelde pensioengerechtigde.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+- number: 8a.4
+  text: "Onze Minister deelt mede in welke landen op grond van een verdrag of een besluit van een\nvolkenrechtelijke organisatie recht op toeslag kan bestaan. In deze mededeling wordt tevens\nopgenomen:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+- number: 8a.4.a
+  text: de vindplaats van het desbetreffende verdrag of besluit, en
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+- number: 8a.4.b
+  text: de eventueel in dat verdrag of besluit aanwezige beperkingen.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8a
+- number: 8b.1
+  text: "Geen recht op ouderdomspensioen ontstaat voor de pensioengerechtigde, aan wie rechtens zijn vrijheid\nis ontnomen indien de dag waarop het ouderdomspensioen zou ingaan dan wel de dag na afloop van de\ntoepassing van [artikel 8c, eerste lid][ref1], met betrekking tot dat recht op ouderdomspensioen, is\ngelegen in de periode dat hem rechtens zijn vrijheid is ontnomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8c
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8b.2
+  text: "Het recht op ouderdomspensioen eindigt, indien de pensioengerechtigde rechtens zijn vrijheid is\nontnomen gedurende ten minste een maand."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8b
+- number: 8b.3
+  text: "De persoon die op grond van het eerste of tweede lid geen recht op ouderdomspensioen heeft, heeft\nmet ingang van de dag waarop hij in vrijheid is gesteld met inachtneming van de bepalingen van deze\nwet recht op ouderdomspensioen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8b
+- number: 8b.4
+  text: "Voor de toepassing van het tweede lid worden perioden van vrijheidsontneming samengeteld, indien zij\nelkaar met een onderbreking van minder dan vier weken opvolgen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8b
+- number: 8b.5
+  text: "Het eerste en tweede lid zijn niet van toepassing en het derde lid is van overeenkomstige toepassing\nop bij algemene maatregel van bestuur aan te wijzen categorieën personen waarbij tenuitvoerlegging\nvan een vrijheidsstraf of vrijheidsbenemende maatregel buiten een justitiële inrichting plaatsvindt."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8b
+- number: 8b.6
+  text: "Voor de pensioengerechtigde die op de dag voorafgaande aan de vrijheidsontneming geen recht heeft op\nouderdomspensioen op grond van [artikel 8c, tweede lid][ref1], eindigt het recht op\nouderdomspensioen, in afwijking van het tweede lid, vanaf de dag dat de vrijheidsontneming ingaat.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8c
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8c.1
+  text: "Voor de pensioengerechtigde ontstaat geen recht op ouderdomspensioen indien en voor zolang hij zich\nop de dag waarop het ouderdomspensioen zou ingaan en daarna onttrekt aan de tenuitvoerlegging van\neen vrijheidsstraf of vrijheidsbenemende maatregel."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8c
+- number: 8c.2
+  text: "Het recht op ouderdomspensioen eindigt, indien de pensioengerechtigde zich, nadat het recht op\nouderdomspensioen is ingegaan, onttrekt aan de tenuitvoerlegging van een vrijheidsstraf of\nvrijheidsbenemende maatregel."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8c
+- number: 8c.3
+  text: "De persoon die op grond van het eerste of tweede lid geen recht op ouderdomspensioen heeft, heeft\nmet ingang van de dag dat hij zich niet langer onttrekt aan de tenuitvoerlegging van een\nvrijheidsstraf of vrijheidsbenemende maatregel met inachtneming van de bepalingen van deze wet recht\nop ouderdomspensioen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8c
+- number: 8d.1
+  text: "Voor de pensioengerechtigde ontstaat geen recht op ouderdomspensioen indien en voor zolang hij een\nuitreiziger is."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8d
+- number: 8d.2
+  text: "Het recht op ouderdomspensioen eindigt, indien de pensioengerechtigde, nadat het recht op\nouderdomspensioen is ingegaan, een uitreiziger is."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8d
+- number: 8d.3
+  text: "De persoon die op grond van het eerste of tweede lid geen recht op ouderdomspensioen heeft, heeft\nmet ingang van de dag dat niet langer het gegronde vermoeden bestaat dat hij zich buiten Nederland\nbevindt met het doel zich aan te sluiten bij een organisatie als bedoeld in [artikel 1, eerste lid,\nonderdeel l][ref1], met inachtneming van de bepalingen van deze wet recht op ouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel1"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8d
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '1'
+    hoofdstuk: I
+- number: 8d.4
+  text: "Geen recht op toeslag heeft de pensioengerechtigde, bedoeld in [artikel 8, eerste lid][ref1], van\nwie de partner een uitreiziger is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8d
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 8d.5
+  text: "Voor het derde lid is [artikel 14, eerste lid][ref1], van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel14"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel8d
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '14'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: '9.1'
+  text: 'Deze wet kent een bruto-ouderdomspensioen voor:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: 9.1.a
+  text: de ongehuwde pensioengerechtigde;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: 9.1.b
+  text: de gehuwde pensioengerechtigde.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: '9.2'
+  text: "De in het eerste lid bedoelde ouderdomspensioenen worden afgeleid van het netto-minimumloon per\nmaand."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: '9.3'
+  text: "Onder het netto-minimumloon wordt verstaan het bruto-minimumloon, na aftrek van premies op grond van\nde [Wet financiering sociale verzekeringen][ref1] en loonbelasting.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0017745"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+  references:
+  - id: ref1
+    bwb_id: BWBR0017745
+- number: '9.4'
+  text: "De loonbelasting en premie voor de volksverzekeringen, bedoeld in [artikel 2 van de Wet financiering\nsociale verzekeringen][ref1], worden berekend voor een werknemer, jonger dan de pensioengerechtigde\nleeftijd, rekening houdend met uitsluitend tweemaal de algemene heffingskorting, bedoeld in [artikel\n22 van de Wet op de loonbelasting 1964][ref2], over het bruto-minimumloon.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0017745#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0002471#Artikel22"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+  references:
+  - id: ref1
+    bwb_id: BWBR0017745
+    artikel: '2'
+  - id: ref2
+    bwb_id: BWBR0002471
+    artikel: '22'
+- number: '9.5'
+  text: "De bruto-ouderdomspensioenen worden zodanig vastgesteld, dat na aftrek van de in te houden\nloonbelasting en premie voor de volksverzekeringen, rekening houdend met de toepasselijke\nheffingskortingen voor een persoon van de pensioengerechtigde leeftijd en ouder, en van de\ninkomensafhankelijke bijdrage, bedoeld in [artikel 41 van de Zorgverzekeringswet][ref1]:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018450#Artikel41"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+  references:
+  - id: ref1
+    bwb_id: BWBR0018450
+    artikel: '41'
+- number: 9.5.a
+  text: "het netto-ouderdomspensioen per maand van een pensioengerechtigde als bedoeld in het eerste lid,\nonderdeel a, gelijk is aan 70% van het netto-minimumloon per maand;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: 9.5.b
+  text: "het netto-ouderdomspensioen per maand van een pensioengerechtigde als bedoeld in het eerste lid,\nonderdeel b, gelijk is aan 50% van het netto-minimumloon per maand."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: '9.6'
+  text: "De volledige bruto-toeslag, bedoeld in [artikel 8][ref1], is gelijk aan het bruto-ouderdomspensioen\nvoor de pensioengerechtigde, bedoeld in het eerste lid, onderdeel b.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '9.7'
+  text: "Een wijziging van het bruto-ouderdomspensioen in verband met een wijziging van het netto-minimumloon\nwordt samen met de dag waarop deze wijziging ingaat, door of namens Onze Minister medegedeeld in de\nStaatscourant."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: '9.8'
+  text: "Een wijziging van het bruto-ouderdomspensioen in verband met een wijziging van het netto-minimumloon\nvindt plaats zonder dat dit bij beschikking is vastgesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: '9.9'
+  text: "De Sociale verzekeringsbank betaalt het gewijzigde ouderdomspensioen, bedoeld in het achtste lid,\nbij de eerstvolgende betaling van het ouderdomspensioen nadat de wijziging, bedoeld in het achtste\nlid, heeft plaatsgevonden."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9
+- number: 9a.1
+  text: "In afwijking van [artikel 9][ref1] is voor de pensioengerechtigde, die niet in Nederland woont, het\nbruto-ouderdomspensioen gelijk aan het bruto-ouderdomspensioen voor de pensioengerechtigde, bedoeld\nin artikel 9, eerste lid, onderdeel b, onverminderd [artikel 13, eerste lid][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 9a.2
+  text: "[Artikel 8a, tweede lid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8a
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 9a.3
+  text: "Bij of krachtens algemene maatregel van bestuur kan worden bepaald dat recht heeft op\nouderdomspensioen alsof hij in Nederland woont:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: 9a.3.a
+  text: "de pensioengerechtigde, bedoeld in [artikel 9, eerste lid, onderdeel a][ref1], die werkzaamheden\nverricht in het algemeen belang en niet in Nederland woont;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 9a.3.b
+  text: "de pensioengerechtigde, bedoeld in [artikel 9, eerste lid, onderdeel a][ref1], die in Aruba,\nCuraçao, Sint Maarten of in de openbare lichamen Bonaire, Sint Eustatius en Saba woont; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 9a.3.c
+  text: de gezinsleden van de in de onderdelen a of b bedoelde pensioengerechtigde.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: 9a.4
+  text: "Recht op ouderdomspensioen alsof hij in Nederland woont, heeft de pensioengerechtigde die niet in\nNederland woont en recht heeft op:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: 9a.4.a
+  text: "een buitengewoon pensioen, garantietoeslag, uitkering, periodieke uitkering, garantie-uitkering,\nvergoeding of tegemoetkoming als bedoeld in de [Wet buitengewoon pensioen 1940–1945][ref1], de [Wet\nbuitengewoon pensioen zeelieden-oorlogsslachtoffers][ref2], de [Wet buitengewoon pensioen Indisch\nverzet][ref3], de [Wet uitkeringen vervolgingsslachtoffers 1940–1945][ref4], de [Wet uitkeringen\nburger-oorlogsslachtoffers 1940–1945][ref5] of de Algemene Oorlogsongevallenregeling Indonesië met\ninbegrip van het besluit van de Luitenant-Gouverneur-Generaal van Nederlands-Indië van 5 november\n1946 (Indisch Staatsblad, 1946, 118); of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002032\n[ref2]: https://wetten.overheid.nl/BWBR0002035\n[ref3]: https://wetten.overheid.nl/BWBR0003968\n[ref4]: https://wetten.overheid.nl/BWBR0002844\n[ref5]: https://wetten.overheid.nl/BWBR0003664"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002032
+  - id: ref2
+    bwb_id: BWBR0002035
+  - id: ref3
+    bwb_id: BWBR0003968
+  - id: ref4
+    bwb_id: BWBR0002844
+  - id: ref5
+    bwb_id: BWBR0003664
+- number: 9a.4.b
+  text: "een pensioen, toeslag, uitkering, vergoeding of tegemoetkoming, vergelijkbaar met een pensioen,\ntoeslag, uitkering, vergoeding of tegemoetkoming als bedoeld in onderdeel a, op grond van een\nbuitenlandse wettelijke regeling die vergelijkbaar is met de wettelijke regelingen, genoemd in\nonderdeel a."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: 9a.5
+  text: "Onze Minister deelt mede in welke landen op grond van een verdrag of een besluit van een\nvolkenrechtelijke organisatie recht op ouderdomspensioen bestaat alsof de pensioengerechtigde in\nNederland woont. In deze mededeling wordt tevens opgenomen:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: 9a.5.a
+  text: de vindplaats van het desbetreffende verdrag of besluit, en
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: 9a.5.b
+  text: de eventueel in dat verdrag of besluit aanwezige beperkingen.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel9a
+- number: '10.1'
+  text: "De volledige bruto-toeslag wordt toegekend voorzolang, met inachtneming van het bepaalde in [artikel\n11][ref1], het inkomen uit arbeid of overig inkomen van de echtgenoot van de pensioengerechtigde\nnihil bedraagt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel11"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel10
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '11'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '10.2'
+  text: "Op de volledige bruto-toeslag wordt in mindering gebracht het inkomen van de echtgenoot van de\npensioengerechtigde uit arbeid of overig inkomen, vastgesteld met inachtneming van het bepaalde in\n[artikel 11][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel11"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel10
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '11'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '11.1'
+  text: "Voor de toepassing van de [artikelen 8][ref1] en [10][ref2] wordt van het inkomen uit arbeid buiten\naanmerking gelaten:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel10"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 11.1.1°
+  text: een bedrag, gelijk aan 15% van het bruto-minimumloon; alsmede
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: 11.1.2°
+  text: "voor zover het inkomen uit arbeid meer bedraagt dan het onder 1° bedoelde bedrag, een derde gedeelte\nvan dat meerdere."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: '11.2'
+  text: "In afwijking van het eerste lid wordt in de maand waarin de pensioengerechtigde of de echtgenoot van\nde pensioengerechtigde de pensioengerechtigde leeftijd heeft bereikt, het bruto-minimumloon, bedoeld\nin het eerste lid, onder 1°, vermenigvuldigd met de factor X/Y, waarbij:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: 11.2.–
+  text: 'X staat voor:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: 11.2.–.a
+  text: "het aantal dagen gelegen in de maand waarin de pensioengerechtigde de pensioengerechtigde leeftijd\nbereikt, vanaf de dag dat de pensioengerechtigde deze leeftijd heeft bereikt, of"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: 11.2.–.b
+  text: "het aantal dagen gelegen in de maand waarin de echtgenoot van de pensioengerechtigde de\npensioengerechtigde leeftijd bereikt, voordat de echtgenoot deze leeftijd heeft bereikt, en"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: 11.2.–
+  text: "Y staat voor het aantal dagen van de maand waarin de pensioengerechtigde of de echtgenoot van de\npensioengerechtigde de pensioengerechtigde leeftijd heeft bereikt."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel11
+- number: '12.1'
+  text: "Op de bruto-toeslag, vastgesteld op grond van [artikel 10][ref1] en, indien van toepassing, na\ntoepassing van [artikel 13, tweede lid][ref2], wordt een korting toegepast tot 10% voor zover de\ntoeslag samen met het gezamenlijke inkomen uit arbeid of overig inkomen van de gehuwde\npensioengerechtigde en diens echtgenoot vermeerderd met het op grond van de [artikelen 9, zesde lid,\nonderdeel b][ref3] en [13, eerste lid][ref4], vastgestelde bruto-ouderdomspensioen door de\ntoepassing van de korting niet minder bedraagt dan 162% van het bruto-minimumloon met inbegrip van\nde bruto-minimumvakantiebijslag, bedoeld in [artikel 15, eerste lid, van de Wet minimumloon en\nminimumvakantiebijslag][ref5].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel10\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel13\n[ref5]: https://wetten.overheid.nl/BWBR0002638#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref5
+    bwb_id: BWBR0002638
+    artikel: '15'
+- number: '12.2'
+  text: "De met toepassing van [artikel 10, tweede lid][ref1], of [artikel 13, tweede lid][ref2], of het\neerste lid berekende niet-volledige bruto-toeslag wordt voor toepassing van [artikel 29, tweede lid,\naanhef en onderdeel b][ref3], uitgedrukt in een percentage van de volledige bruto-toeslag. Dit\npercentage wordt rekenkundig afgerond op een veelvoud van éénhonderdste.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel10\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel29"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '29'
+    hoofdstuk: III
+#    paragraaf: '3'
+- number: '12.3'
+  text: "Dit artikel is van overeenkomstige toepassing op de pensioengerechtigde, bedoeld in [artikel II van\nde Wet van 23 oktober 1993 tot wijziging van de Algemene Ouderdomswet (wijziging in de verhouding\nvan ouderdomspensioen en toeslag)][ref1] (Stb. 592). Ten aanzien van die pensioengerechtigden dient:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0006200#ArtikelII"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0006200
+    artikel: II
+- number: 12.3.a
+  text: "[artikel 10, vierde lid][ref1], zoals dat luidde voor de datum van inwerkingtreding van [die\nwet][ref2], te worden gelezen alsof «en 11» is vervangen door «11 en 12»; en\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel10\n[ref2]: https://wetten.overheid.nl/BWBR0006200"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0006200
+- number: 12.3.b
+  text: "[artikel 29, tweede lid][ref1], zoals dat luidde voor de datum van inwerkingtreding van [die\nwet][ref2], te worden gelezen alsof «met toepassing van artikel 10, tweede lid,» is vervangen door\n«met toepassing van artikel 10, tweede lid, of artikel 13, tweede lid, of artikel 12, eerste lid,»\nen «de in artikel 10, derde lid, bedoelde percenten» is vervangen door «de in artikel 12, tweede\nlid, bedoelde percenten».\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel29\n[ref2]: https://wetten.overheid.nl/BWBR0006200"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '29'
+    hoofdstuk: III
+#    paragraaf: '3'
+  - id: ref2
+    bwb_id: BWBR0006200
+- number: '12.4'
+  text: "[Artikel 11, tweede lid][ref1], is van overeenkomstige toepassing op de inkomensgrens, bedoeld in\nhet eerste lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel11"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '11'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 12a
+  text: "Bij algemene maatregel van bestuur wordt bepaald wat onder inkomen uit arbeid en overig inkomen als\nbedoeld in de [artikelen 8, eerste lid][ref1], [10, eerste en tweede lid][ref2], [11][ref3] en\n[12][ref4] wordt verstaan. Daarbij kan tevens worden bepaald dat nader te bepalen inkomen dat\ngedeeltelijk, niet, of niet langer wordt genoten als gevolg van gewijzigde omstandigheden of enig\nhandelen of nalaten van betrokkene in aanmerking wordt genomen alsof het wel volledig wordt genoten.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel10\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel11\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel12a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '11'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '12'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '13.1'
+  text: "Op het bruto-ouderdomspensioen, vastgesteld op grond van [artikel 9][ref1], wordt een korting\ntoegepast van 2% voor elk kalenderjaar, dat de pensioengerechtigde na het bereiken van de\naanvangsleeftijd, doch vóór het bereiken van de pensioengerechtigde leeftijd niet verzekerd is\ngeweest.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '13.2'
+  text: "Op de bruto-toeslag wordt, na toepassing van [artikel 10][ref1], een korting toegepast van 2% voor\nelk kalenderjaar, dat de echtgenoot van de pensioengerechtigde na het bereiken van de\naanvangsleeftijd, doch vóór het bereiken van de pensioengerechtigde leeftijd van de\npensioengerechtigde niet verzekerd is geweest.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel10"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel13
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '13.3'
+  text: "Bij ministeriële regeling worden regels gesteld omtrent de herleiding van gedeelten van\nkalenderjaren tot gehele kalenderjaren en gedeelten van jaarpremies tot gehele jaarpremies."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel13
+- number: 13a.1
+  text: "[Artikel 13, eerste lid][ref1], is niet van toepassing op de vrouwelijke pensioengerechtigde voor\nelk kalenderjaar dat zij in de periode van 1 januari 1957 tot 1 april 1985 niet verzekerd was,\ndoordat zij in Nederland woonde en gehuwd dan wel gehuwd geweest was met een persoon, die in die\nperiode niet verzekerd was.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel13"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel13a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 13a.2
+  text: "[Artikel 13, eerste lid][ref1], is niet van toepassing op de pensioengerechtigde voor elk\nkalenderjaar dat zijn echtgenoot in de periode van 1 januari 1957 tot 1 april 1985 niet verzekerd\nwas, doordat die echtgenoot in Nederland woonde en gehuwd dan wel gehuwd geweest was met een\npersoon, die in die periode niet verzekerd was.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel13"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel13a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '14.1'
+  text: "Het ouderdomspensioen alsmede een verhoging van het ouderdomspensioen wordt op aanvraag toegekend\ndoor de Sociale verzekeringsbank."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel14
+- number: '14.2'
+  text: "In afwijking van het bepaalde in het vorige lid is de Sociale verzekeringsbank bevoegd het\nouderdomspensioen of een verhoging van het ouderdomspensioen ambtshalve toe te kennen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel14
+- number: '15.1'
+  text: "De Sociale verzekeringsbank is bevoegd controlevoorschriften vast te stellen. Deze voorschriften\nmogen niet verder gaan dan strikt noodzakelijk is voor een juiste uitvoering van deze wet."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel15
+- number: '15.2'
+  text: "De pensioengerechtigde, zijn echtgenoot dan wel zijn wettelijke vertegenwoordiger of de instelling\nwaaraan op grond van [artikel 20][ref1] ouderdomspensioen wordt uitbetaald, is verplicht de\nvoorschriften op te volgen en anderszins aan de Sociale verzekeringsbank desgevraagd de medewerking\nte verlenen die redelijkerwijs nodig is voor de uitvoering van deze wet.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel20"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel15
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '20'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: '15.3'
+  text: "De pensioengerechtigde, zijn echtgenoot, dan wel zijn wettelijk vertegenwoordiger, onthouden zich\nvan zeer ernstige misdragingen jegens de met de uitvoering van deze wet belaste personen en\ninstanties tijdens het verrichten van hun werkzaamheden."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel15
+- number: '16.1'
+  text: "Het ouderdomspensioen gaat in op de dag waarop de belanghebbende aan de voorwaarden voor het recht\nop ouderdomspensioen voldoet."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel16
+- number: '16.2'
+  text: "In afwijking van het bepaalde in het eerste lid kan een ouderdomspensioen niet vroeger ingaan dan de\neerste dag van de twaalfde maand vóór de dag waarop de aanvraag werd ingediend of vóór de dag waarop\nambtshalve toekenning plaatsvond. De Sociale verzekeringsbank kan voor bijzondere gevallen van het\nbepaalde in de vorige volzin afwijken."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel16
+- number: 16a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel16a
+- number: '17.1'
+  text: "Het ouderdomspensioen wordt door de Sociale verzekeringsbank ingetrokken of herzien, wanneer degene,\naan wie het is toegekend, ingevolge het bij of krachtens deze wet bepaalde daarvoor niet of niet\nmeer in aanmerking komt, onderscheidenlijk voor een hoger of lager ouderdomspensioen in aanmerking\nkomt."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+- number: '17.2'
+  text: Vervallen.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+- number: '17.3'
+  text: "De herziening van het ouderdomspensioen, welke voortvloeit uit een wijziging der omstandigheden en\nwelke een verhoging van dit ouderdomspensioen tot gevolg heeft, gaat in op de eerste dag der maand,\nwaarin de wijziging dier omstandigheden heeft plaatsgevonden. Het bepaalde in [artikel 16, tweede\nlid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel16"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '16'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: '17.4'
+  text: "De Sociale verzekeringsbank kent, indien de pensioengerechtigde of zijn wettelijke vertegenwoordiger\nniet op grond van [artikel 50][ref1] desgevraagd aantoont, dat hij een pensioengerechtigde is als\nbedoeld in [artikel 9, eerste lid, onderdeel a][ref2], of dat zijn feitelijke woonsituatie in\novereenstemming is met het door hem dan wel zijn wettelijke vertegenwoordiger verstrekte adres, een\nouderdomspensioen toe gelijk aan dat van een pensioengerechtigde als bedoeld in artikel 9, eerste\nlid, onderdeel b, dan wel herziet het ouderdomspensioen tot het bedrag van dat ouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel50\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel9"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '50'
+    hoofdstuk: VI
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '17.5'
+  text: "De intrekking van het ouderdomspensioen of de herziening daarvan, welke voortvloeit uit een\nwijziging der omstandigheden en welke een verlaging van dit ouderdomspensioen tot gevolg heeft,\ngaat, behoudens in de bij ministeriële regeling aan te wijzen gevallen, in op de eerste dag der\nmaand, volgende op die, waarin de dag is gelegen met ingang waarvan degene, aan wie\nouderdomspensioen is toegekend, daarvoor niet meer in aanmerking komt, onderscheidenlijk voor een\nlager ouderdomspensioen in aanmerking komt. Indien het ouderdomspensioen ten onrechte of tot een te\nhoog bedrag is toegekend, wordt het ingetrokken onderscheidenlijk herzien met ingang van de dag,\nwaarop het is ingegaan."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+- number: '17.6'
+  text: "De herziening van het ouderdomspensioen als gevolg van een wijziging van het netto-minimumloon gaat,\nin afwijking van het bepaalde in het derde en vierde lid, in op de dag waarop het netto-minimumloon\nis herzien."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+- number: '17.7'
+  text: "De beëindiging van het ouderdomspensioen op grond van [artikel 8b, tweede lid][ref1], gaat in op de\neerste dag van de maand volgend op de maand waarin de vrijheidsontneming een maand heeft geduurd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8b"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8b
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '17.8'
+  text: Ter uitvoering van dit artikel kunnen bij ministeriële regeling nadere voorschriften worden gegeven.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17
+- number: 17a.1
+  text: "Onverminderd het elders in deze wet bepaalde terzake van herziening of intrekking van een besluit\ntot toekenning van ouderdomspensioen en terzake van weigering van ouderdomspensioen, herziet de\nSociale verzekeringsbank een dergelijk besluit of trekt zij dat in:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17a
+- number: 17a.1.a
+  text: "indien het niet of niet behoorlijk nakomen van een verplichting op grond van [artikel 15, tweede\nlid][ref1], of [49][ref2], heeft geleid tot het ten onrechte of tot een te hoog bedrag verlenen van\nouderdomspensioen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '15'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17a.1.b
+  text: indien anderszins het ouderdomspensioen ten onrechte of tot een te hoog bedrag is verleend;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17a
+- number: 17a.1.c
+  text: "indien het niet of niet behoorlijk nakomen van de verplichting bedoeld in [artikel 15, tweede\nlid][ref1], of [49][ref2], ertoe leidt dat niet kan worden vastgesteld of nog recht op\nouderdomspensioen bestaat.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '15'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17a.2
+  text: "Indien daarvoor dringende redenen aanwezig zijn kan de Sociale verzekeringsbank besluiten geheel of\ngedeeltelijk van herziening of intrekking af te zien."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17a
+- number: 17b.1
+  text: "De Sociale verzekeringsbank weigert het ouderdomspensioen geheel of gedeeltelijk, tijdelijk of\nblijvend, indien de pensioengerechtigde, zijn echtgenoot, of zijn wettelijke vertegenwoordiger een\nverplichting, hem op grond van [artikel 15, tweede of derde lid][ref1], opgelegd, of de\nverplichtingen, bedoeld in [artikel 55, tweede lid, van de Wet structuur uitvoeringsorganisatie werk\nen inkomen][ref2] niet of niet behoorlijk is nagekomen, dan wel de verplichting, bedoeld in [artikel\n49][ref3] niet binnen de door de Sociale verzekeringsbank daarvoor vastgestelde termijn is\nnagekomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0013060#Artikel55\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '15'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0013060
+    artikel: '55'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17b.2
+  text: "Een maatregel als bedoeld in het eerste lid wordt afgestemd op de ernst van de gedraging en de mate\nwaarin de belanghebbende de gedraging verweten kan worden. Van het opleggen van een maatregel wordt\nin elk geval afgezien, indien elke vorm van verwijtbaarheid ontbreekt."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17b
+- number: 17b.3
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een maatregel als bedoeld in het eerste\nlid en volstaan met het geven van een schriftelijke waarschuwing ter zake het niet tijdig nakomen\nvan de verplichting, bedoeld in [artikel 49][ref1], indien het niet tijdig nakomen van de\nverplichting niet heeft geleid tot het ten onrechte of tot een te hoog bedrag verlenen van\nouderdomspensioen, tenzij het niet tijdig nakomen van de verplichting plaatsvindt binnen een periode\nvan twee jaar te rekenen vanaf de datum waarop eerder aan de belanghebbende een zodanige\nwaarschuwing is gegeven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17b.4
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een maatregel indien daarvoor dringende\nredenen aanwezig zijn."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17b
+- number: 17b.5
+  text: "Het opleggen van een maatregel blijft achterwege indien voor dezelfde gedraging een bestuurlijke\nboete als bedoeld in [artikel 17c][ref1] wordt opgelegd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 17c
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 17b.6
+  text: "Bij of krachtens algemene maatregel van bestuur worden nadere regels gesteld met betrekking tot het\neerste en tweede lid."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17b
+- number: 17c.1
+  text: "De Sociale verzekeringsbank legt een bestuurlijke boete op van ten hoogste het benadelingsbedrag\nwegens het niet of niet behoorlijk nakomen door de pensioengerechtigde, zijn echtgenoot, of zijn\nwettelijke vertegenwoordiger van de verplichting, bedoeld in [artikel 49][ref1]. Indien de feiten en\nomstandigheden, bedoeld in artikel 49, niet of niet behoorlijk zijn medegedeeld en deze overtreding\nopzettelijk is begaan, bedraagt de bestuurlijke boete ten hoogste het bedrag van de vijfde\ncategorie, bedoeld in [artikel 23, vierde lid, van het Wetboek van Strafrecht][ref2]. Indien de\nfeiten en omstandigheden, bedoeld in artikel 49, niet of niet behoorlijk zijn medegedeeld en deze\novertreding niet opzettelijk is begaan, bedraagt de bestuurlijke boete ten hoogste het bedrag van de\nderde categorie, bedoeld in artikel 23, vierde lid, van het Wetboek van Strafrecht.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49\n[ref2]: https://wetten.overheid.nl/BWBR0001854#Artikel23"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+  - id: ref2
+    bwb_id: BWBR0001854
+    artikel: '23'
+- number: 17c.2
+  text: "In dit artikel wordt onder benadelingsbedrag verstaan het brutobedrag dat als gevolg van het niet of\nniet behoorlijk nakomen van de verplichting, bedoeld in [artikel 49][ref1], ten onrechte of tot een\nte hoog bedrag aan ouderdomspensioen is verleend.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17c.3
+  text: "Indien het niet of niet behoorlijk nakomen door de pensioengerechtigde, zijn echtgenoot, of zijn\nwettelijke vertegenwoordiger van de verplichting, bedoeld in [artikel 49][ref1], niet heeft geleid\ntot een benadelingsbedrag, legt de Sociale verzekeringsbank een bestuurlijke boete op van ten\nhoogste het bedrag van de tweede categorie, bedoeld in [artikel 23, vierde lid, van het Wetboek van\nStrafrecht][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49\n[ref2]: https://wetten.overheid.nl/BWBR0001854#Artikel23"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+  - id: ref2
+    bwb_id: BWBR0001854
+    artikel: '23'
+- number: 17c.4
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een bestuurlijke boete en volstaan met\nhet geven van een schriftelijke waarschuwing wegens het niet of niet behoorlijk nakomen van de\nverplichting, bedoeld in [artikel 49][ref1], in situaties die bij algemene maatregel van bestuur\nworden bepaald, tenzij het niet of niet behoorlijk nakomen van de verplichting plaats vindt binnen\neen periode van twee jaar te rekenen vanaf de datum waarop eerder aan de pensioengerechtigde, zijn\nechtgenoot, of zijn wettelijke vertegenwoordiger, een zodanige waarschuwing is gegeven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17c.5
+  text: "De Sociale verzekeringsbank legt een bestuurlijke boete op wegens het niet of niet behoorlijk\nnakomen door de pensioengerechtigde, zijn echtgenoot, of zijn wettelijke vertegenwoordiger van de\nverplichting, bedoeld in [artikel 49][ref1], als gevolg waarvan ten onrechte of tot een te hoog\nbedrag aan ouderdomspensioen is ontvangen, van ten hoogste 150 procent van het\nbenadelingsbedrag, met overeenkomstige toepassing van het eerste lid, indien binnen een tijdvak van\nvijf jaar voorafgaand aan de dag van het begaan van de overtreding een eerdere bestuurlijke boete of\nstrafrechtelijke sanctie is opgelegd wegens een eerdere overtreding, bestaande uit eenzelfde\ngedraging, die onherroepelijk is geworden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 17c.6
+  text: "Onder eenzelfde gedraging als bedoeld in het vijfde lid wordt verstaan het niet of niet behoorlijk\nnakomen van de verplichting, bedoeld in de [artikelen 49][ref1] van deze wet of [35 van de Algemene\nnabestaandenwet][ref2] als gevolg waarvan ten onrechte of tot een te hoog bedrag aan\nouderdomspensioen, nabestaandenuitkering of wezenuitkering is verleend.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49\n[ref2]: https://wetten.overheid.nl/BWBR0007795#Artikel35"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+  - id: ref2
+    bwb_id: BWBR0007795
+    artikel: '35'
+- number: 17c.7
+  text: "In afwijking van het vijfde lid is het in dat lid genoemde tijdvak van vijf jaar tien jaar indien\nwegens de eerdere overtreding, bedoeld in het vijfde lid, de pensioengerechtigde, zijn echtgenoot,\nof zijn wettelijke vertegenwoordiger is gestraft met een onvoorwaardelijke gevangenisstraf."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+- number: 17c.8
+  text: "De Sociale verzekeringsbank kan afzien van het opleggen van een bestuurlijke boete indien daarvoor\ndringende redenen aanwezig zijn."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+- number: 17c.9
+  text: "Degene aan wie een bestuurlijke boete is opgelegd, is verplicht desgevraagd aan de Sociale\nverzekeringsbank de inlichtingen te verstrekken die voor de tenuitvoerlegging van de bestuurlijke\nboete van belang zijn."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+- number: 17c.10
+  text: "Bij algemene maatregel van bestuur worden nadere regels gesteld over de hoogte van de bestuurlijke\nboete."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+- number: 17c.11
+  text: "In afwijking van [artikel 8:69 van de Algemene wet bestuursrecht][ref1] kan de rechter in beroep of\nhoger beroep het bedrag waarop de bestuurlijke boete is vastgesteld ook ten nadele van de\npensioengerechtigde, zijn echtgenoot, of zijn wettelijke vertegenwoordiger wijzigen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel8:69"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: 8:69
+- number: 17c.12
+  text: "Indien ten aanzien van een overtreding waarvoor een bestuurlijke boete is opgelegd geen sprake is\ngeweest van opzet of grove schuld, en voorts is gebleken dat binnen een jaar nadat de bestuurlijke\nboete is opgelegd niet nogmaals een overtreding wegens eenzelfde gedraging is begaan, is de Sociale\nverzekeringsbank bevoegd op verzoek van degene aan wie de bestuurlijke boete is opgelegd, de\nbestuurlijke boete geheel of gedeeltelijk kwijt te schelden bij medewerking aan een schuldregeling.\n[Artikel 25, eerste, derde en vierde lid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel25"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '25'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 17c.13
+  text: "Het besluit tot kwijtschelding, bedoeld in het twaalfde lid, wordt ingetrokken of ten nadele van\ndegene aan wie de bestuurlijke boete is opgelegd herzien indien binnen vijf jaar na het besluit tot\nkwijtschelding wederom een overtreding wegens eenzelfde gedraging is begaan."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17c
+- number: 17d
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17d
+- number: 17e
+  text: "Bij ministeriële regeling kunnen regels worden gesteld omtrent de termijn waarvoor uitstel van\nbetaling van de bestuurlijke boete kan worden verleend alsmede omtrent de hoogte van het op grond\nvan [artikel 17i, eerste of tweede lid][ref1], te verrekenen bedrag en de termijn of termijnen\nwaarbinnen deze verrekening plaatsvindt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17i"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17e
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 17i
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 17f
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17f
+- number: 17g
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17g
+- number: 17h
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17h
+- number: 17i.1
+  text: "De Sociale verzekeringsbank verrekent de bestuurlijke boete en een eerdere bestuurlijke boete wegens\neenzelfde gedraging als bedoeld in [artikel 17c, vijfde lid][ref1], met het ouderdomspensioen dat\ndegene aan wie een bestuurlijke boete is opgelegd op grond van deze wet ontvangt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 17c
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 17i.2
+  text: "Onverminderd het eerste lid kan de Sociale verzekeringsbank de bestuurlijke boete verrekenen met een\nvordering die degene aan wie de bestuurlijke boete is opgelegd op hem heeft."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+- number: 17i.3
+  text: "Het college van burgemeester en wethouders van de betrokken gemeente, onderscheidenlijk het\nUitvoeringsinstituut werknemersverzekeringen, betaalt het bedrag van de bestuurlijke boete, zonder\ndat daarvoor een machtiging nodig is, op haar verzoek aan de Sociale verzekeringsbank indien degene\naan wie een bestuurlijke boete is opgelegd een uitkering ontvangt op grond van de\n[Participatiewet][ref1], de [Wet inkomensvoorziening oudere en gedeeltelijk arbeidsongeschikte\nwerkloze werknemers][ref2], de [Wet inkomensvoorziening oudere en gedeeltelijk arbeidsongeschikte\ngewezen zelfstandigen][ref3], de [Wet inkomensvoorziening oudere werklozen][ref4], de\n[Werkloosheidswet][ref5], de [Ziektewet][ref6], de [Wet arbeidsongeschiktheidsverzekering\nzelfstandigen][ref7], de [Wet arbeidsongeschiktheidsvoorziening jonggehandicapten][ref8], de [Wet\nwerk en inkomen naar arbeidsvermogen][ref9], de [Wet op de arbeidsongeschiktheidsverzekering][ref10]\nof de [Wet arbeid en zorg][ref11] of een toeslag op grond van de [Toeslagenwet][ref12].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n[ref2]: https://wetten.overheid.nl/BWBR0004044\n[ref3]: https://wetten.overheid.nl/BWBR0004163\n[ref4]: https://wetten.overheid.nl/BWBR0024394\n[ref5]: https://wetten.overheid.nl/BWBR0004045\n[ref6]: https://wetten.overheid.nl/BWBR0001888\n[ref7]: https://wetten.overheid.nl/BWBR0008656\n[ref8]: https://wetten.overheid.nl/BWBR0008657\n[ref9]: https://wetten.overheid.nl/BWBR0019057\n[ref10]: https://wetten.overheid.nl/BWBR0002524\n[ref11]: https://wetten.overheid.nl/BWBR0013008\n[ref12]: https://wetten.overheid.nl/BWBR0004043"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+  references:
+  - id: ref1
+    bwb_id: BWBR0015703
+  - id: ref2
+    bwb_id: BWBR0004044
+  - id: ref3
+    bwb_id: BWBR0004163
+  - id: ref4
+    bwb_id: BWBR0024394
+  - id: ref5
+    bwb_id: BWBR0004045
+  - id: ref6
+    bwb_id: BWBR0001888
+  - id: ref7
+    bwb_id: BWBR0008656
+  - id: ref8
+    bwb_id: BWBR0008657
+  - id: ref9
+    bwb_id: BWBR0019057
+  - id: ref10
+    bwb_id: BWBR0002524
+  - id: ref11
+    bwb_id: BWBR0013008
+  - id: ref12
+    bwb_id: BWBR0004043
+- number: 17i.4
+  text: "De in [artikel 479g van het Wetboek van Burgerlijke Rechtsvordering][ref1] aan de raad voor de\nkinderbescherming toegekende bevoegdheid komt gelijkelijk toe aan de Sociale verzekeringsbank.\nIndien de Sociale verzekeringsbank gebruik maakt van deze bevoegdheid, geschiedt de bekendmaking van\nhet dwangbevel, in afwijking van [artikel 4:123, eerste lid, van de Algemene wet\nbestuursrecht][ref2], door middel van toezending per post aan degene aan wie de boete is opgelegd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel479g\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel4:123"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 479g
+  - id: ref2
+    bwb_id: BWBR0005537
+    artikel: 4:123
+- number: 17i.5
+  text: "Zolang de belanghebbende zijn verplichting, bedoeld in [artikel 17c, negende lid][ref1], niet of\nniet behoorlijk nakomt:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 17c
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 17i.5.a
+  text: "is de Sociale verzekeringsbank, in afwijking van [artikel 4:93, vierde lid, van de Algemene wet\nbestuursrecht][ref1], bevoegd tot verrekening voor zover beslag op de vordering van de schuldeiser\nnietig zou zijn;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel4:93"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: 4:93
+- number: 17i.5.b
+  text: "geldt de beslagvrije voet, bedoeld in de [artikelen 475c tot en met 475e van het Wetboek van\nBurgerlijke Rechtsvordering][ref1], in afwijking van [artikel 4:116 van de Algemene wet\nbestuursrecht][ref2], niet bij de invordering van een bestuurlijke boete bij dwangbevel.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel475c\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel4:116"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17i
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 475c
+  - id: ref2
+    bwb_id: BWBR0005537
+    artikel: 4:116
+- number: 17j
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel17j
+- number: '18.1'
+  text: "Na het overlijden van degene, aan wie ouderdomspensioen is toegekend, wordt met ingang van de dag na\nhet overlijden, ouderdomspensioen in de vorm van een overlijdensuitkering uitbetaald:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: 18.1.a
+  text: aan de langstlevende van de echtgenoten;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: 18.1.b
+  text: "bij ontstentenis van de in onderdeel a bedoelde persoon, aan de minderjarige kinderen tot wie de\noverledene in familierechtelijke betrekking stond;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: 18.1.c
+  text: "bij ontstentenis van de in de onderdelen a en b bedoelde personen, aan degenen met wie de overledene\nin gezinsverband leefde."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: '18.2'
+  text: "De overlijdensuitkering is gelijk aan het bedrag van het ouderdomspensioen over één maand, met\nuitzondering van de toeslag, berekend naar de hoogte van het ouderdomspensioen in de maand van\noverlijden van degene aan wie ouderdomspensioen is toegekend."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: '18.3'
+  text: "De overlijdensuitkering wordt ambtshalve of op verzoek aan de rechthebbende of rechthebbenden door\nde Sociale verzekeringsbank uitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: '18.4'
+  text: "De overlijdensuitkering wordt in een bedrag ineens aan de rechthebbende of rechthebbenden\nuitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: '18.5'
+  text: "Het bedrag van de overlijdensuitkering wordt verminderd met het bedrag aan ouderdomspensioen dat,\nover na het overlijden gelegen dagen, reeds is uitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: '18.6'
+  text: De overlijdensuitkering is niet vatbaar voor beslag.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel18
+- number: '19.1'
+  text: "De Sociale verzekeringsbank betaalt het ouderdomspensioen waarop op grond van deze wet recht\nbestaat. De betaling geschiedt als regel maandelijks."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: '19.2'
+  text: "De Sociale verzekeringsbank kan de aan een gehuwde pensioengerechtigde toegekende toeslag betaalbaar\nstellen aan de echtgenoot."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: '19.3'
+  text: "Indien het ouderdomspensioen in het buitenland wordt uitbetaald, geschiedt de betaling in afwijking\nvan [artikel 4:89, derde lid, van de Algemene wet bestuursrecht][ref1] op het tijdstip waarop de\nrekening van de daartoe door de schuldeiser aangewezen bank wordt gecrediteerd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel4:89"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: 4:89
+- number: '19.4'
+  text: "Wanneer een pensioengerechtigde een ander machtigt om het ouderdomspensioen in ontvangst te nemen,\nonderscheidenlijk een verleende machtiging intrekt, wordt daaraan gevolg gegeven met ingang van een\nbetalingstermijn, aanvangende na de dag, waarop de machtiging wordt ingediend, onderscheidenlijk\nwaarop van haar intrekking mededeling wordt gedaan, doch niet later dan de eerste dag van de tweede\nmaand na de dag van indiening, onderscheidenlijk intrekking der machtiging."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: '19.5'
+  text: "De Sociale verzekeringsbank schort de betaling van het ouderdomspensioen op of schorst de betaling\nindien zij op grond van duidelijke aanwijzingen van oordeel is of het gegronde vermoeden heeft, dat:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: 19.5.a
+  text: het recht op ouderdomspensioen niet of niet meer bestaat;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: 19.5.b
+  text: recht op een lager ouderdomspensioen bestaat; of
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: 19.5.c
+  text: "de pensioengerechtigde, zijn echtgenoot dan wel zijn wettelijke vertegenwoordiger of de instelling\nwaaraan op grond van [artikel 20][ref1] ouderdomspensioen wordt uitbetaald, een verplichting als\nbedoeld in [artikel 15, tweede lid][ref2], [artikel 49][ref3] of [artikel 50][ref4] niet is\nnagekomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel20\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel15\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel49\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel50"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '20'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '15'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '50'
+    hoofdstuk: VI
+- number: '19.6'
+  text: "De Sociale verzekeringsbank stelt de betrokken persoon of instelling onverwijld schriftelijk in\nkennis van de beslissing, bedoeld in het vijfde lid."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19
+- number: 19a.1
+  text: "De Sociale verzekeringsbank schort de betaling van het ouderdomspensioen op indien degene aan wie\neen ouderdomspensioen is toegekend een vreemdeling is die niet rechtmatig in Nederland verblijf\nhoudt als bedoeld in [artikel 8 van de Vreemdelingenwet 2000][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19a
+  references:
+  - id: ref1
+    bwb_id: BWBR0011823
+    artikel: '8'
+- number: 19a.2
+  text: "De betaling van het ouderdomspensioen wordt hervat indien betrokkene daartoe een aanvraag indient en\nhet de Sociale verzekeringsbank is gebleken dat hij feitelijk buiten Nederland woont of verblijf\nhoudt."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19a
+- number: 19b.1
+  text: "De Sociale verzekeringsbank schort de betaling van de uitkering op, indien blijkt dat het door de\npensioengerechtigde verstrekte adres van hemzelf of van zijn echtgenoot afwijkt van het adres\nwaaronder de pensioengerechtigde of zijn echtgenoot in de basisregistratie personen staat\ningeschreven."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19b
+- number: 19b.2
+  text: 'Geen opschorting vindt plaats:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19b
+- number: 19b.2.a
+  text: "indien de afwijking redelijkerwijs geen gevolgen kan hebben voor het recht op of de hoogte van de\nuitkering;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19b
+- number: 19b.2.b
+  text: indien de pensioengerechtigde van de afwijking redelijkerwijs geen verwijt kan worden gemaakt.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19b
+- number: 19b.3
+  text: De Sociale verzekeringsbank doet schriftelijk mededeling van de opschorting aan de belanghebbende.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19b
+- number: 19b.4
+  text: "De opschorting wordt beëindigd zodra het aan de Sociale verzekeringsbank gebleken is dat de\nafwijking niet meer bestaat."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel19b
+- number: '20.1'
+  text: "Indien degene aan wie een ouderdomspensioen is toegekend, aanspraak heeft op verstrekking of\nvergoeding van zorg als bedoeld in de [Wet langdurige zorg][ref1] en op grond van die wet een\nbijdrage voor die zorg verschuldigd is, is de Sociale verzekeringsbank bevoegd het ouderdomspensioen\ntot het bedrag van die bijdrage in plaats van aan degene, aan wie ouderdomspensioen is toegekend,\nzonder diens machtiging uit te betalen aan het Zorginstituut Nederland, genoemd in [artikel 58,\neerste lid, van de Zorgverzekeringswet][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0035917\n[ref2]: https://wetten.overheid.nl/BWBR0018450#Artikel58"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel20
+  references:
+  - id: ref1
+    bwb_id: BWBR0035917
+  - id: ref2
+    bwb_id: BWBR0018450
+    artikel: '58'
+- number: '20.2'
+  text: "Indien aan degene aan wie een ouderdomspensioen is toegekend, een maatwerkvoorziening of\npersoonsgebonden budget wordt verstrekt voor beschermd wonen als bedoeld in [artikel 1.1.1 van de\nWet maatschappelijke ondersteuning 2015][ref1], en hij op grond van die [wet][ref2] hiervoor een\nbijdrage is verschuldigd, is de Sociale verzekeringsbank bevoegd het ouderdomspensioen tot het\nbedrag van die bijdrage in plaats van aan degene, aan wie het ouderdomspensioen is toegekend, zonder\ndiens machtiging uit te betalen aan het CAK, genoemd in [artikel 6.1.1, eerste lid, van de Wet\nlangdurige zorg][ref3], dat voor de gemeente de bijdrage int.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0035362#Artikel1.1.1\n[ref2]: https://wetten.overheid.nl/BWBR0035362\n[ref3]: https://wetten.overheid.nl/BWBR0035917#Artikel6.1.1"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel20
+  references:
+  - id: ref1
+    bwb_id: BWBR0035362
+    artikel: 1.1.1
+  - id: ref2
+    bwb_id: BWBR0035362
+  - id: ref3
+    bwb_id: BWBR0035917
+    artikel: 6.1.1
+- number: '20.3'
+  text: "Indien degene, aan wie een ouderdomspensioen is toegekend, in een inrichting ter verpleging van\ngeesteszieken of van zwakzinnigen is opgenomen en de Sociale verzekeringsbank, van de desbetreffende\ninrichting of van het college van burgemeester en wethouders van de gemeente die de opnamekosten\nbetaalt, het verzoek ontvangt om het ouderdomspensioen aan die inrichting of die gemeente uit te\nbetalen, is de Sociale verzekeringsbank bevoegd dat verzoek zonder het stellen van andere\nvoorwaarden in te willigen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel20
+- number: '20.4'
+  text: "Indien het eerste of tweede lid toepassing vindt, heeft de in het derde lid bedoelde bevoegdheid\nbetrekking op het gedeelte van het ouderdomspensioen dat niet aan de in het eerste of tweede lid\ngenoemde instantie wordt uitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel20
+- number: '20.5'
+  text: "Een herziening van het ouderdomspensioen op grond van het eerste of tweede lid als gevolg van een\nwijziging van de verschuldigde bijdrage vindt plaats zonder dat dit bij beschikking wordt\nvastgesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel20
+- number: '21'
+  text: "Voor zover bij of krachtens deze wet niet anders is bepaald, wordt een voorschot op het nog niet\nvastgestelde ouderdomspensioen beschouwd als ouderdomspensioen op grond van deze wet."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel21
+- number: '22'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel22
+- number: '23'
+  text: "De termijnen van het ouderdomspensioen, welke niet zijn ingevorderd binnen twee jaren na de eerste\ndag, waarop zij konden worden ingevorderd, worden niet meer uitbetaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel23
+- number: '24.1'
+  text: "Het ouderdomspensioen dat als gevolg van een besluit als bedoeld in [artikel 17][ref1]\nonverschuldigd is betaald, alsmede hetgeen anderszins onverschuldigd is betaald, wordt door de\nSociale verzekeringsbank teruggevorderd van de pensioengerechtigde of zijn wettelijke\nvertegenwoordiger, dan wel van de erfgenaam van de pensioengerechtigde voor zover het onverschuldigd\nbetaalde in het vermogen van die erfgenaam is gevallen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '17'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: '24.2'
+  text: "In afwijking van het eerste lid kan de Sociale verzekeringsbank besluiten van terugvordering of van\nverdere terugvordering af te zien, indien de pensioengerechtigde, of zijn wettelijke\nvertegenwoordiger:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: 24.2.a
+  text: gedurende vijf jaar volledig aan zijn betalingsverplichtingen heeft voldaan;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: 24.2.b
+  text: "gedurende vijf jaar niet volledig aan zijn betalingsverplichtingen heeft voldaan, maar het\nachterstallige bedrag over die periode, vermeerderd met de daarover verschuldigde wettelijke rente\nen de op de invordering betrekking hebbende kosten, alsnog heeft betaald;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: 24.2.c
+  text: "gedurende vijf jaar geen betalingen heeft verricht en niet aannemelijk is dat hij deze op enig\nmoment zal gaan verrichten; of"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: 24.2.d
+  text: een bedrag, overeenkomend met ten minste 50% van de restsom in één keer aflost.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: '24.3'
+  text: "De in het tweede lid, onderdelen a, b en c, genoemde termijn is tien jaar indien de terugvordering\nhet gevolg is van het niet of niet behoorlijk nakomen van de verplichting, bedoeld in\n[artikel 49][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: '24.4'
+  text: 'De in het tweede lid, onder a en b, genoemde termijn is drie jaar indien:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: 24.4.a
+  text: "het gemiddeld inkomen van de belanghebbende in die periode de beslagvrije voet bedoeld in de\n[artikelen 475c tot en met 475e van het Wetboek van Burgerlijke Rechtsvordering][ref1] niet te boven\nis gegaan; en\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001827#Artikel475c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0001827
+    artikel: 475c
+- number: 24.4.b
+  text: "de terugvordering niet het gevolg is van het niet of niet behoorlijk nakomen van de verplichting,\nbedoeld in [artikel 49][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: '24.5'
+  text: "Indien daarvoor dringende redenen aanwezig zijn kan de Sociale verzekeringsbank besluiten geheel of\ngedeeltelijk van terugvordering af te zien."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: '24.6'
+  text: "Degene van wie wordt teruggevorderd is verplicht desgevraagd aan de Sociale verzekeringsbank de\ninlichtingen te verstrekken die voor de terugvordering van belang zijn."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: '24.7'
+  text: "In afwijking van het eerste lid kan de Sociale verzekeringsbank, onder voorwaarden die Onze Minister\nkan stellen, besluiten van terugvordering af te zien indien het terug te vorderen bedrag een door\nOnze Minister vast te stellen bedrag niet te boven gaat."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24
+- number: 24a.1
+  text: "De Sociale verzekeringsbank kan hetgeen is teruggevorderd op grond van [artikel 24, eerste\nlid][ref1], invorderen bij dwangbevel.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel24"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '24'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 24a.2
+  text: "[Artikel 17i][ref1] is van overeenkomstige toepassing, met dien verstande dat indien het gemiddeld\ninkomen van de pensioengerechtigde of zijn wettelijke vertegenwoordiger gedurende drie jaar de\nbeslagvrije voet bedoeld in de [artikelen 475c tot en met 475e van het Wetboek van Burgerlijke\nRechtsvordering][ref2] niet te boven is gegaan, de Sociale verzekeringsbank de aflossingsbedragen\nlager vaststelt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17i\n[ref2]: https://wetten.overheid.nl/BWBR0001827#Artikel475c"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 17i
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0001827
+    artikel: 475c
+- number: 24b
+  text: "Bij ministeriële regeling kunnen regels worden gesteld met betrekking tot de wijze van\ntenuitvoerlegging van de beschikking waarbij is vastgesteld dat onverschuldigd is betaald."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel24b
+- number: '25.1'
+  text: "In afwijking van [artikel 24, eerste lid][ref1], kan de Sociale verzekeringsbank, op verzoek van de\npensioengerechtigde, of zijn wettelijke vertegenwoordiger, besluiten gedeeltelijk van terugvordering\nof gedeeltelijk van verdere terugvordering af te zien door medewerking aan een schuldregeling,\nindien:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel24"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '24'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 25.1.a
+  text: "redelijkerwijs te voorzien is dat de pensioengerechtigde niet zal kunnen voortgaan met het betalen\nvan zijn schulden of indien hij in de toestand verkeert dat hij heeft opgehouden te betalen;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25.1.b
+  text: "redelijkerwijs te voorzien is dat een schuldregeling met betrekking tot alle vorderingen, behoudens\nde in het tweede lid bedoelde vorderingen, van de overige schuldeisers zonder een zodanig besluit\nniet tot stand zal komen;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25.1.c
+  text: "een naar het oordeel van de Sociale verzekeringsbank betrouwbaar voorstel voor een schuldregeling\ntot stand is gekomen door tussenkomst van een schuldhulpverlener als bedoeld in [artikel 48 van de\nWet op het consumentenkrediet][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0004815#Artikel48"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+  references:
+  - id: ref1
+    bwb_id: BWBR0004815
+    artikel: '48'
+- number: 25.1.d
+  text: aannemelijk is dat medewerking aan een schuldregeling niet concurrentieverstorend werkt; en
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25.1.e
+  text: "uitdeling in het kader van de schuldregeling plaatsvindt overeenkomstig [artikel 349 van de\nFaillissementswet][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001860#Artikel349"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+  references:
+  - id: ref1
+    bwb_id: BWBR0001860
+    artikel: '349'
+- number: '25.2'
+  text: "Het eerste lid is niet van toepassing indien een vordering is ontstaan door het opzettelijk of door\ngrove schuld niet nakomen door de pensioengerechtigde van de verplichting, bedoeld in [artikel\n49][ref1], en met betrekking tot het niet naleven van die verplichting een boete als bedoeld in\n[artikel 17c][ref2] is opgelegd, dan wel indien hiervoor aangifte is gedaan op grond van het\n[Wetboek van Strafrecht][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel17c\n[ref3]: https://wetten.overheid.nl/BWBR0001854"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: 17c
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0001854
+- number: '25.3'
+  text: "Het besluit tot het afzien van terugvordering of van verdere terugvordering wordt ingetrokken of ten\nnadele van de belanghebbende gewijzigd indien:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25.3.a
+  text: "niet binnen twaalf maanden nadat dat besluit is bekendgemaakt, een schuldregeling tot stand is\ngekomen die voldoet aan de eisen, bedoeld in het eerste lid;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25.3.b
+  text: "de pensioengerechtigde, of zijn wettelijke vertegenwoordiger, zijn schuld aan de Sociale\nverzekeringsbank niet overeenkomstig de schuldregeling voldoet; of"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25.3.c
+  text: "onjuiste of onvolledige gegevens zijn verstrekt en de verstrekking van juiste of volledige gegevens\ntot een ander besluit zou hebben geleid."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: '25.4'
+  text: "Bij ministeriële regeling kunnen met betrekking tot dit artikel nadere regels worden gesteld ten\naanzien van de bevoegdheid om mee te werken aan schuldregelingen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25
+- number: 25a
+  text: "Een vordering van de Sociale verzekeringsbank als bedoeld in de [artikelen 24][ref1] en [25][ref2]\nis bevoorrecht en volgt onmiddellijk na de vorderingen, bedoeld in [artikel 288 van Boek 3 van het\nBurgerlijk Wetboek][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel24\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel25\n[ref3]: https://wetten.overheid.nl/BWBR0005291#Artikel288"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel25a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '24'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '25'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0005291
+    artikel: '288'
+- number: '26.1'
+  text: 'Het ouderdomspensioen is:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel26
+- number: 26.1.a
+  text: onvervreemdbaar;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel26
+- number: 26.1.b
+  text: niet vatbaar voor verpanding of belening.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel26
+- number: '26.2'
+  text: "Volmacht tot ontvangst van ouderdomspensioen, onder welke vorm of welke benaming ook door de\ngepensioneerde verleend, is steeds herroepelijk."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel26
+- number: '26.3'
+  text: Elk beding, strijdig met enige bepaling van dit artikel, is nietig.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel26
+- number: '27'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel27
+- number: '28'
+  text: "Degene, die over een maand recht heeft op ouderdomspensioen, heeft over die maand tevens recht op\nvakantie-uitkering."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel28
+- number: '29.1'
+  text: 'De bruto-vakantie-uitkering wordt zodanig vastgesteld, dat:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+- number: 29.1.a
+  text: "de netto-vakantie-uitkering per maand van een ongehuwde pensioengerechtigde gelijk is aan 70% van de\nnetto-minimumvakantiebijslag per maand;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+- number: 29.1.b
+  text: "de netto-vakantie-uitkering per maand van de gehuwde pensioengerechtigde, bedoeld in [artikel 9,\neerste lid onderdeel b][ref1], van wie de echtgenoot de pensioengerechtigde leeftijd heeft bereikt\ndan wel de pensioengerechtigde leeftijd nog niet heeft bereikt. maar voor wie geen recht op toeslag\nbestaat als bedoeld in [artikel 8, eerste lid][ref2], gelijk is aan 50% van de netto-\nminimumvakantiebijslag per maand.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '29.2'
+  text: 'De bruto-vakantie-uitkering per maand van een gehuwde pensioengerechtigde:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+- number: 29.2.a
+  text: "aan wie een volledige toeslag is toegekend is gelijk aan tweemaal de bruto-vakantie-uitkering als\nbedoeld in het eerste lid, onderdeel b;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+- number: 29.2.b
+  text: "aan wie een niet-volledige toeslag is toegekend met toepassing van [artikel 10, tweede lid][ref1],\n[artikel 13, tweede lid][ref2], of [artikel 12, eerste lid][ref3], is gelijk aan de bruto-vakantie-\nuitkering, bedoeld in het eerste lid, onderdeel b, vermeerderd met de met behulp van de in artikel\n12, tweede lid, bedoelde percenten over het verschil tussen de vastgestelde bruto-vakantie-\nuitkering, bedoeld in onderdeel a en de vastgestelde bruto-vakantie-uitkering, bedoeld in het eerste\nlid, onderdeel b.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel10\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel12"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '10'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '12'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '29.3'
+  text: "De in het eerste lid bedoelde netto minimumvakantiebijslag bedraagt het verschil tussen het bedrag,\ndat voor een werknemer jonger dan de pensioengerechtigde leeftijd ontstaat door toepassing van\n[artikel 9, derde lid][ref1], op het in [artikel 8, eerste lid, onderdeel b, van de Wet minimumloon\nen minimumvakantiebijslag][ref2] bedoelde bedrag vermeerderd met de aanspraak op vakantiebijslag op\ngrond van [artikel 15 van die wet][ref3] van degene die aanspraak heeft op laatstgenoemd bedrag, en\nhet netto-minimumloon, bedoeld in artikel 9, derde lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002638#Artikel8\n[ref3]: https://wetten.overheid.nl/BWBR0002638#Artikel15"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002638
+    artikel: '8'
+  - id: ref3
+    bwb_id: BWBR0002638
+    artikel: '15'
+- number: '29.4'
+  text: "In de gevallen, dat op het ouderdomspensioen, vastgesteld op grond van [artikel 9][ref1], met\ntoepassing van [artikel 13, eerste lid][ref2], een korting wordt toegepast, wordt op de, op grond\nvan het eerste en derde lid, vastgestelde bruto-vakantie-uitkering, een evenredige korting\ntoegepast.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 29a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel29a
+- number: '30'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel30
+- number: '31.1'
+  text: Eenmaal per jaar vindt ambtshalve uitbetaling van de vakantie-uitkering plaats.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel31
+- number: '31.2'
+  text: "De in het vorige lid bedoelde uitbetaling vindt plaats in de maand mei en omvat de vakantie-\nuitkering, waarop recht bestond over de periode van twaalf maanden, voorafgaande aan de maand mei."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel31
+- number: '31.3'
+  text: De vakantie-uitkering wordt betaald zonder dat dit bij beschikking is vastgesteld.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel31
+- number: '32'
+  text: "Het bepaalde bij of krachtens de [artikelen 18][ref1], [19][ref2], [20][ref3], [23][ref4],\n[24][ref5], [26][ref6] en [49][ref7] vindt overeenkomstige toepassing ten aanzien van de vakantie-\nuitkering, voor zover bij of krachtens deze paragraaf niet anders is bepaald.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel18\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel19\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel20\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel23\n[ref5]: https://wetten.overheid.nl/BWBR0002221#Artikel24\n[ref6]: https://wetten.overheid.nl/BWBR0002221#Artikel26\n[ref7]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel32
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '18'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '19'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '20'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '23'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref5
+    bwb_id: BWBR0002221
+    artikel: '24'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref6
+    bwb_id: BWBR0002221
+    artikel: '26'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref7
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: '33'
+  text: "Bij ministeriële regeling kunnen met betrekking tot deze paragraaf nadere regels worden gesteld.\nDaarbij kan worden afgeweken van het bepaalde in [artikel 31, tweede lid][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel31"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '31'
+    hoofdstuk: III
+#    paragraaf: '3'
+- number: 33a.1
+  text: 'Recht op een inkomensondersteuning heeft degene, die:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.1.a
+  text: recht heeft op ouderdomspensioen en woonachtig is in Nederland;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.1.b
+  text: "op grond van [artikel 5, tweede lid, van het Besluit regels export uitkeringen][ref1] recht heeft op\nouderdomspensioen alsof hij in Nederland woonachtig is;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011049#Artikel5"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+  references:
+  - id: ref1
+    bwb_id: BWBR0011049
+    artikel: '5'
+- number: 33a.1.c
+  text: "op grond van [artikel 9a, vierde lid][ref1], recht heeft op ouderdomspensioen alsof hij in Nederland\nwoonachtig is; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 9a
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 33a.1.d
+  text: 'recht heeft op ouderdomspensioen en woonachtig is op het grondgebied van:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.1.d.1°
+  text: een van de andere lidstaten van de Europese Unie;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.1.d.2°
+  text: "een andere staat die partij is bij de Overeenkomst betreffende de Europese Economische Ruimte of\nZwitserland;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.1.d.3°
+  text: Aruba, Curaçao, Sint Maarten, of de openbare lichamen Bonaire, Sint Eustatius en Saba; of
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.1.d.4°
+  text: "een land waarmee Nederland een verdrag inzake sociale zekerheid heeft gesloten of waar een besluit\nvan een volkenrechtelijke organisatie inzake sociale zekerheid van kracht is."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.2
+  text: "In de gevallen dat op het ouderdomspensioen, vastgesteld op grond van [artikel 9][ref1], met\ntoepassing van [artikel 13, eerste en derde lid][ref2], een korting wordt toegepast, wordt op de\ninkomensondersteuning een evenredige korting toegepast.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 33a.3
+  text: "De inkomensondersteuning wordt niet beschouwd als ouderdomspensioen op grond van deze wet, tenzij\nvoor de toepassing van [paragraaf 2 van hoofdstuk III][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    hoofdstuk: III
+#    paragraaf: '3'
+- number: 33a.4
+  text: "[Artikel 9, achtste lid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 33a.5
+  text: "Bij algemene maatregel van bestuur worden regels gesteld met betrekking tot de hoogte, de indexering\nen de wijze van betaling van de inkomensondersteuning."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.6
+  text: De inkomensondersteuning is niet vatbaar voor beslag.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+- number: 33a.7
+  text: "Besluiten tot toekenning van inkomensondersteuning op grond van de [Tijdelijke regeling\ninkomensondersteuning AOW-pensioengerechtigden][ref1] worden aangemerkt als besluiten tot toekenning\nvan inkomensondersteuning op grond van dit artikel.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0035282"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel33a
+  references:
+  - id: ref1
+    bwb_id: BWBR0035282
+- number: '34'
+  text: "In dit hoofdstuk en de daarop berustende bepalingen wordt verstaan onder gewezen verzekerde: degene,\nwiens verplichte verzekering is geëindigd."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel34
+- number: '35.1'
+  text: "De gewezen verzekerde die de aanvangsleeftijd heeft bereikt kan zich, zolang hij de\npensioengerechtigde leeftijd nog niet heeft bereikt, vrijwillig verzekeren over een periode van\nmaximaal tien jaar, met ingang van de dag na de dag waarop de verplichte verzekering is geëindigd.\nDe eerste zin is alleen van toepassing indien de gewezen verzekerde direct voorafgaande aan de\nperiode van vrijwillige verzekering ten minste een jaar verplicht verzekerd is geweest."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: '35.2'
+  text: "Indien de periode van vrijwillige verzekering is onderbroken door een periode van verplichte\nverzekering korter dan een jaar, kan de gewezen verzekerde zich opnieuw vrijwillig verzekeren voor\nde resterende periode van de tien jaar."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: '35.3'
+  text: 'De periode van maximaal tien jaar, bedoeld in het eerste lid, is niet van toepassing op:'
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.a
+  text: "de gewezen verzekerde die in dienstbetrekking staat tot een Nederlandse publiekrechtelijke\nrechtspersoon dan wel uit anderen hoofde loon geniet van een zodanige rechtspersoon;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.b
+  text: "de gewezen verzekerde die is uitgezonden om werkzaamheden te verrichten voor door Onze Minister in\novereenstemming met Onze Minister van Buitenlandse Zaken aan te wijzen organisaties voor\nontwikkelingssamenwerking;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.c
+  text: "de gewezen verzekerde die werkzaam is bij een door Onze Minister, Onze Minister van Volksgezondheid,\nWelzijn en Sport en Onze Minister van Binnenlandse Zaken en Koninkrijksrelaties aan te wijzen\nvolkenrechtelijke organisatie;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.d
+  text: "de gewezen verzekerde die werkzaamheden verricht die worden bekostigd door het Rijk en die tevens in\nopdracht van het Rijk worden verricht in het kader van een wettelijke taakomschrijving of ter\nuitvoering van een internationaal verdrag dan wel een daarmee gelijk te stellen overeenkomst of een\nbesluit van een volkenrechtelijke organisatie; of"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.e
+  text: "de gewezen verzekerde, die op de dag waarop de verplichte verzekering is geëindigd de leeftijd van\n50 jaar heeft bereikt, niet in Nederland woont en recht heeft op een:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.e.1°
+  text: "uitkering op grond van de [Wet werk en inkomen naar arbeidsvermogen][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0019057"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0019057
+- number: 35.3.e.2°
+  text: "uitkering op grond van de [Wet op de arbeidsongeschiktheidsverzekering][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002524"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0002524
+- number: 35.3.e.3°
+  text: "uitkering op grond van de [Wet arbeidsongeschiktheidsverzekering zelfstandigen][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008656"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0008656
+- number: 35.3.e.4°
+  text: "uitkering of op recht op arbeidsondersteuning op grond van de [Wet arbeidsongeschiktheidsvoorziening\njonggehandicapten][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008657"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0008657
+- number: 35.3.e.5°
+  text: "uitkering op grond van de [Wet arbeidsongeschiktheidsvoorziening militairen][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002822"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0002822
+- number: 35.3.e.6°
+  text: "pensioen op basis van arbeidsongeschiktheid op grond van de [Wet privatisering\nSpoorwegpensioenfonds][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0006319"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0006319
+- number: 35.3.e.7°
+  text: "pensioen op basis van arbeidsongeschiktheid op grond van de Algemene militaire pensioenwet, zoals\ndie luidde voor 1 januari 1998; of"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: 35.3.e.8°
+  text: "nabestaandenuitkering op grond van de [Algemene nabestaandenwet][ref1], mits die uitkering of dat\npensioen ten minste gelijk is aan 35% van het bruto-minimumloon;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0007795"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+  references:
+  - id: ref1
+    bwb_id: BWBR0007795
+- number: 35.3.f
+  text: de gewezen verzekerde, bedoeld in artikel 40.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: '35.4'
+  text: "De periode van maximaal tien jaar, bedoeld in het eerste lid, is niet van toepassing op de\nechtgenoot van de in het derde lid genoemde gewezen verzekerde en de inwonende minderjarige kinderen\nmet wie die gewezen verzekerde of die echtgenoot in familierechtelijke betrekking staat. Voor de\ntoepassing van dit lid wordt onder de in het derde lid genoemde gewezen verzekerde mede verstaan de\ngewezen verzekerde, bedoeld in onderdeel e van dat lid, wiens recht op een uitkering als bedoeld in\ndat onderdeel uitsluitend als gevolg van het bereiken van de pensioengerechtigde leeftijd is\ngeëindigd."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: '35.5'
+  text: "Bij of krachtens algemene maatregel van bestuur kunnen ten aanzien van dit artikel nadere regels\nworden gesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel35
+- number: '36.1'
+  text: "De gewezen verzekerde die van de vrijwillige verzekering, bedoeld in [artikel 35, eerste lid][ref1],\ngebruik wil maken, is verplicht uiterlijk een jaar na de dag, waarop de verplichte verzekering is\ngeëindigd, een aanvraag daartoe in te dienen bij de Sociale verzekeringsbank.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel35"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel36
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '35'
+    hoofdstuk: IV
+- number: '36.2'
+  text: "De aanvraag wordt afgewezen indien de gewezen verzekerde niet voldoet aan de bij of krachtens dit\nhoofdstuk gestelde voorwaarden."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel36
+- number: '37'
+  text: "De vrijwillige verzekering, bedoeld in [artikel 35, eerste lid][ref1], eindigt:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel35"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '35'
+    hoofdstuk: IV
+- number: 37.a
+  text: "met ingang van de eerste dag van de tweede maand volgend op die waarin de Sociale verzekeringsbank\neen schriftelijke opzegging van de gewezen verzekerde heeft ontvangen;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+- number: 37.b
+  text: met ingang van de dag waarop de gewezen verzekerde de pensioengerechtigde leeftijd bereikt;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+- number: 37.c
+  text: "met ingang van de dag, waarop de periode van tien jaar, bedoeld in [artikel 35, eerste lid][ref1],\nis verstreken;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel35"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '35'
+    hoofdstuk: IV
+- number: 37.d
+  text: met ingang van de dag, waarop de gewezen verzekerde verplicht verzekerd wordt op grond van deze wet;
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+- number: 37.e
+  text: "met ingang van de eerste dag van de vierde maand volgend op de laatste dag van de door de Sociale\nverzekeringsbank gestelde termijn waarbinnen de verschuldigde premie voor de vrijwillige algemene\nouderdomsverzekering, bedoeld in [artikel 71 van de Wet financiering sociale verzekeringen][ref1],\ndient te worden betaald, indien de betaling niet of niet geheel heeft plaatsgevonden;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0017745#Artikel71"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+  references:
+  - id: ref1
+    bwb_id: BWBR0017745
+    artikel: '71'
+- number: 37.f
+  text: "met ingang van de dag volgend op de laatste dag van een door de Sociale verzekeringsbank gestelde\ntermijn waarbinnen de gewezen verzekerde de van hem, in verband met de toepassing van dit hoofdstuk,\nverlangde inlichtingen dient te verstrekken, indien de gewezen verzekerde die gegevens niet heeft\nverstrekt, tenzij de gewezen verzekerde aannemelijk maakt dat dat hem niet in overwegende mate kan\nworden verweten."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel37
+- number: '38.1'
+  text: "De verzekerde, die voorafgaand aan de verplichte verzekering niet eerder verplicht verzekerd is\ngeweest, kan zich, zolang hij de pensioengerechtigde leeftijd nog niet heeft bereikt, vrijwillig\nverzekeren vanaf de aanvangsleeftijd, over de achterliggende periode, waarin hij niet verplicht\nverzekerd is geweest, indien hij ten minste vijf jaar verplicht verzekerd is geweest ingevolge de\n[artikelen 6][ref1] of [6a][ref2], en voor zover hij in die achterliggende periode niet onderworpen\nis geweest aan een buitenlandse wettelijk verplichte ouderdomsverzekering, die bij het bereiken van\nde daarin aangegeven leeftijd recht geeft op ouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel6a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel38
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '6'
+    hoofdstuk: II
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: 6a
+    hoofdstuk: II
+- number: '38.2'
+  text: "Voor de toepassing van het eerste lid wordt degene wiens verplichte verzekering voor het bereiken\nvan de aanvangsleeftijd is beëindigd, geacht niet verplicht verzekerd te zijn geweest gedurende de\nperiode voorafgaand aan het bereiken van de aanvangsleeftijd."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel38
+- number: '38.3'
+  text: "Bij of krachtens algemene maatregel van bestuur kunnen ten aanzien van het eerste lid nadere regels\nworden gesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel38
+- number: '39.1'
+  text: "De verzekerde die van de vrijwillige verzekering, bedoeld in [artikel 38, eerste lid][ref1], gebruik\nwil maken, is verplicht uiterlijk tien jaar na de dag, waarop de verplichte verzekering is ontstaan,\neen aanvraag daartoe in te dienen bij de Sociale verzekeringsbank.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel38"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel39
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '38'
+    hoofdstuk: IV
+- number: '39.2'
+  text: "De [artikelen 36, tweede lid][ref1], en [37, onderdelen e en f][ref2], zijn van overeenkomstige\ntoepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel36\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel37"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel39
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '36'
+    hoofdstuk: IV
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '37'
+    hoofdstuk: IV
+- number: '40'
+  text: "De [artikelen 34 tot en met 39][ref1] zijn van overeenkomstige toepassing op de gewezen verzekerde\ndie op 31 december 2005 vrijwillig verzekerd was op grond van een algemene maatregel van bestuur die\ngebaseerd was op artikel 40, zoals dat luidde op de dag voor inwerkingtreding van de Wet tot\nwijziging van een aantal wetten op het terrein van het Ministerie van Sociale Zaken en\nWerkgelegenheid teneinde deze in overeenstemming te brengen met de motie van het lid Jurgens c.s.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel34"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel40
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '34'
+    hoofdstuk: IV
+- number: '41'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel41
+- number: '42'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel42
+- number: '43'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel43
+- number: '44'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel44
+- number: '45'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel45
+- number: '46'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel46
+- number: '47'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel47
+- number: '48.1'
+  text: "Degene, van wie ingevolge [artikel 65, eerste lid, van de Wet financiering sociale\nverzekeringen][ref1] belasting is geheven of in door Onze Minister en Onze Minister van Financiën\nbij ministeriële regeling aan te wijzen gevallen geacht wordt te zijn geheven, heeft recht op een\nuitkering, indien en zolang hij recht heeft op ouderdomspensioen krachtens deze wet en hij wegens\ngemoedsbezwaren geen aanspraak maakt op dit ouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0017745#Artikel65"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+  references:
+  - id: ref1
+    bwb_id: BWBR0017745
+    artikel: '65'
+- number: '48.2'
+  text: "Degene, die ingevolge het eerste lid recht op een uitkering heeft, dient de Sociale verzekeringsbank\nschriftelijk in kennis te stellen, zodra naar zijn oordeel het totaal aan uitkering betaalde\nbedragen heeft overschreden het totaal van de bedragen, die van hem op grond van de in de aanhef van\nhet eerste lid bedoelde bepalingen aan belasting zijn geheven of geacht worden te zijn geheven. De\nuitbetaling van deze uitkering wordt dan beëindigd met ingang van een betalingstermijn, aanvangende\nna de dag, waarop de kennisgeving door de Sociale verzekeringsbank is ontvangen, doch niet later dan\nde eerste dag van de tweede maand na de dag van ontvangst van die kennisgeving."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+- number: '48.3'
+  text: "Voor de toepassing van het bepaalde in het vorige lid wordt het totaal van de aan belasting geheven\nbedragen:"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+- number: 48.3.a
+  text: "verminderd met de bedragen die niet zijn ingevorderd, dan wel die de verzekerde nalatig is gebleven\nte betalen;"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+- number: 48.3.b
+  text: vermeerderd met een door de in het eerste lid bedoelde uitkeringsgerechtigde te bepalen opslag.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+- number: '48.4'
+  text: "Het bedrag van de uitkering is gelijk aan het bedrag aan ouderdomspensioen en vakantie-uitkering,\nwaarop de belanghebbende krachtens deze wet recht heeft."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+- number: '48.5'
+  text: "Het bepaalde bij of krachtens de [artikelen 14 tot en met 26][ref1], [31][ref2] en [33][ref3] is,\nvoor zover daarvan ten aanzien van de [artikelen 17, derde lid][ref4], [18][ref5], en [24, eerste\nlid][ref6], bij ministeriële regeling niet wordt afgeweken, van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel14\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel31\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel33\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel17\n[ref5]: https://wetten.overheid.nl/BWBR0002221#Artikel18\n[ref6]: https://wetten.overheid.nl/BWBR0002221#Artikel24"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '14'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '31'
+    hoofdstuk: III
+#    paragraaf: '3'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '33'
+    hoofdstuk: III
+#    paragraaf: '3'
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '17'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref5
+    bwb_id: BWBR0002221
+    artikel: '18'
+    hoofdstuk: III
+#    paragraaf: '2'
+  - id: ref6
+    bwb_id: BWBR0002221
+    artikel: '24'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: '48.6'
+  text: "Het bepaalde bij [artikel 49][ref1] is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: '48.7'
+  text: "Onze Minister en Onze Minister van Financiën kunnen bij ministeriële regeling ter zake van het\nbepaalde in het eerste tot en met het zesde lid nadere regels en uitvoeringsvoorschriften geven."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel48
+- number: '49'
+  text: "De pensioengerechtigde, zijn echtgenoot, alsmede zijn wettelijke vertegenwoordiger of de instelling\nwaaraan ingevolge [artikel 20][ref1] ouderdomspensioen wordt uitbetaald, zijn verplicht aan de\nSociale verzekeringsbank op haar verzoek of onverwijld uit eigen beweging alle feiten en\nomstandigheden mee te delen, waarvan hun redelijkerwijs duidelijk moet zijn dat zij van invloed\nkunnen zijn op het recht op uitkering, de hoogte van de uitkering of op het bedrag van de uitkering,\ndat wordt betaald. De verplichting geldt niet indien die feiten en omstandigheden door de Sociale\nverzekeringsbank kunnen worden vastgesteld op grond van bij wettelijk voorschrift als authentiek\naangemerkte gegevens of kunnen worden verkregen uit bij ministeriële regeling aan te wijzen\nadministraties. Bij ministeriële regeling wordt bepaald voor welke gegevens de tweede zin van\ntoepassing is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel20"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel49
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '20'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: '50'
+  text: "In aanvulling op [artikel 49][ref1] kan de Sociale verzekeringsbank de pensioengerechtigde of zijn\nwettelijke vertegenwoordiger verzoeken aan te tonen dat:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel49"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel50
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '49'
+    hoofdstuk: VI
+- number: 50.a
+  text: "de pensioengerechtigde een pensioengerechtigde is als bedoeld in [artikel 9, eerste lid, onderdeel\na][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel50
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '9'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 50.b
+  text: "de feitelijke woonsituatie van de pensioengerechtigde in overeenstemming is met het door hem dan wel\nzijn wettelijke vertegenwoordiger verstrekte adres."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel50
+- number: '51.1'
+  text: "Een beschikking op grond van deze wet en de daarop berustende bepalingen wordt gegeven binnen een\nredelijke termijn na ontvangst van de aanvraag."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel51
+- number: '51.2'
+  text: "De redelijke termijn is in ieder geval verstreken wanneer binnen acht weken na ontvangst van de\naanvraag geen beschikking is gegeven, noch een kennisgeving als bedoeld in het derde lid is gedaan."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel51
+- number: '51.3'
+  text: "Indien een beschikking niet binnen de termijn van acht weken kan worden gegeven, wordt die termijn\nmet een redelijke termijn verlengd en wordt de aanvrager daarvan schriftelijk in kennis gesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel51
+- number: 51a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel51a
+- number: '52'
+  text: "In afwijking van [artikel 7:10, eerste lid, van de Algemene wet bestuursrecht][ref1] beslist de\nSociale verzekeringsbank binnen dertien weken gerekend vanaf de dag na die waarop de termijn voor\nhet indienen van het bezwaarschrift is verstreken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel7:10"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel52
+  references:
+  - id: ref1
+    bwb_id: BWBR0005537
+    artikel: 7:10
+- number: '53.1'
+  text: "Tegen uitspraken van de Centrale Raad van Beroep kan ieder der partijen beroep in cassatie instellen\nter zake van schending of verkeerde toepassing van de [artikelen 1, derde tot en met zevende\nlid][ref1], [2][ref2], [3][ref3] en [6][ref4] en de op die artikelen berustende bepalingen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel2\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel3\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel6"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel53
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '1'
+    hoofdstuk: I
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '2'
+    hoofdstuk: I
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '3'
+    hoofdstuk: I
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '6'
+    hoofdstuk: II
+- number: '53.2'
+  text: "Op dit beroep zijn de voorschriften betreffende het beroep in cassatie tegen uitspraken van de\ngerechtshoven inzake beroepen in belastingzaken van overeenkomstige toepassing, waarbij de Centrale\nRaad van Beroep de plaats inneemt van een gerechtshof."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel53
+- number: '54'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel54
+- number: '55.1'
+  text: "Degene, die vóór het in werking treden van [artikel 6][ref1] de leeftijd van 15, doch nog niet die\nvan 65 jaar heeft bereikt, en die - al dan niet onafgebroken - gedurende zes jaren na de\nvoleindiging van zijn 59ste levensjaar in Nederland, Aruba, Curaçao, Sint Maarten of in de openbare\nlichamen Bonaire, Sint Eustatius en Saba heeft gewoond, wordt voor de toepassing van het bepaalde in\n[artikel 13, eerste lid][ref2], gedurende het tijdvak, gelegen tussen de voleindiging van zijn 15de\nlevensjaar en het in werking treden van [artikel 6][ref3], geacht verzekerd te zijn geweest. Voor de\ntoepassing van het bepaalde in de vorige volzin wordt, uitsluitend voor de vaststelling van de\ntoeslag, bedoeld in [artikel 8][ref4] met toepassing van het bepaalde in [artikel 13, tweede\nlid][ref5], de jongere echtgenoot van de pensioengerechtigde geacht het 59ste levensjaar te hebben\nvoleindigd op dezelfde dag als de pensioengerechtigde.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel13\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel6\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel8\n[ref5]: https://wetten.overheid.nl/BWBR0002221#Artikel13"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel55
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '6'
+    hoofdstuk: II
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: '6'
+    hoofdstuk: II
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref5
+    bwb_id: BWBR0002221
+    artikel: '13'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '55.2'
+  text: "Degene, die voldoet aan het bepaalde in de eerste volzin van het eerste lid, doch nimmer ingevolge\ndeze wet verzekerd is geweest, wordt nochtans voor de toepassing van [artikel 7][ref1] geacht\nverzekerd te zijn geweest.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel7"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel55
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '7'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '56'
+  text: "De voordelen uit [artikel 55][ref1] voortvloeiende komen enkel toe aan degene die in Nederland\nwoont.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel55"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel56
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '55'
+    hoofdstuk: VIII
+#    paragraaf: '1'
+- number: '57'
+  text: "Bij algemene maatregel van bestuur kan onder daarbij te stellen voorwaarden worden bepaald, dat voor\nde toepassing van de [artikelen 55][ref1] en [56][ref2] het wonen buiten Nederland wordt\ngelijkgesteld met het wonen in Nederland.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel55\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel56"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel57
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '55'
+    hoofdstuk: VIII
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '56'
+    hoofdstuk: VIII
+#    paragraaf: '1'
+- number: '58'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel58
+- number: '59'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel59
+- number: '60'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel60
+- number: '61'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel61
+- number: '62.1'
+  text: "De [artikelen 8a][ref1] en [9a][ref2] zijn niet van toepassing op de pensioengerechtigde, die:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8a\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel9a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8a
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: 9a
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 62.1.a
+  text: op 31 december 1999 recht heeft op een ouderdomspensioen en op die dag niet in Nederland woont, en
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62
+- number: 62.1.b
+  text: "op 19 december 2005 dit recht op een ouderdomspensioen uitsluitend nog heeft op grond van artikel 2\nvan de wet van 9 december 2004, houdende goedkeuring van het voornemen tot opzegging van het op 28\njuni 1962 te Genève tot stand gekomen Verdrag betreffende de gelijkheid van behandeling van eigen\nonderdanen en vreemdelingen met betrekking tot de sociale zekerheid (Verdrag nr. 118 aangenomen door\nde Internationale Arbeidsconferentie in haar zesenveertigste zitting; Trb. 1962, 122 en Trb. 1964,\n23) (Stb. 2004, 715)."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62
+- number: '62.2'
+  text: "Het eerste lid blijft van toepassing zolang de pensioengerechtigde blijft wonen in hetzelfde land\nals het land waar hij op 19 december 2005 woonde en blijft voldoen aan de voorwaarden voor het recht\nop ouderdomspensioen."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62
+- number: 62a.1
+  text: "De [artikelen 8a, eerste lid][ref1], en [9a, eerste lid][ref2], zijn niet van toepassing op de\npensioengerechtigde, op wie die artikelen als gevolg van de opzegging van een verdrag, de\nbeëindiging van de voorlopige toepassing van een verdrag dan wel de beëindiging van een daarmee\ngelijk te stellen situatie van toepassing zouden worden, zolang de pensioengerechtigde blijft wonen\nin hetzelfde land of gebied als het land of gebied waar hij op de dag voor buitenwerkingtreding als\ngevolg van die opzegging respectievelijk op de dag voor de beëindiging woonde en blijft voldoen aan\nde voorwaarden voor het recht op ouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8a\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel9a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8a
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: 9a
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 62a.2
+  text: "De pensioengerechtigde die recht heeft op een inkomensondersteuning als bedoeld in [artikel 33a,\neerste lid][ref1], en wiens recht op de inkomensondersteuning uitsluitend zou eindigen als gevolg\nvan de opzegging van een verdrag, de beëindiging van de voorlopige toepassing van een verdrag dan\nwel de beëindiging van een daarmee gelijk te stellen situatie, behoudt het recht op de\ninkomensondersteuning, zolang de pensioengerechtigde blijft wonen in hetzelfde land of gebied als\nhet land of gebied waar hij op de dag voor buitenwerkingtreding als gevolg van die opzegging\nrespectievelijk op de dag voor de beëindiging woonde en blijft voldoen aan de voorwaarden voor het\nrecht op inkomensondersteuning.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel33a"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 33a
+    hoofdstuk: III
+#    paragraaf: '4'
+- number: 62a.3
+  text: "Onze Minister deelt mede ten aanzien van welk land of gebied, met inbegrip van de dag waarop, een\nverdrag als bedoeld in het eerste of tweede lid buitenwerking is getreden dan wel de voorlopige\ntoepassing van een verdrag of een daarmee gelijk te stellen situatie als bedoeld in het eerste of\ntweede lid is beëindigd."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel62a
+- number: '63'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel63
+- number: 63a
+  text: "[Artikel 1, achtste en negende lid][ref1], is niet van toepassing, indien voor de inwerkingtreding\nvan deze artikelleden, op grond van [artikel 8][ref2] recht bestaat op toeslag, omdat de ongehuwde\npensioengerechtigde wegens een gezamenlijke huishouding met een meerderjarig aangehuwd kind of een\nmeerderjarig voormalig pleegkind is aangemerkt als gehuwd, voor zolang dit recht op toeslag bestaat,\ntenzij toepassing van de genoemde artikelleden leidt tot een hoger ouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel63a
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '1'
+    hoofdstuk: I
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: '64'
+  text: "Ten aanzien van de persoon wiens vrijheid op de dag voorafgaande aan de inwerkingtreding van\n[artikel 8b][ref1] reeds rechtens was ontnomen wordt voor de toepassing van [dat artikel][ref2] als\neerste dag waarop de vrijheidsontneming plaatsvindt, aangemerkt de dag van inwerkingtreding van\n[artikel 8b][ref3] en eindigt het recht op ouderdomspensioen in afwijking van [artikel 8b, tweede\nlid][ref4], vanaf de dag dat deze vrijheidsontneming zes maanden heeft geduurd. De beëindiging gaat\nin op de eerste dag van de maand volgend op de maand waarin de vrijheidsontneming als bedoeld in de\neerste zin zes maanden heeft geduurd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8b\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel8b\n[ref3]: https://wetten.overheid.nl/BWBR0002221#Artikel8b\n[ref4]: https://wetten.overheid.nl/BWBR0002221#Artikel8b"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: 8b
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: 8b
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref3
+    bwb_id: BWBR0002221
+    artikel: 8b
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref4
+    bwb_id: BWBR0002221
+    artikel: 8b
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 64a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64a
+- number: 64b.1
+  text: "Pensioengerechtigden die voor 1 januari 2015 zijn gehuwd en die in november of december 2014 de\nleeftijd van 65 jaar bereiken en van wie de echtgenoot jonger is dan de pensioengerechtigde leeftijd\nhebben, in afwijking van [artikel 8, eerste lid][ref1], overeenkomstig de bepalingen van deze wet\nrecht op een toeslag, tenzij, met inachtneming van [artikel 11][ref2], het inkomen uit arbeid of\noverig inkomen van die echtgenoot meer bedraagt dan de volledige bruto-toeslag.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel11"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0002221
+    artikel: '11'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 64b.2
+  text: "[Artikel 8, tweede tot en met vierde lid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel8"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64b
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '8'
+    hoofdstuk: III
+#    paragraaf: '1'
+- number: 64c
+  text: "[Artikel 17, tweede lid][ref1], zoals dat luidde op de dag voorafgaand aan de dag van\ninwerkingtreding van artikel I, onderdeel B, van de Wet van 9 juli 2014 tot wijziging van de\nAlgemene Ouderdomswet in verband met beëindiging van de voorschotregeling en vaststelling van een\ngrondslag voor het stellen van regels ten aanzien van hetgeen wordt verstaan onder het hebben van\nhet hoofdverblijf in dezelfde woning (Stb. 2014, 307) blijft van toepassing op pensioengerechtigden\nten aanzien waarvan dat artikellid is toegepast tot het tijdstip waarop niet meer wordt voldaan aan\nde in dat artikellid gestelde voorwaarden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel17"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64c
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '17'
+    hoofdstuk: III
+#    paragraaf: '2'
+- number: 64d
+  text: "[Artikel 7][ref1], zoals dat luidde op de dag voorafgaand aan de inwerkingtreding van [artikel III,\nonderdeel A, van de Wet vereenvoudiging regelingen SVB][ref2] blijft na de inwerkingtreding van dat\nartikelonderdeel van toepassing op personen die op die dag op grond van artikel 7 recht hebben op\nouderdomspensioen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel7\n[ref2]: https://wetten.overheid.nl/BWBR0033114#ArtikelIII"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64d
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '7'
+    hoofdstuk: III
+#    paragraaf: '1'
+  - id: ref2
+    bwb_id: BWBR0033114
+    artikel: III
+- number: 64e.1
+  text: "Op aanvragen om gebruik te maken van de vrijwillige verzekering, bedoeld in [artikel 38, eerste\nlid][ref1], die zijn ingediend voor de datum van inwerkingtreding van de Wet van 26 november 2014\ntot wijziging van de Algemene Ouderdomswet in verband met wijziging van de voorwaarden voor de\nvrijwillige verzekering over een achterliggende periode en wijziging van de Participatiewet in\nverband met wijziging van de berekening en de periodieke aanpassing van de bijstandsnormen voor\npensioengerechtigden (Stb. 2014, 502) blijft artikel 38, eerste lid, van de Algemene Ouderdomswet,\nzoals dat luidde op de dag voorafgaand aan die datum van inwerkingtreding van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel38"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64e
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '38'
+    hoofdstuk: IV
+- number: 64e.2
+  text: "Op aanvragen om gebruik te maken van de vrijwillige verzekering, bedoeld in [artikel 38, eerste\nlid][ref1], die zijn ingediend op of na de datum van inwerkingtreding van de Wet van 26 november\n2014 tot wijziging van de Algemene Ouderdomswet in verband met wijziging van de voorwaarden voor de\nvrijwillige verzekering over een achterliggende periode en wijziging van de Participatiewet in\nverband met wijziging van de berekening en de periodieke aanpassing van de bijstandsnormen voor\npensioengerechtigden (Stb. 2014, 502) is artikel 38, eerste lid, van de Algemene Ouderdomswet, zoals\ndat door die wet is komen te luiden van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel38"
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel64e
+  references:
+  - id: ref1
+    bwb_id: BWBR0002221
+    artikel: '38'
+    hoofdstuk: IV
+- number: '65'
+  text: "Een gedraging die in strijd is met een krachtens deze wet uitgevaardigde algemene maatregel van\nbestuur, voor zover uitdrukkelijk als strafbaar feit in de zin van dit artikel aangeduid, wordt\ngestraft met hechtenis van ten hoogste een maand of geldboete van de tweede categorie. Het feit\nwordt beschouwd als een overtreding. Het in de eerste zin bedoelde feit wordt beschouwd als een\novertreding."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel65
+- number: '66'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel66
+- number: '67'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel67
+- number: '68'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel68
+- number: '69'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel69
+- number: '70'
+  text: Hetgeen nog ter uitvoering van deze wet nodig is, wordt geregeld bij ministeriële regeling.
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel70
+- number: '71.1'
+  text: "Indien in een pensioenregeling van een pensioenfonds of van een werkgever bepalingen zijn of worden\nopgenomen krachtens welke op enigerlei wijze geheel of gedeeltelijk met het ouderdomspensioen\ningevolge deze wet rekening wordt gehouden, dient bij de toepassing van deze bepalingen in acht te\nworden genomen, dat een verhoging van het ouderdomspensioen, welke plaatsvindt na de datum van\nbeëindiging van de actieve deelneming aan de pensioenregeling, buiten beschouwing blijft."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel71
+- number: '71.2'
+  text: "Het eerste lid is niet van toepassing op pensioenregelingen waarin bepalingen zijn opgenomen volgens\nwelke het ouderdomspensioen ingevolge deze wet en de premievrije aanspraken of het pensioen van die\nregeling tezamen na beëindiging van de actieve deelneming jaarlijks ten minste worden verhoogd met\nhet percentage van de in het eerste lid bedoelde verhoging van het ouderdomspensioen of het\npercentage van de loon- of prijsontwikkeling."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel71
+- number: '72'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel72
+- number: 72a
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel72a
+- number: '73'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel73
+- number: '74'
+  text: Vervallen
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel74
+- number: '75.1'
+  text: Deze wet kan worden aangehaald onder de titel "Algemene Ouderdomswet".
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel75
+- number: '75.2'
+  text: "De artikelen van deze wet treden in werking met ingang van een bij koninklijk besluit te bepalen\ntijdstip, dat voor de verschillende artikelen of onderdelen daarvan verschillend kan worden gesteld."
+  url: https://wetten.overheid.nl/BWBR0002221/2024-01-01#Artikel75

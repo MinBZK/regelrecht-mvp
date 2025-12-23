@@ -1,0 +1,2459 @@
+---
+$schema:
+  https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: besluit_kerninstallaties_splijtstoffen_en_ertsen
+regulatory_layer: AMVB
+publication_date: '2024-09-24'
+valid_from: '2024-01-01'
+bwb_id: BWBR0002667
+url: https://wetten.overheid.nl/BWBR0002667/2024-01-01
+articles:
+  - number: aanhef
+    text: "Wij JULIANA, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz.,
+      enz.,\nenz.\n\nOp de voordracht van Onze Ministers van Economische Zaken en van Sociale Zaken en
+      Volksgezondheid\nvan 8 mei 1968, no. 668/372 W.J.A., gedaan in overeenstemming met Onze Minister
+      van Verkeer en\nWaterstaat, de Centrale Raad voor de Kernenergie gehoord;\n\nGelet op de\n\nDe Raad
+      van State gehoord (advies van 10 juli 1968, no. 42);\n\nGezien het nader rapport van Onze Minister
+      van Economische Zaken en de Staatssecretaris van Sociale\nZaken en Volksgezondheid van 3 september
+      1969, no. 669/609 W.J.A., uitgebracht in overeenstemming\nmet Onze Minister van Verkeer en Waterstaat;\n\
+      \nHebben goedgevonden en verstaan:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Aanhef
+  - number: '1.1'
+    text: 'In dit besluit en de daarop berustende bepalingen wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1
+  - number: '1.2'
+    text: "In dit besluit en de daarop berustende bepalingen wordt onder «activiteit», «blootstelling»,\n\
+      «deskundige», «effectieve dosis» «eindberging», «equivalente dosis», «gezondheidsschade»,\n«omgevingsdosisequivalent»,
+      «radiotoxiciteitsequivalent», »richtlijn 2011/77/Euratom» en «wet»\nverstaan hetgeen daaronder wordt
+      verstaan in [artikel 1.2][ref1] in samenhang met [bijlage 1 van het\nBesluit basisveiligheidsnormen
+      stralingsbescherming][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel1.2\n[ref2]:
+      https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '1.2'
+      - id: ref2
+        bwb_id: BWBR0040179
+  - number: '1.3'
+    text: "In dit besluit en de daarop berustende bepalingen wordt onder «besmetting», «lozing in de lucht»,\n\
+      «lozing in het openbare riool» en «lozing in het oppervlaktewater» verstaan hetgeen daaronder wordt\n\
+      verstaan in [artikel 1.2][ref1] in samenhang met [bijlage 1 van het Besluit basisveiligheidsnormen\n\
+      stralingsbescherming][ref2], met dien verstande dat in plaats van «radioactieve stoffen» telkens\n\
+      «splijtstoffen of ertsen» wordt gelezen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel2.1\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '2.1'
+      - id: ref2
+        bwb_id: BWBR0040179
+  - number: '1.4'
+    text: Vervallen.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1
+  - number: '1.5'
+    text: "In dit besluit en de daarop berustende bepalingen wordt onder «voorhanden hebben» mede verstaan:
+      in\nbezit hebben, beheren, bewaren of anderszins feitelijk onder zich hebben, of het vervaardigen,\n\
+      bewerken, hanteren en opslaan, met uitzondering van het voorhanden hebben bij de opslag in verband\n\
+      met vervoer."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1
+  - number: '1.6'
+    text: "In dit besluit en de daarop berustende bepalingen wordt onder drukvaten, installatieleidingen,\n\
+      veiligheidsappendages en onder druk staande appendages verstaan hetgeen daaronder wordt verstaan
+      in\nhet [Warenwetbesluit drukapparatuur][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0010586"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0010586
+  - number: 1a
+    text: "Het in [artikel 1, eerste lid, onder b, van de wet][ref1] bedoelde percentage van in splijtstoffen\n\
+      aanwezig uranium, plutonium of thorium is onderscheidenlijk een tiende, een tiende en drie, gerekend\n\
+      naar het gewicht.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel1a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '1'
+  - number: '2'
+    text: "Dit besluit is niet van toepassing op het vervoeren, het voorhanden hebben bij opslag in verband
+      met\nhet vervoer en het binnen of buiten Nederlands grondgebied brengen of doen brengen van splijtstoffen\n\
+      of ertsen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel2
+  - number: '3.1'
+    text: "De aanvraag om een vergunning voor handelingen binnen een inrichting als bedoeld in [artikel
+      15,\nonder b, van de wet][ref1], of op een locatie waarop een milieubelastende activiteit die is\n\
+      aangewezen in [hoofdstuk 3 van het Besluit activiteiten leefomgeving][ref2] wordt verricht, wordt\n\
+      ingediend door degene die de inrichting drijft of de milieubelastende activiteit verricht.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0041330"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0041330
+        hoofdstuk: '3'
+  - number: '3.2'
+    text: "Een aanvraag als bedoeld in het eerste lid betreft niet de handelingen die worden verricht
+      door een\npersoon die in het bezit is van een vergunning voor het op steeds wisselende plaatsen
+      verrichten van\nzodanige handelingen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: '3.3'
+    text: 'De aanvraag bevat:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: 3.3.a
+    text: naam en adres van de aanvrager;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: 3.3.b
+    text: "een feitelijke omschrijving van hetgeen de aanvrager met de betrokken splijtstoffen of ertsen
+      wenst\nte doen onderscheidenlijk een aanduiding van de betrokken inrichting, uitrusting of locatie,
+      onder\nvermelding van het gebruik, dat de aanvrager van die inrichting, uitrusting of locatie wenst
+      te\nmaken;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: 3.3.c
+    text: "voor zover een of meer der in de [artikelen 4 tot en met 11][ref1] vervatte bepalingen op de\n\
+      betrokken aanvraag van toepassing zijn, de gegevens, welke de aanvraag uit dien hoofde in het\n\
+      bijzonder dient te bevatten dan wel, ingeval zodanige gegevens in een bij de aanvraag behorende\n\
+      bijlage zijn vermeld, een korte aanduiding van de aard en de inhoud dezer gegevens met verwijzing\n\
+      naar de betrokken bijlage;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel4"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '4'
+        hoofdstuk: II
+        paragraaf: '2'
+  - number: 3.3.d
+    text: een opgave van de tijdsduur, waarvoor de vergunning wordt verlangd;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: 3.3.e
+    text: "indien een vergunning wordt aangevraagd voor een handeling die in de krachtens [artikel 19][ref1]
+      in\nsamenhang met [artikel 2.3 van het Besluit basisveiligheidsnormen stralingsbescherming][ref2]\n\
+      geldende regeling, als gerechtvaardigd is bekendgemaakt, een verwijzing naar die bekendmaking;\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel19\n[ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel2.3"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '19'
+        hoofdstuk: IIIa
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '2.3'
+  - number: 3.3.f
+    text: "indien een vergunning wordt aangevraagd voor een handeling die niet of als niet-gerechtvaardigd
+      is\nbekendgemaakt in de krachtens [artikel 19][ref1] in samenhang met [artikel 2.3 van het Besluit\n\
+      basisveiligheidsnormen stralingsbescherming][ref2] geldende regeling, een verzoek om rechtvaardiging\n\
+      van die handeling en tevens de gegevens met betrekking tot de economische, sociale en andere\nvoordelen
+      van de betrokken handeling en met betrekking tot de gezondheidsschade die erdoor kan\nworden toegebracht,
+      die nodig zijn met het oog op de beoordeling van de gerechtvaardigdheid van de\nhandeling.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel19\n[ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel2.3"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '19'
+        hoofdstuk: IIIa
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '2.3'
+  - number: '3.4'
+    text: "Aanvragen om een vergunning, welke vallen onder verschillende bepalingen van de [paragrafen
+      2][ref1]\nen [3][ref2], kunnen, voor zover die aanvragen betrekking hebben op dezelfde inrichting,
+      uitrusting\nof locatie dan wel op inrichtingen, uitrustingen of locaties, die tezamen een geheel
+      vormen en die\nin elkaars onmiddellijke nabijheid zijn gelegen, in de vorm van een enkele, samengestelde
+      aanvraag\nworden ingediend. Op zodanige aanvraag zijn alle bepalingen van toepassing, welke betrekking
+      hebben\nop de afzonderlijke aanvragen, waaruit zij is samengesteld, met dien verstande dat in gevallen,\n\
+      waarin onverkorte toepassing dezer bepalingen zou leiden tot meervoudige vermelding van eenzelfde\n\
+      gegeven, met een enkelvoudige vermelding kan worden volstaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        hoofdstuk: II
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0002667
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '3.5'
+    text: "Indien een aanvraag om een vergunning betrekking heeft op een inrichting, uitrusting of locatie,
+      ten\naanzien waarvan reeds eerder een aanvraag is ingediend, kan, voor zover bepaalde gegevens reeds
+      bij\nde eerdere aanvraag zijn verstrekt en geen wijziging hebben ondergaan, naar die eerdere aanvraag\n\
+      worden verwezen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: '3.6'
+    text: "De Autoriteit kan de indiening van verdere afschriften van de aanvraag of van daarbij behorende\n\
+      bijlagen verlangen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3
+  - number: 3a.1
+    text: "Indien binnen een inrichting als bedoeld [in artikel 15, onder b, van de wet][ref1] of op een\n\
+      locatie waarop een milieubelastende activiteit die is aangewezen in [hoofdstuk 3 van het Besluit\n\
+      activiteiten leefomgeving][ref2] wordt verricht reeds splijtstoffen, ertsen of radioactieve stoffen\n\
+      voorhanden zijn, of toestellen worden gebruikt, heeft de risicoanalyse, bedoeld in de [artikelen
+      4,\neerste lid, onder e, en derde lid, onder e][ref3], [5, eerste lid, onder d, en tweede lid, onder\n\
+      d][ref4], [6, eerste lid, onder h][ref5], en [9, eerste lid, onder f][ref6], betrekking op de totaal\n\
+      ten gevolge van die inrichting of die locatie ontvangen effectieve dosis. De berekening van de\n\
+      effectieve dosis, bedoeld in de eerste volzin, heeft geen betrekking op de effectieve dosis ten\n\
+      gevolge van handelingen van een persoon als bedoeld in [artikel 3, tweede lid][ref7].\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0041330\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel4\n[ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel5\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref6]: https://wetten.overheid.nl/BWBR0002667#Artikel9\n\
+      [ref7]: https://wetten.overheid.nl/BWBR0002667#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0041330
+        hoofdstuk: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '4'
+        hoofdstuk: II
+        paragraaf: '2'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '5'
+        hoofdstuk: II
+        paragraaf: '2'
+      - id: ref5
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref6
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref7
+        bwb_id: BWBR0002667
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: 3a.2
+    text: "Bij regeling van Onze Minister en Onze Minister van Sociale Zaken en Werkgelegenheid kunnen
+      regels\nworden gesteld met betrekking tot de risicoanalyses, bedoeld in de [artikelen 4, eerste
+      lid, onder\ne, en derde lid, onder e][ref1], [5, eerste lid, onder d, en tweede lid, onder d][ref2],
+      [6, eerste\nlid, onder h en i][ref3], [9, eerste lid, onder f][ref4], en [10, tweede lid, onder
+      b, ten\n6°][ref5].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel4\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel5\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel9\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0002667#Artikel10"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel3a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '4'
+        hoofdstuk: II
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '5'
+        hoofdstuk: II
+        paragraaf: '2'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref5
+        bwb_id: BWBR0002667
+        artikel: '10'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '4.1'
+    text: 'De aanvraag om een vergunning voor het voorhanden hebben van splijtstoffen bevat in ieder geval:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.1.a
+    text: "een opgave van de hoeveelheden, de chemische en fysische toestand, de vorm, het gehalte en
+      de\nverrijkingsgraad, zomede, voor wat bestraalde splijtstoffen betreft, een zo nauwkeurig mogelijke\n\
+      opgave van de activiteit der splijtstoffen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.1.b
+    text: een opgave van het doel, waarvoor de aanvrager de splijtstoffen voorhanden wenst te
+      hebben;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.1.c
+    text: "een opgave en beschrijving van de plaats, waar de splijtstoffen voorhanden worden gehouden,
+      dan wel,\nindien ten aanzien van de inrichting of uitrusting, waarin de splijtstoffen voorhanden
+      worden\ngehouden, een vergunning als bedoeld in [artikel 15, onder b of c, van de wet][ref1] is
+      vereist, een\nopgave van die inrichting of uitrusting, onder verwijzing naar de ten aanzien daarvan
+      verleende\nvergunning, dan wel naar de aanvraag om een zodanige vergunning;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 4.1.d
+    text: "een beschrijving van de maatregelen die door of vanwege de aanvrager zullen worden getroffen
+      ter\nvoorkoming van schade;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.1.e
+    text: "een risicoanalyse van de schade van het voorhanden hebben van de onder a bedoelde splijtstoffen\n\
+      buiten de onder c bedoelde plaats, inrichting of uitrusting;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.1.f
+    text: "een opgave van alle handelingen en met splijtstoffen, ertsen, radioactieve stoffen en toestellen\n\
+      binnen de locatie die kennisgevingsplichtig, registratieplichtig of vergunningplichtig zijn\nkrachtens
+      dit besluit, het [Besluit basisveiligheidsnormen stralingsbescherming][ref1] of het\n[Besluit vervoer
+      splijtstoffen, ertsen en radioactieve stoffen][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002668"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+      - id: ref2
+        bwb_id: BWBR0002668
+  - number: '4.2'
+    text: "Indien de aanvraag betrekking heeft op een ingekapselde bron, bevat zij voorts een opgave van
+      de\nchemische en fysische toestand en vorm waardoor deze splijtstoffen een ingekapselde bron vormen\n\
+      alsmede een aanduiding van de constructie en de kwaliteit van de bron."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: '4.3'
+    text: 'De aanvraag om een vergunning voor het voorhanden hebben van ertsen bevat in ieder geval:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.3.a
+    text: een opgave van de aard, de hoeveelheid en het gemiddelde uranium- of thoriumgehalte der
+      ertsen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.3.b
+    text: een opgave van het doel, waarvoor de aanvrager de ertsen voorhanden wenst te hebben;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.3.c
+    text: een opgave en beschrijving van de plaats, waar de ertsen voorhanden zullen worden
+      gehouden;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.3.d
+    text: "een beschrijving van de maatregelen, die door of vanwege de aanvrager zullen worden getroffen
+      ter\nvoorkoming van schade;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.3.e
+    text: "een risicoanalyse van de schade van het voorhanden hebben van ertsen buiten de onder c bedoelde\n\
+      plaats;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.3.f
+    text: "een opgave van alle handelingen en met splijtstoffen, ertsen, radioactieve stoffen en toestellen\n\
+      binnen de locatie die kennisgevingsplichtig, registratieplichtig of vergunningplichtig zijn\nkrachtens
+      dit besluit, het [Besluit basisveiligheidsnormen stralingsbescherming][ref1] of het\n[Besluit vervoer
+      splijtstoffen, ertsen en radioactieve stoffen][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002668"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+      - id: ref2
+        bwb_id: BWBR0002668
+  - number: '4.4'
+    text: 'Indien de aanvraag betrekking heeft op een hoogactieve bron, bevat de aanvraag voorts:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.4.a
+    text: informatie over het volume van de bron, de bronhouder en de vaste afscherming van die
+      bron;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+  - number: 4.4.b
+    text: "schriftelijk bewijs dat de krachtens [artikel 19][ref1] in samenhang met [artikel 4.15, eerste
+      lid,\nvan het Besluit basisveiligheidsnormen stralingsbescherming][ref2] vereiste financiële zekerheid
+      is\ngesteld.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0012702#Artikel19\n[ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel4.15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel4
+    references:
+      - id: ref1
+        bwb_id: BWBR0012702
+        artikel: '19'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '4.15'
+  - number: '5.1'
+    text: 'De aanvraag om een vergunning voor het zich ontdoen van splijtstoffen bevat in ieder geval:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.1.a
+    text: "een opgave van de hoeveelheden, de chemische en fysische toestand, de vorm, het gehalte en
+      de\nverrijkingsgraad, zomede een zo nauwkeurig mogelijke opgave van de activiteit der splijtstoffen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.1.b
+    text: "een opgave en beschrijving van de plaats, waar en de wijze, waarop de aanvrager zich van de\n\
+      splijtstoffen wenst te ontdoen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.1.c
+    text: "een beschrijving van de maatregelen, welke door of vanwege de aanvrager zullen worden getroffen
+      ter\nvoorkoming van schade;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.1.d
+    text: "een risicoanalyse van de schade buiten de onder b bedoelde plaats als gevolg van de handeling\n\
+      waarvoor vergunning wordt gevraagd;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.1.e
+    text: "een opgave van alle handelingen en met splijtstoffen, ertsen, radioactieve stoffen en toestellen\n\
+      binnen de locatie die kennisgevingsplichtig, registratieplichtig of vergunningplichtig zijn\nkrachtens
+      dit besluit, het [Besluit basisveiligheidsnormen stralingsbescherming][ref1] of het\n[Besluit vervoer
+      splijtstoffen, ertsen en radioactieve stoffen][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002668"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+      - id: ref2
+        bwb_id: BWBR0002668
+  - number: '5.2'
+    text: 'De aanvraag om een vergunning voor het zich ontdoen van ertsen bevat in ieder geval:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.2.a
+    text: een opgave van de aard, de hoeveelheid en het gemiddelde uranium- of thoriumgehalte der
+      ertsen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.2.b
+    text: "een opgave en beschrijving van de plaats, waar en de wijze, waarop de aanvrager zich van de
+      ertsen\nwenst te ontdoen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.2.c
+    text: "een beschrijving van de maatregelen, welke door of vanwege de aanvrager zullen worden getroffen
+      ter\nvoorkoming van schade;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.2.d
+    text: "een risicoanalyse van de schade buiten de onder b bedoelde plaats als gevolg van de handeling\n\
+      waarvoor vergunning wordt gevraagd;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+  - number: 5.2.e
+    text: "een opgave van alle handelingen en met splijtstoffen, ertsen, radioactieve stoffen en toestellen\n\
+      binnen de locatie die kennisgevingsplichtig, registratieplichtig of vergunningplichtig zijn\nkrachtens
+      dit besluit, het [Besluit basisveiligheidsnormen stralingsbescherming][ref1] of het\n[Besluit vervoer
+      splijtstoffen, ertsen en radioactieve stoffen][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002668"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel5
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+      - id: ref2
+        bwb_id: BWBR0002668
+  - number: '6.1'
+    text: "De aanvraag om een vergunning voor het oprichten van een inrichting, waarin kernenergie kan
+      worden\nvrijgemaakt, bevat in ieder geval:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.a
+    text: "een opgave en beschrijving van de plaats, waar de inrichting zal worden gevestigd, onder vermelding\n\
+      van alle terzake doende omstandigheden van geografische, geologische,\nklimatologische, demografische,
+      hydrologische, ecologische en andere aard;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.b
+    text: "een beschrijving van de inrichting met inbegrip van de daarin te bezigen installaties, alsmede
+      van\nde werking van die inrichting en installaties, met opgave van de leveranciers van die onderdelen,\n\
+      welke voor de beoordeling van de veiligheid van belang zijn, en onder vermelding van het hoogste\n\
+      vermogen, waarop de inrichting zal werken;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.c
+    text: "een opgave van de chemische en fysische toestand, de vorm, het gehalte en de verrijkingsgraad
+      der\nsplijtstoffen, welke in de inrichting zullen worden gebruikt, onder vermelding van de hoeveelheid\n\
+      der onderscheidene splijtstoffen, welke ten hoogste te eniger tijd in de inrichting aanwezig zal\n\
+      zijn;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.d
+    text: "een beschrijving van de wijze, waarop de onder *c* bedoelde splijtstoffen in de inrichting
+      zullen\nworden gebruikt, en van de wijze, waarop de splijtstoffen voor en na het gebruik zullen
+      worden\nbewaard;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.e
+    text: "een globale opgave van het totaal aantal personen, dat bij normaal bedrijf in de inrichting
+      werkzaam\nzal zijn, alsmede een opgave van het aantal deskundigen en het aantal andere leden van
+      het\npersoneel, dat rechtstreeks bij het vrijmaken van kernenergie betrokken zal zijn, en van de\n\
+      onderlinge taakverdeling tussen die personeelsleden, zomede - voor wat betreft toezichthoudend\n\
+      personeel - van de gronden, waarop zij geacht kunnen worden voldoende deskundigheid voor het\nverrichten
+      van hun taak te bezitten;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.f
+    text: "een beschrijving van de wijze, waarop de aanvrager voornemens is zich na gebruik te ontdoen
+      van de\nonder *c* bedoelde splijtstoffen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.g
+    text: "een beschrijving van de wijze, waarop de aanvrager voornemens is zich te ontdoen van radioactieve\n\
+      stoffen, welke tijdens het gebruik van de onder *c* bedoelde splijtstoffen zullen ontstaan;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.h
+    text: "een veiligheidsrapport, inhoudende een beschrijving van de maatregelen, die door of vanwege
+      de\naanvrager zullen worden getroffen ter voorkoming van schade, of ter beperking van de kans op
+      schade,\nwaaronder begrepen de maatregelen ter voorkoming van schade buiten de inrichting, tijdens
+      normaal\nbedrijf, en ter voorkoming van schade voortvloeiende uit de in die beschrijving te vermelden\n\
+      gepostuleerde begin-gebeurtenissen, alsmede een risicoanalyse van de schade buiten de inrichting
+      als\ngevolg van die gebeurtenissen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.i
+    text: een risicoanalyse van de schade buiten de inrichting als gevolg van
+      buiten-ontwerpongevallen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: 6.1.j
+    text: "een opgave van de verzekering of andere financiële zekerheid, welke de aanvrager ter voldoening
+      aan\nde [Wet aansprakelijkheid kernongevallen][ref1] zal hebben en in stand houden, onder vermelding
+      van\nalle ter zake doende gegevens.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0003234"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+    references:
+      - id: ref1
+        bwb_id: BWBR0003234
+  - number: '6.2'
+    text: "Het eerste lid is van overeenkomstige toepassing op een aanvraag om een vergunning voor het
+      in\nwerking brengen of in werking houden van een inrichting als in dat lid bedoeld."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel6
+  - number: '7.1'
+    text: "De aanvraag om een vergunning voor het oprichten van een inrichting, waarin splijtstoffen,
+      welke\nplutonium of verrijkt uranium bevatten, of bestraalde splijtstoffen kunnen worden vervaardigd,\n\
+      bewerkt of verwerkt, bevat in ieder geval de gegevens, bedoeld in [artikel 6, eerste lid][ref1],
+      met\ndien verstande dat:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel7
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 7.1.a
+    text: "onder *b* in plaats van \"het hoogste vermogen, waarop de inrichting zal werken\" wordt gelezen:
+      \"de\ngrootste hoeveelheid der onderscheidene splijtstoffen, welke in een bepaald tijdvak in de
+      inrichting\nkan worden vervaardigd, bewerkt of verwerkt\";"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel7
+  - number: 7.1.b
+    text: "telkens in plaats van \"gebruikt\" onderscheidenlijk \"het gebruik\" of \"het vrijmaken van
+      kernenergie\"\nwordt gelezen: \"vervaardigd, bewerkt of verwerkt\" onderscheidenlijk \"de vervaardiging,
+      bewerking of\nverwerking\"."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel7
+  - number: '7.2'
+    text: "Het eerste lid is van overeenkomstige toepassing op een aanvraag om een vergunning voor het
+      in\nwerking brengen of in werking houden van een inrichting als in dat lid bedoeld."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel7
+  - number: '8.1'
+    text: "De aanvraag om een vergunning voor het oprichten van een inrichting, waarin splijtstoffen als\n\
+      bedoeld in [artikel 7, eerste lid][ref1], worden opgeslagen, bevat in ieder geval:\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002667#Artikel7"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 8.1.a
+    text: "een opgave en beschrijving van de plaats, waar de inrichting zal worden gevestigd, onder vermelding\n\
+      van alle terzake doende omstandigheden van geografische, geologische,\nklimatologische, demografische,
+      hydrologische, ecologische en andere aard;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+  - number: 8.1.b
+    text: "een opgave van de chemische en fysische toestand, de vorm, het gehalte en de verrijkingsgraad,\n\
+      zomede, voor wat bestraalde splijtstoffen betreft, een zo nauwkeurig mogelijke opgave van de\nactiviteit
+      der splijtstoffen, onder vermelding van de hoeveelheid der onderscheidene splijtstoffen,\nwelke
+      ten hoogste te eniger tijd in de inrichting aanwezig zal zijn;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+  - number: 8.1.c
+    text: "een globale opgave van het totaal aantal personen, dat bij normaal bedrijf in de inrichting
+      werkzaam\nzal zijn, alsmede een opgave van het aantal leden van het personeel, dat rechtstreeks
+      bij de opslag\nvan splijtstoffen betrokken zal zijn, en van de onderlinge taakverdeling tussen die
+      personeelsleden,\nzomede - voor wat betreft het toezichthoudend personeel - van de gronden, waarop
+      zij geacht kunnen\nworden voldoende deskundigheid voor het verrichten van hun taak te bezitten;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+  - number: 8.1.d
+    text: "een veiligheidsrapport als bedoeld in [artikel 6, eerste lid, onder h][ref1];\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 8.1.e
+    text: "een risicoanalyse als bedoeld in [artikel 6, eerste lid, onder i][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 8.1.f
+    text: "een opgave van de verzekering of andere financiële zekerheid als bedoeld in [artikel 6, eerste
+      lid,\nonder j][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '8.2'
+    text: "Het eerste lid is van overeenkomstige toepassing op een aanvraag om een vergunning voor het
+      in\nwerking brengen of in werking houden van een inrichting als in dat lid bedoeld."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel8
+  - number: '9.1'
+    text: "De aanvraag om een vergunning voor het oprichten van een inrichting, waarin onbestraalde\n\
+      splijtstoffen, welke geen plutonium of verrijkt uranium bevatten, kunnen worden vervaardigd, bewerkt\n\
+      of verwerkt, bevat in ieder geval:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: 9.1.a
+    text: een opgave en beschrijving van de plaats, waar de inrichting zal worden gevestigd;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: 9.1.b
+    text: een beschrijving van de inrichting;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: 9.1.c
+    text: "een opgave van de chemische en fysische toestand, de vorm en het gehalte der splijtstoffen,
+      onder\nvermelding van de hoeveelheid der onderscheidene splijtstoffen, welke ten hoogste te eniger
+      tijd in\nde inrichting aanwezig zal zijn;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: 9.1.d
+    text: "een opgave van het aantal personeelsleden, dat verantwoordelijk zal zijn voor het op deskundige\n\
+      wijze vervaardigen, bewerken, of verwerken van splijtstoffen, met vermelding van de gronden, waarop\n\
+      zij geacht kunnen worden voldoende deskundigheid te bezitten;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: 9.1.e
+    text: "een beschrijving van de maatregelen, welke door of vanwege de aanvrager zullen worden getroffen
+      ter\nvoorkoming van schade, waaronder begrepen de maatregelen ter voorkoming van schade buiten de\n\
+      inrichting;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: 9.1.f
+    text: "een risicoanalyse van de schade buiten de inrichting, welke is verbonden aan het vervaardigen,\n\
+      bewerken of verwerken in de inrichting van de onder c bedoelde splijtstoffen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: '9.2'
+    text: "Het eerste lid is van overeenkomstige toepassing op een aanvraag om een vergunning voor het
+      in\nwerking brengen of in werking houden van een inrichting als in dat lid bedoeld."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel9
+  - number: '10.1'
+    text: "Indien een aanvraag om een vergunning tot wijziging van een inrichting als bedoeld in de [artikelen\n\
+      6][ref1], [7][ref2], [8][ref3] of [9][ref4] mede strekt tot het buiten gebruik stellen of\nontmantelen
+      van de inrichting of een deel daarvan, bevat de aanvraag in ieder geval:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 10.1.a
+    text: "een opgave van de vergunning krachtens welke de betrokken inrichting is opgericht dan wel in
+      werking\ngebracht of gehouden;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: 10.1.b
+    text: een ontmantelingsplan.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: '10.2'
+    text: "Een aanvraag om een vergunning als bedoeld in het eerste lid bevat tevens, indien het betrekking\n\
+      heeft op een inrichting:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: 10.2.a
+    text: "als bedoeld in de [artikelen 6][ref1], [7][ref2] of [8][ref3]: een veiligheidsrapport als bedoeld
+      in\n[artikel 6, eerste lid, onder h][ref4], en een risicoanalyse als bedoeld in [artikel 6, eerste
+      lid,\nonder i][ref5],\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n[ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref5
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 10.2.b
+    text: "als bedoeld in [artikel 9][ref1]: een beschrijving van maatregelen als bedoeld in [artikel
+      9, eerste\nlid, onder e][ref2], en een risicoanalyse als bedoeld in [artikel 9, eerste lid, onder
+      f][ref3], met\ndien verstande dat het veiligheidsrapport, de beschrijving van maatregelen en de
+      risicoanalyses\nbetrekking hebben op de buitengebruikstelling of de ontmanteling.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel9\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel9\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '10.3'
+    text: "De aanvraag voor het wijzigen van een vergunning als bedoeld in het eerste lid, bevat in ieder\n\
+      geval:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: 10.3.a
+    text: "een opgave van de vergunning krachtens welke de betrokken inrichting buiten gebruik is gesteld
+      of\nwordt ontmanteld;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: 10.3.b
+    text: een beschrijving van de voorgenomen wijziging;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: 10.3.c
+    text: "indien de voorgenomen wijziging van invloed is op een of meer gegevens als vermeld in het\n\
+      ontmantelingsplan genoemd in het eerste lid, onder b, een desbetreffende aanvulling van dat plan."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: '10.4'
+    text: "Gelijktijdig met de aanvraag om een vergunning voor het buiten gebruik stellen van een inrichting\n\
+      als bedoeld in het eerste lid, wordt een aanvraag ingediend om een vergunning voor het ontmantelen\n\
+      van die inrichting."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel10
+  - number: '11.1'
+    text: "De aanvraag om een vergunning voor het wijzigen van een inrichting als bedoeld in [artikel
+      6][ref1],\n[7][ref2], [8][ref3] of [9][ref4] bevat in ieder geval:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 11.1.a
+    text: "een opgave van de vergunning, krachtens welke de betrokken inrichting is opgericht dan wel
+      in\nwerking gebracht of gehouden;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+  - number: 11.1.b
+    text: een beschrijving van de voorgenomen wijziging;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+  - number: 11.1.c
+    text: "indien de aanvraag betrekking heeft op een inrichting als bedoeld in [artikel 6][ref1], [7][ref2]\n\
+      of [8][ref3] en de voorgenomen wijziging van invloed is op een of meer gegevens als vermeld in het\n\
+      ter verkrijging van de onder a bedoelde vergunning overgelegde veiligheidsrapport of de\nrisicoanalyse,
+      bedoeld in [artikel 6, onder h][ref4], een desbetreffende aanvulling hiervan;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 11.1.d
+    text: "indien de aanvraag betrekking heeft op een inrichting als bedoeld in [artikel 6][ref1], [7][ref2]\n\
+      of [8][ref3] en de voorgenomen wijziging van invloed is op een of meer gegevens als vermeld in de\n\
+      ter verkrijging van de onder a bedoelde vergunning overgelegde risicoanalyse, bedoeld in [artikel
+      6,\neerste lid, onder i][ref4], een desbetreffende aanvulling van die risicoanalyse;\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n[ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 11.1.e
+    text: "indien de aanvraag betrekking heeft op een inrichting als bedoeld in [artikel 9][ref1] en de\n\
+      voorgenomen wijziging van invloed is op een of meer gegevens als vermeld in de ter verkrijging van\n\
+      de onder a bedoelde vergunning overgelegde risicoanalyse als bedoeld in [artikel 9, eerste lid,\n\
+      onder f][ref2], een desbetreffende aanvulling van die risicoanalyse.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel9\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '11.2'
+    text: "Indien de vergunning met betrekking tot een inrichting als bedoeld in [artikel 6][ref1], [7][ref2]\n\
+      of [8][ref3] is verkregen op een tijdstip waarop ter verkrijging van die vergunning geen\nrisicoanalyse
+      als bedoeld in [artikel 6, eerste lid, onder i][ref4], behoefde te worden overgelegd,\nwordt bij
+      de aanvraag, bedoeld in het eerste lid, indien de voorgenomen wijziging van invloed is op\neen of
+      meer van de gegevens die doorgaans worden vermeld in een zodanige risicoanalyse, een\nrisicoanalyse
+      als bedoeld in [artikel 6, eerste lid, onder i][ref5], gevoegd, die niet alleen\nbetrekking heeft
+      op de wijziging, maar ook op het in werking zijn van de inrichting.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref5]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref5
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '11.3'
+    text: "Dit artikel is niet van toepassing op een aanvraag om een vergunning als bedoeld in [artikel\n\
+      10][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel10"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '10'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 11a
+    text: "In gevallen waarin de vergunning betrekking heeft op het oprichten of wijzigen van een inrichting\n\
+      als bedoeld in [artikel 15, onder b, van de wet][ref1], dat tevens is aan te merken als een\nomgevingsplanactiviteit
+      als bedoeld in [artikel 5.1, eerste lid, aanhef en onder a, van de\nOmgevingswet][ref2], bestaande
+      uit een bouwactiviteit of het in stand houden van een bouwwerk, of\neen omgevingsvergunning voor
+      een bouwactiviteit als bedoeld in artikel 5.1, tweede lid, aanhef en\nonder a, van de Omgevingswet,
+      verstrekt de aanvrager:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0037885#Artikel5.1"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: '5.1'
+  - number: 11a.a
+    text: "indien de aanvraag om die omgevingsvergunning tegelijk met de aanvraag om de vergunning krachtens
+      de\n[wet][ref1] is ingediend, een afschrift van die aanvraag bij zijn aanvraag;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+  - number: 11a.b
+    text: "indien de aanvraag om die omgevingsvergunning niet tegelijk met de aanvraag om de vergunning\n\
+      krachtens de [wet][ref1] is ingediend, een afschrift van die aanvraag aan het bevoegd gezag\ngelijktijdig
+      met de indiening van die aanvraag.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel11a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+  - number: '12'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel12
+  - number: '13'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel13
+  - number: '14'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel14
+  - number: '15'
+    text: "Bij de voorbereiding van beschikkingen met betrekking waartoe op grond van [artikel 17][ref1]
+      of\n[20, eerste lid, van de we][ref2]t [afdeling 3.4 van de Algemene wet bestuursrecht][ref3] van\n\
+      toepassing is, worden – anders dan als adviseurs – betrokken:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel17\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel20\n[ref3]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel15
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '17'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '20'
+      - id: ref3
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+  - number: 15.a
+    text: "in gevallen waarin de beschikking een inrichting als bedoeld in [artikel 6][ref1], [7][ref2]
+      of\n[8][ref3] betreft: het college van gedeputeerde staten van de provincie en het college van\n\
+      burgemeester en wethouders van de gemeente waar de inrichting geheel of in hoofdzaak is of zal zijn\n\
+      gelegen, de colleges van gedeputeerde staten van de provincies en de colleges van burgemeester en\n\
+      wethouders van de gemeenten welker gebied is gelegen op minder dan tien kilometer van de plaats
+      waar\nde inrichting gelegen is of zal zijn, alsmede de bestuursorganen die belast zijn met het\n\
+      waterkwaliteitsbeheer van oppervlaktewaterlichamen als bedoeld in de [bijlage bij de\nOmgevingswet][ref4]
+      die gelegen zijn op minder dan tien kilometer van de plaats waar de inrichting\ngelegen is of zal
+      zijn;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel7\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel8\n[ref4]: https://wetten.overheid.nl/BWBR0037885"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel15
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '7'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '8'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref4
+        bwb_id: BWBR0037885
+  - number: 15.b
+    text: "in gevallen waarin de beschikking een inrichting als bedoeld in [artikel 9][ref1] betreft:
+      het\ncollege van burgemeester en wethouders van de gemeente of gemeenten, waar de inrichting gelegen
+      is\nof zal zijn.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel9"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel15
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '9'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: '16'
+    text: "[Afdeling 3.4 van de Algemene wet bestuursrecht][ref1] alsmede [afdeling 13.2 van de Wet\n\
+      milieubeheer][ref2] zijn niet van toepassing op de voorbereiding van beschikkingen ter zake van
+      het\nvoorhanden hebben of het zich ontdoen van splijtstoffen:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0003245"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel16
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref2
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+  - number: 16.a
+    text: "indien het betreft plutonium met een maximale activiteit van 37 gigabecquerel, mits dit plutonium
+      op\nzodanige wijze is opgenomen in een omhulsel dat daardoor redelijkerwijze voldoende weerstand
+      wordt\ngeboden om elke verspreiding van of besmetting met dit plutonium te voorkomen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel16
+  - number: 16.b
+    text: indien het betreft verarmd uranium, natuurlijk uranium of natuurlijk thorium.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel16
+  - number: '17'
+    text: "Van het geven van een beschikking op de voorbereiding waarvan [afdeling 3.4 van de Algemene
+      wet\nbestuursrecht][ref1] alsmede [afdeling 13.2 van de Wet milieubeheer][ref2] niet van toepassing
+      zijn,\nwordt mededeling gedaan in de *Staatscourant*.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0003245"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref2
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+  - number: '18.1'
+    text: "Geen vergunning als bedoeld in [artikel 15 van de wet][ref1] wordt verleend indien:\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 18.1.a
+    text: "niet is voldaan aan de krachtens [artikel 19][ref1] in samenhang met de hierna genoemde artikelen\n\
+      van het [Besluit basisveiligheidsnormen stralingsbescherming][ref2] gestelde voorwaarden\nbetreffende:\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel19\n[ref2]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '19'
+        hoofdstuk: IIIa
+      - id: ref2
+        bwb_id: BWBR0040179
+  - number: 18.1.a.1°
+    text: "rechtvaardiging: de [artikelen 2.1 tot en met 2.5][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel2.1"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '2.1'
+  - number: 18.1.a.2°
+    text: "optimalisatie: de [artikelen 2.1][ref1], [2.6][ref2], [2.7][ref3], [7.33][ref4], [9.3][ref5]
+      en\n[9.5][ref6];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel2.1\n[ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel2.6\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0040179#Artikel2.7\n[ref4]: https://wetten.overheid.nl/BWBR0040179#Artikel7.33\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0040179#Artikel9.3\n[ref6]: https://wetten.overheid.nl/BWBR0040179#Artikel9.5"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '2.1'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '2.6'
+      - id: ref3
+        bwb_id: BWBR0040179
+        artikel: '2.7'
+      - id: ref4
+        bwb_id: BWBR0040179
+        artikel: '7.33'
+      - id: ref5
+        bwb_id: BWBR0040179
+        artikel: '9.3'
+      - id: ref6
+        bwb_id: BWBR0040179
+        artikel: '9.5'
+  - number: 18.1.a.3°
+    text: "dosislimieten: de [artikelen 2.1][ref1], [2.9][ref2], [7.3][ref3], [7.4][ref4], [7.34][ref5],\n\
+      [7.35][ref6], [7.36][ref7], [9.1][ref8] en [9.2, eerste lid][ref9];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel2.1\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel2.9\n[ref3]: https://wetten.overheid.nl/BWBR0040179#Artikel7.3\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0040179#Artikel7.4\n[ref5]: https://wetten.overheid.nl/BWBR0040179#Artikel7.34\n\
+      [ref6]: https://wetten.overheid.nl/BWBR0040179#Artikel7.35\n[ref7]: https://wetten.overheid.nl/BWBR0040179#Artikel7.36\n\
+      [ref8]: https://wetten.overheid.nl/BWBR0040179#Artikel9.1\n[ref9]: https://wetten.overheid.nl/BWBR0040179#Artikel9.2"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '2.1'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '2.9'
+      - id: ref3
+        bwb_id: BWBR0040179
+        artikel: '7.3'
+      - id: ref4
+        bwb_id: BWBR0040179
+        artikel: '7.4'
+      - id: ref5
+        bwb_id: BWBR0040179
+        artikel: '7.34'
+      - id: ref6
+        bwb_id: BWBR0040179
+        artikel: '7.35'
+      - id: ref7
+        bwb_id: BWBR0040179
+        artikel: '7.36'
+      - id: ref8
+        bwb_id: BWBR0040179
+        artikel: '9.1'
+      - id: ref9
+        bwb_id: BWBR0040179
+        artikel: '9.2'
+  - number: 18.1.a.4°
+    text: "deskundigheid: de [artikelen 5.4 tot en met 5.9][ref1], [7.1][ref2] en [7.2][ref3];\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0040179#Artikel5.4\n[ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel7.1\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0040179#Artikel7.2"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '5.4'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '7.1'
+      - id: ref3
+        bwb_id: BWBR0040179
+        artikel: '7.2'
+  - number: 18.1.b
+    text: "voor een lid van de bevolking dat zich buiten de locatie bevindt, als gevolg van de handeling\n\
+      waarvoor de vergunning is aangevraagd en ten gevolge van andere handelingen binnen en buiten deze\n\
+      locatie, een van de volgende doses wordt overschreden of kan worden overschreden:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+  - number: 18.1.b.1
+    text: 'een effectieve dosis van 1 mSv in een kalenderjaar, en met inachtneming daarvan:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+  - number: 18.1.b.2
+    text: "een equivalente dosis van 50 mSv in een kalenderjaar voor de huid gemiddeld over enig huidoppervlak\n\
+      van 1 cm2;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+  - number: 18.1.c
+    text: "de handeling waarvoor de vergunning is aangevraagd behoort tot een categorie of soort, die
+      in de\nkrachtens [artikel 19][ref1] in samenhang met de krachtens [artikel 2.3 van het Besluit\n\
+      basisveiligheidsnormen stralingsbescherming][ref2] vastgestelde regeling is gerechtvaardigd, maar\n\
+      het specifieke karakter van deze handeling op grond van het eerste of tweede lid van dat artikel\n\
+      niet gerechtvaardigd is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel19\n[ref2]:
+      https://wetten.overheid.nl/BWBR0040179#Artikel2.3"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '19'
+        hoofdstuk: IIIa
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '2.3'
+  - number: '18.2'
+    text: "Een vergunning als bedoeld in [artikel 15, onder b, van de wet][ref1] wordt geweigerd, indien:\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 18.2.a
+    text: "de waarden van de gegevens in de risicoanalyse, bedoeld in [artikel 6, eerste lid, onder h][ref1],\n\
+      niet voldoen aan de in onderstaande tabel opgenomen grenswaarden;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 18.2.b
+    text: "dan wel uit die risico-analyse blijkt dat de effectieve schildklierdosis niet beperkt blijft
+      tot 500\nmSv."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+  - number: '18.3'
+    text: "Een vergunning voor het oprichten, in werking brengen of houden of wijzigen van een inrichting,\n\
+      waarin kernenergie kan worden vrijgemaakt, kan worden geweigerd, indien de waarden in de krachtens\n\
+      [artikel 6, eerste lid, onder i][ref1], verrichte risicoanalyse een van de volgende waarden\noverschrijden:\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+  - number: 18.3.a
+    text: "een kans van 10–6 per jaar dat een persoon, die zich permanent en onbeschermd buiten de\ndesbetreffende
+      inrichting zou bevinden, overlijdt als gevolg van een buiten-ontwerpongeval;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+  - number: 18.3.b
+    text: "een kans van 10–5 per jaar dat buiten de desbetreffende inrichting een groep van ten minste
+      10\npersonen direct dodelijk slachtoffer is van een buiten-ontwerpongeval, of voor n maal meer direct\n\
+      dodelijke slachtoffers een kans die n2 maal kleiner is."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel18
+  - number: '19.1'
+    text: "Het bepaalde bij of krachtens de in het tweede lid genoemde hoofdstukken, paragrafen en artikelen\n\
+      van het [Besluit basisveiligheidsnormen stralingsbescherming][ref1] is van overeenkomstige\ntoepassing.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+  - number: '19.2'
+    text: 'Hoofdstukken, paragrafen en artikelen als bedoeld in het eerste lid zijn:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+  - number: 19.2.a
+    text: "[hoofdstuk 2][ref1];\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '2'
+  - number: 19.2.b
+    text: "de [artikelen 3.4, vierde en vijfde lid][ref1], en [3.14][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel3.4\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel3.14"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '3.4'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '3.14'
+  - number: 19.2.c
+    text: "[hoofdstuk 4][ref1], met uitzondering van de [artikelen 4.21 tot en met 4.28][ref2];\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0040179\n[ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel4.21"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '4'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '4.21'
+  - number: 19.2.d
+    text: "[hoofdstuk 5][ref1], met uitzondering van [artikel 5.3][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel5.3"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '5'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '5.3'
+  - number: 19.2.e
+    text: "[hoofdstuk 6][ref1], met uitzondering van [artikel 6.21][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel6.21"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '6'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '6.21'
+  - number: 19.2.f
+    text: "[hoofdstuk 7][ref1], met uitzondering van [artikel 7.5][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel7.5"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '7'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '7.5'
+  - number: 19.2.g
+    text: "[hoofdstuk 8][ref1], met uitzondering van de [artikelen 8.14, eerste, derde en vierde lid][ref2],\n\
+      [8.15][ref3], [8.16][ref4] en [8.17][ref5];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel8.14\n[ref3]: https://wetten.overheid.nl/BWBR0040179#Artikel8.15\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0040179#Artikel8.16\n[ref5]: https://wetten.overheid.nl/BWBR0040179#Artikel8.17"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '8'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '8.14'
+      - id: ref3
+        bwb_id: BWBR0040179
+        artikel: '8.15'
+      - id: ref4
+        bwb_id: BWBR0040179
+        artikel: '8.16'
+      - id: ref5
+        bwb_id: BWBR0040179
+        artikel: '8.17'
+  - number: 19.2.h
+    text: "[hoofdstuk 9][ref1];\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '9'
+  - number: 19.2.i
+    text: "[hoofdstuk 10][ref1], met uitzondering van de [artikelen 10.1][ref2], [10.3][ref3], [10.4][ref4],\n\
+      [10.5][ref5], [10.6][ref6], [10.10][ref7];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel10.1\n[ref3]: https://wetten.overheid.nl/BWBR0040179#Artikel10.3\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0040179#Artikel10.4\n[ref5]: https://wetten.overheid.nl/BWBR0040179#Artikel10.5\n\
+      [ref6]: https://wetten.overheid.nl/BWBR0040179#Artikel10.6\n[ref7]: https://wetten.overheid.nl/BWBR0040179#Artikel10.10"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        hoofdstuk: '10'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '10.1'
+      - id: ref3
+        bwb_id: BWBR0040179
+        artikel: '10.3'
+      - id: ref4
+        bwb_id: BWBR0040179
+        artikel: '10.4'
+      - id: ref5
+        bwb_id: BWBR0040179
+        artikel: '10.5'
+      - id: ref6
+        bwb_id: BWBR0040179
+        artikel: '10.6'
+      - id: ref7
+        bwb_id: BWBR0040179
+        artikel: '10.10'
+  - number: 19.2.j
+    text: "de [artikelen 11.6][ref1] en [11.7][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel11.6\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel11.7"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '11.6'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '11.7'
+  - number: 19.2.k
+    text: "[artikel 14.1][ref1], met dien verstande dat in plaats van «die van dit besluit afwijken» in
+      dat\nartikel wordt gelezen: die van de van overeenkomstige toepassing verklaarde artikelen afwijken.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel14.1"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '14.1'
+  - number: '20'
+    text: "Onze Minister en Onze Minister van Sociale Zaken en Werkgelegenheid kunnen ten aanzien van\n\
+      inrichtingen als bedoeld in [artikel 15, onder b, van de wet][ref1] regels stellen waaraan het\n\
+      ontwerp en de bedrijfsvoering in verband met de voorkoming van schade moeten voldoen.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0003418#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel20
+    references:
+      - id: ref1
+        bwb_id: BWBR0003418
+        artikel: '15'
+  - number: '21.1'
+    text: "Het is verboden in een inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1], nucleaire\n\
+      drukapparatuur te gebruiken, die niet is goedgekeurd aan de hand van door de Autoriteit daartoe
+      in\nhet belang van de veilige werking van zodanige apparatuur vastgestelde voorschriften.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '21.2'
+    text: "Onze Minister kan bij ministeriële regeling bepalen dat het in het eerste lid gestelde verbod
+      mede\ngeldt voor gebruik in een inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1],
+      van bij\nof krachtens die regeling aangewezen andere drukapparatuur die bij defecten de verspreiding
+      van\nradioactiviteit kan veroorzaken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '21.3'
+    text: "Goedkeuring van nucleaire drukapparatuur, die voor het in werking treden van dit artikel is
+      verleend\naan de hand van een keuring overeenkomstig het [Stoombesluit][ref1], wordt gelijkgesteld
+      met\ngoedkeuring, verleend na een keuring aan de hand van de krachtens het eerste lid vastgestelde\n\
+      voorschriften.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002123"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002123
+  - number: '21.4'
+    text: Met de keuring zijn belast de door de Autoriteit aangewezen instellingen.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel21
+  - number: '21.5'
+    text: De Autoriteit stelt bij verordening regels met betrekking tot het aanwijzen van
+      instellingen.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel21
+  - number: '21.6'
+    text: "De Autoriteit kan bij verordening regels stellen met betrekking tot de wijze waarop de keuringen\n\
+      worden verricht."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel21
+  - number: '22.1'
+    text: Een referentiedreiging of wijziging daarvan wordt door Onze Minister vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel22
+  - number: '22.2'
+    text: "Een referentiedreiging wordt na vaststelling medegedeeld aan de houders van een vergunning
+      van een\ninrichting als bedoeld in [artikel 15, onder b, van de wet][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel22
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '22.3'
+    text: "De Autoriteit kan bij verordening regels stellen ten aanzien van de beveiliging van het voorhanden\n\
+      hebben en het zich ontdoen van de in de [bijlage][ref1] bij dit besluit genoemde splijtstoffen en\n\
+      ertsen en ten aanzien van de beveiliging van inrichtingen als bedoeld in [artikel 15, onder b, van\n\
+      de wet][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel22
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '23.1'
+    text: "De [artikelen 4.3][ref1], [4.4][ref2], [4.6, eerste lid, aanhef en onder a, b en d][ref3],\n\
+      [4.9][ref4], [4.10, eerste en tweede lid][ref5], [4.11, eerste en tweede lid][ref6], [4.12, eerste\n\
+      lid][ref7],[ 4.13][ref8], [4.14, eerste en tweede lid][ref9], [4.19, aanhef en onder d][ref10],\n\
+      [4.22][ref11], [4.23, eerste tot en met derde lid][ref12], [4.24, eerste tot en met derde\nlid][ref13],
+      [4.25][ref14], [4.26][ref15], [4.27][ref16], en [4.28 van het Besluit activiteiten\nleefomgeving][ref17],
+      de [artikelen 8.13, tweede lid][ref18], en [8.38 van het Besluit kwaliteit\nleefomgeving][ref19]
+      en de [artikelen 13.17][ref20], [13.20][ref21], [13.21][ref22], [13.22, derde\nlid][ref23], en [13.24
+      tot en met 13.28 van het Omgevingsbesluit][ref24] zijn van overeenkomstige\ntoepassing op inrichtingen
+      als bedoeld in [artikel 15, onder b, van de wet][ref25] waarin krachtens\nvergunning gevaarlijke
+      stoffen aanwezig zijn of mogen zijn of kunnen ontstaan bij verlies van\ncontrole over de processen,
+      in een hoeveelheid van ten minste de drempelwaarde, bedoeld in bijlage\nI, deel 1 of deel 2, bij
+      de Seveso-richtlijn, met inachtneming van de aantekeningen bij die bijlage.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0041330#Artikel4.3\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0041330#Artikel4.4\n[ref3]: https://wetten.overheid.nl/BWBR0041330#Artikel4.6\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0041330#Artikel4.9\n[ref5]: https://wetten.overheid.nl/BWBR0041330#Artikel4.10\n\
+      [ref6]: https://wetten.overheid.nl/BWBR0041330#Artikel4.11\n[ref7]: https://wetten.overheid.nl/BWBR0041330#Artikel4.12\n\
+      [ref8]: https://wetten.overheid.nl/BWBR0041330#Artikel4.13\n[ref9]: https://wetten.overheid.nl/BWBR0041330#Artikel4.14\n\
+      [ref10]: https://wetten.overheid.nl/BWBR0041330#Artikel4.19\n[ref11]: https://wetten.overheid.nl/BWBR0041330#Artikel4.22\n\
+      [ref12]: https://wetten.overheid.nl/BWBR0041330#Artikel4.23\n[ref13]: https://wetten.overheid.nl/BWBR0041330#Artikel4.24\n\
+      [ref14]: https://wetten.overheid.nl/BWBR0041330#Artikel4.25\n[ref15]: https://wetten.overheid.nl/BWBR0041330#Artikel4.26\n\
+      [ref16]: https://wetten.overheid.nl/BWBR0041330#Artikel4.27\n[ref17]: https://wetten.overheid.nl/BWBR0041330#Artikel4.28\n\
+      [ref18]: https://wetten.overheid.nl/BWBR0041313#Artikel8.13\n[ref19]: https://wetten.overheid.nl/BWBR0041313#Artikel8.38\n\
+      [ref20]: https://wetten.overheid.nl/BWBR0041278#Artikel13.17\n[ref21]: https://wetten.overheid.nl/BWBR0041278#Artikel13.20\n\
+      [ref22]: https://wetten.overheid.nl/BWBR0041278#Artikel13.21\n[ref23]: https://wetten.overheid.nl/BWBR0041278#Artikel13.22\n\
+      [ref24]: https://wetten.overheid.nl/BWBR0041278#Artikel13.24\n[ref25]: https://wetten.overheid.nl/BWBR0002402"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel23
+    references:
+      - id: ref1
+        bwb_id: BWBR0041330
+        artikel: '4.3'
+      - id: ref2
+        bwb_id: BWBR0041330
+        artikel: '4.4'
+      - id: ref3
+        bwb_id: BWBR0041330
+        artikel: '4.6'
+      - id: ref4
+        bwb_id: BWBR0041330
+        artikel: '4.9'
+      - id: ref5
+        bwb_id: BWBR0041330
+        artikel: '4.10'
+      - id: ref6
+        bwb_id: BWBR0041330
+        artikel: '4.11'
+      - id: ref7
+        bwb_id: BWBR0041330
+        artikel: '4.12'
+      - id: ref8
+        bwb_id: BWBR0041330
+        artikel: '4.13'
+      - id: ref9
+        bwb_id: BWBR0041330
+        artikel: '4.14'
+      - id: ref10
+        bwb_id: BWBR0041330
+        artikel: '4.19'
+      - id: ref11
+        bwb_id: BWBR0041330
+        artikel: '4.22'
+      - id: ref12
+        bwb_id: BWBR0041330
+        artikel: '4.23'
+      - id: ref13
+        bwb_id: BWBR0041330
+        artikel: '4.24'
+      - id: ref14
+        bwb_id: BWBR0041330
+        artikel: '4.25'
+      - id: ref15
+        bwb_id: BWBR0041330
+        artikel: '4.26'
+      - id: ref16
+        bwb_id: BWBR0041330
+        artikel: '4.27'
+      - id: ref17
+        bwb_id: BWBR0041330
+        artikel: '4.28'
+      - id: ref18
+        bwb_id: BWBR0041313
+        artikel: '8.13'
+      - id: ref19
+        bwb_id: BWBR0041313
+        artikel: '8.38'
+      - id: ref20
+        bwb_id: BWBR0041278
+        artikel: '13.17'
+      - id: ref21
+        bwb_id: BWBR0041278
+        artikel: '13.20'
+      - id: ref22
+        bwb_id: BWBR0041278
+        artikel: '13.21'
+      - id: ref23
+        bwb_id: BWBR0041278
+        artikel: '13.22'
+      - id: ref24
+        bwb_id: BWBR0041278
+        artikel: '13.24'
+      - id: ref25
+        bwb_id: BWBR0002402
+  - number: '23.2'
+    text: "Het eerste lid is niet van toepassing met betrekking tot gevaarlijke stoffen die tevens radioactief\n\
+      zijn."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel23
+  - number: '24'
+    text: "Het veiligheidsrapport, bedoeld in [artikel 6, eerste lid, onder h][ref1], en het opgestelde\n\
+      preventiebeleid, bedoeld in [artikel 4.10, eerste en tweede lid, van het Besluit activiteiten\n\
+      leefomgeving][ref2], dan wel het veiligheidsrapport, bedoeld in [artikel 4.14, eerste en tweede
+      lid,\nvan dat besluit][ref3], kunnen tot één veiligheidsrapport worden gecombineerd.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002667#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0041330#Artikel4.10\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0041330#Artikel4.14"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel24
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0041330
+        artikel: '4.10'
+      - id: ref3
+        bwb_id: BWBR0041330
+        artikel: '4.14'
+  - number: '25'
+    text: "De houder van een vergunning voor het oprichten, het in werking brengen of het in werking houden
+      van\neen inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1] beschikt over een\nontmantelingsplan.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '26.1'
+    text: 'Een ontmantelingsplan bevat in ieder geval een beschrijving van:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: 26.1.a
+    text: de periode waarin de buitengebruikstelling en de ontmanteling plaatsvinden;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: 26.1.b
+    text: "de planning van de buitengebruikstelling en de ontmanteling, waarbij een onderscheid wordt
+      gemaakt\nin de verschillende fasen waarin de buitengebruikstelling en de ontmanteling plaatsvinden;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: 26.1.c
+    text: "de hoeveelheid en de activiteit van de splijtstoffen of radioactieve stoffen die zich in de\n\
+      verschillende fasen van de buitengebruikstelling en de ontmanteling in de inrichting zullen\nbevinden;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: 26.1.d
+    text: "de bij de buitengebruikstelling en de ontmanteling betrokken medewerkers, hun deskundigheid
+      en\nonderlinge taakverdeling;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: 26.1.e
+    text: de bij de buitengebruikstelling en de ontmanteling toe te passen technieken;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: 26.1.f
+    text: "de relevante milieuaspecten, in het bijzonder het beheer van radioactieve afvalstoffen die
+      bij de\nbuitengebruikstelling en de ontmanteling vrijkomen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: '26.2'
+    text: "Het ontmantelingsplan is gebaseerd op een wijze van buitengebruikstelling en ontmanteling die\n\
+      voldoet aan de [artikelen 30][ref1] en [30a][ref2] en de krachtens [artikel 30b][ref3] gestelde\n\
+      regels.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel30\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel30a\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel30b"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '30'
+        hoofdstuk: IIIa
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: 30a
+        hoofdstuk: IIIa
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: 30b
+        hoofdstuk: IIIa
+  - number: '26.3'
+    text: "Bij regeling van Onze Minister en Onze Minister van Sociale Zaken en Werkgelegenheid kunnen
+      nadere\nregels worden gesteld met betrekking tot de inhoud van het ontmantelingsplan. Daarbij kan
+      worden\nbepaald dat de gestelde regels slechts gelden in de aangegeven categorieën van gevallen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel26
+  - number: '27.1'
+    text: "Het ontmantelingsplan van de houder van een vergunning voor het oprichten, het in werking brengen
+      of\nhet in werking houden van een inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1]
+      en\nwijzigingen van dat plan behoeven goedkeuring van de Autoriteit.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '27.2'
+    text: "Goedkeuring wordt geweigerd indien het ontmantelingsplan niet voldoet aan de eisen die bij
+      of\nkrachtens dit besluit zijn gesteld."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel27
+  - number: '27.3'
+    text: "De Autoriteit beslist op de aanvraag om goedkeuring van het ontmantelingsplan binnen zes maanden
+      na\nontvangst van de aanvraag."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel27
+  - number: '27.4'
+    text: De Autoriteit kan aan de goedkeuring voorschriften verbinden.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel27
+  - number: '27.5'
+    text: "De Autoriteit kan de goedkeuring intrekken indien het ontmantelingsplan niet meer voldoet aan
+      de\neisen die daaraan bij of krachtens dit besluit zijn gesteld."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel27
+  - number: '28'
+    text: "De houder van een vergunning voor het oprichten, het in werking brengen of het in werking houden
+      van\neen inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1] handelt overeenkomstig
+      het\nlaatst goedgekeurde ontmantelingsplan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel28
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '29.1'
+    text: "Vanaf het tijdstip waarop een vergunning voor het in werking brengen van een inrichting als
+      bedoeld\nin [artikel 15, onder b, van de wet][ref1] is verleend totdat een vergunning voor het buiten
+      gebruik\nstellen van die inrichting is verleend, actualiseert de houder van de vergunning voor het
+      in werking\nbrengen of het in werking houden van die inrichting het ontmantelingsplan ten minste
+      elke vijf jaar,\nof wanneer de Autoriteit dit nodig acht.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel29
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '29.2'
+    text: 'De actualisatie, bedoeld in het eerste lid, betreft in ieder geval:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel29
+  - number: 29.2.a
+    text: de planning van de buitengebruikstelling en de ontmanteling;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel29
+  - number: 29.2.b
+    text: de bij de buitengebruikstelling en de ontmanteling toe te passen technieken;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel29
+  - number: 29.2.c
+    text: "wijzigingen van de inrichting voor zover deze gevolgen kunnen hebben voor de buitengebruikstelling\n\
+      of de ontmanteling."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel29
+  - number: '30.1'
+    text: "De houder van een vergunning voor een inrichting als bedoeld in [artikel 15, onder b, van de\n\
+      wet][ref1] vangt aan met de buitengebruikstelling en de ontmanteling van die inrichting onmiddellijk\n\
+      nadat de normale bedrijfsvoering is beëindigd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '30.2'
+    text: "De Autoriteit kan in bijzondere omstandigheden toestaan dat op een later tijdstip met de\n\
+      buitengebruikstelling en de ontmanteling van de inrichting wordt aangevangen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30
+  - number: '30.3'
+    text: "De houder van een vergunning voor het buiten gebruik stellen en het ontmantelen van een inrichting\n\
+      als bedoeld in [artikel 15, onder b, van de wet][ref1] voltooit de buitengebruikstelling en de\n\
+      ontmanteling van die inrichting zo snel als redelijkerwijs mogelijk is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 30a.1
+    text: "Bij de ontmanteling van een inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1]
+      worden\nde feitelijke beperkingen die in de weg staan aan de realisatie van elke volgende functie
+      op het\nterrein waarop de inrichting was gevestigd, weggenomen voor zover die beperkingen het gevolg
+      zijn\nvan die inrichting.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 30a.2
+    text: "Bij een vergunning voor het buiten gebruik stellen en het ontmantelen van een inrichting als
+      bedoeld\nin [artikel 15, onder b, van de wet][ref1] kan de Autoriteit in bijzondere omstandigheden
+      toestaan\ndat wordt afgeweken van het eerste lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 30b
+    text: "Onze Minister en Onze Minister van Sociale Zaken en Werkgelegenheid kunnen regels stellen met\n\
+      betrekking tot de wijze waarop de buitengebruikstelling en de ontmanteling van een inrichting als\n\
+      bedoeld in [artikel 15, onder b, van de wet][ref1] plaatsvinden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 30c
+    text: "De Autoriteit beslist op een aanvraag tot het intrekken van een vergunning voor het ontmantelen
+      van\neen inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1] binnen zes maanden na\n\
+      ontvangst van de aanvraag.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30c
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 30d.1
+    text: "Bij de aanvraag tot het intrekken van een vergunning voor het ontmantelen van een inrichting
+      als\nbedoeld in [artikel 15, onder b, van de wet][ref1] toont de houder van die vergunning ten genoegen\n\
+      van de Autoriteit aan dat de ontmanteling is voltooid. Hierbij toont hij in ieder geval aan dat
+      aan\n[artikel 30a][ref2] is voldaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel30a"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30d
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: 30a
+        hoofdstuk: IIIa
+  - number: 30d.2
+    text: "De Autoriteit kan bij verordening regels stellen met betrekking tot de wijze waarop wordt aangetoond\n\
+      dat de ontmanteling is voltooid."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30d
+  - number: 30e
+    text: "De in de [artikelen 26, derde lid][ref1], [30b][ref2] en [30d, tweede lid][ref3], bedoelde
+      regels\nkunnen tevens betrekking hebben op radioactieve afvalstoffen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel26\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel30b\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel30d"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '26'
+        hoofdstuk: IIIa
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: 30b
+        hoofdstuk: IIIa
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: 30d
+        hoofdstuk: IIIa
+  - number: 30f.1
+    text: "De houder van een vergunning voor een inrichting als bedoeld in [artikel 15, onder b, van de\n\
+      wet][ref1] treft tijdig bij een krachtens [artikel 10.6, zevende lid, van het Besluit\nbasisveiligheidsnormen
+      stralingsbescherming][ref2] of [artikel 42, derde lid, onder e][ref3],\naangewezen instelling een
+      voorziening voor de opslag van:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel10.6\n[ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel42"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30f
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '10.6'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: '42'
+        hoofdstuk: V
+        paragraaf: '1'
+  - number: 30f.1.a
+    text: de splijtstof of erts bevattende afvalstoffen die door het gebruik van die inrichting
+      ontstaan,
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30f
+  - number: 30f.1.b
+    text: "de splijtstof of erts bevattende afvalstoffen en de radioactieve afvalstoffen die terugkomen
+      na\nopwerking van de splijtstoffen die in die inrichting zijn gebruikt en"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30f
+  - number: 30f.1.c
+    text: "de radioactieve afvalstoffen die vrijkomen bij de buitengebruikstelling en de ontmanteling
+      van die\ninrichting."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30f
+  - number: 30f.2
+    text: De Autoriteit kan bij verordening regels stellen over de te treffen voorziening.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30f
+  - number: 30g
+    text: "De vergunninghouder stelt de kosten die hij in rekening brengt voor het in werking houden van
+      een\ninrichting waarin splijtstoffen worden opgeslagen als bedoeld in [artikel 15, onder b, van
+      de\nwet][ref1], die op grond van [artikel 42, derde lid, onderdeel e][ref2], door de Autoriteit
+      is\naangewezen, vast op een transparante, objectieve en niet-discriminerende wijze. Tot de kosten\n\
+      behoren ook kosten die de vergunninghouder maakt voor onderzoek en ontwikkeling voor het beheer
+      van\nverbruikte splijtstoffen, zoals dit in het nationaal programma, bedoeld in [artikel 40a][ref3],
+      is\nopgenomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel42\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002667#Artikel40a"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel30g
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '42'
+        hoofdstuk: V
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0002667
+        artikel: 40a
+        hoofdstuk: IVa
+  - number: '31.1'
+    text: "Aan een vergunning als bedoeld in [artikel 15 van de wet][ref1] worden zodanige voorschriften\n\
+      verbonden, dat:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel31
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '31.2'
+    text: "Tot de in het eerste lid bedoelde voorschriften behoren voorschriften om te verzekeren dat
+      de\ngebruikte installatie en alles wat daartoe behoort in goede staat van onderhoud verkeert."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel31
+  - number: '32'
+    text: "De houder van een vergunning voor een inrichting als bedoeld in [artikel 15, onder b, van de\n\
+      wet][ref1], is verplicht de lozingen van radioactief materiaal te controleren en deze te rapporteren\n\
+      aan de Autoriteit overeenkomstig bij verordening van de Autoriteit gestelde regels.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel32
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '33'
+    text: "Ter voorkoming van schade of ter beperking van de kans op schade buiten de inrichting kunnen
+      aan een\nvergunning als bedoeld in [artikel 15, onder b][ref1], van de wet ook andere voorschriften
+      worden\nverbonden dan bedoeld in [artikel 31, eerste lid][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel31"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel33
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '31'
+        hoofdstuk: IV
+        paragraaf: '1'
+  - number: '34'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel34
+  - number: '35.1'
+    text: "Aan een vergunning als bedoeld in [artikel 15 van de wet][ref1] worden voorschriften met het
+      oog op\nde veiligheid van de staat verbonden, indien de vergunning uitsluitend of mede betrekking
+      heeft op\nhet doen van verrichtingen:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 35.1.a
+    text: "met gebruikmaking van gegevens, hulpmiddelen of materialen dan wel van een inrichting of een\n\
+      uitrusting, ten aanzien waarvan naar het oordeel van de Autoriteit het belang van de veiligheid
+      van\nde staat het opleggen van een verplichting tot geheimhouding of een beperking ten aanzien van
+      het\ngebruik vereist, of"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.1.b
+    text: "waarbij onderzoekingen worden verricht of werkmethoden worden toegepast, ten aanzien waarvan
+      naar\nhet oordeel van de Autoriteit het belang van de veiligheid van de staat het opleggen van een\n\
+      verplichting tot geheimhouding vereist, of"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.1.c
+    text: "welke blijkens een verklaring van de Autoriteit van vitaal belang zijn voor de militaire of
+      civiele\nverdediging."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: '35.2'
+    text: 'Voorschriften als in het eerste lid bedoeld kunnen de verplichting inhouden:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.a
+    text: "ten aanzien van gegevens, hulpmiddelen, materialen, een inrichting of een uitrusting dan wel\n\
+      onderzoekingen of werkmethoden als in het eerste lid bedoeld de geheimhouding te verzekeren;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.b
+    text: "gegevens, hulpmiddelen of materialen dan wel een inrichting of uitrusting als in het eerste
+      lid\nbedoeld met inachtneming van in het voorschrift aangegeven beperkingen te gebruiken;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.c
+    text: "terreinen, gebouwen en ruimten, waar verrichtingen als in het eerste lid bedoeld plaatsvinden
+      dan\nwel gegevens, hulpmiddelen of materialen, met gebruikmaking waarvan zodanige verrichtingen\n\
+      plaatsvinden, worden bewaard, op een bij het voorschrift bepaalde wijze te beveiligen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.d
+    text: "het gebruik van gegevens, hulpmiddelen of materialen dan wel van een inrichting of uitrusting
+      als in\nhet eerste lid bedoeld, alsmede het aanwenden van uit zodanig gebruik voortvloeiende kennis
+      op een\nbij het voorschrift bepaalde wijze te regelen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.e
+    text: "de Autoriteit of in het voorschrift aangewezen Nederlandse controle-organen tijdig in kennis
+      te\nstellen van een voorgenomen vervanging van de met de leiding van de onderneming of instelling,\n\
+      waaraan de vergunning is verleend, belaste persoon of personen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.f
+    text: "alle of bepaalde verrichtingen uitsluitend te laten plaatsvinden door personen, ten aanzien
+      van wie\nde Autoriteit heeft verklaard, dat naar zijn oordeel voldoende waarborgen aanwezig kunnen
+      worden\ngeacht, dat zij de verplichting met betrekking tot de geheimhouding naar behoren zullen
+      vervullen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.g
+    text: "bij het voorschrift aangewezen organen, waaraan een taak is opgedragen terzake van de uitvoering
+      van\nde wet, in het voorschrift omschreven inlichtingen te doen toekomen betreffende gegevens,\n\
+      hulpmiddelen of materialen, dan wel een inrichting of uitrusting als in het eerste lid bedoeld,\n\
+      alsmede een op het verstrekken van zodanige inlichtingen gerichte administratie te voeren, aan de\n\
+      hand waarvan de juistheid van de verstrekte inlichtingen op eenvoudige wijze kan worden aangetoond;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.h
+    text: "de Autoriteit of bij het voorschrift aangewezen Nederlandse controle-organen onverwijld in
+      te\nlichten, indien ernstige inbreuken op de naleving van de met het oog op de veiligheid van de
+      staat\ngegeven voorschriften dan wel spionage worden vermoed of ontdekt;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: 35.2.i
+    text: "een aan de onderneming of instelling verbonden functionaris aan te wijzen, speciaal belast
+      met het\ntreffen van maatregelen ter uitvoering van de met het oog op de veiligheid van de staat
+      aan de\nvergunning verbonden voorschriften, alsmede met het toezicht op de naleving van die maatregelen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel35
+  - number: '36.1'
+    text: "Aan een vergunning als bedoeld in [artikel 15 van de wet][ref1] worden voorschriften met het
+      oog op\nde bewaring van splijtstoffen en ertsen verbonden, indien en voor zover zulks nodig is voor
+      de\nbescherming van de in [artikel 15b, eerste lid, onder a, b of e, van de wet][ref2], bedoelde\n\
+      belangen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel36
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: 15b
+  - number: '36.2'
+    text: 'Voorschriften als bedoeld in het eerste lid kunnen de verplichting inhouden:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel36
+  - number: 36.2.a
+    text: "splijtstoffen of ertsen te bewaren op een zodanige bij het voorschrift aan te geven plaats
+      en wijze,\ndat er geen schade kan optreden;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel36
+  - number: 36.2.b
+    text: "splijtstoffen of ertsen zodanig te bewaren, dat zij zo veel mogelijk zijn beveiligd tegen brand
+      of\nhet op andere wijze verloren gaan;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel36
+  - number: 36.2.c
+    text: "een of meer aan de onderneming of instelling verbonden functionarissen aan te wijzen, speciaal\n\
+      belast met het treffen van maatregelen ter uitvoering van de met het oog op de bewaring aan de\n\
+      vergunning verbonden voorschriften, alsmede met het toezicht op de naleving van die maatregelen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel36
+  - number: '37'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel37
+  - number: '38'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel38
+  - number: '39'
+    text: "Aan een vergunning als bedoeld in [artikel 15, onder b of c, van de wet][ref1], welke uitsluitend
+      of\nmede betrekking heeft op een inrichting of uitrusting, waarop de [Wet aansprakelijkheid\nkernongevallen][ref2]
+      dan wel de wet van 24 oktober 1973, houdende regelen inzake wettelijke\naansprakelijkheid van exploitanten
+      van nucleaire schepen (*Stb.* 536), van toepassing is, wordt met\nhet oog op het zeker stellen van
+      de betaling van de vergoeding, aan derden toekomend voor schade,\nhun toegebracht, het voorschrift
+      verbonden tot het hebben en in stand houden van een zodanige\nverzekering of andere financiële zekerheid
+      als waartoe de houder van de vergunning ingevolge die\nwettelijke regeling gehouden is.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0003418#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0003234"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0003418
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0003234
+  - number: '40.1'
+    text: "Aan een vergunning als bedoeld in [artikel 15 van de wet][ref1] worden voorschriften met het
+      oog op\nde nakoming van internationale verplichtingen verbonden, indien die vergunning uitsluitend
+      of mede\nstrekt tot het doen van verrichtingen met gebruikmaking van gegevens, hulpmiddelen of materialen
+      dan\nwel van een inrichting of uitrusting ten aanzien waarvan internationale overeenkomsten of besluiten\n\
+      van volkenrechtelijke organisaties, welke voor Nederland verbindend zijn en geheel of gedeeltelijk\n\
+      betrekking hebben op het gebied van de kernenergie of van de ioniserende straling, de staat\nverplichtingen
+      opleggen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '40.2'
+    text: 'Voorschriften als in het eerste lid bedoeld kunnen de verplichting inhouden:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40
+  - number: 40.2.a
+    text: "ten aanzien van gegevens, hulpmiddelen of materialen dan wel een inrichting of uitrusting als
+      in het\neerste lid bedoeld de geheimhouding te verzekeren of deze met inachtneming van in het voorschrift\n\
+      aangegeven beperkingen te gebruiken;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40
+  - number: 40.2.b
+    text: "aan bij het voorschrift aangewezen organen, waaraan een taak is opgedragen ter zake van de\n\
+      uitvoering van de in het eerste lid bedoelde overeenkomsten of besluiten, in het voorschrift\nomschreven
+      inlichtingen te doen toekomen betreffende gegevens, hulpmiddelen of materialen dan wel\neen inrichting
+      of uitrusting als in het eerste lid bedoeld, alsmede een op het verstrekken van\nzodanige inlichtingen
+      gerichte administratie te voeren, aan de hand waarvan de juistheid van de\nverstrekte inlichtingen
+      op eenvoudige wijze kan worden aangetoond."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40
+  - number: 40a.1
+    text: "Onze Minister stelt een programma als bedoeld in artikel 5, eerste lid, onderdeel a, van richtlijn\n\
+      2011/70/Euratom, vast voor het beheer van verbruikte splijtstoffen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2
+    text: 'Het programma bevat een uitwerking van de volgende uitgangspunten:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.a
+    text: "de beperking van het ontstaan van verbruikte splijtstoffen tot het praktisch haalbare minimum,
+      zowel\nwat de activiteit als het volume betreft;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.b
+    text: "de onderlinge afhankelijkheden van alle stappen in het ontstaan en het beheer van verbruikte\n\
+      splijtstoffen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.c
+    text: het veilig beheer van verbruikte splijtstoffen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.d
+    text: voor de lange termijn passieve veiligheidsmaatregelen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.e
+    text: een graduele aanpak bij de uitvoering van de maatregelen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.f
+    text: "de kosten voor het beheer van verbruikte splijtstoffen komen ten laste van degene die deze\n\
+      afvalstoffen hebben laten ontstaan;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.2.g
+    text: "een empirisch onderbouwd en gedocumenteerd besluitvormingsproces in alle stadia van het beheer
+      van\nverbruikte splijtstoffen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3
+    text: 'Het programma bevat tevens:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.a
+    text: de beleidsdoelstelling ten aanzien van het beheer van alle typen verbruikte splijtstoffen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.b
+    text: "de mijlpalen die voor de uitvoering van het programma nodig zijn en het tijdpad voor het bereiken\n\
+      van deze mijlpalen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.c
+    text: een inventarisatie van alle verbruikte splijtstoffen en ramingen van toekomstige
+      hoeveelheden;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.d
+    text: "concepten, plannen en technische oplossingen voor het beheer van verbruikte splijtstoffen,
+      van\nontstaan tot eindberging;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.e
+    text: concepten of plannen voor de periode na de sluiting van een inrichting voor eindberging;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.f
+    text: "onderzoeks-, ontwikkelings- en demonstratieactiviteiten die nodig zijn om oplossingen voor
+      het\nbeheer van verbruikte splijtstoffen toe te passen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.g
+    text: "de verantwoordelijkheid voor de uitvoering van het programma en de essentiële prestatie-indicatoren\n\
+      voor toezicht op de voortgang van de uitvoering van het programma;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.h
+    text: "een beoordeling van de kosten van het nationale programma en de onderliggende basis en hypothesen\n\
+      voor deze beoordeling, met inbegrip van een tijdsprofiel;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.i
+    text: de financieringsregelingen ter uitvoering van het programma;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.j
+    text: "het beleid ten aanzien van het verstrekken van informatie met betrekking tot het beheer van\n\
+      verbruikte splijtstoffen aan werknemers en het publiek;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: 40a.3.k
+    text: "een overzicht van met andere lidstaten en derde landen gesloten overeenkomsten over het beheer
+      van\nverbruikte splijtstoffen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel40a
+  - number: '41.1'
+    text: "Het in [artikel 15, onder a, van de wet][ref1] vervatte verbod geldt niet voor het voorhanden
+      hebben\nvan splijtstoffen of ertsen, indien binnen een locatie:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 41.1.a
+    text: "de activiteit van de radionucliden in de betrokken splijtstof of erts lager is dan de bij of\n\
+      krachtens [artikel 3.17 van het Besluit basisveiligheidsnormen stralingsbescherming][ref1]\nvastgestelde
+      vrijstellingswaarde; of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel3.17"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '3.17'
+  - number: 41.1.b
+    text: "de activiteitsconcentratie van die stof of dat erts lager is dan de bij of krachtens [artikel
+      3.17\nvan het Besluit basisveiligheidsnormen stralingsbescherming][ref1] vastgestelde vrijstellingswaarde.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel3.17"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '3.17'
+  - number: '41.2'
+    text: 'Het eerste lid is niet van toepassing, indien:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+  - number: 41.2.a
+    text: "splijtstoffen of ertsen worden toegediend aan personen en, voorzover het de bescherming van
+      mensen\ntegen ioniserende straling betreft, aan dieren voor:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+  - number: 41.2.a.1°
+    text: het stellen van medische of veterinaire diagnoses;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+  - number: 41.2.a.2°
+    text: therapie of (bio)medisch onderzoek;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+  - number: 41.2.a.3°
+    text: het toevoegen van splijtstoffen of ertsen aan consumentenproducten.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+  - number: '41.3'
+    text: "Het bij of krachtens [artikel 3.17, tweede, derde en zesde lid, van het Besluit\nbasisveiligheidsnormen
+      stralingsbescherming][ref1] bepaalde is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel3.17"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '3.17'
+  - number: '41.4'
+    text: "Bij regeling van Onze Minister kan worden bepaald dat het eerste lid niet van toepassing is
+      in\ndaarbij aangewezen categorieën van gevallen, waarin sprake is van een te hoog risico van\nblootstelling
+      van werknemers of leden van de bevolking."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+  - number: '41.5'
+    text: "Het in [artikel 15, onder a, van de wet][ref1] vervatte verbod geldt niet voor het voorhanden
+      hebben\nvan splijtstoffen of ertsen voor bij regeling van Onze Minister aangewezen handelingen die
+      een\nbeperkt risico van blootstelling van mensen tot gevolg hebben.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: '41.6'
+    text: "In de gevallen, bedoeld in het vijfde lid, is een registratieplicht van toepassing. [Artikel
+      3.9 van\nhet Besluit basisveiligheidsnormen stralingsbescherming][ref1] is van overeenkomstige toepassing.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel3.9"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '3.9'
+  - number: 41a
+    text: "Het in [artikel 15, onder a, van de wet][ref1] vervatte verbod geldt niet voor handelingen
+      met\napparaten die een ingekapselde bron bevatten waarbij de bij of krachtens [artikel 3.17 van
+      het\nBesluit basisveiligheidsnormen stralingsbescherming][ref2] vastgestelde waarde voor de activiteit
+      en\nde activiteitsconcentratie wordt overschreden, op voorwaarde dat:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0040179#Artikel3.17"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '3.17'
+  - number: 41a.1°
+    text: het apparaat behoort tot een bij verordening of beschikking van de Autoriteit goedgekeurd
+      type;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41a
+  - number: 41a.2°
+    text: "het apparaat onder normale bedrijfsomstandigheden op 0,1 m van enige bereikbare buitenzijde
+      daarvan\ngeen hoger omgevingsdosisequivalenttempo veroorzaakt dan 1 microsievert per uur, en"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41a
+  - number: 41a.3°
+    text: de Autoriteit voorwaarden voor recycling of verwijdering heeft vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel41a
+  - number: '42.1'
+    text: "Het in [artikel 15, onder a, van de wet][ref1] vervatte verbod geldt niet voor het zich ontdoen
+      van\nsplijtstoffen of ertsen voor product- of materiaalhergebruik of van splijtstoffen of ertsen\n\
+      bevattende afvalstoffen, indien: de activiteitsconcentratie van de radionucliden in de betrokken\n\
+      splijtstoffen of ertsen lager is dan de desbetreffende bij of krachtens [artikel 3.20][ref2] of\n\
+      [3.21][ref3], in samenhang met [artikel 3.22, van het Besluit basisveiligheidsnormen\nstralingsbescherming][ref4]
+      vastgestelde vrijgavewaarde.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]:
+      https://wetten.overheid.nl/BWBR0040179#Artikel3.20\n[ref3]: https://wetten.overheid.nl/BWBR0040179#Artikel3.21\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0040179#Artikel3.22"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0040179
+        artikel: '3.20'
+      - id: ref3
+        bwb_id: BWBR0040179
+        artikel: '3.21'
+      - id: ref4
+        bwb_id: BWBR0040179
+        artikel: '3.22'
+  - number: '42.2'
+    text: "Het bepaalde bij of krachtens [artikel 3.17, tweede en zesde lid, van het Besluit\nbasisveiligheidsnormen
+      stralingsbescherming][ref1] en [artikel 41, vierde lid][ref2], van dit\nbesluit is van overeenkomstige
+      toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179#Artikel3.17\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel41"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+        artikel: '3.17'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '41'
+        hoofdstuk: V
+        paragraaf: '1'
+  - number: '42.3'
+    text: "Het in [artikel 15, onder a, van de wet][ref1] vervatte verbod geldt niet voor het zich ontdoen
+      van\nsplijtstoffen of ertsen voor product- of materiaalhergebruik of van splijtstoffen of ertsen\n\
+      bevattende afvalstoffen, indien het betreft:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 42.3.a
+    text: ingekapselde bronnen die worden teruggenomen door degene die de bron heeft vervaardigd of
+      geleverd;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: 42.3.b
+    text: "een feitelijke levering van splijtstoffen of ertsen door enkele overgave aan een derde met
+      het oog\nop:"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: 42.3.b.1°
+    text: gebruik, product- of materiaalhergebruik van splijtstoffen of ertsen,
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: 42.3.b.2°
+    text: inzameling van splijtstoffen of ertsen bevattende afvalstoffen;
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: 42.3.c
+    text: "een afgifte aan een krachtens [artikel 22, vierde lid, van de wet][ref1] aangewezen instelling
+      voor\nontvangst van in bezit genomen splijtstoffen of ertsen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel22"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '22'
+  - number: 42.3.d
+    text: "het zich ontdoen van splijtstoffen of ertsen bevattende afvalstoffen door afgifte aan een door
+      de\nAutoriteit erkende ophaaldienst van splijtstoffen of ertsen bevattende afvalstoffen;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: 42.3.e
+    text: "een afgifte aan een door de Autoriteit aangewezen instelling voor de ontvangst van splijtstoffen
+      of\nertsen bevattende afvalstoffen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: '42.4'
+    text: "Het derde lid geldt alleen indien de ondernemer zich ervan heeft vergewist dat de ontvanger
+      in het\nbezit is van een vergunning voor de desbetreffende handeling of anderszins gerechtigd is
+      de stoffen\nte ontvangen."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+  - number: '42.5'
+    text: "Met toepassing van [artikel 28, eerste lid, laatste zinsnede, van de Dienstenwet][ref1] is\n\
+      [paragraaf 4.1.3.3. van de Algemene wet bestuursrecht][ref2] niet van toepassing op de aanvraag
+      om\neen erkenning van een ophaaldienst of een aanwijzing van een instelling voor de ontvangst van\n\
+      splijtstoffen of ertsen bevattende afvalstoffen als bedoeld in het derde lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel28\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel42
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '28'
+      - id: ref2
+        bwb_id: BWBR0005537
+        paragraaf: 4.1.3.3
+  - number: '43.1'
+    text: "Het in [artikel 15, onder a, van de wet][ref1] vervatte verbod geldt niet voor het zich ontdoen
+      van\nsplijtstoffen of ertsen door middel van lozing in de lucht, in het openbare riool of in het\n\
+      oppervlaktewater, indien:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 43.1.a
+    text: "bij lozing in de lucht, de activiteit van de in totaal in een kalenderjaar geloosde hoeveelheid\n\
+      splijtstoffen of ertsen bij het verlaten van de locatie via een lozingspunt lager is dan 1\nradiotoxiciteitsequivalent
+      voor inhalatie, als bedoeld in [bijlage 2 bij het Besluit\nbasisveiligheidsnormen stralingsbescherming][ref1];\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+  - number: 43.1.b
+    text: "bij lozing in het openbare riool, de activiteit van de in totaal in een kalenderjaar geloosde\n\
+      hoeveelheid splijtstoffen of ertsen bij het verlaten van de locatie via een lozingspunt lager is
+      dan\n10 radiotoxiciteitsequivalenten voor ingestie, als bedoeld in [bijlage 2 bij het Besluit\n\
+      basisveiligheidsnormen stralingsbescherming][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+  - number: 43.1.c
+    text: "bij lozing in het oppervlaktewater, de activiteit van de in totaal in een kalenderjaar geloosde\n\
+      hoeveelheid splijtstoffen of ertsen bij het verlaten van de locatie via een lozingspunt lager is
+      dan\n0,1 radiotoxiciteitsequivalent voor ingestie, als bedoeld in [bijlage 2 bij het Besluit\nbasisveiligheidsnormen
+      stralingsbescherming][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+  - number: '43.2'
+    text: "De geloosde hoeveelheden, uitgedrukt in radiotoxiciteitsequivalenten, worden gecorrigeerd voor\n\
+      fysisch verval door middel van de correctiefactoren zoals aangegeven in [bijlage 2 bij het Besluit\n\
+      basisveiligheidsnormen stralingsbescherming][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0040179"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0040179
+  - number: '44'
+    text: "Het in [artikel 15, onder b][ref1], van de wet vervatte verbod geldt niet voor het oprichten,
+      in\nwerking brengen, in werking houden of wijzigen van een inrichting, waarin splijtstoffen kunnen\n\
+      worden vervaardigd, bewerkt of verwerkt, dan wel splijtstoffen worden opgeslagen, in het geval,
+      dat\ndie inrichting niet is bestemd en niet wordt gebruikt voor een met de splijtstoffenkringloop
+      verband\nhoudend vervaardigingsproces of voor het voorhanden hebben van andere dan onbestraalde
+      splijtstoffen\nen:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: '15'
+        hoofdstuk: III
+        paragraaf: '1'
+  - number: 44.a
+    text: de voorhanden splijtstoffen geen plutonium of verrijkt uranium bevatten, dan wel
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44
+  - number: 44.b
+    text: "de grootste hoeveelheid splijtstoffen, die te eniger tijd in de inrichting voorhanden wordt\n\
+      gehouden, niet meer bevat dan 375 gram plutonium-239, plutonium-241 of uranium-233, dan wel niet\n\
+      meer dan 600 gram uranium-235, met dien verstande, dat bij aanwezigheid van meer dan een van deze\n\
+      nucliden de som van de breuken, verkregen door het aantal grammen van ieder dier nucliden te delen\n\
+      door de voor dat nuclide hiervoor vastgestelde maximale hoeveelheid, niet groter mag zijn dan 1."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44
+  - number: 44a.1
+    text: "Een aanvraag om goedkeuring voor de wijze waarop financiële zekerheid wordt gesteld als bedoeld
+      in\n[artikel 15f, eerste lid, van de wet][ref1] wordt ingediend bij Onze Minister met gelijktijdige\n\
+      toezending van een afschrift aan Onze Minister van Financiën.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15f"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15f
+  - number: 44a.2
+    text: 'Een aanvraag om goedkeuring als bedoeld in het eerste lid bevat in elk geval de volgende gegevens:'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+  - number: 44a.2.a
+    text: "een overzicht van de verschillende kostenposten voor de buitengebruikstelling en de ontmanteling
+      van\nde betrokken inrichting, bedoeld in [artikel 15, onder b, van de wet][ref1], waarbij wordt
+      uitgegaan\nvan het laatst door de Autoriteit goedgekeurde ontmantelingsplan en de voorschriften
+      die op grond\nvan [artikel 27, vierde lid][ref2], aan de goedkeuring van het ontmantelingsplan zijn
+      verbonden;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0002667#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+      - id: ref2
+        bwb_id: BWBR0002667
+        artikel: '27'
+        hoofdstuk: IIIa
+  - number: 44a.2.b
+    text: "een berekening van de kosten behorende bij de onder a bedoelde kostenposten, bepaald aan de
+      hand van\neen algemeen aanvaarde methode en op basis van het prijspeil op het moment van de indiening
+      van de\naanvraag;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+  - number: 44a.2.c
+    text: "een omrekening van de overeenkomstig onderdeel b bepaalde kosten naar de kosten op het moment
+      van de\nbuitengebruikstelling en de ontmanteling, bepaald aan de hand van een algemeen aanvaarde\n\
+      indexeringsmethode;"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+  - number: 44a.2.d
+    text: "een overzicht waaruit blijkt dat het bedrag van de berekening van de kosten op het moment van
+      de\nbuitengebruikstelling en de ontmanteling is gedekt door financiële zekerheid."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+  - number: 44a.3
+    text: Onze Minister kan nadere regels stellen met betrekking tot de aanvraag om goedkeuring.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44a
+  - number: 44b.1
+    text: "De houder van een vergunning voor het in werking brengen of het in werking houden van een inrichting\n\
+      als bedoeld in [artikel 15, onder b, van de wet][ref1] actualiseert de wijze waarop financiële\n\
+      zekerheid is gesteld nadat het ontmantelingsplan of een wijziging daarvan door de Autoriteit is\n\
+      goedgekeurd of wanneer Onze Minister of Onze Minister van Financiën dit nodig acht.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 44b.2
+    text: "De vergunninghouder, bedoeld in het eerste lid, dient binnen zes maanden na goedkeuring van
+      het\nontmantelingsplan onderscheidenlijk binnen zes maanden nadat Onze Minister of Onze Minister
+      van\nFinanciën kenbaar heeft gemaakt actualisatie van de wijze waarop financiële zekerheid is gesteld,\n\
+      nodig te achten, een aanvraag om goedkeuring van de geactualiseerde financiële zekerheid in."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44b
+  - number: 44c.1
+    text: "Gelijktijdig met de aanvraag om een vergunning voor het buiten gebruik stellen en het ontmantelen\n\
+      van een inrichting als bedoeld in [artikel 15, onder b, van de wet][ref1] wordt een aanvraag\ningediend
+      om goedkeuring voor de wijze waarop financiële zekerheid wordt gesteld.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44c
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 44c.2
+    text: "Indien het eerste lid van toepassing is, wordt in afwijking van [artikel 44a, tweede lid, onder\n\
+      a][ref1], bij het overzicht van de verschillende kostenposten voor de buitengebruikstelling en de\n\
+      ontmanteling uitgegaan van het ontmantelingsplan zoals dat is ingediend bij de aanvraag om een\n\
+      vergunning voor het buiten gebruik stellen en het ontmantelen van de inrichting.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002667#Artikel44a"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44c
+    references:
+      - id: ref1
+        bwb_id: BWBR0002667
+        artikel: 44a
+        hoofdstuk: Va
+  - number: 44d.1
+    text: "De houder van een vergunning voor het buiten gebruik stellen en het ontmantelen van een inrichting\n\
+      als bedoeld in [artikel 15, onder b, van de wet][ref1] actualiseert de wijze waarop financiële\n\
+      zekerheid is gesteld na wijziging van die vergunning, voor zover die wijziging betrekking heeft
+      op\nhet ontmantelingsplan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44d
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+  - number: 44d.2
+    text: "De vergunninghouder, bedoeld in het eerste lid, dient binnen zes maanden na wijziging van de\n\
+      vergunning een aanvraag om goedkeuring van de geactualiseerde financiële zekerheid in."
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44d
+  - number: 44e.1
+    text: "Aangewezen overeenkomstig [artikel 15f, achtste lid, van de wet][ref1], wordt de nucleaire\n\
+      inrichting van URENCO Nederland B.V. te Almelo.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15f"
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15f
+  - number: 44e.2
+    text: Dit hoofdstuk is van overeenkomstige toepassing op de inrichting, bedoeld in het eerste
+      lid.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel44e
+  - number: '45.1'
+    text: 'Dit besluit kan worden aangehaald als: Besluit kerninstallaties, splijtstoffen en ertsen.'
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel45
+  - number: '45.2'
+    text: Het treedt in werking op een door Ons te bepalen tijdstip.
+    url: https://wetten.overheid.nl/BWBR0002667/2024-01-01#Artikel45

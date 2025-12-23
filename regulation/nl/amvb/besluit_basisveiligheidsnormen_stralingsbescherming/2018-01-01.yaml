@@ -1,0 +1,70 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: besluit_basisveiligheidsnormen_stralingsbescherming
+regulatory_layer: AMVB
+publication_date: '2017-12-08'
+valid_from: '2018-01-01'
+bwb_id: BWBR0040179
+url: https://wetten.overheid.nl/BWBR0040179/2018-01-01
+articles:
+  - number: '3.7'
+    text: >
+      1. Bij de verlening van een vergunning bedoeld in artikel 26 van de wet wordt beoordeeld
+      of van de handelingen waarop de vergunning betrekking heeft, te verwachten is dat:
+
+      a. de effectieve dosis voor leden van de bevolking niet hoger zal zijn dan 1 mSv per
+      kalenderjaar;
+
+      b. de effectieve dosis op enig punt buiten de locatie niet hoger zal zijn dan 0,1 mSv
+      per kalenderjaar; en
+
+      c. de equivalente dosis voor de huid niet hoger zal zijn dan 50 mSv per kalenderjaar.
+
+      2. Indien niet aan de vereisten, bedoeld in het eerste lid, wordt voldaan, kan de
+      vergunning niet worden verleend.
+    url: https://wetten.overheid.nl/BWBR0040179/2018-01-01#Hoofdstuk3_Paragraaf3.2_Artikel3.7
+    machine_readable:
+      definitions:
+        DOSIS_LIMIET_BEVOLKING_ALGEMEEN:
+          value: 1.0
+          description: Maximale effectieve dosis voor de bevolking in millisievert per kalenderjaar
+          type: number
+        DOSIS_LIMIET_BEVOLKING_BUITEN_LOCATIE:
+          value: 0.1
+          description: Maximale effectieve dosis buiten de locatie in millisievert per kalenderjaar
+          type: number
+        DOSIS_LIMIET_HUID:
+          value: 50.0
+          description: Maximale equivalente dosis voor de huid in millisievert per kalenderjaar
+          type: number
+      execution:
+        parameters:
+          - name: verwachte_dosis_jaar
+            description: Verwachte effectieve stralingsdosis per jaar voor leden van de bevolking in millisievert
+            type: number
+            required: true
+          - name: verwachte_dosis_huid
+            description: Verwachte equivalente stralingsdosis voor de huid per jaar in millisievert
+            type: number
+            required: false
+          - name: dosis_buiten_locatie
+            description: Verwachte stralingsdosis buiten de locatie in millisievert per jaar
+            type: number
+            required: false
+        output:
+          - name: dosis_limiet_bevolking_algemeen
+            description: Maximale effectieve dosis voor de bevolking in millisievert per kalenderjaar
+            type: number
+          - name: dosis_limiet_bevolking_buiten_locatie
+            description: Maximale effectieve dosis buiten de locatie in millisievert per kalenderjaar
+            type: number
+          - name: dosis_limiet_huid
+            description: Maximale equivalente dosis voor de huid in millisievert per kalenderjaar
+            type: number
+        actions:
+          - output: dosis_limiet_bevolking_algemeen
+            value: $DOSIS_LIMIET_BEVOLKING_ALGEMEEN
+          - output: dosis_limiet_bevolking_buiten_locatie
+            value: $DOSIS_LIMIET_BEVOLKING_BUITEN_LOCATIE
+          - output: dosis_limiet_huid
+            value: $DOSIS_LIMIET_HUID

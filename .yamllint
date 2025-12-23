@@ -74,3 +74,5 @@ ignore: |
   .venv/
   .tox/
   node_modules/
+  # Harvested law files are machine-generated - validated by validate-law-yaml hook instead
+  regulation/nl/
