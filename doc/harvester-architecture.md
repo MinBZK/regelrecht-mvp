@@ -169,8 +169,9 @@ Phase 1 is geïmplementeerd en werkend. De harvester kan wetten downloaden van h
 
 #### Bekende beperkingen
 
-- **Publicatiemetadata in tekst**: De artikeltekst bevat soms publicatiedata (datums/nummers) aan het eind. Dit is een parsing verfijning voor later.
 - **Alleen BWB**: Momenteel alleen nationale wetgeving (BWB). CVDR (lokale regelgeving) komt in een latere fase.
+
+> **Opmerking over publicatiemetadata:** Gestructureerde metadata zoals `<brondata>`, `<opmerkingen-inhoud>` en `<meta-data>` wordt correct gefilterd door de parser (zie `SKIP_TAGS` in `content_parser.py`). Mocht er in de toekomst een wet gevonden worden waar publicatie-informatie letterlijk in de artikeltekst staat (niet in XML-tags), dan kan dit alsnog als verfijning toegevoegd worden.
 
 #### Referenties
 
