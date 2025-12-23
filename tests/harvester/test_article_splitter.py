@@ -1,10 +1,10 @@
-"""Tests for article builder module."""
+"""Tests for article splitter module."""
 
 from pathlib import Path
 
 from lxml import etree
 
-from harvester.parsers.article_builder import (
+from harvester.parsers.article_splitter import (
     ArticleComponent,
     build_articles_from_content,
     walk_artikel,

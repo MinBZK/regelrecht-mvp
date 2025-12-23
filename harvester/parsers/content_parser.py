@@ -350,7 +350,7 @@ def parse_articles_split(
     Returns:
         List of Article objects, one per lowest-level component
     """
-    from harvester.parsers.article_builder import build_articles_from_content
+    from harvester.parsers.article_splitter import build_articles_from_content
 
     return build_articles_from_content(content_tree, bwb_id, date)
 
