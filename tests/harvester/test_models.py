@@ -1,7 +1,5 @@
 """Tests for harvester data models."""
 
-import uuid
-
 from harvester.models import Article, Law, LawMetadata, RegulatoryLayer
 
 
@@ -119,9 +117,6 @@ class TestLaw:
 
         assert law.metadata == metadata
         assert law.articles == []
-        assert law.uuid is not None
-        # UUID should be valid
-        uuid.UUID(law.uuid)
 
     def test_creation_with_articles(self) -> None:
         metadata = LawMetadata(
@@ -138,26 +133,3 @@ class TestLaw:
         assert len(law.articles) == 2
         assert law.articles[0].number == "1"
         assert law.articles[1].number == "2"
-
-    def test_creation_with_explicit_uuid(self) -> None:
-        metadata = LawMetadata(
-            bwb_id="BWBR0018451",
-            title="Wet op de zorgtoeslag",
-            regulatory_layer=RegulatoryLayer.WET,
-        )
-        explicit_uuid = "12345678-1234-1234-1234-123456789abc"
-        law = Law(metadata=metadata, uuid=explicit_uuid)
-
-        assert law.uuid == explicit_uuid
-
-    def test_uuid_is_generated_if_none(self) -> None:
-        metadata = LawMetadata(
-            bwb_id="BWBR0018451",
-            title="Wet op de zorgtoeslag",
-            regulatory_layer=RegulatoryLayer.WET,
-        )
-        law1 = Law(metadata=metadata)
-        law2 = Law(metadata=metadata)
-
-        # Each law should have a unique UUID
-        assert law1.uuid != law2.uuid

@@ -237,15 +237,6 @@ encoded = urllib.parse.quote(query)
 url = f"http://zoekservice.overheid.nl/sru/Search?operation=searchRetrieve&version=1.2&x-connection=BWB&query={encoded}"
 ```
 
-### UUID Generation
-
-```python
-import uuid
-
-new_uuid = str(uuid.uuid4())
-# Example: "60e71675-38bc-4297-87ac-0c145613e481"
-```
-
 ### YAML Generation
 
 ```python
@@ -254,7 +245,6 @@ import yaml
 data = {
     '$schema': 'https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json',
     '$id': 'wet_op_de_zorgtoeslag',
-    'uuid': str(uuid.uuid4()),
     'regulatory_layer': 'WET',
     'publication_date': '2005-12-30',
     'effective_date': '2006-01-01',

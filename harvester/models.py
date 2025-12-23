@@ -1,7 +1,6 @@
 """Data models for the harvester."""
 
 import re
-import uuid
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -99,9 +98,3 @@ class Law:
 
     metadata: LawMetadata
     articles: list[Article] = field(default_factory=list)
-    uuid: str | None = None
-
-    def __post_init__(self) -> None:
-        """Generate UUID if not provided."""
-        if self.uuid is None:
-            self.uuid = str(uuid.uuid4())

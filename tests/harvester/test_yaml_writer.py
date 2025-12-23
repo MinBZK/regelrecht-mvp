@@ -53,7 +53,7 @@ class TestGenerateYamlDict:
                 url="https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel2",
             ),
         ]
-        law = Law(metadata=metadata, articles=articles, uuid="test-uuid")
+        law = Law(metadata=metadata, articles=articles)
 
         result = generate_yaml_dict(law, "2025-01-01")
 
@@ -70,7 +70,7 @@ class TestGenerateYamlDict:
             regulatory_layer=RegulatoryLayer.WET,
             publication_date=None,
         )
-        law = Law(metadata=metadata, uuid="test-uuid")
+        law = Law(metadata=metadata)
 
         result = generate_yaml_dict(law, "2025-01-01")
 
@@ -88,7 +88,7 @@ class TestGenerateYamlDict:
                 title="Test",
                 regulatory_layer=layer,
             )
-            law = Law(metadata=metadata, uuid="test-uuid")
+            law = Law(metadata=metadata)
 
             result = generate_yaml_dict(law, "2025-01-01")
 
@@ -106,7 +106,7 @@ class TestSaveYaml:
             regulatory_layer=RegulatoryLayer.WET,
             publication_date="2005-07-26",
         )
-        law = Law(metadata=metadata, uuid="test-uuid")
+        law = Law(metadata=metadata)
 
         output_path = save_yaml(law, "2025-01-01", output_base=tmp_path)
 
@@ -122,7 +122,7 @@ class TestSaveYaml:
             title="Test Law",
             regulatory_layer=RegulatoryLayer.MINISTERIELE_REGELING,
         )
-        law = Law(metadata=metadata, uuid="test-uuid")
+        law = Law(metadata=metadata)
 
         output_path = save_yaml(law, "2025-01-01", output_base=tmp_path)
 
@@ -170,7 +170,7 @@ class TestSaveYaml:
                 url="http://example.com",
             ),
         ]
-        law = Law(metadata=metadata, articles=articles, uuid="test-uuid")
+        law = Law(metadata=metadata, articles=articles)
 
         output_path = save_yaml(law, "2025-01-01", output_base=tmp_path)
 
@@ -188,7 +188,7 @@ class TestSaveYaml:
             title="Test",
             regulatory_layer=RegulatoryLayer.WET,
         )
-        law = Law(metadata=metadata, uuid="test-uuid")
+        law = Law(metadata=metadata)
 
         # Just verify the function accepts None without erroring
         # We don't actually want to create files in the project directory
