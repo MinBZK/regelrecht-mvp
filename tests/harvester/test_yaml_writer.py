@@ -195,3 +195,32 @@ class TestSaveYaml:
         # So we just test the path construction logic indirectly
         yaml_dict = generate_yaml_dict(law, "2025-01-01")
         assert yaml_dict is not None
+
+    def test_multiline_text_uses_literal_block_scalar(self, tmp_path: Path) -> None:
+        """RFC-001 Decision 2: Multiline text must use |- literal block scalar."""
+        metadata = LawMetadata(
+            bwb_id="BWBR0018451",
+            title="Test Law",
+            regulatory_layer=RegulatoryLayer.WET,
+        )
+        multiline_text = "Eerste regel.\n\nTweede regel met meer tekst."
+        articles = [
+            Article(
+                number="1",
+                text=multiline_text,
+                url="http://example.com",
+            ),
+        ]
+        law = Law(metadata=metadata, articles=articles)
+
+        output_path = save_yaml(law, "2025-01-01", output_base=tmp_path)
+
+        # Read raw file content to verify literal block scalar marker
+        with open(output_path, encoding="utf-8") as f:
+            raw_content = f.read()
+
+        # The text field must use |- (literal block scalar) for multiline
+        assert "text: |-" in raw_content or "text: |" in raw_content, (
+            "RFC-001 Decision 2: Multiline text must use literal block scalar (|-). "
+            f"Got:\n{raw_content}"
+        )

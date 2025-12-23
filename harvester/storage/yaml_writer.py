@@ -4,6 +4,7 @@ import textwrap
 from pathlib import Path
 
 import ruamel.yaml
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 from harvester.models import Law, Reference
 
@@ -97,10 +98,16 @@ def generate_yaml_dict(law: Law, effective_date: str) -> dict:
     """
     law_id = law.metadata.to_slug()
 
-    def format_article_text(text: str) -> str:
-        """Wrap article text for readability if needed."""
+    def format_article_text(text: str) -> str | LiteralScalarString:
+        """Wrap article text for readability and use literal block scalar.
+
+        RFC-001 Decision 2: Use |- (literal block scalar) for multiline text.
+        """
         if _should_wrap_text(text):
-            return _wrap_text(text)
+            text = _wrap_text(text)
+        # Use literal block scalar (|-) for multiline text
+        if "\n" in text:
+            return LiteralScalarString(text)
         return text
 
     def _format_article_dict(article, format_text_fn):
