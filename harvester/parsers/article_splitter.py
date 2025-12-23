@@ -355,8 +355,9 @@ def extract_aanhef(
     considerans_elem = aanhef_elem.find("considerans")
     if considerans_elem is not None:
         for al in considerans_elem.findall(".//considerans.al"):
-            if al.text:
-                parts.append(al.text.strip())
+            al_text = extract_inline_text(al, collector)
+            if al_text:
+                parts.append(al_text)
 
     # Extract <afkondiging> element
     afkondiging_elem = aanhef_elem.find("afkondiging")
