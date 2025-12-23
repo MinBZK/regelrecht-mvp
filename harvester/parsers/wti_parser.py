@@ -3,7 +3,7 @@
 import requests
 from lxml import etree
 
-from harvester.config import BWB_REPOSITORY_URL
+from harvester.config import BWB_REPOSITORY_URL, HTTP_TIMEOUT
 from harvester.models import LawMetadata, RegulatoryLayer
 
 
@@ -20,8 +20,13 @@ def download_wti(bwb_id: str) -> etree._Element:
         requests.HTTPError: If download fails
     """
     url = f"{BWB_REPOSITORY_URL}/{bwb_id}/{bwb_id}.WTI"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
+    response = requests.get(url, timeout=HTTP_TIMEOUT)
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        raise requests.HTTPError(
+            f"Failed to download WTI metadata for {bwb_id}: {e}"
+        ) from e
     return etree.fromstring(response.content)
 
 

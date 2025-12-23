@@ -149,7 +149,7 @@ class TestDownloadWti:
 
             mock_get.assert_called_once_with(
                 f"{BWB_REPOSITORY_URL}/BWBR0018451/BWBR0018451.WTI",
-                timeout=30,
+                timeout=10,
             )
 
     def test_download_raises_on_http_error(self) -> None:

@@ -5,6 +5,7 @@ from datetime import datetime
 import typer
 from rich.console import Console
 
+from harvester.config import validate_bwb_id, validate_date
 from harvester.models import Law
 from harvester.parsers.content_parser import (
     download_content,
@@ -42,6 +43,10 @@ def download(
     """Download a law by BWB ID and convert to YAML."""
     # Use today if no date provided
     effective_date = date or datetime.now().strftime("%Y-%m-%d")
+
+    # Validate inputs before making HTTP requests
+    validate_bwb_id(bwb_id)
+    validate_date(effective_date)
 
     console.print(f"[bold]Downloading {bwb_id}[/bold] for date {effective_date}")
     console.print()

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import requests
 from lxml import etree
 
-from harvester.config import BWB_REPOSITORY_URL
+from harvester.config import BWB_REPOSITORY_URL, HTTP_TIMEOUT
 from harvester.models import Article, Reference
 from harvester.parsers.reference_parser import (
     get_reference_text,
@@ -85,8 +85,13 @@ def download_content(bwb_id: str, date: str) -> etree._Element:
     """
     # Use _0 suffix for consolidated (geconsolideerde) version
     url = f"{BWB_REPOSITORY_URL}/{bwb_id}/{date}_0/xml/{bwb_id}_{date}_0.xml"
-    response = requests.get(url, timeout=30, allow_redirects=True)
-    response.raise_for_status()
+    response = requests.get(url, timeout=HTTP_TIMEOUT, allow_redirects=True)
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        raise requests.HTTPError(
+            f"Failed to download content for {bwb_id} at date {date}: {e}"
+        ) from e
     return etree.fromstring(response.content)
 
 

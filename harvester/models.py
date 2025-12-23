@@ -5,6 +5,8 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 
+from harvester.config import BWB_REPOSITORY_URL
+
 
 class RegulatoryLayer(str, Enum):
     """Types of regulatory documents."""
@@ -78,8 +80,7 @@ class Reference:
         Returns:
             URL to BWB repository XML file
         """
-        base = "https://repository.officiele-overheidspublicaties.nl/bwb"
-        return f"{base}/{self.bwb_id}/{date}_0/xml/{self.bwb_id}_{date}_0.xml"
+        return f"{BWB_REPOSITORY_URL}/{self.bwb_id}/{date}_0/xml/{self.bwb_id}_{date}_0.xml"
 
 
 @dataclass

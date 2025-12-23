@@ -228,7 +228,7 @@ class TestDownloadContent:
             # URL should use _0 suffix for consolidated version
             mock_get.assert_called_once_with(
                 f"{BWB_REPOSITORY_URL}/BWBR0018451/2025-01-01_0/xml/BWBR0018451_2025-01-01_0.xml",
-                timeout=30,
+                timeout=10,
                 allow_redirects=True,
             )
 
