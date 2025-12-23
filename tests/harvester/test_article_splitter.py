@@ -205,6 +205,52 @@ class TestWalkLijst:
         assert components[2].to_number() == "1.1.a.2"
         assert components[2].text == "Sub item 2"
 
+    def test_deeply_nested_list_wlz_style(self) -> None:
+        """Walk deeply nested list (4+ levels) like WLZ decimal structure.
+
+        WLZ has structures like artikel 1.1.2.1.a - this tests that
+        deep nesting is handled correctly.
+        """
+        # Simulates: artikel 13 > lid 1 > onderdeel a > sub 1 > letter i
+        lijst = etree.fromstring(
+            """<lijst>
+                <li>
+                    <li.nr>a.</li.nr>
+                    <al>Intro for onderdeel a:</al>
+                    <lijst>
+                        <li>
+                            <li.nr>1°.</li.nr>
+                            <al>Intro for sub 1:</al>
+                            <lijst>
+                                <li><li.nr>i.</li.nr><al>Deepest level i</al></li>
+                                <li><li.nr>ii.</li.nr><al>Deepest level ii</al></li>
+                            </lijst>
+                        </li>
+                        <li><li.nr>2°.</li.nr><al>Sub item 2</al></li>
+                    </lijst>
+                </li>
+                <li><li.nr>b.</li.nr><al>Onderdeel b</al></li>
+            </lijst>"""
+        )
+
+        # Starting from artikel 13, lid 1
+        components = walk_lijst(lijst, ["13", "1"], "https://example.com")
+
+        # Should produce: 13.1.a, 13.1.a.1°, 13.1.a.1°.i, 13.1.a.1°.ii, 13.1.a.2°, 13.1.b
+        assert len(components) == 6
+
+        # Check deep nesting produces correct numbers
+        assert components[0].to_number() == "13.1.a"
+        assert components[1].to_number() == "13.1.a.1°"
+        assert components[2].to_number() == "13.1.a.1°.i"
+        assert components[3].to_number() == "13.1.a.1°.ii"
+        assert components[4].to_number() == "13.1.a.2°"
+        assert components[5].to_number() == "13.1.b"
+
+        # Verify deepest content
+        assert components[2].text == "Deepest level i"
+        assert components[3].text == "Deepest level ii"
+
 
 class TestWalkLid:
     """Tests for walk_lid function."""
@@ -315,6 +361,60 @@ class TestWalkArtikel:
             components[0].base_url
             == "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel3"
         )
+
+    def test_artikel_with_letter_suffix_awir_style(self) -> None:
+        """Handle article numbers with letter suffixes like AWIR (3a, 4b).
+
+        AWIR has articles like 3, 3a, 4, 4a - tests that suffixed
+        article numbers are preserved correctly.
+        """
+        artikel = etree.fromstring(
+            """<artikel label="Artikel 3a">
+                <kop><label>Artikel</label><nr>3a</nr></kop>
+                <lid><lidnr>1</lidnr><al>First paragraph of 3a.</al></lid>
+                <lid><lidnr>2</lidnr><al>Second paragraph of 3a.</al></lid>
+            </artikel>"""
+        )
+
+        components = walk_artikel(artikel, "BWBR0018451", "2025-01-01")
+
+        assert len(components) == 2
+        assert components[0].to_number() == "3a.1"
+        assert components[1].to_number() == "3a.2"
+        assert "Artikel3a" in components[0].base_url
+
+    def test_artikel_with_bis_suffix_awir_style(self) -> None:
+        """Handle article numbers with Latin suffixes like AWIR (31bis, 49ter).
+
+        AWIR uses Latin ordinal suffixes for inserted articles.
+        """
+        artikel = etree.fromstring(
+            """<artikel label="Artikel 31bis">
+                <kop><label>Artikel</label><nr>31bis</nr></kop>
+                <al>This article was inserted later.</al>
+            </artikel>"""
+        )
+
+        components = walk_artikel(artikel, "BWBR0018451", "2025-01-01")
+
+        assert len(components) == 1
+        assert components[0].to_number() == "31bis"
+        assert "Artikel31bis" in components[0].base_url
+        assert "inserted later" in components[0].text
+
+    def test_artikel_with_roman_numeral_suffix(self) -> None:
+        """Handle article numbers with Roman numeral suffixes (1a.I, 1a.II)."""
+        artikel = etree.fromstring(
+            """<artikel label="Artikel 49quater">
+                <kop><label>Artikel</label><nr>49quater</nr></kop>
+                <lid><lidnr>1</lidnr><al>Text for quater.</al></lid>
+            </artikel>"""
+        )
+
+        components = walk_artikel(artikel, "BWBR0018451", "2025-01-01")
+
+        assert len(components) == 1
+        assert components[0].to_number() == "49quater.1"
 
 
 class TestBuildArticlesFromContent:

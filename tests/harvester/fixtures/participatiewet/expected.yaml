@@ -17,11 +17,27 @@ articles:
       Alzo Wij in overweging genomen hebben, dat het ter vereenvoudiging en verduidelijking van de
       regelgeving en ter versterking van de verantwoordelijkheid der gemeenten voor de ondersteuning bij
       arbeidsinschakeling en de verlening van bijstand gewenst is te komen tot een Wet werk en bijstand,
-      waarin de
+      waarin de [Algemene bijstandswet][ref1], de [Wet financiering Abw, IOAW en IOAZ][ref2], de [Wet
+      inschakeling werkzoekenden][ref3] en het [Besluit in- en doorstroombanen][ref4] zijn geïntegreerd;
 
       Zo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben
       goedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:
+
+
+      [ref1]: https://wetten.overheid.nl/BWBR0007333
+      [ref2]: https://wetten.overheid.nl/BWBR0011670
+      [ref3]: https://wetten.overheid.nl/BWBR0009083
+      [ref4]: https://wetten.overheid.nl/BWBR0010994
     url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Aanhef
+    references:
+      - id: ref1
+        bwb_id: BWBR0007333
+      - id: ref2
+        bwb_id: BWBR0011670
+      - id: ref3
+        bwb_id: BWBR0009083
+      - id: ref4
+        bwb_id: BWBR0010994
   - number: '1'
     text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
     url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel1
