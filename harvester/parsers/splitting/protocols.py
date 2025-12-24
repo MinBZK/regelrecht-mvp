@@ -129,7 +129,7 @@ class SplitStrategy(Protocol):
 class ArticleComponent:
     """Represents a lowest-level component of an article."""
 
-    number_parts: list[str]  # e.g., ["1", "1.", "a"] for artikel 1, lid 1, onderdeel a
+    number_parts: list[str]  # e.g., ["1", "1", "a"] for artikel 1, lid 1, onderdeel a
     text: str
     base_url: str  # Base URL for the article (without fragment)
     references: list[Reference] = field(default_factory=list)
