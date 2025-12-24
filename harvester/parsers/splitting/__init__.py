@@ -8,6 +8,7 @@ hierarchy specifications.
 from harvester.parsers.splitting.config import create_dutch_law_hierarchy
 from harvester.parsers.splitting.engine import SplitEngine
 from harvester.parsers.splitting.protocols import (
+    ArticleComponent,
     ElementSpec,
     SplitContext,
     SplitStrategy,
@@ -19,6 +20,7 @@ from harvester.parsers.splitting.strategies import (
 )
 
 __all__ = [
+    "ArticleComponent",
     "ElementSpec",
     "SplitContext",
     "SplitStrategy",

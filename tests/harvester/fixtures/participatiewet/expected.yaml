@@ -233,45 +233,30 @@ articles:
         bwb_id: BWBR0003738
         artikel: '14'
   - number: '2'
-    text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel2
-  - number: 2.a
     text: |-
-      *premies volksverzekeringen:* premies volksverzekeringen als bedoeld in de [Wet financiering sociale
-      verzekeringen][ref1];
+      In deze wet en de daarop berustende bepalingen wordt verstaan onder: - *premies volksverzekeringen:*
+      premies volksverzekeringen als bedoeld in de [Wet financiering sociale verzekeringen][ref1]; -
+      *kinderbijslag:* kinderbijslag op grond van de [Algemene Kinderbijslagwet][ref2]; - *wettelijk
+      minimumloon:* het minimumloon per maand, bedoeld in [artikel 8, eerste lid, onderdeel b, van de Wet
+      minimumloon en minimumvakantiebijslag][ref3] of, indien het een werknemer jonger dan 21 jaar
+      betreft, het voor zijn leeftijd geldende minimumloon per maand, bedoeld in [artikel 7, derde
+      lid][ref4], en artikel 8, derde lid, van genoemde wet.
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0017745
+      [ref2]: https://wetten.overheid.nl/BWBR0002368
+      [ref3]: https://wetten.overheid.nl/BWBR0002638#Artikel8
+      [ref4]: https://wetten.overheid.nl/BWBR0002638#Artikel7
     url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel2
     references:
       - id: ref1
         bwb_id: BWBR0017745
-  - number: 2.b
-    text: |-
-      *kinderbijslag:* kinderbijslag op grond van de [Algemene Kinderbijslagwet][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0002368
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel2
-    references:
-      - id: ref1
+      - id: ref2
         bwb_id: BWBR0002368
-  - number: 2.c
-    text: |-
-      *wettelijk minimumloon:* het minimumloon per maand, bedoeld in [artikel 8, eerste lid, onderdeel b,
-      van de Wet minimumloon en minimumvakantiebijslag][ref1] of, indien het een werknemer jonger dan
-      21 jaar betreft, het voor zijn leeftijd geldende minimumloon per maand, bedoeld in [artikel 7, derde
-      lid][ref2], en artikel 8, derde lid, van genoemde wet.
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0002638#Artikel8
-      [ref2]: https://wetten.overheid.nl/BWBR0002638#Artikel7
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel2
-    references:
-      - id: ref1
+      - id: ref3
         bwb_id: BWBR0002638
         artikel: '8'
-      - id: ref2
+      - id: ref4
         bwb_id: BWBR0002638
         artikel: '7'
   - number: '3.1'
@@ -378,43 +363,27 @@ articles:
       - id: ref3
         bwb_id: BWBR0002368
   - number: '4.1'
-    text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.a
     text: |-
-      *alleenstaande:* de ongehuwde die geen tot zijn last komende kinderen heeft en geen gezamenlijke
-      huishouding voert met een ander, tenzij het betreft een bloedverwant in de eerste graad of een
-      bloedverwant in de tweede graad indien er bij één van de bloedverwanten in de tweede graad sprake is
-      van zorgbehoefte;
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.b
-    text: |-
-      *alleenstaande ouder:* de ongehuwde die de volledige zorg heeft voor een of meer tot zijn last
-      komende kinderen en geen gezamenlijke huishouding voert met een ander, tenzij het betreft een
-      bloedverwant in de eerste graad of een bloedverwant in de tweede graad indien er bij één van de
-      bloedverwanten in de tweede graad sprake is van zorgbehoefte;
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.c
-    text: '*gezin:*'
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.c.1°
-    text: de gehuwden tezamen;
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.c.2°
-    text: de gehuwden met de tot hun last komende kinderen;
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.c.3°
-    text: de alleenstaande ouder met de tot zijn last komende kinderen;
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-  - number: 4.1.d
-    text: |-
-      *kind:* het in Nederland woonachtige eigen kind of stiefkind of, voor de toepassing van de
-      [artikelen 9][ref1], [9a][ref2] en [30, tweede lid][ref3], het in Nederland woonachtige pleegkind;
+      In deze wet en de daarop berustende bepalingen wordt verstaan onder: - *alleenstaande:* de ongehuwde
+      die geen tot zijn last komende kinderen heeft en geen gezamenlijke huishouding voert met een ander,
+      tenzij het betreft een bloedverwant in de eerste graad of een bloedverwant in de tweede graad indien
+      er bij één van de bloedverwanten in de tweede graad sprake is van zorgbehoefte; - *alleenstaande
+      ouder:* de ongehuwde die de volledige zorg heeft voor een of meer tot zijn last komende kinderen en
+      geen gezamenlijke huishouding voert met een ander, tenzij het betreft een bloedverwant in de eerste
+      graad of een bloedverwant in de tweede graad indien er bij één van de bloedverwanten in de tweede
+      graad sprake is van zorgbehoefte; - *gezin:* - *kind:* het in Nederland woonachtige eigen kind of
+      stiefkind of, voor de toepassing van de [artikelen 9][ref1], [9a][ref2] en [30, tweede lid][ref3],
+      het in Nederland woonachtige pleegkind; - *ten laste komend kind:* het kind jonger dan 18 jaar voor
+      wie aan de alleenstaande ouder of de gehuwde op grond van [artikel 18 van de Algemene
+      Kinderbijslagwet][ref4] kinderbijslag wordt betaald, zal worden betaald of zou worden betaald indien
+      [artikel 7, tweede lid, van die wet][ref5] niet van toepassing zou zijn.
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel9
       [ref2]: https://wetten.overheid.nl/BWBR0015703#Artikel9a
       [ref3]: https://wetten.overheid.nl/BWBR0015703#Artikel30
+      [ref4]: https://wetten.overheid.nl/BWBR0002368#Artikel18
+      [ref5]: https://wetten.overheid.nl/BWBR0002368#Artikel7
     url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
     references:
       - id: ref1
@@ -432,22 +401,10 @@ articles:
         artikel: '30'
         hoofdstuk: '3'
         paragraaf: '3.3'
-  - number: 4.1.e
-    text: |-
-      *ten laste komend kind:* het kind jonger dan 18 jaar voor wie aan de alleenstaande ouder of de
-      gehuwde op grond van [artikel 18 van de Algemene Kinderbijslagwet][ref1] kinderbijslag wordt
-      betaald, zal worden betaald of zou worden betaald indien [artikel 7, tweede lid, van die wet][ref2]
-      niet van toepassing zou zijn.
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel18
-      [ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel7
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel4
-    references:
-      - id: ref1
+      - id: ref4
         bwb_id: BWBR0002368
         artikel: '18'
-      - id: ref2
+      - id: ref5
         bwb_id: BWBR0002368
         artikel: '7'
   - number: '4.2'
@@ -10221,95 +10178,59 @@ articles:
         hoofdstuk: '2'
         paragraaf: '2.1'
   - number: 78ee.1
-    text: 'In dit artikel wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
-  - number: 78ee.1.1
     text: |-
-      *aanvullende beurs:* aanvullende beurs als bedoeld in [artikel 3.8 van de Wet studiefinanciering
-      2000][ref1];
+      In dit artikel wordt verstaan onder: - *aanvullende beurs:* aanvullende beurs als bedoeld in
+      [artikel 3.8 van de Wet studiefinanciering 2000][ref1]; - *basisbeurs uitwonend:* basisbeurs voor
+      een uitwonende student als bedoeld in [artikel 3.6, eerste lid, van de Wet studiefinanciering
+      2000][ref2]; - *leenfase:* fase als bedoeld in [artikel 4.7, derde lid][ref3], [artikel 4.18, tweede
+      lid][ref4], of [artikel 5.2, vierde lid van de Wet studiefinanciering 2000][ref5], waarin een
+      student studiefinanciering kan ontvangen in de vorm van een lening; - *lening:* studiefinanciering
+      in de vorm van een lening als bedoeld in [artikel 4.7, derde lid][ref6], [artikel 4.18, tweede
+      lid][ref7], of [artikel 5.2, vierde lid van de Wet studiefinanciering 2000][ref8]; - *student:*
+      student als bedoeld in [artikel 1.1 van de Wet studiefinanciering 2000][ref9]; - *uitwonende
+      student:* uitwonende student als bedoeld in [artikel 1.1 van de Wet studiefinanciering 2000][ref10].
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0011453#Artikel3.8
+      [ref2]: https://wetten.overheid.nl/BWBR0011453#Artikel3.6
+      [ref3]: https://wetten.overheid.nl/BWBR0011453#Artikel4.7
+      [ref4]: https://wetten.overheid.nl/BWBR0011453#Artikel4.18
+      [ref5]: https://wetten.overheid.nl/BWBR0011453#Artikel5.2
+      [ref6]: https://wetten.overheid.nl/BWBR0011453#Artikel4.7
+      [ref7]: https://wetten.overheid.nl/BWBR0011453#Artikel4.18
+      [ref8]: https://wetten.overheid.nl/BWBR0011453#Artikel5.2
+      [ref9]: https://wetten.overheid.nl/BWBR0011453#Artikel1.1
+      [ref10]: https://wetten.overheid.nl/BWBR0011453#Artikel1.1
     url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
     references:
       - id: ref1
         bwb_id: BWBR0011453
         artikel: '3.8'
-  - number: 78ee.1.2
-    text: |-
-      *basisbeurs uitwonend:* basisbeurs voor een uitwonende student als bedoeld in [artikel 3.6, eerste
-      lid, van de Wet studiefinanciering 2000][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0011453#Artikel3.6
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
-    references:
-      - id: ref1
+      - id: ref2
         bwb_id: BWBR0011453
         artikel: '3.6'
-  - number: 78ee.1.3
-    text: |-
-      *leenfase:* fase als bedoeld in [artikel 4.7, derde lid][ref1], [artikel 4.18, tweede lid][ref2], of
-      [artikel 5.2, vierde lid van de Wet studiefinanciering 2000][ref3], waarin een student
-      studiefinanciering kan ontvangen in de vorm van een lening;
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0011453#Artikel4.7
-      [ref2]: https://wetten.overheid.nl/BWBR0011453#Artikel4.18
-      [ref3]: https://wetten.overheid.nl/BWBR0011453#Artikel5.2
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
-    references:
-      - id: ref1
-        bwb_id: BWBR0011453
-        artikel: '4.7'
-      - id: ref2
-        bwb_id: BWBR0011453
-        artikel: '4.18'
       - id: ref3
         bwb_id: BWBR0011453
-        artikel: '5.2'
-  - number: 78ee.1.4
-    text: |-
-      *lening:* studiefinanciering in de vorm van een lening als bedoeld in [artikel 4.7, derde
-      lid][ref1], [artikel 4.18, tweede lid][ref2], of [artikel 5.2, vierde lid van de Wet
-      studiefinanciering 2000][ref3];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0011453#Artikel4.7
-      [ref2]: https://wetten.overheid.nl/BWBR0011453#Artikel4.18
-      [ref3]: https://wetten.overheid.nl/BWBR0011453#Artikel5.2
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
-    references:
-      - id: ref1
-        bwb_id: BWBR0011453
         artikel: '4.7'
-      - id: ref2
+      - id: ref4
         bwb_id: BWBR0011453
         artikel: '4.18'
-      - id: ref3
+      - id: ref5
         bwb_id: BWBR0011453
         artikel: '5.2'
-  - number: 78ee.1.5
-    text: |-
-      *student:* student als bedoeld in [artikel 1.1 van de Wet studiefinanciering 2000][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0011453#Artikel1.1
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
-    references:
-      - id: ref1
+      - id: ref6
+        bwb_id: BWBR0011453
+        artikel: '4.7'
+      - id: ref7
+        bwb_id: BWBR0011453
+        artikel: '4.18'
+      - id: ref8
+        bwb_id: BWBR0011453
+        artikel: '5.2'
+      - id: ref9
         bwb_id: BWBR0011453
         artikel: '1.1'
-  - number: 78ee.1.6
-    text: |-
-      *uitwonende student:* uitwonende student als bedoeld in [artikel 1.1 van de Wet studiefinanciering
-      2000][ref1].
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0011453#Artikel1.1
-    url: https://wetten.overheid.nl/BWBR0015703/2024-01-01#Artikel78ee
-    references:
-      - id: ref1
+      - id: ref10
         bwb_id: BWBR0011453
         artikel: '1.1'
   - number: 78ee.2

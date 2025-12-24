@@ -22,12 +22,11 @@ articles:
       goedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:
     url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#Aanhef
   - number: A 1
-    text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelA_1
-  - number: A 1.1
     text: |-
-      *algemeen bestuur:* vertegenwoordigend orgaan van een waterschap voor zover het leden betreft van de
-      categorie, bedoeld in [artikel 12, tweede lid, onderdeel a, van de Waterschapswet][ref1];
+      In deze wet en de daarop berustende bepalingen wordt verstaan onder: - *algemeen bestuur:*
+      vertegenwoordigend orgaan van een waterschap voor zover het leden betreft van de categorie, bedoeld
+      in [artikel 12, tweede lid, onderdeel a, van de Waterschapswet][ref1]; - *dagelijks bestuur:*
+      dagelijks bestuur van een waterschap.
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0005108#Artikel12
@@ -36,9 +35,6 @@ articles:
       - id: ref1
         bwb_id: BWBR0005108
         artikel: '12'
-  - number: A 1.2
-    text: '*dagelijks bestuur:* dagelijks bestuur van een waterschap.'
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelA_1
   - number: A 2
     text: Er is een Kiesraad, gevestigd te 's-Gravenhage.
     url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelA_2
@@ -1057,83 +1053,22 @@ articles:
       werkwijze van centraal stembureaus, niet zijnde de Kiesraad.
     url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelE_22
   - number: Ea 1
-    text: 'In dit hoofdstuk en de daarop berustende bepalingen wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-  - number: Ea 1.a
-    text: '*uitslagprogrammatuur:*'
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-  - number: Ea 1.a.a
     text: |-
-      programmatuur die het gemeentelijk stembureau gebruikt ten behoeve van de vaststelling van de
-      aantallen, bedoeld in [artikel Na 26][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0004627#ArtikelNa_26
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-    references:
-      - id: ref1
-        bwb_id: BWBR0004627
-        artikel: Na_26
-        hoofdstuk: Na
-        paragraaf: '4'
-        afdeling: II
-  - number: Ea 1.a.b
-    text: |-
-      programmatuur die het hoofdstembureau gebruikt ten behoeve van de vaststelling van de aantallen,
-      bedoeld in [artikel O 5][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0004627#ArtikelO_5
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-    references:
-      - id: ref1
-        bwb_id: BWBR0004627
-        artikel: O_5
-        hoofdstuk: O
-        paragraaf: '1'
-        afdeling: II
-  - number: Ea 1.a.c
-    text: |-
-      programmatuur die het nationaal briefstembureau gebruikt voor de vaststelling van de aantallen,
-      bedoeld in [artikel O 16][ref1]; en
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0004627#ArtikelO_16
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-    references:
-      - id: ref1
-        bwb_id: BWBR0004627
-        artikel: O_16
-        hoofdstuk: O
-        paragraaf: '2'
-        afdeling: II
-  - number: Ea 1.a.d
-    text: |-
-      programmatuur die het centraal stembureau gebruikt ten behoeve van de vaststelling van de uitslag
-      van de verkiezing en de vaststelling van de aantallen, bedoeld in [artikel P 20, eerste lid][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0004627#ArtikelP_20
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-    references:
-      - id: ref1
-        bwb_id: BWBR0004627
-        artikel: P_20
-        hoofdstuk: P
-        paragraaf: '4'
-        afdeling: II
-  - number: Ea 1.1
-    text: |-
-      *gebruiker:* het gemeentelijk stembureau, het nationaal briefstembureau, het hoofdstembureau of het
-      centraal stembureau;
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-  - number: Ea 1.2
-    text: |-
-      *aansluitvoorschriften:* de aansluitvoorschriften, bedoeld in [artikel Ea 4, eerste lid, aanhef en
-      onder a][ref1];
+      In dit hoofdstuk en de daarop berustende bepalingen wordt verstaan onder: - *uitslagprogrammatuur:*
+      - *gebruiker:* het gemeentelijk stembureau, het nationaal briefstembureau, het hoofdstembureau of
+      het centraal stembureau; - *aansluitvoorschriften:* de aansluitvoorschriften, bedoeld in [artikel Ea
+      4, eerste lid, aanhef en onder a][ref1]; - *gebruiksvoorschriften:* de gebruiksvoorschriften,
+      bedoeld in [artikel Ea 4, eerste lid, aanhef en onder b][ref2]; - *burgemeester en wethouders:*
+      burgemeester en wethouders die het gemeentelijk stembureau hebben ingesteld, burgemeester en
+      wethouders van ’s-Gravenhage die het nationaal briefstembureau hebben ingesteld, burgemeester en
+      wethouders van de gemeente waar het centraal stembureau voor de verkiezing van de leden van de
+      gemeenteraad, onderscheidenlijk provinciale staten is gevestigd; - *dagelijks bestuur:* het
+      dagelijks bestuur van het waterschap waarvoor het centraal stembureau voor de verkiezing van de
+      leden van het algemeen bestuur is ingesteld.
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0004627#ArtikelEa_4
+      [ref2]: https://wetten.overheid.nl/BWBR0004627#ArtikelEa_4
     url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
     references:
       - id: ref1
@@ -1141,32 +1076,11 @@ articles:
         artikel: Ea_4
         hoofdstuk: Ea
         afdeling: II
-  - number: Ea 1.3
-    text: |-
-      *gebruiksvoorschriften:* de gebruiksvoorschriften, bedoeld in [artikel Ea 4, eerste lid, aanhef en
-      onder b][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0004627#ArtikelEa_4
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-    references:
-      - id: ref1
+      - id: ref2
         bwb_id: BWBR0004627
         artikel: Ea_4
         hoofdstuk: Ea
         afdeling: II
-  - number: Ea 1.4
-    text: |-
-      *burgemeester en wethouders:* burgemeester en wethouders die het gemeentelijk stembureau hebben
-      ingesteld, burgemeester en wethouders van ’s-Gravenhage die het nationaal briefstembureau hebben
-      ingesteld, burgemeester en wethouders van de gemeente waar het centraal stembureau voor de
-      verkiezing van de leden van de gemeenteraad, onderscheidenlijk provinciale staten is gevestigd;
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
-  - number: Ea 1.5
-    text: |-
-      *dagelijks bestuur:* het dagelijks bestuur van het waterschap waarvoor het centraal stembureau voor
-      de verkiezing van de leden van het algemeen bestuur is ingesteld.
-    url: https://wetten.overheid.nl/BWBR0004627/2025-08-01#ArtikelEa_1
   - number: Ea 2.1
     text: |-
       De Kiesraad draagt overeenkomstig de bij of krachtens dit hoofdstuk gestelde bepalingen zorg voor de

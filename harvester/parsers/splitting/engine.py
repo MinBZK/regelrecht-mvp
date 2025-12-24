@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from harvester.parsers.article_splitter import ArticleComponent
 from harvester.parsers.content_parser import ReferenceCollector
 from harvester.parsers.registry.registry import get_tag_name
 from harvester.parsers.splitting.protocols import (
+    ArticleComponent,
     ElementSpec,
     SplitContext,
     SplitStrategy,
@@ -94,13 +94,23 @@ class SplitEngine:
         """Find structural children according to spec.
 
         Checks children in priority order and returns the first
-        matching type found.
+        matching type found. Unmarked lists (type="ongemarkeerd") are
+        excluded - their content is extracted inline instead.
         """
         for child_tag in spec.children:
-            children = [child for child in elem if get_tag_name(child) == child_tag]
+            children = [
+                child
+                for child in elem
+                if get_tag_name(child) == child_tag
+                and not self._is_unmarked_list(child)
+            ]
             if children:
                 return children
         return []
+
+    def _is_unmarked_list(self, elem: etree._Element) -> bool:
+        """Check if element is an unmarked list."""
+        return get_tag_name(elem) == "lijst" and elem.get("type") == "ongemarkeerd"
 
     def _process_with_structural_children(
         self,
@@ -193,6 +203,11 @@ class SplitEngine:
                 text = extract_inline_text(child, collector)
                 if text:
                     parts.append(text)
+            elif self._is_unmarked_list(child):
+                # Extract text from unmarked lists inline
+                text = self._extract_unmarked_list_text(child, collector)
+                if text:
+                    parts.append(text)
             elif not self._hierarchy.is_structural(child_tag):
                 # Also extract from non-structural elements
                 text = extract_inline_text(child, collector)
@@ -208,3 +223,35 @@ class SplitEngine:
             base_url=context.base_url,
             references=collector.references.copy(),
         )
+
+    def _extract_unmarked_list_text(
+        self,
+        lijst_elem: etree._Element,
+        collector: ReferenceCollector,
+    ) -> str:
+        """Extract text from an unmarked list, preserving list structure."""
+        parts: list[str] = []
+
+        for li in lijst_elem:
+            if get_tag_name(li) != "li":
+                continue
+
+            li_parts: list[str] = []
+            for child in li:
+                child_tag = get_tag_name(child)
+                if child_tag == "li.nr":
+                    continue  # Skip the dash/bullet marker
+                if child_tag == "al":
+                    text = extract_inline_text(child, collector)
+                    if text:
+                        li_parts.append(text)
+                elif self._is_unmarked_list(child):
+                    # Handle nested unmarked lists
+                    nested = self._extract_unmarked_list_text(child, collector)
+                    if nested:
+                        li_parts.append(nested)
+
+            if li_parts:
+                parts.append("- " + " ".join(li_parts))
+
+        return "\n".join(parts)

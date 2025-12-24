@@ -32,341 +32,154 @@ articles:
       - id: ref1
         bwb_id: BWBR0002614
   - number: 1.1.1
-    text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.1
     text: |-
-      *ADL-woning:* woning die deel uitmaakt van een aantal bij elkaar horende rolstoeldoorgankelijke
-      woningen;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.2
-    text: |-
-      *begeleiding:* activiteiten waarmee een persoon wordt ondersteund bij het uitvoeren van algemene
-      dagelijkse levensverrichtingen en bij het aanbrengen en behouden van structuur in en regie over het
-      persoonlijk leven;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.3
-    text: |-
-      *burgerservicenummer:* het burgerservicenummer, bedoeld in [artikel 1, onderdeel b, van de Wet
-      algemene bepalingen burgerservicenummer][ref1];
+      In deze wet en de daarop berustende bepalingen wordt verstaan onder: - *ADL-woning:* woning die deel
+      uitmaakt van een aantal bij elkaar horende rolstoeldoorgankelijke woningen; - *begeleiding:*
+      activiteiten waarmee een persoon wordt ondersteund bij het uitvoeren van algemene dagelijkse
+      levensverrichtingen en bij het aanbrengen en behouden van structuur in en regie over het persoonlijk
+      leven; - *burgerservicenummer:* het burgerservicenummer, bedoeld in [artikel 1, onderdeel b, van de
+      Wet algemene bepalingen burgerservicenummer][ref1]; - *CAK:* het CAK, genoemd in
+      [artikel 6.1.1][ref2]; - *CIZ:* het CIZ, genoemd in [artikel 7.1.1][ref3]; - *cliëntondersteuning:*
+      onafhankelijke ondersteuning met informatie, advies, algemene ondersteuning en zorgbemiddeling die
+      bijdraagt aan het tot gelding brengen van het recht op zorg in samenhang met dienstverlening op
+      andere gebieden; - *continentaal plat:* de exclusieve economische zone van het Koninkrijk, bedoeld
+      in [artikel 1 van de rijkswet instelling exclusieve economische zone][ref4], voor zover deze grenst
+      aan de territoriale zee van Nederland; - *dossier:* de schriftelijk of elektronisch vastgelegde
+      gegevens met betrekking tot de verlening van zorg aan een cliënt; - *Fonds langdurige zorg:* fonds,
+      genoemd in [artikel 89 van de Wet financiering sociale verzekeringen][ref5]; - *indicatiebesluit:*
+      besluit van het CIZ waarbij beoordeeld wordt of en in welke omvang de verzekerde in aanmerking komt
+      voor zorg; - *inspecteur of ontvanger:* de functionaris, bedoeld in [artikel 2, derde lid, onder b,
+      van de Algemene wet inzake rijksbelastingen][ref6]; - *instelling:* - *mantelzorger:* natuurlijke
+      persoon die rechtstreeks voortvloeiend uit een tussen personen bestaande sociale relatie zorg
+      verleent zonder dat dit beroeps- of bedrijfsmatig geschiedt; - *Onze Minister:* Onze Minister van
+      Volksgezondheid, Welzijn en Sport; - *persoonsgebonden budget:* een subsidie waarmee de verzekerde
+      onder de bij of krachtens [artikel 3.3.3][ref7] en [titel 4.2 van de Algemene wet
+      bestuursrecht][ref8] gestelde voorwaarden aan hem te verlenen zorg kan inkopen; - *persoonlijke
+      verzorging:* het ondersteunen bij of het overnemen van activiteiten op het gebied van de
+      persoonlijke verzorging, gericht op het opheffen van een tekort aan zelfredzaamheid; - *Nederland:*
+      het Europese deel van Nederland; - *solistisch werkende zorgverlener:* een zorgverlener die, anders
+      dan in dienst of onmiddellijk of middellijk in opdracht van een instelling beroepsmatig zorg
+      verleent; - *Sociale verzekeringsbank:* de Sociale verzekeringsbank, genoemd in [artikel 3 van de
+      Wet structuur uitvoeringsorganisatie werk en inkomen][ref9]; - *verblijf:* verblijf als bedoeld in
+      [artikel 3.1.1, eerste lid, onder a][ref10]; - *verpleging:* handelingen, gericht op herstel of
+      voorkoming van verergering van de aandoening, beperking of handicap; - *verzekeraar:*
+      verzekeringsonderneming als bedoeld in richtlijn nr. 73/239/EEG van de Raad van de Europese
+      Gemeenschappen van 24 juli 1973 tot coördinatie van de wettelijke en bestuursrechtelijke bepalingen
+      betreffende de toegang tot het directe verzekeringsbedrijf, met uitzondering van de
+      levensverzekeringbranche en de uitoefening daarvan (PbEG L 228); - *vreemdeling:* vreemdeling als
+      bedoeld in de [Vreemdelingenwet 2000][ref12]; - *Wlz-uitvoerder:* rechtspersoon die geen
+      zorgverzekeraar is, die zich overeenkomstig [artikel 4.1.1][ref13] heeft aangemeld voor de
+      uitvoering van deze wet, het zorgkantoor daaronder begrepen; - *woningaanpassing:* bouwkundige of
+      woontechnische ingreep in of aan een woonruimte; - *zorg:* zorg en overige diensten als bedoeld in
+      [artikel 3.1.1][ref14]; - *zorg in natura:* zorg, geleverd door zorgaanbieders op grond van
+      schriftelijke overeenkomsten tussen zorgaanbieders en Wlz-uitvoerders als bedoeld in
+      [artikel 4.2.2][ref15]; - *zorgaanbieder:* een instelling dan wel een solistisch werkende
+      zorgverlener; - *zorgautoriteit:* de zorgautoriteit, genoemd in [artikel 3 van de Wet marktordening
+      gezondheidszorg][ref16]; - *Zorginstituut:* het Zorginstituut Nederland, genoemd in [artikel 58,
+      eerste lid, van de Zorgverzekeringswet][ref17]; - *zorgkantoor:* een ingevolge [artikel 4.2.4,
+      tweede lid][ref18], voor een bepaalde regio aangewezen Wlz-uitvoerder; - *zorgplan:* schriftelijk of
+      elektronisch als zodanig vastgelegde uitkomsten van hetgeen met de verzekerde dan wel een
+      vertegenwoordiger van de verzekerde is besproken met betrekking tot de in [artikel 8.1.1][ref19]
+      genoemde onderwerpen; - *zorgverlener:* een natuurlijke persoon die in persoon beroepsmatig zorg
+      verleent; - *zorgverzekeraar:* een zorgverzekeraar als bedoeld in [artikel 1, onderdeel b, van de
+      Zorgverzekeringswet][ref20]; - *zorgverzekering:* een zorgverzekering als bedoeld in [artikel 1,
+      onderdeel d, van de Zorgverzekeringswet][ref21].
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0022428
+      [ref2]: https://wetten.overheid.nl/BWBR0035917#Artikel6.1.1
+      [ref3]: https://wetten.overheid.nl/BWBR0035917#Artikel7.1.1
+      [ref4]: https://wetten.overheid.nl/BWBR0010480#Artikel1
+      [ref5]: https://wetten.overheid.nl/BWBR0017745#Artikel89
+      [ref6]: https://wetten.overheid.nl/BWBR0002320#Artikel2
+      [ref7]: https://wetten.overheid.nl/BWBR0035917#Artikel3.3.3
+      [ref8]: https://wetten.overheid.nl/BWBR0005537
+      [ref9]: https://wetten.overheid.nl/BWBR0013060#Artikel3
+      [ref10]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
+      [ref12]: https://wetten.overheid.nl/BWBR0011823
+      [ref13]: https://wetten.overheid.nl/BWBR0035917#Artikel4.1.1
+      [ref14]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
+      [ref15]: https://wetten.overheid.nl/BWBR0035917#Artikel4.2.2
+      [ref16]: https://wetten.overheid.nl/BWBR0020078#Artikel3
+      [ref17]: https://wetten.overheid.nl/BWBR0018450#Artikel58
+      [ref18]: https://wetten.overheid.nl/BWBR0035917#Artikel4.2.4
+      [ref19]: https://wetten.overheid.nl/BWBR0035917#Artikel8.1.1
+      [ref20]: https://wetten.overheid.nl/BWBR0018450#Artikel1
+      [ref21]: https://wetten.overheid.nl/BWBR0018450#Artikel1
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
     references:
       - id: ref1
         bwb_id: BWBR0022428
-  - number: 1.1.1.4
-    text: |-
-      *CAK:* het CAK, genoemd in [artikel 6.1.1][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel6.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref2
         bwb_id: BWBR0035917
         artikel: 6.1.1
         hoofdstuk: '6'
         paragraaf: '1'
-  - number: 1.1.1.5
-    text: |-
-      *CIZ:* het CIZ, genoemd in [artikel 7.1.1][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel7.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref3
         bwb_id: BWBR0035917
         artikel: 7.1.1
         hoofdstuk: '7'
         paragraaf: '1'
-  - number: 1.1.1.6
-    text: |-
-      *cliëntondersteuning:* onafhankelijke ondersteuning met informatie, advies, algemene ondersteuning
-      en zorgbemiddeling die bijdraagt aan het tot gelding brengen van het recht op zorg in samenhang met
-      dienstverlening op andere gebieden;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.7
-    text: |-
-      *continentaal plat:* de exclusieve economische zone van het Koninkrijk, bedoeld in [artikel 1 van de
-      rijkswet instelling exclusieve economische zone][ref1], voor zover deze grenst aan de territoriale
-      zee van Nederland;
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0010480#Artikel1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref4
         bwb_id: BWBR0010480
         artikel: '1'
-  - number: 1.1.1.8
-    text: |-
-      *dossier:* de schriftelijk of elektronisch vastgelegde gegevens met betrekking tot de verlening van
-      zorg aan een cliënt;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.9
-    text: |-
-      *Fonds langdurige zorg:* fonds, genoemd in [artikel 89 van de Wet financiering sociale
-      verzekeringen][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0017745#Artikel89
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref5
         bwb_id: BWBR0017745
         artikel: '89'
-  - number: 1.1.1.10
-    text: |-
-      *indicatiebesluit:* besluit van het CIZ waarbij beoordeeld wordt of en in welke omvang de verzekerde
-      in aanmerking komt voor zorg;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.11
-    text: |-
-      *inspecteur of ontvanger:* de functionaris, bedoeld in [artikel 2, derde lid, onder b, van de
-      Algemene wet inzake rijksbelastingen][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0002320#Artikel2
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref6
         bwb_id: BWBR0002320
         artikel: '2'
-  - number: 1.1.1.12
-    text: '*instelling:*'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.12.1°
-    text: een organisatorisch verband dat zorg verleent;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.12.2°
-    text: |-
-      een organisatorisch verband dat gevestigd is buiten het grondgebied van het Europese deel van
-      Nederland en overeenkomstig de daar geldende wetgeving rechtmatig gezondheidszorg verstrekt als
-      bedoeld bij of krachtens [artikel 3.1.1][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
-        bwb_id: BWBR0035917
-        artikel: 3.1.1
-        hoofdstuk: '3'
-        paragraaf: '1'
-  - number: 1.1.1.13
-    text: |-
-      *mantelzorger:* natuurlijke persoon die rechtstreeks voortvloeiend uit een tussen personen bestaande
-      sociale relatie zorg verleent zonder dat dit beroeps- of bedrijfsmatig geschiedt;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.14
-    text: '*Onze Minister:* Onze Minister van Volksgezondheid, Welzijn en Sport;'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.15
-    text: |-
-      *persoonsgebonden budget:* een subsidie waarmee de verzekerde onder de bij of krachtens
-      [artikel 3.3.3][ref1] en [titel 4.2 van de Algemene wet bestuursrecht][ref2] gestelde voorwaarden
-      aan hem te verlenen zorg kan inkopen;
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel3.3.3
-      [ref2]: https://wetten.overheid.nl/BWBR0005537
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref7
         bwb_id: BWBR0035917
         artikel: 3.3.3
         hoofdstuk: '3'
         paragraaf: '3'
-      - id: ref2
+      - id: ref8
         bwb_id: BWBR0005537
-  - number: 1.1.1.16
-    text: |-
-      *persoonlijke verzorging:* het ondersteunen bij of het overnemen van activiteiten op het gebied van
-      de persoonlijke verzorging, gericht op het opheffen van een tekort aan zelfredzaamheid;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.17
-    text: '*Nederland:* het Europese deel van Nederland;'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.18
-    text: |-
-      *solistisch werkende zorgverlener:* een zorgverlener die, anders dan in dienst of onmiddellijk of
-      middellijk in opdracht van een instelling beroepsmatig zorg verleent;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.19
-    text: |-
-      *Sociale verzekeringsbank:* de Sociale verzekeringsbank, genoemd in [artikel 3 van de Wet structuur
-      uitvoeringsorganisatie werk en inkomen][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0013060#Artikel3
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref9
         bwb_id: BWBR0013060
         artikel: '3'
-  - number: 1.1.1.20
-    text: |-
-      *verblijf:* verblijf als bedoeld in [artikel 3.1.1, eerste lid, onder a][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref10
         bwb_id: BWBR0035917
         artikel: 3.1.1
         hoofdstuk: '3'
         paragraaf: '1'
-  - number: 1.1.1.21
-    text: |-
-      *verpleging:* handelingen, gericht op herstel of voorkoming van verergering van de aandoening,
-      beperking of handicap;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.22
-    text: |-
-      *verzekeraar:* verzekeringsonderneming als bedoeld in richtlijn nr. 73/239/EEG van de Raad van de
-      Europese Gemeenschappen van 24 juli 1973 tot coördinatie van de wettelijke en bestuursrechtelijke
-      bepalingen betreffende de toegang tot het directe verzekeringsbedrijf, met uitzondering van de
-      levensverzekeringbranche en de uitoefening daarvan (PbEG L 228);
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.23
-    text: |-
-      *vreemdeling:* vreemdeling als bedoeld in de [Vreemdelingenwet 2000][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0011823
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref12
         bwb_id: BWBR0011823
-  - number: 1.1.1.24
-    text: |-
-      *Wlz-uitvoerder:* rechtspersoon die geen zorgverzekeraar is, die zich overeenkomstig
-      [artikel 4.1.1][ref1] heeft aangemeld voor de uitvoering van deze wet, het zorgkantoor daaronder
-      begrepen;
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel4.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref13
         bwb_id: BWBR0035917
         artikel: 4.1.1
         hoofdstuk: '4'
         paragraaf: '1'
-  - number: 1.1.1.25
-    text: '*woningaanpassing:* bouwkundige of woontechnische ingreep in of aan een woonruimte;'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.26
-    text: |-
-      *zorg:* zorg en overige diensten als bedoeld in [artikel 3.1.1][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref14
         bwb_id: BWBR0035917
         artikel: 3.1.1
         hoofdstuk: '3'
         paragraaf: '1'
-  - number: 1.1.1.27
-    text: |-
-      *zorg in natura:* zorg, geleverd door zorgaanbieders op grond van schriftelijke overeenkomsten
-      tussen zorgaanbieders en Wlz-uitvoerders als bedoeld in [artikel 4.2.2][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel4.2.2
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref15
         bwb_id: BWBR0035917
         artikel: 4.2.2
         hoofdstuk: '4'
         paragraaf: '2'
-  - number: 1.1.1.28
-    text: '*zorgaanbieder:* een instelling dan wel een solistisch werkende zorgverlener;'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.29
-    text: |-
-      *zorgautoriteit:* de zorgautoriteit, genoemd in [artikel 3 van de Wet marktordening
-      gezondheidszorg][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0020078#Artikel3
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref16
         bwb_id: BWBR0020078
         artikel: '3'
-  - number: 1.1.1.30
-    text: |-
-      *Zorginstituut:* het Zorginstituut Nederland, genoemd in [artikel 58, eerste lid, van de
-      Zorgverzekeringswet][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0018450#Artikel58
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref17
         bwb_id: BWBR0018450
         artikel: '58'
-  - number: 1.1.1.31
-    text: |-
-      *zorgkantoor:* een ingevolge [artikel 4.2.4, tweede lid][ref1], voor een bepaalde regio aangewezen
-      Wlz-uitvoerder;
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel4.2.4
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref18
         bwb_id: BWBR0035917
         artikel: 4.2.4
         hoofdstuk: '4'
         paragraaf: '2'
-  - number: 1.1.1.32
-    text: |-
-      *zorgplan:* schriftelijk of elektronisch als zodanig vastgelegde uitkomsten van hetgeen met de
-      verzekerde dan wel een vertegenwoordiger van de verzekerde is besproken met betrekking tot de in
-      [artikel 8.1.1][ref1] genoemde onderwerpen;
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0035917#Artikel8.1.1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref19
         bwb_id: BWBR0035917
         artikel: 8.1.1
         hoofdstuk: '8'
-  - number: 1.1.1.33
-    text: '*zorgverlener:* een natuurlijke persoon die in persoon beroepsmatig zorg verleent;'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-  - number: 1.1.1.34
-    text: |-
-      *zorgverzekeraar:* een zorgverzekeraar als bedoeld in [artikel 1, onderdeel b, van de
-      Zorgverzekeringswet][ref1];
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0018450#Artikel1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref20
         bwb_id: BWBR0018450
         artikel: '1'
-  - number: 1.1.1.35
-    text: |-
-      *zorgverzekering:* een zorgverzekering als bedoeld in [artikel 1, onderdeel d, van de
-      Zorgverzekeringswet][ref1].
-
-
-      [ref1]: https://wetten.overheid.nl/BWBR0018450#Artikel1
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel1.1.1
-    references:
-      - id: ref1
+      - id: ref21
         bwb_id: BWBR0018450
         artikel: '1'
   - number: 1.1.2.1
@@ -848,45 +661,14 @@ articles:
     text: door zware regieproblemen voortdurend begeleiding of overname van taken nodig heeft.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
   - number: 3.2.1.2
-    text: 'In het eerste lid wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.a
-    text: '*blijvend:* van niet voorbijgaande aard;'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.b
     text: |-
-      *permanent toezicht:* onafgebroken toezicht en actieve observatie gedurende het gehele etmaal,
-      waardoor tijdig kan worden ingegrepen;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.c
-    text: '*ernstig nadeel voor de verzekerde:* een situatie waarin de verzekerde:'
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.c.1°
-    text: zich maatschappelijk te gronde richt of dreigt te richten;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.c.2°
-    text: zichzelf in ernstige mate verwaarloost of dreigt te verwaarlozen;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.c.3°
-    text: |-
-      ernstig lichamelijk letsel oploopt of dreigt op te lopen dan wel zichzelf ernstig lichamelijk letsel
-      toebrengt of dreigt toe te brengen;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.c.4°
-    text: |-
-      ernstig in zijn ontwikkeling wordt geschaad of dreigt te worden geschaad of dat zijn veiligheid
-      ernstig wordt bedreigd, al dan niet doordat hij onder de invloed van een ander raakt;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.d
-    text: |-
+      In het eerste lid wordt verstaan onder: - *blijvend:* van niet voorbijgaande aard; - *permanent
+      toezicht:* onafgebroken toezicht en actieve observatie gedurende het gehele etmaal, waardoor tijdig
+      kan worden ingegrepen; - *ernstig nadeel voor de verzekerde:* een situatie waarin de verzekerde: -
       *zelfzorg:* de uitvoering van algemene dagelijkse levensverrichtingen waaronder de persoonlijke
-      verzorging en hygiëne en, zo nodig, de verpleegkundige zorg;
-    url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
-  - number: 3.2.1.2.e
-    text: |-
-      *regieproblemen:* beperkingen in het vermogen om een adequaat oordeel te vormen over dagelijks
-      voorkomende situaties op het gebied van sociale redzaamheid, probleemgedrag, psychisch functioneren
-      of geheugen en oriëntatie.
+      verzorging en hygiëne en, zo nodig, de verpleegkundige zorg; - *regieproblemen:* beperkingen in het
+      vermogen om een adequaat oordeel te vormen over dagelijks voorkomende situaties op het gebied van
+      sociale redzaamheid, probleemgedrag, psychisch functioneren of geheugen en oriëntatie.
     url: https://wetten.overheid.nl/BWBR0035917/2025-07-05#Artikel3.2.1
   - number: 3.2.1.3
     text: |-

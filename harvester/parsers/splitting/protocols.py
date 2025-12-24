@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol
 
+from harvester.models import Article, Reference
+
 if TYPE_CHECKING:
     from lxml import etree
 
@@ -121,3 +123,36 @@ class SplitStrategy(Protocol):
             The extracted number, or None if not found
         """
         ...
+
+
+@dataclass
+class ArticleComponent:
+    """Represents a lowest-level component of an article."""
+
+    number_parts: list[str]  # e.g., ["1", "1.", "a"] for artikel 1, lid 1, onderdeel a
+    text: str
+    base_url: str  # Base URL for the article (without fragment)
+    references: list[Reference] = field(default_factory=list)
+
+    def to_number(self) -> str:
+        """Convert number parts to dot notation."""
+        return ".".join(self.number_parts)
+
+    def to_article(self) -> Article:
+        """Convert to Article object with reference definitions appended to text."""
+        text = self.text
+
+        # Append reference definitions if there are any references
+        if self.references:
+            ref_lines = []
+            for ref in self.references:
+                url = ref.to_wetten_url()
+                ref_lines.append(f"[{ref.id}]: {url}")
+            text = f"{text}\n\n" + "\n".join(ref_lines)
+
+        return Article(
+            number=self.to_number(),
+            text=text,
+            url=self.base_url,
+            references=self.references,
+        )

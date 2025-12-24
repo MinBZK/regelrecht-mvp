@@ -2911,22 +2911,14 @@ articles:
       verwerking door Onze Minister niet van toepassing.
     url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel32
   - number: '33.1'
-    text: 'In dit artikel wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel33
-  - number: 33.1.a
     text: |-
-      *catastrofe:* een natuurramp, een pandemie, een kernexplosie of een bij ministeriële regeling aan te
-      wijzen andere buitengewone gebeurtenis;
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel33
-  - number: 33.1.b
-    text: '*catastrofejaar:* het kalenderjaar waarin een catastrofe optreedt;'
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel33
-  - number: 33.1.c
-    text: |-
-      *gemiddelde vereveningsbijdrage:* de toegekende vereveningsbijdrage per verzekerde, die wordt
-      berekend door de som van de op grond van [artikel 32][ref1] met betrekking tot het catastrofejaar
-      aan alle zorgverzekeraars toegekende vereveningsbijdragen te delen door het op het moment van
-      toekenning van die bijdragen verwachte totaalaantal verzekerden in dat jaar.
+      In dit artikel wordt verstaan onder: - *catastrofe:* een natuurramp, een pandemie, een kernexplosie
+      of een bij ministeriële regeling aan te wijzen andere buitengewone gebeurtenis; - *catastrofejaar:*
+      het kalenderjaar waarin een catastrofe optreedt; - *gemiddelde vereveningsbijdrage:* de toegekende
+      vereveningsbijdrage per verzekerde, die wordt berekend door de som van de op grond van [artikel
+      32][ref1] met betrekking tot het catastrofejaar aan alle zorgverzekeraars toegekende
+      vereveningsbijdragen te delen door het op het moment van toekenning van die bijdragen verwachte
+      totaalaantal verzekerden in dat jaar.
 
 
       [ref1]: https://wetten.overheid.nl/BWBR0018450#Artikel32
@@ -6655,39 +6647,28 @@ articles:
         bwb_id: BWBR0020368
         artikel: 3a:85
   - number: '123.1'
-    text: 'In dit artikel wordt verstaan onder:'
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel123
-  - number: 123.1.a
     text: |-
-      *orgaan van de woonplaats:* rechtspersoon die door Onze Minister is aangewezen als orgaan van de
-      woonplaats in de zin van de Verordening (EG) nr. 883/2004 van het Europees Parlement en de Raad van
-      29 april 2004, betreffende de coördinatie van socialezekerheidsstelsels (PbEU 2004, L 166), of, voor
-      zover het zorg betreft, een verdrag inzake sociale zekerheid;
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel123
-  - number: 123.1.b
-    text: |-
-      *orgaan van de verblijfplaats:* rechtspersoon die door Onze Minister is aangewezen als orgaan van de
-      verblijfplaats in de zin van de Verordening (EG) nr. 883/2004 van het Europees Parlement en de Raad
-      van 29 april 2004, betreffende de coördinatie van socialezekerheidsstelsels (PbEU 2004, L 166), of,
-      voor zover het zorg betreft, een verdrag inzake sociale zekerheid;
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel123
-  - number: 123.1.c
-    text: |-
-      *verdragsrecht:* recht van een in Nederland wonende of tijdelijk verblijvende persoon op zorg of
-      andere diensten in de zin van deze wet of de [Wet langdurige zorg][ref1] uit hoofde van een
-      verordening van het Europees Parlement en de Raad van de Europese Unie dan wel toepassing van
-      zodanige verordening krachtens een overeenkomst betreffende de Europese Economische Ruimte of een
-      verdrag inzake sociale zekerheid;
+      In dit artikel wordt verstaan onder: - *orgaan van de woonplaats:* rechtspersoon die door Onze
+      Minister is aangewezen als orgaan van de woonplaats in de zin van de Verordening (EG) nr. 883/2004
+      van het Europees Parlement en de Raad van 29 april 2004, betreffende de coördinatie van
+      socialezekerheidsstelsels (PbEU 2004, L 166), of, voor zover het zorg betreft, een verdrag inzake
+      sociale zekerheid; - *orgaan van de verblijfplaats:* rechtspersoon die door Onze Minister is
+      aangewezen als orgaan van de verblijfplaats in de zin van de Verordening (EG) nr. 883/2004 van het
+      Europees Parlement en de Raad van 29 april 2004, betreffende de coördinatie van
+      socialezekerheidsstelsels (PbEU 2004, L 166), of, voor zover het zorg betreft, een verdrag inzake
+      sociale zekerheid; - *verdragsrecht:* recht van een in Nederland wonende of tijdelijk verblijvende
+      persoon op zorg of andere diensten in de zin van deze wet of de [Wet langdurige zorg][ref3] uit
+      hoofde van een verordening van het Europees Parlement en de Raad van de Europese Unie dan wel
+      toepassing van zodanige verordening krachtens een overeenkomst betreffende de Europese Economische
+      Ruimte of een verdrag inzake sociale zekerheid; - *verdragsgerechtigde:* persoon met een
+      verdragsrecht.
 
 
-      [ref1]: https://wetten.overheid.nl/BWBR0035917
+      [ref3]: https://wetten.overheid.nl/BWBR0035917
     url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel123
     references:
-      - id: ref1
+      - id: ref3
         bwb_id: BWBR0035917
-  - number: 123.1.d
-    text: '*verdragsgerechtigde:* persoon met een verdragsrecht.'
-    url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel123
   - number: '123.2'
     text: Onze Minister wijst de organen van de woonplaats en de organen van de verblijfplaats aan.
     url: https://wetten.overheid.nl/BWBR0018450/2025-07-05#Artikel123
