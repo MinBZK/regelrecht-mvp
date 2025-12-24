@@ -15,10 +15,8 @@ if TYPE_CHECKING:
 class LeafSplitStrategy:
     """Default strategy: split at every leaf (deepest) level.
 
-    This matches the current behavior of article_splitter.py:
-    - Split at artikel, lid, and li elements
-    - Extract intro text before structural children
-    - Recurse into nested structures
+    Splits at artikel, lid, and li elements, extracting intro text
+    before structural children and recursing into nested structures.
     """
 
     def should_split_here(
