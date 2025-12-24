@@ -359,11 +359,14 @@ articles:
         output:
           - name: leeftijd
             type: number
-            description: Leeftijd van de persoon in jaren (stub, returns 20)
+            description: Leeftijd van de persoon in jaren, berekend op basis van geboortedatum
         actions:
-          # Stub implementatie - retourneert 20 jaar voor testing
           - output: leeftijd
-            value: 20
+            operation: SUBTRACT_DATE
+            values:
+              - $referencedate
+              - $geboortedatum
+            unit: years
   - number: Artikel 2.8
     text: |-
       Artikel 2.8 1 De gegevens over de burgerlijke staat worden, indien zij feiten betreffen die zich in Nederland

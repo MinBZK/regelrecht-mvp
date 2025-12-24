@@ -578,3 +578,262 @@ def step_then_minimale_afstand_m(context, amount):
         raise AssertionError(
             f"Expected minimale_afstand_m {expected}, but got {actual}"
         )
+
+
+# === Nederlandse zorgtoeslag step definitions ===
+
+
+@given('de datum is "{date}"')  # type: ignore[misc]
+def step_given_datum(context, date):
+    """Set the calculation date (Dutch)"""
+    context.calculation_date = date
+
+
+@given('een persoon met BSN "{bsn}"')  # type: ignore[misc]
+def step_given_persoon_met_bsn(context, bsn):
+    """Set the BSN for the current person (Dutch)"""
+    context.bsn = bsn
+    if not hasattr(context, "mock_service"):
+        context.mock_service = MockDataService()
+
+
+@given("de volgende {service} {table_name} gegevens:")  # type: ignore[misc]
+def step_given_dutch_service_data(context, service, table_name):
+    """
+    Generic Dutch step to store service data from table
+
+    Maps Dutch table names to English equivalents:
+    - personen -> personal_data
+    - relaties -> relationship_data
+    - verzekeringen -> insurance
+    - box1, box2, box3 -> box1, box2, box3
+    - detenties -> detention
+    """
+    if not hasattr(context, "mock_service"):
+        context.mock_service = MockDataService()
+
+    # Map Dutch table names to English
+    table_mapping = {
+        "personen": "personal_data",
+        "relaties": "relationship_data",
+        "verzekeringen": "insurance",
+        "detenties": "detention",
+        "inschrijvingen": "enrollment",
+        "studiefinanciering": "student_finance",
+    }
+    datasource = table_mapping.get(table_name, table_name)
+
+    for row in context.table:
+        # Convert all values to appropriate types
+        data = {"bsn": row["bsn"]}
+
+        for key in row.headings:
+            if key != "bsn":
+                value = row[key]
+                if value == "null":
+                    data[key] = None
+                else:
+                    try:
+                        data[key] = float(value)
+                    except ValueError:
+                        data[key] = value
+
+        context.mock_service.store_data(service, datasource, data)
+        context.bsn = row["bsn"]
+
+
+@when("de zorgtoeslagwet wordt uitgevoerd door TOESLAGEN")  # type: ignore[misc]
+def step_when_zorgtoeslagwet_uitgevoerd(context):
+    """Execute the zorgtoeslag law (Dutch)"""
+    from engine.service import LawExecutionService
+    from engine.data_sources import DictDataSource
+
+    # Create service
+    service = LawExecutionService("regulation/nl")
+
+    # Get calculation date
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+
+    # Convert mock data to data sources
+    if hasattr(context, "mock_service"):
+        mock = context.mock_service
+
+        def convert_value(v):
+            if v == "null" or v is None:
+                return None
+            if v == "true":
+                return True
+            if v == "false":
+                return False
+            try:
+                if "." in str(v):
+                    return float(v)
+                return int(v)
+            except (ValueError, TypeError):
+                return v
+
+        # Create a single data source per service/datasource combination
+        for service_name, datasources in mock.services.items():
+            for datasource_name, bsn_data in datasources.items():
+                source_name = f"{service_name.lower()}_{datasource_name}"
+                source = DictDataSource(name=source_name, priority=100)
+
+                for bsn, record in bsn_data.items():
+                    converted_record = {k: convert_value(v) for k, v in record.items()}
+                    source.store(bsn, converted_record)
+
+                service.add_data_source(source)
+
+        # Add derived fields needed by zorgtoeslag
+        derived = DictDataSource(name="derived", priority=200)
+
+        for bsn in [context.bsn]:
+            derived_record = {}
+
+            # Get personal data
+            personal = mock.services.get("RvIG", {}).get("personal_data", {}).get(bsn)
+
+            # geboortedatum - needed for leeftijd calculation in BRP wet
+            if personal and "geboortedatum" in personal:
+                derived_record["geboortedatum"] = personal["geboortedatum"]
+
+            # PARTNERSCHAP_TYPE - needed for heeft_partner calculation in BRP wet
+            relationship = (
+                mock.services.get("RvIG", {}).get("relationship_data", {}).get(bsn)
+            )
+            if relationship:
+                derived_record["partnerschap_type"] = relationship.get(
+                    "partnerschap_type", "GEEN"
+                )
+            else:
+                derived_record["partnerschap_type"] = "GEEN"
+
+            # POLIS_STATUS - needed for is_verzekerde calculation in Zvw
+            insurance = mock.services.get("RVZ", {}).get("insurance", {}).get(bsn)
+            if insurance:
+                derived_record["polis_status"] = insurance.get(
+                    "polis_status", "INACTIEF"
+                )
+            else:
+                derived_record["polis_status"] = "INACTIEF"
+
+            # Income fields for wet_inkomstenbelasting_2001
+            box1 = mock.services.get("BELASTINGDIENST", {}).get("box1", {}).get(bsn, {})
+            derived_record["loon_uit_dienstbetrekking"] = box1.get(
+                "loon_uit_dienstbetrekking", 0
+            )
+            derived_record["uitkeringen_en_pensioenen"] = box1.get(
+                "uitkeringen_en_pensioenen", 0
+            )
+            derived_record["winst_uit_onderneming"] = box1.get(
+                "winst_uit_onderneming", 0
+            )
+            derived_record["resultaat_overige_werkzaamheden"] = box1.get(
+                "resultaat_overige_werkzaamheden", 0
+            )
+            derived_record["eigen_woning"] = box1.get("eigen_woning", 0)
+
+            # Box 2 fields (aanmerkelijk belang)
+            box2 = mock.services.get("BELASTINGDIENST", {}).get("box2", {}).get(bsn, {})
+            derived_record["reguliere_voordelen"] = box2.get("reguliere_voordelen", 0)
+            derived_record["vervreemdingsvoordelen"] = box2.get(
+                "vervreemdingsvoordelen", 0
+            )
+
+            # Box 3 fields (vermogen)
+            box3 = mock.services.get("BELASTINGDIENST", {}).get("box3", {}).get(bsn, {})
+            derived_record["spaargeld"] = box3.get("spaargeld", 0)
+            derived_record["beleggingen"] = box3.get("beleggingen", 0)
+            derived_record["onroerend_goed"] = box3.get("onroerend_goed", 0)
+            derived_record["schulden"] = box3.get("schulden", 0)
+
+            # Partner fields (default to 0)
+            derived_record["partner_inkomen"] = 0
+            derived_record["partner_vermogen"] = 0
+
+            derived.store(bsn, derived_record)
+
+        service.add_data_source(derived)
+
+    # Execute the law
+    parameters = {"bsn": context.bsn}
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="wet_op_de_zorgtoeslag",
+            output_name="hoogte_toeslag",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+
+        # Print execution trace
+        print_execution_trace(result, "Zorgtoeslag Execution Trace")
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@then("is niet voldaan aan de voorwaarden")  # type: ignore[misc]
+def step_then_niet_voldaan(context):
+    """Verify that the applicant does not meet the requirements (Dutch)"""
+    if context.error:
+        # Check if error indicates no right
+        if "geen recht" in str(context.error).lower():
+            return
+        raise AssertionError(f"Unexpected error: {context.error}")
+
+    if context.result is None:
+        return  # No result means requirements not met
+
+    # Check if the output indicates no right
+    result = context.result
+    hoogte = result.output.get("hoogte_toeslag", 0)
+
+    # For zorgtoeslag: if the amount is 0 or there's a rejection reason, not met
+    if hoogte == 0:
+        return
+
+    # Check for is_verzekerde output
+    if "is_verzekerde_zorgtoeslag" in result.output:
+        if not result.output["is_verzekerde_zorgtoeslag"]:
+            return
+
+    raise AssertionError(
+        f"Expected requirements not met, but got hoogte_toeslag: {hoogte}"
+    )
+
+
+@then("heeft de persoon recht op zorgtoeslag")  # type: ignore[misc]
+def step_then_heeft_recht(context):
+    """Verify that the applicant has the right to healthcare allowance (Dutch)"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    hoogte = result.output.get("hoogte_toeslag", 0)
+
+    if hoogte <= 0:
+        raise AssertionError(
+            f"Expected person to have right to zorgtoeslag, but hoogte_toeslag is {hoogte}"
+        )
+
+
+@then('is het toeslagbedrag "{amount}" euro')  # type: ignore[misc]
+def step_then_toeslagbedrag(context, amount):
+    """Verify the allowance amount in euro (Dutch)"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual_eurocent = result.output.get("hoogte_toeslag", 0)
+    actual_euro = actual_eurocent / 100
+
+    expected_euro = float(amount)
+
+    # Allow small rounding difference
+    if abs(actual_euro - expected_euro) > 0.02:
+        raise AssertionError(
+            f"Expected toeslagbedrag €{expected_euro:.2f}, but got €{actual_euro:.2f}"
+        )

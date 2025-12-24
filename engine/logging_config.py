@@ -15,15 +15,15 @@ class GlobalIndent:
 
     _level = 0
     _tree_chars_single = {
-        "pipe": "│",
-        "branch": "├──",
-        "leaf": "└──",
+        "pipe": "|",
+        "branch": "+--",
+        "leaf": "`--",
         "space": " " * 3,
     }
     _tree_chars_double = {
-        "pipe": "║",
-        "branch": "║──",
-        "leaf": "╚══",
+        "pipe": "|",
+        "branch": "+--",
+        "leaf": "`--",
         "space": " " * 3,
     }
     _active_branches: set[int] = set()
