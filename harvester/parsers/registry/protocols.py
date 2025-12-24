@@ -52,6 +52,42 @@ class ParseContext:
 RecurseFn = Callable[["etree._Element", ParseContext], ParseResult]
 
 
+def extract_text_with_tail(
+    elem: "etree._Element",
+    context: ParseContext,
+    recurse: RecurseFn,
+) -> str:
+    """Extract text from element including children and tail text.
+
+    This is the common pattern for inline/passthrough elements:
+    - Include element's direct text
+    - Recurse into children
+    - Include tail text after each child
+
+    Args:
+        elem: The XML element to extract text from
+        context: Current parsing context
+        recurse: Function to call for recursive child processing
+
+    Returns:
+        Extracted text content
+    """
+    parts: list[str] = []
+
+    if elem.text:
+        parts.append(elem.text)
+
+    for child in elem:
+        result = recurse(child, context)
+        if result.text:
+            parts.append(result.text)
+
+        if child.tail:
+            parts.append(child.tail)
+
+    return "".join(parts).strip()
+
+
 class ElementHandler(Protocol):
     """Protocol for element handlers.
 

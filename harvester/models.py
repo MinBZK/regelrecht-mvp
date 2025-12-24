@@ -83,6 +83,22 @@ class Reference:
         return f"{BWB_REPOSITORY_URL}/{self.bwb_id}/{date}_0/xml/{self.bwb_id}_{date}_0.xml"
 
 
+def format_reference_definitions(references: list["Reference"]) -> str:
+    """Format references as markdown reference definitions.
+
+    Args:
+        references: List of Reference objects
+
+    Returns:
+        Markdown reference definitions, e.g.:
+        [ref1]: https://wetten.overheid.nl/BWBR0018451#Artikel4
+        [ref2]: https://wetten.overheid.nl/BWBR0018450#Artikel1
+    """
+    if not references:
+        return ""
+    return "\n".join(f"[{ref.id}]: {ref.to_wetten_url()}" for ref in references)
+
+
 @dataclass
 class Article:
     """A single article from a law."""

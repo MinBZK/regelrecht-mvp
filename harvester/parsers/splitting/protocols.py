@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol
 
-from harvester.models import Article, Reference
+from harvester.models import Article, Reference, format_reference_definitions
 
 if TYPE_CHECKING:
     from lxml import etree
@@ -143,12 +143,9 @@ class ArticleComponent:
         text = self.text
 
         # Append reference definitions if there are any references
-        if self.references:
-            ref_lines = []
-            for ref in self.references:
-                url = ref.to_wetten_url()
-                ref_lines.append(f"[{ref.id}]: {url}")
-            text = f"{text}\n\n" + "\n".join(ref_lines)
+        ref_defs = format_reference_definitions(self.references)
+        if ref_defs:
+            text = f"{text}\n\n{ref_defs}"
 
         return Article(
             number=self.to_number(),

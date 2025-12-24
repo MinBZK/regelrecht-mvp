@@ -261,3 +261,187 @@ class TestBuildArticlesFromContent:
         # Note: Article 3 now has 5 leden, Article 4a has 4 leden, Article 5 has 5 leden
         simple_articles = [a for a in articles if "." not in a.number]
         assert len(simple_articles) == 5
+
+    def test_section_based_article_numbering(self) -> None:
+        """Test article numbers with letters and spaces like 'A 1', 'B 5'."""
+        xml = """
+        <wetgeving>
+            <wet-besluit>
+                <wettekst>
+                    <artikel label="Artikel A 1">
+                        <kop><nr>A 1</nr></kop>
+                        <al>First article in section A.</al>
+                    </artikel>
+                    <artikel label="Artikel B 1">
+                        <kop><nr>B 1</nr></kop>
+                        <lid>
+                            <lidnr>1</lidnr>
+                            <al>First paragraph of B 1.</al>
+                        </lid>
+                        <lid>
+                            <lidnr>2</lidnr>
+                            <al>Second paragraph of B 1.</al>
+                        </lid>
+                    </artikel>
+                </wettekst>
+            </wet-besluit>
+        </wetgeving>
+        """
+        root = etree.fromstring(xml)
+        articles = build_articles_from_content(root, "BWBR0001234", "2025-01-01")
+
+        # A 1 has no leden, so just one article
+        art_a1 = next((a for a in articles if a.number == "A 1"), None)
+        assert art_a1 is not None
+        assert "First article in section A" in art_a1.text
+
+        # B 1 has leden, so split into B 1.1 and B 1.2
+        art_b1_1 = next((a for a in articles if a.number == "B 1.1"), None)
+        art_b1_2 = next((a for a in articles if a.number == "B 1.2"), None)
+        assert art_b1_1 is not None
+        assert art_b1_2 is not None
+        assert "First paragraph" in art_b1_1.text
+        assert "Second paragraph" in art_b1_2.text
+
+        # URL should use underscores instead of spaces
+        assert "ArtikelA_1" in art_a1.url
+        assert "ArtikelB_1" in art_b1_1.url
+
+    def test_deep_nesting(self) -> None:
+        """Test deeply nested structures like artikel 1.1, lid 2, onderdeel 1, sub a."""
+        xml = """
+        <wetgeving>
+            <wet-besluit>
+                <wettekst>
+                    <artikel label="Artikel 1.1">
+                        <kop><nr>1.1</nr></kop>
+                        <lid>
+                            <lidnr>1</lidnr>
+                            <al>Simple first paragraph.</al>
+                        </lid>
+                        <lid>
+                            <lidnr>2</lidnr>
+                            <al>Intro text for list:</al>
+                            <lijst type="expliciet">
+                                <li>
+                                    <li.nr>1.</li.nr>
+                                    <al>Nested intro:</al>
+                                    <lijst type="expliciet">
+                                        <li>
+                                            <li.nr>a.</li.nr>
+                                            <al>Deepest level item a.</al>
+                                        </li>
+                                        <li>
+                                            <li.nr>b.</li.nr>
+                                            <al>Deepest level item b.</al>
+                                        </li>
+                                    </lijst>
+                                </li>
+                            </lijst>
+                        </lid>
+                    </artikel>
+                </wettekst>
+            </wet-besluit>
+        </wetgeving>
+        """
+        root = etree.fromstring(xml)
+        articles = build_articles_from_content(root, "BWBR0001234", "2025-01-01")
+
+        # Check deep nesting produces correct article numbers
+        art_1_1_1 = next((a for a in articles if a.number == "1.1.1"), None)
+        art_1_1_2 = next((a for a in articles if a.number == "1.1.2"), None)
+        art_1_1_2_1 = next((a for a in articles if a.number == "1.1.2.1"), None)
+        art_1_1_2_1_a = next((a for a in articles if a.number == "1.1.2.1.a"), None)
+        art_1_1_2_1_b = next((a for a in articles if a.number == "1.1.2.1.b"), None)
+
+        assert art_1_1_1 is not None, "Missing 1.1.1"
+        assert art_1_1_2 is not None, "Missing 1.1.2 (intro)"
+        assert art_1_1_2_1 is not None, "Missing 1.1.2.1 (nested intro)"
+        assert art_1_1_2_1_a is not None, "Missing 1.1.2.1.a"
+        assert art_1_1_2_1_b is not None, "Missing 1.1.2.1.b"
+
+        assert "Simple first" in art_1_1_1.text
+        assert "Deepest level item a" in art_1_1_2_1_a.text
+        assert "Deepest level item b" in art_1_1_2_1_b.text
+
+    def test_unmarked_lists_inline(self) -> None:
+        """Test that unmarked lists (type='ongemarkeerd') are rendered inline as markdown."""
+        xml = """
+        <wetgeving>
+            <wet-besluit>
+                <wettekst>
+                    <artikel label="Artikel 1">
+                        <kop><nr>1</nr></kop>
+                        <al>In deze wet wordt verstaan onder:</al>
+                        <lijst type="ongemarkeerd">
+                            <li>
+                                <li.nr>–</li.nr>
+                                <al>eerste begrip: definitie van eerste begrip;</al>
+                            </li>
+                            <li>
+                                <li.nr>–</li.nr>
+                                <al>tweede begrip: definitie van tweede begrip.</al>
+                            </li>
+                        </lijst>
+                    </artikel>
+                </wettekst>
+            </wet-besluit>
+        </wetgeving>
+        """
+        root = etree.fromstring(xml)
+        articles = build_articles_from_content(root, "BWBR0001234", "2025-01-01")
+
+        # Should produce only ONE article, not split by list items
+        non_aanhef = [a for a in articles if a.number != "aanhef"]
+        assert len(non_aanhef) == 1
+
+        art_1 = non_aanhef[0]
+        assert art_1.number == "1"
+
+        # Text should contain markdown bullet points
+        assert "- eerste begrip:" in art_1.text
+        assert "- tweede begrip:" in art_1.text
+
+    def test_unmarked_list_in_lid(self) -> None:
+        """Test unmarked list inside a lid is rendered inline."""
+        xml = """
+        <wetgeving>
+            <wet-besluit>
+                <wettekst>
+                    <artikel label="Artikel 1">
+                        <kop><nr>1</nr></kop>
+                        <lid>
+                            <lidnr>1</lidnr>
+                            <al>Regular paragraph.</al>
+                        </lid>
+                        <lid>
+                            <lidnr>2</lidnr>
+                            <al>List intro:</al>
+                            <lijst type="ongemarkeerd">
+                                <li>
+                                    <li.nr>-</li.nr>
+                                    <al>item one;</al>
+                                </li>
+                                <li>
+                                    <li.nr>-</li.nr>
+                                    <al>item two.</al>
+                                </li>
+                            </lijst>
+                        </lid>
+                    </artikel>
+                </wettekst>
+            </wet-besluit>
+        </wetgeving>
+        """
+        root = etree.fromstring(xml)
+        articles = build_articles_from_content(root, "BWBR0001234", "2025-01-01")
+
+        # Should produce 1.1 and 1.2 (not 1.2.1, 1.2.2 for unmarked items)
+        numbers = [a.number for a in articles if a.number != "aanhef"]
+        assert "1.1" in numbers
+        assert "1.2" in numbers
+        assert "1.2.1" not in numbers  # Unmarked items not split
+
+        art_1_2 = next(a for a in articles if a.number == "1.2")
+        assert "- item one" in art_1_2.text
+        assert "- item two" in art_1_2.text

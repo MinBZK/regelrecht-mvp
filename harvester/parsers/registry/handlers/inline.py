@@ -16,6 +16,7 @@ from harvester.parsers.registry.protocols import (
     ParseContext,
     ParseResult,
     RecurseFn,
+    extract_text_with_tail,
 )
 
 if TYPE_CHECKING:
@@ -175,20 +176,7 @@ class AlHandler:
         context: ParseContext,
         recurse: RecurseFn,
     ) -> ParseResult:
-        parts: list[str] = []
-
-        if elem.text:
-            parts.append(elem.text)
-
-        for child in elem:
-            result = recurse(child, context)
-            if result.text:
-                parts.append(result.text)
-
-            if child.tail:
-                parts.append(child.tail)
-
-        return ParseResult(text="".join(parts).strip())
+        return ParseResult(text=extract_text_with_tail(elem, context, recurse))
 
 
 @dataclass
@@ -212,18 +200,4 @@ class RedactieHandler:
         context: ParseContext,
         recurse: RecurseFn,
     ) -> ParseResult:
-        # Extract text content, recursing into children
-        parts: list[str] = []
-
-        if elem.text:
-            parts.append(elem.text)
-
-        for child in elem:
-            result = recurse(child, context)
-            if result.text:
-                parts.append(result.text)
-
-            if child.tail:
-                parts.append(child.tail)
-
-        return ParseResult(text="".join(parts).strip())
+        return ParseResult(text=extract_text_with_tail(elem, context, recurse))

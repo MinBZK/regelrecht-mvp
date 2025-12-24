@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from harvester.models import Article
+from harvester.models import Article, format_reference_definitions
 from harvester.parsers.content_parser import ReferenceCollector
 from harvester.parsers.splitting import (
     ArticleComponent,
@@ -83,12 +83,9 @@ def extract_aanhef(
     aanhef_url = f"https://wetten.overheid.nl/{bwb_id}/{date}#Aanhef"
 
     # Add reference definitions if any references were collected
-    if collector.references:
-        ref_lines = []
-        for ref in collector.references:
-            url = ref.to_wetten_url()
-            ref_lines.append(f"[{ref.id}]: {url}")
-        aanhef_text = f"{aanhef_text}\n\n" + "\n".join(ref_lines)
+    ref_defs = format_reference_definitions(collector.references)
+    if ref_defs:
+        aanhef_text = f"{aanhef_text}\n\n{ref_defs}"
 
     return Article(
         number="aanhef",

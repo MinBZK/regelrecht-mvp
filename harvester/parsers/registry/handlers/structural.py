@@ -14,6 +14,7 @@ from harvester.parsers.registry.protocols import (
     ParseContext,
     ParseResult,
     RecurseFn,
+    extract_text_with_tail,
 )
 from harvester.parsers.registry.registry import get_tag_name
 
@@ -217,20 +218,7 @@ class PassthroughHandler:
         context: ParseContext,
         recurse: RecurseFn,
     ) -> ParseResult:
-        parts: list[str] = []
-
-        if elem.text:
-            parts.append(elem.text)
-
-        for child in elem:
-            result = recurse(child, context)
-            if result.text:
-                parts.append(result.text)
-
-            if child.tail:
-                parts.append(child.tail)
-
-        return ParseResult(text="".join(parts).strip())
+        return ParseResult(text=extract_text_with_tail(elem, context, recurse))
 
 
 # Convenience aliases

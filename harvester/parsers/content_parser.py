@@ -8,7 +8,7 @@ import requests
 from lxml import etree
 
 from harvester.config import BWB_REPOSITORY_URL, HTTP_TIMEOUT
-from harvester.models import Article, Reference
+from harvester.models import Article, Reference, format_reference_definitions
 from harvester.parsers.reference_parser import parse_extref, parse_intref
 
 
@@ -52,14 +52,7 @@ class ReferenceCollector:
             [ref1]: https://wetten.overheid.nl/BWBR0018451#Artikel4
             [ref2]: https://wetten.overheid.nl/BWBR0018450#Artikel1
         """
-        if not self.references:
-            return ""
-
-        lines = []
-        for ref in self.references:
-            url = ref.to_wetten_url()
-            lines.append(f"[{ref.id}]: {url}")
-        return "\n".join(lines)
+        return format_reference_definitions(self.references)
 
 
 def download_content(bwb_id: str, date: str) -> etree._Element:
