@@ -402,11 +402,14 @@ class RuleContext:
                 uri = RegelrechtURIBuilder.build(regulation, output_name, output_name)
             else:
                 # External data source (no regulation) - delegate to service provider
-                logger.debug(
-                    f"External data source for {input_name}: output={output_name}"
+                logger.warning(
+                    f"External data source for {input_name}: output={output_name} - "
+                    f"no regulation specified, cannot resolve. Source spec: {source_spec}"
                 )
-                # For now, return None - service provider should handle this
-                return None
+                raise ValueError(
+                    f"Cannot resolve input '{input_name}': external data source without "
+                    f"regulation is not supported. Specify a regulation in the source."
+                )
         else:
             # Backward compatibility: article, url, ref
             article_ref = source_spec.get("article")
@@ -416,7 +419,10 @@ class RuleContext:
                 logger.warning(
                     f"No regulation/output or article/url/ref found in source spec for {input_name}"
                 )
-                return None
+                raise ValueError(
+                    f"Cannot resolve input '{input_name}': no valid source specification found. "
+                    f"Expected regulation/output or article/url/ref in source spec."
+                )
 
             # Convert article reference format to URI format
             # article: "law_id.output" -> regelrecht://law_id/output#input_name
@@ -467,6 +473,14 @@ class RuleContext:
                 )
                 return None
 
+            # Create internal reference trace node
+            internal_ref_node = PathNode(
+                type="uri_call",
+                name=f"Internal #{output_name}",
+                details={"output": output_name, "law_id": self.current_law.id},
+            )
+            self.add_to_path(internal_ref_node)
+
             # Execute the article directly
             from engine.engine import ArticleEngine
 
@@ -479,8 +493,16 @@ class RuleContext:
                 data_registry=self.data_registry,
             )
 
+            # Attach sub-trace if available
+            if result.path:
+                internal_ref_node.add_child(result.path)
+
             # Extract the output
             value = result.output.get(output_name)
+
+            # Update trace node with result
+            internal_ref_node.result = value
+            self.pop_path()
 
             # Cache result
             self._uri_cache[cache_key] = value
@@ -498,9 +520,22 @@ class RuleContext:
 
         # Call service provider
         logger.debug(f"Resolving URI: {uri} with params {resolved_params}")
+
+        # Create URI call trace node
+        uri_call_node = PathNode(
+            type="uri_call",
+            name=f"Call {uri}",
+            details={"uri": uri, "parameters": resolved_params},
+        )
+        self.add_to_path(uri_call_node)
+
         result = self.service_provider.evaluate_uri(
             uri, resolved_params, self.calculation_date
         )
+
+        # Attach sub-law trace as child if available
+        if result.path:
+            uri_call_node.add_child(result.path)
 
         # Extract field from URI
         from engine.uri_resolver import RegelrechtURI
@@ -514,6 +549,10 @@ class RuleContext:
                 value = list(result.output.values())[0]
             else:
                 value = result.output
+
+        # Update trace node with result
+        uri_call_node.result = value
+        self.pop_path()
 
         # Cache result
         self._uri_cache[cache_key] = value
@@ -612,6 +651,18 @@ class RuleContext:
             article_obj = verordening.find_article_by_output(output_name)
 
             if article_obj:
+                # Create delegation trace node
+                delegation_node = PathNode(
+                    type="uri_call",
+                    name=f"Delegation {verordening.id}",
+                    details={
+                        "verordening_id": verordening.id,
+                        "output": output_name,
+                        "criteria": resolved_criteria,
+                    },
+                )
+                self.add_to_path(delegation_node)
+
                 from engine.engine import ArticleEngine
 
                 engine = ArticleEngine(article_obj, verordening)
@@ -622,19 +673,28 @@ class RuleContext:
                     data_registry=self.data_registry,
                 )
 
+                # Attach sub-trace if available
+                if result.path:
+                    delegation_node.add_child(result.path)
+
                 logger.debug(f"Delegation result: {result.output}")
 
                 # Extract specific output if single output requested
                 if isinstance(output_name, str) and output_name in result.output:
-                    return result.output[output_name]
+                    value = result.output[output_name]
                 elif isinstance(output_name, list):
                     # Return dict with requested outputs only
-                    return {
+                    value = {
                         k: result.output[k] for k in output_name if k in result.output
                     }
                 else:
                     # Fallback: return full output dict
-                    return result.output
+                    value = result.output
+
+                # Update trace node with result
+                delegation_node.result = value
+                self.pop_path()
+                return value
             else:
                 logger.warning(
                     f"Output {output_name} not found in verordening {verordening.id}"

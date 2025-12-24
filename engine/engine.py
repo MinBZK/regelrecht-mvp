@@ -581,10 +581,11 @@ class ArticleEngine:
             )
             logger.debug(f"Expected match value: {expected_match_value}")
 
-        # Track the first matching regeling to ensure a single match
-        first_match = None
+        # Collect all matching regelingen to ensure exactly one match
+        # Note: This code assumes single-threaded execution
+        matches: list[dict] = []
 
-        # Try each regeling - error immediately if we find a second match
+        # Try each regeling and collect all matches
         for regeling_law in regelingen:
             regeling_id = regeling_law.id
 
@@ -644,36 +645,32 @@ class ArticleEngine:
                 if output_field in result.output:
                     logger.info(f"Regeling {regeling_id} matches criteria")
 
-                    # Check if we already found a match
-                    if first_match is not None:
-                        # Multiple matches - error immediately
-                        error_msg = (
-                            f"Multiple regelingen match for {self.law.id} article {self.article.number} "
-                            f"with criteria {match_criteria}. Found at least: [{first_match['law'].id}, {regeling_id}]. "
-                            f"Please add more specific match criteria to ensure deterministic resolution."
-                        )
-                        logger.error(error_msg)
-                        raise ValueError(error_msg)
-
-                    # Store first match
-                    first_match = {
-                        "law": regeling_law,
-                        "result": result.output[output_field],
-                    }
+                    # Store this match
+                    matches.append(
+                        {
+                            "law": regeling_law,
+                            "result": result.output[output_field],
+                            "path": result.path,
+                        }
+                    )
                 else:
                     logger.error(
                         f"Regeling {regeling_id}: Output field '{output_field}' not found in result"
                     )
                     continue  # Try next regeling
 
-            except Exception as e:
+            except (KeyError, ValueError, TypeError) as e:
+                # Expected errors during resolution - try next regeling
                 logger.error(
                     f"Error resolving regeling {regeling_id}: {e}, trying next"
                 )
                 continue  # Try next regeling
+            except (MemoryError, SystemExit, KeyboardInterrupt):
+                # Critical errors - re-raise immediately
+                raise
 
-        # Check if we found exactly one match
-        if first_match is None:
+        # Validate exactly one match
+        if len(matches) == 0:
             error_msg = (
                 f"No matching regeling found for {self.law.id} article {self.article.number} "
                 f"with criteria {match_criteria}"
@@ -681,8 +678,39 @@ class ArticleEngine:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-        # Exactly one match - return the result
+        if len(matches) > 1:
+            match_ids = [m["law"].id for m in matches]
+            error_msg = (
+                f"Multiple regelingen match for {self.law.id} article {self.article.number} "
+                f"with criteria {match_criteria}. Found: {match_ids}. "
+                f"Please add more specific match criteria to ensure deterministic resolution."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Exactly one match - add trace and return the result
+        first_match = matches[0]
         logger.info(
             f"Successfully resolved to unique regeling: {first_match['law'].id}"
         )
+
+        # Create resolve trace node with sub-law trace
+        resolve_node = PathNode(
+            type="uri_call",
+            name=f"Resolve {first_match['law'].id}",
+            result=first_match["result"],
+            details={
+                "regeling_id": first_match["law"].id,
+                "output": output_field,
+                "match_criteria": match_criteria,
+            },
+        )
+        context.add_to_path(resolve_node)
+
+        # Attach sub-law trace if available
+        if first_match.get("path"):
+            resolve_node.add_child(first_match["path"])
+
+        context.pop_path()
+
         return first_match["result"]
