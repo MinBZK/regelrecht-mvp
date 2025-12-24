@@ -1,6 +1,6 @@
 # RFC-005: Reference-Style Markdown Links for Cross-Law References
 
-**Status:** Accepted
+**Status:** Proposed
 **Date:** 2025-12-24
 **Authors:** regelrecht-mvp team
 
