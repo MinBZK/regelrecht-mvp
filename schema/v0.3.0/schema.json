@@ -688,6 +688,16 @@
           "$ref": "#/definitions/operationValue",
           "description": "Direct value assignment"
         },
+        "operation": {
+          "$ref": "#/definitions/operationType"
+        },
+        "values": {
+          "type": "array",
+          "description": "Operands for the operation",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
         "resolve": {
           "type": "object",
           "description": "Resolve output from ministeriele regeling based on legal_basis",
