@@ -12,6 +12,28 @@ from behave import given, when, then  # type: ignore[import-untyped]
 from mock_data_service import MockDataService  # type: ignore[import-not-found]
 
 
+def print_execution_trace(result, title: str = "Execution Trace") -> None:
+    """
+    Print the execution trace from an ArticleResult if available.
+
+    Args:
+        result: ArticleResult with optional path (PathNode)
+        title: Title to display above the trace
+    """
+    if result is None:
+        return
+
+    if not hasattr(result, "path") or result.path is None:
+        return
+
+    print(f"\n{'=' * 60}")
+    print(f"** {title} **")
+    print(f"   Law: {result.law_id} | Article: {result.article_number}")
+    print(f"{'=' * 60}")
+    print(result.path.render())
+    print(f"{'=' * 60}\n")
+
+
 # === Bijstand step definitions ===
 
 
@@ -93,6 +115,9 @@ def step_when_bijstandsaanvraag_executed(context, article):
         )
         context.result = result
         context.error = None
+
+        # Print execution trace
+        print_execution_trace(result, "Bijstand Execution Trace")
     except Exception as e:
         context.error = e
         context.result = None
@@ -361,6 +386,9 @@ def step_when_healthcare_allowance_executed(context):
             parameters=parameters,
         )
         context.result = result
+
+        # Print execution trace
+        print_execution_trace(result, "Healthcare Allowance Execution Trace")
     except Exception as e:
         context.error = e
         raise
@@ -386,6 +414,9 @@ def step_when_request_standard_premium(context, year):
             calculation_date=calculation_date,
         )
         context.result = result
+
+        # Print execution trace
+        print_execution_trace(result, "Standard Premium Execution Trace")
     except Exception as e:
         context.error = e
         # Don't raise - let the Then step verify the error
@@ -509,6 +540,9 @@ def step_when_erfgrensbeplanting_requested(context, law_id, article):
         )
         context.result = result
         context.error = None
+
+        # Print execution trace
+        print_execution_trace(result, "Erfgrensbeplanting Execution Trace")
     except Exception as e:
         context.error = e
         context.result = None

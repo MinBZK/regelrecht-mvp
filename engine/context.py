@@ -99,6 +99,65 @@ class PathNode:
         """Add a child node to the trace"""
         self.children.append(child)
 
+    def render(self, indent: int = 0, prefix: str = "") -> str:
+        """
+        Render the execution trace as a tree string
+
+        Args:
+            indent: Current indentation level
+            prefix: Prefix for the current line (tree branches)
+
+        Returns:
+            Formatted tree string
+        """
+        lines = []
+
+        # Format the result value
+        result_str = ""
+        if self.result is not None:
+            if isinstance(self.result, bool):
+                result_str = f" -> {'TRUE' if self.result else 'FALSE'}"
+            elif isinstance(self.result, (int, float)):
+                result_str = f" -> {self.result}"
+            elif isinstance(self.result, str) and len(self.result) < 50:
+                result_str = f" -> {self.result!r}"
+
+        # Format the node type (ASCII-only for Windows compatibility)
+        type_icon = {
+            "root": "[ROOT]",
+            "action": "[ACT]",
+            "operation": "[OP]",
+            "resolve": "[RES]",
+            "uri_call": "[URI]",
+            "requirement": "[REQ]",
+        }.get(self.type, "[*]")
+
+        # Add resolve type if present
+        resolve_info = f" [{self.resolve_type}]" if self.resolve_type else ""
+
+        # Build the line
+        line = f"{prefix}{type_icon} {self.name}{resolve_info}{result_str}"
+        lines.append(line)
+
+        # Render children with tree branches (ASCII-only for Windows compatibility)
+        for i, child in enumerate(self.children):
+            is_last = i == len(self.children) - 1
+            child_prefix = prefix + ("    " if is_last else "|   ")
+            branch = "`-- " if is_last else "+-- "
+            child_lines = child.render(indent + 1, child_prefix)
+
+            # Add the branch to the first line of child output
+            child_output = child_lines.split("\n")
+            if child_output:
+                # Replace the prefix on the first line with the branch
+                first_line = child_output[0]
+                # Find where the icon starts (after prefix)
+                lines.append(prefix + branch + first_line[len(child_prefix) :])
+                # Add remaining lines as-is
+                lines.extend(child_output[1:])
+
+        return "\n".join(lines)
+
 
 class RuleContext:
     """Execution context for article evaluation"""
