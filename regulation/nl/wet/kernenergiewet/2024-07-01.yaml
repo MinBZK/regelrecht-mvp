@@ -1,0 +1,3147 @@
+---
+$schema:
+  https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: kernenergiewet
+regulatory_layer: WET
+publication_date: '2010-01-21'
+valid_from: '2024-07-01'
+bwb_id: BWBR0002402
+url: https://wetten.overheid.nl/BWBR0002402/2024-07-01
+articles:
+  - number: aanhef
+    text: "Wij JULIANA, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz.,
+      enz.,\nenz.\n\nAllen, die deze zullen zien of horen lezen, saluut! doen te weten:\n\nAlzo Wij in
+      overweging genomen hebben, dat het wenselijk is op het gebied van de kernenergie en de\nioniserende
+      stralen een regeling te treffen, in het bijzonder ter bevordering van een goede\nontwikkeling op
+      het gebied van de vrijmaking van kernenergie en de aanwending van radioactieve\nstoffen en ioniserende
+      stralen uitzendende toestellen, zomede ter bescherming tegen de hieraan\nverbonden gevaren;\n\n\
+      Zo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben\n\
+      goedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Aanhef
+  - number: '1.1'
+    text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.a
+    text: 'kernenergie: energie, vrijkomend bij splijting of versmelting van atoomkernen;'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.b
+    text: "splijtstoffen: stoffen, welke ten minste een bij algemene maatregel van bestuur te bepalen\n\
+      percentage uranium, plutonium, thorium of andere daarbij aangewezen elementen bevatten;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.c
+    text: "ertsen: ertsen die naar gewicht gerekend ten minste een tiende procent uranium of drie procent\n\
+      thorium bevatten en waarmee handelingen worden verricht wegens hun splijt- of kweekeigenschappen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.d
+    text: "radioactieve stoffen: stoffen met uitzondering van splijtstoffen en ertsen, die in zodanige
+      mate\nradionucliden bevatten dat zij, voorzover het de bescherming tegen ioniserende straling betreft,\n\
+      niet mogen worden verwaarloosd;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.e
+    text: "ioniserende straling: röntgen- en gammastraling, alsmede corpusculaire straling, die in staat
+      is\nionenvorming te veroorzaken;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.f
+    text: "toestel: toestel dat ioniserende straling kan uitzenden en geen radioactieve stof, splijtstof
+      of\nerts bevat;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.g
+    text: 'bevoegd gezag: bestuursorgaan dat bevoegd is tot het geven van een beschikking;'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: 1.1.h
+    text: "Autoriteit: Autoriteit Nucleaire Veiligheid en Stralingsbescherming, genoemd in [artikel 3,
+      eerste\nlid][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '3'
+        hoofdstuk: II
+  - number: '1.2'
+    text: "De voordracht tot vaststelling, wijziging of intrekking van een algemene maatregel van bestuur
+      als\nin het eerste lid, onder b, bedoeld wordt Ons gedaan door Onze Ministers van Infrastructuur
+      en\nMilieu en van Sociale Zaken en Werkgelegenheid."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel1
+  - number: '2'
+    text: "Het bij of krachtens deze wet bepaalde is mede van toepassing op een verkenningsonderzoek,
+      het\nopsporen of het winnen van delfstoffen of aardwarmte, dan wel het opslaan van stoffen voorzover
+      dit\nplaatsvindt op het continentaal plat, bedoeld in de [Mijnbouwwet][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0014168"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel2
+    references:
+      - id: ref1
+        bwb_id: BWBR0014168
+  - number: '3.1'
+    text: Er is een Autoriteit Nucleaire Veiligheid en Stralingsbescherming.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: '3.2'
+    text: De Autoriteit vervult haar taken in onafhankelijkheid.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: '3.3'
+    text: "De Autoriteit heeft met betrekking tot nucleaire veiligheid en stralingsbescherming, de daarmee\n\
+      samenhangende crisisvoorbereiding, alsmede beveiliging en waarborgen tot taak:"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.a
+    text: de uitvoering van de taken die haar bij of krachtens de wet zijn toegekend;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.b
+    text: het toezicht op de naleving van bij of krachtens deze wet gestelde regels;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.c
+    text: "het op basis van haar specifieke kennis en deskundigheid en in samenhang met haar andere bij
+      of\nkrachtens de wet opgedragen taken adviseren over beleid en wet- en regelgeving;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.d
+    text: het geven van voorlichting;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.e
+    text: het deelnemen aan activiteiten van internationale organisaties;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.f
+    text: "het samenwerken met vergelijkbare buitenlandse autoriteiten van landen in de nabijheid van\n\
+      inrichtingen als bedoeld in [artikel 15, onder b][ref1], onder meer door het uitwisselen en delen\n\
+      van informatie;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 3.3.g
+    text: "het onderhouden van relaties met andere dan de in onderdeel f bedoelde vergelijkbare buitenlandse\n\
+      autoriteiten en nationale en internationale organisaties;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.h
+    text: het met kennis ondersteunen van nationale organisaties;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: 3.3.i
+    text: het doen en laten doen van onderzoek ten behoeve van de uitvoering van haar taken.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: '3.4'
+    text: "De Autoriteit heeft tot taak het deelnemen aan de omschrijving van voorschriften over nucleaire\n\
+      veiligheid als bedoeld in artikel 5, derde lid, onderdeel a, van Richtlijn 2009/71/Euratom van de\n\
+      Raad van 25 juni 2009 tot vaststelling van een communautair kader voor de nucleaire veiligheid van\n\
+      kerninstallaties (PbEU 2009, L 172), zoals laatstelijk gewijzigd bij Richtlijn 2014/87/Euratom van\n\
+      de Raad van 8 juli 2014 (PbEU 2014, L 219)."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel3
+  - number: '4.1'
+    text: "Bij of krachtens algemene maatregel van bestuur kan worden bepaald dat de Autoriteit in het
+      belang\nvan nucleaire veiligheid, stralingsbescherming of beveiliging bij verordening regels kan
+      stellen met\nbetrekking tot organisatorische of technische onderwerpen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel4
+  - number: '4.2'
+    text: "De Autoriteit stelt een verordening niet vast dan nadat van het ontwerp op geschikte wijze
+      kennis is\ngegeven en aan een ieder de gelegenheid is geboden om binnen een bij die bekendmaking
+      door de\nAutoriteit vast te stellen termijn van ten minste vier weken na de dag waarop de kennisgeving
+      is\ngedaan, zienswijzen schriftelijk ter kennis van de Autoriteit te brengen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel4
+  - number: '5.1'
+    text: De Autoriteit bestaat uit minimaal twee en maximaal drie leden, onder wie de voorzitter.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+  - number: '5.2'
+    text: "Benoeming vindt plaats op grond van deskundigheid of ervaring, die nodig is voor de uitoefening
+      van\nde taken van de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+  - number: '5.3'
+    text: "De leden worden benoemd voor een tijdvak van maximaal vier jaar en zijn aansluitend éénmalig
+      voor\neen tijdvak van maximaal vier jaar herbenoembaar. In het geval van bijzondere omstandigheden
+      binnen\nde organisatie van de Autoriteit kan een lid van de Autoriteit bij afloop van de tweede\n\
+      benoemingstermijn terstond opnieuw worden benoemd voor een tijdvak van maximaal twee jaar."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+  - number: '5.4'
+    text: "In het geval van een vacature vormen de overige leden, in afwijking van het eerste lid, de\n\
+      Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+  - number: '5.5'
+    text: "Onverminderd [artikel 13, eerste lid, van de Kaderwet zelfstandige bestuursorganen][ref1] heeft
+      een\nlid geen financiële of andere belangen waardoor zijn onpartijdigheid in het geding kan zijn.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0020495#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+    references:
+      - id: ref1
+        bwb_id: BWBR0020495
+        artikel: '13'
+  - number: '5.6'
+    text: Een lid kan niet tevens zijn een aan een minister ondergeschikte ambtenaar.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+  - number: '5.7'
+    text: "Het lidmaatschap van de Autoriteit wordt aangewezen als een vertrouwensfunctie als bedoeld
+      in\n[artikel 1, eerste lid, onderdeel a, van de Wet veiligheidsonderzoeken][ref1].\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0008277#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel5
+    references:
+      - id: ref1
+        bwb_id: BWBR0008277
+        artikel: '1'
+  - number: '6.1'
+    text: Onze Minister van Infrastructuur en Milieu benoemt, schorst en ontslaat de leden van de
+      Autoriteit.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel6
+  - number: '6.2'
+    text: "Onze Minister van Infrastructuur en Milieu doet mededeling van een besluit tot ontslag in de\n\
+      Staatscourant. De redenen van het ontslag worden in die mededeling openbaar gemaakt indien de\n\
+      betrokkene daarom verzoekt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel6
+  - number: '7'
+    text: "Onze Minister van Infrastructuur en Milieu stelt de bezoldiging of schadeloosstelling van leden
+      van\nde Autoriteit vast."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel7
+  - number: '8'
+    text: "De Autoriteit stelt procedures vast ter voorkoming of oplossing van belangenconflicten bij
+      de\nuitoefening van haar taken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel8
+  - number: '9.1'
+    text: "Onze Minister van Infrastructuur en Milieu stelt voldoende financiële middelen ter beschikking
+      aan\nde Autoriteit ter uitoefening van haar taken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel9
+  - number: '9.2'
+    text: "Onze Minister van Infrastructuur en Milieu neemt in zijn begroting de Autoriteit als afzonderlijke\n\
+      begrotingspost op en voorziet deze post van een toelichting."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel9
+  - number: '10'
+    text: "Onze Minister van Infrastructuur en Milieu stelt ten behoeve van de uitvoering van haar taken,\n\
+      voldoende en gekwalificeerd personeel ter beschikking aan de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel10
+  - number: '11'
+    text: "Onverminderd [artikel 18, tweede lid, van de Kaderwet zelfstandige bestuursorganen][ref1] zendt
+      de\nAutoriteit het jaarverslag, naast aan Onze Minister van Infrastructuur en Milieu, tevens aan
+      Onze\nMinisters van Sociale Zaken en Werkgelegenheid, van Volksgezondheid, Welzijn en Sport en van\n\
+      Veiligheid en Justitie.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0020495#Artikel18"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0020495
+        artikel: '18'
+  - number: '12.1'
+    text: "Onverminderd [artikel 20, eerste lid, van de Kaderwet zelfstandige bestuursorganen][ref1] verstrekt\n\
+      de Autoriteit desgevraagd naast aan Onze Minister van Infrastructuur en Milieu tevens aan Onze\n\
+      Ministers van Sociale Zaken en Werkgelegenheid, van Volksgezondheid, Welzijn en Sport en van\nVeiligheid
+      en Justitie alle voor de uitoefening van hun taak benodigde inlichtingen. Zij kunnen\ninzage vorderen
+      van alle zakelijke gegevens en bescheiden, indien dat voor de vervulling van hun\ntaak redelijkerwijs
+      nodig is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0020495#Artikel20"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12
+    references:
+      - id: ref1
+        bwb_id: BWBR0020495
+        artikel: '20'
+  - number: '12.2'
+    text: "Onze Ministers kunnen gezamenlijk nadere regels vaststellen over de verstrekking van gegevens
+      of\ninlichtingen van de Autoriteit aan Onze Ministers en van Onze Ministers aan de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12
+  - number: 12a
+    text: "In afwijking van [artikel 21, eerste lid, van de Kaderwet zelfstandig bestuursorganen][ref1]
+      kan\nOnze Minister van Infrastructuur en Milieu geen beleidsregels vaststellen met betrekking tot
+      de\ntaakuitoefening door de Autoriteit.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0020495#Artikel21"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12a
+    references:
+      - id: ref1
+        bwb_id: BWBR0020495
+        artikel: '21'
+  - number: 12b.1
+    text: De Autoriteit stelt een bestuursreglement vast.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12b
+  - number: 12b.2
+    text: Het bestuursreglement behoeft goedkeuring van Onze Minister van Infrastructuur en Milieu.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12b
+  - number: 12b.3
+    text: "Het bestuursreglement bevat alleen regels over de wijze van besluitvorming, het financiële
+      beheer,\nde administratieve organisatie, vervanging van leden, vertegenwoordigingsbevoegdheid en
+      procedures\nmet het oog op een goede en zorgvuldige uitoefening van de taken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12b
+  - number: 12b.4
+    text: De Autoriteit maakt het bestuursreglement na de goedkeuring bekend in de Staatscourant.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12b
+  - number: 12c.1
+    text: "In afwijking van [artikel 22, eerste lid, van de Kaderwet zelfstandige bestuursorganen][ref1]
+      kan\nOnze Minister van Infrastructuur en Milieu een besluit van de Autoriteit uitsluitend vernietigen\n\
+      wegens strijd met het recht.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0020495#Artikel22"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12c
+    references:
+      - id: ref1
+        bwb_id: BWBR0020495
+        artikel: '22'
+  - number: 12c.2
+    text: "Onze Minister van Infrastructuur en Milieu stelt beide kamers der Staten-Generaal onverwijld
+      in\nkennis van een besluit tot vernietiging van een besluit van de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12c
+  - number: 12d
+    text: "Indien de Autoriteit haar taak ernstig verwaarloost, kan Onze Minister van Infrastructuur en
+      Milieu\nna overleg met Onze Ministers van Sociale Zaken en Werkgelegenheid en van Volksgezondheid,
+      Welzijn\nen Sport die de taakverwaarlozing aangaat of aangaan de noodzakelijke voorzieningen treffen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12d
+  - number: 12e
+    text: "Onze Minister van Infrastructuur en Milieu stelt het verslag, bedoeld in [artikel 39, eerste
+      lid,\nvan de Kaderwet zelfstandige bestuursorganen][ref1], op na overleg met Onze Ministers van
+      Sociale\nZaken en Werkgelegenheid en van Volksgezondheid, Welzijn en Sport.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0020495#Artikel39"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel12e
+    references:
+      - id: ref1
+        bwb_id: BWBR0020495
+        artikel: '39'
+  - number: '13.1'
+    text: "Er is een register, waarin worden ingeschreven de gegevens van splijtstoffen, ertsen en andere\n\
+      stoffen waaruit splijtstoffen kunnen worden verkregen en die naar gewicht gerekend ten minste een\n\
+      tiende procent uranium of drie procent thorium bevatten, waarvan overeenkomstig [artikel 14][ref1]\n\
+      aangifte is gedaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel14"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel13
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '14'
+        hoofdstuk: III
+        afdeling: '1'
+  - number: '13.2'
+    text: "Bij of krachtens algemene maatregel van bestuur wordt de inrichting van het register geregeld
+      en\nworden de gevallen aangewezen, waarin inlichtingen uit het register kunnen worden verstrekt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel13
+  - number: '13.3'
+    text: De Autoriteit is belast met het beheer van het register en de verstrekking van
+      inlichtingen daaruit.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel13
+  - number: '14.1'
+    text: "Ieder, die met inachtneming van deze wet splijtstoffen of ertsen of andere stoffen waaruit\n\
+      splijtstoffen kunnen worden verkregen en die naar gewicht gerekend ten minste een tiende procent\n\
+      uranium of drie procent thorium bevatten vervoert, voorhanden heeft, binnen of buiten Nederlands\n\
+      grondgebied brengt of doet brengen, dan wel zich daarvan ontdoet, is verplicht daaromtrent\nadministratie
+      te voeren en ten behoeve van de in [artikel 13][ref1] bedoelde inschrijving aangifte\nte doen, een
+      en ander in bij algemene maatregel van bestuur te bepalen gevallen en overeenkomstig\nbij de maatregel
+      te stellen regelen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel14
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '13'
+        hoofdstuk: III
+        afdeling: '1'
+  - number: '14.2'
+    text: "Ieder, die de aanwezigheid van ertsen of andere stoffen waaruit splijtstoffen kunnen worden\n\
+      verkregen en die naar gewicht gerekend ten minste een tiende procent uranium of drie procent thorium\n\
+      bevatten in de bodem heeft vastgesteld, is verplicht in bij algemene maatregel van bestuur te\n\
+      bepalen gevallen en overeenkomstig bij de maatregel te stellen regelen daarvan ten behoeve van de
+      in\n[artikel 13][ref1] bedoelde inschrijving aangifte te doen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel14
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '13'
+        hoofdstuk: III
+        afdeling: '1'
+  - number: '15'
+    text: 'Het is verboden zonder vergunning van de Autoriteit:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15
+  - number: 15.a
+    text: "splijtstoffen of ertsen te vervoeren, voorhanden te hebben, binnen of buiten Nederlands grondgebied\n\
+      te brengen of te doen brengen, dan wel zich daarvan te ontdoen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15
+  - number: 15.b
+    text: "een inrichting, waarin kernenergie kan worden vrijgemaakt, splijtstoffen kunnen worden vervaardigd,\n\
+      bewerkt of verwerkt, dan wel splijtstoffen worden opgeslagen, op te richten, inwerking te brengen,\n\
+      in werking te houden, buiten gebruik te stellen of te wijzigen of een inrichting, waarin kernenergie\n\
+      kon worden vrijgemaakt, splijtstoffen konden worden vervaardigd, bewerkt of verwerkt, dan wel\n\
+      splijtstoffen werden opgeslagen, te ontmantelen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15
+  - number: 15.c
+    text: "een uitrusting, geschikt om een vaartuig of ander vervoermiddel door middel van kernenergie
+      voort te\nbewegen, daarin aan te brengen of aangebracht te houden, dan wel zodanige daarin aangebrachte\n\
+      uitrusting in werking te brengen, in werking te houden of te wijzigen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15
+  - number: 15a.1
+    text: "Met ingang van 31 december 2033 vervalt de op grond van [artikel 15, onder b][ref1], verleende\n\
+      vergunning voor het in werking houden van de in 1973 in werking gebrachte kernenergiecentrale\n\
+      Borssele, voorzover het betreft het vrijmaken van kernenergie.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15a.2
+    text: "Een aanvraag om een vergunning als bedoeld in [artikel 15, onder b][ref1], voor het vrijmaken
+      van\nkernenergie in de in het eerste lid genoemde inrichting na het in het eerste lid genoemde tijdstip\n\
+      wordt, onverminderd het overigens bij of krachtens deze wet bepaalde, buiten behandeling gelaten.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15aa
+    text: "Indien een vergunning als bedoeld in [artikel 15, onder b][ref1], voor het wijzigen van een\n\
+      inrichting wordt aangevraagd en voor die inrichting al een of meer vergunningen krachtens deze wet\n\
+      zijn verleend, is [artikel 5.43, eerste en vierde lid, van de Omgevingswet][ref2] van\novereenkomstige
+      toepassing. De Autoriteit kan de rechten die de vergunninghouder aan de al eerder\nverleende vergunningen
+      ontleende, niet wijzigen anders dan mogelijk zou zijn met toepassing van\n[artikel 18a][ref3] of
+      [artikel 19][ref4] van deze wet.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0037885#Artikel5.43\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel18a\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel19"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15aa
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: '5.43'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: 18a
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: '19'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15b.1
+    text: 'De vergunning kan slechts worden geweigerd in het belang van:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15b.1.a
+    text: de bescherming van mensen, dieren, planten en goederen;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15b.1.b
+    text: de veiligheid van de staat;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15b.1.c
+    text: "de bewaring en beveiliging van splijtstoffen en ertsen en de beveiliging van inrichtingen als\n\
+      bedoeld in [artikel 15, onder b][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15b.1.d
+    text: "het zeker stellen van de betaling van de vergoeding, aan derden toekomende voor schade of letsel,\n\
+      hun toegebracht;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15b.1.e
+    text: de nakoming van internationale verplichtingen.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15b.2
+    text: "Onverminderd het eerste lid kan een vergunning voor het oprichten van een inrichting als bedoeld
+      in\n[artikel 15, onder b][ref1], worden geweigerd, indien de in de aanvraag beschreven techniek
+      voor het\nvrijmaken van kernenergie, het vervaardigen, bewerken of verwerken van splijtstoffen dan
+      wel het\nopslaan van splijtstoffen in de inrichting naar het oordeel van de Autoriteit bij het in
+      werking\nbrengen van de inrichting zal zijn verouderd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15b.3
+    text: "Bij algemene maatregel van bestuur kunnen naast de in het eerste lid bedoelde belangen andere\n\
+      belangen worden aangewezen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15b.4
+    text: "Indien Wij niet binnen drie maanden na het in werking treden van een algemene maatregel van
+      bestuur\nals in het derde lid bedoeld aan de Tweede Kamer der Staten-Generaal een voorstel van wet
+      hebben\ndoen toekomen tot wijziging van deze wet overeenkomstig die maatregel of indien zodanig
+      voorstel\nwordt ingetrokken of verworpen, trekken Wij de maatregel onverwijld in."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15b
+  - number: 15c.1
+    text: "In een vergunning wordt duidelijk aangegeven waarop zij betrekking heeft. De aanvraag om de\n\
+      vergunning maakt deel uit van de vergunning, voor zover dat in de vergunning is aangegeven."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15c
+  - number: 15c.2
+    text: "Een vergunning kan ter bescherming van de bij of krachtens [artikel 15][ref1] aangewezen belangen\n\
+      onder beperkingen worden verleend.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15c
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15c.3
+    text: "Aan een vergunning worden, met inachtneming van de dienaangaande bij algemene maatregel van
+      bestuur\ngestelde regels, de voorschriften verbonden, die nodig zijn ter bescherming van de bij
+      of krachtens\n[artikel 15 ][ref1] aangewezen belangen. Voor zover door het verbinden van voorschriften
+      aan de\nvergunning de nadelige gevolgen van de betrokken activiteit voor mensen, dieren, planten
+      en goederen\nniet kunnen worden voorkomen, worden daaraan de voorschriften verbonden, die de grootst
+      mogelijke\nbescherming bieden tegen die gevolgen, tenzij dat redelijkerwijs niet kan worden gevergd.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15c
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15c.4
+    text: "Voor zover ten aanzien van de betrokken splijtstoffen, ertsen, inrichtingen of uitrustingen
+      regels\ngelden krachtens [artikel 21][ref1], kunnen de voorschriften daarvan alleen afwijken, voor
+      zover dat\nbij die regels is toegestaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel21"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15c
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '21'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15d.1
+    text: "De aan een vergunning te verbinden voorschriften geven de doeleinden aan, die de vergunninghouder\n\
+      ter bescherming van de bij of krachtens [artikel 15b][ref1] aangewezen belangen op een door hem
+      te\nbepalen wijze dient te verwezenlijken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15d
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15d.2
+    text: "Voor zover dit naar het oordeel van de Autoriteit noodzakelijk is, kunnen de voorschriften
+      inhouden\ndat daarbij aangegeven middelen ter bescherming van de bij of krachtens [artikel 15b][ref1]\n\
+      aangewezen belangen moeten worden toegepast.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15d
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15e.1
+    text: "Aan een vergunning kunnen ter bescherming van de bij of krachtens [artikel 15][ref1] aangewezen\n\
+      belangen andere dan de in [artikel 15][ref2] bedoelde voorschriften worden verbonden.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel15b\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel15d"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: 15d
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15e.2
+    text: "Een voorschrift kan de verplichting inhouden dat met betrekking tot in het voorschrift geregelde,\n\
+      daarbij aangegeven onderwerpen moet worden voldaan aan nadere eisen die door een bij het voorschrift\n\
+      aangewezen bestuursorgaan worden gesteld. Bij het voorschrift kan worden aangegeven hoe die eisen\n\
+      door het betrokken bestuursorgaan moeten worden bekendgemaakt. Bij het stellen van een nadere eis\n\
+      wordt het tijdstip bepaald, waarop ten aanzien van die eis de verplichting ingaat."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15e
+  - number: 15f.1
+    text: "De houder van een vergunning als bedoeld in [artikel 15, onder b][ref1], voor het in werking\n\
+      brengen, in werking houden, buiten gebruik stellen of ontmantelen van een inrichting waarin\nkernenergie
+      kan, onderscheidenlijk kon worden vrijgemaakt, stelt op een door Onze Ministers van\nInfrastructuur
+      en Milieu en van Financiën goedgekeurde wijze financiële zekerheid ter dekking van de\nkosten die
+      voortvloeien uit het buiten gebruik stellen en de ontmanteling van de inrichting.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15f.2
+    text: "De financiële zekerheid wordt in stand gehouden tot het tijdstip waarop Onze genoemde Ministers\n\
+      schriftelijk hebben verklaard dat de ontmanteling is voltooid."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.3
+    text: 'De financiële zekerheid wordt gesteld in een of meer van de volgende vormen:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.3.a
+    text: een borgtocht of een bankgarantie;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.3.b
+    text: "het deelnemen aan een daartoe ingesteld fonds dat naar het oordeel van Onze genoemde Ministers\n\
+      voldoende waarborg biedt dat de in het eerste lid bedoelde kosten zijn gedekt;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.3.c
+    text: "het treffen van enige andere voorziening die naar het oordeel van Onze genoemde Ministers voldoende\n\
+      waarborg biedt dat de in het eerste lid bedoelde kosten zijn gedekt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.4
+    text: "De aanvraag om goedkeuring vermeldt het bedrag en de termijn waarvoor en het tijdstip en de
+      wijze\nwaarop de zekerheid wordt gesteld. Tevens bevat de aanvraag een onderbouwing van de omvang
+      van de te\nstellen financiële zekerheid. Indien de aanvraag betrekking heeft op een wijziging van
+      bij een\neerdere aanvraag verstrekte gegevens, wordt de aanvraag uiterlijk vier weken voor de wijziging\n\
+      ingediend."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.5
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen regels worden gesteld met betrekking
+      tot de\naanvraag om goedkeuring."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.6
+    text: "Aan de goedkeuring kunnen voorschriften worden verbonden. Daartoe kan in ieder geval behoren
+      een\nvoorschrift dat de houder van de vergunning het bedrag van de gestelde zekerheid aanpast, indien
+      dat\nnaar het oordeel van Onze genoemde Ministers nodig is met het oog op wijziging van bij het\n\
+      voorschrift aangegeven omstandigheden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.7
+    text: "Onze genoemde Ministers beslissen binnen zes maanden na de ontvangst van een aanvraag om goedkeuring\n\
+      op die aanvraag."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+  - number: 15f.8
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen andere inrichtingen als bedoeld in [artikel\n\
+      15, onder b][ref1], worden aangewezen, waarop het eerste tot en met zevende lid van overeenkomstige\n\
+      toepassing zijn.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 15f.9
+    text: "Met toepassing van [artikel 28, eerste lid, laatste zinsnede, van de Dienstenwet][ref1] is\n\
+      [paragraaf 4.1.3.3. van de Algemene wet bestuursrecht][ref2] niet van toepassing op de aanvraag
+      om\ngoedkeuring.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel28\n[ref2]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel15f
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '28'
+      - id: ref2
+        bwb_id: BWBR0005537
+        paragraaf: 4.1.3.3
+  - number: '16.1'
+    text: "Bij of krachtens algemene maatregel van bestuur worden regelen gesteld betreffende de wijze,
+      waarop\nde aanvraag om een vergunning dient te geschieden, en de gegevens, welke van de aanvrager
+      kunnen\nworden verlangd."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel16
+  - number: '16.2'
+    text: "Bij of krachtens de maatregel wordt in ieder geval bepaald dat de aanvrager in gevallen waarin
+      de\nvergunning betrekking heeft op het oprichten of veranderen van een inrichting als bedoeld in\n\
+      [artikel 15, onder b][ref1], dat tevens is aan te merken als het bouwen van een bouwwerk waarvoor\n\
+      een omgevingsvergunning voor een omgevingsplanactiviteit als bedoeld in [artikel 5.1, eerste lid,\n\
+      aanhef en onder a, van de Omgevingswet][ref2], bestaande uit een bouwactiviteit of het in stand\n\
+      houden van een bouwwerk, of een omgevingsvergunning voor een bouwactiviteit als bedoeld in artikel\n\
+      5.1, tweede lid, aanhef en onder a, van de Omgevingswet, indien de aanvragen om een\nomgevingsvergunning
+      voor een omgevingsplanactiviteit bestaande uit een bouwactiviteit of het in\nstand houden van een
+      bouwwerk of een omgevingsvergunning voor een bouwactiviteit:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0037885#Artikel5.1"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel16
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: '5.1'
+  - number: 16.2.a
+    text: "tegelijk met de aanvraag om de vergunning krachtens deze wet zijn ingediend, een afschrift
+      van die\naanvragen bij zijn aanvraag overlegt;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel16
+  - number: 16.2.b
+    text: "niet tegelijk met de aanvraag om de vergunning krachtens deze wet worden ingediend, een afschrift\n\
+      van die aanvragen aan het bevoegd gezag overlegt gelijktijdig met de indiening van die aanvraag."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel16
+  - number: '17.1'
+    text: "Op de voorbereiding van de beschikking op de aanvraag om een vergunning krachtens [artikel
+      15][ref1]\nis [afdeling 3.4 van de Algemene wet bestuursrecht][ref2] van toepassing en zijn [paragraaf
+      16.2.2\nvan de Omgevingswet][ref3], [artikel 5.7, vierde lid, van de Omgevingswet][ref4] en [afdeling
+      13.2\nvan de Wet milieubeheer][ref5] van overeenkomstige toepassing, met dien verstande dat daarbij\n\
+      hetgeen in de [artikelen 17a tot en met 20a ][ref6] van deze wet is bepaald, in acht wordt genomen.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0005537\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0037885\n[ref4]: https://wetten.overheid.nl/BWBR0037885#Artikel5.7\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0003245\n[ref6]: https://wetten.overheid.nl/BWBR0002402#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref3
+        bwb_id: BWBR0037885
+        paragraaf: 16.2.2
+      - id: ref4
+        bwb_id: BWBR0037885
+        artikel: '5.7'
+      - id: ref5
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+      - id: ref6
+        bwb_id: BWBR0002402
+        artikel: 17a
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '17.2'
+    text: "In afwijking van het eerste lid zijn de in dat lid genoemde onderdelen van de [Algemene wet\n\
+      bestuursrecht][ref1], van de [Omgevingswet][ref2] en van de [Wet milieubeheer][ref3] niet van\n\
+      toepassing op de voorbereiding van beschikkingen op de aanvraag om een vergunning krachtens:\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0005537\n[ref2]: https://wetten.overheid.nl/BWBR0037885\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0003245"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+      - id: ref2
+        bwb_id: BWBR0037885
+      - id: ref3
+        bwb_id: BWBR0003245
+  - number: 17.2.a
+    text: "[artikel 15, onder a][ref1], voor het vervoeren, het voorhanden hebben bij opslag in verband
+      met het\nvervoer, dan wel het binnen of buiten Nederlands grondgebied brengen of doen brengen van\n\
+      splijtstoffen of ertsen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 17.2.b
+    text: "[artikel 15, onder a][ref1], voor het voorhanden hebben van splijtstoffen in een inrichting
+      of\nuitrusting, ten aanzien waarvan een vergunning krachtens [artikel 15, onder b of c][ref2], is\n\
+      vereist, dan wel voor het zich ontdoen van splijtstoffen die rechtstreeks afkomstig zijn uit een\n\
+      zodanige inrichting of uitrusting;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 17.2.c
+    text: "[artikel 15, onder a][ref1], voor het voorhanden hebben of zich ontdoen van splijtstoffen in\n\
+      gevallen als bedoeld in het derde lid;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 17.2.d
+    text: "[artikel 15, onder c][ref1], in gevallen waarin de uitrusting slechts buiten Nederland in werking\n\
+      zal worden gebracht of gehouden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '17.3'
+    text: 'Gevallen als bedoeld in het tweede lid, onder c, zijn die gevallen:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17.3.a
+    text: 'waarin het voorhanden hebben van splijtstoffen of het zich daarvan ontdoen geschiedt:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17.3.a.1°
+    text: in een voertuig of aan boord van een vaartuig of van een luchtvaartuig;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17.3.a.2°
+    text: "op steeds wisselende plaatsen, indien die gevallen behoren tot een bij algemene maatregel van\n\
+      bestuur aangegeven categorie waarin het belang van de toepassing van [afdeling 3.4 van de Algemene\n\
+      wet bestuursrecht][ref1] niet opweegt tegen de daaraan verbonden bezwaren;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+  - number: 17.3.a.3°
+    text: "indien al eerder een overeenkomstige vergunning met betrekking tot dezelfde plaats was verleend
+      aan\nde aanvrager of aan degene wiens vergunning ingevolge [artikel 70][ref1] voor hem geldt en
+      de\naangevraagde vergunning niet leidt tot andere of grotere nadelige gevolgen voor het milieu dan\n\
+      volgens de geldende vergunning is toegestaan;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel70"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '70'
+        hoofdstuk: IX
+  - number: 17.3.b
+    text: "waarin bij algemene maatregel van bestuur aangegeven splijtstoffen op een daarbij aan te geven
+      wijze\nhetzij zijn opgenomen in vaste stoffen die geen ioniserende straling uitzenden, hetzij zijn
+      omgeven\ndoor een omhulsel;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17.3.c
+    text: "behorende tot een bij algemene maatregel van bestuur aangewezen categorie, waarin, gezien de
+      wijze\nwaarop de daarbij aangegeven splijtstoffen worden toegepast, het belang van de toepassing
+      van\n[afdeling 3.4 van de Algemene wet bestuursrecht][ref1] niet opweegt tegen de daaraan verbonden\n\
+      bezwaren.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+  - number: '17.4'
+    text: "In afwijking van het eerste lid zijn de in dat lid genoemde onderdelen van de [Algemene wet\n\
+      bestuursrecht][ref1], van de [Omgevingswet][ref2] en van de [Wet milieubeheer][ref3] niet van\n\
+      toepassing op de voorbereiding van beschikkingen op de aanvraag om een wijziging van een vergunning\n\
+      krachtens [artikel 15, onder b of c][ref4]:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0037885\n[ref3]: https://wetten.overheid.nl/BWBR0003245\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+      - id: ref2
+        bwb_id: BWBR0037885
+      - id: ref3
+        bwb_id: BWBR0003245
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 17.4.a
+    text: "die niet leidt tot andere of grotere nadelige gevolgen voor het milieu dan volgens de geldende\n\
+      vergunning is toegestaan;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17.4.b
+    text: "waarvoor geen verplichting bestaat tot het maken van een milieueffectrapport als bedoeld in\n\
+      [afdeling 16.4 van de Omgevingswet][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0037885"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0037885
+        afdeling: '16.4'
+  - number: 17.4.c
+    text: die niet leidt tot een wijziging van de ontwerpbedrijfsduur van de inrichting; en
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17.4.d
+    text: die niet leidt tot een andere inrichting dan waarvoor eerder een vergunning is verleend.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17
+  - number: 17a
+    text: "Bij algemene maatregel van bestuur worden de bestuursorganen aangewezen, die - anders dan als\n\
+      adviseurs - bij de totstandkoming van de beschikking op de aanvraag worden betrokken. Bij de\nmaatregel
+      kunnen bestuursorganen worden aangewezen, die in de gelegenheid worden gesteld advies uit\nte brengen
+      over het ontwerp van de beschikking op de aanvraag om een vergunning."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17a
+  - number: 17b
+    text: "Het bestuursorgaan dat zorg draagt voor het beheer van het zuiveringtechnisch werk of het\n\
+      oppervlaktewaterlichaam waarop afvalwater vanuit een voorziening voor de inzameling en het transport\n\
+      van afvalwater wordt gebracht, is adviseur met betrekking tot een aanvraag om een vergunning die\n\
+      betrekking heeft op een activiteit als bedoeld in [artikel 15, onder b][ref1], voor zover die\n\
+      aanvraag betrekking heeft op het brengen van afvalwater of andere afvalstoffen in die voorziening.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel17b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '18'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel18
+  - number: 18a.1
+    text: "De Autoriteit beziet regelmatig of de beperkingen waaronder een vergunning is verleend, en
+      de\nvoorschriften die aan een vergunning zijn verbonden, nog toereikend zijn gezien de ontwikkelingen
+      op\nhet gebied van de technische mogelijkheden tot bescherming van mensen, dieren, planten en goederen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel18a
+  - number: 18a.2
+    text: "De Autoriteit wijzigt de beperkingen waaronder de vergunning is verleend en de voorschriften
+      die\ndaaraan zijn verbonden, vult deze aan of trekt ze in, dan wel brengt alsnog beperkingen aan,
+      of\nverbindt alsnog voorschriften aan de vergunning, voor zover blijkt dat de nadelige gevolgen
+      die de\nbetrokken activiteit voor mensen, dieren, planten en goederen veroorzaakt, gezien de ontwikkeling\n\
+      van de technische mogelijkheden tot bescherming daarvan verder kunnen worden beperkt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel18a
+  - number: 18a.3
+    text: "Bij algemene maatregel van bestuur kunnen in het belang van de bescherming van mensen, dieren,\n\
+      planten en goederen regels worden gesteld met betrekking tot de wijze waarop het eerste lid wordt\n\
+      toegepast met betrekking tot daarbij aangewezen categorieën van handelingen. Bij de maatregel kan\n\
+      worden bepaald dat daarbij gestelde regels slechts gelden in daarbij aangegeven categorieën van\n\
+      gevallen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel18a
+  - number: 18a.4
+    text: "Met betrekking tot de beslissing ter zake en de inhoud van die beperkingen en voorschriften
+      zijn de\n[artikelen 15b tot en met 15e][ref1] van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel18a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '19.1'
+    text: "De Autoriteit kan beperkingen waaronder een vergunning is verleend, en voorschriften die daaraan\n\
+      zijn verbonden, wijzigen, aanvullen of intrekken, dan wel alsnog beperkingen aanbrengen of\nvoorschriften
+      aan een vergunning verbinden ter bescherming van de bij of krachtens [artikel\n15b][ref1] aangewezen
+      belangen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '19.2'
+    text: "Een ieder, met uitzondering van de vergunninghouder, kan de Autoriteit verzoeken een vergunning
+      in\nhet belang van de bescherming van mensen, dieren, planten en goederen met toepassing van het
+      eerste\nlid te wijzigen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel19
+  - number: '19.3'
+    text: "Op aanvraag van de vergunninghouder kan de Autoriteit beperkingen waaronder een vergunning
+      is\nverleend, en voorschriften die daaraan zijn verbonden, wijzigen, aanvullen of intrekken, dan
+      wel\nalsnog beperkingen aanbrengen of voorschriften aan een vergunning verbinden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel19
+  - number: '19.4'
+    text: "In een geval als bedoeld in [artikel 15b, vierde lid][ref1], trekt de Autoriteit zo spoedig
+      mogelijk\nnadat de betrokken algemene maatregel van bestuur is ingetrokken, de ingevolge die maatregel
+      aan een\nvergunning verbonden voorschriften in. Tot het tijdstip waarop de beschikking tot intrekking
+      van\nkracht wordt, blijven de voorschriften gelden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '20.1'
+    text: "Op de voorbereiding van een beschikking krachtens [artikel 18a, tweede lid][ref1], of [artikel
+      19,\neerste, tweede of derde lid][ref2], is – tenzij het een geval betreft als bedoeld in [artikel
+      17,\ntweede lid][ref3] – [afdeling 3.4 van de Algemene wet bestuursrecht][ref4] van toepassing en
+      zijn\n[paragraaf 16.2.2 van de Omgevingswet][ref5], [artikel 5.7, vierde lid, van de Omgevingswet][ref6]\n\
+      en [afdeling 13.2 van de Wet milieubeheer][ref7] van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel18a\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel19\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel17\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0005537\n[ref5]: https://wetten.overheid.nl/BWBR0037885\n\
+      [ref6]: https://wetten.overheid.nl/BWBR0037885#Artikel5.7\n[ref7]: https://wetten.overheid.nl/BWBR0003245"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel20
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 18a
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '19'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '17'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref4
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref5
+        bwb_id: BWBR0037885
+        paragraaf: 16.2.2
+      - id: ref6
+        bwb_id: BWBR0037885
+        artikel: '5.7'
+      - id: ref7
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+  - number: '20.2'
+    text: "Indien een verzoek wordt gedaan als bedoeld in [artikel 19, tweede lid][ref1], stelt de Autoriteit\n\
+      de houder van de betrokken vergunning daarvan in kennis. Deze wordt voor zover zijn belang dat\n\
+      vordert, mede als verzoeker beschouwd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel19"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel20
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '19'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 20a.1
+    text: "De Autoriteit kan de vergunning intrekken indien dat ter bescherming van de bij of krachtens\n\
+      [artikel 15b][ref1] aangewezen belangen noodzakelijk is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel20a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 20a.2
+    text: "Op de voorbereiding van een beschikking krachtens het eerste lid is [afdeling 3.4 van de Algemene\n\
+      wet bestuursrecht][ref1] van toepassing en zijn [paragraaf 16.2.2 van de Omgevingswet][ref2],\n\
+      [artikel 5.7, vierde lid, van de Omgevingswet][ref3] en [afdeling 13.2 van de Wet\nmilieubeheer][ref4]
+      van overeenkomstige toepassing, tenzij het een geval betreft als bedoeld in\n[artikel 17, tweede
+      lid][ref5].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537\n[ref2]: https://wetten.overheid.nl/BWBR0037885\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0037885#Artikel5.7\n[ref4]: https://wetten.overheid.nl/BWBR0003245\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0002402#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel20a
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref2
+        bwb_id: BWBR0037885
+        paragraaf: 16.2.2
+      - id: ref3
+        bwb_id: BWBR0037885
+        artikel: '5.7'
+      - id: ref4
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+      - id: ref5
+        bwb_id: BWBR0002402
+        artikel: '17'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 20a.3
+    text: "De Autoriteit kan een vergunning voor het ontmantelen van een inrichting als bedoeld in [artikel
+      15,\nonder b][ref1], tevens intrekken wanneer de ontmanteling van die inrichting is voltooid.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel20a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '21.1'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen ter bescherming van de bij of krachtens\n\
+      [artikel 15b][ref1] aangewezen belangen regels worden gesteld met betrekking tot daartoe bij de\n\
+      maatregel aangewezen categorieën van splijtstoffen, ertsen, inrichtingen of uitrustingen dan wel\n\
+      onderdelen van inrichtingen of uitrustingen. Bij de maatregel kan worden bepaald dat daarbij\ngestelde
+      regels slechts gelden in daarbij aangegeven categorieën van gevallen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '21.2'
+    text: "Bij algemene maatregel van bestuur kan worden bepaald dat de bij [artikel 15][ref1] gestelde\n\
+      verboden in daarbij aangewezen categorieën van gevallen niet gelden met betrekking tot\nsplijtstoffen,
+      ertsen, inrichtingen of uitrustingen, behorende tot een bij die maatregel aangewezen\ncategorie.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '21.3'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen regels worden gesteld met betrekking
+      tot de\nbuitengebruikstelling en ontmanteling van bij of krachtens die maatregel aangewezen categorieën
+      van\ninrichtingen als bedoeld in [artikel 15, onder b][ref1]. Bij of krachtens de maatregel kan
+      worden\nbepaald dat daarbij gestelde regels slechts gelden in daarbij aangegeven categorieën van
+      gevallen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '21.4'
+    text: "Ten aanzien van bij de regels te stellen voorschriften zijn de bij of krachtens [artikel 5.34,\n\
+      eerste en tweede lid, van de Omgevingswet][ref1] gestelde regels over activiteiten als bedoeld in\n\
+      [artikel 5.1, tweede lid, aanhef en onder b, van die wet][ref2], alsmede [artikel 13.5, eerste tot\n\
+      en met vijfde lid, van die wet][ref3] van overeenkomstige toepassing, met dien verstande dat bij\n\
+      toepassing van het tweede lid het stellen van financiële zekerheid slechts kan worden voorgeschreven\n\
+      in de vorm van het sluiten van een verzekering tegen aansprakelijkheid voor schade, voortvloeiend\n\
+      uit de nadelige gevolgen voor de bij of krachtens [artikel 15b][ref4] aangewezen belangen, die de\n\
+      inrichting veroorzaakt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0037885#Artikel5.34\n[ref2]:
+      https://wetten.overheid.nl/BWBR0037885#Artikel5.1\n[ref3]: https://wetten.overheid.nl/BWBR0037885#Artikel13.5\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0037885
+        artikel: '5.34'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: '5.1'
+      - id: ref3
+        bwb_id: BWBR0037885
+        artikel: '13.5'
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '21.5'
+    text: "Indien bij een maatregel krachtens het eerste lid tevens toepassing wordt gegeven aan het tweede\n\
+      lid, kan de verplichting worden opgelegd tot het melden van de handelingen ten aanzien waarvan de\n\
+      bij [artikel 15][ref1] gestelde verboden niet gelden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '21.6'
+    text: "De [artikelen 4.4, eerste lid][ref1], [4.5][ref2] en [4.22, tweede lid, van de Omgevingswet][ref3]\n\
+      zijn van overeenkomstige toepassing, met dien verstande dat onder \"Onze Minister\" wordt verstaan:\n\
+      Onze Ministers van Infrastructuur en Milieu en van Sociale Zaken en Werkgelegenheid tezamen.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0037885#Artikel4.4\n[ref2]: https://wetten.overheid.nl/BWBR0037885#Artikel4.5\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0037885#Artikel4.22"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0037885
+        artikel: '4.4'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: '4.5'
+      - id: ref3
+        bwb_id: BWBR0037885
+        artikel: '4.22'
+  - number: '22.1'
+    text: "Ieder, die zonder daartoe bevoegd te zijn splijtstoffen of ertsen, dan wel stoffen, waarvan
+      hij\nredelijkerwijs moet vermoeden, dat het splijtstoffen of ertsen zijn, onder zich heeft of krijgt,
+      is\nverplicht daarvan terstond aangifte te doen bij de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel22
+  - number: '22.2'
+    text: "De Autoriteit geeft van de gedane aangifte kennis aan de burgemeester van de gemeente, waar
+      die\ngoederen zich bevinden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel22
+  - number: '22.3'
+    text: "De Autoriteit is bevoegd met betrekking tot ongeoorloofd aanwezig bevonden splijtstoffen en
+      ertsen\nen de voorwerpen, welke tot hun verpakking of berging dienen of hebben gediend, een last
+      onder\nbestuursdwang op te leggen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel22
+  - number: '22.4'
+    text: "Door toepassing van bestuursdwang in bezit genomen goederen worden overgedragen aan een door
+      de\nAutoriteit aan te wijzen instelling of persoon. Deze doet van de overdracht mededeling in de\n\
+      Staatscourant. Met toepassing van [artikel 28, eerste lid, laatste zinsnede, van de\nDienstenwet][ref1]
+      is [paragraaf 4.1.3.3. van de Algemene wet bestuursrecht][ref2] niet van\ntoepassing op de aanvraag
+      om een aanwijzing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel28\n[ref2]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel22
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '28'
+      - id: ref2
+        bwb_id: BWBR0005537
+        paragraaf: 4.1.3.3
+  - number: '23.1'
+    text: "Hij, die bevoegd is de in bezit genomen splijtstoffen of ertsen onder zich te hebben, kan binnen\n\
+      drie maanden na de in [artikel 22, vierde lid][ref1], bedoelde kennisgeving de afgifte van de in\n\
+      bezit genomen goederen vorderen bij een verzoekschrift, te richten tot de rechtbank, binnen welker\n\
+      rechtsgebied de inbezitneming heeft plaats gevonden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel22"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel23
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '22'
+        hoofdstuk: III
+        afdeling: '3'
+  - number: '23.2'
+    text: "De rechtbank behandelt het verzoek overeenkomstig de bepalingen van de zesde afdeling van Titel
+      I\nvan het Eerste Boek van het Wetboek van Strafvordering en beslist zo spoedig mogelijk bij met\n\
+      redenen omklede beschikking."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel23
+  - number: '24.1'
+    text: "Ingeval niet binnen de in [artikel 23, eerste lid][ref1], genoemde termijn een verzoekschrift
+      is\ningediend of ingeval een krachtens dat lid gedaan verzoek ongegrond is verklaard, vervallen
+      alle\nrechten op de in bezit genomen goederen aan de staat, met uitzondering van de rechten, welke\n\
+      ingevolge internationale overeenkomsten of besluiten van volkenrechtelijke organisaties daarop\n\
+      rusten. De krachtens [artikel 22, vierde lid][ref2], aangewezen instelling of persoon doet hiervan\n\
+      mededeling in de Staatscourant.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel23\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel22"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel24
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '23'
+        hoofdstuk: III
+        afdeling: '3'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '22'
+        hoofdstuk: III
+        afdeling: '3'
+  - number: '24.2'
+    text: "Hij, wiens rechten ingevolge het eerste lid aan de staat zijn vervallen, kan binnen een jaar
+      na de\nkrachtens het eerste lid gedane kennisgeving deze rechten van de staat terugvorderen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel24
+  - number: '25'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel25
+  - number: '26.1'
+    text: "De voordracht tot vaststelling, wijziging of intrekking van een algemene maatregel van bestuur
+      als\nin dit hoofdstuk bedoeld wordt Ons gedaan, indien het betreft:"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel26
+  - number: 26.1.a
+    text: "een maatregel als in [artikel 13][ref1] of [14][ref2] bedoeld: Onze Minister van Infrastructuur
+      en\nMilieu;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel13\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel14"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel26
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '13'
+        hoofdstuk: III
+        afdeling: '1'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '14'
+        hoofdstuk: III
+        afdeling: '1'
+  - number: 26.1.b
+    text: "een maatregel als in [artikel 15b][ref1] bedoeld: door Onze Ministers, wie het aangaat;\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel26
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 26.1.c
+    text: "een maatregel als in [artikel 16][ref1], [17][ref2] of [21][ref3] bedoeld: door Onze Ministers
+      van\nInfrastructuur en Milieu en van Sociale Zaken en Werkgelegenheid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel16\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel17\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel21"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel26
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '16'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '17'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '21'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '26.2'
+    text: "Ten aanzien van bij een algemene maatregel van bestuur, vastgesteld krachtens [artikel 14][ref1],\n\
+      geregelde onderwerpen, kan Onze Minister van Infrastructuur en Milieu nadere regels stellen.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel14"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel26
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '14'
+        hoofdstuk: III
+        afdeling: '1'
+  - number: '28'
+    text: "Ieder die radioactieve stoffen bereidt, vervoert, voorhanden heeft, toepast, binnen of buiten\n\
+      Nederlands grondgebied brengt of doet brengen, dan wel zich daarvan ontdoet, is verplicht\ndaaromtrent
+      een administratie te voeren, overeenkomstig bij of krachtens algemene maatregel van\nbestuur gestelde
+      regels."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel28
+  - number: '29.1'
+    text: "Het is verboden zonder vergunning van de Autoriteit bij of krachtens algemene maatregel van
+      bestuur\naan te wijzen radioactieve stoffen of in daarbij aan te wijzen gevallen radioactieve stoffen
+      te\nbereiden, te vervoeren, voorhanden te hebben, toe te passen, binnen of buiten Nederlands grondgebied\n\
+      te brengen of te doen brengen, dan wel zich daarvan te ontdoen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29
+  - number: '29.2'
+    text: "Voor zover het bij of krachtens het eerste lid bepaalde afwijkt van bij of krachtens andere
+      wetten\ngestelde regelen, blijven deze buiten toepassing."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29
+  - number: 29a.1
+    text: "Op de voorbereiding van de beschikking op de aanvraag om een vergunning krachtens [artikel
+      29][ref1]\nzijn [afdeling 3.4 van de Algemene wet bestuursrecht][ref2] en [afdeling 13.2 van de
+      Wet\nmilieubeheer][ref3] van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel29\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0005537\n[ref3]: https://wetten.overheid.nl/BWBR0003245"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '29'
+        hoofdstuk: IV
+        afdeling: '1'
+      - id: ref2
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref3
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+  - number: 29a.2
+    text: "In afwijking van het eerste lid zijn [afdeling 3.4 van de Algemene wet bestuursrecht][ref1]
+      en\n[afdeling 13.2 van de Wet milieubeheer][ref2] niet van toepassing op de voorbereiding van de\n\
+      beschikking op de aanvraag om een vergunning krachtens [artikel 29][ref3]:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0003245\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel29"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29a
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref2
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '29'
+        hoofdstuk: IV
+        afdeling: '1'
+  - number: 29a.2.a
+    text: "voor het vervoeren, het voorhanden hebben bij opslag in verband met het vervoer, het binnen
+      of\nbuiten Nederlands grondgebied brengen of doen brengen van radioactieve stoffen, dan wel het\n\
+      voorhanden hebben of zich ontdoen van zodanige stoffen die zullen ontstaan tijdens het gebruik van\n\
+      splijtstoffen in een inrichting of uitrusting, ten aanzien waarvan een vergunning krachtens [artikel\n\
+      15, onder b of c][ref1], is vereist;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 29a.2.b
+    text: "voor het bereiden, voorhanden hebben, toepassen of zich ontdoen van radioactieve stoffen in\n\
+      overeenkomstige gevallen als bedoeld in [artikel 17, derde lid][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '17'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 29a.2.c
+    text: "voor medische toepassingen, indien naar het oordeel van de Autoriteit het belang van de patiënt\n\
+      onverwijlde toepassing van die stoffen vereist."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29a
+  - number: 29a.3
+    text: "De [artikelen 15c, eerste lid][ref1], [16][ref2] en [17a][ref3] zijn van overeenkomstige toepassing.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15c\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel16\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel29a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15c
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '16'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: 17a
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '30'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel30
+  - number: '31.1'
+    text: "Aan een vergunning worden met inachtneming van de dienaangaande bij algemene maatregel van
+      bestuur\ngestelde regelen de met het oog op de bescherming van mensen, dieren, planten en goederen
+      nodige\nvoorschriften verbonden. Voor zover door het verbinden van voorschriften aan de vergunning
+      de\nnadelige gevolgen van de betrokken activiteit voor mensen, dieren, planten en goederen niet
+      kunnen\nworden voorkomen, worden daaraan de voorschriften verbonden, die de grootst mogelijke bescherming\n\
+      bieden tegen die gevolgen, tenzij dat redelijkerwijs niet kan worden gevergd."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel31
+  - number: '31.2'
+    text: "Zodanige voorschriften kunnen de verplichting inhouden te voldoen aan door bestuursorganen,
+      die bij\nhet voorschrift zijn aangewezen, gestelde nadere eisen. Bij het stellen van zodanige eis
+      wordt\ntevens het tijdstip bepaald, waarop ten aanzien van die eis de verplichting ingaat."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel31
+  - number: '31.3'
+    text: "Een vergunning kan ter bescherming van de in het eerste lid genoemde belangen onder beperkingen\n\
+      worden verleend."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel31
+  - number: '31.4'
+    text: "De [artikelen 18][ref1] zijn van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel18a"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel31
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 18a
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '32.1'
+    text: "Onverminderd het in [artikel 29][ref1] bepaalde kunnen bij of krachtens algemene maatregel
+      van\nbestuur regels worden gesteld met betrekking tot radioactieve stoffen met het oog op de bescherming\n\
+      van mensen, dieren, planten en goederen of in het belang van de beveiliging van die stoffen.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel29"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '29'
+        hoofdstuk: IV
+        afdeling: '1'
+  - number: '32.2'
+    text: 'Hiertoe kunnen behoren:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: 32.2.a
+    text: "regelen, welke voorwaarden inhouden, waaraan degene, die bij de maatregel aangewezen radioactieve\n\
+      stoffen bereidt, vervoert, voorhanden heeft of toepast, dan wel zich daarvan ontdoet, moet voldoen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: 32.2.b
+    text: "regelen betreffende de plaatsen, waar, de wijze, waarop en de omstandigheden, waaronder bij
+      de\nmaatregel aangewezen radioactieve stoffen mogen worden bereid, vervoerd, voorhanden gehouden
+      of\ntoegepast, en de wijze, waarop en de omstandigheden, waaronder men zich van deze stoffen mag\n\
+      ontdoen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: 32.2.c
+    text: "regelen, welke voorwaarden inhouden, waaraan vervoermiddelen, waarmede bij de maatregel aangewezen\n\
+      radioactieve stoffen worden vervoerd, moeten voldoen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: '32.3'
+    text: "Een algemene maatregel van bestuur, waarbij regelen als in het tweede lid, onder a, b of c,
+      bedoeld\nworden gesteld, kan tevens de verplichting inhouden te voldoen aan door bestuursorganen,
+      die bij de\nmaatregel zijn aangewezen, aan de betrokkene gestelde nadere eisen. Bij het stellen
+      van zodanige eis\nwordt tevens het tijdstip bepaald, waarop ten aanzien van die eis de verplichting
+      ingaat."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: '32.4'
+    text: "Bij of krachtens de algemene maatregel van bestuur, bedoeld in het eerste lid, kan een verplichting\n\
+      worden opgelegd tot het melden van bij die maatregel aangewezen handelingen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: '32.5'
+    text: "Ten aanzien van het bepaalde in het vierde lid zijn de [artikelen 4.4, eerste lid][ref1],\n\
+      [4.5][ref2] en [4.22, tweede lid, van de Omgevingswet][ref3] van overeenkomstige toepassing, met\n\
+      dien verstande dat onder «Onze Minister» wordt verstaan: Onze Ministers van Sociale Zaken en\nWerkgelegenheid
+      en van Infrastructuur en Milieu.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0037885#Artikel4.4\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0037885#Artikel4.5\n[ref3]: https://wetten.overheid.nl/BWBR0037885#Artikel4.22"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+    references:
+      - id: ref1
+        bwb_id: BWBR0037885
+        artikel: '4.4'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: '4.5'
+      - id: ref3
+        bwb_id: BWBR0037885
+        artikel: '4.22'
+  - number: '32.6'
+    text: "Indien bij een algemene maatregel van bestuur als in het eerste lid bedoeld wordt afgeweken
+      van bij\nof krachtens andere wetten gestelde regelen, blijven deze in zoverre buiten toepassing."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel32
+  - number: '33.1'
+    text: "Ieder, die zonder daartoe bevoegd te zijn radioactieve stoffen dan wel stoffen, waarvan hij\n\
+      redelijkerwijs moet vermoeden dat het radioactieve stoffen zijn, onder zich heeft of krijgt, is\n\
+      verplicht daarvan terstond aangifte te doen bij de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel33
+  - number: '33.2'
+    text: "De Autoriteit geeft van de gedane aangifte kennis aan de burgemeester van de gemeente, waar
+      die\ngoederen zich bevinden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel33
+  - number: '33.3'
+    text: "De krachtens [artikel 58, eerste lid, onderdeel b][ref1], aangewezen ambtenaren en de Autoriteit\n\
+      zijn bevoegd met betrekking tot ongeoorloofd aanwezig bevonden radioactieve stoffen en de\nvoorwerpen,
+      welke tot hun verpakking of berging dienen of hebben gediend, een last onder\nbestuursdwang op te
+      leggen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel33
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+  - number: '33.4'
+    text: "Door toepassing van bestuursdwang in bezit genomen goederen worden overgedragen aan een door
+      de\nAutoriteit aan te wijzen instelling of persoon. Deze doet van de overdracht mededeling in de\n\
+      Staatscourant. Met toepassing van [artikel 28, eerste lid, laatste zinsnede, van de\nDienstenwet][ref1]
+      is [paragraaf 4.1.3.3. van de Algemene wet bestuursrecht][ref2] niet van\ntoepassing op de aanvraag
+      om een aanwijzing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0026759#Artikel28\n[ref2]: https://wetten.overheid.nl/BWBR0005537"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel33
+    references:
+      - id: ref1
+        bwb_id: BWBR0026759
+        artikel: '28'
+      - id: ref2
+        bwb_id: BWBR0005537
+        paragraaf: 4.1.3.3
+  - number: '33.5'
+    text: "De [artikelen 23][ref1] en [24][ref2] zijn van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel23\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel24"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel33
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '23'
+        hoofdstuk: III
+        afdeling: '3'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '24'
+        hoofdstuk: III
+        afdeling: '3'
+  - number: '34.1'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen met het oog op de bescherming van mensen,\n\
+      dieren, planten en goederen regelen worden gesteld betreffende toestellen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '34.2'
+    text: 'Hiertoe kunnen behoren:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: 34.2.a
+    text: "regelen, welke een verbod inhouden bij de maatregel aangewezen toestellen te gebruiken, voor
+      zover\nnaar Ons oordeel het nut van het gebruik daarvan niet opweegt tegen de nadelige gevolgen
+      voor de\nopenbare gezondheid;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: 34.2.b
+    text: "regelen, welke een verbod inhouden bij de maatregel aangewezen toestellen te gebruiken zonder\n\
+      vergunning;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: 34.2.c
+    text: "regelen, welke voorwaarden inhouden, waaraan degene, die bij de maatregel aangewezen toestellen\n\
+      gebruikt, moet voldoen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: 34.2.d
+    text: regelen, welke voorwaarden inhouden, waaraan bij de maatregel aangewezen toestellen moeten
+      voldoen;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: 34.2.e
+    text: "regelen betreffende de plaatsen, waar, de wijze, waarop en de omstandigheden, waaronder bij
+      de\nmaatregel aangewezen toestellen mogen worden gebruikt;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: 34.2.f
+    text: "regelen, welke de verplichting inhouden tot melding van het gebruik van bij de maatregel aangewezen\n\
+      toestellen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '34.3'
+    text: "In geval van toepassing van het tweede lid, onder b, zijn [afdeling 3.4 van de Algemene wet\n\
+      bestuursrecht][ref1] en [afdeling 13.2 van de Wet milieubeheer][ref2] van toepassing, voor zover
+      dat\nbij die regelen is bepaald. De [artikelen 15c, eerste lid][ref3], [16, eerste lid][ref4], en\n\
+      [17a][ref5] zijn van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0003245\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel15c\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel16\n[ref5]: https://wetten.overheid.nl/BWBR0002402#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        afdeling: '3.4'
+      - id: ref2
+        bwb_id: BWBR0003245
+        afdeling: '13.2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: 15c
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: '16'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref5
+        bwb_id: BWBR0002402
+        artikel: 17a
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '34.4'
+    text: "Een vergunning als bedoeld in het tweede lid, onder b, kan ter bescherming tegen nadelige gevolgen\n\
+      voor mensen, dieren, planten of goederen onder beperkingen worden verleend."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '34.5'
+    text: "Aan een vergunning als in het tweede lid, onder b, bedoeld kunnen voorschriften worden verbonden.\n\
+      Voor zover door het verbinden van voorschriften aan de vergunning de nadelige gevolgen van de\n\
+      betrokken activiteit voor mensen, dieren, planten en goederen niet kunnen worden voorkomen, worden\n\
+      daaraan de voorschriften verbonden, die de grootst mogelijke bescherming bieden tegen die gevolgen,\n\
+      tenzij dat redelijkerwijs niet kan worden gevergd."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '34.6'
+    text: "Zodanige voorschriften kunnen, voor zover bij de maatregel niet anders is bepaald, de verplichting\n\
+      inhouden te voldoen aan door bestuursorganen, die bij het voorschrift zijn aangewezen, gestelde\n\
+      nadere eisen. Bij het stellen van zodanige eis wordt tevens het tijdstip bepaald, waarop ten aanzien\n\
+      van die eis de verplichting ingaat."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '34.7'
+    text: "De [artikelen 18a tot en met 20a][ref1] zijn van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel18a"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 18a
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '34.8'
+    text: "Een algemene maatregel van bestuur, waarbij regelen als in het tweede lid, onder c, d of e,
+      bedoeld\nworden gesteld, kan tevens de verplichting inhouden te voldoen aan door bestuursorganen,
+      die bij de\nmaatregel zijn aangewezen, aan de betrokkene gestelde nadere eisen. Het vijfde lid,
+      tweede volzin,\nis van overeenkomstige toepassing."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '34.9'
+    text: "Indien bij een algemene maatregel van bestuur als in het eerste lid bedoeld wordt afgeweken
+      van bij\nof krachtens andere wetten gestelde regelen, blijven deze in zoverre buiten toepassing."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel34
+  - number: '35'
+    text: "De voordracht tot vaststelling, wijziging of intrekking van een algemene maatregel van bestuur\n\
+      krachtens dit hoofdstuk wordt Ons gedaan door Onze Ministers van Infrastructuur en Milieu en van\n\
+      Sociale Zaken en Werkgelegenheid. Indien de maatregel betrekking heeft op medische\nstralingstoepassingen,
+      wordt de voordracht mede door Onze Minister van Volksgezondheid, Welzijn en\nSport gedaan."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel35
+  - number: '36.1'
+    text: "Indien ten aanzien van een inrichting als in [artikel 15, onder b][ref1], bedoeld of ten aanzien
+      van\neen uitrusting als in dat artikel, onder c, bedoeld, welke in een vaartuig of ander vervoermiddel
+      is\nof wordt aangebracht, dan wel ten aanzien van splijtstoffen, ertsen, radioactieve stoffen of\n\
+      toestellen in strijd met het bij of krachtens deze wet bepaalde is gehandeld, kunnen de krachtens\n\
+      [artikel 58, eerste lid][ref2], aangewezen ambtenaren, ingeval dit handelen naar hun oordeel ten\n\
+      gevolge heeft, dat personen door het verrichten van werkzaamheden in bepaalde ruimten of door het\n\
+      verblijf in die ruimten zich aan een aanmerkelijk gevaar blootstellen, de betrokkene bij beschikking\n\
+      bevelen een ieder, dan wel personen, behorende tot daarbij aangewezen categorieën, te beletten\n\
+      werkzaamheden in die ruimten te verrichten of aldaar te verblijven.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel36
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+  - number: '36.2'
+    text: "De ambtenaar, die een beschikking krachtens het eerste lid heeft vastgesteld, kan - zo nodig
+      met\nbehulp van de sterke arm - alle maatregelen treffen, die hij ter verzekering van de uitvoering
+      van\nde beschikking nodig acht."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel36
+  - number: '36.3'
+    text: "Een krachtens het eerste lid vastgestelde beschikking heeft een werkingsduur van één week,
+      tenzij\nvóór het verstrijken van die termijn door de Autoriteit anders is bepaald."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel36
+  - number: '37.1'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen regelen worden gesteld betreffende het
+      meten\nvan doses ioniserende straling en het bepalen van radioactieve besmetting, zomede betreffende
+      de\nregistratie daarvan."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: '37.2'
+    text: 'Hiertoe kunnen behoren:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: 37.2.a
+    text: "regelen, welke voor bij de maatregel aangewezen personen de verplichting inhouden tot het bij
+      zich\ndragen van een middel ter controle van de dosis ioniserende straling, waaraan zij blootgesteld
+      zijn\ngeweest;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: 37.2.b
+    text: "regelen, welke voor bij de maatregel aangewezen personen de verplichting inhouden tot het houden
+      van\neen register, waarin wordt bijgehouden de dosis ioniserende straling, waaraan de houder is\n\
+      blootgesteld geweest;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: 37.2.c
+    text: "regelen, welke voor degene onder wiens verantwoordelijkheid de houder van een register als
+      onder b\nbedoeld aan ioniserende straling blootgesteld is geweest, de verplichting inhouden tot
+      het\nregistreren van de dosis in dit register;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: 37.2.d
+    text: "regelen, welke voor bij de maatregelen aangewezen personen de verplichting inhouden tot het
+      zich\nonderwerpen aan een geneeskundig onderzoek in verband met stralingsgevaar;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: 37.2.e
+    text: "regelen, welke de verplichting inhouden apparaten, dienende tot het meten van doses ioniserende\n\
+      straling en tot het bepalen van radioactieve besmetting, te doen ijken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37
+  - number: 37a.1
+    text: "De voordracht tot vaststelling, wijziging of intrekking van een algemene maatregel van bestuur
+      als\nin [artikel 37][ref1] bedoeld wordt gedaan door Onze Minister van Infrastructuur en Milieu
+      en,\nindien het een maatregel betreft met het oog op de arbeidsbescherming dan wel de medische aspecten\n\
+      van bescherming tegen ioniserende straling, Onze Minister van Sociale Zaken en Werkgelegenheid\n\
+      onderscheidenlijk Onze Minister van Volksgezondheid, Welzijn en Sport.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel37"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '37'
+        hoofdstuk: Va
+  - number: 37a.2
+    text: "Ten aanzien van bij een algemene maatregel van bestuur, vastgesteld krachtens het eerste lid,\n\
+      geregelde onderwerpen kan Onze Minister van Infrastructuur en Milieu en, indien het een maatregel\n\
+      betreft met het oog op de arbeidsbescherming dan wel medische aspecten van bescherming tegen\nioniserende
+      straling, Onze Minister van Sociale Zaken en Werkgelegenheid onderscheidenlijk Onze\nMinister van
+      Volksgezondheid, Welzijn en Sport, nadere regels stellen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37a
+  - number: 37b.1
+    text: "Indien naar het oordeel van de Autoriteit de bedrijfsvoering van een inrichting als bedoeld
+      in\n[artikel 15, onder b][ref1], ernstige tekortkomingen vertoont, treft zij alle maatregelen die
+      zij\nmet het oog op de omstandigheden geboden achten.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 37b.2
+    text: "Tot de in het eerste lid bedoelde maatregelen kunnen behoren het treffen van de nodige technische,\n\
+      organisatorische, personele en administratieve voorzieningen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37b
+  - number: 37b.3
+    text: "Indien de inrichting in gebruik is dan wel is bestemd voor gebruik bij de Nederlandse krijgsmacht
+      of\nbij de krijgsmacht van een bondgenootschappelijke mogendheid, oefent de Autoriteit haar bevoegdheid\n\
+      uit in overeenstemming met Onze Minister van Defensie, onderscheidenlijk de verantwoordelijke\n\
+      autoriteit van de desbetreffende mogendheid."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel37b
+  - number: '38'
+    text: 'Voor de toepassing van dit hoofdstuk en de daarop berustende bepalingen wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.a
+    text: 'Onze Minister: Onze Minister van Infrastructuur en Milieu;'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.b
+    text: 'ongeval: gebeurtenis'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.b.1°
+    text: "als gevolg waarvan straling vrijkomt of dreigt vrij te komen die tot een verhoogd risico leidt
+      of\nkan leiden voor mens of milieu, of"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.b.2°
+    text: "die ter voorkoming of vermindering van een verhoogd stralingsrisico voor mens of milieu een\n\
+      gecoördineerde inzet van diensten en organisaties van verschillende disciplines vergt;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.c
+    text: 'categorie A-object:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.c.1°
+    text: "een inrichting als bedoeld in [artikel 15, onder b][ref1], met uitzondering van een inrichting\n\
+      waarin uitsluitend splijtstoffen worden opgeslagen of verwerkt, alsmede een inrichting voor\nuraniumverrijking,\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 38.c.2°
+    text: "een ruimtevaartuig of een vervoermiddel met een uitrusting als bedoeld in [artikel 15, onder\n\
+      c][ref1],\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 38.c.3°
+    text: "inrichtingen als bedoeld in [artikel 15, onder b][ref1], uitrustingen als bedoeld in artikel
+      15,\nonder c, alsmede inrichtingen of vervoermiddelen waarin of waarmee handelingen worden verricht
+      als\nbedoeld in artikel 15, onder a, met betrekking tot splijtstoffen of ertsen voor zover bestemd
+      voor\nof in gebruik bij de Nederlandse krijgsmacht of bij de krijgsmacht van een bondgenootschappelijke\n\
+      mogendheid, of\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 38.c.4°
+    text: "een met een object als bedoeld onder 1° tot en met 3° en onder d vergelijkbaar object buiten\n\
+      Nederland;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d
+    text: 'categorie B-object:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d.1°
+    text: een inrichting voor uraniumverrijking,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d.2°
+    text: "een inrichting waarin uitsluitend splijtstoffen of radioactieve stoffen worden opgeslagen of\n\
+      verwerkt,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d.3°
+    text: een inrichting waarin radioactieve stoffen kunnen worden bereid of toegepast,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d.4°
+    text: een inrichting waarin zich toestellen bevinden,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d.5°
+    text: een vervoermiddel waarin zich splijtstoffen of ertsen bevinden, of
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.d.6°
+    text: een vervoermiddel waarin zich radioactieve stoffen of toestellen bevinden;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.e
+    text: "radiologische noodsituatie: een situatie die een dringend optreden vereist om mensen, dieren,\n\
+      planten en goederen tegen blootstelling aan ioniserende straling te beschermen;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.f
+    text: "interventie: een verrichting, bestaande uit het treffen van maatregelen bij stralingsbronnen,\n\
+      stralingsroutes en mensen, dieren, planten en goederen, ter voorkoming of vermindering van de\n\
+      blootstelling aan ioniserende straling van mensen, dieren, planten en goederen ten gevolge van:"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.f.1°
+    text: een radiologische noodsituatie, of
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38.f.2°
+    text: "een langdurige blootstelling tengevolge van een radiologische noodsituatie of een handeling
+      of\nwerkzaamheid met splijtstoffen, radioactieve stoffen of toestellen die in het verleden heeft\n\
+      plaatsgevonden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38
+  - number: 38a.1
+    text: "Onze Minister en Onze Minister wie het aangaat zijn verantwoordelijk voor de voorbereiding
+      van\ninterventies en voor de coördinatie en uitvoering daarvan. Bij of krachtens algemene maatregel
+      van\nbestuur kunnen omtrent deze voorbereiding, uitvoering en coördinatie regels worden gesteld."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38a
+  - number: 38a.2
+    text: "De voordracht tot vaststelling, wijziging of intrekking van een algemene maatregel van bestuur
+      als\nbedoeld in het eerste lid wordt gedaan door Onze Minister en Onze Minister wie het aangaat."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel38a
+  - number: '39.1'
+    text: "Ieder die weet of redelijkerwijs kan vermoeden dat zich een ongeval voordoet met een categorie
+      A- of\nB-object is verplicht dit terstond te melden aan de burgemeester van de gemeente, waar hij
+      zich\nbevindt en aan de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel39
+  - number: '39.2'
+    text: "De exploitant van een inrichting als bedoeld in [artikel 15, onder b][ref1], verschaft de\n\
+      burgemeester en de Autoriteit, al of niet op hun verzoek, onverwijld alle informatie die bij de\n\
+      uitoefening van hun taak nodig is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '40.1'
+    text: "Onze Minister en Onze Minister wie het aangaat, zijn verantwoordelijk voor de voorbereiding
+      van de\norganisatie ten behoeve van een doelmatige bestrijding van ongevallen binnen of buiten Nederland
+      met\ncategorie A-objecten en voor de coördinatie van die bestrijding. Zij bevorderen voorts in het\n\
+      bijzonder het houden van oefeningen en de totstandkoming van afspraken, die nodig zijn voor een\n\
+      doelmatige bestrijding van deze ongevallen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel40
+  - number: '40.2'
+    text: "Het bestuur van de veiligheidsregio is verantwoordelijk voor de voorbereiding van de organisatie
+      ten\nbehoeve van een doelmatige bestrijding van ongevallen met categorie B-objecten. De burgemeester
+      is\nverantwoordelijk voor de coördinatie van die bestrijding."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel40
+  - number: '41'
+    text: "De voorbereiding door het bestuur van de veiligheidsregio van de bestrijding van ongevallen
+      met\ncategorie A-objecten en categorie B-objecten geschiedt overeenkomstig [paragraaf 3 van de Wet\n\
+      veiligheidsregio’s][ref1]. Bij de voorbereiding houdt het bestuur van de veiligheidsregio rekening\n\
+      met de, overeenkomstig [artikel 40, eerste lid][ref2], tot stand gekomen afspraken.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0027466\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel40"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel41
+    references:
+      - id: ref1
+        bwb_id: BWBR0027466
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '40'
+        hoofdstuk: VI
+        afdeling: '2'
+  - number: '42.1'
+    text: "Onze Minister kan, na overleg met Onze Minister wie het aangaat, gelet op de meer dan plaatselijke\n\
+      betekenis van een ongeval met een categorie B-object, zoveel mogelijk na overleg met de burgemeester\n\
+      van de gemeente waar zich dat ongeval heeft voorgedaan en de voorzitter van de veiligheidsregio,\n\
+      besluiten dat een ongeval met een categorie B-object wordt bestreden als een ongeval met een\ncategorie
+      A-object."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel42
+  - number: '42.2'
+    text: "De burgemeester van de gemeente waar zich dat ongeval heeft voorgedaan, of de voorzitter van
+      de\nveiligheidsregio kan Onze Minister verzoeken gebruik te maken van de bevoegdheid, bedoeld in
+      het\neerste lid."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel42
+  - number: '43.1'
+    text: "Onze Minister en Onze Minister wie het aangaat, dragen er zorg voor dat de Nederlandse bevolking
+      op\npassende wijze informatie wordt verstrekt over mogelijke ongevallen met een categorie A-object,
+      de\nmaatregelen ter voorkoming en bestrijding daarvan, daaronder begrepen maatregelen ter bescherming\n\
+      van de gezondheid, en de bij deze ongevallen te volgen gedragslijn."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: '43.2'
+    text: 'De in het eerste lid bedoelde informatie heeft in ieder geval betrekking op:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: 43.2.a
+    text: gegevens inhoudende basiskennis over radioactiviteit en de gevolgen daarvan op mens en
+      milieu;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: 43.2.b
+    text: de gevaren en de gevolgen van een ongeval;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: 43.2.c
+    text: de wijze waarop de bevolking bij een ongeval wordt gewaarschuwd, op de hoogte gehouden en
+      beschermd;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: 43.2.d
+    text: de wijze waarop de bevolking dreigend gevaar kan herkennen;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: 43.2.e
+    text: "de door de bevolking te volgen gedragslijn en de maatregelen die zij bij een ongeval dient
+      te\ntreffen om de schadelijke gevolgen daarvan zoveel mogelijk te beperken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: '43.3'
+    text: "De verschaffing van de informatie, bedoeld in het tweede lid, onder *c, d* en *e*, geschiedt
+      ten\nminste één maal per jaar en daarnaast wanneer in de beschreven maatregelen significante wijzigingen\n\
+      worden aangebracht. Voor zover nodig wordt de te verstrekken informatie dan bijgewerkt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: '43.4'
+    text: "De verschaffing van de informatie, bedoeld in het tweede lid, onder *a* en *b*, geschiedt ten
+      minste\néén maal per vijf jaar en daarnaast wanneer in de beschreven maatregelen significante wijzigingen\n\
+      worden aangebracht. Voor zover nodig wordt de te verstrekken informatie dan bijgewerkt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: '43.5'
+    text: "Onze Minister en Onze Minister wie het aangaat verschaffen de informatie, bedoeld in het vierde
+      lid,\neerder en werken deze eerder bij, indien naar hun oordeel ontwikkelingen in de kennis over
+      de\nveiligheid, over de beoordeling van risico’s of over een doelmatige ongevallenbestrijding hiertoe\n\
+      nopen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43
+  - number: 43a.1
+    text: "Onze Minister en Onze Minister wie het aangaat, dragen er zorg voor dat de bevolking die wordt\n\
+      getroffen door een ongeval met een categorie A-object of door een ongeval met een categorie B-object\n\
+      dat krachtens [artikel 42][ref1] als een ongeval met een categorie A-object wordt bestreden,\nonverwijld
+      en bij herhaling doelmatige informatie wordt verstrekt over de te volgen gedragslijn en\nde maatregelen
+      die zijn getroffen ter bestrijding van dat ongeval, daaronder begrepen maatregelen\nter bescherming
+      van de gezondheid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel42"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '42'
+        hoofdstuk: VI
+        afdeling: '2'
+  - number: 43a.2
+    text: 'De in het eerste lid bedoelde informatie heeft in ieder geval betrekking op:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43a
+  - number: 43a.2.a
+    text: "het ongeval, met name over de oorzaak, de omvang en de te verwachten gevolgen voor mens en
+      milieu,\nalsmede over het te verwachten verloop van het ongeval;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43a
+  - number: 43a.2.b
+    text: de wijze waarop de bevolking wordt gewaarschuwd, op de hoogte gehouden en beschermd;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43a
+  - number: 43a.2.c
+    text: "instructies aan de bevolking die afhankelijk van de aard van het ongeval betrekking kunnen
+      hebben op\nonder meer het gebruik van verontreinigde levensmiddelen, de hygiëne en ontsmetting,
+      het verblijf\nbinnenshuis, distributie en gebruik van beschermende stoffen en evacuatie;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43a
+  - number: 43a.2.d
+    text: de diensten of personen bij wie nadere informatie kan worden ingewonnen.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43a
+  - number: 43b.1
+    text: "De Autoriteit draagt er zorg voor dat de Nederlandse bevolking op passende wijze, in ieder
+      geval\nlangs elektronische weg op een algemeen toegankelijke wijze, informatie wordt verstrekt over\n\
+      ongewone gebeurtenissen binnen inrichtingen als bedoeld in [artikel 15, onder b][ref1], en, voor\n\
+      zover daarover informatie beschikbaar is, over ongewone gebeurtenissen binnen vergelijkbare\nbuitenlandse
+      inrichtingen in de nabijheid van Nederland.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 43b.2
+    text: "De Autoriteit bericht Onze Minister jaarlijks vóór 1 juli over de ongewone gebeurtenissen die
+      in het\nvoorgaande jaar hebben plaatsgevonden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43b
+  - number: 43b.3
+    text: "Bij de informatieverstrekking en het bericht wordt in ieder geval ingegaan op de oorzaak, omvang
+      en\ngevolgen van de ongewone gebeurtenissen, alsmede op de bij de ongewone gebeurtenissen genomen\n\
+      maatregelen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel43b
+  - number: '44'
+    text: "Onze Minister, Onze Minister wie het aangaat, en het bestuur van de veiligheidsregio dragen
+      er zorg\nvoor dat de personen werkzaam bij diensten of organisaties die kunnen worden ingeschakeld
+      bij de\nbestrijding van een ongeval met een categorie A-object of van een ongeval met een categorie
+      B-object\ndat krachtens [artikel 42][ref1] als een ongeval met een categorie A-object wordt bestreden,\n\
+      regelmatig worden geïnformeerd over de tot deze categorie behorende ongevallen, over de risico’s
+      die\nzij bij de uitvoering van hun taak lopen, en over de daarbij te nemen voorzorgsmaatregelen.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel42"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel44
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '42'
+        hoofdstuk: VI
+        afdeling: '2'
+  - number: '45.1'
+    text: "De verstrekking van informatie aan de bevolking en aan personen die bij de bestrijding van
+      een\nongeval met een categorie B-object zijn betrokken, geschiedt overeenkomstig het bepaalde bij
+      of\nkrachtens de [artikelen 7][ref1] en [46 van de Wet veiligheidsregio’s][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0027466#Artikel7\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0027466#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel45
+    references:
+      - id: ref1
+        bwb_id: BWBR0027466
+        artikel: '7'
+      - id: ref2
+        bwb_id: BWBR0027466
+        artikel: '46'
+  - number: '45.2'
+    text: "Het bestuur van de veiligheidsregio draagt er zorg voor dat de door hem verstrekte informatie
+      in\novereenstemming is met de informatie, bedoeld in [artikel 43, tweede lid, onder a en b][ref1].\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel43"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel45
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '43'
+        hoofdstuk: VI
+        afdeling: '3'
+  - number: '46.1'
+    text: "Indien zich een ongeval voordoet met een categorie A-object of met een categorie B-object dat\n\
+      krachtens [artikel 42][ref1] als een ongeval met een A-object wordt bestreden, stelt Onze Minister\n\
+      wie het aangaat, regels of treft hij maatregelen, zo nodig met behulp van de sterke arm, om de\n\
+      gevolgen van dat ongeval zoveel mogelijk te beperken of ongedaan te maken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel42"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '42'
+        hoofdstuk: VI
+        afdeling: '2'
+  - number: '46.2'
+    text: 'De in het eerste lid bedoelde regels en maatregelen kunnen onder meer betrekking hebben op:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.a
+    text: de toegang van mensen, dieren, planten of goederen tot het verontreinigde gebied,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.b
+    text: het verblijf binnenshuis van mens en dier,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.c
+    text: "het brengen van mensen, dieren, planten of goederen binnen het verontreinigde gebied naar elders\n\
+      binnen of buiten het verontreinigde gebied,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.d
+    text: "het uitwendig ontsmetten en het behandelen van inwendige besmetting van mensen, alsmede het\n\
+      verstrekken van beschermende stoffen aan mensen,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.e
+    text: "het in verband met stralingsgevaar onderwerpen van personen of dieren aan een geneeskundig
+      of\nveterinair onderzoek,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.f
+    text: "het begraven, verbranden, bewaren, behandelen of vervoeren van lijken van personen, die mogelijk\n\
+      radioactief besmet zijn,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.g
+    text: "het in beslag nemen of het vernietigen van dieren, planten en goederen, die mogelijk radioactief\n\
+      besmet zijn,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.h
+    text: het ontsmetten van dieren of goederen,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.i
+    text: het versnellen van de afvoer of het doorspoelen van verontreinigd oppervlaktewater,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.j
+    text: het beschermen van oppervlaktewater en de drinkwatervoorziening,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.k
+    text: "het onttrekken van primair slib aan het slibverwerkingsproces, of het verbieden of beperken
+      van het\ngebruik van oppervlaktewater, en"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: 46.2.l
+    text: "het telen en oogsten van land- en tuinbouwprodukten, het sluiten van kassen, het weiden, vangen
+      en\nslachten van dieren en het vissen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: '46.3'
+    text: "Onze Minister wie het aangaat, stelt geen regels en treft geen maatregelen dan na overleg met
+      Onze\nMinister alsmede met de voorzitter van de veiligheidsregio en de commissaris van de Koning,
+      die\nhierbij in het bijzonder betrokken zijn, tenzij de vereiste spoed zich daartegen verzet."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel46
+  - number: '47.1'
+    text: "Indien zich een ongeval voordoet met een categorie A-object, als bedoeld in [artikel 38, onderdeel\n\
+      ][ref1], kan de Autoriteit degene die het daarbij betrokken object onder zijn beheer heeft, bij\n\
+      beschikking bevelen de maatregelen te nemen die naar haar oordeel nodig zijn om de gevolgen van
+      dat\nongeval zoveel mogelijk te beperken en ongedaan te maken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel38"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel47
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '38'
+        hoofdstuk: VI
+        afdeling: '1'
+  - number: '47.2'
+    text: "Tot de in het eerste lid bedoelde maatregelen kunnen behoren het stilleggen van de betrokken\n\
+      inrichting, het buiten werking stellen van de betrokken uitrusting of het beëindigen van het\nverblijf
+      van het betrokken vervoermiddel in Nederland."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel47
+  - number: '47.3'
+    text: "De burgemeester van de gemeente waar zich het ongeval heeft voorgedaan kan de Autoriteit verzoeken\n\
+      gebruik te maken van de bevoegdheid, bedoeld in het eerste lid. Op dit verzoek wordt zo spoedig\n\
+      mogelijk beschikt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel47
+  - number: '47.4'
+    text: "Van een krachtens het eerste lid vastgestelde beschikking wordt mededeling gedaan door toezending\n\
+      van een afschrift aan de burgemeester van de gemeente, waar zich het ongeval heeft voorgedaan."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel47
+  - number: '48.1'
+    text: "Indien zich een ongeval voordoet met een categorie A-object, als bedoeld in [artikel 38, onderdeel\n\
+      ][ref1], kan Onze Minister van Defensie, in overeenstemming met Onze Minister en Onze Minister van\n\
+      Veiligheid en Justitie, degene die het daarbij betrokken object onder zijn beheer heeft, bij\nbeschikking
+      bevelen de maatregelen te nemen die naar zijn oordeel nodig zijn om de gevolgen van dat\nongeval
+      zoveel mogelijk te beperken en ongedaan te maken. [Artikel 47, tweede lid][ref2], is van\novereenkomstige
+      toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel38\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel47"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel48
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '38'
+        hoofdstuk: VI
+        afdeling: '1'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '47'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: '48.2'
+    text: "De burgemeester van de gemeente waar zich het ongeval heeft voorgedaan, kan Onze Minister van\n\
+      Defensie verzoeken gebruik te maken van de bevoegdheid, bedoeld in het eerste lid. Op dit verzoek\n\
+      wordt zo spoedig mogelijk beschikt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel48
+  - number: '48.3'
+    text: "[Artikel 47, vierde lid][ref1], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel47"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel48
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '47'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: '49.1'
+    text: "De commissaris van de Koning, de burgemeester, de voorzitter van de veiligheidsregio en het\n\
+      dagelijks bestuur van het waterschap en van andere openbare lichamen verlenen, op verzoek van Onze\n\
+      Minister wie het aangaat, medewerking aan de uitvoering of handhaving van de in [artikel 46, eerste\n\
+      lid][ref1], bedoelde regels en maatregelen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: '49.2'
+    text: "Onze Minister wie het aangaat, geeft van de regels en maatregelen, bedoeld in [artikel 46,
+      eerste\nlid][ref1], onmiddellijk kennis aan de commissaris van de Koning, aan de burgemeester, aan
+      de\nvoorzitter van de veiligheidsregio en, voor zover nodig, aan het dagelijks bestuur van het\n\
+      waterschap en van andere openbare lichamen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49a.1
+    text: "Onze Minister wie het aangaat, trekt, zodra de omstandigheden dit toelaten, de regels in en\n\
+      beëindigt de getroffen maatregelen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49a
+  - number: 49a.2
+    text: "Indien de krachtens [artikel 46, eerste lid][ref1], gestelde regels of getroffen maatregelen
+      met\nonmiddellijke ingang in werking moeten treden of van kracht moeten worden, kan met het oog
+      daarop\nbekendmaking plaatsvinden door middel van de locale, regionale of landelijke omroep.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49b.1
+    text: "De voorzitter van de veiligheidsregio kan naar aanleiding van een ongeval met een categorie
+      A-object\nbij verordening voorschriften vaststellen of kan, zonodig met behulp van de sterke arm,
+      maatregelen\ntreffen om de gevolgen van dat ongeval zoveel mogelijk te beperken of ongedaan te maken.
+      De\nvoorschriften en maatregelen kunnen onder meer betrekking hebben op de onderwerpen, bedoeld
+      in\n[artikel 46, tweede lid][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49b.2
+    text: "De voorzitter van de veiligheidsregio deelt de voorschriften of maatregelen die hij krachtens
+      het\neerste lid heeft vastgesteld of getroffen, onmiddellijk mee aan Onze Minister, Onze Minister
+      wie het\naangaat, de commissaris van de Koning en de Autoriteit."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49b
+  - number: 49b.3
+    text: "De voorzitter van de veiligheidsregio trekt de door hem vastgestelde voorschriften in en beëindigt\n\
+      de door hem getroffen maatregelen, zodra Onze Minister wie het aangaat, overeenkomstige regels stelt\n\
+      of overeenkomstige maatregelen treft krachtens [artikel 46, eerste lid][ref1], of aan de voorzitter\n\
+      van de veiligheidsregio meedeelt dat de door deze vastgestelde voorschriften moeten worden\ningetrokken
+      of de door hem getroffen maatregelen moeten worden beëindigd. Onze Minister wie het\naangaat, handelt
+      hierbij voor zover mogelijk in overleg met de voorzitter van de veiligheidsregio.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49b.4
+    text: "[Artikel 49a][ref1] is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel49a"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 49a
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49c
+    text: "De burgemeester deelt de bevelen en algemeen verbindende voorschriften die hij op grond van
+      [artikel\n175][ref1] onderscheidenlijk [176 van de Gemeentewet][ref2] bij een ongeval met een categorie\n\
+      B-object heeft gegeven, onmiddellijk mee aan Onze Minister, Onze Minister wie het aangaat, de\n\
+      commissaris van de Koning en de Autoriteit.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005416#Artikel175\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0005416#Artikel176"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49c
+    references:
+      - id: ref1
+        bwb_id: BWBR0005416
+        artikel: '175'
+      - id: ref2
+        bwb_id: BWBR0005416
+        artikel: '176'
+  - number: 49d.1
+    text: "Indien zich een ongeval voordoet met een categorie B-object, treft de beheerder van het\noppervlaktewater
+      maatregelen, zonodig met behulp van de sterke arm, die naar zijn oordeel nodig zijn\nom de gevolgen
+      voor het oppervlaktewater zoveel mogelijk te beperken of ongedaan te maken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49d
+  - number: 49d.2
+    text: 'De in het eerste lid bedoelde maatregelen kunnen in ieder geval betrekking hebben op:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49d
+  - number: 49d.2.a
+    text: het versnellen van de afvoer of het doorspoelen van verontreinigd oppervlaktewater,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49d
+  - number: 49d.2.b
+    text: het beschermen van oppervlaktewater en de drinkwatervoorziening, en
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49d
+  - number: 49d.2.c
+    text: "het onttrekken van primair slib aan het slibverwerkingsproces, of het verbieden of beperken
+      van het\ngebruik van oppervlaktewater."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49d
+  - number: 49d.3
+    text: "De [artikelen 49][ref1], [49][ref2], en [49][ref3] zijn van overeenkomstige toepassing.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel49a\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel49b\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel49c"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49d
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 49a
+        hoofdstuk: VI
+        afdeling: '4'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: 49b
+        hoofdstuk: VI
+        afdeling: '4'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: 49c
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49e.1
+    text: "Het in het derde lid aangewezen bestuursorgaan kan regels stellen, waarbij wordt bepaald dat
+      een\nvergoeding kan worden toegekend indien de vaststelling vooraf of zich uit de toepassing van
+      [artikel\n46][ref1], [49b][ref2] of [49d][ref3] of uit de toepassing van [artikel 175][ref4] of
+      [176 van de\nGemeentewet][ref5] bij een ongeval met een categorie B-object al dan niet schade voordoet,
+      zou\nleiden tot onredelijke vertraging in de behandeling van de aanvraag van schadevergoeding op
+      grond\nvan [artikel 4:126 van de Algemene wet bestuursrecht][ref6] of tot kosten ten aanzien waarvan
+      in\nredelijkheid niet kan worden gevergd dat de belanghebbende deze draagt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel49b\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel49b\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0005416#Artikel175\n[ref5]: https://wetten.overheid.nl/BWBR0005416#Artikel176\n\
+      [ref6]: https://wetten.overheid.nl/BWBR0005537#Artikel4:126"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: 49b
+        hoofdstuk: VI
+        afdeling: '4'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: 49b
+        hoofdstuk: VI
+        afdeling: '4'
+      - id: ref4
+        bwb_id: BWBR0005416
+        artikel: '175'
+      - id: ref5
+        bwb_id: BWBR0005416
+        artikel: '176'
+      - id: ref6
+        bwb_id: BWBR0005537
+        artikel: 4:126
+  - number: 49e.2
+    text: "Een vergoeding krachtens het eerste lid kan alleen aan de belanghebbende worden toegekend onder
+      de\nvoorwaarde dat hij voor het toegekende bedrag de rechten die hij terzake van de door hem geleden\n\
+      schade tegenover derden heeft, overdraagt aan het bestuursorgaan dat de vergoeding toekent."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49e
+  - number: 49e.3
+    text: 'Regels als bedoeld in het eerste lid worden gesteld door:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49e
+  - number: 49e.3.a
+    text: "Onze Minister wie het aangaat, indien het betreft schade ten gevolge van de toepassing van
+      [artikel\n46][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '46'
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: 49e.3.b
+    text: "de gemeenteraad, indien het betreft schade ten gevolge van de toepassing van [artikel 49b][ref1]
+      of\nvan de toepassing van [artikel 175][ref2] of [176 van de Gemeentewet][ref3] bij een ongeval
+      met een\ncategorie B-object;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel49b\n[ref2]:
+      https://wetten.overheid.nl/BWBR0005416#Artikel175\n[ref3]: https://wetten.overheid.nl/BWBR0005416#Artikel176"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 49b
+        hoofdstuk: VI
+        afdeling: '4'
+      - id: ref2
+        bwb_id: BWBR0005416
+        artikel: '175'
+      - id: ref3
+        bwb_id: BWBR0005416
+        artikel: '176'
+  - number: 49e.3.c
+    text: "de beheerder van het oppervlaktewater indien het betreft schade ten gevolge van de toepassing
+      van\n[artikel 49d][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel49d"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel49e
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 49d
+        hoofdstuk: VI
+        afdeling: '4'
+  - number: '50'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel50
+  - number: '51'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel51
+  - number: '52'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel52
+  - number: '53'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel53
+  - number: '54'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel54
+  - number: '55'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel55
+  - number: '56'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel56
+  - number: '57'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel57
+  - number: '58.1'
+    text: 'Met het toezicht op de naleving van het bepaalde bij of krachtens deze wet zijn belast:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+  - number: 58.1.a
+    text: "de bij besluit van de Autoriteit aangewezen ambtenaren die deel uitmaken van het personeel,
+      bedoeld\nin [artikel 10][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel10"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '10'
+        hoofdstuk: II
+  - number: 58.1.b
+    text: de bij besluit van Onze Ministers, wie het aangaat, aangewezen ambtenaren.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+  - number: '58.2'
+    text: "Onze Ministers van Infrastructuur en Milieu en van Sociale Zaken en Werkgelegenheid wijzen,
+      in\novereenstemming met Onze Ministers wie het mede aangaat, ambtenaren aan belast met het meten
+      van\ndoses ioniserende straling en het bepalen van radioactieve besmetting, alsmede met de in [artikel\n\
+      37][ref1] bedoelde registratie daarvan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel37"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '37'
+        hoofdstuk: Va
+  - number: '58.3'
+    text: "Met de uitoefening van de in het eerste lid, onderdeel b, en het tweede lid bedoelde taken
+      zijn mede\nbelast de door Onze Minister van Volksgezondheid, Welzijn en Sport daartoe aangewezen
+      ambtenaren,\nbedoeld in [artikel 25, eerste lid, onder ][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0001969#Artikel25"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+    references:
+      - id: ref1
+        bwb_id: BWBR0001969
+        artikel: '25'
+  - number: '58.4'
+    text: "Onze betrokken Ministers stellen regelen betreffende de taakvervulling van de krachtens het
+      eerste\nlid, onderdeel b, en het tweede en derde lid aangewezen ambtenaren."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+  - number: '58.5'
+    text: "Van een besluit als bedoeld in het eerste, tweede of derde lid wordt mededeling gedaan door\n\
+      plaatsing in de *Staatscourant*."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel58
+  - number: '59.1'
+    text: "De [artikelen 5:13][ref1] en [5:15 tot en met 5:20, eerste en tweede lid, van de Algemene wet\n\
+      bestuursrecht][ref2] zijn van overeenkomstige toepassing ten aanzien van de in [artikel 58, tweede\n\
+      en derde lid][ref3], bedoelde ambtenaren bij de uitoefening van de in [artikel 58, tweede\nlid][ref4],
+      bedoelde taken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel5:13\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel5:15\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel58\n[ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel59
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 5:13
+      - id: ref2
+        bwb_id: BWBR0005537
+        artikel: 5:15
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+  - number: '59.2'
+    text: "De in [artikel 58, eerste, tweede en derde lid][ref1], bedoelde ambtenaren zijn bevoegd, met\n\
+      medeneming van de benodigde apparatuur, een woning binnen te treden zonder toestemming van de\n\
+      bewoner.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel59
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+  - number: '60'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel60
+  - number: '61'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel61
+  - number: '62'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel62
+  - number: '63'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel63
+  - number: '64'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel64
+  - number: '65.1'
+    text: "De Autoriteit kan personen, die zijn aangewezen om de naleving van internationale overeenkomsten
+      en\ndoor volkenrechtelijke organisaties genomen besluiten, geheel of gedeeltelijk betrekking hebbende
+      op\nhet gebied van de kernenergie of van de ioniserende straling, te controleren, toelaten deze
+      taak te\nvervullen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel65
+  - number: '65.2'
+    text: "De [artikelen 5:13][ref1] en [5:15 tot en met 5:20, eerste en tweede lid, van de Algemene wet\n\
+      bestuursrecht][ref2] zijn van overeenkomstige toepassing ten aanzien van de in het eerste lid\n\
+      bedoelde personen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel5:13\n[ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel5:15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel65
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 5:13
+      - id: ref2
+        bwb_id: BWBR0005537
+        artikel: 5:15
+  - number: '65.3'
+    text: "De in het eerste lid bedoelde personen zijn bevoegd, met medeneming van de benodigde apparatuur,
+      een\nwoning binnen te treden zonder toestemming van de bewoner, met dien verstande dat bedoelde
+      personen\ndaarbij vergezeld zijn van een ambtenaar als bedoeld in [artikel 58][ref1].\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel65
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+  - number: '65.4'
+    text: "Van een besluit als bedoeld in het eerste lid wordt mededeling gedaan door plaatsing in de\n\
+      *Staatscourant*."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel65
+  - number: '66'
+    text: "Het bevoegd gezag is bevoegd tot overeenkomstige toepassing van [artikel 5:20, derde lid, van
+      de\nAlgemene wet bestuursrecht][ref1] ter handhaving van de [artikelen 59, eerste lid][ref2], en
+      [65,\ntweede lid][ref3], voor zover het betreft de verplichting tot het verlenen van medewerking
+      aan een\nkrachtens [artikel 58, tweede en derde lid][ref4], aangewezen ambtenaar of een krachtens
+      artikel 65\ntoegelaten persoon.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel5:20\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel59\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel65\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel66
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 5:20
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '59'
+        hoofdstuk: VIII
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '65'
+        hoofdstuk: VIII
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+  - number: '67.1'
+    text: "Bij algemene maatregel van bestuur kunnen regelen worden gesteld ter uitvoering van internationale\n\
+      overeenkomsten en door volkenrechtelijke organisaties genomen besluiten, geheel of gedeeltelijk\n\
+      betrekking hebbende op het gebied van de kernenergie of van de ioniserende straling."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: '67.2'
+    text: 'Hiertoe kunnen behoren:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: 67.2.a
+    text: "regelen, welke een verbod inhouden hulpstoffen of hulptoestellen, welke voor de vrijmaking
+      van\nkernenergie of voor de opslag, vervaardiging, bewerking of verwerking van splijtstoffen dienstig\n\
+      kunnen zijn, voorhanden te hebben dan wel binnen of buiten Nederlands grondgebied te brengen zonder\n\
+      vergunning;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: 67.2.b
+    text: regelen, welke de verplichting inhouden tot mededeling van daarbij aangewezen gegevens.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: '67.3'
+    text: "In geval van toepassing van het tweede lid, onder *a,* is [artikel 16][ref1] van overeenkomstige\n\
+      toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel16"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '16'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '67.4'
+    text: Aan een vergunning als in het tweede lid, onder *a,* bedoeld kunnen voorschriften worden
+      verbonden.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: '67.5'
+    text: "Zodanige voorschriften kunnen, voor zover bij de maatregel niet anders is bepaald, de verplichting\n\
+      inhouden te voldoen aan door bestuursorganen, die bij het voorschrift zijn aangewezen, gestelde\n\
+      nadere eisen. Bij het stellen van zodanige eis wordt tevens het tijdstip bepaald, waarop ten aanzien\n\
+      van die eis de verplichting ingaat."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: '67.6'
+    text: "Een vergunning als bedoeld in het tweede lid, onder *a,* kan te allen tijde worden ingetrokken
+      op\ngrond van gewichtige redenen aan het algemeen belang ontleend. De aan een vergunning verbonden\n\
+      voorschriften kunnen te allen tijde worden gewijzigd, aangevuld of ingetrokken."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel67
+  - number: '68'
+    text: "Bij algemene maatregel van bestuur kunnen regelen worden gesteld ter verzekering van de\ngeheimhouding
+      van:"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel68
+  - number: 68.a
+    text: 'gegevens, hulpmiddelen en materialen voor:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel68
+  - number: 68.a.1°
+    text: de vrijmaking van kernenergie,
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel68
+  - number: 68.a.2°
+    text: de opslag, vervaardiging, bewerking of verwerking van splijtstoffen en
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel68
+  - number: 68.a.3°
+    text: "de beveiliging van bij die maatregel aangewezen categorieën van splijtstoffen, ertsen, radioactieve\n\
+      stoffen en inrichtingen als bedoeld in [artikel 15, onder b][ref1],\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel68
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: 68.b
+    text: "met behulp van zodanige gegevens, hulpmiddelen en materialen verrichte onderzoekingen en toegepaste\n\
+      werkmethoden, voor zover deze onderzoekingen en werkmethoden door Onze Ministers, wie het aangaat,\n\
+      zijn aangewezen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel68
+  - number: '69.1'
+    text: "Bij of krachtens algemene maatregel van bestuur wordt bepaald welke taken worden verricht door
+      een\ndeskundige en worden regels gesteld met betrekking tot de vaardigheden en bekwaamheden, waaraan\n\
+      deskundigen moeten voldoen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: '69.2'
+    text: "Bij de maatregel kan worden bepaald dat daarbij aangewezen taken slechts mogen worden verricht
+      door\neen persoon die met het oog op de uitvoering van die taken is ingeschreven in een door de
+      Autoriteit\nbeheerd register."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: '69.3'
+    text: "De Autoriteit beslist op de aanvraag voor inschrijving in een register als bedoeld in het tweede\n\
+      lid. Zij is bevoegd de inschrijving door te halen."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: '69.4'
+    text: "Een inschrijving in een register geldt voor een bepaalde tijd. Aan een inschrijving kunnen\n\
+      voorschriften worden verbonden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: '69.5'
+    text: "Bij of krachtens algemene maatregel van bestuur worden regels gesteld over de eisen met betrekking\n\
+      tot vaardigheden en bekwaamheden waaraan een persoon moet voldoen om als deskundige in een register\n\
+      te kunnen worden ingeschreven."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: '69.6'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen regels worden gesteld over de inschrijving
+      in\neen register, die in ieder geval betrekking kunnen hebben op:"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: 69.6.a
+    text: "de wijze waarop de aanvraag voor inschrijving in een register wordt gedaan en de door de aanvrager\n\
+      te verschaffen gegevens en bescheiden;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: 69.6.b
+    text: "de gronden waarop en de gevallen waarin de inschrijving kan worden geweigerd, doorgehaald of\n\
+      geschorst;"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: 69.6.c
+    text: de vergoeding die is verschuldigd in verband met de inschrijving in een register;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: 69.6.d
+    text: het beheer van een register.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69
+  - number: 69a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69a
+  - number: 69b
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69b
+  - number: 69c
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69c
+  - number: 69d
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel69d
+  - number: '70.1'
+    text: Een krachtens deze wet verleende vergunning is persoonlijk.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel70
+  - number: '70.2'
+    text: "Na het overlijden van een vergunninghouder blijft de vergunning gedurende vier weken van kracht
+      ten\nbehoeve van diens rechtverkrijgenden, die het bedrijf voortzetten, mits door of namens hen
+      binnen\neen week na dit overlijden daarvan aan de Autoriteit kennis wordt gegeven onder opgaaf van
+      de namen\nvan hen, die het bedrijf voortzetten. Wanneer binnen deze vier weken een aanvraag om een
+      nieuwe\nvergunning is ingediend, blijft eerstbedoelde vergunning verder van kracht totdat op die
+      aanvraag\nonherroepelijk is beslist. Gedurende het van kracht blijven van de vergunning kan zij
+      overeenkomstig\nde [artikelen 19 tot en met 20a][ref1] worden gewijzigd of ingetrokken.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel19"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel70
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '19'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '70.3'
+    text: "De vergunninghouder kan de vergunning geheel of gedeeltelijk aan een ander overdragen, indien\n\
+      daarvoor toestemming is gegeven door de Autoriteit. Aan de toestemming kunnen voorschriften worden\n\
+      verbonden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel70
+  - number: 70a
+    text: "Op een overeenkomst, gesloten door de eigenaar van een inrichting als bedoeld in [artikel 15,
+      onder\nb][ref1], waarin kernenergie kan worden vrijgemaakt, met de Staat der Nederlanden, die verband
+      houdt\nmet die inrichting, is [artikel 252 van Boek 6 van het Burgerlijk Wetboek][ref2] van overeenkomstige\n\
+      toepassing, met dien verstande dat de in dat artikel bedoelde rechtsgevolgen mede zullen gelden
+      voor\nverplichtingen van eerstgenoemde partij om ten aanzien van die inrichting iets te doen.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n[ref2]: https://wetten.overheid.nl/BWBR0005289#Artikel252"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel70a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0005289
+        artikel: '252'
+  - number: '71'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel71
+  - number: '72.1'
+    text: "Bij algemene maatregel van bestuur kunnen bij of krachtens andere wetten gestelde regelen geheel
+      of\ngedeeltelijk buiten toepassing worden verklaard, voor zover de belangen, welke die regelen beogen
+      te\nbeschermen, naar Ons oordeel in voldoende mate door toepassing van deze wet kunnen worden beschermd."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel72
+  - number: '72.2'
+    text: "Indien Wij niet binnen twaalf weken na het in werking treden van een algemene maatregel van
+      bestuur,\nwaarbij bepalingen van een andere wet geheel of gedeeltelijk buiten toepassing zijn verklaard,
+      aan\nde Staten-Generaal een voorstel van wet tot wijziging van die wet of tot afwijking daarvan
+      hebben\ndoen toekomen of indien zodanig voorstel wordt ingetrokken of verworpen, trekken Wij de
+      maatregel\nonverwijld in."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel72
+  - number: '73'
+    text: "Indien in deze wet geregelde onderwerpen in het belang van een goede uitvoering van de wet
+      nadere\nregeling behoeven, kan deze geschieden bij algemene maatregel van bestuur."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel73
+  - number: '74'
+    text: "De bij de toepassing van deze wet betrokken personen zijn verplicht in bij algemene maatregel
+      van\nbestuur bepaalde gevallen en overeenkomstig daarbij gestelde regelen bij de maatregel vastgestelde\n\
+      bedragen aan de staat te betalen als bijdrage in de aan de uitvoering van deze wet verbonden kosten."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel74
+  - number: '75.1'
+    text: "Wij kunnen ten behoeve van instellingen van wetenschap of in het belang van de landsverdediging
+      van\nde in de [artikelen 15][ref1] en [29][ref2] vervatte verboden:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel29"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel75
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '29'
+        hoofdstuk: IV
+        afdeling: '1'
+  - number: 75.1.a
+    text: bij algemene maatregel van bestuur vrijstelling verlenen;
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel75
+  - number: 75.1.b
+    text: op daartoe strekkend verzoek ontheffing verlenen.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel75
+  - number: '75.2'
+    text: "Aan een vrijstelling of ontheffing worden de voorschriften verbonden, welke naar Ons oordeel
+      nodig\nzijn met het oog op de bij of krachtens [artikel 15][ref1] aangewezen belangen.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel15b"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel75
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: 15b
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '76.1'
+    text: "Het ontwerp van een algemene maatregel van bestuur krachtens [artikel 4][ref1], [14][ref2],\n\
+      [15c][ref3], [15f][ref4], [16][ref5], [17][ref6], [17a][ref7], [18a][ref8], [21][ref9], [29][ref10],\n\
+      [32][ref11], [34][ref12], [37][ref13], [38a][ref14], [67][ref15], [68][ref16], [73][ref17] of\n\
+      [75][ref18] wordt overgelegd aan de beide kamers der Staten-Generaal en in de Staatscourant\nbekendgemaakt.
+      Aan een ieder wordt de gelegenheid geboden binnen een bij die bekendmaking vast te\nstellen termijn
+      van ten minste vier weken opmerkingen over het ontwerp schriftelijk ter kennis te\nbrengen van Onze
+      Ministers van Infrastructuur en Milieu, van Sociale Zaken en Werkgelegenheid en,\nbehoudens ingeval
+      het een maatregel krachtens artikel 21 betreft, van Volksgezondheid, Welzijn en\nSport.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0002402#Artikel4\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel14\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel15c\n[ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel15f\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0002402#Artikel16\n[ref6]: https://wetten.overheid.nl/BWBR0002402#Artikel17\n\
+      [ref7]: https://wetten.overheid.nl/BWBR0002402#Artikel17a\n[ref8]: https://wetten.overheid.nl/BWBR0002402#Artikel18a\n\
+      [ref9]: https://wetten.overheid.nl/BWBR0002402#Artikel21\n[ref10]: https://wetten.overheid.nl/BWBR0002402#Artikel29\n\
+      [ref11]: https://wetten.overheid.nl/BWBR0002402#Artikel32\n[ref12]: https://wetten.overheid.nl/BWBR0002402#Artikel34\n\
+      [ref13]: https://wetten.overheid.nl/BWBR0002402#Artikel37\n[ref14]: https://wetten.overheid.nl/BWBR0002402#Artikel38a\n\
+      [ref15]: https://wetten.overheid.nl/BWBR0002402#Artikel67\n[ref16]: https://wetten.overheid.nl/BWBR0002402#Artikel68\n\
+      [ref17]: https://wetten.overheid.nl/BWBR0002402#Artikel73\n[ref18]: https://wetten.overheid.nl/BWBR0002402#Artikel75"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel76
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '4'
+        hoofdstuk: II
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '14'
+        hoofdstuk: III
+        afdeling: '1'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: 15c
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: 15f
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref5
+        bwb_id: BWBR0002402
+        artikel: '16'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref6
+        bwb_id: BWBR0002402
+        artikel: '17'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref7
+        bwb_id: BWBR0002402
+        artikel: 17a
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref8
+        bwb_id: BWBR0002402
+        artikel: 18a
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref9
+        bwb_id: BWBR0002402
+        artikel: '21'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref10
+        bwb_id: BWBR0002402
+        artikel: '29'
+        hoofdstuk: IV
+        afdeling: '1'
+      - id: ref11
+        bwb_id: BWBR0002402
+        artikel: '32'
+        hoofdstuk: IV
+        afdeling: '1'
+      - id: ref12
+        bwb_id: BWBR0002402
+        artikel: '34'
+        hoofdstuk: IV
+        afdeling: '2'
+      - id: ref13
+        bwb_id: BWBR0002402
+        artikel: '37'
+        hoofdstuk: Va
+      - id: ref14
+        bwb_id: BWBR0002402
+        artikel: 38a
+        hoofdstuk: VI
+        afdeling: '1'
+      - id: ref15
+        bwb_id: BWBR0002402
+        artikel: '67'
+        hoofdstuk: IX
+      - id: ref16
+        bwb_id: BWBR0002402
+        artikel: '68'
+        hoofdstuk: IX
+      - id: ref17
+        bwb_id: BWBR0002402
+        artikel: '73'
+        hoofdstuk: IX
+      - id: ref18
+        bwb_id: BWBR0002402
+        artikel: '75'
+        hoofdstuk: IX
+  - number: '76.2'
+    text: "Een algemene maatregel van bestuur als bedoeld in het eerste lid wordt, nadat hij is vastgesteld,\n\
+      toegezonden aan beide kamers der Staten-Generaal. Hij treedt niet eerder in werking dan vier weken\n\
+      na de datum van uitgifte van het *Staatsblad* waarin hij is geplaatst."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel76
+  - number: '76.3'
+    text: "Ten aanzien van bij een algemene maatregel van bestuur, vastgesteld krachtens [artikel 67][ref1],\n\
+      geregelde onderwerpen kunnen Onze betrokken Ministers nadere regelen stellen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel67"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel76
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '67'
+        hoofdstuk: IX
+  - number: '76.4'
+    text: "Hetgeen ingevolge deze wet bij algemene maatregel van bestuur kan worden geregeld, kan in afwijking\n\
+      daarvan bij ministeriële regeling worden geregeld, indien de regels uitsluitend strekken ter\nuitvoering
+      van een voor Nederland verbindend verdrag of een voor Nederland verbindend besluit van\neen volkenrechtelijke
+      organisatie, tenzij voor een juiste uitvoering wijziging van een algemene\nmaatregel van bestuur
+      of de wet noodzakelijk is. Op de vaststelling van een ministeriële regeling\nzijn de [artikelen
+      26][ref1] en [35][ref2] van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel26\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel35"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel76
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '26'
+        hoofdstuk: III
+        afdeling: '5'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '35'
+        hoofdstuk: IV
+        afdeling: '3'
+  - number: 76a
+    text: "Een gedraging in strijd met een voorschrift dat is verbonden aan een krachtens deze wet verleende\n\
+      vergunning, is verboden."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel76a
+  - number: '77'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel77
+  - number: '78'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel78
+  - number: '79'
+    text: 'Degene die:'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel79
+  - number: 79.a
+    text: "splijtstoffen of ertsen vervoert, voorhanden heeft, toepast, binnen of buiten Nederlands grondgebied\n\
+      brengt of doet brengen, ter beschikking stelt dan wel zich deze verschaft of zich daarvan ontdoet,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel79
+  - number: 79.b
+    text: "een inrichting waarin kernenergie kan worden vrijgemaakt, splijtstoffen kunnen worden vervaardigd,\n\
+      bewerkt of verwerkt, dan wel splijtstoffen worden opgeslagen, opricht, in werking brengt, in werking\n\
+      houdt of wijzigt,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel79
+  - number: 79.c
+    text: "een uitrusting, geschikt om een vaartuig of een ander vervoermiddel door middel van kernenergie\n\
+      voort te bewegen, daarin aanbrengt of aangebracht houdt, dan wel zodanige daarin aangebrachte\n\
+      uitrusting in werking brengt, in werking houdt of wijzigt,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel79
+  - number: 79.d
+    text: "radioactieve stoffen bereidt, vervoert, voorhanden heeft, toepast, binnen of buiten Nederlands\n\
+      grondgebied brengt of doet brengen, ter beschikking stelt, dan wel zich deze verschaft of zich\n\
+      daarvan ontdoet,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel79
+  - number: 79.e
+    text: "ioniserende stralen uitzendende toestellen vervaardigt, vervoert, voorhanden heeft, toepast,
+      binnen\nof buiten Nederlands grondgebied brengt of doet brengen, ter beschikking stelt, dan wel
+      zich een\nzodanig toestel verschaft of zich daarvan ontdoet,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel79
+  - number: '80.1'
+    text: "Indien van het opzettelijk handelen in strijd met het bij of krachtens de [artikelen 15][ref1],\n\
+      [21][ref2], [26][ref3], of [76a][ref4], voor zover betrekking hebbend op een vergunning als bedoeld\n\
+      in [artikel 15][ref5], bepaalde gevaar voor ernstig lichamelijk letsel voor een ander of\naanzienlijke
+      schade aan goederen of het milieu te duchten is, wordt de schuldige gestraft met\ngevangenisstraf
+      van ten hoogste twaalf jaren of geldboete van de vijfde categorie.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel21\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel26\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel76a\n[ref5]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '21'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '26'
+        hoofdstuk: III
+        afdeling: '5'
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: 76a
+        hoofdstuk: IX
+      - id: ref5
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '80.2'
+    text: "Indien van het opzettelijk handelen in strijd met het bij of krachtens de [artikelen 15][ref1],\n\
+      [21][ref2], [26][ref3] of [76a][ref4], voor zover betrekking hebbend op een vergunning als bedoeld\n\
+      in [artikel 15][ref5], bepaalde levensgevaar voor een ander te duchten is en het feit iemands dood\n\
+      ten gevolge heeft, wordt de schuldige gestraft met levenslange gevangenisstraf of tijdelijke van
+      ten\nhoogste dertig jaren of geldboete van de vijfde categorie.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel21\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel26\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0002402#Artikel76a\n[ref5]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '21'
+        hoofdstuk: III
+        afdeling: '2'
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '26'
+        hoofdstuk: III
+        afdeling: '5'
+      - id: ref4
+        bwb_id: BWBR0002402
+        artikel: 76a
+        hoofdstuk: IX
+      - id: ref5
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '80.3'
+    text: "De samenspanning tot de in het eerste en tweede lid omschreven misdrijven, te begaan met een\n\
+      terroristisch oogmerk als bedoeld in [artikel 83a van het Wetboek van Strafrecht][ref1], wordt\n\
+      gestraft met gevangenisstraf van ten hoogste tien jaren of geldboete van de vijfde categorie.\n\
+      [Artikel 96, tweede lid, van het Wetboek van Strafrecht][ref2] is van overeenkomstige toepassing.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0001854#Artikel83a\n[ref2]: https://wetten.overheid.nl/BWBR0001854#Artikel96"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80
+    references:
+      - id: ref1
+        bwb_id: BWBR0001854
+        artikel: 83a
+      - id: ref2
+        bwb_id: BWBR0001854
+        artikel: '96'
+  - number: 80a
+    text: "In geval van vervolging wegens een strafbaar feit, vallende onder de omschrijvingen van artikel
+      7,\neerste lid, onder a en d, van het op 3 maart 1980 te Wenen/New York tot stand gekomen Verdrag
+      inzake\nde fysieke beveiliging van kernmateriaal (Trb. 1981, 7), zoals gewijzigd bij de op 8 juli
+      2005 te\nWenen tot stand gekomen Wijziging van dat verdrag (Trb. 2006, 81), op grond van een der\n\
+      bevoegdheidsregels, bedoeld in [artikel 8, eerste lid, onder b][ref1], of [artikel 8, tweede\nlid][ref2],
+      van dat Verdrag, wordt bij de toepassing van deze wet\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel8\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel8"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80a
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '8'
+        hoofdstuk: II
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '8'
+        hoofdstuk: II
+  - number: 80a.a
+    text: "elk handelen zonder vergunning te verlenen door het bevoegd gezag van een Staat, Partij bij
+      dat\nVerdrag, of in strijd met de in zulk een Staat geldende voorschriften gelijk gesteld met eenzelfde\n\
+      handelen zonder vergunning te verlenen ingevolge deze wet of in strijd met overeenkomstige bij of\n\
+      krachtens deze wet gestelde voorschriften,"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80a
+  - number: 80a.b
+    text: "het binnen of buiten het grondgebied van een Staat, Partij bij dat Verdrag, brengen of doen
+      brengen\ngelijk gesteld met het binnen of buiten Nederlands grondgebied brengen of doen brengen,
+      en"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80a
+  - number: 80a.c
+    text: "de veiligheid van de Staat gelijk gesteld met de veiligheid van een vreemde Staat, Partij bij
+      dat\nVerdrag."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80a
+  - number: 80b
+    text: "Bij veroordeling wegens een der misdrijven omschreven in de [artikelen 79][ref1] en [80, derde\n\
+      lid][ref2], alsmede bij veroordeling wegens een der misdrijven omschreven in artikel 80, tweede
+      lid,\nbegaan met een terroristisch oogmerk als bedoeld in [artikel 83a van het Wetboek van\nStrafrecht][ref3],
+      kan ontzetting van het in [artikel 28, eerste lid, onder 3°, van het Wetboek van\nStrafrecht][ref4]
+      vermelde recht worden uitgesproken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel79\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel80\n[ref3]: https://wetten.overheid.nl/BWBR0001854#Artikel83a\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0001854#Artikel28"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel80b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '79'
+        hoofdstuk: X
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '80'
+        hoofdstuk: X
+      - id: ref3
+        bwb_id: BWBR0001854
+        artikel: 83a
+      - id: ref4
+        bwb_id: BWBR0001854
+        artikel: '28'
+  - number: '81'
+    text: "De in de [artikelen 79][ref1] en [80][ref2] strafbaar gestelde feiten zijn misdrijven.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel79\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel80"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel81
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '79'
+        hoofdstuk: X
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '80'
+        hoofdstuk: X
+  - number: '82'
+    text: "Ingeval bij of krachtens deze wet regels worden gesteld met gebruikmaking van door het\nInternationaal
+      Atoomenergieagentschap vastgestelde veiligheidsnormen, kan overtreding van die regels\nook als strafbaar
+      feit worden aangemerkt dan wel worden bestraft met een bestuurlijke sanctie indien\ndeze regels
+      in de Engelse taal zijn gesteld en bekend gemaakt."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel82
+  - number: '83.1'
+    text: "Met de opsporing van de bij of krachtens deze wet strafbaar gestelde feiten zijn, onverminderd\n\
+      [artikel 141 van het Wetboek van Strafvordering][ref1], belast de in [artikel 58][ref2] bedoelde\n\
+      ambtenaren, voor zover zij bij besluit van Onze Minister van Veiligheid en Justitie zijn aangewezen.\n\
+      Deze ambtenaren zijn tevens belast met de opsporing van de feiten, strafbaar gesteld in de\n[artikelen
+      179 tot en met 182][ref3] en [184 van het Wetboek van Strafrecht][ref4], voor zover deze\nfeiten
+      betrekking hebben op een bevel, vordering of handeling, gedaan of ondernomen door henzelf.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0001903#Artikel141\n[ref2]: https://wetten.overheid.nl/BWBR0002402#Artikel58\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0001854#Artikel179\n[ref4]: https://wetten.overheid.nl/BWBR0001854#Artikel184"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel83
+    references:
+      - id: ref1
+        bwb_id: BWBR0001903
+        artikel: '141'
+      - id: ref2
+        bwb_id: BWBR0002402
+        artikel: '58'
+        hoofdstuk: VIII
+      - id: ref3
+        bwb_id: BWBR0001854
+        artikel: '179'
+      - id: ref4
+        bwb_id: BWBR0001854
+        artikel: '184'
+  - number: '83.2'
+    text: "Van een besluit als bedoeld in het eerste lid wordt mededeling gedaan door plaatsing in de\n\
+      *Staatscourant*."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel83
+  - number: 83a
+    text: "Met betrekking tot de handhaving van het bij of krachtens deze wet bepaalde zijn de [artikelen\n\
+      18.4][ref1][18.4a][ref2], en [18.10 van de Omgevingswet][ref3] van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0037885#Artikel18.4\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0037885#Artikel18.4a\n[ref3]: https://wetten.overheid.nl/BWBR0037885#Artikel18.10"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel83a
+    references:
+      - id: ref1
+        bwb_id: BWBR0037885
+        artikel: '18.4'
+      - id: ref2
+        bwb_id: BWBR0037885
+        artikel: 18.4a
+      - id: ref3
+        bwb_id: BWBR0037885
+        artikel: '18.10'
+  - number: 83b.1
+    text: "De [artikelen 5:13][ref1] en [5:15 tot en met 5:20, eerste en tweede lid, van de Algemene wet\n\
+      bestuursrecht][ref2] zijn van overeenkomstige toepassing ten aanzien van de in [artikel 83][ref3]\n\
+      bedoelde ambtenaren bij de uitoefening van de in dat artikel bedoelde taken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005537#Artikel5:13\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0005537#Artikel5:15\n[ref3]: https://wetten.overheid.nl/BWBR0002402#Artikel83"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel83b
+    references:
+      - id: ref1
+        bwb_id: BWBR0005537
+        artikel: 5:13
+      - id: ref2
+        bwb_id: BWBR0005537
+        artikel: 5:15
+      - id: ref3
+        bwb_id: BWBR0002402
+        artikel: '83'
+        hoofdstuk: X
+  - number: 83b.2
+    text: "De in [artikel 83][ref1] bedoelde ambtenaren zijn bij de uitoefening van de in dat artikel
+      bedoelde\ntaken bevoegd, met medeneming van de benodigde apparatuur, een woning binnen te treden
+      zonder\ntoestemming van de bewoner.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel83"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel83b
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '83'
+        hoofdstuk: X
+  - number: 83c
+    text: "De Autoriteit is bevoegd tot oplegging van een last onder bestuursdwang ter handhaving van
+      de bij of\nkrachtens deze wet gestelde verplichtingen, voor zover het het werkterrein van de Autoriteit
+      betreft\nen voor zover die bevoegdheid niet al voortvloeit uit andere voorschriften van deze wet."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel83c
+  - number: '84'
+    text: Bevat wijzigingen in andere regelgeving.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel84
+  - number: '85'
+    text: "Krachtens de Hinderwet voor inrichtingen als in [artikel 15, onder ][ref1], bedoeld verleende\n\
+      vergunningen worden geacht te zijn verleend op grond van deze wet.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel85
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        artikel: '15'
+        hoofdstuk: III
+        afdeling: '2'
+  - number: '86'
+    text: Bevat wijzigingen in andere regelgeving.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel86
+  - number: '87'
+    text: De Röntgenstralenwet (*Stb.* 1931, 299) wordt ingetrokken.
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel87
+  - number: '88'
+    text: 'Deze wet kan worden aangehaald als: Kernenergiewet.'
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel88
+  - number: '89.1'
+    text: "[Hoofdstuk II van deze wet][ref1] treedt in werking met ingang van de dag na de datum van uitgifte\n\
+      van het *Staatsblad*, waarin zij wordt geplaatst.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002402"
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel89
+    references:
+      - id: ref1
+        bwb_id: BWBR0002402
+        hoofdstuk: II
+  - number: '89.2'
+    text: "Haar onderscheidene overige bepalingen treden in werking op door Ons te bepalen tijdstippen.
+      De\nvoordrachten hiertoe worden Ons gedaan door Onze Ministers, wie het aangaat, de Centrale Raad\n\
+      gehoord."
+    url: https://wetten.overheid.nl/BWBR0002402/2024-07-01#Artikel89

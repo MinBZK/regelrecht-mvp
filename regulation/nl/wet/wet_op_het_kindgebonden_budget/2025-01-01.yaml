@@ -1,0 +1,854 @@
+---
+$schema:
+  https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: wet_op_het_kindgebonden_budget
+regulatory_layer: WET
+publication_date: '2016-12-29'
+valid_from: '2025-01-01'
+bwb_id: BWBR0022751
+url: https://wetten.overheid.nl/BWBR0022751/2025-01-01
+articles:
+  - number: aanhef
+    text: "Wij Beatrix, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz. enz. enz.\n\nAllen, die deze zullen zien of horen lezen, saluut! doen te weten:\n\nAlzo Wij in overweging genomen hebben, dat het wenselijk is dat personen voor wie de kosten van\nkinderen in verhouding tot hun inkomen een te zware last vormen, een financiële bijdrage in die\nkosten ontvangen;\n\nZo is het, dat Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben\ngoedgevonden en verstaan, gelijk Wij goedvinden en verstaan bij deze:"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Aanhef
+
+  - number: '1.1'
+    text: 'In deze wet en de daarop berustende bepalingen wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+
+  - number: 1.1.a
+    text: 'Onze Minister: Onze Minister van Sociale Zaken en Werkgelegenheid;'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+
+  - number: 1.1.b
+    text: 'kindgebonden budget: een financiële bijdrage van het Rijk in de kosten voor kinderen;'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+
+  - number: 1.1.c
+    text: "ouder: de verzekerde in de zin van de [Algemene Kinderbijslagwet][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0002368
+
+  - number: 1.1.d
+    text: "drempelinkomen: 108% van het twaalfvoud van het voor de maand januari van het berekeningsjaar\ngeldende in [artikel 8, eerste lid, onderdeel b, van de Wet minimumloon en\nminimumvakantiebijslag][ref1] bedoelde bedrag per maand.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002638#Artikel8"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0002638
+        artikel: '8'
+    machine_readable:
+      definitions:
+        DREMPELINKOMEN_ALLEENSTAAND:
+          value: 2840600
+          description: "Drempelinkomen voor alleenstaande ouder (€28.406). NOTE: Hardcoded waarde uit POC. Idealiter berekend als 108% van 12 * minimumloon januari."
+        DREMPELINKOMEN_TOESLAGPARTNER:
+          value: 4041600
+          description: "Drempelinkomen voor ouder met toeslagpartner (€40.416). NOTE: Hardcoded waarde uit POC."
+      execution:
+        output:
+          - name: drempelinkomen_alleenstaand
+            type: amount
+            description: Drempelinkomen voor alleenstaande ouder
+          - name: drempelinkomen_toeslagpartner
+            type: amount
+            description: Drempelinkomen voor ouder met toeslagpartner
+        actions:
+          - output: drempelinkomen_alleenstaand
+            value: $DREMPELINKOMEN_ALLEENSTAAND
+          - output: drempelinkomen_toeslagpartner
+            value: $DREMPELINKOMEN_TOESLAGPARTNER
+
+  - number: '1.2'
+    text: "De hoogte van het kindgebonden budget is afhankelijk van de draagkracht op basis van het inkomen en\nhet vermogen."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+
+  - number: '1.3'
+    text: "[Artikel 4 van de Algemene wet inkomensafhankelijke regelingen][ref1] is niet van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel4"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '4'
+
+  - number: '1.4'
+    text: "In afwijking van [artikel 7, derde lid, van de Algemene wet inkomensafhankelijke regelingen][ref1],\nbestaat geen aanspraak op kindgebonden budget indien de rendementsgrondslag, bedoeld in [artikel 5.3\nvan de Wet inkomstenbelasting 2001][ref2], van de ouder aan het begin van het berekeningsjaar meer\nbedraagt dan € 141.896 of, indien de ouder het gehele berekeningsjaar dezelfde partner heeft, de\ngezamenlijke rendementsgrondslag, bedoeld in artikel 5.3 van de Wet inkomstenbelasting 2001, van de\nouder en zijn partner aan het begin van het berekeningsjaar meer bedraagt dan € 179.429. Bij de\nbepaling van de rendementsgrondslag, bedoeld in de vorige zin, wordt geen rekening gehouden met de\nvrijstelling, bedoeld in [artikel 5.13 van de Wet inkomstenbelasting 2001][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel7\n[ref2]: https://wetten.overheid.nl/BWBR0011353#Artikel5.3\n[ref3]: https://wetten.overheid.nl/BWBR0011353#Artikel5.13"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '7'
+      - id: ref2
+        bwb_id: BWBR0011353
+        artikel: '5.3'
+      - id: ref3
+        bwb_id: BWBR0011353
+        artikel: '5.13'
+    machine_readable:
+      definitions:
+        VERMOGENSGRENS_ALLEENSTAAND:
+          value: 14189600
+          description: "Vermogensgrens voor alleenstaande ouder (€141.896)"
+        VERMOGENSGRENS_PARTNER:
+          value: 17942900
+          description: "Vermogensgrens voor ouder met partner (€179.429)"
+      execution:
+        output:
+          - name: vermogensgrens_alleenstaand
+            type: amount
+            description: Vermogensgrens voor alleenstaande ouder
+          - name: vermogensgrens_partner
+            type: amount
+            description: Vermogensgrens voor ouder met partner
+        actions:
+          - output: vermogensgrens_alleenstaand
+            value: $VERMOGENSGRENS_ALLEENSTAAND
+          - output: vermogensgrens_partner
+            value: $VERMOGENSGRENS_PARTNER
+
+  - number: '1.5'
+    text: "In afwijking van [artikel 9, tweede lid, van de Algemene wet inkomensafhankelijke regelingen][ref1],\nbestaat er wel aanspraak op kindgebonden budget voor een kind dat geen vreemdeling is of dat\nrechtmatig verblijf houdt in de zin van [artikel 8 van de Vreemdelingenwet 2000][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0011823#Artikel8"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '9'
+      - id: ref2
+        bwb_id: BWBR0011823
+        artikel: '8'
+
+  - number: '2.1'
+    text: "Aanspraak op een kindgebonden budget heeft de ouder voor een kind voor wie aan die ouder op grond\nvan [artikel 18 van de Algemene Kinderbijslagwet][ref1] kinderbijslag wordt betaald of zou worden\nbetaald indien [artikel 7, tweede lid van die wet][ref2] niet van toepassing zou zijn, met dien\nverstande dat de aanspraak op een kindgebonden budget bestaat met ingang van de kalendermaand na de\nmaand waarin het kind is geboren dan wel tot het huishouden is gaan behoren tot en met de\nkalendermaand waarin het kind de leeftijd van 18 jaar bereikt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368#Artikel18\n[ref2]: https://wetten.overheid.nl/BWBR0002368#Artikel7"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    references:
+      - id: ref1
+        bwb_id: BWBR0002368
+        artikel: '18'
+      - id: ref2
+        bwb_id: BWBR0002368
+        artikel: '7'
+    machine_readable:
+      endpoint: kindgebonden_budget
+      competent_authority:
+        name: Dienst Toeslagen
+        type: INSTANCE
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+            required: true
+            description: BSN van de ouder
+
+        input:
+          # Externe bronnen
+          - name: HEEFT_PARTNER
+            type: boolean
+            description: Heeft een partner (toeslagpartner)
+            source:
+              regulation: wet_basisregistratie_personen
+              output: heeft_partner
+              parameters:
+                bsn: $BSN
+
+          - name: PARTNER_BSN
+            type: string
+            description: BSN van de partner (indien aanwezig)
+            source:
+              regulation: wet_basisregistratie_personen
+              output: partner_bsn
+              parameters:
+                bsn: $BSN
+
+          - name: AANTAL_KINDEREN
+            type: number
+            description: Aantal kinderen waarvoor kinderbijslag wordt ontvangen
+            source:
+              regulation: algemene_kinderbijslagwet
+              output: aantal_kinderen
+              parameters:
+                bsn: $BSN
+
+          - name: KINDEREN_LEEFTIJDEN
+            type: array
+            description: Leeftijden van alle kinderen
+            source:
+              regulation: algemene_kinderbijslagwet
+              output: kinderen_leeftijden
+              parameters:
+                bsn: $BSN
+
+          - name: ONTVANGT_KINDERBIJSLAG
+            type: boolean
+            description: Ontvangt kinderbijslag voor het kind
+            source:
+              regulation: algemene_kinderbijslagwet
+              output: ontvangt_kinderbijslag
+              parameters:
+                bsn: $BSN
+
+          - name: TOETSINGSINKOMEN
+            type: amount
+            description: Toetsingsinkomen van de ouder
+            source:
+              regulation: uwv_toetsingsinkomen
+              output: toetsingsinkomen
+              parameters:
+                bsn: $BSN
+
+          - name: PARTNER_TOETSINGSINKOMEN
+            type: amount
+            description: Toetsingsinkomen van de partner
+            source:
+              regulation: uwv_toetsingsinkomen
+              output: toetsingsinkomen
+              parameters:
+                bsn: $PARTNER_BSN
+
+          - name: VERMOGEN
+            type: amount
+            description: Vermogen van de ouder
+            source:
+              regulation: belastingdienst_vermogen
+              output: vermogen
+              parameters:
+                bsn: $BSN
+
+          - name: PARTNER_VERMOGEN
+            type: amount
+            description: Vermogen van de partner
+            source:
+              regulation: belastingdienst_vermogen
+              output: vermogen
+              parameters:
+                bsn: $PARTNER_BSN
+
+          # Interne referenties naar andere artikelen
+          - name: DREMPELINKOMEN_ALLEENSTAAND
+            type: amount
+            description: Drempelinkomen voor alleenstaande ouder
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: drempelinkomen_alleenstaand
+              description: Conform artikel 1.1.d
+
+          - name: DREMPELINKOMEN_TOESLAGPARTNER
+            type: amount
+            description: Drempelinkomen voor ouder met toeslagpartner
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: drempelinkomen_toeslagpartner
+              description: Conform artikel 1.1.d
+
+          - name: VERMOGENSGRENS_ALLEENSTAAND
+            type: amount
+            description: Vermogensgrens voor alleenstaande ouder
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: vermogensgrens_alleenstaand
+              description: Conform artikel 1.4
+
+          - name: VERMOGENSGRENS_PARTNER
+            type: amount
+            description: Vermogensgrens voor ouder met partner
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: vermogensgrens_partner
+              description: Conform artikel 1.4
+
+          - name: BASISBEDRAG_PER_KIND
+            type: amount
+            description: Basisbedrag per kind
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: basisbedrag_per_kind
+              description: Conform artikel 2.2
+
+          - name: EXTRA_12_15_JAAR
+            type: amount
+            description: Extra bedrag voor kinderen 12-15 jaar
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: extra_12_15_jaar
+              description: Conform artikel 2.4
+
+          - name: EXTRA_16_17_JAAR
+            type: amount
+            description: Extra bedrag voor kinderen 16-17 jaar
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: extra_16_17_jaar
+              description: Conform artikel 2.5
+
+          - name: ALO_KOP
+            type: amount
+            description: Verhoging voor alleenstaande ouder
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: alo_kop
+              description: Conform artikel 2.6
+
+          - name: AFBOUWPERCENTAGE
+            type: number
+            description: Afbouwpercentage
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: afbouwpercentage
+              description: Conform artikel 2.7 en 2.8
+
+          - name: EXTRA_DREMPEL_PARTNER
+            type: amount
+            description: Extra drempel voor partners
+            source:
+              regulation: wet_op_het_kindgebonden_budget
+              output: extra_drempel_partner
+              description: Conform artikel 2.8
+
+        output:
+          - name: heeft_recht_op_kindgebonden_budget
+            type: boolean
+            description: Geeft aan of de ouder recht heeft op kindgebonden budget
+
+          - name: kindgebonden_budget_jaar
+            type: amount
+            description: Totale hoogte van het kindgebonden budget per jaar
+
+          - name: alo_kop_bedrag
+            type: amount
+            description: Bedrag van de alleenstaande ouderkop (ALO-kop)
+
+          - name: leeftijdstoeslagen
+            type: amount
+            description: Totale leeftijdstoeslagen voor alle kinderen
+
+          - name: gezamenlijk_toetsingsinkomen
+            type: amount
+            description: Gezamenlijk toetsingsinkomen (ouder + partner)
+
+          - name: gezamenlijk_vermogen
+            type: amount
+            description: Gezamenlijk vermogen (ouder + partner)
+
+        actions:
+          # Hulpberekeningen
+          - output: leeftijdstoeslagen
+            value:
+              operation: FOREACH
+              combine: ADD
+              subject: $KINDEREN_LEEFTIJDEN
+              as: leeftijd
+              do:
+                operation: SWITCH
+                cases:
+                  - when:
+                      operation: AND
+                      conditions:
+                        - operation: GREATER_THAN_OR_EQUAL
+                          subject: $leeftijd
+                          value: 16
+                        - operation: LESS_THAN_OR_EQUAL
+                          subject: $leeftijd
+                          value: 17
+                    then: $EXTRA_16_17_JAAR
+                  - when:
+                      operation: AND
+                      conditions:
+                        - operation: GREATER_THAN_OR_EQUAL
+                          subject: $leeftijd
+                          value: 12
+                        - operation: LESS_THAN_OR_EQUAL
+                          subject: $leeftijd
+                          value: 15
+                    then: $EXTRA_12_15_JAAR
+                default: 0
+
+          - output: alo_kop_bedrag
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $HEEFT_PARTNER
+                value: false
+              then: $ALO_KOP
+              else: 0
+
+          - output: gezamenlijk_toetsingsinkomen
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $HEEFT_PARTNER
+                value: true
+              then:
+                operation: ADD
+                values:
+                  - $TOETSINGSINKOMEN
+                  - $PARTNER_TOETSINGSINKOMEN
+              else: $TOETSINGSINKOMEN
+
+          - output: gezamenlijk_vermogen
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $HEEFT_PARTNER
+                value: true
+              then:
+                operation: ADD
+                values:
+                  - $VERMOGEN
+                  - $PARTNER_VERMOGEN
+              else: $VERMOGEN
+
+          # Voorwaarden voor recht op kindgebonden budget
+          - output: heeft_recht_op_kindgebonden_budget
+            value:
+              operation: AND
+              conditions:
+                # Kinderbijslag voorwaarde
+                - operation: EQUALS
+                  subject: $ONTVANGT_KINDERBIJSLAG
+                  value: true
+
+                # Minimaal 1 kind
+                - operation: GREATER_THAN
+                  subject: $AANTAL_KINDEREN
+                  value: 0
+
+                # Vermogenstoets
+                - operation: IF
+                  when:
+                    operation: EQUALS
+                    subject: $HEEFT_PARTNER
+                    value: true
+                  then:
+                    operation: LESS_THAN
+                    subject: $gezamenlijk_vermogen
+                    value: $VERMOGENSGRENS_PARTNER
+                  else:
+                    operation: LESS_THAN
+                    subject: $gezamenlijk_vermogen
+                    value: $VERMOGENSGRENS_ALLEENSTAAND
+
+          # Hoofdberekening kindgebonden budget
+          - output: kindgebonden_budget_jaar
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $HEEFT_PARTNER
+                value: false
+              then:
+                # Alleenstaande ouder
+                operation: MAX
+                values:
+                  - operation: SUBTRACT
+                    values:
+                      # Basisbedrag + leeftijdstoeslagen + ALO-kop
+                      - operation: ADD
+                        values:
+                          # Basisbedrag per kind
+                          - operation: MULTIPLY
+                            values:
+                              - $AANTAL_KINDEREN
+                              - $BASISBEDRAG_PER_KIND
+                          # Leeftijdstoeslagen
+                          - $leeftijdstoeslagen
+                          # ALO-kop
+                          - $alo_kop_bedrag
+                      # Afbouw op basis van inkomen boven drempel
+                      - operation: IF
+                        when:
+                          operation: GREATER_THAN
+                          subject: $TOETSINGSINKOMEN
+                          value: $DREMPELINKOMEN_ALLEENSTAAND
+                        then:
+                          operation: MULTIPLY
+                          values:
+                            - operation: SUBTRACT
+                              values:
+                                - $TOETSINGSINKOMEN
+                                - $DREMPELINKOMEN_ALLEENSTAAND
+                            - $AFBOUWPERCENTAGE
+                        else: 0
+                  - 0
+              else:
+                # Met partner
+                operation: MAX
+                values:
+                  - operation: SUBTRACT
+                    values:
+                      # Basisbedrag + leeftijdstoeslagen
+                      - operation: ADD
+                        values:
+                          - operation: MULTIPLY
+                            values:
+                              - $AANTAL_KINDEREN
+                              - $BASISBEDRAG_PER_KIND
+                          - $leeftijdstoeslagen
+                      # Afbouw op basis van gezamenlijk inkomen
+                      - operation: IF
+                        when:
+                          operation: GREATER_THAN
+                          subject: $gezamenlijk_toetsingsinkomen
+                          value:
+                            operation: ADD
+                            values:
+                              - $DREMPELINKOMEN_TOESLAGPARTNER
+                              - $EXTRA_DREMPEL_PARTNER
+                        then:
+                          operation: MULTIPLY
+                          values:
+                            - operation: SUBTRACT
+                              values:
+                                - $gezamenlijk_toetsingsinkomen
+                                - operation: ADD
+                                  values:
+                                    - $DREMPELINKOMEN_TOESLAGPARTNER
+                                    - $EXTRA_DREMPEL_PARTNER
+                            - $AFBOUWPERCENTAGE
+                        else: 0
+                  - 0
+
+  - number: '2.2'
+    text: 'Het kindgebonden budget bedraagt voor een berekeningsjaar:'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: 2.2.a
+    text: 'indien de ouder aanspraak heeft voor een kind: € 2.511;'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        BASISBEDRAG_PER_KIND:
+          value: 251100
+          description: "Basisbedrag per kind (€2.511)"
+      execution:
+        output:
+          - name: basisbedrag_per_kind
+            type: amount
+            description: Basisbedrag per kind
+        actions:
+          - output: basisbedrag_per_kind
+            value: $BASISBEDRAG_PER_KIND
+
+  - number: 2.2.b
+    text: "indien de ouder aanspraak heeft voor twee of meer kinderen: € 2.511 per kind voor het tweede of\nvolgende kind."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: '2.3'
+    text: "Een ouder heeft aanspraak op een verhoging van het kindgebonden budget in een berekeningsjaar voor\neen kind met ingang van de kalendermaand na de maand waarin dat kind de leeftijd van 12 jaar heeft\nbereikt."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: '2.4'
+    text: "Voor een kind dat 12 jaar of ouder is, maar jonger is dan 16 jaar bedraagt de verhoging van het\nkindgebonden budget € 703."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        EXTRA_12_15_JAAR:
+          value: 70300
+          description: "Extra bedrag voor kinderen 12-15 jaar (€703)"
+      execution:
+        output:
+          - name: extra_12_15_jaar
+            type: amount
+            description: Extra bedrag voor kinderen 12-15 jaar
+        actions:
+          - output: extra_12_15_jaar
+            value: $EXTRA_12_15_JAAR
+
+  - number: '2.5'
+    text: "Voor een kind dat 16 of 17 jaar is, bedraagt de verhoging van het kindgebonden budget met ingang van\nde kalendermaand na de maand waarin het kind de leeftijd van 16 jaar heeft bereikt € 936,00."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        EXTRA_16_17_JAAR:
+          value: 93600
+          description: "Extra bedrag voor kinderen 16-17 jaar (€936)"
+      execution:
+        output:
+          - name: extra_16_17_jaar
+            type: amount
+            description: Extra bedrag voor kinderen 16-17 jaar
+        actions:
+          - output: extra_16_17_jaar
+            value: $EXTRA_16_17_JAAR
+
+  - number: '2.6'
+    text: "De ouder die geen partner heeft, heeft aanspraak op een verhoging van het kindgebonden budget van\n€ 3.389."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        ALO_KOP:
+          value: 338900
+          description: "Alleenstaande ouderkop (€3.389)"
+      execution:
+        output:
+          - name: alo_kop
+            type: amount
+            description: Verhoging voor alleenstaande ouder
+        actions:
+          - output: alo_kop
+            value: $ALO_KOP
+
+  - number: '2.7'
+    text: "Bij een toetsingsinkomen van de ouder die geen partner heeft, van meer dan het drempelinkomen wordt\nde som van de bedragen waarop recht bestaat op grond van het tweede, vierde, vijfde en zesde lid\nverminderd met 7,10% van het verschil tussen het toetsingsinkomen en het drempelinkomen."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        AFBOUWPERCENTAGE:
+          value: 0.071
+          description: "Afbouwpercentage (7,10%)"
+      execution:
+        output:
+          - name: afbouwpercentage
+            type: number
+            description: Afbouwpercentage
+        actions:
+          - output: afbouwpercentage
+            value: $AFBOUWPERCENTAGE
+
+  - number: '2.8'
+    text: "Bij een gezamenlijk toetsingsinkomen van de ouder en zijn partner van meer dan het met € 9.139,00\nverhoogde drempelinkomen wordt de som van de bedragen waarop recht bestaat op grond van het tweede,\nvierde en vijfde lid verminderd met 7,10% van het verschil tussen het gezamenlijk toetsingsinkomen\nen het met € 9.139,00 verhoogde drempelinkomen."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        EXTRA_DREMPEL_PARTNER:
+          value: 913900
+          description: "Extra drempel voor partners (€9.139)"
+      execution:
+        output:
+          - name: extra_drempel_partner
+            type: amount
+            description: Extra drempel voor partners
+        actions:
+          - output: extra_drempel_partner
+            value: $EXTRA_DREMPEL_PARTNER
+
+  - number: '2.9'
+    text: "Een ouder als bedoeld in het eerste en derde lid en zijn partner die tevens ouder is als bedoeld in\nhet eerste lid worden voor de toepassing van deze wet geacht gezamenlijk één aanspraak te hebben."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: '2.10'
+    text: "Indien aan twee ouders kinderbijslag wordt uitbetaald op basis van het recht op kinderbijslag van\néén van die ouders, heeft alleen de ouder, wiens recht op kinderbijslag wordt uitbetaald aanspraak\nop een kindgebonden budget."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: '2.11'
+    text: De aanspraak op een kindgebonden budget wordt voor iedere kalendermaand afzonderlijk bepaald.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: '2.12'
+    text: 'Indien de ouder:'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: 2.12.a
+    text: aanspraak heeft op kindgebonden budget voor een kind, en
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: 2.12.b
+    text: "voor dat kind voor de toepassing van de [Algemene Kinderbijslagwet][ref1] een ander land dan\nNederland, een van de andere lidstaten van de Europese Unie, een andere staat die partij is bij de\nOvereenkomst betreffende de Europese Economische Ruimte en Zwitserland als woonland in aanmerking\nwordt genomen,\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    references:
+      - id: ref1
+        bwb_id: BWBR0002368
+
+  - number: '2.13'
+    text: 'Indien de ouder:'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: 2.13.a
+    text: aanspraak heeft op kindgebonden budget voor meer dan een kind, en
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: 2.13.b
+    text: "voor een of meer van die kinderen voor de toepassing van de [Algemene Kinderbijslagwet][ref1] een\nander land dan Nederland, een van de andere lidstaten van de Europese Unie, een andere staat die\npartij is bij de Overeenkomst betreffende de Europese Economische Ruimte en Zwitserland als woonland\nin aanmerking wordt genomen,\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002368"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+    references:
+      - id: ref1
+        bwb_id: BWBR0002368
+
+  - number: '2.14'
+    text: "Het twaalfde en dertiende lid zijn niet van toepassing indien het een kind betreft dat op de eerste\ndag van een kalenderkwartaal niet in Nederland woont doch langer dan drie maanden onafgebroken in\nNederland verblijft."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel2
+
+  - number: '3.1'
+    text: "De bedragen, genoemd in de [artikelen 1, vierde lid][ref1], [2, tweede, vierde tot en met zesde en\nachtste lid][ref2], en [3, zesde en zevende lid][ref3], worden met ingang van 1 januari van elk\nkalenderjaar gewijzigd overeenkomstig de tabelcorrectiefactor, bedoeld in [artikel 10.2 van de Wet\ninkomstenbelasting 2001][ref4]. De gewijzigde bedragen worden door of namens Onze Minister\nmedegedeeld in de Staatscourant.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0022751#Artikel2\n[ref3]: https://wetten.overheid.nl/BWBR0022751#Artikel3\n[ref4]: https://wetten.overheid.nl/BWBR0011353#Artikel10.2"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '1'
+      - id: ref2
+        bwb_id: BWBR0022751
+        artikel: '2'
+      - id: ref3
+        bwb_id: BWBR0022751
+        artikel: '3'
+      - id: ref4
+        bwb_id: BWBR0011353
+        artikel: '10.2'
+
+  - number: '3.2'
+    text: "Indien er aanleiding is om de bedragen, bedoeld in het eerste lid, te verhogen op een andere wijze\ndan op grond van het eerste lid, worden de bedragen vastgesteld bij algemene maatregel van bestuur."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.3'
+    text: "De overeenkomstig het eerste en tweede lid aangepaste bedragen treden in de plaats van de bedragen,\ngenoemd in de [artikelen 1, vierde lid][ref1], en [2, tweede, vierde tot en met zesde, en achtste\nlid][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0022751#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '1'
+      - id: ref2
+        bwb_id: BWBR0022751
+        artikel: '2'
+
+  - number: '3.4'
+    text: "Indien een verhoging als bedoeld in het tweede lid wordt toegepast, vindt deze verhoging plaats\nnadat het eerste lid toepassing heeft gevonden."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.5'
+    text: "Met ingang van de hieronder genoemde data komen de percentages, genoemd in [artikel 2, zevende en\nachtste lid][ref1], te luiden:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '2'
+
+  - number: 3.5.a
+    text: met ingang van 1 januari 2026 7,60%;
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: 3.5.b
+    text: met ingang van 1 januari 2027 8,05%;
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: 3.5.c
+    text: met ingang van 1 januari 2028 8,50%.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.6'
+    text: "Met ingang van de hieronder genoemde data worden de bedragen, bedoeld in [artikel 2, tweede en zesde\nlid][ref1], telkens als volgt verlaagd:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '2'
+
+  - number: 3.6.a
+    text: met ingang van 1 januari 2026 met € 69;
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: 3.6.b
+    text: met ingang van 1 januari 2028 met € 19.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.7'
+    text: "Met ingang van de hieronder genoemde data worden de bedragen, bedoeld in [artikel 2, tweede\nlid][ref1], telkens als volgt verhoogd, waarbij de gewijzigde bedragen in de plaats treden van die\nbedragen en die gewijzigde bedragen door of namens Onze Minister worden medegedeeld in de\nStaatscourant:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '2'
+
+  - number: 3.7.a
+    text: met ingang van 1 januari 2026 met € 66;
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: 3.7.b
+    text: met ingang van 1 januari 2027 met € 64;
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: 3.7.c
+    text: met ingang van 1 januari 2028 met € 66.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.8'
+    text: "De verlagingen, bedoeld in het zesde en zevende lid, vinden plaats nadat het eerste lid toepassing\nheeft gevonden."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.9'
+    text: "De bedragen, gewijzigd overeenkomstig het zesde tot en met achtste lid, treden in de plaats van de\nbedragen, bedoeld in [artikel 2, tweede en zesde lid][ref1]. Die gewijzigde bedragen worden door of\nnamens Onze Minister medegedeeld in de Staatscourant.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '2'
+
+  - number: '3.10'
+    text: "De verlaging, bedoeld in het zesde lid, en de verhoging, bedoeld in het zevende lid, vinden plaats\nnadat het eerste lid toepassing heeft gevonden."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+
+  - number: '3.11'
+    text: "Het eerste lid vindt met ingang van 1 januari 2025 eenmalig geen toepassing voor de bedragen,\nbedoeld in [artikel 2, tweede en zesde lid][ref1], en [artikel 3, zesde en zevende lid][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0022751#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0022751#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0022751
+        artikel: '2'
+      - id: ref2
+        bwb_id: BWBR0022751
+        artikel: '3'
+
+  - number: '4'
+    text: "Het kindgebonden budget blijft buiten beschouwing bij de verlening van andere op het inkomen of\nvermogen afgestemde publiekrechtelijke uitkeringen en verstrekkingen."
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel4
+
+  - number: '5.1'
+    text: De Dienst Toeslagen is belast met de uitvoering van deze wet.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel5
+
+  - number: '5.2'
+    text: De ouder die
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel5
+
+  - number: 5.2.a
+    text: over het berekeningsjaar aanspraak heeft op een kindgebonden budget, en
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel5
+
+  - number: 5.2.b
+    text: "over het berekeningsjaar reeds in aanmerking komt voor een andere tegemoetkoming waarvan de\nuitvoering is opgedragen aan de Dienst Toeslagen,"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel5
+
+  - number: '5.3'
+    text: "Voor de toepassing van [artikel 16, eerste en tweede lid, van de Algemene wet inkomensafhankelijke\nregelingen][ref1] wordt in het geval, bedoeld in het tweede lid, de aanvraag geacht te zijn gedaan\nop het moment waarop de Dienst Toeslagen bekend is geworden dat de ouder aanspraak heeft op een\nkindgebonden budget.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel16"
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel5
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '16'
+
+  - number: '6'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel6
+
+  - number: 6a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel6a
+
+  - number: '7'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel7
+
+  - number: '8'
+    text: Wijzigt de Wet werk en bijstand.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel8
+
+  - number: '9'
+    text: Wijzigt de Algemene wet inkomensafhankelijke regelingen.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel9
+
+  - number: '10'
+    text: Wijzigt de Wet structuur uitvoeringsorganisatie werk en inkomen.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel10
+
+  - number: '11.1'
+    text: Deze wet treedt in werking op een bij koninklijk besluit te bepalen tijdstip.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel11
+
+  - number: '11.2'
+    text: Deze wet geldt voor berekeningsjaren die aanvangen op of na 1 januari 2008.
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel11
+
+  - number: '12'
+    text: 'Deze wet wordt aangehaald als: Wet op het kindgebonden budget.'
+    url: https://wetten.overheid.nl/BWBR0022751/2025-01-01#Artikel12

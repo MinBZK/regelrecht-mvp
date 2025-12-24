@@ -1,0 +1,1127 @@
+---
+$schema:
+  https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: wet_op_de_huurtoeslag
+regulatory_layer: WET
+publication_date: '2024-12-20'
+valid_from: '2025-01-01'
+bwb_id: BWBR0008659
+url: https://wetten.overheid.nl/BWBR0008659/2025-01-01
+articles:
+  - number: aanhef
+    text: "Wij Beatrix, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz.
+      enz. enz.\n\nAllen, die deze zullen zien of horen lezen, saluut! doen te weten:\n\nAlzo Wij in overweging
+      genomen hebben, dat het wenselijk is de Wet individuele huursubsidie te\nherzien, ter matiging van
+      de huurlasten van huishoudens met lagere inkomens, ter vereenvoudiging van\nde wettelijke bepalingen,
+      alsmede ter vergroting van de doelmatigheid van de\nhuursubsidieverstrekking;\n\nZo is het, dat
+      Wij, de Raad van State gehoord, en met gemeen overleg der Staten-Generaal, hebben\ngoedgevonden
+      en verstaan, gelijk Wij goedvinden en verstaan bij deze:"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Aanhef
+  - number: '1'
+    text: 'In deze wet en de bepalingen die daarop berusten wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.a
+    text: "burgemeester en wethouders: burgemeester en wethouders van de gemeente waar de woning is gelegen\n\
+      waarop de huurtoeslag betrekking heeft;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.b
+    text: "huurcommissie: de huurcommissie, bedoeld in [artikel 3a, eerste lid, van de Uitvoeringswet\n\
+      huurprijzen woonruimte][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0014315#Artikel3a"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0014315
+        artikel: 3a
+  - number: 1.c
+    text: "huurder: persoon die zijn hoofdverblijf heeft in een door hem gehuurde woning, daaronder begrepen\n\
+      een woonwagen, tenzij:"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.c.1°
+    text: "de overeenkomst van huur en verhuur een gebruik van de woning betreft dat naar zijn aard slechts
+      van\nkorte duur is, of"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.c.2°
+    text: "de woning onderdeel uitmaakt van een hotel-, pension-, kamp- of vakantiebestedingsbedrijf,
+      ongeacht\nde duur van de huurovereenkomst;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.d
+    text: 'huurprijs: de prijs die bij huur en verhuur is verschuldigd voor het enkele gebruik van een
+      woning;'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.e
+    text: "huurtoeslag: een tegemoetkoming van het Rijk als bedoeld in [artikel 2, eerste lid, onderdeel
+      h, van\nde Algemene wet inkomensafhankelijke regelingen][ref1] in de kosten van het huren van een
+      woning;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '2'
+  - number: 1.f
+    text: "onderhuurder: persoon als bedoeld in [artikel 2, eerste lid, onderdeel e, onder 2°, van de
+      Algemene\nwet inkomensafhankelijke regelingen][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '2'
+  - number: 1.g
+    text: 'Onze Minister: Onze Minister van Volkshuisvesting en Ruimtelijke Ordening;'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.h
+    text: "rekenhuur: de rekenhuur, bedoeld in [artikel 5][ref1];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel5"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '5'
+        hoofdstuk: '1'
+        paragraaf: '2'
+  - number: 1.i
+    text: "rekeninkomen: de gezamenlijke toetsingsinkomens, bedoeld in [artikel 8 van de Algemene wet\n\
+      inkomensafhankelijke regelingen][ref1], die in aanmerking worden genomen voor het bepalen van de\n\
+      draagkracht, bedoeld in [artikel 7 van die wet][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472#Artikel8\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0018472#Artikel7"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '8'
+      - id: ref2
+        bwb_id: BWBR0018472
+        artikel: '7'
+  - number: 1.j
+    text: "standplaats: kavel, bestemd voor het plaatsen van een woonwagen, waarop voorzieningen aanwezig
+      zijn\ndie op het leidingnet van de openbare nutsbedrijven, andere instellingen of van gemeenten
+      kunnen\nworden aangesloten;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.k
+    text: "woning: een gebouwde onroerende zaak voor zover deze als zelfstandige woonruimte, onvrije etage
+      dan\nwel andere onzelfstandige woonruimte is verhuurd, alsmede de onroerende aanhorigheden;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1.l
+    text: "woonwagen: voor bewoning bestemd gebouw dat is geplaatst op een standplaats en dat in zijn
+      geheel of\nin delen kan worden verplaatst."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1
+  - number: 1a.1
+    text: "Op deze wet is de [Algemene wet inkomensafhankelijke regelingen][ref1], met uitzondering van\n\
+      [artikel 6, eerste en tweede lid][ref2], van toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0018472\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0018472#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1a
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+      - id: ref2
+        bwb_id: BWBR0018472
+        artikel: '6'
+  - number: 1a.2
+    text: "De uitvoering van het toekennen, uitbetalen en terugvorderen van een huurtoeslag is opgedragen
+      aan\nde Dienst Toeslagen."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1a
+  - number: 1a.3
+    text: "In afwijking van [artikel 3 van de Algemene wet inkomensafhankelijke regelingen][ref1] wordt
+      in deze\nwet en de daarop berustende bepalingen de partner uitsluitend als partner aangemerkt indien
+      deze in\nde basisregistratie personen op het adres van de huurder staat ingeschreven.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0018472#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel1a
+    references:
+      - id: ref1
+        bwb_id: BWBR0018472
+        artikel: '3'
+  - number: '2'
+    text: 'In deze wet en de bepalingen die daarop berusten wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel2
+  - number: 2.a
+    text: "eenpersoonshuishouden: het huishouden van een huurder die, afgezien van een eventuele onderhuurder\n\
+      en de tot het huishouden van de onderhuurder behorende personen, als enige een woning bewoont;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel2
+  - number: 2.b
+    text: "meerpersoonshuishouden: het huishouden van een huurder die samen met diens partner of een of
+      meer\nmedebewoners een woning bewoont."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel2
+  - number: '3'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel3
+  - number: '4'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel4
+  - number: '5.1'
+    text: "In deze wet en de bepalingen die daarop berusten wordt verstaan onder rekenhuur: de huurprijs
+      die de\nhuurder per maand is verschuldigd, of, als dat lager is dan de huurprijs, een bedrag dat
+      gelijk is\naan de maximale huurprijsgrens, bedoeld in de krachtens de [artikelen 10, eerste lid][ref1],
+      en [12,\ntweede lid, van de Uitvoeringswet huurprijzen woonruimte][ref2] daarover gestelde regels,\n\
+      vermeerderd met:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0014315#Artikel10\n[ref2]: https://wetten.overheid.nl/BWBR0014315#Artikel12"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+    references:
+      - id: ref1
+        bwb_id: BWBR0014315
+        artikel: '10'
+      - id: ref2
+        bwb_id: BWBR0014315
+        artikel: '12'
+  - number: 5.1.a
+    text: een bedrag voor door de huurder verschuldigde servicekosten, en
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: 5.1.b
+    text: "in geval van huur van een woonwagen zonder eigen aandrijving het bedrag dat verschuldigd is
+      voor de\nhuur van de standplaats."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: '5.2'
+    text: "Bij de toepassing van het eerste lid kan het in de aanhef van dat lid laatstbedoelde bedrag
+      slechts\nin plaats van de verschuldigde huurprijs in aanmerking worden genomen nadat, op verzoek
+      van de\nDienst Toeslagen, de huurcommissie, dan wel de voorzitter van de huurcommissie, aan de Dienst\n\
+      Toeslagen en aan de huurder advies heeft uitgebracht, dan wel een verklaring heeft verstrekt, over\n\
+      de redelijk te achten huurprijs. Bij algemene maatregel van bestuur kunnen omtrent die verklaring\n\
+      nadere regels worden gesteld."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: '5.3'
+    text: "Als servicekosten als bedoeld in het eerste lid, onderdeel a, worden uitsluitend in aanmerking\n\
+      genomen:"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: 5.3.a
+    text: "kosten voor het in bedrijf zijn van lift-, ventilatie-, hydrofoor- en alarminstallaties, en
+      van\nverlichting van door de huurder met anderen gemeenschappelijk gebruikte ruimten, met een maximum
+      van\n€ 12 per maand;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: 5.3.b
+    text: "schoonmaakkosten van de lift en andere gemeenschappelijke ruimten, met een maximum van € 12
+      per\nmaand;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: 5.3.c
+    text: de kosten voor de diensten van een huismeester, met een maximum van € 12 per maand;
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: 5.3.d
+    text: "kapitaals- en onderhoudskosten van dienstruimten en gemeenschappelijke recreatieruimten, met
+      een\nmaximum van € 12 per maand."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel5
+  - number: '6'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel6
+  - number: '7.1'
+    text: "Het recht op en de hoogte van de huurtoeslag is afhankelijk van de draagkracht, waaronder begrepen\n\
+      het vermogen, van de huurder, diens partner en de medebewoners."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel7
+  - number: '7.2'
+    text: Ten aanzien van een bepaalde woning kan slechts aan één huurder een huurtoeslag worden
+      toegekend.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel7
+  - number: 7a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel7a
+  - number: '8'
+    text: Een huurtoeslag wordt slechts toegekend aan een huurder die meerderjarig is.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel8
+    machine_readable:
+      definitions:
+        MINIMUM_LEEFTIJD:
+          value: 18
+      execution:
+        output:
+          - name: minimum_leeftijd_huurder
+            type: number
+            description: Minimumleeftijd voor recht op huurtoeslag
+        actions:
+          - output: minimum_leeftijd_huurder
+            value: $MINIMUM_LEEFTIJD
+  - number: '9.1'
+    text: 'Een huurtoeslag wordt slechts toegekend:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel9
+  - number: 9.1.a
+    text: "als de huurder, diens partner alsmede degenen die medebewoner van de woning zijn, als ingezetene
+      op\nhet adres van die woning zijn ingeschreven in de basisregistratie personen;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel9
+  - number: 9.1.b
+    text: "als geen andere personen met dat adres in de basisregistratie personen zijn ingeschreven, behoudens\n\
+      eventueel een onderhuurder en personen die behoren tot diens huishouden."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel9
+  - number: '9.2'
+    text: "In afwijking van het eerste lid kan een huurtoeslag worden toegekend, als de onjuiste inschrijving\n\
+      in de basisregistratie personen niet aan de huurder kan worden toegerekend."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel9
+  - number: '10'
+    text: "De huurder die tijdelijke bescherming geniet als bedoeld in [artikel 1 van de Vreemdelingenwet\n\
+      2000][ref1] omdat hij onder de reikwijdte valt van het Uitvoeringsbesluit (EU) 2022/382 van de Raad\n\
+      van 4 maart 2022 tot vaststelling van het bestaan van een massale toestroom van ontheemden uit\n\
+      Oekraïne in de zin van artikel 5 van Richtlijn 2001/55/EG, en tot invoering van tijdelijke\nbescherming
+      naar aanleiding daarvan (PbEU 2022, L 71/1) of een verlenging van dat besluit, heeft\nrecht op huurtoeslag.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0011823#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel10
+    references:
+      - id: ref1
+        bwb_id: BWBR0011823
+        artikel: '1'
+  - number: '11.1'
+    text: 'Een huurtoeslag wordt slechts toegekend voor de huur van een woning die:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+  - number: 11.1.a
+    text: een zelfstandige woonruimte of een onvrije etage is, of
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+  - number: 11.1.b
+    text: "een onzelfstandige woonruimte is, welke deel uitmaakt van een woongebouw of woning, geheel
+      of\ngedeeltelijk verhuurd ten behoeve van begeleid wonen, groepswonen door ouderen of een daarmee\n\
+      vergelijkbare woonvorm, en in eigendom van en aan de huurder verhuurd door een rechtspersoon zonder\n\
+      winstoogmerk, die mede op het gebied van de volkshuisvesting werkzaam is."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+  - number: '11.2'
+    text: "Het eerste lid onder b vindt slechts toepassing als de onzelfstandige woonruimte deel uitmaakt
+      van\neen woongebouw of woning, die door de Dienst Toeslagen is aangewezen. Bij algemene maatregel
+      van\nbestuur kunnen terzake nadere regels worden gesteld, waarbij een lagere maximale rekenhuur
+      kan\nworden vastgesteld dan uit [artikel 13][ref1] voortvloeit.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '3'
+  - number: '11.3'
+    text: "Voor de huur van een woonwagen zonder eigen aandrijving wordt slechts een huurtoeslag toegekend,\n\
+      indien deze:"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+  - number: 11.3.a
+    text: "is geplaatst op een standplaats of op een regionaal woonwagencentrum dat tot stand is gekomen
+      voor 1\noktober 1970, en"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+  - number: 11.3.b
+    text: "voldoet aan de eisen, daaraan gesteld krachtens de [Omgevingswet][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0037885"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0037885
+  - number: '12'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel12
+  - number: '13.1'
+    text: 'Geen huurtoeslag wordt toegekend als de rekenhuur:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.1.a
+    text: 'hoger is dan € 900,07 per maand als:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.1.a.1º
+    text: "de huurder, diens partner of een van de medebewoners 23 jaar of ouder is, dan wel de woning
+      deelt\nmet een kind of pleegkind van de huurder, diens partner of een medebewoner of"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.1.a.2º
+    text: de huurder, diens partner of de medebewoner jonger dan 23 jaar is, en een handicap heeft
+      of
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.1.b
+    text: hoger is dan € 477,20 per maand in andere gevallen dan bedoeld onder a.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: '13.2'
+    text: 'Het eerste lid is niet van toepassing:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.2.a
+    text: "als sprake is van overschrijding van een daar genoemd bedrag omdat voorzieningen zijn aangebracht
+      in\nen rond de woning, die noodzakelijk zijn in verband met een handicap van de huurder, van diens\n\
+      partner of van een medebewoner;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.2.b
+    text: "als de woning geschikt en bestemd is voor de huisvesting van een huishouden van ten minste
+      acht\npersonen, en het huishouden van de huurder uit ten minste acht personen bestaat;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: 13.2.c
+    text: "na overschrijding van de bedragen, genoemd in het eerste lid, als de huurder eerder een huurtoeslag\n\
+      ten aanzien van de desbetreffende woning is toegekend."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: '13.3'
+    text: "Als een huurtoeslag wordt toegekend met toepassing van het tweede lid, ontvangt de huurder
+      geen\nhuurtoeslag voor het deel van de rekenhuur dat ligt boven het maximum dat in het eerste lid
+      is\ngenoemd."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+  - number: '13.4'
+    text: "De in het eerste lid, onder a en b, genoemde bedragen worden met ingang van 1 januari van elk
+      jaar\ngewijzigd overeenkomstig [artikel 27][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel13
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '27'
+        hoofdstuk: '5'
+  - number: '14.1'
+    text: 'Het norminkomen bedraagt:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+  - number: 14.1.a
+    text: € 28.375 bij een eenpersoonshuishouden;
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+  - number: 14.1.b
+    text: € 38.500 bij een meerpersoonshuishouden;
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+  - number: 14.1.c
+    text: € 27.100,60 bij een eenpersoonsouderenhuishouden;
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+  - number: 14.1.d
+    text: € 35.784,56 bij een meerpersoonsouderenhuishouden.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+  - number: '14.2'
+    text: "Het norminkomen, genoemd in het eerste lid, onderdelen c en d, wordt vermeerderd met € 665\n\
+      onderscheidenlijk € 1 462."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+  - number: '14.3'
+    text: "De in het eerste lid genoemde bedragen worden met ingang van 1 januari van elk jaar gewijzigd\n\
+      overeenkomstig [artikel 27][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel14
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '27'
+        hoofdstuk: '5'
+  - number: '15'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel15
+  - number: '16'
+    text: "De basishuur is het gedeelte van de rekenhuur dat voor rekening van de huurder blijft. De basishuur\n\
+      is het overeenkomstig de [artikelen 17][ref1], [18][ref2] en [19][ref3] berekende bedrag van de\n\
+      normhuur verhoogd met € 12 per 1 januari 2023 bij Stb. 2022/528: € 0.In Stb. 2023/494 wordt de\n\
+      basishuur aangepast vanaf 1 januari 2024..\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel17\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel18\n[ref3]: https://wetten.overheid.nl/BWBR0008659#Artikel19"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel16
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '17'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '18'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0008659
+        artikel: '19'
+        hoofdstuk: '3'
+        paragraaf: '1'
+  - number: '17.1'
+    text: 'Het minimum-inkomensijkpunt wordt verkregen door:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+  - number: 17.1.a
+    text: "voor een eenpersoonshuishouden: de uitkomst van het bedrag van het bruto- ouderdomspensioen
+      voor de\npensioengerechtigde, bedoeld in [artikel 9, eerste lid, onder a, van de Algemene\nOuderdomswet][ref1],
+      zoals dat bedrag naar redelijke verwachting in het berekeningsjaar zal luiden,\nvermeerderd met
+      het bedrag van de bruto-vakantie-uitkering, vastgesteld overeenkomstig [artikel 29,\neerste lid,
+      aanhef en onder a, van die wet][ref2], zoals dat bedrag naar redelijke verwachting in\nhet berekeningsjaar
+      zal luiden, te herrekenen naar een jaarinkomen in het berekeningsjaar en dat\njaarinkomen te vermeerderen
+      met € 2 340;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel29"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002221
+        artikel: '9'
+      - id: ref2
+        bwb_id: BWBR0002221
+        artikel: '29'
+  - number: 17.1.b
+    text: "voor een meerpersoonshuishouden: de uitkomst van twee maal het bedrag van het bruto-\nouderdomspensioen
+      voor de pensioengerechtigde, bedoeld in [artikel 9, eerste lid, onder b, van de\nAlgemene Ouderdomswet][ref1],
+      zoals dat bedrag naar redelijke verwachting in het berekeningsjaar zal\nluiden, vermeerderd met
+      het bedrag van de bruto-vakantie-uitkering, vastgesteld overeenkomstig\n[artikel 29, eerste lid,
+      aanhef en onder b, van die wet][ref2], zoals dat bedrag naar redelijke\nverwachting in het berekeningsjaar
+      zal luiden, te herrekenen naar een jaarinkomen in het\nberekeningsjaar en dat jaarinkomen te vermeerderen
+      met € 2 512.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel29"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0002221
+        artikel: '9'
+      - id: ref2
+        bwb_id: BWBR0002221
+        artikel: '29'
+  - number: '17.2'
+    text: Bij het minimum-inkomensijkpunt behoort een normhuur van € 238,01.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+  - number: '17.3'
+    text: 'De normhuur, bedoeld in het tweede lid, wordt verlaagd met:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+  - number: 17.3.a
+    text: € 1,82 als sprake is van een eenpersoonshuishouden, en
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+  - number: 17.3.b
+    text: € 3,63 als sprake is van een meerpersoonshuishouden.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+  - number: '17.4'
+    text: "Het in het tweede lid genoemde bedrag wordt met ingang van 1 januari van elk jaar gewijzigd\n\
+      overeenkomstig [artikel 27][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '27'
+        hoofdstuk: '5'
+  - number: '18.1'
+    text: 'Het referentie-inkomensijkpunt bedraagt:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: 18.1.a
+    text: 'voor een eenpersoonshuishouden: € 32.625;'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: 18.1.b
+    text: 'voor een meerpersoonshuishouden: € 42.475.'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: '18.2'
+    text: Bij het referentie-inkomensijkpunt behoort een normhuur van € 483,78.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: '18.3'
+    text: 'De normhuur, bedoeld in het tweede lid, wordt verlaagd met:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: 18.3.a
+    text: € 2,27 als sprake is van een eenpersoonshuishouden; en
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: 18.3.b
+    text: € 4,54 als sprake is van een meerpersoonshuishouden.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+  - number: '18.4'
+    text: "De in het eerste en tweede lid genoemde bedragen worden met ingang van 1 januari van elk jaar\n\
+      gewijzigd overeenkomstig [artikel 27][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '27'
+        hoofdstuk: '5'
+  - number: '19.1'
+    text: "Voor elk rekeninkomen onder of gelijk aan het minimum-inkomensijkpunt, bedoeld in [artikel\n\
+      17][ref1], geldt de normhuur, bedoeld in artikel 17, tweede en derde lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '17'
+        hoofdstuk: '3'
+        paragraaf: '1'
+  - number: '19.2'
+    text: "Voor elk rekeninkomen boven het minimum-inkomensijkpunt is, per type huishouden als bedoeld
+      in\n[artikel 2][ref1], de hoogte van de normhuur de uitkomst van de formule: (a x Y2) + (b x Y)
+      in welke\nformule voorstelt: a en b: de factoren, vast te stellen bij ministeriële regeling, die,
+      per type\nhuishouden, worden afgeleid uit de lineaire relatie tussen de bij het minimum-inkomensijkpunt\n\
+      behorende normhuurquote en de bij het referentie-inkomensijkpunt behorende normhuurquote; Y: het\n\
+      rekeninkomen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '2'
+        hoofdstuk: '1'
+        paragraaf: '2'
+  - number: '19.3'
+    text: De overeenkomstig het tweede lid berekende normhuur wordt naar boven afgerond op hele
+      eurocenten.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel19
+  - number: '19.4'
+    text: "Bij ministeriële regeling worden met ingang van 1 januari van elk jaar de factoren, bedoeld
+      in het\ntweede lid, gewijzigd."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel19
+  - number: '20.1'
+    text: De kwaliteitskortingsgrens is € 477,20 per maand.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel20
+  - number: '20.2'
+    text: 'De aftoppingsgrens is:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel20
+  - number: 20.2.a
+    text: "€ 682,96 per maand als het huishouden van de huurder, afgezien van eventuele onderhuurders
+      en\npersonen die tot diens huishouden behoren, uit één of twee personen bestaat;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel20
+  - number: 20.2.b
+    text: "€ 731,93 per maand als het huishouden van de huurder, afgezien van eventuele onderhuurders
+      en\npersonen die tot diens huishouden behoren, uit drie of meer personen bestaat."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel20
+  - number: '20.3'
+    text: "De in het eerste en tweede lid genoemde bedragen worden met ingang van 1 januari van elk jaar\n\
+      gewijzigd overeenkomstig [artikel 27][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel20
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '27'
+        hoofdstuk: '5'
+  - number: '21.1'
+    text: 'De hoogte van de huurtoeslag wordt als volgt bepaald:'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel21
+  - number: 21.1.a
+    text: "het deel van de rekenhuur boven de basishuur tot aan de kwaliteitskortingsgrens wordt voor
+      100\nprocent gesubsidieerd;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel21
+  - number: 21.1.b
+    text: "het deel van de rekenhuur boven de kwaliteitskortingsgrens tot aan de aftoppingsgrens wordt
+      voor een\nbij algemene maatregel van bestuur vast te stellen percentage gesubsidieerd;"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel21
+  - number: 21.1.c
+    text: "het deel van de rekenhuur boven de aftoppingsgrens wordt voor een bij algemene maatregel van
+      bestuur\nvast te stellen percentage gesubsidieerd."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel21
+  - number: '21.2'
+    text: "In afwijking van het eerste lid, onderdelen a en b, wordt, als de basishuur op of boven de\n\
+      kwaliteitskortingsgrens ligt, het deel van de rekenhuur boven de basishuur tot aan de\naftoppingsgrens
+      voor het percentage, bedoeld in het eerste lid, onderdeel b, gesubsidieerd."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel21
+  - number: '21.3'
+    text: "In afwijking van het eerste lid wordt, als de basishuur op of boven de aftoppingsgrens ligt,
+      het\ndeel van de rekenhuur boven de basishuur voor het percentage, bedoeld in het eerste lid, onderdeel\n\
+      c, gesubsidieerd."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel21
+  - number: '22'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel22
+  - number: 22a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel22a
+  - number: '23'
+    text: "Bij verhuizing van de huurder blijft het in [artikel 7, eerste lid][ref1], bedoelde recht op\n\
+      huurtoeslag in stand, mits hij de woning naar welke hij verhuist huurt en vervolgens bewoont en
+      ook\noverigens aan de voorwaarden voor verkrijging van huurtoeslag wordt voldaan. [Artikel 5, tweede\n\
+      lid][ref2], is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel7\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel5"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel23
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '7'
+        hoofdstuk: '2'
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '5'
+        hoofdstuk: '1'
+        paragraaf: '2'
+  - number: '24'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel24
+  - number: '25'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel25
+  - number: '26'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26
+  - number: 26a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26a
+  - number: 26b
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26b
+  - number: 26c
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26c
+  - number: 26d
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26d
+  - number: 26e
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26e
+  - number: 26f
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26f
+  - number: 26g
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel26g
+  - number: '27.1'
+    text: "Bij ministeriële regeling worden met ingang van 1 januari van elk jaar de bedragen, genoemd
+      in de\n[artikelen 13, eerste lid, onderdeel a][ref1] (maximale huurgrens), en [14, eerste lid][ref2]\n\
+      (norminkomen), gewijzigd met de factor, bedoeld in [artikel 10.2 van de Wet inkomstenbelasting\n\
+      2001][ref3], met dien verstande dat in het eerste en tweede lid van laatstgenoemd artikel voor\n\
+      «kalenderjaar» telkens wordt gelezen «berekeningsjaar» en dat in het tweede lid van dat artikel
+      voor\n«Consumentenprijsindex Alle Huishoudens afgeleid» wordt gelezen «Consumentenprijsindex Alle\n\
+      Huishoudens».\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel13\n[ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel14\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0011353#Artikel10.2"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '14'
+        hoofdstuk: '2'
+        paragraaf: '4'
+      - id: ref3
+        bwb_id: BWBR0011353
+        artikel: '10.2'
+  - number: '27.2'
+    text: "Naast de wijziging op grond van het eerste lid kan het bedrag, genoemd in [artikel 14, eerste\n\
+      lid][ref1] (norminkomen), bij ministeriële regeling worden gewijzigd ter voorkoming van onbedoelde\n\
+      gevolgen van maatregelen met betrekking tot de inkomens boven het minimum-inkomensijkpunt.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel14"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '14'
+        hoofdstuk: '2'
+        paragraaf: '4'
+  - number: '27.3'
+    text: "Bij ministeriële regeling worden, met ingang van 1 januari van elk jaar, de bedragen, genoemd
+      in de\n[artikelen 13, eerste lid, onderdeel b][ref1] (maximale huurgrens), [17, tweede lid][ref2]
+      (bij\nminimum-inkomensijkpunt behorende normhuur), [18, tweede lid][ref3] (bij referentie-inkomensijkpunt\n\
+      behorende normhuur), en [20, eerste en tweede lid][ref4] (kwaliteitskortingsgrens en\naftoppingsgrenzen),
+      gewijzigd met het percentage van de huurprijsontwikkeling, zoals die naar\nredelijke verwachting
+      in het tijdvak dat loopt van 1 juli van het aan het berekeningsjaar\nvoorafgaande jaar tot 1 juli
+      van het berekeningsjaar zal plaatsvinden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel13\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel17\n[ref3]: https://wetten.overheid.nl/BWBR0008659#Artikel18\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0008659#Artikel20"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '17'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0008659
+        artikel: '18'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref4
+        bwb_id: BWBR0008659
+        artikel: '20'
+        hoofdstuk: '3'
+        paragraaf: '2'
+  - number: '27.4'
+    text: "Bij ministeriële regeling wordt elk jaar, na overleg met Onze Minister van Sociale Zaken en\n\
+      Werkgelegenheid, de hoogte vastgesteld van de bedragen, zoals die met ingang van 1 januari krachtens\n\
+      [artikel 17, eerste lid][ref1], als minimum-inkomensijkpunten gelden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '17'
+        hoofdstuk: '3'
+        paragraaf: '1'
+  - number: '27.5'
+    text: "Bij ministeriële regeling worden met ingang van 1 januari van elk jaar de bedragen, genoemd
+      in\n[artikel 18, eerste lid][ref1] (referentie-inkomensijkpunten), gewijzigd met het percentage,
+      waarmee\nde in het berekeningsjaar verwachte corresponderende bedragen krachtens [artikel 17, eerste
+      lid,\nonderdelen a en b][ref2] (minimum-inkomensijkpunten), afwijken van de corresponderende bedragen
+      die\nin het daaraan voorafgaande berekeningsjaar gelden krachtens de in dat artikellid genoemde
+      wetten.\nVan dit percentage kan worden afgeweken, voor zover de wijziging van de in artikel 17,
+      eerste lid,\nbedoelde jaarinkomens onbedoeld afwijkt van de wijziging welke naar verwachting plaats
+      zal vinden\nmet betrekking tot de inkomens boven het minimum-inkomensijkpunt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel18\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '18'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '17'
+        hoofdstuk: '3'
+        paragraaf: '1'
+  - number: '27.6'
+    text: "De bedragen, bedoeld in het eerste, tweede en derde lid, worden naar boven afgerond op hele\n\
+      eurocenten, met uitzondering van de norminkomens, bedoeld in [artikel 14, eerste lid, onderdelen
+      a\nen b][ref1] (maximum inkomen bij een- en meerpersoonshuishoudens), die naar boven worden afgerond
+      op\neen veelvoud van € 25. De bedragen, bedoeld in het vierde en vijfde lid, en de som van de bedragen,\n\
+      genoemd in artikel 14, eerste lid, onderdelen c of d, en bedoeld in artikel 14, tweede lid (maximum\n\
+      inkomen bij een- en meerpersoonsouderenhuishoudens), worden naar boven afgerond op een veelvoud
+      van\n€ 25. Bij een volgende wijziging van de norminkomens en de bedragen, bedoeld in het vijfde
+      lid,\nwordt uitgegaan van de bedragen zoals die waren, voordat zij werden afgerond.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0008659#Artikel14"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '14'
+        hoofdstuk: '2'
+        paragraaf: '4'
+  - number: '27.7'
+    text: "De overeenkomstig het eerste tot en met zesde lid vastgestelde, vanaf 1 januari geldende minimum-\n\
+      inkomensijkpunten, referentie-inkomensijkpunten, maximale inkomensgrenzen, normhuren, de als gevolg\n\
+      daarvan voor de onderscheiden typen huishouden gewijzigde factoren, bedoeld in [artikel 19, tweede\n\
+      lid][ref1], maximale huur-, kwaliteitskortings- en aftoppingsgrenzen, worden elk jaar uiterlijk
+      op\n1 november daaraan voorafgaand in de Staatscourant bekendgemaakt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel19"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '19'
+        hoofdstuk: '3'
+        paragraaf: '1'
+  - number: '27.8'
+    text: "Bij algemene maatregel van bestuur kunnen de bedragen, genoemd in de [artikelen 5, derde lid,\n\
+      onderdelen a, b, c, en d][ref1] (maximum service-kosten), [16][ref2] (verhoging van de normhuur),\n\
+      [17, eerste lid, onderdelen a en b][ref3] (toeslag bij minimum-inkomensijkpunt), en derde lid,\n\
+      onderdelen a en b (verlaging van de normhuur bij minimum-inkomensijkpunt), en [artikel 18, derde\n\
+      lid, onderdelen a en b][ref4] (verlaging van de normhuur bij referentie-inkomensijkpunt), hoger
+      of\nlager worden gesteld.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel5\n[ref2]:
+      https://wetten.overheid.nl/BWBR0008659#Artikel16\n[ref3]: https://wetten.overheid.nl/BWBR0008659#Artikel17\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0008659#Artikel18"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '5'
+        hoofdstuk: '1'
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '16'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0008659
+        artikel: '17'
+        hoofdstuk: '3'
+        paragraaf: '1'
+      - id: ref4
+        bwb_id: BWBR0008659
+        artikel: '18'
+        hoofdstuk: '3'
+        paragraaf: '1'
+  - number: '28.1'
+    text: "Burgemeester en wethouders bevorderen dat binnen hun gemeente een of meer voorzieningen tot
+      stand\nkomen die de dienstverlening, voortvloeiende uit de uitvoering van deze wet en van de Algemene
+      wet\ninkomensafhankelijke regelingen, welke ten goede komt aan de huurders, verbeteren."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel28
+  - number: '28.2'
+    text: "Bij of krachtens algemene maatregel van bestuur kunnen regels worden gesteld ten aanzien van
+      de\ntaken en van de inrichting van de voorzieningen, bedoeld in het eerste lid."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel28
+  - number: '29'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel29
+  - number: '30'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30
+  - number: 30a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30a
+  - number: 30aa
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30aa
+  - number: 30ab
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30ab
+  - number: 30b
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30b
+  - number: 30c
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30c
+  - number: 30d
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel30d
+  - number: '31'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel31
+  - number: '32'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel32
+  - number: '33'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel33
+  - number: '34'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel34
+  - number: '35'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel35
+  - number: '36'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel36
+  - number: '37'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel37
+  - number: '38'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel38
+  - number: '39'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel39
+  - number: '40'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel40
+  - number: '41'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel41
+  - number: '42'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel42
+  - number: '43'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel43
+  - number: '44'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel44
+  - number: '45'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel45
+  - number: '46'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel46
+  - number: '47'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel47
+  - number: '48'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel48
+  - number: 48a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel48a
+  - number: 48b
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel48b
+  - number: 48c
+    text: "De Dienst Toeslagen verstrekt op verzoek aan burgemeester en wethouders de voor de uitvoering
+      ten\nbehoeve van het doen van uitkeringen uit een bij verordening op basis van [artikel 108 van
+      de\nGemeentewet][ref1] ingesteld gemeentelijk woonlastenfonds benodigde gegevens behoudens het bepaalde\n\
+      in [artikel 38a van de Algemene wet inkomensafhankelijke regelingen][ref2], uitsluitend ten behoeve\n\
+      van dat woonlastenfonds.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005416#Artikel108\n[ref2]:
+      https://wetten.overheid.nl/BWBR0018472#Artikel38a"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel48c
+    references:
+      - id: ref1
+        bwb_id: BWBR0005416
+        artikel: '108'
+      - id: ref2
+        bwb_id: BWBR0018472
+        artikel: 38a
+  - number: '49.1'
+    text: "De Dienst Toeslagen kan voor de huur van nader door Onze Minister aangewezen woningen of categorieën\n\
+      van woningen een huurtoeslag toekennen in afwijking van de [artikelen 1, onder c en d][ref1],\n\
+      [11][ref2] en [13][ref3], ten behoeve van experimenten die naar het oordeel van Onze Minister in
+      het\nbelang van de volkshuisvesting zijn. Onze Minister bepaalt hierbij vooraf de duur van het\n\
+      experiment.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel1\n[ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel11\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0008659#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel49
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '1'
+        hoofdstuk: '1'
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '11'
+        hoofdstuk: '2'
+        paragraaf: '3'
+      - id: ref3
+        bwb_id: BWBR0008659
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '3'
+  - number: '49.2'
+    text: "De Dienst Toeslagen kan op verzoek van Onze Minister na afsluiting van het experiment af blijven\n\
+      wijken van de in het eerste lid genoemde artikelen, voor zover het de bewoners betreft die tijdens\n\
+      de duur van het experiment een huurtoeslag ontvingen met toepassing van het eerste lid en zolang
+      een\ndoor Onze Minister op basis van het experiment noodzakelijk geoordeelde wijziging van deze
+      wet nog\nniet van kracht is geworden en in werking is getreden."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel49
+  - number: '50'
+    text: "De voordracht voor een algemene maatregel van bestuur krachtens de [artikelen 21, eerste lid][ref1],\n\
+      en [27, achtste lid][ref2], wordt niet gedaan dan nadat het ontwerp aan de beide kamers der Staten-\n\
+      Generaal is overgelegd en sedert die overlegging vier weken zijn verstreken.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel21\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel27"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel50
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '21'
+        hoofdstuk: '3'
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '27'
+        hoofdstuk: '5'
+  - number: '51'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel51
+  - number: '52'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel52
+  - number: '53'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel53
+  - number: '54'
+    text: De Wet individuele huursubsidie wordt ingetrokken.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel54
+  - number: '55.1'
+    text: "Op subsidietijdvakken die zijn aangevangen onder de werking van de Wet individuele huursubsidie\n\
+      blijven de daarop vóór de inwerkingtreding van de Huursubsidiewet geldende bepalingen van\ntoepassing.
+      Gedurende de eerste vijf subsidiejaren na de inwerkingtreding van [artikel 44][ref1],\nwordt de
+      huursubsidie-uitgavennorm zodanig lager vastgesteld dan uit [artikel 41][ref2] voortvloeit,\ndat
+      een eventuele overschrijding van de huursubsidie-uitgavennorm die is ontstaan gedurende het\neerste
+      subsidiejaar na inwerkingtreding van deze wet, wordt tenietgedaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel44\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel41"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '44'
+        hoofdstuk: '8'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '41'
+        hoofdstuk: '8'
+  - number: '55.2'
+    text: "In het eerste subsidiejaar na inwerkingtreding van deze wet wordt in afwijking van [artikel
+      4,\neerste lid][ref1], verstaan onder rekenvermogen: het gezamenlijk vermogen van de huurder en
+      de\nmedebewoners op 0.00 uur op de datum van inwerkingtreding van [artikel 4, eerste lid][ref2].\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel4\n[ref2]: https://wetten.overheid.nl/BWBR0008659#Artikel4"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '4'
+        hoofdstuk: '1'
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0008659
+        artikel: '4'
+        hoofdstuk: '1'
+        paragraaf: '2'
+  - number: '55.3'
+    text: "[Artikel 11][ref1] blijft buiten toepassing ten aanzien van een huurder van onzelfstandige\n\
+      woonruimte, anders dan bedoeld in dat artikel, indien die woonruimte onmiddellijk voorafgaand aan\n\
+      het moment dat de Wet individuele huursubsidie werd ingetrokken, was aangewezen als woonruimte aan\n\
+      de huurder waarvan een bijdrage op voet van die wet kon worden verstrekt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel11"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '11'
+        hoofdstuk: '2'
+        paragraaf: '3'
+  - number: '55.4'
+    text: "[Artikel 13, eerste lid][ref1], is niet van toepassing op een huurder op wie artikel 41 van
+      de Wet\nindividuele huursubsidie of [artikel II van de wet van 9 juni 1994 houdende wijziging van
+      de Wet\nindividuele huursubsidie][ref2] (Stb. 439) van toepassing was over de aan de dag van\ninwerkingtreding
+      van deze wet voorafgaande kalendermaand, zolang deze huurder het genot van de\ndesbetreffende woning
+      behoudt. [Artikel 13, derde lid][ref3], is in deze gevallen van\novereenkomstige toepassing.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel13\n[ref2]: https://wetten.overheid.nl/BWBR0006720#ArtikelII\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0008659#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '3'
+      - id: ref2
+        bwb_id: BWBR0006720
+        artikel: II
+      - id: ref3
+        bwb_id: BWBR0008659
+        artikel: '13'
+        hoofdstuk: '2'
+        paragraaf: '3'
+  - number: '55.5'
+    text: "Bij de toepassing van [artikel 2][ref1], en bij de toepassing van [artikel 7 van de Algemene
+      wet\ninkomensafhankelijke regelingen][ref2] kan de Dienst Toeslagen op verzoek van de huurder het
+      op\n31 december 2005 van kracht zijnde beleid toepassen dat Onze Minister heeft getroffen op grond
+      van\n[artikel 9][ref3] en [artikel 26][ref4], eerste lid, zoals die artikelen onmiddellijk voorafgaand\n\
+      aan de inwerkingtreding van de [Aanpassingswet Algemene wet inkomensafhankelijke regelingen][ref5]\n\
+      luidden.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0018472#Artikel7\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0008659#Artikel9\n[ref4]: https://wetten.overheid.nl/BWBR0008659#Artikel26\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0018471"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '2'
+        hoofdstuk: '1'
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0018472
+        artikel: '7'
+      - id: ref3
+        bwb_id: BWBR0008659
+        artikel: '9'
+        hoofdstuk: '2'
+        paragraaf: '2'
+      - id: ref4
+        bwb_id: BWBR0008659
+        artikel: '26'
+        hoofdstuk: '4'
+      - id: ref5
+        bwb_id: BWBR0018471
+  - number: '55.6'
+    text: "Het vijfde lid geldt uitsluitend in bij of krachtens algemene maatregel van bestuur vast te
+      stellen\ngevallen."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+  - number: '55.7'
+    text: "Een verrekening als bedoeld in [artikel 36, derde lid][ref1], kan mede betrekking hebben op
+      te veel\nbetaalde bedragen en de daarop betrekking hebbende verhogingen op voet van de Wet individuele\n\
+      huursubsidie.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel36"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '36'
+        hoofdstuk: '7'
+  - number: '55.8'
+    text: "Voor de toepassing van [artikel 41][ref1] voor het eerste subsidiejaar na inwerkingtreding
+      van deze\nwet, gelden de bijdragen op voet van de Wet individuele huursubsidie over het daaraan
+      voorafgaande\njaar als uitgaven aan huursubsidie.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0008659#Artikel41"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel55
+    references:
+      - id: ref1
+        bwb_id: BWBR0008659
+        artikel: '41'
+        hoofdstuk: '8'
+  - number: '56'
+    text: "Indien artikel I, onder B en C, van het bij koninklijke boodschap van 26 juni 1995 ingediende\n\
+      voorstel van wet tot wijziging van de Vreemdelingenwet en enige andere wetten teneinde de aanspraak\n\
+      van vreemdelingen jegens bestuursorganen op verstrekkingen, voorzieningen, uitkeringen, ontheffingen\n\
+      en vergunningen te koppelen aan het rechtmatig verblijf van de vreemdeling in Nederland\n(*kamerstukken*
+      24 233) tot wet wordt verheven en in werking treedt:"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel56
+  - number: 56.a
+    text: met ingang van 1 juli van enig jaar, treedt artikel 10 in werking met ingang van die
+      datum;
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel56
+  - number: 56.b
+    text: "met ingang van een andere datum dan 1 juli, treedt artikel 10 in werking met ingang van de
+      1 juli\ndie volgt op die datum."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel56
+  - number: 56a
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel56a
+  - number: 56b
+    text: "In afwijking van artikel 13, eerste lid, onderdeel a, aanhef, onderscheidenlijk onderdeel b,
+      van de\nHuursubsidiewet, zoals die luidden na het tijdstip van inwerkingtreding van [artikel I,
+      onderdeel\nEA, van de wet van 26 januari 2004 tot wijziging van de Huursubsidiewet en enkele andere
+      wetten\n(introductie van een nieuwe procedure voor huurders die een aanvraag om toekenning van huursubsidie\n\
+      indienen)][ref1] (Stb. 61), luiden de daarin genoemde bedragen voor het tijdvak dat loopt van 1 juli\n\
+      2003 tot en met 30 juni 2004: € 585,24 onderscheidenlijk € 317,03.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0016332#ArtikelI"
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel56b
+    references:
+      - id: ref1
+        bwb_id: BWBR0016332
+        artikel: I
+  - number: '57.1'
+    text: Onze Minister brengt jaarlijks verslag uit aan de Staten-Generaal over de werking van deze
+      wet.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel57
+  - number: '57.2'
+    text: "Onverminderd het bepaalde in het eerste lid zendt Onze Minister binnen drie jaar na de\ninwerkingtreding
+      van deze wet aan de Staten-Generaal een verslag over de doeltreffendheid en de\neffecten van deze
+      wet in de praktijk."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel57
+  - number: '58.1'
+    text: "Deze wet treedt in werking met ingang van 1 juli van een bij koninklijk besluit te bepalen
+      jaar, met\nuitzondering van artikel 4, eerste lid, dat zes maanden later in werking treedt, en met
+      uitzondering\nvan artikel 10, dat in werking treedt op het tijdstip, bedoeld in artikel 56."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel58
+  - number: '58.2'
+    text: "In afwijking van het eerste lid treden de artikelen 39, 40, 44 en 45 in werking met ingang
+      van de 1\njuli die volgt op het bij koninklijk besluit bepaalde jaar, bedoeld in het eerste lid."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel58
+  - number: '58.3'
+    text: "Met ingang van de dag van inwerkingtreding van deze wet worden de daarin voorkomende bedragen\n\
+      aangepast overeenkomstig artikel 27, met als uitgangspunt dat de laatste aanpassing daarvan per
+      1\njuli 1997 heeft plaatsgevonden."
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel58
+  - number: '58.4'
+    text: Het derde lid blijft buiten toepassing als deze wet met ingang van 1 juli 1997 in werking
+      treedt.
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel58
+  - number: '59'
+    text: 'Deze wet wordt aangehaald als: Wet op de huurtoeslag.'
+    url: https://wetten.overheid.nl/BWBR0008659/2025-01-01#Artikel59

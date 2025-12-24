@@ -1,0 +1,1516 @@
+---
+$schema:
+  https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json
+$id: besluit_bijstandverlening_zelfstandigen_2004
+regulatory_layer: AMVB
+publication_date: '2025-09-05'
+valid_from: '2025-01-01'
+bwb_id: BWBR0015711
+url: https://wetten.overheid.nl/BWBR0015711/2025-01-01
+articles:
+  - number: aanhef
+    text: "Wij Beatrix, bij de gratie Gods, Koningin der Nederlanden, Prinses van Oranje-Nassau, enz.
+      enz. enz.\n\nOp de voordracht van de Staatssecretaris van Sociale Zaken en Werkgelegenheid van 3
+      september 2003,\nDirectie Bijstand en Gemeentelijk Activeringsbeleid, nr. B&GA/WWB/03/70143;\n\n\
+      Gelet op\n\nDe Raad van State gehoord (advies van 18 september 2003, nr. W12.03.0369/IV);\n\nGezien
+      het nader rapport van de Staatssecretaris van Sociale Zaken en Werkgelegenheid van 9 oktober\n2003,
+      Directie Werk en Bijstand, nr. W&B/WWB/03/76459;\n\nHebben goedgevonden en verstaan:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Aanhef
+  - number: '1'
+    text: 'In dit besluit en de daarop berustende bepalingen wordt verstaan onder:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.a
+    text: "wet: [Participatiewet][ref1];\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+  - number: 1.b
+    text: "zelfstandige: de belanghebbende van 18 jaar tot aan de pensioengerechtigde leeftijd, bedoeld
+      in\n[artikel 7a, eerste lid, van de Algemene Ouderdomswet][ref1] die voor de voorziening in het
+      bestaan\nis aangewezen op arbeid in eigen bedrijf of zelfstandig beroep hier te lande en die:\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0002221#Artikel7a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0002221
+        artikel: 7a
+  - number: 1.b.1°
+    text: voldoet aan de wettelijke vereisten voor de uitoefening daarvan;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.b.2°
+    text: "voldoet aan het urencriterium, bedoeld in [artikel 3.6 van de Wet inkomstenbelasting 2001][ref1],
+      en\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0011353#Artikel3.6"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0011353
+        artikel: '3.6'
+  - number: 1.b.3°
+    text: "alleen of samen met degenen met wie hij het bedrijf of zelfstandig beroep uitoefent de volledige\n\
+      zeggenschap in dat bedrijf of zelfstandig beroep heeft en de financiële risico's daarvan draagt;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.c
+    text: "levensvatbaar bedrijf of zelfstandig beroep: het bedrijf of zelfstandig beroep waaruit de\n\
+      zelfstandige naar verwachting na bijstandsverlening een inkomen zal verwerven dat, samen met het\n\
+      overige inkomen, toereikend is voor de voortzetting van het bedrijf of zelfstandig beroep en voor
+      de\nvoorziening in het bestaan;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.d
+    text: 'boekjaar: de periode van 12 maanden waarover de administratie van de zelfstandige wordt gevoerd;'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.e
+    text: "netto inkomen: het over het boekjaar verworven inkomen, bedoeld in [hoofdstuk 3, paragraaf 3.4
+      van\nde wet][ref1], met toepassing van [artikel 6, tweede lid][ref2];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.4'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '2'
+  - number: 1.f
+    text: "bruto inkomen: het over het boekjaar verworven inkomen, bedoeld in [hoofdstuk 3, paragraaf 3.4
+      van\nde wet][ref1], zonder toepassing van [artikel 31, derde lid, van de wet][ref2] en [artikel
+      6, tweede\nlid][ref3];\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n[ref2]: https://wetten.overheid.nl/BWBR0015703#Artikel31\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel6"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.4'
+      - id: ref2
+        bwb_id: BWBR0015703
+        artikel: '31'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '2'
+  - number: 1.g
+    text: "jaarnorm: de tot een bedrag per boekjaar omgerekende som van de bijstandsnorm, bedoeld in [hoofdstuk\n\
+      3, paragraaf 3.2][ref1] en [3.3 van de wet][ref2], verhoogd met de vergoeding, bedoeld in [artikel\n\
+      46 van de Zorgverzekeringswet][ref3] en de verleende bijzondere bijstand;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015703\n[ref3]: https://wetten.overheid.nl/BWBR0018450#Artikel46"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.2'
+      - id: ref2
+        bwb_id: BWBR0015703
+        paragraaf: '3.3'
+      - id: ref3
+        bwb_id: BWBR0018450
+        artikel: '46'
+  - number: 1.h
+    text: "totaal vermogen: het vermogen, bedoeld in [artikel 34, eerste lid, onderdeel a, van de wet][ref1],\n\
+      zonder aftrek van de aanwezige schulden en zonder de in [artikel 34, tweede lid, onderdelen a en
+      e,\nvan de wet][ref2], bedoelde bezittingen in aanmerking te nemen;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel34\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015703#Artikel34"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '34'
+      - id: ref2
+        bwb_id: BWBR0015703
+        artikel: '34'
+  - number: 1.i
+    text: 'eigen vermogen: het verschil tussen het totaal vermogen en de aanwezige schulden;'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.j
+    text: "bank: bank als bedoeld in [artikel 1:1 van de Wet op het financieel toezicht][ref1];\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0020368#Artikel1:1"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+    references:
+      - id: ref1
+        bwb_id: BWBR0020368
+        artikel: 1:1
+  - number: 1.k
+    text: 'ondernemer in de binnenvaart: de zelfstandige die arbeid verricht door:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.k.1°
+    text: "het vervoeren of opslaan van goederen met behulp van een schip dat bestemd is of gebruikt wordt
+      voor\nhet vervoer van goederen op de Nederlandse binnenwateren, stromen en riviermonden, alsmede
+      op de\nDollard, de Waddenzee en het IJsselmeer;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: 1.k.2°
+    text: "het slepen of duwen van de in onder 1 bedoelde schepen met een boot die blijkens zijn bouw
+      daarvoor\nis bestemd en niet tevens is ingericht voor het vervoer van goederen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel1
+  - number: '2.1'
+    text: 'Algemene bijstand kan worden verleend aan:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: 2.1.a
+    text: "de zelfstandige die gedurende een redelijke termijn als zodanig werkzaam is geweest en wiens
+      bedrijf\nof zelfstandig beroep levensvatbaar is;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: 2.1.b
+    text: "de persoon of de echtgenoot van de persoon die uit hoofde van werkloosheid een uitkering ontvangt
+      en\ndie een bedrijf of zelfstandig beroep begint dat levensvatbaar is;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: 2.1.c
+    text: "de zelfstandige geboren voor 1 januari 1960, wiens bedrijf of zelfstandig beroep niet levensvatbaar\n\
+      is en die het bedrijf of zelfstandig beroep gedurende een aaneengesloten periode van 10 jaar\nonmiddellijk
+      voorafgaand aan de aanvraag heeft uitgeoefend en hieruit een inkomen geniet dat\nduurzaam ontoereikend
+      is om in de noodzakelijke kosten van het bestaan te voorzien;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: 2.1.d
+    text: "de zelfstandige wiens bedrijf of zelfstandig beroep niet levensvatbaar is en die zich verplicht
+      de\nactiviteiten in het bedrijf of zelfstandig beroep zo spoedig mogelijk, doch uiterlijk binnen
+      12\nmaanden, te beëindigen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: '2.2'
+    text: "Bijstand ter voorziening in de behoefte aan bedrijfskapitaal kan slechts worden verleend aan
+      de\nzelfstandige, bedoeld in de onderdelen a, b en c van het eerste lid."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: '2.3'
+    text: "Bijstandsverlening aan een persoon die algemene bijstand ontvangt, die voornemens is een bedrijf
+      of\nzelfstandig beroep te beginnen en zich in verband hiermee niet beschikbaar stelt voor arbeid
+      in\ndienstbetrekking kan gedurende een voorbereidingsperiode van ten hoogste 12 maanden worden\n\
+      voortgezet. In een zodanig geval:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: 2.3.a
+    text: "zijn de [artikelen 9][ref1], met uitzondering van het eerste lid, onderdeel c, en [10 van de\n\
+      wet][ref2] niet van toepassing;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel9\n[ref2]:
+      https://wetten.overheid.nl/BWBR0015703#Artikel10"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '9'
+      - id: ref2
+        bwb_id: BWBR0015703
+        artikel: '10'
+  - number: 2.3.b
+    text: is de belanghebbende verplicht mee te werken aan door het college aangewezen begeleiding.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel2
+  - number: '3.1'
+    text: "Bijstand in de vorm van een bedrag om niet, waaronder kwijtschelding van rente, als bedoeld
+      in de\n[artikelen 12][ref1], [19][ref2], [21][ref3] en [22][ref4]:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel12\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel19\n[ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel21\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0015711#Artikel22"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '12'
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '19'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '21'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref4
+        bwb_id: BWBR0015711
+        artikel: '22'
+        hoofdstuk: III
+        paragraaf: '1'
+  - number: 3.1.a
+    text: wordt niet verleend indien het eigen vermogen meer bedraagt dan  € 243.892,00;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel3
+  - number: 3.1.b
+    text: "wordt, indien het eigen vermogen meer bedraagt dan € 58.035,00, doch minder dan € 243.892,00
+      slechts\nverleend indien dit eigen vermogen niet meer bedraagt dan 30 procent van het totaal vermogen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel3
+  - number: '3.2'
+    text: "In afwijking van het eerste lid wordt aan de zelfstandige als bedoeld in [artikel 2, eerste
+      lid,\nonderdeel c][ref1], bijstand in de vorm van een bedrag om niet als bedoeld in de [artikelen\n\
+      12][ref2] en [26][ref3] niet verleend, indien het eigen vermogen meer bedraagt dan € 170.725,00.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel12\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel26"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel3
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '12'
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '26'
+        hoofdstuk: III
+        paragraaf: '3'
+  - number: '4'
+    text: "De bijstand die wordt verleend in de vorm van een bedrag om niet met toepassing van [artikel\n\
+      12][ref1] wordt verhoogd met een forfaitair bedrag dat overeenkomt met de loonbelasting en de\n\
+      premies volksverzekeringen waarvoor de gemeente die de bijstand verleent krachtens de [Wet op de\n\
+      loonbelasting 1964][ref2] inhoudingspichtige is.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel12\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0002471"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel4
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '12'
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref2
+        bwb_id: BWBR0002471
+  - number: '5'
+    text: De algemene bijstand wordt per boekjaar vastgesteld.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel5
+  - number: '6.1'
+    text: "In afwijking van [artikel 32, eerste lid, onderdeel b, van de wet][ref1] wordt bij de\nbijstandsverlening
+      aan een zelfstandige rekening gehouden met het inkomen over een boekjaar. Een\nteruggave van inkomstenbelasting
+      en premies volksverzekeringen wordt bij een zelfstandige niet als\ninkomen aangemerkt.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0015703#Artikel32"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel6
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '32'
+  - number: '6.2'
+    text: "Bij de bijstandsverlening aan een zelfstandige worden de verschuldigde inkomstenbelasting en
+      premies\nvolksverzekeringen over inkomen waarover geen loonbelasting is geheven gesteld op 20 procent
+      per 1\njanuari 2025: 19 procent van dat inkomen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel6
+  - number: '7'
+    text: "Niet als vermogen wordt in aanmerking genomen het voor de uitoefening van het bedrijf of zelfstandig\n\
+      beroep noodzakelijke vermogen, waaronder mede begrepen het vermogen gebonden in de door de\nzelfstandige
+      of zijn gezin in eigendom bewoonde woning met bijbehorend erf."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel7
+  - number: '8.1'
+    text: "De voor de uitoefening van het bedrijf of zelfstandig beroep noodzakelijke bezittingen en de\n\
+      aanwezige schulden van de zelfstandige worden gewaardeerd op basis van de waarde in het economisch\n\
+      verkeer."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: '8.2'
+    text: 'In afwijking van het eerste lid worden de volgende vermogensbestanddelen als volgt gewaardeerd:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.2.a
+    text: "onderhanden werken, halffabrikaten, eindproducten en te velde staande gewassen worden gewaardeerd
+      op\nbasis van de gemaakte kosten, arbeidskosten daaronder begrepen;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.2.b
+    text: "handelsvoorraden en grondstoffen worden gewaardeerd op basis van de aanschaffingswaarde, voor
+      zover\nnodig gecorrigeerd met een aftrek wegens incourantheid;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.2.c
+    text: "immateriële activa, zoals goodwill en melkquotum worden gewaardeerd op basis van de aankoopprijs,\n\
+      waarbij rekening wordt gehouden met de afschrijving;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.2.d
+    text: "levensverzekeringen, die zijn aangegaan voor de financiering van onroerende zaken, worden opgenomen\n\
+      tegen de contante waarde;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.2.e
+    text: "aandelen in coöperaties en inkoopverenigingen alsmede andere vormen van ledenkapitaal worden\n\
+      gewaardeerd op basis van de fiscale boekwaarde;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.2.f
+    text: land en tuinbouwgrond wordt gewaardeerd op de waarde in verpachte staat.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: '8.3'
+    text: "In afwijking van het tweede lid, onderdeel a, kunnen de meerjarige te velde staande gewassen
+      of de\nplantopstanden in een bepaalde bedrijfstak worden gewaardeerd op de waarde in het economisch
+      verkeer\nop het moment dat er in deze bedrijfstak sprake is van een crisissituatie; van een crisissituatie
+      is\nsprake in het geval dat er in meer dan twee opeenvolgende jaren lage opbrengstprijzen zijn verkregen\n\
+      al dan niet in combinatie met lage fysieke opbrengsten als gevolg van slechte weersomstandigheden."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: '8.4'
+    text: 'Onder schulden wordt mede verstaan:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.4.a
+    text: uit de jaarrekening blijkende schulden wegens niet uitbetaald loon aan kinderen;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: 8.4.b
+    text: "reserveringen in verband met belastingclaims, die voortvloeien uit de vaststelling van de waarde
+      van\nde bezittingen, bedoeld in het eerste en tweede lid."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: '8.5'
+    text: Het college laat, indien daartoe aanleiding bestaat, de onroerende zaken taxeren door een
+      taxateur.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: '8.6'
+    text: "Het college laat de waarde van de bezittingen opnieuw vaststellen indien gewijzigde omstandigheden\n\
+      daartoe aanleiding geven."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel8
+  - number: '9'
+    text: "Bij de verlening van bijstand aan een zelfstandige die het bedrijf of zelfstandig beroep tezamen
+      met\neen of meer anderen uitoefent, wordt onder vermogen mede verstaan het vermogen van die anderen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel9
+  - number: '10'
+    text: "Algemene bijstand kan naar de regels van dit besluit worden verleend in de vorm van een renteloze\n\
+      geldlening, die al dan niet geheel of gedeeltelijk kan worden omgezet in een bedrag om niet of in
+      de\nvorm van een bedrag om niet."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel10
+  - number: '11.1'
+    text: "Algemene bijstand heeft voorlopig de vorm van een renteloze geldlening die in maandelijkse
+      termijnen\nwordt uitbetaald."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel11
+  - number: '11.2'
+    text: "Zodra het inkomen bekend is over het boekjaar waarin de in het eerste lid bedoelde bijstand
+      is\nverleend, wordt de hoogte van deze bijstand definitief vastgesteld en vindt, voor zover het
+      vermogen\nvan de zelfstandige de van toepassing zijnde grens van [artikel 3][ref1] niet te boven
+      gaat, tot die\nhoogte omzetting plaats in een bedrag om niet.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel11
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '12.1'
+    text: "Het college neemt een nadere beslissing met betrekking tot de verleende bijstand, bedoeld in\n\
+      [artikel 11, eerste lid][ref1], nadat het college het netto inkomen uit bedrijf of zelfstandig\n\
+      beroep definitief heeft vastgesteld.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel11"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel12
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '11'
+        hoofdstuk: II
+        paragraaf: '4'
+  - number: '12.2'
+    text: "Indien de verleende bijstand, vermeerderd met het in het desbetreffende boekjaar behaalde netto\n\
+      inkomen:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel12
+  - number: 12.2.a
+    text: "minder is dan de jaarnorm, wordt ambtshalve voor het verschil bijstand verleend, met dien verstande\n\
+      dat de in totaal te verlenen bijstand niet meer bedraagt dan de jaarnorm berekend naar evenredigheid\n\
+      over de periode waarin over het desbetreffende boekjaar bijstand is verleend, waarbij de als\ngeldlening
+      verstrekte bijstand wordt omgezet in een bedrag om niet;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel12
+  - number: 12.2.b
+    text: "gelijk is aan de jaarnorm, wordt de als geldlening verstrekte bijstand omgezet in een bedrag
+      om\nniet;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel12
+  - number: 12.2.c
+    text: "meer is dan de jaarnorm, kan de bijstand ter grootte van het verschil worden teruggevorderd
+      en wordt\nde rest van de als geldlening verstrekte bijstand omgezet in een bedrag om niet."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel12
+  - number: '13'
+    text: "In afwijking van [artikel 12][ref1] wordt, voor zover het eigen vermogen de van toepassing
+      zijnde\nvermogensgrens, genoemd in [artikel 3][ref2] overschrijdt, de renteloze geldlening gehandhaafd
+      na\nafloop van het tijdvak waarin bijstand is verleend. Met ingang van het jaar volgend op het laatste\n\
+      jaar van de bijstandsverlening wordt hierop een jaarlijkse aflossing van ten minste 10 procent\n\
+      voldaan.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel12\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel13
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '12'
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '14.1'
+    text: "Bijstand aan een zelfstandige ter voorziening in de behoefte aan bedrijfskapitaal wordt naar
+      de\nregels van dit besluit verleend in de vorm van een rentedragende lening, een renteloze lening,\n\
+      borgtocht of een bedrag om niet."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel14
+  - number: '14.2'
+    text: "Een voorschot als bedoeld in [artikel 52, van de wet][ref1], kan geen betrekking hebben op
+      bijstand\nter voorziening in de behoefte aan bedrijfskapitaal.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel52"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel14
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '52'
+  - number: '14.3'
+    text: "Bijstand ter voorziening in de behoefte aan bedrijfskapitaal wordt niet verleend aan personen
+      als\nbedoeld in [artikel 34a, eerste lid, van de Wet werk en inkomen naar arbeidsvermogen][ref1]
+      met een\nnaar het oordeel van het UWV structurele functionele beperking die arbeid als zelfstandige\n\
+      verrichten of gaan verrichten.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0019057#Artikel34a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel14
+    references:
+      - id: ref1
+        bwb_id: BWBR0019057
+        artikel: 34a
+  - number: '15'
+    text: "Bijstand in de vorm van een rentedragende geldlening ter voorziening in de behoefte aan\nbedrijfskapitaal
+      wordt verleend met inachtneming van het volgende:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel15
+  - number: 15.a
+    text: "de rente van de geldlening bedraagt 5 procent per 1 juli 2009: 8 procent per jaar gedurende
+      de\ngehele looptijd van de geldlening;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel15
+  - number: 15.b
+    text: de looptijd van de geldlening is ten hoogste tien jaar.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel15
+  - number: '16'
+    text: "Bijstand in de vorm van borgtocht ter voorziening in de behoefte aan bedrijfskapitaal wordt
+      verleend\nmet inachtneming van het volgende:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel16
+  - number: 16.a
+    text: "de borgtocht heeft geen betrekking op de rente en kosten van die geldlening waarvoor borgtocht
+      wordt\naangegaan;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel16
+  - number: 16.b
+    text: de looptijd van de geldlening waarvoor borgtocht wordt aangegaan is ten hoogste tien jaar;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel16
+  - number: 16.c
+    text: "de borgtocht kan alleen worden aangegaan met een bank of een daartoe door het college erkende\n\
+      rechtspersoon, die zonder winstoogmerk kredieten verstrekt aan ondernemers;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel16
+  - number: 16.d
+    text: "het bedrag dat de zelfstandige na uitwinning verschuldigd is, wordt aangemerkt als een lening,\n\
+      waarop de [artikelen 40 tot en met 43][ref1] van toepassing zijn;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel40"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel16
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '40'
+        hoofdstuk: V
+        paragraaf: '2'
+  - number: 16.e
+    text: uitwinning door de bank kan slechts plaatsvinden na toestemming van het college.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel16
+  - number: '17'
+    text: "Het college kan bijstand verlenen aan de zelfstandige ter gedeeltelijke of volledige betaling
+      van\neen bedrijfsschuld, mits de bijstand wordt verleend op grond van [artikel 2, tweede lid][ref1].\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel17
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '18'
+    text: "Aan een zelfstandige als bedoeld in [artikel 2, eerste lid, onderdeel a][ref1], wordt gedurende
+      ten\nhoogste 12 maanden algemene bijstand verleend. Verlenging van deze termijn met ten hoogste
+      24\nmaanden is mogelijk indien de oorzaak van de behoefte aan bijstand is gelegen in externe\nomstandigheden
+      van tijdelijke aard.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel18
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '19'
+    text: "In afwijking van [artikel 11][ref1] wordt aan een zelfstandige als bedoeld in [artikel 2, eerste\n\
+      lid, onderdeel a][ref2], algemene bijstand verleend als een bedrag om niet indien:\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0015711#Artikel11\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '11'
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: 19.a
+    text: de uitkeringsduur ten hoogste zes maanden is;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel19
+  - number: 19.b
+    text: "de inkomensvorming in het betreffende bedrijf of zelfstandig beroep regelmatig over het jaar\n\
+      verloopt en het inkomen duurzaam lager is dan de som van de bijstandsnorm, bedoeld in [hoofdstuk
+      3,\nparagraaf 3.2][ref1] en [3.3, van de wet][ref2], en de verleende bijzondere bijstand; en\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0015703\n[ref2]: https://wetten.overheid.nl/BWBR0015703"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.2'
+      - id: ref2
+        bwb_id: BWBR0015703
+        paragraaf: '3.3'
+  - number: 19.c
+    text: "het vermogen van de zelfstandige, het bedrag, bedoeld in [artikel 3, eerste lid][ref1], niet
+      te\nboven gaat.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel19
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '20'
+    text: "Aan een zelfstandige als bedoeld in [artikel 2, eerste lid, onderdeel a][ref1], kan ter voorziening\n\
+      in de behoefte aan bedrijfskapitaal bijstand in de vorm van een rentedragende geldlening of\nborgtocht
+      worden verleend tot een bedrag van ten hoogste € 253.420,00. Dit bedrag geldt per bedrijf\nof zelfstandig
+      beroep.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel20
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '21.1'
+    text: "De op grond van de [artikelen 15][ref1] en [20][ref2] verschuldigde rente wordt ambtshalve\n\
+      kwijtgescholden en reeds betaalde rente terugbetaald, indien het netto inkomen in een of beide\n\
+      boekjaren volgend op het boekjaar van de aanvraag, lager is dan de jaarnorm, tenzij in een boekjaar\n\
+      aan de zelfstandige ook algemene bijstand, bedoeld in [artikel 10][ref3], is verleend. Het bedrag
+      is\nten hoogste de voor dat boekjaar geldende renteverplichting op grond van artikel 15, doch niet
+      meer\ndan het verschil tussen de jaarnorm en het netto inkomen in het boekjaar.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel15\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel20\n[ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel10"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '15'
+        hoofdstuk: II
+        paragraaf: '5'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '20'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '10'
+        hoofdstuk: II
+        paragraaf: '4'
+  - number: '21.2'
+    text: "Indien de bijstand is verleend in de vorm van borgtocht op grond van de [artikelen 16][ref1]
+      en\n[20][ref2], is het eerste lid van overeenkomstige toepassing op de door de bank verstrekte lening.\n\
+      Het aldus berekende bedrag wordt verstrekt als een bedrag om niet. Aan deze bijstand wordt de\n\
+      voorwaarde verbonden dat deze wordt aangewend ter aflossing of tot rentebetaling op de door de bank\n\
+      verstrekte lening.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel16\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel20"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '16'
+        hoofdstuk: II
+        paragraaf: '5'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '20'
+        hoofdstuk: III
+        paragraaf: '1'
+  - number: '21.3'
+    text: "Het bedrag van de op grond van het eerste lid kwijtgescholden of terugbetaalde rente, of het
+      op\ngrond van het tweede lid berekende bedrag om niet, kan tezamen met de over hetzelfde boekjaar\n\
+      verleende bijstand ingevolge [hoofdstuk II, paragraaf 4][ref1], niet meer bedragen dan de jaarnorm.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel21
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        hoofdstuk: II
+        paragraaf: '4'
+  - number: '22'
+    text: "Bijstand in de behoefte aan bedrijfskapitaal kan aan een zelfstandige als bedoeld in [artikel
+      2,\neerste lid, onderdeel a][ref1], worden verleend in de vorm van een bedrag om niet tot ten hoogste\n\
+      € 12.671,00, indien het inkomen van de zelfstandige duurzaam lager is dan de som van de\nbijstandsnorm,
+      bedoeld in [hoofdstuk 3, paragraaf 3.2][ref2] en [3.3, van de wet][ref3], en de\nverleende bijzondere
+      bijstand en diens vermogen de grens genoemd in [artikel 3, eerste lid][ref4],\nniet te boven gaat.
+      Deze bijstand gaat niet samen met bijstand als bedoeld in [artikel 20][ref5].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015703\n[ref3]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref4]: https://wetten.overheid.nl/BWBR0015711#Artikel3\n[ref5]: https://wetten.overheid.nl/BWBR0015711#Artikel20"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel22
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015703
+        paragraaf: '3.2'
+      - id: ref3
+        bwb_id: BWBR0015703
+        paragraaf: '3.3'
+      - id: ref4
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+      - id: ref5
+        bwb_id: BWBR0015711
+        artikel: '20'
+        hoofdstuk: III
+        paragraaf: '1'
+  - number: '23.1'
+    text: "Aan de persoon, bedoeld in [artikel 2, eerste lid, onderdeel b][ref1], wordt na de beëindiging
+      van\nde uitkering uit hoofde van werkloosheid gedurende ten hoogste 36 maanden algemene bijstand\n\
+      verleend. Verlenging van deze termijn is mogelijk indien de zelfstandige om redenen van medische
+      of\nsociale aard niet volledig beschikbaar is voor de uitoefening van het bedrijf of zelfstandig
+      beroep.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel23
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '23.2'
+    text: "Toekenning van algemene bijstand als bedoeld in het eerste lid wordt beëindigd zodra het bedrijf
+      of\nzelfstandig beroep niet meer levensvatbaar is."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel23
+  - number: '23.3'
+    text: "Het college is bevoegd te onderzoeken of het bedrijf of zelfstandig beroep nog levensvatbaar
+      is,\nindien daartoe naar het oordeel van het college aanleiding bestaat."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel23
+  - number: '24'
+    text: "Aan een zelfstandige als bedoeld in [artikel 2, eerste lid, onderdeel b][ref1], kan ter voorziening\n\
+      in de behoefte aan bedrijfskapitaal uitsluitend bijstand in de vorm van een rentedragende geldlening\n\
+      of borgtocht worden verleend tot een bedrag van ten hoogste € 46.656,00. Dit bedrag geldt per\n\
+      bedrijf of zelfstandig beroep.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel24
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '25'
+    text: "Aan een zelfstandige als bedoeld in [artikel 2, eerste lid, onderdeel c][ref1], wordt algemene\n\
+      bijstand verleend voor de duur dat hij uit het bedrijf of zelfstandig beroep naar verwachting een\n\
+      bruto inkomen zal behalen dat gemiddeld minstens € 10.065,00 per boekjaar bedraagt.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel25
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '26'
+    text: "Bijstand ter voorziening in de behoefte aan bedrijfskapitaal wordt aan de zelfstandige, bedoeld
+      in\n[artikel 2, eerste lid, onderdeel c][ref1], slechts verleend tot ten hoogste € 12.671,00. Deze\n\
+      bijstand wordt verstrekt in de vorm van een bedrag om niet of, voor zover het eigen vermogen meer\n\
+      bedraagt dan het bedrag, genoemd in [artikel 3, tweede lid][ref2], in de vorm van een renteloze\n\
+      lening. [Artikel 13][ref3] is van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel3\n[ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel13"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel26
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '13'
+        hoofdstuk: II
+        paragraaf: '4'
+  - number: '27'
+    text: "Aan een zelfstandige als bedoeld in [artikel 2, eerste lid, onderdeel d][ref1], wordt algemene\n\
+      bijstand verleend gedurende ten hoogste 12 maanden. Verlenging van deze termijn met ten hoogste
+      12\nmaanden is op verzoek van de zelfstandige mogelijk voor zover de beëindiging naar het oordeel
+      van\nhet college een langere termijn noodzakelijk maakt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel27
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '28'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel28
+  - number: '29.1'
+    text: "Bijstand in de met de voorbereiding samenhangende kosten, bedoeld in [artikel 2, derde lid][ref1],\n\
+      kan worden verleend aan een persoon als bedoeld in artikel 2, derde lid.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel29
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '29.2'
+    text: Deze bijstand heeft voorlopig de vorm van een renteloze geldlening.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel29
+  - number: '29.3'
+    text: 'Indien de belanghebbende in aansluiting op de voorbereidingsperiode:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel29
+  - number: 29.3.a
+    text: "geen bedrijf of beroep als zelfstandige begint, dan wordt de geldlening omgezet in een bedrag
+      om\nniet, tenzij de belanghebbende niet voldoet aan de verplichtingen, bedoeld in [artikel 17 van
+      de\nwet][ref1], of een tekortschietend besef van verantwoordelijkheid betoont voor de voorziening
+      in het\nbestaan;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel17"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel29
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '17'
+  - number: 29.3.b
+    text: "een bedrijf of beroep als zelfstandige begint, dan wordt de geldlening omgezet in een rentedragende\n\
+      geldlening."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel29
+  - number: '30.1'
+    text: "Bijstand ter voorziening in de behoefte aan bedrijfskapitaal aan de zelfstandige die het bedrijf
+      of\nzelfstandig beroep uitoefent in de vorm van een maatschap, een vennootschap onder firma, een\n\
+      commanditaire vennootschap, een besloten vennootschap of een coöperatieve vereniging met wettelijke\n\
+      aansprakelijkheid, wordt slechts verleend indien hoofdelijke aansprakelijkheid voor de uit de\n\
+      bijstandsverlening voortvloeiende verplichtingen wordt aanvaard door:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel30
+  - number: 30.1.a
+    text: alle vennoten of leden waarmee het bedrijf of zelfstandig beroep wordt uitgeoefend;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel30
+  - number: 30.1.b
+    text: de besloten vennootschap en de coöperatieve vereniging met wettelijke aansprakelijkheid.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel30
+  - number: '30.2'
+    text: "De eis van aanvaarding van hoofdelijke aansprakelijkheid geldt niet voor de commanditaire vennoot\n\
+      wiens inbreng uitsluitend uit kapitaal bestaat."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel30
+  - number: '30.3'
+    text: "Bijstand ter voorziening in de behoefte aan bedrijfskapitaal wordt niet verleend aan de vennoot
+      in\neen maatschap die daar alleen arbeid inbrengt. Deze vennoot behoeft geen hoofdelijke\naansprakelijkheid
+      te aanvaarden voor de aan de andere vennoten verleende bijstand ter voorziening in\nde behoefte
+      aan bedrijfskapitaal."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel30
+  - number: '31'
+    text: "Op de bijstandsverlening, bedoeld in [artikel 30][ref1], is [artikel 21][ref2] op ieder van
+      de\nvennoten of leden van overeenkomstige toepassing, mits de zelfstandige is aan te merken als
+      een\npersoon als bedoeld in [artikel 2, eerste lid, onderdeel a][ref3].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel30\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel21\n[ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel31
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '30'
+        hoofdstuk: III
+        paragraaf: '7'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '21'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '32'
+    text: "Indien bijstand wordt verleend aan een zelfstandige die zijn bedrijf of zelfstandig beroep
+      uitoefent\nin een samenwerkingsverband of in de vorm van een rechtspersoon, gelden de bedragen van
+      de\nvermogensgrenzen, bedoeld in [artikel 3][ref1], voor ieder van de vennoten of leden afzonderlijk.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel3"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel32
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '33'
+    text: "Ten aanzien van de zelfstandige die het bedrijf of zelfstandig beroep uitoefent in de vorm
+      van een\nbesloten vennootschap of een coöperatieve vereniging met wettelijke aansprakelijkheid,
+      wordt onder\nnetto inkomen als bedoeld in [artikel 1, onderdeel e][ref1], mede verstaan de naar
+      evenredigheid van\nhet aantal zelfstandigen in een boekjaar omgerekende winst van deze rechtspersoon
+      verminderd met de\nhierover verschuldigde vennootschapsbelasting.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel1"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel33
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '1'
+        hoofdstuk: I
+  - number: '34'
+    text: "De bijstand die met toepassing van [artikel 37][ref1] wordt verleend heeft voorlopig de vorm
+      van een\nrenteloze geldlening. Het bepaalde bij en krachtens [artikel 11, tweede lid][ref2], is
+      op deze\ngeldlening van overeenkomstige toepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel37\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel11"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel34
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '37'
+        hoofdstuk: IV
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '11'
+        hoofdstuk: II
+        paragraaf: '4'
+  - number: '35.1'
+    text: De aanvraag wordt ingediend bij het college.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel35
+  - number: '35.2'
+    text: "Indien het een aanvraag betreft om als zelfstandige bijstand te ontvangen stelt het college
+      binnen\ndertien weken na ontvangst van de aanvraag vast of recht op bijstand bestaat."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel35
+  - number: '35.3'
+    text: "Het college kan de termijn bedoeld in het tweede lid verlengen met ten hoogste dertien weken,
+      indien\nhet college niet in staat is tijdig een besluit te nemen. Van de verlenging doet het college\n\
+      mededeling aan de zelfstandige, onder vermelding van het tijdstip waarop de termijn voor het nemen\n\
+      van een besluit zal verstrijken."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel35
+  - number: '36'
+    text: "Indien de ondernemer in de binnenvaart geen woonplaats heeft als bedoeld in [artikel 40, eerste
+      lid,\nvan de wet][ref1], bestaat het recht op bijstand jegens het college van de gemeente waar de\n\
+      ondernemer in de binnenvaart op het moment van zijn aanvraag zijn feitelijke ligplaats heeft.\n\n\
+      \n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel40"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel36
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '40'
+  - number: '37.1'
+    text: "Bij zeer dringende redenen van tijdelijke aard kan aan de zelfstandige, die als ingezetene
+      in de\nbasisregistratie personen is ingeschreven en die zich uit hoofde van zijn bedrijf of beroep\n\
+      tijdelijk in het buitenland bevindt, door Onze Minister bijstand worden verleend volgens door hem
+      te\nstellen regels."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel37
+  - number: '37.2'
+    text: "[Hoofdstuk 6, paragraaf 6.5, van de wet][ref1], en [hoofdstuk VI][ref2] zijn van toepassing
+      op\nterugvordering en verhaal van kosten van bijstand die door Onze Minister is verleend, met dien\n\
+      verstande dat het Rijk in plaats van de gemeente treedt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel37
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '6.5'
+      - id: ref2
+        bwb_id: BWBR0015711
+        hoofdstuk: VI
+  - number: '38.1'
+    text: "Het college legt bij de bijstandsverlening verplichtingen op die het college nodig acht voor
+      een\ndoelmatige bedrijfs- of beroepsuitoefening."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel38
+  - number: '38.2'
+    text: "De zelfstandige aan wie bijstand wordt verleend is verplicht naar behoren een administratie
+      te\nvoeren. De zelfstandige legt deze binnen 6 maanden na afloop van het boekjaar op de volgende
+      wijze\nover aan het college:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel38
+  - number: 38.2.a
+    text: "uit eigener beweging over ieder boekjaar waarover uitkering is verleend als bedoeld in [hoofdstuk\n\
+      II, § 4][ref1], of aanspraak kan worden gemaakt op bijstand als bedoeld in [artikel 21][ref2]; of\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel21"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '21'
+        hoofdstuk: III
+        paragraaf: '1'
+  - number: 38.2.b
+    text: op verzoek van het college.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel38
+  - number: '38.3'
+    text: "Ten aanzien van de zelfstandige die zijn bedrijf of zelfstandig beroep gedurende ten minste
+      een half\njaar niet of nagenoeg niet uitoefent, zijn de [artikelen 9][ref1] en [10 van de wet][ref2]
+      van\ntoepassing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel9\n[ref2]: https://wetten.overheid.nl/BWBR0015703#Artikel10"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel38
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '9'
+      - id: ref2
+        bwb_id: BWBR0015703
+        artikel: '10'
+  - number: '39.1'
+    text: 'Het college legt in de beschikking waarin de bijstand wordt toegekend in elk geval vast:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: 39.1.a
+    text: "indien de bijstand wordt verstrekt in de vorm van een rentedragende geldlening op grond van
+      de\n[artikelen 20][ref1] of [24][ref2]:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel20\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel24"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '20'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '24'
+        hoofdstuk: III
+        paragraaf: '2'
+  - number: 39.1.a.1°
+    text: de bestemming van de geldlening;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: 39.1.a.2°
+    text: de verplichtingen tot betaling van rente en aflossing alsmede de betalingstermijnen;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: 39.1.a.3°
+    text: "dat het bedrag van de lening, behoudens in de gevallen waarin [artikel 21, eerste lid][ref1],
+      van\ntoepassing is en met inachtneming van [artikel 41][ref2], terstond opeisbaar is bij het niet
+      nakomen\nvan de verplichtingen tot betaling van rente en aflossing;\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel21\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel41"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '21'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '41'
+        hoofdstuk: V
+        paragraaf: '2'
+  - number: 39.1.b
+    text: "indien de bijstand wordt verstrekt in de vorm van borgtocht op grond van [artikel 16][ref1],
+      dat aan\nde verplichtingen opgenomen in de leningsovereenkomst met de bank dient te worden voldaan.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel16"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '16'
+        hoofdstuk: II
+        paragraaf: '5'
+  - number: '39.2'
+    text: "In de beschikking tot toekenning van de bijstand wordt voorts opgenomen dat het bedrag van
+      de lening\nterstond opeisbaar is:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: 39.2.a
+    text: indien zij niet overeenkomstig de bestemming is besteed;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: 39.2.b
+    text: op het moment dat de zelfstandige het bedrijf of zelfstandig beroep overdraagt of
+      beëindigt;
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: 39.2.c
+    text: "ingeval van surséance van betaling of faillissement van de zelfstandige, van één van de vennoten
+      of\nleden waarmee het bedrijf of zelfstandig beroep in een samenwerkingsverband wordt uitgeoefend,
+      of\nvan de rechtspersoon."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: '39.3'
+    text: "Het college kan aan het verlenen van bijstand in de vorm van een geldlening verplichtingen
+      verbinden\ndie zijn gericht op meerdere zekerheid voor de nakoming van de aan deze bijstand verbonden
+      rente- en\naflossingsverplichtingen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel39
+  - number: '40'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel40
+  - number: '41.1'
+    text: "De zelfstandige die geheel of gedeeltelijk niet in staat is aan de rente- en\naflossingsverplichtingen
+      te voldoen, kan een met redenen omkleed verzoek om uitstel van betaling bij\nhet college indienen."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel41
+  - number: '41.2'
+    text: "Uitstel van aflossing en betaling van rente wordt ten hoogste voor een periode van een jaar\n\
+      verleend. Het college kan zonodig deze periode tweemaal met ten hoogste een jaar verlengen. Over
+      de\ngehele looptijd van de lening kan maximaal gedurende een aaneengesloten of onderbroken periode
+      van\ndrie jaar uitstel worden verleend."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel41
+  - number: '41.3'
+    text: "Het uitstel heeft bij voorrang betrekking op de aflossing. De vordering wegens uitstel van
+      betaling\nvan rente is niet rentedragend."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel41
+  - number: '41.4'
+    text: "Indien blijkt dat de zelfstandige duurzaam niet aan de verplichtingen kan voldoen of, indien
+      de\nperiode van drie jaar bedoeld in het tweede lid is verstreken, zijn de lening en de eventuele\n\
+      achterstallige rente terstond opeisbaar en kunnen deze worden teruggevorderd."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel41
+  - number: '41.5'
+    text: "Indien blijkt dat de financiële omstandigheden van de zelfstandige zodanig zijn dat deze geacht
+      kan\nworden aan de verplichtingen te kunnen voldoen, kunnen de vanaf de vervaldatum achterstallige
+      rente-\nen aflossingsbedragen terstond worden teruggevorderd. Indien hierbij sprake is van een toerekenbare\n\
+      tekortkoming in de nakoming, is over de achterstallige rente- en aflossingsbedragen de wettelijke\n\
+      rente verschuldigd."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel41
+  - number: '41.6'
+    text: "In de gevallen, bedoeld in het vierde en vijfde lid, blijft het resterende deel van de lening
+      vanaf\nhet moment van de opeisbaarheid van de lening rentedragend."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel41
+  - number: '42'
+    text: "Indien op grond van dit besluit een lening is verstrekt werkt het college mee aan een schuldregeling\n\
+      of aan een akkoord voor zover dit noodzakelijk is voor de voortzetting van het bedrijf of\nzelfstandig
+      beroep, of dit bij de beëindiging van het bedrijf of zelfstandig beroep tot stand kan\nkomen. Deze
+      medewerking wordt slechts verleend indien:"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel42
+  - number: 42.a
+    text: het gedeelte van de lening dat door gestelde zekerheden wordt gedekt, buiten het akkoord
+      blijft, en
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel42
+  - number: 42.b
+    text: alle concurrente schuldeisers evenredige medewerking verlenen.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel42
+  - number: '43.1'
+    text: "Bij beëindiging van het bedrijf of zelfstandig beroep wordt de lening, behoudens in het geval\n\
+      [artikel 42][ref1] toepassing vindt, volledig terugbetaald. Gestelde zekerheden worden volledig\n\
+      uitgewonnen. In afwijking daarvan blijft, op verzoek van de betrokkene en voor zover mogelijk, een\n\
+      lening onder hypothecair verband, verbonden aan de eigen woning met bijbehorend erf, gehandhaafd
+      of\nwordt deze tot de onbelaste waarde van deze woning gevestigd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel42"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '42'
+        hoofdstuk: V
+        paragraaf: '2'
+  - number: '43.2'
+    text: "Indien na beëindiging van het bedrijf of zelfstandig beroep een deel van de lening resteert
+      en deze\nniet met toepassing van het vorige lid onder hypothecair verband is verleend, kan in het
+      geval van\nniet verwijtbaarheid het resterende deel van de lening vanaf de beëindiging renteloos
+      worden\ngemaakt. In het geval van een renteloos gemaakte lening dient gedurende de periode van vijf
+      jaar na\nbeëindiging van het bedrijf of zelfstandig beroep 50 procent van het netto inkomen boven
+      de\nbijstandsnorm, bedoeld in [hoofdstuk 3, paragrafen 3.2][ref1] en [3.3, van de wet][ref2], besteed
+      te\nworden voor aflossing van deze lening.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015703"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.2'
+      - id: ref2
+        bwb_id: BWBR0015703
+        paragraaf: '3.3'
+  - number: '43.3'
+    text: "De lening, die de zelfstandige bij de beëindiging op grond van het eerste lid gehouden is terug
+      te\nbetalen, is een lening als bedoeld in [artikel 58, tweede lid, onderdeel b, van de wet][ref1].\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '58'
+  - number: 43a.1
+    text: "Bij beëindiging van het bedrijf of zelfstandig beroep vangt de aflossing van de geldlening
+      onder\nverband van hypotheek of verpanding aan op het moment van beëindiging van de bijstandsverlening."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43a
+  - number: 43a.2
+    text: "De aflossing van de geldlening onder verband van hypotheek of verpanding vindt maandelijks
+      plaats\ngedurende ten hoogste tien jaar."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43a
+  - number: 43a.3
+    text: "Het college stelt het maandbedrag van de aflossing vast aan de hand van het inkomen, bedoeld
+      in\n[paragraaf 3.4 van de wet][ref1], en de noodzakelijke, voor rekening van de zelfstandige en
+      zijn\ngezin komende, bijzondere bestaanskosten. Indien de omstandigheden daartoe aanleiding geven,
+      wijzigt\nhet college het maandbedrag van de aflossing.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43a
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.4'
+  - number: 43a.4
+    text: "Bij een inkomen van de zelfstandige en zijn gezin als bedoeld in het derde lid dat niet uitgaat\n\
+      boven de van toepassing zijnde bijstandsnorm, bedoeld in de [paragrafen 3.2][ref1] en [3.3 van de\n\
+      wet][ref2], wordt geen aflossing gevergd.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015703"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43a
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        paragraaf: '3.2'
+      - id: ref2
+        bwb_id: BWBR0015703
+        paragraaf: '3.3'
+  - number: 43a.5
+    text: "Indien de zelfstandige en zijn gezin tijdens de aflossingsperiode van tien jaar schuldig nalatig\n\
+      zijn in het voldoen van de vastgestelde aflossing, is het nog niet afgeloste deel van de geldlening\n\
+      terstond opeisbaar en is daarover tevens de wettelijke rente verschuldigd."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43a
+  - number: 43b.1
+    text: "Indien door toepassing van [artikel 43a, derde of vierde lid][ref1], na afloop van de\naflossingsperiode
+      van tien jaar de geldlening nog niet is afgelost, is vanaf dat moment maandelijks\nrente verschuldigd
+      over het nog niet afgeloste deel van de geldlening.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel43a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43b
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: 43a
+        hoofdstuk: V
+        paragraaf: '2'
+  - number: 43b.2
+    text: De rente, bedoeld in het eerste lid, is de wettelijke rente, verminderd met drie procent.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43b
+  - number: 43b.3
+    text: "Indien de zelfstandige naar het oordeel van het college de rente geheel of gedeeltelijk kan
+      betalen,\ndoch niet kan aflossen, wordt een betaling eerst tot ten hoogste het bedrag van de verschuldigde\n\
+      maandrente aangemerkt als aflossing en wordt de rente die daardoor niet wordt betaald bijgeschreven\n\
+      bij het nog niet afgeloste deel van de geldlening."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43b
+  - number: 43b.4
+    text: "Indien de zelfstandige naar het oordeel van het college geen rente kan betalen wordt de\nverschuldigde
+      rente bijgeschreven bij het nog niet afgeloste deel van de geldlening."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43b
+  - number: 43b.5
+    text: Over een bijgeschreven rentevordering is geen rente verschuldigd.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43b
+  - number: 43c.1
+    text: "Bij verkoop van de woning dan wel bij vererving van de woning na het overlijden van de zelfstandige\n\
+      of, indien het een echtpaar betreft, na het overlijden van de langstlevende echtgenoot, wordt het\n\
+      nog niet afgeloste deel van de geldlening, alsmede de op grond van [artikel 43b, vierde lid][ref1],\n\
+      bijgeschreven rente, terstond afgelost.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel43b"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43c
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: 43b
+        hoofdstuk: V
+        paragraaf: '2'
+  - number: 43c.2
+    text: "Indien bij de verkoop van de woning op basis van de waarde in het economisch verkeer bij vrije\n\
+      oplevering het voor de afrekening beschikbare bedrag lager is dan het resterende bedrag van de\n\
+      geldlening en van de rentevordering, wordt het verschil kwijtgescholden."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43c
+  - number: 43d
+    text: "Aan de zelfstandige of langstlevende echtgenoot, bedoeld in [artikel 43c, eerste lid][ref1],
+      wordt,\ntelkens na afloop van een kalenderjaar, een opgave verstrekt van de stand van de geldlening
+      en van\nde rentevorderingen.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel43c"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel43d
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: 43c
+        hoofdstuk: V
+        paragraaf: '2'
+  - number: '44'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel44
+  - number: '45'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel45
+  - number: '46'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel46
+  - number: '47'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel47
+  - number: '48'
+    text: "Onze Minister verstrekt jaarlijks ten laste van ’s Rijks kas aan het college een uitkering
+      als\nonderdeel van de uitkering, bedoeld in [artikel 69, eerste lid, van de wet][ref1], voor de
+      kosten\nvan algemene bijstand aan zelfstandigen, bedoeld in [artikel 2, eerste lid][ref2].\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel69\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel48
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: '69'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: '49.1'
+    text: "Onze Minister verstrekt jaarlijks ten laste van ’s Rijks kas aan het college een bedrag van
+      100% van\nde lasten van de bijstand ter voorziening in de behoefte aan bedrijfskapitaal, met dien
+      verstande\ndat Onze Minister in de daaropvolgende vijf jaar in totaal 75% van dit verstrekte bedrag\n\
+      terugvordert van het college, in jaarlijkse stappen van achtereenvolgens 20%, 20%, 15%, 10% en 10%."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel49
+  - number: '49.2'
+    text: "Onze Minister vordert jaarlijks 75% van de baten van vóór 1 januari 2020 door het college verstrekte\n\
+      bijstand ter voorziening in de behoefte aan bedrijfskapitaal terug van het college."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel49
+  - number: '50.1'
+    text: "Onze Minister stelt de lasten van bijstand ter voorziening in de behoefte aan bedrijfskapitaal,\n\
+      bedoeld in [artikel 49, eerste lid][ref1], en de baten van vóór 1 januari 2020 verstrekt\nbedrijfskapitaal,
+      bedoeld in artikel 49, tweede lid, vast binnen een jaar na ontvangst door Onze\nMinister van Binnenlandse
+      Zaken en Koninkrijksrelaties van de verantwoordingsinformatie, bedoeld in\n[artikel 17a, eerste
+      lid, van de Financiële-verhoudingswet][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel49\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008290#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel50
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '49'
+        hoofdstuk: VII
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0008290
+        artikel: 17a
+  - number: '50.2'
+    text: "De lasten van de bijstand ter voorziening in de behoefte aan bedrijfskapitaal worden bij de\n\
+      vaststelling, bedoeld in het eerste lid, buiten aanmerking gelaten indien deze lasten blijkens het\n\
+      verslag van bevindingen, bedoeld in [artikel 213, vierde lid, van de Gemeentewet][ref1], dat deel\n\
+      uit maakt van de informatie, bedoeld in [artikel 17a, eerste lid, van de Financiële-\nverhoudingswet][ref2],
+      als fout of onzeker worden aangemerkt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005416#Artikel213\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008290#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel50
+    references:
+      - id: ref1
+        bwb_id: BWBR0005416
+        artikel: '213'
+      - id: ref2
+        bwb_id: BWBR0008290
+        artikel: 17a
+  - number: '50.3'
+    text: "Indien de verantwoordingsinformatie, bedoeld in het eerste lid, niet binnen achttien maanden
+      na het\nkalenderjaar waarop het betrekking heeft is ontvangen door Onze Minister van Binnenlandse
+      Zaken en\nKoninkrijksrelaties worden de lasten en baten van bijstand ter voorziening in de behoefte
+      aan\nbedrijfskapitaal ambtshalve door Onze Minister vastgesteld."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel50
+  - number: '51'
+    text: "Deze paragraaf is in afwijking van de [artikelen 48 tot en met 50][ref1] van toepassing op
+      de\nvergoeding van de kosten van bijstandsverlening aan ondernemers in de binnenvaart waarvan de\n\
+      bijstand, op grond van [artikel 36][ref2] zoals dat luidde op 31 december 2019, wordt verstrekt
+      door\nhet college van de gemeenten Groningen, Zwolle, Nijmegen, Nieuwegein, Amsterdam, Rotterdam,\n\
+      Terneuzen, Geertruidenberg of Maasgouw.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel48\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel36"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel51
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '48'
+        hoofdstuk: VII
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '36'
+        hoofdstuk: IV
+  - number: '52.1'
+    text: 'Onze Minister vergoedt ten laste van ‘s Rijks kas aan het college:'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel52
+  - number: 52.1.a
+    text: "100% van de kosten van algemene bijstand en bijstand ter voorziening in de behoefte aan\nbedrijfskapitaal;"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel52
+  - number: 52.1.b
+    text: "de kosten van aan derden opgedragen onderzoek inzake verlening van algemene bijstand en bijstand
+      ter\nvoorziening in de behoefte aan bedrijfskapitaal, voor zover deze kosten een bij ministeriële\n\
+      regeling te bepalen maximumbedrag per onderzoek niet overschrijden."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel52
+  - number: '52.2'
+    text: "Onder onderzoek als bedoeld in het eerste lid, onderdeel b, wordt verstaan, een bedrijfseconomisch\n\
+      of bedrijfstechnisch onderzoek, waaronder begrepen taxatie van vermogensbestanddelen, afgerond met\n\
+      een schriftelijke rapportage, voor zover dit onderzoek noodzakelijk is voor de uitvoering van dit\n\
+      besluit."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel52
+  - number: '53.1'
+    text: "Onze Minister stelt de vergoeding, bedoeld in [artikel 52][ref1], vast binnen een jaar na ontvangst\n\
+      door Onze Minister van Binnenlandse Zaken en Koninkrijksrelaties van de verantwoordingsinformatie,\n\
+      bedoeld in [artikel 17a, eerste lid, van de Financiële-verhoudingswet][ref2].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel52\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008290#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel53
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '52'
+        hoofdstuk: VII
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0008290
+        artikel: 17a
+  - number: '53.2'
+    text: "De kosten van algemene bijstand, de kosten van de bijstand ter voorziening in de behoefte aan\n\
+      bedrijfskapitaal, de uitvoeringskosten en de kosten voor onderzoek worden bij de vaststelling,\n\
+      bedoeld in het eerste lid, buiten aanmerking gelaten indien deze kosten blijkens het verslag van\n\
+      bevindingen, bedoeld in [artikel 213, vierde lid, van de Gemeentewet][ref1], dat deel uit maakt
+      van\nde informatie, bedoeld in [artikel 17a, eerste lid, van de Financiële-verhoudingswet][ref2],
+      als\nfout of onzeker worden aangemerkt.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0005416#Artikel213\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0008290#Artikel17a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel53
+    references:
+      - id: ref1
+        bwb_id: BWBR0005416
+        artikel: '213'
+      - id: ref2
+        bwb_id: BWBR0008290
+        artikel: 17a
+  - number: '53.3'
+    text: "Indien de verantwoordingsinformatie, bedoeld in het eerste lid, niet binnen achttien maanden
+      na het\nkalenderjaar waarop het betrekking heeft is ontvangen door Onze Minister van Binnenlandse
+      Zaken en\nKoninkrijksrelaties wordt de vergoeding ambtshalve door Onze Minister vastgesteld."
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel53
+  - number: '54'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel54
+  - number: '55'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel55
+  - number: '56'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel56
+  - number: '57'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel57
+  - number: '58'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel58
+  - number: '59'
+    text: Vervallen
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel59
+  - number: '60.1'
+    text: "De bedragen, genoemd in de [artikelen 3][ref1], [20][ref2], [22][ref3], [24][ref4], [25][ref5]
+      en\n[26][ref6], worden met ingang van 1 januari van elk kalenderjaar gewijzigd met het percentage\n\
+      waarmee het prijsindexcijfer van de gezinsconsumptie over de maand oktober daaraan voorafgaand\n\
+      afwijkt van het prijsindexcijfer waarop de laatste vaststelling van de bedragen is gebaseerd. De\n\
+      gewijzigde bedragen worden door of namens Onze Minister medegedeeld in de Staatscourant.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0015711#Artikel3\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel20\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel22\n[ref4]: https://wetten.overheid.nl/BWBR0015711#Artikel24\n\
+      [ref5]: https://wetten.overheid.nl/BWBR0015711#Artikel25\n[ref6]: https://wetten.overheid.nl/BWBR0015711#Artikel26"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '3'
+        hoofdstuk: II
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '20'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '22'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref4
+        bwb_id: BWBR0015711
+        artikel: '24'
+        hoofdstuk: III
+        paragraaf: '2'
+      - id: ref5
+        bwb_id: BWBR0015711
+        artikel: '25'
+        hoofdstuk: III
+        paragraaf: '3'
+      - id: ref6
+        bwb_id: BWBR0015711
+        artikel: '26'
+        hoofdstuk: III
+        paragraaf: '3'
+  - number: '60.2'
+    text: "Onze Minister herziet het rentepercentage, genoemd in [artikel 15][ref1], voor zover de rente
+      die\nbanken in rekening brengen bij het verstrekken van leningen aan bedrijven, daartoe aanleiding
+      geeft.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel15"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '15'
+        hoofdstuk: II
+        paragraaf: '5'
+  - number: '60.3'
+    text: "Onze Minister stelt het in [artikel 6, tweede lid][ref1], genoemde percentage zodanig vast
+      dat dit\ngelijk is aan het gemiddeld bedrag dat voor personen die de pensioengerechtigde leeftijd,
+      bedoeld in\n[artikel 7a, eerste lid, van de Algemene Ouderdomswet][ref2], nog niet hebben bereikt
+      over de\nalgemene bijstand verschuldigd is aan loonbelasting en premies volksverzekeringen, uitgedrukt
+      als\neen percentage van de algemene bijstand verhoogd met deze loonbelasting en premies.\n\n\n[ref1]:
+      https://wetten.overheid.nl/BWBR0015711#Artikel6\n[ref2]: https://wetten.overheid.nl/BWBR0002221#Artikel7a"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '6'
+        hoofdstuk: II
+        paragraaf: '2'
+      - id: ref2
+        bwb_id: BWBR0002221
+        artikel: 7a
+  - number: 60a.1
+    text: "[Artikel 2, eerste lid, onderdeel c][ref1], zoals dat luidde op 31 december 2019, blijft van\n\
+      toepassing op de zelfstandige die zijn aanvraag uiterlijk 31 december 2019 heeft ingediend.\n\n\n\
+      [ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60a
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: 60a.2
+    text: "De [artikelen 20, tweede lid][ref1], en [21, eerste tot en met vierde lid][ref2], zoals die
+      luidden\nop 31 december 2019, blijven van toepassing op de zelfstandige, bedoeld in [artikel 2,
+      eerste lid,\nonderdeel a][ref3], die zijn aanvraag om algemene bijstand en bijstand ter voorziening
+      in de\nbehoefte aan bedrijfskapitaal, uiterlijk 31 december 2019 heeft ingediend.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711#Artikel20\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel21\n[ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel2"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60a
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        artikel: '20'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '21'
+        hoofdstuk: III
+        paragraaf: '1'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '2'
+        hoofdstuk: II
+        paragraaf: '1'
+  - number: 60a.3
+    text: "[Hoofdstuk VII][ref1] zoals dat luidde op 31 december 2019, blijft van toepassing op de vaststelling\n\
+      van de ten laste van de gemeente gebleven kosten, de vergoeding en de aanvullende uitkering, bedoeld\n\
+      in de [artikelen 54][ref2] en [58][ref3], voor kosten die betrekking hebben op de kalenderjaren\n\
+      gelegen voor het jaar 2020.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711\n[ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel54\n\
+      [ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel58"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60a
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        hoofdstuk: VII
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '54'
+        hoofdstuk: VIIa
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '58'
+        hoofdstuk: VIIa
+  - number: 60aa
+    text: "Indien in de periode van 1 oktober 2021 tot en met 31 december 2021 op grond van [hoofdstuk\n\
+      VIIa][ref1], zoals dat luidde tot en met 31 december (Stb. 2021, 438), algemene bijstand is\ntoegekend
+      en met ingang van het tijdstip waarop dit hoofdstuk vervalt, op of na dat tijdstip\nalgemene bijstand
+      op grond van dit besluit is benodigd, wordt hiertoe een nieuwe aanvraag om\nalgemene bijstand ingediend.\n\
+      \n\n[ref1]: https://wetten.overheid.nl/BWBR0015711"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60aa
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        hoofdstuk: VIIa
+  - number: 60ab
+    text: "Indien in de periode van 1 januari 2022 tot en met 31 maart 2022 op grond van [hoofdstuk\n\
+      VIIa][ref1], zoals ingevoegd bij Besluit van 18 februari 2022 tot wijziging van het Besluit\nbijstandverlening
+      zelfstandigen 2004 in verband met het verlengen van de tijdelijke regels voor\nbijstandverlening
+      aan zelfstandigen als gevolg van de verhoogde instroom door de crisis in verband\nmet COVID-19 tot
+      en met maart 2022 (Stb. 2022, 82), algemene bijstand is toegekend en op of na\n1 april 2022 algemene
+      bijstand op grond van dit besluit is benodigd:\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60ab
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        hoofdstuk: VIIa
+  - number: 60ab.a
+    text: wordt hiertoe een nieuwe aanvraag om algemene bijstand ingediend; en
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60ab
+  - number: 60ab.b
+    text: "wordt, indien nadien in hetzelfde boekjaar algemene bijstand op grond van dit besluit wordt\n\
+      verleend, de algemene bijstand die op grond van dit [hoofdstuk VIIa][ref1] is verleend en die\n\
+      betrekking heeft op de kalendermaanden januari, februari of maart 2022 bij de toepassing van de\n\
+      [artikelen 11][ref2] en [12][ref3] tot het inkomen gerekend.\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015711\n\
+      [ref2]: https://wetten.overheid.nl/BWBR0015711#Artikel11\n[ref3]: https://wetten.overheid.nl/BWBR0015711#Artikel12"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60ab
+    references:
+      - id: ref1
+        bwb_id: BWBR0015711
+        hoofdstuk: VIIa
+      - id: ref2
+        bwb_id: BWBR0015711
+        artikel: '11'
+        hoofdstuk: II
+        paragraaf: '4'
+      - id: ref3
+        bwb_id: BWBR0015711
+        artikel: '12'
+        hoofdstuk: II
+        paragraaf: '4'
+  - number: 60b
+    text: "Dit besluit berust op [artikel 78f van de Participatiewet][ref1].\n\n\n[ref1]: https://wetten.overheid.nl/BWBR0015703#Artikel78f"
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel60b
+    references:
+      - id: ref1
+        bwb_id: BWBR0015703
+        artikel: 78f
+  - number: '61'
+    text: Dit besluit treedt in werking met ingang van 1 januari 2004.
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel61
+  - number: '62'
+    text: 'Dit besluit wordt aangehaald als: Besluit bijstandverlening zelfstandigen 2004.'
+    url: https://wetten.overheid.nl/BWBR0015711/2025-01-01#Artikel62
