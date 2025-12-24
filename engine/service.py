@@ -28,7 +28,8 @@ class LawExecutionService:
         self.data_registry = DataSourceRegistry()
 
         logger.info(
-            f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_output_count()} outputs"
+            f"Loaded {self.rule_resolver.get_law_count()} laws "
+            f"({self.rule_resolver.get_version_count()} versions)"
         )
 
     def evaluate_uri(
@@ -59,8 +60,11 @@ class LawExecutionService:
         if calculation_date is None:
             calculation_date = datetime.now().date().isoformat()
 
-        # Resolve URI to law, article, field
-        law, article, field = self.rule_resolver.resolve_uri(uri)
+        # Parse calculation_date for version selection
+        reference_date = datetime.strptime(calculation_date, "%Y-%m-%d")
+
+        # Resolve URI to law, article, field (using reference_date for version selection)
+        law, article, field = self.rule_resolver.resolve_uri(uri, reference_date)
 
         if not law or not article:
             raise ValueError(f"Could not resolve URI: {uri}")
@@ -128,17 +132,18 @@ class LawExecutionService:
         """Get list of all (law_id, output_name) pairs"""
         return self.rule_resolver.list_all_outputs()
 
-    def get_law_info(self, law_id: str) -> dict:
+    def get_law_info(self, law_id: str, reference_date: datetime | None = None) -> dict:
         """
         Get information about a law
 
         Args:
             law_id: Law identifier
+            reference_date: Date for version selection (uses most recent if None)
 
         Returns:
             Dictionary with law metadata
         """
-        law = self.rule_resolver.get_law_by_id(law_id)
+        law = self.rule_resolver.get_law_by_id(law_id, reference_date)
         if not law:
             return {}
 
@@ -146,6 +151,7 @@ class LawExecutionService:
             "id": law.id,
             "regulatory_layer": law.regulatory_layer,
             "publication_date": law.publication_date,
+            "valid_from": law.valid_from,
             "bwb_id": law.get_bwb_id(),
             "url": law.get_url(),
             "outputs": list(law.get_all_outputs().keys()),

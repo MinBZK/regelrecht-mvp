@@ -3,8 +3,12 @@ Rule Resolver - Law discovery and loading
 
 Handles loading article-based laws from the regulation directory
 and indexing them by $id and output names.
+
+Supports multiple versions of the same law (same $id, different valid_from dates).
+When resolving, selects the version where valid_from <= reference_date.
 """
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import yaml
@@ -15,7 +19,7 @@ from engine.logging_config import logger
 
 
 class RuleResolver:
-    """Resolves and loads article-based laws"""
+    """Resolves and loads article-based laws with date-based version selection"""
 
     def __init__(self, regulation_dir: str):
         """
@@ -25,8 +29,8 @@ class RuleResolver:
             regulation_dir: Path to regulation directory (e.g., "regulation/nl")
         """
         self.regulation_dir = Path(regulation_dir)
-        self._law_registry: dict[str, ArticleBasedLaw] = {}
-        self._output_index: dict[tuple[str, str], Article] = {}
+        # Store ALL versions of each law, keyed by $id
+        self._law_versions: dict[str, list[ArticleBasedLaw]] = {}
         self._legal_basis_index: dict[
             tuple[str, str], list[ArticleBasedLaw]
         ] = {}  # (law_id, article) -> [regelingen]
@@ -67,20 +71,10 @@ class RuleResolver:
         # Parse as ArticleBasedLaw
         law = ArticleBasedLaw(yaml_data)
 
-        # Register by $id
-        if law.id in self._law_registry:
-            logger.warning(f"Duplicate law ID '{law.id}', overwriting previous")
-
-        self._law_registry[law.id] = law
-
-        # Index outputs
-        for output_name, article in law.get_all_outputs().items():
-            key = (law.id, output_name)
-            if key in self._output_index:
-                logger.warning(
-                    f"Duplicate output '{law.id}/{output_name}', overwriting"
-                )
-            self._output_index[key] = article
+        # Add to versions list (multiple versions of same law allowed)
+        if law.id not in self._law_versions:
+            self._law_versions[law.id] = []
+        self._law_versions[law.id].append(law)
 
         # Index by legal_basis if present (all regulatory layers)
         if "legal_basis" in yaml_data:
@@ -117,39 +111,105 @@ class RuleResolver:
 
         return self._yaml_cache[file_key]
 
-    def get_law_by_id(self, law_id: str) -> Optional[ArticleBasedLaw]:
+    def _select_version_for_date(
+        self, versions: list[ArticleBasedLaw], reference_date: datetime | None
+    ) -> ArticleBasedLaw | None:
         """
-        Get law by $id slug
+        Select the appropriate law version for a given reference date.
+
+        Selects the version where valid_from <= reference_date,
+        preferring the most recent valid_from date.
+
+        Args:
+            versions: List of law versions (same $id, different valid_from)
+            reference_date: The date for which to select the version
+
+        Returns:
+            The appropriate ArticleBasedLaw version, or None if no valid version
+        """
+        if not versions:
+            return None
+
+        # If no reference date, return the most recent version
+        if reference_date is None:
+            # Sort by valid_from descending, return first
+            sorted_versions = sorted(
+                versions,
+                key=lambda v: v.valid_from or "0000-00-00",
+                reverse=True,
+            )
+            return sorted_versions[0]
+
+        # Convert reference_date to string for comparison (YYYY-MM-DD format)
+        ref_date_str = reference_date.strftime("%Y-%m-%d")
+
+        # Filter versions where valid_from <= reference_date
+        valid_versions = [
+            v for v in versions if v.valid_from is None or v.valid_from <= ref_date_str
+        ]
+
+        if not valid_versions:
+            # No version valid for this date - return None or fall back to earliest?
+            logger.warning(
+                f"No version valid for date {ref_date_str}, "
+                f"available: {[v.valid_from for v in versions]}"
+            )
+            return None
+
+        # Sort by valid_from descending to get the most recent valid version
+        sorted_versions = sorted(
+            valid_versions,
+            key=lambda v: v.valid_from or "0000-00-00",
+            reverse=True,
+        )
+        return sorted_versions[0]
+
+    def get_law_by_id(
+        self, law_id: str, reference_date: datetime | None = None
+    ) -> Optional[ArticleBasedLaw]:
+        """
+        Get law by $id slug, selecting the appropriate version for the reference date.
 
         Args:
             law_id: Law identifier (e.g., "zorgtoeslagwet")
+            reference_date: Date for version selection (uses most recent if None)
 
         Returns:
             ArticleBasedLaw or None if not found
         """
-        return self._law_registry.get(law_id)
+        versions = self._law_versions.get(law_id)
+        if not versions:
+            return None
+        return self._select_version_for_date(versions, reference_date)
 
-    def get_article_by_output(self, law_id: str, output_name: str) -> Optional[Article]:
+    def get_article_by_output(
+        self, law_id: str, output_name: str, reference_date: datetime | None = None
+    ) -> Optional[Article]:
         """
         Get article by law ID and output name
 
         Args:
             law_id: Law identifier
             output_name: Output name
+            reference_date: Date for version selection
 
         Returns:
             Article or None if not found
         """
-        return self._output_index.get((law_id, output_name))
+        law = self.get_law_by_id(law_id, reference_date)
+        if not law:
+            return None
+        return law.find_article_by_output(output_name)
 
     def resolve_uri(
-        self, uri: str
+        self, uri: str, reference_date: datetime | None = None
     ) -> tuple[Optional[ArticleBasedLaw], Optional[Article], Optional[str]]:
         """
         Resolve regelrecht:// URI to law, article, and field
 
         Args:
             uri: regelrecht:// URI string
+            reference_date: Date for version selection
 
         Returns:
             Tuple of (law, article, field) or (None, None, None) if not found
@@ -160,7 +220,7 @@ class RuleResolver:
             logger.error(f"Invalid URI: {e}")
             return (None, None, None)
 
-        law = self.get_law_by_id(parsed.law_id)
+        law = self.get_law_by_id(parsed.law_id, reference_date)
         if not law:
             logger.error(f"Law not found: {parsed.law_id}")
             return (None, None, None)
@@ -173,16 +233,36 @@ class RuleResolver:
         return (law, article, parsed.field)
 
     def list_all_laws(self) -> list[str]:
-        """Get list of all loaded law IDs"""
-        return list(self._law_registry.keys())
+        """Get list of all loaded law IDs (unique, regardless of versions)"""
+        return list(self._law_versions.keys())
 
-    def list_all_outputs(self) -> list[tuple[str, str]]:
-        """Get list of all (law_id, output_name) pairs"""
-        return list(self._output_index.keys())
+    def list_all_outputs(
+        self, reference_date: datetime | None = None
+    ) -> list[tuple[str, str]]:
+        """
+        Get list of all (law_id, output_name) pairs for the given reference date.
+
+        Args:
+            reference_date: Date for version selection
+
+        Returns:
+            List of (law_id, output_name) tuples
+        """
+        outputs = []
+        for law_id in self._law_versions:
+            law = self.get_law_by_id(law_id, reference_date)
+            if law:
+                for output_name in law.get_all_outputs().keys():
+                    outputs.append((law_id, output_name))
+        return outputs
 
     def get_law_count(self) -> int:
-        """Get number of loaded laws"""
-        return len(self._law_registry)
+        """Get number of unique law IDs (not counting versions)"""
+        return len(self._law_versions)
+
+    def get_version_count(self) -> int:
+        """Get total number of law versions loaded"""
+        return sum(len(versions) for versions in self._law_versions.values())
 
     def find_regelingen_by_legal_basis(
         self, law_id: str, article: str
@@ -207,12 +287,16 @@ class RuleResolver:
             law for law in all_laws if law.regulatory_layer == "MINISTERIELE_REGELING"
         ]
 
-    def get_output_count(self) -> int:
-        """Get number of indexed outputs"""
-        return len(self._output_index)
+    def get_output_count(self, reference_date: datetime | None = None) -> int:
+        """Get number of outputs for the given reference date"""
+        return len(self.list_all_outputs(reference_date))
 
     def find_delegated_regulation(
-        self, law_id: str, article: str, criteria: list[dict]
+        self,
+        law_id: str,
+        article: str,
+        criteria: list[dict],
+        reference_date: datetime | None = None,
     ) -> Optional[ArticleBasedLaw]:
         """
         Find a delegated regulation that matches the given criteria.
@@ -227,12 +311,24 @@ class RuleResolver:
             article: The article number in the delegating law (e.g., "1")
             criteria: List of criteria dicts with 'name' and 'value' keys
                      e.g., [{"name": "gemeente_code", "value": "GM0384"}]
+            reference_date: Date for version selection
 
         Returns:
             Matching ArticleBasedLaw or None if no match found
         """
         basis_key = (law_id, article)
-        candidates = self._legal_basis_index.get(basis_key, [])
+        all_candidates = self._legal_basis_index.get(basis_key, [])
+
+        # Filter candidates by reference_date if provided
+        if reference_date:
+            ref_date_str = reference_date.strftime("%Y-%m-%d")
+            candidates = [
+                c
+                for c in all_candidates
+                if c.valid_from is None or c.valid_from <= ref_date_str
+            ]
+        else:
+            candidates = all_candidates
 
         logger.debug(
             f"Finding delegated regulation for {law_id}.{article} with criteria {criteria}"

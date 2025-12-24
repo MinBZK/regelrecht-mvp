@@ -542,7 +542,7 @@ class RuleContext:
         # Find the delegated regulation using select_on criteria
         rule_resolver = self.service_provider.rule_resolver
         verordening = rule_resolver.find_delegated_regulation(
-            law_id, article, resolved_criteria
+            law_id, article, resolved_criteria, self.reference_date
         )
 
         if verordening:
@@ -587,7 +587,7 @@ class RuleContext:
         )
 
         # Find the delegating article and get legal_basis_for section
-        delegating_law = rule_resolver.get_law_by_id(law_id)
+        delegating_law = rule_resolver.get_law_by_id(law_id, self.reference_date)
         if delegating_law:
             for art in delegating_law.articles:
                 if art.number == article:
