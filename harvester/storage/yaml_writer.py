@@ -54,9 +54,8 @@ def _wrap_text(text: str, width: int = TEXT_WRAP_WIDTH) -> str:
 
 def _should_wrap_text(text: str) -> bool:
     """Check if text should be wrapped for readability."""
-    return (
-        len(text) > 80 or "[" in text and "](" in text  # Markdown links
-    )
+    has_markdown_links = "[" in text and "](" in text
+    return len(text) > 80 or has_markdown_links
 
 
 def _reference_to_dict(ref: Reference) -> dict:

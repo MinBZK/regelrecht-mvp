@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 
 import requests
@@ -89,31 +88,6 @@ def download_content(bwb_id: str, date: str) -> etree._Element:
             f"Failed to download content for {bwb_id} at date {date}: {e}"
         ) from e
     return etree.fromstring(response.content)
-
-
-def convert_jci_to_url(jci_ref: str) -> str:
-    """Convert JCI reference to wetten.overheid.nl URL.
-
-    Args:
-        jci_ref: JCI reference like "jci1.3:c:BWBR0018450&artikel=1"
-
-    Returns:
-        URL like "https://wetten.overheid.nl/BWBR0018450#Artikel1"
-    """
-    # Extract BWB ID and artikel from JCI reference
-    # Format: jci1.3:c:BWBR0018450&artikel=1 or jci1.3:c:BWBR0018450&artikel=1&lid=2
-    bwb_match = re.search(r"BWBR\d+", jci_ref)
-    artikel_match = re.search(r"artikel=(\d+\w*)", jci_ref)
-
-    if bwb_match:
-        bwb_id = bwb_match.group(0)
-        if artikel_match:
-            artikel = artikel_match.group(1)
-            return f"https://wetten.overheid.nl/{bwb_id}#Artikel{artikel}"
-        return f"https://wetten.overheid.nl/{bwb_id}"
-
-    # Return original if can't parse
-    return jci_ref
 
 
 def parse_articles_split(
