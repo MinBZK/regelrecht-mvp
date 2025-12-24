@@ -63,6 +63,7 @@ class ArticleEngine:
         calculation_date: str,
         requested_output: Optional[str] = None,
         data_registry: Optional["DataSourceRegistry"] = None,
+        _depth: int = 0,
     ) -> ArticleResult:
         """
         Execute this article's logic
@@ -72,6 +73,7 @@ class ArticleEngine:
             service_provider: Service for resolving URIs
             calculation_date: Date for which calculations are performed
             requested_output: Specific output to calculate (optional, calculates all if None)
+            _depth: Internal recursion depth counter (do not set manually)
 
         Returns:
             ArticleResult with outputs and metadata
@@ -88,16 +90,23 @@ class ArticleEngine:
             output_specs=self.outputs_spec,
             current_law=self.law,
             data_registry=data_registry,
+            _depth=_depth,
         )
 
         # Create root path node for execution trace
+        if requested_output:
+            root_name = f"{self.law.id}/{requested_output}"
+        else:
+            root_name = f"{self.law.id} article {self.article.number}"
+
         root_node = PathNode(
             type="root",
-            name=f"Evaluate {self.law.id} article {self.article.number}",
+            name=root_name,
             details={
                 "law_id": self.law.id,
                 "article": self.article.number,
                 "parameters": parameters,
+                "requested_output": requested_output,
             },
         )
         context.add_to_path(root_node)
@@ -111,6 +120,8 @@ class ArticleEngine:
             filtered_outputs = {
                 k: v for k, v in context.outputs.items() if k == requested_output
             }
+            # Set result on root node
+            root_node.result = filtered_outputs.get(requested_output)
         else:
             filtered_outputs = context.outputs
 
@@ -387,7 +398,13 @@ class ArticleEngine:
             return result
         elif op_type == "DIVIDE":
             result = evaluated[0]
-            for v in evaluated[1:]:
+            for i, v in enumerate(evaluated[1:], start=1):
+                if v == 0:
+                    raise ZeroDivisionError(
+                        f"Division by zero in DIVIDE operation: "
+                        f"cannot divide {result} by {v} (value at index {i}). "
+                        f"Values: {evaluated}"
+                    )
                 result /= v
             return result
 
@@ -410,8 +427,16 @@ class ArticleEngine:
         ]
 
         if op_type == "MAX":
+            if not evaluated:
+                raise ValueError(
+                    "MAX operation requires at least one value, got empty list"
+                )
             return max(evaluated)
         elif op_type == "MIN":
+            if not evaluated:
+                raise ValueError(
+                    "MIN operation requires at least one value, got empty list"
+                )
             return min(evaluated)
 
         return None
@@ -612,6 +637,7 @@ class ArticleEngine:
                         service_provider=context.service_provider,
                         calculation_date=context.calculation_date,
                         requested_output=match_output,  # Only calculate the match field
+                        _depth=context._depth + 1,
                     )
 
                     if match_output not in match_result.output:
@@ -639,6 +665,7 @@ class ArticleEngine:
                     service_provider=context.service_provider,
                     calculation_date=context.calculation_date,
                     requested_output=output_field,  # Only calculate the requested output
+                    _depth=context._depth + 1,
                 )
 
                 # Extract the requested output field

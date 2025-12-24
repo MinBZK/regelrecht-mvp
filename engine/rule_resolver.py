@@ -342,8 +342,12 @@ class RuleResolver:
                 crit_name: str | None = criterion.get("name")
                 crit_value = criterion.get("value")
 
-                # Skip invalid criteria without name
+                # Invalid criteria without name - log warning and reject match
                 if crit_name is None:
+                    logger.warning(
+                        f"Invalid criterion missing 'name' in criteria: {criterion}. "
+                        f"Full criteria list: {criteria}"
+                    )
                     all_match = False
                     break
 

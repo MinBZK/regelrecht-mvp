@@ -13,6 +13,15 @@ from engine.engine import ArticleEngine, ArticleResult
 from engine.logging_config import logger
 from engine.data_sources import DataSource, DataSourceRegistry, DictDataSource
 
+# Maximum recursion depth for law references to prevent stack overflow
+MAX_RECURSION_DEPTH = 50
+
+
+class RecursionDepthError(Exception):
+    """Raised when law reference recursion exceeds maximum depth"""
+
+    pass
+
 
 class LawExecutionService:
     """Service for executing article-based laws"""
@@ -39,6 +48,7 @@ class LawExecutionService:
         parameters: dict,
         calculation_date: Optional[str] = None,
         requested_output: Optional[str] = None,
+        _depth: int = 0,
     ) -> ArticleResult:
         """
         Evaluate a regelrecht:// URI
@@ -48,14 +58,23 @@ class LawExecutionService:
             parameters: Input parameters (e.g., {"BSN": "123456789"})
             calculation_date: Date for which calculations are performed (defaults to today)
             requested_output: Specific output field to calculate (optional)
+            _depth: Internal recursion depth counter (do not set manually)
 
         Returns:
             ArticleResult with outputs
 
         Raises:
             ValueError: If URI cannot be resolved
+            RecursionDepthError: If recursion depth exceeds MAX_RECURSION_DEPTH
         """
-        logger.info(f"Evaluating URI: {uri}")
+        # Check recursion depth to prevent stack overflow from circular references
+        if _depth > MAX_RECURSION_DEPTH:
+            raise RecursionDepthError(
+                f"Maximum recursion depth ({MAX_RECURSION_DEPTH}) exceeded while evaluating {uri}. "
+                f"This likely indicates circular law references."
+            )
+
+        logger.info(f"Evaluating URI: {uri} (depth={_depth})")
 
         # Default calculation date to today
         if calculation_date is None:
@@ -97,6 +116,7 @@ class LawExecutionService:
             calculation_date,
             output_to_calculate,
             data_registry=self.data_registry,
+            _depth=_depth,
         )
 
         return result
@@ -122,7 +142,7 @@ class LawExecutionService:
         """
         from engine.uri_resolver import RegelrechtURIBuilder
 
-        uri = RegelrechtURIBuilder.build(law_id, output_name)
+        uri = RegelrechtURIBuilder.build(law_id, output_name, output_name)
         return self.evaluate_uri(uri, parameters, calculation_date)
 
     def list_available_laws(self) -> list[str]:

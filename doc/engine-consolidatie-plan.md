@@ -419,3 +419,35 @@ PR 7 (Tracing) ──→ Kan parallel aan alles, maar best als laatste (raakt ve
 | GlobalIndent state machine | logging_config.py:5-30 | ❌ Missing |
 | Tree visualization (ASCII) | logging_config.py:72-81 | ❌ Missing |
 | 13+ resolve type categories | engine.py:214-276 | Partial (4 types) |
+
+---
+
+## Bekende Technical Debt
+
+De volgende issues zijn geïdentificeerd in code review.
+
+### ⚠️ BLOCKING - Fix Before Merge
+
+| Issue | Locatie | Beschrijving | Impact |
+|-------|---------|--------------|--------|
+| **Date calculations approximate** | `engine/engine.py:538-541` | Gebruikt `days // 30` voor maanden en `days // 365` voor jaren. Dit is **niet acceptabel** voor financiële berekeningen en kan leiden tot onjuiste toeslagbedragen. | **KRITIEK**: Kan leiden tot verkeerde berekeningen van toeslagen, termijnen, etc. |
+
+**Actie vereist**: Implementeer precieze datumberekeningen met `dateutil.relativedelta` voor SUBTRACT_DATE operatie voordat de branch wordt gemerged.
+
+### Low Priority (Backlog)
+
+| Issue | Locatie | Beschrijving | Impact |
+|-------|---------|--------------|--------|
+| **No cache size limit** | `engine/service.py`, `engine/context.py` | URI cache (`_uri_cache`) en engine cache (`engine_cache`) groeien onbeperkt. Kan memory issues veroorzaken bij langdurig gebruik. | Pas relevant bij productie load of lange sessies |
+
+### Aanbevelingen
+
+1. **Date calculations (BLOCKING)**: Gebruik `dateutil.relativedelta` voor precieze maand/jaar berekeningen:
+   ```python
+   from dateutil.relativedelta import relativedelta
+   delta = relativedelta(date1, date2)
+   months = delta.years * 12 + delta.months
+   years = delta.years
+   ```
+
+2. **Cache limits (backlog)**: Implementeer LRU (Least Recently Used) cache met maximale grootte als memory issues optreden. Bijvoorbeeld met `functools.lru_cache` of een custom implementatie.

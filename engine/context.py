@@ -99,13 +99,16 @@ class PathNode:
         """Add a child node to the trace"""
         self.children.append(child)
 
-    def render(self, indent: int = 0, prefix: str = "") -> str:
+    def render(
+        self, indent: int = 0, prefix: str = "", is_top_level: bool = True
+    ) -> str:
         """
         Render the execution trace as a tree string
 
         Args:
             indent: Current indentation level
             prefix: Prefix for the current line (tree branches)
+            is_top_level: Whether this is the outermost call (adds visual separators)
 
         Returns:
             Formatted tree string
@@ -116,35 +119,43 @@ class PathNode:
         result_str = ""
         if self.result is not None:
             if isinstance(self.result, bool):
-                result_str = f" -> {'TRUE' if self.result else 'FALSE'}"
+                result_str = f" => {'TRUE' if self.result else 'FALSE'}"
             elif isinstance(self.result, (int, float)):
-                result_str = f" -> {self.result}"
+                result_str = f" => {self.result}"
             elif isinstance(self.result, str) and len(self.result) < 50:
-                result_str = f" -> {self.result!r}"
+                result_str = f" => {self.result!r}"
 
         # Format the node type (ASCII-only for Windows compatibility)
         type_icon = {
-            "root": "[ROOT]",
+            "root": ">>>",
             "action": "[ACT]",
             "operation": "[OP]",
             "resolve": "[RES]",
-            "uri_call": "[URI]",
+            "uri_call": "[CALL]",
             "requirement": "[REQ]",
         }.get(self.type, "[*]")
 
         # Add resolve type if present
         resolve_info = f" [{self.resolve_type}]" if self.resolve_type else ""
 
-        # Build the line
-        line = f"{prefix}{type_icon} {self.name}{resolve_info}{result_str}"
-        lines.append(line)
+        # Build the line - root nodes get special formatting
+        if self.type == "root" and is_top_level:
+            # Top-level root gets a header line
+            header_line = "=" * 60
+            lines.append(header_line)
+            line = f"{prefix}{type_icon} {self.name}{resolve_info}{result_str}"
+            lines.append(line)
+            lines.append("-" * 60)
+        else:
+            line = f"{prefix}{type_icon} {self.name}{resolve_info}{result_str}"
+            lines.append(line)
 
         # Render children with tree branches (ASCII-only for Windows compatibility)
         for i, child in enumerate(self.children):
             is_last = i == len(self.children) - 1
             child_prefix = prefix + ("    " if is_last else "|   ")
             branch = "`-- " if is_last else "+-- "
-            child_lines = child.render(indent + 1, child_prefix)
+            child_lines = child.render(indent + 1, child_prefix, is_top_level=False)
 
             # Add the branch to the first line of child output
             child_output = child_lines.split("\n")
@@ -155,6 +166,10 @@ class PathNode:
                 lines.append(prefix + branch + first_line[len(child_prefix) :])
                 # Add remaining lines as-is
                 lines.extend(child_output[1:])
+
+        # Add footer for top-level root
+        if self.type == "root" and is_top_level:
+            lines.append("=" * 60)
 
         return "\n".join(lines)
 
@@ -172,6 +187,7 @@ class RuleContext:
         output_specs: list[dict] | None = None,
         current_law: Any = None,
         data_registry: "DataSourceRegistry | None" = None,
+        _depth: int = 0,
     ):
         """
         Initialize execution context
@@ -185,6 +201,7 @@ class RuleContext:
             output_specs: Output specifications from execution section
             current_law: The law being executed (for resolving # references)
             data_registry: Registry for external data sources (optional)
+            _depth: Internal recursion depth counter (do not set manually)
         """
         self.definitions = self._process_definitions(definitions)
         self.parameters = parameters
@@ -193,6 +210,7 @@ class RuleContext:
         self.input_specs = input_specs or []
         self.output_specs = output_specs or []
         self.current_law = current_law
+        self._depth = _depth
 
         # Parse calculation date as datetime object for use as $referencedate context variable
         try:
@@ -491,6 +509,7 @@ class RuleContext:
                 calculation_date=self.calculation_date,
                 requested_output=output_name,
                 data_registry=self.data_registry,
+                _depth=self._depth + 1,
             )
 
             # Attach sub-trace if available
@@ -530,7 +549,7 @@ class RuleContext:
         self.add_to_path(uri_call_node)
 
         result = self.service_provider.evaluate_uri(
-            uri, resolved_params, self.calculation_date
+            uri, resolved_params, self.calculation_date, _depth=self._depth + 1
         )
 
         # Attach sub-law trace as child if available
@@ -671,6 +690,7 @@ class RuleContext:
                     service_provider=self.service_provider,
                     calculation_date=self.calculation_date,
                     data_registry=self.data_registry,
+                    _depth=self._depth + 1,
                 )
 
                 # Attach sub-trace if available
@@ -811,6 +831,7 @@ class RuleContext:
             service_provider=self.service_provider,
             calculation_date=self.calculation_date,
             data_registry=self.data_registry,
+            _depth=self._depth + 1,
         )
 
         return result.output
