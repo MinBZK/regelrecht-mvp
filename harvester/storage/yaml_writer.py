@@ -123,7 +123,6 @@ def generate_yaml_dict(law: Law, effective_date: str) -> dict:
             ]
         return result
 
-    # RFC-001 Decision 7: uuid field removed (no clear purpose identified)
     return {
         "$schema": SCHEMA_URL,
         "$id": law_id,

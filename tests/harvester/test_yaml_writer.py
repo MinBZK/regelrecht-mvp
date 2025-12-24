@@ -25,7 +25,6 @@ class TestGenerateYamlDict:
 
         assert result["$schema"] == SCHEMA_URL
         assert result["$id"] == "wet_op_de_zorgtoeslag"
-        # RFC-001 Decision 7: uuid field removed
         assert "uuid" not in result
         assert result["regulatory_layer"] == "WET"
         assert result["publication_date"] == "2005-07-26"
@@ -149,7 +148,6 @@ class TestSaveYaml:
 
         assert loaded["$schema"] == SCHEMA_URL
         assert loaded["$id"] == "wet_op_de_zorgtoeslag"
-        # RFC-001 Decision 7: uuid field removed
         assert "uuid" not in loaded
         assert loaded["regulatory_layer"] == "WET"
         assert loaded["valid_from"] == "2025-01-01"
