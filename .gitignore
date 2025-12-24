@@ -49,3 +49,7 @@ htmlcov/
 
 # Git worktrees
 .worktrees/
+
+# Junctions/symlinks for behave to find features and steps
+features/regulation
+regulation/nl/steps

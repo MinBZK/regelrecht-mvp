@@ -8,8 +8,47 @@ import os
 # Add the steps directory to the path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from behave import given, when, then  # type: ignore[import-untyped]
-from mock_data_service import MockDataService  # type: ignore[import-not-found]
+# Get project root for absolute paths (works from any working directory)
+_steps_dir = os.path.dirname(os.path.abspath(__file__))
+_features_dir = os.path.dirname(_steps_dir)
+# Handle both features/steps/ and regulation/nl/steps/ (symlink)
+if os.path.basename(_features_dir) == "nl":
+    # Running from regulation/nl/steps -> go up to project root
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(_features_dir))
+else:
+    # Running from features/steps -> go up 2 levels to project root
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(_steps_dir))
+
+# Add project root to Python path for engine imports
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+REGULATION_DIR = os.path.join(PROJECT_ROOT, "regulation", "nl")
+
+from behave import given, when, then  # noqa: E402  # type: ignore[import-untyped]
+from mock_data_service import MockDataService  # noqa: E402  # type: ignore[import-not-found]
+
+
+def print_execution_trace(result, title: str = "Execution Trace") -> None:
+    """
+    Print the execution trace from an ArticleResult if available.
+
+    Args:
+        result: ArticleResult with optional path (PathNode)
+        title: Title to display above the trace
+    """
+    if result is None:
+        return
+
+    if not hasattr(result, "path") or result.path is None:
+        return
+
+    print(f"\n{'=' * 60}")
+    print(f"** {title} **")
+    print(f"   Law: {result.law_id} | Article: {result.article_number}")
+    print(f"{'=' * 60}")
+    print(result.path.render())
+    print(f"{'=' * 60}\n")
 
 
 # === Bijstand step definitions ===
@@ -63,7 +102,7 @@ def step_when_bijstandsaanvraag_executed(context, article):
     from engine.service import LawExecutionService
 
     # Create service
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
 
     # Get calculation date
     calculation_date = getattr(context, "calculation_date", "2024-01-01")
@@ -84,15 +123,18 @@ def step_when_bijstandsaanvraag_executed(context, article):
     )
 
     try:
-        # Call Article 43 via one of its outputs
-        result = service.evaluate_law_output(
-            law_id="participatiewet",
-            output_name="heeft_recht_op_bijstand",
+        # Call Article 43 - use URI without field to get all outputs
+        uri = "regelrecht://participatiewet/heeft_recht_op_bijstand"
+        result = service.evaluate_uri(
+            uri=uri,
             parameters=parameters,
             calculation_date=calculation_date,
         )
         context.result = result
         context.error = None
+
+        # Print execution trace
+        print_execution_trace(result, "Bijstand Execution Trace")
     except Exception as e:
         context.error = e
         context.result = None
@@ -260,26 +302,95 @@ def step_given_service_datasource_data(context, service, datasource):
 
 @when("the healthcare allowance law is executed")  # type: ignore[misc]
 def step_when_healthcare_allowance_executed(context):
-    """Execute the healthcare allowance law with mock data"""
+    """Execute the healthcare allowance law with mock data via data sources"""
+    from datetime import datetime
     from engine.service import LawExecutionService
+    from engine.data_sources import DictDataSource
 
-    # Create a wrapper service that uses mocks for external calls
-    class MockLawExecutionService(LawExecutionService):
-        def __init__(self, regulation_dir, mock_service):
-            super().__init__(regulation_dir)
-            self.mock_service = mock_service
+    # Create service
+    service = LawExecutionService(REGULATION_DIR)
 
-        def evaluate_uri(
-            self, uri, parameters, calculation_date=None, requested_output=None
-        ):
-            # All laws should now be real - no mocking needed!
-            # Just use the real engine for everything
-            return super().evaluate_uri(
-                uri, parameters, calculation_date, requested_output
+    # Convert mock data to data sources
+    if hasattr(context, "mock_service"):
+        mock = context.mock_service
+
+        # Helper to convert string values to appropriate types
+        def convert_value(v):
+            if v == "null" or v is None:
+                return None
+            if v == "true":
+                return True
+            if v == "false":
+                return False
+            # Try to convert to int or float
+            try:
+                if "." in str(v):
+                    return float(v)
+                return int(v)
+            except (ValueError, TypeError):
+                return v
+
+        # Create a single data source per service/datasource combination
+        for service_name, datasources in mock.services.items():
+            for datasource_name, bsn_data in datasources.items():
+                source_name = f"{service_name.lower()}_{datasource_name}"
+                source = DictDataSource(name=source_name, priority=100)
+
+                for bsn, record in bsn_data.items():
+                    # Convert string values to proper types
+                    converted_record = {k: convert_value(v) for k, v in record.items()}
+                    source.store(bsn, converted_record)
+
+                service.add_data_source(source)
+
+        # Add derived fields that zorgtoeslag needs directly
+        # (inputs that have NO source spec in the zorgtoeslag law)
+        derived = DictDataSource(name="derived", priority=200)
+
+        for bsn in [context.bsn]:
+            derived_record = {}
+
+            # LEEFTIJD - from personal_data (zorgtoeslag needs this directly)
+            personal = mock.services.get("RVIG", {}).get("personal_data", {}).get(bsn)
+            if personal and "geboortedatum" in personal:
+                birth_date = datetime.strptime(
+                    personal["geboortedatum"], "%Y-%m-%d"
+                ).date()
+                today = datetime.now().date()
+                age = (
+                    today.year
+                    - birth_date.year
+                    - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                )
+                derived_record["leeftijd"] = age
+
+            # HEEFT_VERZEKERING - from insurance data
+            insurance = mock.services.get("RVZ", {}).get("insurance", {}).get(bsn)
+            derived_record["heeft_verzekering"] = (
+                insurance.get("polis_status") == "ACTIEF" if insurance else False
             )
 
-    # Create service with mocks
-    service = MockLawExecutionService("regulation/nl", context.mock_service)
+            # HEEFT_VERDRAGSVERZEKERING, IS_GEDETINEERD, IS_FORENSISCH - defaults
+            derived_record["heeft_verdragsverzekering"] = False
+            derived_record["is_gedetineerd"] = False
+            derived_record["is_forensisch"] = False
+
+            # HEEFT_PARTNER - from relationship data
+            relationship = (
+                mock.services.get("RVIG", {}).get("relationship_data", {}).get(bsn)
+            )
+            derived_record["heeft_partner"] = (
+                relationship.get("partnerschap_type") != "GEEN"
+                if relationship
+                else False
+            )
+
+            # PARTNER_INKOMEN - 0 for tests without partner
+            derived_record["partner_inkomen"] = 0
+
+            derived.store(bsn, derived_record)
+
+        service.add_data_source(derived)
 
     # Execute the law
     parameters = {"bsn": context.bsn}
@@ -287,11 +398,14 @@ def step_when_healthcare_allowance_executed(context):
     try:
         # Call the zorgtoeslag calculation output
         result = service.evaluate_law_output(
-            law_id="zorgtoeslagwet",
-            output_name="hoogte_zorgtoeslag",
+            law_id="wet_op_de_zorgtoeslag",
+            output_name="hoogte_toeslag",
             parameters=parameters,
         )
         context.result = result
+
+        # Print execution trace
+        print_execution_trace(result, "Healthcare Allowance Execution Trace")
     except Exception as e:
         context.error = e
         raise
@@ -303,20 +417,23 @@ def step_when_request_standard_premium(context, year):
     from engine.service import LawExecutionService
 
     # Create service
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
 
     # Set calculation_date to match the year
     calculation_date = f"{year}-01-01"
 
     try:
-        # Call the get_standaardpremie output (Article 4)
+        # Call the get_standaardpremie output (from regeling_standaardpremie)
         result = service.evaluate_law_output(
-            law_id="zorgtoeslagwet",
+            law_id="regeling_standaardpremie",
             output_name="standaardpremie",
             parameters={},
             calculation_date=calculation_date,
         )
         context.result = result
+
+        # Print execution trace
+        print_execution_trace(result, "Standard Premium Execution Trace")
     except Exception as e:
         context.error = e
         # Don't raise - let the Then step verify the error
@@ -370,11 +487,11 @@ def step_then_allowance_amount(context, amount):
     result = context.result
 
     # The output should be in eurocent, convert to euro
-    if "hoogte_zorgtoeslag" in result.output:
-        actual_amount_eurocent = result.output["hoogte_zorgtoeslag"]
+    if "hoogte_toeslag" in result.output:
+        actual_amount_eurocent = result.output["hoogte_toeslag"]
         actual_amount_euro = actual_amount_eurocent / 100
     else:
-        raise AssertionError(f"No 'hoogte_zorgtoeslag' in outputs: {result.output}")
+        raise AssertionError(f"No 'hoogte_toeslag' in outputs: {result.output}")
 
     # Compare with expected amount
     expected_amount = float(amount)
@@ -427,19 +544,23 @@ def step_when_erfgrensbeplanting_requested(context, law_id, article):
     """Execute the erfgrensbeplanting query"""
     from engine.service import LawExecutionService
 
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
     calculation_date = getattr(context, "calculation_date", "2024-01-01")
     parameters = context.query_data.copy()
 
     try:
-        result = service.evaluate_law_output(
-            law_id=law_id,
-            output_name="minimale_afstand_cm",
+        # Use URI without specific field to get all outputs
+        uri = f"regelrecht://{law_id}/minimale_afstand_cm"
+        result = service.evaluate_uri(
+            uri=uri,
             parameters=parameters,
             calculation_date=calculation_date,
         )
         context.result = result
         context.error = None
+
+        # Print execution trace
+        print_execution_trace(result, "Erfgrensbeplanting Execution Trace")
     except Exception as e:
         context.error = e
         context.result = None
@@ -474,4 +595,263 @@ def step_then_minimale_afstand_m(context, amount):
     if abs(actual - expected) > 0.01:
         raise AssertionError(
             f"Expected minimale_afstand_m {expected}, but got {actual}"
+        )
+
+
+# === Nederlandse zorgtoeslag step definitions ===
+
+
+@given('de datum is "{date}"')  # type: ignore[misc]
+def step_given_datum(context, date):
+    """Set the calculation date (Dutch)"""
+    context.calculation_date = date
+
+
+@given('een persoon met BSN "{bsn}"')  # type: ignore[misc]
+def step_given_persoon_met_bsn(context, bsn):
+    """Set the BSN for the current person (Dutch)"""
+    context.bsn = bsn
+    if not hasattr(context, "mock_service"):
+        context.mock_service = MockDataService()
+
+
+@given("de volgende {service} {table_name} gegevens:")  # type: ignore[misc]
+def step_given_dutch_service_data(context, service, table_name):
+    """
+    Generic Dutch step to store service data from table
+
+    Maps Dutch table names to English equivalents:
+    - personen -> personal_data
+    - relaties -> relationship_data
+    - verzekeringen -> insurance
+    - box1, box2, box3 -> box1, box2, box3
+    - detenties -> detention
+    """
+    if not hasattr(context, "mock_service"):
+        context.mock_service = MockDataService()
+
+    # Map Dutch table names to English
+    table_mapping = {
+        "personen": "personal_data",
+        "relaties": "relationship_data",
+        "verzekeringen": "insurance",
+        "detenties": "detention",
+        "inschrijvingen": "enrollment",
+        "studiefinanciering": "student_finance",
+    }
+    datasource = table_mapping.get(table_name, table_name)
+
+    for row in context.table:
+        # Convert all values to appropriate types
+        data = {"bsn": row["bsn"]}
+
+        for key in row.headings:
+            if key != "bsn":
+                value = row[key]
+                if value == "null":
+                    data[key] = None
+                else:
+                    try:
+                        data[key] = float(value)
+                    except ValueError:
+                        data[key] = value
+
+        context.mock_service.store_data(service, datasource, data)
+        context.bsn = row["bsn"]
+
+
+@when("de zorgtoeslagwet wordt uitgevoerd door TOESLAGEN")  # type: ignore[misc]
+def step_when_zorgtoeslagwet_uitgevoerd(context):
+    """Execute the zorgtoeslag law (Dutch)"""
+    from engine.service import LawExecutionService
+    from engine.data_sources import DictDataSource
+
+    # Create service
+    service = LawExecutionService(REGULATION_DIR)
+
+    # Get calculation date
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+
+    # Convert mock data to data sources
+    if hasattr(context, "mock_service"):
+        mock = context.mock_service
+
+        def convert_value(v):
+            if v == "null" or v is None:
+                return None
+            if v == "true":
+                return True
+            if v == "false":
+                return False
+            try:
+                if "." in str(v):
+                    return float(v)
+                return int(v)
+            except (ValueError, TypeError):
+                return v
+
+        # Create a single data source per service/datasource combination
+        for service_name, datasources in mock.services.items():
+            for datasource_name, bsn_data in datasources.items():
+                source_name = f"{service_name.lower()}_{datasource_name}"
+                source = DictDataSource(name=source_name, priority=100)
+
+                for bsn, record in bsn_data.items():
+                    converted_record = {k: convert_value(v) for k, v in record.items()}
+                    source.store(bsn, converted_record)
+
+                service.add_data_source(source)
+
+        # Add derived fields needed by zorgtoeslag
+        derived = DictDataSource(name="derived", priority=200)
+
+        for bsn in [context.bsn]:
+            derived_record = {}
+
+            # Get personal data
+            personal = mock.services.get("RvIG", {}).get("personal_data", {}).get(bsn)
+
+            # geboortedatum - needed for leeftijd calculation in BRP wet
+            if personal and "geboortedatum" in personal:
+                derived_record["geboortedatum"] = personal["geboortedatum"]
+
+            # PARTNERSCHAP_TYPE - needed for heeft_partner calculation in BRP wet
+            relationship = (
+                mock.services.get("RvIG", {}).get("relationship_data", {}).get(bsn)
+            )
+            if relationship:
+                derived_record["partnerschap_type"] = relationship.get(
+                    "partnerschap_type", "GEEN"
+                )
+            else:
+                derived_record["partnerschap_type"] = "GEEN"
+
+            # POLIS_STATUS - needed for is_verzekerde calculation in Zvw
+            insurance = mock.services.get("RVZ", {}).get("insurance", {}).get(bsn)
+            if insurance:
+                derived_record["polis_status"] = insurance.get(
+                    "polis_status", "INACTIEF"
+                )
+            else:
+                derived_record["polis_status"] = "INACTIEF"
+
+            # Income fields for wet_inkomstenbelasting_2001
+            box1 = mock.services.get("BELASTINGDIENST", {}).get("box1", {}).get(bsn, {})
+            derived_record["loon_uit_dienstbetrekking"] = box1.get(
+                "loon_uit_dienstbetrekking", 0
+            )
+            derived_record["uitkeringen_en_pensioenen"] = box1.get(
+                "uitkeringen_en_pensioenen", 0
+            )
+            derived_record["winst_uit_onderneming"] = box1.get(
+                "winst_uit_onderneming", 0
+            )
+            derived_record["resultaat_overige_werkzaamheden"] = box1.get(
+                "resultaat_overige_werkzaamheden", 0
+            )
+            derived_record["eigen_woning"] = box1.get("eigen_woning", 0)
+
+            # Box 2 fields (aanmerkelijk belang)
+            box2 = mock.services.get("BELASTINGDIENST", {}).get("box2", {}).get(bsn, {})
+            derived_record["reguliere_voordelen"] = box2.get("reguliere_voordelen", 0)
+            derived_record["vervreemdingsvoordelen"] = box2.get(
+                "vervreemdingsvoordelen", 0
+            )
+
+            # Box 3 fields (vermogen)
+            box3 = mock.services.get("BELASTINGDIENST", {}).get("box3", {}).get(bsn, {})
+            derived_record["spaargeld"] = box3.get("spaargeld", 0)
+            derived_record["beleggingen"] = box3.get("beleggingen", 0)
+            derived_record["onroerend_goed"] = box3.get("onroerend_goed", 0)
+            derived_record["schulden"] = box3.get("schulden", 0)
+
+            # Partner fields (default to 0)
+            derived_record["partner_inkomen"] = 0
+            derived_record["partner_vermogen"] = 0
+
+            derived.store(bsn, derived_record)
+
+        service.add_data_source(derived)
+
+    # Execute the law
+    parameters = {"bsn": context.bsn}
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="wet_op_de_zorgtoeslag",
+            output_name="hoogte_toeslag",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+
+        # Print execution trace
+        print_execution_trace(result, "Zorgtoeslag Execution Trace")
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@then("is niet voldaan aan de voorwaarden")  # type: ignore[misc]
+def step_then_niet_voldaan(context):
+    """Verify that the applicant does not meet the requirements (Dutch)"""
+    if context.error:
+        # Check if error indicates no right
+        if "geen recht" in str(context.error).lower():
+            return
+        raise AssertionError(f"Unexpected error: {context.error}")
+
+    if context.result is None:
+        return  # No result means requirements not met
+
+    # Check if the output indicates no right
+    result = context.result
+    hoogte = result.output.get("hoogte_toeslag", 0)
+
+    # For zorgtoeslag: if the amount is 0 or there's a rejection reason, not met
+    if hoogte == 0:
+        return
+
+    # Check for is_verzekerde output
+    if "is_verzekerde_zorgtoeslag" in result.output:
+        if not result.output["is_verzekerde_zorgtoeslag"]:
+            return
+
+    raise AssertionError(
+        f"Expected requirements not met, but got hoogte_toeslag: {hoogte}"
+    )
+
+
+@then("heeft de persoon recht op zorgtoeslag")  # type: ignore[misc]
+def step_then_heeft_recht(context):
+    """Verify that the applicant has the right to healthcare allowance (Dutch)"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    hoogte = result.output.get("hoogte_toeslag", 0)
+
+    if hoogte <= 0:
+        raise AssertionError(
+            f"Expected person to have right to zorgtoeslag, but hoogte_toeslag is {hoogte}"
+        )
+
+
+@then('is het toeslagbedrag "{amount}" euro')  # type: ignore[misc]
+def step_then_toeslagbedrag(context, amount):
+    """Verify the allowance amount in euro (Dutch)"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual_eurocent = result.output.get("hoogte_toeslag", 0)
+    actual_euro = actual_eurocent / 100
+
+    expected_euro = float(amount)
+
+    # Allow small rounding difference
+    if abs(actual_euro - expected_euro) > 0.02:
+        raise AssertionError(
+            f"Expected toeslagbedrag €{expected_euro:.2f}, but got €{actual_euro:.2f}"
         )

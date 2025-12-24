@@ -482,6 +482,11 @@
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit for date operations (SUBTRACT_DATE)",
+          "enum": ["days", "months", "years"]
         }
       },
       "additionalProperties": false
@@ -741,6 +746,11 @@
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit for date operations (SUBTRACT_DATE)",
+          "enum": ["days", "months", "years"]
         }
       },
       "additionalProperties": false

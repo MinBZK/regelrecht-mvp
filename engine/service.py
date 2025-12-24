@@ -4,12 +4,23 @@ Law Execution Service
 Top-level service for executing article-based laws via URI resolution.
 """
 
-from typing import Optional
+from typing import Any, Optional
 from datetime import datetime
+import threading
 
 from engine.rule_resolver import RuleResolver
 from engine.engine import ArticleEngine, ArticleResult
 from engine.logging_config import logger
+from engine.data_sources import DataSource, DataSourceRegistry, DictDataSource
+
+# Maximum recursion depth for law references to prevent stack overflow
+MAX_RECURSION_DEPTH = 50
+
+
+class RecursionDepthError(Exception):
+    """Raised when law reference recursion exceeds maximum depth"""
+
+    pass
 
 
 class LawExecutionService:
@@ -24,9 +35,11 @@ class LawExecutionService:
         """
         self.rule_resolver = RuleResolver(regulation_dir)
         self.engine_cache: dict[tuple[str, str], ArticleEngine] = {}
+        self.data_registry = DataSourceRegistry()
 
         logger.info(
-            f"Loaded {self.rule_resolver.get_law_count()} laws with {self.rule_resolver.get_output_count()} outputs"
+            f"Loaded {self.rule_resolver.get_law_count()} laws "
+            f"({self.rule_resolver.get_version_count()} versions)"
         )
 
     def evaluate_uri(
@@ -35,6 +48,7 @@ class LawExecutionService:
         parameters: dict,
         calculation_date: Optional[str] = None,
         requested_output: Optional[str] = None,
+        _depth: int = 0,
     ) -> ArticleResult:
         """
         Evaluate a regelrecht:// URI
@@ -44,21 +58,33 @@ class LawExecutionService:
             parameters: Input parameters (e.g., {"BSN": "123456789"})
             calculation_date: Date for which calculations are performed (defaults to today)
             requested_output: Specific output field to calculate (optional)
+            _depth: Internal recursion depth counter (do not set manually)
 
         Returns:
             ArticleResult with outputs
 
         Raises:
             ValueError: If URI cannot be resolved
+            RecursionDepthError: If recursion depth exceeds MAX_RECURSION_DEPTH
         """
-        logger.info(f"Evaluating URI: {uri}")
+        # Check recursion depth to prevent stack overflow from circular references
+        if _depth > MAX_RECURSION_DEPTH:
+            raise RecursionDepthError(
+                f"Maximum recursion depth ({MAX_RECURSION_DEPTH}) exceeded while evaluating {uri}. "
+                f"This likely indicates circular law references."
+            )
+
+        logger.info(f"Evaluating URI: {uri} (depth={_depth})")
 
         # Default calculation date to today
         if calculation_date is None:
             calculation_date = datetime.now().date().isoformat()
 
-        # Resolve URI to law, article, field
-        law, article, field = self.rule_resolver.resolve_uri(uri)
+        # Parse calculation_date for version selection
+        reference_date = datetime.strptime(calculation_date, "%Y-%m-%d")
+
+        # Resolve URI to law, article, field (using reference_date for version selection)
+        law, article, field = self.rule_resolver.resolve_uri(uri, reference_date)
 
         if not law or not article:
             raise ValueError(f"Could not resolve URI: {uri}")
@@ -85,7 +111,12 @@ class LawExecutionService:
 
         # Execute article
         result = engine.evaluate(
-            parameters, self, calculation_date, output_to_calculate
+            parameters,
+            self,
+            calculation_date,
+            output_to_calculate,
+            data_registry=self.data_registry,
+            _depth=_depth,
         )
 
         return result
@@ -111,7 +142,7 @@ class LawExecutionService:
         """
         from engine.uri_resolver import RegelrechtURIBuilder
 
-        uri = RegelrechtURIBuilder.build(law_id, output_name)
+        uri = RegelrechtURIBuilder.build(law_id, output_name, output_name)
         return self.evaluate_uri(uri, parameters, calculation_date)
 
     def list_available_laws(self) -> list[str]:
@@ -122,17 +153,18 @@ class LawExecutionService:
         """Get list of all (law_id, output_name) pairs"""
         return self.rule_resolver.list_all_outputs()
 
-    def get_law_info(self, law_id: str) -> dict:
+    def get_law_info(self, law_id: str, reference_date: datetime | None = None) -> dict:
         """
         Get information about a law
 
         Args:
             law_id: Law identifier
+            reference_date: Date for version selection (uses most recent if None)
 
         Returns:
             Dictionary with law metadata
         """
-        law = self.rule_resolver.get_law_by_id(law_id)
+        law = self.rule_resolver.get_law_by_id(law_id, reference_date)
         if not law:
             return {}
 
@@ -140,20 +172,63 @@ class LawExecutionService:
             "id": law.id,
             "regulatory_layer": law.regulatory_layer,
             "publication_date": law.publication_date,
+            "valid_from": law.valid_from,
             "bwb_id": law.get_bwb_id(),
             "url": law.get_url(),
             "outputs": list(law.get_all_outputs().keys()),
             "article_count": len(law.articles),
         }
 
+    # === Data Source Management ===
+
+    def add_data_source(self, source: DataSource) -> None:
+        """
+        Add a data source to the registry
+
+        Args:
+            source: DataSource implementation to register
+        """
+        self.data_registry.register(source)
+
+    def add_dict_source(
+        self,
+        name: str,
+        data: dict[str, dict[str, Any]],
+        priority: int = 100,
+    ) -> None:
+        """
+        Add a dict-based data source
+
+        Args:
+            name: Unique name for the source
+            data: Dict of {key: {field: value}} records
+            priority: Priority for disambiguation (higher = preferred)
+        """
+        source = DictDataSource(name=name, priority=priority)
+        for key, record in data.items():
+            source.store(key, record)
+        self.data_registry.register(source)
+
+    def clear_data_sources(self) -> None:
+        """Remove all registered data sources"""
+        self.data_registry = DataSourceRegistry()
+
     # TODO: Generiek mechanisme voor uitvoerder data - nu hardcoded voor Diemen
     # Dit moet later vervangen worden door een service provider pattern
+    #
+    # WARNING: Class-level mutable state for test data. This is thread-safe but
+    # tests MUST call clear_uitvoerder_data() after use to prevent test interference.
+    # Consider using dependency injection or test fixtures instead for production use.
     _uitvoerder_data: dict[str, dict[str, int]] = {}
+    _uitvoerder_lock = threading.Lock()
 
     @classmethod
     def set_gedragscategorie(cls, bsn: str, gemeente_code: str, categorie: int) -> None:
         """
         Set gedragscategorie for a BSN (test/mock data)
+
+        WARNING: Uses class-level state. Call clear_uitvoerder_data() after use
+        to prevent test interference.
 
         Args:
             bsn: Burgerservicenummer
@@ -161,7 +236,8 @@ class LawExecutionService:
             categorie: Gedragscategorie (0, 1, 2, or 3)
         """
         key = f"{gemeente_code}:{bsn}"
-        cls._uitvoerder_data[key] = {"gedragscategorie": categorie}
+        with cls._uitvoerder_lock:
+            cls._uitvoerder_data[key] = {"gedragscategorie": categorie}
 
     @classmethod
     def get_gedragscategorie(cls, bsn: str, gemeente_code: str) -> int:
@@ -176,10 +252,12 @@ class LawExecutionService:
             Gedragscategorie (0 if not set)
         """
         key = f"{gemeente_code}:{bsn}"
-        data = cls._uitvoerder_data.get(key, {})
-        return data.get("gedragscategorie", 0)
+        with cls._uitvoerder_lock:
+            data = cls._uitvoerder_data.get(key, {})
+            return data.get("gedragscategorie", 0)
 
     @classmethod
     def clear_uitvoerder_data(cls) -> None:
-        """Clear all uitvoerder test data"""
-        cls._uitvoerder_data = {}
+        """Clear all uitvoerder test data. MUST be called after tests."""
+        with cls._uitvoerder_lock:
+            cls._uitvoerder_data = {}

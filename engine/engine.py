@@ -5,11 +5,14 @@ Core engine for evaluating article-level machine_readable.execution sections.
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from engine.article_loader import Article, ArticleBasedLaw
 from engine.context import RuleContext, PathNode
 from engine.logging_config import logger
+
+if TYPE_CHECKING:
+    from engine.data_sources import DataSourceRegistry
 
 
 @dataclass
@@ -59,6 +62,8 @@ class ArticleEngine:
         service_provider: Any,
         calculation_date: str,
         requested_output: Optional[str] = None,
+        data_registry: Optional["DataSourceRegistry"] = None,
+        _depth: int = 0,
     ) -> ArticleResult:
         """
         Execute this article's logic
@@ -68,6 +73,7 @@ class ArticleEngine:
             service_provider: Service for resolving URIs
             calculation_date: Date for which calculations are performed
             requested_output: Specific output to calculate (optional, calculates all if None)
+            _depth: Internal recursion depth counter (do not set manually)
 
         Returns:
             ArticleResult with outputs and metadata
@@ -83,14 +89,45 @@ class ArticleEngine:
             input_specs=self.inputs,
             output_specs=self.outputs_spec,
             current_law=self.law,
+            data_registry=data_registry,
+            _depth=_depth,
         )
+
+        # Create root path node for execution trace
+        if requested_output:
+            root_name = f"{self.law.id}/{requested_output}"
+        else:
+            root_name = f"{self.law.id} article {self.article.number}"
+
+        root_node = PathNode(
+            type="root",
+            name=root_name,
+            details={
+                "law_id": self.law.id,
+                "article": self.article.number,
+                "parameters": parameters,
+                "requested_output": requested_output,
+            },
+        )
+        context.add_to_path(root_node)
 
         # Execute actions
         self._execute_actions(context, requested_output)
 
+        # Filter outputs if requested_output is specified
+        # All actions execute (for dependencies), but only return requested output
+        if requested_output:
+            filtered_outputs = {
+                k: v for k, v in context.outputs.items() if k == requested_output
+            }
+            # Set result on root node
+            root_node.result = filtered_outputs.get(requested_output)
+        else:
+            filtered_outputs = context.outputs
+
         # Build result
         result = ArticleResult(
-            output=context.outputs,
+            output=filtered_outputs,
             input=context.resolved_inputs,
             article_number=self.article.number,
             law_id=self.law.id,
@@ -112,22 +149,31 @@ class ArticleEngine:
         Args:
             context: Execution context
             requested_output: Specific output to calculate (optional)
-        """
-        # If requested_output specified, only execute actions needed for that output
-        # For now, execute all actions in order
-        # TODO: Implement dependency analysis and topological sort
 
+        Note: All actions are executed because intermediate outputs may be
+        dependencies of the requested output. TODO: Implement proper
+        dependency analysis to only execute necessary actions.
+        """
         for action in self.actions:
             output_name = action.get("output")
             if output_name:
-                # Check if we need to calculate this output
-                if requested_output and output_name != requested_output:
-                    continue
+                # Create action path node
+                action_node = PathNode(
+                    type="action",
+                    name=f"Calculate {output_name}",
+                    details={"output": output_name},
+                )
+                context.add_to_path(action_node)
 
-                logger.debug(f"Executing action for output: {output_name}")
-                value = self._evaluate_action(action, context)
-                context.set_output(output_name, value)
-                logger.debug(f"Output {output_name} = {value}")
+                with logger.indent_block(f"Action: {output_name}"):
+                    value = self._evaluate_action(action, context)
+                    context.set_output(output_name, value)
+
+                    # Update action node with result
+                    action_node.result = value
+                    logger.debug(f"Output {output_name} = {value}")
+
+                context.pop_path()
 
     def _evaluate_action(self, action: dict, context: RuleContext) -> Any:
         """
@@ -168,7 +214,21 @@ class ArticleEngine:
         """
         # Variable reference: $VARIABLE_NAME
         if isinstance(value, str) and value.startswith("$"):
-            return context._resolve_value(value[1:])
+            var_name = value[1:]
+            resolved = context._resolve_value(var_name)
+
+            # Create resolve path node
+            resolve_node = PathNode(
+                type="resolve",
+                name=f"${var_name}",
+                result=resolved,
+                resolve_type=self._get_resolve_type(var_name, context),
+                details={"variable": var_name},
+            )
+            context.add_to_path(resolve_node)
+            context.pop_path()
+
+            return resolved
 
         # Nested operation: {operation: ..., ...}
         if isinstance(value, dict) and "operation" in value:
@@ -176,6 +236,25 @@ class ArticleEngine:
 
         # Literal value
         return value
+
+    def _get_resolve_type(self, var_name: str, context: RuleContext) -> str:
+        """Determine how a variable was resolved"""
+        if var_name in context.parameters:
+            return "PARAMETER"
+        elif var_name in context.definitions:
+            return "DEFINITION"
+        elif var_name in context.outputs:
+            return "OUTPUT"
+        elif var_name in context.local:
+            return "LOCAL"
+        elif var_name in context.resolved_inputs:
+            return "URI_CALL"
+        else:
+            # Check if it's an input that needs resolution
+            input_spec = context._find_input_spec(var_name)
+            if input_spec and "source" in input_spec:
+                return "URI_CALL"
+            return "UNKNOWN"
 
     def _evaluate_operation(self, operation: dict, context: RuleContext) -> Any:
         """
@@ -190,39 +269,58 @@ class ArticleEngine:
         """
         op_type = operation["operation"]
 
-        # IF operation
-        if op_type == "IF":
-            return self._evaluate_if(operation, context)
+        # Create operation path node
+        op_node = PathNode(
+            type="operation",
+            name=op_type,
+            details={"operation": op_type},
+        )
+        context.add_to_path(op_node)
 
-        # SWITCH operation
-        if op_type == "SWITCH":
-            return self._evaluate_switch(operation, context)
+        try:
+            # IF operation
+            if op_type == "IF":
+                result = self._evaluate_if(operation, context)
+            # SWITCH operation
+            elif op_type == "SWITCH":
+                result = self._evaluate_switch(operation, context)
+            # Comparison operations
+            elif op_type in [
+                "EQUALS",
+                "NOT_EQUALS",
+                "GREATER_THAN",
+                "LESS_THAN",
+                "GREATER_THAN_OR_EQUAL",
+                "LESS_THAN_OR_EQUAL",
+            ]:
+                result = self._evaluate_comparison(operation, context)
+            # Arithmetic operations
+            elif op_type in ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"]:
+                result = self._evaluate_arithmetic(operation, context)
+            # Aggregate operations
+            elif op_type in ["MAX", "MIN"]:
+                result = self._evaluate_aggregate(operation, context)
+            # Logical operations
+            elif op_type in ["AND", "OR"]:
+                result = self._evaluate_logical(operation, context)
+            # Null checking operations
+            elif op_type in ["IS_NULL", "NOT_NULL"]:
+                result = self._evaluate_null_check(operation, context)
+            # Membership operations
+            elif op_type in ["IN", "NOT_IN"]:
+                result = self._evaluate_membership(operation, context)
+            # Date operations
+            elif op_type == "SUBTRACT_DATE":
+                result = self._evaluate_subtract_date(operation, context)
+            else:
+                logger.warning(f"Unknown operation: {op_type}")
+                result = None
 
-        # Comparison operations
-        if op_type in [
-            "EQUALS",
-            "NOT_EQUALS",
-            "GREATER_THAN",
-            "LESS_THAN",
-            "GREATER_THAN_OR_EQUAL",
-            "LESS_THAN_OR_EQUAL",
-        ]:
-            return self._evaluate_comparison(operation, context)
-
-        # Arithmetic operations
-        if op_type in ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"]:
-            return self._evaluate_arithmetic(operation, context)
-
-        # Aggregate operations
-        if op_type in ["MAX", "MIN"]:
-            return self._evaluate_aggregate(operation, context)
-
-        # Logical operations
-        if op_type in ["AND", "OR"]:
-            return self._evaluate_logical(operation, context)
-
-        logger.warning(f"Unknown operation: {op_type}")
-        return None
+            # Update node with result
+            op_node.result = result
+            return result
+        finally:
+            context.pop_path()
 
     def _evaluate_if(self, operation: dict, context: RuleContext) -> Any:
         """Evaluate IF-WHEN-THEN-ELSE operation"""
@@ -300,7 +398,13 @@ class ArticleEngine:
             return result
         elif op_type == "DIVIDE":
             result = evaluated[0]
-            for v in evaluated[1:]:
+            for i, v in enumerate(evaluated[1:], start=1):
+                if v == 0:
+                    raise ZeroDivisionError(
+                        f"Division by zero in DIVIDE operation: "
+                        f"cannot divide {result} by {v} (value at index {i}). "
+                        f"Values: {evaluated}"
+                    )
                 result /= v
             return result
 
@@ -323,8 +427,16 @@ class ArticleEngine:
         ]
 
         if op_type == "MAX":
+            if not evaluated:
+                raise ValueError(
+                    "MAX operation requires at least one value, got empty list"
+                )
             return max(evaluated)
         elif op_type == "MIN":
+            if not evaluated:
+                raise ValueError(
+                    "MIN operation requires at least one value, got empty list"
+                )
             return min(evaluated)
 
         return None
@@ -356,6 +468,86 @@ class ArticleEngine:
             return False
 
         return False
+
+    def _evaluate_null_check(self, operation: dict, context: RuleContext) -> bool:
+        """Evaluate null checking operation (IS_NULL, NOT_NULL)"""
+        op_type = operation["operation"]
+        subject = self._evaluate_value(operation["subject"], context)
+
+        is_null = subject is None
+        return is_null if op_type == "IS_NULL" else not is_null
+
+    def _evaluate_membership(self, operation: dict, context: RuleContext) -> bool:
+        """Evaluate membership operation (IN, NOT_IN)"""
+        op_type = operation["operation"]
+        subject = self._evaluate_value(operation["subject"], context)
+        values = operation.get("values", [])
+
+        # Evaluate all values in the list
+        evaluated_values = [self._evaluate_value(v, context) for v in values]
+
+        is_member = subject in evaluated_values
+        return is_member if op_type == "IN" else not is_member
+
+    def _evaluate_subtract_date(self, operation: dict, context: RuleContext) -> int:
+        """
+        Evaluate date subtraction operation
+
+        Returns the difference between two dates in the specified unit.
+
+        Args:
+            operation: Operation spec with values and unit (days, months, years)
+            context: Execution context
+
+        Returns:
+            Integer difference in the specified unit
+        """
+        from datetime import datetime, date
+
+        values = operation.get("values", [])
+        unit = operation.get("unit", "days")
+
+        if len(values) < 2:
+            logger.warning("SUBTRACT_DATE requires exactly 2 values")
+            return 0
+
+        date1 = self._evaluate_value(values[0], context)
+        date2 = self._evaluate_value(values[1], context)
+
+        # Convert strings to dates if needed
+        def to_date(val):
+            if isinstance(val, datetime):
+                return val.date()
+            elif isinstance(val, date):
+                return val
+            elif isinstance(val, str):
+                try:
+                    return datetime.strptime(val, "%Y-%m-%d").date()
+                except ValueError:
+                    logger.warning(f"Invalid date format: {val}")
+                    return None
+            return None
+
+        d1 = to_date(date1)
+        d2 = to_date(date2)
+
+        if d1 is None or d2 is None:
+            logger.warning(f"Could not parse dates: {date1}, {date2}")
+            return 0
+
+        delta = d1 - d2
+
+        if unit == "days":
+            return delta.days
+        elif unit == "months":
+            # Approximate months
+            return delta.days // 30
+        elif unit == "years":
+            # Approximate years
+            return delta.days // 365
+        else:
+            logger.warning(f"Unknown date unit: {unit}")
+            return delta.days
 
     def _evaluate_resolve(self, resolve_spec: dict, context: RuleContext) -> Any:
         """
@@ -414,10 +606,11 @@ class ArticleEngine:
             )
             logger.debug(f"Expected match value: {expected_match_value}")
 
-        # Track the first matching regeling to ensure a single match
-        first_match = None
+        # Collect all matching regelingen to ensure exactly one match
+        # Note: This code assumes single-threaded execution
+        matches: list[dict] = []
 
-        # Try each regeling - error immediately if we find a second match
+        # Try each regeling and collect all matches
         for regeling_law in regelingen:
             regeling_id = regeling_law.id
 
@@ -444,6 +637,7 @@ class ArticleEngine:
                         service_provider=context.service_provider,
                         calculation_date=context.calculation_date,
                         requested_output=match_output,  # Only calculate the match field
+                        _depth=context._depth + 1,
                     )
 
                     if match_output not in match_result.output:
@@ -471,42 +665,39 @@ class ArticleEngine:
                     service_provider=context.service_provider,
                     calculation_date=context.calculation_date,
                     requested_output=output_field,  # Only calculate the requested output
+                    _depth=context._depth + 1,
                 )
 
                 # Extract the requested output field
                 if output_field in result.output:
                     logger.info(f"Regeling {regeling_id} matches criteria")
 
-                    # Check if we already found a match
-                    if first_match is not None:
-                        # Multiple matches - error immediately
-                        error_msg = (
-                            f"Multiple regelingen match for {self.law.id} article {self.article.number} "
-                            f"with criteria {match_criteria}. Found at least: [{first_match['law'].id}, {regeling_id}]. "
-                            f"Please add more specific match criteria to ensure deterministic resolution."
-                        )
-                        logger.error(error_msg)
-                        raise ValueError(error_msg)
-
-                    # Store first match
-                    first_match = {
-                        "law": regeling_law,
-                        "result": result.output[output_field],
-                    }
+                    # Store this match
+                    matches.append(
+                        {
+                            "law": regeling_law,
+                            "result": result.output[output_field],
+                            "path": result.path,
+                        }
+                    )
                 else:
                     logger.error(
                         f"Regeling {regeling_id}: Output field '{output_field}' not found in result"
                     )
                     continue  # Try next regeling
 
-            except Exception as e:
+            except (KeyError, ValueError, TypeError) as e:
+                # Expected errors during resolution - try next regeling
                 logger.error(
                     f"Error resolving regeling {regeling_id}: {e}, trying next"
                 )
                 continue  # Try next regeling
+            except (MemoryError, SystemExit, KeyboardInterrupt):
+                # Critical errors - re-raise immediately
+                raise
 
-        # Check if we found exactly one match
-        if first_match is None:
+        # Validate exactly one match
+        if len(matches) == 0:
             error_msg = (
                 f"No matching regeling found for {self.law.id} article {self.article.number} "
                 f"with criteria {match_criteria}"
@@ -514,8 +705,39 @@ class ArticleEngine:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-        # Exactly one match - return the result
+        if len(matches) > 1:
+            match_ids = [m["law"].id for m in matches]
+            error_msg = (
+                f"Multiple regelingen match for {self.law.id} article {self.article.number} "
+                f"with criteria {match_criteria}. Found: {match_ids}. "
+                f"Please add more specific match criteria to ensure deterministic resolution."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Exactly one match - add trace and return the result
+        first_match = matches[0]
         logger.info(
             f"Successfully resolved to unique regeling: {first_match['law'].id}"
         )
+
+        # Create resolve trace node with sub-law trace
+        resolve_node = PathNode(
+            type="uri_call",
+            name=f"Resolve {first_match['law'].id}",
+            result=first_match["result"],
+            details={
+                "regeling_id": first_match["law"].id,
+                "output": output_field,
+                "match_criteria": match_criteria,
+            },
+        )
+        context.add_to_path(resolve_node)
+
+        # Attach sub-law trace if available
+        if first_match.get("path"):
+            resolve_node.add_child(first_match["path"])
+
+        context.pop_path()
+
         return first_match["result"]

@@ -5,11 +5,82 @@ Manages state and value resolution during article execution.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import copy
 from datetime import datetime
 
 from engine.logging_config import logger
+
+if TYPE_CHECKING:
+    from engine.data_sources import DataSourceRegistry
+
+
+@dataclass
+class TypeSpec:
+    """Specification for value types with enforcement capabilities"""
+
+    type: str | None = None
+    unit: str | None = None  # e.g., "eurocent", "EUR", "days", "years"
+    precision: int | None = None  # decimal places for rounding
+    min: int | float | None = None
+    max: int | float | None = None
+
+    def enforce(self, value: Any) -> Any:
+        """
+        Enforce type specifications on a value
+
+        Args:
+            value: Value to enforce type specs on
+
+        Returns:
+            Value with type specs enforced (rounded, bounded, etc.)
+        """
+        if value is None:
+            return value
+
+        # String type
+        if self.type == "string":
+            return str(value)
+
+        # Convert string to numeric if needed
+        if isinstance(value, str):
+            try:
+                value = float(value)
+            except ValueError:
+                return value
+
+        # For non-numeric types, return as-is
+        if not isinstance(value, int | float):
+            return value
+
+        # Apply min/max constraints
+        if self.min is not None:
+            value = max(value, self.min)
+        if self.max is not None:
+            value = min(value, self.max)
+
+        # Apply precision (rounding)
+        if self.precision is not None:
+            value = round(value, self.precision)
+
+        # Convert to int for cent units
+        if self.unit == "eurocent":
+            value = int(value)
+
+        return value
+
+    @classmethod
+    def from_spec(cls, spec: dict | None) -> "TypeSpec | None":
+        """Create TypeSpec from output specification dict"""
+        if not spec:
+            return None
+        return cls(
+            type=spec.get("type"),
+            unit=spec.get("unit"),
+            precision=spec.get("precision"),
+            min=spec.get("min"),
+            max=spec.get("max"),
+        )
 
 
 @dataclass
@@ -28,6 +99,80 @@ class PathNode:
         """Add a child node to the trace"""
         self.children.append(child)
 
+    def render(
+        self, indent: int = 0, prefix: str = "", is_top_level: bool = True
+    ) -> str:
+        """
+        Render the execution trace as a tree string
+
+        Args:
+            indent: Current indentation level
+            prefix: Prefix for the current line (tree branches)
+            is_top_level: Whether this is the outermost call (adds visual separators)
+
+        Returns:
+            Formatted tree string
+        """
+        lines = []
+
+        # Format the result value
+        result_str = ""
+        if self.result is not None:
+            if isinstance(self.result, bool):
+                result_str = f" => {'TRUE' if self.result else 'FALSE'}"
+            elif isinstance(self.result, (int, float)):
+                result_str = f" => {self.result}"
+            elif isinstance(self.result, str) and len(self.result) < 50:
+                result_str = f" => {self.result!r}"
+
+        # Format the node type (ASCII-only for Windows compatibility)
+        type_icon = {
+            "root": ">>>",
+            "action": "[ACT]",
+            "operation": "[OP]",
+            "resolve": "[RES]",
+            "uri_call": "[CALL]",
+            "requirement": "[REQ]",
+        }.get(self.type, "[*]")
+
+        # Add resolve type if present
+        resolve_info = f" [{self.resolve_type}]" if self.resolve_type else ""
+
+        # Build the line - root nodes get special formatting
+        if self.type == "root" and is_top_level:
+            # Top-level root gets a header line
+            header_line = "=" * 60
+            lines.append(header_line)
+            line = f"{prefix}{type_icon} {self.name}{resolve_info}{result_str}"
+            lines.append(line)
+            lines.append("-" * 60)
+        else:
+            line = f"{prefix}{type_icon} {self.name}{resolve_info}{result_str}"
+            lines.append(line)
+
+        # Render children with tree branches (ASCII-only for Windows compatibility)
+        for i, child in enumerate(self.children):
+            is_last = i == len(self.children) - 1
+            child_prefix = prefix + ("    " if is_last else "|   ")
+            branch = "`-- " if is_last else "+-- "
+            child_lines = child.render(indent + 1, child_prefix, is_top_level=False)
+
+            # Add the branch to the first line of child output
+            child_output = child_lines.split("\n")
+            if child_output:
+                # Replace the prefix on the first line with the branch
+                first_line = child_output[0]
+                # Find where the icon starts (after prefix)
+                lines.append(prefix + branch + first_line[len(child_prefix) :])
+                # Add remaining lines as-is
+                lines.extend(child_output[1:])
+
+        # Add footer for top-level root
+        if self.type == "root" and is_top_level:
+            lines.append("=" * 60)
+
+        return "\n".join(lines)
+
 
 class RuleContext:
     """Execution context for article evaluation"""
@@ -41,6 +186,8 @@ class RuleContext:
         input_specs: list[dict] | None = None,
         output_specs: list[dict] | None = None,
         current_law: Any = None,
+        data_registry: "DataSourceRegistry | None" = None,
+        _depth: int = 0,
     ):
         """
         Initialize execution context
@@ -53,6 +200,8 @@ class RuleContext:
             input_specs: Input specifications from execution section
             output_specs: Output specifications from execution section
             current_law: The law being executed (for resolving # references)
+            data_registry: Registry for external data sources (optional)
+            _depth: Internal recursion depth counter (do not set manually)
         """
         self.definitions = self._process_definitions(definitions)
         self.parameters = parameters
@@ -61,6 +210,7 @@ class RuleContext:
         self.input_specs = input_specs or []
         self.output_specs = output_specs or []
         self.current_law = current_law
+        self._depth = _depth
 
         # Parse calculation date as datetime object for use as $referencedate context variable
         try:
@@ -82,6 +232,10 @@ class RuleContext:
         # Execution trace
         self.path: Optional[PathNode] = None
         self.current_path: Optional[PathNode] = None
+        self._path_stack: list[PathNode] = []  # Stack for parent tracking
+
+        # Data source registry for external data resolution
+        self.data_registry = data_registry
 
     def _process_definitions(self, definitions: dict) -> dict:
         """
@@ -117,7 +271,12 @@ class RuleContext:
         4. Resolved inputs
         5. Definitions (constants)
         6. Parameters (direct inputs)
-        7. Input with source.url (cross-law reference)
+        7. Input with source (cross-law reference) - ALWAYS followed!
+        8. Data registry (for inputs WITHOUT source spec)
+        9. Uitvoerder data (gedragscategorie)
+
+        The key insight: outputs always come from their designated law.
+        Data sources only provide leaf-level inputs that have no source spec.
 
         Supports dot notation for property access (e.g., referencedate.year)
 
@@ -162,18 +321,38 @@ class RuleContext:
         if path in self.definitions:
             return self.definitions[path]
 
-        # 6. Parameters (direct inputs)
+        # 6. Parameters (direct inputs) - case-insensitive matching
         if path in self.parameters:
             return self.parameters[path]
+        # Try case-insensitive match
+        path_lower = path.lower()
+        for param_name, param_value in self.parameters.items():
+            if param_name.lower() == path_lower:
+                return param_value
 
-        # 7. Input with source - need to resolve
+        # 7. Input with source - ALWAYS resolve from cross-law reference
+        # Outputs must come from their designated law, not from data sources
         input_spec = self._find_input_spec(path)
         if input_spec and "source" in input_spec:
             value = self._resolve_from_source(input_spec["source"], path)
             self.resolved_inputs[path] = value
             return value
 
-        # 8. Uitvoerder data - resolve from service provider
+        # 8. Data registry - for inputs WITHOUT source spec (leaf-level data)
+        if self.data_registry:
+            # Normalize field name and build selection criteria from parameters
+            field_name = path.lower()
+            criteria = {k.lower(): v for k, v in self.parameters.items()}
+
+            match = self.data_registry.resolve(field_name, criteria)
+            if match:
+                logger.debug(
+                    f"Resolved {path} from data source {match.source_name}: {match.value}"
+                )
+                self.resolved_inputs[path] = match.value
+                return match.value
+
+        # 9. Uitvoerder data - resolve from service provider
         # TODO: Dit is een tijdelijke hardcoded oplossing voor gedragscategorie
         # Later vervangen door generiek mechanisme
         if path == "gedragscategorie":
@@ -241,11 +420,14 @@ class RuleContext:
                 uri = RegelrechtURIBuilder.build(regulation, output_name, output_name)
             else:
                 # External data source (no regulation) - delegate to service provider
-                logger.debug(
-                    f"External data source for {input_name}: output={output_name}"
+                logger.warning(
+                    f"External data source for {input_name}: output={output_name} - "
+                    f"no regulation specified, cannot resolve. Source spec: {source_spec}"
                 )
-                # For now, return None - service provider should handle this
-                return None
+                raise ValueError(
+                    f"Cannot resolve input '{input_name}': external data source without "
+                    f"regulation is not supported. Specify a regulation in the source."
+                )
         else:
             # Backward compatibility: article, url, ref
             article_ref = source_spec.get("article")
@@ -255,7 +437,10 @@ class RuleContext:
                 logger.warning(
                     f"No regulation/output or article/url/ref found in source spec for {input_name}"
                 )
-                return None
+                raise ValueError(
+                    f"Cannot resolve input '{input_name}': no valid source specification found. "
+                    f"Expected regulation/output or article/url/ref in source spec."
+                )
 
             # Convert article reference format to URI format
             # article: "law_id.output" -> regelrecht://law_id/output#input_name
@@ -306,6 +491,14 @@ class RuleContext:
                 )
                 return None
 
+            # Create internal reference trace node
+            internal_ref_node = PathNode(
+                type="uri_call",
+                name=f"Internal #{output_name}",
+                details={"output": output_name, "law_id": self.current_law.id},
+            )
+            self.add_to_path(internal_ref_node)
+
             # Execute the article directly
             from engine.engine import ArticleEngine
 
@@ -315,10 +508,20 @@ class RuleContext:
                 service_provider=self.service_provider,
                 calculation_date=self.calculation_date,
                 requested_output=output_name,
+                data_registry=self.data_registry,
+                _depth=self._depth + 1,
             )
+
+            # Attach sub-trace if available
+            if result.path:
+                internal_ref_node.add_child(result.path)
 
             # Extract the output
             value = result.output.get(output_name)
+
+            # Update trace node with result
+            internal_ref_node.result = value
+            self.pop_path()
 
             # Cache result
             self._uri_cache[cache_key] = value
@@ -336,9 +539,22 @@ class RuleContext:
 
         # Call service provider
         logger.debug(f"Resolving URI: {uri} with params {resolved_params}")
-        result = self.service_provider.evaluate_uri(
-            uri, resolved_params, self.calculation_date
+
+        # Create URI call trace node
+        uri_call_node = PathNode(
+            type="uri_call",
+            name=f"Call {uri}",
+            details={"uri": uri, "parameters": resolved_params},
         )
+        self.add_to_path(uri_call_node)
+
+        result = self.service_provider.evaluate_uri(
+            uri, resolved_params, self.calculation_date, _depth=self._depth + 1
+        )
+
+        # Attach sub-law trace as child if available
+        if result.path:
+            uri_call_node.add_child(result.path)
 
         # Extract field from URI
         from engine.uri_resolver import RegelrechtURI
@@ -352,6 +568,10 @@ class RuleContext:
                 value = list(result.output.values())[0]
             else:
                 value = result.output
+
+        # Update trace node with result
+        uri_call_node.result = value
+        self.pop_path()
 
         # Cache result
         self._uri_cache[cache_key] = value
@@ -439,7 +659,7 @@ class RuleContext:
         # Find the delegated regulation using select_on criteria
         rule_resolver = self.service_provider.rule_resolver
         verordening = rule_resolver.find_delegated_regulation(
-            law_id, article, resolved_criteria
+            law_id, article, resolved_criteria, self.reference_date
         )
 
         if verordening:
@@ -450,6 +670,18 @@ class RuleContext:
             article_obj = verordening.find_article_by_output(output_name)
 
             if article_obj:
+                # Create delegation trace node
+                delegation_node = PathNode(
+                    type="uri_call",
+                    name=f"Delegation {verordening.id}",
+                    details={
+                        "verordening_id": verordening.id,
+                        "output": output_name,
+                        "criteria": resolved_criteria,
+                    },
+                )
+                self.add_to_path(delegation_node)
+
                 from engine.engine import ArticleEngine
 
                 engine = ArticleEngine(article_obj, verordening)
@@ -457,21 +689,32 @@ class RuleContext:
                     parameters=resolved_params,
                     service_provider=self.service_provider,
                     calculation_date=self.calculation_date,
+                    data_registry=self.data_registry,
+                    _depth=self._depth + 1,
                 )
+
+                # Attach sub-trace if available
+                if result.path:
+                    delegation_node.add_child(result.path)
 
                 logger.debug(f"Delegation result: {result.output}")
 
                 # Extract specific output if single output requested
                 if isinstance(output_name, str) and output_name in result.output:
-                    return result.output[output_name]
+                    value = result.output[output_name]
                 elif isinstance(output_name, list):
                     # Return dict with requested outputs only
-                    return {
+                    value = {
                         k: result.output[k] for k in output_name if k in result.output
                     }
                 else:
                     # Fallback: return full output dict
-                    return result.output
+                    value = result.output
+
+                # Update trace node with result
+                delegation_node.result = value
+                self.pop_path()
+                return value
             else:
                 logger.warning(
                     f"Output {output_name} not found in verordening {verordening.id}"
@@ -483,7 +726,7 @@ class RuleContext:
         )
 
         # Find the delegating article and get legal_basis_for section
-        delegating_law = rule_resolver.get_law_by_id(law_id)
+        delegating_law = rule_resolver.get_law_by_id(law_id, self.reference_date)
         if delegating_law:
             for art in delegating_law.articles:
                 if art.number == article:
@@ -587,6 +830,8 @@ class RuleContext:
             parameters=params,
             service_provider=self.service_provider,
             calculation_date=self.calculation_date,
+            data_registry=self.data_registry,
+            _depth=self._depth + 1,
         )
 
         return result.output
@@ -635,12 +880,66 @@ class RuleContext:
         return None
 
     def set_output(self, name: str, value: Any):
-        """Set an output value"""
+        """
+        Set an output value, applying TypeSpec enforcement if available
+
+        Args:
+            name: Output name
+            value: Value to set
+        """
+        # Find type_spec for this output
+        for spec in self.output_specs:
+            if spec.get("name") == name:
+                type_spec_dict = spec.get("type_spec")
+                if type_spec_dict:
+                    type_spec = TypeSpec.from_spec(type_spec_dict)
+                    if type_spec:
+                        value = type_spec.enforce(value)
+                        logger.debug(f"TypeSpec enforced for {name}: {value}")
+                break
+
         self.outputs[name] = value
 
     def get_output(self, name: str) -> Any:
         """Get an output value"""
         return self.outputs.get(name)
+
+    # === Execution Trace Methods ===
+
+    def add_to_path(self, node: PathNode) -> None:
+        """
+        Add a node to the execution trace tree
+
+        The node becomes a child of the current path node, and
+        the current path is updated to point to the new node.
+
+        Args:
+            node: PathNode to add to the trace
+        """
+        if self.path is None:
+            # First node becomes the root
+            self.path = node
+            self.current_path = node
+        else:
+            # Add as child of current node
+            if self.current_path:
+                self.current_path.add_child(node)
+            # Push current to stack and update current
+            if self.current_path:
+                self._path_stack.append(self.current_path)
+            self.current_path = node
+
+    def pop_path(self) -> None:
+        """
+        Pop the current path node and return to parent
+
+        After this call, current_path points to the parent node.
+        """
+        if self._path_stack:
+            self.current_path = self._path_stack.pop()
+        else:
+            # At root level, keep current_path pointing to root
+            self.current_path = self.path
 
     def set_local(self, name: str, value: Any):
         """Set a local variable (for loops)"""
