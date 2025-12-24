@@ -8,8 +8,25 @@ import os
 # Add the steps directory to the path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from behave import given, when, then  # type: ignore[import-untyped]
-from mock_data_service import MockDataService  # type: ignore[import-not-found]
+# Get project root for absolute paths (works from any working directory)
+_steps_dir = os.path.dirname(os.path.abspath(__file__))
+_features_dir = os.path.dirname(_steps_dir)
+# Handle both features/steps/ and regulation/nl/steps/ (symlink)
+if os.path.basename(_features_dir) == "nl":
+    # Running from regulation/nl/steps -> go up to project root
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(_features_dir))
+else:
+    # Running from features/steps -> go up to project root
+    PROJECT_ROOT = os.path.dirname(_features_dir)
+
+# Add project root to Python path for engine imports
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+REGULATION_DIR = os.path.join(PROJECT_ROOT, "regulation", "nl")
+
+from behave import given, when, then  # noqa: E402  # type: ignore[import-untyped]
+from mock_data_service import MockDataService  # noqa: E402  # type: ignore[import-not-found]
 
 
 def print_execution_trace(result, title: str = "Execution Trace") -> None:
@@ -85,7 +102,7 @@ def step_when_bijstandsaanvraag_executed(context, article):
     from engine.service import LawExecutionService
 
     # Create service
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
 
     # Get calculation date
     calculation_date = getattr(context, "calculation_date", "2024-01-01")
@@ -291,7 +308,7 @@ def step_when_healthcare_allowance_executed(context):
     from engine.data_sources import DictDataSource
 
     # Create service
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
 
     # Convert mock data to data sources
     if hasattr(context, "mock_service"):
@@ -400,7 +417,7 @@ def step_when_request_standard_premium(context, year):
     from engine.service import LawExecutionService
 
     # Create service
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
 
     # Set calculation_date to match the year
     calculation_date = f"{year}-01-01"
@@ -527,7 +544,7 @@ def step_when_erfgrensbeplanting_requested(context, law_id, article):
     """Execute the erfgrensbeplanting query"""
     from engine.service import LawExecutionService
 
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
     calculation_date = getattr(context, "calculation_date", "2024-01-01")
     parameters = context.query_data.copy()
 
@@ -649,7 +666,7 @@ def step_when_zorgtoeslagwet_uitgevoerd(context):
     from engine.data_sources import DictDataSource
 
     # Create service
-    service = LawExecutionService("regulation/nl")
+    service = LawExecutionService(REGULATION_DIR)
 
     # Get calculation date
     calculation_date = getattr(context, "calculation_date", "2025-01-01")

@@ -50,5 +50,6 @@ htmlcov/
 # Git worktrees
 .worktrees/
 
-# Junction for behave to find feature files in regulation folder
+# Junctions/symlinks for behave to find features and steps
 features/regulation
+regulation/nl/steps
