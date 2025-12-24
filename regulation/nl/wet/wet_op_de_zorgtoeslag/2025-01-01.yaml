@@ -254,6 +254,7 @@ articles:
               output: vermogen
               parameters:
                 bsn: $BSN
+                peildatum: $referencedate
               description: Rendementsgrondslag conform art. 5.3 Wet IB 2001
             type_spec:
               unit: eurocent
@@ -267,6 +268,7 @@ articles:
               output: gezamenlijk_vermogen
               parameters:
                 bsn: $BSN
+                peildatum: $referencedate
               description: Gezamenlijke rendementsgrondslag met partner
             type_spec:
               unit: eurocent
