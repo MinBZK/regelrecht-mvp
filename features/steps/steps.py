@@ -16,8 +16,8 @@ if os.path.basename(_features_dir) == "nl":
     # Running from regulation/nl/steps -> go up to project root
     PROJECT_ROOT = os.path.dirname(os.path.dirname(_features_dir))
 else:
-    # Running from features/steps -> go up to project root
-    PROJECT_ROOT = os.path.dirname(_features_dir)
+    # Running from features/steps -> go up 2 levels to project root
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(_steps_dir))
 
 # Add project root to Python path for engine imports
 if PROJECT_ROOT not in sys.path:
@@ -123,10 +123,10 @@ def step_when_bijstandsaanvraag_executed(context, article):
     )
 
     try:
-        # Call Article 43 via one of its outputs
-        result = service.evaluate_law_output(
-            law_id="participatiewet",
-            output_name="heeft_recht_op_bijstand",
+        # Call Article 43 - use URI without field to get all outputs
+        uri = "regelrecht://participatiewet/heeft_recht_op_bijstand"
+        result = service.evaluate_uri(
+            uri=uri,
             parameters=parameters,
             calculation_date=calculation_date,
         )
@@ -549,9 +549,10 @@ def step_when_erfgrensbeplanting_requested(context, law_id, article):
     parameters = context.query_data.copy()
 
     try:
-        result = service.evaluate_law_output(
-            law_id=law_id,
-            output_name="minimale_afstand_cm",
+        # Use URI without specific field to get all outputs
+        uri = f"regelrecht://{law_id}/minimale_afstand_cm"
+        result = service.evaluate_uri(
+            uri=uri,
             parameters=parameters,
             calculation_date=calculation_date,
         )
