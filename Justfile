@@ -9,6 +9,10 @@ default:
 test:
     uv run pytest
 
+# Run pytest with optional test filter (e.g. just test-filter test_article_builder)
+test-filter filter="":
+    uv run pytest {{ if filter != "" { "-k " + filter } else { "" } }} -v
+
 # Run behave BDD tests
 behave:
     uv run behave
@@ -50,3 +54,7 @@ pre-commit:
 # Sync dependencies
 sync:
     uv sync
+
+# Download a law from BWB repository (harvester)
+harvest bwb_id date="2025-01-01" *args="":
+    uv run python -m harvester download {{bwb_id}} --date {{date}} {{args}}

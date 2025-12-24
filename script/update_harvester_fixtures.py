@@ -1,0 +1,78 @@
+"""Regenerate expected YAML output for harvester integration tests."""
+
+import io
+import sys
+from pathlib import Path
+
+# Add project root to path so we can import harvester
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import ruamel.yaml
+from lxml import etree
+
+from harvester.models import Law
+from harvester.parsers.content_parser import parse_articles_split
+from harvester.parsers.wti_parser import parse_wti_metadata
+from harvester.storage.yaml_writer import generate_yaml_dict
+
+FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "harvester" / "fixtures"
+
+# Fixtures to regenerate: (name, effective_date)
+FIXTURES = [
+    ("zorgtoeslag", "2025-01-01"),
+    ("kieswet", "2025-08-01"),
+    ("wlz", "2025-07-05"),
+    ("zvw", "2025-07-05"),
+    ("awir", "2025-01-01"),
+    ("participatiewet", "2024-01-01"),
+]
+
+
+def update_fixture(name: str, date: str) -> None:
+    """Update expected YAML for a single fixture."""
+    fixture_dir = FIXTURES_DIR / name
+    wti_path = fixture_dir / "wti.xml"
+    content_path = fixture_dir / "content.xml"
+
+    if not wti_path.exists() or not content_path.exists():
+        print(f"Skipping {name}: XML files not found")
+        return
+
+    wti_tree = etree.parse(str(wti_path))
+    content_tree = etree.parse(str(content_path))
+
+    metadata = parse_wti_metadata(wti_tree.getroot())
+    articles = parse_articles_split(content_tree.getroot(), metadata.bwb_id, date)
+    law = Law(metadata=metadata, articles=articles)
+    yaml_dict = generate_yaml_dict(law, date)
+
+    output_path = fixture_dir / "expected.yaml"
+
+    # Configure ruamel.yaml to match yaml_writer.py settings
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style = False
+    yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.width = 100
+    yaml.explicit_start = True  # Add --- document start
+
+    # Write to string buffer first, then strip trailing spaces
+    # (ruamel.yaml adds trailing spaces when wrapping long values)
+    buffer = io.StringIO()
+    yaml.dump(yaml_dict, buffer)
+    content = buffer.getvalue()
+    content = "\n".join(line.rstrip() for line in content.splitlines()) + "\n"
+
+    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(content)
+    print(f"Updated {output_path} ({len(articles)} articles)")
+
+
+def main() -> None:
+    """Update expected YAML output from input XML fixtures."""
+    for name, date in FIXTURES:
+        update_fixture(name, date)
+
+
+if __name__ == "__main__":
+    main()

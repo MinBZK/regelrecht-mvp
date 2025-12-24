@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wetgeving>
+  <wet>
+    <wettekst>
+      <artikel label="Artikel 1">
+        <al>Dit artikel heeft geen nr element.</al>
+      </artikel>
+      <artikel>
+        <al>Dit artikel heeft geen label en geen nr.</al>
+      </artikel>
+    </wettekst>
+  </wet>
+</wetgeving>
