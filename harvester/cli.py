@@ -7,11 +7,7 @@ from rich.console import Console
 
 from harvester.config import validate_bwb_id, validate_date
 from harvester.models import Law
-from harvester.parsers.content_parser import (
-    download_content,
-    parse_articles,
-    parse_articles_split,
-)
+from harvester.parsers.content_parser import download_content, parse_articles_split
 from harvester.parsers.wti_parser import download_wti, parse_wti_metadata
 from harvester.storage.yaml_writer import save_yaml
 
@@ -33,11 +29,6 @@ def download(
         "--date",
         "-d",
         help="Effective date in YYYY-MM-DD format (default: today)",
-    ),
-    no_split: bool = typer.Option(
-        False,
-        "--no-split",
-        help="Keep articles whole instead of splitting to components",
     ),
 ) -> None:
     """Download a law by BWB ID and convert to YAML."""
@@ -62,10 +53,7 @@ def download(
         # Download and parse content (legal text)
         console.print("[dim]Downloading content...[/dim]")
         content_tree = download_content(bwb_id, effective_date)
-        if no_split:
-            articles = parse_articles(content_tree, bwb_id, effective_date)
-        else:
-            articles = parse_articles_split(content_tree, bwb_id, effective_date)
+        articles = parse_articles_split(content_tree, bwb_id, effective_date)
         console.print(f"  Articles: {len(articles)}")
 
         # Create Law object

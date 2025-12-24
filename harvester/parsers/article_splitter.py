@@ -12,11 +12,8 @@ from dataclasses import dataclass, field
 from lxml import etree
 
 from harvester.models import Article, Reference
-from harvester.parsers.content_parser import (
-    SKIP_TAGS,
-    ReferenceCollector,
-    get_tag_name,
-)
+from harvester.parsers.content_parser import SKIP_TAGS, ReferenceCollector
+from harvester.parsers.registry.registry import get_tag_name
 from harvester.parsers.text_extractor import (
     extract_inline_text,
     extract_li_text,

@@ -132,8 +132,8 @@ harvester/
 
 4. **Content parser bouwen** (`parsers/content_parser.py`)
    - `download_content(bwb_id: str, date: str) -> etree.Element`
-   - `extract_text_from_element(elem: etree.Element) -> str`
-   - `parse_articles(content_tree: etree.Element, bwb_id: str, date: str) -> list[Article]`
+   - `parse_articles_split(content_tree: etree.Element, bwb_id: str, date: str) -> list[Article]`
+   - Text extraction via registry-based handlers (`parsers/registry/`)
    - Code basis: `script/download_law.py`
 
 5. **YAML writer bouwen** (`storage/yaml_writer.py`)
