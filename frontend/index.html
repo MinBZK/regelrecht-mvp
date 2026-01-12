@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegelRecht - Browser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <span class="top-nav__title">RegelRecht browser</span>
+
+      <div class="top-nav__spacer"></div>
+
+      <button class="top-nav__action">
+        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="7" cy="7" r="5"/>
+          <path d="M11 11l3 3"/>
+        </svg>
+        <span>Zoeken</span>
+      </button>
+
+      <button class="top-nav__action">
+        <span>RR project</span>
+        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 6l4 4 4-4"/>
+        </svg>
+      </button>
+
+      <button class="top-nav__action">
+        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="5" r="3"/>
+          <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+        </svg>
+        <span>A.J. Jansen-de Jong</span>
+        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 6l4 4 4-4"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Main Content: 3 Panes -->
+    <main class="main-content">
+
+      <!-- Home Pane: List of regulations -->
+      <aside class="pane pane--narrow browser-home">
+        <div class="pane__header">
+          <h1 class="pane__title">Wetten en regels</h1>
+        </div>
+        <div class="pane__search">
+          <svg class="pane__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="7" cy="7" r="5"/>
+            <path d="M11 11l3 3"/>
+          </svg>
+          <input type="text" class="pane__search-input" placeholder="Zoeken">
+        </div>
+        <div class="pane__content scrollable">
+          <div class="list">
+            <div class="list__section">Favorieten</div>
+            <a href="#" class="list__item list__item--selected">
+              <div class="list__content">
+                <div class="list__title">Wet op de zorgtoeslag</div>
+              </div>
+              <svg class="list__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 4l4 4-4 4"/>
+              </svg>
+            </a>
+
+            <div class="list__section">Recent bekeken</div>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Zorgverzekeringswet</div>
+              </div>
+              <svg class="list__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 4l4 4-4 4"/>
+              </svg>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Algemene wet inkomensafhankelijke regelingen</div>
+              </div>
+              <svg class="list__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 4l4 4-4 4"/>
+              </svg>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Wet inkomstenbelasting 2001</div>
+              </div>
+              <svg class="list__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 4l4 4-4 4"/>
+              </svg>
+            </a>
+
+            <div class="list__section">Recent bewerkt</div>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Regeling standaardpremie</div>
+              </div>
+              <svg class="list__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 4l4 4-4 4"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Law Pane: Structure of selected law -->
+      <section class="pane pane--narrow browser-law">
+        <div class="pane__header">
+          <h2 class="pane__title">Wet op de zorgtoeslag</h2>
+        </div>
+        <div class="pane__content scrollable">
+          <!-- Articles as list -->
+          <div class="list list--dividers">
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 1 - Begripsbepalingen</div>
+              </div>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 1a - Verantwoordelijke minister</div>
+              </div>
+              <span class="list__badge">MR</span>
+            </a>
+            <a href="#" class="list__item list__item--selected">
+              <div class="list__content">
+                <div class="list__title">Artikel 2 - Aanspraak zorgtoeslag</div>
+              </div>
+              <span class="list__badge">MR</span>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 3 - Vermogenstoets</div>
+              </div>
+              <span class="list__badge">MR</span>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 4 - Standaardpremie</div>
+              </div>
+              <span class="list__badge">MR</span>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 4a - Woonlandbeginsel</div>
+              </div>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 5 - Uitvoering</div>
+              </div>
+              <span class="list__badge">MR</span>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 6 - Evaluatie</div>
+              </div>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 7 - Inwerkingtreding</div>
+              </div>
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 8 - Citeertitel</div>
+              </div>
+              <span class="list__badge">MR</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Article Pane: Selected article with tabs -->
+      <article class="pane pane--wide browser-article">
+        <div class="tabs">
+          <input type="radio" name="article-tabs" id="tab-1" class="tabs__input" checked>
+          <input type="radio" name="article-tabs" id="tab-2" class="tabs__input">
+          <input type="radio" name="article-tabs" id="tab-3" class="tabs__input">
+
+          <nav class="tabs__nav">
+            <label for="tab-1" class="tabs__label">Tekst</label>
+            <label for="tab-2" class="tabs__label">Machine</label>
+            <label for="tab-3" class="tabs__label">YAML</label>
+          </nav>
+
+          <div class="tabs__panels">
+            <!-- Tab 1: Legal Text -->
+            <div class="tabs__panel">
+              <div class="article-text">
+                <h2>Artikel 2 - Aanspraak zorgtoeslag</h2>
+
+                <p><strong>1.</strong> Indien de normpremie voor een verzekerde in het berekeningsjaar minder bedraagt dan de standaardpremie in dat jaar, heeft de verzekerde aanspraak op een zorgtoeslag ter grootte van dat verschil. Voor een verzekerde met een toeslagpartner geldt het dubbele van de standaardpremie en worden de verzekerde en de toeslagpartner geacht gezamenlijk aanspraak te maken op zorgtoeslag.</p>
+
+                <p><strong>2.</strong> De normpremie bedraagt een percentage van het drempelinkomen in het berekeningsjaar, vermeerderd met een percentage van het toetsingsinkomen van de verzekerde. Ingeval de verzekerde een toeslagpartner heeft, wordt het gezamenlijk toetsingsinkomen van de verzekerde en de toeslagpartner in aanmerking genomen.</p>
+
+                <p><strong>3.</strong> De percentages, bedoeld in het tweede lid, bedragen voor een verzekerde met een toeslagpartner 4,273 procent van het drempelinkomen, vermeerderd met 13,700 procent van het toetsingsinkomen, en voor een verzekerde zonder toeslagpartner 1,896 procent van het drempelinkomen, vermeerderd met 13,700 procent van het toetsingsinkomen. Bij ministeriële regeling kunnen deze percentages worden gewijzigd.</p>
+
+                <p><strong>4.</strong> In afwijking van het eerste lid bedraagt de aanspraak op een zorgtoeslag voor een verzekerde met een partner die geen verzekerde is, vijftig procent van het op grond van het eerste lid berekende bedrag.</p>
+
+                <p><strong>5.</strong> De aanspraak op een zorgtoeslag wordt voor iedere kalendermaand afzonderlijk bepaald.</p>
+
+                <p><strong>6.</strong> Bij ministeriële regeling kunnen nadere regels worden gesteld.</p>
+
+                <p><strong>7.</strong> Onze Minister zendt een voornemen tot wijziging van de percentages, bedoeld in het derde lid, ten minste twee weken voor de vaststelling aan beide kamers der Staten-Generaal.</p>
+              </div>
+            </div>
+
+            <!-- Tab 2: Machine Readable -->
+            <div class="tabs__panel">
+              <div class="machine-view">
+                <h3 style="margin-bottom: var(--spacing-4);">Definities</h3>
+                <pre><code>drempelinkomen_alleenstaande: 39719.00
+drempelinkomen_aanvrager_met_toeslagpartner: 55875.00
+percentage_drempelinkomen_alleenstaande: 1.896%
+percentage_drempelinkomen_partner: 4.273%
+percentage_toetsingsinkomen: 13.700%</code></pre>
+
+                <h3 style="margin: var(--spacing-6) 0 var(--spacing-4);">Input</h3>
+                <pre><code>leeftijd: number (bron: wet_basisregistratie_personen)
+is_verzekerde: boolean (bron: zorgverzekeringswet)
+heeft_toeslagpartner: boolean (bron: awir)
+toetsingsinkomen: amount (bron: awir)
+standaardpremie: amount (bron: regeling_standaardpremie)
+vermogen_onder_grens: boolean (bron: artikel 3)</code></pre>
+
+                <h3 style="margin: var(--spacing-6) 0 var(--spacing-4);">Output</h3>
+                <pre><code>heeft_recht_op_zorgtoeslag: boolean
+hoogte_zorgtoeslag: amount (eurocent)</code></pre>
+              </div>
+            </div>
+
+            <!-- Tab 3: YAML Source -->
+            <div class="tabs__panel">
+              <div class="yaml-view">
+                <pre><code>machine_readable:
+  definitions:
+    drempelinkomen_alleenstaande:
+      value: 3971900
+    drempelinkomen_aanvrager_met_toeslagpartner:
+      value: 5587500
+    percentage_drempelinkomen_alleenstaande:
+      value: 0.01896
+    percentage_drempelinkomen_partner:
+      value: 0.04273
+    percentage_toetsingsinkomen:
+      value: 0.137
+  execution:
+    produces:
+      legal_character: BESCHIKKING
+      decision_type: TOEKENNING
+    parameters:
+      - name: bsn
+        type: string
+        required: true
+    output:
+      - name: heeft_recht_op_zorgtoeslag
+        type: boolean
+      - name: hoogte_zorgtoeslag
+        type: amount
+        type_spec:
+          unit: eurocent</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Article Footer -->
+        <footer class="article-footer">
+          <button class="btn btn--secondary">
+            <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 8v5a1 1 0 001 1h8a1 1 0 001-1V8M11 4l-3-3-3 3M8 1v9"/>
+            </svg>
+            Deel
+          </button>
+          <a href="editor.html" class="btn btn--primary">
+            <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2l2 2-7 7-3 1 1-3 7-7zM11 3l2 2"/>
+            </svg>
+            Bewerken
+          </a>
+        </footer>
+      </article>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegelRecht - Navigation</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .showcase {
+      padding: var(--spacing-8);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .showcase__header {
+      margin-bottom: var(--spacing-8);
+      padding-bottom: var(--spacing-4);
+      border-bottom: var(--divider-width) solid var(--color-border);
+    }
+
+    .showcase__title {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-2);
+    }
+
+    .showcase__subtitle {
+      color: var(--color-text-secondary);
+    }
+
+    .showcase__nav {
+      display: flex;
+      gap: var(--spacing-2);
+      margin-bottom: var(--spacing-8);
+    }
+
+    .showcase__nav-link {
+      padding: var(--spacing-2) var(--spacing-4);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      background-color: var(--color-surface);
+      border: var(--divider-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+    }
+
+    .showcase__nav-link:hover {
+      color: var(--color-text-primary);
+      background-color: var(--color-slate-100);
+    }
+
+    .showcase__nav-link--active {
+      color: var(--color-white);
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .component-section {
+      margin-bottom: var(--spacing-8);
+    }
+
+    .component-section__title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-2);
+    }
+
+    .component-section__description {
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-4);
+    }
+
+    .demo-row {
+      padding: var(--spacing-4);
+      background-color: var(--color-slate-50);
+      border-radius: var(--border-radius-lg);
+      margin-bottom: var(--spacing-4);
+    }
+
+    .demo-container {
+      background-color: var(--color-surface);
+      border: var(--divider-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      overflow: hidden;
+    }
+
+    .code-block {
+      padding: var(--spacing-4);
+      background-color: var(--color-slate-900);
+      color: var(--color-slate-100);
+      border-radius: var(--border-radius-md);
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: var(--font-size-sm);
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <div class="showcase">
+    <header class="showcase__header">
+      <h1 class="showcase__title">Navigation</h1>
+      <p class="showcase__subtitle">Navigatie componenten voor de applicatie.</p>
+    </header>
+
+    <nav class="showcase__nav">
+      <a href="index.html" class="showcase__nav-link">Overzicht</a>
+      <a href="buttons.html" class="showcase__nav-link">Buttons</a>
+      <a href="list.html" class="showcase__nav-link">List</a>
+      <a href="tabs.html" class="showcase__nav-link">Tabs</a>
+      <a href="forms.html" class="showcase__nav-link">Forms</a>
+      <a href="navigation.html" class="showcase__nav-link showcase__nav-link--active">Navigation</a>
+    </nav>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Top Navigation Bar</h2>
+      <p class="component-section__description">Hoofd navigatiebalk met logo, zoekbalk, project selector en user menu.</p>
+
+      <div class="demo-row">
+        <div class="demo-container">
+          <header class="top-nav">
+            <a href="/" class="top-nav__logo">
+              <svg class="top-nav__logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+              <span>RegelRecht</span>
+            </a>
+
+            <div class="top-nav__search">
+              <svg class="top-nav__search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="7" cy="7" r="5"/>
+                <path d="M11 11l3 3"/>
+              </svg>
+              <input type="text" class="top-nav__search-input" placeholder="Zoeken in wetten en regels...">
+            </div>
+
+            <div class="top-nav__spacer"></div>
+
+            <button class="top-nav__project">
+              <svg class="top-nav__project-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="3" width="12" height="10" rx="1"/>
+                <path d="M2 6h12"/>
+              </svg>
+              <span>Zorgtoeslag Project</span>
+              <svg class="top-nav__project-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 6l4 4 4-4"/>
+              </svg>
+            </button>
+
+            <button class="top-nav__user">
+              <svg class="top-nav__user-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="8" cy="5" r="3"/>
+                <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+              </svg>
+            </button>
+          </header>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;header class="top-nav"&gt;
+  &lt;a href="/" class="top-nav__logo"&gt;
+    &lt;svg class="top-nav__logo-icon"&gt;...&lt;/svg&gt;
+    &lt;span&gt;RegelRecht&lt;/span&gt;
+  &lt;/a&gt;
+
+  &lt;div class="top-nav__search"&gt;
+    &lt;svg class="top-nav__search-icon"&gt;...&lt;/svg&gt;
+    &lt;input type="text" class="top-nav__search-input"
+           placeholder="Zoeken..."&gt;
+  &lt;/div&gt;
+
+  &lt;div class="top-nav__spacer"&gt;&lt;/div&gt;
+
+  &lt;button class="top-nav__project"&gt;
+    &lt;svg&gt;...&lt;/svg&gt;
+    &lt;span&gt;Project Name&lt;/span&gt;
+    &lt;svg&gt;...&lt;/svg&gt;
+  &lt;/button&gt;
+
+  &lt;button class="top-nav__user"&gt;
+    &lt;svg&gt;...&lt;/svg&gt;
+  &lt;/button&gt;
+&lt;/header&gt;</code>
+      </div>
+    </section>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Editor Navigation</h2>
+      <p class="component-section__description">Navigatiebalk voor de editor met back link.</p>
+
+      <div class="demo-row">
+        <div class="demo-container">
+          <header class="top-nav">
+            <div class="editor-nav">
+              <a href="#" class="editor-nav__back">
+                <svg class="editor-nav__back-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M10 4L6 8L10 12"/>
+                </svg>
+                <span>Browser</span>
+              </a>
+            </div>
+
+            <a href="/" class="top-nav__logo">
+              <svg class="top-nav__logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+              <span>RegelRecht</span>
+            </a>
+
+            <div class="top-nav__spacer"></div>
+
+            <button class="top-nav__project">
+              <svg class="top-nav__project-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="3" width="12" height="10" rx="1"/>
+                <path d="M2 6h12"/>
+              </svg>
+              <span>Zorgtoeslag Project</span>
+              <svg class="top-nav__project-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 6l4 4 4-4"/>
+              </svg>
+            </button>
+
+            <button class="top-nav__user">
+              <svg class="top-nav__user-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="8" cy="5" r="3"/>
+                <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+              </svg>
+            </button>
+          </header>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;div class="editor-nav"&gt;
+  &lt;a href="index.html" class="editor-nav__back"&gt;
+    &lt;svg class="editor-nav__back-icon"&gt;
+      &lt;path d="M10 4L6 8L10 12"/&gt;
+    &lt;/svg&gt;
+    &lt;span&gt;Browser&lt;/span&gt;
+  &lt;/a&gt;
+&lt;/div&gt;</code>
+      </div>
+    </section>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Pane Header</h2>
+      <p class="component-section__description">Header voor content panes met titel.</p>
+
+      <div class="demo-row">
+        <div class="demo-container" style="max-width: 360px;">
+          <div class="pane__header">
+            <h2 class="pane__title">Wetten en regels</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;div class="pane__header"&gt;
+  &lt;h2 class="pane__title"&gt;Wetten en regels&lt;/h2&gt;
+&lt;/div&gt;</code>
+      </div>
+    </section>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Collapsible (Details/Summary)</h2>
+      <p class="component-section__description">CSS-only expandable sections met native details element.</p>
+
+      <div class="demo-row">
+        <div class="demo-container" style="max-width: 360px;">
+          <details class="collapsible" open>
+            <summary class="collapsible__trigger">Hoofdstuk 1 - Algemeen</summary>
+            <div class="collapsible__content">
+              <div class="list">
+                <a href="#" class="list__item">
+                  <div class="list__content">
+                    <div class="list__title">Artikel 1 - Begripsbepalingen</div>
+                  </div>
+                </a>
+                <a href="#" class="list__item list__item--selected">
+                  <div class="list__content">
+                    <div class="list__title">Artikel 2 - Aanspraak zorgtoeslag</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </details>
+          <details class="collapsible">
+            <summary class="collapsible__trigger">Hoofdstuk 2 - Uitvoering</summary>
+            <div class="collapsible__content">
+              <div class="list">
+                <a href="#" class="list__item">
+                  <div class="list__content">
+                    <div class="list__title">Artikel 5 - Uitvoering</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;details class="collapsible" open&gt;
+  &lt;summary class="collapsible__trigger"&gt;
+    Hoofdstuk 1 - Algemeen
+  &lt;/summary&gt;
+  &lt;div class="collapsible__content"&gt;
+    &lt;!-- Content --&gt;
+  &lt;/div&gt;
+&lt;/details&gt;</code>
+      </div>
+    </section>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Article Footer</h2>
+      <p class="component-section__description">Footer met actie buttons voor artikel weergave.</p>
+
+      <div class="demo-row">
+        <div class="demo-container" style="max-width: 600px;">
+          <footer class="article-footer">
+            <button class="btn btn--secondary">
+              <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 8v5a1 1 0 001 1h8a1 1 0 001-1V8M11 4l-3-3-3 3M8 1v9"/>
+              </svg>
+              Deel
+            </button>
+            <button class="btn btn--primary">
+              <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2l2 2-7 7-3 1 1-3 7-7zM11 3l2 2"/>
+              </svg>
+              Bewerken
+            </button>
+          </footer>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;footer class="article-footer"&gt;
+  &lt;button class="btn btn--secondary"&gt;
+    &lt;svg class="btn__icon"&gt;...&lt;/svg&gt;
+    Deel
+  &lt;/button&gt;
+  &lt;button class="btn btn--primary"&gt;
+    &lt;svg class="btn__icon"&gt;...&lt;/svg&gt;
+    Bewerken
+  &lt;/button&gt;
+&lt;/footer&gt;</code>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,149 @@
+/* Pane-specific Styles */
+
+/* Browser Home Pane */
+.browser-home {
+  background-color: var(--color-slate-50);
+}
+
+.browser-home .pane__header {
+  background-color: var(--color-surface);
+}
+
+/* Browser Law Pane */
+.browser-law .pane__content {
+  background-color: var(--color-surface);
+}
+
+/* Browser Article Pane */
+.browser-article {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+}
+
+.browser-article .tabs {
+  flex: 1;
+  min-height: 0;
+}
+
+.browser-article .tabs__panel {
+  padding: var(--spacing-4);
+}
+
+/* Article Content Styling */
+.article-text {
+  max-width: 65ch;
+}
+
+.article-text h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-4);
+}
+
+.article-text h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  margin-top: var(--spacing-6);
+  margin-bottom: var(--spacing-2);
+}
+
+.article-text p {
+  margin-bottom: var(--spacing-4);
+  line-height: var(--line-height-relaxed);
+}
+
+.article-text ol,
+.article-text ul {
+  margin-bottom: var(--spacing-4);
+  padding-left: var(--spacing-6);
+}
+
+.article-text li {
+  margin-bottom: var(--spacing-2);
+  list-style: decimal;
+}
+
+/* Machine Readable View */
+.machine-view {
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: var(--font-size-sm);
+}
+
+.machine-view pre {
+  padding: var(--spacing-4);
+  background-color: var(--color-slate-50);
+  border-radius: var(--border-radius-md);
+  overflow-x: auto;
+}
+
+/* YAML View */
+.yaml-view {
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: var(--font-size-sm);
+}
+
+.yaml-view pre {
+  padding: var(--spacing-4);
+  background-color: var(--color-slate-900);
+  color: var(--color-slate-100);
+  border-radius: var(--border-radius-md);
+  overflow-x: auto;
+}
+
+/* Editor Panes */
+.editor-text {
+  background-color: var(--color-surface);
+}
+
+.editor-machine {
+  background-color: var(--color-slate-50);
+}
+
+/* Article Footer */
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-4);
+  border-top: var(--divider-width) solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn--secondary {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border: var(--divider-width) solid var(--color-border);
+}
+
+.btn--secondary:hover {
+  background-color: var(--color-slate-50);
+}
+
+.btn--primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+}
+
+.btn--primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn__icon {
+  width: 16px;
+  height: 16px;
+}

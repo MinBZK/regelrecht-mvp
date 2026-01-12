@@ -1,0 +1,334 @@
+/* Editor View Components */
+
+/* Document Tab Bar */
+.doc-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-slate-50);
+  border-bottom: var(--divider-width) solid var(--color-border);
+  overflow-x: auto;
+}
+
+.doc-tabs__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface);
+  border: var(--divider-width) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.doc-tabs__tab:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-slate-100);
+}
+
+.doc-tabs__tab--active {
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border-color: var(--color-primary);
+}
+
+.doc-tabs__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  border-radius: var(--border-radius-sm);
+}
+
+.doc-tabs__close:hover {
+  background-color: var(--color-slate-200);
+  color: var(--color-text-primary);
+}
+
+/* Editor Back Link */
+.editor-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.editor-nav__back {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+}
+
+.editor-nav__back:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-slate-100);
+}
+
+.editor-nav__back-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Editor Two-Column Layout */
+.editor-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Text Editor Pane */
+.editor-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: var(--divider-width) solid var(--color-border);
+}
+
+/* Text Editor Toolbar */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-surface);
+  border-bottom: var(--divider-width) solid var(--color-border);
+}
+
+.editor-toolbar__group {
+  display: flex;
+  gap: var(--spacing-0-5);
+}
+
+.editor-toolbar__group + .editor-toolbar__group {
+  margin-left: var(--spacing-2);
+  padding-left: var(--spacing-2);
+  border-left: var(--divider-width) solid var(--color-border);
+}
+
+.editor-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editor-toolbar__btn:hover {
+  background-color: var(--color-slate-100);
+  color: var(--color-text-primary);
+}
+
+.editor-toolbar__btn--active {
+  background-color: var(--color-slate-200);
+  color: var(--color-text-primary);
+}
+
+.editor-toolbar__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Text Content Area */
+.editor-text__content {
+  flex: 1;
+  padding: var(--spacing-4);
+  overflow-y: auto;
+}
+
+.editor-text__body {
+  max-width: 65ch;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+}
+
+.editor-text__body h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-4);
+}
+
+.editor-text__body p {
+  margin-bottom: var(--spacing-4);
+}
+
+/* Machine Readable Pane */
+.editor-machine {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-slate-50);
+}
+
+.editor-machine__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-surface);
+  border-bottom: var(--divider-width) solid var(--color-border);
+}
+
+.editor-machine__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Lid Selector (Paragraph tabs) */
+.lid-selector {
+  display: flex;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-surface);
+  border-bottom: var(--divider-width) solid var(--color-border);
+}
+
+.lid-selector__btn {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background-color: transparent;
+  border: var(--divider-width) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lid-selector__btn:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-slate-100);
+}
+
+.lid-selector__btn--active {
+  color: var(--color-white);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-select {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border: var(--divider-width) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-2) center;
+  padding-right: var(--spacing-8);
+}
+
+.form-select:hover {
+  border-color: var(--color-slate-400);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Editor Sections */
+.editor-section {
+  background-color: var(--color-surface);
+  border-bottom: var(--divider-width) solid var(--color-border);
+}
+
+.editor-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.editor-section__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.editor-section__actions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.editor-section__content {
+  padding: 0 var(--spacing-4) var(--spacing-4);
+}
+
+/* Small buttons for section actions */
+.btn--sm {
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+}
+
+.btn--ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+}
+
+.btn--ghost:hover {
+  background-color: var(--color-slate-100);
+  color: var(--color-text-primary);
+}
+
+/* Data rows in sections */
+.data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2) 0;
+  border-bottom: var(--divider-width) solid var(--color-border);
+}
+
+.data-row:last-child {
+  border-bottom: none;
+}
+
+.data-row__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.data-row__value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+/* Machine Content Scrollable Area */
+.editor-machine__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+}
