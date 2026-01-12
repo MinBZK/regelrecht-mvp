@@ -22,14 +22,14 @@ body {
 }
 
 /* Main Content Area (below nav) */
-.columns-split-view {
+.main-content {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* Split View Pane Base Styles */
-.split-view__pane {
+/* Pane Base Styles */
+.pane {
   display: flex;
   flex-direction: column;
   background-color: var(--color-surface);
@@ -37,23 +37,23 @@ body {
   overflow: hidden;
 }
 
-.split-view__pane:last-child {
+.pane:last-child {
   border-right: none;
 }
 
-.split-view__pane--narrow {
+.pane--narrow {
   width: var(--pane-width-narrow);
   min-width: var(--pane-width-narrow);
   flex-shrink: 0;
 }
 
-.split-view__pane--wide {
+.pane--wide {
   flex: 1;
   min-width: var(--pane-width-wide);
 }
 
-/* Page Header */
-.page__header {
+/* Pane Header */
+.pane__header {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -61,15 +61,8 @@ body {
   min-height: var(--nav-height);
 }
 
-.page__header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  margin-left: auto;
-}
-
-/* Search Field */
-.search-field {
+/* Pane Search */
+.pane__search {
   display: flex;
   align-items: center;
   margin: 0 var(--spacing-4) var(--spacing-3);
@@ -80,7 +73,7 @@ body {
   gap: var(--spacing-2);
 }
 
-.search-field__icon {
+.pane__search-icon {
   width: 16px;
   height: 16px;
   min-width: 16px;
@@ -91,7 +84,7 @@ body {
   flex-shrink: 0;
 }
 
-.search-field__input {
+.pane__search-input {
   flex: 1;
   border: none;
   background: transparent;
@@ -100,45 +93,18 @@ body {
   outline: none;
 }
 
-.search-field__input::placeholder {
+.pane__search-input::placeholder {
   color: var(--color-text-muted);
 }
 
-.title-bar__title {
+.pane__title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-snug);
 }
 
-/* Law Pane Header */
-.law-pane__header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3) var(--spacing-4);
-  border-bottom: var(--divider-width) solid var(--color-border);
-  background-color: var(--color-surface);
-}
-
-.law-pane__title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-snug);
-}
-
-.law-pane__toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-}
-
-/* Make heart icon white in accent-filled button */
-.law-pane__toolbar .toolbar-heart img {
-  filter: brightness(0) invert(1);
-}
-
-/* Page Main Content */
-.page__main {
+/* Pane Content */
+.pane__content {
   flex: 1;
   overflow-y: auto;
 }
@@ -163,23 +129,6 @@ body {
 
 .scrollable::-webkit-scrollbar-thumb:hover {
   background: var(--color-slate-400);
-}
-
-/* Hide scrollbar in law pane */
-.browser-law-pane .scrollable,
-.browser-law-pane .page__main,
-.browser-law-pane .page__main.scrollable {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.browser-law-pane .scrollable::-webkit-scrollbar,
-.browser-law-pane .page__main::-webkit-scrollbar,
-.browser-law-pane .page__main.scrollable::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
 }
 
 /* Divider */

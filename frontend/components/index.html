@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegelRecht - Component Library</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    /* Showcase specific styles */
+    .showcase {
+      padding: var(--spacing-8);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .showcase__header {
+      margin-bottom: var(--spacing-8);
+      padding-bottom: var(--spacing-4);
+      border-bottom: var(--divider-width) solid var(--color-border);
+    }
+
+    .showcase__title {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-2);
+    }
+
+    .showcase__subtitle {
+      color: var(--color-text-secondary);
+    }
+
+    .showcase__nav {
+      display: flex;
+      gap: var(--spacing-2);
+      margin-bottom: var(--spacing-8);
+    }
+
+    .showcase__nav-link {
+      padding: var(--spacing-2) var(--spacing-4);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      background-color: var(--color-surface);
+      border: var(--divider-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+    }
+
+    .showcase__nav-link:hover {
+      color: var(--color-text-primary);
+      background-color: var(--color-slate-100);
+    }
+
+    .showcase__nav-link--active {
+      color: var(--color-white);
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .component-section {
+      margin-bottom: var(--spacing-8);
+    }
+
+    .component-section__title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-4);
+    }
+
+    .component-section__description {
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-4);
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--spacing-4);
+    }
+
+    .component-card {
+      display: flex;
+      flex-direction: column;
+      padding: var(--spacing-4);
+      background-color: var(--color-surface);
+      border: var(--divider-width) solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      text-decoration: none;
+      color: inherit;
+      transition: all var(--transition-fast);
+    }
+
+    .component-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+    }
+
+    .component-card__title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-2);
+    }
+
+    .component-card__description {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-4);
+    }
+
+    .component-card__preview {
+      padding: var(--spacing-4);
+      background-color: var(--color-slate-50);
+      border-radius: var(--border-radius-md);
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Mini preview styles */
+    .preview-btn {
+      padding: var(--spacing-2) var(--spacing-4);
+      font-size: var(--font-size-sm);
+      background-color: var(--color-primary);
+      color: var(--color-white);
+      border-radius: var(--border-radius-md);
+    }
+
+    .preview-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .preview-list__item {
+      padding: var(--spacing-2);
+      font-size: var(--font-size-xs);
+      background-color: var(--color-surface);
+      border-radius: var(--border-radius-sm);
+    }
+
+    .preview-list__item--selected {
+      background-color: var(--color-primary);
+      color: var(--color-white);
+    }
+
+    .preview-tabs {
+      display: flex;
+      gap: var(--spacing-1);
+    }
+
+    .preview-tab {
+      padding: var(--spacing-1) var(--spacing-2);
+      font-size: var(--font-size-xs);
+      border-radius: var(--border-radius-sm);
+    }
+
+    .preview-tab--active {
+      background-color: var(--color-primary);
+      color: var(--color-white);
+    }
+
+    .preview-tab--inactive {
+      background-color: var(--color-surface);
+      color: var(--color-text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="showcase">
+    <header class="showcase__header">
+      <h1 class="showcase__title">RegelRecht Component Library</h1>
+      <p class="showcase__subtitle">Design system componenten voor de RegelRecht UI</p>
+    </header>
+
+    <nav class="showcase__nav">
+      <a href="index.html" class="showcase__nav-link showcase__nav-link--active">Overzicht</a>
+      <a href="buttons.html" class="showcase__nav-link">Buttons</a>
+      <a href="list.html" class="showcase__nav-link">List</a>
+      <a href="tabs.html" class="showcase__nav-link">Tabs</a>
+      <a href="forms.html" class="showcase__nav-link">Forms</a>
+      <a href="navigation.html" class="showcase__nav-link">Navigation</a>
+    </nav>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Alle Componenten</h2>
+      <p class="component-section__description">Klik op een component voor details en varianten.</p>
+
+      <div class="component-grid">
+        <a href="buttons.html" class="component-card">
+          <h3 class="component-card__title">Buttons</h3>
+          <p class="component-card__description">Primary, secondary en ghost button varianten.</p>
+          <div class="component-card__preview">
+            <div class="preview-btn">Button</div>
+          </div>
+        </a>
+
+        <a href="list.html" class="component-card">
+          <h3 class="component-card__title">List</h3>
+          <p class="component-card__description">Lijsten met titels, subtitels en badges.</p>
+          <div class="component-card__preview">
+            <div class="preview-list">
+              <div class="preview-list__item preview-list__item--selected">Item 1</div>
+              <div class="preview-list__item">Item 2</div>
+              <div class="preview-list__item">Item 3</div>
+            </div>
+          </div>
+        </a>
+
+        <a href="tabs.html" class="component-card">
+          <h3 class="component-card__title">Tabs</h3>
+          <p class="component-card__description">CSS-only tab switching met pill style.</p>
+          <div class="component-card__preview">
+            <div class="preview-tabs">
+              <div class="preview-tab preview-tab--active">Tab 1</div>
+              <div class="preview-tab preview-tab--inactive">Tab 2</div>
+              <div class="preview-tab preview-tab--inactive">Tab 3</div>
+            </div>
+          </div>
+        </a>
+
+        <a href="forms.html" class="component-card">
+          <h3 class="component-card__title">Forms</h3>
+          <p class="component-card__description">Form controls: inputs, selects, labels.</p>
+          <div class="component-card__preview">
+            <select class="form-select" style="width: 150px;">
+              <option>Select option</option>
+            </select>
+          </div>
+        </a>
+
+        <a href="navigation.html" class="component-card">
+          <h3 class="component-card__title">Navigation</h3>
+          <p class="component-card__description">Top navigation bar en document tabs.</p>
+          <div class="component-card__preview">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+              <span style="color: var(--color-primary); font-weight: 550;">RegelRecht</span>
+              <span style="color: var(--color-text-secondary);">|</span>
+              <span style="color: var(--color-text-secondary);">Menu</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="../index.html" class="component-card">
+          <h3 class="component-card__title">Browser View</h3>
+          <p class="component-card__description">3-koloms layout met wetten browser.</p>
+          <div class="component-card__preview">
+            <div style="display: flex; gap: 4px; width: 100%;">
+              <div style="flex: 1; height: 60px; background: var(--color-slate-200); border-radius: 4px;"></div>
+              <div style="flex: 1; height: 60px; background: var(--color-slate-200); border-radius: 4px;"></div>
+              <div style="flex: 2; height: 60px; background: var(--color-slate-200); border-radius: 4px;"></div>
+            </div>
+          </div>
+        </a>
+
+        <a href="../editor.html" class="component-card">
+          <h3 class="component-card__title">Editor View</h3>
+          <p class="component-card__description">2-koloms layout voor artikel bewerking.</p>
+          <div class="component-card__preview">
+            <div style="display: flex; gap: 4px; width: 100%;">
+              <div style="flex: 1; height: 60px; background: var(--color-slate-200); border-radius: 4px;"></div>
+              <div style="flex: 1; height: 60px; background: var(--color-slate-200); border-radius: 4px;"></div>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="component-section">
+      <h2 class="component-section__title">Design Tokens</h2>
+      <p class="component-section__description">Kleuren, typography en spacing uit Figma.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--spacing-4); margin-top: var(--spacing-4);">
+        <!-- Colors -->
+        <div style="background: var(--color-surface); border: var(--divider-width) solid var(--color-border); border-radius: var(--border-radius-lg); padding: var(--spacing-4);">
+          <h4 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-3);">Primary Colors</h4>
+          <div style="display: flex; flex-direction: column; gap: var(--spacing-2);">
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 32px; height: 32px; background: var(--color-primary); border-radius: var(--border-radius-sm);"></div>
+              <span style="font-size: var(--font-size-xs); font-family: monospace;">#154273</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 32px; height: 32px; background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--border-radius-sm);"></div>
+              <span style="font-size: var(--font-size-xs); font-family: monospace;">#FFFFFF</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slate -->
+        <div style="background: var(--color-surface); border: var(--divider-width) solid var(--color-border); border-radius: var(--border-radius-lg); padding: var(--spacing-4);">
+          <h4 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-3);">Slate Palette</h4>
+          <div style="display: flex; flex-direction: column; gap: var(--spacing-1);">
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 24px; height: 24px; background: var(--color-slate-50); border: 1px solid var(--color-border); border-radius: 2px;"></div>
+              <span style="font-size: 10px; font-family: monospace;">50</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 24px; height: 24px; background: var(--color-slate-200); border-radius: 2px;"></div>
+              <span style="font-size: 10px; font-family: monospace;">200</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 24px; height: 24px; background: var(--color-slate-500); border-radius: 2px;"></div>
+              <span style="font-size: 10px; font-family: monospace;">500</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 24px; height: 24px; background: var(--color-slate-900); border-radius: 2px;"></div>
+              <span style="font-size: 10px; font-family: monospace;">900</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Typography -->
+        <div style="background: var(--color-surface); border: var(--divider-width) solid var(--color-border); border-radius: var(--border-radius-lg); padding: var(--spacing-4);">
+          <h4 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-3);">Typography</h4>
+          <div style="display: flex; flex-direction: column; gap: var(--spacing-2);">
+            <span style="font-size: var(--font-size-xs);">12px - XS</span>
+            <span style="font-size: var(--font-size-sm);">14px - SM</span>
+            <span style="font-size: var(--font-size-base);">16px - Base</span>
+            <span style="font-size: var(--font-size-lg);">18px - LG</span>
+            <span style="font-size: var(--font-size-xl);">20px - XL</span>
+          </div>
+        </div>
+
+        <!-- Spacing -->
+        <div style="background: var(--color-surface); border: var(--divider-width) solid var(--color-border); border-radius: var(--border-radius-lg); padding: var(--spacing-4);">
+          <h4 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-3);">Spacing</h4>
+          <div style="display: flex; flex-direction: column; gap: var(--spacing-2);">
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 4px; height: 16px; background: var(--color-primary);"></div>
+              <span style="font-size: 10px; font-family: monospace;">4px</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 8px; height: 16px; background: var(--color-primary);"></div>
+              <span style="font-size: 10px; font-family: monospace;">8px</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 16px; height: 16px; background: var(--color-primary);"></div>
+              <span style="font-size: 10px; font-family: monospace;">16px</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--spacing-2);">
+              <div style="width: 24px; height: 16px; background: var(--color-primary);"></div>
+              <span style="font-size: 10px; font-family: monospace;">24px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
