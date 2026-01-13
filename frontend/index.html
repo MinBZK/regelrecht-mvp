@@ -112,67 +112,105 @@
 
       <!-- Law Pane: Structure of selected law -->
       <section class="split-view__pane split-view__pane--narrow browser-law-pane">
-        <div class="page__header">
-          <h2 class="title-bar__title">Wet op de zorgtoeslag</h2>
+        <div class="law-pane__header">
+          <h2 class="law-pane__title">Wet op de zorgtoeslag</h2>
+          <div class="law-pane__toolbar">
+            <button class="icon-btn icon-btn--filled" title="Favoriet">
+              <img src="assets/icons/heart-filled (favorite-filled).svg" alt="Favoriet" width="16" height="16">
+            </button>
+            <button class="text-btn" title="Filter">
+              <img src="assets/icons/list-decreasing-lines (filter).svg" alt="" width="16" height="16">
+              <span>Filter</span>
+            </button>
+            <button class="text-btn" title="Download">
+              <img src="assets/icons/arrow-down-in-bucket (download).svg" alt="" width="16" height="16">
+              <span>Download</span>
+            </button>
+            <button class="icon-btn" title="Meer opties">
+              <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+            </button>
+          </div>
         </div>
         <div class="page__main scrollable">
-          <!-- Articles as list -->
+          <!-- Articles as list with sections -->
           <div class="list list--dividers">
+            <div class="list__group-header">Deel</div>
+            <div class="list__group-subheader">Hoofdstuk</div>
+            <div class="list__group-subheader list__group-subheader--level2">Paragraaf</div>
+            <div class="list__group-subheader list__group-subheader--level3">Subparagraaf</div>
             <a href="#" class="list__item">
               <div class="list__content">
-                <div class="list__title">Artikel 1 - Begripsbepalingen</div>
+                <div class="list__title">Artikel 1</div>
+                <div class="list__subtitle">Begripsbepalingen en reikwijdte</div>
               </div>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
             <a href="#" class="list__item">
               <div class="list__content">
-                <div class="list__title">Artikel 1a - Verantwoordelijke minister</div>
+                <div class="list__title">Artikel 1a</div>
+                <div class="list__subtitle">Verantwoordelijke minister</div>
               </div>
-              <span class="list__badge">MR</span>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
+            </a>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel 2</div>
+                <div class="list__subtitle">Aanspraak op zorgtoeslag</div>
+              </div>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
             <a href="#" class="list__item list__item--selected">
               <div class="list__content">
-                <div class="list__title">Artikel 2 - Aanspraak zorgtoeslag</div>
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
               </div>
-              <span class="list__badge">MR</span>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
             <a href="#" class="list__item">
               <div class="list__content">
-                <div class="list__title">Artikel 3 - Vermogenstoets</div>
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
               </div>
-              <span class="list__badge">MR</span>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
+            </a>
+            <div class="list__group-subheader list__group-subheader--level3">Subparagraaf</div>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
+              </div>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
             <a href="#" class="list__item">
               <div class="list__content">
-                <div class="list__title">Artikel 4 - Standaardpremie</div>
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
               </div>
-              <span class="list__badge">MR</span>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
             <a href="#" class="list__item">
               <div class="list__content">
-                <div class="list__title">Artikel 4a - Woonlandbeginsel</div>
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
               </div>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
+            </a>
+            <div class="list__group-header">Hoofdstuk</div>
+            <div class="list__group-subheader">Paragraaf</div>
+            <div class="list__group-subheader list__group-subheader--level2">Subparagraaf</div>
+            <a href="#" class="list__item">
+              <div class="list__content">
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
+              </div>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
             <a href="#" class="list__item">
               <div class="list__content">
-                <div class="list__title">Artikel 5 - Uitvoering</div>
+                <div class="list__title">Artikel X</div>
+                <div class="list__subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing...</div>
               </div>
-              <span class="list__badge">MR</span>
-            </a>
-            <a href="#" class="list__item">
-              <div class="list__content">
-                <div class="list__title">Artikel 6 - Evaluatie</div>
-              </div>
-            </a>
-            <a href="#" class="list__item">
-              <div class="list__content">
-                <div class="list__title">Artikel 7 - Inwerkingtreding</div>
-              </div>
-            </a>
-            <a href="#" class="list__item">
-              <div class="list__content">
-                <div class="list__title">Artikel 8 - Citeertitel</div>
-              </div>
-              <span class="list__badge">MR</span>
+              <img src="assets/icons/chevron-right-small.svg" class="list__chevron-icon" alt="" width="16" height="16">
             </a>
           </div>
         </div>
@@ -185,10 +223,26 @@
           <input type="radio" name="article-tabs" id="tab-2" class="tabs__input">
           <input type="radio" name="article-tabs" id="tab-3" class="tabs__input">
 
-          <nav class="tabs__nav">
+          <nav class="tabs__nav tabs__nav--centered">
             <label for="tab-1" class="tabs__label">Tekst</label>
             <label for="tab-2" class="tabs__label">Machine</label>
             <label for="tab-3" class="tabs__label">YAML</label>
+          </nav>
+
+          <!-- Lid Navigation -->
+          <nav class="lid-nav">
+            <button class="lid-nav__arrow" title="Vorige">
+              <img src="assets/icons/chevron-left-small.svg" alt="Vorige" width="16" height="16">
+            </button>
+            <div class="lid-nav__buttons">
+              <button class="lid-nav__btn lid-nav__btn--active">Lid 1</button>
+              <button class="lid-nav__btn">Lid 2</button>
+              <button class="lid-nav__btn">Lid 3</button>
+              <button class="lid-nav__btn">Lid 4</button>
+            </div>
+            <button class="lid-nav__arrow" title="Volgende">
+              <img src="assets/icons/chevron-right-small.svg" alt="Volgende" width="16" height="16">
+            </button>
           </nav>
 
           <div class="tabs__panels">

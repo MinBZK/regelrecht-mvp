@@ -61,6 +61,67 @@ body {
   min-height: var(--nav-height);
 }
 
+.page__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-left: auto;
+}
+
+/* Icon Button */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.icon-btn:hover {
+  background-color: var(--color-slate-100);
+}
+
+.icon-btn img {
+  opacity: 0.6;
+}
+
+.icon-btn:hover img {
+  opacity: 1;
+}
+
+.icon-btn--filled img {
+  opacity: 1;
+}
+
+/* Text Button (icon + label) - matches header background */
+.text-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  background-color: var(--color-slate-50);
+  border: var(--divider-width) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.text-btn:hover {
+  background-color: var(--color-white);
+}
+
+.text-btn img {
+  opacity: 0.7;
+}
+
 /* Search Field */
 .search-field {
   display: flex;
@@ -103,6 +164,28 @@ body {
   line-height: var(--line-height-snug);
 }
 
+/* Law Pane Header */
+.law-pane__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: var(--divider-width) solid var(--color-border);
+  background-color: var(--color-slate-50);
+}
+
+.law-pane__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.law-pane__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
 /* Page Main Content */
 .page__main {
   flex: 1;
@@ -129,6 +212,23 @@ body {
 
 .scrollable::-webkit-scrollbar-thumb:hover {
   background: var(--color-slate-400);
+}
+
+/* Hide scrollbar in law pane */
+.browser-law-pane .scrollable,
+.browser-law-pane .page__main,
+.browser-law-pane .page__main.scrollable {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.browser-law-pane .scrollable::-webkit-scrollbar,
+.browser-law-pane .page__main::-webkit-scrollbar,
+.browser-law-pane .page__main.scrollable::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 /* Divider */
