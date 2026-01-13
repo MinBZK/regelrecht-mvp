@@ -1,6 +1,6 @@
 /* Top Navigation Bar */
 
-.top-nav {
+.top-navigation-bar {
   display: flex;
   align-items: center;
   height: var(--nav-height);
@@ -11,14 +11,14 @@
 }
 
 /* Title */
-.top-nav__title {
+.top-navigation-bar__title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
 
 /* Action buttons */
-.top-nav__action {
+.top-navigation-bar__action {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
@@ -29,17 +29,17 @@
   cursor: pointer;
 }
 
-.top-nav__action:hover {
+.top-navigation-bar__action:hover {
   background-color: var(--color-slate-100);
 }
 
-.top-nav__action-icon {
+.top-navigation-bar__action-icon {
   width: 16px;
   height: 16px;
 }
 
-/* Logo (legacy) */
-.top-nav__logo {
+/* Logo */
+.top-navigation-bar__logo {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -48,13 +48,13 @@
   color: var(--color-primary);
 }
 
-.top-nav__logo-icon {
+.top-navigation-bar__logo-icon {
   width: 24px;
   height: 24px;
 }
 
 /* Search */
-.top-nav__search {
+.top-navigation-bar__search {
   display: flex;
   align-items: center;
   flex: 1;
@@ -67,13 +67,13 @@
   gap: var(--spacing-2);
 }
 
-.top-nav__search-icon {
+.top-navigation-bar__search-icon {
   width: 16px;
   height: 16px;
   color: var(--color-text-secondary);
 }
 
-.top-nav__search-input {
+.top-navigation-bar__search-input {
   flex: 1;
   border: none;
   background: transparent;
@@ -82,17 +82,17 @@
   outline: none;
 }
 
-.top-nav__search-input::placeholder {
+.top-navigation-bar__search-input::placeholder {
   color: var(--color-text-muted);
 }
 
 /* Spacer */
-.top-nav__spacer {
+.top-navigation-bar__spacer {
   flex: 1;
 }
 
 /* Project Selector */
-.top-nav__project {
+.top-navigation-bar__project {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
@@ -103,17 +103,17 @@
   cursor: pointer;
 }
 
-.top-nav__project:hover {
+.top-navigation-bar__project:hover {
   background-color: var(--color-slate-100);
 }
 
-.top-nav__project-icon {
+.top-navigation-bar__project-icon {
   width: 16px;
   height: 16px;
 }
 
 /* User Menu */
-.top-nav__user {
+.top-navigation-bar__user {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,11 +124,11 @@
   cursor: pointer;
 }
 
-.top-nav__user:hover {
+.top-navigation-bar__user:hover {
   background-color: var(--color-slate-300);
 }
 
-.top-nav__user-icon {
+.top-navigation-bar__user-icon {
   width: 16px;
   height: 16px;
   color: var(--color-text-secondary);

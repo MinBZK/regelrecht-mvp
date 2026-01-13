@@ -12,54 +12,54 @@
 <body>
   <div class="app">
     <!-- Top Navigation Bar -->
-    <header class="top-nav">
-      <span class="top-nav__title">RegelRecht browser</span>
+    <header class="top-navigation-bar">
+      <span class="top-navigation-bar__title">RegelRecht browser</span>
 
-      <div class="top-nav__spacer"></div>
+      <div class="top-navigation-bar__spacer"></div>
 
-      <button class="top-nav__action">
-        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <button class="top-navigation-bar__action">
+        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="7" cy="7" r="5"/>
           <path d="M11 11l3 3"/>
         </svg>
         <span>Zoeken</span>
       </button>
 
-      <button class="top-nav__action">
+      <button class="top-navigation-bar__action">
         <span>RR project</span>
-        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M4 6l4 4 4-4"/>
         </svg>
       </button>
 
-      <button class="top-nav__action">
-        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <button class="top-navigation-bar__action">
+        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="8" cy="5" r="3"/>
           <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
         </svg>
         <span>A.J. Jansen-de Jong</span>
-        <svg class="top-nav__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M4 6l4 4 4-4"/>
         </svg>
       </button>
     </header>
 
     <!-- Main Content: 3 Panes -->
-    <main class="main-content">
+    <main class="columns-split-view">
 
       <!-- Home Pane: List of regulations -->
-      <aside class="pane pane--narrow browser-home">
-        <div class="pane__header">
-          <h1 class="pane__title">Wetten en regels</h1>
+      <aside class="split-view__pane split-view__pane--narrow browser-home-pane">
+        <div class="page__header">
+          <h1 class="title-bar__title">Wetten en regels</h1>
         </div>
-        <div class="pane__search">
-          <svg class="pane__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <div class="search-field">
+          <svg class="search-field__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="7" cy="7" r="5"/>
             <path d="M11 11l3 3"/>
           </svg>
-          <input type="text" class="pane__search-input" placeholder="Zoeken">
+          <input type="text" class="search-field__input" placeholder="Zoeken">
         </div>
-        <div class="pane__content scrollable">
+        <div class="page__main scrollable">
           <div class="list">
             <div class="list__section">Favorieten</div>
             <a href="#" class="list__item list__item--selected">
@@ -111,11 +111,11 @@
       </aside>
 
       <!-- Law Pane: Structure of selected law -->
-      <section class="pane pane--narrow browser-law">
-        <div class="pane__header">
-          <h2 class="pane__title">Wet op de zorgtoeslag</h2>
+      <section class="split-view__pane split-view__pane--narrow browser-law-pane">
+        <div class="page__header">
+          <h2 class="title-bar__title">Wet op de zorgtoeslag</h2>
         </div>
-        <div class="pane__content scrollable">
+        <div class="page__main scrollable">
           <!-- Articles as list -->
           <div class="list list--dividers">
             <a href="#" class="list__item">
@@ -179,7 +179,7 @@
       </section>
 
       <!-- Article Pane: Selected article with tabs -->
-      <article class="pane pane--wide browser-article">
+      <article class="split-view__pane split-view__pane--wide browser-article-pane">
         <div class="tabs">
           <input type="radio" name="article-tabs" id="tab-1" class="tabs__input" checked>
           <input type="radio" name="article-tabs" id="tab-2" class="tabs__input">
@@ -272,8 +272,8 @@ hoogte_zorgtoeslag: amount (eurocent)</code></pre>
           </div>
         </div>
 
-        <!-- Article Footer -->
-        <footer class="article-footer">
+        <!-- Page Footer -->
+        <footer class="page__footer">
           <button class="btn btn--secondary">
             <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M3 8v5a1 1 0 001 1h8a1 1 0 001-1V8M11 4l-3-3-3 3M8 1v9"/>

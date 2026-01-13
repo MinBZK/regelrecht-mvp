@@ -1,32 +1,32 @@
 /* Pane-specific Styles */
 
 /* Browser Home Pane */
-.browser-home {
+.browser-home-pane {
   background-color: var(--color-slate-50);
 }
 
-.browser-home .pane__header {
+.browser-home-pane .page__header {
   background-color: var(--color-surface);
 }
 
 /* Browser Law Pane */
-.browser-law .pane__content {
+.browser-law-pane .page__main {
   background-color: var(--color-surface);
 }
 
 /* Browser Article Pane */
-.browser-article {
+.browser-article-pane {
   display: flex;
   flex-direction: column;
   background-color: var(--color-surface);
 }
 
-.browser-article .tabs {
+.browser-article-pane .tabs {
   flex: 1;
   min-height: 0;
 }
 
-.browser-article .tabs__panel {
+.browser-article-pane .tabs__panel {
   padding: var(--spacing-4);
 }
 
@@ -91,17 +91,18 @@
   overflow-x: auto;
 }
 
-/* Editor Panes */
-.editor-text {
+/* Editor Text Pane */
+.editor-text-pane {
   background-color: var(--color-surface);
 }
 
-.editor-machine {
+/* Editor Machine Pane */
+.editor-machine-pane {
   background-color: var(--color-slate-50);
 }
 
-/* Article Footer */
-.article-footer {
+/* Page Footer */
+.page__footer {
   display: flex;
   justify-content: space-between;
   padding: var(--spacing-4);
