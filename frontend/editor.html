@@ -13,71 +13,77 @@
   <div class="app">
     <!-- Top Navigation Bar -->
     <header class="top-navigation-bar">
-      <div class="top-navigation-bar__back-button">
-        <a href="index.html" class="top-navigation-bar__back-button-link">
-          <svg class="top-navigation-bar__back-button-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M10 4L6 8L10 12"/>
-          </svg>
-          <span>Browser</span>
-        </a>
-      </div>
-
-      <a href="/" class="top-navigation-bar__logo">
-        <svg class="top-navigation-bar__logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-          <path d="M2 17l10 5 10-5"/>
-          <path d="M2 12l10 5 10-5"/>
-        </svg>
-        <span>RegelRecht</span>
-      </a>
+      <span class="top-navigation-bar__title">regelrecht editor</span>
 
       <div class="top-navigation-bar__spacer"></div>
 
-      <button class="top-navigation-bar__project">
-        <svg class="top-navigation-bar__project-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="2" y="3" width="12" height="10" rx="1"/>
-          <path d="M2 6h12"/>
-        </svg>
-        <span>Zorgtoeslag Project</span>
-        <svg class="top-navigation-bar__project-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M4 6l4 4 4-4"/>
-        </svg>
+      <a href="index.html" class="top-navigation-bar__action">
+        <img src="assets/icons/chevron-left-small.svg" alt="" width="16" height="16">
+        <span>Browser</span>
+      </a>
+
+      <button class="top-navigation-bar__action">
+        <img src="assets/icons/magnifier (search).svg" alt="" width="16" height="16">
+        <span>Zoeken</span>
       </button>
 
-      <button class="top-navigation-bar__user">
-        <svg class="top-navigation-bar__user-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="5" r="3"/>
-          <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
-        </svg>
+      <button class="top-navigation-bar__action">
+        <span>RR project</span>
+        <img src="assets/icons/caret-down.svg" alt="" width="16" height="16">
+      </button>
+
+      <button class="top-navigation-bar__action">
+        <img src="assets/icons/person (profile, account).svg" alt="" width="16" height="16">
+        <span>A.J. Jansen-de Jong</span>
+        <img src="assets/icons/caret-down.svg" alt="" width="16" height="16">
       </button>
     </header>
 
     <!-- Document Tab Bar -->
     <div class="document-tab-bar">
       <div class="document-tab-bar__item document-tab-bar__item--active">
-        <span>Artikel 2 - Aanspraak zorgtoeslag</span>
+        <div class="document-tab-bar__item-content">
+          <span class="document-tab-bar__item-title">Artikel 2</span>
+          <span class="document-tab-bar__item-subtitle">Wet op de zorgtoeslag</span>
+        </div>
         <button class="document-tab-bar__item-dismiss-button">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4 4l8 8M12 4l-8 8"/>
-          </svg>
+          <img src="assets/icons/dismiss-small.svg" alt="Sluiten" width="16" height="16">
         </button>
       </div>
       <div class="document-tab-bar__item">
-        <span>Artikel 3 - Vermogenstoets</span>
+        <div class="document-tab-bar__item-content">
+          <span class="document-tab-bar__item-title">Artikel 5</span>
+          <span class="document-tab-bar__item-subtitle">Wet op de zorgtoeslag</span>
+        </div>
         <button class="document-tab-bar__item-dismiss-button">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4 4l8 8M12 4l-8 8"/>
-          </svg>
+          <img src="assets/icons/dismiss-small.svg" alt="Sluiten" width="16" height="16">
         </button>
       </div>
       <div class="document-tab-bar__item">
-        <span>Artikel 4 - Standaardpremie</span>
+        <div class="document-tab-bar__item-content">
+          <span class="document-tab-bar__item-title">Artikel 17</span>
+          <span class="document-tab-bar__item-subtitle">Awir</span>
+        </div>
         <button class="document-tab-bar__item-dismiss-button">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4 4l8 8M12 4l-8 8"/>
-          </svg>
+          <img src="assets/icons/dismiss-small.svg" alt="Sluiten" width="16" height="16">
         </button>
       </div>
+      <div class="document-tab-bar__item">
+        <div class="document-tab-bar__item-content">
+          <span class="document-tab-bar__item-title">Artikel 13</span>
+          <span class="document-tab-bar__item-subtitle">Algemene wet inzake rijksbelastingen</span>
+        </div>
+        <button class="document-tab-bar__item-dismiss-button">
+          <img src="assets/icons/dismiss-small.svg" alt="Sluiten" width="16" height="16">
+        </button>
+      </div>
+      <div class="document-tab-bar__spacer"></div>
+      <button class="document-tab-bar__action-btn" title="Meer opties">
+        <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+      </button>
+      <button class="document-tab-bar__action-btn document-tab-bar__action-btn--primary" title="Nieuw artikel">
+        <img src="assets/icons/plus.svg" alt="Nieuw" width="16" height="16">
+      </button>
     </div>
 
     <!-- Main Editor Content: 2 Panes -->
@@ -86,50 +92,37 @@
       <!-- Left Pane: Text Editor -->
       <section class="editor-text-pane">
         <div class="editor-text-pane__toolbar">
+          <div class="editor-text-pane__toolbar-dropdown">
+            <select class="editor-text-pane__toolbar-select">
+              <option selected>Tekst</option>
+              <option>Kop 1</option>
+              <option>Kop 2</option>
+            </select>
+          </div>
           <div class="editor-text-pane__toolbar-group">
-            <button class="editor-text-pane__toolbar-button" title="Undo">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 7h8a3 3 0 110 6H9"/>
-                <path d="M6 4L3 7l3 3"/>
-              </svg>
-            </button>
-            <button class="editor-text-pane__toolbar-button" title="Redo">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M13 7H5a3 3 0 100 6h2"/>
-                <path d="M10 4l3 3-3 3"/>
-              </svg>
+            <button class="editor-text-pane__toolbar-button editor-text-pane__toolbar-button--text" title="Link">
+              Link
             </button>
           </div>
           <div class="editor-text-pane__toolbar-group">
-            <button class="editor-text-pane__toolbar-button editor-text-pane__toolbar-button--active" title="Bold">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4 2h5a3 3 0 012.1 5.15A3.5 3.5 0 019.5 14H4V2zm2 5h3a1 1 0 100-2H6v2zm0 2v3h3.5a1.5 1.5 0 000-3H6z"/>
-              </svg>
+            <button class="editor-text-pane__toolbar-button" title="Bold">
+              <img src="assets/icons/bold.svg" alt="Bold" width="16" height="16" class="editor-text-pane__toolbar-icon">
             </button>
             <button class="editor-text-pane__toolbar-button" title="Italic">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M6 2h6v2h-2l-2 8h2v2H4v-2h2l2-8H6V2z"/>
-              </svg>
-            </button>
-            <button class="editor-text-pane__toolbar-button" title="Underline">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4 2v6a4 4 0 108 0V2h2v6a6 6 0 11-12 0V2h2zM2 14h12v2H2v-2z"/>
-              </svg>
+              <img src="assets/icons/italic.svg" alt="Italic" width="16" height="16" class="editor-text-pane__toolbar-icon">
             </button>
           </div>
           <div class="editor-text-pane__toolbar-group">
-            <button class="editor-text-pane__toolbar-button" title="Numbered list">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M2 3h1v3H2V5H1V4h1V3zm0 6h2v1H2v1h2v2H1v-1h2v-1H1V9h1zm4-5h10v2H6V4zm0 4h10v2H6V8zm0 4h10v2H6v-2z"/>
-              </svg>
+            <button class="editor-text-pane__toolbar-button" title="Horizontale lijn">
+              <img src="assets/icons/minus.svg" alt="Lijn" width="16" height="16" class="editor-text-pane__toolbar-icon">
             </button>
-            <button class="editor-text-pane__toolbar-button" title="Bulleted list">
-              <svg class="editor-text-pane__toolbar-icon" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="2" cy="5" r="1.5"/>
-                <circle cx="2" cy="9" r="1.5"/>
-                <circle cx="2" cy="13" r="1.5"/>
-                <path d="M6 4h10v2H6V4zm0 4h10v2H6V8zm0 4h10v2H6v-2z"/>
-              </svg>
+          </div>
+          <div class="editor-text-pane__toolbar-group">
+            <button class="editor-text-pane__toolbar-button" title="Bullet list">
+              <img src="assets/icons/bullet-list.svg" alt="Bullet list" width="16" height="16" class="editor-text-pane__toolbar-icon">
+            </button>
+            <button class="editor-text-pane__toolbar-button" title="Numbered list">
+              <img src="assets/icons/numbered-list.svg" alt="Numbered list" width="16" height="16" class="editor-text-pane__toolbar-icon">
             </button>
           </div>
         </div>
@@ -158,164 +151,227 @@
       <!-- Right Pane: Machine Readable Editor -->
       <section class="editor-machine-pane">
         <div class="editor-machine-pane__header">
-          <h2 class="editor-machine-pane__title">Machine-leesbaar</h2>
+          <div class="editor-machine-pane__dropdown">
+            <select class="editor-machine-pane__dropdown-select">
+              <option selected>Machine</option>
+              <option>Tekst</option>
+              <option>YAML</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Pagination (Lid Selector) -->
-        <div class="pagination">
-          <button class="toggle-button toggle-button--active">Lid 1</button>
-          <button class="toggle-button">Lid 2</button>
-          <button class="toggle-button">Lid 3</button>
-          <button class="toggle-button">Lid 4</button>
-          <button class="toggle-button">Lid 5</button>
-          <button class="toggle-button">Lid 6</button>
-          <button class="toggle-button">Lid 7</button>
+        <!-- Pagination (Lid Selector) - Centered -->
+        <div class="lid-nav lid-nav--editor">
+          <button class="lid-nav__arrow" title="Vorige">
+            <img src="assets/icons/chevron-left-small.svg" alt="Vorige" width="16" height="16">
+          </button>
+          <div class="lid-nav__buttons">
+            <button class="lid-nav__btn lid-nav__btn--active">Lid 1</button>
+            <button class="lid-nav__btn">Lid 2</button>
+            <button class="lid-nav__btn">Lid 3</button>
+            <button class="lid-nav__btn">Lid 4</button>
+            <button class="lid-nav__btn">Lid 5</button>
+            <button class="lid-nav__btn">Lid 6</button>
+            <button class="lid-nav__btn">Lid 7</button>
+          </div>
+          <button class="lid-nav__arrow" title="Volgende">
+            <img src="assets/icons/chevron-right-small.svg" alt="Volgende" width="16" height="16">
+          </button>
         </div>
 
         <div class="editor-machine-pane__content scrollable">
-          <!-- Meta dropdowns -->
-          <div style="padding: var(--spacing-4); background: var(--color-surface); border-bottom: var(--divider-width) solid var(--color-border);">
+          <!-- Text Preview -->
+          <div class="editor-machine-pane__preview">
+            <p>Indien de normpremie voor een verzekerde in het berekeningsjaar minder bedraagt dan de standaardpremie in dat jaar, heeft de verzekerde aanspraak op een zorgtoeslag ter grootte van dat verschil... <a href="#" class="editor-machine-pane__preview-link">Toon alles</a></p>
+          </div>
+
+          <!-- Meta dropdowns - side by side -->
+          <div class="editor-machine-pane__meta">
             <div class="form-field">
               <label class="form-field__label">Juridische basis</label>
               <select class="form-field__select">
-                <option>BESCHIKKING</option>
-                <option>VERGUNNING</option>
-                <option>SUBSIDIE</option>
+                <option>Beschikking</option>
+                <option>Vergunning</option>
+                <option>Subsidie</option>
               </select>
             </div>
-            <div class="form-field" style="margin-bottom: 0;">
+            <div class="form-field">
               <label class="form-field__label">Besluittype</label>
               <select class="form-field__select">
-                <option>TOEKENNING</option>
-                <option>AFWIJZING</option>
-                <option>INTREKKING</option>
+                <option>Toekenning</option>
+                <option>Afwijzing</option>
+                <option>Intrekking</option>
               </select>
             </div>
           </div>
 
           <!-- Definities Section -->
-          <div class="heading-group">
-            <div class="heading-group__header">
-              <h3 class="heading-group__title">Definities</h3>
-              <div class="heading-group__actions">
-                <button class="btn btn--sm btn--ghost">Bewerk</button>
-                <button class="btn btn--sm btn--secondary">+ Nieuwe</button>
+          <div class="section-group">
+            <h3 class="section-group__title">Definities</h3>
+            <div class="section-group__items">
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">{definition-title} = {value}</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
+              </div>
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">{definition-title} = {value}</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="heading-group__content">
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">drempelinkomen_alleenstaande</span>
-                <span class="editor-machine-list__item-value">3971900</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">drempelinkomen_partner</span>
-                <span class="editor-machine-list__item-value">5587500</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">percentage_drempelinkomen_alleenstaande</span>
-                <span class="editor-machine-list__item-value">0.01896</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">percentage_drempelinkomen_partner</span>
-                <span class="editor-machine-list__item-value">0.04273</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">percentage_toetsingsinkomen</span>
-                <span class="editor-machine-list__item-value">0.137</span>
-              </div>
-            </div>
+            <button class="section-group__add-btn">
+              <img src="assets/icons/plus-small.svg" alt="" width="16" height="16">
+              <span>Nieuwe definitie</span>
+            </button>
           </div>
 
           <!-- Parameters Section -->
-          <div class="heading-group">
-            <div class="heading-group__header">
-              <h3 class="heading-group__title">Parameters</h3>
-              <div class="heading-group__actions">
-                <button class="btn btn--sm btn--ghost">Bewerk</button>
-                <button class="btn btn--sm btn--secondary">+ Nieuwe</button>
+          <div class="section-group">
+            <h3 class="section-group__title">Parameters</h3>
+            <p class="section-group__description">Nodig om dit lid uit te kunnen voeren. <a href="#">Lees meer</a></p>
+            <div class="section-group__items">
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">{parameter-title} ({type})</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
+              </div>
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">{parameter-title} ({type})</span>
+                  <span class="section-item__description">Verplicht om uit te voeren. Dit is een beschrijving van deze parameter.</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="heading-group__content">
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">BSN</span>
-                <span class="editor-machine-list__item-value">string (required)</span>
-              </div>
-            </div>
+            <button class="section-group__add-btn">
+              <img src="assets/icons/plus-small.svg" alt="" width="16" height="16">
+              <span>Nieuwe parameter</span>
+            </button>
           </div>
 
           <!-- Invoer Section -->
-          <div class="heading-group">
-            <div class="heading-group__header">
-              <h3 class="heading-group__title">Invoer</h3>
-              <div class="heading-group__actions">
-                <button class="btn btn--sm btn--ghost">Bewerk</button>
-                <button class="btn btn--sm btn--secondary">+ Nieuwe</button>
+          <div class="section-group">
+            <h3 class="section-group__title">Invoer</h3>
+            <p class="section-group__description">Van andere regels om te gebruiken. <a href="#">Lees meer</a></p>
+            <div class="section-group__items">
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">{input-title} ({output-title})</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
+              </div>
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">{input-title} ({output-title})</span>
+                  <span class="section-item__description">Verplicht om uit te voeren.</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="heading-group__content">
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">is_verzekerde</span>
-                <span class="editor-machine-list__item-value">boolean</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">heeft_toeslagpartner</span>
-                <span class="editor-machine-list__item-value">boolean</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">toetsingsinkomen</span>
-                <span class="editor-machine-list__item-value">amount</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">standaardpremie</span>
-                <span class="editor-machine-list__item-value">amount</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">vermogen_onder_grens</span>
-                <span class="editor-machine-list__item-value">boolean</span>
-              </div>
-            </div>
+            <button class="section-group__add-btn">
+              <img src="assets/icons/plus-small.svg" alt="" width="16" height="16">
+              <span>Nieuwe invoer</span>
+            </button>
           </div>
 
           <!-- Uitvoer Section -->
-          <div class="heading-group">
-            <div class="heading-group__header">
-              <h3 class="heading-group__title">Uitvoer</h3>
-              <div class="heading-group__actions">
-                <button class="btn btn--sm btn--ghost">Bewerk</button>
-                <button class="btn btn--sm btn--secondary">+ Nieuwe</button>
+          <div class="section-group">
+            <h3 class="section-group__title">Uitvoer</h3>
+            <div class="section-group__items">
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">heeft_recht_op_zorgtoeslag (boolean)</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
+              </div>
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">hoogte_zorgtoeslag (amount)</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="heading-group__content">
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">heeft_recht_op_zorgtoeslag</span>
-                <span class="editor-machine-list__item-value">boolean</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">hoogte_zorgtoeslag</span>
-                <span class="editor-machine-list__item-value">amount (eurocent)</span>
-              </div>
-            </div>
+            <button class="section-group__add-btn">
+              <img src="assets/icons/plus-small.svg" alt="" width="16" height="16">
+              <span>Nieuwe uitvoer</span>
+            </button>
           </div>
 
           <!-- Acties Section -->
-          <div class="heading-group">
-            <div class="heading-group__header">
-              <h3 class="heading-group__title">Acties</h3>
-              <div class="heading-group__actions">
-                <button class="btn btn--sm btn--ghost">Bewerk</button>
-                <button class="btn btn--sm btn--secondary">+ Nieuwe</button>
+          <div class="section-group">
+            <h3 class="section-group__title">Acties</h3>
+            <div class="section-group__items">
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">bereken_normpremie</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
+              </div>
+              <div class="section-item">
+                <div class="section-item__content">
+                  <span class="section-item__label">bereken_zorgtoeslag</span>
+                </div>
+                <div class="section-item__actions">
+                  <button class="btn btn--sm btn--secondary">Bewerk</button>
+                  <button class="btn btn--sm btn--icon">
+                    <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="heading-group__content">
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">bereken_normpremie</span>
-                <span class="editor-machine-list__item-value">MULTIPLY, ADD</span>
-              </div>
-              <div class="editor-machine-list__item">
-                <span class="editor-machine-list__item-label">bereken_zorgtoeslag</span>
-                <span class="editor-machine-list__item-value">SUBTRACT, MAX</span>
-              </div>
-            </div>
+            <button class="section-group__add-btn">
+              <img src="assets/icons/plus-small.svg" alt="" width="16" height="16">
+              <span>Nieuwe actie</span>
+            </button>
           </div>
         </div>
       </section>
