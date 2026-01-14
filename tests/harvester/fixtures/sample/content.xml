@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wetgeving>
+  <wet>
+    <wettekst>
+      <artikel label="Artikel 1">
+        <nr>1</nr>
+        <al>In deze wet wordt verstaan onder:</al>
+        <lijst>
+          <li>
+            <al>a. Onze Minister: Onze Minister van Volksgezondheid;</al>
+          </li>
+          <li>
+            <al>b. zorgverzekering: de schadeverzekering;</al>
+          </li>
+        </lijst>
+      </artikel>
+      <artikel label="Artikel 2">
+        <nr>2</nr>
+        <al>De verzekerde heeft aanspraak op zorgtoeslag indien de normpremie minder bedraagt dan de standaardpremie.</al>
+        <al>De hoogte wordt bepaald door <nadruk type="vet">de draagkracht</nadruk> van de verzekerde.</al>
+      </artikel>
+      <artikel label="Artikel 3">
+        <nr>3</nr>
+        <al>Zie ook <extref doc="jci1.3:c:BWBR0018450&amp;artikel=1">artikel 1 van de Zorgverzekeringswet</extref> voor definities.</al>
+      </artikel>
+    </wettekst>
+  </wet>
+</wetgeving>

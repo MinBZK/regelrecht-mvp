@@ -8,7 +8,6 @@ Usage:
 """
 
 import sys
-import uuid
 import re
 from pathlib import Path
 from datetime import datetime
@@ -181,7 +180,6 @@ def generate_yaml(metadata, articles, effective_date):
     law_data = {
         "$schema": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json",
         "$id": law_id,
-        "uuid": str(uuid.uuid4()),
         "regulatory_layer": metadata.get("regulatory_layer", "WET"),
         "publication_date": metadata.get("publication_date", effective_date),
         "bwb_id": metadata["bwb_id"],
