@@ -30,16 +30,21 @@
 .browser-article-pane {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  background-color: var(--color-slate-50);
+  padding: var(--spacing-4);
+  gap: var(--spacing-4);
 }
 
 .browser-article-pane .tabs {
   flex: 1;
   min-height: 0;
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius-lg);
 }
 
 .browser-article-pane .tabs__panel {
   padding: var(--spacing-4);
+  background-color: var(--color-surface);
 }
 
 /* Article Content Styling */
@@ -118,8 +123,17 @@
   display: flex;
   justify-content: space-between;
   padding: var(--spacing-4);
-  border-top: var(--divider-width) solid var(--color-border);
   background-color: var(--color-surface);
+  border-radius: var(--border-radius-lg);
+}
+
+/* Ensure accent-filled buttons have white text and icons */
+.page__footer rr-button[variant="accent-filled"] {
+  --rr-button-text-color: var(--color-white);
+}
+
+.page__footer rr-button[variant="accent-filled"] svg {
+  stroke: var(--color-white);
 }
 
 /* Button Styles */

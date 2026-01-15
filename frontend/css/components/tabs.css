@@ -41,6 +41,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  background-color: var(--color-surface);
 }
 
 .tabs__panel {
@@ -85,61 +86,12 @@
   border-bottom: var(--divider-width) solid var(--color-border);
 }
 
-.lid-nav__arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.lid-nav__arrow:hover {
-  background-color: var(--color-slate-100);
-}
-
-.lid-nav__arrow img {
-  opacity: 0.6;
-}
-
-.lid-nav__arrow:hover img {
-  opacity: 1;
-}
-
 .lid-nav__buttons {
   display: flex;
   gap: var(--spacing-1);
 }
 
-.lid-nav__btn {
-  padding: var(--spacing-1-5) var(--spacing-3);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  background-color: var(--color-surface);
-  border: var(--divider-width) solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.lid-nav__btn:hover {
-  background-color: var(--color-slate-50);
-  color: var(--color-text-primary);
-}
-
-.lid-nav__btn--active {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.lid-nav__btn--active:hover {
-  background-color: var(--color-primary-hover);
-  color: var(--color-white);
+/* Storybook toggle button styling within lid-nav */
+.lid-nav__buttons rr-toggle-button {
+  --rr-toggle-button-gap: var(--spacing-1);
 }

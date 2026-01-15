@@ -113,34 +113,6 @@
   background-color: var(--color-primary-hover);
 }
 
-/* Editor Back Link */
-.top-navigation-bar__back-button {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-}
-
-.top-navigation-bar__back-button-link {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-2);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-}
-
-.top-navigation-bar__back-button-link:hover {
-  color: var(--color-text-primary);
-  background-color: var(--color-slate-100);
-}
-
-.top-navigation-bar__back-button-icon {
-  width: 16px;
-  height: 16px;
-}
-
 /* Editor Text Pane */
 .editor-text-pane {
   flex: 1;
@@ -201,40 +173,10 @@
   border-left: var(--divider-width) solid var(--color-border);
 }
 
-.editor-text-pane__toolbar-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: var(--color-text-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.editor-text-pane__toolbar-button:hover {
-  background-color: var(--color-slate-100);
-  color: var(--color-text-primary);
-}
-
-.editor-text-pane__toolbar-button--active {
-  background-color: var(--color-slate-200);
-  color: var(--color-text-primary);
-}
-
-.editor-text-pane__toolbar-button--text {
-  width: auto;
-  padding: var(--spacing-1) var(--spacing-2);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  border: var(--divider-width) solid var(--color-border);
-  border-radius: var(--border-radius-md);
-}
-
-.editor-text-pane__toolbar-icon {
-  width: 16px;
-  height: 16px;
+/* Storybook component styling within toolbar */
+.editor-text-pane__toolbar rr-icon-button,
+.editor-text-pane__toolbar rr-button {
+  flex-shrink: 0;
 }
 
 /* Text Content Area */
@@ -318,21 +260,6 @@
   padding: var(--spacing-0-5);
 }
 
-.lid-nav--editor .lid-nav__btn {
-  background-color: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-}
-
-.lid-nav--editor .lid-nav__btn:hover {
-  background-color: var(--color-slate-300);
-}
-
-.lid-nav--editor .lid-nav__btn--active {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-}
-
 /* Meta dropdowns side by side */
 .editor-machine-pane__meta {
   display: grid;
@@ -411,23 +338,6 @@
 
 .heading-group__content {
   padding: 0 var(--spacing-4) var(--spacing-4);
-}
-
-/* Small buttons for section actions */
-.btn--sm {
-  padding: var(--spacing-1) var(--spacing-2);
-  font-size: var(--font-size-xs);
-}
-
-.btn--ghost {
-  background-color: transparent;
-  color: var(--color-text-secondary);
-  border: none;
-}
-
-.btn--ghost:hover {
-  background-color: var(--color-slate-100);
-  color: var(--color-text-primary);
 }
 
 /* Editor Machine List Items */
@@ -574,37 +484,4 @@
 .section-group__add-btn:hover {
   background-color: var(--color-slate-50);
   border-color: var(--color-slate-400);
-}
-
-/* Button variants */
-.btn--secondary {
-  background-color: var(--color-slate-200);
-  color: var(--color-text-primary);
-  border: var(--divider-width) solid var(--color-slate-300);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-weight: var(--font-weight-medium);
-}
-
-.btn--secondary:hover {
-  background-color: var(--color-slate-300);
-}
-
-.btn--icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  background-color: transparent;
-  border: var(--divider-width) solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn--icon:hover {
-  background-color: var(--color-slate-100);
 }
