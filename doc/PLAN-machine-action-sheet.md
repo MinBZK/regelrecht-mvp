@@ -22,6 +22,10 @@ git worktree add .worktrees/machine-action-sheet -b feature/machine-action-sheet
   - [x] 1.5 Sub-Operaties Lijst
   - [x] 1.6 Mock Data
   - [x] 1.7 Integratie in Editor
+- [ ] **Fase 1b:** Visuele correcties op basis van Figma review
+  - [ ] 1b.1 Achtergrondkleuren corrigeren
+  - [ ] 1b.2 Als/Dan/Anders layout aanpassen
+  - [ ] 1b.3 "Onderliggende operaties" hernoemen/hergebruiken als clipboard
 - [ ] **Fase 2:** Comparison + Logical Operaties
   - [ ] 2.1 Comparison Operatie
   - [ ] 2.2 Logical Operatie
@@ -124,6 +128,57 @@ const mockOperation = {
 6. Navigeer naar sub-operatie (bijv. klik op conditie)
 7. "Bovenliggende operaties" toont parent
 8. Klik "Bewerk" bij parent om terug te gaan
+
+---
+
+## Fase 1b: Visuele correcties op basis van Figma review
+
+### Feedback
+
+Na review blijken de volgende punten af te wijken van het Figma design:
+
+#### Achtergrondkleuren
+- **Operatie blok:** Heeft nu grijze achtergrond, moet wit zijn
+- **Form fields (Titel, Type):** Hebben nu witte achtergrond, moeten blauw/lichtblauw zijn volgens Figma
+
+#### Als/Dan/Anders layout
+- **Huidige implementatie:** Elke sectie toont direct de geselecteerde operatie met titel en samenvatting
+- **Figma design:** De layout is anders:
+  - Dropdown staat op één lijn met het label ("Als", "Dan", "Anders")
+  - Dropdown toont het geselecteerde item
+  - **Onder** de dropdown staat nogmaals de naam van de geselecteerde operatie
+  - Daaronder een "Bewerk" link om naar die operatie te navigeren
+
+#### "Onderliggende operaties" sectie
+- **Huidige implementatie:** Toont de child operations (condition, then, else) als navigatie-items
+- **Correcte interpretatie:** Dit is NIET bedoeld om de operatie-boom naar beneden te tonen
+- **Bedoelde functie:** Clipboard/staging area voor:
+  - Gekopieerde operaties
+  - Orphaned (losgekoppelde) operaties
+  - Operaties die nog niet ergens aan gekoppeld zijn
+- **De boom naar beneden:** Wordt al getoond via de Als/Dan/Anders secties zelf - die ZIJN de children
+
+### Taken
+
+#### 1b.1 Achtergrondkleuren corrigeren
+- Operatie editor blok: witte achtergrond
+- Form fields: blauwe/lichtblauwe achtergrond volgens Figma tokens
+
+#### 1b.2 Als/Dan/Anders layout aanpassen
+- Dropdown op één lijn met label
+- Geselecteerde item in dropdown
+- Naam operatie onder dropdown
+- "Bewerk" link eronder voor navigatie
+
+#### 1b.3 "Onderliggende operaties" hernoemen/hergebruiken
+- Functie wijzigen naar clipboard/staging
+- Alleen tonen als er orphaned/gekopieerde operaties zijn
+- Verwijderen uit huidige child navigation flow
+
+### Verificatie Fase 1b
+1. Vergelijk achtergrondkleuren met Figma design
+2. Als/Dan/Anders layout komt overeen met Figma
+3. "Onderliggende operaties" toont alleen clipboard items (of is verborgen als leeg)
 
 ---
 
