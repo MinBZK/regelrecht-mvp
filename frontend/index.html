@@ -251,24 +251,136 @@
             <!-- Tab 2: Machine Readable -->
             <div class="tabs__panel">
               <div class="machine-view">
-                <h3 style="margin-bottom: var(--spacing-4);">Definities</h3>
-                <pre><code>drempelinkomen_alleenstaande: 39719.00
-drempelinkomen_aanvrager_met_toeslagpartner: 55875.00
-percentage_drempelinkomen_alleenstaande: 1.896%
-percentage_drempelinkomen_partner: 4.273%
-percentage_toetsingsinkomen: 13.700%</code></pre>
+                <!-- Tekst preview -->
+                <div class="machine-view__text-preview">
+                  <p class="machine-view__preview-text">
+                    Indien de verzekerde, bedoeld in artikel 2, met een in het buitenland wonende partner voor de toepassing van deze wet en de daarop berustende bepalingen wordt aangemerkt als een verzekerde zonder partner, bedraagt de normpremie in afwijking van het tweede lid...
+                    <a href="#" class="machine-view__toggle-link">Toon alles</a>
+                  </p>
+                </div>
 
-                <h3 style="margin: var(--spacing-6) 0 var(--spacing-4);">Input</h3>
-                <pre><code>leeftijd: number (bron: wet_basisregistratie_personen)
-is_verzekerde: boolean (bron: zorgverzekeringswet)
-heeft_toeslagpartner: boolean (bron: awir)
-toetsingsinkomen: amount (bron: awir)
-standaardpremie: amount (bron: regeling_standaardpremie)
-vermogen_onder_grens: boolean (bron: artikel 3)</code></pre>
+                <!-- Metadata (Juridische basis, Besluittype) -->
+                <div class="machine-view__list machine-view__list--box">
+                  <div class="machine-view__list-item machine-view__list-item--metadata">
+                    <span class="machine-view__item-label">Juridische basis</span>
+                    <span class="machine-view__item-value">Beschikking</span>
+                  </div>
+                  <div class="machine-view__list-item machine-view__list-item--metadata">
+                    <span class="machine-view__item-label">Besluittype</span>
+                    <span class="machine-view__item-value">Toekenning</span>
+                  </div>
+                </div>
 
-                <h3 style="margin: var(--spacing-6) 0 var(--spacing-4);">Output</h3>
-                <pre><code>heeft_recht_op_zorgtoeslag: boolean
-hoogte_zorgtoeslag: amount (eurocent)</code></pre>
+                <!-- Definities -->
+                <div class="machine-view__section">
+                  <h4 class="machine-view__heading">Definities</h4>
+                  <div class="machine-view__list machine-view__list--box">
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">drempelinkomen_alleenstaande</span>
+                      <span class="machine-view__item-value">39719.00</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">drempelinkomen_partner</span>
+                      <span class="machine-view__item-value">55875.00</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">percentage_drempelinkomen_alleenstaande</span>
+                      <span class="machine-view__item-value">1.896%</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">percentage_drempelinkomen_partner</span>
+                      <span class="machine-view__item-value">4.273%</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">percentage_toetsingsinkomen</span>
+                      <span class="machine-view__item-value">13.700%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Parameters -->
+                <div class="machine-view__section">
+                  <h4 class="machine-view__heading">Parameters</h4>
+                  <p class="machine-view__subtitle">
+                    Nodig om dit lid uit te kunnen voeren.
+                    <a href="#" class="machine-view__link">Lees meer</a>
+                  </p>
+                  <div class="machine-view__list machine-view__list--box">
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">bsn</span>
+                      <span class="machine-view__item-type">(string)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Invoer -->
+                <div class="machine-view__section">
+                  <h4 class="machine-view__heading">Invoer</h4>
+                  <p class="machine-view__subtitle">
+                    Van andere regels om te gebruiken.
+                    <a href="#" class="machine-view__link">Lees meer</a>
+                  </p>
+                  <div class="machine-view__list machine-view__list--box">
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">leeftijd</span>
+                      <span class="machine-view__item-type">(number)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">is_verzekerde</span>
+                      <span class="machine-view__item-type">(boolean)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">heeft_toeslagpartner</span>
+                      <span class="machine-view__item-type">(boolean)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">toetsingsinkomen</span>
+                      <span class="machine-view__item-type">(amount)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">standaardpremie</span>
+                      <span class="machine-view__item-type">(amount)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">vermogen_onder_grens</span>
+                      <span class="machine-view__item-type">(boolean)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Uitvoer -->
+                <div class="machine-view__section">
+                  <h4 class="machine-view__heading">Uitvoer</h4>
+                  <p class="machine-view__subtitle">
+                    Beschikbaar voor andere regels. Let op: een naam moet uniek zijn.
+                    <a href="#" class="machine-view__link">Lees meer</a>
+                  </p>
+                  <div class="machine-view__list machine-view__list--box">
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">heeft_recht_op_zorgtoeslag</span>
+                      <span class="machine-view__item-type">(boolean)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">hoogte_zorgtoeslag</span>
+                      <span class="machine-view__item-type">(amount)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Acties -->
+                <div class="machine-view__section">
+                  <h4 class="machine-view__heading">Acties</h4>
+                  <div class="machine-view__list machine-view__list--box">
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">heeft_recht_op_zorgtoeslag</span>
+                      <span class="machine-view__item-type">AND(is_verzekerde, vermogen_onder_grens)</span>
+                    </div>
+                    <div class="machine-view__list-item">
+                      <span class="machine-view__item-title">hoogte_zorgtoeslag</span>
+                      <span class="machine-view__item-type">SUBTRACT(standaardpremie, normpremie)</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
