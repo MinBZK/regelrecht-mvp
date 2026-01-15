@@ -8,41 +8,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="/main.js"></script>
 </head>
 <body>
   <div class="app">
     <!-- Top Navigation Bar -->
-    <header class="top-navigation-bar">
-      <span class="top-navigation-bar__title">RegelRecht browser</span>
-
-      <div class="top-navigation-bar__spacer"></div>
-
-      <button class="top-navigation-bar__action">
-        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="7" cy="7" r="5"/>
-          <path d="M11 11l3 3"/>
-        </svg>
-        <span>Zoeken</span>
-      </button>
-
-      <button class="top-navigation-bar__action">
-        <span>RR project</span>
-        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M4 6l4 4 4-4"/>
-        </svg>
-      </button>
-
-      <button class="top-navigation-bar__action">
-        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="5" r="3"/>
-          <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
-        </svg>
-        <span>A.J. Jansen-de Jong</span>
-        <svg class="top-navigation-bar__action-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M4 6l4 4 4-4"/>
-        </svg>
-      </button>
-    </header>
+    <rr-top-navigation-bar
+      title="RegelRecht browser"
+      no-logo
+      no-menu
+      utility-no-language-switch
+      utility-account-label="A.J. Jansen-de Jong"
+    >
+    </rr-top-navigation-bar>
 
     <!-- Main Content: 3 Panes -->
     <main class="columns-split-view">
@@ -115,20 +93,25 @@
         <div class="law-pane__header">
           <h2 class="law-pane__title">Wet op de zorgtoeslag</h2>
           <div class="law-pane__toolbar">
-            <button class="icon-btn icon-btn--filled" title="Favoriet">
+            <rr-icon-button variant="accent-filled" size="s" title="Favoriet" class="toolbar-heart">
               <img src="assets/icons/heart-filled (favorite-filled).svg" alt="Favoriet" width="16" height="16">
-            </button>
-            <button class="text-btn" title="Filter">
-              <img src="assets/icons/list-decreasing-lines (filter).svg" alt="" width="16" height="16">
-              <span>Filter</span>
-            </button>
-            <button class="text-btn" title="Download">
-              <img src="assets/icons/arrow-down-in-bucket (download).svg" alt="" width="16" height="16">
-              <span>Download</span>
-            </button>
-            <button class="icon-btn" title="Meer opties">
+            </rr-icon-button>
+            <rr-button variant="neutral-tinted" size="s" has-leading-icon title="Filter">
+              <svg slot="icon-start" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M2 5H22V7H2V5ZM8 17H16V19H8V17Z"/>
+                <path d="M5 11H19V13H5V11Z"/>
+              </svg>
+              Filter
+            </rr-button>
+            <rr-button variant="neutral-tinted" size="s" has-leading-icon title="Download">
+              <svg slot="icon-start" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M13 3V13.5858L17.2929 9.29289L18.7071 10.7071L12 17.4142L5.29289 10.7071L6.70711 9.29289L11 13.5858V3H13ZM5 16V19C5 19.5523 5.44772 20 6 20H18C18.5523 20 19 19.5523 19 19V16H21V19C21 20.6569 19.6569 22 18 22H6C4.34315 22 3 20.6569 3 19V16H5Z"/>
+              </svg>
+              Download
+            </rr-button>
+            <rr-icon-button variant="neutral-tinted" size="s" title="Meer opties">
               <img src="assets/icons/ellipsis-horizontal (more).svg" alt="Meer" width="16" height="16">
-            </button>
+            </rr-icon-button>
           </div>
         </div>
         <div class="page__main scrollable">
@@ -231,18 +214,18 @@
 
           <!-- Lid Navigation -->
           <nav class="lid-nav">
-            <button class="lid-nav__arrow" title="Vorige">
+            <rr-icon-button variant="neutral-tinted" size="s" title="Vorige">
               <img src="assets/icons/chevron-left-small.svg" alt="Vorige" width="16" height="16">
-            </button>
+            </rr-icon-button>
             <div class="lid-nav__buttons">
-              <button class="lid-nav__btn lid-nav__btn--active">Lid 1</button>
-              <button class="lid-nav__btn">Lid 2</button>
-              <button class="lid-nav__btn">Lid 3</button>
-              <button class="lid-nav__btn">Lid 4</button>
+              <rr-toggle-button size="s" selected>Lid 1</rr-toggle-button>
+              <rr-toggle-button size="s">Lid 2</rr-toggle-button>
+              <rr-toggle-button size="s">Lid 3</rr-toggle-button>
+              <rr-toggle-button size="s">Lid 4</rr-toggle-button>
             </div>
-            <button class="lid-nav__arrow" title="Volgende">
+            <rr-icon-button variant="neutral-tinted" size="s" title="Volgende">
               <img src="assets/icons/chevron-right-small.svg" alt="Volgende" width="16" height="16">
-            </button>
+            </rr-icon-button>
           </nav>
 
           <div class="tabs__panels">
@@ -328,17 +311,19 @@ hoogte_zorgtoeslag: amount (eurocent)</code></pre>
 
         <!-- Page Footer -->
         <footer class="page__footer">
-          <button class="btn btn--secondary">
-            <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rr-button variant="accent-outlined" has-leading-icon>
+            <svg slot="icon-start" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M3 8v5a1 1 0 001 1h8a1 1 0 001-1V8M11 4l-3-3-3 3M8 1v9"/>
             </svg>
             Deel
-          </button>
-          <a href="editor.html" class="btn btn--primary">
-            <svg class="btn__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 2l2 2-7 7-3 1 1-3 7-7zM11 3l2 2"/>
-            </svg>
-            Bewerken
+          </rr-button>
+          <a href="editor.html">
+            <rr-button variant="accent-outlined" has-leading-icon>
+              <svg slot="icon-start" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2l2 2-7 7-3 1 1-3 7-7zM11 3l2 2"/>
+              </svg>
+              Bewerken
+            </rr-button>
           </a>
         </footer>
       </article>
