@@ -81,17 +81,110 @@
   list-style: decimal;
 }
 
-/* Machine Readable View */
+/* Machine Readable View - Redesigned */
 .machine-view {
-  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
-  font-size: var(--font-size-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  max-width: 616px;
 }
 
-.machine-view pre {
-  padding: var(--spacing-4);
+/* Text preview */
+.machine-view__text-preview {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+}
+
+.machine-view__preview-text {
+  margin: 0;
+}
+
+.machine-view__toggle-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.machine-view__toggle-link:hover {
+  text-decoration: underline;
+}
+
+/* Section */
+.machine-view__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+}
+
+/* Heading */
+.machine-view__heading {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+/* Subtitle */
+.machine-view__subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+  margin: 0;
+}
+
+.machine-view__link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.machine-view__link:hover {
+  text-decoration: underline;
+}
+
+/* Box list */
+.machine-view__list--box {
   background-color: var(--color-slate-50);
-  border-radius: var(--border-radius-md);
-  overflow-x: auto;
+  border-radius: 11px;
+  padding: 7px var(--spacing-4) var(--spacing-2);
+}
+
+/* List item */
+.machine-view__list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-2) 0;
+  border-top: var(--divider-width) solid var(--color-border);
+  gap: var(--spacing-4);
+}
+
+.machine-view__list-item:first-child {
+  border-top: none;
+}
+
+/* Item content */
+.machine-view__item-title {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.machine-view__item-value,
+.machine-view__item-type {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+/* Metadata items */
+.machine-view__list-item--metadata .machine-view__item-label {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.machine-view__list-item--metadata .machine-view__item-value {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
 }
 
 /* YAML View */
