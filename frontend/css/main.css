@@ -5,7 +5,6 @@
 @import 'layout.css';
 
 /* Components */
-@import 'components/navigation.css';
 @import 'components/list.css';
 @import 'components/tabs.css';
 @import 'components/collapsible.css';

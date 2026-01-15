@@ -14,17 +14,7 @@
   background-color: var(--color-surface);
 }
 
-/* Hide scrollbar in law pane */
-.browser-law-pane .page__main.scrollable {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
-
-.browser-law-pane .page__main.scrollable::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Opera */
-  width: 0;
-  height: 0;
-}
+/* Note: Scrollbar hiding for .browser-law-pane is defined in layout.css */
 
 /* Browser Article Pane */
 .browser-article-pane {
