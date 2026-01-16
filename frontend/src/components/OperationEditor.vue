@@ -58,24 +58,16 @@ const availableTypes = Object.entries(operationTypeLabels)
 
     <div class="operation-editor__content">
       <!-- Title field -->
-      <div class="operation-editor__field" style="background-color: #f1f5f9;">
-        <label class="operation-editor__label">Titel</label>
-        <input
-          type="text"
-          class="operation-editor__input"
+      <rr-form-row label="Titel" divider>
+        <rr-text-field
           :value="operation.title"
           placeholder="Naamloze operatie"
-        >
-      </div>
+        ></rr-text-field>
+      </rr-form-row>
 
       <!-- Type field -->
-      <div class="operation-editor__field" style="background-color: #f1f5f9;">
-        <label class="operation-editor__label">Type</label>
-        <select
-          class="operation-editor__select"
-          style="background-color: #e2e8f0;"
-          :value="operation.type"
-        >
+      <rr-form-row label="Type" divider>
+        <rr-select-field :value="operation.type">
           <option
             v-for="[value, label] in availableTypes"
             :key="value"
@@ -83,8 +75,8 @@ const availableTypes = Object.entries(operationTypeLabels)
           >
             {{ label }}
           </option>
-        </select>
-      </div>
+        </rr-select-field>
+      </rr-form-row>
 
       <!-- Type-specific content -->
       <component
@@ -139,51 +131,6 @@ const availableTypes = Object.entries(operationTypeLabels)
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.operation-editor__field {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-3, 12px) var(--spacing-4, 16px);
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.operation-editor__label {
-  flex: 0 0 80px;
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--color-slate-700, #334155);
-}
-
-.operation-editor__input {
-  flex: 1;
-  padding: var(--spacing-2, 8px) var(--spacing-3, 12px);
-  border: 2px solid var(--color-slate-600, #475569);
-  border-radius: var(--border-radius-md, 7px);
-  font-size: var(--font-size-sm, 0.875rem);
-  font-family: inherit;
-  background: var(--color-white, #fff);
-  color: var(--color-slate-900, #0f172a);
-}
-
-.operation-editor__select {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 7px;
-  font-size: 0.875rem;
-  font-family: inherit;
-  background-color: #e2e8f0 !important;
-  color: #0f172a;
-}
-
-.operation-editor__input:focus {
-  outline: 2px solid var(--color-primary, #154273);
-  outline-offset: -2px;
-}
-
-.operation-editor__select:focus {
-  outline: 2px solid var(--color-primary, #154273);
-  outline-offset: -2px;
 }
 
 .operation-editor__unsupported {

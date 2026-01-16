@@ -2,6 +2,9 @@
 import '@minbzk/storybook';
 import '@minbzk/storybook/css';
 
+// Import local web components
+import './src/webcomponents';
+
 // Import Vue for the machine action sheet editor
 import { createApp } from 'vue';
 import App from './src/App.vue';
