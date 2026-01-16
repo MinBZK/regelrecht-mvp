@@ -49,3 +49,7 @@ htmlcov/
 
 # Git worktrees
 .worktrees/
+
+# Frontend
+node_modules/
+frontend/dist/
