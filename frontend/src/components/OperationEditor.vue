@@ -58,7 +58,7 @@ const availableTypes = Object.entries(operationTypeLabels)
 
     <div class="operation-editor__content">
       <!-- Title field -->
-      <div class="operation-editor__field">
+      <div class="operation-editor__field" style="background-color: #f1f5f9;">
         <label class="operation-editor__label">Titel</label>
         <input
           type="text"
@@ -69,9 +69,13 @@ const availableTypes = Object.entries(operationTypeLabels)
       </div>
 
       <!-- Type field -->
-      <div class="operation-editor__field">
+      <div class="operation-editor__field" style="background-color: #f1f5f9;">
         <label class="operation-editor__label">Type</label>
-        <select class="operation-editor__select" :value="operation.type">
+        <select
+          class="operation-editor__select"
+          style="background-color: #e2e8f0;"
+          :value="operation.type"
+        >
           <option
             v-for="[value, label] in availableTypes"
             :key="value"
@@ -94,17 +98,17 @@ const availableTypes = Object.entries(operationTypeLabels)
         <p>Dit operatie type ({{ operation.type }}) wordt nog niet ondersteund in de UI.</p>
       </div>
 
-      <!-- Child operations list -->
-      <ChildOperationsList :operation="operation" />
+      <!-- Clipboard operations (empty by default, hidden when empty) -->
+      <ChildOperationsList :clipboard-items="[]" />
     </div>
   </section>
 </template>
 
 <style scoped>
 .operation-editor {
-  background: var(--color-slate-50, #f8fafc);
-  border-radius: var(--border-radius-lg, 11px);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 8px);
 }
 
 .operation-editor__header {
@@ -112,6 +116,8 @@ const availableTypes = Object.entries(operationTypeLabels)
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-3, 12px) var(--spacing-4, 16px);
+  background: var(--color-white, #fff);
+  border-radius: var(--border-radius-lg, 11px);
 }
 
 .operation-editor__header-left {
@@ -130,6 +136,7 @@ const availableTypes = Object.entries(operationTypeLabels)
 .operation-editor__content {
   background: var(--color-white, #fff);
   border-radius: var(--border-radius-lg, 11px);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -138,7 +145,7 @@ const availableTypes = Object.entries(operationTypeLabels)
   display: flex;
   align-items: center;
   padding: var(--spacing-3, 12px) var(--spacing-4, 16px);
-  border-bottom: 1px solid var(--color-slate-100, #f1f5f9);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .operation-editor__label {
@@ -147,22 +154,36 @@ const availableTypes = Object.entries(operationTypeLabels)
   color: var(--color-slate-700, #334155);
 }
 
-.operation-editor__input,
-.operation-editor__select {
+.operation-editor__input {
   flex: 1;
   padding: var(--spacing-2, 8px) var(--spacing-3, 12px);
-  border: 1px solid var(--color-slate-200, #e2e8f0);
+  border: 2px solid var(--color-slate-600, #475569);
   border-radius: var(--border-radius-md, 7px);
   font-size: var(--font-size-sm, 0.875rem);
   font-family: inherit;
   background: var(--color-white, #fff);
+  color: var(--color-slate-900, #0f172a);
 }
 
-.operation-editor__input:focus,
+.operation-editor__select {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background-color: #e2e8f0 !important;
+  color: #0f172a;
+}
+
+.operation-editor__input:focus {
+  outline: 2px solid var(--color-primary, #154273);
+  outline-offset: -2px;
+}
+
 .operation-editor__select:focus {
-  outline: none;
-  border-color: var(--color-primary, #154273);
-  box-shadow: 0 0 0 2px rgba(21, 66, 115, 0.1);
+  outline: 2px solid var(--color-primary, #154273);
+  outline-offset: -2px;
 }
 
 .operation-editor__unsupported {

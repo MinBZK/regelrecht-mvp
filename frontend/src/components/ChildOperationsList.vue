@@ -1,48 +1,48 @@
 <script setup>
 import { computed, inject } from 'vue'
-import { getChildOperations, getOperationSummary } from '../data/mockOperations'
+import { getOperationSummary } from '../data/mockOperations'
+
+// This component now serves as a clipboard/staging area for:
+// - Copied operations
+// - Orphaned operations (not linked to any parent)
+// - Operations ready to be placed somewhere
 
 const props = defineProps({
-  operation: {
-    type: Object,
-    required: true
+  // Clipboard items - array of operations that are not linked anywhere
+  clipboardItems: {
+    type: Array,
+    default: () => []
   }
 })
 
 const navigateTo = inject('navigateTo')
 
-// Get child operations for the current operation
-const childOperations = computed(() => {
-  return getChildOperations(props.operation)
-})
-
-const handleNavigate = (childOperation) => {
+const handleNavigate = (operation) => {
   if (navigateTo) {
-    navigateTo(childOperation)
+    navigateTo(operation)
   }
 }
 
-// Check if there are any child operations to show
-const hasChildren = computed(() => childOperations.value.length > 0)
+// Only show when there are clipboard items
+const hasItems = computed(() => props.clipboardItems.length > 0)
 </script>
 
 <template>
-  <section v-if="hasChildren" class="child-operations">
-    <header class="child-operations__header">
-      <h4 class="child-operations__title">Onderliggende operaties</h4>
+  <section v-if="hasItems" class="clipboard-operations">
+    <header class="clipboard-operations__header">
+      <h4 class="clipboard-operations__title">Klembord</h4>
     </header>
-    <div class="child-operations__list">
+    <div class="clipboard-operations__list">
       <div
-        v-for="child in childOperations"
-        :key="child.operation.id"
-        class="child-operations__item"
-        @click="handleNavigate(child.operation)"
+        v-for="item in clipboardItems"
+        :key="item.id"
+        class="clipboard-operations__item"
+        @click="handleNavigate(item)"
       >
-        <div class="child-operations__item-content">
-          <span class="child-operations__item-label">{{ child.label }}</span>
-          <div class="child-operations__item-info">
-            <span class="child-operations__item-title">{{ child.operation.title }}</span>
-            <span class="child-operations__item-summary">{{ getOperationSummary(child.operation) }}</span>
+        <div class="clipboard-operations__item-content">
+          <div class="clipboard-operations__item-info">
+            <span class="clipboard-operations__item-title">{{ item.title }}</span>
+            <span class="clipboard-operations__item-summary">{{ getOperationSummary(item) }}</span>
           </div>
         </div>
         <img
@@ -50,7 +50,7 @@ const hasChildren = computed(() => childOperations.value.length > 0)
           alt="Ga naar"
           width="16"
           height="16"
-          class="child-operations__item-chevron"
+          class="clipboard-operations__item-chevron"
         >
       </div>
     </div>
@@ -58,17 +58,17 @@ const hasChildren = computed(() => childOperations.value.length > 0)
 </template>
 
 <style scoped>
-.child-operations {
+.clipboard-operations {
   margin-top: var(--spacing-3, 12px);
   padding-top: var(--spacing-3, 12px);
   border-top: 1px solid var(--color-slate-100, #f1f5f9);
 }
 
-.child-operations__header {
+.clipboard-operations__header {
   padding: var(--spacing-2, 8px) var(--spacing-4, 16px);
 }
 
-.child-operations__title {
+.clipboard-operations__title {
   font-size: var(--font-size-xs, 0.75rem);
   font-weight: var(--font-weight-semibold, 600);
   color: var(--color-slate-500, #64748b);
@@ -77,12 +77,12 @@ const hasChildren = computed(() => childOperations.value.length > 0)
   margin: 0;
 }
 
-.child-operations__list {
+.clipboard-operations__list {
   display: flex;
   flex-direction: column;
 }
 
-.child-operations__item {
+.clipboard-operations__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -92,11 +92,11 @@ const hasChildren = computed(() => childOperations.value.length > 0)
   transition: background-color var(--transition-fast, 150ms);
 }
 
-.child-operations__item:hover {
+.clipboard-operations__item:hover {
   background: var(--color-slate-50, #f8fafc);
 }
 
-.child-operations__item-content {
+.clipboard-operations__item-content {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-3, 12px);
@@ -104,17 +104,7 @@ const hasChildren = computed(() => childOperations.value.length > 0)
   min-width: 0;
 }
 
-.child-operations__item-label {
-  flex: 0 0 auto;
-  font-size: var(--font-size-xs, 0.75rem);
-  font-weight: var(--font-weight-semibold, 600);
-  color: var(--color-primary, #154273);
-  background: var(--color-primary-50, #e8f0f7);
-  padding: var(--spacing-0-5, 2px) var(--spacing-2, 8px);
-  border-radius: var(--border-radius-sm, 4px);
-}
-
-.child-operations__item-info {
+.clipboard-operations__item-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-0-5, 2px);
@@ -122,13 +112,13 @@ const hasChildren = computed(() => childOperations.value.length > 0)
   min-width: 0;
 }
 
-.child-operations__item-title {
+.clipboard-operations__item-title {
   font-weight: var(--font-weight-semibold, 600);
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--color-slate-900, #0f172a);
 }
 
-.child-operations__item-summary {
+.clipboard-operations__item-summary {
   font-size: var(--font-size-xs, 0.75rem);
   color: var(--color-slate-500, #64748b);
   white-space: nowrap;
@@ -136,12 +126,12 @@ const hasChildren = computed(() => childOperations.value.length > 0)
   text-overflow: ellipsis;
 }
 
-.child-operations__item-chevron {
+.clipboard-operations__item-chevron {
   flex-shrink: 0;
   opacity: 0.5;
 }
 
-.child-operations__item:hover .child-operations__item-chevron {
+.clipboard-operations__item:hover .clipboard-operations__item-chevron {
   opacity: 1;
 }
 </style>
