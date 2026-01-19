@@ -19,7 +19,7 @@ repos:
       - id: check-case-conflict
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.11
+    rev: v0.14.13
     hooks:
       # Note: script/download_law.py excluded (see comment above for reasoning)
       - id: ruff
@@ -29,7 +29,7 @@ repos:
         exclude: ^script/download_law\.py$
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         args: [--strict]
