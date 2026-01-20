@@ -164,8 +164,36 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     permissions:
       packages: write
+      deployments: write
 
     steps:
+      - name: Deactivate GitHub Deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const environment = `pr${prNumber}`;
+
+            // List all deployments for this environment
+            const { data: deployments } = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: environment,
+            });
+
+            // Mark each deployment as inactive
+            for (const deployment of deployments) {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+                description: 'PR closed, deployment deactivated',
+              });
+              console.log(`Deactivated deployment ${deployment.id}`);
+            }
+
+            console.log(`Deactivated ${deployments.length} deployments for ${environment}`);
       - name: Delete RIG Deployment
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
