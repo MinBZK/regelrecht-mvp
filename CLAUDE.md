@@ -270,21 +270,43 @@ The frontend is automatically deployed to RIG via `.github/workflows/deploy.yml`
 - Port: 8000 (required by RIG liveprobe)
 - Registry: `ghcr.io/minbzk/regelrecht-mvp`
 
-### Useful RIG API Commands
+### RIG API
+
+**API Docs:** https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/docs
+
+**Base URL:** `https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api`
+
+#### Get Deployment Logs
 
 ```bash
-# Get deployment logs
+# Get logs for a specific deployment (lines: 1-1000, default 10)
 curl -H "X-API-Key: $RIG_API_KEY" \
-  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/logs/regel-k4c?deployment=prN&lines=50"
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/logs/regel-k4c?deployment=pr73&lines=50"
 
-# Refresh project
+# Get logs for production
+curl -H "X-API-Key: $RIG_API_KEY" \
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/logs/regel-k4c?deployment=regelrecht&lines=50"
+
+# Filter by component
+curl -H "X-API-Key: $RIG_API_KEY" \
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/logs/regel-k4c?deployment=pr73&component=editor&lines=100"
+```
+
+#### Other Commands
+
+```bash
+# Refresh project (sync config)
 curl -H "X-API-Key: $RIG_API_KEY" \
   "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/:refresh"
 
 # Upsert deployment
 curl -X POST -H "X-API-Key: $RIG_API_KEY" -H "Content-Type: application/json" \
   "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/:upsert-deployment" \
-  -d '{"deploymentName": "prN", "components": [{"reference": "editor", "image": "ghcr.io/minbzk/regelrecht-mvp:pr-N"}]}'
+  -d '{"deploymentName": "pr73", "components": [{"reference": "editor", "image": "ghcr.io/minbzk/regelrecht-mvp:pr-73"}]}'
+
+# Delete deployment
+curl -X DELETE -H "X-API-Key: $RIG_API_KEY" \
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/pr73"
 ```
 
 ## Future Development
