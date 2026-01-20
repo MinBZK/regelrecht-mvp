@@ -1,3 +1,4 @@
+---
 name: Build and Deploy
 
 on:
@@ -162,7 +163,8 @@ jobs:
     steps:
       - name: Delete RIG Deployment
         run: |
-          curl -X DELETE "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/pr-${{ github.event.pull_request.number }}" \
+          PR_NUM="${{ github.event.pull_request.number }}"
+          curl -X DELETE "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/pr-${PR_NUM}" \
             -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
             --fail-with-body || echo "Deployment may not exist, continuing..."
 
