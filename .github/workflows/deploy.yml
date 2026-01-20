@@ -1,0 +1,260 @@
+---
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: minbzk/regelrecht-mvp
+  RIG_API_URL: https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api
+  RIG_PROJECT: regel-k4c
+  RIG_COMPONENT: editor
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=pr,prefix=pr-
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          secrets: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+
+  deploy-preview:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    permissions:
+      pull-requests: write
+    environment:
+      name: pr${{ github.event.pull_request.number }}
+      url: https://editor-pr${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+
+    steps:
+      - name: Deploy to RIG (Preview)
+        run: |
+          curl -X POST "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/:upsert-deployment" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
+            -d '{
+              "deploymentName": "pr${{ github.event.pull_request.number }}",
+              "components": [{
+                "reference": "${{ env.RIG_COMPONENT }}",
+                "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}"
+              }],
+              "cloneFrom": "regelrecht",
+              "forceClone": false
+            }' \
+            --fail-with-body
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const deploymentUrl = `https://editor-pr${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
+            const body = `## 🚀 Preview Deployment
+
+            Your changes have been deployed to a preview environment:
+
+            **URL:** ${deploymentUrl}
+
+            This deployment will be automatically deleted when the PR is closed.`;
+
+            // Check if there's already a comment from this workflow
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Preview Deployment')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body,
+              });
+            }
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions: {}
+    environment:
+      name: production
+      url: https://editor-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+
+    steps:
+      - name: Deploy to RIG (Production)
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          curl -X POST "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/:upsert-deployment" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
+            -d '{
+              "deploymentName": "regelrecht",
+              "components": [{
+                "reference": "${{ env.RIG_COMPONENT }}",
+                "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-'"$SHORT_SHA"'"
+              }]
+            }' \
+            --fail-with-body
+
+  cleanup-preview:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    permissions:
+      packages: write
+      deployments: write
+
+    steps:
+      - name: Delete GitHub Deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const environment = `pr${prNumber}`;
+
+            // List all deployments for this environment
+            const { data: deployments } = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: environment,
+            });
+
+            for (const deployment of deployments) {
+              // First mark as inactive (required before deletion)
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+              });
+
+              // Then delete the deployment
+              await github.rest.repos.deleteDeployment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+              });
+              console.log(`Deleted deployment ${deployment.id}`);
+            }
+
+            console.log(`Deleted ${deployments.length} deployments for ${environment}`);
+
+      - name: Delete GitHub Environment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ADMIN_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const environment = `pr${prNumber}`;
+
+            await github.rest.repos.deleteAnEnvironment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment_name: environment,
+            });
+            console.log(`Deleted environment ${environment}`);
+
+      - name: Delete RIG Deployment
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+          curl -X DELETE "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/pr${PR_NUM}" \
+            -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
+            --fail-with-body || echo "Deployment may not exist, continuing..."
+
+      - name: Delete Container Image
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const packageName = context.repo.repo;
+            const tagToDelete = `pr-${prNumber}`;
+
+            try {
+              // Get all versions of the package
+              const { data: versions } = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+                package_type: 'container',
+                package_name: packageName,
+                org: context.repo.owner,
+              });
+
+              // Find the version with our tag
+              const versionToDelete = versions.find(v =>
+                v.metadata?.container?.tags?.includes(tagToDelete)
+              );
+
+              if (versionToDelete) {
+                await github.rest.packages.deletePackageVersionForOrg({
+                  package_type: 'container',
+                  package_name: packageName,
+                  org: context.repo.owner,
+                  package_version_id: versionToDelete.id,
+                });
+                console.log(`Deleted image with tag ${tagToDelete}`);
+              } else {
+                console.log(`No image found with tag ${tagToDelete}`);
+              }
+            } catch (error) {
+              console.log(`Failed to delete image: ${error.message}`);
+            }
