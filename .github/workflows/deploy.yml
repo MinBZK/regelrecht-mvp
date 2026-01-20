@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: minbzk/regelrecht-mvp
   RIG_API_URL: https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api
   RIG_PROJECT: regel-k4c
   RIG_COMPONENT: editor
