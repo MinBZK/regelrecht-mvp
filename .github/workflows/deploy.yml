@@ -69,7 +69,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     environment:
       name: pr-${{ github.event.pull_request.number }}
-      url: https://pr-${{ github.event.pull_request.number }}.regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      url: https://component-1-pr-${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
 
     steps:
       - name: Deploy to RIG (Preview)
@@ -91,7 +91,7 @@ jobs:
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const deploymentUrl = `https://pr-${prNumber}.regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
+            const deploymentUrl = `https://component-1-pr-${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
             const body = `## 🚀 Preview Deployment
 
             Your changes have been deployed to a preview environment:
@@ -136,7 +136,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      url: https://component-1-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
 
     steps:
       - name: Deploy to RIG (Production)
@@ -146,7 +146,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
             -d '{
-              "deploymentName": "production",
+              "deploymentName": "regelrecht",
               "components": [{
                 "reference": "${{ env.RIG_COMPONENT }}",
                 "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-'"$SHORT_SHA"'"
