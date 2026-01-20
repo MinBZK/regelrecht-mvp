@@ -82,7 +82,9 @@ jobs:
               "components": [{
                 "reference": "${{ env.RIG_COMPONENT }}",
                 "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}"
-              }]
+              }],
+              "cloneFrom": "regelrecht",
+              "forceClone": false
             }' \
             --fail-with-body
 
