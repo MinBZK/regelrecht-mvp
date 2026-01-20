@@ -67,6 +67,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    permissions:
+      pull-requests: write
     environment:
       name: pr-${{ github.event.pull_request.number }}
       url: https://editor-pr-${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
@@ -136,6 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions: {}
     environment:
       name: production
       url: https://editor-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
