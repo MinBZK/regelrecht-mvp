@@ -200,6 +200,14 @@ jobs:
             }
 
             console.log(`Deleted ${deployments.length} deployments for ${environment}`);
+
+            // Delete the environment itself
+            await github.rest.repos.deleteAnEnvironment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment_name: environment,
+            });
+            console.log(`Deleted environment ${environment}`);
       - name: Delete RIG Deployment
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
