@@ -241,7 +241,6 @@ This ensures:
 - **Language**: Python 3.12+
 - **Package Manager**: uv
 - **Code Quality**: Ruff (linting and formatting), ty (type checking), pre-commit hooks
-- **Frontend**: Vite + @minbzk/storybook (static HTML/CSS)
 - **Deployment**: RIG (Quattro/rijksapps) via GitHub Actions
 
 ## CI/CD Deployment
