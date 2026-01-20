@@ -70,8 +70,8 @@ jobs:
     permissions:
       pull-requests: write
     environment:
-      name: pr-${{ github.event.pull_request.number }}
-      url: https://editor-pr-${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      name: pr${{ github.event.pull_request.number }}
+      url: https://editor-pr${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
 
     steps:
       - name: Deploy to RIG (Preview)
@@ -80,7 +80,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
             -d '{
-              "deploymentName": "pr-${{ github.event.pull_request.number }}",
+              "deploymentName": "pr${{ github.event.pull_request.number }}",
               "components": [{
                 "reference": "${{ env.RIG_COMPONENT }}",
                 "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}"
@@ -95,7 +95,7 @@ jobs:
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const deploymentUrl = `https://editor-pr-${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
+            const deploymentUrl = `https://editor-pr${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
             const body = `## 🚀 Preview Deployment
 
             Your changes have been deployed to a preview environment:
@@ -169,7 +169,7 @@ jobs:
       - name: Delete RIG Deployment
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
-          curl -X DELETE "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/pr-${PR_NUM}" \
+          curl -X DELETE "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/pr${PR_NUM}" \
             -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
             --fail-with-body || echo "Deployment may not exist, continuing..."
 
