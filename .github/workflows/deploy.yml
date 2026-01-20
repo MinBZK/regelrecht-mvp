@@ -201,13 +201,21 @@ jobs:
 
             console.log(`Deleted ${deployments.length} deployments for ${environment}`);
 
-            // Delete the environment itself
+      - name: Delete GitHub Environment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ADMIN_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const environment = `pr${prNumber}`;
+
             await github.rest.repos.deleteAnEnvironment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               environment_name: environment,
             });
             console.log(`Deleted environment ${environment}`);
+
       - name: Delete RIG Deployment
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
