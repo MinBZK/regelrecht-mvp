@@ -167,7 +167,7 @@ jobs:
       deployments: write
 
     steps:
-      - name: Deactivate GitHub Deployment
+      - name: Delete GitHub Deployment
         uses: actions/github-script@v7
         with:
           script: |
@@ -181,19 +181,25 @@ jobs:
               environment: environment,
             });
 
-            // Mark each deployment as inactive
             for (const deployment of deployments) {
+              // First mark as inactive (required before deletion)
               await github.rest.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 deployment_id: deployment.id,
                 state: 'inactive',
-                description: 'PR closed, deployment deactivated',
               });
-              console.log(`Deactivated deployment ${deployment.id}`);
+
+              // Then delete the deployment
+              await github.rest.repos.deleteDeployment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+              });
+              console.log(`Deleted deployment ${deployment.id}`);
             }
 
-            console.log(`Deactivated ${deployments.length} deployments for ${environment}`);
+            console.log(`Deleted ${deployments.length} deployments for ${environment}`);
       - name: Delete RIG Deployment
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
