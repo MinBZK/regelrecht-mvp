@@ -107,6 +107,12 @@ When adding type hints:
 
 ### Directory Structure
 
+- **frontend/** - Static HTML/CSS law editor prototype
+  - `index.html` - Law browser page
+  - `editor.html` - Law editor page
+  - `Dockerfile` - Multi-stage build (Node.js + nginx-unprivileged)
+  - `nginx.conf` - Nginx config (port 8000, gzip, caching)
+
 - **engine/** - Article-based law execution engine
   - `article_loader.py` - Loads and parses article-based YAML laws
   - `uri_resolver.py` - Parses `regelrecht://` URIs
@@ -235,6 +241,52 @@ This ensures:
 - **Language**: Python 3.12+
 - **Package Manager**: uv
 - **Code Quality**: Ruff (linting and formatting), ty (type checking), pre-commit hooks
+- **Frontend**: Vite + @minbzk/storybook (static HTML/CSS)
+- **Deployment**: RIG (Quattro/rijksapps) via GitHub Actions
+
+## CI/CD Deployment
+
+The frontend is automatically deployed to RIG via `.github/workflows/deploy.yml`.
+
+### Environments
+
+| Environment | Deployment Name | URL |
+|-------------|-----------------|-----|
+| Production | `regelrecht` | https://editor-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl |
+| PR Preview | `prN` | https://editor-prN-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl |
+
+### How It Works
+
+1. **PR opened/updated**: Builds Docker image, pushes to GHCR, deploys `prN` to RIG
+2. **PR closed**: Deletes RIG deployment and GHCR image
+3. **Push to main**: Deploys `regelrecht` (production) to RIG
+
+### Required Secrets
+
+- `RIG_API_KEY` - API key for RIG Operations Manager (configured in GitHub secrets)
+
+### Docker Image
+
+- Base: `nginxinc/nginx-unprivileged:alpine`
+- Port: 8000 (required by RIG liveprobe)
+- Registry: `ghcr.io/minbzk/regelrecht-mvp`
+
+### Useful RIG API Commands
+
+```bash
+# Get deployment logs
+curl -H "X-API-Key: $RIG_API_KEY" \
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/logs/regel-k4c?deployment=prN&lines=50"
+
+# Refresh project
+curl -H "X-API-Key: $RIG_API_KEY" \
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/:refresh"
+
+# Upsert deployment
+curl -X POST -H "X-API-Key: $RIG_API_KEY" -H "Content-Type: application/json" \
+  "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/:upsert-deployment" \
+  -d '{"deploymentName": "prN", "components": [{"reference": "editor", "image": "ghcr.io/minbzk/regelrecht-mvp:pr-N"}]}'
+```
 
 ## Future Development
 
