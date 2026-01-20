@@ -12,7 +12,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   RIG_API_URL: https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api
   RIG_PROJECT: regel-k4c
-  RIG_COMPONENT: component-1
+  RIG_COMPONENT: editor
 
 jobs:
   build:
@@ -69,7 +69,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     environment:
       name: pr-${{ github.event.pull_request.number }}
-      url: https://component-1-pr-${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      url: https://editor-pr-${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
 
     steps:
       - name: Deploy to RIG (Preview)
@@ -93,7 +93,7 @@ jobs:
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const deploymentUrl = `https://component-1-pr-${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
+            const deploymentUrl = `https://editor-pr-${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
             const body = `## 🚀 Preview Deployment
 
             Your changes have been deployed to a preview environment:
@@ -138,7 +138,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: https://component-1-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      url: https://editor-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
 
     steps:
       - name: Deploy to RIG (Production)
