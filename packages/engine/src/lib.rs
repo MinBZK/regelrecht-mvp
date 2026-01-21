@@ -24,10 +24,12 @@
 //! )?;
 //! ```
 
+pub mod article;
 pub mod error;
 pub mod types;
 
 // Re-export commonly used items
+pub use article::{Article, ArticleBasedLaw, Execution, MachineReadable};
 pub use error::{EngineError, Result};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
 
