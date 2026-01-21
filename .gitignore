@@ -53,3 +53,9 @@ htmlcov/
 # Frontend
 node_modules/
 frontend/dist/
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
