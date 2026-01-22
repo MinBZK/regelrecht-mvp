@@ -84,50 +84,9 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
           clone-from: regelrecht
           force-clone: false
-
-      - name: Comment on PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const deploymentUrl = '${{ steps.deploy.outputs.url }}';
-            const body = `## Preview Deployment
-
-            Your changes have been deployed to a preview environment:
-
-            **URL:** ${deploymentUrl}
-
-            This deployment will be automatically deleted when the PR is closed.`;
-
-            // Check if there's already a comment from this workflow
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('Preview Deployment')
-            );
-
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body,
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: body,
-              });
-            }
+          comment-on-pr: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-header: '## Preview Deployment'
 
   deploy-production:
     runs-on: ubuntu-latest
