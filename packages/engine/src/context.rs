@@ -139,6 +139,11 @@ impl RuleContext {
         self.resolved_inputs.insert(name.into(), value);
     }
 
+    /// Get all resolved inputs (cached cross-law results).
+    pub fn resolved_inputs(&self) -> &HashMap<String, Value> {
+        &self.resolved_inputs
+    }
+
     /// Get the reference date.
     pub fn reference_date(&self) -> NaiveDate {
         self.reference_date

@@ -26,6 +26,7 @@
 
 pub mod article;
 pub mod context;
+pub mod engine;
 pub mod error;
 pub mod operations;
 pub mod types;
@@ -36,6 +37,7 @@ pub use article::{
     SwitchCase,
 };
 pub use context::RuleContext;
+pub use engine::{ArticleEngine, ArticleResult};
 pub use error::{EngineError, Result};
 pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
