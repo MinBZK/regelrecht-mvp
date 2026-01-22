@@ -39,12 +39,60 @@ pub struct TypeSpec {
     pub unit: Option<String>,
 }
 
+/// Selection criteria for delegation matching
+///
+/// Used in `select_on` to specify which criteria must match when
+/// selecting among multiple candidate regulations (e.g., gemeente_code).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SelectOnCriteria {
+    /// Name of the criteria field (e.g., "gemeente_code")
+    pub name: String,
+    /// Value to match (can be a variable reference like "$gemeente_code")
+    pub value: ActionValue,
+}
+
+/// Delegation specification for cross-law references
+///
+/// Specifies how to find and call a delegated regulation. Used when a higher law
+/// (e.g., Participatiewet) delegates to a lower regulation (e.g., gemeentelijke verordening).
+///
+/// # Example
+///
+/// ```yaml
+/// delegation:
+///   law_id: participatiewet
+///   article: '8'
+///   select_on:
+///     - name: gemeente_code
+///       value: $gemeente_code
+/// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Delegation {
+    /// Law ID that establishes the delegation (e.g., "participatiewet")
+    pub law_id: String,
+    /// Article number that contains the delegation authority
+    pub article: String,
+    /// Selection criteria for matching the correct regulation
+    #[serde(default)]
+    pub select_on: Option<Vec<SelectOnCriteria>>,
+}
+
 /// Source specification for input fields
+///
+/// Defines where an input value comes from. Can be:
+/// - Simple regulation reference: `regulation: "other_law"` + `output: "field_name"`
+/// - Delegation: Complex lookup based on legal_basis and select_on criteria
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
+    /// Simple cross-law reference (law ID)
     #[serde(default)]
     pub regulation: Option<String>,
+    /// Delegation specification for complex cross-law lookups
+    #[serde(default)]
+    pub delegation: Option<Delegation>,
+    /// Output field to retrieve from the source
     pub output: String,
+    /// Parameters to pass to the source execution
     #[serde(default)]
     pub parameters: Option<HashMap<String, String>>,
 }

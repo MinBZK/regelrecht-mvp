@@ -19,7 +19,9 @@
 //! println!("Output: {:?}", result.outputs);
 //! ```
 
-use crate::article::{Action, ActionOperation, Article, ArticleBasedLaw, Input};
+use crate::article::{
+    Action, ActionOperation, Article, ArticleBasedLaw, Delegation, Input, SelectOnCriteria,
+};
 use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
 use crate::operations::{evaluate_value, execute_operation};
@@ -187,11 +189,51 @@ impl<'a> ArticleEngine<'a> {
                 None => continue, // No source, skip
             };
 
-            // Check if this is an internal reference (no regulation specified)
-            // or an external reference to another law
-            let is_internal = source.regulation.is_none();
+            // Determine the type of reference:
+            // 1. Delegation: source.delegation is set (complex cross-law with select_on)
+            // 2. External: source.regulation is set (simple cross-law reference)
+            // 3. Internal: neither is set (same-law reference)
 
-            if is_internal {
+            if let Some(delegation) = &source.delegation {
+                // Delegation reference: requires ServiceProvider to find matching regulation
+                // Check if value was pre-resolved via parameters
+                if parameters.contains_key(&input.name) {
+                    // Already resolved, use the parameter value
+                    continue;
+                }
+
+                // Format select_on criteria for error message
+                let criteria_desc = delegation
+                    .select_on
+                    .as_ref()
+                    .map(|criteria| {
+                        criteria
+                            .iter()
+                            .map(|c| c.name.clone())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
+                    .unwrap_or_else(|| "none".to_string());
+
+                return Err(EngineError::DelegationNotResolved {
+                    input_name: input.name.clone(),
+                    law_id: delegation.law_id.clone(),
+                    article: delegation.article.clone(),
+                    select_on: criteria_desc,
+                });
+            } else if let Some(regulation) = &source.regulation {
+                // External reference: requires ServiceProvider (Phase 7)
+                // Check if value was pre-resolved via parameters
+                if parameters.contains_key(&input.name) {
+                    continue;
+                }
+
+                return Err(EngineError::InvalidOperation(format!(
+                    "External reference to '{}' (regulation: {}) requires ServiceProvider. \
+                     Pass the value as a parameter or implement Phase 7.",
+                    input.name, regulation
+                )));
+            } else {
                 // Internal reference: resolve within the same law
                 let output_name = &source.output;
                 let value = self.resolve_internal_reference(
@@ -202,17 +244,6 @@ impl<'a> ArticleEngine<'a> {
                     depth,
                 )?;
                 context.set_resolved_input(&input.name, value);
-            } else {
-                // External reference: requires ServiceProvider (Phase 7)
-                // For now, check if it's already in parameters (may have been pre-resolved)
-                if !parameters.contains_key(&input.name) {
-                    return Err(EngineError::InvalidOperation(format!(
-                        "External reference to '{}' (regulation: {}) requires ServiceProvider. \
-                         Pass the value as a parameter or implement Phase 7.",
-                        input.name,
-                        source.regulation.as_ref().unwrap()
-                    )));
-                }
             }
         }
 
@@ -340,12 +371,18 @@ impl<'a> ArticleEngine<'a> {
         // Check for resolve (delegation to child regulations)
         // Resolve is used for delegation patterns where a law delegates to regelingen
         // Full implementation requires ServiceProvider (Phase 7)
-        if let Some(_resolve) = &action.resolve {
-            return Err(EngineError::InvalidOperation(
-                "Resolve actions (delegation) require ServiceProvider - not yet implemented. \
-                 Use input sources for cross-law references."
-                    .to_string(),
-            ));
+        if let Some(resolve) = &action.resolve {
+            let match_desc = resolve
+                .match_spec
+                .as_ref()
+                .map(|m| format!("output={}, value=<expr>", m.output))
+                .unwrap_or_else(|| "none".to_string());
+
+            return Err(EngineError::DelegationError(format!(
+                "Resolve action requires ServiceProvider: type={}, output={}, match=[{}]. \
+                 Use input sources with pre-resolved values or implement ServiceProvider (Phase 7).",
+                resolve.resolve_type, resolve.output, match_desc
+            )));
         }
 
         // No value or operation specified
@@ -411,6 +448,101 @@ impl<'a> ArticleEngine<'a> {
             .and_then(|exec| exec.input.as_deref())
             .unwrap_or(&[])
     }
+}
+
+// =============================================================================
+// Delegation Helper Functions
+// =============================================================================
+
+/// Evaluate select_on criteria to concrete values.
+///
+/// Used by ServiceProvider to match delegation criteria against candidate regulations.
+/// This function evaluates variable references in the criteria values.
+///
+/// # Arguments
+/// * `criteria` - List of select_on criteria
+/// * `context` - Execution context with variables
+///
+/// # Returns
+/// HashMap mapping criteria names to their evaluated values.
+///
+/// # Example
+///
+/// Given:
+/// ```yaml
+/// select_on:
+///   - name: gemeente_code
+///     value: $gemeente_code
+/// ```
+///
+/// And context with `gemeente_code = "0363"`, returns:
+/// ```text
+/// { "gemeente_code" => Value::String("0363") }
+/// ```
+pub fn evaluate_select_on_criteria(
+    criteria: &[SelectOnCriteria],
+    context: &RuleContext,
+) -> Result<HashMap<String, Value>> {
+    let mut result = HashMap::new();
+
+    for criterion in criteria {
+        let value = evaluate_value(&criterion.value, context)?;
+        result.insert(criterion.name.clone(), value);
+    }
+
+    Ok(result)
+}
+
+/// Check if a regulation matches delegation criteria.
+///
+/// Compares the evaluated select_on criteria against a regulation's metadata
+/// or output values. Used by ServiceProvider to find matching regulations.
+///
+/// # Arguments
+/// * `criteria_values` - Evaluated criteria from `evaluate_select_on_criteria`
+/// * `regulation_values` - Values from the candidate regulation
+///
+/// # Returns
+/// `true` if all criteria match, `false` otherwise.
+pub fn matches_delegation_criteria(
+    criteria_values: &HashMap<String, Value>,
+    regulation_values: &HashMap<String, Value>,
+) -> bool {
+    for (name, expected_value) in criteria_values {
+        match regulation_values.get(name) {
+            Some(actual_value) if values_equal(expected_value, actual_value) => continue,
+            _ => return false,
+        }
+    }
+    true
+}
+
+/// Compare two values for equality (with numeric coercion).
+///
+/// Handles Int/Float comparison like Python: `42 == 42.0` is true.
+/// Uses a tolerance of 1e-9 for floating point comparisons to handle
+/// computed values that should be "equal" but differ due to floating point arithmetic.
+fn values_equal(a: &Value, b: &Value) -> bool {
+    const TOLERANCE: f64 = 1e-9;
+    match (a, b) {
+        (Value::Int(i), Value::Float(f)) | (Value::Float(f), Value::Int(i)) => {
+            (*i as f64 - *f).abs() < TOLERANCE
+        }
+        (Value::Float(f1), Value::Float(f2)) => (*f1 - *f2).abs() < TOLERANCE,
+        _ => a == b,
+    }
+}
+
+/// Extract delegation info from a source specification.
+///
+/// Returns references to delegation details for efficient access.
+/// Used by ServiceProvider to match delegation criteria against candidate regulations.
+pub fn get_delegation_info(delegation: &Delegation) -> (&str, &str, Option<&[SelectOnCriteria]>) {
+    (
+        &delegation.law_id,
+        &delegation.article,
+        delegation.select_on.as_deref(),
+    )
 }
 
 #[cfg(test)]
@@ -1072,6 +1204,296 @@ articles:
         assert!(matches!(result, Err(EngineError::InvalidOperation(_))));
         if let Err(EngineError::InvalidOperation(msg)) = result {
             assert!(msg.contains("ServiceProvider"));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Delegation Tests
+    // -------------------------------------------------------------------------
+
+    mod delegation {
+        use super::*;
+
+        #[test]
+        fn test_delegation_source_error() {
+            // Delegation source should fail with DelegationNotResolved error
+            let yaml = r#"
+$id: delegation_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Article with delegation source
+    machine_readable:
+      execution:
+        parameters:
+          - name: gemeente_code
+            type: string
+            required: true
+        input:
+          - name: delegated_value
+            type: number
+            source:
+              delegation:
+                law_id: participatiewet
+                article: '8'
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
+              output: verlaging_percentage
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            value: $delegated_value
+"#;
+            let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+            let article = law.find_article_by_number("1").unwrap();
+            let engine = ArticleEngine::new(article, &law);
+
+            let mut params = HashMap::new();
+            params.insert(
+                "gemeente_code".to_string(),
+                Value::String("0363".to_string()),
+            );
+
+            let result = engine.evaluate(params, "2025-01-01");
+
+            assert!(
+                matches!(result, Err(EngineError::DelegationNotResolved { .. })),
+                "Expected DelegationNotResolved error, got: {:?}",
+                result
+            );
+
+            if let Err(EngineError::DelegationNotResolved {
+                input_name,
+                law_id,
+                article,
+                select_on,
+            }) = result
+            {
+                assert_eq!(input_name, "delegated_value");
+                assert_eq!(law_id, "participatiewet");
+                assert_eq!(article, "8");
+                assert!(select_on.contains("gemeente_code"));
+            }
+        }
+
+        #[test]
+        fn test_delegation_with_preresolved_parameter() {
+            // Delegation source should succeed if value is pre-resolved via parameters
+            let yaml = r#"
+$id: delegation_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Article with delegation source
+    machine_readable:
+      execution:
+        parameters:
+          - name: gemeente_code
+            type: string
+          - name: delegated_value
+            type: number
+        input:
+          - name: delegated_value
+            type: number
+            source:
+              delegation:
+                law_id: participatiewet
+                article: '8'
+                select_on:
+                  - name: gemeente_code
+                    value: $gemeente_code
+              output: verlaging_percentage
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            operation: MULTIPLY
+            values:
+              - $delegated_value
+              - 2
+"#;
+            let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+            let article = law.find_article_by_number("1").unwrap();
+            let engine = ArticleEngine::new(article, &law);
+
+            let mut params = HashMap::new();
+            params.insert(
+                "gemeente_code".to_string(),
+                Value::String("0363".to_string()),
+            );
+            params.insert("delegated_value".to_string(), Value::Int(50)); // Pre-resolved
+
+            let result = engine.evaluate(params, "2025-01-01").unwrap();
+
+            // Should use pre-resolved value: 50 * 2 = 100
+            assert_eq!(result.outputs.get("result"), Some(&Value::Int(100)));
+        }
+
+        #[test]
+        fn test_resolve_action_error() {
+            // Resolve action should fail with DelegationError
+            let yaml = r#"
+$id: resolve_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Article with resolve action
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+        actions:
+          - output: standaardpremie
+            resolve:
+              type: ministeriele_regeling
+              output: standaardpremie
+              match:
+                output: berekeningsjaar
+                value: $referencedate.year
+"#;
+            let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+            let article = law.find_article_by_number("1").unwrap();
+            let engine = ArticleEngine::new(article, &law);
+
+            let result = engine.evaluate(HashMap::new(), "2025-01-01");
+
+            assert!(
+                matches!(result, Err(EngineError::DelegationError(_))),
+                "Expected DelegationError, got: {:?}",
+                result
+            );
+
+            if let Err(EngineError::DelegationError(msg)) = result {
+                assert!(msg.contains("ServiceProvider"));
+                assert!(msg.contains("ministeriele_regeling"));
+            }
+        }
+
+        #[test]
+        fn test_evaluate_select_on_criteria() {
+            use crate::article::{ActionValue, SelectOnCriteria};
+            use crate::types::Value;
+
+            let criteria = vec![
+                SelectOnCriteria {
+                    name: "gemeente_code".to_string(),
+                    value: ActionValue::Literal(Value::String("$gemeente_code".to_string())),
+                },
+                SelectOnCriteria {
+                    name: "year".to_string(),
+                    value: ActionValue::Literal(Value::Int(2025)),
+                },
+            ];
+
+            let mut params = HashMap::new();
+            params.insert(
+                "gemeente_code".to_string(),
+                Value::String("0363".to_string()),
+            );
+
+            let context = RuleContext::new(params, "2025-01-01").unwrap();
+            let result = evaluate_select_on_criteria(&criteria, &context).unwrap();
+
+            // First criterion is a variable reference, should resolve to "0363"
+            assert_eq!(
+                result.get("gemeente_code"),
+                Some(&Value::String("0363".to_string()))
+            );
+
+            // Second criterion is a literal, should be 2025
+            assert_eq!(result.get("year"), Some(&Value::Int(2025)));
+        }
+
+        #[test]
+        fn test_matches_delegation_criteria() {
+            let mut criteria = HashMap::new();
+            criteria.insert(
+                "gemeente_code".to_string(),
+                Value::String("0363".to_string()),
+            );
+            criteria.insert("year".to_string(), Value::Int(2025));
+
+            // Exact match
+            let mut regulation_values = HashMap::new();
+            regulation_values.insert(
+                "gemeente_code".to_string(),
+                Value::String("0363".to_string()),
+            );
+            regulation_values.insert("year".to_string(), Value::Int(2025));
+            assert!(matches_delegation_criteria(&criteria, &regulation_values));
+
+            // Mismatch on gemeente_code
+            regulation_values.insert(
+                "gemeente_code".to_string(),
+                Value::String("0518".to_string()),
+            );
+            assert!(!matches_delegation_criteria(&criteria, &regulation_values));
+
+            // Missing field
+            regulation_values.remove("year");
+            regulation_values.insert(
+                "gemeente_code".to_string(),
+                Value::String("0363".to_string()),
+            );
+            assert!(!matches_delegation_criteria(&criteria, &regulation_values));
+
+            // Int/Float equality
+            let mut float_criteria = HashMap::new();
+            float_criteria.insert("amount".to_string(), Value::Int(100));
+            let mut float_values = HashMap::new();
+            float_values.insert("amount".to_string(), Value::Float(100.0));
+            assert!(matches_delegation_criteria(&float_criteria, &float_values));
+        }
+
+        #[test]
+        fn test_parse_participatiewet_delegation() {
+            // Test that the real participatiewet file with delegation parses correctly
+            use std::path::PathBuf;
+
+            let manifest_dir = env!("CARGO_MANIFEST_DIR");
+            let path = PathBuf::from(manifest_dir)
+                .join("..")
+                .join("..")
+                .join("regulation")
+                .join("nl/wet/participatiewet/2022-03-15.yaml");
+
+            let law = ArticleBasedLaw::from_yaml_file(&path).unwrap();
+
+            // Find article 43 which uses delegation
+            let article = law.find_article_by_number("43");
+            assert!(article.is_some(), "Should find article 43");
+
+            let article = article.unwrap();
+            let exec = article.get_execution_spec().unwrap();
+
+            // Check that inputs with delegation are parsed
+            let inputs = exec.input.as_ref().unwrap();
+            let delegation_input = inputs
+                .iter()
+                .find(|i| i.name == "verlaging_percentage_uit_verordening");
+            assert!(
+                delegation_input.is_some(),
+                "Should find verlaging_percentage_uit_verordening input"
+            );
+
+            let source = delegation_input.unwrap().source.as_ref().unwrap();
+            assert!(source.delegation.is_some(), "Should have delegation");
+
+            let delegation = source.delegation.as_ref().unwrap();
+            assert_eq!(delegation.law_id, "participatiewet");
+            assert_eq!(delegation.article, "8");
+
+            let select_on = delegation.select_on.as_ref().unwrap();
+            assert_eq!(select_on.len(), 1);
+            assert_eq!(select_on[0].name, "gemeente_code");
         }
     }
 

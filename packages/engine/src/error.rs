@@ -61,9 +61,22 @@ pub enum EngineError {
     #[error("Required parameter missing: {0}")]
     MissingParameter(String),
 
-    /// Delegation error
+    /// Delegation error (generic)
     #[error("Delegation error: {0}")]
     DelegationError(String),
+
+    /// Delegation not resolved - requires ServiceProvider
+    #[error(
+        "Delegation not resolved: input '{input_name}' requires delegation lookup \
+         (law_id: {law_id}, article: {article}, select_on: [{select_on}]). \
+         Pass the value as a parameter or implement ServiceProvider."
+    )]
+    DelegationNotResolved {
+        input_name: String,
+        law_id: String,
+        article: String,
+        select_on: String,
+    },
 
     /// Invalid date format
     #[error("Invalid date format: {0}")]

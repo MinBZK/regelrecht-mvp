@@ -34,11 +34,14 @@ pub mod uri;
 
 // Re-export commonly used items
 pub use article::{
-    Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, Execution, MachineReadable,
-    SwitchCase,
+    Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, Delegation, Execution,
+    MachineReadable, SelectOnCriteria, Source, SwitchCase,
 };
 pub use context::RuleContext;
-pub use engine::{ArticleEngine, ArticleResult};
+pub use engine::{
+    evaluate_select_on_criteria, get_delegation_info, matches_delegation_criteria, ArticleEngine,
+    ArticleResult,
+};
 pub use error::{EngineError, Result};
 pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
