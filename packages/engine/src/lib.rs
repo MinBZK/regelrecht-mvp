@@ -26,11 +26,16 @@
 
 pub mod article;
 pub mod error;
+pub mod operations;
 pub mod types;
 
 // Re-export commonly used items
-pub use article::{Article, ArticleBasedLaw, Execution, MachineReadable};
+pub use article::{
+    Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, Execution, MachineReadable,
+    SwitchCase,
+};
 pub use error::{EngineError, Result};
+pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
 
 /// Library version

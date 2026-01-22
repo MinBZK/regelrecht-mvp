@@ -118,6 +118,15 @@ pub struct ResolveMatch {
     pub value: ActionValue,
 }
 
+/// A single case in a SWITCH operation
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SwitchCase {
+    /// Condition to evaluate
+    pub when: ActionValue,
+    /// Value to return if condition is true
+    pub then: ActionValue,
+}
+
 /// Represents a value in an action - can be a literal, variable reference, or nested operation.
 ///
 /// Uses `#[serde(untagged)]` for flexible YAML parsing. The Operation variant is tried first,
@@ -158,6 +167,12 @@ pub struct ActionOperation {
     /// Conditions for AND/OR operations
     #[serde(default)]
     pub conditions: Option<Vec<ActionValue>>,
+    /// Cases for SWITCH operations
+    #[serde(default)]
+    pub cases: Option<Vec<SwitchCase>>,
+    /// Default value for SWITCH operations
+    #[serde(default)]
+    pub default: Option<ActionValue>,
 }
 
 /// Action definition in execution spec
@@ -292,9 +307,25 @@ impl Article {
             .unwrap_or_default()
     }
 
+    /// Check if this article produces a specific output (allocation-free).
+    ///
+    /// More efficient than `get_output_names().contains(&name)` as it
+    /// doesn't allocate a Vec.
+    pub fn has_output(&self, output_name: &str) -> bool {
+        self.machine_readable
+            .as_ref()
+            .and_then(|mr| mr.execution.as_ref())
+            .and_then(|exec| exec.output.as_ref())
+            .is_some_and(|outputs| outputs.iter().any(|o| o.name == output_name))
+    }
+
     /// Check if this article is publicly callable (has outputs)
     pub fn is_public(&self) -> bool {
-        !self.get_output_names().is_empty()
+        self.machine_readable
+            .as_ref()
+            .and_then(|mr| mr.execution.as_ref())
+            .and_then(|exec| exec.output.as_ref())
+            .is_some_and(|outputs| !outputs.is_empty())
     }
 
     /// Get the competent authority for this article
@@ -374,11 +405,13 @@ impl ArticleBasedLaw {
         serde_yaml::from_str(content).map_err(EngineError::YamlError)
     }
 
-    /// Find article that produces the given output
+    /// Find article that produces the given output.
+    ///
+    /// Uses allocation-free search via `Article::has_output()`.
     pub fn find_article_by_output(&self, output_name: &str) -> Option<&Article> {
         self.articles
             .iter()
-            .find(|article| article.get_output_names().contains(&output_name))
+            .find(|article| article.has_output(output_name))
     }
 
     /// Find article by article number
@@ -527,6 +560,24 @@ articles:
         let law = ArticleBasedLaw::from_yaml_str(LAW_WITH_OUTPUTS_YAML).unwrap();
         let names = law.articles[0].get_output_names();
         assert_eq!(names, vec!["test_output"]);
+    }
+
+    #[test]
+    fn test_article_has_output() {
+        let law = ArticleBasedLaw::from_yaml_str(LAW_WITH_OUTPUTS_YAML).unwrap();
+
+        // Article 1 has "test_output"
+        assert!(law.articles[0].has_output("test_output"));
+        assert!(!law.articles[0].has_output("another_output"));
+        assert!(!law.articles[0].has_output("nonexistent"));
+
+        // Article 2 has "another_output"
+        assert!(law.articles[1].has_output("another_output"));
+        assert!(!law.articles[1].has_output("test_output"));
+
+        // Minimal law articles have no outputs
+        let minimal = ArticleBasedLaw::from_yaml_str(MINIMAL_LAW_YAML).unwrap();
+        assert!(!minimal.articles[0].has_output("anything"));
     }
 
     #[test]
