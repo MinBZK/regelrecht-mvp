@@ -4,10 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Represents any value in the engine (similar to Python's Any)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(untagged)]
 pub enum Value {
     /// Null/None value
+    #[default]
     Null,
     /// Boolean value
     Bool(bool),
@@ -96,12 +97,6 @@ impl Value {
             Value::Array(a) => !a.is_empty(),
             Value::Object(o) => !o.is_empty(),
         }
-    }
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Value::Null
     }
 }
 
@@ -226,10 +221,11 @@ impl Operation {
 }
 
 /// Regulatory layer types
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RegulatoryLayer {
     /// Formal law (wet)
+    #[default]
     Wet,
     /// Ministerial regulation (ministeriële regeling)
     MinisterieleRegeling,
@@ -241,28 +237,17 @@ pub enum RegulatoryLayer {
     Beleidsregel,
 }
 
-impl Default for RegulatoryLayer {
-    fn default() -> Self {
-        RegulatoryLayer::Wet
-    }
-}
-
 /// Parameter type specification
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ParameterType {
+    #[default]
     String,
     Number,
     Boolean,
     Date,
     Array,
     Object,
-}
-
-impl Default for ParameterType {
-    fn default() -> Self {
-        ParameterType::String
-    }
 }
 
 /// Node type in execution trace

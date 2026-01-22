@@ -298,12 +298,7 @@ impl Article {
             .as_ref()
             .and_then(|mr| mr.execution.as_ref())
             .and_then(|exec| exec.output.as_ref())
-            .map(|outputs| {
-                outputs
-                    .iter()
-                    .map(|o| o.name.as_str())
-                    .collect()
-            })
+            .map(|outputs| outputs.iter().map(|o| o.name.as_str()).collect())
             .unwrap_or_default()
     }
 
@@ -416,7 +411,9 @@ impl ArticleBasedLaw {
 
     /// Find article by article number
     pub fn find_article_by_number(&self, number: &str) -> Option<&Article> {
-        self.articles.iter().find(|article| article.number == number)
+        self.articles
+            .iter()
+            .find(|article| article.number == number)
     }
 
     /// Get mapping of output names to articles
@@ -592,7 +589,9 @@ articles:
     #[test]
     fn test_article_get_definitions() {
         let law = ArticleBasedLaw::from_yaml_str(LAW_WITH_OUTPUTS_YAML).unwrap();
-        let defs = law.articles[0].get_definitions().expect("should have definitions");
+        let defs = law.articles[0]
+            .get_definitions()
+            .expect("should have definitions");
         assert_eq!(defs.len(), 1);
         assert!(defs.contains_key("CONSTANT_VALUE"));
 
@@ -616,9 +615,15 @@ articles:
 "#;
         let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
         assert_eq!(law.id, "apv_amsterdam");
-        assert_eq!(law.regulatory_layer, RegulatoryLayer::GemeentelijkeVerordening);
+        assert_eq!(
+            law.regulatory_layer,
+            RegulatoryLayer::GemeentelijkeVerordening
+        );
         assert_eq!(law.gemeente_code, Some("GM0363".to_string()));
-        assert_eq!(law.uuid, Some("a0a0a0a0-0000-0000-0000-000000000363".to_string()));
+        assert_eq!(
+            law.uuid,
+            Some("a0a0a0a0-0000-0000-0000-000000000363".to_string())
+        );
     }
 
     #[test]
@@ -852,8 +857,7 @@ articles:
 
         #[test]
         fn test_load_zorgtoeslagwet() {
-            let path = get_regulation_path()
-                .join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
+            let path = get_regulation_path().join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load zorgtoeslagwet: {}", e));
 
@@ -863,13 +867,15 @@ articles:
 
             // Verify key output can be found
             let article = law.find_article_by_output("heeft_recht_op_zorgtoeslag");
-            assert!(article.is_some(), "Should find article with heeft_recht_op_zorgtoeslag output");
+            assert!(
+                article.is_some(),
+                "Should find article with heeft_recht_op_zorgtoeslag output"
+            );
         }
 
         #[test]
         fn test_load_zorgverzekeringswet() {
-            let path = get_regulation_path()
-                .join("nl/wet/zorgverzekeringswet/2025-01-01.yaml");
+            let path = get_regulation_path().join("nl/wet/zorgverzekeringswet/2025-01-01.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load zorgverzekeringswet: {}", e));
 
@@ -889,8 +895,7 @@ articles:
 
         #[test]
         fn test_load_kieswet() {
-            let path = get_regulation_path()
-                .join("nl/wet/kieswet/2025-01-01.yaml");
+            let path = get_regulation_path().join("nl/wet/kieswet/2025-01-01.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load kieswet: {}", e));
 
@@ -899,8 +904,7 @@ articles:
 
         #[test]
         fn test_load_wet_langdurige_zorg() {
-            let path = get_regulation_path()
-                .join("nl/wet/wet_langdurige_zorg/2025-07-05.yaml");
+            let path = get_regulation_path().join("nl/wet/wet_langdurige_zorg/2025-07-05.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load wet langdurige zorg: {}", e));
 
@@ -909,8 +913,8 @@ articles:
 
         #[test]
         fn test_load_burgerlijk_wetboek_boek_5() {
-            let path = get_regulation_path()
-                .join("nl/wet/burgerlijk_wetboek_boek_5/2024-01-01.yaml");
+            let path =
+                get_regulation_path().join("nl/wet/burgerlijk_wetboek_boek_5/2024-01-01.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load BW5: {}", e));
 
@@ -919,8 +923,7 @@ articles:
 
         #[test]
         fn test_load_participatiewet() {
-            let path = get_regulation_path()
-                .join("nl/wet/participatiewet/2022-03-15.yaml");
+            let path = get_regulation_path().join("nl/wet/participatiewet/2022-03-15.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load participatiewet: {}", e));
 
@@ -929,8 +932,8 @@ articles:
 
         #[test]
         fn test_load_wet_brp() {
-            let path = get_regulation_path()
-                .join("nl/wet/wet_basisregistratie_personen/2025-02-12.yaml");
+            let path =
+                get_regulation_path().join("nl/wet/wet_basisregistratie_personen/2025-02-12.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load wet BRP: {}", e));
 
@@ -939,8 +942,8 @@ articles:
 
         #[test]
         fn test_load_wet_ib_2001() {
-            let path = get_regulation_path()
-                .join("nl/wet/wet_inkomstenbelasting_2001/2025-01-01.yaml");
+            let path =
+                get_regulation_path().join("nl/wet/wet_inkomstenbelasting_2001/2025-01-01.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load wet IB 2001: {}", e));
 
@@ -966,7 +969,10 @@ articles:
                 .unwrap_or_else(|e| panic!("Failed to load APV erfgrens Amsterdam: {}", e));
 
             assert_eq!(law.id, "apv_erfgrens_amsterdam");
-            assert_eq!(law.regulatory_layer, RegulatoryLayer::GemeentelijkeVerordening);
+            assert_eq!(
+                law.regulatory_layer,
+                RegulatoryLayer::GemeentelijkeVerordening
+            );
             assert_eq!(law.gemeente_code, Some("GM0363".to_string()));
         }
 
@@ -977,7 +983,10 @@ articles:
             let law = ArticleBasedLaw::from_yaml_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to load afstemmingsverordening Diemen: {}", e));
 
-            assert_eq!(law.regulatory_layer, RegulatoryLayer::GemeentelijkeVerordening);
+            assert_eq!(
+                law.regulatory_layer,
+                RegulatoryLayer::GemeentelijkeVerordening
+            );
         }
 
         #[test]
@@ -1013,17 +1022,21 @@ articles:
                 }
             }
 
-            assert_eq!(loaded_count, 12, "Should have loaded all 12 regulation files");
+            assert_eq!(
+                loaded_count, 12,
+                "Should have loaded all 12 regulation files"
+            );
         }
 
         #[test]
         fn test_zorgtoeslagwet_find_article_by_output_works() {
-            let path = get_regulation_path()
-                .join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
+            let path = get_regulation_path().join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
             let law = ArticleBasedLaw::from_yaml_file(&path).unwrap();
 
             // Test find_article_by_output for key outputs
-            assert!(law.find_article_by_output("heeft_recht_op_zorgtoeslag").is_some());
+            assert!(law
+                .find_article_by_output("heeft_recht_op_zorgtoeslag")
+                .is_some());
             assert!(law.find_article_by_output("hoogte_zorgtoeslag").is_some());
             assert!(law.find_article_by_output("vermogen_onder_grens").is_some());
 

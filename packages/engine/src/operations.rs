@@ -125,9 +125,10 @@ fn execute_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Resul
     let subject = op.subject.as_ref().ok_or_else(|| {
         EngineError::InvalidOperation("Comparison requires 'subject'".to_string())
     })?;
-    let value = op.value.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("Comparison requires 'value'".to_string())
-    })?;
+    let value = op
+        .value
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("Comparison requires 'value'".to_string()))?;
 
     let subject_val = evaluate_value(subject, resolver)?;
     let value_val = evaluate_value(value, resolver)?;
@@ -140,9 +141,10 @@ fn execute_not_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> R
     let subject = op.subject.as_ref().ok_or_else(|| {
         EngineError::InvalidOperation("Comparison requires 'subject'".to_string())
     })?;
-    let value = op.value.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("Comparison requires 'value'".to_string())
-    })?;
+    let value = op
+        .value
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("Comparison requires 'value'".to_string()))?;
 
     let subject_val = evaluate_value(subject, resolver)?;
     let value_val = evaluate_value(value, resolver)?;
@@ -164,9 +166,10 @@ where
     let subject = op.subject.as_ref().ok_or_else(|| {
         EngineError::InvalidOperation("Comparison requires 'subject'".to_string())
     })?;
-    let value = op.value.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("Comparison requires 'value'".to_string())
-    })?;
+    let value = op
+        .value
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("Comparison requires 'value'".to_string()))?;
 
     let subject_val = evaluate_value(subject, resolver)?;
     let value_val = evaluate_value(value, resolver)?;
@@ -357,9 +360,10 @@ where
 
 /// Execute AND operation: short-circuit evaluation, returns false if any condition is false.
 fn execute_and<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
-    let conditions = op.conditions.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("AND requires 'conditions'".to_string())
-    })?;
+    let conditions = op
+        .conditions
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("AND requires 'conditions'".to_string()))?;
 
     for condition in conditions {
         let val = evaluate_value(condition, resolver)?;
@@ -373,9 +377,10 @@ fn execute_and<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<V
 
 /// Execute OR operation: short-circuit evaluation, returns true if any condition is true.
 fn execute_or<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
-    let conditions = op.conditions.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("OR requires 'conditions'".to_string())
-    })?;
+    let conditions = op
+        .conditions
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("OR requires 'conditions'".to_string()))?;
 
     for condition in conditions {
         let val = evaluate_value(condition, resolver)?;
@@ -393,12 +398,14 @@ fn execute_or<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Va
 
 /// Execute IF operation: evaluates condition, returns then or else branch.
 fn execute_if<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
-    let when = op.when.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("IF requires 'when'".to_string())
-    })?;
-    let then = op.then.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("IF requires 'then'".to_string())
-    })?;
+    let when = op
+        .when
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("IF requires 'when'".to_string()))?;
+    let then = op
+        .then
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("IF requires 'then'".to_string()))?;
 
     let condition_result = evaluate_value(when, resolver)?;
 
@@ -413,9 +420,10 @@ fn execute_if<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Va
 
 /// Execute SWITCH operation: evaluates cases in order, returns first matching case.
 fn execute_switch<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
-    let cases = op.cases.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("SWITCH requires 'cases'".to_string())
-    })?;
+    let cases = op
+        .cases
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("SWITCH requires 'cases'".to_string()))?;
 
     for case in cases {
         let condition_result = evaluate_value(&case.when, resolver)?;
@@ -439,18 +447,12 @@ fn execute_switch<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Resul
 /// Get the 'values' array from an operation, or return an error.
 fn get_values(op: &ActionOperation) -> Result<&Vec<ActionValue>> {
     op.values.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation(format!(
-            "{:?} requires 'values'",
-            op.operation
-        ))
+        EngineError::InvalidOperation(format!("{:?} requires 'values'", op.operation))
     })
 }
 
 /// Evaluate a slice of ActionValues to concrete Values.
-fn evaluate_values<R: ValueResolver>(
-    values: &[ActionValue],
-    resolver: &R,
-) -> Result<Vec<Value>> {
+fn evaluate_values<R: ValueResolver>(values: &[ActionValue], resolver: &R) -> Result<Vec<Value>> {
     values.iter().map(|v| evaluate_value(v, resolver)).collect()
 }
 
@@ -650,7 +652,10 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            assert_eq!(execute_operation(&op, &resolver).unwrap(), Value::Bool(true));
+            assert_eq!(
+                execute_operation(&op, &resolver).unwrap(),
+                Value::Bool(true)
+            );
 
             // Test greater case
             let op2 = ActionOperation {
@@ -665,7 +670,10 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            assert_eq!(execute_operation(&op2, &resolver).unwrap(), Value::Bool(true));
+            assert_eq!(
+                execute_operation(&op2, &resolver).unwrap(),
+                Value::Bool(true)
+            );
         }
 
         #[test]
@@ -685,7 +693,10 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            assert_eq!(execute_operation(&op, &resolver).unwrap(), Value::Bool(true));
+            assert_eq!(
+                execute_operation(&op, &resolver).unwrap(),
+                Value::Bool(true)
+            );
 
             // Test less case
             let op2 = ActionOperation {
@@ -700,7 +711,10 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            assert_eq!(execute_operation(&op2, &resolver).unwrap(), Value::Bool(true));
+            assert_eq!(
+                execute_operation(&op2, &resolver).unwrap(),
+                Value::Bool(true)
+            );
         }
 
         #[test]
@@ -1214,8 +1228,7 @@ mod tests {
 
         #[test]
         fn test_if_with_nested_condition() {
-            let resolver = TestResolver::new()
-                .with_var("has_partner", true);
+            let resolver = TestResolver::new().with_var("has_partner", true);
 
             let condition = ActionValue::Operation(Box::new(ActionOperation {
                 operation: Operation::Equals,
@@ -1346,12 +1359,10 @@ mod tests {
                 then: None,
                 else_branch: None,
                 conditions: None,
-                cases: Some(vec![
-                    SwitchCase {
-                        when: lit(false),
-                        then: lit(100i64),
-                    },
-                ]),
+                cases: Some(vec![SwitchCase {
+                    when: lit(false),
+                    then: lit(100i64),
+                }]),
                 default: None,
             };
 
@@ -1361,8 +1372,7 @@ mod tests {
 
         #[test]
         fn test_switch_with_nested_conditions() {
-            let resolver = TestResolver::new()
-                .with_var("status", "active");
+            let resolver = TestResolver::new().with_var("status", "active");
 
             let op = ActionOperation {
                 operation: Operation::Switch,

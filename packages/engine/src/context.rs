@@ -670,7 +670,10 @@ mod tests {
         ctx.set_output("very_deep", Value::Object(very_deep));
 
         // Build a path with 35 "n"s + "end" = 36 property accesses, exceeding limit of 32
-        let excessive_path = format!("very_deep.{}.end", (0..35).map(|_| "n").collect::<Vec<_>>().join("."));
+        let excessive_path = format!(
+            "very_deep.{}.end",
+            (0..35).map(|_| "n").collect::<Vec<_>>().join(".")
+        );
 
         // This should fail due to depth limit
         let result = ctx.resolve(&excessive_path);

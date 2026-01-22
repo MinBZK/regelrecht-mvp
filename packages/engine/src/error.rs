@@ -89,6 +89,9 @@ mod tests {
             expected: "number".to_string(),
             actual: "string".to_string(),
         };
-        assert_eq!(err.to_string(), "Type mismatch: expected number, got string");
+        assert_eq!(
+            err.to_string(),
+            "Type mismatch: expected number, got string"
+        );
     }
 }

@@ -30,6 +30,7 @@ pub mod engine;
 pub mod error;
 pub mod operations;
 pub mod types;
+pub mod uri;
 
 // Re-export commonly used items
 pub use article::{
@@ -41,6 +42,7 @@ pub use engine::{ArticleEngine, ArticleResult};
 pub use error::{EngineError, Result};
 pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
+pub use uri::{internal_reference, ReferenceType, RegelrechtUri, RegelrechtUriBuilder};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
