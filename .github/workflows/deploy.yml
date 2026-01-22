@@ -10,9 +10,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: minbzk/regelrecht-mvp
-  RIG_API_URL: https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api
-  RIG_PROJECT: regel-k4c
-  RIG_COMPONENT: editor
+  ZAD_PROJECT: regel-k4c
+  ZAD_COMPONENT: editor
 
 jobs:
   build:
@@ -71,32 +70,28 @@ jobs:
       pull-requests: write
     environment:
       name: pr${{ github.event.pull_request.number }}
-      url: https://editor-pr${{ github.event.pull_request.number }}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      url: ${{ steps.deploy.outputs.url }}
 
     steps:
-      - name: Deploy to RIG (Preview)
-        run: |
-          curl -X POST "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/:upsert-deployment" \
-            -H "Content-Type: application/json" \
-            -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
-            -d '{
-              "deploymentName": "pr${{ github.event.pull_request.number }}",
-              "components": [{
-                "reference": "${{ env.RIG_COMPONENT }}",
-                "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}"
-              }],
-              "cloneFrom": "regelrecht",
-              "forceClone": false
-            }' \
-            --fail-with-body
+      - name: Deploy to ZAD (Preview)
+        id: deploy
+        uses: RijksICTGilde/zad-actions/deploy@v1
+        with:
+          api-key: ${{ secrets.RIG_API_KEY }}
+          project-id: ${{ env.ZAD_PROJECT }}
+          deployment-name: pr${{ github.event.pull_request.number }}
+          component: ${{ env.ZAD_COMPONENT }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
+          clone-from: regelrecht
+          force-clone: false
 
       - name: Comment on PR
         uses: actions/github-script@v7
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const deploymentUrl = `https://editor-pr${prNumber}-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl`;
-            const body = `## 🚀 Preview Deployment
+            const deploymentUrl = '${{ steps.deploy.outputs.url }}';
+            const body = `## Preview Deployment
 
             Your changes have been deployed to a preview environment:
 
@@ -141,23 +136,22 @@ jobs:
     permissions: {}
     environment:
       name: production
-      url: https://editor-regelrecht-regel-k4c.rig.prd1.gn2.quattro.rijksapps.nl
+      url: ${{ steps.deploy.outputs.url }}
 
     steps:
-      - name: Deploy to RIG (Production)
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          curl -X POST "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/:upsert-deployment" \
-            -H "Content-Type: application/json" \
-            -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
-            -d '{
-              "deploymentName": "regelrecht",
-              "components": [{
-                "reference": "${{ env.RIG_COMPONENT }}",
-                "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-'"$SHORT_SHA"'"
-              }]
-            }' \
-            --fail-with-body
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Deploy to ZAD (Production)
+        id: deploy
+        uses: RijksICTGilde/zad-actions/deploy@v1
+        with:
+          api-key: ${{ secrets.RIG_API_KEY }}
+          project-id: ${{ env.ZAD_PROJECT }}
+          deployment-name: regelrecht
+          component: ${{ env.ZAD_COMPONENT }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.sha.outputs.short }}
 
   cleanup-preview:
     runs-on: ubuntu-latest
@@ -167,94 +161,17 @@ jobs:
       deployments: write
 
     steps:
-      - name: Delete GitHub Deployment
-        uses: actions/github-script@v7
+      - name: Cleanup ZAD Deployment
+        uses: RijksICTGilde/zad-actions/cleanup@v1
         with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const environment = `pr${prNumber}`;
-
-            // List all deployments for this environment
-            const { data: deployments } = await github.rest.repos.listDeployments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              environment: environment,
-            });
-
-            for (const deployment of deployments) {
-              // First mark as inactive (required before deletion)
-              await github.rest.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: deployment.id,
-                state: 'inactive',
-              });
-
-              // Then delete the deployment
-              await github.rest.repos.deleteDeployment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: deployment.id,
-              });
-              console.log(`Deleted deployment ${deployment.id}`);
-            }
-
-            console.log(`Deleted ${deployments.length} deployments for ${environment}`);
-
-      - name: Delete GitHub Environment
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.ADMIN_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const environment = `pr${prNumber}`;
-
-            await github.rest.repos.deleteAnEnvironment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              environment_name: environment,
-            });
-            console.log(`Deleted environment ${environment}`);
-
-      - name: Delete RIG Deployment
-        run: |
-          PR_NUM="${{ github.event.pull_request.number }}"
-          curl -X DELETE "${{ env.RIG_API_URL }}/projects/${{ env.RIG_PROJECT }}/pr${PR_NUM}" \
-            -H "X-API-Key: ${{ secrets.RIG_API_KEY }}" \
-            --fail-with-body || echo "Deployment may not exist, continuing..."
-
-      - name: Delete Container Image
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const packageName = context.repo.repo;
-            const tagToDelete = `pr-${prNumber}`;
-
-            try {
-              // Get all versions of the package
-              const { data: versions } = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
-                package_type: 'container',
-                package_name: packageName,
-                org: context.repo.owner,
-              });
-
-              // Find the version with our tag
-              const versionToDelete = versions.find(v =>
-                v.metadata?.container?.tags?.includes(tagToDelete)
-              );
-
-              if (versionToDelete) {
-                await github.rest.packages.deletePackageVersionForOrg({
-                  package_type: 'container',
-                  package_name: packageName,
-                  org: context.repo.owner,
-                  package_version_id: versionToDelete.id,
-                });
-                console.log(`Deleted image with tag ${tagToDelete}`);
-              } else {
-                console.log(`No image found with tag ${tagToDelete}`);
-              }
-            } catch (error) {
-              console.log(`Failed to delete image: ${error.message}`);
-            }
+          api-key: ${{ secrets.RIG_API_KEY }}
+          project-id: ${{ env.ZAD_PROJECT }}
+          deployment-name: pr${{ github.event.pull_request.number }}
+          delete-github-env: true
+          delete-github-deployments: true
+          delete-container: true
+          container-org: ${{ github.repository_owner }}
+          container-name: ${{ github.event.repository.name }}
+          container-tag: pr-${{ github.event.pull_request.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-admin-token: ${{ secrets.ADMIN_TOKEN }}
