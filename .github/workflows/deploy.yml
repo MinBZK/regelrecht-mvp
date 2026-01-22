@@ -169,8 +169,8 @@ jobs:
           delete-github-env: true
           delete-github-deployments: true
           delete-container: true
-          container-org: minbzk
-          container-name: regelrecht-mvp
+          container-org: ${{ github.repository_owner }}
+          container-name: ${{ github.event.repository.name }}
           container-tag: pr-${{ github.event.pull_request.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-admin-token: ${{ secrets.ADMIN_TOKEN }}
