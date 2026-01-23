@@ -40,6 +40,7 @@
 //! ```
 
 use serde::Serialize;
+use serde_wasm_bindgen::Serializer;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
@@ -47,6 +48,11 @@ use crate::article::ArticleBasedLaw;
 use crate::engine::ArticleEngine;
 use crate::error::EngineError;
 use crate::types::{RegulatoryLayer, Value};
+
+/// Create a serializer that converts HashMaps to JavaScript objects (not Maps)
+fn js_serializer() -> Serializer {
+    Serializer::new().serialize_maps_as_objects(true)
+}
 
 /// Maximum YAML size to prevent DoS attacks (1 MB)
 const MAX_YAML_SIZE: usize = 1_000_000;
@@ -130,6 +136,15 @@ impl WasmEngine {
 
         let law = ArticleBasedLaw::from_yaml_str(yaml).map_err(EngineError::from)?;
         let id = law.id.clone();
+
+        // Check for duplicate - require explicit unload first
+        if self.laws.contains_key(&id) {
+            return Err(wasm_error(&format!(
+                "Law '{}' is already loaded. Call unloadLaw('{}') first to replace it.",
+                id, id
+            )));
+        }
+
         self.laws.insert(id.clone(), law);
         Ok(id)
     }
@@ -156,6 +171,7 @@ impl WasmEngine {
     /// );
     /// console.log(result.outputs.heeft_recht_op_zorgtoeslag);  // true or false
     /// ```
+    #[wasm_bindgen(js_name = execute)]
     pub fn execute(
         &self,
         law_id: &str,
@@ -194,8 +210,9 @@ impl WasmEngine {
             law_uuid: result.law_uuid,
         };
 
-        serde_wasm_bindgen::to_value(&wasm_result)
-            .map_err(|e| wasm_error(&format!("Failed to serialize result: {}", e)))
+        wasm_result
+            .serialize(&js_serializer())
+            .map_err(|e| wasm_error(&format!("Failed to serialize result for law '{}': {}", law_id, e)))
     }
 
     /// List all loaded law IDs (sorted alphabetically).
@@ -250,8 +267,8 @@ impl WasmEngine {
             article_count: law.articles.len(),
         };
 
-        serde_wasm_bindgen::to_value(&info)
-            .map_err(|e| wasm_error(&format!("Failed to serialize law info: {}", e)))
+        info.serialize(&js_serializer())
+            .map_err(|e| wasm_error(&format!("Failed to serialize law info for '{}': {}", law_id, e)))
     }
 
     /// Remove a loaded law from the engine.
@@ -288,6 +305,7 @@ impl WasmEngine {
     ///
     /// # Returns
     /// Version string (e.g., "0.1.0")
+    #[wasm_bindgen(js_name = version)]
     pub fn version(&self) -> String {
         env!("CARGO_PKG_VERSION").to_string()
     }

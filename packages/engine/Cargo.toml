@@ -2,8 +2,13 @@
 name = "regelrecht-engine"
 version = "0.1.0"
 edition = "2021"
-description = "RegelRecht law execution engine"
+authors = ["MinBZK <noreply@minbzk.nl>"]
+description = "RegelRecht law execution engine - Machine-readable Dutch law execution"
 license = "MIT"
+repository = "https://github.com/MinBZK/regelrecht-mvp"
+homepage = "https://github.com/MinBZK/regelrecht-mvp"
+keywords = ["law", "legal", "wasm", "dutch", "regelrecht"]
+categories = ["wasm", "parsing"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
