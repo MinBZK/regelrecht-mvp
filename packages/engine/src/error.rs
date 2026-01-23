@@ -81,6 +81,18 @@ pub enum EngineError {
     /// Invalid date format
     #[error("Invalid date format: {0}")]
     InvalidDate(String),
+
+    /// External reference not resolved - requires ServiceProvider
+    #[error(
+        "External reference not resolved: input '{input_name}' requires resolution from \
+         regulation '{regulation}' output '{output}'. \
+         Pass the value as a parameter or use ServiceProvider."
+    )]
+    ExternalReferenceNotResolved {
+        input_name: String,
+        regulation: String,
+        output: String,
+    },
 }
 
 /// Result type alias for engine operations

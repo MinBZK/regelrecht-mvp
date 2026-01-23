@@ -12,7 +12,9 @@
 //! use regelrecht_engine::{LawExecutionService, Value};
 //! use std::collections::HashMap;
 //!
-//! let service = LawExecutionService::new("./regulations")?;
+//! let mut service = LawExecutionService::new();
+//! service.load_law(yaml_str)?;
+//!
 //! let mut params = HashMap::new();
 //! params.insert("BSN".to_string(), Value::String("123456789".to_string()));
 //!
@@ -20,7 +22,7 @@
 //!     "zorgtoeslagwet",
 //!     "heeft_recht_op_zorgtoeslag",
 //!     params,
-//!     Some("2024-01-01"),
+//!     "2024-01-01",
 //! )?;
 //! ```
 
@@ -29,6 +31,8 @@ pub mod context;
 pub mod engine;
 pub mod error;
 pub mod operations;
+pub mod resolver;
+pub mod service;
 pub mod types;
 pub mod uri;
 
@@ -48,6 +52,8 @@ pub use engine::{
 pub use error::{EngineError, Result};
 pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
+pub use resolver::RuleResolver;
+pub use service::{LawExecutionService, ServiceProvider};
 pub use uri::{internal_reference, ReferenceType, RegelrechtUri, RegelrechtUriBuilder};
 
 /// Library version

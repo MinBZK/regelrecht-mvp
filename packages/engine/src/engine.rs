@@ -222,17 +222,17 @@ impl<'a> ArticleEngine<'a> {
                     select_on: criteria_desc,
                 });
             } else if let Some(regulation) = &source.regulation {
-                // External reference: requires ServiceProvider (Phase 7)
+                // External reference: requires ServiceProvider
                 // Check if value was pre-resolved via parameters
                 if parameters.contains_key(&input.name) {
                     continue;
                 }
 
-                return Err(EngineError::InvalidOperation(format!(
-                    "External reference to '{}' (regulation: {}) requires ServiceProvider. \
-                     Pass the value as a parameter or implement Phase 7.",
-                    input.name, regulation
-                )));
+                return Err(EngineError::ExternalReferenceNotResolved {
+                    input_name: input.name.clone(),
+                    regulation: regulation.clone(),
+                    output: source.output.clone(),
+                });
             } else {
                 // Internal reference: resolve within the same law
                 let output_name = &source.output;
@@ -1201,9 +1201,20 @@ articles:
 
         let result = engine.evaluate(HashMap::new(), "2025-01-01");
 
-        assert!(matches!(result, Err(EngineError::InvalidOperation(_))));
-        if let Err(EngineError::InvalidOperation(msg)) = result {
-            assert!(msg.contains("ServiceProvider"));
+        assert!(
+            matches!(result, Err(EngineError::ExternalReferenceNotResolved { .. })),
+            "Expected ExternalReferenceNotResolved error, got: {:?}",
+            result
+        );
+        if let Err(EngineError::ExternalReferenceNotResolved {
+            input_name,
+            regulation,
+            output,
+        }) = result
+        {
+            assert_eq!(input_name, "external_value");
+            assert_eq!(regulation, "other_law");
+            assert_eq!(output, "some_output");
         }
     }
 
