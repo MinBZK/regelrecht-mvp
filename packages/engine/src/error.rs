@@ -86,6 +86,14 @@ pub enum EngineError {
 /// Result type alias for engine operations
 pub type Result<T> = std::result::Result<T, EngineError>;
 
+// WASM error conversion
+#[cfg(feature = "wasm")]
+impl From<EngineError> for wasm_bindgen::JsValue {
+    fn from(err: EngineError) -> Self {
+        wasm_bindgen::JsValue::from_str(&err.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -32,6 +32,9 @@ pub mod operations;
 pub mod types;
 pub mod uri;
 
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
 // Re-export commonly used items
 pub use article::{
     Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, Delegation, Execution,
