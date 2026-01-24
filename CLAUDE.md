@@ -86,7 +86,13 @@ When using git worktrees, create them **inside the project folder** (e.g., `.wor
 ```bash
 # Create worktree inside project
 git worktree add .worktrees/feature-branch feature-branch
+
+# Copy Claude Code settings to the new worktree
+mkdir -p .worktrees/feature-branch/.claude
+cp .claude/settings.local.json .worktrees/feature-branch/.claude/
 ```
+
+**Why copy settings?** The `.claude/settings.local.json` file is gitignored, so it's not included when creating a worktree. Claude Code treats each directory as a separate project and won't inherit permissions from the main repo. Copying the settings ensures pre-authorized commands (like `just` commands) work without re-approval.
 
 ### Type Checking
 This project uses **ty** for Python type checking. All code must pass type checks.
