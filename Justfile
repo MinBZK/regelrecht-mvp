@@ -50,3 +50,7 @@ pre-commit:
 # Sync dependencies
 sync:
     uv sync
+
+# Generate golden test fixtures (for Python/Rust parity testing)
+golden:
+    uv run python script/generate_golden_fixtures.py
