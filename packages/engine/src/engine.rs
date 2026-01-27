@@ -335,13 +335,20 @@ impl<'a> ArticleEngine<'a> {
 
     /// Execute all actions in order.
     ///
+    /// All actions are executed regardless of `requested_output` because:
+    /// 1. Later actions may depend on earlier outputs
+    /// 2. Python implementation returns all outputs from the article
+    ///
+    /// The `requested_output` parameter is only used for article lookup,
+    /// not for filtering actions within the article.
+    ///
     /// # Arguments
     /// * `context` - Execution context
-    /// * `requested_output` - Specific output to calculate (optional)
+    /// * `_requested_output` - Unused (kept for API compatibility)
     fn execute_actions(
         &self,
         context: &mut RuleContext,
-        requested_output: Option<&str>,
+        _requested_output: Option<&str>,
     ) -> Result<()> {
         let actions = self.get_actions();
 
@@ -351,13 +358,6 @@ impl<'a> ArticleEngine<'a> {
                 Some(name) => name,
                 None => continue,
             };
-
-            // If requested_output specified, only execute matching action
-            if let Some(requested) = requested_output {
-                if output_name != requested {
-                    continue;
-                }
-            }
 
             // Evaluate the action and store output
             let value = self.evaluate_action(action, context)?;
