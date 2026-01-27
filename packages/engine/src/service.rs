@@ -26,24 +26,17 @@
 //! ```
 
 use crate::article::{Article, ArticleBasedLaw, Input, SelectOnCriteria};
+use crate::config;
 use crate::context::RuleContext;
 use crate::engine::{
     evaluate_select_on_criteria, get_delegation_info, ArticleEngine, ArticleResult,
 };
-use crate::operations::ValueResolver;
 use crate::error::{EngineError, Result};
+use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
 use crate::types::Value;
 use crate::uri::RegelrechtUri;
 use std::collections::{HashMap, HashSet};
-
-/// Maximum depth for cross-law resolution to prevent infinite loops.
-///
-/// This limit (20) is conservative and sufficient for real-world Dutch regulations,
-/// which typically have at most 3-5 levels of cross-law dependencies
-/// (e.g., Wet → Ministeriële Regeling → Gemeentelijke Verordening).
-/// The limit also matches the maximum expected delegation chain depth.
-const MAX_CROSS_LAW_DEPTH: usize = 20;
 
 /// Trait for resolving cross-law references and delegations.
 ///
@@ -161,8 +154,11 @@ impl LawExecutionService {
     }
 
     /// Load a law struct directly.
-    pub fn load_law_struct(&mut self, law: ArticleBasedLaw) {
-        self.resolver.load_law(law);
+    ///
+    /// # Returns
+    /// `Ok(())` on success, `Err` if the maximum number of laws would be exceeded.
+    pub fn load_law_struct(&mut self, law: ArticleBasedLaw) -> Result<()> {
+        self.resolver.load_law(law)
     }
 
     /// Execute a law output by name.
@@ -208,12 +204,25 @@ impl LawExecutionService {
         visited: HashSet<String>,
         depth: usize,
     ) -> Result<ArticleResult> {
+        tracing::debug!(
+            law_id = %law_id,
+            output = %output_name,
+            depth = depth,
+            "Resolving cross-law reference"
+        );
+
         // Check depth limit
-        if depth > MAX_CROSS_LAW_DEPTH {
+        if depth > config::MAX_CROSS_LAW_DEPTH {
+            tracing::warn!(
+                law_id = %law_id,
+                output = %output_name,
+                depth = depth,
+                "Cross-law resolution depth exceeded"
+            );
             return Err(EngineError::CircularReference(format!(
                 "Cross-law resolution depth exceeded {} levels. \
                  Possible circular reference involving {}:{}",
-                MAX_CROSS_LAW_DEPTH, law_id, output_name
+                config::MAX_CROSS_LAW_DEPTH, law_id, output_name
             )));
         }
 

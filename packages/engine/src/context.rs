@@ -17,17 +17,26 @@
 //! Supports nested property access using dot notation:
 //! - `referencedate.year` - Get year from reference date
 //! - `person.address.city` - Navigate nested objects
+//!
+//! # Child Context Behavior
+//!
+//! The `create_child()` method creates a child context for nested evaluation
+//! (e.g., FOREACH loops). Important: **child contexts start with an empty local scope**.
+//!
+//! This is an intentional design difference from the Python implementation:
+//! - **Rust**: Clears local scope in child contexts (safer, prevents variable pollution)
+//! - **Python**: Copies local scope to child contexts (allows cross-iteration access)
+//!
+//! If you need to pass values between iterations, use parameters or store them
+//! in outputs rather than relying on local scope inheritance.
 
 use crate::article::Definition;
+use crate::config;
 use crate::error::{EngineError, Result};
 use crate::operations::ValueResolver;
 use crate::types::Value;
 use chrono::{Datelike, NaiveDate};
 use std::collections::HashMap;
-
-/// Maximum recursion depth for dot notation property access.
-/// Prevents stack overflow on malicious or malformed input like "a.a.a.a.a...".
-const MAX_PROPERTY_DEPTH: usize = 32;
 
 /// Execution context for article evaluation.
 ///
@@ -154,6 +163,21 @@ impl RuleContext {
     /// The child inherits definitions, parameters, resolved_inputs, and outputs,
     /// but starts with an **empty local scope**. This ensures that FOREACH loop
     /// variables from a parent context don't leak into child iterations.
+    ///
+    /// # Design Note
+    ///
+    /// This behavior differs from the Python implementation, which copies the
+    /// local scope to child contexts. The Rust implementation intentionally
+    /// clears local scope to:
+    ///
+    /// 1. **Prevent variable pollution**: Loop variables shouldn't accidentally
+    ///    affect nested operations
+    /// 2. **Explicit is better**: If you need values in a child context, pass
+    ///    them explicitly via parameters or outputs
+    /// 3. **Safety**: Reduces the risk of subtle bugs from shared mutable state
+    ///
+    /// If Python compatibility is required for specific use cases, pass the
+    /// needed values explicitly via parameters before evaluation.
     pub fn create_child(&self) -> Self {
         Self {
             definitions: self.definitions.clone(),
@@ -253,10 +277,10 @@ fn date_to_value(date: NaiveDate) -> Value {
 /// * `depth` - Current recursion depth (for stack overflow protection)
 fn get_property(value: &Value, property_path: &str, depth: usize) -> Result<Value> {
     // Prevent stack overflow on deeply nested or malicious input
-    if depth >= MAX_PROPERTY_DEPTH {
+    if depth >= config::MAX_PROPERTY_DEPTH {
         return Err(EngineError::InvalidOperation(format!(
             "Property access depth exceeds maximum of {}",
-            MAX_PROPERTY_DEPTH
+            config::MAX_PROPERTY_DEPTH
         )));
     }
 
@@ -307,6 +331,7 @@ fn value_type_name(value: &Value) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config;
 
     fn make_context() -> RuleContext {
         let mut params = HashMap::new();
@@ -658,21 +683,22 @@ mod tests {
         assert_eq!(result.unwrap(), Value::Int(42));
 
         // Create a structure that's deeper than MAX_PROPERTY_DEPTH (32)
-        // We need 35 levels to trigger the depth limit
+        // We need (MAX_PROPERTY_DEPTH + 3) levels to trigger the depth limit
+        let depth = config::MAX_PROPERTY_DEPTH + 3;
         let mut very_deep = HashMap::new();
         very_deep.insert("end".to_string(), Value::Int(999));
 
-        for _ in 0..35 {
+        for _ in 0..depth {
             let mut wrapper = HashMap::new();
             wrapper.insert("n".to_string(), Value::Object(very_deep));
             very_deep = wrapper;
         }
         ctx.set_output("very_deep", Value::Object(very_deep));
 
-        // Build a path with 35 "n"s + "end" = 36 property accesses, exceeding limit of 32
+        // Build a path with (depth) "n"s + "end", exceeding limit
         let excessive_path = format!(
             "very_deep.{}.end",
-            (0..35).map(|_| "n").collect::<Vec<_>>().join(".")
+            (0..depth).map(|_| "n").collect::<Vec<_>>().join(".")
         );
 
         // This should fail due to depth limit

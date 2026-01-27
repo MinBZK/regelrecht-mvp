@@ -22,6 +22,7 @@
 use crate::article::{
     Action, ActionOperation, Article, ArticleBasedLaw, Delegation, Input, SelectOnCriteria,
 };
+use crate::config;
 use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
 use crate::operations::{evaluate_value, execute_operation};
@@ -30,10 +31,6 @@ use crate::types::Value;
 #[allow(unused_imports)]
 use crate::uri::RegelrechtUri;
 use std::collections::{HashMap, HashSet};
-
-/// Maximum depth for internal reference resolution to prevent stack overflow.
-/// This limits how many nested articles can reference each other.
-const MAX_RESOLUTION_DEPTH: usize = 50;
 
 /// Result of article execution
 #[derive(Debug, Clone)]
@@ -127,11 +124,25 @@ impl<'a> ArticleEngine<'a> {
         visited: HashSet<String>,
         depth: usize,
     ) -> Result<ArticleResult> {
+        tracing::debug!(
+            law_id = %self.law.id,
+            article = %self.article.number,
+            depth = depth,
+            requested_output = ?requested_output,
+            "Starting article evaluation"
+        );
+
         // Check depth limit
-        if depth > MAX_RESOLUTION_DEPTH {
+        if depth > config::MAX_RESOLUTION_DEPTH {
+            tracing::warn!(
+                law_id = %self.law.id,
+                article = %self.article.number,
+                depth = depth,
+                "Resolution depth exceeded"
+            );
             return Err(EngineError::CircularReference(format!(
                 "Resolution depth exceeded {} levels. Possible circular reference involving article '{}'",
-                MAX_RESOLUTION_DEPTH, self.article.number
+                config::MAX_RESOLUTION_DEPTH, self.article.number
             )));
         }
 
@@ -152,13 +163,22 @@ impl<'a> ArticleEngine<'a> {
         // Build result
         // Clone outputs and resolved_inputs since ArticleResult must own the data
         // (it may outlive the context)
-        Ok(ArticleResult {
+        let result = ArticleResult {
             outputs: context.outputs().clone(),
             resolved_inputs: context.resolved_inputs().clone(),
             article_number: self.article.number.clone(),
             law_id: self.law.id.clone(),
             law_uuid: self.law.uuid.clone(),
-        })
+        };
+
+        tracing::debug!(
+            law_id = %self.law.id,
+            article = %self.article.number,
+            outputs = ?result.outputs.keys().collect::<Vec<_>>(),
+            "Article evaluation completed"
+        );
+
+        Ok(result)
     }
 
     /// Resolve input sources (internal and external references).

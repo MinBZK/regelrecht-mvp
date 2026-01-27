@@ -10,11 +10,77 @@
 //!
 //! # Limitations
 //!
-//! - **No cross-law resolution**: External references (`source.regulation`) require a
-//!   ServiceProvider implementation (not yet available in WASM). Workaround: pre-resolve
-//!   external values and pass them as parameters.
-//! - **No delegation resolution**: Delegation with `select_on` criteria requires ServiceProvider.
-//!   Workaround: pre-resolve delegated values and pass them as parameters.
+//! The WASM environment cannot perform cross-law resolution or delegation lookups because
+//! these require a ServiceProvider implementation (filesystem access, database queries, etc.)
+//! that is not available in browser environments.
+//!
+//! ## Cross-Law References (`source.regulation`)
+//!
+//! When an article has an input that references another law:
+//!
+//! ```yaml
+//! input:
+//!   - name: standaardpremie
+//!     source:
+//!       regulation: regeling_standaardpremie
+//!       output: standaardpremie
+//! ```
+//!
+//! **WASM cannot resolve this automatically**. Instead:
+//!
+//! 1. Load and execute the referenced law separately
+//! 2. Pass the result as a parameter:
+//!
+//! ```javascript
+//! // First, get the standaardpremie value
+//! const spResult = engine.execute('regeling_standaardpremie', 'standaardpremie', {}, '2025-01-01');
+//! const standaardpremie = spResult.outputs.standaardpremie;
+//!
+//! // Then pass it as a parameter to the dependent law
+//! const result = engine.execute('zorgtoeslagwet', 'hoogte_zorgtoeslag', {
+//!     standaardpremie: standaardpremie,  // Pre-resolved value
+//!     // ... other parameters
+//! }, '2025-01-01');
+//! ```
+//!
+//! ## Delegation (`source.delegation`)
+//!
+//! When an article delegates to local regulations:
+//!
+//! ```yaml
+//! input:
+//!   - name: verlaging_percentage
+//!     source:
+//!       delegation:
+//!         law_id: participatiewet
+//!         article: '8'
+//!         select_on:
+//!           - name: gemeente_code
+//!             value: $gemeente_code
+//!       output: verlaging_percentage
+//! ```
+//!
+//! **WASM cannot look up delegated regulations**. Instead:
+//!
+//! 1. Determine which local regulation applies (using `gemeente_code`, etc.)
+//! 2. Load and execute that regulation
+//! 3. Pass the result as a parameter:
+//!
+//! ```javascript
+//! // Load the applicable local regulation
+//! const localLawId = engine.loadLaw(localVerordeningYaml);
+//!
+//! // Execute to get the delegated value
+//! const delegatedResult = engine.execute(localLawId, 'verlaging_percentage', {
+//!     gemeente_code: 'GM0363'
+//! }, '2025-01-01');
+//!
+//! // Pass it to the parent law
+//! const result = engine.execute('participatiewet', 'bijstandsnorm', {
+//!     verlaging_percentage: delegatedResult.outputs.verlaging_percentage,
+//!     // ... other parameters
+//! }, '2025-01-01');
+//! ```
 //!
 //! # Example (JavaScript)
 //!
@@ -38,6 +104,18 @@
 //! );
 //! console.log(result.outputs);
 //! ```
+//!
+//! # Error Handling
+//!
+//! All methods that can fail return `Result<T, JsValue>`. In JavaScript:
+//!
+//! ```javascript
+//! try {
+//!     const result = engine.execute(...);
+//! } catch (e) {
+//!     console.error('Execution failed:', e);  // e is a string with error details
+//! }
+//! ```
 
 use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
@@ -45,6 +123,7 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 use crate::article::ArticleBasedLaw;
+use crate::config;
 use crate::engine::ArticleEngine;
 use crate::error::EngineError;
 use crate::types::{RegulatoryLayer, Value};
@@ -54,15 +133,50 @@ fn js_serializer() -> Serializer {
     Serializer::new().serialize_maps_as_objects(true)
 }
 
-/// Maximum YAML size to prevent DoS attacks (1 MB)
-const MAX_YAML_SIZE: usize = 1_000_000;
-
-/// Maximum number of laws that can be loaded
-const MAX_LOADED_LAWS: usize = 100;
-
-/// Helper to create consistent error JsValues
+/// Helper to create consistent error JsValues.
+///
+/// Formats error messages for JavaScript consumption.
 fn wasm_error(msg: &str) -> JsValue {
     JsValue::from_str(msg)
+}
+
+/// Convert internal EngineError to user-friendly WASM error with actionable guidance.
+fn engine_error_to_wasm(err: EngineError) -> JsValue {
+    match err {
+        EngineError::ExternalReferenceNotResolved {
+            input_name,
+            regulation,
+            output,
+        } => {
+            wasm_error(&format!(
+                "Cross-law resolution not supported in WASM: input '{}' requires value from '{}' output '{}'. \
+                 Pre-resolve this value and pass it as a parameter: {{ \"{}\": <resolved_value> }}",
+                input_name, regulation, output, input_name
+            ))
+        }
+        EngineError::DelegationNotResolved {
+            input_name,
+            law_id,
+            article,
+            select_on,
+        } => {
+            wasm_error(&format!(
+                "Delegation resolution not supported in WASM: input '{}' requires lookup from '{}' article '{}' \
+                 (select_on: [{}]). Load the delegated regulation, execute it, and pass the result as a parameter: \
+                 {{ \"{}\": <resolved_value> }}",
+                input_name, law_id, article, select_on, input_name
+            ))
+        }
+        EngineError::DelegationError(msg) => {
+            wasm_error(&format!(
+                "Delegation error: {}. In WASM, delegation must be pre-resolved. \
+                 Load and execute the delegated regulation, then pass results as parameters.",
+                msg
+            ))
+        }
+        // For other errors, use the standard conversion
+        other => wasm_error(&other.to_string()),
+    }
 }
 
 /// Serializable result for execute() - avoids double serialization through serde_json
@@ -127,14 +241,20 @@ impl WasmEngine {
     #[wasm_bindgen(js_name = loadLaw)]
     pub fn load_law(&mut self, yaml: &str) -> Result<String, JsValue> {
         // Input validation
-        if yaml.len() > MAX_YAML_SIZE {
-            return Err(wasm_error("YAML exceeds maximum size (1 MB)"));
+        if yaml.len() > config::MAX_YAML_SIZE {
+            return Err(wasm_error(&format!(
+                "YAML exceeds maximum size ({} bytes)",
+                config::MAX_YAML_SIZE
+            )));
         }
-        if self.laws.len() >= MAX_LOADED_LAWS {
-            return Err(wasm_error("Maximum number of laws reached (100)"));
+        if self.laws.len() >= config::MAX_LOADED_LAWS {
+            return Err(wasm_error(&format!(
+                "Maximum number of laws reached ({})",
+                config::MAX_LOADED_LAWS
+            )));
         }
 
-        let law = ArticleBasedLaw::from_yaml_str(yaml).map_err(EngineError::from)?;
+        let law = ArticleBasedLaw::from_yaml_str(yaml).map_err(engine_error_to_wasm)?;
         let id = law.id.clone();
 
         // Check for duplicate - require explicit unload first
@@ -199,7 +319,9 @@ impl WasmEngine {
 
         // Execute
         let engine = ArticleEngine::new(article, law);
-        let result = engine.evaluate(params, calculation_date)?;
+        let result = engine
+            .evaluate(params, calculation_date)
+            .map_err(engine_error_to_wasm)?;
 
         // Serialize result directly (no intermediate serde_json::Value)
         let wasm_result = WasmExecuteResult {
