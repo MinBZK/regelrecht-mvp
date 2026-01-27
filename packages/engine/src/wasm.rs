@@ -306,12 +306,12 @@ impl WasmEngine {
             .ok_or_else(|| EngineError::LawNotFound(law_id.to_string()))?;
 
         // Find article by output
-        let article = law.find_article_by_output(output_name).ok_or_else(|| {
-            EngineError::OutputNotFound {
-                law_id: law_id.to_string(),
-                output: output_name.to_string(),
-            }
-        })?;
+        let article =
+            law.find_article_by_output(output_name)
+                .ok_or_else(|| EngineError::OutputNotFound {
+                    law_id: law_id.to_string(),
+                    output: output_name.to_string(),
+                })?;
 
         // Parse parameters from JsValue
         let params: HashMap<String, Value> = serde_wasm_bindgen::from_value(parameters)
@@ -332,9 +332,12 @@ impl WasmEngine {
             law_uuid: result.law_uuid,
         };
 
-        wasm_result
-            .serialize(&js_serializer())
-            .map_err(|e| wasm_error(&format!("Failed to serialize result for law '{}': {}", law_id, e)))
+        wasm_result.serialize(&js_serializer()).map_err(|e| {
+            wasm_error(&format!(
+                "Failed to serialize result for law '{}': {}",
+                law_id, e
+            ))
+        })
     }
 
     /// List all loaded law IDs (sorted alphabetically).
@@ -389,8 +392,12 @@ impl WasmEngine {
             article_count: law.articles.len(),
         };
 
-        info.serialize(&js_serializer())
-            .map_err(|e| wasm_error(&format!("Failed to serialize law info for '{}': {}", law_id, e)))
+        info.serialize(&js_serializer()).map_err(|e| {
+            wasm_error(&format!(
+                "Failed to serialize law info for '{}': {}",
+                law_id, e
+            ))
+        })
     }
 
     /// Remove a loaded law from the engine.

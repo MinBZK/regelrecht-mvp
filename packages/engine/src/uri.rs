@@ -306,6 +306,7 @@ impl RegelrechtUriBuilder {
     /// Build and parse into a RegelrechtUri
     ///
     /// This method is guaranteed to succeed because the builder validates inputs.
+    #[allow(clippy::unwrap_used)]
     pub fn build_parsed(&self) -> RegelrechtUri {
         // Safe to unwrap because:
         // 1. law_id and output are validated as non-empty in new()/try_new()

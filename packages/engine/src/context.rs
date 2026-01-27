@@ -98,6 +98,7 @@ impl RuleContext {
     /// Create a context with a default date (today).
     ///
     /// Useful for testing.
+    #[allow(clippy::expect_used)]
     pub fn with_defaults(parameters: HashMap<String, Value>) -> Self {
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         Self::new(parameters, &today).expect("today's date should always be valid")

@@ -302,9 +302,10 @@ fn execute_subtract<R: ValueResolver>(
 
     let evaluated = evaluate_values(values, resolver, depth)?;
 
-    let (first, rest) = evaluated
-        .split_first()
-        .expect("invariant: values checked non-empty above");
+    // SAFETY: values guaranteed non-empty by check above
+    let Some((first, rest)) = evaluated.split_first() else {
+        unreachable!("values checked non-empty above")
+    };
     let mut result = to_number(first)?;
     let mut has_float = matches!(first, Value::Float(_));
 
@@ -379,9 +380,10 @@ fn execute_divide<R: ValueResolver>(
 
     let evaluated = evaluate_values(values, resolver, depth)?;
 
-    let (first, rest) = evaluated
-        .split_first()
-        .expect("invariant: values checked non-empty above");
+    // SAFETY: values guaranteed non-empty by check above
+    let Some((first, rest)) = evaluated.split_first() else {
+        unreachable!("values checked non-empty above")
+    };
     let mut result = to_number(first)?;
 
     for val in rest {
@@ -442,10 +444,10 @@ where
         })
         .collect::<Result<Vec<_>>>()?;
 
-    let result = nums
-        .into_iter()
-        .reduce(combine)
-        .expect("invariant: values checked non-empty above");
+    // SAFETY: values guaranteed non-empty by check above
+    let Some(result) = nums.into_iter().reduce(combine) else {
+        unreachable!("values checked non-empty above")
+    };
 
     Ok(if has_float {
         Value::Float(result)
@@ -480,11 +482,7 @@ fn execute_and<R: ValueResolver>(
 }
 
 /// Execute OR operation: short-circuit evaluation, returns true if any condition is true.
-fn execute_or<R: ValueResolver>(
-    op: &ActionOperation,
-    resolver: &R,
-    depth: usize,
-) -> Result<Value> {
+fn execute_or<R: ValueResolver>(op: &ActionOperation, resolver: &R, depth: usize) -> Result<Value> {
     let conditions = op
         .conditions
         .as_ref()
@@ -505,11 +503,7 @@ fn execute_or<R: ValueResolver>(
 // =============================================================================
 
 /// Execute IF operation: evaluates condition, returns then or else branch.
-fn execute_if<R: ValueResolver>(
-    op: &ActionOperation,
-    resolver: &R,
-    depth: usize,
-) -> Result<Value> {
+fn execute_if<R: ValueResolver>(op: &ActionOperation, resolver: &R, depth: usize) -> Result<Value> {
     let when = op
         .when
         .as_ref()
@@ -563,9 +557,7 @@ fn execute_switch<R: ValueResolver>(
 /// Safely convert f64 to i64, returning error on overflow/NaN/Infinity
 fn f64_to_i64_safe(f: f64) -> Result<i64> {
     if f.is_nan() {
-        return Err(EngineError::ArithmeticOverflow(
-            "Result is NaN".to_string(),
-        ));
+        return Err(EngineError::ArithmeticOverflow("Result is NaN".to_string()));
     }
     if f.is_infinite() {
         return Err(EngineError::ArithmeticOverflow(

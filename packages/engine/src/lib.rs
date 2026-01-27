@@ -46,21 +46,21 @@ pub use article::{
     Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, Delegation, Execution,
     MachineReadable, SelectOnCriteria, Source, SwitchCase,
 };
+pub use config::{
+    MAX_ARRAY_SIZE, MAX_CROSS_LAW_DEPTH, MAX_LOADED_LAWS, MAX_OPERATION_DEPTH, MAX_PROPERTY_DEPTH,
+    MAX_RESOLUTION_DEPTH, MAX_YAML_SIZE,
+};
 pub use context::RuleContext;
 pub use engine::{
     evaluate_select_on_criteria, get_delegation_info, matches_delegation_criteria, ArticleEngine,
     ArticleResult,
 };
-pub use config::{
-    MAX_ARRAY_SIZE, MAX_CROSS_LAW_DEPTH, MAX_LOADED_LAWS, MAX_OPERATION_DEPTH, MAX_PROPERTY_DEPTH,
-    MAX_RESOLUTION_DEPTH, MAX_YAML_SIZE,
-};
 pub use error::{EngineError, ExternalError, Result};
 pub use operations::{evaluate_value, execute_operation, ValueResolver};
-pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
 pub use resolver::RuleResolver;
 pub use service::{LawExecutionService, ServiceProvider};
 pub use trace::{PathNode, TraceBuilder};
+pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
 pub use uri::{internal_reference, ReferenceType, RegelrechtUri, RegelrechtUriBuilder};
 
 /// Library version

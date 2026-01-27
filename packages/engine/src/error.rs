@@ -302,9 +302,8 @@ mod tests {
     #[test]
     fn test_external_error_hides_internal_details() {
         // CircularReference details are hidden
-        let internal = EngineError::CircularReference(
-            "Complex circular chain: a -> b -> c -> a".to_string(),
-        );
+        let internal =
+            EngineError::CircularReference("Complex circular chain: a -> b -> c -> a".to_string());
         let external: ExternalError = internal.into();
         assert_eq!(external.to_string(), "Circular reference detected");
 

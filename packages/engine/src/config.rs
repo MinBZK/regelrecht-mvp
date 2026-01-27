@@ -78,7 +78,10 @@ mod tests {
         assert!(MAX_ARRAY_SIZE >= 100, "Should allow reasonable arrays");
         assert!(MAX_ARRAY_SIZE <= 10_000, "Should not allow huge arrays");
 
-        assert!(MAX_RESOLUTION_DEPTH >= 10, "Should allow reasonable nesting");
+        assert!(
+            MAX_RESOLUTION_DEPTH >= 10,
+            "Should allow reasonable nesting"
+        );
         assert!(MAX_RESOLUTION_DEPTH <= 100, "Should limit deep nesting");
 
         assert!(MAX_CROSS_LAW_DEPTH >= 5, "Should allow typical chains");

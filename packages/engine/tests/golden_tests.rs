@@ -18,7 +18,6 @@ use std::path::Path;
 struct FixtureFile {
     #[allow(dead_code)]
     version: String,
-    category: String,
     #[allow(dead_code)]
     test_count: usize,
     test_cases: Vec<TestCase>,
@@ -28,8 +27,6 @@ struct FixtureFile {
 #[derive(Debug, Deserialize)]
 struct TestCase {
     id: String,
-    description: String,
-    category: String,
     #[serde(default)]
     parameters: HashMap<String, serde_json::Value>,
     #[serde(default)]
@@ -67,11 +64,7 @@ struct Expected {
     #[serde(default)]
     outputs: HashMap<String, serde_json::Value>,
     #[serde(default)]
-    resolved_inputs: HashMap<String, serde_json::Value>,
-    #[serde(default)]
     error_type: Option<String>,
-    #[serde(default)]
-    error_message: Option<String>,
 }
 
 /// Convert JSON value to engine Value
@@ -94,9 +87,7 @@ fn json_to_value(json: &serde_json::Value) -> Value {
             }
         }
         serde_json::Value::String(s) => Value::String(s.clone()),
-        serde_json::Value::Array(arr) => {
-            Value::Array(arr.iter().map(json_to_value).collect())
-        }
+        serde_json::Value::Array(arr) => Value::Array(arr.iter().map(json_to_value).collect()),
         serde_json::Value::Object(obj) => {
             let map: HashMap<String, Value> = obj
                 .iter()
@@ -112,9 +103,7 @@ fn values_match(expected: &serde_json::Value, actual: &Value) -> bool {
     match (expected, actual) {
         (serde_json::Value::Null, Value::Null) => true,
         (serde_json::Value::Bool(e), Value::Bool(a)) => e == a,
-        (serde_json::Value::Number(e), Value::Int(a)) => {
-            e.as_i64() == Some(*a)
-        }
+        (serde_json::Value::Number(e), Value::Int(a)) => e.as_i64() == Some(*a),
         (serde_json::Value::Number(e), Value::Float(a)) => {
             if let Some(f) = e.as_f64() {
                 (f - a).abs() < 1e-9
@@ -158,7 +147,10 @@ fn run_test_case(test: &TestCase) -> Result<(), String> {
     // Verify required fields are present
     let law_id = test.law_id.as_ref().ok_or("Missing law_id")?;
     let output_name = test.output_name.as_ref().ok_or("Missing output_name")?;
-    let calculation_date = test.calculation_date.as_ref().ok_or("Missing calculation_date")?;
+    let calculation_date = test
+        .calculation_date
+        .as_ref()
+        .ok_or("Missing calculation_date")?;
     let expected = test.expected.as_ref().ok_or("Missing expected")?;
 
     let mut service = LawExecutionService::new();
@@ -166,17 +158,14 @@ fn run_test_case(test: &TestCase) -> Result<(), String> {
     // Load law(s)
     if test.multi_law {
         for law_spec in &test.laws {
-            service.load_law(&law_spec.yaml).map_err(|e| {
-                format!(
-                    "Failed to load law '{}': {}",
-                    law_spec.law_id, e
-                )
-            })?;
+            service
+                .load_law(&law_spec.yaml)
+                .map_err(|e| format!("Failed to load law '{}': {}", law_spec.law_id, e))?;
         }
     } else if let Some(yaml) = &test.law_yaml {
-        service.load_law(yaml).map_err(|e| {
-            format!("Failed to load law '{}': {}", law_id, e)
-        })?;
+        service
+            .load_law(yaml)
+            .map_err(|e| format!("Failed to load law '{}': {}", law_id, e))?;
     } else {
         return Err("Test case has neither law_yaml nor multi_law".to_string());
     }
@@ -189,12 +178,7 @@ fn run_test_case(test: &TestCase) -> Result<(), String> {
         .collect();
 
     // Execute
-    let result = service.evaluate_law_output(
-        law_id,
-        output_name,
-        params,
-        calculation_date,
-    );
+    let result = service.evaluate_law_output(law_id, output_name, params, calculation_date);
 
     // Verify result
     if expected.success {
@@ -329,17 +313,10 @@ macro_rules! golden_test_category {
                 if skipped > 0 {
                     println!(
                         "{}/{} tests passed in {} ({} skipped)",
-                        passed,
-                        passed,
-                        $file,
-                        skipped
+                        passed, passed, $file, skipped
                     );
                 } else {
-                    println!(
-                        "All {} tests passed in {}",
-                        passed,
-                        $file
-                    );
+                    println!("All {} tests passed in {}", passed, $file);
                 }
             }
         }
@@ -400,9 +377,10 @@ fn test_all_golden_tests() {
 
         let results = run_fixture_file(&path);
         let passed = results.iter().filter(|(_, r)| r.is_ok()).count();
-        let skipped = results.iter().filter(|(_, r)| {
-            matches!(r, Err(e) if e.starts_with("SKIPPED"))
-        }).count();
+        let skipped = results
+            .iter()
+            .filter(|(_, r)| matches!(r, Err(e) if e.starts_with("SKIPPED")))
+            .count();
         let failed = results.len() - passed - skipped;
 
         total_passed += passed;
@@ -418,14 +396,25 @@ fn test_all_golden_tests() {
         }
 
         if skipped > 0 {
-            println!("{}: {}/{} passed ({} skipped)", file, passed, passed + failed, skipped);
+            println!(
+                "{}: {}/{} passed ({} skipped)",
+                file,
+                passed,
+                passed + failed,
+                skipped
+            );
         } else {
             println!("{}: {}/{} passed", file, passed, passed + failed);
         }
     }
 
     println!("\n=== Summary ===");
-    println!("Total: {}/{} passed ({} skipped)", total_passed, total_passed + total_failed, total_skipped);
+    println!(
+        "Total: {}/{} passed ({} skipped)",
+        total_passed,
+        total_passed + total_failed,
+        total_skipped
+    );
 
     if !all_failures.is_empty() {
         println!("\nFailures:");

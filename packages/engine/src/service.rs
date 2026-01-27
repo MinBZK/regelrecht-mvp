@@ -222,7 +222,9 @@ impl LawExecutionService {
             return Err(EngineError::CircularReference(format!(
                 "Cross-law resolution depth exceeded {} levels. \
                  Possible circular reference involving {}:{}",
-                config::MAX_CROSS_LAW_DEPTH, law_id, output_name
+                config::MAX_CROSS_LAW_DEPTH,
+                law_id,
+                output_name
             )));
         }
 
@@ -792,7 +794,12 @@ articles:
 
         // Execute dependent law - should automatically resolve base_law reference
         let result = service
-            .evaluate_law_output("dependent_law", "doubled_value", HashMap::new(), "2025-01-01")
+            .evaluate_law_output(
+                "dependent_law",
+                "doubled_value",
+                HashMap::new(),
+                "2025-01-01",
+            )
             .unwrap();
 
         // doubled_value = base_value (100) * 2 = 200
@@ -805,8 +812,12 @@ articles:
         // Only load dependent law, not base law
         service.load_law(make_dependent_law()).unwrap();
 
-        let result =
-            service.evaluate_law_output("dependent_law", "doubled_value", HashMap::new(), "2025-01-01");
+        let result = service.evaluate_law_output(
+            "dependent_law",
+            "doubled_value",
+            HashMap::new(),
+            "2025-01-01",
+        );
 
         assert!(
             matches!(result, Err(EngineError::LawNotFound(_))),
@@ -839,7 +850,12 @@ articles:
         );
 
         let result = service
-            .evaluate_law_output("using_delegation_law", "adjusted_amount", params, "2025-01-01")
+            .evaluate_law_output(
+                "using_delegation_law",
+                "adjusted_amount",
+                params,
+                "2025-01-01",
+            )
             .unwrap();
 
         // adjusted_amount = 1000 * (20 / 100) = 200.0 (DIVIDE produces float)
@@ -856,7 +872,12 @@ articles:
         );
 
         let result = service
-            .evaluate_law_output("using_delegation_law", "adjusted_amount", params, "2025-01-01")
+            .evaluate_law_output(
+                "using_delegation_law",
+                "adjusted_amount",
+                params,
+                "2025-01-01",
+            )
             .unwrap();
 
         // adjusted_amount = 1000 * (15 / 100) = 150.0 (DIVIDE produces float)
@@ -882,8 +903,12 @@ articles:
             Value::String("9999".to_string()),
         );
 
-        let result =
-            service.evaluate_law_output("using_delegation_law", "adjusted_amount", params, "2025-01-01");
+        let result = service.evaluate_law_output(
+            "using_delegation_law",
+            "adjusted_amount",
+            params,
+            "2025-01-01",
+        );
 
         assert!(
             matches!(result, Err(EngineError::DelegationError(_))),
@@ -902,7 +927,11 @@ articles:
         service.load_law(make_base_law()).unwrap();
 
         let result = service
-            .evaluate_uri("regelrecht://base_law/base_value", &HashMap::new(), "2025-01-01")
+            .evaluate_uri(
+                "regelrecht://base_law/base_value",
+                &HashMap::new(),
+                "2025-01-01",
+            )
             .unwrap();
 
         assert_eq!(result.outputs.get("base_value"), Some(&Value::Int(100)));
@@ -1149,7 +1178,12 @@ articles:
         params.insert("local_percentage".to_string(), Value::Int(25)); // Pre-resolved
 
         let result = service
-            .evaluate_law_output("using_delegation_law", "adjusted_amount", params, "2025-01-01")
+            .evaluate_law_output(
+                "using_delegation_law",
+                "adjusted_amount",
+                params,
+                "2025-01-01",
+            )
             .unwrap();
 
         // adjusted_amount = 1000 * (25 / 100) = 250.0

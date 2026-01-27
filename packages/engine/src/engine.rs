@@ -1222,7 +1222,10 @@ articles:
         let result = engine.evaluate(HashMap::new(), "2025-01-01");
 
         assert!(
-            matches!(result, Err(EngineError::ExternalReferenceNotResolved { .. })),
+            matches!(
+                result,
+                Err(EngineError::ExternalReferenceNotResolved { .. })
+            ),
             "Expected ExternalReferenceNotResolved error, got: {:?}",
             result
         );

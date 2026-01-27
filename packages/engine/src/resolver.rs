@@ -297,8 +297,7 @@ impl RuleResolver {
     /// Remove all indexes for a law.
     fn remove_indexes_for_law(&mut self, law_id: &str) {
         // Remove output index entries
-        self.output_index
-            .retain(|(id, _), _| id.as_str() != law_id);
+        self.output_index.retain(|(id, _), _| id.as_str() != law_id);
 
         // Remove from legal basis index
         for candidates in self.legal_basis_index.values_mut() {
