@@ -14,6 +14,15 @@ use crate::types::{Operation, Value};
 /// Maximum nesting depth for operations to prevent stack overflow
 const MAX_OPERATION_DEPTH: usize = 100;
 
+/// Maximum integer value that can be exactly represented in f64.
+/// Beyond this, precision is lost when converting i64 to f64.
+/// This is 2^53 = 9007199254740992.
+const MAX_SAFE_INTEGER: i64 = 9_007_199_254_740_992;
+
+/// Minimum integer value that can be exactly represented in f64.
+/// This is -2^53.
+const MIN_SAFE_INTEGER: i64 = -9_007_199_254_740_992;
+
 /// Trait for resolving variable references ($var) during operation execution.
 ///
 /// Implementations should provide variable resolution from context (parameters,
@@ -133,11 +142,37 @@ pub fn execute_operation<R: ValueResolver>(
 ///
 /// This matches Python's behavior where `42 == 42.0` is `True`.
 /// For non-numeric types, uses standard equality.
+///
+/// # NaN Handling
+///
+/// Unlike IEEE 754 where `NaN != NaN`, this function treats two NaN values
+/// as equal. This is intentional for law execution where NaN represents
+/// invalid/missing data, and comparing two missing values should be consistent.
 fn values_equal(a: &Value, b: &Value) -> bool {
     match (a, b) {
-        // Numeric comparison: Int and Float are compared as f64
-        (Value::Int(i), Value::Float(f)) => (*i as f64) == *f,
-        (Value::Float(f), Value::Int(i)) => *f == (*i as f64),
+        // Float-Float comparison: handle NaN specially
+        (Value::Float(f1), Value::Float(f2)) => {
+            if f1.is_nan() && f2.is_nan() {
+                true // Both NaN are considered equal
+            } else {
+                f1 == f2
+            }
+        }
+        // Int-Float comparison: handle NaN (NaN != any integer)
+        (Value::Int(i), Value::Float(f)) => {
+            if f.is_nan() {
+                false
+            } else {
+                (*i as f64) == *f
+            }
+        }
+        (Value::Float(f), Value::Int(i)) => {
+            if f.is_nan() {
+                false
+            } else {
+                *f == (*i as f64)
+            }
+        }
         // Default: use structural equality
         _ => a == b,
     }
@@ -233,7 +268,7 @@ fn execute_add<R: ValueResolver>(
 
     for val in &evaluated {
         match val {
-            Value::Int(i) => sum += *i as f64,
+            Value::Int(_) => sum += to_number(val)?,
             Value::Float(f) => {
                 sum += f;
                 has_float = true;
@@ -250,6 +285,9 @@ fn execute_add<R: ValueResolver>(
 }
 
 /// Execute SUBTRACT operation: first value minus all subsequent values.
+///
+/// Note: Uses `to_number()` which validates that integers are within the
+/// safe range for f64 conversion (±2^53).
 fn execute_subtract<R: ValueResolver>(
     op: &ActionOperation,
     resolver: &R,
@@ -285,6 +323,9 @@ fn execute_subtract<R: ValueResolver>(
 }
 
 /// Execute MULTIPLY operation: product of all values.
+///
+/// Note: Uses `to_number()` which validates that integers are within the
+/// safe range for f64 conversion (±2^53).
 fn execute_multiply<R: ValueResolver>(
     op: &ActionOperation,
     resolver: &R,
@@ -304,7 +345,7 @@ fn execute_multiply<R: ValueResolver>(
 
     for val in &evaluated {
         match val {
-            Value::Int(i) => result *= *i as f64,
+            Value::Int(_) => result *= to_number(val)?,
             Value::Float(f) => {
                 result *= f;
                 has_float = true;
@@ -566,9 +607,24 @@ fn evaluate_values<R: ValueResolver>(
 }
 
 /// Convert a Value to a number (f64).
+///
+/// # Precision
+///
+/// For integers larger than 2^53 or smaller than -2^53, precision is lost
+/// when converting to f64. This function returns an error for such values
+/// to prevent silent precision loss in financial/legal calculations.
 fn to_number(val: &Value) -> Result<f64> {
     match val {
-        Value::Int(i) => Ok(*i as f64),
+        Value::Int(i) => {
+            // Check if integer is within safe range for f64
+            if *i > MAX_SAFE_INTEGER || *i < MIN_SAFE_INTEGER {
+                return Err(EngineError::ArithmeticOverflow(format!(
+                    "Integer {} exceeds safe range for floating-point conversion (±2^53)",
+                    i
+                )));
+            }
+            Ok(*i as f64)
+        }
         Value::Float(f) => Ok(*f),
         _ => Err(type_error("number", val)),
     }
@@ -1866,6 +1922,95 @@ mod tests {
             assert_eq!(f64_to_i64_safe(0.0).unwrap(), 0);
             assert_eq!(f64_to_i64_safe(0.9).unwrap(), 0); // truncates
             assert_eq!(f64_to_i64_safe(-0.9).unwrap(), 0); // truncates towards zero
+        }
+
+        #[test]
+        fn test_nan_equality() {
+            // NaN == NaN should be true in our implementation (unlike IEEE 754)
+            let nan1 = Value::Float(f64::NAN);
+            let nan2 = Value::Float(f64::NAN);
+            assert!(
+                values_equal(&nan1, &nan2),
+                "Two NaN values should be considered equal"
+            );
+
+            // NaN != any integer
+            let nan = Value::Float(f64::NAN);
+            let int = Value::Int(42);
+            assert!(
+                !values_equal(&nan, &int),
+                "NaN should not equal any integer"
+            );
+            assert!(
+                !values_equal(&int, &nan),
+                "Any integer should not equal NaN"
+            );
+
+            // NaN != regular float
+            let nan = Value::Float(f64::NAN);
+            let float = Value::Float(42.0);
+            assert!(
+                !values_equal(&nan, &float),
+                "NaN should not equal regular float"
+            );
+        }
+
+        #[test]
+        fn test_large_integer_precision_error() {
+            // Integers beyond 2^53 should error when converted to f64
+            let large_int = Value::Int(MAX_SAFE_INTEGER + 1);
+            let result = to_number(&large_int);
+            assert!(
+                matches!(result, Err(EngineError::ArithmeticOverflow(_))),
+                "Large integer should cause overflow error, got: {:?}",
+                result
+            );
+
+            let small_int = Value::Int(MIN_SAFE_INTEGER - 1);
+            let result = to_number(&small_int);
+            assert!(
+                matches!(result, Err(EngineError::ArithmeticOverflow(_))),
+                "Small integer should cause overflow error, got: {:?}",
+                result
+            );
+
+            // Within safe range should work
+            let safe_int = Value::Int(MAX_SAFE_INTEGER);
+            let result = to_number(&safe_int);
+            assert!(result.is_ok(), "Safe integer should convert successfully");
+            assert_eq!(result.unwrap(), MAX_SAFE_INTEGER as f64);
+
+            let safe_neg = Value::Int(MIN_SAFE_INTEGER);
+            let result = to_number(&safe_neg);
+            assert!(result.is_ok(), "Safe negative should convert successfully");
+            assert_eq!(result.unwrap(), MIN_SAFE_INTEGER as f64);
+        }
+
+        #[test]
+        fn test_arithmetic_with_large_integer() {
+            // Addition with integers beyond safe range (>2^53) should fail
+            let large_value: i64 = 9_007_199_254_740_993; // MAX_SAFE_INTEGER + 1
+
+            let resolver = TestResolver::new();
+            let op = ActionOperation {
+                operation: Operation::Add,
+                subject: None,
+                value: None,
+                values: Some(vec![lit(large_value), lit(1i64)]),
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+            };
+
+            let result = execute_operation(&op, &resolver, 0);
+            assert!(
+                matches!(result, Err(EngineError::ArithmeticOverflow(_))),
+                "Large integer in arithmetic should cause overflow error, got: {:?}",
+                result
+            );
         }
     }
 }
