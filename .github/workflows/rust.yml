@@ -5,13 +5,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/engine/**'
-      - '.github/workflows/rust.yml'
+      - packages/engine/**
+      - .github/workflows/rust.yml
   pull_request:
     branches: [main]
     paths:
-      - 'packages/engine/**'
-      - '.github/workflows/rust.yml'
+      - packages/engine/**
+      - .github/workflows/rust.yml
 
 permissions:
   contents: read

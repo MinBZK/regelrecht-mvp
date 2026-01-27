@@ -771,15 +771,15 @@ articles:
         let mut params = HashMap::new();
         params.insert("age".to_string(), Value::Int(25));
 
-        // Only request is_adult output
+        // Request specific output (used for article lookup)
         let result = engine
             .evaluate_with_output(params, "2025-01-01", Some("is_adult"))
             .unwrap();
 
-        // Should have is_adult
+        // All outputs are calculated (matches Python behavior)
+        // Later actions may depend on earlier outputs
         assert!(result.outputs.contains_key("is_adult"));
-        // Should NOT have age_check_result (wasn't requested)
-        assert!(!result.outputs.contains_key("age_check_result"));
+        assert!(result.outputs.contains_key("age_check_result"));
     }
 
     // -------------------------------------------------------------------------
