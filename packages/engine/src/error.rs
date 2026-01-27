@@ -61,6 +61,14 @@ pub enum EngineError {
     #[error("Required parameter missing: {0}")]
     MissingParameter(String),
 
+    /// Arithmetic overflow when converting f64 to i64
+    #[error("Arithmetic overflow: {0}")]
+    ArithmeticOverflow(String),
+
+    /// Maximum operation nesting depth exceeded
+    #[error("Maximum operation depth exceeded: {0} levels")]
+    MaxDepthExceeded(usize),
+
     /// Delegation error (generic)
     #[error("Delegation error: {0}")]
     DelegationError(String),

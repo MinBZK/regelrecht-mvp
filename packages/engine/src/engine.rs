@@ -360,12 +360,12 @@ impl<'a> ArticleEngine<'a> {
         // When an action has an operation, the value/subject fields are operands, not direct results
         if let Some(operation) = &action.operation {
             let action_op = self.action_to_operation(action, operation)?;
-            return execute_operation(&action_op, context);
+            return execute_operation(&action_op, context, 0);
         }
 
         // Check for direct value (only when no operation is specified)
         if let Some(value) = &action.value {
-            return evaluate_value(value, context);
+            return evaluate_value(value, context, 0);
         }
 
         // Check for resolve (delegation to child regulations)
@@ -486,7 +486,7 @@ pub fn evaluate_select_on_criteria(
     let mut result = HashMap::new();
 
     for criterion in criteria {
-        let value = evaluate_value(&criterion.value, context)?;
+        let value = evaluate_value(&criterion.value, context, 0)?;
         result.insert(criterion.name.clone(), value);
     }
 

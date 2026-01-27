@@ -11,6 +11,9 @@ use crate::article::{ActionOperation, ActionValue};
 use crate::error::{EngineError, Result};
 use crate::types::{Operation, Value};
 
+/// Maximum nesting depth for operations to prevent stack overflow
+const MAX_OPERATION_DEPTH: usize = 100;
+
 /// Trait for resolving variable references ($var) during operation execution.
 ///
 /// Implementations should provide variable resolution from context (parameters,
@@ -51,7 +54,17 @@ pub trait ValueResolver {
 /// - Literal values (returned directly)
 /// - Variable references ($name) - resolved via the resolver
 /// - Nested operations - executed recursively
-pub fn evaluate_value<R: ValueResolver>(value: &ActionValue, resolver: &R) -> Result<Value> {
+///
+/// The depth parameter tracks recursion to prevent stack overflow.
+pub fn evaluate_value<R: ValueResolver>(
+    value: &ActionValue,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    if depth > MAX_OPERATION_DEPTH {
+        return Err(EngineError::MaxDepthExceeded(depth));
+    }
+
     match value {
         ActionValue::Literal(v) => {
             // Check if it's a variable reference (starts with $)
@@ -62,40 +75,53 @@ pub fn evaluate_value<R: ValueResolver>(value: &ActionValue, resolver: &R) -> Re
             }
             Ok(v.clone())
         }
-        ActionValue::Operation(op) => execute_operation(op, resolver),
+        ActionValue::Operation(op) => execute_operation(op, resolver, depth + 1),
     }
 }
 
 /// Execute an operation and return the result.
 ///
 /// Dispatches to the appropriate operation handler based on the operation type.
-pub fn execute_operation<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+/// The depth parameter tracks recursion to prevent stack overflow.
+pub fn execute_operation<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    if depth > MAX_OPERATION_DEPTH {
+        return Err(EngineError::MaxDepthExceeded(depth));
+    }
+
     match op.operation {
         // Comparison operations
-        Operation::Equals => execute_equals(op, resolver),
-        Operation::NotEquals => execute_not_equals(op, resolver),
-        Operation::GreaterThan => execute_numeric_comparison(op, resolver, |a, b| a > b),
-        Operation::LessThan => execute_numeric_comparison(op, resolver, |a, b| a < b),
-        Operation::GreaterThanOrEqual => execute_numeric_comparison(op, resolver, |a, b| a >= b),
-        Operation::LessThanOrEqual => execute_numeric_comparison(op, resolver, |a, b| a <= b),
+        Operation::Equals => execute_equals(op, resolver, depth),
+        Operation::NotEquals => execute_not_equals(op, resolver, depth),
+        Operation::GreaterThan => execute_numeric_comparison(op, resolver, depth, |a, b| a > b),
+        Operation::LessThan => execute_numeric_comparison(op, resolver, depth, |a, b| a < b),
+        Operation::GreaterThanOrEqual => {
+            execute_numeric_comparison(op, resolver, depth, |a, b| a >= b)
+        }
+        Operation::LessThanOrEqual => {
+            execute_numeric_comparison(op, resolver, depth, |a, b| a <= b)
+        }
 
         // Arithmetic operations
-        Operation::Add => execute_add(op, resolver),
-        Operation::Subtract => execute_subtract(op, resolver),
-        Operation::Multiply => execute_multiply(op, resolver),
-        Operation::Divide => execute_divide(op, resolver),
+        Operation::Add => execute_add(op, resolver, depth),
+        Operation::Subtract => execute_subtract(op, resolver, depth),
+        Operation::Multiply => execute_multiply(op, resolver, depth),
+        Operation::Divide => execute_divide(op, resolver, depth),
 
         // Aggregate operations
-        Operation::Max => execute_aggregate(op, resolver, f64::max),
-        Operation::Min => execute_aggregate(op, resolver, f64::min),
+        Operation::Max => execute_aggregate(op, resolver, depth, f64::max),
+        Operation::Min => execute_aggregate(op, resolver, depth, f64::min),
 
         // Logical operations
-        Operation::And => execute_and(op, resolver),
-        Operation::Or => execute_or(op, resolver),
+        Operation::And => execute_and(op, resolver, depth),
+        Operation::Or => execute_or(op, resolver, depth),
 
         // Conditional operations
-        Operation::If => execute_if(op, resolver),
-        Operation::Switch => execute_switch(op, resolver),
+        Operation::If => execute_if(op, resolver, depth),
+        Operation::Switch => execute_switch(op, resolver, depth),
     }
 }
 
@@ -121,7 +147,11 @@ fn values_equal(a: &Value, b: &Value) -> bool {
 ///
 /// - `Int(42) == Float(42.0)` returns `true` (like Python)
 /// - Non-numeric types use structural equality
-fn execute_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_equals<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let subject = op.subject.as_ref().ok_or_else(|| {
         EngineError::InvalidOperation("Comparison requires 'subject'".to_string())
     })?;
@@ -130,14 +160,18 @@ fn execute_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Resul
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("Comparison requires 'value'".to_string()))?;
 
-    let subject_val = evaluate_value(subject, resolver)?;
-    let value_val = evaluate_value(value, resolver)?;
+    let subject_val = evaluate_value(subject, resolver, depth)?;
+    let value_val = evaluate_value(value, resolver, depth)?;
 
     Ok(Value::Bool(values_equal(&subject_val, &value_val)))
 }
 
 /// Execute NOT_EQUALS operation with Python-style numeric coercion.
-fn execute_not_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_not_equals<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let subject = op.subject.as_ref().ok_or_else(|| {
         EngineError::InvalidOperation("Comparison requires 'subject'".to_string())
     })?;
@@ -146,8 +180,8 @@ fn execute_not_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> R
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("Comparison requires 'value'".to_string()))?;
 
-    let subject_val = evaluate_value(subject, resolver)?;
-    let value_val = evaluate_value(value, resolver)?;
+    let subject_val = evaluate_value(subject, resolver, depth)?;
+    let value_val = evaluate_value(value, resolver, depth)?;
 
     Ok(Value::Bool(!values_equal(&subject_val, &value_val)))
 }
@@ -158,6 +192,7 @@ fn execute_not_equals<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> R
 fn execute_numeric_comparison<R: ValueResolver, F>(
     op: &ActionOperation,
     resolver: &R,
+    depth: usize,
     compare: F,
 ) -> Result<Value>
 where
@@ -171,8 +206,8 @@ where
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("Comparison requires 'value'".to_string()))?;
 
-    let subject_val = evaluate_value(subject, resolver)?;
-    let value_val = evaluate_value(value, resolver)?;
+    let subject_val = evaluate_value(subject, resolver, depth)?;
+    let value_val = evaluate_value(value, resolver, depth)?;
 
     let subject_num = to_number(&subject_val)?;
     let value_num = to_number(&value_val)?;
@@ -185,9 +220,13 @@ where
 // =============================================================================
 
 /// Execute ADD operation: sum of all values.
-fn execute_add<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_add<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let values = get_values(op)?;
-    let evaluated = evaluate_values(values, resolver)?;
+    let evaluated = evaluate_values(values, resolver, depth)?;
 
     let mut sum = 0.0;
     let mut has_float = false;
@@ -206,12 +245,16 @@ fn execute_add<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<V
     Ok(if has_float {
         Value::Float(sum)
     } else {
-        Value::Int(sum as i64)
+        Value::Int(f64_to_i64_safe(sum)?)
     })
 }
 
 /// Execute SUBTRACT operation: first value minus all subsequent values.
-fn execute_subtract<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_subtract<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let values = get_values(op)?;
     if values.is_empty() {
         return Err(EngineError::InvalidOperation(
@@ -219,9 +262,11 @@ fn execute_subtract<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Res
         ));
     }
 
-    let evaluated = evaluate_values(values, resolver)?;
+    let evaluated = evaluate_values(values, resolver, depth)?;
 
-    let (first, rest) = evaluated.split_first().unwrap();
+    let (first, rest) = evaluated
+        .split_first()
+        .expect("invariant: values checked non-empty above");
     let mut result = to_number(first)?;
     let mut has_float = matches!(first, Value::Float(_));
 
@@ -235,12 +280,16 @@ fn execute_subtract<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Res
     Ok(if has_float {
         Value::Float(result)
     } else {
-        Value::Int(result as i64)
+        Value::Int(f64_to_i64_safe(result)?)
     })
 }
 
 /// Execute MULTIPLY operation: product of all values.
-fn execute_multiply<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_multiply<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let values = get_values(op)?;
     if values.is_empty() {
         return Err(EngineError::InvalidOperation(
@@ -248,7 +297,7 @@ fn execute_multiply<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Res
         ));
     }
 
-    let evaluated = evaluate_values(values, resolver)?;
+    let evaluated = evaluate_values(values, resolver, depth)?;
 
     let mut result = 1.0;
     let mut has_float = false;
@@ -267,7 +316,7 @@ fn execute_multiply<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Res
     Ok(if has_float {
         Value::Float(result)
     } else {
-        Value::Int(result as i64)
+        Value::Int(f64_to_i64_safe(result)?)
     })
 }
 
@@ -275,7 +324,11 @@ fn execute_multiply<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Res
 ///
 /// Returns `Err(DivisionByZero)` for division by zero.
 /// Returns `Err(InvalidOperation)` for NaN or Infinity results.
-fn execute_divide<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_divide<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let values = get_values(op)?;
     if values.is_empty() {
         return Err(EngineError::InvalidOperation(
@@ -283,9 +336,11 @@ fn execute_divide<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Resul
         ));
     }
 
-    let evaluated = evaluate_values(values, resolver)?;
+    let evaluated = evaluate_values(values, resolver, depth)?;
 
-    let (first, rest) = evaluated.split_first().unwrap();
+    let (first, rest) = evaluated
+        .split_first()
+        .expect("invariant: values checked non-empty above");
     let mut result = to_number(first)?;
 
     for val in rest {
@@ -320,6 +375,7 @@ fn execute_divide<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Resul
 fn execute_aggregate<R: ValueResolver, F>(
     op: &ActionOperation,
     resolver: &R,
+    depth: usize,
     combine: F,
 ) -> Result<Value>
 where
@@ -332,7 +388,7 @@ where
         ));
     }
 
-    let evaluated = evaluate_values(values, resolver)?;
+    let evaluated = evaluate_values(values, resolver, depth)?;
 
     let mut has_float = false;
     let nums: Vec<f64> = evaluated
@@ -345,12 +401,15 @@ where
         })
         .collect::<Result<Vec<_>>>()?;
 
-    let result = nums.into_iter().reduce(combine).unwrap();
+    let result = nums
+        .into_iter()
+        .reduce(combine)
+        .expect("invariant: values checked non-empty above");
 
     Ok(if has_float {
         Value::Float(result)
     } else {
-        Value::Int(result as i64)
+        Value::Int(f64_to_i64_safe(result)?)
     })
 }
 
@@ -359,14 +418,18 @@ where
 // =============================================================================
 
 /// Execute AND operation: short-circuit evaluation, returns false if any condition is false.
-fn execute_and<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_and<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let conditions = op
         .conditions
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("AND requires 'conditions'".to_string()))?;
 
     for condition in conditions {
-        let val = evaluate_value(condition, resolver)?;
+        let val = evaluate_value(condition, resolver, depth)?;
         if !val.to_bool() {
             return Ok(Value::Bool(false));
         }
@@ -376,14 +439,18 @@ fn execute_and<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<V
 }
 
 /// Execute OR operation: short-circuit evaluation, returns true if any condition is true.
-fn execute_or<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_or<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let conditions = op
         .conditions
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("OR requires 'conditions'".to_string()))?;
 
     for condition in conditions {
-        let val = evaluate_value(condition, resolver)?;
+        let val = evaluate_value(condition, resolver, depth)?;
         if val.to_bool() {
             return Ok(Value::Bool(true));
         }
@@ -397,7 +464,11 @@ fn execute_or<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Va
 // =============================================================================
 
 /// Execute IF operation: evaluates condition, returns then or else branch.
-fn execute_if<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_if<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let when = op
         .when
         .as_ref()
@@ -407,34 +478,38 @@ fn execute_if<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Va
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("IF requires 'then'".to_string()))?;
 
-    let condition_result = evaluate_value(when, resolver)?;
+    let condition_result = evaluate_value(when, resolver, depth)?;
 
     if condition_result.to_bool() {
-        evaluate_value(then, resolver)
+        evaluate_value(then, resolver, depth)
     } else if let Some(else_branch) = &op.else_branch {
-        evaluate_value(else_branch, resolver)
+        evaluate_value(else_branch, resolver, depth)
     } else {
         Ok(Value::Null)
     }
 }
 
 /// Execute SWITCH operation: evaluates cases in order, returns first matching case.
-fn execute_switch<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Result<Value> {
+fn execute_switch<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     let cases = op
         .cases
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("SWITCH requires 'cases'".to_string()))?;
 
     for case in cases {
-        let condition_result = evaluate_value(&case.when, resolver)?;
+        let condition_result = evaluate_value(&case.when, resolver, depth)?;
         if condition_result.to_bool() {
-            return evaluate_value(&case.then, resolver);
+            return evaluate_value(&case.then, resolver, depth);
         }
     }
 
     // Return default if no case matched
     if let Some(default) = &op.default {
-        evaluate_value(default, resolver)
+        evaluate_value(default, resolver, depth)
     } else {
         Ok(Value::Null)
     }
@@ -444,6 +519,33 @@ fn execute_switch<R: ValueResolver>(op: &ActionOperation, resolver: &R) -> Resul
 // Helper Functions
 // =============================================================================
 
+/// Safely convert f64 to i64, returning error on overflow/NaN/Infinity
+fn f64_to_i64_safe(f: f64) -> Result<i64> {
+    if f.is_nan() {
+        return Err(EngineError::ArithmeticOverflow(
+            "Result is NaN".to_string(),
+        ));
+    }
+    if f.is_infinite() {
+        return Err(EngineError::ArithmeticOverflow(
+            "Result is infinite".to_string(),
+        ));
+    }
+
+    // i64::MIN and i64::MAX as f64 (these are exact for MIN, approximate for MAX)
+    const I64_MIN_F64: f64 = i64::MIN as f64;
+    const I64_MAX_F64: f64 = i64::MAX as f64;
+
+    if !(I64_MIN_F64..=I64_MAX_F64).contains(&f) {
+        return Err(EngineError::ArithmeticOverflow(format!(
+            "Value {} exceeds i64 range",
+            f
+        )));
+    }
+
+    Ok(f as i64)
+}
+
 /// Get the 'values' array from an operation, or return an error.
 fn get_values(op: &ActionOperation) -> Result<&Vec<ActionValue>> {
     op.values.as_ref().ok_or_else(|| {
@@ -452,8 +554,15 @@ fn get_values(op: &ActionOperation) -> Result<&Vec<ActionValue>> {
 }
 
 /// Evaluate a slice of ActionValues to concrete Values.
-fn evaluate_values<R: ValueResolver>(values: &[ActionValue], resolver: &R) -> Result<Vec<Value>> {
-    values.iter().map(|v| evaluate_value(v, resolver)).collect()
+fn evaluate_values<R: ValueResolver>(
+    values: &[ActionValue],
+    resolver: &R,
+    depth: usize,
+) -> Result<Vec<Value>> {
+    values
+        .iter()
+        .map(|v| evaluate_value(v, resolver, depth))
+        .collect()
 }
 
 /// Convert a Value to a number (f64).
@@ -551,7 +660,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -571,7 +680,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(false));
         }
 
@@ -591,7 +700,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -611,7 +720,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -631,7 +740,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -653,7 +762,7 @@ mod tests {
                 default: None,
             };
             assert_eq!(
-                execute_operation(&op, &resolver).unwrap(),
+                execute_operation(&op, &resolver, 0).unwrap(),
                 Value::Bool(true)
             );
 
@@ -671,7 +780,7 @@ mod tests {
                 default: None,
             };
             assert_eq!(
-                execute_operation(&op2, &resolver).unwrap(),
+                execute_operation(&op2, &resolver, 0).unwrap(),
                 Value::Bool(true)
             );
         }
@@ -694,7 +803,7 @@ mod tests {
                 default: None,
             };
             assert_eq!(
-                execute_operation(&op, &resolver).unwrap(),
+                execute_operation(&op, &resolver, 0).unwrap(),
                 Value::Bool(true)
             );
 
@@ -712,7 +821,7 @@ mod tests {
                 default: None,
             };
             assert_eq!(
-                execute_operation(&op2, &resolver).unwrap(),
+                execute_operation(&op2, &resolver, 0).unwrap(),
                 Value::Bool(true)
             );
         }
@@ -736,7 +845,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -757,7 +866,7 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
 
             // Float(42.0) == Int(42) should also be true (symmetric)
@@ -773,7 +882,7 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            let result2 = execute_operation(&op2, &resolver).unwrap();
+            let result2 = execute_operation(&op2, &resolver, 0).unwrap();
             assert_eq!(result2, Value::Bool(true));
 
             // Int(42) != Float(42.5) should be true
@@ -789,7 +898,7 @@ mod tests {
                 cases: None,
                 default: None,
             };
-            let result3 = execute_operation(&op3, &resolver).unwrap();
+            let result3 = execute_operation(&op3, &resolver, 0).unwrap();
             assert_eq!(result3, Value::Bool(true));
         }
     }
@@ -817,7 +926,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(60));
         }
 
@@ -837,7 +946,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Float(60.5));
         }
 
@@ -857,7 +966,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(50));
         }
 
@@ -877,7 +986,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(24));
         }
 
@@ -897,7 +1006,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Float(50.0));
         }
 
@@ -917,7 +1026,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::DivisionByZero)));
         }
 
@@ -940,7 +1049,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Float(50.0));
         }
     }
@@ -968,7 +1077,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(50));
         }
 
@@ -988,7 +1097,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(10));
         }
 
@@ -1008,7 +1117,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Float(50.3));
         }
 
@@ -1028,7 +1137,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(0));
         }
     }
@@ -1056,7 +1165,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -1076,7 +1185,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(false));
         }
 
@@ -1096,7 +1205,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
 
@@ -1116,7 +1225,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(false));
         }
 
@@ -1153,7 +1262,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
         }
     }
@@ -1182,7 +1291,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(100));
         }
 
@@ -1202,7 +1311,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(50));
         }
 
@@ -1222,7 +1331,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Null);
         }
 
@@ -1256,7 +1365,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(200));
         }
 
@@ -1285,7 +1394,7 @@ mod tests {
                 default: Some(lit(0i64)),
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(100));
         }
 
@@ -1314,7 +1423,7 @@ mod tests {
                 default: Some(lit(0i64)),
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(200));
         }
 
@@ -1343,7 +1452,7 @@ mod tests {
                 default: Some(lit(0i64)),
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(0));
         }
 
@@ -1366,7 +1475,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Null);
         }
 
@@ -1418,7 +1527,7 @@ mod tests {
                 default: Some(lit(0i64)),
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(20));
         }
     }
@@ -1461,7 +1570,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(50));
         }
 
@@ -1522,7 +1631,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver).unwrap();
+            let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(6));
         }
     }
@@ -1550,7 +1659,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::InvalidOperation(_))));
         }
 
@@ -1570,7 +1679,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::InvalidOperation(_))));
         }
 
@@ -1590,7 +1699,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::TypeMismatch { .. })));
         }
 
@@ -1610,7 +1719,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::VariableNotFound(_))));
         }
 
@@ -1630,7 +1739,7 @@ mod tests {
                 default: None,
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::InvalidOperation(_))));
         }
 
@@ -1650,8 +1759,113 @@ mod tests {
                 default: Some(lit(0i64)),
             };
 
-            let result = execute_operation(&op, &resolver);
+            let result = execute_operation(&op, &resolver, 0);
             assert!(matches!(result, Err(EngineError::InvalidOperation(_))));
+        }
+
+        #[test]
+        fn test_overflow_detection() {
+            let resolver = TestResolver::new();
+            // Use values that will overflow when multiplied
+            let op = ActionOperation {
+                operation: Operation::Multiply,
+                subject: None,
+                value: None,
+                values: Some(vec![lit(i64::MAX), lit(2i64)]),
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+            };
+
+            let result = execute_operation(&op, &resolver, 0);
+            assert!(matches!(result, Err(EngineError::ArithmeticOverflow(_))));
+        }
+
+        #[test]
+        fn test_max_depth_exceeded() {
+            // Create a deeply nested operation that exceeds MAX_OPERATION_DEPTH
+            let resolver = TestResolver::new();
+
+            // Build nested IF operations
+            let mut nested: ActionValue = lit(42i64);
+            for _ in 0..=MAX_OPERATION_DEPTH + 1 {
+                nested = ActionValue::Operation(Box::new(ActionOperation {
+                    operation: Operation::If,
+                    subject: None,
+                    value: None,
+                    values: None,
+                    when: Some(lit(true)),
+                    then: Some(nested),
+                    else_branch: None,
+                    conditions: None,
+                    cases: None,
+                    default: None,
+                }));
+            }
+
+            if let ActionValue::Operation(op) = nested {
+                let result = execute_operation(&op, &resolver, 0);
+                assert!(
+                    matches!(result, Err(EngineError::MaxDepthExceeded(_))),
+                    "Expected MaxDepthExceeded but got {:?}",
+                    result
+                );
+            }
+        }
+
+        #[test]
+        fn test_nan_detection_in_f64_to_i64() {
+            // Test that NaN is properly detected
+            let result = f64_to_i64_safe(f64::NAN);
+            assert!(matches!(result, Err(EngineError::ArithmeticOverflow(_))));
+            if let Err(EngineError::ArithmeticOverflow(msg)) = result {
+                assert!(msg.contains("NaN"));
+            }
+        }
+
+        #[test]
+        fn test_infinity_detection_in_f64_to_i64() {
+            // Test that infinity is properly detected
+            let result_pos = f64_to_i64_safe(f64::INFINITY);
+            assert!(matches!(
+                result_pos,
+                Err(EngineError::ArithmeticOverflow(_))
+            ));
+
+            let result_neg = f64_to_i64_safe(f64::NEG_INFINITY);
+            assert!(matches!(
+                result_neg,
+                Err(EngineError::ArithmeticOverflow(_))
+            ));
+        }
+
+        #[test]
+        fn test_i64_range_overflow_detection() {
+            // Test values beyond i64 range
+            let result_high = f64_to_i64_safe(1e20);
+            assert!(matches!(
+                result_high,
+                Err(EngineError::ArithmeticOverflow(_))
+            ));
+
+            let result_low = f64_to_i64_safe(-1e20);
+            assert!(matches!(
+                result_low,
+                Err(EngineError::ArithmeticOverflow(_))
+            ));
+        }
+
+        #[test]
+        fn test_valid_f64_to_i64_conversion() {
+            // Test valid conversions work correctly
+            assert_eq!(f64_to_i64_safe(42.0).unwrap(), 42);
+            assert_eq!(f64_to_i64_safe(-42.0).unwrap(), -42);
+            assert_eq!(f64_to_i64_safe(0.0).unwrap(), 0);
+            assert_eq!(f64_to_i64_safe(0.9).unwrap(), 0); // truncates
+            assert_eq!(f64_to_i64_safe(-0.9).unwrap(), 0); // truncates towards zero
         }
     }
 }
