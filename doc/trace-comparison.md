@@ -2,8 +2,17 @@
 
 This document compares execution traces between the Python and Rust implementations of the regelrecht engine.
 
-**Generated:** 2026-01-28
+**Generated:** 2026-01-28 (updated)
 **Test Results:** Both engines pass 17/17 BDD scenarios
+
+**Run traces locally:**
+```bash
+# Python
+uv run python -c "import logging; logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s'); ..."
+
+# Rust
+RUST_LOG=regelrecht_engine=debug cargo test --test bdd -- --nocapture
+```
 
 ---
 
@@ -83,12 +92,10 @@ Found delegated regulation
 Executing delegated regulation
   regulation_id=afstemmingsverordening_...
   output=verlaging_percentage
-Article evaluation completed
-  law_id=afstemmingsverordening_...
-  outputs=[duur_maanden, verlaging_percentage]
-Delegation result value=Int(0)
-Article evaluation completed
-  law_id=participatiewet article=43
+Output verlaging_percentage = 0
+Output duur_maanden = 0
+Delegation result: verlaging_percentage = 0
+Output uitkering_bedrag = 109171
 ```
 
 </td>
@@ -134,13 +141,11 @@ Resolving delegation law_id=participatiewet
   article=8
 Found delegated regulation
   found_regulation=afstemmingsverordening_...
-Executing delegated regulation
-  output=verlaging_percentage
-Article evaluation completed
-  outputs=[duur_maanden, verlaging_percentage]
-Delegation result value=Int(5)
-Article evaluation completed
-  law_id=participatiewet article=43
+Output verlaging_percentage = 5
+Output duur_maanden = 1
+Delegation result: verlaging_percentage = 5
+Output verlaging_bedrag = 5458.55
+Output uitkering_bedrag = 103712
 ```
 
 </td>
@@ -190,13 +195,12 @@ Found delegated regulation
 Resolving cross-law reference
   law_id=participatiewet
   output=verlaging_percentage_lid_5 depth=2
-Starting article evaluation
-  law_id=participatiewet article=18
-Article evaluation completed
-  outputs=[verlaging_percentage_lid_5]
-Delegation result value=Int(100)
-Article evaluation completed
-  law_id=participatiewet article=43
+Output verlaging_percentage_lid_5 = 100
+Output verlaging_percentage = 100
+Output duur_maanden = 1
+Delegation result: verlaging_percentage = 100
+Output verlaging_bedrag = 109171
+Output uitkering_bedrag = 0
 ```
 
 </td>
@@ -255,11 +259,9 @@ Checking candidate regulation
   matches=true
 Found delegated regulation
   found_regulation=apv_erfgrens_amsterdam
-Executing delegated regulation
-  regulation_id=apv_erfgrens_amsterdam
-Article evaluation completed
-  outputs=[minimale_afstand_cm]
-Delegation result value=Int(100)
+Output minimale_afstand_cm = 100
+Delegation result: minimale_afstand_cm = 100
+Output minimale_afstand_m = 1
 ```
 
 </td>
@@ -326,8 +328,8 @@ No matching regulation found, checking
 Using defaults (optional delegation)
   law_id=burgerlijk_wetboek_boek_5
   article=42
-Defaults output calculated
-  output=minimale_afstand_cm value=Int(200)
+Output minimale_afstand_cm = 200
+Output minimale_afstand_m = 2
 ```
 
 </td>
@@ -373,8 +375,8 @@ Checking candidate regulation
   matches=false
 No matching regulation found
 Using defaults (optional delegation)
-Defaults output calculated
-  output=minimale_afstand_cm value=Int(50)
+Output minimale_afstand_cm = 50
+Output minimale_afstand_m = 0.5
 ```
 
 </td>
@@ -391,11 +393,22 @@ Defaults output calculated
 |--------|--------|------|
 | Log level prefix | `DEBUG -` / `INFO -` | `DEBUG regelrecht_engine::module:` |
 | Delegation resolution | `Resolving delegation: law.article` | `Resolving delegation law_id= article=` |
-| Criteria format | `[{'name': 'x', 'value': 'y'}]` | `["x=String(\"y\")"]` |
+| Criteria format | `[{'name': 'x', 'value': 'y'}]` | `["x=y"]` |
 | Candidate check | `Checking gemeente_code: law has X, looking for Y` | `Checking candidate regulation candidate= law_values={} criteria={} matches=` |
 | Found regulation | `Found matching regulation: name` | `Found delegated regulation found_regulation=` |
 | Defaults fallback | `Using defaults from law.article (optional delegation)` | `Using defaults (optional delegation) law_id= article=` |
-| Output format | `Output name = value` | `Defaults output calculated output= value=` |
+| Output format | `Output name = value` | `Output name = value` |
+| Delegation result | `Delegation result: {name: value}` | `Delegation result: name = value` |
+
+### Value Format Comparison
+
+| Type | Python | Rust |
+|------|--------|------|
+| Integer | `100` | `100` |
+| Float | `1.0` | `1` |
+| Boolean | `True` | `true` |
+| Null | `None` | `null` |
+| String | `"text"` | `text` |
 
 ---
 
