@@ -38,6 +38,67 @@ use crate::types::Value;
 use crate::uri::RegelrechtUri;
 use std::collections::{HashMap, HashSet};
 
+// =============================================================================
+// Resolution Context
+// =============================================================================
+
+/// Context for tracking cross-law resolution state.
+///
+/// Bundles the state needed for cycle detection and depth tracking
+/// during cross-law reference resolution. This reduces the number of
+/// parameters passed between internal resolution functions.
+#[derive(Clone)]
+struct ResolutionContext<'a> {
+    /// Date for calculations (YYYY-MM-DD)
+    calculation_date: &'a str,
+    /// Set of law#output keys already being resolved (cycle detection)
+    visited: HashSet<String>,
+    /// Current resolution depth
+    depth: usize,
+}
+
+impl<'a> ResolutionContext<'a> {
+    /// Create a new resolution context.
+    fn new(calculation_date: &'a str) -> Self {
+        Self {
+            calculation_date,
+            visited: HashSet::new(),
+            depth: 0,
+        }
+    }
+
+    /// Create a child context with a new visited key and incremented depth.
+    ///
+    /// Used when descending into a cross-law reference to track the resolution chain.
+    fn with_visited(&self, key: String) -> Self {
+        let mut new_visited = self.visited.clone();
+        new_visited.insert(key);
+        Self {
+            calculation_date: self.calculation_date,
+            visited: new_visited,
+            depth: self.depth + 1,
+        }
+    }
+
+    /// Check if a key is already being resolved (cycle detection).
+    fn is_visited(&self, key: &str) -> bool {
+        self.visited.contains(key)
+    }
+}
+
+/// Reference to a delegation source for resolution.
+///
+/// Bundles the delegation-specific parameters to reduce argument count
+/// in delegation resolution functions.
+struct DelegationRef<'a> {
+    /// The law that grants the delegation
+    law_id: &'a str,
+    /// The article that grants the delegation
+    article: &'a str,
+    /// Criteria for selecting the delegated regulation
+    select_on: Option<&'a [SelectOnCriteria]>,
+}
+
 /// Trait for resolving cross-law references and delegations.
 ///
 /// Implement this trait to provide custom law loading and resolution strategies.
@@ -182,16 +243,8 @@ impl LawExecutionService {
         parameters: HashMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
-        // Track visited articles across laws for cycle detection
-        let visited = HashSet::new();
-        self.evaluate_law_output_internal(
-            law_id,
-            output_name,
-            parameters,
-            calculation_date,
-            visited,
-            0,
-        )
+        let res_ctx = ResolutionContext::new(calculation_date);
+        self.evaluate_law_output_internal(law_id, output_name, parameters, &res_ctx)
     }
 
     /// Internal method with cycle tracking.
@@ -200,23 +253,21 @@ impl LawExecutionService {
         law_id: &str,
         output_name: &str,
         parameters: HashMap<String, Value>,
-        calculation_date: &str,
-        visited: HashSet<String>,
-        depth: usize,
+        res_ctx: &ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         tracing::debug!(
             law_id = %law_id,
             output = %output_name,
-            depth = depth,
+            depth = res_ctx.depth,
             "Resolving cross-law reference"
         );
 
         // Check depth limit
-        if depth > config::MAX_CROSS_LAW_DEPTH {
+        if res_ctx.depth > config::MAX_CROSS_LAW_DEPTH {
             tracing::warn!(
                 law_id = %law_id,
                 output = %output_name,
-                depth = depth,
+                depth = res_ctx.depth,
                 "Cross-law resolution depth exceeded"
             );
             return Err(EngineError::CircularReference(format!(
@@ -244,31 +295,20 @@ impl LawExecutionService {
             })?;
 
         // Execute with service provider
-        self.evaluate_article_with_service(
-            article,
-            law,
-            parameters,
-            calculation_date,
-            Some(output_name),
-            visited,
-            depth,
-        )
+        self.evaluate_article_with_service(article, law, parameters, Some(output_name), res_ctx)
     }
 
     /// Execute an article with ServiceProvider support.
-    #[allow(clippy::too_many_arguments)]
     fn evaluate_article_with_service(
         &self,
         article: &Article,
         law: &ArticleBasedLaw,
         parameters: HashMap<String, Value>,
-        calculation_date: &str,
         requested_output: Option<&str>,
-        visited: HashSet<String>,
-        depth: usize,
+        res_ctx: &ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         // Create execution context
-        let mut context = RuleContext::new(parameters.clone(), calculation_date)?;
+        let mut context = RuleContext::new(parameters.clone(), res_ctx.calculation_date)?;
 
         // Set definitions from article
         if let Some(definitions) = article.get_definitions() {
@@ -276,14 +316,7 @@ impl LawExecutionService {
         }
 
         // Resolve inputs with sources using ServiceProvider
-        self.resolve_inputs_with_service(
-            article,
-            &mut context,
-            &parameters,
-            calculation_date,
-            &visited,
-            depth,
-        )?;
+        self.resolve_inputs_with_service(article, &mut context, &parameters, res_ctx)?;
 
         // Use ArticleEngine for action execution (it handles the internal logic)
         let engine = ArticleEngine::new(article, law);
@@ -295,7 +328,7 @@ impl LawExecutionService {
             combined_params.insert(name.clone(), value.clone());
         }
 
-        engine.evaluate_with_output(combined_params, calculation_date, requested_output)
+        engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
     }
 
     /// Resolve input sources using ServiceProvider.
@@ -304,9 +337,7 @@ impl LawExecutionService {
         article: &Article,
         context: &mut RuleContext,
         parameters: &HashMap<String, Value>,
-        calculation_date: &str,
-        visited: &HashSet<String>,
-        depth: usize,
+        res_ctx: &ResolutionContext<'_>,
     ) -> Result<()> {
         let inputs = self.get_inputs(article);
 
@@ -324,17 +355,18 @@ impl LawExecutionService {
             if let Some(delegation) = &source.delegation {
                 // Delegation reference
                 let (del_law_id, del_article, select_on) = get_delegation_info(delegation);
+                let del_ref = DelegationRef {
+                    law_id: del_law_id,
+                    article: del_article,
+                    select_on,
+                };
 
                 let value = self.resolve_delegation_input_internal(
-                    del_law_id,
-                    del_article,
-                    select_on,
+                    &del_ref,
                     &source.output,
                     source.parameters.as_ref(),
                     context,
-                    calculation_date,
-                    visited,
-                    depth,
+                    res_ctx,
                 )?;
 
                 context.set_resolved_input(&input.name, value);
@@ -345,9 +377,7 @@ impl LawExecutionService {
                     &source.output,
                     source.parameters.as_ref(),
                     context,
-                    calculation_date,
-                    visited,
-                    depth,
+                    res_ctx,
                 )?;
 
                 context.set_resolved_input(&input.name, value);
@@ -362,20 +392,17 @@ impl LawExecutionService {
     }
 
     /// Internal method for external input resolution with depth tracking.
-    #[allow(clippy::too_many_arguments)]
     fn resolve_external_input_internal(
         &self,
         regulation: &str,
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        calculation_date: &str,
-        visited: &HashSet<String>,
-        depth: usize,
+        res_ctx: &ResolutionContext<'_>,
     ) -> Result<Value> {
         // Check for circular reference before proceeding
         let key = format!("{}#{}", regulation, output);
-        if visited.contains(&key) {
+        if res_ctx.is_visited(&key) {
             return Err(EngineError::CircularReference(format!(
                 "Circular cross-law reference detected: {} is already being resolved",
                 key
@@ -385,19 +412,12 @@ impl LawExecutionService {
         // Build parameters for the target article
         let target_params = self.build_target_parameters(source_parameters, context)?;
 
-        // Track this reference for nested calls
-        let mut new_visited = visited.clone();
-        new_visited.insert(key);
+        // Create child context with this reference tracked
+        let child_ctx = res_ctx.with_visited(key);
 
         // Execute the target article
-        let result = self.evaluate_law_output_internal(
-            regulation,
-            output,
-            target_params,
-            calculation_date,
-            new_visited,
-            depth + 1,
-        )?;
+        let result =
+            self.evaluate_law_output_internal(regulation, output, target_params, &child_ctx)?;
 
         // Extract the requested output
         result
@@ -411,21 +431,16 @@ impl LawExecutionService {
     }
 
     /// Internal method for delegation input resolution with depth tracking.
-    #[allow(clippy::too_many_arguments)]
     fn resolve_delegation_input_internal(
         &self,
-        delegation_law_id: &str,
-        delegation_article: &str,
-        select_on: Option<&[SelectOnCriteria]>,
+        delegation: &DelegationRef<'_>,
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        calculation_date: &str,
-        visited: &HashSet<String>,
-        depth: usize,
+        res_ctx: &ResolutionContext<'_>,
     ) -> Result<Value> {
         // Evaluate selection criteria
-        let criteria = if let Some(criteria_spec) = select_on {
+        let criteria = if let Some(criteria_spec) = delegation.select_on {
             evaluate_select_on_criteria(criteria_spec, context)?
         } else {
             HashMap::new()
@@ -433,7 +448,7 @@ impl LawExecutionService {
 
         // Find matching regulation
         let regulation = self
-            .find_delegated_regulation(delegation_law_id, delegation_article, &criteria)?
+            .find_delegated_regulation(delegation.law_id, delegation.article, &criteria)?
             .ok_or_else(|| {
                 let criteria_str = criteria
                     .iter()
@@ -442,13 +457,13 @@ impl LawExecutionService {
                     .join(", ");
                 EngineError::DelegationError(format!(
                     "No regulation found for delegation from {}#{} with criteria [{}]",
-                    delegation_law_id, delegation_article, criteria_str
+                    delegation.law_id, delegation.article, criteria_str
                 ))
             })?;
 
         // Check for circular reference
         let key = format!("{}#{}", regulation.id, output);
-        if visited.contains(&key) {
+        if res_ctx.is_visited(&key) {
             return Err(EngineError::CircularReference(format!(
                 "Circular delegation reference detected: {} is already being resolved",
                 key
@@ -458,19 +473,12 @@ impl LawExecutionService {
         // Build parameters for the delegated regulation
         let target_params = self.build_target_parameters(source_parameters, context)?;
 
-        // Track this reference for nested calls
-        let mut new_visited = visited.clone();
-        new_visited.insert(key);
+        // Create child context with this reference tracked
+        let child_ctx = res_ctx.with_visited(key);
 
         // Execute the delegated regulation with cycle tracking
-        let result = self.evaluate_law_output_internal(
-            &regulation.id,
-            output,
-            target_params,
-            calculation_date,
-            new_visited,
-            depth + 1,
-        )?;
+        let result =
+            self.evaluate_law_output_internal(&regulation.id, output, target_params, &child_ctx)?;
 
         // Extract the requested output
         result
@@ -580,15 +588,8 @@ impl ServiceProvider for LawExecutionService {
         context: &RuleContext,
         calculation_date: &str,
     ) -> Result<Value> {
-        self.resolve_external_input_internal(
-            regulation,
-            output,
-            source_parameters,
-            context,
-            calculation_date,
-            &HashSet::new(),
-            0,
-        )
+        let res_ctx = ResolutionContext::new(calculation_date);
+        self.resolve_external_input_internal(regulation, output, source_parameters, context, &res_ctx)
     }
 
     fn resolve_delegation_input(
@@ -601,18 +602,13 @@ impl ServiceProvider for LawExecutionService {
         context: &RuleContext,
         calculation_date: &str,
     ) -> Result<Value> {
-        // Use internal method with empty visited set for external callers
-        self.resolve_delegation_input_internal(
-            delegation_law_id,
-            delegation_article,
+        let res_ctx = ResolutionContext::new(calculation_date);
+        let del_ref = DelegationRef {
+            law_id: delegation_law_id,
+            article: delegation_article,
             select_on,
-            output,
-            source_parameters,
-            context,
-            calculation_date,
-            &HashSet::new(),
-            0,
-        )
+        };
+        self.resolve_delegation_input_internal(&del_ref, output, source_parameters, context, &res_ctx)
     }
 }
 
