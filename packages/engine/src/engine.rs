@@ -27,9 +27,6 @@ use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
 use crate::operations::{evaluate_value, execute_operation};
 use crate::types::Value;
-// RegelrechtUri will be used in Phase 7 for external reference resolution
-#[allow(unused_imports)]
-use crate::uri::RegelrechtUri;
 use std::collections::{HashMap, HashSet};
 
 /// Result of article execution

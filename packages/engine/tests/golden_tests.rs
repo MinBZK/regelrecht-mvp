@@ -16,10 +16,12 @@ use std::path::Path;
 // a minimum supported version) to catch fixture format changes early.
 #[derive(Debug, Deserialize)]
 struct FixtureFile {
-    #[allow(dead_code)]
-    version: String,
-    #[allow(dead_code)]
-    test_count: usize,
+    /// Fixture format version (reserved for future compatibility checks)
+    #[serde(rename = "version")]
+    _version: String,
+    /// Total test count (informational, not enforced)
+    #[serde(rename = "test_count")]
+    _test_count: usize,
     test_cases: Vec<TestCase>,
 }
 
