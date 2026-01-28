@@ -589,7 +589,13 @@ impl ServiceProvider for LawExecutionService {
         calculation_date: &str,
     ) -> Result<Value> {
         let res_ctx = ResolutionContext::new(calculation_date);
-        self.resolve_external_input_internal(regulation, output, source_parameters, context, &res_ctx)
+        self.resolve_external_input_internal(
+            regulation,
+            output,
+            source_parameters,
+            context,
+            &res_ctx,
+        )
     }
 
     fn resolve_delegation_input(
@@ -608,7 +614,13 @@ impl ServiceProvider for LawExecutionService {
             article: delegation_article,
             select_on,
         };
-        self.resolve_delegation_input_internal(&del_ref, output, source_parameters, context, &res_ctx)
+        self.resolve_delegation_input_internal(
+            &del_ref,
+            output,
+            source_parameters,
+            context,
+            &res_ctx,
+        )
     }
 }
 
