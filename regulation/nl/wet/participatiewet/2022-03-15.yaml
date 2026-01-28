@@ -427,6 +427,7 @@ articles:
               output: verlaging_percentage
               parameters:
                 bsn: $bsn
+                gedragscategorie: $gedragscategorie
 
           - name: duur_maanden_uit_verordening
             type: number
@@ -441,6 +442,7 @@ articles:
               output: duur_maanden
               parameters:
                 bsn: $bsn
+                gedragscategorie: $gedragscategorie
 
         output:
           - name: heeft_recht_op_bijstand

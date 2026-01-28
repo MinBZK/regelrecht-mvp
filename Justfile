@@ -50,3 +50,21 @@ pre-commit:
 # Sync dependencies
 sync:
     uv sync
+
+# Generate golden test fixtures (for Python/Rust parity testing)
+golden:
+    uv run python script/generate_golden_fixtures.py
+
+# Run Rust BDD tests
+rust-bdd:
+    cd packages/engine && cargo test --test bdd -- --nocapture
+
+# Run Rust unit tests
+rust-test:
+    cd packages/engine && cargo test --lib
+
+# Run all Rust tests
+rust-test-all: rust-test rust-bdd
+
+# Run all BDD tests (Python + Rust)
+bdd-all: behave rust-bdd
