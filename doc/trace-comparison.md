@@ -89,12 +89,14 @@ Checking candidate regulation
   matches=true
 Found delegated regulation
   found_regulation=afstemmingsverordening_...
-Executing delegated regulation
-  regulation_id=afstemmingsverordening_...
-  output=verlaging_percentage
 Output verlaging_percentage = 0
 Output duur_maanden = 0
 Delegation result: verlaging_percentage = 0
+Output voldoet_aan_uwv_registratie = true
+Output voldoet_aan_nationaliteit = true
+Output heeft_recht_op_bijstand = true
+Output normbedrag = 109171
+Output verlaging_bedrag = 0
 Output uitkering_bedrag = 109171
 ```
 
@@ -144,8 +146,12 @@ Found delegated regulation
 Output verlaging_percentage = 5
 Output duur_maanden = 1
 Delegation result: verlaging_percentage = 5
+Output voldoet_aan_uwv_registratie = true
+Output voldoet_aan_nationaliteit = true
+Output heeft_recht_op_bijstand = true
+Output normbedrag = 109171
 Output verlaging_bedrag = 5458.55
-Output uitkering_bedrag = 103712
+Output uitkering_bedrag = 103712.45
 ```
 
 </td>
