@@ -119,16 +119,8 @@ fn assert_execution_fails_with(world: &mut RegelrechtWorld, expected_message: St
     let error_msg = world.error_message().unwrap_or_default();
 
     // Normalize expected message for cross-engine compatibility
-    // Python engine uses "No regulation found for mandatory delegation"
-    // Rust engine uses "Delegation error: No regulation found for delegation"
-    let normalized_expected = if expected_message
-        .to_lowercase()
-        .contains("mandatory delegation")
-    {
-        "no regulation found for delegation".to_string()
-    } else {
-        expected_message.to_lowercase()
-    };
+    // Both Python and Rust engine now use "No regulation found for mandatory delegation"
+    let normalized_expected = expected_message.to_lowercase();
 
     assert!(
         error_msg.to_lowercase().contains(&normalized_expected),
