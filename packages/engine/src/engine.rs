@@ -358,6 +358,7 @@ impl<'a> ArticleEngine<'a> {
 
             // Evaluate the action and store output
             let value = self.evaluate_action(action, context)?;
+            tracing::debug!("Output {} = {}", output_name, value);
             context.set_output(output_name, value);
         }
 

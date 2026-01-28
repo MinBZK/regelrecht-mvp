@@ -535,9 +535,7 @@ impl LawExecutionService {
 
         tracing::debug!(
             regulation_id = %regulation.id,
-            output = %output,
-            value = ?value,
-            "Delegation result"
+            "Delegation result: {} = {}", output, value
         );
 
         Ok(value)
@@ -627,11 +625,7 @@ impl LawExecutionService {
             for action in actions {
                 if let Some(output_name) = &action.output {
                     let value = self.evaluate_default_action(action, &defaults_context)?;
-                    tracing::debug!(
-                        output = %output_name,
-                        value = ?value,
-                        "Defaults output calculated"
-                    );
+                    tracing::debug!("Output {} = {}", output_name, value);
                     defaults_context.set_output(output_name, value);
                 }
             }
