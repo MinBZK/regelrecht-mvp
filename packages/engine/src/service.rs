@@ -28,13 +28,13 @@
 use crate::article::{
     Action, Article, ArticleBasedLaw, Input, LegalBasisForDefaults, SelectOnCriteria,
 };
-use crate::operations::evaluate_value;
 use crate::config;
 use crate::context::RuleContext;
 use crate::engine::{
     evaluate_select_on_criteria, get_delegation_info, ArticleEngine, ArticleResult,
 };
 use crate::error::{EngineError, Result};
+use crate::operations::evaluate_value;
 use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
 use crate::types::Value;
@@ -475,7 +475,13 @@ impl LawExecutionService {
                     "Found delegated regulation"
                 );
                 // Found a delegated regulation - execute it
-                self.execute_delegated_regulation(regulation, output, source_parameters, context, res_ctx)
+                self.execute_delegated_regulation(
+                    regulation,
+                    output,
+                    source_parameters,
+                    context,
+                    res_ctx,
+                )
             }
             None => {
                 tracing::debug!(
@@ -524,14 +530,15 @@ impl LawExecutionService {
         let result =
             self.evaluate_law_output_internal(&regulation.id, output, target_params, &child_ctx)?;
 
-        let value = result
-            .outputs
-            .get(output)
-            .cloned()
-            .ok_or_else(|| EngineError::OutputNotFound {
-                law_id: regulation.id.clone(),
-                output: output.to_string(),
-            })?;
+        let value =
+            result
+                .outputs
+                .get(output)
+                .cloned()
+                .ok_or_else(|| EngineError::OutputNotFound {
+                    law_id: regulation.id.clone(),
+                    output: output.to_string(),
+                })?;
 
         tracing::debug!(
             regulation_id = %regulation.id,
@@ -554,23 +561,21 @@ impl LawExecutionService {
         criteria: &HashMap<String, Value>,
     ) -> Result<Value> {
         // Get the delegating law and article
-        let law = self.get_law(delegation.law_id).ok_or_else(|| {
-            EngineError::LawNotFound(delegation.law_id.to_string())
-        })?;
+        let law = self
+            .get_law(delegation.law_id)
+            .ok_or_else(|| EngineError::LawNotFound(delegation.law_id.to_string()))?;
 
-        let article = law.find_article_by_number(delegation.article).ok_or_else(|| {
-            EngineError::ArticleNotFound {
+        let article = law
+            .find_article_by_number(delegation.article)
+            .ok_or_else(|| EngineError::ArticleNotFound {
                 law_id: delegation.law_id.to_string(),
                 article: delegation.article.to_string(),
-            }
-        })?;
+            })?;
 
         // Look for legal_basis_for with defaults
         let defaults = article
             .get_legal_basis_for()
-            .and_then(|basis_list| {
-                basis_list.iter().find_map(|basis| basis.defaults.as_ref())
-            });
+            .and_then(|basis_list| basis_list.iter().find_map(|basis| basis.defaults.as_ref()));
 
         match defaults {
             Some(defaults) => {
