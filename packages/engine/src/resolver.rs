@@ -205,6 +205,13 @@ impl RuleResolver {
         let key = (law_id.to_string(), article.to_string());
         let candidate_ids = self.legal_basis_index.get(&key)?;
 
+        tracing::debug!(
+            law_id = %law_id,
+            article = %article,
+            candidates = candidate_ids.len(),
+            "Finding delegated regulation"
+        );
+
         // Check each candidate against criteria
         for candidate_id in candidate_ids {
             // Skip if law was removed (index may be stale)
@@ -230,11 +237,25 @@ impl RuleResolver {
             }
 
             // Check if criteria match
-            if matches_delegation_criteria(criteria, &law_values) {
+            let matches = matches_delegation_criteria(criteria, &law_values);
+            tracing::debug!(
+                candidate = %candidate_id,
+                law_values = ?law_values,
+                criteria = ?criteria,
+                matches = %matches,
+                "Checking candidate regulation"
+            );
+
+            if matches {
                 return Some(law);
             }
         }
 
+        tracing::debug!(
+            law_id = %law_id,
+            article = %article,
+            "No matching regulation found"
+        );
         None
     }
 

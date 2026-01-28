@@ -449,16 +449,40 @@ impl LawExecutionService {
             HashMap::new()
         };
 
+        // Format criteria for logging
+        let criteria_str: Vec<String> = criteria
+            .iter()
+            .map(|(k, v)| format!("{}={:?}", k, v))
+            .collect();
+
+        tracing::debug!(
+            law_id = %delegation.law_id,
+            article = %delegation.article,
+            criteria = ?criteria_str,
+            "Resolving delegation"
+        );
+
         // Find matching regulation
         let regulation_opt =
             self.find_delegated_regulation(delegation.law_id, delegation.article, &criteria)?;
 
         match regulation_opt {
             Some(regulation) => {
+                tracing::debug!(
+                    delegation_from = %delegation.law_id,
+                    delegation_article = %delegation.article,
+                    found_regulation = %regulation.id,
+                    "Found delegated regulation"
+                );
                 // Found a delegated regulation - execute it
                 self.execute_delegated_regulation(regulation, output, source_parameters, context, res_ctx)
             }
             None => {
+                tracing::debug!(
+                    delegation_from = %delegation.law_id,
+                    delegation_article = %delegation.article,
+                    "No matching regulation found, checking for defaults"
+                );
                 // No delegated regulation found - try to use defaults from the delegating article
                 self.try_execute_defaults(delegation, output, source_parameters, context, &criteria)
             }
@@ -486,6 +510,13 @@ impl LawExecutionService {
         // Build parameters for the delegated regulation
         let target_params = self.build_target_parameters(source_parameters, context)?;
 
+        tracing::debug!(
+            regulation_id = %regulation.id,
+            output = %output,
+            params = ?target_params.keys().collect::<Vec<_>>(),
+            "Executing delegated regulation"
+        );
+
         // Create child context with this reference tracked
         let child_ctx = res_ctx.with_visited(key);
 
@@ -493,15 +524,23 @@ impl LawExecutionService {
         let result =
             self.evaluate_law_output_internal(&regulation.id, output, target_params, &child_ctx)?;
 
-        // Extract the requested output
-        result
+        let value = result
             .outputs
             .get(output)
             .cloned()
             .ok_or_else(|| EngineError::OutputNotFound {
                 law_id: regulation.id.clone(),
                 output: output.to_string(),
-            })
+            })?;
+
+        tracing::debug!(
+            regulation_id = %regulation.id,
+            output = %output,
+            value = ?value,
+            "Delegation result"
+        );
+
+        Ok(value)
     }
 
     /// Try to execute defaults from the delegating article's legal_basis_for section.
@@ -537,17 +576,28 @@ impl LawExecutionService {
 
         match defaults {
             Some(defaults) => {
+                tracing::info!(
+                    law_id = %delegation.law_id,
+                    article = %delegation.article,
+                    "Using defaults (optional delegation)"
+                );
                 self.execute_defaults(defaults, output, source_parameters, context)
             }
             None => {
-                // No defaults available - this is an error
+                // No defaults available - this is an error (mandatory delegation)
                 let criteria_str = criteria
                     .iter()
                     .map(|(k, v)| format!("{}={:?}", k, v))
                     .collect::<Vec<_>>()
                     .join(", ");
+                tracing::error!(
+                    law_id = %delegation.law_id,
+                    article = %delegation.article,
+                    criteria = %criteria_str,
+                    "No regulation found for mandatory delegation"
+                );
                 Err(EngineError::DelegationError(format!(
-                    "No regulation found for delegation from {}#{} with criteria [{}] and no defaults available",
+                    "No regulation found for mandatory delegation from {}#{} with criteria [{}]",
                     delegation.law_id, delegation.article, criteria_str
                 )))
             }
@@ -577,6 +627,11 @@ impl LawExecutionService {
             for action in actions {
                 if let Some(output_name) = &action.output {
                     let value = self.evaluate_default_action(action, &defaults_context)?;
+                    tracing::debug!(
+                        output = %output_name,
+                        value = ?value,
+                        "Defaults output calculated"
+                    );
                     defaults_context.set_output(output_name, value);
                 }
             }
