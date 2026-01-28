@@ -38,6 +38,35 @@ pub struct LegalBasis {
     pub description: Option<String>,
 }
 
+/// Contract specification for legal_basis_for delegations
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LegalBasisForContract {
+    #[serde(default)]
+    pub parameters: Option<Vec<Parameter>>,
+    #[serde(default)]
+    pub output: Option<Vec<Output>>,
+}
+
+/// Defaults specification for optional delegations
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LegalBasisForDefaults {
+    #[serde(default)]
+    pub definitions: Option<HashMap<String, Definition>>,
+    #[serde(default)]
+    pub actions: Option<Vec<Action>>,
+}
+
+/// Legal basis for specification - defines what lower regulations can provide
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LegalBasisFor {
+    pub regulatory_layer: RegulatoryLayer,
+    pub subject: String,
+    #[serde(default)]
+    pub contract: Option<LegalBasisForContract>,
+    #[serde(default)]
+    pub defaults: Option<LegalBasisForDefaults>,
+}
+
 /// Type specification for input/output fields.
 ///
 /// Currently only contains unit specification, but may be extended
@@ -312,6 +341,8 @@ pub struct MachineReadable {
     pub requires: Option<Vec<String>>,
     #[serde(default)]
     pub competent_authority: Option<CompetentAuthority>,
+    #[serde(default)]
+    pub legal_basis_for: Option<Vec<LegalBasisFor>>,
 }
 
 /// Represents a single article in a law
@@ -386,6 +417,16 @@ impl Article {
         self.machine_readable
             .as_ref()
             .and_then(|mr| mr.competent_authority.as_ref())
+    }
+
+    /// Get legal_basis_for specifications from this article.
+    ///
+    /// These define what lower-level regulations can provide and optionally
+    /// include default values if no delegated regulation exists.
+    pub fn get_legal_basis_for(&self) -> Option<&Vec<LegalBasisFor>> {
+        self.machine_readable
+            .as_ref()
+            .and_then(|mr| mr.legal_basis_for.as_ref())
     }
 }
 

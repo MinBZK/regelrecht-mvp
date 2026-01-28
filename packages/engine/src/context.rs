@@ -159,6 +159,19 @@ impl RuleContext {
         self.reference_date
     }
 
+    /// Get the calculation date as a string (YYYY-MM-DD format).
+    pub fn get_calculation_date(&self) -> &str {
+        // Extract ISO date string from the cached reference_date_value
+        // This is safe because we always set it in new()
+        if let Value::Object(obj) = &self.reference_date_value {
+            if let Some(Value::String(iso)) = obj.get("iso") {
+                return iso.as_str();
+            }
+        }
+        // Fallback - should never happen since we always set iso in new()
+        "1970-01-01"
+    }
+
     /// Create a child context for nested evaluation (e.g., FOREACH).
     ///
     /// The child inherits definitions, parameters, resolved_inputs, and outputs,

@@ -25,7 +25,10 @@
 //! )?;
 //! ```
 
-use crate::article::{Article, ArticleBasedLaw, Input, SelectOnCriteria};
+use crate::article::{
+    Action, Article, ArticleBasedLaw, Input, LegalBasisForDefaults, SelectOnCriteria,
+};
+use crate::operations::evaluate_value;
 use crate::config;
 use crate::context::RuleContext;
 use crate::engine::{
@@ -447,20 +450,30 @@ impl LawExecutionService {
         };
 
         // Find matching regulation
-        let regulation = self
-            .find_delegated_regulation(delegation.law_id, delegation.article, &criteria)?
-            .ok_or_else(|| {
-                let criteria_str = criteria
-                    .iter()
-                    .map(|(k, v)| format!("{}={:?}", k, v))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                EngineError::DelegationError(format!(
-                    "No regulation found for delegation from {}#{} with criteria [{}]",
-                    delegation.law_id, delegation.article, criteria_str
-                ))
-            })?;
+        let regulation_opt =
+            self.find_delegated_regulation(delegation.law_id, delegation.article, &criteria)?;
 
+        match regulation_opt {
+            Some(regulation) => {
+                // Found a delegated regulation - execute it
+                self.execute_delegated_regulation(regulation, output, source_parameters, context, res_ctx)
+            }
+            None => {
+                // No delegated regulation found - try to use defaults from the delegating article
+                self.try_execute_defaults(delegation, output, source_parameters, context, &criteria)
+            }
+        }
+    }
+
+    /// Execute a found delegated regulation.
+    fn execute_delegated_regulation(
+        &self,
+        regulation: &ArticleBasedLaw,
+        output: &str,
+        source_parameters: Option<&HashMap<String, String>>,
+        context: &RuleContext,
+        res_ctx: &ResolutionContext<'_>,
+    ) -> Result<Value> {
         // Check for circular reference
         let key = format!("{}#{}", regulation.id, output);
         if res_ctx.is_visited(&key) {
@@ -489,6 +502,105 @@ impl LawExecutionService {
                 law_id: regulation.id.clone(),
                 output: output.to_string(),
             })
+    }
+
+    /// Try to execute defaults from the delegating article's legal_basis_for section.
+    ///
+    /// This is called when no delegated regulation is found. If the delegating
+    /// article has defaults defined, those are executed instead.
+    fn try_execute_defaults(
+        &self,
+        delegation: &DelegationRef<'_>,
+        output: &str,
+        source_parameters: Option<&HashMap<String, String>>,
+        context: &RuleContext,
+        criteria: &HashMap<String, Value>,
+    ) -> Result<Value> {
+        // Get the delegating law and article
+        let law = self.get_law(delegation.law_id).ok_or_else(|| {
+            EngineError::LawNotFound(delegation.law_id.to_string())
+        })?;
+
+        let article = law.find_article_by_number(delegation.article).ok_or_else(|| {
+            EngineError::ArticleNotFound {
+                law_id: delegation.law_id.to_string(),
+                article: delegation.article.to_string(),
+            }
+        })?;
+
+        // Look for legal_basis_for with defaults
+        let defaults = article
+            .get_legal_basis_for()
+            .and_then(|basis_list| {
+                basis_list.iter().find_map(|basis| basis.defaults.as_ref())
+            });
+
+        match defaults {
+            Some(defaults) => {
+                self.execute_defaults(defaults, output, source_parameters, context)
+            }
+            None => {
+                // No defaults available - this is an error
+                let criteria_str = criteria
+                    .iter()
+                    .map(|(k, v)| format!("{}={:?}", k, v))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                Err(EngineError::DelegationError(format!(
+                    "No regulation found for delegation from {}#{} with criteria [{}] and no defaults available",
+                    delegation.law_id, delegation.article, criteria_str
+                )))
+            }
+        }
+    }
+
+    /// Execute defaults actions to produce the requested output.
+    fn execute_defaults(
+        &self,
+        defaults: &LegalBasisForDefaults,
+        output: &str,
+        source_parameters: Option<&HashMap<String, String>>,
+        context: &RuleContext,
+    ) -> Result<Value> {
+        // Build a new context for defaults execution
+        // Start with the source parameters resolved
+        let target_params = self.build_target_parameters(source_parameters, context)?;
+        let mut defaults_context = RuleContext::new(target_params, context.get_calculation_date())?;
+
+        // Set definitions from defaults
+        if let Some(definitions) = &defaults.definitions {
+            defaults_context.set_definitions(definitions);
+        }
+
+        // Execute actions
+        if let Some(actions) = &defaults.actions {
+            for action in actions {
+                if let Some(output_name) = &action.output {
+                    let value = self.evaluate_default_action(action, &defaults_context)?;
+                    defaults_context.set_output(output_name, value);
+                }
+            }
+        }
+
+        // Extract the requested output
+        defaults_context
+            .get_output(output)
+            .cloned()
+            .ok_or_else(|| EngineError::OutputNotFound {
+                law_id: "defaults".to_string(),
+                output: output.to_string(),
+            })
+    }
+
+    /// Evaluate a single action from defaults.
+    fn evaluate_default_action(&self, action: &Action, context: &RuleContext) -> Result<Value> {
+        // Check for direct value
+        if let Some(value) = &action.value {
+            return evaluate_value(value, context, 0);
+        }
+
+        // No value specified - return null
+        Ok(Value::Null)
     }
 
     /// Build parameters for a target article from source parameter mapping.
