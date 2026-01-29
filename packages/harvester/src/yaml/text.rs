@@ -15,17 +15,35 @@ pub fn wrap_text(text: &str, width: usize) -> String {
     let mut content_lines: Vec<&str> = Vec::new();
 
     // Find where reference definitions start (from end)
+    // Only include empty lines that are BETWEEN reference definitions
     let mut in_refs = false;
+    let mut pending_empty: Vec<&str> = Vec::new();
+
     for line in lines.iter().rev() {
         if line.starts_with("[ref") && line.contains("]: ") {
+            // Found a reference line - include any pending empty lines
+            for empty in pending_empty.drain(..).rev() {
+                ref_lines.insert(0, empty);
+            }
             ref_lines.insert(0, line);
             in_refs = true;
         } else if in_refs && line.is_empty() {
-            ref_lines.insert(0, line);
+            // Empty line while in refs - save for later
+            // Only add if followed by another ref line
+            pending_empty.push(line);
         } else {
+            // Non-ref line - move pending empties to content and exit ref mode
+            for empty in pending_empty.drain(..) {
+                content_lines.insert(0, empty);
+            }
             in_refs = false;
             content_lines.insert(0, line);
         }
+    }
+
+    // Any remaining pending empties go to content
+    for empty in pending_empty {
+        content_lines.insert(0, empty);
     }
 
     // Wrap content paragraphs

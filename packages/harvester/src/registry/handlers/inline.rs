@@ -20,6 +20,26 @@ static BWB_PATTERN: LazyLock<Regex> =
 static ARTIKEL_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"artikel=(\d+\w*)").expect("valid regex"));
 
+/// Regex for extracting lid (paragraph) from JCI reference.
+static LID_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"lid=([^&]+)").expect("valid regex"));
+
+/// Regex for extracting onderdeel (subdivision) from JCI reference.
+static ONDERDEEL_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"onderdeel=([^&]+)").expect("valid regex"));
+
+/// Regex for extracting hoofdstuk (chapter) from JCI reference.
+static HOOFDSTUK_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"hoofdstuk=([^&]+)").expect("valid regex"));
+
+/// Regex for extracting paragraaf (section) from JCI reference.
+static PARAGRAAF_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"paragraaf=([^&]+)").expect("valid regex"));
+
+/// Regex for extracting afdeling (division) from JCI reference.
+static AFDELING_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"afdeling=([^&]+)").expect("valid regex"));
+
 /// Convert JCI reference to wetten.overheid.nl URL.
 fn convert_jci_to_url(jci_ref: &str) -> String {
     if let Some(bwb_match) = BWB_PATTERN.find(jci_ref) {
@@ -33,32 +53,24 @@ fn convert_jci_to_url(jci_ref: &str) -> String {
     jci_ref.to_string()
 }
 
+/// Extract first capture group from a regex match.
+fn extract_capture(pattern: &Regex, text: &str) -> Option<String> {
+    pattern.captures(text).map(|c| c[1].to_string())
+}
+
 /// Parse JCI reference to Reference object.
 fn parse_jci_reference(jci_ref: &str) -> Option<Reference> {
     let bwb_id = BWB_PATTERN.find(jci_ref)?.as_str().to_string();
 
-    let artikel = ARTIKEL_PATTERN
-        .captures(jci_ref)
-        .map(|c| c[1].to_string());
-
-    // Extract other optional parameters
-    let extract_param = |param: &str| -> Option<String> {
-        let pattern = format!(r"{}=([^&]+)", regex::escape(param));
-        Regex::new(&pattern)
-            .ok()?
-            .captures(jci_ref)
-            .map(|c| c[1].to_string())
-    };
-
     Some(Reference {
         id: String::new(), // Will be set by collector
         bwb_id,
-        artikel,
-        lid: extract_param("lid"),
-        onderdeel: extract_param("onderdeel"),
-        hoofdstuk: extract_param("hoofdstuk"),
-        paragraaf: extract_param("paragraaf"),
-        afdeling: extract_param("afdeling"),
+        artikel: extract_capture(&ARTIKEL_PATTERN, jci_ref),
+        lid: extract_capture(&LID_PATTERN, jci_ref),
+        onderdeel: extract_capture(&ONDERDEEL_PATTERN, jci_ref),
+        hoofdstuk: extract_capture(&HOOFDSTUK_PATTERN, jci_ref),
+        paragraaf: extract_capture(&PARAGRAAF_PATTERN, jci_ref),
+        afdeling: extract_capture(&AFDELING_PATTERN, jci_ref),
     })
 }
 
@@ -92,6 +104,31 @@ impl ElementHandler for NadrukHandler {
     }
 }
 
+/// Common logic for handling reference elements (extref/intref).
+///
+/// Converts references to markdown links using reference-style formatting
+/// when a collector is available, or inline links otherwise.
+fn handle_reference_element(node: Node<'_, '_>, context: &mut ParseContext<'_>) -> ParseResult {
+    let ref_text = node.text().unwrap_or_default();
+    let doc_attr = node.attribute("doc").unwrap_or_default();
+
+    if let Some(collector) = &mut context.collector {
+        // Try to parse as JCI reference
+        if let Some(reference) = parse_jci_reference(doc_attr) {
+            let ref_id = collector.add_full_reference(reference);
+            return ParseResult::new(format!("[{ref_text}][{ref_id}]"));
+        }
+    }
+
+    // Fallback to inline link
+    if !doc_attr.is_empty() {
+        let url = convert_jci_to_url(doc_attr);
+        return ParseResult::new(format!("[{ref_text}]({url})"));
+    }
+
+    ParseResult::new(ref_text)
+}
+
 /// Handler for `<extref>` (external reference) elements.
 ///
 /// Converts external references to markdown links using reference-style
@@ -109,24 +146,7 @@ impl ElementHandler for ExtrefHandler {
         context: &mut ParseContext<'_>,
         _recurse: &RecurseFn<'a, 'input>,
     ) -> ParseResult {
-        let ref_text = node.text().unwrap_or_default();
-        let doc_attr = node.attribute("doc").unwrap_or_default();
-
-        if let Some(collector) = &mut context.collector {
-            // Try to parse as JCI reference
-            if let Some(reference) = parse_jci_reference(doc_attr) {
-                let ref_id = collector.add_full_reference(reference);
-                return ParseResult::new(format!("[{ref_text}][{ref_id}]"));
-            }
-        }
-
-        // Fallback to inline link
-        if !doc_attr.is_empty() {
-            let url = convert_jci_to_url(doc_attr);
-            return ParseResult::new(format!("[{ref_text}]({url})"));
-        }
-
-        ParseResult::new(ref_text)
+        handle_reference_element(node, context)
     }
 }
 
@@ -147,24 +167,7 @@ impl ElementHandler for IntrefHandler {
         context: &mut ParseContext<'_>,
         _recurse: &RecurseFn<'a, 'input>,
     ) -> ParseResult {
-        let ref_text = node.text().unwrap_or_default();
-        let doc_attr = node.attribute("doc").unwrap_or_default();
-
-        if let Some(collector) = &mut context.collector {
-            // Try to parse as JCI reference
-            if let Some(reference) = parse_jci_reference(doc_attr) {
-                let ref_id = collector.add_full_reference(reference);
-                return ParseResult::new(format!("[{ref_text}][{ref_id}]"));
-            }
-        }
-
-        // Fallback to inline link
-        if !doc_attr.is_empty() {
-            let url = convert_jci_to_url(doc_attr);
-            return ParseResult::new(format!("[{ref_text}]({url})"));
-        }
-
-        ParseResult::new(ref_text)
+        handle_reference_element(node, context)
     }
 }
 

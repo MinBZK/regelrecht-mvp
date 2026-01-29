@@ -11,7 +11,6 @@ use crate::config::wetten_url;
 
 /// Types of regulatory documents in Dutch law.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RegulatoryLayer {
     /// Formal law (wet).
     #[serde(rename = "WET")]
@@ -59,7 +58,7 @@ impl RegulatoryLayer {
 
     /// Get the directory name for file output.
     #[must_use]
-    pub fn to_dir_name(&self) -> &'static str {
+    pub fn as_dir_name(&self) -> &'static str {
         match self {
             Self::Wet => "wet",
             Self::Amvb => "amvb",
@@ -72,6 +71,8 @@ impl RegulatoryLayer {
     }
 
     /// Parse from WTI "soort-regeling" text.
+    ///
+    /// Unknown types default to `Wet` with a warning logged.
     #[must_use]
     pub fn from_soort_regeling(text: &str) -> Self {
         match text.to_lowercase().as_str() {
@@ -82,7 +83,13 @@ impl RegulatoryLayer {
             "beleidsregel" => Self::Beleidsregel,
             "verordening" => Self::Verordening,
             "regeling" => Self::Regeling,
-            _ => Self::Wet, // Default
+            unknown => {
+                tracing::warn!(
+                    soort_regeling = %unknown,
+                    "Unknown soort-regeling type, defaulting to WET"
+                );
+                Self::Wet
+            }
         }
     }
 }
@@ -140,7 +147,7 @@ impl LawMetadata {
 }
 
 /// A reference to another article or law.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reference {
     /// Unique identifier for this reference (e.g., "ref1").
     pub id: String,
@@ -264,7 +271,7 @@ impl Article {
 }
 
 /// Complete law with metadata and articles.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Law {
     /// Metadata from WTI file.
     pub metadata: LawMetadata,
@@ -304,10 +311,10 @@ mod tests {
     }
 
     #[test]
-    fn test_regulatory_layer_to_dir_name() {
-        assert_eq!(RegulatoryLayer::Wet.to_dir_name(), "wet");
+    fn test_regulatory_layer_as_dir_name() {
+        assert_eq!(RegulatoryLayer::Wet.as_dir_name(), "wet");
         assert_eq!(
-            RegulatoryLayer::MinisterieleRegeling.to_dir_name(),
+            RegulatoryLayer::MinisterieleRegeling.as_dir_name(),
             "ministeriele_regeling"
         );
     }

@@ -208,11 +208,6 @@ impl ElementHandler for PassthroughHandler {
     }
 }
 
-/// Alias handlers for specific skip elements.
-pub type KopHandler = SkipHandler;
-pub type PlaatjeHandler = SkipHandler;
-pub type IllustratieHandler = SkipHandler;
-
 #[cfg(test)]
 mod tests {
     use super::*;

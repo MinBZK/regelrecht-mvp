@@ -49,12 +49,19 @@ impl SplitStrategy for LeafSplitStrategy {
 
         // Find the number element using the path
         let nr_node = find_by_path(node, source)?;
-        let mut nr = get_text(nr_node);
+        let nr = get_text(nr_node);
 
-        // Remove trailing period if present (for list items like "a." -> "a")
-        if nr.ends_with('.') {
-            nr.pop();
-        }
+        // Clean up the number:
+        // - Remove trailing punctuation (period, degree symbol for Dutch "1°", "2°")
+        // - Trim whitespace
+        let nr = nr.trim();
+        let nr = nr
+            .strip_suffix('.')
+            .or_else(|| nr.strip_suffix('°'))
+            .or_else(|| nr.strip_suffix("°."))
+            .unwrap_or(nr)
+            .trim()
+            .to_string();
 
         if nr.is_empty() {
             None
@@ -129,5 +136,30 @@ mod tests {
         let node = doc.root_element();
 
         assert_eq!(strategy.get_number(node, &spec), None);
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_degree_symbol() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("li").with_number_source("li.nr");
+
+        // Dutch lists often use degree symbol: "1°", "2°"
+        let xml = "<li><li.nr>1°</li.nr></li>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("1".to_string()));
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_whitespace() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("lid").with_number_source("lidnr");
+
+        let xml = "<lid><lidnr>  2.  </lidnr></lid>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("2".to_string()));
     }
 }
