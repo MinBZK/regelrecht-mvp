@@ -20,10 +20,12 @@ pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/regelrech
 pub const TEXT_WRAP_WIDTH: usize = 100;
 
 /// BWB ID pattern: BWBR followed by 7 digits.
+#[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid
 static BWB_ID_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^BWBR\d{7}$").expect("valid regex"));
 
 /// Date pattern: YYYY-MM-DD.
+#[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid
 static DATE_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\d{4}-\d{2}-\d{2}$").expect("valid regex"));
 

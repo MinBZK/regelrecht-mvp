@@ -96,6 +96,7 @@ fn download_command(bwb_id: &str, date: Option<&str>, output: Option<&std::path:
 
     // Create progress spinner
     let pb = ProgressBar::new_spinner();
+    #[allow(clippy::expect_used)] // Static template string that is guaranteed to be valid
     pb.set_style(
         ProgressStyle::default_spinner()
             .template("{spinner:.green} {msg}")

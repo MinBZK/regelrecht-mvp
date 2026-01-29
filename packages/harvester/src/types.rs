@@ -114,10 +114,12 @@ pub struct LawMetadata {
 }
 
 /// Regex for slug generation - matches non-word characters.
+#[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid
 static SLUG_NON_WORD: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[^\w\s-]").expect("valid regex"));
 
 /// Regex for slug generation - matches whitespace and dashes.
+#[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid
 static SLUG_SPACE_DASH: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[-\s]+").expect("valid regex"));
 

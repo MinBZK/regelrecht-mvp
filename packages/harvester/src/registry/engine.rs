@@ -2,7 +2,7 @@
 
 use roxmltree::Node;
 
-use super::registry::ElementRegistry;
+use super::core::ElementRegistry;
 use super::types::{ParseContext, ParseResult};
 use crate::error::{HarvesterError, Result};
 use crate::xml::get_tag_name;

@@ -5,7 +5,7 @@ use super::handlers::{
     ExtrefHandler, IntrefHandler, LiHandler, LiNrHandler, LidHandler, LidnrHandler, LijstHandler,
     NadrukHandler, PassthroughHandler, RedactieHandler, SkipHandler, WijHandler,
 };
-use super::registry::ElementRegistry;
+use super::core::ElementRegistry;
 
 /// Create a content registry configured for Dutch law XML.
 ///
