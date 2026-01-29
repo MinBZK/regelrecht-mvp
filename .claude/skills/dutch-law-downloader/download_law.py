@@ -3,8 +3,8 @@
 Download and convert a Dutch law from BWB to regelrecht YAML format.
 
 Usage:
-    uv run python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715 2025-02-12
-    uv run python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715  # Uses latest version
+    python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715 2025-02-12
+    python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715  # Uses latest version
 
 Note: This is a standalone utility script. The dutch-law-downloader Claude skill
 replaces this script for interactive use (it uses WebFetch instead of Python).
@@ -222,10 +222,10 @@ def save_yaml(law_id, law_data, regulatory_layer, effective_date):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: uv run python .claude/skills/dutch-law-downloader/download_law.py BWBR_ID [DATE]")
+        print("Usage: python .claude/skills/dutch-law-downloader/download_law.py BWBR_ID [DATE]")
         print()
         print("Example:")
-        print("  uv run python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715 2025-02-12")
+        print("  python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715 2025-02-12")
         sys.exit(1)
 
     bwbr_id = sys.argv[1]

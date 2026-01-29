@@ -558,10 +558,10 @@ Engine: Calculates result using all interconnected laws
 
 1. **Review TODOs first**: List all missing dependencies before execution
 2. **Download in order**: Start with base laws, then dependent laws
-3. **Test incrementally**: Run behave tests after each interpretation
+3. **Test incrementally**: Run `just bdd` after each interpretation
 4. **Check cross-references**: Verify `#field` references match actual outputs
 5. **Validate eurocent**: Double-check monetary conversions
-6. **Add test scenarios**: Create behave features for edge cases
+6. **Add test scenarios**: Create Gherkin feature files for edge cases
 7. **Document assumptions**: Add comments for ambiguous interpretations
 8. **Iterate**: Re-run interpretation if legal text changes
 
