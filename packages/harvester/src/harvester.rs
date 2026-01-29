@@ -10,7 +10,6 @@ use crate::splitting::{create_dutch_law_hierarchy, LeafSplitStrategy, SplitConte
 use crate::types::{Article, Law};
 use crate::wti::download_wti;
 use crate::xml::{find_by_path, find_children, get_tag_name, get_text};
-use crate::registry::ReferenceCollector;
 
 /// Download and parse a Dutch law.
 ///
@@ -94,7 +93,6 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
 fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Article> {
     let aanhef = doc.descendants().find(|n| n.is_element() && get_tag_name(*n) == "aanhef")?;
 
-    let collector = ReferenceCollector::new();
     let mut parts: Vec<String> = Vec::new();
 
     // Extract <wij> element
@@ -138,7 +136,7 @@ fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Articl
         number: "aanhef".to_string(),
         text: aanhef_text,
         url: aanhef_url,
-        references: collector.into_references(),
+        references: Vec::new(), // Aanhef typically has no cross-law references
     })
 }
 

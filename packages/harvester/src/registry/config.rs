@@ -42,7 +42,27 @@ pub fn create_content_registry() -> ElementRegistry {
     registry.register("noot", SkipHandler); // Notes are skipped
     registry.register("nootref", PassthroughHandler);
 
-    // Skip tags (metadata, structure, images)
+    // Skip tags - elements that don't contribute to article text content
+    //
+    // Metadata elements (BWB internal):
+    //   - meta-data: BWB metadata container
+    //   - jcis/jci: JCI (Juriconnect Identifier) references
+    //   - brondata: Source data metadata
+    //   - giosduurbwb: Duration/validity metadata
+    //   - informatieproduct: Information product type
+    //
+    // Structure elements (handled separately or not needed):
+    //   - kop: Headers (extracted separately via find_by_path)
+    //   - tussenkop: Intermediate headers within articles
+    //   - wat: "Wat" indicator in preambles
+    //   - adres: Address blocks
+    //   - slotondertekening: Closing signatures
+    //   - slotformulering: Closing formula
+    //
+    // Non-text elements:
+    //   - plaatje: Image placeholder
+    //   - illustratie: Illustration container
+    //   - formule/formule-klein: Mathematical formulas
     registry.skip([
         "meta-data",
         "kop",

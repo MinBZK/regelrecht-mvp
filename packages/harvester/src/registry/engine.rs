@@ -50,48 +50,31 @@ impl ParseEngine {
 
         // Get handler
         if let Some(handler) = self.registry.get_handler(node, context) {
-            // Create recursive parsing closure
+            // Create recursive parsing closure that logs errors but continues parsing
             let recurse = |child: Node<'_, '_>, ctx: &mut ParseContext<'_>| -> ParseResult {
-                self.parse(child, ctx).unwrap_or_else(|_| ParseResult::empty())
+                self.parse(child, ctx).unwrap_or_else(|err| {
+                    tracing::warn!(
+                        error = %err,
+                        tag = %get_tag_name(child),
+                        "Error parsing child element, skipping"
+                    );
+                    ParseResult::empty()
+                })
             };
 
             return Ok(handler.handle(node, context, &recurse));
         }
 
-        // No handler - raise error
+        // No handler - raise error with parent context
+        let parent_context = node
+            .parent_element()
+            .map(|p| format!("<{}>", get_tag_name(p)));
         Err(HarvesterError::UnknownElement {
             tag_name: tag_name.to_string(),
-            context: None,
+            context: parent_context,
         })
     }
 
-    /// Parse all children of an element.
-    ///
-    /// Utility method for handlers that need to process all children.
-    ///
-    /// # Arguments
-    /// * `node` - The parent element
-    /// * `context` - Current parsing context
-    /// * `separator` - String to join child results with
-    pub fn parse_children(
-        &self,
-        node: Node<'_, '_>,
-        context: &mut ParseContext<'_>,
-        separator: &str,
-    ) -> Result<ParseResult> {
-        let mut parts: Vec<String> = Vec::new();
-
-        for child in node.children() {
-            if child.is_element() {
-                let result = self.parse(child, context)?;
-                if !result.text.is_empty() {
-                    parts.push(result.text);
-                }
-            }
-        }
-
-        Ok(ParseResult::new(parts.join(separator)))
-    }
 }
 
 #[cfg(test)]

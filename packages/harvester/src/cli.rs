@@ -35,9 +35,6 @@ pub enum Commands {
         #[arg(short, long)]
         output: Option<PathBuf>,
     },
-
-    /// Show version information.
-    Version,
 }
 
 /// Run the CLI.
@@ -47,10 +44,6 @@ pub fn run() -> Result<()> {
     match cli.command {
         Commands::Download { bwb_id, date, output } => {
             download_command(&bwb_id, date.as_deref(), output.as_deref())
-        }
-        Commands::Version => {
-            println!("regelrecht-harvester {}", env!("CARGO_PKG_VERSION"));
-            Ok(())
         }
     }
 }
@@ -71,6 +64,26 @@ fn download_command(bwb_id: &str, date: Option<&str>, output: Option<&std::path:
     if let Err(e) = validate_date(&effective_date) {
         eprintln!("{} {}", style("Error:").red().bold(), e);
         std::process::exit(1);
+    }
+
+    // Validate output directory exists (if specified) before downloading
+    if let Some(output_dir) = output {
+        if !output_dir.exists() {
+            eprintln!(
+                "{} Output directory does not exist: {}",
+                style("Error:").red().bold(),
+                output_dir.display()
+            );
+            std::process::exit(1);
+        }
+        if !output_dir.is_dir() {
+            eprintln!(
+                "{} Output path is not a directory: {}",
+                style("Error:").red().bold(),
+                output_dir.display()
+            );
+            std::process::exit(1);
+        }
     }
 
     println!(
@@ -146,14 +159,10 @@ mod tests {
     fn test_cli_parse_download() {
         let cli = Cli::parse_from(["regelrecht-harvester", "download", "BWBR0018451"]);
 
-        match cli.command {
-            Commands::Download { bwb_id, date, output } => {
-                assert_eq!(bwb_id, "BWBR0018451");
-                assert!(date.is_none());
-                assert!(output.is_none());
-            }
-            _ => panic!("Expected Download command"),
-        }
+        let Commands::Download { bwb_id, date, output } = cli.command;
+        assert_eq!(bwb_id, "BWBR0018451");
+        assert!(date.is_none());
+        assert!(output.is_none());
     }
 
     #[test]
@@ -166,19 +175,9 @@ mod tests {
             "2025-01-01",
         ]);
 
-        match cli.command {
-            Commands::Download { bwb_id, date, .. } => {
-                assert_eq!(bwb_id, "BWBR0018451");
-                assert_eq!(date, Some("2025-01-01".to_string()));
-            }
-            _ => panic!("Expected Download command"),
-        }
+        let Commands::Download { bwb_id, date, .. } = cli.command;
+        assert_eq!(bwb_id, "BWBR0018451");
+        assert_eq!(date, Some("2025-01-01".to_string()));
     }
 
-    #[test]
-    fn test_cli_parse_version() {
-        let cli = Cli::parse_from(["regelrecht-harvester", "version"]);
-
-        assert!(matches!(cli.command, Commands::Version));
-    }
 }

@@ -9,10 +9,12 @@ use crate::error::{HarvesterError, Result};
 pub const BWB_REPOSITORY_URL: &str = "https://repository.officiele-overheidspublicaties.nl/bwb";
 
 /// HTTP timeout in seconds.
-pub const HTTP_TIMEOUT_SECS: u64 = 10;
+///
+/// Set to 30 seconds to accommodate large XML files and slow connections.
+pub const HTTP_TIMEOUT_SECS: u64 = 30;
 
 /// Schema URL for regelrecht YAML files.
-pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.1/schema.json";
+pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.1/schema.json";
 
 /// Text wrap width for YAML output.
 pub const TEXT_WRAP_WIDTH: usize = 100;
@@ -51,11 +53,13 @@ pub fn validate_bwb_id(bwb_id: &str) -> Result<()> {
 
 /// Validate date format (YYYY-MM-DD).
 ///
+/// Rejects dates in the future since BWB won't have consolidated versions for them.
+///
 /// # Arguments
 /// * `date_str` - Date string to validate
 ///
 /// # Returns
-/// * `Ok(())` if valid format and valid date
+/// * `Ok(())` if valid format, valid date, and not in the future
 /// * `Err(HarvesterError::InvalidDate)` if invalid
 ///
 /// # Examples
@@ -71,33 +75,59 @@ pub fn validate_date(date_str: &str) -> Result<()> {
         return Err(HarvesterError::InvalidDate(date_str.to_string()));
     }
 
-    // Also validate that it's a real date
-    match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-        Ok(_) => Ok(()),
-        Err(_) => Err(HarvesterError::InvalidDate(date_str.to_string())),
+    // Parse and validate it's a real date
+    let parsed_date = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+        .map_err(|_| HarvesterError::InvalidDate(date_str.to_string()))?;
+
+    // Reject future dates - BWB won't have consolidated versions for them
+    let today = chrono::Local::now().date_naive();
+    if parsed_date > today {
+        return Err(HarvesterError::InvalidDate(format!(
+            "{date_str} is in the future (today is {today})"
+        )));
     }
+
+    Ok(())
 }
 
 /// Build WTI (metadata) URL for a law.
 ///
 /// # Arguments
-/// * `bwb_id` - The BWB identifier
+/// * `bwb_id` - The BWB identifier (should be validated with `validate_bwb_id` first)
 ///
 /// # Returns
 /// URL to the WTI file
+///
+/// # Panics
+/// Debug builds panic if bwb_id doesn't match expected format.
 pub fn wti_url(bwb_id: &str) -> String {
+    debug_assert!(
+        BWB_ID_PATTERN.is_match(bwb_id),
+        "bwb_id should be validated before calling wti_url"
+    );
     format!("{BWB_REPOSITORY_URL}/{bwb_id}/{bwb_id}.WTI")
 }
 
 /// Build content (consolidated XML) URL for a law at a specific date.
 ///
 /// # Arguments
-/// * `bwb_id` - The BWB identifier
-/// * `date` - The effective date in YYYY-MM-DD format
+/// * `bwb_id` - The BWB identifier (should be validated with `validate_bwb_id` first)
+/// * `date` - The effective date in YYYY-MM-DD format (should be validated with `validate_date` first)
 ///
 /// # Returns
 /// URL to the consolidated XML file
+///
+/// # Panics
+/// Debug builds panic if inputs don't match expected formats.
 pub fn content_url(bwb_id: &str, date: &str) -> String {
+    debug_assert!(
+        BWB_ID_PATTERN.is_match(bwb_id),
+        "bwb_id should be validated before calling content_url"
+    );
+    debug_assert!(
+        DATE_PATTERN.is_match(date),
+        "date should be validated before calling content_url"
+    );
     format!("{BWB_REPOSITORY_URL}/{bwb_id}/{date}_0/xml/{bwb_id}_{date}_0.xml")
 }
 

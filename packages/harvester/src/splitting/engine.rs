@@ -35,6 +35,10 @@ impl<S: SplitStrategy> SplitEngine<S> {
     pub fn split(&self, node: Node<'_, '_>, context: SplitContext) -> Vec<ArticleComponent> {
         let tag = get_tag_name(node);
         let Some(spec) = self.hierarchy.get_spec(tag) else {
+            tracing::warn!(
+                tag = %tag,
+                "Unknown element in splitting hierarchy, skipping"
+            );
             return Vec::new();
         };
 

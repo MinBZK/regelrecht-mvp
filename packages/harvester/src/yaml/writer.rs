@@ -126,6 +126,9 @@ pub fn generate_yaml(law: &Law, effective_date: &str) -> Result<String> {
 
 /// Save a Law object as a YAML file.
 ///
+/// Uses atomic write pattern: writes to temp file, syncs to disk, then renames.
+/// This ensures partial writes don't corrupt existing files on crash.
+///
 /// # Arguments
 /// * `law` - The Law object to save
 /// * `effective_date` - The effective date in YYYY-MM-DD format
@@ -137,19 +140,26 @@ pub fn save_yaml(law: &Law, effective_date: &str, output_base: Option<&Path>) ->
     let output_base = output_base.unwrap_or(Path::new("regulation/nl"));
 
     // Determine directory structure
-    let layer_dir = law.metadata.regulatory_layer.to_dir_name();
+    let layer_dir = law.metadata.regulatory_layer.as_dir_name();
     let law_id = law.metadata.to_slug();
     let output_dir = output_base.join(layer_dir).join(&law_id);
     fs::create_dir_all(&output_dir)?;
 
     let output_file = output_dir.join(format!("{effective_date}.yaml"));
+    let temp_file = output_dir.join(format!(".{effective_date}.yaml.tmp"));
 
     // Generate YAML content
     let content = generate_yaml(law, effective_date)?;
 
-    // Write with Unix line endings
-    let mut file = File::create(&output_file)?;
-    file.write_all(content.as_bytes())?;
+    // Write to temp file first, then sync and rename for atomicity
+    {
+        let mut file = File::create(&temp_file)?;
+        file.write_all(content.as_bytes())?;
+        file.sync_all()?; // Ensure data is flushed to disk
+    }
+
+    // Atomic rename (on most filesystems)
+    fs::rename(&temp_file, &output_file)?;
 
     Ok(output_file)
 }
