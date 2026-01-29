@@ -22,8 +22,8 @@
     },
     "valid_from": {
       "type": "string",
-      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-      "description": "Date when the law/regulation becomes effective (inwerkingtredingsdatum)"
+      "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}|#.+)$",
+      "description": "Date when the law/regulation becomes effective (inwerkingtredingsdatum), or an internal reference starting with #"
     },
     "regulatory_layer": {
       "type": "string",
