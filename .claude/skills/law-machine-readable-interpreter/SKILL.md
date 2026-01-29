@@ -528,7 +528,7 @@ Before reporting, validate the updated YAML:
 
 **Step 13a: Run validation (linting + schema)**
 ```bash
-script/validate.sh {LAW_FILE_PATH}
+just validate {LAW_FILE_PATH}
 ```
 
 This checks for:

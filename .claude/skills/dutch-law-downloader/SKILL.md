@@ -264,7 +264,7 @@ Create directories if they don't exist.
 Before confirming, validate the generated YAML:
 
 ```bash
-script/validate.sh {FILE_PATH}
+just validate {FILE_PATH}
 ```
 
 **If validation fails:**

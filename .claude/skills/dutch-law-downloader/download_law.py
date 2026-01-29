@@ -269,7 +269,7 @@ def main():
         print(f"   Articles: {len(articles)}")
         print()
         print("Next steps:")
-        print(f"1. Validate: script/validate.sh {output_file}")
+        print(f"1. Validate: just validate {output_file}")
         print(
             "2. Interpret: Use the law-machine-readable-interpreter skill to add machine_readable sections"
         )

@@ -241,7 +241,7 @@ http://zoekservice.overheid.nl/sru/Search?operation=searchRetrieve&version=1.2&x
 
 After generating YAML, validate it:
 ```bash
-script/validate.sh {FILE_PATH}
+just validate {FILE_PATH}
 ```
 
 ## Debugging Tips
