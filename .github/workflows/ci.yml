@@ -4,46 +4,180 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - packages/engine/**
+      - features/**
+      - regulation/**
+      - schema/**
+      - script/**
+      - .pre-commit-config.yaml
+      - .github/workflows/ci.yml
   pull_request:
     branches: [main]
+    paths:
+      - packages/engine/**
+      - features/**
+      - regulation/**
+      - schema/**
+      - script/**
+      - .pre-commit-config.yaml
+      - .github/workflows/ci.yml
 
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
 jobs:
-  typecheck:
-    name: Type check
+  pre-commit:
+    name: Pre-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/engine/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: uv sync --all-groups
+      - uses: pre-commit/action@v3.0.1
 
-      - name: Run ty type checker
-        run: uv run ty check
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/engine/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run cargo check
+        run: cargo check --all-features
 
   test:
-    name: Run Tests
+    name: Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
         with:
-          python-version: '3.12'
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/engine/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
-      - name: Install dependencies
-        run: uv sync --all-groups
+      - name: Run tests
+        run: cargo test --all-features
 
-      - name: Run pytest
-        run: uv run pytest tests/ -v
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Run behave BDD tests
-        run: uv run behave features/ --tags="~@wip"
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/engine/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings
+
+  wasm:
+    name: WASM Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/engine/target
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('packages/engine/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-wasm-
+
+      - name: Build for WASM
+        run: cargo build --target wasm32-unknown-unknown --features wasm

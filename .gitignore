@@ -1,30 +1,3 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-venv/
-ENV/
-env/
-
 # IDE
 .vscode/
 .idea/
@@ -34,18 +7,10 @@ env/
 
 # Claude Code
 .claude/settings.local.json
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
+.claude/*.local.*
 
 # Logs
 *.log
-
-# Claude Code
-.claude/*.local.*
-.claude/settings.local.json
 
 # Git worktrees
 .worktrees/
@@ -56,6 +21,14 @@ frontend/dist/
 
 # Rust
 target/
-Cargo.lock
 **/*.rs.bk
 *.pdb
+
+# Python (legacy, may exist in contributor environments)
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+
+# Beads
+.beads/

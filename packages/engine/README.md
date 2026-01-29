@@ -129,7 +129,7 @@ Get the engine version.
 
 ## Limitations
 
-This WASM interface has some limitations compared to the full Rust/Python engine:
+This WASM interface has some limitations compared to the full Rust engine:
 
 - **No cross-law resolution:** External references (`source.regulation`) require a ServiceProvider which is not available in WASM. **Workaround:** pre-resolve external values and pass them as parameters.
 - **No delegation resolution:** Delegation with `select_on` criteria requires a ServiceProvider. **Workaround:** pre-resolve delegated values and pass them as parameters.

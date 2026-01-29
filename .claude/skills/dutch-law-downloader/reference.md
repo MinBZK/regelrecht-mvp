@@ -202,77 +202,46 @@ regulation/nl/koninklijk_besluit/kb_zorgtoeslag/2023-07-01.yaml
 - Remove special characters
 - Example: "Wet op de zorgtoeslag" → "wet_op_de_zorgtoeslag"
 
-## Python Code Examples
+## XML Parsing Reference
 
-### XML Parsing with lxml
+The dutch-law-downloader skill (Claude) handles XML parsing directly using WebFetch.
+Below are the key XML structures and extraction patterns to follow.
 
-```python
-from lxml import etree
+### WTI Extraction
 
-# Parse WTI
-wti_tree = etree.parse('BWBR0018451.WTI')
-ns = {'bwb-dl': 'http://www.geonovum.nl/bwb-dl/1.0'}
-bwbr_id = wti_tree.find('.//bwb-dl:bwb-id', ns).text
-soort = wti_tree.find('.//bwb-dl:soort', ns).text
+From a WTI file, extract these fields using the `bwb-dl` namespace (`http://www.geonovum.nl/bwb-dl/1.0`):
 
-# Parse Toestand
-toestand_tree = etree.parse('BWBR0018451_2025-01-01.xml')
-bwb_ns = {'bwb': 'http://www.overheid.nl/2011/BWB'}
-articles = toestand_tree.findall('.//bwb:artikel', bwb_ns)
+| XPath | Field |
+|-------|-------|
+| `//bwb-dl:bwb-id` | BWB identifier (e.g., `BWBR0018451`) |
+| `//bwb-dl:soort` | Regulation type (maps to `regulatory_layer`) |
+| `//bwb-dl:citeertitel` | Citation title (used for law ID) |
+| `//bwb-dl:publicatiedatum` | Publication date |
+| `//bwb-dl:datum-in-werking` | Effective date |
 
-for artikel in articles:
-    nr = artikel.find('.//bwb:nr', bwb_ns).text
-    leden = artikel.findall('.//bwb:lid', bwb_ns)
-    for lid in leden:
-        text = lid.find('.//bwb:al', bwb_ns).text
+### Toestand (Consolidated Text) Extraction
+
+From a toestand XML, extract articles using the `bwb` namespace (`http://www.overheid.nl/2011/BWB`):
+
+| XPath | Field |
+|-------|-------|
+| `//bwb:artikel` | Article elements |
+| `bwb:kop/bwb:nr` | Article number |
+| `bwb:lid` | Paragraphs within article |
+| `bwb:lid/bwb:al` | Paragraph text |
+
+### SRU Query URL Construction
+
+Construct SRU URLs by URL-encoding the CQL query parameter:
+```
+http://zoekservice.overheid.nl/sru/Search?operation=searchRetrieve&version=1.2&x-connection=BWB&query={URL_ENCODED_CQL}
 ```
 
-### URL Encoding for SRU
+### Validation
 
-```python
-import urllib.parse
-
-query = 'dcterms.title any "zorgtoeslag"'
-encoded = urllib.parse.quote(query)
-url = f"http://zoekservice.overheid.nl/sru/Search?operation=searchRetrieve&version=1.2&x-connection=BWB&query={encoded}"
-```
-
-### UUID Generation
-
-```python
-import uuid
-
-new_uuid = str(uuid.uuid4())
-# Example: "60e71675-38bc-4297-87ac-0c145613e481"
-```
-
-### YAML Generation
-
-```python
-import yaml
-
-data = {
-    '$schema': 'https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.2.0/schema.json',
-    '$id': 'wet_op_de_zorgtoeslag',
-    'uuid': str(uuid.uuid4()),
-    'regulatory_layer': 'WET',
-    'publication_date': '2005-12-30',
-    'effective_date': '2006-01-01',
-    'identifiers': {
-        'bwb_id': 'BWBR0018451',
-        'url': 'https://wetten.overheid.nl/BWBR0018451/2025-01-01'
-    },
-    'articles': [
-        {
-            'number': '1',
-            'text': 'Legal text here...',
-            'url': 'https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel1'
-        }
-    ]
-}
-
-with open('output.yaml', 'w', encoding='utf-8') as f:
-    yaml.dump(data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+After generating YAML, validate it:
+```bash
+just validate {FILE_PATH}
 ```
 
 ## Debugging Tips

@@ -113,5 +113,7 @@ delegation:
 
 ## References
 
-- `engine/context.py`: `_resolve_from_delegation()`
-- `engine/rule_resolver.py`: `find_delegated_regulation()`
+- `engine/context.py`: `_resolve_from_delegation()` *(original Python prototype, removed)*
+- `engine/rule_resolver.py`: `find_delegated_regulation()` *(original Python prototype, removed)*
+- `packages/engine/src/engine.rs`: `resolve_input_sources()`, `evaluate_select_on_criteria()` *(Rust implementation)*
+- `packages/engine/src/resolver.rs`: `find_delegated_regulation()` *(Rust implementation)*

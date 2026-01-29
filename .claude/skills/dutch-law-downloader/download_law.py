@@ -3,8 +3,12 @@
 Download and convert a Dutch law from BWB to regelrecht YAML format.
 
 Usage:
-    uv run python script/download_law.py BWBR0033715 2025-02-12
-    uv run python script/download_law.py BWBR0033715  # Uses latest version
+    python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715 2025-02-12
+    python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715  # Uses latest version
+
+Note: This is a standalone utility script. The dutch-law-downloader Claude skill
+replaces this script for interactive use (it uses WebFetch instead of Python).
+This script is kept as a reference and for batch/CI use.
 """
 
 import sys
@@ -35,7 +39,7 @@ def slugify(text):
 def download_wti(bwbr_id):
     """Download WTI (metadata) file."""
     url = f"https://repository.officiele-overheidspublicaties.nl/bwb/{bwbr_id}/{bwbr_id}.WTI"
-    print(f"📥 Downloading WTI from: {url}")
+    print(f"Downloading WTI from: {url}")
     response = requests.get(url)
     response.raise_for_status()
     return etree.fromstring(response.content)
@@ -44,7 +48,7 @@ def download_wti(bwbr_id):
 def download_toestand(bwbr_id, date):
     """Download Toestand (legal text) file."""
     url = f"https://repository.officiele-overheidspublicaties.nl/bwb/{bwbr_id}/{date}/xml/{bwbr_id}_{date}.xml"
-    print(f"📥 Downloading Toestand from: {url}")
+    print(f"Downloading Toestand from: {url}")
     response = requests.get(url, allow_redirects=True)
     response.raise_for_status()
     return etree.fromstring(response.content)
@@ -144,7 +148,7 @@ def parse_articles(toestand_tree, bwbr_id, date):
     # Find all artikel elements (no namespace)
     artikel_elements = toestand_tree.findall(".//artikel")
 
-    print(f"📄 Found {len(artikel_elements)} articles")
+    print(f"Found {len(artikel_elements)} articles")
 
     for artikel in artikel_elements:
         # Get article number - try label attribute first, then nr element
@@ -201,7 +205,7 @@ def save_yaml(law_id, law_data, regulatory_layer, effective_date):
 
     output_file = output_dir / f"{effective_date}.yaml"
 
-    print(f"💾 Saving to: {output_file}")
+    print(f"Saving to: {output_file}")
 
     with open(output_file, "w", encoding="utf-8") as f:
         yaml.dump(
@@ -218,10 +222,10 @@ def save_yaml(law_id, law_data, regulatory_layer, effective_date):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: uv run python script/download_law.py BWBR_ID [DATE]")
+        print("Usage: python .claude/skills/dutch-law-downloader/download_law.py BWBR_ID [DATE]")
         print()
         print("Example:")
-        print("  uv run python script/download_law.py BWBR0033715 2025-02-12")
+        print("  python .claude/skills/dutch-law-downloader/download_law.py BWBR0033715 2025-02-12")
         sys.exit(1)
 
     bwbr_id = sys.argv[1]
@@ -230,9 +234,9 @@ def main():
     # If no date provided, use today
     if not effective_date:
         effective_date = datetime.now().strftime("%Y-%m-%d")
-        print(f"ℹ️  No date provided, using: {effective_date}")
+        print(f"No date provided, using: {effective_date}")
 
-    print(f"🔍 Processing {bwbr_id} for date {effective_date}")
+    print(f"Processing {bwbr_id} for date {effective_date}")
     print()
 
     try:
@@ -241,17 +245,17 @@ def main():
         toestand_tree = download_toestand(bwbr_id, effective_date)
 
         # Parse metadata
-        print("📋 Parsing metadata...")
+        print("Parsing metadata...")
         metadata = parse_wti_metadata(wti_tree)
         print(f"   Title: {metadata.get('title', 'Unknown')}")
         print(f"   Type: {metadata.get('regulatory_layer', 'Unknown')}")
 
         # Parse articles
-        print("📄 Parsing articles...")
+        print("Parsing articles...")
         articles = parse_articles(toestand_tree, bwbr_id, effective_date)
 
         # Generate YAML
-        print("🔧 Generating YAML...")
+        print("Generating YAML...")
         law_id, law_data = generate_yaml(metadata, articles, effective_date)
 
         # Save file
@@ -260,18 +264,18 @@ def main():
         )
 
         print()
-        print("✅ Success!")
+        print("Success!")
         print(f"   Saved to: {output_file}")
         print(f"   Articles: {len(articles)}")
         print()
         print("Next steps:")
-        print(f"1. Validate: uv run python script/validate.py {output_file}")
+        print(f"1. Validate: just validate {output_file}")
         print(
             "2. Interpret: Use the law-machine-readable-interpreter skill to add machine_readable sections"
         )
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         import traceback
 
         traceback.print_exc()

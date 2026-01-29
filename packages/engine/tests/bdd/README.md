@@ -1,6 +1,6 @@
 # Rust BDD Tests
 
-This directory contains Cucumber/Gherkin BDD tests for the Rust engine, using the same feature files as the Python implementation.
+This directory contains Cucumber/Gherkin BDD tests for the Rust engine.
 
 ## Running the Tests
 
@@ -29,8 +29,8 @@ cd packages/engine && cargo test --test bdd -- --nocapture
 
 #### Bijstand Tests (10 scenarios)
 - **Issue**: Rust engine doesn't have "uitvoerder context" mechanism for `gedragscategorie`
-- **Root cause**: The participatiewet YAML only passes `bsn` to the delegation, but the verordening needs `gedragscategorie` which is set via a separate mechanism in Python
-- **Fix needed**: Implement parameter forwarding or uitvoerder context in Rust engine
+- **Root cause**: The participatiewet YAML only passes `bsn` to the delegation, but the verordening needs `gedragscategorie` which requires an uitvoerder context mechanism
+- **Fix needed**: Implement parameter forwarding or uitvoerder context in the engine
 
 #### Erfgrensbeplanting Without Verordening (2 scenarios)
 - **Issue**: Rust engine doesn't support delegation defaults yet
