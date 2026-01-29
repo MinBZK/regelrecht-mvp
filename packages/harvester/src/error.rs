@@ -20,6 +20,10 @@ pub enum HarvesterError {
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),
 
+    /// All HTTP retry attempts exhausted.
+    #[error("HTTP request failed after {attempts} attempts: {message}")]
+    RetriesExhausted { attempts: u32, message: String },
+
     /// Failed to download WTI metadata.
     #[error("Failed to download WTI metadata for {bwb_id}: {source}")]
     WtiDownload {

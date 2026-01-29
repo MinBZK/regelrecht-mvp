@@ -40,7 +40,7 @@ pub fn create_client() -> Result<Client> {
 /// # Returns
 /// Raw bytes of the response body
 pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
-    let mut last_error = None;
+    let mut last_error: Option<String> = None;
 
     for attempt in 0..MAX_RETRIES {
         if attempt > 0 {
@@ -62,9 +62,7 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
                         max_retries = MAX_RETRIES,
                         "Server error, will retry"
                     );
-                    last_error = Some(HarvesterError::Http(
-                        response.error_for_status().unwrap_err(),
-                    ));
+                    last_error = Some(format!("Server error: {status}"));
                     continue;
                 }
 
@@ -82,7 +80,7 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
                         max_retries = MAX_RETRIES,
                         "Connection error, will retry"
                     );
-                    last_error = Some(HarvesterError::Http(e));
+                    last_error = Some(e.to_string());
                     continue;
                 }
                 // Other errors (like invalid URL) - don't retry
@@ -92,12 +90,10 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
     }
 
     // All retries exhausted
-    Err(last_error.unwrap_or_else(|| {
-        HarvesterError::Http(
-            reqwest::blocking::get("http://[::1]:1") // Dummy to create error
-                .unwrap_err(),
-        )
-    }))
+    Err(HarvesterError::RetriesExhausted {
+        attempts: MAX_RETRIES,
+        message: last_error.unwrap_or_else(|| "Unknown error".to_string()),
+    })
 }
 
 #[cfg(test)]

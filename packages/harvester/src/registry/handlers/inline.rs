@@ -12,30 +12,38 @@ use crate::registry::handler::{extract_text_with_tail, ElementHandler, RecurseFn
 use crate::registry::types::{ElementType, ParseContext, ParseResult};
 use crate::types::Reference;
 
+// Static regexes for parsing JCI references - all patterns are guaranteed to be valid
+#[allow(clippy::expect_used)]
 /// Regex for extracting BWB ID from JCI reference.
 static BWB_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"BWBR\d+").expect("valid regex"));
 
+#[allow(clippy::expect_used)]
 /// Regex for extracting article number from JCI reference.
 static ARTIKEL_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"artikel=(\d+\w*)").expect("valid regex"));
 
+#[allow(clippy::expect_used)]
 /// Regex for extracting lid (paragraph) from JCI reference.
 static LID_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"lid=([^&]+)").expect("valid regex"));
 
+#[allow(clippy::expect_used)]
 /// Regex for extracting onderdeel (subdivision) from JCI reference.
 static ONDERDEEL_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"onderdeel=([^&]+)").expect("valid regex"));
 
+#[allow(clippy::expect_used)]
 /// Regex for extracting hoofdstuk (chapter) from JCI reference.
 static HOOFDSTUK_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"hoofdstuk=([^&]+)").expect("valid regex"));
 
+#[allow(clippy::expect_used)]
 /// Regex for extracting paragraaf (section) from JCI reference.
 static PARAGRAAF_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"paragraaf=([^&]+)").expect("valid regex"));
 
+#[allow(clippy::expect_used)]
 /// Regex for extracting afdeling (division) from JCI reference.
 static AFDELING_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"afdeling=([^&]+)").expect("valid regex"));
