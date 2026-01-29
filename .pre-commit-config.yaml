@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: validate-law-yaml
         name: Validate law YAML schema
-        entry: cargo run --manifest-path packages/engine/Cargo.toml --bin validate --
+        entry: script/validate.sh
         language: system
         files: ^regulation/.*\.yaml$
         types: [yaml]

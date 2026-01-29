@@ -18,4 +18,4 @@ test-all: test bdd
 
 # Validate regulation YAML files
 validate *FILES:
-    cargo run --manifest-path packages/engine/Cargo.toml --bin validate -- {{FILES}}
+    script/validate.sh {{FILES}}
