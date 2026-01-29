@@ -6,17 +6,20 @@ use jsonschema::Validator;
 use regelrecht_engine::article::ArticleBasedLaw;
 
 /// Embedded schemas keyed by their `$id` URL suffix (version path).
-fn load_schemas() -> HashMap<&'static str, serde_json::Value> {
+///
+/// These are compiled-in from the repo's schema/ directory and are guaranteed
+/// to be valid JSON at build time.
+fn load_schemas() -> Result<HashMap<&'static str, serde_json::Value>, String> {
     let mut schemas = HashMap::new();
     let v020: serde_json::Value =
         serde_json::from_str(include_str!("../../../../schema/v0.2.0/schema.json"))
-            .expect("invalid v0.2.0 schema JSON");
+            .map_err(|e| format!("invalid v0.2.0 schema JSON: {e}"))?;
     let v030: serde_json::Value =
         serde_json::from_str(include_str!("../../../../schema/v0.3.0/schema.json"))
-            .expect("invalid v0.3.0 schema JSON");
+            .map_err(|e| format!("invalid v0.3.0 schema JSON: {e}"))?;
     schemas.insert("v0.2.0", v020);
     schemas.insert("v0.3.0", v030);
-    schemas
+    Ok(schemas)
 }
 
 /// Detect schema version from the `$schema` field in the YAML document.
@@ -39,7 +42,13 @@ fn main() {
         process::exit(1);
     }
 
-    let schemas = load_schemas();
+    let schemas = match load_schemas() {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("FATAL: {e}");
+            process::exit(2);
+        }
+    };
     let mut failed = false;
 
     for arg in &args {
