@@ -1,32 +1,17 @@
 ---
 ci:
   autofix_prs: false
-  skip: [ty-check, validate-law-yaml]  # these need uv, run in GitHub Actions instead
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      # Note: script/download_law.py is a symlink to .claude/skills/dutch-law-downloader/download_law.py
-      # Excluded from hooks for Windows compatibility (symlinks behave differently on Windows)
       - id: trailing-whitespace
-        exclude: ^script/download_law\.py$
       - id: end-of-file-fixer
-        exclude: ^script/download_law\.py$
       - id: check-yaml
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: check-case-conflict
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
-    hooks:
-      # Note: script/download_law.py excluded (see comment above for reasoning)
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-        exclude: ^script/download_law\.py$
-      - id: ruff-format
-        exclude: ^script/download_law\.py$
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
@@ -34,19 +19,3 @@ repos:
       - id: yamllint
         args: [--strict]
         types: [yaml]
-
-  - repo: local
-    hooks:
-      - id: ty-check
-        name: ty type checker
-        entry: uv run ty check
-        language: system
-        types: [python]
-        pass_filenames: false
-
-      - id: validate-law-yaml
-        name: validate law YAML files
-        entry: uv run python script/validate.py
-        language: system
-        files: ^regulation/nl/.*\.yaml$
-        pass_filenames: true
