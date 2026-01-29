@@ -105,7 +105,7 @@ After completing significant code changes, proactively use the `code-reviewer` s
 ## CI/CD Deployment
 
 The frontend is automatically deployed to RIG via `.github/workflows/deploy.yml`.
-Rust CI runs via `.github/workflows/rust.yml`.
+CI runs via `.github/workflows/ci.yml`.
 
 ### Environments
 

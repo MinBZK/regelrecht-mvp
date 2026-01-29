@@ -1,5 +1,5 @@
 ---
-name: Rust CI
+name: CI
 
 on:
   push:
@@ -8,14 +8,14 @@ on:
       - packages/engine/**
       - features/**
       - regulation/**
-      - .github/workflows/rust.yml
+      - .github/workflows/ci.yml
   pull_request:
     branches: [main]
     paths:
       - packages/engine/**
       - features/**
       - regulation/**
-      - .github/workflows/rust.yml
+      - .github/workflows/ci.yml
 
 permissions:
   contents: read
