@@ -540,10 +540,10 @@ This checks for:
 
 **Step 13b: Run schema validation only**
 ```bash
-cargo run --manifest-path packages/engine/Cargo.toml --bin validate -- {LAW_FILE_PATH}
+just validate {LAW_FILE_PATH}
 ```
 
-This validates against the JSON schema.
+This validates against the JSON schema (serde + JSON Schema Draft-07).
 
 **If validation fails:**
 - Review schema errors carefully
