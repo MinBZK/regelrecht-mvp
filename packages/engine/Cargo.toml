@@ -29,6 +29,10 @@ futures = "0.3"
 walkdir = "2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+[[bin]]
+name = "validate"
+path = "src/bin/validate.rs"
+
 [[test]]
 name = "bdd"
 harness = false

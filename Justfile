@@ -15,3 +15,7 @@ bdd:
 
 # Run all Rust tests (unit + BDD)
 test-all: test bdd
+
+# Validate regulation YAML files
+validate *FILES:
+    cargo run --manifest-path packages/engine/Cargo.toml --bin validate -- {{FILES}}

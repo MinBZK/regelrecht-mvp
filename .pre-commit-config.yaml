@@ -19,3 +19,12 @@ repos:
       - id: yamllint
         args: [--strict]
         types: [yaml]
+
+  - repo: local
+    hooks:
+      - id: validate-law-yaml
+        name: Validate law YAML schema
+        entry: cargo run --manifest-path packages/engine/Cargo.toml --bin validate --
+        language: system
+        files: ^regulation/.*\.yaml$
+        types: [yaml]

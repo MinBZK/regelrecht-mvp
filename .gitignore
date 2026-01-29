@@ -25,5 +25,11 @@ Cargo.lock
 **/*.rs.bk
 *.pdb
 
+# Python (legacy, may exist in contributor environments)
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+
 # Beads
 .beads/
