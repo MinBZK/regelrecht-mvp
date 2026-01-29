@@ -133,11 +133,14 @@ For each changed file:
 
 **Run the tests:**
 ```bash
-# Run tests to verify they pass
-uv run pytest
+# Run unit tests
+just test
 
-# Or with coverage
-uv run pytest --cov
+# Run BDD tests
+just bdd
+
+# Run all tests (unit + BDD)
+just test-all
 ```
 
 ### Step 6: Requirements Verification

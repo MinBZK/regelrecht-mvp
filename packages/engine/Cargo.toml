@@ -21,24 +21,9 @@ thiserror = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
 
-[dev-dependencies]
-pretty_assertions = "1.4"
-cucumber = "0.21"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-futures = "0.3"
-walkdir = "2"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-[[bin]]
-name = "validate"
-path = "src/bin/validate.rs"
-
-[[test]]
-name = "bdd"
-harness = false
-
-[features]
-wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen"]
+[dependencies.jsonschema]
+version = "0.40"
+optional = true
 
 [dependencies.wasm-bindgen]
 version = "0.2"
@@ -47,6 +32,27 @@ optional = true
 [dependencies.serde-wasm-bindgen]
 version = "0.6"
 optional = true
+
+[[bin]]
+name = "validate"
+path = "src/bin/validate.rs"
+required-features = ["validate"]
+
+[[test]]
+name = "bdd"
+harness = false
+
+[features]
+wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen"]
+validate = ["dep:jsonschema"]
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+cucumber = "0.21"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+futures = "0.3"
+walkdir = "2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [profile.release]
 lto = true

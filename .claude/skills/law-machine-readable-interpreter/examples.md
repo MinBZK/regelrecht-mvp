@@ -526,9 +526,9 @@ User: "Interpret the Wet op de Zorgtoeslag"
 [law-machine-readable-interpreter skill]
 Result: Same file updated with machine_readable sections
 
-Step 3: Test with behave
-User: "Run the behave tests"
-Result: All tests pass using the interpreted law
+Step 3: Test with cucumber-rs
+User: "Run the BDD tests"
+Result: All tests pass using `just bdd`
 
 Step 4: Identify missing dependencies
 Skill reports:

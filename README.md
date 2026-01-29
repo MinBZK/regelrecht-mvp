@@ -4,7 +4,7 @@ RegelRecht MVP - Machine-readable Dutch law execution engine with a web-based ed
 
 ## Components
 
-- **engine/** - Python law execution engine
+- **packages/engine/** - Rust law execution engine
 - **regulation/** - Dutch legal regulations in machine-readable YAML format
 - **frontend/** - Static HTML/CSS law editor prototype
 

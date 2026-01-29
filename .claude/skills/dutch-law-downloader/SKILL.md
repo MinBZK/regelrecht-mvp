@@ -264,7 +264,7 @@ Create directories if they don't exist.
 Before confirming, validate the generated YAML:
 
 ```bash
-uv run python script/validate.py {FILE_PATH}
+script/validate.sh {FILE_PATH}
 ```
 
 **If validation fails:**

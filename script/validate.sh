@@ -8,4 +8,4 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-exec cargo run --manifest-path "$REPO_ROOT/packages/engine/Cargo.toml" --bin validate -- "$@"
+exec cargo run --manifest-path "$REPO_ROOT/packages/engine/Cargo.toml" --features validate --bin validate -- "$@"

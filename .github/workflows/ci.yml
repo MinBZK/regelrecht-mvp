@@ -4,8 +4,24 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'packages/engine/**'
+      - 'features/**'
+      - 'regulation/**'
+      - 'schema/**'
+      - 'script/**'
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'packages/engine/**'
+      - 'features/**'
+      - 'regulation/**'
+      - 'schema/**'
+      - 'script/**'
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/ci.yml'
 
 permissions:
   contents: read
