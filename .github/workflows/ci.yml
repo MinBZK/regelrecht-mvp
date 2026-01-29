@@ -4,18 +4,8 @@ name: CI
 on:
   push:
     branches: [main]
-    paths:
-      - packages/engine/**
-      - features/**
-      - regulation/**
-      - .github/workflows/ci.yml
   pull_request:
     branches: [main]
-    paths:
-      - packages/engine/**
-      - features/**
-      - regulation/**
-      - .github/workflows/ci.yml
 
 permissions:
   contents: read
@@ -25,6 +15,32 @@ env:
   RUSTFLAGS: -Dwarnings
 
 jobs:
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/engine/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: pre-commit/action@v3.0.1
+
   check:
     name: Check
     runs-on: ubuntu-latest
