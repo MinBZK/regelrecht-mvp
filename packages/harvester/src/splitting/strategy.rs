@@ -66,10 +66,19 @@ impl SplitStrategy for LeafSplitStrategy {
         // Unicode bullet: U+2022 (•)
         // These appear in laws like Participatiewet article 22a for formula variable definitions
         if nr.is_empty() || nr == "•" {
-            None
-        } else {
-            Some(nr.to_string())
+            return None;
         }
+
+        // Transform asterisk suffix to "_bis" for transition articles (overgangsartikelen)
+        // Example: "78ee*" becomes "78ee_bis"
+        // The asterisk in Dutch law denotes transition provisions added later
+        let nr = if let Some(base) = nr.strip_suffix('*') {
+            format!("{base}_bis")
+        } else {
+            nr.to_string()
+        };
+
+        Some(nr)
     }
 }
 
@@ -190,5 +199,49 @@ mod tests {
         let node = doc.root_element();
 
         assert_eq!(strategy.get_number(node, &spec), None);
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_asterisk_to_bis() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("artikel").with_number_source("kop/nr");
+
+        // Asterisk suffix should be transformed to "_bis"
+        // This is used for Dutch "overgangsartikelen" (transition provisions)
+        let xml = "<artikel><kop><nr>78ee*</nr></kop></artikel>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(
+            strategy.get_number(node, &spec),
+            Some("78ee_bis".to_string())
+        );
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_asterisk_with_period() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("lid").with_number_source("lidnr");
+
+        // Asterisk with trailing period: "1*." -> "1_bis"
+        // Period is stripped first, then asterisk is transformed
+        let xml = "<lid><lidnr>1*.</lidnr></lid>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("1_bis".to_string()));
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_no_asterisk_unchanged() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("artikel").with_number_source("kop/nr");
+
+        // Regular article numbers should not be affected
+        let xml = "<artikel><kop><nr>78ee</nr></kop></artikel>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("78ee".to_string()));
     }
 }
