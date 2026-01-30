@@ -160,6 +160,51 @@ pub fn element_children<'a, 'input>(
     node.children().filter(|child| child.is_element())
 }
 
+/// Information about a bijlage (appendix) ancestor.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BijlageContext {
+    /// The bijlage number (e.g., "1", "2", "3").
+    pub number: String,
+}
+
+/// Find the nearest bijlage ancestor and extract its number.
+///
+/// Walks up the XML tree from the given node to find a `<bijlage>` ancestor.
+/// If found, extracts the number from `<kop>/<nr>`.
+///
+/// # Arguments
+/// * `node` - Starting node to search from
+///
+/// # Returns
+/// `Some(BijlageContext)` if the node is inside a bijlage, `None` otherwise
+///
+/// # Examples
+/// ```
+/// use roxmltree::Document;
+/// use regelrecht_harvester::xml::find_bijlage_context;
+///
+/// let xml = r#"<bijlage><kop><nr>1</nr></kop><artikel/></bijlage>"#;
+/// let doc = Document::parse(xml).unwrap();
+/// let artikel = doc.descendants().find(|n| n.has_tag_name("artikel")).unwrap();
+///
+/// let ctx = find_bijlage_context(artikel);
+/// assert!(ctx.is_some());
+/// assert_eq!(ctx.unwrap().number, "1");
+/// ```
+pub fn find_bijlage_context(node: Node<'_, '_>) -> Option<BijlageContext> {
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if parent.is_element() && get_tag_name(parent) == "bijlage" {
+            let number = find_by_path(parent, "kop/nr")
+                .map(|nr| get_text(nr))
+                .filter(|s| !s.is_empty())?;
+            return Some(BijlageContext { number });
+        }
+        current = parent.parent();
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -248,5 +293,60 @@ mod tests {
 
         let children: Vec<_> = element_children(root).collect();
         assert_eq!(children.len(), 2);
+    }
+
+    #[test]
+    fn test_find_bijlage_context_inside_bijlage() {
+        let xml = r#"<wet>
+            <bijlage>
+                <kop><nr>1</nr><titel>Bijlage 1</titel></kop>
+                <artikel><kop><nr>1</nr></kop></artikel>
+            </bijlage>
+        </wet>"#;
+        let doc = Document::parse(xml).unwrap();
+        let artikel = doc
+            .descendants()
+            .find(|n| n.is_element() && get_tag_name(*n) == "artikel")
+            .unwrap();
+
+        let ctx = find_bijlage_context(artikel);
+        assert!(ctx.is_some());
+        assert_eq!(ctx.unwrap().number, "1");
+    }
+
+    #[test]
+    fn test_find_bijlage_context_outside_bijlage() {
+        let xml = r#"<wet>
+            <artikel><kop><nr>1</nr></kop></artikel>
+        </wet>"#;
+        let doc = Document::parse(xml).unwrap();
+        let artikel = doc
+            .descendants()
+            .find(|n| n.is_element() && get_tag_name(*n) == "artikel")
+            .unwrap();
+
+        let ctx = find_bijlage_context(artikel);
+        assert!(ctx.is_none());
+    }
+
+    #[test]
+    fn test_find_bijlage_context_nested_bijlage() {
+        let xml = r#"<wet>
+            <bijlage>
+                <kop><nr>2</nr></kop>
+                <deel>
+                    <artikel><kop><nr>1.a</nr></kop></artikel>
+                </deel>
+            </bijlage>
+        </wet>"#;
+        let doc = Document::parse(xml).unwrap();
+        let artikel = doc
+            .descendants()
+            .find(|n| n.is_element() && get_tag_name(*n) == "artikel")
+            .unwrap();
+
+        let ctx = find_bijlage_context(artikel);
+        assert!(ctx.is_some());
+        assert_eq!(ctx.unwrap().number, "2");
     }
 }

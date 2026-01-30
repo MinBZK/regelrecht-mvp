@@ -9,7 +9,7 @@ use crate::http::create_client;
 use crate::splitting::{create_dutch_law_hierarchy, LeafSplitStrategy, SplitContext, SplitEngine};
 use crate::types::{Article, Law};
 use crate::wti::download_wti;
-use crate::xml::{find_by_path, find_children, get_tag_name, get_text};
+use crate::xml::{find_bijlage_context, find_by_path, find_children, get_tag_name, get_text};
 
 /// Download and parse a Dutch law.
 ///
@@ -70,12 +70,18 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
             continue; // Skip articles without number
         };
 
+        // Detect bijlage context
+        let bijlage_context = find_bijlage_context(artikel);
+
         // Build base URL
         let artikel_nr_url = artikel_nr.replace(' ', "_");
         let base_url = wetten_url(bwb_id, Some(date), Some(&artikel_nr_url), None, None, None);
 
-        // Create split context
-        let context = SplitContext::new(bwb_id, date, base_url);
+        // Create split context with bijlage prefix if applicable
+        let mut context = SplitContext::new(bwb_id, date, base_url);
+        if let Some(ctx) = bijlage_context {
+            context = context.with_bijlage_prefix(format!("B{}", ctx.number));
+        }
 
         // Split the artikel
         let components = engine.split(artikel, context);

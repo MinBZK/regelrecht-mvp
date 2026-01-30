@@ -180,6 +180,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 parts.join(" ").trim().to_string(),
                 context.base_url.clone(),
             )
+            .with_bijlage_prefix(context.bijlage_prefix.clone())
             .with_references(collector.into_references()),
         )
     }
@@ -237,6 +238,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 parts.join(" ").trim().to_string(),
                 context.base_url.clone(),
             )
+            .with_bijlage_prefix(context.bijlage_prefix.clone())
             .with_references(collector.into_references()),
         )
     }
@@ -479,5 +481,49 @@ mod tests {
         assert!(components[0].text.contains("[artikel 1][ref1]"));
         assert_eq!(components[0].references.len(), 1);
         assert_eq!(components[0].references[0].bwb_id, "BWBR0018451");
+    }
+
+    #[test]
+    fn test_split_artikel_with_bijlage_prefix() {
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>First paragraph in bijlage.</al>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0005537", "2025-01-01", "https://example.com")
+            .with_bijlage_prefix("B1");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        assert_eq!(components[0].to_number(), "B1:1.1");
+        assert_eq!(components[0].bijlage_prefix, Some("B1".to_string()));
+    }
+
+    #[test]
+    fn test_split_artikel_without_bijlage_prefix() {
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <al>Regular article text.</al>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0005537", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        assert_eq!(components[0].to_number(), "1");
+        assert_eq!(components[0].bijlage_prefix, None);
     }
 }
