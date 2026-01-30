@@ -13,6 +13,11 @@ pub const BWB_REPOSITORY_URL: &str = "https://repository.officiele-overheidspubl
 /// Set to 30 seconds to accommodate large XML files and slow connections.
 pub const HTTP_TIMEOUT_SECS: u64 = 30;
 
+/// Maximum HTTP response size in bytes (50 MB).
+///
+/// This prevents downloading unexpectedly large files that could exhaust memory.
+pub const MAX_RESPONSE_SIZE: u64 = 50 * 1024 * 1024;
+
 /// Schema URL for regelrecht YAML files.
 pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.1/schema.json";
 
@@ -133,6 +138,17 @@ pub fn content_url(bwb_id: &str, date: &str) -> String {
     format!("{BWB_REPOSITORY_URL}/{bwb_id}/{date}_0/xml/{bwb_id}_{date}_0.xml")
 }
 
+/// Sanitize a URL fragment identifier by removing problematic characters.
+///
+/// This ensures fragment IDs are safe for use in URLs and don't contain
+/// characters that could cause issues (like quotes, angle brackets, etc.).
+fn sanitize_fragment(fragment: &str) -> String {
+    fragment
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_' || *c == '.' || *c == '~')
+        .collect()
+}
+
 /// Build wetten.overheid.nl URL for a law.
 ///
 /// # Arguments
@@ -163,18 +179,19 @@ pub fn wetten_url(
     }
 
     // Anchor priority: artikel > hoofdstuk > afdeling > paragraaf
+    // Sanitize all fragment values to prevent injection of problematic characters
     if let Some(a) = article {
         url.push_str("#Artikel");
-        url.push_str(&a.replace(' ', "_"));
+        url.push_str(&sanitize_fragment(&a.replace(' ', "_")));
     } else if let Some(h) = chapter {
         url.push_str("#Hoofdstuk");
-        url.push_str(&h.replace(' ', "_"));
+        url.push_str(&sanitize_fragment(&h.replace(' ', "_")));
     } else if let Some(a) = section {
         url.push_str("#Afdeling");
-        url.push_str(&a.replace(' ', "_"));
+        url.push_str(&sanitize_fragment(&a.replace(' ', "_")));
     } else if let Some(p) = paragraph {
         url.push_str("#Paragraaf");
-        url.push_str(&p.replace(' ', "_"));
+        url.push_str(&sanitize_fragment(&p.replace(' ', "_")));
     }
 
     url
@@ -251,13 +268,27 @@ mod tests {
         );
 
         assert_eq!(
-            wetten_url("BWBR0018451", Some("2025-01-01"), Some("1"), None, None, None),
+            wetten_url(
+                "BWBR0018451",
+                Some("2025-01-01"),
+                Some("1"),
+                None,
+                None,
+                None
+            ),
             "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel1"
         );
 
         // Test space replacement in article numbers
         assert_eq!(
-            wetten_url("BWBR0018451", Some("2025-01-01"), Some("A 1"), None, None, None),
+            wetten_url(
+                "BWBR0018451",
+                Some("2025-01-01"),
+                Some("A 1"),
+                None,
+                None,
+                None
+            ),
             "https://wetten.overheid.nl/BWBR0018451/2025-01-01#ArtikelA_1"
         );
     }
@@ -304,6 +335,39 @@ mod tests {
         assert_eq!(
             wetten_url("BWBR0009950", None, None, None, Some("3.1"), Some("2")),
             "https://wetten.overheid.nl/BWBR0009950#Afdeling3.1"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_fragment() {
+        // Normal text passes through
+        assert_eq!(sanitize_fragment("1a"), "1a");
+        assert_eq!(sanitize_fragment("Artikel1"), "Artikel1");
+
+        // Dots, underscores, hyphens, tildes are allowed
+        assert_eq!(sanitize_fragment("3.1"), "3.1");
+        assert_eq!(sanitize_fragment("A_1"), "A_1");
+        assert_eq!(sanitize_fragment("test-case"), "test-case");
+
+        // Special characters are stripped
+        assert_eq!(sanitize_fragment("1<script>"), "1script");
+        assert_eq!(sanitize_fragment("test\"quote"), "testquote");
+        assert_eq!(sanitize_fragment("1&amp;2"), "1amp2");
+    }
+
+    #[test]
+    fn test_wetten_url_sanitizes_fragments() {
+        // Article with potentially dangerous characters should be sanitized
+        assert_eq!(
+            wetten_url(
+                "BWBR0009950",
+                None,
+                Some("1<script>alert('xss')</script>"),
+                None,
+                None,
+                None
+            ),
+            "https://wetten.overheid.nl/BWBR0009950#Artikel1scriptalertxssscript"
         );
     }
 }

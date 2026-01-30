@@ -20,8 +20,9 @@ static BWB_PATTERN: LazyLock<Regex> =
 
 #[allow(clippy::expect_used)]
 /// Regex for extracting article number from JCI reference.
+/// Matches both numeric (1, 1a, 12bis) and Roman numeral (I, II, IV, etc.) article numbers.
 static ARTIKEL_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"artikel=(\d+\w*)").expect("valid regex"));
+    LazyLock::new(|| Regex::new(r"artikel=([IVXLCDM]+\w*|\d+\w*)").expect("valid regex"));
 
 #[allow(clippy::expect_used)]
 /// Regex for extracting lid (paragraph) from JCI reference.
@@ -113,10 +114,11 @@ impl ElementHandler for NadrukHandler {
     fn handle<'a, 'input>(
         &self,
         node: Node<'a, 'input>,
-        _context: &mut ParseContext<'_>,
-        _recurse: &RecurseFn<'a, 'input>,
+        context: &mut ParseContext<'_>,
+        recurse: &RecurseFn<'a, 'input>,
     ) -> ParseResult {
-        let text = node.text().unwrap_or_default();
+        // Use extract_text_with_tail to properly handle nested elements
+        let text = extract_text_with_tail(node, context, recurse);
         let nadruk_type = node.attribute("type").unwrap_or_default();
 
         let formatted = if nadruk_type == "vet" {
@@ -264,6 +266,24 @@ mod tests {
     }
 
     #[test]
+    fn test_nadruk_handler_nested() {
+        // Test that nadruk can contain nested elements and still extract text properly
+        let xml = r#"<nadruk type="vet">bold text with <sub>subscript</sub> inside</nadruk>"#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+        let mut context = ParseContext::new("BWBR0000000", "2025-01-01");
+        // Simple recurse that just returns text for any child
+        let recurse = |child: Node<'_, '_>, _: &mut ParseContext<'_>| {
+            ParseResult::new(child.text().unwrap_or_default())
+        };
+        let result = NadrukHandler.handle(node, &mut context, &recurse);
+        // The nested content should be extracted (exact format depends on extract_text_with_tail)
+        assert!(result.text.starts_with("**"));
+        assert!(result.text.ends_with("**"));
+        assert!(result.text.contains("bold text"));
+    }
+
+    #[test]
     fn test_convert_jci_to_url() {
         assert_eq!(
             convert_jci_to_url("jci1.3:c:BWBR0018451&artikel=4"),
@@ -327,7 +347,8 @@ mod tests {
         let node = doc.root_element();
 
         let mut collector = ReferenceCollector::new();
-        let mut context = ParseContext::new("BWBR0000000", "2025-01-01").with_collector(&mut collector);
+        let mut context =
+            ParseContext::new("BWBR0000000", "2025-01-01").with_collector(&mut collector);
 
         let recurse = |_: Node<'_, '_>, _: &mut ParseContext<'_>| ParseResult::empty();
         let result = ExtrefHandler.handle(node, &mut context, &recurse);
@@ -360,5 +381,32 @@ mod tests {
         assert_eq!(reference.bwb_id, "BWBR0018451");
         assert_eq!(reference.artikel, Some("4".to_string()));
         assert_eq!(reference.lid, Some("2".to_string()));
+    }
+
+    #[test]
+    fn test_convert_jci_to_url_roman_numerals() {
+        // Roman numeral article numbers (common in transitional provisions)
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0018451&artikel=I"),
+            "https://wetten.overheid.nl/BWBR0018451#ArtikelI"
+        );
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0018451&artikel=IV"),
+            "https://wetten.overheid.nl/BWBR0018451#ArtikelIV"
+        );
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0018451&artikel=XIIa"),
+            "https://wetten.overheid.nl/BWBR0018451#ArtikelXIIa"
+        );
+    }
+
+    #[test]
+    fn test_parse_jci_reference_roman_numerals() {
+        let jci = "jci1.3:c:BWBR0018451&artikel=IV&lid=1";
+        let reference = parse_jci_reference(jci).unwrap();
+
+        assert_eq!(reference.bwb_id, "BWBR0018451");
+        assert_eq!(reference.artikel, Some("IV".to_string()));
+        assert_eq!(reference.lid, Some("1".to_string()));
     }
 }

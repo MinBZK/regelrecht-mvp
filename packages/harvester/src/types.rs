@@ -6,6 +6,7 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
+use unicode_normalization::UnicodeNormalization;
 
 use crate::config::wetten_url;
 
@@ -126,6 +127,9 @@ static SLUG_SPACE_DASH: LazyLock<Regex> =
 impl LawMetadata {
     /// Generate a URL-friendly slug from the title.
     ///
+    /// Uses NFKD normalization to convert accented characters (like é, ë, ü)
+    /// to their ASCII equivalents before filtering.
+    ///
     /// # Examples
     /// ```
     /// use regelrecht_harvester::types::{LawMetadata, RegulatoryLayer};
@@ -141,7 +145,14 @@ impl LawMetadata {
     /// ```
     #[must_use]
     pub fn to_slug(&self) -> String {
-        let text = self.title.to_lowercase();
+        // Normalize using NFKD to decompose accented characters,
+        // then filter to ASCII only (this removes the combining diacritics)
+        let text: String = self
+            .title
+            .to_lowercase()
+            .nfkd()
+            .filter(|c| c.is_ascii())
+            .collect();
         let text = SLUG_NON_WORD.replace_all(&text, "");
         let text = SLUG_SPACE_DASH.replace_all(&text, "_");
         text.trim_matches('_').to_string()
@@ -258,11 +269,7 @@ pub struct Article {
 impl Article {
     /// Create a new article.
     #[must_use]
-    pub fn new(
-        number: impl Into<String>,
-        text: impl Into<String>,
-        url: impl Into<String>,
-    ) -> Self {
+    pub fn new(number: impl Into<String>, text: impl Into<String>, url: impl Into<String>) -> Self {
         Self {
             number: number.into(),
             text: text.into(),
@@ -330,9 +337,18 @@ mod tests {
 
     #[test]
     fn test_regulatory_layer_from_soort_regeling() {
-        assert_eq!(RegulatoryLayer::from_soort_regeling("wet"), RegulatoryLayer::Wet);
-        assert_eq!(RegulatoryLayer::from_soort_regeling("WET"), RegulatoryLayer::Wet);
-        assert_eq!(RegulatoryLayer::from_soort_regeling("amvb"), RegulatoryLayer::Amvb);
+        assert_eq!(
+            RegulatoryLayer::from_soort_regeling("wet"),
+            RegulatoryLayer::Wet
+        );
+        assert_eq!(
+            RegulatoryLayer::from_soort_regeling("WET"),
+            RegulatoryLayer::Wet
+        );
+        assert_eq!(
+            RegulatoryLayer::from_soort_regeling("amvb"),
+            RegulatoryLayer::Amvb
+        );
         assert_eq!(
             RegulatoryLayer::from_soort_regeling("algemene maatregel van bestuur"),
             RegulatoryLayer::Amvb
@@ -370,6 +386,32 @@ mod tests {
             effective_date: None,
         };
         assert_eq!(metadata.to_slug(), "wet_test_special");
+    }
+
+    #[test]
+    fn test_law_metadata_to_slug_diacritics() {
+        let metadata = LawMetadata {
+            bwb_id: "BWBR0000000".to_string(),
+            title: "Ministeriële regeling".to_string(),
+            regulatory_layer: RegulatoryLayer::MinisterieleRegeling,
+            publication_date: None,
+            effective_date: None,
+        };
+        // ë should be normalized to e
+        assert_eq!(metadata.to_slug(), "ministeriele_regeling");
+    }
+
+    #[test]
+    fn test_law_metadata_to_slug_various_diacritics() {
+        let metadata = LawMetadata {
+            bwb_id: "BWBR0000000".to_string(),
+            title: "Café résumé naïve".to_string(),
+            regulatory_layer: RegulatoryLayer::Wet,
+            publication_date: None,
+            effective_date: None,
+        };
+        // é, é, ï should all be normalized to their ASCII equivalents
+        assert_eq!(metadata.to_slug(), "cafe_resume_naive");
     }
 
     #[test]

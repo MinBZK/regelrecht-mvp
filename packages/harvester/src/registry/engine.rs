@@ -1,5 +1,7 @@
 //! Parse engine that orchestrates element parsing using the registry.
 
+use std::cell::RefCell;
+
 use roxmltree::Node;
 
 use super::core::ElementRegistry;
@@ -50,19 +52,36 @@ impl ParseEngine {
 
         // Get handler
         if let Some(handler) = self.registry.get_handler(node, context) {
-            // Create recursive parsing closure that logs errors but continues parsing
+            // Collect errors during recursive parsing
+            let collected_errors: RefCell<Vec<String>> = RefCell::new(Vec::new());
+
+            // Create recursive parsing closure that collects errors and continues parsing
             let recurse = |child: Node<'_, '_>, ctx: &mut ParseContext<'_>| -> ParseResult {
-                self.parse(child, ctx).unwrap_or_else(|err| {
-                    tracing::warn!(
-                        error = %err,
-                        tag = %get_tag_name(child),
-                        "Error parsing child element, skipping"
-                    );
-                    ParseResult::empty()
-                })
+                match self.parse(child, ctx) {
+                    Ok(mut result) => {
+                        // Collect any errors from the child result
+                        collected_errors
+                            .borrow_mut()
+                            .extend(result.errors.drain(..));
+                        result
+                    }
+                    Err(err) => {
+                        let error_msg = format!("Error parsing <{}>: {}", get_tag_name(child), err);
+                        tracing::warn!(
+                            error = %err,
+                            tag = %get_tag_name(child),
+                            "Error parsing child element, skipping"
+                        );
+                        collected_errors.borrow_mut().push(error_msg);
+                        ParseResult::empty()
+                    }
+                }
             };
 
-            return Ok(handler.handle(node, context, &recurse));
+            let mut result = handler.handle(node, context, &recurse);
+            // Merge collected errors into the result
+            result.errors.extend(collected_errors.into_inner());
+            return Ok(result);
         }
 
         // No handler - raise error with parent context
@@ -74,7 +93,6 @@ impl ParseEngine {
             context: parent_context,
         })
     }
-
 }
 
 #[cfg(test)]

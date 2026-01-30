@@ -1,11 +1,11 @@
 //! Registry configuration for Dutch law content parsing.
 
+use super::core::ElementRegistry;
 use super::handlers::{
     AanhefHandler, AfkondigingHandler, AlHandler, ConsideransAlHandler, ConsideransHandler,
     ExtrefHandler, IntrefHandler, LiHandler, LiNrHandler, LidHandler, LidnrHandler, LijstHandler,
     NadrukHandler, PassthroughHandler, RedactieHandler, SkipHandler, WijHandler,
 };
-use super::core::ElementRegistry;
 
 /// Create a content registry configured for Dutch law XML.
 ///

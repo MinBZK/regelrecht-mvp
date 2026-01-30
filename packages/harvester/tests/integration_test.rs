@@ -30,7 +30,8 @@ fn run_pipeline() -> Law {
     let metadata = parse_wti_metadata(&wti_doc);
 
     // Parse articles from content
-    let content_doc = roxmltree::Document::parse(&content_xml).expect("Failed to parse content XML");
+    let content_doc =
+        roxmltree::Document::parse(&content_xml).expect("Failed to parse content XML");
     let articles = parse_articles(&content_doc, &metadata.bwb_id, "2025-01-01");
 
     Law { metadata, articles }
@@ -39,13 +40,18 @@ fn run_pipeline() -> Law {
 /// Parse articles from content XML document.
 fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Vec<Article> {
     use regelrecht_harvester::config::wetten_url;
-    use regelrecht_harvester::splitting::{create_dutch_law_hierarchy, LeafSplitStrategy, SplitContext, SplitEngine};
+    use regelrecht_harvester::splitting::{
+        create_dutch_law_hierarchy, LeafSplitStrategy, SplitContext, SplitEngine,
+    };
     use regelrecht_harvester::xml::{find_by_path, find_children, get_tag_name, get_text};
 
     let mut articles = Vec::new();
 
     // Extract aanhef
-    if let Some(aanhef) = doc.descendants().find(|n| n.is_element() && get_tag_name(*n) == "aanhef") {
+    if let Some(aanhef) = doc
+        .descendants()
+        .find(|n| n.is_element() && get_tag_name(*n) == "aanhef")
+    {
         let mut parts: Vec<String> = Vec::new();
 
         if let Some(wij) = find_children(aanhef, "wij").next() {
@@ -58,7 +64,10 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
         }
 
         if let Some(considerans) = find_children(aanhef, "considerans").next() {
-            for al in considerans.descendants().filter(|n| n.is_element() && get_tag_name(*n) == "considerans.al") {
+            for al in considerans
+                .descendants()
+                .filter(|n| n.is_element() && get_tag_name(*n) == "considerans.al")
+            {
                 let text = extract_simple_text(al);
                 if !text.is_empty() {
                     parts.push(text);
@@ -79,7 +88,7 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
             articles.push(Article {
                 number: "aanhef".to_string(),
                 text: parts.join("\n\n"),
-                url: wetten_url(bwb_id, Some(date), Some("Aanhef")),
+                url: wetten_url(bwb_id, Some(date), Some("Aanhef"), None, None, None),
                 references: Vec::new(),
             });
         }
@@ -90,7 +99,10 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
     let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
 
     // Find all artikel elements
-    for artikel in doc.descendants().filter(|n| n.is_element() && get_tag_name(*n) == "artikel") {
+    for artikel in doc
+        .descendants()
+        .filter(|n| n.is_element() && get_tag_name(*n) == "artikel")
+    {
         let artikel_nr = if let Some(nr_node) = find_by_path(artikel, "kop/nr") {
             get_text(nr_node)
         } else if let Some(label) = artikel.attribute("label") {
@@ -100,7 +112,7 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
         };
 
         let artikel_nr_url = artikel_nr.replace(' ', "_");
-        let base_url = wetten_url(bwb_id, Some(date), Some(&artikel_nr_url));
+        let base_url = wetten_url(bwb_id, Some(date), Some(&artikel_nr_url), None, None, None);
         let context = SplitContext::new(bwb_id, date, base_url);
 
         let components = engine.split(artikel, context);
@@ -162,9 +174,14 @@ fn test_pipeline_aanhef() {
     assert!(aanhef.is_some(), "Should have aanhef article");
 
     let aanhef = aanhef.unwrap();
-    assert!(aanhef.text.contains("Wij Beatrix"), "Aanhef should contain 'Wij Beatrix'");
-    assert!(aanhef.text.contains("zorgtoeslag") || aanhef.text.contains("zorgverzekering"),
-        "Aanhef should mention zorgtoeslag or zorgverzekering");
+    assert!(
+        aanhef.text.contains("Wij Beatrix"),
+        "Aanhef should contain 'Wij Beatrix'"
+    );
+    assert!(
+        aanhef.text.contains("zorgtoeslag") || aanhef.text.contains("zorgverzekering"),
+        "Aanhef should mention zorgtoeslag or zorgverzekering"
+    );
 }
 
 #[test]
@@ -179,11 +196,17 @@ fn test_pipeline_article_1_components() {
     assert!(art_1_1_a.is_some(), "Should have article 1.1.a");
 
     if let Some(art) = art_1_1 {
-        assert!(art.text.contains("In deze wet"), "Article 1.1 should contain 'In deze wet'");
+        assert!(
+            art.text.contains("In deze wet"),
+            "Article 1.1 should contain 'In deze wet'"
+        );
     }
 
     if let Some(art) = art_1_1_a {
-        assert!(art.text.contains("Onze Minister"), "Article 1.1.a should contain 'Onze Minister'");
+        assert!(
+            art.text.contains("Onze Minister"),
+            "Article 1.1.a should contain 'Onze Minister'"
+        );
     }
 }
 
@@ -232,11 +255,23 @@ fn test_yaml_generation() {
     let yaml = generate_yaml(&law, "2025-01-01").expect("Failed to generate YAML");
 
     // Basic structure checks
-    assert!(yaml.starts_with("---\n"), "YAML should start with document marker");
+    assert!(
+        yaml.starts_with("---\n"),
+        "YAML should start with document marker"
+    );
     assert!(yaml.contains("$schema:"), "YAML should contain $schema");
-    assert!(yaml.contains("$id: wet_op_de_zorgtoeslag"), "YAML should contain correct $id");
-    assert!(yaml.contains("regulatory_layer: WET"), "YAML should contain regulatory_layer");
-    assert!(yaml.contains("bwb_id: BWBR0018451"), "YAML should contain bwb_id");
+    assert!(
+        yaml.contains("$id: wet_op_de_zorgtoeslag"),
+        "YAML should contain correct $id"
+    );
+    assert!(
+        yaml.contains("regulatory_layer: WET"),
+        "YAML should contain regulatory_layer"
+    );
+    assert!(
+        yaml.contains("bwb_id: BWBR0018451"),
+        "YAML should contain bwb_id"
+    );
 }
 
 #[test]
@@ -245,7 +280,8 @@ fn test_yaml_validates_structure() {
     let yaml = generate_yaml(&law, "2025-01-01").expect("Failed to generate YAML");
 
     // Parse as YAML to verify it's valid
-    let parsed: serde_yaml::Value = serde_yaml::from_str(&yaml).expect("Generated YAML should be valid");
+    let parsed: serde_yaml::Value =
+        serde_yaml::from_str(&yaml).expect("Generated YAML should be valid");
 
     // Check required fields exist
     assert!(parsed.get("$schema").is_some(), "Should have $schema");

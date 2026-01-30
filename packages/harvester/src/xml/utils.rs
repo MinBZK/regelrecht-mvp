@@ -120,7 +120,9 @@ pub fn find_by_path<'a, 'input>(node: Node<'a, 'input>, path: &str) -> Option<No
 /// # Returns
 /// Trimmed text content, or empty string if no text
 pub fn get_text(node: Node<'_, '_>) -> String {
-    node.text().map(|s| s.trim().to_string()).unwrap_or_default()
+    node.text()
+        .map(|s| s.trim().to_string())
+        .unwrap_or_default()
 }
 
 /// Get an attribute value from a node.

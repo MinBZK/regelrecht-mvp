@@ -46,7 +46,11 @@ impl ElementHandler for LiNrHandler {
         _context: &mut ParseContext<'_>,
         _recurse: &RecurseFn<'a, 'input>,
     ) -> ParseResult {
-        let mut nr = node.text().map(|s| s.trim()).unwrap_or_default().to_string();
+        let mut nr = node
+            .text()
+            .map(|s| s.trim())
+            .unwrap_or_default()
+            .to_string();
         if nr.ends_with('.') {
             nr.pop();
         }

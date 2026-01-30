@@ -20,13 +20,18 @@ pub enum ElementType {
 pub struct ParseResult {
     /// The extracted text content.
     pub text: String,
+    /// Errors encountered during parsing (non-fatal).
+    pub errors: Vec<String>,
 }
 
 impl ParseResult {
     /// Create a new parse result with text.
     #[must_use]
     pub fn new(text: impl Into<String>) -> Self {
-        Self { text: text.into() }
+        Self {
+            text: text.into(),
+            errors: Vec::new(),
+        }
     }
 
     /// Create an empty parse result.
@@ -34,7 +39,20 @@ impl ParseResult {
     pub fn empty() -> Self {
         Self {
             text: String::new(),
+            errors: Vec::new(),
         }
+    }
+
+    /// Create a parse result with an error.
+    #[must_use]
+    pub fn with_error(mut self, error: impl Into<String>) -> Self {
+        self.errors.push(error.into());
+        self
+    }
+
+    /// Merge another parse result's errors into this one.
+    pub fn merge_errors(&mut self, other: &ParseResult) {
+        self.errors.extend(other.errors.iter().cloned());
     }
 }
 
