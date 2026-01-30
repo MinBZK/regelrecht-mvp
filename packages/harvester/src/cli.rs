@@ -7,7 +7,7 @@ use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::config::{validate_bwb_id, validate_date};
-use crate::error::Result;
+use crate::error::{HarvesterError, Result};
 use crate::harvester::download_law;
 use crate::yaml::save_yaml;
 
@@ -42,47 +42,42 @@ pub fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Download { bwb_id, date, output } => {
-            download_command(&bwb_id, date.as_deref(), output.as_deref())
-        }
+        Commands::Download {
+            bwb_id,
+            date,
+            output,
+        } => download_command(&bwb_id, date.as_deref(), output.as_deref()),
     }
 }
 
 /// Execute the download command.
-fn download_command(bwb_id: &str, date: Option<&str>, output: Option<&std::path::Path>) -> Result<()> {
+fn download_command(
+    bwb_id: &str,
+    date: Option<&str>,
+    output: Option<&std::path::Path>,
+) -> Result<()> {
     // Use today if no date provided
     let effective_date = date
         .map(String::from)
         .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
     // Validate inputs before making HTTP requests
-    if let Err(e) = validate_bwb_id(bwb_id) {
-        eprintln!("{} {}", style("Error:").red().bold(), e);
-        std::process::exit(1);
-    }
-
-    if let Err(e) = validate_date(&effective_date) {
-        eprintln!("{} {}", style("Error:").red().bold(), e);
-        std::process::exit(1);
-    }
+    validate_bwb_id(bwb_id)?;
+    validate_date(&effective_date)?;
 
     // Validate output directory exists (if specified) before downloading
     if let Some(output_dir) = output {
         if !output_dir.exists() {
-            eprintln!(
-                "{} Output directory does not exist: {}",
-                style("Error:").red().bold(),
-                output_dir.display()
-            );
-            std::process::exit(1);
+            return Err(HarvesterError::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Output directory does not exist: {}", output_dir.display()),
+            )));
         }
         if !output_dir.is_dir() {
-            eprintln!(
-                "{} Output path is not a directory: {}",
-                style("Error:").red().bold(),
-                output_dir.display()
-            );
-            std::process::exit(1);
+            return Err(HarvesterError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Output path is not a directory: {}", output_dir.display()),
+            )));
         }
     }
 
@@ -111,21 +106,14 @@ fn download_command(bwb_id: &str, date: Option<&str>, output: Option<&std::path:
         Ok(law) => law,
         Err(e) => {
             pb.finish_and_clear();
-            eprintln!("{} {}", style("Error:").red().bold(), e);
-            std::process::exit(1);
+            return Err(e);
         }
     };
 
     pb.set_message("Processing articles...");
 
-    println!(
-        "  Title: {}",
-        style(&law.metadata.title).green()
-    );
-    println!(
-        "  Type: {}",
-        law.metadata.regulatory_layer.as_str()
-    );
+    println!("  Title: {}", style(&law.metadata.title).green());
+    println!("  Type: {}", law.metadata.regulatory_layer.as_str());
     println!("  Articles: {}", law.articles.len());
 
     // Save to YAML
@@ -135,8 +123,7 @@ fn download_command(bwb_id: &str, date: Option<&str>, output: Option<&std::path:
         Ok(path) => path,
         Err(e) => {
             pb.finish_and_clear();
-            eprintln!("{} {}", style("Error:").red().bold(), e);
-            std::process::exit(1);
+            return Err(e);
         }
     };
 
@@ -160,7 +147,11 @@ mod tests {
     fn test_cli_parse_download() {
         let cli = Cli::parse_from(["regelrecht-harvester", "download", "BWBR0018451"]);
 
-        let Commands::Download { bwb_id, date, output } = cli.command;
+        let Commands::Download {
+            bwb_id,
+            date,
+            output,
+        } = cli.command;
         assert_eq!(bwb_id, "BWBR0018451");
         assert!(date.is_none());
         assert!(output.is_none());
@@ -180,5 +171,4 @@ mod tests {
         assert_eq!(bwb_id, "BWBR0018451");
         assert_eq!(date, Some("2025-01-01".to_string()));
     }
-
 }

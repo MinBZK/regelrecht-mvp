@@ -11,7 +11,7 @@ use roxmltree::Document;
 
 use crate::config::wti_url;
 use crate::error::{HarvesterError, Result};
-use crate::http::download_bytes;
+use crate::http::{bytes_to_string, download_bytes};
 use crate::types::{LawMetadata, RegulatoryLayer};
 
 /// Download WTI (metadata) XML content for a law.
@@ -35,7 +35,10 @@ pub fn download_wti_xml(client: &Client, bwb_id: &str) -> Result<String> {
         }
     })?;
 
-    Ok(String::from_utf8_lossy(&bytes).into_owned())
+    Ok(bytes_to_string(
+        &bytes,
+        &format!("WTI metadata for {bwb_id}"),
+    ))
 }
 
 /// Download and parse WTI metadata for a law.
@@ -89,9 +92,7 @@ pub fn parse_wti_metadata(doc: &Document<'_>) -> LawMetadata {
 /// Find official title (citeertitel with status="officieel").
 fn find_official_title(doc: &Document<'_>) -> Option<String> {
     doc.descendants()
-        .find(|n| {
-            n.has_tag_name("citeertitel") && n.attribute("status") == Some("officieel")
-        })
+        .find(|n| n.has_tag_name("citeertitel") && n.attribute("status") == Some("officieel"))
         .and_then(|n| n.text())
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
@@ -184,7 +185,10 @@ mod tests {
         let doc = Document::parse(xml).unwrap();
         let metadata = parse_wti_metadata(&doc);
 
-        assert_eq!(metadata.regulatory_layer, RegulatoryLayer::MinisterieleRegeling);
+        assert_eq!(
+            metadata.regulatory_layer,
+            RegulatoryLayer::MinisterieleRegeling
+        );
     }
 
     #[test]

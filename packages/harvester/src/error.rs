@@ -67,6 +67,10 @@ pub enum HarvesterError {
     /// No BWB ID found in JCI reference.
     #[error("No BWB ID found in JCI reference: {0}")]
     InvalidJciReference(String),
+
+    /// HTTP response too large.
+    #[error("HTTP response too large: {actual_bytes} bytes exceeds limit of {max_bytes} bytes")]
+    ResponseTooLarge { max_bytes: u64, actual_bytes: u64 },
 }
 
 /// Result type alias for harvester operations.
@@ -89,10 +93,7 @@ mod tests {
             tag_name: "foo".to_string(),
             context: Some("artikel".to_string()),
         };
-        assert_eq!(
-            err.to_string(),
-            "No handler for element <foo> in artikel"
-        );
+        assert_eq!(err.to_string(), "No handler for element <foo> in artikel");
     }
 
     #[test]

@@ -10,8 +10,12 @@ use crate::xml::{find_by_path, get_text};
 /// Implementations determine where to split and how to extract numbers.
 pub trait SplitStrategy {
     /// Determine if this element should produce a component.
-    fn should_split_here(&self, node: Node<'_, '_>, spec: &ElementSpec, context: &SplitContext)
-        -> bool;
+    fn should_split_here(
+        &self,
+        node: Node<'_, '_>,
+        spec: &ElementSpec,
+        context: &SplitContext,
+    ) -> bool;
 
     /// Extract the number/identifier for this element.
     fn get_number(&self, node: Node<'_, '_>, spec: &ElementSpec) -> Option<String>;

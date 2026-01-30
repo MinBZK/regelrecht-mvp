@@ -63,10 +63,7 @@ impl ElementSpec {
 
     /// Set the content tags.
     #[must_use]
-    pub fn with_content_tags(
-        mut self,
-        tags: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
+    pub fn with_content_tags(mut self, tags: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.content_tags = tags.into_iter().map(Into::into).collect();
         self
     }
@@ -119,7 +116,11 @@ pub struct SplitContext {
 impl SplitContext {
     /// Create a new split context.
     #[must_use]
-    pub fn new(bwb_id: impl Into<String>, date: impl Into<String>, base_url: impl Into<String>) -> Self {
+    pub fn new(
+        bwb_id: impl Into<String>,
+        date: impl Into<String>,
+        base_url: impl Into<String>,
+    ) -> Self {
         Self {
             bwb_id: bwb_id.into(),
             date: date.into(),
@@ -170,7 +171,11 @@ pub struct ArticleComponent {
 impl ArticleComponent {
     /// Create a new article component.
     #[must_use]
-    pub fn new(number_parts: Vec<String>, text: impl Into<String>, base_url: impl Into<String>) -> Self {
+    pub fn new(
+        number_parts: Vec<String>,
+        text: impl Into<String>,
+        base_url: impl Into<String>,
+    ) -> Self {
         Self {
             number_parts,
             text: text.into(),
@@ -275,12 +280,9 @@ mod tests {
 
     #[test]
     fn test_article_component_to_number_with_bijlage_prefix() {
-        let component = ArticleComponent::new(
-            vec!["1".to_string(), "a".to_string()],
-            "test",
-            "url",
-        )
-        .with_bijlage_prefix(Some("B1".to_string()));
+        let component =
+            ArticleComponent::new(vec!["1".to_string(), "a".to_string()], "test", "url")
+                .with_bijlage_prefix(Some("B1".to_string()));
         assert_eq!(component.to_number(), "B1:1.a");
     }
 
@@ -294,12 +296,9 @@ mod tests {
     #[test]
     fn test_article_component_to_article() {
         let references = vec![Reference::new("ref1", "BWBR0018451")];
-        let component = ArticleComponent::new(
-            vec!["1".to_string()],
-            "Article text",
-            "https://example.com",
-        )
-        .with_references(references);
+        let component =
+            ArticleComponent::new(vec!["1".to_string()], "Article text", "https://example.com")
+                .with_references(references);
 
         let article = component.to_article();
         assert_eq!(article.number, "1");

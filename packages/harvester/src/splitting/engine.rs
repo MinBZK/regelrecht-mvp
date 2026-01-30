@@ -116,9 +116,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
 
         // Extract intro text before structural children
         if self.strategy.should_split_here(node, spec, context) {
-            if let Some(intro) =
-                self.extract_intro_text(node, spec, context, structural_children)
-            {
+            if let Some(intro) = self.extract_intro_text(node, spec, context, structural_children) {
                 components.push(intro);
             }
         }
@@ -248,9 +246,12 @@ impl<S: SplitStrategy> SplitEngine<S> {
     /// This processes `<extref>`, `<intref>`, `<nadruk>`, and other inline
     /// elements through their registered handlers, enabling proper markdown
     /// link generation and reference collection.
-    fn extract_inline_text(&self, node: Node<'_, '_>, collector: &mut ReferenceCollector) -> String {
-        let mut parse_context =
-            ParseContext::new("", "").with_collector(collector);
+    fn extract_inline_text(
+        &self,
+        node: Node<'_, '_>,
+        collector: &mut ReferenceCollector,
+    ) -> String {
+        let mut parse_context = ParseContext::new("", "").with_collector(collector);
 
         // Try to parse using the registry engine
         if let Ok(result) = self.parse_engine.parse(node, &mut parse_context) {
@@ -262,7 +263,11 @@ impl<S: SplitStrategy> SplitEngine<S> {
     }
 
     /// Simple text extraction fallback.
-    fn extract_simple_text(&self, node: Node<'_, '_>, collector: &mut ReferenceCollector) -> String {
+    fn extract_simple_text(
+        &self,
+        node: Node<'_, '_>,
+        collector: &mut ReferenceCollector,
+    ) -> String {
         let mut text = String::new();
 
         if let Some(t) = node.text() {
@@ -431,7 +436,9 @@ mod tests {
 
         assert_eq!(components.len(), 1);
         // Should contain markdown link
-        assert!(components[0].text.contains("[artikel 1 van de Zorgverzekeringswet][ref1]"));
+        assert!(components[0]
+            .text
+            .contains("[artikel 1 van de Zorgverzekeringswet][ref1]"));
         // Should have reference definition
         assert!(components[0].references.len() == 1);
         assert_eq!(components[0].references[0].id, "ref1");

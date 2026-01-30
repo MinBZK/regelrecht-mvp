@@ -36,10 +36,7 @@ pub fn download_law(bwb_id: &str, date: &str) -> Result<Law> {
     // Parse articles from content
     let articles = parse_articles(&content_xml, bwb_id, date)?;
 
-    Ok(Law {
-        metadata,
-        articles,
-    })
+    Ok(Law { metadata, articles })
 }
 
 /// Parse articles from content XML.
@@ -57,15 +54,15 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
     let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
 
     // Find all artikel elements
-    for artikel in doc.descendants().filter(|n| n.is_element() && get_tag_name(*n) == "artikel") {
+    for artikel in doc
+        .descendants()
+        .filter(|n| n.is_element() && get_tag_name(*n) == "artikel")
+    {
         // Get article number
         let artikel_nr = if let Some(nr_node) = find_by_path(artikel, "kop/nr") {
             get_text(nr_node)
         } else if let Some(label) = artikel.attribute("label") {
-            label
-                .strip_prefix("Artikel ")
-                .unwrap_or(label)
-                .to_string()
+            label.strip_prefix("Artikel ").unwrap_or(label).to_string()
         } else {
             continue; // Skip articles without number
         };
@@ -97,7 +94,9 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
 
 /// Extract the aanhef (preamble) as an article.
 fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Article> {
-    let aanhef = doc.descendants().find(|n| n.is_element() && get_tag_name(*n) == "aanhef")?;
+    let aanhef = doc
+        .descendants()
+        .find(|n| n.is_element() && get_tag_name(*n) == "aanhef")?;
 
     let mut parts: Vec<String> = Vec::new();
 
@@ -113,7 +112,10 @@ fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Articl
 
     // Extract <considerans> elements
     if let Some(considerans) = find_children(aanhef, "considerans").next() {
-        for al in considerans.descendants().filter(|n| n.is_element() && get_tag_name(*n) == "considerans.al") {
+        for al in considerans
+            .descendants()
+            .filter(|n| n.is_element() && get_tag_name(*n) == "considerans.al")
+        {
             let text = extract_simple_text(al);
             if !text.is_empty() {
                 parts.push(text);

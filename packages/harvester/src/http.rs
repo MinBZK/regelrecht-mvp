@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use reqwest::blocking::Client;
 
-use crate::config::HTTP_TIMEOUT_SECS;
+use crate::config::{HTTP_TIMEOUT_SECS, MAX_RESPONSE_SIZE};
 use crate::error::{HarvesterError, Result};
 
 /// User agent string identifying this harvester.
@@ -68,7 +68,27 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
 
                 // Don't retry client errors (4xx) - they won't succeed
                 let response = response.error_for_status()?;
+
+                // Check Content-Length header before downloading
+                if let Some(content_length) = response.content_length() {
+                    if content_length > MAX_RESPONSE_SIZE {
+                        return Err(HarvesterError::ResponseTooLarge {
+                            max_bytes: MAX_RESPONSE_SIZE,
+                            actual_bytes: content_length,
+                        });
+                    }
+                }
+
                 let bytes = response.bytes()?;
+
+                // Also check actual size (Content-Length may be missing or wrong)
+                if bytes.len() as u64 > MAX_RESPONSE_SIZE {
+                    return Err(HarvesterError::ResponseTooLarge {
+                        max_bytes: MAX_RESPONSE_SIZE,
+                        actual_bytes: bytes.len() as u64,
+                    });
+                }
+
                 return Ok(bytes.to_vec());
             }
             Err(e) => {
@@ -96,6 +116,26 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
     })
 }
 
+/// Convert bytes to a string, preferring strict UTF-8 but falling back to lossy conversion.
+///
+/// Logs a warning if the input contains invalid UTF-8 sequences.
+///
+/// # Arguments
+/// * `bytes` - The bytes to convert
+/// * `source` - Description of the source for logging purposes
+///
+/// # Returns
+/// A valid UTF-8 string
+pub fn bytes_to_string(bytes: &[u8], source: &str) -> String {
+    match String::from_utf8(bytes.to_vec()) {
+        Ok(s) => s,
+        Err(_) => {
+            tracing::warn!(source = %source, "Invalid UTF-8, using lossy conversion");
+            String::from_utf8_lossy(bytes).into_owned()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,5 +144,20 @@ mod tests {
     fn test_create_client() {
         let client = create_client();
         assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_bytes_to_string_valid_utf8() {
+        let bytes = "Hello, world!".as_bytes();
+        let result = bytes_to_string(bytes, "test");
+        assert_eq!(result, "Hello, world!");
+    }
+
+    #[test]
+    fn test_bytes_to_string_invalid_utf8() {
+        let bytes = [0xff, 0xfe, 0x48, 0x65, 0x6c, 0x6c, 0x6f]; // Invalid UTF-8 prefix + "Hello"
+        let result = bytes_to_string(&bytes, "test");
+        // Should not panic, should return something
+        assert!(!result.is_empty());
     }
 }

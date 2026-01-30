@@ -28,7 +28,11 @@ impl ElementRegistry {
     }
 
     /// Register a handler for a specific tag name.
-    pub fn register(&mut self, tag_name: impl Into<String>, handler: impl ElementHandler + 'static) {
+    pub fn register(
+        &mut self,
+        tag_name: impl Into<String>,
+        handler: impl ElementHandler + 'static,
+    ) {
         self.handlers.insert(tag_name.into(), Box::new(handler));
     }
 

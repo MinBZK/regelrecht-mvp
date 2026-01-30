@@ -1,8 +1,20 @@
 //! Text wrapping utilities for YAML output.
 
+use regex::Regex;
+use std::sync::LazyLock;
 use textwrap::{fill, Options};
 
 use crate::config::TEXT_WRAP_WIDTH;
+
+/// Regex pattern for reference-style links [text][refN].
+#[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid
+static REFERENCE_LINK_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[[^\]]+\]\[ref\d+\]").expect("valid regex"));
+
+/// Check if text contains reference-style links that would be broken by wrapping.
+fn contains_reference_link(text: &str) -> bool {
+    REFERENCE_LINK_PATTERN.is_match(text)
+}
 
 /// Wrap text at specified width, preserving paragraph breaks and reference definitions.
 ///
@@ -46,12 +58,22 @@ pub fn wrap_text(text: &str, width: usize) -> String {
         content_lines.insert(0, empty);
     }
 
-    // Wrap content paragraphs
+    // Wrap content paragraphs, but skip paragraphs containing reference-style links
     let content_text = content_lines.join("\n");
     let paragraphs: Vec<&str> = content_text.split("\n\n").collect();
 
     let options = Options::new(width);
-    let wrapped: Vec<String> = paragraphs.iter().map(|p| fill(p, &options)).collect();
+    let wrapped: Vec<String> = paragraphs
+        .iter()
+        .map(|p| {
+            if contains_reference_link(p) {
+                // Don't wrap paragraphs with reference links - wrapping could break them
+                (*p).to_string()
+            } else {
+                fill(p, &options)
+            }
+        })
+        .collect();
 
     let wrapped_content = wrapped.join("\n\n");
 
@@ -115,5 +137,28 @@ mod tests {
     fn test_should_wrap_text_with_links() {
         let text = "Text with [link](url)";
         assert!(should_wrap_text(text));
+    }
+
+    #[test]
+    fn test_contains_reference_link() {
+        assert!(contains_reference_link(
+            "See [article 4][ref1] for details."
+        ));
+        assert!(contains_reference_link(
+            "Multiple [ref][ref1] and [other][ref2] links."
+        ));
+        assert!(!contains_reference_link("No reference links here."));
+        assert!(!contains_reference_link(
+            "[link](url) is inline, not reference."
+        ));
+    }
+
+    #[test]
+    fn test_wrap_text_skips_reference_links() {
+        // A very long line with a reference link should not be wrapped
+        let text = "This is a very long paragraph that contains a reference link like [article 4 of the Zorgverzekeringswet][ref1] which should not be broken across lines because that would invalidate the markdown.";
+        let wrapped = wrap_text(text, 40);
+        // The reference link should still be intact
+        assert!(wrapped.contains("[article 4 of the Zorgverzekeringswet][ref1]"));
     }
 }

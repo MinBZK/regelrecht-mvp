@@ -6,7 +6,7 @@ use reqwest::blocking::Client;
 
 use crate::config::content_url;
 use crate::error::{HarvesterError, Result};
-use crate::http::download_bytes;
+use crate::http::{bytes_to_string, download_bytes};
 
 /// Download content XML for a law at a specific date.
 ///
@@ -34,7 +34,10 @@ pub fn download_content_xml(client: &Client, bwb_id: &str, date: &str) -> Result
         }
     })?;
 
-    Ok(String::from_utf8_lossy(&bytes).into_owned())
+    Ok(bytes_to_string(
+        &bytes,
+        &format!("content XML for {bwb_id}"),
+    ))
 }
 
 #[cfg(test)]
