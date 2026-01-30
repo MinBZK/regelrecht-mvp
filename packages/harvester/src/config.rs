@@ -139,10 +139,22 @@ pub fn content_url(bwb_id: &str, date: &str) -> String {
 /// * `bwb_id` - The BWB identifier
 /// * `date` - Optional effective date
 /// * `article` - Optional article number for fragment
+/// * `chapter` - Optional chapter (hoofdstuk) for fragment
+/// * `section` - Optional section (afdeling) for fragment
+/// * `paragraph` - Optional paragraph (paragraaf) for fragment
+///
+/// Anchor priority: artikel > hoofdstuk > afdeling > paragraaf
 ///
 /// # Returns
 /// Public URL to wetten.overheid.nl
-pub fn wetten_url(bwb_id: &str, date: Option<&str>, article: Option<&str>) -> String {
+pub fn wetten_url(
+    bwb_id: &str,
+    date: Option<&str>,
+    article: Option<&str>,
+    chapter: Option<&str>,
+    section: Option<&str>,
+    paragraph: Option<&str>,
+) -> String {
     let mut url = format!("https://wetten.overheid.nl/{bwb_id}");
 
     if let Some(d) = date {
@@ -150,9 +162,19 @@ pub fn wetten_url(bwb_id: &str, date: Option<&str>, article: Option<&str>) -> St
         url.push_str(d);
     }
 
+    // Anchor priority: artikel > hoofdstuk > afdeling > paragraaf
     if let Some(a) = article {
         url.push_str("#Artikel");
         url.push_str(&a.replace(' ', "_"));
+    } else if let Some(h) = chapter {
+        url.push_str("#Hoofdstuk");
+        url.push_str(&h.replace(' ', "_"));
+    } else if let Some(a) = section {
+        url.push_str("#Afdeling");
+        url.push_str(&a.replace(' ', "_"));
+    } else if let Some(p) = paragraph {
+        url.push_str("#Paragraaf");
+        url.push_str(&p.replace(' ', "_"));
     }
 
     url
@@ -219,24 +241,69 @@ mod tests {
     #[test]
     fn test_wetten_url() {
         assert_eq!(
-            wetten_url("BWBR0018451", None, None),
+            wetten_url("BWBR0018451", None, None, None, None, None),
             "https://wetten.overheid.nl/BWBR0018451"
         );
 
         assert_eq!(
-            wetten_url("BWBR0018451", Some("2025-01-01"), None),
+            wetten_url("BWBR0018451", Some("2025-01-01"), None, None, None, None),
             "https://wetten.overheid.nl/BWBR0018451/2025-01-01"
         );
 
         assert_eq!(
-            wetten_url("BWBR0018451", Some("2025-01-01"), Some("1")),
+            wetten_url("BWBR0018451", Some("2025-01-01"), Some("1"), None, None, None),
             "https://wetten.overheid.nl/BWBR0018451/2025-01-01#Artikel1"
         );
 
         // Test space replacement in article numbers
         assert_eq!(
-            wetten_url("BWBR0018451", Some("2025-01-01"), Some("A 1")),
+            wetten_url("BWBR0018451", Some("2025-01-01"), Some("A 1"), None, None, None),
             "https://wetten.overheid.nl/BWBR0018451/2025-01-01#ArtikelA_1"
+        );
+    }
+
+    #[test]
+    fn test_wetten_url_chapter() {
+        assert_eq!(
+            wetten_url("BWBR0009950", None, None, Some("5a"), None, None),
+            "https://wetten.overheid.nl/BWBR0009950#Hoofdstuk5a"
+        );
+    }
+
+    #[test]
+    fn test_wetten_url_section() {
+        assert_eq!(
+            wetten_url("BWBR0009950", None, None, None, Some("3.1"), None),
+            "https://wetten.overheid.nl/BWBR0009950#Afdeling3.1"
+        );
+    }
+
+    #[test]
+    fn test_wetten_url_paragraph() {
+        assert_eq!(
+            wetten_url("BWBR0009950", None, None, None, None, Some("2")),
+            "https://wetten.overheid.nl/BWBR0009950#Paragraaf2"
+        );
+    }
+
+    #[test]
+    fn test_wetten_url_anchor_priority() {
+        // Article takes priority over chapter
+        assert_eq!(
+            wetten_url("BWBR0009950", None, Some("1"), Some("5a"), None, None),
+            "https://wetten.overheid.nl/BWBR0009950#Artikel1"
+        );
+
+        // Chapter takes priority over section
+        assert_eq!(
+            wetten_url("BWBR0009950", None, None, Some("5a"), Some("3.1"), None),
+            "https://wetten.overheid.nl/BWBR0009950#Hoofdstuk5a"
+        );
+
+        // Section takes priority over paragraph
+        assert_eq!(
+            wetten_url("BWBR0009950", None, None, None, Some("3.1"), Some("2")),
+            "https://wetten.overheid.nl/BWBR0009950#Afdeling3.1"
         );
     }
 }

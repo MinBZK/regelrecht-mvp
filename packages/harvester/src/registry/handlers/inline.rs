@@ -49,13 +49,30 @@ static AFDELING_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"afdeling=([^&]+)").expect("valid regex"));
 
 /// Convert JCI reference to wetten.overheid.nl URL.
+///
+/// Anchor priority: artikel > hoofdstuk > afdeling > paragraaf
 fn convert_jci_to_url(jci_ref: &str) -> String {
     if let Some(bwb_match) = BWB_PATTERN.find(jci_ref) {
         let bwb_id = bwb_match.as_str();
+
+        // Check anchors in priority order
         if let Some(caps) = ARTIKEL_PATTERN.captures(jci_ref) {
-            let artikel = &caps[1];
+            let artikel = caps[1].replace(' ', "_");
             return format!("https://wetten.overheid.nl/{bwb_id}#Artikel{artikel}");
         }
+        if let Some(caps) = HOOFDSTUK_PATTERN.captures(jci_ref) {
+            let hoofdstuk = caps[1].replace(' ', "_");
+            return format!("https://wetten.overheid.nl/{bwb_id}#Hoofdstuk{hoofdstuk}");
+        }
+        if let Some(caps) = AFDELING_PATTERN.captures(jci_ref) {
+            let afdeling = caps[1].replace(' ', "_");
+            return format!("https://wetten.overheid.nl/{bwb_id}#Afdeling{afdeling}");
+        }
+        if let Some(caps) = PARAGRAAF_PATTERN.captures(jci_ref) {
+            let paragraaf = caps[1].replace(' ', "_");
+            return format!("https://wetten.overheid.nl/{bwb_id}#Paragraaf{paragraaf}");
+        }
+
         return format!("https://wetten.overheid.nl/{bwb_id}");
     }
     jci_ref.to_string()
@@ -256,6 +273,50 @@ mod tests {
         assert_eq!(
             convert_jci_to_url("jci1.3:c:BWBR0018451"),
             "https://wetten.overheid.nl/BWBR0018451"
+        );
+    }
+
+    #[test]
+    fn test_convert_jci_to_url_chapter() {
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0009950&hoofdstuk=5a"),
+            "https://wetten.overheid.nl/BWBR0009950#Hoofdstuk5a"
+        );
+
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0009950&hoofdstuk=5c"),
+            "https://wetten.overheid.nl/BWBR0009950#Hoofdstuk5c"
+        );
+    }
+
+    #[test]
+    fn test_convert_jci_to_url_section() {
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0009950&afdeling=3.1"),
+            "https://wetten.overheid.nl/BWBR0009950#Afdeling3.1"
+        );
+    }
+
+    #[test]
+    fn test_convert_jci_to_url_paragraph() {
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0009950&paragraaf=2"),
+            "https://wetten.overheid.nl/BWBR0009950#Paragraaf2"
+        );
+    }
+
+    #[test]
+    fn test_convert_jci_to_url_priority() {
+        // Article takes priority over chapter
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0009950&hoofdstuk=5a&artikel=1"),
+            "https://wetten.overheid.nl/BWBR0009950#Artikel1"
+        );
+
+        // Chapter takes priority over section
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0009950&afdeling=3.1&hoofdstuk=5a"),
+            "https://wetten.overheid.nl/BWBR0009950#Hoofdstuk5a"
         );
     }
 

@@ -72,7 +72,7 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
 
         // Build base URL
         let artikel_nr_url = artikel_nr.replace(' ', "_");
-        let base_url = wetten_url(bwb_id, Some(date), Some(&artikel_nr_url));
+        let base_url = wetten_url(bwb_id, Some(date), Some(&artikel_nr_url), None, None, None);
 
         // Create split context
         let context = SplitContext::new(bwb_id, date, base_url);
@@ -130,7 +130,7 @@ fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Articl
     }
 
     let aanhef_text = parts.join("\n\n");
-    let aanhef_url = wetten_url(bwb_id, Some(date), Some("Aanhef"));
+    let aanhef_url = wetten_url(bwb_id, Some(date), Some("Aanhef"), None, None, None);
 
     Some(Article {
         number: "aanhef".to_string(),

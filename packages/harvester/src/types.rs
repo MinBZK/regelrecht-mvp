@@ -204,7 +204,14 @@ impl Reference {
     /// * `date` - Optional date for versioned URL
     #[must_use]
     pub fn to_wetten_url(&self, date: Option<&str>) -> String {
-        wetten_url(&self.bwb_id, date, self.artikel.as_deref())
+        wetten_url(
+            &self.bwb_id,
+            date,
+            self.artikel.as_deref(),
+            self.hoofdstuk.as_deref(),
+            self.afdeling.as_deref(),
+            self.paragraaf.as_deref(),
+        )
     }
 }
 
@@ -381,6 +388,83 @@ mod tests {
         assert_eq!(
             reference.to_wetten_url(None),
             "https://wetten.overheid.nl/BWBR0018451#Artikel4"
+        );
+    }
+
+    #[test]
+    fn test_reference_to_wetten_url_chapter() {
+        let reference = Reference {
+            id: "ref1".to_string(),
+            bwb_id: "BWBR0009950".to_string(),
+            artikel: None,
+            lid: None,
+            onderdeel: None,
+            hoofdstuk: Some("5a".to_string()),
+            paragraaf: None,
+            afdeling: None,
+        };
+
+        assert_eq!(
+            reference.to_wetten_url(None),
+            "https://wetten.overheid.nl/BWBR0009950#Hoofdstuk5a"
+        );
+    }
+
+    #[test]
+    fn test_reference_to_wetten_url_section() {
+        let reference = Reference {
+            id: "ref1".to_string(),
+            bwb_id: "BWBR0009950".to_string(),
+            artikel: None,
+            lid: None,
+            onderdeel: None,
+            hoofdstuk: None,
+            paragraaf: None,
+            afdeling: Some("3.1".to_string()),
+        };
+
+        assert_eq!(
+            reference.to_wetten_url(None),
+            "https://wetten.overheid.nl/BWBR0009950#Afdeling3.1"
+        );
+    }
+
+    #[test]
+    fn test_reference_to_wetten_url_paragraph() {
+        let reference = Reference {
+            id: "ref1".to_string(),
+            bwb_id: "BWBR0009950".to_string(),
+            artikel: None,
+            lid: None,
+            onderdeel: None,
+            hoofdstuk: None,
+            paragraaf: Some("2".to_string()),
+            afdeling: None,
+        };
+
+        assert_eq!(
+            reference.to_wetten_url(None),
+            "https://wetten.overheid.nl/BWBR0009950#Paragraaf2"
+        );
+    }
+
+    #[test]
+    fn test_reference_to_wetten_url_priority() {
+        // Article takes priority over chapter
+        let reference = Reference {
+            id: "ref1".to_string(),
+            bwb_id: "BWBR0009950".to_string(),
+            artikel: Some("1".to_string()),
+            lid: None,
+            onderdeel: None,
+            hoofdstuk: Some("5a".to_string()),
+            paragraaf: None,
+            afdeling: None,
+        };
+
+        assert_eq!(
+            reference.to_wetten_url(None),
+            "https://wetten.overheid.nl/BWBR0009950#Artikel1"
         );
     }
 
