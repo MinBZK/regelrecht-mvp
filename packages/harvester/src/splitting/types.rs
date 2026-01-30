@@ -111,6 +111,9 @@ pub struct SplitContext {
 
     /// Optional maximum depth to split to.
     pub max_depth: Option<usize>,
+
+    /// Optional bijlage prefix (e.g., "B1", "B2") for articles in appendices.
+    pub bijlage_prefix: Option<String>,
 }
 
 impl SplitContext {
@@ -124,7 +127,15 @@ impl SplitContext {
             number_parts: Vec::new(),
             depth: 0,
             max_depth: None,
+            bijlage_prefix: None,
         }
+    }
+
+    /// Set the bijlage prefix for articles in appendices.
+    #[must_use]
+    pub fn with_bijlage_prefix(mut self, prefix: impl Into<String>) -> Self {
+        self.bijlage_prefix = Some(prefix.into());
+        self
     }
 
     /// Create a new context with an additional number part.
@@ -151,6 +162,9 @@ pub struct ArticleComponent {
 
     /// References contained in this component.
     pub references: Vec<Reference>,
+
+    /// Optional bijlage prefix (e.g., "B1", "B2") for articles in appendices.
+    pub bijlage_prefix: Option<String>,
 }
 
 impl ArticleComponent {
@@ -162,6 +176,7 @@ impl ArticleComponent {
             text: text.into(),
             base_url: base_url.into(),
             references: Vec::new(),
+            bijlage_prefix: None,
         }
     }
 
@@ -172,10 +187,24 @@ impl ArticleComponent {
         self
     }
 
-    /// Convert number parts to dot notation.
+    /// Set the bijlage prefix for articles in appendices.
+    #[must_use]
+    pub fn with_bijlage_prefix(mut self, prefix: Option<String>) -> Self {
+        self.bijlage_prefix = prefix;
+        self
+    }
+
+    /// Convert number parts to dot notation, including bijlage prefix if present.
+    ///
+    /// For regular articles: "1.1.a"
+    /// For bijlage articles: "B1:1.1.a"
     #[must_use]
     pub fn to_number(&self) -> String {
-        self.number_parts.join(".")
+        let base = self.number_parts.join(".");
+        match &self.bijlage_prefix {
+            Some(prefix) => format!("{prefix}:{base}"),
+            None => base,
+        }
     }
 
     /// Convert to `Article` object with reference definitions appended to text.
@@ -242,6 +271,24 @@ mod tests {
             "url",
         );
         assert_eq!(component.to_number(), "1.1.a");
+    }
+
+    #[test]
+    fn test_article_component_to_number_with_bijlage_prefix() {
+        let component = ArticleComponent::new(
+            vec!["1".to_string(), "a".to_string()],
+            "test",
+            "url",
+        )
+        .with_bijlage_prefix(Some("B1".to_string()));
+        assert_eq!(component.to_number(), "B1:1.a");
+    }
+
+    #[test]
+    fn test_split_context_with_bijlage_prefix() {
+        let ctx = SplitContext::new("BWBR0005537", "2025-01-01", "https://example.com")
+            .with_bijlage_prefix("B2");
+        assert_eq!(ctx.bijlage_prefix, Some("B2".to_string()));
     }
 
     #[test]
