@@ -60,13 +60,15 @@ impl SplitStrategy for LeafSplitStrategy {
             .or_else(|| nr.strip_suffix('°'))
             .or_else(|| nr.strip_suffix("°."))
             .unwrap_or(nr)
-            .trim()
-            .to_string();
+            .trim();
 
-        if nr.is_empty() {
+        // Filter out bullet-only markers (used for formula variables, not article numbers)
+        // Unicode bullet: U+2022 (•)
+        // These appear in laws like Participatiewet article 22a for formula variable definitions
+        if nr.is_empty() || nr == "•" {
             None
         } else {
-            Some(nr)
+            Some(nr.to_string())
         }
     }
 }
@@ -161,5 +163,32 @@ mod tests {
         let node = doc.root_element();
 
         assert_eq!(strategy.get_number(node, &spec), Some("2".to_string()));
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_bullet_only() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("li").with_number_source("li.nr");
+
+        // Bullet-only markers (used for formula variables like A, B in Participatiewet)
+        // should be treated as unnumbered, so content is extracted inline
+        let xml = "<li><li.nr>•</li.nr></li>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), None);
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_bullet_with_whitespace() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("li").with_number_source("li.nr");
+
+        // Bullet with surrounding whitespace should also be filtered
+        let xml = "<li><li.nr>  •  </li.nr></li>";
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), None);
     }
 }
