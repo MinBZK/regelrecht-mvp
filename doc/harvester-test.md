@@ -385,7 +385,7 @@ Hier worden alle gevonden issues bijgehouden met hun status.
 | 3 | WvS, Wet OB, AOW | Dash-marker lijsten worden gesplitst ipv inline gehouden | fixed | - |
 | 4 | WvS | Artikel vs lid naamconflict (420bis.1 vs 420bis lid 1) | open | - |
 | 5 | Wft | XML response te groot (>50MB) | open | - |
-| 6 | AOW | Vervallen artikelen krijgen leeg nummer | open | - |
+| 6 | AOW | Vervallen artikelen krijgen leeg nummer | fixed | - |
 
 **Issue status:** `open`, `in_progress`, `fixed`, `wont_fix`
 
@@ -395,7 +395,7 @@ Hier worden alle gevonden issues bijgehouden met hun status.
 
 1. ~~**Issue #3** (Ongemarkeerde lijsten) - Hoogste impact, raakt 5 wetten~~ **FIXED** - Dash-marker lijsten worden nu inline gehouden
 2. ~~**Issue #2** (Gefaseerde inwerkingtreding) - Raakt 2 wetten, structureel probleem~~ **FIXED** - Multi-versie artikelen worden als één component gehouden, redactioneel commentaar geëxcludeerd
-3. **Issue #6** (Lege nummers vervallen artikelen) - Eenvoudige fix
+3. ~~**Issue #6** (Lege nummers vervallen artikelen) - Eenvoudige fix~~ **FIXED** - Nummer uit label attribuut gehaald als kop/nr ontbreekt
 4. **Issue #1** (Meerdere lijsten in artikel) - Complex, raakt bijlagen
 5. **Issue #4** (Artikel/lid conflict) - Edge case in WvS
 6. **Issue #5** (HTTP size limit) - Configuratie aanpassing

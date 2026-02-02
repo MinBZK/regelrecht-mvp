@@ -49,12 +49,40 @@ impl SplitStrategy for LeafSplitStrategy {
     }
 
     fn get_number(&self, node: Node<'_, '_>, spec: &ElementSpec) -> Option<String> {
-        let source = spec.number_source.as_deref()?;
+        // Try primary number source first
+        if let Some(source) = spec.number_source.as_deref() {
+            if let Some(nr_node) = find_by_path(node, source) {
+                let nr = get_text(nr_node);
+                if let Some(cleaned) = self.clean_number(&nr) {
+                    return Some(cleaned);
+                }
+            }
+        }
 
-        // Find the number element using the path
-        let nr_node = find_by_path(node, source)?;
-        let nr = get_text(nr_node);
+        // Fallback: try label attribute for artikel elements (used by repealed articles)
+        // Repealed articles ("Vervallen") often lack <kop><nr> but retain the label attribute
+        // Example: <artikel label="Artikel 4"> with text "Vervallen"
+        if spec.tag == "artikel" {
+            if let Some(label) = node.attribute("label") {
+                if let Some(nr) = label.strip_prefix("Artikel ") {
+                    if let Some(cleaned) = self.clean_number(nr) {
+                        return Some(cleaned);
+                    }
+                }
+            }
+        }
 
+        None
+    }
+}
+
+impl LeafSplitStrategy {
+    /// Clean up and normalize an article number.
+    ///
+    /// - Removes trailing punctuation (period, degree symbol)
+    /// - Filters out bullet-only markers
+    /// - Transforms asterisk suffix to "_bis" for transition articles
+    fn clean_number(&self, nr: &str) -> Option<String> {
         // Clean up the number:
         // - Remove trailing punctuation (period, degree symbol for Dutch "1°", "2°")
         // - Trim whitespace
@@ -247,5 +275,45 @@ mod tests {
         let node = doc.root_element();
 
         assert_eq!(strategy.get_number(node, &spec), Some("78ee".to_string()));
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_from_label_fallback() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("artikel").with_number_source("kop/nr");
+
+        // Repealed articles ("Vervallen") often lack <kop><nr> but have label attribute
+        // The strategy should fall back to extracting the number from label
+        let xml = r#"<artikel label="Artikel 4"><al>Vervallen</al></artikel>"#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("4".to_string()));
+    }
+
+    #[test]
+    fn test_leaf_strategy_get_number_from_label_complex() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("artikel").with_number_source("kop/nr");
+
+        // Complex article numbers like "16a" should also work via label fallback
+        let xml = r#"<artikel label="Artikel 16a"><al>Vervallen</al></artikel>"#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("16a".to_string()));
+    }
+
+    #[test]
+    fn test_leaf_strategy_prefers_kop_nr_over_label() {
+        let strategy = LeafSplitStrategy;
+        let spec = ElementSpec::new("artikel").with_number_source("kop/nr");
+
+        // When both kop/nr and label exist, kop/nr should take precedence
+        let xml = r#"<artikel label="Artikel 5"><kop><nr>5</nr></kop></artikel>"#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root_element();
+
+        assert_eq!(strategy.get_number(node, &spec), Some("5".to_string()));
     }
 }
