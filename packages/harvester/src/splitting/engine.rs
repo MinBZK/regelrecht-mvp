@@ -88,7 +88,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 .filter(|child| {
                     child.is_element()
                         && get_tag_name(*child) == child_tag
-                        && !self.is_unmarked_list(*child)
+                        && !self.is_effectively_unmarked_list(*child)
                 })
                 .collect();
 
@@ -99,9 +99,53 @@ impl<S: SplitStrategy> SplitEngine<S> {
         Vec::new()
     }
 
-    /// Check if element is an unmarked list.
+    /// Check if element is an unmarked list (explicit attribute).
     fn is_unmarked_list(&self, node: Node<'_, '_>) -> bool {
         get_tag_name(node) == "lijst" && node.attribute("type") == Some("ongemarkeerd")
+    }
+
+    /// Check if a list is "effectively unmarked" - all items have non-addressable markers.
+    ///
+    /// This includes:
+    /// - Lists with `type="ongemarkeerd"` attribute
+    /// - Lists where ALL `li.nr` elements contain only bullets (•), dashes (–/-/—), or are empty
+    ///
+    /// These lists should be kept inline rather than split into separate components.
+    fn is_effectively_unmarked_list(&self, node: Node<'_, '_>) -> bool {
+        if get_tag_name(node) != "lijst" {
+            return false;
+        }
+
+        // Explicit ongemarkeerd attribute
+        if node.attribute("type") == Some("ongemarkeerd") {
+            return true;
+        }
+
+        // Check all li children - if ALL have non-addressable markers, treat as unmarked
+        let li_items: Vec<_> = node
+            .children()
+            .filter(|c| c.is_element() && get_tag_name(*c) == "li")
+            .collect();
+
+        if li_items.is_empty() {
+            return false;
+        }
+
+        li_items.iter().all(|li| {
+            let nr_text = li
+                .children()
+                .find(|c| c.is_element() && get_tag_name(*c) == "li.nr")
+                .and_then(|n| n.text())
+                .map(|s| s.trim())
+                .unwrap_or("");
+
+            // Non-addressable markers: empty, bullet, or various dash characters
+            nr_text.is_empty()
+                || nr_text == "•"
+                || nr_text == "–"  // en-dash
+                || nr_text == "-"  // hyphen
+                || nr_text == "—"  // em-dash
+        })
     }
 
     /// Process an element that has structural children.
@@ -211,8 +255,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 if !text.is_empty() {
                     parts.push(text);
                 }
-            } else if self.is_unmarked_list(child) {
-                // Extract text from unmarked lists inline
+            } else if self.is_effectively_unmarked_list(child) {
+                // Extract text from effectively unmarked lists inline
                 let text = self.extract_unmarked_list_text(child, &mut collector);
                 if !text.is_empty() {
                     parts.push(text);
@@ -661,6 +705,111 @@ mod tests {
         assert!(
             text.contains("2°") && text.contains("standplaats"),
             "Missing nested list item 2°"
+        );
+    }
+
+    #[test]
+    fn test_split_artikel_with_dash_list_inline() {
+        // Lists with dash markers should be kept inline, not split into separate components
+        // This fixes the issue where articles like Wetboek van Strafrecht 421.1.b
+        // were incorrectly split because dash-marked lists weren't recognized as unmarked
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>421</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>Intro text:</al>
+                <lijst>
+                    <li><li.nr>–</li.nr><al>first item;</al></li>
+                    <li><li.nr>–</li.nr><al>second item.</al></li>
+                </lijst>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0001854", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        // Should produce 1 component with all items inline (not split into 3)
+        assert_eq!(
+            components.len(),
+            1,
+            "Dash-marked list should be kept inline, not split"
+        );
+        assert!(
+            components[0].text.contains("first item"),
+            "Missing first list item"
+        );
+        assert!(
+            components[0].text.contains("second item"),
+            "Missing second list item"
+        );
+    }
+
+    #[test]
+    fn test_split_artikel_with_bullet_list_inline() {
+        // Lists with bullet markers (•) should also be kept inline
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>Requirements:</al>
+                <lijst>
+                    <li><li.nr>•</li.nr><al>requirement one;</al></li>
+                    <li><li.nr>•</li.nr><al>requirement two.</al></li>
+                </lijst>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(
+            components.len(),
+            1,
+            "Bullet-marked list should be kept inline"
+        );
+        assert!(components[0].text.contains("requirement one"));
+        assert!(components[0].text.contains("requirement two"));
+    }
+
+    #[test]
+    fn test_split_artikel_with_mixed_markers_still_splits() {
+        // A list with mixed markers (some addressable, some not) should still be split
+        // because the addressable items need their own components
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>Definitions:</al>
+                <lijst>
+                    <li><li.nr>a.</li.nr><al>first definition;</al></li>
+                    <li><li.nr>–</li.nr><al>note about definitions;</al></li>
+                    <li><li.nr>b.</li.nr><al>second definition.</al></li>
+                </lijst>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        // Should still split because not ALL items have non-addressable markers
+        assert!(
+            components.len() > 1,
+            "Mixed marker list should still be split"
         );
     }
 }
