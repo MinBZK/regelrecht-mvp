@@ -221,21 +221,28 @@ impl ElementHandler for AlHandler {
 
 /// Handler for `<redactie>` (editorial note) elements.
 ///
-/// Editorial notes indicate text that has been modified or replaced.
+/// Editorial notes are NOT law text - they are annotations from editors.
+/// Examples:
+/// - "Dit artikel is gewijzigd in verband met..."
+/// - "Voor overige gevallen luidt het artikel als volgt:"
+/// - "Vervallen."
+///
+/// These elements are SKIPPED (return empty text) during parsing.
 pub struct RedactieHandler;
 
 impl ElementHandler for RedactieHandler {
     fn element_type(&self) -> ElementType {
-        ElementType::Inline
+        ElementType::Skip // Editorial content is always skipped
     }
 
     fn handle<'a, 'input>(
         &self,
-        node: Node<'a, 'input>,
-        context: &mut ParseContext<'_>,
-        recurse: &RecurseFn<'a, 'input>,
+        _node: Node<'a, 'input>,
+        _context: &mut ParseContext<'_>,
+        _recurse: &RecurseFn<'a, 'input>,
     ) -> ParseResult {
-        ParseResult::new(extract_text_with_tail(node, context, recurse))
+        // Return empty - editorial content is not law text
+        ParseResult::empty()
     }
 }
 

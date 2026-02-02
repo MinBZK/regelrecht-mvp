@@ -51,6 +51,15 @@ impl<S: SplitStrategy> SplitEngine<S> {
             context
         };
 
+        // Multi-version articles: extract as single component, don't split by lid
+        // These have <tussenkop> elements that separate different versions
+        if tag == "artikel" && self.has_version_separator(node) {
+            if let Some(component) = self.extract_full_article_content(node, spec, &context) {
+                return vec![component];
+            }
+            return Vec::new();
+        }
+
         // Find structural children
         let structural_children = self.find_structural_children(node, spec);
 
@@ -102,6 +111,28 @@ impl<S: SplitStrategy> SplitEngine<S> {
     /// Check if element is an unmarked list (explicit attribute).
     fn is_unmarked_list(&self, node: Node<'_, '_>) -> bool {
         get_tag_name(node) == "lijst" && node.attribute("type") == Some("ongemarkeerd")
+    }
+
+    /// Check if an artikel contains multiple versions (phased implementation).
+    ///
+    /// Articles with "gefaseerde inwerkingtreding" (phased implementation) contain
+    /// multiple versions of the same content separated by `<tussenkop>` elements.
+    /// These articles should NOT be split by lid to avoid duplicate numbers.
+    fn has_version_separator(&self, node: Node<'_, '_>) -> bool {
+        node.children()
+            .any(|c| c.is_element() && get_tag_name(c) == "tussenkop")
+    }
+
+    /// Check if a node is editorial content (not law text).
+    ///
+    /// `<redactie>` elements contain editorial annotations like:
+    /// - "Dit artikel is gewijzigd in verband met..."
+    /// - "Voor overige gevallen luidt het artikel als volgt:"
+    /// - "Vervallen."
+    ///
+    /// These must be excluded from extracted text as they are NOT part of the law.
+    fn is_editorial_content(&self, node: Node<'_, '_>) -> bool {
+        get_tag_name(node) == "redactie"
     }
 
     /// Check if a list is "effectively unmarked" - all items have non-addressable markers.
@@ -285,16 +316,158 @@ impl<S: SplitStrategy> SplitEngine<S> {
         )
     }
 
+    /// Extract full article content without splitting by lid.
+    ///
+    /// Used for articles with multiple versions (gefaseerde inwerkingtreding).
+    /// These contain `<tussenkop>` elements that separate different versions
+    /// and should NOT be split into individual lid components.
+    fn extract_full_article_content(
+        &self,
+        node: Node<'_, '_>,
+        spec: &ElementSpec,
+        context: &SplitContext,
+    ) -> Option<ArticleComponent> {
+        let mut collector = ReferenceCollector::new();
+        let mut parts: Vec<String> = Vec::new();
+
+        for child in node.children() {
+            if !child.is_element() {
+                continue;
+            }
+
+            let child_tag = get_tag_name(child);
+
+            // Skip kop (number already extracted)
+            if spec.skip_for_number.contains(&child_tag.to_string()) {
+                continue;
+            }
+
+            // Skip meta-data elements
+            if child_tag == "meta-data" {
+                continue;
+            }
+
+            // Extract content recursively (extract_inline_text already skips redactie)
+            let text = self.extract_element_recursive(child, &mut collector);
+            if !text.is_empty() {
+                parts.push(text);
+            }
+        }
+
+        if parts.is_empty() {
+            return None;
+        }
+
+        Some(
+            ArticleComponent::new(
+                context.number_parts.clone(),
+                parts.join("\n\n").trim().to_string(),
+                context.base_url.clone(),
+            )
+            .with_bijlage_prefix(context.bijlage_prefix.clone())
+            .with_references(collector.into_references()),
+        )
+    }
+
+    /// Recursively extract text from an element and its children.
+    ///
+    /// Handles nested structures like lid > al, lijst > li > al, etc.
+    /// Editorial content is automatically skipped.
+    fn extract_element_recursive(
+        &self,
+        node: Node<'_, '_>,
+        collector: &mut ReferenceCollector,
+    ) -> String {
+        let tag = get_tag_name(node);
+
+        // Skip editorial content
+        if self.is_editorial_content(node) {
+            return String::new();
+        }
+
+        // Skip tussenkop - it's just a version separator, not content
+        if tag == "tussenkop" {
+            return String::new();
+        }
+
+        // Skip meta-data
+        if tag == "meta-data" {
+            return String::new();
+        }
+
+        // Content elements - extract inline text
+        if tag == "al" {
+            return self.extract_inline_text(node, collector);
+        }
+
+        // Structural elements - recurse into children
+        if tag == "lid" || tag == "lijst" || tag == "li" {
+            let mut parts: Vec<String> = Vec::new();
+
+            // For lid, include the lid number as prefix
+            if tag == "lid" {
+                if let Some(nr) = node
+                    .children()
+                    .find(|c| c.is_element() && get_tag_name(*c) == "lidnr")
+                    .and_then(|n| n.text())
+                {
+                    parts.push(nr.trim().to_string());
+                }
+            }
+
+            // For li, include the li.nr as prefix
+            if tag == "li" {
+                if let Some(nr) = node
+                    .children()
+                    .find(|c| c.is_element() && get_tag_name(*c) == "li.nr")
+                    .and_then(|n| n.text())
+                {
+                    parts.push(nr.trim().to_string());
+                }
+            }
+
+            for child in node.children() {
+                if !child.is_element() {
+                    continue;
+                }
+
+                let child_tag = get_tag_name(child);
+
+                // Skip number elements - already handled above
+                if child_tag == "lidnr" || child_tag == "li.nr" {
+                    continue;
+                }
+
+                let text = self.extract_element_recursive(child, collector);
+                if !text.is_empty() {
+                    parts.push(text);
+                }
+            }
+
+            return parts.join(" ");
+        }
+
+        // Unknown element - try inline extraction
+        self.extract_inline_text(node, collector)
+    }
+
     /// Extract inline text from an element using the registry handlers.
     ///
     /// This processes `<extref>`, `<intref>`, `<nadruk>`, and other inline
     /// elements through their registered handlers, enabling proper markdown
     /// link generation and reference collection.
+    ///
+    /// Editorial content (`<redactie>`) is always skipped - it's not law text.
     fn extract_inline_text(
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
     ) -> String {
+        // Skip editorial content - not law text
+        if self.is_editorial_content(node) {
+            return String::new();
+        }
+
         let mut parse_context = ParseContext::new("", "").with_collector(collector);
 
         // Try to parse using the registry engine
@@ -307,11 +480,18 @@ impl<S: SplitStrategy> SplitEngine<S> {
     }
 
     /// Simple text extraction fallback.
+    ///
+    /// Editorial content (`<redactie>`) is always skipped - it's not law text.
     fn extract_simple_text(
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
     ) -> String {
+        // Skip editorial content - not law text
+        if self.is_editorial_content(node) {
+            return String::new();
+        }
+
         let mut text = String::new();
 
         if let Some(t) = node.text() {
@@ -811,5 +991,126 @@ mod tests {
             components.len() > 1,
             "Mixed marker list should still be split"
         );
+    }
+
+    #[test]
+    fn test_split_artikel_excludes_redactie() {
+        // Editorial content (<redactie>) should not appear in extracted text
+        // as it's not law text but editorial annotations
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <al><redactie type="extra">This is editorial, not law text.</redactie></al>
+            <al>This is actual law text.</al>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        assert!(
+            !components[0].text.contains("editorial"),
+            "Editorial content should be excluded"
+        );
+        assert!(
+            components[0].text.contains("actual law text"),
+            "Law text should be present"
+        );
+    }
+
+    #[test]
+    fn test_split_artikel_with_multiple_versions_stays_together() {
+        // Articles with gefaseerde inwerkingtreding (phased implementation) contain
+        // multiple versions separated by <tussenkop>. They should stay as one component.
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>8:36c</nr></kop>
+            <al><redactie type="extra">Editorial note about this article.</redactie></al>
+            <lid>
+                <lidnr>1</lidnr>
+                <al>Version 1 lid 1 text.</al>
+            </lid>
+            <lid>
+                <lidnr>2</lidnr>
+                <al>Version 1 lid 2 text.</al>
+            </lid>
+            <al><redactie type="extra">Voor overige gevallen luidt het artikel als volgt:</redactie></al>
+            <tussenkop>Artikel 8:36c.</tussenkop>
+            <lid>
+                <lidnr>1</lidnr>
+                <al>Version 2 lid 1 text.</al>
+            </lid>
+            <lid>
+                <lidnr>2</lidnr>
+                <al>Version 2 lid 2 text.</al>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0005537", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        // Single component with both versions
+        assert_eq!(
+            components.len(),
+            1,
+            "Multi-version article should be a single component"
+        );
+        assert_eq!(components[0].to_number(), "8:36c");
+
+        // Both versions should be present
+        assert!(
+            components[0].text.contains("Version 1 lid 1"),
+            "Version 1 content should be present"
+        );
+        assert!(
+            components[0].text.contains("Version 2 lid 1"),
+            "Version 2 content should be present"
+        );
+
+        // Editorial content should be excluded
+        assert!(
+            !components[0].text.contains("Editorial note"),
+            "Editorial note should be excluded"
+        );
+        assert!(
+            !components[0].text.contains("overige gevallen"),
+            "Editorial separator should be excluded"
+        );
+    }
+
+    #[test]
+    fn test_split_artikel_redactie_in_lid() {
+        // Redactie inside lid elements should also be excluded
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>5</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>Actual paragraph text.</al>
+                <al><redactie type="vervanging">Vervallen.</redactie></al>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        assert!(
+            !components[0].text.contains("Vervallen"),
+            "Editorial 'Vervallen' should be excluded"
+        );
+        assert!(components[0].text.contains("Actual paragraph text"));
     }
 }
