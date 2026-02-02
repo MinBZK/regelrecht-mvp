@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use super::text::{should_wrap_text, wrap_text_default};
+use super::text::{normalize_text, should_wrap_text, wrap_text_default};
 use crate::config::SCHEMA_URL;
 use crate::error::Result;
 use crate::types::{Law, Reference};
@@ -78,10 +78,14 @@ fn generate_yaml_struct(law: &Law, effective_date: &str) -> YamlLaw {
         .articles
         .iter()
         .map(|article| {
-            let text = if should_wrap_text(&article.text) {
-                wrap_text_default(&article.text)
+            // First normalize the text to fix typographical issues from source XML
+            let normalized = normalize_text(&article.text);
+
+            // Then wrap if needed
+            let text = if should_wrap_text(&normalized) {
+                wrap_text_default(&normalized)
             } else {
-                article.text.clone()
+                normalized
             };
 
             YamlArticle {

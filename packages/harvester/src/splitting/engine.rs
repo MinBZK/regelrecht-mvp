@@ -319,9 +319,15 @@ impl<S: SplitStrategy> SplitEngine<S> {
                     if !text.is_empty() {
                         li_parts.push(text);
                     }
-                } else if self.is_unmarked_list(child) {
-                    // Handle nested unmarked lists
-                    let nested = self.extract_unmarked_list_text(child, collector);
+                } else if child_tag == "lijst" {
+                    // Handle nested lists (both marked and unmarked)
+                    // For definitions with sub-items like "woonruimte: 1° ... 2° ..."
+                    let nested = if self.is_unmarked_list(child) {
+                        self.extract_unmarked_list_text(child, collector)
+                    } else {
+                        // Marked list - extract all items inline
+                        self.extract_marked_list_text(child, collector)
+                    };
                     if !nested.is_empty() {
                         li_parts.push(nested);
                     }
@@ -334,6 +340,72 @@ impl<S: SplitStrategy> SplitEngine<S> {
         }
 
         parts.join("\n")
+    }
+
+    /// Extract text from a marked (expliciet) list, joining items with their markers.
+    ///
+    /// Used for nested marked lists within definition items (e.g., "woonruimte: 1° ... 2° ...").
+    fn extract_marked_list_text(
+        &self,
+        lijst_node: Node<'_, '_>,
+        collector: &mut ReferenceCollector,
+    ) -> String {
+        let mut parts: Vec<String> = Vec::new();
+
+        for li in lijst_node.children() {
+            if !li.is_element() || get_tag_name(li) != "li" {
+                continue;
+            }
+
+            let mut li_parts: Vec<String> = Vec::new();
+
+            // Get the marker (li.nr) text
+            let marker = li
+                .children()
+                .find(|c| c.is_element() && get_tag_name(*c) == "li.nr")
+                .and_then(|n| n.text())
+                .map(|s| s.trim().to_string());
+
+            for child in li.children() {
+                if !child.is_element() {
+                    continue;
+                }
+
+                let child_tag = get_tag_name(child);
+
+                if child_tag == "li.nr" {
+                    continue;
+                }
+
+                if child_tag == "al" {
+                    let text = self.extract_inline_text(child, collector);
+                    if !text.is_empty() {
+                        li_parts.push(text);
+                    }
+                } else if child_tag == "lijst" {
+                    // Recursively handle nested lists
+                    let nested = if self.is_unmarked_list(child) {
+                        self.extract_unmarked_list_text(child, collector)
+                    } else {
+                        self.extract_marked_list_text(child, collector)
+                    };
+                    if !nested.is_empty() {
+                        li_parts.push(nested);
+                    }
+                }
+            }
+
+            if !li_parts.is_empty() {
+                let item_text = li_parts.join(" ");
+                if let Some(m) = marker {
+                    parts.push(format!("{m} {item_text}"));
+                } else {
+                    parts.push(item_text);
+                }
+            }
+        }
+
+        parts.join(" ")
     }
 }
 
@@ -532,5 +604,63 @@ mod tests {
         assert_eq!(components.len(), 1);
         assert_eq!(components[0].to_number(), "1");
         assert_eq!(components[0].bijlage_prefix, None);
+    }
+
+    #[test]
+    fn test_split_artikel_with_nested_marked_list_in_definition() {
+        // Tests definitions like "woonruimte: 1° ... 2° ..." where a definition term
+        // has sub-items in a nested marked list
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>In deze wet wordt verstaan onder:</al>
+                <lijst type="ongemarkeerd">
+                    <li>
+                        <al><nadruk type="cur">term:</nadruk> simple definition;</al>
+                    </li>
+                    <li>
+                        <al><nadruk type="cur">woonruimte:</nadruk></al>
+                        <lijst type="expliciet">
+                            <li>
+                                <li.nr>1°</li.nr>
+                                <al>besloten ruimte die bestemd is voor bewoning, en</al>
+                            </li>
+                            <li>
+                                <li.nr>2°</li.nr>
+                                <al>standplaats;</al>
+                            </li>
+                        </lijst>
+                    </li>
+                    <li>
+                        <al><nadruk type="cur">other:</nadruk> another definition.</al>
+                    </li>
+                </lijst>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0035303", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        let text = &components[0].text;
+
+        // Should contain the term
+        assert!(text.contains("*woonruimte:*"), "Missing woonruimte term");
+
+        // Should contain the nested list items
+        assert!(
+            text.contains("1°") && text.contains("besloten ruimte"),
+            "Missing nested list item 1°"
+        );
+        assert!(
+            text.contains("2°") && text.contains("standplaats"),
+            "Missing nested list item 2°"
+        );
     }
 }

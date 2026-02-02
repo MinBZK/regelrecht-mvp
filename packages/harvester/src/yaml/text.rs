@@ -1,4 +1,4 @@
-//! Text wrapping utilities for YAML output.
+//! Text wrapping and normalization utilities for YAML output.
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -11,9 +11,36 @@ use crate::config::TEXT_WRAP_WIDTH;
 static REFERENCE_LINK_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[[^\]]+\]\[ref\d+\]").expect("valid regex"));
 
+/// Regex pattern for missing space after comma before a word character.
+/// Matches "word,word" but not "word, word" or "1,000".
+#[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid
+static MISSING_SPACE_AFTER_COMMA: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"([a-zA-Z]),([a-zA-Z])").expect("valid regex"));
+
 /// Check if text contains reference-style links that would be broken by wrapping.
 fn contains_reference_link(text: &str) -> bool {
     REFERENCE_LINK_PATTERN.is_match(text)
+}
+
+/// Normalize common typographical issues in source text.
+///
+/// Fixes:
+/// - Missing space after comma before a word (e.g., "lid,van" → "lid, van")
+///
+/// This is needed because some official source XML contains typographical errors.
+pub fn normalize_text(text: &str) -> String {
+    // Loop until no more replacements needed (handles overlapping cases like "a,b,c")
+    let mut result = text.to_string();
+    loop {
+        let replaced = MISSING_SPACE_AFTER_COMMA
+            .replace_all(&result, "$1, $2")
+            .to_string();
+        if replaced == result {
+            break;
+        }
+        result = replaced;
+    }
+    result
 }
 
 /// Wrap text at specified width, preserving paragraph breaks and reference definitions.
@@ -160,5 +187,35 @@ mod tests {
         let wrapped = wrap_text(text, 40);
         // The reference link should still be intact
         assert!(wrapped.contains("[article 4 of the Zorgverzekeringswet][ref1]"));
+    }
+
+    #[test]
+    fn test_normalize_text_missing_space_after_comma() {
+        // Real example from Wet op de zorgtoeslag source XML
+        assert_eq!(normalize_text("lid,van"), "lid, van");
+        assert_eq!(
+            normalize_text("eerste of derde lid,van die wet"),
+            "eerste of derde lid, van die wet"
+        );
+    }
+
+    #[test]
+    fn test_normalize_text_preserves_correct_spacing() {
+        // Should not change text with correct spacing
+        assert_eq!(normalize_text("lid, van"), "lid, van");
+        assert_eq!(normalize_text("correct, spacing"), "correct, spacing");
+    }
+
+    #[test]
+    fn test_normalize_text_preserves_numbers() {
+        // Should not add space in numbers like "1,000"
+        assert_eq!(normalize_text("€ 1,000"), "€ 1,000");
+        assert_eq!(normalize_text("bedrag van 1,50"), "bedrag van 1,50");
+    }
+
+    #[test]
+    fn test_normalize_text_multiple_occurrences() {
+        // Should fix multiple occurrences
+        assert_eq!(normalize_text("a,b,c,d"), "a, b, c, d");
     }
 }
