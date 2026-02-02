@@ -86,6 +86,11 @@ impl<S: SplitStrategy> SplitEngine<S> {
     /// Checks children in priority order and returns the first
     /// matching type found. Unmarked lists (type="ongemarkeerd") are
     /// excluded - their content is extracted inline instead.
+    ///
+    /// **Multiple sibling lists:** When multiple `<lijst>` elements appear
+    /// as direct siblings (not separated by `<lid>`), they are kept inline
+    /// rather than split. This prevents duplicate numbers like `B2:1.a` when
+    /// bijlagen have multiple lists that each start their own enumeration.
     fn find_structural_children<'a, 'input>(
         &self,
         node: Node<'a, 'input>,
@@ -102,6 +107,11 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 .collect();
 
             if !children.is_empty() {
+                // Multiple sibling lists at the same level cause duplicate numbers
+                // (each list starts its own a, b, c enumeration). Keep them inline.
+                if child_tag == "lijst" && children.len() > 1 {
+                    return Vec::new();
+                }
                 return children;
             }
         }
@@ -259,6 +269,9 @@ impl<S: SplitStrategy> SplitEngine<S> {
     }
 
     /// Extract all content from a leaf element.
+    ///
+    /// Lists encountered here are kept inline (they weren't treated as
+    /// structural children, e.g., due to multiple sibling lists).
     fn extract_leaf_content(
         &self,
         node: Node<'_, '_>,
@@ -286,9 +299,14 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 if !text.is_empty() {
                     parts.push(text);
                 }
-            } else if self.is_effectively_unmarked_list(child) {
-                // Extract text from effectively unmarked lists inline
-                let text = self.extract_unmarked_list_text(child, &mut collector);
+            } else if child_tag == "lijst" {
+                // Lists encountered here are kept inline (not split as structural children)
+                // This happens for unmarked lists or multiple sibling lists
+                let text = if self.is_effectively_unmarked_list(child) {
+                    self.extract_unmarked_list_text(child, &mut collector)
+                } else {
+                    self.extract_marked_list_text(child, &mut collector)
+                };
                 if !text.is_empty() {
                     parts.push(text);
                 }
@@ -1112,5 +1130,128 @@ mod tests {
             "Editorial 'Vervallen' should be excluded"
         );
         assert!(components[0].text.contains("Actual paragraph text"));
+    }
+
+    #[test]
+    fn test_split_artikel_with_single_list() {
+        // Single list should still split normally into separate components
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>Introduction:</al>
+                <lijst>
+                    <li><li.nr>a.</li.nr><al>first item;</al></li>
+                    <li><li.nr>b.</li.nr><al>second item.</al></li>
+                </lijst>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        // Should split: intro + 2 list items = 3 components
+        assert_eq!(components.len(), 3, "Single list should be split normally");
+        assert_eq!(components[0].to_number(), "1.1");
+        assert_eq!(components[1].to_number(), "1.1.a");
+        assert_eq!(components[2].to_number(), "1.1.b");
+    }
+
+    #[test]
+    fn test_split_artikel_with_multiple_sibling_lists_keeps_inline() {
+        // Multiple sibling lists at the same level should be kept inline
+        // to prevent duplicates like B2:1.a appearing multiple times
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <al>Introduction to first list:</al>
+            <lijst>
+                <li><li.nr>a.</li.nr><al>first list item a;</al></li>
+                <li><li.nr>b.</li.nr><al>first list item b.</al></li>
+            </lijst>
+            <al>Introduction to second list:</al>
+            <lijst>
+                <li><li.nr>a.</li.nr><al>second list item a;</al></li>
+                <li><li.nr>b.</li.nr><al>second list item b.</al></li>
+            </lijst>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0005537", "2025-01-01", "https://example.com")
+            .with_bijlage_prefix("B2");
+
+        let components = engine.split(doc.root_element(), context);
+
+        // Multiple sibling lists should be kept inline - single component
+        assert_eq!(
+            components.len(),
+            1,
+            "Multiple sibling lists should be kept inline, not split"
+        );
+        assert_eq!(components[0].to_number(), "B2:1");
+
+        // All content should be present
+        let text = &components[0].text;
+        assert!(text.contains("first list item a"), "Missing first list a");
+        assert!(text.contains("first list item b"), "Missing first list b");
+        assert!(text.contains("second list item a"), "Missing second list a");
+        assert!(text.contains("second list item b"), "Missing second list b");
+    }
+
+    #[test]
+    fn test_split_artikel_with_lid_wrapped_lists() {
+        // Lists inside separate lids should still split (each lid has one list)
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <lid>
+                <lidnr>1.</lidnr>
+                <al>First lid intro:</al>
+                <lijst>
+                    <li><li.nr>a.</li.nr><al>lid 1 item a;</al></li>
+                    <li><li.nr>b.</li.nr><al>lid 1 item b.</al></li>
+                </lijst>
+            </lid>
+            <lid>
+                <lidnr>2.</lidnr>
+                <al>Second lid intro:</al>
+                <lijst>
+                    <li><li.nr>a.</li.nr><al>lid 2 item a;</al></li>
+                    <li><li.nr>b.</li.nr><al>lid 2 item b.</al></li>
+                </lijst>
+            </lid>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        // Each lid has ONE list, so they should split normally
+        // lid 1: intro + a + b = 3 components
+        // lid 2: intro + a + b = 3 components
+        // Total = 6 components
+        assert_eq!(
+            components.len(),
+            6,
+            "Lists in separate lids should split normally"
+        );
+
+        // Verify unique numbers (no duplicates)
+        assert_eq!(components[0].to_number(), "1.1");
+        assert_eq!(components[1].to_number(), "1.1.a");
+        assert_eq!(components[2].to_number(), "1.1.b");
+        assert_eq!(components[3].to_number(), "1.2");
+        assert_eq!(components[4].to_number(), "1.2.a");
+        assert_eq!(components[5].to_number(), "1.2.b");
     }
 }
