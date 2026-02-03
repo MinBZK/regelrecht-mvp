@@ -2,7 +2,7 @@
 
 use roxmltree::Document;
 
-use crate::config::{validate_bwb_id, validate_date, wetten_url};
+use crate::config::{validate_bwb_id, validate_date, wetten_url, DEFAULT_MAX_RESPONSE_SIZE};
 use crate::content::download_content_xml;
 use crate::error::Result;
 use crate::http::create_client;
@@ -20,9 +20,24 @@ use crate::xml::{find_bijlage_context, find_by_path, find_children, get_tag_name
 /// # Returns
 /// A `Law` object containing metadata, articles, and any warnings encountered during parsing
 pub fn download_law(bwb_id: &str, date: &str) -> Result<Law> {
+    download_law_with_max_size(bwb_id, date, DEFAULT_MAX_RESPONSE_SIZE / (1024 * 1024))
+}
+
+/// Download and parse a Dutch law with configurable max response size.
+///
+/// # Arguments
+/// * `bwb_id` - The BWB identifier (e.g., "BWBR0018451")
+/// * `date` - The effective date in YYYY-MM-DD format
+/// * `max_size_mb` - Maximum response size in megabytes
+///
+/// # Returns
+/// A `Law` object containing metadata, articles, and any warnings encountered during parsing
+pub fn download_law_with_max_size(bwb_id: &str, date: &str, max_size_mb: u64) -> Result<Law> {
     // Validate inputs
     validate_bwb_id(bwb_id)?;
     validate_date(date)?;
+
+    let max_size_bytes = max_size_mb * 1024 * 1024;
 
     // Create HTTP client
     let client = create_client()?;
@@ -31,7 +46,7 @@ pub fn download_law(bwb_id: &str, date: &str) -> Result<Law> {
     let metadata = download_wti(&client, bwb_id)?;
 
     // Download content XML
-    let content_xml = download_content_xml(&client, bwb_id, date)?;
+    let content_xml = download_content_xml(&client, bwb_id, date, max_size_bytes)?;
 
     // Parse articles from content
     let (articles, warnings) = parse_articles(&content_xml, bwb_id, date)?;

@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use reqwest::blocking::Client;
 
-use crate::config::{HTTP_TIMEOUT_SECS, MAX_RESPONSE_SIZE};
+use crate::config::{DEFAULT_MAX_RESPONSE_SIZE, HTTP_TIMEOUT_SECS};
 use crate::error::{HarvesterError, Result};
 
 /// User agent string identifying this harvester.
@@ -36,10 +36,11 @@ pub fn create_client() -> Result<Client> {
 /// # Arguments
 /// * `client` - HTTP client to use
 /// * `url` - URL to download from
+/// * `max_size` - Maximum response size in bytes
 ///
 /// # Returns
 /// Raw bytes of the response body
-pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
+pub fn download_bytes(client: &Client, url: &str, max_size: u64) -> Result<Vec<u8>> {
     let mut last_error: Option<String> = None;
 
     for attempt in 0..MAX_RETRIES {
@@ -71,9 +72,9 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
 
                 // Check Content-Length header before downloading
                 if let Some(content_length) = response.content_length() {
-                    if content_length > MAX_RESPONSE_SIZE {
+                    if content_length > max_size {
                         return Err(HarvesterError::ResponseTooLarge {
-                            max_bytes: MAX_RESPONSE_SIZE,
+                            max_bytes: max_size,
                             actual_bytes: content_length,
                         });
                     }
@@ -82,9 +83,9 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
                 let bytes = response.bytes()?;
 
                 // Also check actual size (Content-Length may be missing or wrong)
-                if bytes.len() as u64 > MAX_RESPONSE_SIZE {
+                if bytes.len() as u64 > max_size {
                     return Err(HarvesterError::ResponseTooLarge {
-                        max_bytes: MAX_RESPONSE_SIZE,
+                        max_bytes: max_size,
                         actual_bytes: bytes.len() as u64,
                     });
                 }
@@ -114,6 +115,20 @@ pub fn download_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
         attempts: MAX_RETRIES,
         message: last_error.unwrap_or_else(|| "Unknown error".to_string()),
     })
+}
+
+/// Download content from a URL with retry logic using default max size.
+///
+/// Convenience wrapper around [`download_bytes`] that uses [`DEFAULT_MAX_RESPONSE_SIZE`].
+///
+/// # Arguments
+/// * `client` - HTTP client to use
+/// * `url` - URL to download from
+///
+/// # Returns
+/// Raw bytes of the response body
+pub fn download_bytes_default(client: &Client, url: &str) -> Result<Vec<u8>> {
+    download_bytes(client, url, DEFAULT_MAX_RESPONSE_SIZE)
 }
 
 /// Convert bytes to a string, preferring strict UTF-8 but falling back to lossy conversion.

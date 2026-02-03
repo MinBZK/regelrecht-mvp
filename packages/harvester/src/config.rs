@@ -13,10 +13,12 @@ pub const BWB_REPOSITORY_URL: &str = "https://repository.officiele-overheidspubl
 /// Set to 30 seconds to accommodate large XML files and slow connections.
 pub const HTTP_TIMEOUT_SECS: u64 = 30;
 
-/// Maximum HTTP response size in bytes (50 MB).
+/// Default maximum HTTP response size in bytes (100 MB).
 ///
 /// This prevents downloading unexpectedly large files that could exhaust memory.
-pub const MAX_RESPONSE_SIZE: u64 = 50 * 1024 * 1024;
+/// Can be overridden via CLI --max-size flag for exceptionally large laws like
+/// Wet op het financieel toezicht (52.6 MB).
+pub const DEFAULT_MAX_RESPONSE_SIZE: u64 = 100 * 1024 * 1024;
 
 /// Schema URL for regelrecht YAML files.
 pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.1/schema.json";

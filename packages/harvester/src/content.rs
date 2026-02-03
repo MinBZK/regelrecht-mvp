@@ -17,12 +17,18 @@ use crate::http::{bytes_to_string, download_bytes};
 /// * `client` - HTTP client to use
 /// * `bwb_id` - The BWB identifier (e.g., "BWBR0018451")
 /// * `date` - The effective date in YYYY-MM-DD format
+/// * `max_size` - Maximum response size in bytes
 ///
 /// # Returns
 /// Raw XML content as a string
-pub fn download_content_xml(client: &Client, bwb_id: &str, date: &str) -> Result<String> {
+pub fn download_content_xml(
+    client: &Client,
+    bwb_id: &str,
+    date: &str,
+    max_size: u64,
+) -> Result<String> {
     let url = content_url(bwb_id, date);
-    let bytes = download_bytes(client, &url).map_err(|e| {
+    let bytes = download_bytes(client, &url, max_size).map_err(|e| {
         if let HarvesterError::Http(source) = e {
             HarvesterError::ContentDownload {
                 bwb_id: bwb_id.to_string(),
