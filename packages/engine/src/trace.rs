@@ -103,6 +103,178 @@ impl PathNode {
         self.duration_us = Some(duration_us);
         self
     }
+
+    /// Render the trace as a human-readable tree string.
+    ///
+    /// Produces output like:
+    /// ```text
+    /// calculate (action)
+    /// +-- inkomen (resolve) [parameter] = 50000
+    /// +-- drempel (resolve) [definition] = 30000
+    /// `-- vergelijk (operation) = true
+    ///     +-- $inkomen (resolve) = 50000
+    ///     `-- $drempel (resolve) = 30000
+    /// ```
+    ///
+    /// # Arguments
+    /// * `indent` - Current indentation level (start with 0)
+    /// * `is_last` - Whether this is the last child in its parent (affects line prefix)
+    pub fn render(&self, indent: usize, is_last: bool) -> String {
+        self.render_internal(indent, is_last, true)
+    }
+
+    /// Internal render implementation.
+    fn render_internal(&self, indent: usize, is_last: bool, is_top_level: bool) -> String {
+        let mut lines = Vec::new();
+
+        // Build the prefix for this node
+        let prefix = if is_top_level {
+            String::new()
+        } else if is_last {
+            "`-- ".to_string()
+        } else {
+            "+-- ".to_string()
+        };
+
+        // Build indentation for child nodes
+        let child_indent = if is_top_level {
+            String::new()
+        } else if is_last {
+            "    ".to_string()
+        } else {
+            "|   ".to_string()
+        };
+
+        // Format the node type
+        let type_str = match self.node_type {
+            PathNodeType::Resolve => "resolve",
+            PathNodeType::Operation => "operation",
+            PathNodeType::Action => "action",
+            PathNodeType::Requirement => "requirement",
+            PathNodeType::UriCall => "uri_call",
+            PathNodeType::Article => "article",
+            PathNodeType::Delegation => "delegation",
+        };
+
+        // Build the main line
+        let mut line = format!("{}{} ({})", prefix, self.name, type_str);
+
+        // Add resolve type if present
+        if let Some(ref rt) = self.resolve_type {
+            let rt_str = match rt {
+                ResolveType::Uri => "uri",
+                ResolveType::Parameter => "parameter",
+                ResolveType::Definition => "definition",
+                ResolveType::Output => "output",
+                ResolveType::Input => "input",
+                ResolveType::Local => "local",
+                ResolveType::Context => "context",
+                ResolveType::ResolvedInput => "resolved_input",
+                ResolveType::DataSource => "data_source",
+            };
+            line.push_str(&format!(" [{}]", rt_str));
+        }
+
+        // Add result if present
+        if let Some(ref result) = self.result {
+            line.push_str(&format!(" = {}", format_value_compact(result)));
+        }
+
+        // Add duration if present (and significant)
+        if let Some(duration) = self.duration_us {
+            if duration >= 100 {
+                // Only show if >= 0.1ms
+                line.push_str(&format!(" ({}μs)", duration));
+            }
+        }
+
+        lines.push(line);
+
+        // Render children
+        let child_count = self.children.len();
+        for (i, child) in self.children.iter().enumerate() {
+            let is_last_child = i == child_count - 1;
+            let child_str = child.render_internal(0, is_last_child, false);
+
+            // Add proper indentation to each line of the child's output
+            for (j, child_line) in child_str.lines().enumerate() {
+                if j == 0 {
+                    // First line gets the current indentation
+                    lines.push(format!(
+                        "{}{}",
+                        " ".repeat(indent * 4) + &child_indent,
+                        child_line
+                    ));
+                } else {
+                    // Subsequent lines need continued indentation
+                    lines.push(format!(
+                        "{}{}",
+                        " ".repeat(indent * 4) + &child_indent,
+                        child_line
+                    ));
+                }
+            }
+        }
+
+        lines.join("\n")
+    }
+
+    /// Render the trace as a compact single-line summary.
+    pub fn render_compact(&self) -> String {
+        let type_str = match self.node_type {
+            PathNodeType::Resolve => "res",
+            PathNodeType::Operation => "op",
+            PathNodeType::Action => "act",
+            PathNodeType::Requirement => "req",
+            PathNodeType::UriCall => "uri",
+            PathNodeType::Article => "art",
+            PathNodeType::Delegation => "del",
+        };
+
+        let result_str = self
+            .result
+            .as_ref()
+            .map(|v| format!("={}", format_value_compact(v)))
+            .unwrap_or_default();
+
+        format!("{}:{}{}", type_str, self.name, result_str)
+    }
+}
+
+/// Format a Value compactly for trace output.
+fn format_value_compact(value: &Value) -> String {
+    match value {
+        Value::Null => "null".to_string(),
+        Value::Bool(b) => b.to_string(),
+        Value::Int(i) => i.to_string(),
+        Value::Float(f) => {
+            // Limit decimal places
+            if f.fract() == 0.0 {
+                format!("{:.1}", f)
+            } else {
+                format!("{:.2}", f)
+            }
+        }
+        Value::String(s) => {
+            // Truncate long strings
+            if s.len() > 20 {
+                format!("\"{}...\"", &s[..17])
+            } else {
+                format!("\"{}\"", s)
+            }
+        }
+        Value::Array(arr) => {
+            if arr.len() <= 3 {
+                let items: Vec<String> = arr.iter().map(format_value_compact).collect();
+                format!("[{}]", items.join(", "))
+            } else {
+                format!("[{} items]", arr.len())
+            }
+        }
+        Value::Object(obj) => {
+            format!("{{...{} keys}}", obj.len())
+        }
+    }
 }
 
 /// A node being built, with timing information.
@@ -372,5 +544,145 @@ mod tests {
         assert_eq!(level3.name, "level3");
         assert_eq!(level3.result, Some(Value::Int(1)));
         assert!(level3.children.is_empty());
+    }
+
+    // -------------------------------------------------------------------------
+    // Render Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_render_simple_node() {
+        let node = PathNode::new(PathNodeType::Resolve, "inkomen")
+            .with_result(Value::Int(50000))
+            .with_resolve_type(ResolveType::Parameter);
+
+        let rendered = node.render(0, false);
+        assert!(rendered.contains("inkomen"));
+        assert!(rendered.contains("resolve"));
+        assert!(rendered.contains("parameter"));
+        assert!(rendered.contains("50000"));
+    }
+
+    #[test]
+    fn test_render_nested_trace() {
+        let child1 = PathNode::new(PathNodeType::Resolve, "a")
+            .with_result(Value::Int(10))
+            .with_resolve_type(ResolveType::Parameter);
+
+        let child2 = PathNode::new(PathNodeType::Resolve, "b")
+            .with_result(Value::Int(20))
+            .with_resolve_type(ResolveType::Definition);
+
+        let root = PathNode::new(PathNodeType::Operation, "ADD")
+            .with_result(Value::Int(30))
+            .with_child(child1)
+            .with_child(child2);
+
+        let rendered = root.render(0, false);
+
+        // Check structure
+        assert!(rendered.contains("ADD (operation)"));
+        assert!(rendered.contains("a (resolve)"));
+        assert!(rendered.contains("b (resolve)"));
+
+        // Check tree characters
+        assert!(rendered.contains("+--") || rendered.contains("`--"));
+    }
+
+    #[test]
+    fn test_render_complex_tree() {
+        // Build a more complex tree
+        let resolve_a = PathNode::new(PathNodeType::Resolve, "var_a")
+            .with_result(Value::Int(100));
+
+        let resolve_b = PathNode::new(PathNodeType::Resolve, "var_b")
+            .with_result(Value::Int(200));
+
+        let add_op = PathNode::new(PathNodeType::Operation, "ADD")
+            .with_result(Value::Int(300))
+            .with_child(resolve_a)
+            .with_child(resolve_b);
+
+        let article = PathNode::new(PathNodeType::Article, "artikel_1")
+            .with_child(add_op);
+
+        let rendered = article.render(0, false);
+
+        // Verify the structure is readable
+        let lines: Vec<&str> = rendered.lines().collect();
+        assert!(lines[0].contains("artikel_1"));
+        assert!(lines.iter().any(|l| l.contains("ADD")));
+        assert!(lines.iter().any(|l| l.contains("var_a")));
+        assert!(lines.iter().any(|l| l.contains("var_b")));
+    }
+
+    #[test]
+    fn test_render_compact() {
+        let node = PathNode::new(PathNodeType::Operation, "MULTIPLY")
+            .with_result(Value::Int(42));
+
+        let compact = node.render_compact();
+        assert_eq!(compact, "op:MULTIPLY=42");
+    }
+
+    #[test]
+    fn test_render_compact_resolve() {
+        let node = PathNode::new(PathNodeType::Resolve, "param")
+            .with_result(Value::String("test".to_string()));
+
+        let compact = node.render_compact();
+        assert!(compact.starts_with("res:param="));
+    }
+
+    #[test]
+    fn test_format_value_compact_truncates_long_strings() {
+        let long_string = "this is a very long string that should be truncated";
+        let formatted = format_value_compact(&Value::String(long_string.to_string()));
+        assert!(formatted.len() < long_string.len());
+        assert!(formatted.contains("..."));
+    }
+
+    #[test]
+    fn test_format_value_compact_array() {
+        let small_array = Value::Array(vec![Value::Int(1), Value::Int(2)]);
+        let formatted = format_value_compact(&small_array);
+        assert_eq!(formatted, "[1, 2]");
+
+        let large_array = Value::Array(vec![
+            Value::Int(1),
+            Value::Int(2),
+            Value::Int(3),
+            Value::Int(4),
+            Value::Int(5),
+        ]);
+        let formatted = format_value_compact(&large_array);
+        assert!(formatted.contains("5 items"));
+    }
+
+    #[test]
+    fn test_render_with_all_resolve_types() {
+        let types = vec![
+            (ResolveType::Uri, "uri"),
+            (ResolveType::Parameter, "parameter"),
+            (ResolveType::Definition, "definition"),
+            (ResolveType::Output, "output"),
+            (ResolveType::Input, "input"),
+            (ResolveType::Local, "local"),
+            (ResolveType::Context, "context"),
+            (ResolveType::ResolvedInput, "resolved_input"),
+            (ResolveType::DataSource, "data_source"),
+        ];
+
+        for (rt, expected_str) in types {
+            let node = PathNode::new(PathNodeType::Resolve, "test")
+                .with_resolve_type(rt);
+            let rendered = node.render(0, false);
+            assert!(
+                rendered.contains(&format!("[{}]", expected_str)),
+                "Expected [{}] in: {}",
+                expected_str,
+                rendered
+            );
+        }
     }
 }
