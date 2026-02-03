@@ -448,6 +448,8 @@ impl<'a> ArticleEngine<'a> {
             // so SWITCH must be nested inside `value` to work correctly
             cases: None,
             default: None,
+            // Unit for SUBTRACT_DATE - Action doesn't have this field yet
+            unit: None,
         })
     }
 

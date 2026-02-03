@@ -213,6 +213,17 @@ pub enum Operation {
     // Conditional operations (2)
     If,
     Switch,
+
+    // Null checking operations (2)
+    IsNull,
+    NotNull,
+
+    // Membership testing operations (2)
+    In,
+    NotIn,
+
+    // Date operations (1)
+    SubtractDate,
 }
 
 impl Operation {
@@ -250,6 +261,21 @@ impl Operation {
     /// Check if this is a conditional operation
     pub fn is_conditional(&self) -> bool {
         matches!(self, Operation::If | Operation::Switch)
+    }
+
+    /// Check if this is a null checking operation
+    pub fn is_null_check(&self) -> bool {
+        matches!(self, Operation::IsNull | Operation::NotNull)
+    }
+
+    /// Check if this is a membership testing operation
+    pub fn is_membership(&self) -> bool {
+        matches!(self, Operation::In | Operation::NotIn)
+    }
+
+    /// Check if this is a date operation
+    pub fn is_date(&self) -> bool {
+        matches!(self, Operation::SubtractDate)
     }
 }
 

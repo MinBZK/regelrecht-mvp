@@ -39,6 +39,7 @@ use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
 use crate::types::Value;
 use crate::uri::RegelrechtUri;
+use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
 
 // =============================================================================
@@ -68,6 +69,11 @@ impl<'a> ResolutionContext<'a> {
             visited: HashSet::new(),
             depth: 0,
         }
+    }
+
+    /// Parse the calculation_date as NaiveDate for version selection.
+    fn reference_date(&self) -> Option<NaiveDate> {
+        NaiveDate::parse_from_str(self.calculation_date, "%Y-%m-%d").ok()
     }
 
     /// Create a child context with a new visited key and incremented depth.
@@ -129,6 +135,7 @@ pub trait ServiceProvider {
     /// * `law_id` - The law that grants the delegation
     /// * `article` - The article number that grants the delegation
     /// * `criteria` - Evaluated select_on criteria to match
+    /// * `reference_date` - Optional date to select the appropriate law version
     ///
     /// # Returns
     /// Reference to the matching regulation, if found.
@@ -137,6 +144,7 @@ pub trait ServiceProvider {
         law_id: &str,
         article: &str,
         criteria: &HashMap<String, Value>,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Option<&ArticleBasedLaw>>;
 
     /// Get a law by ID.
@@ -291,7 +299,7 @@ impl LawExecutionService {
         // Find the article
         let article = self
             .resolver
-            .get_article_by_output(law_id, output_name)
+            .get_article_by_output(law_id, output_name, res_ctx.reference_date())
             .ok_or_else(|| EngineError::OutputNotFound {
                 law_id: law_id.to_string(),
                 output: output_name.to_string(),
@@ -463,8 +471,12 @@ impl LawExecutionService {
         );
 
         // Find matching regulation
-        let regulation_opt =
-            self.find_delegated_regulation(delegation.law_id, delegation.article, &criteria)?;
+        let regulation_opt = self.find_delegated_regulation(
+            delegation.law_id,
+            delegation.article,
+            &criteria,
+            res_ctx.reference_date(),
+        )?;
 
         match regulation_opt {
             Some(regulation) => {
@@ -736,10 +748,11 @@ impl ServiceProvider for LawExecutionService {
         law_id: &str,
         article: &str,
         criteria: &HashMap<String, Value>,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Option<&ArticleBasedLaw>> {
         Ok(self
             .resolver
-            .find_delegated_regulation(law_id, article, criteria))
+            .find_delegated_regulation(law_id, article, criteria, reference_date))
     }
 
     fn get_law(&self, law_id: &str) -> Option<&ArticleBasedLaw> {
