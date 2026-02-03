@@ -7,7 +7,7 @@ use crate::content::download_content_xml;
 use crate::error::Result;
 use crate::http::create_client;
 use crate::splitting::{create_dutch_law_hierarchy, LeafSplitStrategy, SplitContext, SplitEngine};
-use crate::types::{Article, Law};
+use crate::types::{Law, Preamble};
 use crate::wti::download_wti;
 use crate::xml::{find_bijlage_context, find_by_path, find_children, get_tag_name, get_text};
 
@@ -49,27 +49,33 @@ pub fn download_law_with_max_size(bwb_id: &str, date: &str, max_size_mb: u64) ->
     let content_xml = download_content_xml(&client, bwb_id, date, max_size_bytes)?;
 
     // Parse articles from content
-    let (articles, warnings) = parse_articles(&content_xml, bwb_id, date)?;
+    let parsed = parse_articles(&content_xml, bwb_id, date)?;
 
     Ok(Law {
         metadata,
-        articles,
-        warnings,
+        preamble: parsed.preamble,
+        articles: parsed.articles,
+        warnings: parsed.warnings,
     })
+}
+
+/// Parsed content from XML.
+struct ParsedContent {
+    preamble: Option<Preamble>,
+    articles: Vec<crate::types::Article>,
+    warnings: Vec<String>,
 }
 
 /// Parse articles from content XML.
 ///
-/// Returns `(articles, warnings)` tuple where warnings are non-fatal parse errors.
-fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<(Vec<Article>, Vec<String>)> {
+/// Returns parsed content including optional preamble, articles, and warnings.
+fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<ParsedContent> {
     let doc = Document::parse(xml)?;
     let mut articles = Vec::new();
     let mut all_warnings: Vec<String> = Vec::new();
 
-    // Extract aanhef first
-    if let Some(aanhef) = extract_aanhef(&doc, bwb_id, date) {
-        articles.push(aanhef);
-    }
+    // Extract aanhef (preamble)
+    let preamble = extract_aanhef(&doc, bwb_id, date);
 
     // Create split engine
     let hierarchy = create_dutch_law_hierarchy();
@@ -115,11 +121,15 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<(Vec<Article>, 
         }
     }
 
-    Ok((articles, all_warnings))
+    Ok(ParsedContent {
+        preamble,
+        articles,
+        warnings: all_warnings,
+    })
 }
 
-/// Extract the aanhef (preamble) as an article.
-fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Article> {
+/// Extract the aanhef (preamble) as a separate Preamble object.
+fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Preamble> {
     let aanhef = doc
         .descendants()
         .find(|n| n.is_element() && get_tag_name(*n) == "aanhef")?;
@@ -163,15 +173,10 @@ fn extract_aanhef(doc: &Document<'_>, bwb_id: &str, date: &str) -> Option<Articl
         return None;
     }
 
-    let aanhef_text = parts.join("\n\n");
-    let aanhef_url = wetten_url(bwb_id, Some(date), Some("Aanhef"), None, None, None);
+    let text = parts.join("\n\n");
+    let url = wetten_url(bwb_id, Some(date), Some("Aanhef"), None, None, None);
 
-    Some(Article {
-        number: "aanhef".to_string(),
-        text: aanhef_text,
-        url: aanhef_url,
-        references: Vec::new(), // Aanhef typically has no cross-law references
-    })
+    Some(Preamble { text, url })
 }
 
 /// Simple text extraction from a node.

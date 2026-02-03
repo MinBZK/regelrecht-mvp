@@ -11,6 +11,13 @@ use crate::config::SCHEMA_URL;
 use crate::error::Result;
 use crate::types::{Law, Reference};
 
+/// Preamble representation for YAML serialization.
+#[derive(Debug, Serialize)]
+struct YamlPreamble {
+    text: String,
+    url: String,
+}
+
 /// Article representation for YAML serialization.
 #[derive(Debug, Serialize)]
 struct YamlArticle {
@@ -67,12 +74,29 @@ struct YamlLaw {
     valid_from: String,
     bwb_id: String,
     url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    preamble: Option<YamlPreamble>,
     articles: Vec<YamlArticle>,
 }
 
 /// Generate a schema-compliant YAML structure from a Law object.
 fn generate_yaml_struct(law: &Law, effective_date: &str) -> YamlLaw {
     let law_id = law.metadata.to_slug();
+
+    // Convert preamble if present
+    let preamble = law.preamble.as_ref().map(|p| {
+        // Normalize and wrap preamble text like articles
+        let normalized = normalize_text(&p.text);
+        let text = if should_wrap_text(&normalized) {
+            wrap_text_default(&normalized)
+        } else {
+            normalized
+        };
+        YamlPreamble {
+            text,
+            url: p.url.clone(),
+        }
+    });
 
     let articles: Vec<YamlArticle> = law
         .articles
@@ -112,6 +136,7 @@ fn generate_yaml_struct(law: &Law, effective_date: &str) -> YamlLaw {
             "https://wetten.overheid.nl/{}/{}",
             law.metadata.bwb_id, effective_date
         ),
+        preamble,
         articles,
     }
 }
