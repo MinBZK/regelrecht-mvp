@@ -29,6 +29,7 @@
 pub mod article;
 pub mod config;
 pub mod context;
+pub mod data_source;
 pub mod engine;
 pub mod error;
 pub mod operations;
@@ -51,6 +52,7 @@ pub use config::{
     MAX_RESOLUTION_DEPTH, MAX_YAML_SIZE,
 };
 pub use context::RuleContext;
+pub use data_source::{DataSource, DataSourceMatch, DataSourceRegistry, DictDataSource};
 pub use engine::{
     evaluate_select_on_criteria, get_delegation_info, matches_delegation_criteria, ArticleEngine,
     ArticleResult,

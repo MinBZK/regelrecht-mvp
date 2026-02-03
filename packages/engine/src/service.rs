@@ -30,6 +30,7 @@ use crate::article::{
 };
 use crate::config;
 use crate::context::RuleContext;
+use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
 use crate::engine::{
     evaluate_select_on_criteria, get_delegation_info, ArticleEngine, ArticleResult,
 };
@@ -199,8 +200,10 @@ pub trait ServiceProvider {
 ///
 /// `LawExecutionService` wraps a `RuleResolver` and implements `ServiceProvider`
 /// to enable automatic resolution of external references and delegations.
+/// It also supports external data sources via `DataSourceRegistry`.
 pub struct LawExecutionService {
     resolver: RuleResolver,
+    data_registry: DataSourceRegistry,
 }
 
 impl Default for LawExecutionService {
@@ -214,6 +217,7 @@ impl LawExecutionService {
     pub fn new() -> Self {
         Self {
             resolver: RuleResolver::new(),
+            data_registry: DataSourceRegistry::new(),
         }
     }
 
@@ -724,6 +728,61 @@ impl LawExecutionService {
     /// Get direct access to the resolver.
     pub fn resolver(&self) -> &RuleResolver {
         &self.resolver
+    }
+
+    // -------------------------------------------------------------------------
+    // Data Source Management
+    // -------------------------------------------------------------------------
+
+    /// Add a data source to the registry.
+    ///
+    /// Data sources are queried in priority order (highest first) when
+    /// resolving values that aren't found in the law context.
+    pub fn add_data_source(&mut self, source: Box<dyn DataSource>) {
+        self.data_registry.add_source(source);
+    }
+
+    /// Add a dictionary-based data source.
+    ///
+    /// Convenience method for adding a `DictDataSource` with the given data.
+    ///
+    /// # Arguments
+    /// * `name` - Name identifier for this data source
+    /// * `priority` - Priority for resolution order (higher = checked first)
+    /// * `data` - Data as record_key -> field_name -> value
+    pub fn add_dict_source(
+        &mut self,
+        name: impl Into<String>,
+        priority: i32,
+        data: HashMap<String, HashMap<String, Value>>,
+    ) {
+        self.data_registry
+            .add_source(Box::new(DictDataSource::new(name, priority, data)));
+    }
+
+    /// Remove a data source by name.
+    pub fn remove_data_source(&mut self, name: &str) -> bool {
+        self.data_registry.remove_source(name)
+    }
+
+    /// Clear all data sources from the registry.
+    pub fn clear_data_sources(&mut self) {
+        self.data_registry.clear();
+    }
+
+    /// Get the number of registered data sources.
+    pub fn data_source_count(&self) -> usize {
+        self.data_registry.source_count()
+    }
+
+    /// List all registered data source names.
+    pub fn list_data_sources(&self) -> Vec<&str> {
+        self.data_registry.list_sources()
+    }
+
+    /// Get direct access to the data registry.
+    pub fn data_registry(&self) -> &DataSourceRegistry {
+        &self.data_registry
     }
 }
 
