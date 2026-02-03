@@ -6,7 +6,7 @@
 use std::fs;
 use std::path::Path;
 
-use regelrecht_harvester::types::{Article, Law, RegulatoryLayer};
+use regelrecht_harvester::types::{Article, Law, Preamble, RegulatoryLayer};
 use regelrecht_harvester::wti::parse_wti_metadata;
 use regelrecht_harvester::yaml::generate_yaml;
 
@@ -18,6 +18,12 @@ fn load_fixture(name: &str) -> String {
         .join("zorgtoeslag")
         .join(name);
     fs::read_to_string(&path).unwrap_or_else(|e| panic!("Failed to load {}: {}", path.display(), e))
+}
+
+/// Parsed content from integration test.
+struct ParsedContent {
+    preamble: Option<Preamble>,
+    articles: Vec<Article>,
 }
 
 /// Run the harvester pipeline on zorgtoeslag fixtures.
@@ -32,17 +38,18 @@ fn run_pipeline() -> Law {
     // Parse articles from content
     let content_doc =
         roxmltree::Document::parse(&content_xml).expect("Failed to parse content XML");
-    let articles = parse_articles(&content_doc, &metadata.bwb_id, "2025-01-01");
+    let parsed = parse_content(&content_doc, &metadata.bwb_id, "2025-01-01");
 
     Law {
         metadata,
-        articles,
+        preamble: parsed.preamble,
+        articles: parsed.articles,
         warnings: Vec::new(),
     }
 }
 
-/// Parse articles from content XML document.
-fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Vec<Article> {
+/// Parse content from XML document (preamble + articles).
+fn parse_content(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> ParsedContent {
     use regelrecht_harvester::config::wetten_url;
     use regelrecht_harvester::splitting::{
         create_dutch_law_hierarchy, LeafSplitStrategy, SplitContext, SplitEngine,
@@ -50,8 +57,9 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
     use regelrecht_harvester::xml::{find_by_path, find_children, get_tag_name, get_text};
 
     let mut articles = Vec::new();
+    let mut preamble = None;
 
-    // Extract aanhef
+    // Extract aanhef as preamble
     if let Some(aanhef) = doc
         .descendants()
         .find(|n| n.is_element() && get_tag_name(*n) == "aanhef")
@@ -89,11 +97,9 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
         }
 
         if !parts.is_empty() {
-            articles.push(Article {
-                number: "aanhef".to_string(),
+            preamble = Some(Preamble {
                 text: parts.join("\n\n"),
                 url: wetten_url(bwb_id, Some(date), Some("Aanhef"), None, None, None),
-                references: Vec::new(),
             });
         }
     }
@@ -125,7 +131,7 @@ fn parse_articles(doc: &roxmltree::Document<'_>, bwb_id: &str, date: &str) -> Ve
         }
     }
 
-    articles
+    ParsedContent { preamble, articles }
 }
 
 /// Simple text extraction from a node.
@@ -152,13 +158,16 @@ fn extract_simple_text(node: roxmltree::Node<'_, '_>) -> String {
 fn test_pipeline_article_count() {
     let law = run_pipeline();
 
-    // Expected: 36 articles (aanhef + 35 artikel components)
+    // Expected: 35 artikel components (preamble is now separate)
     assert_eq!(
         law.articles.len(),
-        36,
-        "Expected 36 articles (aanhef + 35), got {}",
+        35,
+        "Expected 35 articles, got {}",
         law.articles.len()
     );
+
+    // Preamble should be present
+    assert!(law.preamble.is_some(), "Should have preamble");
 }
 
 #[test]
@@ -171,20 +180,24 @@ fn test_pipeline_metadata() {
 }
 
 #[test]
-fn test_pipeline_aanhef() {
+fn test_pipeline_preamble() {
     let law = run_pipeline();
 
-    let aanhef = law.articles.iter().find(|a| a.number == "aanhef");
-    assert!(aanhef.is_some(), "Should have aanhef article");
+    let preamble = law.preamble.as_ref();
+    assert!(preamble.is_some(), "Should have preamble");
 
-    let aanhef = aanhef.unwrap();
+    let preamble = preamble.unwrap();
     assert!(
-        aanhef.text.contains("Wij Beatrix"),
-        "Aanhef should contain 'Wij Beatrix'"
+        preamble.text.contains("Wij Beatrix"),
+        "Preamble should contain 'Wij Beatrix'"
     );
     assert!(
-        aanhef.text.contains("zorgtoeslag") || aanhef.text.contains("zorgverzekering"),
-        "Aanhef should mention zorgtoeslag or zorgverzekering"
+        preamble.text.contains("zorgtoeslag") || preamble.text.contains("zorgverzekering"),
+        "Preamble should mention zorgtoeslag or zorgverzekering"
+    );
+    assert!(
+        preamble.url.contains("Aanhef"),
+        "Preamble URL should contain 'Aanhef'"
     );
 }
 

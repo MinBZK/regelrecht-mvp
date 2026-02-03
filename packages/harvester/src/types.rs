@@ -250,6 +250,16 @@ pub fn format_reference_definitions(references: &[Reference]) -> String {
         .join("\n")
 }
 
+/// Preamble (aanhef) section of a law.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Preamble {
+    /// Preamble text content.
+    pub text: String,
+
+    /// URL to the preamble on wetten.overheid.nl.
+    pub url: String,
+}
+
 /// A single article from a law.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Article {
@@ -292,6 +302,9 @@ pub struct Law {
     /// Metadata from WTI file.
     pub metadata: LawMetadata,
 
+    /// Preamble (aanhef) section, if present.
+    pub preamble: Option<Preamble>,
+
     /// List of articles.
     pub articles: Vec<Article>,
 
@@ -308,6 +321,7 @@ impl Law {
     pub fn new(metadata: LawMetadata) -> Self {
         Self {
             metadata,
+            preamble: None,
             articles: Vec::new(),
             warnings: Vec::new(),
         }

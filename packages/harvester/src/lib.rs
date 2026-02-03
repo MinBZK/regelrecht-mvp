@@ -50,4 +50,4 @@ pub use harvester::{download_law, download_law_with_max_size};
 // Re-export commonly used items
 pub use config::{validate_bwb_id, validate_date};
 pub use error::{HarvesterError, Result};
-pub use types::{Article, Law, LawMetadata, Reference, RegulatoryLayer};
+pub use types::{Article, Law, LawMetadata, Preamble, Reference, RegulatoryLayer};
