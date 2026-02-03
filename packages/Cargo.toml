@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [
+    "engine",
+    "harvester",
+]
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
