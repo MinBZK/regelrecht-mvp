@@ -115,6 +115,9 @@ fn download_command(
     println!("  Title: {}", style(&law.metadata.title).green());
     println!("  Type: {}", law.metadata.regulatory_layer.as_str());
     println!("  Articles: {}", law.articles.len());
+    if !law.warnings.is_empty() {
+        println!("  Warnings: {}", style(law.warnings.len()).yellow().bold());
+    }
 
     // Save to YAML
     pb.set_message("Saving YAML...");

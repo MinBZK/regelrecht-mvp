@@ -294,6 +294,12 @@ pub struct Law {
 
     /// List of articles.
     pub articles: Vec<Article>,
+
+    /// Non-fatal warnings encountered during parsing.
+    ///
+    /// These indicate data that may have been skipped or improperly handled.
+    /// Callers can inspect this to assess data quality.
+    pub warnings: Vec<String>,
 }
 
 impl Law {
@@ -303,12 +309,24 @@ impl Law {
         Self {
             metadata,
             articles: Vec::new(),
+            warnings: Vec::new(),
         }
     }
 
     /// Add an article to the law.
     pub fn add_article(&mut self, article: Article) {
         self.articles.push(article);
+    }
+
+    /// Add a warning to the law.
+    pub fn add_warning(&mut self, warning: impl Into<String>) {
+        self.warnings.push(warning.into());
+    }
+
+    /// Get the number of warnings.
+    #[must_use]
+    pub fn warning_count(&self) -> usize {
+        self.warnings.len()
     }
 }
 
@@ -553,9 +571,14 @@ mod tests {
 
         let mut law = Law::new(metadata);
         assert!(law.articles.is_empty());
+        assert!(law.warnings.is_empty());
 
         law.add_article(Article::new("1", "Text", "url"));
         assert_eq!(law.articles.len(), 1);
+
+        law.add_warning("Test warning");
+        assert_eq!(law.warning_count(), 1);
+        assert_eq!(law.warnings[0], "Test warning");
     }
 
     #[test]

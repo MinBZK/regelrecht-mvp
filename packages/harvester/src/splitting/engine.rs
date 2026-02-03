@@ -183,9 +183,9 @@ impl<S: SplitStrategy> SplitEngine<S> {
             // Non-addressable markers: empty, bullet, or various dash characters
             nr_text.is_empty()
                 || nr_text == "•"
-                || nr_text == "–"  // en-dash
-                || nr_text == "-"  // hyphen
-                || nr_text == "—"  // em-dash
+                || nr_text == "–" // en-dash
+                || nr_text == "-" // hyphen
+                || nr_text == "—" // em-dash
         })
     }
 
@@ -224,6 +224,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
     ) -> Option<ArticleComponent> {
         let mut collector = ReferenceCollector::new();
         let mut parts: Vec<String> = Vec::new();
+        let mut warnings: Vec<String> = Vec::new();
 
         let first_structural = structural_children.first();
 
@@ -246,7 +247,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
 
             // Extract content from content tags
             if spec.content_tags.contains(&child_tag.to_string()) {
-                let text = self.extract_inline_text(child, &mut collector);
+                let (text, errs) = self.extract_inline_text_with_warnings(child, &mut collector);
+                warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
                 }
@@ -264,7 +266,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 context.base_url.clone(),
             )
             .with_bijlage_prefix(context.bijlage_prefix.clone())
-            .with_references(collector.into_references()),
+            .with_references(collector.into_references())
+            .with_warnings(warnings),
         )
     }
 
@@ -280,6 +283,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
     ) -> Option<ArticleComponent> {
         let mut collector = ReferenceCollector::new();
         let mut parts: Vec<String> = Vec::new();
+        let mut warnings: Vec<String> = Vec::new();
 
         for child in node.children() {
             if !child.is_element() {
@@ -295,7 +299,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
 
             // Extract content from content tags
             if spec.content_tags.contains(&child_tag.to_string()) {
-                let text = self.extract_inline_text(child, &mut collector);
+                let (text, errs) = self.extract_inline_text_with_warnings(child, &mut collector);
+                warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
                 }
@@ -312,7 +317,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 }
             } else if !self.hierarchy.is_structural(child_tag) {
                 // Also extract from non-structural elements
-                let text = self.extract_inline_text(child, &mut collector);
+                let (text, errs) = self.extract_inline_text_with_warnings(child, &mut collector);
+                warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
                 }
@@ -330,7 +336,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 context.base_url.clone(),
             )
             .with_bijlage_prefix(context.bijlage_prefix.clone())
-            .with_references(collector.into_references()),
+            .with_references(collector.into_references())
+            .with_warnings(warnings),
         )
     }
 
@@ -347,6 +354,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
     ) -> Option<ArticleComponent> {
         let mut collector = ReferenceCollector::new();
         let mut parts: Vec<String> = Vec::new();
+        let mut warnings: Vec<String> = Vec::new();
 
         for child in node.children() {
             if !child.is_element() {
@@ -366,7 +374,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
             }
 
             // Extract content recursively (extract_inline_text already skips redactie)
-            let text = self.extract_element_recursive(child, &mut collector);
+            let (text, errs) = self.extract_element_recursive_with_warnings(child, &mut collector);
+            warnings.extend(errs);
             if !text.is_empty() {
                 parts.push(text);
             }
@@ -383,7 +392,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 context.base_url.clone(),
             )
             .with_bijlage_prefix(context.bijlage_prefix.clone())
-            .with_references(collector.into_references()),
+            .with_references(collector.into_references())
+            .with_warnings(warnings),
         )
     }
 
@@ -391,36 +401,39 @@ impl<S: SplitStrategy> SplitEngine<S> {
     ///
     /// Handles nested structures like lid > al, lijst > li > al, etc.
     /// Editorial content is automatically skipped.
-    fn extract_element_recursive(
+    ///
+    /// Returns `(text, warnings)` tuple where warnings are non-fatal parse errors.
+    fn extract_element_recursive_with_warnings(
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
-    ) -> String {
+    ) -> (String, Vec<String>) {
         let tag = get_tag_name(node);
 
         // Skip editorial content
         if self.is_editorial_content(node) {
-            return String::new();
+            return (String::new(), Vec::new());
         }
 
         // Skip tussenkop - it's just a version separator, not content
         if tag == "tussenkop" {
-            return String::new();
+            return (String::new(), Vec::new());
         }
 
         // Skip meta-data
         if tag == "meta-data" {
-            return String::new();
+            return (String::new(), Vec::new());
         }
 
         // Content elements - extract inline text
         if tag == "al" {
-            return self.extract_inline_text(node, collector);
+            return self.extract_inline_text_with_warnings(node, collector);
         }
 
         // Structural elements - recurse into children
         if tag == "lid" || tag == "lijst" || tag == "li" {
             let mut parts: Vec<String> = Vec::new();
+            let mut warnings: Vec<String> = Vec::new();
 
             // For lid, include the lid number as prefix
             if tag == "lid" {
@@ -456,17 +469,18 @@ impl<S: SplitStrategy> SplitEngine<S> {
                     continue;
                 }
 
-                let text = self.extract_element_recursive(child, collector);
+                let (text, errs) = self.extract_element_recursive_with_warnings(child, collector);
+                warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
                 }
             }
 
-            return parts.join(" ");
+            return (parts.join(" "), warnings);
         }
 
         // Unknown element - try inline extraction
-        self.extract_inline_text(node, collector)
+        self.extract_inline_text_with_warnings(node, collector)
     }
 
     /// Extract inline text from an element using the registry handlers.
@@ -476,25 +490,39 @@ impl<S: SplitStrategy> SplitEngine<S> {
     /// link generation and reference collection.
     ///
     /// Editorial content (`<redactie>`) is always skipped - it's not law text.
-    fn extract_inline_text(
+    ///
+    /// Returns `(text, warnings)` tuple where warnings are non-fatal parse errors.
+    fn extract_inline_text_with_warnings(
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
-    ) -> String {
+    ) -> (String, Vec<String>) {
         // Skip editorial content - not law text
         if self.is_editorial_content(node) {
-            return String::new();
+            return (String::new(), Vec::new());
         }
 
         let mut parse_context = ParseContext::new("", "").with_collector(collector);
 
         // Try to parse using the registry engine
         if let Ok(result) = self.parse_engine.parse(node, &mut parse_context) {
-            return result.text.trim().to_string();
+            return (result.text.trim().to_string(), result.errors);
         }
 
         // Fallback to simple text extraction if handler not found
-        self.extract_simple_text(node, collector)
+        (self.extract_simple_text(node, collector), Vec::new())
+    }
+
+    /// Extract inline text from an element using the registry handlers.
+    ///
+    /// This is a convenience wrapper that discards warnings. Use
+    /// `extract_inline_text_with_warnings` when warning collection is needed.
+    fn extract_inline_text(
+        &self,
+        node: Node<'_, '_>,
+        collector: &mut ReferenceCollector,
+    ) -> String {
+        self.extract_inline_text_with_warnings(node, collector).0
     }
 
     /// Simple text extraction fallback.
@@ -1253,5 +1281,67 @@ mod tests {
         assert_eq!(components[3].to_number(), "1.2");
         assert_eq!(components[4].to_number(), "1.2.a");
         assert_eq!(components[5].to_number(), "1.2.b");
+    }
+
+    #[test]
+    fn test_split_artikel_components_have_warnings_field() {
+        // Verify that ArticleComponent has a warnings field (even if empty)
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <al>Article text here.</al>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        // Verify warnings field exists and is initialized
+        assert!(
+            components[0].warnings.is_empty(),
+            "Expected no warnings for valid content"
+        );
+    }
+
+    #[test]
+    fn test_split_artikel_with_unknown_element_produces_warning() {
+        // An unknown element inside <al> should produce a warning but still extract text
+        let hierarchy = create_dutch_law_hierarchy();
+        let engine = SplitEngine::new(hierarchy, LeafSplitStrategy);
+
+        let xml = r#"<artikel>
+            <kop><nr>1</nr></kop>
+            <al>Text before <unknown_element>unknown content</unknown_element> text after.</al>
+        </artikel>"#;
+
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let context = SplitContext::new("BWBR0000000", "2025-01-01", "https://example.com");
+
+        let components = engine.split(doc.root_element(), context);
+
+        assert_eq!(components.len(), 1);
+        // Text should still be extracted (graceful degradation)
+        assert!(
+            components[0].text.contains("Text before"),
+            "Should extract text before unknown element"
+        );
+        assert!(
+            components[0].text.contains("text after"),
+            "Should extract text after unknown element"
+        );
+        // Should have a warning about the unknown element
+        assert!(
+            !components[0].warnings.is_empty(),
+            "Should have warning for unknown element, got: {:?}",
+            components[0].warnings
+        );
+        assert!(
+            components[0].warnings[0].contains("unknown_element"),
+            "Warning should mention the unknown element name"
+        );
     }
 }

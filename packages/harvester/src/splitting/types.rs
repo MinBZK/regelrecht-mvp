@@ -166,6 +166,9 @@ pub struct ArticleComponent {
 
     /// Optional bijlage prefix (e.g., "B1", "B2") for articles in appendices.
     pub bijlage_prefix: Option<String>,
+
+    /// Non-fatal warnings encountered during parsing.
+    pub warnings: Vec<String>,
 }
 
 impl ArticleComponent {
@@ -182,6 +185,7 @@ impl ArticleComponent {
             base_url: base_url.into(),
             references: Vec::new(),
             bijlage_prefix: None,
+            warnings: Vec::new(),
         }
     }
 
@@ -196,6 +200,13 @@ impl ArticleComponent {
     #[must_use]
     pub fn with_bijlage_prefix(mut self, prefix: Option<String>) -> Self {
         self.bijlage_prefix = prefix;
+        self
+    }
+
+    /// Add warnings to this component.
+    #[must_use]
+    pub fn with_warnings(mut self, warnings: Vec<String>) -> Self {
+        self.warnings = warnings;
         self
     }
 
