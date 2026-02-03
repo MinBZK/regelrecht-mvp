@@ -144,7 +144,16 @@ pub fn content_url(bwb_id: &str, date: &str) -> String {
 ///
 /// This ensures fragment IDs are safe for use in URLs and don't contain
 /// characters that could cause issues (like quotes, angle brackets, etc.).
-fn sanitize_fragment(fragment: &str) -> String {
+///
+/// # Examples
+/// ```
+/// use regelrecht_harvester::config::sanitize_fragment;
+///
+/// assert_eq!(sanitize_fragment("1a"), "1a");
+/// assert_eq!(sanitize_fragment("3.1"), "3.1");
+/// assert_eq!(sanitize_fragment("1<script>"), "1script");
+/// ```
+pub fn sanitize_fragment(fragment: &str) -> String {
     fragment
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_' || *c == '.' || *c == '~')

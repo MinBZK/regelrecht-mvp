@@ -8,6 +8,7 @@ use regex::Regex;
 use roxmltree::Node;
 use std::sync::LazyLock;
 
+use crate::config::sanitize_fragment;
 use crate::registry::handler::{extract_text_with_tail, ElementHandler, RecurseFn};
 use crate::registry::types::{ElementType, ParseContext, ParseResult};
 use crate::types::Reference;
@@ -52,25 +53,28 @@ static AFDELING_PATTERN: LazyLock<Regex> =
 /// Convert JCI reference to wetten.overheid.nl URL.
 ///
 /// Anchor priority: artikel > hoofdstuk > afdeling > paragraaf
+///
+/// All fragment values are sanitized to prevent injection of problematic characters.
 fn convert_jci_to_url(jci_ref: &str) -> String {
     if let Some(bwb_match) = BWB_PATTERN.find(jci_ref) {
         let bwb_id = bwb_match.as_str();
 
         // Check anchors in priority order
+        // Sanitize all fragment values to prevent injection of problematic characters
         if let Some(caps) = ARTIKEL_PATTERN.captures(jci_ref) {
-            let artikel = caps[1].replace(' ', "_");
+            let artikel = sanitize_fragment(&caps[1].replace(' ', "_"));
             return format!("https://wetten.overheid.nl/{bwb_id}#Artikel{artikel}");
         }
         if let Some(caps) = HOOFDSTUK_PATTERN.captures(jci_ref) {
-            let hoofdstuk = caps[1].replace(' ', "_");
+            let hoofdstuk = sanitize_fragment(&caps[1].replace(' ', "_"));
             return format!("https://wetten.overheid.nl/{bwb_id}#Hoofdstuk{hoofdstuk}");
         }
         if let Some(caps) = AFDELING_PATTERN.captures(jci_ref) {
-            let afdeling = caps[1].replace(' ', "_");
+            let afdeling = sanitize_fragment(&caps[1].replace(' ', "_"));
             return format!("https://wetten.overheid.nl/{bwb_id}#Afdeling{afdeling}");
         }
         if let Some(caps) = PARAGRAAF_PATTERN.captures(jci_ref) {
-            let paragraaf = caps[1].replace(' ', "_");
+            let paragraaf = sanitize_fragment(&caps[1].replace(' ', "_"));
             return format!("https://wetten.overheid.nl/{bwb_id}#Paragraaf{paragraaf}");
         }
 
@@ -415,5 +419,30 @@ mod tests {
         assert_eq!(reference.bwb_id, "BWBR0018451");
         assert_eq!(reference.artikel, Some("IV".to_string()));
         assert_eq!(reference.lid, Some("1".to_string()));
+    }
+
+    #[test]
+    fn test_convert_jci_to_url_sanitizes_fragments() {
+        // Note: artikel pattern only matches word chars, so <script> isn't captured
+        // This tests that sanitization is applied to patterns that match more broadly
+
+        // hoofdstuk pattern matches [^&]+ which could include special chars
+        // Quotes and other special chars should be stripped by sanitize_fragment
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0018451&hoofdstuk=5<script>alert"),
+            "https://wetten.overheid.nl/BWBR0018451#Hoofdstuk5scriptalert"
+        );
+
+        // Test afdeling with special chars
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0018451&afdeling=3.1\"onclick"),
+            "https://wetten.overheid.nl/BWBR0018451#Afdeling3.1onclick"
+        );
+
+        // Test paragraaf with angle brackets
+        assert_eq!(
+            convert_jci_to_url("jci1.3:c:BWBR0018451&paragraaf=2<>"),
+            "https://wetten.overheid.nl/BWBR0018451#Paragraaf2"
+        );
     }
 }
