@@ -36,7 +36,263 @@ use crate::error::{EngineError, Result};
 use crate::operations::ValueResolver;
 use crate::types::Value;
 use chrono::{Datelike, NaiveDate};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+// =============================================================================
+// TypeSpec - Value Type Specification with Enforcement
+// =============================================================================
+
+/// Specification for value types with enforcement capabilities.
+///
+/// TypeSpec defines constraints and transformations that can be applied to values:
+/// - **Type checking**: Ensure values match expected types
+/// - **Range constraints**: min/max bounds for numeric values
+/// - **Precision**: Rounding to specified decimal places
+/// - **Unit conversion**: Handle unit-specific transformations (e.g., eurocent)
+///
+/// # Example
+///
+/// ```ignore
+/// use regelrecht_engine::{TypeSpec, Value};
+///
+/// let spec = TypeSpec::new()
+///     .with_precision(2)
+///     .with_min(0.0)
+///     .with_max(100.0);
+///
+/// let value = Value::Float(123.456);
+/// let enforced = spec.enforce(value);
+/// // enforced = Value::Float(100.0)  // clamped to max, rounded to 2 decimals
+/// ```
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TypeSpec {
+    /// Expected value type (e.g., "number", "string", "boolean")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value_type: Option<String>,
+
+    /// Unit for the value (e.g., "eurocent", "EUR", "days", "percent")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<String>,
+
+    /// Number of decimal places for rounding (for numeric values)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<i32>,
+
+    /// Minimum allowed value (for numeric values)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min: Option<f64>,
+
+    /// Maximum allowed value (for numeric values)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max: Option<f64>,
+}
+
+impl TypeSpec {
+    /// Create a new empty TypeSpec.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the expected value type.
+    pub fn with_type(mut self, value_type: impl Into<String>) -> Self {
+        self.value_type = Some(value_type.into());
+        self
+    }
+
+    /// Set the unit.
+    pub fn with_unit(mut self, unit: impl Into<String>) -> Self {
+        self.unit = Some(unit.into());
+        self
+    }
+
+    /// Set the precision (decimal places).
+    pub fn with_precision(mut self, precision: i32) -> Self {
+        self.precision = Some(precision);
+        self
+    }
+
+    /// Set the minimum value.
+    pub fn with_min(mut self, min: f64) -> Self {
+        self.min = Some(min);
+        self
+    }
+
+    /// Set the maximum value.
+    pub fn with_max(mut self, max: f64) -> Self {
+        self.max = Some(max);
+        self
+    }
+
+    /// Create a TypeSpec from a specification map.
+    ///
+    /// Recognized keys:
+    /// - `type` or `value_type`: string
+    /// - `unit`: string
+    /// - `precision`: integer
+    /// - `min`: number
+    /// - `max`: number
+    pub fn from_spec(spec: &HashMap<String, Value>) -> Option<Self> {
+        // Return None if spec is empty
+        if spec.is_empty() {
+            return None;
+        }
+
+        let mut type_spec = TypeSpec::new();
+
+        // Extract value_type (check both "type" and "value_type" keys)
+        if let Some(Value::String(t)) = spec.get("type").or_else(|| spec.get("value_type")) {
+            type_spec.value_type = Some(t.clone());
+        }
+
+        // Extract unit
+        if let Some(Value::String(u)) = spec.get("unit") {
+            type_spec.unit = Some(u.clone());
+        }
+
+        // Extract precision
+        if let Some(v) = spec.get("precision") {
+            match v {
+                Value::Int(p) => type_spec.precision = Some(*p as i32),
+                Value::Float(p) => type_spec.precision = Some(*p as i32),
+                _ => {}
+            }
+        }
+
+        // Extract min
+        if let Some(v) = spec.get("min") {
+            match v {
+                Value::Int(m) => type_spec.min = Some(*m as f64),
+                Value::Float(m) => type_spec.min = Some(*m),
+                _ => {}
+            }
+        }
+
+        // Extract max
+        if let Some(v) = spec.get("max") {
+            match v {
+                Value::Int(m) => type_spec.max = Some(*m as f64),
+                Value::Float(m) => type_spec.max = Some(*m),
+                _ => {}
+            }
+        }
+
+        // Return None if no constraints were found
+        if type_spec.value_type.is_none()
+            && type_spec.unit.is_none()
+            && type_spec.precision.is_none()
+            && type_spec.min.is_none()
+            && type_spec.max.is_none()
+        {
+            return None;
+        }
+
+        Some(type_spec)
+    }
+
+    /// Check if this TypeSpec has any constraints to enforce.
+    pub fn has_constraints(&self) -> bool {
+        self.precision.is_some() || self.min.is_some() || self.max.is_some() || self.unit.is_some()
+    }
+
+    /// Enforce the type specification on a value.
+    ///
+    /// Applies the following transformations in order:
+    /// 1. Min/max clamping (for numeric values)
+    /// 2. Precision rounding (for numeric values)
+    /// 3. Unit-specific conversions (e.g., eurocent -> integer)
+    ///
+    /// Non-numeric values are returned unchanged (unless unit conversion applies).
+    pub fn enforce(&self, value: Value) -> Value {
+        match value {
+            Value::Int(i) => self.enforce_numeric(i as f64),
+            Value::Float(f) => self.enforce_numeric(f),
+            // Non-numeric values pass through unchanged
+            other => other,
+        }
+    }
+
+    /// Enforce constraints on a numeric value.
+    fn enforce_numeric(&self, value: f64) -> Value {
+        let mut result = value;
+
+        // 1. Apply min constraint
+        if let Some(min) = self.min {
+            result = result.max(min);
+        }
+
+        // 2. Apply max constraint
+        if let Some(max) = self.max {
+            result = result.min(max);
+        }
+
+        // 3. Apply precision (rounding)
+        if let Some(precision) = self.precision {
+            let factor = 10_f64.powi(precision);
+            result = (result * factor).round() / factor;
+        }
+
+        // 4. Handle unit-specific conversions
+        if let Some(ref unit) = self.unit {
+            return self.convert_for_unit(result, unit);
+        }
+
+        // Determine if result should be Int or Float
+        if result.fract() == 0.0 && result >= i64::MIN as f64 && result <= i64::MAX as f64 {
+            Value::Int(result as i64)
+        } else {
+            Value::Float(result)
+        }
+    }
+
+    /// Convert a numeric value based on its unit.
+    fn convert_for_unit(&self, value: f64, unit: &str) -> Value {
+        match unit.to_lowercase().as_str() {
+            // Cent units should be integers
+            "eurocent" | "cent" | "cents" => {
+                let rounded = value.round();
+                Value::Int(rounded as i64)
+            }
+            // Euro with 2 decimal precision
+            "eur" | "euro" | "euros" => {
+                let rounded = (value * 100.0).round() / 100.0;
+                Value::Float(rounded)
+            }
+            // Percentage typically with 2 decimal precision
+            "percent" | "percentage" => {
+                let rounded = (value * 100.0).round() / 100.0;
+                Value::Float(rounded)
+            }
+            // Days should be integers
+            "days" | "day" => {
+                let rounded = value.round();
+                Value::Int(rounded as i64)
+            }
+            // Months should be integers
+            "months" | "month" => {
+                let rounded = value.round();
+                Value::Int(rounded as i64)
+            }
+            // Years should be integers
+            "years" | "year" => {
+                let rounded = value.round();
+                Value::Int(rounded as i64)
+            }
+            // Unknown units - return as-is
+            _ => {
+                if value.fract() == 0.0 && value >= i64::MIN as f64 && value <= i64::MAX as f64 {
+                    Value::Int(value as i64)
+                } else {
+                    Value::Float(value)
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// RuleContext - Execution Context
+// =============================================================================
 
 /// Execution context for article evaluation.
 ///
@@ -122,6 +378,23 @@ impl RuleContext {
     /// Set an output value.
     pub fn set_output(&mut self, name: impl Into<String>, value: Value) {
         self.outputs.insert(name.into(), value);
+    }
+
+    /// Set an output value with type specification enforcement.
+    ///
+    /// If a TypeSpec is provided, the value will be transformed according to
+    /// its constraints (min/max clamping, precision rounding, unit conversion).
+    pub fn set_output_with_spec(
+        &mut self,
+        name: impl Into<String>,
+        value: Value,
+        spec: Option<&TypeSpec>,
+    ) {
+        let enforced_value = match spec {
+            Some(type_spec) => type_spec.enforce(value),
+            None => value,
+        };
+        self.outputs.insert(name.into(), enforced_value);
     }
 
     /// Get an output value.
@@ -346,6 +619,193 @@ fn value_type_name(value: &Value) -> &'static str {
 mod tests {
     use super::*;
     use crate::config;
+
+    // =========================================================================
+    // TypeSpec Tests
+    // =========================================================================
+
+    mod typespec_tests {
+        use super::*;
+
+        #[test]
+        fn test_typespec_new() {
+            let spec = TypeSpec::new();
+            assert!(spec.value_type.is_none());
+            assert!(spec.unit.is_none());
+            assert!(spec.precision.is_none());
+            assert!(spec.min.is_none());
+            assert!(spec.max.is_none());
+        }
+
+        #[test]
+        fn test_typespec_builder() {
+            let spec = TypeSpec::new()
+                .with_type("number")
+                .with_unit("EUR")
+                .with_precision(2)
+                .with_min(0.0)
+                .with_max(1000.0);
+
+            assert_eq!(spec.value_type, Some("number".to_string()));
+            assert_eq!(spec.unit, Some("EUR".to_string()));
+            assert_eq!(spec.precision, Some(2));
+            assert_eq!(spec.min, Some(0.0));
+            assert_eq!(spec.max, Some(1000.0));
+        }
+
+        #[test]
+        fn test_typespec_from_spec() {
+            let mut spec_map = HashMap::new();
+            spec_map.insert("type".to_string(), Value::String("number".to_string()));
+            spec_map.insert("unit".to_string(), Value::String("EUR".to_string()));
+            spec_map.insert("precision".to_string(), Value::Int(2));
+            spec_map.insert("min".to_string(), Value::Float(0.0));
+            spec_map.insert("max".to_string(), Value::Int(1000));
+
+            let spec = TypeSpec::from_spec(&spec_map).unwrap();
+
+            assert_eq!(spec.value_type, Some("number".to_string()));
+            assert_eq!(spec.unit, Some("EUR".to_string()));
+            assert_eq!(spec.precision, Some(2));
+            assert_eq!(spec.min, Some(0.0));
+            assert_eq!(spec.max, Some(1000.0));
+        }
+
+        #[test]
+        fn test_typespec_from_spec_empty() {
+            let spec_map = HashMap::new();
+            let spec = TypeSpec::from_spec(&spec_map);
+            assert!(spec.is_none());
+        }
+
+        #[test]
+        fn test_typespec_from_spec_value_type_key() {
+            let mut spec_map = HashMap::new();
+            spec_map.insert(
+                "value_type".to_string(),
+                Value::String("boolean".to_string()),
+            );
+
+            let spec = TypeSpec::from_spec(&spec_map).unwrap();
+            assert_eq!(spec.value_type, Some("boolean".to_string()));
+        }
+
+        #[test]
+        fn test_enforce_min() {
+            let spec = TypeSpec::new().with_min(10.0);
+
+            assert_eq!(spec.enforce(Value::Int(5)), Value::Int(10));
+            assert_eq!(spec.enforce(Value::Int(15)), Value::Int(15));
+            assert_eq!(spec.enforce(Value::Float(5.5)), Value::Int(10));
+        }
+
+        #[test]
+        fn test_enforce_max() {
+            let spec = TypeSpec::new().with_max(100.0);
+
+            assert_eq!(spec.enforce(Value::Int(50)), Value::Int(50));
+            assert_eq!(spec.enforce(Value::Int(150)), Value::Int(100));
+            assert_eq!(spec.enforce(Value::Float(150.5)), Value::Int(100));
+        }
+
+        #[test]
+        fn test_enforce_min_max() {
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0);
+
+            assert_eq!(spec.enforce(Value::Int(-10)), Value::Int(0));
+            assert_eq!(spec.enforce(Value::Int(50)), Value::Int(50));
+            assert_eq!(spec.enforce(Value::Int(200)), Value::Int(100));
+        }
+
+        #[test]
+        fn test_enforce_precision() {
+            let spec = TypeSpec::new().with_precision(2);
+
+            assert_eq!(spec.enforce(Value::Float(3.14159)), Value::Float(3.14));
+            // 2.999 rounds to 3.0, which is a whole number, so it becomes Int(3)
+            assert_eq!(spec.enforce(Value::Float(2.999)), Value::Int(3));
+            // Use a value that doesn't have floating point representation issues
+            assert_eq!(spec.enforce(Value::Float(1.236)), Value::Float(1.24));
+        }
+
+        #[test]
+        fn test_enforce_precision_zero() {
+            let spec = TypeSpec::new().with_precision(0);
+
+            assert_eq!(spec.enforce(Value::Float(3.7)), Value::Int(4));
+            assert_eq!(spec.enforce(Value::Float(3.2)), Value::Int(3));
+        }
+
+        #[test]
+        fn test_enforce_unit_eurocent() {
+            let spec = TypeSpec::new().with_unit("eurocent");
+
+            assert_eq!(spec.enforce(Value::Float(123.45)), Value::Int(123));
+            assert_eq!(spec.enforce(Value::Float(123.67)), Value::Int(124));
+            assert_eq!(spec.enforce(Value::Int(100)), Value::Int(100));
+        }
+
+        #[test]
+        fn test_enforce_unit_euro() {
+            let spec = TypeSpec::new().with_unit("EUR");
+
+            assert_eq!(spec.enforce(Value::Float(123.456)), Value::Float(123.46));
+            assert_eq!(spec.enforce(Value::Float(99.994)), Value::Float(99.99));
+        }
+
+        #[test]
+        fn test_enforce_unit_days() {
+            let spec = TypeSpec::new().with_unit("days");
+
+            assert_eq!(spec.enforce(Value::Float(30.5)), Value::Int(31));
+            assert_eq!(spec.enforce(Value::Float(30.4)), Value::Int(30));
+        }
+
+        #[test]
+        fn test_enforce_combined() {
+            // Test min + max + precision together
+            let spec = TypeSpec::new()
+                .with_min(0.0)
+                .with_max(100.0)
+                .with_precision(1);
+
+            // Value within range, needs rounding
+            assert_eq!(spec.enforce(Value::Float(50.55)), Value::Float(50.6));
+
+            // Value below min (0.0 is whole number, becomes Int)
+            assert_eq!(spec.enforce(Value::Float(-10.0)), Value::Int(0));
+
+            // Value above max (100.0 is whole number, becomes Int)
+            assert_eq!(spec.enforce(Value::Float(150.0)), Value::Int(100));
+        }
+
+        #[test]
+        fn test_enforce_non_numeric() {
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0);
+
+            // Non-numeric values pass through unchanged
+            assert_eq!(
+                spec.enforce(Value::String("hello".to_string())),
+                Value::String("hello".to_string())
+            );
+            assert_eq!(spec.enforce(Value::Bool(true)), Value::Bool(true));
+            assert_eq!(spec.enforce(Value::Null), Value::Null);
+        }
+
+        #[test]
+        fn test_has_constraints() {
+            assert!(!TypeSpec::new().has_constraints());
+            assert!(TypeSpec::new().with_min(0.0).has_constraints());
+            assert!(TypeSpec::new().with_max(100.0).has_constraints());
+            assert!(TypeSpec::new().with_precision(2).has_constraints());
+            assert!(TypeSpec::new().with_unit("EUR").has_constraints());
+            assert!(!TypeSpec::new().with_type("number").has_constraints());
+        }
+    }
+
+    // =========================================================================
+    // RuleContext Tests
+    // =========================================================================
 
     fn make_context() -> RuleContext {
         let mut params = HashMap::new();
