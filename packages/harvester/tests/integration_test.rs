@@ -34,7 +34,11 @@ fn run_pipeline() -> Law {
         roxmltree::Document::parse(&content_xml).expect("Failed to parse content XML");
     let articles = parse_articles(&content_doc, &metadata.bwb_id, "2025-01-01");
 
-    Law { metadata, articles }
+    Law {
+        metadata,
+        articles,
+        warnings: Vec::new(),
+    }
 }
 
 /// Parse articles from content XML document.

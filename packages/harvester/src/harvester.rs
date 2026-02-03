@@ -18,7 +18,7 @@ use crate::xml::{find_bijlage_context, find_by_path, find_children, get_tag_name
 /// * `date` - The effective date in YYYY-MM-DD format
 ///
 /// # Returns
-/// A `Law` object containing metadata and articles
+/// A `Law` object containing metadata, articles, and any warnings encountered during parsing
 pub fn download_law(bwb_id: &str, date: &str) -> Result<Law> {
     // Validate inputs
     validate_bwb_id(bwb_id)?;
@@ -34,15 +34,22 @@ pub fn download_law(bwb_id: &str, date: &str) -> Result<Law> {
     let content_xml = download_content_xml(&client, bwb_id, date)?;
 
     // Parse articles from content
-    let articles = parse_articles(&content_xml, bwb_id, date)?;
+    let (articles, warnings) = parse_articles(&content_xml, bwb_id, date)?;
 
-    Ok(Law { metadata, articles })
+    Ok(Law {
+        metadata,
+        articles,
+        warnings,
+    })
 }
 
 /// Parse articles from content XML.
-fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
+///
+/// Returns `(articles, warnings)` tuple where warnings are non-fatal parse errors.
+fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<(Vec<Article>, Vec<String>)> {
     let doc = Document::parse(xml)?;
     let mut articles = Vec::new();
+    let mut all_warnings: Vec<String> = Vec::new();
 
     // Extract aanhef first
     if let Some(aanhef) = extract_aanhef(&doc, bwb_id, date) {
@@ -83,13 +90,17 @@ fn parse_articles(xml: &str, bwb_id: &str, date: &str) -> Result<Vec<Article>> {
         // Split the artikel
         let components = engine.split(artikel, context);
 
-        // Convert components to articles
+        // Convert components to articles and collect warnings
         for component in components {
+            // Collect warnings with article context
+            for warning in &component.warnings {
+                all_warnings.push(format!("Article {}: {}", component.to_number(), warning));
+            }
             articles.push(component.to_article());
         }
     }
 
-    Ok(articles)
+    Ok((articles, all_warnings))
 }
 
 /// Extract the aanhef (preamble) as an article.
