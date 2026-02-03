@@ -45,7 +45,7 @@ pub mod xml;
 pub mod yaml;
 
 // Re-export main functions
-pub use harvester::download_law;
+pub use harvester::{download_law, download_law_with_max_size};
 
 // Re-export commonly used items
 pub use config::{validate_bwb_id, validate_date};

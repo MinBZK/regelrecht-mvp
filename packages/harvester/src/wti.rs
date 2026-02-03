@@ -11,7 +11,7 @@ use roxmltree::Document;
 
 use crate::config::wti_url;
 use crate::error::{HarvesterError, Result};
-use crate::http::{bytes_to_string, download_bytes};
+use crate::http::{bytes_to_string, download_bytes_default};
 use crate::types::{LawMetadata, RegulatoryLayer};
 
 /// Download WTI (metadata) XML content for a law.
@@ -24,7 +24,7 @@ use crate::types::{LawMetadata, RegulatoryLayer};
 /// Raw XML content as a string
 pub fn download_wti_xml(client: &Client, bwb_id: &str) -> Result<String> {
     let url = wti_url(bwb_id);
-    let bytes = download_bytes(client, &url).map_err(|e| {
+    let bytes = download_bytes_default(client, &url).map_err(|e| {
         if let HarvesterError::Http(source) = e {
             HarvesterError::WtiDownload {
                 bwb_id: bwb_id.to_string(),
