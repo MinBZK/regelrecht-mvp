@@ -575,9 +575,10 @@ fn execute_is_null<R: ValueResolver>(
     resolver: &R,
     depth: usize,
 ) -> Result<Value> {
-    let subject = op.subject.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("IS_NULL requires 'subject'".to_string())
-    })?;
+    let subject = op
+        .subject
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("IS_NULL requires 'subject'".to_string()))?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
     Ok(Value::Bool(subject_val.is_null()))
@@ -589,9 +590,10 @@ fn execute_not_null<R: ValueResolver>(
     resolver: &R,
     depth: usize,
 ) -> Result<Value> {
-    let subject = op.subject.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("NOT_NULL requires 'subject'".to_string())
-    })?;
+    let subject = op
+        .subject
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("NOT_NULL requires 'subject'".to_string()))?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
     Ok(Value::Bool(!subject_val.is_null()))
@@ -604,14 +606,11 @@ fn execute_not_null<R: ValueResolver>(
 /// Execute IN operation: returns true if subject is in the values list.
 ///
 /// Uses Python-style numeric coercion for equality comparison.
-fn execute_in<R: ValueResolver>(
-    op: &ActionOperation,
-    resolver: &R,
-    depth: usize,
-) -> Result<Value> {
-    let subject = op.subject.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("IN requires 'subject'".to_string())
-    })?;
+fn execute_in<R: ValueResolver>(op: &ActionOperation, resolver: &R, depth: usize) -> Result<Value> {
+    let subject = op
+        .subject
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("IN requires 'subject'".to_string()))?;
     let values = get_values(op)?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
@@ -634,9 +633,10 @@ fn execute_not_in<R: ValueResolver>(
     resolver: &R,
     depth: usize,
 ) -> Result<Value> {
-    let subject = op.subject.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("NOT_IN requires 'subject'".to_string())
-    })?;
+    let subject = op
+        .subject
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("NOT_IN requires 'subject'".to_string()))?;
     let values = get_values(op)?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
@@ -2567,12 +2567,13 @@ mod tests {
 
         #[test]
         fn test_in_with_variables() {
-            let resolver = TestResolver::new()
-                .with_var("status", "active")
-                .with_var("valid_statuses", Value::Array(vec![
+            let resolver = TestResolver::new().with_var("status", "active").with_var(
+                "valid_statuses",
+                Value::Array(vec![
                     Value::String("active".to_string()),
                     Value::String("pending".to_string()),
-                ]));
+                ]),
+            );
 
             let op = ActionOperation {
                 operation: Operation::In,
