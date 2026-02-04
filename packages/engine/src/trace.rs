@@ -256,9 +256,10 @@ fn format_value_compact(value: &Value) -> String {
             }
         }
         Value::String(s) => {
-            // Truncate long strings
-            if s.len() > 20 {
-                format!("\"{}...\"", &s[..17])
+            // Truncate long strings (use chars() for UTF-8 safety)
+            if s.chars().count() > 20 {
+                let truncated: String = s.chars().take(17).collect();
+                format!("\"{}...\"", truncated)
             } else {
                 format!("\"{}\"", s)
             }
@@ -592,19 +593,16 @@ mod tests {
     #[test]
     fn test_render_complex_tree() {
         // Build a more complex tree
-        let resolve_a = PathNode::new(PathNodeType::Resolve, "var_a")
-            .with_result(Value::Int(100));
+        let resolve_a = PathNode::new(PathNodeType::Resolve, "var_a").with_result(Value::Int(100));
 
-        let resolve_b = PathNode::new(PathNodeType::Resolve, "var_b")
-            .with_result(Value::Int(200));
+        let resolve_b = PathNode::new(PathNodeType::Resolve, "var_b").with_result(Value::Int(200));
 
         let add_op = PathNode::new(PathNodeType::Operation, "ADD")
             .with_result(Value::Int(300))
             .with_child(resolve_a)
             .with_child(resolve_b);
 
-        let article = PathNode::new(PathNodeType::Article, "artikel_1")
-            .with_child(add_op);
+        let article = PathNode::new(PathNodeType::Article, "artikel_1").with_child(add_op);
 
         let rendered = article.render(0, false);
 
@@ -618,8 +616,7 @@ mod tests {
 
     #[test]
     fn test_render_compact() {
-        let node = PathNode::new(PathNodeType::Operation, "MULTIPLY")
-            .with_result(Value::Int(42));
+        let node = PathNode::new(PathNodeType::Operation, "MULTIPLY").with_result(Value::Int(42));
 
         let compact = node.render_compact();
         assert_eq!(compact, "op:MULTIPLY=42");
@@ -640,6 +637,39 @@ mod tests {
         let formatted = format_value_compact(&Value::String(long_string.to_string()));
         assert!(formatted.len() < long_string.len());
         assert!(formatted.contains("..."));
+    }
+
+    #[test]
+    fn test_format_value_compact_utf8_safety() {
+        // Dutch legal text with diacritics - would panic with byte slicing at position 17
+        // if using &s[..17] instead of chars().take(17)
+        let dutch_text = "éénentwintigste regeling met diakritische tekens";
+        assert!(
+            dutch_text.chars().count() > 20,
+            "Test string must be > 20 chars"
+        );
+        let formatted = format_value_compact(&Value::String(dutch_text.to_string()));
+        assert!(
+            formatted.contains("..."),
+            "Expected truncation for: {}",
+            formatted
+        );
+        // Verify it produces valid output (doesn't panic on UTF-8 boundary)
+        assert!(!formatted.is_empty());
+
+        // String with multi-byte chars throughout - old code would panic
+        // Each letter with accent is 2 bytes, slicing at byte 17 would cut mid-character
+        let accented = "àáâãäåæçèéêëìíîïðñòóôõö";
+        assert!(
+            accented.chars().count() > 20,
+            "Test string must be > 20 chars"
+        );
+        let formatted = format_value_compact(&Value::String(accented.to_string()));
+        assert!(
+            formatted.contains("..."),
+            "Expected truncation for accented: {}",
+            formatted
+        );
     }
 
     #[test]
@@ -674,8 +704,7 @@ mod tests {
         ];
 
         for (rt, expected_str) in types {
-            let node = PathNode::new(PathNodeType::Resolve, "test")
-                .with_resolve_type(rt);
+            let node = PathNode::new(PathNodeType::Resolve, "test").with_resolve_type(rt);
             let rendered = node.render(0, false);
             assert!(
                 rendered.contains(&format!("[{}]", expected_str)),
