@@ -214,16 +214,27 @@ impl TypeSpec {
 
     /// Enforce constraints on a numeric value.
     fn enforce_numeric(&self, value: f64) -> Value {
-        let mut result = value;
-
-        // 1. Apply min constraint
-        if let Some(min) = self.min {
-            result = result.max(min);
+        // Reject non-finite values (NaN, Infinity) - cannot meaningfully enforce constraints
+        if !value.is_finite() {
+            return Value::Float(value);
         }
 
-        // 2. Apply max constraint
-        if let Some(max) = self.max {
-            result = result.min(max);
+        let mut result = value;
+
+        // 1. Apply min/max constraints (swap if min > max to be forgiving)
+        match (self.min, self.max) {
+            (Some(min), Some(max)) if min > max => {
+                // Invalid config: swap to be forgiving
+                result = result.max(max).min(min);
+            }
+            (min_opt, max_opt) => {
+                if let Some(min) = min_opt {
+                    result = result.max(min);
+                }
+                if let Some(max) = max_opt {
+                    result = result.min(max);
+                }
+            }
         }
 
         // 3. Apply precision (rounding)
@@ -800,6 +811,216 @@ mod tests {
             assert!(TypeSpec::new().with_precision(2).has_constraints());
             assert!(TypeSpec::new().with_unit("EUR").has_constraints());
             assert!(!TypeSpec::new().with_type("number").has_constraints());
+        }
+
+        // Issue 2: NaN/Infinity tests
+        #[test]
+        fn test_enforce_nan_passthrough() {
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0);
+            match spec.enforce(Value::Float(f64::NAN)) {
+                Value::Float(f) => assert!(f.is_nan()),
+                other => panic!("Expected Float(NaN), got {:?}", other),
+            }
+        }
+
+        #[test]
+        fn test_enforce_infinity_passthrough() {
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0);
+            assert_eq!(
+                spec.enforce(Value::Float(f64::INFINITY)),
+                Value::Float(f64::INFINITY)
+            );
+            assert_eq!(
+                spec.enforce(Value::Float(f64::NEG_INFINITY)),
+                Value::Float(f64::NEG_INFINITY)
+            );
+        }
+
+        // Issue 4: min > max tests
+        #[test]
+        fn test_enforce_min_greater_than_max() {
+            // min=100, max=50 is invalid config - should swap to be forgiving
+            let spec = TypeSpec::new().with_min(100.0).with_max(50.0);
+
+            // Value between swapped range (50..100) should be clamped
+            let result = spec.enforce(Value::Int(75));
+            // After swap: clamp to max(50) first, then min(100)
+            // 75.max(50) = 75, 75.min(100) = 75 -> within swapped range
+            assert_eq!(result, Value::Int(75));
+
+            // Value below both
+            let result = spec.enforce(Value::Int(25));
+            // 25.max(50) = 50, 50.min(100) = 50
+            assert_eq!(result, Value::Int(50));
+
+            // Value above both
+            let result = spec.enforce(Value::Int(150));
+            // 150.max(50) = 150, 150.min(100) = 100
+            assert_eq!(result, Value::Int(100));
+        }
+
+        // Issue 5: Boundary value tests
+        #[test]
+        fn test_enforce_min_boundary_exact() {
+            let spec = TypeSpec::new().with_min(10.0);
+            // value == min should stay unchanged
+            assert_eq!(spec.enforce(Value::Int(10)), Value::Int(10));
+            assert_eq!(spec.enforce(Value::Float(10.0)), Value::Int(10));
+        }
+
+        #[test]
+        fn test_enforce_max_boundary_exact() {
+            let spec = TypeSpec::new().with_max(100.0);
+            // value == max should stay unchanged
+            assert_eq!(spec.enforce(Value::Int(100)), Value::Int(100));
+            assert_eq!(spec.enforce(Value::Float(100.0)), Value::Int(100));
+        }
+
+        #[test]
+        fn test_enforce_min_max_at_boundaries() {
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0);
+            // Exact min
+            assert_eq!(spec.enforce(Value::Int(0)), Value::Int(0));
+            // Exact max
+            assert_eq!(spec.enforce(Value::Int(100)), Value::Int(100));
+            // Just inside
+            assert_eq!(spec.enforce(Value::Float(0.01)), Value::Float(0.01));
+            assert_eq!(spec.enforce(Value::Float(99.99)), Value::Float(99.99));
+        }
+
+        // Issue 6: Unit alias and case-insensitivity tests
+        #[test]
+        fn test_enforce_unit_cent_aliases() {
+            // "eurocent", "cent", "cents" should all produce integers
+            for unit in &["eurocent", "cent", "cents"] {
+                let spec = TypeSpec::new().with_unit(*unit);
+                assert_eq!(
+                    spec.enforce(Value::Float(123.7)),
+                    Value::Int(124),
+                    "Failed for unit: {}",
+                    unit
+                );
+            }
+        }
+
+        #[test]
+        fn test_enforce_unit_euro_aliases() {
+            // "eur", "euro", "euros" should all round to 2 decimals
+            for unit in &["eur", "euro", "euros"] {
+                let spec = TypeSpec::new().with_unit(*unit);
+                assert_eq!(
+                    spec.enforce(Value::Float(123.456)),
+                    Value::Float(123.46),
+                    "Failed for unit: {}",
+                    unit
+                );
+            }
+        }
+
+        #[test]
+        fn test_enforce_unit_time_aliases() {
+            // day/days, month/months, year/years should all produce integers
+            for unit in &["day", "days", "month", "months", "year", "years"] {
+                let spec = TypeSpec::new().with_unit(*unit);
+                assert_eq!(
+                    spec.enforce(Value::Float(30.7)),
+                    Value::Int(31),
+                    "Failed for unit: {}",
+                    unit
+                );
+            }
+        }
+
+        #[test]
+        fn test_enforce_unit_percent_aliases() {
+            // "percent" and "percentage" should round to 2 decimals
+            for unit in &["percent", "percentage"] {
+                let spec = TypeSpec::new().with_unit(*unit);
+                assert_eq!(
+                    spec.enforce(Value::Float(12.345)),
+                    Value::Float(12.35),
+                    "Failed for unit: {}",
+                    unit
+                );
+            }
+        }
+
+        #[test]
+        fn test_enforce_unit_case_insensitive() {
+            // Unit matching should be case-insensitive
+            for unit in &["EUROCENT", "EuroCent", "Eurocent"] {
+                let spec = TypeSpec::new().with_unit(*unit);
+                assert_eq!(
+                    spec.enforce(Value::Float(123.7)),
+                    Value::Int(124),
+                    "Failed for unit: {}",
+                    unit
+                );
+            }
+
+            for unit in &["EUR", "Euro", "EUROS"] {
+                let spec = TypeSpec::new().with_unit(*unit);
+                assert_eq!(
+                    spec.enforce(Value::Float(123.456)),
+                    Value::Float(123.46),
+                    "Failed for unit: {}",
+                    unit
+                );
+            }
+        }
+
+        #[test]
+        fn test_enforce_unit_unknown() {
+            let spec = TypeSpec::new().with_unit("unknown_unit");
+            // Unknown unit should pass through with int/float logic
+            assert_eq!(spec.enforce(Value::Int(42)), Value::Int(42));
+            assert_eq!(spec.enforce(Value::Float(3.14)), Value::Float(3.14));
+        }
+    }
+
+    // =========================================================================
+    // set_output_with_spec Tests (Issue 3)
+    // =========================================================================
+
+    mod set_output_with_spec_tests {
+        use super::*;
+
+        #[test]
+        fn test_set_output_with_spec_applies_constraints() {
+            let mut ctx = make_context();
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0).with_precision(0);
+
+            ctx.set_output_with_spec("result", Value::Float(150.7), Some(&spec));
+            assert_eq!(ctx.get_output("result"), Some(&Value::Int(100)));
+        }
+
+        #[test]
+        fn test_set_output_with_spec_none_passthrough() {
+            let mut ctx = make_context();
+
+            ctx.set_output_with_spec("result", Value::Float(150.7), None);
+            assert_eq!(ctx.get_output("result"), Some(&Value::Float(150.7)));
+        }
+
+        #[test]
+        fn test_set_output_with_spec_nan_passthrough() {
+            let mut ctx = make_context();
+            let spec = TypeSpec::new().with_min(0.0).with_max(100.0);
+
+            ctx.set_output_with_spec("result", Value::Float(f64::NAN), Some(&spec));
+            match ctx.get_output("result") {
+                Some(Value::Float(f)) => assert!(f.is_nan()),
+                other => panic!("Expected Float(NaN), got {:?}", other),
+            }
+        }
+
+        #[test]
+        fn test_set_output_with_spec_unit_conversion() {
+            let mut ctx = make_context();
+            let spec = TypeSpec::new().with_unit("eurocent");
+
+            ctx.set_output_with_spec("amount", Value::Float(1234.56), Some(&spec));
+            assert_eq!(ctx.get_output("amount"), Some(&Value::Int(1235)));
         }
     }
 

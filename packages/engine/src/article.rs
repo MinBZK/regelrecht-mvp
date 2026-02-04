@@ -67,12 +67,15 @@ pub struct LegalBasisFor {
     pub defaults: Option<LegalBasisForDefaults>,
 }
 
-/// Type specification for input/output fields.
+/// Unit specification for input/output fields (schema-level).
+///
+/// Represents the unit metadata from the YAML schema. This is distinct from
+/// [`crate::context::TypeSpec`] which handles full enforcement (min/max, precision, etc.).
 ///
 /// Currently only contains unit specification, but may be extended
-/// with additional type metadata (precision, range, format) as the schema evolves.
+/// with additional type metadata as the schema evolves.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct TypeSpec {
+pub struct UnitSpec {
     /// Unit of measurement (e.g., "eurocent", "days", "percentage")
     #[serde(default)]
     pub unit: Option<String>,
@@ -157,7 +160,7 @@ pub struct Input {
     #[serde(default)]
     pub source: Option<Source>,
     #[serde(default)]
-    pub type_spec: Option<TypeSpec>,
+    pub unit_spec: Option<UnitSpec>,
     #[serde(default)]
     pub description: Option<String>,
 }
@@ -169,7 +172,7 @@ pub struct Output {
     #[serde(rename = "type")]
     pub output_type: String,
     #[serde(default)]
-    pub type_spec: Option<TypeSpec>,
+    pub unit_spec: Option<UnitSpec>,
     #[serde(default)]
     pub description: Option<String>,
 }
