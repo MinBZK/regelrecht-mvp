@@ -6,12 +6,11 @@ Top-level service for executing article-based laws via URI resolution.
 
 from typing import Any, Optional
 from datetime import datetime
-import threading
 
 from engine.rule_resolver import RuleResolver
 from engine.engine import ArticleEngine, ArticleResult
 from engine.logging_config import logger
-from engine.data_sources import DataSource, DataSourceRegistry, DictDataSource
+from engine.data_sources import DataSource, DataSourceRegistry, DictDataSource, UitvoerderDataSource
 
 # Maximum recursion depth for law references to prevent stack overflow
 MAX_RECURSION_DEPTH = 50
@@ -213,51 +212,13 @@ class LawExecutionService:
         """Remove all registered data sources"""
         self.data_registry = DataSourceRegistry()
 
-    # TODO: Generiek mechanisme voor uitvoerder data - nu hardcoded voor Diemen
-    # Dit moet later vervangen worden door een service provider pattern
-    #
-    # WARNING: Class-level mutable state for test data. This is thread-safe but
-    # tests MUST call clear_uitvoerder_data() after use to prevent test interference.
-    # Consider using dependency injection or test fixtures instead for production use.
-    _uitvoerder_data: dict[str, dict[str, int]] = {}
-    _uitvoerder_lock = threading.Lock()
-
-    @classmethod
-    def set_gedragscategorie(cls, bsn: str, gemeente_code: str, categorie: int) -> None:
-        """
-        Set gedragscategorie for a BSN (test/mock data)
-
-        WARNING: Uses class-level state. Call clear_uitvoerder_data() after use
-        to prevent test interference.
-
-        Args:
-            bsn: Burgerservicenummer
-            gemeente_code: Gemeente code (e.g., "GM0384")
-            categorie: Gedragscategorie (0, 1, 2, or 3)
-        """
-        key = f"{gemeente_code}:{bsn}"
-        with cls._uitvoerder_lock:
-            cls._uitvoerder_data[key] = {"gedragscategorie": categorie}
-
-    @classmethod
-    def get_gedragscategorie(cls, bsn: str, gemeente_code: str) -> int:
-        """
-        Get gedragscategorie for a BSN from uitvoerder data
-
-        Args:
-            bsn: Burgerservicenummer
-            gemeente_code: Gemeente code (e.g., "GM0384")
-
-        Returns:
-            Gedragscategorie (0 if not set)
-        """
-        key = f"{gemeente_code}:{bsn}"
-        with cls._uitvoerder_lock:
-            data = cls._uitvoerder_data.get(key, {})
-            return data.get("gedragscategorie", 0)
-
-    @classmethod
-    def clear_uitvoerder_data(cls) -> None:
-        """Clear all uitvoerder test data. MUST be called after tests."""
-        with cls._uitvoerder_lock:
-            cls._uitvoerder_data = {}
+    def get_uitvoerder_source(self, gemeente_code: str) -> UitvoerderDataSource:
+        """Get or create an uitvoerder data source for a gemeente."""
+        source_name = f"uitvoerder_{gemeente_code}"
+        existing = self.data_registry.get_source(source_name)
+        if existing is not None:
+            return existing  # type: ignore[return-value]
+        # Create new source
+        source = UitvoerderDataSource(gemeente_code=gemeente_code)
+        self.data_registry.register(source)
+        return source

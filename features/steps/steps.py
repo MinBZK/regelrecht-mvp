@@ -115,12 +115,11 @@ def step_when_bijstandsaanvraag_executed(context, article):
         parameters["bsn"] = "123456789"
 
     # Set gedragscategorie in uitvoerder data (not as direct parameter)
-    # The engine will resolve this from uitvoerder data
+    # The engine will resolve this from the data registry
     gemeente_code = parameters.get("gemeente_code", "")
     gedragscategorie = parameters.pop("gedragscategorie", 0)
-    LawExecutionService.set_gedragscategorie(
-        parameters["bsn"], gemeente_code, gedragscategorie
-    )
+    uitvoerder_source = service.get_uitvoerder_source(gemeente_code)
+    uitvoerder_source.set_value(parameters["bsn"], "gedragscategorie", gedragscategorie)
 
     try:
         # Call Article 43 - use URI without field to get all outputs
@@ -138,9 +137,6 @@ def step_when_bijstandsaanvraag_executed(context, article):
     except Exception as e:
         context.error = e
         context.result = None
-    finally:
-        # Clean up uitvoerder data
-        LawExecutionService.clear_uitvoerder_data()
 
 
 @then("the citizen has the right to bijstand")  # type: ignore[misc]

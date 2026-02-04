@@ -11,6 +11,12 @@ from datetime import datetime
 
 from engine.logging_config import logger
 
+# Allowed property paths for datetime-like objects
+ALLOWED_DATETIME_PROPERTIES = frozenset({
+    "year", "month", "day", "hour", "minute", "second",
+    "isoformat", "strftime",
+})
+
 if TYPE_CHECKING:
     from engine.data_sources import DataSourceRegistry
 
@@ -273,7 +279,6 @@ class RuleContext:
         6. Parameters (direct inputs)
         7. Input with source (cross-law reference) - ALWAYS followed!
         8. Data registry (for inputs WITHOUT source spec)
-        9. Uitvoerder data (gedragscategorie)
 
         The key insight: outputs always come from their designated law.
         Data sources only provide leaf-level inputs that have no source spec.
@@ -352,14 +357,6 @@ class RuleContext:
                 self.resolved_inputs[path] = match.value
                 return match.value
 
-        # 9. Uitvoerder data - resolve from service provider
-        # TODO: Dit is een tijdelijke hardcoded oplossing voor gedragscategorie
-        # Later vervangen door generiek mechanisme
-        if path == "gedragscategorie":
-            value = self._resolve_from_uitvoerder(path)
-            if value is not None:
-                return value
-
         logger.warning(f"Could not resolve variable: {path}")
         return None
 
@@ -382,6 +379,19 @@ class RuleContext:
             if intermediate is None:
                 return None
             return self._get_property(intermediate, remaining)
+
+        # Reject private/special attributes
+        if property_path.startswith("_"):
+            logger.warning(f"Rejected access to private attribute: {property_path}")
+            return None
+
+        # For datetime-like objects, only allow safe properties
+        if hasattr(obj, "__class__") and obj.__class__.__module__ == "datetime":
+            if property_path not in ALLOWED_DATETIME_PROPERTIES:
+                logger.warning(
+                    f"Rejected non-whitelisted datetime attribute: {property_path}"
+                )
+                return None
 
         # Get the property
         if hasattr(obj, property_path):
@@ -835,49 +845,6 @@ class RuleContext:
         )
 
         return result.output
-
-    def _resolve_from_uitvoerder(self, var_name: str) -> Any:
-        """
-        Resolve a variable from uitvoerder (execution organization) data
-
-        TODO: Dit is een tijdelijke hardcoded oplossing.
-        Later vervangen door generiek mechanisme met service providers.
-
-        Args:
-            var_name: Variable name to resolve
-
-        Returns:
-            Resolved value or None
-        """
-        # We need bsn to look up uitvoerder data
-        bsn = self.parameters.get("bsn")
-        if not bsn:
-            logger.debug(f"Cannot resolve {var_name} from uitvoerder: missing bsn")
-            return None
-
-        # Get gemeente_code from parameters OR from the current law (if it's a verordening)
-        gemeente_code = self.parameters.get("gemeente_code")
-        if not gemeente_code and self.current_law:
-            # Gemeentelijke verordeningen have gemeente_code in their metadata
-            gemeente_code = getattr(self.current_law, "gemeente_code", None)
-
-        if not gemeente_code:
-            logger.debug(
-                f"Cannot resolve {var_name} from uitvoerder: missing gemeente_code"
-            )
-            return None
-
-        # Hardcoded lookup for gedragscategorie
-        if var_name == "gedragscategorie":
-            from engine.service import LawExecutionService
-
-            value = LawExecutionService.get_gedragscategorie(bsn, gemeente_code)
-            logger.debug(
-                f"Resolved {var_name} from uitvoerder {gemeente_code}: {value}"
-            )
-            return value
-
-        return None
 
     def set_output(self, name: str, value: Any):
         """

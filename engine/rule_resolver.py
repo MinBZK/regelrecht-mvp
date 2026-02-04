@@ -17,6 +17,12 @@ from engine.article_loader import ArticleBasedLaw, Article
 from engine.uri_resolver import RegelrechtURI
 from engine.logging_config import logger
 
+# Allowed attributes for getattr on law objects in find_delegated_regulation
+ALLOWED_LAW_ATTRIBUTES = frozenset({
+    "gemeente_code", "jaar", "valid_from", "publication_date",
+    "bwb_id", "regulatory_layer", "id",
+})
+
 
 class RuleResolver:
     """Resolves and loads article-based laws with date-based version selection"""
@@ -348,6 +354,12 @@ class RuleResolver:
                         f"Invalid criterion missing 'name' in criteria: {criterion}. "
                         f"Full criteria list: {criteria}"
                     )
+                    all_match = False
+                    break
+
+                # Only allow whitelisted attributes
+                if crit_name not in ALLOWED_LAW_ATTRIBUTES:
+                    logger.warning(f"Rejected non-whitelisted attribute: {crit_name}")
                     all_match = False
                     break
 

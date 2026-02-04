@@ -586,6 +586,11 @@
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit for date operations (SUBTRACT_DATE)",
+          "enum": ["days", "months", "years"]
         }
       },
       "additionalProperties": false
@@ -631,6 +636,7 @@
           "enum": [
             "EQUALS",
             "NOT_EQUALS",
+            "IS_NULL",
             "NOT_NULL",
             "GREATER_THAN",
             "LESS_THAN",
@@ -764,6 +770,7 @@
         "NOT",
         "EQUALS",
         "NOT_EQUALS",
+        "IS_NULL",
         "NOT_NULL",
         "GREATER_THAN",
         "LESS_THAN",
@@ -891,6 +898,11 @@
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit for date operations (SUBTRACT_DATE)",
+          "enum": ["days", "months", "years"]
         }
       },
       "additionalProperties": false

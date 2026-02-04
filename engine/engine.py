@@ -353,11 +353,21 @@ class ArticleEngine:
         subject = self._evaluate_value(operation["subject"], context)
         value = self._evaluate_value(operation["value"], context)
 
+        # EQUALS and NOT_EQUALS handle None correctly
         if op_type == "EQUALS":
             return subject == value
         elif op_type == "NOT_EQUALS":
             return subject != value
-        elif op_type == "GREATER_THAN":
+
+        # Ordering comparisons require non-None values
+        if subject is None or value is None:
+            logger.warning(
+                f"Cannot compare None values with {op_type}: "
+                f"subject={subject}, value={value}"
+            )
+            return False
+
+        if op_type == "GREATER_THAN":
             return subject > value
         elif op_type == "LESS_THAN":
             return subject < value
@@ -507,9 +517,10 @@ class ArticleEngine:
         values = operation.get("values", [])
         unit = operation.get("unit", "days")
 
-        if len(values) < 2:
-            logger.warning("SUBTRACT_DATE requires exactly 2 values")
-            return 0
+        if len(values) != 2:
+            raise ValueError(
+                f"SUBTRACT_DATE requires exactly 2 values, got {len(values)}"
+            )
 
         date1 = self._evaluate_value(values[0], context)
         date2 = self._evaluate_value(values[1], context)
@@ -532,8 +543,9 @@ class ArticleEngine:
         d2 = to_date(date2)
 
         if d1 is None or d2 is None:
-            logger.warning(f"Could not parse dates: {date1}, {date2}")
-            return 0
+            raise ValueError(
+                f"SUBTRACT_DATE could not parse dates: {date1}, {date2}"
+            )
 
         delta = d1 - d2
 
@@ -637,6 +649,7 @@ class ArticleEngine:
                         service_provider=context.service_provider,
                         calculation_date=context.calculation_date,
                         requested_output=match_output,  # Only calculate the match field
+                        data_registry=context.data_registry,
                         _depth=context._depth + 1,
                     )
 
@@ -665,6 +678,7 @@ class ArticleEngine:
                     service_provider=context.service_provider,
                     calculation_date=context.calculation_date,
                     requested_output=output_field,  # Only calculate the requested output
+                    data_registry=context.data_registry,
                     _depth=context._depth + 1,
                 )
 

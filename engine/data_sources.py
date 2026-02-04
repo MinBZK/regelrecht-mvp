@@ -111,6 +111,46 @@ class DictDataSource:
         return self._field_index.copy()
 
 
+@dataclass
+class UitvoerderDataSource:
+    """Data source for gemeente-specific uitvoerder data (e.g., gedragscategorie)."""
+
+    gemeente_code: str
+    _name: str = field(init=False)
+    _priority: int = 200  # Higher than dict sources
+    _data: dict[str, dict[str, Any]] = field(default_factory=dict)
+    _field_index: set[str] = field(default_factory=set)
+
+    def __post_init__(self) -> None:
+        self._name = f"uitvoerder_{self.gemeente_code}"
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def priority(self) -> int:
+        return self._priority
+
+    def has_field(self, field: str) -> bool:
+        return field.lower() in self._field_index
+
+    def get(self, field: str, criteria: dict[str, Any]) -> Any | None:
+        field_lower = field.lower()
+        bsn = str(criteria.get("bsn") or criteria.get("BSN", ""))
+        if not bsn:
+            return None
+        return self._data.get(bsn, {}).get(field_lower)
+
+    def set_value(self, bsn: str, field: str, value: Any) -> None:
+        """Store a value for a BSN."""
+        field_lower = field.lower()
+        if bsn not in self._data:
+            self._data[bsn] = {}
+        self._data[bsn][field_lower] = value
+        self._field_index.add(field_lower)
+
+
 class DataSourceRegistry:
     """
     Registry for data sources with priority-based resolution.

@@ -520,7 +520,7 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["EQUALS", "NOT_EQUALS", "NOT_NULL", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN_OR_EQUAL", "IN", "NOT_IN"]
+          "enum": ["EQUALS", "NOT_EQUALS", "IS_NULL", "NOT_NULL", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN_OR_EQUAL", "IN", "NOT_IN"]
         },
         "subject": {
           "$ref": "#/definitions/variableReference",
@@ -631,6 +631,7 @@
         "NOT",
         "EQUALS",
         "NOT_EQUALS",
+        "IS_NULL",
         "NOT_NULL",
         "GREATER_THAN",
         "LESS_THAN",
