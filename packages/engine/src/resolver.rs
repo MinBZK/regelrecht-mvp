@@ -24,7 +24,7 @@ use crate::config;
 use crate::context::RuleContext;
 use crate::engine::{evaluate_select_on_criteria, matches_delegation_criteria};
 use crate::error::{EngineError, Result};
-use crate::types::Value;
+use crate::types::{RegulatoryLayer, Value};
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
@@ -378,6 +378,140 @@ impl RuleResolver {
     ) -> Result<Option<&ArticleBasedLaw>> {
         let criteria = evaluate_select_on_criteria(select_on, context)?;
         Ok(self.find_delegated_regulation(law_id, article, &criteria, reference_date))
+    }
+
+    /// Find all regulations that declare a given law+article as their legal basis.
+    ///
+    /// Optionally filters by regulatory layer.
+    ///
+    /// # Arguments
+    /// * `law_id` - The law that grants the delegation
+    /// * `article` - The article number that grants the delegation
+    /// * `layer_filter` - Optional regulatory layer to filter candidates
+    /// * `reference_date` - Optional date to select the appropriate version
+    ///
+    /// # Returns
+    /// List of references to matching laws.
+    pub fn find_regulations_by_legal_basis(
+        &self,
+        law_id: &str,
+        article: &str,
+        layer_filter: Option<&RegulatoryLayer>,
+        reference_date: Option<NaiveDate>,
+    ) -> Vec<&ArticleBasedLaw> {
+        let key = (law_id.to_string(), article.to_string());
+        let candidate_ids = match self.legal_basis_index.get(&key) {
+            Some(ids) => ids,
+            None => return Vec::new(),
+        };
+
+        let mut results = Vec::new();
+        for candidate_id in candidate_ids {
+            let Some(law) = self.get_law_for_date(candidate_id, reference_date) else {
+                continue;
+            };
+
+            // Filter by regulatory layer if specified
+            if let Some(filter) = layer_filter {
+                if &law.regulatory_layer != filter {
+                    continue;
+                }
+            }
+
+            results.push(law);
+        }
+
+        results
+    }
+
+    /// Get the number of entries in the output index.
+    ///
+    /// This counts the total number of (law_id, output_name) pairs across all laws.
+    pub fn output_count(&self) -> usize {
+        self.output_index.len()
+    }
+
+    /// List all (law_id, output_name) pairs from the output index.
+    pub fn list_all_outputs(&self) -> Vec<(&str, &str)> {
+        let mut outputs: Vec<(&str, &str)> = self
+            .output_index
+            .keys()
+            .map(|(law_id, output)| (law_id.as_str(), output.as_str()))
+            .collect();
+        outputs.sort();
+        outputs
+    }
+
+    /// Load all YAML law files from a directory (recursively).
+    ///
+    /// Scans the given directory for `.yaml` files and loads each one.
+    /// Files that fail to parse are logged as warnings and skipped.
+    ///
+    /// # Arguments
+    /// * `dir` - Path to the directory to scan
+    ///
+    /// # Returns
+    /// Number of successfully loaded law files.
+    ///
+    /// # Errors
+    /// Returns error if the directory cannot be read.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn load_from_directory(&mut self, dir: &std::path::Path) -> Result<usize> {
+        let mut count = 0;
+        self.load_from_directory_recursive(dir, &mut count)?;
+        Ok(count)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn load_from_directory_recursive(
+        &mut self,
+        dir: &std::path::Path,
+        count: &mut usize,
+    ) -> Result<()> {
+        use std::fs;
+
+        let entries = fs::read_dir(dir).map_err(|e| {
+            EngineError::LoadError(format!(
+                "Failed to read directory '{}': {}",
+                dir.display(),
+                e
+            ))
+        })?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| {
+                EngineError::LoadError(format!("Failed to read directory entry: {}", e))
+            })?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                self.load_from_directory_recursive(&path, count)?;
+            } else if path.extension().and_then(|e| e.to_str()) == Some("yaml") {
+                match ArticleBasedLaw::from_yaml_file(&path) {
+                    Ok(law) => match self.load_law(law) {
+                        Ok(()) => {
+                            *count += 1;
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                path = %path.display(),
+                                error = %e,
+                                "Failed to register law from file"
+                            );
+                        }
+                    },
+                    Err(e) => {
+                        tracing::warn!(
+                            path = %path.display(),
+                            error = %e,
+                            "Failed to parse YAML law file"
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// List all loaded law IDs (unique, not including versions).
@@ -1053,5 +1187,95 @@ articles:
         let date_2024 = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
         let law = resolver.get_law_for_date("test_law", Some(date_2024));
         assert!(law.is_some()); // The None valid_from version should match
+    }
+
+    // -------------------------------------------------------------------------
+    // New Method Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_resolver_output_count() {
+        let mut resolver = RuleResolver::new();
+        assert_eq!(resolver.output_count(), 0);
+
+        resolver.load_from_yaml(make_test_law()).unwrap();
+        assert_eq!(resolver.output_count(), 1);
+
+        resolver.load_from_yaml(make_delegating_law()).unwrap();
+        assert_eq!(resolver.output_count(), 2);
+    }
+
+    #[test]
+    fn test_resolver_list_all_outputs() {
+        let mut resolver = RuleResolver::new();
+
+        resolver.load_from_yaml(make_test_law()).unwrap();
+        resolver.load_from_yaml(make_delegating_law()).unwrap();
+
+        let outputs = resolver.list_all_outputs();
+        assert_eq!(outputs.len(), 2);
+        assert!(outputs.contains(&("test_law", "test_output")));
+        assert!(outputs.contains(&("participatiewet", "delegation_granted")));
+    }
+
+    #[test]
+    fn test_resolver_find_regulations_by_legal_basis() {
+        let mut resolver = RuleResolver::new();
+
+        resolver.load_from_yaml(make_delegating_law()).unwrap();
+        resolver
+            .load_from_yaml(&make_delegated_regulation("0363"))
+            .unwrap();
+        resolver
+            .load_from_yaml(&make_delegated_regulation("0518"))
+            .unwrap();
+
+        // Find all regulations with this legal basis
+        let results = resolver.find_regulations_by_legal_basis("participatiewet", "8", None, None);
+        assert_eq!(results.len(), 2);
+
+        // Filter by regulatory layer
+        let results = resolver.find_regulations_by_legal_basis(
+            "participatiewet",
+            "8",
+            Some(&RegulatoryLayer::GemeentelijkeVerordening),
+            None,
+        );
+        assert_eq!(results.len(), 2);
+
+        // Filter by a layer that doesn't match
+        let results = resolver.find_regulations_by_legal_basis(
+            "participatiewet",
+            "8",
+            Some(&RegulatoryLayer::MinisterieleRegeling),
+            None,
+        );
+        assert_eq!(results.len(), 0);
+
+        // Non-existent law/article
+        let results = resolver.find_regulations_by_legal_basis("nonexistent", "1", None, None);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_resolver_load_from_directory() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let regulation_path = std::path::PathBuf::from(manifest_dir)
+            .join("..")
+            .join("..")
+            .join("regulation")
+            .join("nl");
+
+        let mut resolver = RuleResolver::new();
+        let count = resolver.load_from_directory(&regulation_path).unwrap();
+
+        assert!(
+            count >= 10,
+            "Expected at least 10 laws from regulation/nl, got {}",
+            count
+        );
+        assert!(resolver.has_law("zorgtoeslagwet"));
+        assert!(resolver.has_law("regeling_standaardpremie"));
+        assert!(resolver.has_law("participatiewet"));
     }
 }

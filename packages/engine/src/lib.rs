@@ -60,7 +60,7 @@ pub use engine::{
 pub use error::{EngineError, ExternalError, Result};
 pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use resolver::RuleResolver;
-pub use service::{LawExecutionService, ServiceProvider};
+pub use service::{LawExecutionService, LawInfo, ServiceProvider};
 pub use trace::{PathNode, TraceBuilder};
 pub use types::{Operation, ParameterType, PathNodeType, RegulatoryLayer, ResolveType, Value};
 pub use uri::{internal_reference, ReferenceType, RegelrechtUri, RegelrechtUriBuilder};

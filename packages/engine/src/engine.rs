@@ -25,7 +25,7 @@ use crate::article::{
 use crate::config;
 use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
-use crate::operations::{evaluate_value, execute_operation};
+use crate::operations::{evaluate_value, execute_operation, ValueResolver};
 use crate::types::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -387,9 +387,16 @@ impl<'a> ArticleEngine<'a> {
         }
 
         // Check for resolve (delegation to child regulations)
-        // Resolve is used for delegation patterns where a law delegates to regelingen
-        // Full implementation requires ServiceProvider (Phase 7)
+        // Resolve actions are pre-resolved by the service layer and injected as parameters.
+        // If the output was pre-resolved, use that value. Otherwise, error.
         if let Some(resolve) = &action.resolve {
+            // Check if pre-resolved by service layer (available via context parameters)
+            if let Some(output_name) = &action.output {
+                if let Ok(value) = context.resolve(output_name) {
+                    return Ok(value);
+                }
+            }
+
             let match_desc = resolve
                 .match_spec
                 .as_ref()
@@ -398,7 +405,7 @@ impl<'a> ArticleEngine<'a> {
 
             return Err(EngineError::DelegationError(format!(
                 "Resolve action requires ServiceProvider: type={}, output={}, match=[{}]. \
-                 Use input sources with pre-resolved values or implement ServiceProvider (Phase 7).",
+                 Use LawExecutionService to automatically resolve, or pass the value as a parameter.",
                 resolve.resolve_type, resolve.output, match_desc
             )));
         }
@@ -542,7 +549,7 @@ pub fn matches_delegation_criteria(
 /// Handles Int/Float comparison like Python: `42 == 42.0` is true.
 /// Uses a tolerance of 1e-9 for floating point comparisons to handle
 /// computed values that should be "equal" but differ due to floating point arithmetic.
-fn values_equal(a: &Value, b: &Value) -> bool {
+pub(crate) fn values_equal(a: &Value, b: &Value) -> bool {
     const TOLERANCE: f64 = 1e-9;
     match (a, b) {
         (Value::Int(i), Value::Float(f)) | (Value::Float(f), Value::Int(i)) => {
