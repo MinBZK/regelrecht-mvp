@@ -225,9 +225,7 @@ impl RuleResolver {
 
         match reference_date {
             None => versions.first(), // Return most recent
-            Some(ref_date) => {
-                self.select_version_for_date(versions, ref_date)
-            }
+            Some(ref_date) => self.select_version_for_date(versions, ref_date),
         }
     }
 
@@ -494,9 +492,8 @@ impl RuleResolver {
 
 /// Parse a date string in ISO 8601 format (YYYY-MM-DD).
 fn parse_date(s: &str) -> Result<NaiveDate> {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d").map_err(|e| {
-        EngineError::InvalidOperation(format!("Failed to parse date '{}': {}", s, e))
-    })
+    NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|e| EngineError::InvalidOperation(format!("Failed to parse date '{}': {}", s, e)))
 }
 
 #[cfg(test)]
@@ -894,15 +891,21 @@ articles:
         let date_2025 = NaiveDate::from_ymd_opt(2025, 6, 1).unwrap();
 
         // 2023-06-01: Should get 2023-01-01 version
-        let law = resolver.get_law_for_date("test_law", Some(date_2023)).unwrap();
+        let law = resolver
+            .get_law_for_date("test_law", Some(date_2023))
+            .unwrap();
         assert_eq!(law.valid_from, Some("2023-01-01".to_string()));
 
         // 2024-12-01: Should get 2024-06-01 version (most recent valid)
-        let law = resolver.get_law_for_date("test_law", Some(date_2024)).unwrap();
+        let law = resolver
+            .get_law_for_date("test_law", Some(date_2024))
+            .unwrap();
         assert_eq!(law.valid_from, Some("2024-06-01".to_string()));
 
         // 2025-06-01: Should get 2025-01-01 version
-        let law = resolver.get_law_for_date("test_law", Some(date_2025)).unwrap();
+        let law = resolver
+            .get_law_for_date("test_law", Some(date_2025))
+            .unwrap();
         assert_eq!(law.valid_from, Some("2025-01-01".to_string()));
 
         // None: Should get most recent version

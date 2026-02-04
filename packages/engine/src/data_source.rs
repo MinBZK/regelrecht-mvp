@@ -264,7 +264,8 @@ impl DataSourceRegistry {
     pub fn add_source(&mut self, source: Box<dyn DataSource>) {
         self.sources.push(source);
         // Sort by priority descending
-        self.sources.sort_by(|a, b| b.priority().cmp(&a.priority()));
+        self.sources
+            .sort_by_key(|b| std::cmp::Reverse(b.priority()));
     }
 
     /// Remove a data source by name.
@@ -298,7 +299,11 @@ impl DataSourceRegistry {
     ///
     /// # Returns
     /// A `DataSourceMatch` if the value was found, None otherwise.
-    pub fn resolve(&self, field: &str, criteria: &HashMap<String, Value>) -> Option<DataSourceMatch> {
+    pub fn resolve(
+        &self,
+        field: &str,
+        criteria: &HashMap<String, Value>,
+    ) -> Option<DataSourceMatch> {
         for source in &self.sources {
             if !source.has_field(field) {
                 continue;
