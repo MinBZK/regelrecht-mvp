@@ -26,19 +26,19 @@
 //! ```
 
 use crate::article::{
-    Action, Article, ArticleBasedLaw, Input, LegalBasisForDefaults, SelectOnCriteria,
+    Action, Article, ArticleBasedLaw, Input, LegalBasisForDefaults, Resolve, SelectOnCriteria,
 };
 use crate::config;
 use crate::context::RuleContext;
 use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
 use crate::engine::{
-    evaluate_select_on_criteria, get_delegation_info, ArticleEngine, ArticleResult,
+    evaluate_select_on_criteria, get_delegation_info, values_equal, ArticleEngine, ArticleResult,
 };
 use crate::error::{EngineError, Result};
 use crate::operations::evaluate_value;
 use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
-use crate::types::Value;
+use crate::types::{RegulatoryLayer, Value};
 use crate::uri::RegelrechtUri;
 use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
@@ -196,6 +196,42 @@ pub trait ServiceProvider {
     ) -> Result<Value>;
 }
 
+/// Metadata about a loaded law.
+///
+/// Provides summary information about a law without requiring full article access.
+#[derive(Debug, Clone)]
+pub struct LawInfo {
+    /// Law identifier
+    pub id: String,
+    /// Regulatory layer
+    pub regulatory_layer: RegulatoryLayer,
+    /// Publication date
+    pub publication_date: String,
+    /// BWB identifier (for national laws)
+    pub bwb_id: Option<String>,
+    /// URL to official source
+    pub url: Option<String>,
+    /// List of output names produced by this law
+    pub outputs: Vec<String>,
+    /// Number of articles in the law
+    pub article_count: usize,
+}
+
+/// Parse a resolve type string to a `RegulatoryLayer` for filtering.
+///
+/// Maps resolve type strings (from YAML `resolve.type` fields) to the
+/// corresponding `RegulatoryLayer` enum variant.
+fn parse_regulatory_layer(resolve_type: &str) -> Option<RegulatoryLayer> {
+    match resolve_type.to_lowercase().as_str() {
+        "ministeriele_regeling" => Some(RegulatoryLayer::MinisterieleRegeling),
+        "wet" => Some(RegulatoryLayer::Wet),
+        "amvb" => Some(RegulatoryLayer::Amvb),
+        "gemeentelijke_verordening" => Some(RegulatoryLayer::GemeentelijkeVerordening),
+        "beleidsregel" => Some(RegulatoryLayer::Beleidsregel),
+        _ => None,
+    }
+}
+
 /// High-level service for executing laws with automatic cross-law resolution.
 ///
 /// `LawExecutionService` wraps a `RuleResolver` and implements `ServiceProvider`
@@ -333,6 +369,9 @@ impl LawExecutionService {
         // Resolve inputs with sources using ServiceProvider
         self.resolve_inputs_with_service(article, &mut context, &parameters, res_ctx)?;
 
+        // Pre-resolve any resolve actions in this article
+        let resolved_actions = self.pre_resolve_actions(article, law, &context, res_ctx)?;
+
         // Use ArticleEngine for action execution (it handles the internal logic)
         let engine = ArticleEngine::new(article, law);
 
@@ -342,8 +381,244 @@ impl LawExecutionService {
         for (name, value) in context.resolved_inputs() {
             combined_params.insert(name.clone(), value.clone());
         }
+        // Merge pre-resolved action outputs so the engine can pick them up
+        for (name, value) in resolved_actions {
+            combined_params.insert(name, value);
+        }
 
         engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
+    }
+
+    /// Pre-resolve all resolve actions in an article.
+    ///
+    /// Scans the article's actions for `resolve:` specifications and resolves
+    /// each one using `resolve_resolve_action()`. Returns a map of output names
+    /// to resolved values.
+    fn pre_resolve_actions(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        context: &RuleContext,
+        res_ctx: &ResolutionContext<'_>,
+    ) -> Result<HashMap<String, Value>> {
+        let mut resolved = HashMap::new();
+
+        let actions = article
+            .get_execution_spec()
+            .and_then(|exec| exec.actions.as_deref())
+            .unwrap_or(&[]);
+
+        for action in actions {
+            if let Some(resolve) = &action.resolve {
+                if let Some(output_name) = &action.output {
+                    let value = self.resolve_resolve_action(
+                        resolve,
+                        &law.id,
+                        &article.number,
+                        context,
+                        res_ctx,
+                    )?;
+                    resolved.insert(output_name.clone(), value);
+                }
+            }
+        }
+
+        Ok(resolved)
+    }
+
+    /// Resolve a single resolve action.
+    ///
+    /// Implements the Python `_evaluate_resolve()` algorithm:
+    /// 1. Find regulations by legal basis (filtered by resolve type)
+    /// 2. If match criteria exist, evaluate expected value from context
+    /// 3. For each candidate: execute to get match output, compare, skip on mismatch
+    /// 4. Execute matching candidate for requested output
+    /// 5. Require exactly 1 match (error on 0 or 2+)
+    fn resolve_resolve_action(
+        &self,
+        resolve: &Resolve,
+        law_id: &str,
+        article_number: &str,
+        context: &RuleContext,
+        res_ctx: &ResolutionContext<'_>,
+    ) -> Result<Value> {
+        let layer_filter = parse_regulatory_layer(&resolve.resolve_type);
+
+        tracing::debug!(
+            law_id = %law_id,
+            article = %article_number,
+            resolve_type = %resolve.resolve_type,
+            output = %resolve.output,
+            "Resolving action via legal basis"
+        );
+
+        // Find regulations that have this article as their legal_basis
+        let candidates = self.resolver.find_regulations_by_legal_basis(
+            law_id,
+            article_number,
+            layer_filter.as_ref(),
+            res_ctx.reference_date(),
+        );
+
+        if candidates.is_empty() {
+            return Err(EngineError::DelegationError(format!(
+                "No regulations found with legal_basis {}#{} (type={})",
+                law_id, article_number, resolve.resolve_type
+            )));
+        }
+
+        tracing::debug!(
+            candidates = candidates.len(),
+            ids = ?candidates.iter().map(|c| &c.id).collect::<Vec<_>>(),
+            "Found candidate regulations"
+        );
+
+        // Evaluate expected match value if match criteria exist
+        let expected_match_value = if let Some(match_spec) = &resolve.match_spec {
+            Some(evaluate_value(&match_spec.value, context, 0)?)
+        } else {
+            None
+        };
+
+        // Track matches: we need exactly one
+        let mut first_match: Option<(&str, Value)> = None;
+
+        for candidate_law in &candidates {
+            let candidate_id = &candidate_law.id;
+
+            // Find the article that produces the requested output
+            let candidate_article = match candidate_law.find_article_by_output(&resolve.output) {
+                Some(a) => a,
+                None => {
+                    tracing::debug!(
+                        candidate = %candidate_id,
+                        output = %resolve.output,
+                        "Candidate has no article with requested output, skipping"
+                    );
+                    continue;
+                }
+            };
+
+            // Phase 1: Check match criteria if present
+            if let (Some(match_spec), Some(expected)) = (&resolve.match_spec, &expected_match_value)
+            {
+                let match_result = self.try_evaluate_candidate(
+                    candidate_article,
+                    candidate_law,
+                    Some(&match_spec.output),
+                    res_ctx,
+                );
+
+                match match_result {
+                    Ok(result) => {
+                        let match_value = result.outputs.get(&match_spec.output);
+                        match match_value {
+                            Some(actual) if values_equal(actual, expected) => {
+                                tracing::debug!(
+                                    candidate = %candidate_id,
+                                    "Match criteria satisfied"
+                                );
+                            }
+                            Some(actual) => {
+                                tracing::debug!(
+                                    candidate = %candidate_id,
+                                    expected = %expected,
+                                    actual = %actual,
+                                    "Match criteria not met, skipping"
+                                );
+                                continue;
+                            }
+                            None => {
+                                tracing::debug!(
+                                    candidate = %candidate_id,
+                                    match_output = %match_spec.output,
+                                    "Match output not found, skipping"
+                                );
+                                continue;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::debug!(
+                            candidate = %candidate_id,
+                            error = %e,
+                            "Error evaluating match criteria, skipping"
+                        );
+                        continue;
+                    }
+                }
+            }
+
+            // Phase 2: Get the actual requested output
+            let output_result = self.try_evaluate_candidate(
+                candidate_article,
+                candidate_law,
+                Some(&resolve.output),
+                res_ctx,
+            );
+
+            match output_result {
+                Ok(result) => {
+                    if let Some(value) = result.outputs.get(&resolve.output).cloned() {
+                        // Check for multiple matches
+                        if let Some((prev_id, _)) = &first_match {
+                            return Err(EngineError::DelegationError(format!(
+                                "Multiple regulations match for {}#{} with resolve type '{}'. \
+                                 Found at least: [{}, {}]. \
+                                 Add more specific match criteria to ensure deterministic resolution.",
+                                law_id, article_number, resolve.resolve_type, prev_id, candidate_id
+                            )));
+                        }
+                        first_match = Some((candidate_id, value));
+                    } else {
+                        tracing::debug!(
+                            candidate = %candidate_id,
+                            output = %resolve.output,
+                            "Output not found in result, skipping"
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::debug!(
+                        candidate = %candidate_id,
+                        error = %e,
+                        "Error evaluating candidate, skipping"
+                    );
+                    continue;
+                }
+            }
+        }
+
+        match first_match {
+            Some((matched_id, value)) => {
+                tracing::info!(
+                    law_id = %law_id,
+                    article = %article_number,
+                    matched = %matched_id,
+                    "Resolved to unique regulation"
+                );
+                Ok(value)
+            }
+            None => Err(EngineError::DelegationError(format!(
+                "No matching regulation found for {}#{} with resolve type '{}' and match criteria {:?}",
+                law_id, article_number, resolve.resolve_type,
+                resolve.match_spec.as_ref().map(|m| &m.output)
+            ))),
+        }
+    }
+
+    /// Try to evaluate a candidate regulation's article.
+    ///
+    /// Used by resolve_resolve_action to evaluate match criteria and output values.
+    /// Returns the execution result, or an error if evaluation fails.
+    fn try_evaluate_candidate(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        requested_output: Option<&str>,
+        res_ctx: &ResolutionContext<'_>,
+    ) -> Result<ArticleResult> {
+        self.evaluate_article_with_service(article, law, HashMap::new(), requested_output, res_ctx)
     }
 
     /// Resolve input sources using ServiceProvider.
@@ -728,6 +1003,49 @@ impl LawExecutionService {
     /// Get direct access to the resolver.
     pub fn resolver(&self) -> &RuleResolver {
         &self.resolver
+    }
+
+    /// Get metadata about a loaded law.
+    ///
+    /// # Arguments
+    /// * `law_id` - The law identifier
+    ///
+    /// # Returns
+    /// `LawInfo` with metadata, or `None` if the law is not loaded.
+    pub fn get_law_info(&self, law_id: &str) -> Option<LawInfo> {
+        let law = self.resolver.get_law(law_id)?;
+
+        // Collect output names from all articles
+        let mut outputs = Vec::new();
+        for article in &law.articles {
+            if let Some(exec) = article.get_execution_spec() {
+                if let Some(output_specs) = &exec.output {
+                    for output in output_specs {
+                        outputs.push(output.name.clone());
+                    }
+                }
+            }
+        }
+
+        Some(LawInfo {
+            id: law.id.clone(),
+            regulatory_layer: law.regulatory_layer.clone(),
+            publication_date: law.publication_date.clone(),
+            bwb_id: law.bwb_id.clone(),
+            url: law.url.clone(),
+            outputs,
+            article_count: law.articles.len(),
+        })
+    }
+
+    /// List all (law_id, output_name) pairs across all loaded laws.
+    pub fn list_all_outputs(&self) -> Vec<(&str, &str)> {
+        self.resolver.list_all_outputs()
+    }
+
+    /// Get the total number of outputs across all loaded laws.
+    pub fn get_output_count(&self) -> usize {
+        self.resolver.output_count()
     }
 
     // -------------------------------------------------------------------------
@@ -1437,5 +1755,429 @@ articles:
             result.outputs.get("adjusted_amount"),
             Some(&Value::Float(250.0))
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Resolve Action Tests
+    // -------------------------------------------------------------------------
+
+    fn make_resolve_parent_law() -> &'static str {
+        r#"
+$id: parent_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '4'
+    text: Article with resolve action
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+        actions:
+          - output: standaardpremie
+            resolve:
+              type: ministeriele_regeling
+              output: standaardpremie
+              match:
+                output: berekeningsjaar
+                value: $referencedate.year
+"#
+    }
+
+    fn make_matching_regeling(year: i64, premium: i64) -> String {
+        format!(
+            r#"
+$id: regeling_{year}
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2025-01-01'
+legal_basis:
+  - law_id: parent_law
+    article: '4'
+articles:
+  - number: '1'
+    text: Regeling for {year}
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+          - name: berekeningsjaar
+            type: number
+        actions:
+          - output: standaardpremie
+            value: {premium}
+          - output: berekeningsjaar
+            value: {year}
+"#
+        )
+    }
+
+    #[test]
+    fn test_service_resolve_action_standaardpremie() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_resolve_parent_law()).unwrap();
+        service
+            .load_law(&make_matching_regeling(2025, 211200))
+            .unwrap();
+        service
+            .load_law(&make_matching_regeling(2024, 197200))
+            .unwrap();
+
+        // Execute for 2025 - should resolve to regeling_2025
+        let result = service
+            .evaluate_law_output(
+                "parent_law",
+                "standaardpremie",
+                HashMap::new(),
+                "2025-01-01",
+            )
+            .unwrap();
+
+        assert_eq!(
+            result.outputs.get("standaardpremie"),
+            Some(&Value::Int(211200))
+        );
+
+        // Execute for 2024 - should resolve to regeling_2024
+        let result = service
+            .evaluate_law_output(
+                "parent_law",
+                "standaardpremie",
+                HashMap::new(),
+                "2024-06-15",
+            )
+            .unwrap();
+
+        assert_eq!(
+            result.outputs.get("standaardpremie"),
+            Some(&Value::Int(197200))
+        );
+    }
+
+    #[test]
+    fn test_resolve_action_no_match() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_resolve_parent_law()).unwrap();
+        // Load a regeling for 2023 only - no match for 2025
+        service
+            .load_law(&make_matching_regeling(2023, 180000))
+            .unwrap();
+
+        let result = service.evaluate_law_output(
+            "parent_law",
+            "standaardpremie",
+            HashMap::new(),
+            "2025-01-01",
+        );
+
+        assert!(
+            matches!(result, Err(EngineError::DelegationError(_))),
+            "Expected DelegationError for no match, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_resolve_action_multiple_matches() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_resolve_parent_law()).unwrap();
+        // Load two regelingen that both match 2025
+        service
+            .load_law(&make_matching_regeling(2025, 211200))
+            .unwrap();
+
+        // Create a second regeling with same year but different name
+        let duplicate = r#"
+$id: regeling_2025_alt
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2025-01-01'
+legal_basis:
+  - law_id: parent_law
+    article: '4'
+articles:
+  - number: '1'
+    text: Alternate regeling for 2025
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+          - name: berekeningsjaar
+            type: number
+        actions:
+          - output: standaardpremie
+            value: 999999
+          - output: berekeningsjaar
+            value: 2025
+"#;
+        service.load_law(duplicate).unwrap();
+
+        let result = service.evaluate_law_output(
+            "parent_law",
+            "standaardpremie",
+            HashMap::new(),
+            "2025-01-01",
+        );
+
+        assert!(
+            matches!(result, Err(EngineError::DelegationError(_))),
+            "Expected DelegationError for multiple matches, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_resolve_action_without_match_criteria() {
+        // Resolve action without match spec - should match if exactly one candidate
+        let parent = r#"
+$id: simple_parent
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Simple resolve without match
+    machine_readable:
+      execution:
+        output:
+          - name: some_value
+            type: number
+        actions:
+          - output: some_value
+            resolve:
+              type: ministeriele_regeling
+              output: some_value
+"#;
+        let regeling = r#"
+$id: simple_regeling
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2025-01-01'
+legal_basis:
+  - law_id: simple_parent
+    article: '1'
+articles:
+  - number: '1'
+    text: Simple regeling
+    machine_readable:
+      execution:
+        output:
+          - name: some_value
+            type: number
+        actions:
+          - output: some_value
+            value: 42
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(parent).unwrap();
+        service.load_law(regeling).unwrap();
+
+        let result = service
+            .evaluate_law_output("simple_parent", "some_value", HashMap::new(), "2025-01-01")
+            .unwrap();
+
+        assert_eq!(result.outputs.get("some_value"), Some(&Value::Int(42)));
+    }
+
+    #[test]
+    fn test_resolve_action_no_regulations() {
+        // Resolve action when no regulations have this legal basis
+        let parent = r#"
+$id: orphan_parent
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Resolve with no candidates
+    machine_readable:
+      execution:
+        output:
+          - name: orphan_output
+            type: number
+        actions:
+          - output: orphan_output
+            resolve:
+              type: ministeriele_regeling
+              output: orphan_output
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(parent).unwrap();
+
+        let result = service.evaluate_law_output(
+            "orphan_parent",
+            "orphan_output",
+            HashMap::new(),
+            "2025-01-01",
+        );
+
+        assert!(
+            matches!(result, Err(EngineError::DelegationError(_))),
+            "Expected DelegationError, got: {:?}",
+            result
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // API Method Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_law_info() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_base_law()).unwrap();
+
+        let info = service.get_law_info("base_law").unwrap();
+        assert_eq!(info.id, "base_law");
+        assert_eq!(info.regulatory_layer, RegulatoryLayer::Wet);
+        assert_eq!(info.publication_date, "2025-01-01");
+        assert!(info.bwb_id.is_none());
+        assert!(info.url.is_none());
+        assert_eq!(info.outputs, vec!["base_value"]);
+        assert_eq!(info.article_count, 1);
+
+        // Non-existent law
+        assert!(service.get_law_info("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_list_all_outputs() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_base_law()).unwrap();
+        service.load_law(make_dependent_law()).unwrap();
+
+        let outputs = service.list_all_outputs();
+        assert!(outputs.contains(&("base_law", "base_value")));
+        assert!(outputs.contains(&("dependent_law", "doubled_value")));
+        assert_eq!(outputs.len(), 2);
+    }
+
+    #[test]
+    fn test_output_count() {
+        let mut service = LawExecutionService::new();
+        assert_eq!(service.get_output_count(), 0);
+
+        service.load_law(make_base_law()).unwrap();
+        assert_eq!(service.get_output_count(), 1);
+
+        service.load_law(make_dependent_law()).unwrap();
+        assert_eq!(service.get_output_count(), 2);
+    }
+
+    #[test]
+    fn test_parse_regulatory_layer_helper() {
+        assert_eq!(
+            parse_regulatory_layer("ministeriele_regeling"),
+            Some(RegulatoryLayer::MinisterieleRegeling)
+        );
+        assert_eq!(
+            parse_regulatory_layer("MINISTERIELE_REGELING"),
+            Some(RegulatoryLayer::MinisterieleRegeling)
+        );
+        assert_eq!(parse_regulatory_layer("wet"), Some(RegulatoryLayer::Wet));
+        assert_eq!(parse_regulatory_layer("amvb"), Some(RegulatoryLayer::Amvb));
+        assert_eq!(
+            parse_regulatory_layer("gemeentelijke_verordening"),
+            Some(RegulatoryLayer::GemeentelijkeVerordening)
+        );
+        assert_eq!(
+            parse_regulatory_layer("beleidsregel"),
+            Some(RegulatoryLayer::Beleidsregel)
+        );
+        assert_eq!(parse_regulatory_layer("unknown_type"), None);
+    }
+
+    // -------------------------------------------------------------------------
+    // Integration Tests with Real Regulation Files
+    // -------------------------------------------------------------------------
+
+    mod integration {
+        use super::*;
+        use std::path::PathBuf;
+
+        fn get_regulation_path() -> PathBuf {
+            let manifest_dir = env!("CARGO_MANIFEST_DIR");
+            PathBuf::from(manifest_dir)
+                .join("..")
+                .join("..")
+                .join("regulation")
+        }
+
+        #[test]
+        fn test_service_resolve_with_real_files() {
+            // Integration test: load real zorgtoeslagwet + regeling_standaardpremie
+            // and verify resolve action works end-to-end
+            let regulation_path = get_regulation_path();
+
+            let zorgtoeslagwet_path =
+                regulation_path.join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
+            let regeling_path = regulation_path
+                .join("nl/ministeriele_regeling/regeling_standaardpremie/2025-01-01.yaml");
+
+            let zt_law = ArticleBasedLaw::from_yaml_file(&zorgtoeslagwet_path).unwrap();
+            let rsp_law = ArticleBasedLaw::from_yaml_file(&regeling_path).unwrap();
+
+            let mut service = LawExecutionService::new();
+            service.load_law_struct(zt_law).unwrap();
+            service.load_law_struct(rsp_law).unwrap();
+
+            // Execute zorgtoeslagwet standaardpremie output
+            // This should resolve the regeling_standaardpremie via legal_basis
+            let result = service
+                .evaluate_law_output(
+                    "zorgtoeslagwet",
+                    "standaardpremie",
+                    HashMap::new(),
+                    "2025-01-01",
+                )
+                .unwrap();
+
+            // standaardpremie for 2025 = 211200 eurocent (€2112)
+            assert_eq!(
+                result.outputs.get("standaardpremie"),
+                Some(&Value::Int(211200)),
+                "Expected standaardpremie=211200 for 2025"
+            );
+        }
+
+        #[test]
+        fn test_load_from_directory() {
+            let regulation_path = get_regulation_path().join("nl");
+
+            let mut resolver = crate::resolver::RuleResolver::new();
+            let count = resolver.load_from_directory(&regulation_path).unwrap();
+
+            // Should load all YAML files from the regulation directory
+            assert!(
+                count >= 10,
+                "Expected at least 10 laws loaded from regulation/nl, got {}",
+                count
+            );
+
+            // Verify known laws are loaded
+            assert!(resolver.has_law("zorgtoeslagwet"));
+            assert!(resolver.has_law("regeling_standaardpremie"));
+            assert!(resolver.has_law("participatiewet"));
+        }
+
+        #[test]
+        fn test_get_law_info_real() {
+            let regulation_path = get_regulation_path();
+            let path = regulation_path.join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
+            let law = ArticleBasedLaw::from_yaml_file(&path).unwrap();
+
+            let mut service = LawExecutionService::new();
+            service.load_law_struct(law).unwrap();
+
+            let info = service.get_law_info("zorgtoeslagwet").unwrap();
+            assert_eq!(info.id, "zorgtoeslagwet");
+            assert_eq!(info.regulatory_layer, RegulatoryLayer::Wet);
+            assert!(info.article_count > 0);
+            assert!(!info.outputs.is_empty());
+            // Should include standaardpremie output
+            assert!(
+                info.outputs.contains(&"standaardpremie".to_string()),
+                "Expected standaardpremie in outputs: {:?}",
+                info.outputs
+            );
+        }
     }
 }
