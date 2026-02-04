@@ -260,6 +260,9 @@ pub struct ActionOperation {
     /// Default value for SWITCH operations
     #[serde(default)]
     pub default: Option<ActionValue>,
+    /// Unit for SUBTRACT_DATE operation ("days", "months", "years")
+    #[serde(default)]
+    pub unit: Option<String>,
 }
 
 /// Action definition in execution spec
