@@ -50,7 +50,7 @@ pub use config::{
     MAX_ARRAY_SIZE, MAX_CROSS_LAW_DEPTH, MAX_LOADED_LAWS, MAX_OPERATION_DEPTH, MAX_PROPERTY_DEPTH,
     MAX_RESOLUTION_DEPTH, MAX_YAML_SIZE,
 };
-pub use context::RuleContext;
+pub use context::{RuleContext, TypeSpec};
 pub use engine::{
     evaluate_select_on_criteria, get_delegation_info, matches_delegation_criteria, ArticleEngine,
     ArticleResult,
