@@ -988,7 +988,10 @@ mod tests {
         #[test]
         fn test_set_output_with_spec_applies_constraints() {
             let mut ctx = make_context();
-            let spec = TypeSpec::new().with_min(0.0).with_max(100.0).with_precision(0);
+            let spec = TypeSpec::new()
+                .with_min(0.0)
+                .with_max(100.0)
+                .with_precision(0);
 
             ctx.set_output_with_spec("result", Value::Float(150.7), Some(&spec));
             assert_eq!(ctx.get_output("result"), Some(&Value::Int(100)));
