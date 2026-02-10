@@ -475,3 +475,57 @@ def step_then_minimale_afstand_m(context, amount):
         raise AssertionError(
             f"Expected minimale_afstand_m {expected}, but got {actual}"
         )
+
+
+# === Leerplichtwet step definitions ===
+
+
+@when("the law output {output_name} is requested for {law_id}")  # type: ignore[misc]
+def step_when_law_output_requested(context, output_name, law_id):
+    """Execute a law output query using query_data as parameters"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2024-01-01")
+    parameters = getattr(context, "query_data", {}).copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id=law_id,
+            output_name=output_name,
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@then('the result "{output_name}" is "{value}"')  # type: ignore[misc]
+def step_then_result_output_is(context, output_name, value):
+    """Verify any output value (boolean or numeric)"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get(output_name)
+
+    if actual is None:
+        raise AssertionError(f"No '{output_name}' in outputs: {result.output}")
+
+    # Convert expected value to match type
+    if value in ("true", "false"):
+        expected = value == "true"
+    else:
+        try:
+            expected = int(value)
+        except ValueError:
+            try:
+                expected = float(value)
+            except ValueError:
+                expected = value
+
+    if actual != expected:
+        raise AssertionError(f"Expected {output_name} = {expected}, but got {actual}")

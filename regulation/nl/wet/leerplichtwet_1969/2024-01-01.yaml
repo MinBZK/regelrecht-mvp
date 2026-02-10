@@ -1,0 +1,230 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: leerplichtwet_1969
+regulatory_layer: WET
+publication_date: '1969-07-30'
+valid_from: '2024-01-01'
+bwb_id: BWBR0002628
+url: https://wetten.overheid.nl/BWBR0002628/2024-08-01
+name: Leerplichtwet 1969
+
+# Note: This YAML contains selected articles for the proof of concept:
+# - Art. 1: Begripsbepalingen (alleen tekst)
+# - Art. 2: Verantwoordelijke personen (eigen schoolplicht vanaf 12 jaar)
+# - Art. 3: Begin en einde leerplicht (5-16 jaar / 12 schooljaren)
+# - Art. 4b: Kwalificatieplicht (16-18 jaar, geen startkwalificatie)
+# - Art. 5: Vrijstellingen (alleen tekst)
+# - Art. 11a: Vrijstelling jonge kinderen (< 6 jaar)
+
+articles:
+  - number: '1'
+    text: |-
+      In deze wet en de op deze wet berustende voorschriften wordt verstaan onder:
+      a. school:
+        1°. een basisschool, speciale school voor basisonderwijs of school voor speciaal onderwijs als bedoeld
+        in de Wet op het primair onderwijs;
+        2°. een school voor voortgezet onderwijs als bedoeld in de Wet op het voortgezet onderwijs 2020;
+        3°. een instelling voor speciaal en voortgezet speciaal onderwijs als bedoeld in de Wet op de
+        expertisecentra;
+        4°. een instelling als bedoeld in de Wet educatie en beroepsonderwijs;
+      b. hoofd: hij die met de leiding van de school is belast;
+      c. de ambtenaar: de ambtenaar belast met het toezicht op de naleving van deze wet;
+      d. Onze Minister: Onze Minister van Onderwijs, Cultuur en Wetenschap;
+      e. startkwalificatie: een diploma van een opleiding als bedoeld in artikel 7.2.2, eerste lid, onderdelen b
+      tot en met e, van de Wet educatie en beroepsonderwijs of een diploma hoger algemeen voortgezet onderwijs
+      of voorbereidend wetenschappelijk onderwijs als bedoeld in artikel 2.6, onderscheidenlijk artikel 2.7, van
+      de Wet op het voortgezet onderwijs 2020.
+    url: https://wetten.overheid.nl/BWBR0002628/2024-08-01#Paragraaf1_Artikel1
+
+  - number: '2'
+    text: |-
+      1. Degene die het gezag over een jongere uitoefent, en degene die zich met de feitelijke verzorging van
+      een jongere heeft belast, zijn verplicht overeenkomstig de bepalingen van deze wet te zorgen, dat de
+      jongere als leerling van een school staat ingeschreven en deze school na inschrijving geregeld bezoekt.
+
+      2. De in het eerste lid bedoelde verplichtingen gelden niet voor zover de daarin bedoelde personen kunnen
+      aantonen dat zij daarvoor niet verantwoordelijk kunnen worden geacht.
+
+      3. De jongere die de leeftijd van 12 jaren heeft bereikt, is verplicht overeenkomstig de bepalingen van
+      deze wet de school waaraan hij als leerling staat ingeschreven, geregeld te bezoeken, onverminderd het
+      bepaalde in het eerste lid.
+    url: https://wetten.overheid.nl/BWBR0002628/2024-08-01#Paragraaf1_Artikel2
+    machine_readable:
+      definitions:
+        LEEFTIJD_EIGEN_SCHOOLPLICHT:
+          value: 12
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+        output:
+          - name: heeft_eigen_schoolplicht
+            type: boolean
+        actions:
+          - output: heeft_eigen_schoolplicht
+            value:
+              operation: GREATER_THAN_OR_EQUAL
+              subject: $leeftijd
+              value: $LEEFTIJD_EIGEN_SCHOOLPLICHT
+
+  - number: '3'
+    text: |-
+      1. Degene die het gezag over een jongere uitoefent of zich met de feitelijke verzorging van een jongere
+      heeft belast, is verplicht te zorgen dat die jongere als leerling van een school staat ingeschreven en
+      deze school na inschrijving geregeld bezoekt, zolang de jongere nog niet de leeftijd van 5 jaren heeft
+      bereikt.
+
+      a. Lid 1: De leerplicht begint op de eerste schooldag van de maand volgende op die waarin het kind de
+      leeftijd van vijf jaar bereikt.
+
+      b. De leerplicht eindigt:
+        1°. aan het einde van het schooljaar, lopende op de dag waarop de jongere de leeftijd van zestien
+        jaren bereikt; of, indien dat eerder is:
+        2°. aan het einde van het twaalfde schooljaar na aanvang van de leerplicht.
+    url: https://wetten.overheid.nl/BWBR0002628/2024-08-01#Paragraaf2_Artikel3
+    machine_readable:
+      definitions:
+        LEEFTIJD_START:
+          value: 5
+        LEEFTIJD_EINDE:
+          value: 16
+        SCHOOLJAREN_EINDE:
+          value: 12
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+          - name: aantal_schooljaren
+            type: number
+            required: true
+        output:
+          - name: is_leerplichtig
+            type: boolean
+        actions:
+          - output: is_leerplichtig
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: $LEEFTIJD_START
+                - operation: LESS_THAN
+                  subject: $leeftijd
+                  value: $LEEFTIJD_EINDE
+                - operation: LESS_THAN
+                  subject: $aantal_schooljaren
+                  value: $SCHOOLJAREN_EINDE
+
+  - number: 4b
+    text: |-
+      1. Na het einde van de leerplicht is de jongere die nog geen achttien jaren oud is en die geen
+      startkwalificatie heeft behaald, verplicht om, in plaats van de leerplicht, gedurende het volledige
+      schooljaar als leerling of student van een school of instelling als bedoeld in artikel 1, onderdeel a,
+      onder 2° tot en met 4°, ingeschreven te staan en deze school of instelling geregeld te bezoeken.
+
+      2. De in het eerste lid bedoelde verplichting geldt niet gedurende de periode dat de jongere:
+      a. een opleiding volgt als bedoeld in de Wet educatie en beroepsonderwijs waarvoor geen
+      kwalificatieplicht geldt;
+      b. beschikt over een startkwalificatie.
+    url: https://wetten.overheid.nl/BWBR0002628/2024-08-01#Paragraaf2a_Artikel4b
+    machine_readable:
+      definitions:
+        LEEFTIJD_EINDE_KWALIFICATIEPLICHT:
+          value: 18
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+          - name: aantal_schooljaren
+            type: number
+            required: true
+          - name: heeft_startkwalificatie
+            type: boolean
+            required: true
+        output:
+          - name: is_kwalificatieplichtig
+            type: boolean
+        actions:
+          - output: is_kwalificatieplichtig
+            value:
+              operation: AND
+              conditions:
+                # Leerplicht is afgelopen (leeftijd >= 16 OF aantal_schooljaren >= 12)
+                - operation: OR
+                  conditions:
+                    - operation: GREATER_THAN_OR_EQUAL
+                      subject: $leeftijd
+                      value: 16
+                    - operation: GREATER_THAN_OR_EQUAL
+                      subject: $aantal_schooljaren
+                      value: 12
+                # Jonger dan 18
+                - operation: LESS_THAN
+                  subject: $leeftijd
+                  value: $LEEFTIJD_EINDE_KWALIFICATIEPLICHT
+                # Geen startkwalificatie
+                - operation: EQUALS
+                  subject: $heeft_startkwalificatie
+                  value: false
+
+  - number: '5'
+    text: |-
+      De in artikel 2, eerste lid, bedoelde personen zijn vrijgesteld van de verplichting om te zorgen dat een
+      jongere als leerling van een school staat ingeschreven en deze school na inschrijving geregeld bezoekt,
+      indien:
+      a. de jongere op lichamelijke of psychische gronden niet geschikt is om tot een school onderscheidenlijk
+      een instelling te worden toegelaten;
+      b. zij tegen de richting van het onderwijs op alle binnen redelijke afstand van de woning gelegen scholen
+      onderscheidenlijk instellingen waarop de jongere geplaatst zou kunnen worden, overwegende bezwaren
+      hebben;
+      c. de jongere als leerling van een inrichting van onderwijs buiten Nederland staat ingeschreven en deze
+      inrichting geregeld bezoekt.
+    url: https://wetten.overheid.nl/BWBR0002628/2024-08-01#Paragraaf3_Artikel5
+
+  - number: 11a
+    text: |-
+      1. Een jongere die de leeftijd van zes jaar nog niet heeft bereikt, mag ten hoogste vijf uren per week
+      de school niet bezoeken.
+
+      2. Op verzoek van de in artikel 2, eerste lid, bedoelde personen kan het bevoegd gezag van de school dit
+      aantal uren uitbreiden tot ten hoogste tien uren per week.
+    url: https://wetten.overheid.nl/BWBR0002628/2024-08-01#Paragraaf5_Artikel11a
+    machine_readable:
+      definitions:
+        LEEFTIJD_GRENS:
+          value: 6
+        STANDAARD_UREN:
+          value: 5
+        MAXIMUM_UREN:
+          value: 10
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+          - name: heeft_uitbreiding_vrijstelling
+            type: boolean
+            required: false
+        output:
+          - name: vrijstelling_uren_per_week
+            type: number
+        actions:
+          - output: vrijstelling_uren_per_week
+            value:
+              operation: IF
+              when:
+                operation: LESS_THAN
+                subject: $leeftijd
+                value: $LEEFTIJD_GRENS
+              then:
+                operation: IF
+                when:
+                  operation: EQUALS
+                  subject: $heeft_uitbreiding_vrijstelling
+                  value: true
+                then: $MAXIMUM_UREN
+                else: $STANDAARD_UREN
+              else: 0
