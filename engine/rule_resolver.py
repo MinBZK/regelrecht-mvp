@@ -43,7 +43,12 @@ class RuleResolver:
             )
 
         # Scan wet/, ministeriele_regeling/, and gemeentelijke_verordening/ directories
-        for category in ["wet", "ministeriele_regeling", "gemeentelijke_verordening"]:
+        for category in [
+            "wet",
+            "ministeriele_regeling",
+            "gemeentelijke_verordening",
+            "koninklijk_besluit",
+        ]:
             category_dir = self.regulation_dir / category
             if category_dir.exists():
                 self._load_laws_from_directory(category_dir)

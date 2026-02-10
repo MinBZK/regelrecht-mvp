@@ -461,6 +461,76 @@ def step_then_minimale_afstand_cm(context, amount):
         )
 
 
+# === Rijbewijs step definitions ===
+
+
+@when("the rijbewijs minimumleeftijd is requested for {law_id} article {article}")  # type: ignore[misc]
+def step_when_rijbewijs_requested(context, law_id, article):
+    """Execute the rijbewijs minimum age query"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.query_data.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id=law_id,
+            output_name="minimum_leeftijd",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@then('the minimum_leeftijd is "{age}"')  # type: ignore[misc]
+def step_then_minimum_leeftijd(context, age):
+    """Verify the minimum age"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("minimum_leeftijd")
+    expected = int(age)
+
+    if actual != expected:
+        raise AssertionError(f"Expected minimum_leeftijd {expected}, but got {actual}")
+
+
+@then("the persoon voldoet aan de leeftijdseis")  # type: ignore[misc]
+def step_then_voldoet_aan_leeftijdseis(context):
+    """Verify the person meets the age requirement"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("voldoet_aan_leeftijd")
+
+    if actual is not True:
+        raise AssertionError(
+            f"Expected persoon to meet age requirement, but voldoet_aan_leeftijd = {actual}"
+        )
+
+
+@then("the persoon voldoet niet aan de leeftijdseis")  # type: ignore[misc]
+def step_then_voldoet_niet_aan_leeftijdseis(context):
+    """Verify the person does not meet the age requirement"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("voldoet_aan_leeftijd")
+
+    if actual is not False:
+        raise AssertionError(
+            f"Expected persoon to NOT meet age requirement, but voldoet_aan_leeftijd = {actual}"
+        )
+
+
 @then('the minimale_afstand_m is "{amount}"')  # type: ignore[misc]
 def step_then_minimale_afstand_m(context, amount):
     """Verify the minimale afstand in meters"""

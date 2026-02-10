@@ -1,0 +1,249 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: reglement_rijbewijzen
+uuid: 7b33a000-7b33-7b33-7b33-7b33a0000005
+regulatory_layer: KONINKLIJK_BESLUIT
+publication_date: '2025-01-01'
+bwb_id: BWBR0008074
+url: https://wetten.overheid.nl/BWBR0008074/2025-01-01
+
+articles:
+  - number: '5'
+    text: |
+      1. De minimumleeftijd voor het afgeven van een rijbewijs dat geldig is voor het
+      besturen van motorrijtuigen van de rijbewijscategorie of rijbewijscategorieën:
+
+      a. AM bedraagt 16 jaren;
+      b. A1 bedraagt 18 jaren;
+      c. A2 bedraagt 20 jaren;
+      d. A, indien de aanvrager houder is van een rijbewijs voor de rijbewijscategorie A2,
+         bedraagt 22 jaren;
+      e. A, in andere gevallen dan bedoeld in onderdeel d, bedraagt 24 jaren, met
+         dien verstande dat voor rijbewijzen die geldig zijn voor het besturen van
+         driewielige motorrijtuigen de minimumleeftijd 21 jaren bedraagt;
+      f. B en E bij B bedraagt 18 jaren;
+      g. C1 en E bij C1 bedraagt 18 jaren;
+      h. C en E bij C bedraagt 21 jaren;
+      i. C en E bij C, indien de aanvrager in het bezit is van een getuigschrift van
+         vakbekwaamheid als bedoeld in artikel 151a, eerste lid, onderdeel b, van de
+         Wegenverkeerswet 1994 bedraagt 18 jaren;
+      j. D1 en E bij D1 bedraagt 21 jaren;
+      k. D1 en E bij D1, indien de aanvrager in het bezit is van een getuigschrift van
+         vakbekwaamheid als bedoeld in artikel 151a, eerste lid, onderdeel b, van de
+         Wegenverkeerswet 1994 bedraagt 18 jaren;
+      l. D en E bij D bedraagt 24 jaren;
+      m. D en E bij D, indien de aanvrager in het bezit is van een getuigschrift van
+         vakbekwaamheid als bedoeld in artikel 151a, eerste lid, onderdeel b, van de
+         Wegenverkeerswet 1994 bedraagt 21 jaren.
+    url: https://wetten.overheid.nl/BWBR0008074/2025-01-01#HoofdstukIII_Paragraaf1_Artikel5
+
+    machine_readable:
+      definitions:
+        LEEFTIJD_AM:
+          value: 16
+        LEEFTIJD_A1:
+          value: 18
+        LEEFTIJD_A2:
+          value: 20
+        LEEFTIJD_A_MET_A2:
+          value: 22
+        LEEFTIJD_A_ZONDER_A2:
+          value: 24
+        LEEFTIJD_A_DRIEWIELIG:
+          value: 21
+        LEEFTIJD_B:
+          value: 18
+        LEEFTIJD_C1:
+          value: 18
+        LEEFTIJD_C_ZONDER_VAKBEKWAAMHEID:
+          value: 21
+        LEEFTIJD_C_MET_VAKBEKWAAMHEID:
+          value: 18
+        LEEFTIJD_D1_ZONDER_VAKBEKWAAMHEID:
+          value: 21
+        LEEFTIJD_D1_MET_VAKBEKWAAMHEID:
+          value: 18
+        LEEFTIJD_D_ZONDER_VAKBEKWAAMHEID:
+          value: 24
+        LEEFTIJD_D_MET_VAKBEKWAAMHEID:
+          value: 21
+
+      execution:
+        produces:
+          legal_character: INFORMATIEF
+          decision_type: GEEN_BESLUIT
+
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+            description: Leeftijd van de aanvrager in jaren
+          - name: categorie
+            type: string
+            required: true
+            description: >-
+              Rijbewijscategorie: AM, A1, A2, A, B, C1, C, D1, D
+          - name: heeft_rijbewijs_A2
+            type: boolean
+            required: false
+            description: Of de aanvrager houder is van een rijbewijs A2 (relevant voor categorie A)
+          - name: heeft_vakbekwaamheid
+            type: boolean
+            required: false
+            description: >-
+              Of de aanvrager een getuigschrift van vakbekwaamheid bezit
+              (relevant voor categorieën C, D1, D)
+          - name: is_driewielig
+            type: boolean
+            required: false
+            description: >-
+              Of het een driewielig motorrijtuig betreft (relevant voor categorie A)
+
+        output:
+          - name: minimum_leeftijd
+            type: number
+            description: De minimumleeftijd voor de gevraagde rijbewijscategorie
+          - name: voldoet_aan_leeftijd
+            type: boolean
+            description: Of de aanvrager voldoet aan de minimumleeftijdseis
+
+        actions:
+          - output: minimum_leeftijd
+            value:
+              operation: SWITCH
+              cases:
+                # a. AM: 16 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: AM
+                  then: $LEEFTIJD_AM
+
+                # b. A1: 18 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: A1
+                  then: $LEEFTIJD_A1
+
+                # c. A2: 20 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: A2
+                  then: $LEEFTIJD_A2
+
+                # d/e. A: afhankelijk van A2-rijbewijs en driewielig
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: A
+                  then:
+                    operation: IF
+                    when: $is_driewielig
+                    then: $LEEFTIJD_A_DRIEWIELIG
+                    else:
+                      operation: IF
+                      when: $heeft_rijbewijs_A2
+                      then: $LEEFTIJD_A_MET_A2
+                      else: $LEEFTIJD_A_ZONDER_A2
+
+                # f. B: 18 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: B
+                  then: $LEEFTIJD_B
+
+                # f. E bij B: 18 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: E bij B
+                  then: $LEEFTIJD_B
+
+                # g. C1: 18 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: C1
+                  then: $LEEFTIJD_C1
+
+                # g. E bij C1: 18 jaar
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: E bij C1
+                  then: $LEEFTIJD_C1
+
+                # h/i. C: afhankelijk van vakbekwaamheid
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: C
+                  then:
+                    operation: IF
+                    when: $heeft_vakbekwaamheid
+                    then: $LEEFTIJD_C_MET_VAKBEKWAAMHEID
+                    else: $LEEFTIJD_C_ZONDER_VAKBEKWAAMHEID
+
+                # h/i. E bij C: afhankelijk van vakbekwaamheid
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: E bij C
+                  then:
+                    operation: IF
+                    when: $heeft_vakbekwaamheid
+                    then: $LEEFTIJD_C_MET_VAKBEKWAAMHEID
+                    else: $LEEFTIJD_C_ZONDER_VAKBEKWAAMHEID
+
+                # j/k. D1: afhankelijk van vakbekwaamheid
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: D1
+                  then:
+                    operation: IF
+                    when: $heeft_vakbekwaamheid
+                    then: $LEEFTIJD_D1_MET_VAKBEKWAAMHEID
+                    else: $LEEFTIJD_D1_ZONDER_VAKBEKWAAMHEID
+
+                # j/k. E bij D1: afhankelijk van vakbekwaamheid
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: E bij D1
+                  then:
+                    operation: IF
+                    when: $heeft_vakbekwaamheid
+                    then: $LEEFTIJD_D1_MET_VAKBEKWAAMHEID
+                    else: $LEEFTIJD_D1_ZONDER_VAKBEKWAAMHEID
+
+                # l/m. D: afhankelijk van vakbekwaamheid
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: D
+                  then:
+                    operation: IF
+                    when: $heeft_vakbekwaamheid
+                    then: $LEEFTIJD_D_MET_VAKBEKWAAMHEID
+                    else: $LEEFTIJD_D_ZONDER_VAKBEKWAAMHEID
+
+                # l/m. E bij D: afhankelijk van vakbekwaamheid
+                - when:
+                    operation: EQUALS
+                    subject: $categorie
+                    value: E bij D
+                  then:
+                    operation: IF
+                    when: $heeft_vakbekwaamheid
+                    then: $LEEFTIJD_D_MET_VAKBEKWAAMHEID
+                    else: $LEEFTIJD_D_ZONDER_VAKBEKWAAMHEID
+
+          - output: voldoet_aan_leeftijd
+            value:
+              operation: GREATER_THAN_OR_EQUAL
+              subject: $leeftijd
+              value: $minimum_leeftijd
