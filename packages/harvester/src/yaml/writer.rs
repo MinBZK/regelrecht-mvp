@@ -20,6 +20,15 @@ static QUOTED_VALUE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(\s*(?:- )?[a-zA-Z_$][a-zA-Z_$0-9]*: )'([^']*)'$").expect("valid regex")
 });
 
+/// Regex matching an unquoted YAML scalar value on a key line.
+/// Excludes block scalar indicators (`|`, `>`) to avoid quoting them.
+/// Captures: (1) prefix including key and colon-space, (2) the plain value.
+#[allow(clippy::expect_used)]
+static UNQUOTED_VALUE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r##"^(\s*(?:- )?[a-zA-Z_$][a-zA-Z_$0-9]*: )([^\s'"#\[{|>][^\n]*)$"##)
+        .expect("valid regex")
+});
+
 /// Preamble representation for YAML serialization.
 #[derive(Debug, Serialize)]
 struct YamlPreamble {
@@ -152,7 +161,7 @@ fn generate_yaml_struct(law: &Law, effective_date: &str) -> YamlLaw {
 
 /// Indent YAML sequences to comply with `indent-sequences: true`.
 ///
-/// serde_yml places sequence items (`- `) at the same indent as their parent key.
+/// serde_yaml_ng places sequence items (`- `) at the same indent as their parent key.
 /// This function adds 2 spaces so items are indented under their parent, e.g.:
 ///
 /// ```yaml
@@ -270,15 +279,15 @@ fn needs_yaml_quoting(value: &str) -> bool {
     false
 }
 
-/// Strip redundant single quotes from YAML scalar values.
+/// Fix YAML scalar quoting to match yamllint's `quoted-strings: {required: only-when-needed}`.
 ///
-/// Removes quotes from values that YAML would parse as strings anyway,
-/// matching yamllint's `quoted-strings: {required: only-when-needed}` rule.
-fn strip_redundant_quotes(yaml: &str) -> String {
+/// - Strips quotes from values that YAML would parse as strings anyway.
+/// - Adds quotes to unquoted values that would be misinterpreted (dates, booleans, numbers).
+fn fix_yaml_quoting(yaml: &str) -> String {
     yaml.lines()
         .map(|line| {
+            // Try to strip redundant quotes from quoted values
             if let Some(caps) = QUOTED_VALUE_RE.captures(line) {
-                // Groups 1 and 2 are guaranteed to exist when the regex matches
                 let (Some(prefix), Some(value)) = (caps.get(1), caps.get(2)) else {
                     return line.to_string();
                 };
@@ -287,6 +296,18 @@ fn strip_redundant_quotes(yaml: &str) -> String {
                     line.to_string()
                 } else {
                     format!("{}{value}", prefix.as_str())
+                }
+            }
+            // Try to add missing quotes to unquoted values that need them
+            else if let Some(caps) = UNQUOTED_VALUE_RE.captures(line) {
+                let (Some(prefix), Some(value)) = (caps.get(1), caps.get(2)) else {
+                    return line.to_string();
+                };
+                let value = value.as_str();
+                if needs_yaml_quoting(value) {
+                    format!("{}'{value}'", prefix.as_str())
+                } else {
+                    line.to_string()
                 }
             } else {
                 line.to_string()
@@ -299,10 +320,10 @@ fn strip_redundant_quotes(yaml: &str) -> String {
 /// Generate YAML string from a Law object.
 pub fn generate_yaml(law: &Law, effective_date: &str) -> Result<String> {
     let yaml_struct = generate_yaml_struct(law, effective_date);
-    let yaml_string = serde_yml::to_string(&yaml_struct)?;
+    let yaml_string = serde_yaml_ng::to_string(&yaml_struct)?;
 
     // Post-process for yamllint compliance
-    let yaml_string = strip_redundant_quotes(&yaml_string);
+    let yaml_string = fix_yaml_quoting(&yaml_string);
     let yaml_string = indent_yaml_sequences(&yaml_string);
 
     // Add document start marker and clean up trailing whitespace
@@ -481,9 +502,9 @@ mod tests {
     }
 
     #[test]
-    fn test_strip_redundant_quotes() {
+    fn test_fix_yaml_quoting() {
         let input = "number: '1.1.a'\ndate: '2024-10-16'\nartikel: '68b'\ncount: '1'";
-        let result = strip_redundant_quotes(input);
+        let result = fix_yaml_quoting(input);
         assert_eq!(
             result,
             "number: 1.1.a\ndate: '2024-10-16'\nartikel: 68b\ncount: '1'"

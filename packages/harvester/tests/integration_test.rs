@@ -297,8 +297,8 @@ fn test_yaml_validates_structure() {
     let yaml = generate_yaml(&law, "2025-01-01").expect("Failed to generate YAML");
 
     // Parse as YAML to verify it's valid
-    let parsed: serde_yml::Value =
-        serde_yml::from_str(&yaml).expect("Generated YAML should be valid");
+    let parsed: serde_yaml_ng::Value =
+        serde_yaml_ng::from_str(&yaml).expect("Generated YAML should be valid");
 
     // Check required fields exist
     assert!(parsed.get("$schema").is_some(), "Should have $schema");
