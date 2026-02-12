@@ -94,8 +94,7 @@ pub fn wrap_text(text: &str, width: usize) -> String {
         .iter()
         .map(|p| {
             if contains_reference_link(p) {
-                // Don't wrap paragraphs with reference links - wrapping could break them
-                (*p).to_string()
+                wrap_with_protected_refs(p, &options)
             } else {
                 fill(p, &options)
             }
@@ -110,6 +109,40 @@ pub fn wrap_text(text: &str, width: usize) -> String {
     } else {
         wrapped_content
     }
+}
+
+/// Wrap text while protecting reference-style links from being split.
+///
+/// Replaces `[text][refN]` tokens with single-word placeholders before wrapping,
+/// then restores them after. This allows textwrap to break lines around the links
+/// without breaking inside them.
+fn wrap_with_protected_refs(text: &str, options: &Options<'_>) -> String {
+    let mut replacements: Vec<(String, String)> = Vec::new();
+    let mut protected = text.to_string();
+
+    // Replace each reference link with a same-width non-breakable placeholder.
+    // Width must match so textwrap calculates line breaks correctly.
+    for mat in REFERENCE_LINK_PATTERN.find_iter(text) {
+        let original = mat.as_str();
+        let tag = format!("__REF{:03}__", replacements.len());
+        let placeholder = format!(
+            "{}{}",
+            tag,
+            "_".repeat(original.len().saturating_sub(tag.len()))
+        );
+        replacements.push((placeholder.clone(), original.to_string()));
+        protected = protected.replacen(original, &placeholder, 1);
+    }
+
+    let wrapped = fill(&protected, options);
+
+    // Restore original reference links
+    let mut result = wrapped;
+    for (placeholder, original) in &replacements {
+        result = result.replacen(placeholder.as_str(), original, 1);
+    }
+
+    result
 }
 
 /// Check if text should be wrapped for readability.
@@ -181,12 +214,23 @@ mod tests {
     }
 
     #[test]
-    fn test_wrap_text_skips_reference_links() {
-        // A very long line with a reference link should not be wrapped
+    fn test_wrap_text_wraps_around_reference_links() {
+        // Long text with reference links should be wrapped, but links stay intact
         let text = "This is a very long paragraph that contains a reference link like [article 4 of the Zorgverzekeringswet][ref1] which should not be broken across lines because that would invalidate the markdown.";
-        let wrapped = wrap_text(text, 40);
-        // The reference link should still be intact
+        let wrapped = wrap_text(text, 60);
+        // The reference link should still be intact (not split across lines)
         assert!(wrapped.contains("[article 4 of the Zorgverzekeringswet][ref1]"));
+        // But the text should be wrapped (contains newlines)
+        assert!(wrapped.contains('\n'), "Text should be wrapped");
+        // And no line should exceed the width by much (allowing for unbreakable ref links)
+        for line in wrapped.lines() {
+            assert!(
+                line.len() <= 110,
+                "Line too long ({} chars): {}",
+                line.len(),
+                line
+            );
+        }
     }
 
     #[test]

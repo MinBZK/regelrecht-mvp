@@ -74,4 +74,3 @@ ignore: |
   .venv/
   .tox/
   node_modules/
-  packages/harvester/tests/

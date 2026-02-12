@@ -24,7 +24,8 @@ pub const DEFAULT_MAX_RESPONSE_SIZE: u64 = 100 * 1024 * 1024;
 pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.1/schema.json";
 
 /// Text wrap width for YAML output.
-pub const TEXT_WRAP_WIDTH: usize = 100;
+/// Accounts for up to 6 spaces of YAML block scalar indent (125 - 6 = 119, with margin).
+pub const TEXT_WRAP_WIDTH: usize = 115;
 
 /// BWB ID pattern: BWBR followed by 7 digits.
 #[allow(clippy::expect_used)] // Static regex that is guaranteed to be valid

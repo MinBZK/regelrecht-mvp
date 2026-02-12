@@ -3,13 +3,22 @@
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
+use regex::Regex;
 use serde::Serialize;
 
 use super::text::{normalize_text, should_wrap_text, wrap_text_default};
 use crate::config::SCHEMA_URL;
 use crate::error::Result;
 use crate::types::{Law, Reference};
+
+/// Regex matching a single-quoted YAML scalar value on a key line.
+/// Captures: (1) prefix including key and colon-space, (2) the unquoted value.
+#[allow(clippy::expect_used)]
+static QUOTED_VALUE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^(\s*(?:- )?[a-zA-Z_$][a-zA-Z_$0-9]*: )'([^']*)'$").expect("valid regex")
+});
 
 /// Preamble representation for YAML serialization.
 #[derive(Debug, Serialize)]
@@ -141,10 +150,160 @@ fn generate_yaml_struct(law: &Law, effective_date: &str) -> YamlLaw {
     }
 }
 
+/// Indent YAML sequences to comply with `indent-sequences: true`.
+///
+/// serde_yml places sequence items (`- `) at the same indent as their parent key.
+/// This function adds 2 spaces so items are indented under their parent, e.g.:
+///
+/// ```yaml
+/// # Before:          # After:
+/// articles:          articles:
+/// - number: '1'        - number: '1'
+///   text: foo            text: foo
+/// ```
+fn indent_yaml_sequences(yaml: &str) -> String {
+    let mut result: Vec<String> = Vec::new();
+    // Stack of indent levels where sequences start
+    let mut seq_indents: Vec<usize> = Vec::new();
+
+    for line in yaml.lines() {
+        let trimmed = line.trim_start();
+
+        // Pass empty lines through unchanged
+        if trimmed.is_empty() {
+            result.push(line.to_string());
+            continue;
+        }
+
+        let indent = line.len() - trimmed.len();
+
+        // Pop sequences we've exited: either moved to a shallower indent,
+        // or returned to the same indent but not as a sequence continuation.
+        while let Some(&seq_indent) = seq_indents.last() {
+            if indent < seq_indent || (indent == seq_indent && !trimmed.starts_with("- ")) {
+                seq_indents.pop();
+            } else {
+                break;
+            }
+        }
+
+        // Detect new or continuing sequence
+        if trimmed.starts_with("- ") {
+            let is_continuation = seq_indents.last().is_some_and(|&si| si == indent);
+            if !is_continuation {
+                seq_indents.push(indent);
+            }
+        }
+
+        // Apply extra indentation
+        let extra = seq_indents.len() * 2;
+        if extra > 0 {
+            result.push(format!("{}{}", " ".repeat(indent + extra), trimmed));
+        } else {
+            result.push(line.to_string());
+        }
+    }
+
+    result.join("\n")
+}
+
+/// Check if a plain YAML scalar would be parsed as a non-string type.
+///
+/// Returns `true` if the value needs single quotes to remain a string
+/// (integers, floats, dates, booleans, null, or values with special characters).
+fn needs_yaml_quoting(value: &str) -> bool {
+    if value.is_empty() {
+        return true;
+    }
+
+    // YAML booleans and null
+    match value.to_lowercase().as_str() {
+        "true" | "false" | "yes" | "no" | "on" | "off" | "null" | "~" => return true,
+        _ => {}
+    }
+
+    // Starts with YAML special character
+    if let Some(&first) = value.as_bytes().first() {
+        if b"{}[],&*#?|-<>=!%@:\"`' ".contains(&first) {
+            return true;
+        }
+    }
+
+    // Contains problematic sequences or trailing colon
+    if value.contains(": ") || value.contains(" #") || value.ends_with(':') {
+        return true;
+    }
+
+    let num_part = value.strip_prefix('-').unwrap_or(value);
+
+    // Pure integer
+    if !num_part.is_empty() && num_part.bytes().all(|b| b.is_ascii_digit()) {
+        return true;
+    }
+
+    // Float: digits.digits (exactly one dot, digits on both sides)
+    if let Some(dot_pos) = num_part.find('.') {
+        let (before, after_with_dot) = num_part.split_at(dot_pos);
+        let after = &after_with_dot[1..];
+        if !before.is_empty()
+            && !after.is_empty()
+            && before.bytes().all(|b| b.is_ascii_digit())
+            && after.bytes().all(|b| b.is_ascii_digit())
+        {
+            return true;
+        }
+    }
+
+    // Date: YYYY-MM-DD
+    let date_parts: Vec<&str> = value.split('-').collect();
+    if date_parts.len() == 3
+        && date_parts[0].len() == 4
+        && date_parts[1].len() == 2
+        && date_parts[2].len() == 2
+        && date_parts
+            .iter()
+            .all(|p| p.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return true;
+    }
+
+    false
+}
+
+/// Strip redundant single quotes from YAML scalar values.
+///
+/// Removes quotes from values that YAML would parse as strings anyway,
+/// matching yamllint's `quoted-strings: {required: only-when-needed}` rule.
+fn strip_redundant_quotes(yaml: &str) -> String {
+    yaml.lines()
+        .map(|line| {
+            if let Some(caps) = QUOTED_VALUE_RE.captures(line) {
+                // Groups 1 and 2 are guaranteed to exist when the regex matches
+                let (Some(prefix), Some(value)) = (caps.get(1), caps.get(2)) else {
+                    return line.to_string();
+                };
+                let value = value.as_str();
+                if needs_yaml_quoting(value) {
+                    line.to_string()
+                } else {
+                    format!("{}{value}", prefix.as_str())
+                }
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// Generate YAML string from a Law object.
 pub fn generate_yaml(law: &Law, effective_date: &str) -> Result<String> {
     let yaml_struct = generate_yaml_struct(law, effective_date);
     let yaml_string = serde_yml::to_string(&yaml_struct)?;
+
+    // Post-process for yamllint compliance
+    let yaml_string = strip_redundant_quotes(&yaml_string);
+    let yaml_string = indent_yaml_sequences(&yaml_string);
 
     // Add document start marker and clean up trailing whitespace
     let lines: Vec<&str> = yaml_string.lines().map(|l| l.trim_end()).collect();
@@ -250,6 +409,85 @@ mod tests {
 
         let content = fs::read_to_string(output_path).unwrap();
         assert!(content.starts_with("---\n"));
+    }
+
+    #[test]
+    fn test_generate_yaml_indented_sequences() {
+        let law = create_test_law();
+        let yaml = generate_yaml(&law, "2025-01-01").unwrap();
+
+        // Articles should be indented under their key
+        assert!(
+            yaml.contains("articles:\n  - number:"),
+            "Sequence items should be indented under articles key"
+        );
+    }
+
+    #[test]
+    fn test_generate_yaml_no_redundant_quotes() {
+        let mut law = create_test_law();
+        law.add_article(Article::new(
+            "1.1.a",
+            "Sub-article text",
+            "https://example.com",
+        ));
+        let yaml = generate_yaml(&law, "2025-01-01").unwrap();
+
+        // 1.1.a should NOT be quoted (contains letters, not a number)
+        assert!(
+            yaml.contains("number: 1.1.a"),
+            "1.1.a should not be quoted, got: {}",
+            yaml
+        );
+        // But dates should remain quoted
+        assert!(
+            yaml.contains("publication_date: '2005-12-29'"),
+            "Dates should remain quoted"
+        );
+    }
+
+    #[test]
+    fn test_needs_yaml_quoting() {
+        // Values that need quoting
+        assert!(needs_yaml_quoting("1.1")); // float
+        assert!(needs_yaml_quoting("42")); // integer
+        assert!(needs_yaml_quoting("2024-10-16")); // date
+        assert!(needs_yaml_quoting("true")); // boolean
+        assert!(needs_yaml_quoting("null")); // null
+        assert!(needs_yaml_quoting("")); // empty
+        assert!(needs_yaml_quoting("foo: bar")); // contains ": "
+        assert!(needs_yaml_quoting("end:")); // ends with ":"
+
+        // Values that don't need quoting
+        assert!(!needs_yaml_quoting("1.1.a"));
+        assert!(!needs_yaml_quoting("68b"));
+        assert!(!needs_yaml_quoting("18d"));
+        assert!(!needs_yaml_quoting("3.3.1"));
+        assert!(!needs_yaml_quoting("4a.1"));
+        assert!(!needs_yaml_quoting("ref1"));
+        assert!(!needs_yaml_quoting("BWBR0018451"));
+        assert!(!needs_yaml_quoting("hello"));
+    }
+
+    #[test]
+    fn test_indent_yaml_sequences() {
+        let input =
+            "top: val\nitems:\n- name: a\n  val: 1\n- name: b\n  nested:\n  - id: x\n    v: 1";
+        let result = indent_yaml_sequences(input);
+        assert_eq!(
+            result,
+            "top: val\nitems:\n  - name: a\n    val: 1\n  - name: b\n    nested:\n      - id: x\n        v: 1"
+        );
+    }
+
+    #[test]
+    fn test_strip_redundant_quotes() {
+        let input = "number: '1.1.a'\ndate: '2024-10-16'\nartikel: '68b'\ncount: '1'";
+        let result = strip_redundant_quotes(input);
+        assert_eq!(
+            result,
+            "number: 1.1.a\ndate: '2024-10-16'\nartikel: 68b\ncount: '1'"
+        );
     }
 
     #[test]
