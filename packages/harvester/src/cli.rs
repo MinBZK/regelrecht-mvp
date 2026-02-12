@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::config::{validate_bwb_id, validate_date, DEFAULT_MAX_RESPONSE_SIZE};
+use crate::config::DEFAULT_MAX_RESPONSE_SIZE;
 use crate::error::{HarvesterError, Result};
 use crate::harvester::download_law_with_max_size;
 use crate::yaml::save_yaml;
@@ -69,10 +69,6 @@ fn download_command(
     let effective_date = date
         .map(String::from)
         .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
-
-    // Validate inputs before making HTTP requests
-    validate_bwb_id(bwb_id)?;
-    validate_date(&effective_date)?;
 
     // Validate output directory exists (if specified) before downloading
     if let Some(output_dir) = output {

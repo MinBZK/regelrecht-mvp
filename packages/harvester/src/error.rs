@@ -62,7 +62,7 @@ pub enum HarvesterError {
 
     /// YAML serialization error.
     #[error("YAML serialization failed: {0}")]
-    YamlSerialization(#[from] serde_yaml::Error),
+    YamlSerialization(#[from] serde_yml::Error),
 
     /// No BWB ID found in JCI reference.
     #[error("No BWB ID found in JCI reference: {0}")]

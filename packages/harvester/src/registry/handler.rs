@@ -69,6 +69,10 @@ pub fn extract_text_with_tail<'a, 'input>(
         if let Some(tail) = child.tail() {
             if !tail.trim().is_empty() {
                 parts.push(tail.to_string());
+            } else if tail.contains(' ') {
+                // Preserve word-separating spaces between inline elements
+                // e.g., <nadruk>A</nadruk> <nadruk>B</nadruk> should produce "A B" not "AB"
+                parts.push(" ".to_string());
             }
         }
     }

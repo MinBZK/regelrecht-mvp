@@ -36,7 +36,7 @@ pub fn download_wti_xml(client: &Client, bwb_id: &str) -> Result<String> {
     })?;
 
     Ok(bytes_to_string(
-        &bytes,
+        bytes,
         &format!("WTI metadata for {bwb_id}"),
     ))
 }
@@ -51,11 +51,19 @@ pub fn download_wti_xml(client: &Client, bwb_id: &str) -> Result<String> {
 /// * `bwb_id` - The BWB identifier (e.g., "BWBR0018451")
 ///
 /// # Returns
-/// `LawMetadata` with extracted fields
-pub fn download_wti(client: &Client, bwb_id: &str) -> Result<LawMetadata> {
+/// `WtiParseResult` with extracted metadata and any warnings
+pub fn download_wti(client: &Client, bwb_id: &str) -> Result<WtiParseResult> {
     let xml = download_wti_xml(client, bwb_id)?;
     let doc = Document::parse(&xml)?;
     Ok(parse_wti_metadata(&doc))
+}
+
+/// Parsed WTI metadata including any warnings encountered.
+pub struct WtiParseResult {
+    /// The extracted metadata.
+    pub metadata: LawMetadata,
+    /// Warnings encountered during parsing (e.g., ambiguous regulatory layer mapping).
+    pub warnings: Vec<String>,
 }
 
 /// Extract metadata from WTI XML document.
@@ -64,8 +72,8 @@ pub fn download_wti(client: &Client, bwb_id: &str) -> Result<LawMetadata> {
 /// * `doc` - Parsed WTI XML document
 ///
 /// # Returns
-/// `LawMetadata` with extracted fields
-pub fn parse_wti_metadata(doc: &Document<'_>) -> LawMetadata {
+/// `WtiParseResult` with extracted metadata and any warnings
+pub fn parse_wti_metadata(doc: &Document<'_>) -> WtiParseResult {
     let root = doc.root_element();
 
     // BWB ID from attribute
@@ -75,17 +83,25 @@ pub fn parse_wti_metadata(doc: &Document<'_>) -> LawMetadata {
     let title = find_official_title(doc).unwrap_or_else(|| find_any_title(doc).unwrap_or_default());
 
     // Regulatory layer from soort-regeling
-    let regulatory_layer = find_regulatory_layer(doc);
+    let (regulatory_layer, layer_warning) = find_regulatory_layer(doc);
 
     // Publication date
     let publication_date = find_publication_date(doc);
 
-    LawMetadata {
-        bwb_id,
-        title,
-        regulatory_layer,
-        publication_date,
-        effective_date: None,
+    let mut warnings = Vec::new();
+    if let Some(warning) = layer_warning {
+        warnings.push(warning);
+    }
+
+    WtiParseResult {
+        metadata: LawMetadata {
+            bwb_id,
+            title,
+            regulatory_layer,
+            publication_date,
+            effective_date: None,
+        },
+        warnings,
     }
 }
 
@@ -108,12 +124,14 @@ fn find_any_title(doc: &Document<'_>) -> Option<String> {
 }
 
 /// Find regulatory layer from soort-regeling.
-fn find_regulatory_layer(doc: &Document<'_>) -> RegulatoryLayer {
+///
+/// Returns `(layer, warning)` where the warning is present for ambiguous or unknown types.
+fn find_regulatory_layer(doc: &Document<'_>) -> (RegulatoryLayer, Option<String>) {
     doc.descendants()
         .find(|n| n.has_tag_name("soort-regeling"))
         .and_then(|n| n.text())
         .map(RegulatoryLayer::from_soort_regeling)
-        .unwrap_or(RegulatoryLayer::Wet)
+        .unwrap_or((RegulatoryLayer::Wet, None))
 }
 
 /// Find publication date.
@@ -139,12 +157,16 @@ mod tests {
     #[test]
     fn test_parse_wti_metadata_basic() {
         let doc = Document::parse(SAMPLE_WTI).unwrap();
-        let metadata = parse_wti_metadata(&doc);
+        let result = parse_wti_metadata(&doc);
 
-        assert_eq!(metadata.bwb_id, "BWBR0018451");
-        assert_eq!(metadata.title, "Wet op de zorgtoeslag");
-        assert_eq!(metadata.regulatory_layer, RegulatoryLayer::Wet);
-        assert_eq!(metadata.publication_date, Some("2005-12-29".to_string()));
+        assert_eq!(result.metadata.bwb_id, "BWBR0018451");
+        assert_eq!(result.metadata.title, "Wet op de zorgtoeslag");
+        assert_eq!(result.metadata.regulatory_layer, RegulatoryLayer::Wet);
+        assert_eq!(
+            result.metadata.publication_date,
+            Some("2005-12-29".to_string())
+        );
+        assert!(result.warnings.is_empty());
     }
 
     #[test]
@@ -155,9 +177,9 @@ mod tests {
 </wti-metagegevens>"#;
 
         let doc = Document::parse(xml).unwrap();
-        let metadata = parse_wti_metadata(&doc);
+        let result = parse_wti_metadata(&doc);
 
-        assert_eq!(metadata.title, "Fallback Title");
+        assert_eq!(result.metadata.title, "Fallback Title");
     }
 
     #[test]
@@ -169,9 +191,10 @@ mod tests {
 </wti-metagegevens>"#;
 
         let doc = Document::parse(xml).unwrap();
-        let metadata = parse_wti_metadata(&doc);
+        let result = parse_wti_metadata(&doc);
 
-        assert_eq!(metadata.regulatory_layer, RegulatoryLayer::Amvb);
+        assert_eq!(result.metadata.regulatory_layer, RegulatoryLayer::Amvb);
+        assert!(result.warnings.is_empty());
     }
 
     #[test]
@@ -183,12 +206,13 @@ mod tests {
 </wti-metagegevens>"#;
 
         let doc = Document::parse(xml).unwrap();
-        let metadata = parse_wti_metadata(&doc);
+        let result = parse_wti_metadata(&doc);
 
         assert_eq!(
-            metadata.regulatory_layer,
+            result.metadata.regulatory_layer,
             RegulatoryLayer::MinisterieleRegeling
         );
+        assert!(result.warnings.is_empty());
     }
 
     #[test]
@@ -198,11 +222,43 @@ mod tests {
 </wti-metagegevens>"#;
 
         let doc = Document::parse(xml).unwrap();
-        let metadata = parse_wti_metadata(&doc);
+        let result = parse_wti_metadata(&doc);
 
-        assert_eq!(metadata.bwb_id, "BWBR0000001");
-        assert_eq!(metadata.title, "");
-        assert_eq!(metadata.regulatory_layer, RegulatoryLayer::Wet);
-        assert_eq!(metadata.publication_date, None);
+        assert_eq!(result.metadata.bwb_id, "BWBR0000001");
+        assert_eq!(result.metadata.title, "");
+        assert_eq!(result.metadata.regulatory_layer, RegulatoryLayer::Wet);
+        assert_eq!(result.metadata.publication_date, None);
+    }
+
+    #[test]
+    fn test_parse_wti_metadata_koninklijk_besluit_maps_to_amvb_with_warning() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<wti-metagegevens bwb-id="BWBR0000001">
+  <citeertitel status="officieel">Test KB</citeertitel>
+  <soort-regeling>koninklijk besluit</soort-regeling>
+</wti-metagegevens>"#;
+
+        let doc = Document::parse(xml).unwrap();
+        let result = parse_wti_metadata(&doc);
+
+        assert_eq!(result.metadata.regulatory_layer, RegulatoryLayer::Amvb);
+        assert_eq!(result.warnings.len(), 1);
+        assert!(result.warnings[0].contains("koninklijk besluit"));
+    }
+
+    #[test]
+    fn test_parse_wti_metadata_unknown_type_warns() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<wti-metagegevens bwb-id="BWBR0000001">
+  <citeertitel status="officieel">Unknown</citeertitel>
+  <soort-regeling>something_unknown</soort-regeling>
+</wti-metagegevens>"#;
+
+        let doc = Document::parse(xml).unwrap();
+        let result = parse_wti_metadata(&doc);
+
+        assert_eq!(result.metadata.regulatory_layer, RegulatoryLayer::Wet);
+        assert_eq!(result.warnings.len(), 1);
+        assert!(result.warnings[0].contains("something_unknown"));
     }
 }

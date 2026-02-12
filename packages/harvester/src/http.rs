@@ -133,20 +133,20 @@ pub fn download_bytes_default(client: &Client, url: &str) -> Result<Vec<u8>> {
 
 /// Convert bytes to a string, preferring strict UTF-8 but falling back to lossy conversion.
 ///
-/// Logs a warning if the input contains invalid UTF-8 sequences.
+/// Takes ownership of the `Vec<u8>` to avoid cloning when the input is valid UTF-8.
 ///
 /// # Arguments
-/// * `bytes` - The bytes to convert
+/// * `bytes` - The bytes to convert (takes ownership)
 /// * `source` - Description of the source for logging purposes
 ///
 /// # Returns
 /// A valid UTF-8 string
-pub fn bytes_to_string(bytes: &[u8], source: &str) -> String {
-    match String::from_utf8(bytes.to_vec()) {
+pub fn bytes_to_string(bytes: Vec<u8>, source: &str) -> String {
+    match String::from_utf8(bytes) {
         Ok(s) => s,
-        Err(_) => {
+        Err(e) => {
             tracing::warn!(source = %source, "Invalid UTF-8, using lossy conversion");
-            String::from_utf8_lossy(bytes).into_owned()
+            String::from_utf8_lossy(e.as_bytes()).into_owned()
         }
     }
 }
@@ -163,15 +163,15 @@ mod tests {
 
     #[test]
     fn test_bytes_to_string_valid_utf8() {
-        let bytes = "Hello, world!".as_bytes();
+        let bytes = b"Hello, world!".to_vec();
         let result = bytes_to_string(bytes, "test");
         assert_eq!(result, "Hello, world!");
     }
 
     #[test]
     fn test_bytes_to_string_invalid_utf8() {
-        let bytes = [0xff, 0xfe, 0x48, 0x65, 0x6c, 0x6c, 0x6f]; // Invalid UTF-8 prefix + "Hello"
-        let result = bytes_to_string(&bytes, "test");
+        let bytes = vec![0xff, 0xfe, 0x48, 0x65, 0x6c, 0x6c, 0x6f]; // Invalid UTF-8 prefix + "Hello"
+        let result = bytes_to_string(bytes, "test");
         // Should not panic, should return something
         assert!(!result.is_empty());
     }

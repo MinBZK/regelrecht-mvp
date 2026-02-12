@@ -247,7 +247,12 @@ impl<S: SplitStrategy> SplitEngine<S> {
 
             // Extract content from content tags
             if spec.content_tags.contains(&child_tag.to_string()) {
-                let (text, errs) = self.extract_inline_text_with_warnings(child, &mut collector);
+                let (text, errs) = self.extract_inline_text_with_warnings(
+                    child,
+                    &mut collector,
+                    &context.bwb_id,
+                    &context.date,
+                );
                 warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
@@ -299,7 +304,12 @@ impl<S: SplitStrategy> SplitEngine<S> {
 
             // Extract content from content tags
             if spec.content_tags.contains(&child_tag.to_string()) {
-                let (text, errs) = self.extract_inline_text_with_warnings(child, &mut collector);
+                let (text, errs) = self.extract_inline_text_with_warnings(
+                    child,
+                    &mut collector,
+                    &context.bwb_id,
+                    &context.date,
+                );
                 warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
@@ -308,16 +318,31 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 // Lists encountered here are kept inline (not split as structural children)
                 // This happens for unmarked lists or multiple sibling lists
                 let text = if self.is_effectively_unmarked_list(child) {
-                    self.extract_unmarked_list_text(child, &mut collector)
+                    self.extract_unmarked_list_text(
+                        child,
+                        &mut collector,
+                        &context.bwb_id,
+                        &context.date,
+                    )
                 } else {
-                    self.extract_marked_list_text(child, &mut collector)
+                    self.extract_marked_list_text(
+                        child,
+                        &mut collector,
+                        &context.bwb_id,
+                        &context.date,
+                    )
                 };
                 if !text.is_empty() {
                     parts.push(text);
                 }
             } else if !self.hierarchy.is_structural(child_tag) {
                 // Also extract from non-structural elements
-                let (text, errs) = self.extract_inline_text_with_warnings(child, &mut collector);
+                let (text, errs) = self.extract_inline_text_with_warnings(
+                    child,
+                    &mut collector,
+                    &context.bwb_id,
+                    &context.date,
+                );
                 warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
@@ -374,7 +399,12 @@ impl<S: SplitStrategy> SplitEngine<S> {
             }
 
             // Extract content recursively (extract_inline_text already skips redactie)
-            let (text, errs) = self.extract_element_recursive_with_warnings(child, &mut collector);
+            let (text, errs) = self.extract_element_recursive_with_warnings(
+                child,
+                &mut collector,
+                &context.bwb_id,
+                &context.date,
+            );
             warnings.extend(errs);
             if !text.is_empty() {
                 parts.push(text);
@@ -407,6 +437,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
+        bwb_id: &str,
+        date: &str,
     ) -> (String, Vec<String>) {
         let tag = get_tag_name(node);
 
@@ -427,7 +459,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
 
         // Content elements - extract inline text
         if tag == "al" {
-            return self.extract_inline_text_with_warnings(node, collector);
+            return self.extract_inline_text_with_warnings(node, collector, bwb_id, date);
         }
 
         // Structural elements - recurse into children
@@ -469,7 +501,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
                     continue;
                 }
 
-                let (text, errs) = self.extract_element_recursive_with_warnings(child, collector);
+                let (text, errs) =
+                    self.extract_element_recursive_with_warnings(child, collector, bwb_id, date);
                 warnings.extend(errs);
                 if !text.is_empty() {
                     parts.push(text);
@@ -480,7 +513,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
         }
 
         // Unknown element - try inline extraction
-        self.extract_inline_text_with_warnings(node, collector)
+        self.extract_inline_text_with_warnings(node, collector, bwb_id, date)
     }
 
     /// Extract inline text from an element using the registry handlers.
@@ -496,13 +529,15 @@ impl<S: SplitStrategy> SplitEngine<S> {
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
+        bwb_id: &str,
+        date: &str,
     ) -> (String, Vec<String>) {
         // Skip editorial content - not law text
         if self.is_editorial_content(node) {
             return (String::new(), Vec::new());
         }
 
-        let mut parse_context = ParseContext::new("", "").with_collector(collector);
+        let mut parse_context = ParseContext::new(bwb_id, date).with_collector(collector);
 
         // Try to parse using the registry engine
         if let Ok(result) = self.parse_engine.parse(node, &mut parse_context) {
@@ -510,7 +545,10 @@ impl<S: SplitStrategy> SplitEngine<S> {
         }
 
         // Fallback to simple text extraction if handler not found
-        (self.extract_simple_text(node, collector), Vec::new())
+        (
+            self.extract_simple_text(node, collector, bwb_id, date),
+            Vec::new(),
+        )
     }
 
     /// Extract inline text from an element using the registry handlers.
@@ -521,8 +559,11 @@ impl<S: SplitStrategy> SplitEngine<S> {
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
+        bwb_id: &str,
+        date: &str,
     ) -> String {
-        self.extract_inline_text_with_warnings(node, collector).0
+        self.extract_inline_text_with_warnings(node, collector, bwb_id, date)
+            .0
     }
 
     /// Simple text extraction fallback.
@@ -532,6 +573,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
         &self,
         node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
+        bwb_id: &str,
+        date: &str,
     ) -> String {
         // Skip editorial content - not law text
         if self.is_editorial_content(node) {
@@ -547,7 +590,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
         for child in node.children() {
             if child.is_element() {
                 // Try registry first, fall back to recursive simple extraction
-                let child_text = self.extract_inline_text(child, collector);
+                let child_text = self.extract_inline_text(child, collector, bwb_id, date);
                 text.push_str(&child_text);
             }
             if let Some(tail) = child.tail() {
@@ -563,6 +606,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
         &self,
         lijst_node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
+        bwb_id: &str,
+        date: &str,
     ) -> String {
         let mut parts: Vec<String> = Vec::new();
 
@@ -585,7 +630,7 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 }
 
                 if child_tag == "al" {
-                    let text = self.extract_inline_text(child, collector);
+                    let text = self.extract_inline_text(child, collector, bwb_id, date);
                     if !text.is_empty() {
                         li_parts.push(text);
                     }
@@ -593,10 +638,10 @@ impl<S: SplitStrategy> SplitEngine<S> {
                     // Handle nested lists (both marked and unmarked)
                     // For definitions with sub-items like "woonruimte: 1° ... 2° ..."
                     let nested = if self.is_unmarked_list(child) {
-                        self.extract_unmarked_list_text(child, collector)
+                        self.extract_unmarked_list_text(child, collector, bwb_id, date)
                     } else {
                         // Marked list - extract all items inline
-                        self.extract_marked_list_text(child, collector)
+                        self.extract_marked_list_text(child, collector, bwb_id, date)
                     };
                     if !nested.is_empty() {
                         li_parts.push(nested);
@@ -619,6 +664,8 @@ impl<S: SplitStrategy> SplitEngine<S> {
         &self,
         lijst_node: Node<'_, '_>,
         collector: &mut ReferenceCollector,
+        bwb_id: &str,
+        date: &str,
     ) -> String {
         let mut parts: Vec<String> = Vec::new();
 
@@ -648,16 +695,16 @@ impl<S: SplitStrategy> SplitEngine<S> {
                 }
 
                 if child_tag == "al" {
-                    let text = self.extract_inline_text(child, collector);
+                    let text = self.extract_inline_text(child, collector, bwb_id, date);
                     if !text.is_empty() {
                         li_parts.push(text);
                     }
                 } else if child_tag == "lijst" {
                     // Recursively handle nested lists
                     let nested = if self.is_unmarked_list(child) {
-                        self.extract_unmarked_list_text(child, collector)
+                        self.extract_unmarked_list_text(child, collector, bwb_id, date)
                     } else {
-                        self.extract_marked_list_text(child, collector)
+                        self.extract_marked_list_text(child, collector, bwb_id, date)
                     };
                     if !nested.is_empty() {
                         li_parts.push(nested);

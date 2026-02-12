@@ -43,7 +43,7 @@ pub fn download_law_with_max_size(bwb_id: &str, date: &str, max_size_mb: u64) ->
     let client = create_client()?;
 
     // Download and parse WTI metadata
-    let metadata = download_wti(&client, bwb_id)?;
+    let wti_result = download_wti(&client, bwb_id)?;
 
     // Download content XML
     let content_xml = download_content_xml(&client, bwb_id, date, max_size_bytes)?;
@@ -51,11 +51,15 @@ pub fn download_law_with_max_size(bwb_id: &str, date: &str, max_size_mb: u64) ->
     // Parse articles from content
     let parsed = parse_articles(&content_xml, bwb_id, date)?;
 
+    // Combine warnings from WTI parsing and content parsing
+    let mut warnings = wti_result.warnings;
+    warnings.extend(parsed.warnings);
+
     Ok(Law {
-        metadata,
+        metadata: wti_result.metadata,
         preamble: parsed.preamble,
         articles: parsed.articles,
-        warnings: parsed.warnings,
+        warnings,
     })
 }
 

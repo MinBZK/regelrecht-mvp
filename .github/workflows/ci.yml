@@ -90,21 +90,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            packages/engine/target
-            packages/harvester/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml', 'packages/harvester/Cargo.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

@@ -33,18 +33,18 @@ fn run_pipeline() -> Law {
 
     // Parse WTI metadata
     let wti_doc = roxmltree::Document::parse(&wti_xml).expect("Failed to parse WTI XML");
-    let metadata = parse_wti_metadata(&wti_doc);
+    let wti_result = parse_wti_metadata(&wti_doc);
 
     // Parse articles from content
     let content_doc =
         roxmltree::Document::parse(&content_xml).expect("Failed to parse content XML");
-    let parsed = parse_content(&content_doc, &metadata.bwb_id, "2025-01-01");
+    let parsed = parse_content(&content_doc, &wti_result.metadata.bwb_id, "2025-01-01");
 
     Law {
-        metadata,
+        metadata: wti_result.metadata,
         preamble: parsed.preamble,
         articles: parsed.articles,
-        warnings: Vec::new(),
+        warnings: wti_result.warnings,
     }
 }
 
@@ -297,8 +297,8 @@ fn test_yaml_validates_structure() {
     let yaml = generate_yaml(&law, "2025-01-01").expect("Failed to generate YAML");
 
     // Parse as YAML to verify it's valid
-    let parsed: serde_yaml::Value =
-        serde_yaml::from_str(&yaml).expect("Generated YAML should be valid");
+    let parsed: serde_yml::Value =
+        serde_yml::from_str(&yaml).expect("Generated YAML should be valid");
 
     // Check required fields exist
     assert!(parsed.get("$schema").is_some(), "Should have $schema");

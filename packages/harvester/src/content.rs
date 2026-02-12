@@ -40,10 +40,7 @@ pub fn download_content_xml(
         }
     })?;
 
-    Ok(bytes_to_string(
-        &bytes,
-        &format!("content XML for {bwb_id}"),
-    ))
+    Ok(bytes_to_string(bytes, &format!("content XML for {bwb_id}")))
 }
 
 #[cfg(test)]

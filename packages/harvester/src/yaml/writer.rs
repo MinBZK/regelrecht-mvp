@@ -144,7 +144,7 @@ fn generate_yaml_struct(law: &Law, effective_date: &str) -> YamlLaw {
 /// Generate YAML string from a Law object.
 pub fn generate_yaml(law: &Law, effective_date: &str) -> Result<String> {
     let yaml_struct = generate_yaml_struct(law, effective_date);
-    let yaml_string = serde_yaml::to_string(&yaml_struct)?;
+    let yaml_string = serde_yml::to_string(&yaml_struct)?;
 
     // Add document start marker and clean up trailing whitespace
     let lines: Vec<&str> = yaml_string.lines().map(|l| l.trim_end()).collect();
@@ -185,6 +185,12 @@ pub fn save_yaml(law: &Law, effective_date: &str, output_base: Option<&Path>) ->
         let mut file = File::create(&temp_file)?;
         file.write_all(content.as_bytes())?;
         file.sync_all()?; // Ensure data is flushed to disk
+    }
+
+    // On Windows, rename fails if the destination already exists
+    #[cfg(target_os = "windows")]
+    if output_file.exists() {
+        fs::remove_file(&output_file)?;
     }
 
     // Atomic rename (on most filesystems)
