@@ -25,7 +25,7 @@ use crate::article::{
 use crate::config;
 use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
-use crate::operations::{evaluate_value, execute_operation, ValueResolver};
+use crate::operations::{evaluate_value, execute_operation, values_equal, ValueResolver};
 use crate::types::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -542,22 +542,6 @@ pub fn matches_delegation_criteria(
         }
     }
     true
-}
-
-/// Compare two values for equality (with numeric coercion).
-///
-/// Handles Int/Float comparison like Python: `42 == 42.0` is true.
-/// Uses a tolerance of 1e-9 for floating point comparisons to handle
-/// computed values that should be "equal" but differ due to floating point arithmetic.
-pub(crate) fn values_equal(a: &Value, b: &Value) -> bool {
-    const TOLERANCE: f64 = 1e-9;
-    match (a, b) {
-        (Value::Int(i), Value::Float(f)) | (Value::Float(f), Value::Int(i)) => {
-            (*i as f64 - *f).abs() < TOLERANCE
-        }
-        (Value::Float(f1), Value::Float(f2)) => (*f1 - *f2).abs() < TOLERANCE,
-        _ => a == b,
-    }
 }
 
 /// Extract delegation info from a source specification.

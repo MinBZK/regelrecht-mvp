@@ -133,6 +133,9 @@ impl RuleResolver {
             )));
         }
 
+        // Extract legal_basis before moving law into the version list
+        let legal_basis = law.legal_basis.clone();
+
         // Get or create the version list for this law ID
         let versions = self.law_versions.entry(law_id.clone()).or_default();
 
@@ -140,10 +143,10 @@ impl RuleResolver {
         let existing_idx = versions.iter().position(|v| v.valid_from == valid_from);
         if let Some(idx) = existing_idx {
             tracing::debug!(law_id = %law_id, valid_from = ?valid_from, "Replacing existing version");
-            versions[idx] = law.clone();
+            versions[idx] = law;
         } else {
             tracing::debug!(law_id = %law_id, valid_from = ?valid_from, "Adding new version");
-            versions.push(law.clone());
+            versions.push(law);
         }
 
         // Sort versions by valid_from date (newest first)
@@ -158,9 +161,9 @@ impl RuleResolver {
 
         // Build legal basis index (if law has legal_basis metadata)
         // This is per-law-ID, not per-version
-        if let Some(legal_bases) = &law.legal_basis {
-            for legal_basis in legal_bases {
-                let key = (legal_basis.law_id.clone(), legal_basis.article.clone());
+        if let Some(legal_bases) = &legal_basis {
+            for lb in legal_bases {
+                let key = (lb.law_id.clone(), lb.article.clone());
                 let candidates = self.legal_basis_index.entry(key).or_default();
                 if !candidates.contains(&law_id) {
                     candidates.push(law_id.clone());

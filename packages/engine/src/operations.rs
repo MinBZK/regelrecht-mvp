@@ -163,7 +163,13 @@ pub fn execute_operation<R: ValueResolver>(
 /// Unlike IEEE 754 where `NaN != NaN`, this function treats two NaN values
 /// as equal. This is intentional for law execution where NaN represents
 /// invalid/missing data, and comparing two missing values should be consistent.
-fn values_equal(a: &Value, b: &Value) -> bool {
+///
+/// # Precision Guard
+///
+/// Integers beyond ±2^53 cannot be exactly represented as f64, so
+/// Int-Float comparisons involving such integers return `false` immediately
+/// to avoid silent precision loss.
+pub(crate) fn values_equal(a: &Value, b: &Value) -> bool {
     match (a, b) {
         // Float-Float comparison: handle NaN specially
         (Value::Float(f1), Value::Float(f2)) => {
@@ -173,20 +179,12 @@ fn values_equal(a: &Value, b: &Value) -> bool {
                 f1 == f2
             }
         }
-        // Int-Float comparison: handle NaN (NaN != any integer)
+        // Int-Float comparison: handle NaN and precision guard
         (Value::Int(i), Value::Float(f)) => {
-            if f.is_nan() {
-                false
-            } else {
-                (*i as f64) == *f
-            }
+            !f.is_nan() && *i >= MIN_SAFE_INTEGER && *i <= MAX_SAFE_INTEGER && (*i as f64) == *f
         }
         (Value::Float(f), Value::Int(i)) => {
-            if f.is_nan() {
-                false
-            } else {
-                *f == (*i as f64)
-            }
+            !f.is_nan() && *i >= MIN_SAFE_INTEGER && *i <= MAX_SAFE_INTEGER && *f == (*i as f64)
         }
         // Default: use structural equality
         _ => a == b,
@@ -739,6 +737,9 @@ fn calculate_days_difference(date1: NaiveDate, date2: NaiveDate) -> i64 {
 ///
 /// Uses proper calendar arithmetic. A month is counted as complete when
 /// the same day-of-month (or end of month if day doesn't exist) is reached.
+/// For end-of-month edge cases (e.g., Jan 31 → Feb 28), if `earlier.day()`
+/// exceeds the number of days in `later`'s month, it is capped to the last
+/// day of that month so the month is correctly counted as complete.
 fn calculate_months_difference(date1: NaiveDate, date2: NaiveDate) -> i64 {
     let (earlier, later, sign) = if date1 >= date2 {
         (date2, date1, 1)
@@ -750,12 +751,34 @@ fn calculate_months_difference(date1: NaiveDate, date2: NaiveDate) -> i64 {
     let months_diff = later.month() as i32 - earlier.month() as i32;
     let mut total_months = years_diff * 12 + months_diff;
 
-    // Adjust if we haven't reached the same day in the month
-    if later.day() < earlier.day() {
+    // Cap earlier.day() to the max days in later's month so that
+    // Jan 31 → Feb 28 counts as 1 month (28 is the last day of Feb).
+    let max_day_in_later_month = days_in_month(later.year(), later.month());
+    let earlier_day_capped = earlier.day().min(max_day_in_later_month);
+
+    // Adjust if we haven't reached the (capped) day in the month
+    if later.day() < earlier_day_capped {
         total_months -= 1;
     }
 
     (total_months as i64) * sign
+}
+
+/// Return the number of days in a given month.
+fn days_in_month(year: i32, month: u32) -> u32 {
+    // Month lengths are well-known; use a match for safety and clarity
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            if (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 30, // Defensive fallback; should never happen with valid dates
+    }
 }
 
 /// Calculate the difference in complete years between two dates.
@@ -2751,6 +2774,107 @@ mod tests {
         }
 
         #[test]
+        fn test_subtract_date_months_end_of_month() {
+            let resolver = TestResolver::new();
+
+            // Jan 31 → Feb 28: should be 1 month (Feb 28 is last day of Feb)
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2025-02-28")),
+                value: Some(lit("2025-01-31")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("months".to_string()),
+            };
+            assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
+
+            // Jan 29 → Feb 28: should be 1 month (28 < 29, but 28 is max for Feb)
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2025-02-28")),
+                value: Some(lit("2025-01-29")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("months".to_string()),
+            };
+            assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
+
+            // Jan 30 → Feb 28: should be 1 month
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2025-02-28")),
+                value: Some(lit("2025-01-30")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("months".to_string()),
+            };
+            assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
+
+            // Jan 31 → Feb 15: should be 0 months (haven't reached day 31 or end of Feb)
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2025-02-15")),
+                value: Some(lit("2025-01-31")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("months".to_string()),
+            };
+            assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(0));
+
+            // Mar 31 → Apr 30: should be 1 month (30 is last day of Apr)
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2025-04-30")),
+                value: Some(lit("2025-03-31")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("months".to_string()),
+            };
+            assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
+
+            // Leap year: Jan 31 → Feb 29: should be 1 month
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2024-02-29")),
+                value: Some(lit("2024-01-31")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("months".to_string()),
+            };
+            assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
+        }
+
+        #[test]
         fn test_subtract_date_years() {
             let resolver = TestResolver::new();
             let op = ActionOperation {
@@ -2964,5 +3088,42 @@ mod tests {
             let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(0));
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // values_equal Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_values_equal_precision_guard() {
+        // Integers beyond ±2^53 can't be exactly represented as f64
+        let large_int = MAX_SAFE_INTEGER + 1; // 2^53 + 1
+        let large_neg = MIN_SAFE_INTEGER - 1; // -(2^53) - 1
+
+        // These should return false because the integer can't be exactly represented
+        assert!(!values_equal(
+            &Value::Int(large_int),
+            &Value::Float(large_int as f64)
+        ));
+        assert!(!values_equal(
+            &Value::Float(large_neg as f64),
+            &Value::Int(large_neg)
+        ));
+
+        // Integers within safe range should still work
+        assert!(values_equal(&Value::Int(42), &Value::Float(42.0)));
+        assert!(values_equal(&Value::Float(42.0), &Value::Int(42)));
+        assert!(values_equal(
+            &Value::Int(MAX_SAFE_INTEGER),
+            &Value::Float(MAX_SAFE_INTEGER as f64)
+        ));
+
+        // NaN handling
+        assert!(values_equal(
+            &Value::Float(f64::NAN),
+            &Value::Float(f64::NAN)
+        ));
+        assert!(!values_equal(&Value::Int(0), &Value::Float(f64::NAN)));
+        assert!(!values_equal(&Value::Float(f64::NAN), &Value::Int(0)));
     }
 }

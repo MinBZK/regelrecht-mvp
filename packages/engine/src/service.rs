@@ -32,10 +32,11 @@ use crate::config;
 use crate::context::RuleContext;
 use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
 use crate::engine::{
-    evaluate_select_on_criteria, get_delegation_info, values_equal, ArticleEngine, ArticleResult,
+    evaluate_select_on_criteria, get_delegation_info, ArticleEngine, ArticleResult,
 };
 use crate::error::{EngineError, Result};
 use crate::operations::evaluate_value;
+use crate::operations::values_equal;
 use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
 use crate::types::{RegulatoryLayer, Value};
@@ -239,6 +240,10 @@ fn parse_regulatory_layer(resolve_type: &str) -> Option<RegulatoryLayer> {
 /// It also supports external data sources via `DataSourceRegistry`.
 pub struct LawExecutionService {
     resolver: RuleResolver,
+    /// Staged for future integration: will be queried during law execution
+    /// to resolve external data (e.g., citizen income, municipality data).
+    /// Currently only supports manual CRUD; automatic resolution during
+    /// execution is not yet wired up.
     data_registry: DataSourceRegistry,
 }
 
@@ -1053,6 +1058,10 @@ impl LawExecutionService {
     // -------------------------------------------------------------------------
 
     /// Add a data source to the registry.
+    ///
+    /// **Note:** Data sources are staged for future integration. They are
+    /// not yet automatically queried during law execution. Currently only
+    /// manual CRUD operations and direct registry queries are supported.
     ///
     /// Data sources are queried in priority order (highest first) when
     /// resolving values that aren't found in the law context.

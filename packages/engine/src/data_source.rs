@@ -103,6 +103,10 @@ pub struct DictDataSource {
     data: HashMap<String, HashMap<String, Value>>,
     /// Index of all available field names (lowercase)
     field_index: HashSet<String>,
+    /// When set, `get()` filters criteria to only these fields before building the
+    /// lookup key. This is needed for `from_records()`, which stores records by a
+    /// single key field, while `get()` would otherwise build a key from ALL criteria.
+    key_fields: Option<Vec<String>>,
 }
 
 impl DictDataSource {
@@ -141,6 +145,7 @@ impl DictDataSource {
             priority,
             data: normalized_data,
             field_index,
+            key_fields: None,
         }
     }
 
@@ -176,7 +181,9 @@ impl DictDataSource {
             }
         }
 
-        Some(Self::new(name, priority, data))
+        let mut source = Self::new(name, priority, data);
+        source.key_fields = Some(vec![key_field_lower]);
+        Some(source)
     }
 
     /// Store a record in the data source.
@@ -225,8 +232,20 @@ impl DataSource for DictDataSource {
     }
 
     fn get(&self, field: &str, criteria: &HashMap<String, Value>) -> Option<Value> {
-        // Build lookup key from criteria
-        let key = build_lookup_key(criteria);
+        // When key_fields is set (e.g. from_records), filter criteria to only
+        // the key fields before building the lookup key. Otherwise a caller
+        // passing extra criteria would produce a key that doesn't match any record.
+        let key = match &self.key_fields {
+            Some(fields) => {
+                let filtered: HashMap<String, Value> = criteria
+                    .iter()
+                    .filter(|(k, _)| fields.contains(&k.to_lowercase()))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                build_lookup_key(&filtered)
+            }
+            None => build_lookup_key(criteria),
+        };
 
         // Look up record
         let record = self.data.get(&key)?;
@@ -505,8 +524,9 @@ mod tests {
         let source = DictDataSource::from_records("persons", 10, "BSN", records).unwrap();
         assert_eq!(source.record_count(), 2);
 
+        // Criteria must use the key_field name ("BSN"), not an arbitrary name
         let mut criteria = HashMap::new();
-        criteria.insert("key".to_string(), Value::String("123".to_string()));
+        criteria.insert("BSN".to_string(), Value::String("123".to_string()));
         assert_eq!(source.get("income", &criteria), Some(Value::Int(50000)));
     }
 
@@ -695,5 +715,44 @@ mod tests {
         assert_eq!(value_to_key(&Value::Float(3.14)), "3.14");
         assert_eq!(value_to_key(&Value::Bool(true)), "true");
         assert_eq!(value_to_key(&Value::Null), "null");
+    }
+
+    #[test]
+    fn test_from_records_multi_criteria_lookup() {
+        // from_records stores by a single key_field, but get() receives
+        // all criteria. Without key_fields filtering, the extra criteria
+        // would cause a key mismatch and the lookup would silently fail.
+        let records = vec![
+            {
+                let mut r = HashMap::new();
+                r.insert("BSN".to_string(), Value::String("123".to_string()));
+                r.insert("income".to_string(), Value::Int(50000));
+                r
+            },
+            {
+                let mut r = HashMap::new();
+                r.insert("BSN".to_string(), Value::String("456".to_string()));
+                r.insert("income".to_string(), Value::Int(40000));
+                r
+            },
+        ];
+
+        let source = DictDataSource::from_records("persons", 10, "BSN", records).unwrap();
+
+        // Lookup with multiple criteria — the extra "year" criterion should be
+        // ignored because the source was created with key_field="BSN"
+        let mut criteria = HashMap::new();
+        criteria.insert("BSN".to_string(), Value::String("123".to_string()));
+        criteria.insert("year".to_string(), Value::Int(2025));
+
+        assert_eq!(source.get("income", &criteria), Some(Value::Int(50000)));
+
+        // Single criterion should still work
+        let mut criteria_single = HashMap::new();
+        criteria_single.insert("BSN".to_string(), Value::String("456".to_string()));
+        assert_eq!(
+            source.get("income", &criteria_single),
+            Some(Value::Int(40000))
+        );
     }
 }
