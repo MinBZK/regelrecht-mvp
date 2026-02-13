@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - packages/engine/**
+      - packages/harvester/**
       - features/**
       - regulation/**
       - schema/**
@@ -16,6 +17,7 @@ on:
     branches: [main]
     paths:
       - packages/engine/**
+      - packages/harvester/**
       - features/**
       - regulation/**
       - schema/**
@@ -87,20 +89,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            packages/engine/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
 
       - uses: actions/setup-python@v5
         with:
@@ -232,3 +220,101 @@ jobs:
 
       - name: Build for WASM
         run: cargo build --target wasm32-unknown-unknown --features wasm
+
+  # Harvester CI jobs
+  harvester-check:
+    name: Harvester Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/harvester
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/harvester/target
+          key: ${{ runner.os }}-cargo-harvester-${{ hashFiles('packages/harvester/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-harvester-
+
+      - name: Run cargo check
+        run: cargo check --all-features
+
+  harvester-test:
+    name: Harvester Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/harvester
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/harvester/target
+          key: ${{ runner.os }}-cargo-harvester-${{ hashFiles('packages/harvester/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-harvester-
+
+      - name: Run tests
+        run: cargo test --all-features
+
+  harvester-fmt:
+    name: Harvester Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/harvester
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+  harvester-clippy:
+    name: Harvester Clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/harvester
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/harvester/target
+          key: ${{ runner.os }}-cargo-harvester-${{ hashFiles('packages/harvester/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-harvester-
+
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings
