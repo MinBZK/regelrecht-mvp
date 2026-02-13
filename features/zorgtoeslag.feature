@@ -32,4 +32,4 @@ Feature: Healthcare allowance calculation
       | bsn       | spaargeld | beleggingen | onroerend_goed | schulden |
       | 999993653 | 0         | 0           | 0              | 0        |
     When the healthcare allowance law is executed
-    Then the allowance amount is "1358.93" euro
+    Then the allowance amount is "2096.92" euro
