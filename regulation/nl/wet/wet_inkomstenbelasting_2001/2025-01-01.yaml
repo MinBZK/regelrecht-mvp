@@ -11,14 +11,80 @@ competent_authority:
   name: TODO
 
 articles:
+  - number: '3.1'
+    text: |-
+      Belastbaar inkomen uit werk en woning is het inkomen uit werk en woning verminderd met de te verrekenen
+      verliezen uit werk en woning.
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel3.1
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: loon_uit_dienstbetrekking
+            type: number
+            required: true
+          - name: uitkeringen_en_pensioenen
+            type: number
+            required: true
+          - name: winst_uit_onderneming
+            type: number
+            required: false
+          - name: resultaat_overige_werkzaamheden
+            type: number
+            required: false
+          - name: eigen_woning
+            type: number
+            required: false
+        output:
+          - name: box1_inkomen
+            type: amount
+            type_spec:
+              unit: eurocent
+        actions:
+          - output: box1_inkomen
+            operation: ADD
+            values:
+              - $loon_uit_dienstbetrekking
+              - $uitkeringen_en_pensioenen
+              - $winst_uit_onderneming
+              - $resultaat_overige_werkzaamheden
+              - $eigen_woning
+
+  - number: '4.12'
+    text: |-
+      Inkomen uit aanmerkelijk belang is het gezamenlijke bedrag van de reguliere voordelen en de
+      vervreemdingsvoordelen verminderd met de te verrekenen verliezen uit aanmerkelijk belang.
+    url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel4.12
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: reguliere_voordelen
+            type: number
+            required: false
+          - name: vervreemdingsvoordelen
+            type: number
+            required: false
+        output:
+          - name: box2_inkomen
+            type: amount
+            type_spec:
+              unit: eurocent
+        actions:
+          - output: box2_inkomen
+            operation: ADD
+            values:
+              - $reguliere_voordelen
+              - $vervreemdingsvoordelen
+
   - number: '5.2'
     text: |-
-      Artikel 5.2 - Rendementsgrondslag
-
-      [TODO: Full legal text to be downloaded]
-
-      De rendementsgrondslag is de waarde van de bezittingen verminderd met de schulden, zoals bepaald in Box 3 van de
-      inkomstenbelasting.
+      Rendementsgrondslag is de waarde van de bezittingen verminderd met de waarde van de schulden. De
+      rendementsgrondslag aan het begin van het kalenderjaar (peildatum 1 januari) wordt als uitgangspunt genomen.
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel5.2
     machine_readable:
       execution:
@@ -26,21 +92,63 @@ articles:
           - name: bsn
             type: string
             required: true
-            description: Burgerservicenummer van de persoon
+          - name: spaargeld
+            type: number
+            required: false
+          - name: beleggingen
+            type: number
+            required: false
+          - name: onroerend_goed
+            type: number
+            required: false
+          - name: schulden
+            type: number
+            required: false
         output:
           - name: rendementsgrondslag
             type: amount
-            description: Rendementsgrondslag (vermogen) in eurocent
+            type_spec:
+              unit: eurocent
         actions:
           - output: rendementsgrondslag
-            value: 0
+            operation: SUBTRACT
+            values:
+              - operation: ADD
+                values:
+                  - $spaargeld
+                  - $beleggingen
+                  - $onroerend_goed
+              - $schulden
 
   - number: '2.18'
     text: |-
-      Artikel 2.18 - Verzamelinkomen
-
-      [TODO: Full legal text to be downloaded]
-
-      Het verzamelinkomen is de som van het belastbare inkomen uit werk en woning, het belastbare inkomen uit
-      aanmerkelijk belang, en het belastbare inkomen uit sparen en beleggen.
+      Verzamelinkomen is het gezamenlijke bedrag van het inkomen uit werk en woning, het inkomen uit aanmerkelijk
+      belang en het belastbaar inkomen uit sparen en beleggen.
     url: https://wetten.overheid.nl/BWBR0011353/2025-01-01#Artikel2.18
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: box1_inkomen
+            type: number
+            required: true
+          - name: box2_inkomen
+            type: number
+            required: false
+          - name: box3_inkomen
+            type: number
+            required: false
+        output:
+          - name: toetsingsinkomen
+            type: amount
+            type_spec:
+              unit: eurocent
+        actions:
+          - output: toetsingsinkomen
+            operation: ADD
+            values:
+              - $box1_inkomen
+              - $box2_inkomen
+              - $box3_inkomen
