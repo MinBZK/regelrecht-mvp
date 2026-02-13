@@ -22,21 +22,22 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: loon_uit_dienstbetrekking
             type: number
-            required: true
+            source: {}
           - name: uitkeringen_en_pensioenen
             type: number
-            required: true
+            source: {}
           - name: winst_uit_onderneming
             type: number
-            required: false
+            source: {}
           - name: resultaat_overige_werkzaamheden
             type: number
-            required: false
+            source: {}
           - name: eigen_woning
             type: number
-            required: false
+            source: {}
         output:
           - name: box1_inkomen
             type: amount
@@ -63,12 +64,13 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: reguliere_voordelen
             type: number
-            required: false
+            source: {}
           - name: vervreemdingsvoordelen
             type: number
-            required: false
+            source: {}
         output:
           - name: box2_inkomen
             type: amount
@@ -92,18 +94,19 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: spaargeld
             type: number
-            required: false
+            source: {}
           - name: beleggingen
             type: number
-            required: false
+            source: {}
           - name: onroerend_goed
             type: number
-            required: false
+            source: {}
           - name: schulden
             type: number
-            required: false
+            source: {}
         output:
           - name: rendementsgrondslag
             type: amount
@@ -131,15 +134,21 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: box1_inkomen
             type: number
-            required: true
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: box1_inkomen
+              parameters:
+                bsn: $bsn
           - name: box2_inkomen
             type: number
-            required: false
-          - name: box3_inkomen
-            type: number
-            required: false
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: box2_inkomen
+              parameters:
+                bsn: $bsn
         output:
           - name: toetsingsinkomen
             type: amount
@@ -151,4 +160,3 @@ articles:
             values:
               - $box1_inkomen
               - $box2_inkomen
-              - $box3_inkomen

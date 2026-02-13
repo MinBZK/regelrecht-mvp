@@ -300,11 +300,14 @@ impl<'a> ArticleEngine<'a> {
                 return Err(EngineError::ExternalReferenceNotResolved {
                     input_name: input.name.clone(),
                     regulation: regulation.clone(),
-                    output: source.output.clone(),
+                    output: source.output.clone().unwrap_or_default(),
                 });
-            } else {
-                // Internal reference: resolve within the same law
-                let output_name = &source.output;
+            } else if let Some(output_name) = &source.output {
+                // Internal reference: resolve within the same law.
+                // Check if already resolved by service layer.
+                if parameters.contains_key(&input.name) {
+                    continue;
+                }
                 let value = self.resolve_internal_reference(
                     output_name,
                     parameters,
@@ -313,6 +316,13 @@ impl<'a> ArticleEngine<'a> {
                     depth,
                 )?;
                 context.set_resolved_input(&input.name, value);
+            } else {
+                // Empty source (source: {}) — resolved by DataSourceRegistry in service layer.
+                // Check if already provided as parameter.
+                if parameters.contains_key(&input.name) {
+                    continue;
+                }
+                // Otherwise leave unresolved — the service layer will handle it.
             }
         }
 

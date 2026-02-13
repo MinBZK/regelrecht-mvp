@@ -49,12 +49,13 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: detentiestatus
             type: string
-            required: true
+            source: {}
           - name: inrichting_type
             type: string
-            required: true
+            source: {}
         output:
           - name: is_gedetineerd
             type: boolean

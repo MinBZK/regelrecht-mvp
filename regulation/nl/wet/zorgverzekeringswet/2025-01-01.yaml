@@ -114,12 +114,17 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: polis_status
             type: string
-            required: true
+            source: {}
           - name: is_gedetineerd
             type: boolean
-            required: false
+            source:
+              regulation: penitentiaire_beginselenwet
+              output: is_gedetineerd
+              parameters:
+                bsn: $bsn
         output:
           - name: is_verzekerd
             type: boolean

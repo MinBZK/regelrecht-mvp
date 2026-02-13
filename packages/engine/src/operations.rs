@@ -709,12 +709,25 @@ fn execute_in<R: ValueResolver>(op: &ActionOperation, resolver: &R, depth: usize
         .subject
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("IN requires 'subject'".to_string()))?;
-    let values = get_values(op)?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
-    let evaluated_values = evaluate_values(values, resolver, depth)?;
 
-    for val in &evaluated_values {
+    // Support both `values: [...]` (inline list) and `value: $list_ref` (reference to list)
+    let check_values: Vec<Value> = if let Some(values) = &op.values {
+        evaluate_values(values, resolver, depth)?
+    } else if let Some(value) = &op.value {
+        let resolved = evaluate_value(value, resolver, depth)?;
+        match resolved {
+            Value::Array(items) => items,
+            other => vec![other],
+        }
+    } else {
+        return Err(EngineError::InvalidOperation(
+            "IN requires 'values' or 'value'".to_string(),
+        ));
+    };
+
+    for val in &check_values {
         if values_equal(&subject_val, val) {
             return Ok(Value::Bool(true));
         }
@@ -735,12 +748,25 @@ fn execute_not_in<R: ValueResolver>(
         .subject
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("NOT_IN requires 'subject'".to_string()))?;
-    let values = get_values(op)?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
-    let evaluated_values = evaluate_values(values, resolver, depth)?;
 
-    for val in &evaluated_values {
+    // Support both `values: [...]` (inline list) and `value: $list_ref` (reference to list)
+    let check_values: Vec<Value> = if let Some(values) = &op.values {
+        evaluate_values(values, resolver, depth)?
+    } else if let Some(value) = &op.value {
+        let resolved = evaluate_value(value, resolver, depth)?;
+        match resolved {
+            Value::Array(items) => items,
+            other => vec![other],
+        }
+    } else {
+        return Err(EngineError::InvalidOperation(
+            "NOT_IN requires 'values' or 'value'".to_string(),
+        ));
+    };
+
+    for val in &check_values {
         if values_equal(&subject_val, val) {
             return Ok(Value::Bool(false));
         }
@@ -821,6 +847,22 @@ fn parse_date(value: &Value) -> Result<NaiveDate> {
                 s, e
             ))
         }),
+        // Handle referencedate objects with {iso, year, month, day}
+        Value::Object(obj) => {
+            if let Some(Value::String(iso)) = obj.get("iso") {
+                NaiveDate::parse_from_str(iso, "%Y-%m-%d").map_err(|e| {
+                    EngineError::InvalidOperation(format!(
+                        "Failed to parse date '{}': {}. Expected format: YYYY-MM-DD",
+                        iso, e
+                    ))
+                })
+            } else {
+                Err(EngineError::TypeMismatch {
+                    expected: "date string (YYYY-MM-DD) or object with 'iso' field".to_string(),
+                    actual: format!("{:?}", value),
+                })
+            }
+        }
         _ => Err(EngineError::TypeMismatch {
             expected: "date string (YYYY-MM-DD)".to_string(),
             actual: format!("{:?}", value),

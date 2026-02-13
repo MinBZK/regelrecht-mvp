@@ -89,9 +89,10 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: partnerschap_type
             type: string
-            required: true
+            source: {}
         output:
           - name: heeft_toeslagpartner
             type: boolean
@@ -193,9 +194,14 @@ articles:
           - name: bsn
             type: string
             required: true
+        input:
           - name: verzamelinkomen
             type: number
-            required: true
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: toetsingsinkomen
+              parameters:
+                bsn: $bsn
         output:
           - name: toetsingsinkomen
             type: amount
