@@ -144,15 +144,7 @@ zorgtoeslagwet (2025-01-01 {bsn: 999993653} hoogte_zorgtoeslag)
 ║   ├──URI call: algemene_wet_inkomensafhankelijke_regelingen#heeft_toeslagpartner
 ║   ║   ├──Resolving $BSN
 ║   ║   │   ├──Resolving from PARAMETERS: '999993653'
-║   ║   ├──Resolving $PARTNERSCHAP_TYPE
-║   ║   │   ├──Resolving from DATA_SOURCE: 'GEEN'
-║   ║   ├──Computing heeft_toeslagpartner
-║   ║   │   ├──Compute IN(...) = False
-║   ║   │   │   ├──Resolving $PARTNERSCHAP_TYPE
-║   ║   │   │   │   ├──Resolving from PARAMETERS: 'GEEN'
-║   ║   │   │   ├──Resolving $GELDIGE_PARTNERTYPEN
-║   ║   │   │   │   ├──Resolving from DEFINITION: ['HUWELIJK', 'GEREGISTREERD_PARTNERSCHAP']
-║   ║   ├──Result of heeft_toeslagpartner: False
+║   ║   ├──CACHED: algemene_wet_inkomensafhankelijke_regelingen#heeft_toeslagpartner: False
 ║   ├──Computing vermogen_onder_grens
 ║   │   ├──Compute LESSTHANOREQUAL(...) = True
 ║   │   │   ├──Resolving $VERMOGEN
