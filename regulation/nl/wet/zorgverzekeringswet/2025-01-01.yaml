@@ -103,6 +103,37 @@ articles:
       Wetboek](jci1.3:c:BWBR0002656&titeldeel=20) , zorgt ervoor dat de minderjarige verzekeringsplichtige, dan wel de
       onder curatele, bewind of mentorschap gestelde verzekeringsplichtige krachtens een zorgverzekering verzekerd is.
     url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#Artikel2
+    machine_readable:
+      definitions:
+        actieve_polis_statussen:
+          value:
+            - ACTIEF
+            - GESCHORST_MET_TERUGWERKENDE_KRACHT
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: polis_status
+            type: string
+            required: true
+          - name: is_gedetineerd
+            type: boolean
+            required: false
+        output:
+          - name: is_verzekerd
+            type: boolean
+        actions:
+          - output: is_verzekerd
+            value:
+              operation: AND
+              conditions:
+                - operation: IN
+                  subject: $polis_status
+                  value: $actieve_polis_statussen
+                - operation: NOT_EQUALS
+                  subject: $is_gedetineerd
+                  value: true
   - number: Artikel 3
     text: |-
       Artikel 3 1 Een zorgverzekeraar is verplicht met of ten behoeve van iedere verzekeringsplichtige die in zijn
@@ -2241,25 +2272,3 @@ articles:
         actions:
           - output: wet_naam
             value: Zorgverzekeringswet
-  - number: API-1
-    text: |-
-      SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining whether a person
-      is insured (verzekerd) under the Zorgverzekeringswet based on their BSN. According to the ZVW, nearly all residents
-      of the Netherlands are required to have health insurance. This endpoint checks insurance status. NOTE: This is not
-      part of the original ZVW text, but provides programmatic access to insurance status for other laws that need this
-      information.
-    url: https://wetten.overheid.nl/BWBR0018450/2025-01-01#API-1
-    machine_readable:
-      execution:
-        parameters:
-          - name: bsn
-            type: string
-            required: true
-            description: Burgerservicenummer van de persoon
-        output:
-          - name: is_verzekerd
-            type: boolean
-            description: Geeft aan of de persoon verzekerd is onder de ZVW
-        actions:
-          - output: is_verzekerd
-            value: true
