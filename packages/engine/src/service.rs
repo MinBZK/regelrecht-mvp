@@ -39,10 +39,13 @@ use crate::operations::evaluate_value;
 use crate::operations::values_equal;
 use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
-use crate::types::{RegulatoryLayer, Value};
+use crate::trace::TraceBuilder;
+use crate::types::{PathNodeType, RegulatoryLayer, ResolveType, Value};
 use crate::uri::RegelrechtUri;
 use chrono::NaiveDate;
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 // =============================================================================
 // Resolution Context
@@ -63,6 +66,8 @@ struct ResolutionContext<'a> {
     visited: HashSet<String>,
     /// Current resolution depth
     depth: usize,
+    /// Optional shared trace builder
+    trace: Option<Rc<RefCell<TraceBuilder>>>,
 }
 
 impl<'a> ResolutionContext<'a> {
@@ -72,6 +77,17 @@ impl<'a> ResolutionContext<'a> {
             calculation_date,
             visited: HashSet::new(),
             depth: 0,
+            trace: None,
+        }
+    }
+
+    /// Create a new resolution context with trace builder.
+    fn with_trace(calculation_date: &'a str, trace: Rc<RefCell<TraceBuilder>>) -> Self {
+        Self {
+            calculation_date,
+            visited: HashSet::new(),
+            depth: 0,
+            trace: Some(trace),
         }
     }
 
@@ -304,6 +320,60 @@ impl LawExecutionService {
         self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)
     }
 
+    /// Execute a law output with tracing enabled.
+    ///
+    /// Same as `evaluate_law_output` but also returns an execution trace
+    /// in the `ArticleResult.trace` field.
+    pub fn evaluate_law_output_with_trace(
+        &self,
+        law_id: &str,
+        output_name: &str,
+        parameters: HashMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
+        let trace = Rc::new(RefCell::new(TraceBuilder::new()));
+
+        // Push the top-level article node
+        {
+            let mut tb = trace.borrow_mut();
+            tb.push(
+                format!("{} ({})", law_id, output_name),
+                PathNodeType::Article,
+            );
+            let mut sorted_params: Vec<_> = parameters
+                .iter()
+                .map(|(k, v)| format!("{}: {}", k, v))
+                .collect();
+            sorted_params.sort();
+            tb.set_message(format!(
+                "{} ({} {{{}}} {})",
+                law_id,
+                calculation_date,
+                sorted_params.join(", "),
+                output_name,
+            ));
+        }
+
+        let mut res_ctx = ResolutionContext::with_trace(calculation_date, Rc::clone(&trace));
+        let mut result =
+            self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)?;
+
+        // Drop res_ctx so it releases its Rc clone
+        drop(res_ctx);
+
+        // Set the result on the top-level article node and pop it
+        {
+            let mut tb = trace.borrow_mut();
+            if let Some(value) = result.outputs.get(output_name) {
+                tb.set_result(value.clone());
+            }
+            // Pop returns the completed top-level node
+            result.trace = tb.pop();
+        }
+
+        Ok(result)
+    }
+
     /// Internal method with cycle tracking.
     fn evaluate_law_output_internal(
         &self,
@@ -367,6 +437,11 @@ impl LawExecutionService {
         // Create execution context
         let mut context = RuleContext::new(parameters.clone(), res_ctx.calculation_date)?;
 
+        // Attach trace builder if available
+        if let Some(ref tb) = res_ctx.trace {
+            context.set_trace(Rc::clone(tb));
+        }
+
         // Set definitions from article
         if let Some(definitions) = article.get_definitions() {
             context.set_definitions(definitions);
@@ -392,7 +467,12 @@ impl LawExecutionService {
             combined_params.insert(name, value);
         }
 
-        engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
+        // Use traced evaluation if trace is available
+        if let Some(ref tb) = res_ctx.trace {
+            engine.evaluate_with_trace(combined_params, res_ctx.calculation_date, requested_output, Rc::clone(tb))
+        } else {
+            engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
+        }
     }
 
     /// Pre-resolve all resolve actions in an article.
@@ -656,6 +736,20 @@ impl LawExecutionService {
                         source = %data_match.source_name,
                         "Resolved input from data registry"
                     );
+
+                    // Trace the data source resolution
+                    if let Some(ref tb) = res_ctx.trace {
+                        let mut tb = tb.borrow_mut();
+                        tb.push(&input.name, PathNodeType::Resolve);
+                        tb.set_resolve_type(ResolveType::DataSource);
+                        tb.set_result(data_match.value.clone());
+                        tb.set_message(format!(
+                            "Resolving from SOURCE {}: {}",
+                            data_match.source_name, data_match.value
+                        ));
+                        tb.pop();
+                    }
+
                     context.set_resolved_input(&input.name, data_match.value);
                     continue;
                 }
@@ -718,6 +812,14 @@ impl LawExecutionService {
             )));
         }
 
+        // Trace cross-law call
+        if let Some(ref tb) = res_ctx.trace {
+            tb.borrow_mut().push(
+                format!("{}#{}", regulation, output),
+                PathNodeType::UriCall,
+            );
+        }
+
         // Build parameters for the target article
         let target_params = self.build_target_parameters(source_parameters, context)?;
 
@@ -731,15 +833,23 @@ impl LawExecutionService {
         // Leave scope (even on error, for correct cycle tracking)
         res_ctx.leave(&key);
 
-        // Extract the requested output
-        result?
+        let value = result?
             .outputs
             .get(output)
             .cloned()
             .ok_or_else(|| EngineError::OutputNotFound {
                 law_id: regulation.to_string(),
                 output: output.to_string(),
-            })
+            })?;
+
+        // Complete trace node
+        if let Some(ref tb) = res_ctx.trace {
+            let mut tb = tb.borrow_mut();
+            tb.set_result(value.clone());
+            tb.pop();
+        }
+
+        Ok(value)
     }
 
     /// Internal method for delegation input resolution with depth tracking.

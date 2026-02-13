@@ -132,31 +132,45 @@ articles:
                               operation: EQUALS
                               subject: $heeft_toeslagpartner
                               value: true
-                            then: $drempelinkomen_aanvrager_met_toeslagpartner
-                            else: $drempelinkomen_alleenstaande
-                          - operation: IF
+                            then: $percentage_drempelinkomen_partner
+                            else: $percentage_drempelinkomen_alleenstaande
+                          - operation: MIN
+                            values:
+                              - $toetsingsinkomen
+                              - operation: IF
+                                when:
+                                  operation: EQUALS
+                                  subject: $heeft_toeslagpartner
+                                  value: true
+                                then: $drempelinkomen_aanvrager_met_toeslagpartner
+                                else: $drempelinkomen_alleenstaande
+                      - operation: IF
+                        when:
+                          operation: GREATER_THAN
+                          subject: $toetsingsinkomen
+                          value:
+                            operation: IF
                             when:
                               operation: EQUALS
                               subject: $heeft_toeslagpartner
                               value: true
-                            then: $percentage_drempelinkomen_partner
-                            else: $percentage_drempelinkomen_alleenstaande
-                      - operation: MULTIPLY
-                        values:
-                          - operation: MAX
-                            values:
-                              - 0
-                              - operation: SUBTRACT
-                                values:
-                                  - $toetsingsinkomen
-                                  - operation: IF
-                                    when:
-                                      operation: EQUALS
-                                      subject: $heeft_toeslagpartner
-                                      value: true
-                                    then: $drempelinkomen_aanvrager_met_toeslagpartner
-                                    else: $drempelinkomen_alleenstaande
-                          - $percentage_toetsingsinkomen
+                            then: $drempelinkomen_aanvrager_met_toeslagpartner
+                            else: $drempelinkomen_alleenstaande
+                        then:
+                          operation: MULTIPLY
+                          values:
+                            - operation: SUBTRACT
+                              values:
+                                - $toetsingsinkomen
+                                - operation: IF
+                                  when:
+                                    operation: EQUALS
+                                    subject: $heeft_toeslagpartner
+                                    value: true
+                                  then: $drempelinkomen_aanvrager_met_toeslagpartner
+                                  else: $drempelinkomen_alleenstaande
+                            - $percentage_toetsingsinkomen
+                        else: 0
           - output: heeft_recht_op_zorgtoeslag
             value:
               operation: AND

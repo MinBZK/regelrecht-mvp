@@ -12,7 +12,7 @@
 
 use crate::article::{ActionOperation, ActionValue};
 use crate::error::{EngineError, Result};
-use crate::types::{Operation, Value};
+use crate::types::{Operation, PathNodeType, Value};
 use chrono::{Datelike, NaiveDate};
 
 /// Maximum nesting depth for operations to prevent stack overflow
@@ -59,6 +59,23 @@ pub trait ValueResolver {
     /// * `Ok(Value)` - The resolved value
     /// * `Err(EngineError::VariableNotFound)` - Variable doesn't exist in context
     fn resolve(&self, name: &str) -> Result<Value>;
+
+    /// Push a trace node. No-op by default.
+    fn trace_push(&self, _name: &str, _node_type: PathNodeType) {}
+
+    /// Pop a trace node. No-op by default.
+    fn trace_pop(&self) {}
+
+    /// Set result on current trace node. No-op by default.
+    fn trace_set_result(&self, _result: Value) {}
+
+    /// Set message on current trace node. No-op by default.
+    fn trace_set_message(&self, _msg: String) {}
+
+    /// Check if tracing is active. Returns false by default.
+    fn has_trace(&self) -> bool {
+        false
+    }
 }
 
 /// Evaluate an ActionValue to a concrete Value.
@@ -105,6 +122,65 @@ pub fn execute_operation<R: ValueResolver>(
         return Err(EngineError::MaxDepthExceeded(depth));
     }
 
+    let tracing = resolver.has_trace();
+    let op_name = if tracing {
+        let name = format!("{:?}", op.operation).to_uppercase();
+        resolver.trace_push(&name, PathNodeType::Operation);
+        Some(name)
+    } else {
+        None
+    };
+
+    let result = execute_operation_internal(op, resolver, depth);
+
+    if let Some(op_name) = op_name {
+        match &result {
+            Ok(value) => {
+                resolver.trace_set_result(value.clone());
+                resolver.trace_set_message(format!(
+                    "Compute {}(...) = {}",
+                    op_name,
+                    format_value_for_trace(value)
+                ));
+            }
+            Err(e) => {
+                resolver.trace_set_message(format!("Error in {}: {}", op_name, e));
+            }
+        }
+        resolver.trace_pop();
+    }
+
+    result
+}
+
+/// Format a value compactly for trace messages.
+fn format_value_for_trace(value: &Value) -> String {
+    match value {
+        Value::Null => "None".to_string(),
+        Value::Bool(b) => {
+            if *b {
+                "True".to_string()
+            } else {
+                "False".to_string()
+            }
+        }
+        Value::Int(i) => i.to_string(),
+        Value::Float(f) => format!("{}", f),
+        Value::String(s) => format!("'{}'", s),
+        Value::Array(arr) => {
+            let items: Vec<String> = arr.iter().map(format_value_for_trace).collect();
+            format!("[{}]", items.join(", "))
+        }
+        Value::Object(_) => "{...}".to_string(),
+    }
+}
+
+/// Internal operation dispatch (no tracing).
+fn execute_operation_internal<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
     match op.operation {
         // Comparison operations
         Operation::Equals => execute_equals(op, resolver, depth),
@@ -484,11 +560,21 @@ fn execute_and<R: ValueResolver>(
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("AND requires 'conditions'".to_string()))?;
 
+    let tracing = resolver.has_trace();
+    let mut results: Option<Vec<Value>> = if tracing { Some(Vec::new()) } else { None };
     for condition in conditions {
         let val = evaluate_value(condition, resolver, depth)?;
         if !val.to_bool() {
             return Ok(Value::Bool(false));
         }
+        if let Some(ref mut r) = results {
+            r.push(val);
+        }
+    }
+
+    if let Some(results) = results {
+        let result_strs: Vec<String> = results.iter().map(format_value_for_trace).collect();
+        resolver.trace_set_message(format!("Result [{}] AND: True", result_strs.join(", ")));
     }
 
     Ok(Value::Bool(true))
@@ -529,9 +615,23 @@ fn execute_if<R: ValueResolver>(op: &ActionOperation, resolver: &R, depth: usize
     let condition_result = evaluate_value(when, resolver, depth)?;
 
     if condition_result.to_bool() {
-        evaluate_value(then, resolver, depth)
+        let result = evaluate_value(then, resolver, depth)?;
+        if resolver.has_trace() {
+            resolver.trace_set_message(format!(
+                "THEN condition: {}",
+                format_value_for_trace(&result)
+            ));
+        }
+        Ok(result)
     } else if let Some(else_branch) = &op.else_branch {
-        evaluate_value(else_branch, resolver, depth)
+        let result = evaluate_value(else_branch, resolver, depth)?;
+        if resolver.has_trace() {
+            resolver.trace_set_message(format!(
+                "ELSE condition: {}",
+                format_value_for_trace(&result)
+            ));
+        }
+        Ok(result)
     } else {
         Ok(Value::Null)
     }
@@ -838,7 +938,7 @@ fn f64_to_i64_safe(f: f64) -> Result<i64> {
     const I64_MIN_F64: f64 = i64::MIN as f64;
     const I64_MAX_F64: f64 = i64::MAX as f64;
 
-    if f < I64_MIN_F64 || f >= I64_MAX_F64 {
+    if !(I64_MIN_F64..I64_MAX_F64).contains(&f) {
         return Err(EngineError::ArithmeticOverflow(format!(
             "Value {} exceeds i64 range",
             f

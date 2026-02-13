@@ -339,24 +339,44 @@ pub enum ParameterType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PathNodeType {
+    /// Variable/value resolution step
     Resolve,
+    /// Operation execution (e.g., ADD, EQUALS)
     Operation,
+    /// Action execution within an article
     Action,
+    /// Requirement check
     Requirement,
+    /// Cross-law URI call
     UriCall,
+    /// Article-level execution
+    Article,
+    /// Delegation to another regulation
+    Delegation,
 }
 
 /// Resolve type for variable resolution
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ResolveType {
+    /// Value resolved from a regelrecht:// URI
     Uri,
+    /// Value resolved from input parameters
     Parameter,
+    /// Value resolved from article definitions (constants)
     Definition,
+    /// Value resolved from calculated outputs
     Output,
+    /// Value resolved from input specification
     Input,
+    /// Value resolved from local scope (loop variables)
     Local,
+    /// Value resolved from context variables (referencedate)
     Context,
+    /// Value resolved from cached cross-law results
+    ResolvedInput,
+    /// Value resolved from external data source
+    DataSource,
 }
 
 #[cfg(test)]
