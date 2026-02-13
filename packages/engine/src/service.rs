@@ -53,7 +53,9 @@ use std::collections::{HashMap, HashSet};
 /// Bundles the state needed for cycle detection and depth tracking
 /// during cross-law reference resolution. This reduces the number of
 /// parameters passed between internal resolution functions.
-#[derive(Clone)]
+///
+/// Uses a scoped push/pop pattern for the visited set to avoid
+/// cloning the HashSet on every cross-law descent.
 struct ResolutionContext<'a> {
     /// Date for calculations (YYYY-MM-DD)
     calculation_date: &'a str,
@@ -78,17 +80,16 @@ impl<'a> ResolutionContext<'a> {
         NaiveDate::parse_from_str(self.calculation_date, "%Y-%m-%d").ok()
     }
 
-    /// Create a child context with a new visited key and incremented depth.
-    ///
-    /// Used when descending into a cross-law reference to track the resolution chain.
-    fn with_visited(&self, key: String) -> Self {
-        let mut new_visited = self.visited.clone();
-        new_visited.insert(key);
-        Self {
-            calculation_date: self.calculation_date,
-            visited: new_visited,
-            depth: self.depth + 1,
-        }
+    /// Enter a cross-law resolution scope: mark key as visited and increment depth.
+    fn enter(&mut self, key: String) {
+        self.visited.insert(key);
+        self.depth += 1;
+    }
+
+    /// Leave a cross-law resolution scope: unmark key and decrement depth.
+    fn leave(&mut self, key: &str) {
+        self.visited.remove(key);
+        self.depth -= 1;
     }
 
     /// Check if a key is already being resolved (cycle detection).
@@ -299,8 +300,8 @@ impl LawExecutionService {
         parameters: HashMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
-        let res_ctx = ResolutionContext::new(calculation_date);
-        self.evaluate_law_output_internal(law_id, output_name, parameters, &res_ctx)
+        let mut res_ctx = ResolutionContext::new(calculation_date);
+        self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)
     }
 
     /// Internal method with cycle tracking.
@@ -309,7 +310,7 @@ impl LawExecutionService {
         law_id: &str,
         output_name: &str,
         parameters: HashMap<String, Value>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         tracing::debug!(
             law_id = %law_id,
@@ -361,7 +362,7 @@ impl LawExecutionService {
         law: &ArticleBasedLaw,
         parameters: HashMap<String, Value>,
         requested_output: Option<&str>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         // Create execution context
         let mut context = RuleContext::new(parameters.clone(), res_ctx.calculation_date)?;
@@ -404,7 +405,7 @@ impl LawExecutionService {
         article: &Article,
         law: &ArticleBasedLaw,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<HashMap<String, Value>> {
         let mut resolved = HashMap::new();
 
@@ -445,7 +446,7 @@ impl LawExecutionService {
         law_id: &str,
         article_number: &str,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         let layer_filter = parse_regulatory_layer(&resolve.resolve_type);
 
@@ -621,7 +622,7 @@ impl LawExecutionService {
         article: &Article,
         law: &ArticleBasedLaw,
         requested_output: Option<&str>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         self.evaluate_article_with_service(article, law, HashMap::new(), requested_output, res_ctx)
     }
@@ -632,7 +633,7 @@ impl LawExecutionService {
         article: &Article,
         context: &mut RuleContext,
         parameters: &HashMap<String, Value>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<()> {
         let inputs = self.get_inputs(article);
 
@@ -693,7 +694,7 @@ impl LawExecutionService {
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Check for circular reference before proceeding
         let key = format!("{}#{}", regulation, output);
@@ -707,15 +708,18 @@ impl LawExecutionService {
         // Build parameters for the target article
         let target_params = self.build_target_parameters(source_parameters, context)?;
 
-        // Create child context with this reference tracked
-        let child_ctx = res_ctx.with_visited(key);
+        // Enter cross-law resolution scope
+        res_ctx.enter(key.clone());
 
         // Execute the target article
         let result =
-            self.evaluate_law_output_internal(regulation, output, target_params, &child_ctx)?;
+            self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
+
+        // Leave scope (even on error, for correct cycle tracking)
+        res_ctx.leave(&key);
 
         // Extract the requested output
-        result
+        result?
             .outputs
             .get(output)
             .cloned()
@@ -732,7 +736,7 @@ impl LawExecutionService {
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Evaluate selection criteria
         let criteria = if let Some(criteria_spec) = delegation.select_on {
@@ -786,7 +790,7 @@ impl LawExecutionService {
                     "No matching regulation found, checking for defaults"
                 );
                 // No delegated regulation found - try to use defaults from the delegating article
-                self.try_execute_defaults(delegation, output, source_parameters, context, &criteria)
+                self.try_execute_defaults(delegation, output, source_parameters, context, &criteria, res_ctx)
             }
         }
     }
@@ -798,7 +802,7 @@ impl LawExecutionService {
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Check for circular reference
         let key = format!("{}#{}", regulation.id, output);
@@ -819,22 +823,24 @@ impl LawExecutionService {
             "Executing delegated regulation"
         );
 
-        // Create child context with this reference tracked
-        let child_ctx = res_ctx.with_visited(key);
+        // Enter cross-law resolution scope
+        res_ctx.enter(key.clone());
 
         // Execute the delegated regulation with cycle tracking
         let result =
-            self.evaluate_law_output_internal(&regulation.id, output, target_params, &child_ctx)?;
+            self.evaluate_law_output_internal(&regulation.id, output, target_params, res_ctx);
 
-        let value =
-            result
-                .outputs
-                .get(output)
-                .cloned()
-                .ok_or_else(|| EngineError::OutputNotFound {
-                    law_id: regulation.id.clone(),
-                    output: output.to_string(),
-                })?;
+        // Leave scope (even on error, for correct cycle tracking)
+        res_ctx.leave(&key);
+
+        let value = result?
+            .outputs
+            .get(output)
+            .cloned()
+            .ok_or_else(|| EngineError::OutputNotFound {
+                law_id: regulation.id.clone(),
+                output: output.to_string(),
+            })?;
 
         tracing::debug!(
             regulation_id = %regulation.id,
@@ -855,10 +861,12 @@ impl LawExecutionService {
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
         criteria: &HashMap<String, Value>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
-        // Get the delegating law and article
+        // Get the delegating law and article (version-aware)
         let law = self
-            .get_law(delegation.law_id)
+            .resolver
+            .get_law_for_date(delegation.law_id, res_ctx.reference_date())
             .ok_or_else(|| EngineError::LawNotFound(delegation.law_id.to_string()))?;
 
         let article = law
@@ -1153,13 +1161,13 @@ impl ServiceProvider for LawExecutionService {
         context: &RuleContext,
         calculation_date: &str,
     ) -> Result<Value> {
-        let res_ctx = ResolutionContext::new(calculation_date);
+        let mut res_ctx = ResolutionContext::new(calculation_date);
         self.resolve_external_input_internal(
             regulation,
             output,
             source_parameters,
             context,
-            &res_ctx,
+            &mut res_ctx,
         )
     }
 
@@ -1173,7 +1181,7 @@ impl ServiceProvider for LawExecutionService {
         context: &RuleContext,
         calculation_date: &str,
     ) -> Result<Value> {
-        let res_ctx = ResolutionContext::new(calculation_date);
+        let mut res_ctx = ResolutionContext::new(calculation_date);
         let del_ref = DelegationRef {
             law_id: delegation_law_id,
             article: delegation_article,
@@ -1184,7 +1192,7 @@ impl ServiceProvider for LawExecutionService {
             output,
             source_parameters,
             context,
-            &res_ctx,
+            &mut res_ctx,
         )
     }
 }

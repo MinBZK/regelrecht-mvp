@@ -117,10 +117,15 @@ impl RuleResolver {
 
         // Count total laws across all versions
         let total_laws: usize = self.law_versions.values().map(|v| v.len()).sum();
-        let is_new_law = !self.law_versions.contains_key(&law_id);
 
-        // Enforce law count limit for new laws
-        if is_new_law && total_laws >= config::MAX_LOADED_LAWS {
+        // Check if we're replacing an existing version (which doesn't increase count)
+        let is_replacement = self
+            .law_versions
+            .get(&law_id)
+            .is_some_and(|versions| versions.iter().any(|v| v.valid_from == valid_from));
+
+        // Enforce law count limit (applies to all new versions, not just new law IDs)
+        if !is_replacement && total_laws >= config::MAX_LOADED_LAWS {
             tracing::warn!(
                 current = total_laws,
                 max = config::MAX_LOADED_LAWS,

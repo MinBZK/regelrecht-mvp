@@ -5,7 +5,12 @@ use std::collections::HashMap;
 use std::fmt;
 
 /// Represents any value in the engine (similar to Python's Any)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+///
+/// Note: `PartialEq` is implemented manually so that `Float(NaN) == Float(NaN)`
+/// returns `true`. In the law execution domain, NaN represents invalid/missing
+/// data and two missing values are considered equal for comparison purposes.
+/// This matches the behavior of [`crate::operations::values_equal`].
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(untagged)]
 pub enum Value {
     /// Null/None value
@@ -23,6 +28,27 @@ pub enum Value {
     Array(Vec<Value>),
     /// Object/Map of values
     Object(HashMap<String, Value>),
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Int(a), Value::Int(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => {
+                // NaN == NaN is true in the law execution domain
+                if a.is_nan() && b.is_nan() {
+                    return true;
+                }
+                a == b
+            }
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => a == b,
+            _ => false,
+        }
+    }
 }
 
 impl Value {
@@ -381,6 +407,18 @@ mod tests {
         assert!(Operation::Max.is_aggregate());
         assert!(Operation::And.is_logical());
         assert!(Operation::If.is_conditional());
+    }
+
+    #[test]
+    fn test_value_nan_equality() {
+        // NaN == NaN should be true (intentional domain decision for law execution)
+        assert_eq!(Value::Float(f64::NAN), Value::Float(f64::NAN));
+        // NaN != non-NaN
+        assert_ne!(Value::Float(f64::NAN), Value::Float(0.0));
+        assert_ne!(Value::Float(0.0), Value::Float(f64::NAN));
+        // Normal floats still work
+        assert_eq!(Value::Float(1.0), Value::Float(1.0));
+        assert_ne!(Value::Float(1.0), Value::Float(2.0));
     }
 
     #[test]
