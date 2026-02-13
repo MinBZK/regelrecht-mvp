@@ -68,6 +68,8 @@ struct ResolutionContext<'a> {
     depth: usize,
     /// Optional shared trace builder
     trace: Option<Rc<RefCell<TraceBuilder>>>,
+    /// Per-execution memoization cache: canonical key → outputs map
+    cache: HashMap<String, HashMap<String, Value>>,
 }
 
 impl<'a> ResolutionContext<'a> {
@@ -78,6 +80,7 @@ impl<'a> ResolutionContext<'a> {
             visited: HashSet::new(),
             depth: 0,
             trace: None,
+            cache: HashMap::new(),
         }
     }
 
@@ -88,6 +91,7 @@ impl<'a> ResolutionContext<'a> {
             visited: HashSet::new(),
             depth: 0,
             trace: Some(trace),
+            cache: HashMap::new(),
         }
     }
 
@@ -112,6 +116,18 @@ impl<'a> ResolutionContext<'a> {
     fn is_visited(&self, key: &str) -> bool {
         self.visited.contains(key)
     }
+}
+
+/// Build a deterministic cache key from law_id, output_name, and parameters.
+fn cache_key(law_id: &str, output_name: &str, params: &HashMap<String, Value>) -> String {
+    let mut sorted: Vec<_> = params.iter().collect();
+    sorted.sort_by_key(|(k, _)| k.as_str());
+    let params_str: String = sorted
+        .iter()
+        .map(|(k, v)| format!("{}={:?}", k, v))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("{}#{}({})", law_id, output_name, params_str)
 }
 
 /// Reference to a delegation source for resolution.
@@ -382,6 +398,31 @@ impl LawExecutionService {
         parameters: HashMap<String, Value>,
         res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
+        // --- Cache check (before depth check: cached results don't increase depth) ---
+        let key = cache_key(law_id, output_name, &parameters);
+        if let Some(cached_outputs) = res_ctx.cache.get(&key) {
+            tracing::debug!(law_id, output_name, "Cache hit");
+            if let Some(ref tb) = res_ctx.trace {
+                let mut tb = tb.borrow_mut();
+                tb.push(
+                    format!("{}#{}", law_id, output_name),
+                    PathNodeType::Cached,
+                );
+                if let Some(val) = cached_outputs.get(output_name) {
+                    tb.set_result(val.clone());
+                }
+                tb.pop();
+            }
+            return Ok(ArticleResult {
+                outputs: cached_outputs.clone(),
+                resolved_inputs: HashMap::new(),
+                article_number: String::new(),
+                law_id: law_id.to_string(),
+                law_uuid: None,
+                trace: None,
+            });
+        }
+
         tracing::debug!(
             law_id = %law_id,
             output = %output_name,
@@ -422,7 +463,13 @@ impl LawExecutionService {
             })?;
 
         // Execute with service provider
-        self.evaluate_article_with_service(article, law, parameters, Some(output_name), res_ctx)
+        let result =
+            self.evaluate_article_with_service(article, law, parameters, Some(output_name), res_ctx)?;
+
+        // --- Cache store (only on success) ---
+        res_ctx.cache.insert(key, result.outputs.clone());
+
+        Ok(result)
     }
 
     /// Execute an article with ServiceProvider support.

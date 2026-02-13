@@ -353,6 +353,8 @@ pub enum PathNodeType {
     Article,
     /// Delegation to another regulation
     Delegation,
+    /// Cached cross-law result (memoized)
+    Cached,
 }
 
 /// Resolve type for variable resolution
