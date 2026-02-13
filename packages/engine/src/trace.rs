@@ -513,9 +513,11 @@ fn format_value_display(value: &Value) -> String {
             format!("[{}]", items.join(", "))
         }
         Value::Object(obj) => {
-            let items: Vec<String> = obj
+            let mut keys: Vec<&String> = obj.keys().collect();
+            keys.sort();
+            let items: Vec<String> = keys
                 .iter()
-                .map(|(k, v)| format!("'{}': {}", k, format_value_display(v)))
+                .map(|k| format!("'{}': {}", k, format_value_display(&obj[k.as_str()])))
                 .collect();
             format!("{{{}}}", items.join(", "))
         }

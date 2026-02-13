@@ -448,7 +448,7 @@ impl LawExecutionService {
         }
 
         // Resolve inputs with sources using ServiceProvider
-        self.resolve_inputs_with_service(article, &mut context, &parameters, res_ctx)?;
+        self.resolve_inputs_with_service(article, law, &mut context, &parameters, res_ctx)?;
 
         // Pre-resolve any resolve actions in this article
         let resolved_actions = self.pre_resolve_actions(article, law, &context, res_ctx)?;
@@ -716,6 +716,7 @@ impl LawExecutionService {
     fn resolve_inputs_with_service(
         &self,
         article: &Article,
+        law: &ArticleBasedLaw,
         context: &mut RuleContext,
         parameters: &HashMap<String, Value>,
         res_ctx: &mut ResolutionContext<'_>,
@@ -760,6 +761,9 @@ impl LawExecutionService {
                 }
             }
 
+            // For cross-law/delegation resolution, output defaults to input name
+            let output_name = source.output.as_deref().unwrap_or(&input.name);
+
             if let Some(delegation) = &source.delegation {
                 // Delegation reference
                 let (del_law_id, del_article, select_on) = get_delegation_info(delegation);
@@ -771,7 +775,7 @@ impl LawExecutionService {
 
                 let value = self.resolve_delegation_input_internal(
                     &del_ref,
-                    &source.output,
+                    output_name,
                     source.parameters.as_ref(),
                     context,
                     res_ctx,
@@ -782,17 +786,40 @@ impl LawExecutionService {
                 // External reference
                 let value = self.resolve_external_input_internal(
                     regulation,
-                    &source.output,
+                    output_name,
                     source.parameters.as_ref(),
                     context,
                     res_ctx,
                 )?;
 
                 context.set_resolved_input(&input.name, value);
+            } else if source.output.is_some() {
+                // Internal reference (same-law) with output specified.
+                // Resolve through the service layer so cross-law inputs of the
+                // referenced article are properly handled.
+                let ref_article = law
+                    .find_article_by_output(output_name)
+                    .ok_or_else(|| EngineError::OutputNotFound {
+                        law_id: law.id.clone(),
+                        output: output_name.to_string(),
+                    })?;
+
+                let ref_params = parameters.clone();
+                let result = self.evaluate_article_with_service(
+                    ref_article,
+                    law,
+                    ref_params,
+                    Some(output_name),
+                    res_ctx,
+                )?;
+
+                if let Some(value) = result.outputs.get(output_name) {
+                    context.set_resolved_input(&input.name, value.clone());
+                }
             } else {
-                // Internal reference - handled by ArticleEngine
-                // We don't resolve these here because ArticleEngine handles them
-                // with proper circular reference detection within the same law
+                // Empty source (source: {}) — resolved from DataSourceRegistry only.
+                // If DataSourceRegistry didn't match above, leave unresolved
+                // (engine will use null/default).
             }
         }
 

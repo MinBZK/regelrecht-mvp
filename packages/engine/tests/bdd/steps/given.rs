@@ -98,6 +98,13 @@ fn set_bd_box3_data(world: &mut RegelrechtWorld, step: &Step) {
     }
 }
 
+#[given(regex = r#"the following DJI "detenties" data:"#)]
+fn set_dji_detenties_data(world: &mut RegelrechtWorld, step: &Step) {
+    if let Some(table) = &step.table {
+        parse_external_data_table(table, &mut world.external_data.dji_detenties);
+    }
+}
+
 /// Parse an external data table with headers.
 ///
 /// Table format:
