@@ -98,6 +98,10 @@ pub enum EngineError {
         select_on: String,
     },
 
+    /// Data source error
+    #[error("Data source error: {0}")]
+    DataSourceError(String),
+
     /// Invalid date format
     #[error("Invalid date format: {0}")]
     InvalidDate(String),
@@ -203,6 +207,10 @@ pub enum ExternalError {
     #[error("External reference not resolved: {0}")]
     ExternalReferenceNotResolved(String),
 
+    /// Data source error
+    #[error("Data source error")]
+    DataSourceError,
+
     /// Invalid date format
     #[error("Invalid date format")]
     InvalidDate,
@@ -236,6 +244,7 @@ impl From<EngineError> for ExternalError {
             EngineError::ExternalReferenceNotResolved { input_name, .. } => {
                 ExternalError::ExternalReferenceNotResolved(input_name)
             }
+            EngineError::DataSourceError(_) => ExternalError::DataSourceError,
             EngineError::InvalidDate(_) => ExternalError::InvalidDate,
         }
     }

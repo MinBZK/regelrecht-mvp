@@ -241,10 +241,10 @@ fn parse_regulatory_layer(resolve_type: &str) -> Option<RegulatoryLayer> {
 /// It also supports external data sources via `DataSourceRegistry`.
 pub struct LawExecutionService {
     resolver: RuleResolver,
-    /// Staged for future integration: will be queried during law execution
-    /// to resolve external data (e.g., citizen income, municipality data).
-    /// Currently only supports manual CRUD; automatic resolution during
-    /// execution is not yet wired up.
+    /// Registry for external data sources. Queried during law execution
+    /// to resolve inputs before falling back to cross-law resolution.
+    /// Acts as an override layer: if a data source provides a field,
+    /// it's used instead of triggering cross-law/delegation resolution.
     data_registry: DataSourceRegistry,
 }
 
@@ -646,6 +646,19 @@ impl LawExecutionService {
             // Check if already provided as parameter
             if parameters.contains_key(&input.name) {
                 continue;
+            }
+
+            // Check DataSourceRegistry before cross-law resolution
+            if self.data_registry.source_count() > 0 {
+                if let Some(data_match) = self.data_registry.resolve(&input.name, parameters) {
+                    tracing::debug!(
+                        input = %input.name,
+                        source = %data_match.source_name,
+                        "Resolved input from data registry"
+                    );
+                    context.set_resolved_input(&input.name, data_match.value);
+                    continue;
+                }
             }
 
             if let Some(delegation) = &source.delegation {
@@ -1067,12 +1080,8 @@ impl LawExecutionService {
 
     /// Add a data source to the registry.
     ///
-    /// **Note:** Data sources are staged for future integration. They are
-    /// not yet automatically queried during law execution. Currently only
-    /// manual CRUD operations and direct registry queries are supported.
-    ///
-    /// Data sources are queried in priority order (highest first) when
-    /// resolving values that aren't found in the law context.
+    /// Data sources are queried in priority order (highest first) during
+    /// input resolution, before falling back to cross-law resolution.
     pub fn add_data_source(&mut self, source: Box<dyn DataSource>) {
         self.data_registry.add_source(source);
     }
@@ -1103,6 +1112,30 @@ impl LawExecutionService {
     /// Clear all data sources from the registry.
     pub fn clear_data_sources(&mut self) {
         self.data_registry.clear();
+    }
+
+    /// Register a dictionary data source from flat records.
+    ///
+    /// # Arguments
+    /// * `name` - Name identifier for this data source
+    /// * `key_field` - Field name to use as the record key (case-insensitive)
+    /// * `records` - List of records as field -> value maps
+    pub fn register_dict_source(
+        &mut self,
+        name: &str,
+        key_field: &str,
+        records: Vec<HashMap<String, Value>>,
+    ) -> Result<()> {
+        match DictDataSource::from_records(name, 10, key_field, records) {
+            Some(source) => {
+                self.data_registry.add_source(Box::new(source));
+                Ok(())
+            }
+            None => Err(EngineError::DataSourceError(format!(
+                "Key field '{}' not found in records for source '{}'",
+                key_field, name
+            ))),
+        }
     }
 
     /// Get the number of registered data sources.
@@ -2290,5 +2323,156 @@ articles:
             Some(&Value::Int(200)),
             "2025 reference date should resolve to v2 (200)"
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // DataSourceRegistry Integration Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_data_registry_provides_input() {
+        // A law references a regulation for an input, but the data registry
+        // provides the value directly. The referenced regulation is NOT loaded,
+        // proving the registry short-circuits cross-law resolution.
+        let law = r#"
+$id: registry_test_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Has external reference resolved by registry
+    machine_readable:
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+            required: true
+        input:
+          - name: external_value
+            type: number
+            source:
+              regulation: nonexistent_law
+              output: some_output
+              parameters:
+                BSN: $BSN
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            operation: MULTIPLY
+            values:
+              - $external_value
+              - 3
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(law).unwrap();
+
+        // Register data source with the input field
+        let mut record = HashMap::new();
+        record.insert("BSN".to_string(), Value::String("123".to_string()));
+        record.insert("external_value".to_string(), Value::Int(42));
+
+        service
+            .register_dict_source("test_data", "BSN", vec![record])
+            .unwrap();
+
+        let mut params = HashMap::new();
+        params.insert("BSN".to_string(), Value::String("123".to_string()));
+
+        let result = service
+            .evaluate_law_output("registry_test_law", "result", params, "2025-01-01")
+            .unwrap();
+
+        // result = 42 * 3 = 126
+        assert_eq!(result.outputs.get("result"), Some(&Value::Int(126)));
+    }
+
+    #[test]
+    fn test_data_registry_fallback_to_cross_law() {
+        // Registry has no matching field → cross-law resolution should still work
+        let mut service = LawExecutionService::new();
+        service.load_law(make_base_law()).unwrap();
+        service.load_law(make_dependent_law()).unwrap();
+
+        // Register a data source with an unrelated field
+        let mut record = HashMap::new();
+        record.insert("key".to_string(), Value::String("x".to_string()));
+        record.insert("unrelated_field".to_string(), Value::Int(999));
+
+        service
+            .register_dict_source("unrelated_data", "key", vec![record])
+            .unwrap();
+
+        // Execute dependent law - should fall back to cross-law resolution
+        let result = service
+            .evaluate_law_output(
+                "dependent_law",
+                "doubled_value",
+                HashMap::new(),
+                "2025-01-01",
+            )
+            .unwrap();
+
+        // doubled_value = base_value (100) * 2 = 200
+        assert_eq!(result.outputs.get("doubled_value"), Some(&Value::Int(200)));
+    }
+
+    #[test]
+    fn test_parameters_take_priority_over_registry() {
+        // Both a parameter and a registry entry exist for the same field.
+        // The parameter should win because it's checked first.
+        let law = r#"
+$id: priority_test_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Tests parameter vs registry priority
+    machine_readable:
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+          - name: external_value
+            type: number
+        input:
+          - name: external_value
+            type: number
+            source:
+              regulation: some_law
+              output: some_output
+              parameters:
+                BSN: $BSN
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            value: $external_value
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(law).unwrap();
+
+        // Register data source with external_value = 100
+        let mut record = HashMap::new();
+        record.insert("BSN".to_string(), Value::String("123".to_string()));
+        record.insert("external_value".to_string(), Value::Int(100));
+
+        service
+            .register_dict_source("test_data", "BSN", vec![record])
+            .unwrap();
+
+        // Pass external_value = 50 as parameter (should win)
+        let mut params = HashMap::new();
+        params.insert("BSN".to_string(), Value::String("123".to_string()));
+        params.insert("external_value".to_string(), Value::Int(50));
+
+        let result = service
+            .evaluate_law_output("priority_test_law", "result", params, "2025-01-01")
+            .unwrap();
+
+        // Parameter value (50) should win over registry value (100)
+        assert_eq!(result.outputs.get("result"), Some(&Value::Int(50)));
     }
 }
