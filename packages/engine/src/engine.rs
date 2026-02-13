@@ -123,7 +123,14 @@ impl<'a> ArticleEngine<'a> {
         let mut visited = HashSet::new();
         visited.insert(self.article.number.clone());
 
-        self.evaluate_internal_traced(parameters, calculation_date, requested_output, visited, 0, Some(trace))
+        self.evaluate_internal_traced(
+            parameters,
+            calculation_date,
+            requested_output,
+            visited,
+            0,
+            Some(trace),
+        )
     }
 
     /// Internal evaluation method that tracks visited articles for circular reference detection.
@@ -142,7 +149,14 @@ impl<'a> ArticleEngine<'a> {
         visited: HashSet<String>,
         depth: usize,
     ) -> Result<ArticleResult> {
-        self.evaluate_internal_traced(parameters, calculation_date, requested_output, visited, depth, None)
+        self.evaluate_internal_traced(
+            parameters,
+            calculation_date,
+            requested_output,
+            visited,
+            depth,
+            None,
+        )
     }
 
     /// Internal evaluation with optional tracing.

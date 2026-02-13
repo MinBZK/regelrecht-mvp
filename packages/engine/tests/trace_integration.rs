@@ -51,10 +51,7 @@ fn setup_zorgtoeslag_service() -> LawExecutionService {
     // Register derived data for zorgtoeslag Article 2 inputs.
     // This mirrors the BDD step `execute_healthcare_allowance`.
     let mut derived_record: HashMap<String, Value> = HashMap::new();
-    derived_record.insert(
-        "bsn".to_string(),
-        Value::String("999993653".to_string()),
-    );
+    derived_record.insert("bsn".to_string(), Value::String("999993653".to_string()));
     derived_record.insert("leeftijd".to_string(), Value::Int(20));
     derived_record.insert("is_verzekerde".to_string(), Value::Bool(true));
     derived_record.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
@@ -72,10 +69,7 @@ fn test_zorgtoeslag_trace_output_format() {
     let service = setup_zorgtoeslag_service();
 
     let mut params = HashMap::new();
-    params.insert(
-        "bsn".to_string(),
-        Value::String("999993653".to_string()),
-    );
+    params.insert("bsn".to_string(), Value::String("999993653".to_string()));
     params.insert("vermogen".to_string(), Value::Int(0));
     params.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
 
@@ -118,10 +112,7 @@ fn test_zorgtoeslag_trace_result_matches_non_trace() {
     let service = setup_zorgtoeslag_service();
 
     let mut params = HashMap::new();
-    params.insert(
-        "bsn".to_string(),
-        Value::String("999993653".to_string()),
-    );
+    params.insert("bsn".to_string(), Value::String("999993653".to_string()));
     params.insert("vermogen".to_string(), Value::Int(0));
     params.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
 
@@ -137,12 +128,7 @@ fn test_zorgtoeslag_trace_result_matches_non_trace() {
 
     // Execute without trace
     let normal_result = service
-        .evaluate_law_output(
-            "zorgtoeslagwet",
-            "hoogte_zorgtoeslag",
-            params,
-            "2025-01-01",
-        )
+        .evaluate_law_output("zorgtoeslagwet", "hoogte_zorgtoeslag", params, "2025-01-01")
         .expect("Normal evaluation should succeed");
 
     // Results should be identical
@@ -157,21 +143,13 @@ fn test_trace_disabled_by_default() {
     let service = setup_zorgtoeslag_service();
 
     let mut params = HashMap::new();
-    params.insert(
-        "bsn".to_string(),
-        Value::String("999993653".to_string()),
-    );
+    params.insert("bsn".to_string(), Value::String("999993653".to_string()));
     params.insert("vermogen".to_string(), Value::Int(0));
     params.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
 
     // Normal evaluation should not have a trace
     let result = service
-        .evaluate_law_output(
-            "zorgtoeslagwet",
-            "hoogte_zorgtoeslag",
-            params,
-            "2025-01-01",
-        )
+        .evaluate_law_output("zorgtoeslagwet", "hoogte_zorgtoeslag", params, "2025-01-01")
         .expect("Evaluation should succeed");
 
     assert!(

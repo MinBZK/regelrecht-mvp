@@ -315,7 +315,11 @@ impl PathNode {
 
             PathNodeType::Resolve => {
                 // Resolving $VAR
-                lines.push(format!("{}├──Resolving ${}", prefix, self.name.to_uppercase()));
+                lines.push(format!(
+                    "{}├──Resolving ${}",
+                    prefix,
+                    self.name.to_uppercase()
+                ));
 
                 let child_prefix = format!("{}│   ", prefix);
 
@@ -351,7 +355,10 @@ impl PathNode {
                         .as_ref()
                         .map(format_value_display)
                         .unwrap_or_else(|| "?".to_string());
-                    lines.push(format!("{}├──Compute {} = {}", prefix, self.name, result_str));
+                    lines.push(format!(
+                        "{}├──Compute {} = {}",
+                        prefix, self.name, result_str
+                    ));
                 }
 
                 let child_prefix = format!("{}│   ", prefix);

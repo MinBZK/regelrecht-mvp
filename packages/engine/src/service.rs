@@ -469,7 +469,12 @@ impl LawExecutionService {
 
         // Use traced evaluation if trace is available
         if let Some(ref tb) = res_ctx.trace {
-            engine.evaluate_with_trace(combined_params, res_ctx.calculation_date, requested_output, Rc::clone(tb))
+            engine.evaluate_with_trace(
+                combined_params,
+                res_ctx.calculation_date,
+                requested_output,
+                Rc::clone(tb),
+            )
         } else {
             engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
         }
@@ -814,10 +819,8 @@ impl LawExecutionService {
 
         // Trace cross-law call
         if let Some(ref tb) = res_ctx.trace {
-            tb.borrow_mut().push(
-                format!("{}#{}", regulation, output),
-                PathNodeType::UriCall,
-            );
+            tb.borrow_mut()
+                .push(format!("{}#{}", regulation, output), PathNodeType::UriCall);
         }
 
         // Build parameters for the target article
@@ -827,20 +830,20 @@ impl LawExecutionService {
         res_ctx.enter(key.clone());
 
         // Execute the target article
-        let result =
-            self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
+        let result = self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
 
         // Leave scope (even on error, for correct cycle tracking)
         res_ctx.leave(&key);
 
-        let value = result?
-            .outputs
-            .get(output)
-            .cloned()
-            .ok_or_else(|| EngineError::OutputNotFound {
-                law_id: regulation.to_string(),
-                output: output.to_string(),
-            })?;
+        let value =
+            result?
+                .outputs
+                .get(output)
+                .cloned()
+                .ok_or_else(|| EngineError::OutputNotFound {
+                    law_id: regulation.to_string(),
+                    output: output.to_string(),
+                })?;
 
         // Complete trace node
         if let Some(ref tb) = res_ctx.trace {
@@ -913,7 +916,14 @@ impl LawExecutionService {
                     "No matching regulation found, checking for defaults"
                 );
                 // No delegated regulation found - try to use defaults from the delegating article
-                self.try_execute_defaults(delegation, output, source_parameters, context, &criteria, res_ctx)
+                self.try_execute_defaults(
+                    delegation,
+                    output,
+                    source_parameters,
+                    context,
+                    &criteria,
+                    res_ctx,
+                )
             }
         }
     }
@@ -956,14 +966,15 @@ impl LawExecutionService {
         // Leave scope (even on error, for correct cycle tracking)
         res_ctx.leave(&key);
 
-        let value = result?
-            .outputs
-            .get(output)
-            .cloned()
-            .ok_or_else(|| EngineError::OutputNotFound {
-                law_id: regulation.id.clone(),
-                output: output.to_string(),
-            })?;
+        let value =
+            result?
+                .outputs
+                .get(output)
+                .cloned()
+                .ok_or_else(|| EngineError::OutputNotFound {
+                    law_id: regulation.id.clone(),
+                    output: output.to_string(),
+                })?;
 
         tracing::debug!(
             regulation_id = %regulation.id,
