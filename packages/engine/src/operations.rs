@@ -777,7 +777,7 @@ fn days_in_month(year: i32, month: u32) -> u32 {
                 28
             }
         }
-        _ => 30, // Defensive fallback; should never happen with valid dates
+        _ => unreachable!("Invalid month: {month}"),
     }
 }
 
@@ -794,9 +794,18 @@ fn calculate_years_difference(date1: NaiveDate, date2: NaiveDate) -> i64 {
 
     let mut years = later.year() - earlier.year();
 
-    // Check if we've reached the anniversary this year
+    // Check if we've reached the anniversary this year.
+    // For Feb 29 birthdays in non-leap years, the anniversary falls on Feb 28
+    // (per Dutch law: BW art. 1:2, Algemene Termijnenwet).
     let anniversary_month = earlier.month();
-    let anniversary_day = earlier.day();
+    let anniversary_day = {
+        let day = earlier.day();
+        if anniversary_month == 2 && day == 29 && days_in_month(later.year(), 2) < 29 {
+            28
+        } else {
+            day
+        }
+    };
 
     if later.month() < anniversary_month
         || (later.month() == anniversary_month && later.day() < anniversary_day)
@@ -822,11 +831,14 @@ fn f64_to_i64_safe(f: f64) -> Result<i64> {
         ));
     }
 
-    // i64::MIN and i64::MAX as f64 (these are exact for MIN, approximate for MAX)
+    // i64::MIN as f64 is exact (-9223372036854775808.0).
+    // i64::MAX as f64 rounds UP to 9223372036854775808.0, which is i64::MAX + 1.
+    // Using strict < on the upper bound prevents accepting that rounded-up value,
+    // which would saturate to i64::MAX on `as i64` (semantically wrong).
     const I64_MIN_F64: f64 = i64::MIN as f64;
     const I64_MAX_F64: f64 = i64::MAX as f64;
 
-    if !(I64_MIN_F64..=I64_MAX_F64).contains(&f) {
+    if f < I64_MIN_F64 || f >= I64_MAX_F64 {
         return Err(EngineError::ArithmeticOverflow(format!(
             "Value {} exceeds i64 range",
             f
@@ -2230,6 +2242,18 @@ mod tests {
         }
 
         #[test]
+        fn test_f64_to_i64_rejects_i64_max_as_f64() {
+            // i64::MAX as f64 rounds up to 9223372036854775808.0 (i64::MAX + 1).
+            // `f as i64` would saturate to i64::MAX, which is semantically wrong.
+            let result = f64_to_i64_safe(i64::MAX as f64);
+            assert!(
+                matches!(result, Err(EngineError::ArithmeticOverflow(_))),
+                "Expected ArithmeticOverflow for i64::MAX as f64, got: {:?}",
+                result
+            );
+        }
+
+        #[test]
         fn test_nan_equality() {
             // NaN == NaN should be true in our implementation (unlike IEEE 754)
             let nan1 = Value::Float(f64::NAN);
@@ -3087,6 +3111,74 @@ mod tests {
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(0));
+        }
+
+        #[test]
+        fn test_subtract_date_years_feb29_birthday_on_feb28() {
+            // Born Feb 29 (leap year). On Feb 28 of a non-leap year, the person
+            // should have turned their age (per Dutch law: BW art. 1:2).
+            let resolver = TestResolver::new();
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2001-02-28")),
+                value: Some(lit("2000-02-29")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("years".to_string()),
+            };
+
+            let result = execute_operation(&op, &resolver, 0).unwrap();
+            assert_eq!(result, Value::Int(1));
+        }
+
+        #[test]
+        fn test_subtract_date_years_feb29_birthday_before_feb28() {
+            // Born Feb 29. On Feb 27 of a non-leap year, the birthday hasn't
+            // happened yet — should be 0 years.
+            let resolver = TestResolver::new();
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2001-02-27")),
+                value: Some(lit("2000-02-29")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("years".to_string()),
+            };
+
+            let result = execute_operation(&op, &resolver, 0).unwrap();
+            assert_eq!(result, Value::Int(0));
+        }
+
+        #[test]
+        fn test_subtract_date_years_feb29_birthday_on_leap_year() {
+            // Born Feb 29. On Feb 29 of the next leap year, exactly 4 years.
+            let resolver = TestResolver::new();
+            let op = ActionOperation {
+                operation: Operation::SubtractDate,
+                subject: Some(lit("2004-02-29")),
+                value: Some(lit("2000-02-29")),
+                values: None,
+                when: None,
+                then: None,
+                else_branch: None,
+                conditions: None,
+                cases: None,
+                default: None,
+                unit: Some("years".to_string()),
+            };
+
+            let result = execute_operation(&op, &resolver, 0).unwrap();
+            assert_eq!(result, Value::Int(4));
         }
     }
 

@@ -166,6 +166,7 @@ impl DictDataSource {
         records: Vec<HashMap<String, Value>>,
     ) -> Option<Self> {
         let key_field_lower = key_field.to_lowercase();
+        let has_records = !records.is_empty();
         let mut data = HashMap::new();
 
         for record in records {
@@ -179,6 +180,12 @@ impl DictDataSource {
                 let key = value_to_key(&key_val);
                 data.insert(key, record);
             }
+        }
+
+        // If records were provided but none contained the key field, return None
+        // to signal a configuration error (wrong key_field name).
+        if data.is_empty() && has_records {
+            return None;
         }
 
         let mut source = Self::new(name, priority, data);
@@ -381,7 +388,7 @@ impl std::fmt::Debug for DataSourceRegistry {
 /// Sorts criteria by key name and joins values with underscore.
 fn build_lookup_key(criteria: &HashMap<String, Value>) -> String {
     let mut pairs: Vec<_> = criteria.iter().collect();
-    pairs.sort_by(|a, b| a.0.cmp(b.0));
+    pairs.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
 
     pairs
         .iter()
@@ -502,6 +509,42 @@ mod tests {
         let mut criteria = HashMap::new();
         criteria.insert("key".to_string(), Value::String("789".to_string()));
         assert_eq!(source.get("income", &criteria), Some(Value::Int(60000)));
+    }
+
+    #[test]
+    fn test_dict_source_from_records_missing_key_field() {
+        // Records exist but none contain the key field → should return None
+        let records = vec![
+            {
+                let mut r = HashMap::new();
+                r.insert("name".to_string(), Value::String("Jan".to_string()));
+                r.insert("income".to_string(), Value::Int(50000));
+                r
+            },
+            {
+                let mut r = HashMap::new();
+                r.insert("name".to_string(), Value::String("Piet".to_string()));
+                r.insert("income".to_string(), Value::Int(40000));
+                r
+            },
+        ];
+
+        let result = DictDataSource::from_records("persons", 10, "BSN", records);
+        assert!(
+            result.is_none(),
+            "Expected None when key field is missing from all records"
+        );
+    }
+
+    #[test]
+    fn test_dict_source_from_records_empty_vec() {
+        // Empty records vec → should return Some (empty source)
+        let result = DictDataSource::from_records("persons", 10, "BSN", vec![]);
+        assert!(
+            result.is_some(),
+            "Expected Some for empty records vec (no records = no error)"
+        );
+        assert_eq!(result.unwrap().record_count(), 0);
     }
 
     #[test]
@@ -706,6 +749,24 @@ mod tests {
         let key = build_lookup_key(&criteria);
         // Keys are sorted alphabetically
         assert_eq!(key, "123_2025");
+    }
+
+    #[test]
+    fn test_build_lookup_key_case_insensitive_sort() {
+        // Mixed-case keys should produce the same lookup key regardless of casing
+        let mut criteria_upper = HashMap::new();
+        criteria_upper.insert("BSN".to_string(), Value::String("123".to_string()));
+        criteria_upper.insert("Year".to_string(), Value::Int(2025));
+
+        let mut criteria_lower = HashMap::new();
+        criteria_lower.insert("bsn".to_string(), Value::String("123".to_string()));
+        criteria_lower.insert("year".to_string(), Value::Int(2025));
+
+        assert_eq!(
+            build_lookup_key(&criteria_upper),
+            build_lookup_key(&criteria_lower),
+            "Mixed-case keys should produce identical lookup keys"
+        );
     }
 
     #[test]

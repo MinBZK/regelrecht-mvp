@@ -335,10 +335,10 @@ impl LawExecutionService {
             )));
         }
 
-        // Get the law
+        // Get the law (version-aware: use the same reference date as the article lookup)
         let law = self
             .resolver
-            .get_law(law_id)
+            .get_law_for_date(law_id, res_ctx.reference_date())
             .ok_or_else(|| EngineError::LawNotFound(law_id.to_string()))?;
 
         // Find the article
@@ -2188,5 +2188,99 @@ articles:
                 info.outputs
             );
         }
+    }
+
+    #[test]
+    fn test_cross_law_uses_version_aware_lookup() {
+        // Two versions of a referenced law with different definitions.
+        // Cross-law resolution should pick the correct version based on
+        // the reference date, not just the latest version.
+        // Version selection uses `valid_from` to determine applicability.
+        let base_v1 = r#"
+$id: versioned_base
+regulatory_layer: WET
+publication_date: '2024-01-01'
+valid_from: '2024-01-01'
+articles:
+  - number: '1'
+    text: Base value v1
+    machine_readable:
+      definitions:
+        BASE_VALUE:
+          value: 100
+      execution:
+        output:
+          - name: base_value
+            type: number
+        actions:
+          - output: base_value
+            value: $BASE_VALUE
+"#;
+        let base_v2 = r#"
+$id: versioned_base
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Base value v2
+    machine_readable:
+      definitions:
+        BASE_VALUE:
+          value: 200
+      execution:
+        output:
+          - name: base_value
+            type: number
+        actions:
+          - output: base_value
+            value: $BASE_VALUE
+"#;
+        let dependent = r#"
+$id: cross_law_consumer
+regulatory_layer: WET
+publication_date: '2024-01-01'
+articles:
+  - number: '1'
+    text: Uses versioned base
+    machine_readable:
+      execution:
+        input:
+          - name: external_base
+            type: number
+            source:
+              regulation: versioned_base
+              output: base_value
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            value: $external_base
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(base_v1).unwrap();
+        service.load_law(base_v2).unwrap();
+        service.load_law(dependent).unwrap();
+
+        // Reference date 2024-06-15 should use v1 (BASE_VALUE=100)
+        let result = service
+            .evaluate_law_output("cross_law_consumer", "result", HashMap::new(), "2024-06-15")
+            .unwrap();
+        assert_eq!(
+            result.outputs.get("result"),
+            Some(&Value::Int(100)),
+            "2024 reference date should resolve to v1 (100)"
+        );
+
+        // Reference date 2025-06-15 should use v2 (BASE_VALUE=200)
+        let result = service
+            .evaluate_law_output("cross_law_consumer", "result", HashMap::new(), "2025-06-15")
+            .unwrap();
+        assert_eq!(
+            result.outputs.get("result"),
+            Some(&Value::Int(200)),
+            "2025 reference date should resolve to v2 (200)"
+        );
     }
 }
