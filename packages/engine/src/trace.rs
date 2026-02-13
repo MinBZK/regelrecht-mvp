@@ -65,6 +65,10 @@ pub struct PathNode {
     /// Execution duration in microseconds
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_us: Option<u64>,
+
+    /// Free-form message for trace output (e.g., "Resolving from PARAMETERS: 999993653")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 impl PathNode {
@@ -77,6 +81,7 @@ impl PathNode {
             resolve_type: None,
             children: Vec::new(),
             duration_us: None,
+            message: None,
         }
     }
 
@@ -101,6 +106,12 @@ impl PathNode {
     /// Set the duration in microseconds.
     pub fn with_duration(mut self, duration_us: u64) -> Self {
         self.duration_us = Some(duration_us);
+        self
+    }
+
+    /// Set a free-form message for trace output.
+    pub fn with_message(mut self, message: impl Into<String>) -> Self {
+        self.message = Some(message.into());
         self
     }
 
@@ -219,6 +230,196 @@ impl PathNode {
         lines.join("\n")
     }
 
+    /// Render the trace using box-drawing characters for human-readable output.
+    ///
+    /// Produces output like:
+    /// ```text
+    /// SVB: zorgtoeslagwet (2025-01-01 {BSN: 999993653} hoogte_zorgtoeslag)
+    /// ║──Evaluating rules for SVB zorgtoeslagwet (2025-01-01 hoogte_zorgtoeslag)
+    /// ║──Requirements {'all': [...]}
+    /// ║   ├──Resolving $LEEFTIJD
+    /// ║   │   ├──Resolving from DATA_SOURCE: 20
+    /// ║   ├──Compute GREATER_OR_EQUAL(20, 18) = True
+    /// ║   ├──Requirement met
+    /// ║──Computing hoogte_zorgtoeslag
+    /// ║   ├──Resolving $TOETSINGSINKOMEN
+    /// ║   │   ├──Resolving from DATA_SOURCE: 79547
+    /// ║──Result of hoogte_zorgtoeslag: 209692
+    /// ```
+    pub fn render_box_drawing(&self) -> String {
+        let mut lines = Vec::new();
+        self.render_box_node(&mut lines, "");
+        lines.join("\n")
+    }
+
+    /// Internal recursive renderer for box-drawing format.
+    ///
+    /// `prefix` is the leading string for continuation lines (e.g., "║   ").
+    fn render_box_node(&self, lines: &mut Vec<String>, prefix: &str) {
+        match self.node_type {
+            PathNodeType::Article => {
+                // Header line: "AGENCY: law_id (date {params} output_name)"
+                if let Some(ref msg) = self.message {
+                    lines.push(msg.clone());
+                } else {
+                    lines.push(self.name.clone());
+                }
+
+                // Evaluating rules line
+                lines.push(format!("{}║──Evaluating rules for {}", prefix, self.name));
+
+                let child_prefix = format!("{}║   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+
+                // Result line
+                if let Some(ref result) = self.result {
+                    // Extract the output name from "law_id (output_name)" format
+                    let output_name = self
+                        .name
+                        .split_once(' ')
+                        .map(|(_, rest)| rest.trim_matches(|c| c == '(' || c == ')'))
+                        .unwrap_or(&self.name);
+                    lines.push(format!(
+                        "{}║──Result of {}: {}",
+                        prefix,
+                        output_name,
+                        format_value_display(result)
+                    ));
+                }
+            }
+
+            PathNodeType::Requirement => {
+                // Requirements line
+                if let Some(ref msg) = self.message {
+                    lines.push(format!("{}├──{}", prefix, msg));
+                } else {
+                    lines.push(format!("{}├──Requirements", prefix));
+                }
+
+                let child_prefix = format!("{}│   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+
+                // Requirement met/not met
+                if let Some(ref result) = self.result {
+                    if result.to_bool() {
+                        lines.push(format!("{}├──Requirement met", prefix));
+                    } else {
+                        lines.push(format!("{}├──Requirement NOT met", prefix));
+                    }
+                }
+            }
+
+            PathNodeType::Resolve => {
+                // Resolving $VAR
+                lines.push(format!("{}├──Resolving ${}", prefix, self.name.to_uppercase()));
+
+                let child_prefix = format!("{}│   ", prefix);
+
+                // Show resolution source
+                if let Some(ref rt) = self.resolve_type {
+                    let rt_name = resolve_type_name(rt);
+                    let val_str = self
+                        .result
+                        .as_ref()
+                        .map(format_value_display)
+                        .unwrap_or_else(|| "?".to_string());
+                    lines.push(format!(
+                        "{}├──Resolving from {}: {}",
+                        child_prefix, rt_name, val_str
+                    ));
+                } else if let Some(ref msg) = self.message {
+                    lines.push(format!("{}├──{}", child_prefix, msg));
+                }
+
+                // Render children (sub-resolutions)
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+            }
+
+            PathNodeType::Operation => {
+                // Compute OP(args) = result
+                if let Some(ref msg) = self.message {
+                    lines.push(format!("{}├──{}", prefix, msg));
+                } else {
+                    let result_str = self
+                        .result
+                        .as_ref()
+                        .map(format_value_display)
+                        .unwrap_or_else(|| "?".to_string());
+                    lines.push(format!("{}├──Compute {} = {}", prefix, self.name, result_str));
+                }
+
+                let child_prefix = format!("{}│   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+            }
+
+            PathNodeType::Action => {
+                // Computing output_name
+                if let Some(ref msg) = self.message {
+                    lines.push(format!("{}├──{}", prefix, msg));
+                } else {
+                    lines.push(format!("{}├──Computing {}", prefix, self.name));
+                }
+
+                let child_prefix = format!("{}│   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+
+                // Result of output_name: value
+                if let Some(ref result) = self.result {
+                    // Use the top-level article prefix (║──) for results instead of branch prefix
+                    // Pop the last 4 chars ("│   ") from prefix and replace with "║──"
+                    let result_prefix = if let Some(stripped) = prefix.strip_suffix("│   ") {
+                        format!("{}║──", stripped)
+                    } else {
+                        format!("{}├──", prefix)
+                    };
+                    lines.push(format!(
+                        "{}Result of {}: {}",
+                        result_prefix,
+                        self.name,
+                        format_value_display(result)
+                    ));
+                }
+            }
+
+            PathNodeType::UriCall => {
+                // Nested sub-law call: render with its own ║ scope
+                if let Some(ref msg) = self.message {
+                    lines.push(format!("{}├──{}", prefix, msg));
+                } else {
+                    lines.push(format!("{}├──URI call: {}", prefix, self.name));
+                }
+
+                let child_prefix = format!("{}║   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+            }
+
+            PathNodeType::Delegation => {
+                if let Some(ref msg) = self.message {
+                    lines.push(format!("{}├──{}", prefix, msg));
+                } else {
+                    lines.push(format!("{}├──Delegation: {}", prefix, self.name));
+                }
+
+                let child_prefix = format!("{}│   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+            }
+        }
+    }
+
     /// Render the trace as a compact single-line summary.
     pub fn render_compact(&self) -> String {
         let type_str = match self.node_type {
@@ -275,6 +476,57 @@ fn format_value_compact(value: &Value) -> String {
         Value::Object(obj) => {
             format!("{{...{} keys}}", obj.len())
         }
+    }
+}
+
+/// Format a Value for box-drawing trace output.
+///
+/// Uses display formatting: True/False for bools, quoted strings, etc.
+fn format_value_display(value: &Value) -> String {
+    match value {
+        Value::Null => "None".to_string(),
+        Value::Bool(b) => {
+            if *b {
+                "True".to_string()
+            } else {
+                "False".to_string()
+            }
+        }
+        Value::Int(i) => i.to_string(),
+        Value::Float(f) => {
+            if f.fract() == 0.0 {
+                format!("{:.1}", f)
+            } else {
+                format!("{}", f)
+            }
+        }
+        Value::String(s) => format!("'{}'", s),
+        Value::Array(arr) => {
+            let items: Vec<String> = arr.iter().map(format_value_display).collect();
+            format!("[{}]", items.join(", "))
+        }
+        Value::Object(obj) => {
+            let items: Vec<String> = obj
+                .iter()
+                .map(|(k, v)| format!("'{}': {}", k, format_value_display(v)))
+                .collect();
+            format!("{{{}}}", items.join(", "))
+        }
+    }
+}
+
+/// Get a human-readable name for a ResolveType.
+fn resolve_type_name(rt: &ResolveType) -> &'static str {
+    match rt {
+        ResolveType::Uri => "URI",
+        ResolveType::Parameter => "PARAMETERS",
+        ResolveType::Definition => "DEFINITION",
+        ResolveType::Output => "OUTPUT",
+        ResolveType::Input => "INPUT",
+        ResolveType::Local => "LOCAL",
+        ResolveType::Context => "CONTEXT",
+        ResolveType::ResolvedInput => "RESOLVED_INPUT",
+        ResolveType::DataSource => "DATA_SOURCE",
     }
 }
 
@@ -351,6 +603,17 @@ impl TraceBuilder {
 
         if let Some(current) = self.stack.last_mut() {
             current.node.result = Some(result);
+        }
+    }
+
+    /// Set a free-form message on the current node.
+    pub fn set_message(&mut self, msg: impl Into<String>) {
+        if !self.enabled {
+            return;
+        }
+
+        if let Some(current) = self.stack.last_mut() {
+            current.node.message = Some(msg.into());
         }
     }
 
