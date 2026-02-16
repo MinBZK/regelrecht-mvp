@@ -1,4 +1,3 @@
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::error::{PipelineError, Result};
@@ -34,13 +33,17 @@ impl CreateJobRequest {
     }
 
     pub fn with_max_attempts(mut self, max_attempts: i32) -> Self {
-        self.max_attempts = max_attempts;
+        self.max_attempts = max_attempts.max(1);
         self
     }
 }
 
 /// Create a new job in the queue.
-pub async fn create_job(pool: &PgPool, req: CreateJobRequest) -> Result<Job> {
+#[tracing::instrument(skip(executor, req), fields(job_type = ?req.job_type, law_id = %req.law_id, priority = req.priority.value()))]
+pub async fn create_job<'e, E>(executor: E, req: CreateJobRequest) -> Result<Job>
+where
+    E: sqlx::PgExecutor<'e>,
+{
     let job = sqlx::query_as::<_, Job>(
         r#"
         INSERT INTO jobs (job_type, law_id, priority, payload, max_attempts)
@@ -53,15 +56,20 @@ pub async fn create_job(pool: &PgPool, req: CreateJobRequest) -> Result<Job> {
     .bind(req.priority.value())
     .bind(&req.payload)
     .bind(req.max_attempts)
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await?;
 
+    tracing::info!(job_id = %job.id, "job created");
     Ok(job)
 }
 
 /// Claim the highest-priority pending job using FOR UPDATE SKIP LOCKED.
 /// Returns None if no jobs are available.
-pub async fn claim_job(pool: &PgPool, job_type: Option<JobType>) -> Result<Option<Job>> {
+#[tracing::instrument(skip(executor))]
+pub async fn claim_job<'e, E>(executor: E, job_type: Option<JobType>) -> Result<Option<Job>>
+where
+    E: sqlx::PgExecutor<'e>,
+{
     let job = match job_type {
         Some(jt) => {
             sqlx::query_as::<_, Job>(
@@ -79,7 +87,7 @@ pub async fn claim_job(pool: &PgPool, job_type: Option<JobType>) -> Result<Optio
                 "#,
             )
             .bind(jt)
-            .fetch_optional(pool)
+            .fetch_optional(executor)
             .await?
         }
         None => {
@@ -97,20 +105,27 @@ pub async fn claim_job(pool: &PgPool, job_type: Option<JobType>) -> Result<Optio
                 RETURNING *
                 "#,
             )
-            .fetch_optional(pool)
+            .fetch_optional(executor)
             .await?
         }
     };
 
+    if let Some(ref j) = job {
+        tracing::info!(job_id = %j.id, law_id = %j.law_id, attempt = j.attempts, "job claimed");
+    }
     Ok(job)
 }
 
 /// Mark a job as completed with an optional result payload.
-pub async fn complete_job(
-    pool: &PgPool,
+#[tracing::instrument(skip(executor, result))]
+pub async fn complete_job<'e, E>(
+    executor: E,
     job_id: Uuid,
     result: Option<serde_json::Value>,
-) -> Result<Job> {
+) -> Result<Job>
+where
+    E: sqlx::PgExecutor<'e>,
+{
     let job = sqlx::query_as::<_, Job>(
         r#"
         UPDATE jobs
@@ -121,19 +136,24 @@ pub async fn complete_job(
     )
     .bind(job_id)
     .bind(&result)
-    .fetch_optional(pool)
+    .fetch_optional(executor)
     .await?
-    .ok_or(PipelineError::JobNotFound(job_id))?;
+    .ok_or(PipelineError::JobNotProcessing(job_id))?;
 
+    tracing::info!(job_id = %job.id, law_id = %job.law_id, "job completed");
     Ok(job)
 }
 
 /// Mark a job as failed. If attempts < max_attempts, reset to pending for retry.
-pub async fn fail_job(
-    pool: &PgPool,
+#[tracing::instrument(skip(executor, error_result))]
+pub async fn fail_job<'e, E>(
+    executor: E,
     job_id: Uuid,
     error_result: Option<serde_json::Value>,
-) -> Result<Job> {
+) -> Result<Job>
+where
+    E: sqlx::PgExecutor<'e>,
+{
     let job = sqlx::query_as::<_, Job>(
         r#"
         UPDATE jobs
@@ -152,18 +172,30 @@ pub async fn fail_job(
     )
     .bind(job_id)
     .bind(&error_result)
-    .fetch_optional(pool)
+    .fetch_optional(executor)
     .await?
-    .ok_or(PipelineError::JobNotFound(job_id))?;
+    .ok_or(PipelineError::JobNotProcessing(job_id))?;
 
+    match job.status {
+        JobStatus::Pending => {
+            tracing::info!(job_id = %job.id, attempt = job.attempts, max = job.max_attempts, "job failed, will retry");
+        }
+        JobStatus::Failed => {
+            tracing::warn!(job_id = %job.id, attempts = job.attempts, "job permanently failed after exhausting retries");
+        }
+        _ => {}
+    }
     Ok(job)
 }
 
 /// Get a job by ID.
-pub async fn get_job(pool: &PgPool, job_id: Uuid) -> Result<Job> {
+pub async fn get_job<'e, E>(executor: E, job_id: Uuid) -> Result<Job>
+where
+    E: sqlx::PgExecutor<'e>,
+{
     let job = sqlx::query_as::<_, Job>(r#"SELECT * FROM jobs WHERE id = $1"#)
         .bind(job_id)
-        .fetch_optional(pool)
+        .fetch_optional(executor)
         .await?
         .ok_or(PipelineError::JobNotFound(job_id))?;
 
@@ -171,19 +203,22 @@ pub async fn get_job(pool: &PgPool, job_id: Uuid) -> Result<Job> {
 }
 
 /// List jobs with optional status filter.
-pub async fn list_jobs(pool: &PgPool, status: Option<JobStatus>) -> Result<Vec<Job>> {
+pub async fn list_jobs<'e, E>(executor: E, status: Option<JobStatus>) -> Result<Vec<Job>>
+where
+    E: sqlx::PgExecutor<'e>,
+{
     let jobs = match status {
         Some(s) => {
             sqlx::query_as::<_, Job>(
                 r#"SELECT * FROM jobs WHERE status = $1 ORDER BY priority DESC, created_at ASC"#,
             )
             .bind(s)
-            .fetch_all(pool)
+            .fetch_all(executor)
             .await?
         }
         None => {
             sqlx::query_as::<_, Job>(r#"SELECT * FROM jobs ORDER BY priority DESC, created_at ASC"#)
-                .fetch_all(pool)
+                .fetch_all(executor)
                 .await?
         }
     };

@@ -5,6 +5,7 @@ use serde_json::json;
 
 use regelrecht_pipeline::job_queue::{self, CreateJobRequest};
 use regelrecht_pipeline::models::{JobStatus, JobType, Priority};
+use regelrecht_pipeline::PipelineError;
 
 #[tokio::test]
 async fn test_create_and_get_job() {
@@ -33,6 +34,19 @@ async fn test_create_job_with_payload() {
     let job = job_queue::create_job(&db.pool, req).await.unwrap();
 
     assert_eq!(job.payload, Some(payload));
+}
+
+#[tokio::test]
+async fn test_max_attempts_clamped_to_minimum_1() {
+    let db = common::TestDb::new().await;
+
+    let req = CreateJobRequest::new(JobType::Harvest, "BWBR0001840").with_max_attempts(0);
+    let job = job_queue::create_job(&db.pool, req).await.unwrap();
+    assert_eq!(job.max_attempts, 1);
+
+    let req = CreateJobRequest::new(JobType::Harvest, "BWBR0001841").with_max_attempts(-5);
+    let job = job_queue::create_job(&db.pool, req).await.unwrap();
+    assert_eq!(job.max_attempts, 1);
 }
 
 #[tokio::test]
@@ -114,6 +128,19 @@ async fn test_complete_job() {
     assert_eq!(completed.status, JobStatus::Completed);
     assert_eq!(completed.result, Some(result));
     assert!(completed.completed_at.is_some());
+}
+
+#[tokio::test]
+async fn test_complete_job_not_processing() {
+    let db = common::TestDb::new().await;
+
+    // Create a job but don't claim it — it's still pending
+    let req = CreateJobRequest::new(JobType::Harvest, "BWBR0001840");
+    let job = job_queue::create_job(&db.pool, req).await.unwrap();
+
+    // Trying to complete a pending job should fail with JobNotProcessing
+    let result = job_queue::complete_job(&db.pool, job.id, None).await;
+    assert!(matches!(result, Err(PipelineError::JobNotProcessing(_))));
 }
 
 #[tokio::test]

@@ -11,6 +11,9 @@ pub enum PipelineError {
     #[error("job not found: {0}")]
     JobNotFound(uuid::Uuid),
 
+    #[error("job {0} is not in processing state")]
+    JobNotProcessing(uuid::Uuid),
+
     #[error("law not found: {0}")]
     LawNotFound(String),
 
@@ -19,6 +22,9 @@ pub enum PipelineError {
 
     #[error("configuration error: {0}")]
     Config(String),
+
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
 }
 
 pub type Result<T> = std::result::Result<T, PipelineError>;
