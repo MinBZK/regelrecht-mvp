@@ -35,3 +35,23 @@ harvester-fmt:
 # Validate regulation YAML files
 validate *FILES:
     script/validate.sh {{FILES}}
+
+# Run pipeline tests (requires Docker for testcontainers)
+pipeline-test:
+    cd packages/pipeline && cargo test
+
+# Check pipeline compilation (works offline, no DB needed)
+pipeline-check:
+    cd packages/pipeline && SQLX_OFFLINE=true cargo check
+
+# Start local Postgres for development
+db-up:
+    docker compose up -d postgres
+
+# Stop local Postgres
+db-down:
+    docker compose down
+
+# Run database migrations (requires local Postgres)
+db-migrate:
+    cd packages/pipeline && cargo sqlx migrate run
