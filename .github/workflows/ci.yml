@@ -7,6 +7,7 @@ on:
     paths:
       - packages/engine/**
       - packages/harvester/**
+      - packages/pipeline/**
       - features/**
       - regulation/**
       - schema/**
@@ -18,6 +19,7 @@ on:
     paths:
       - packages/engine/**
       - packages/harvester/**
+      - packages/pipeline/**
       - features/**
       - regulation/**
       - schema/**
@@ -315,6 +317,108 @@ jobs:
           key: ${{ runner.os }}-cargo-harvester-${{ hashFiles('packages/harvester/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-harvester-
+
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings
+
+  # Pipeline CI jobs
+  pipeline-check:
+    name: Pipeline Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pipeline
+    env:
+      SQLX_OFFLINE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/pipeline/target
+          key: ${{ runner.os }}-cargo-pipeline-${{ hashFiles('packages/pipeline/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-pipeline-
+
+      - name: Run cargo check
+        run: cargo check --all-features
+
+  pipeline-test:
+    name: Pipeline Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/pipeline/target
+          key: ${{ runner.os }}-cargo-pipeline-${{ hashFiles('packages/pipeline/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-pipeline-
+
+      - name: Run tests
+        run: cargo test --all-features
+
+  pipeline-fmt:
+    name: Pipeline Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+  pipeline-clippy:
+    name: Pipeline Clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pipeline
+    env:
+      SQLX_OFFLINE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/pipeline/target
+          key: ${{ runner.os }}-cargo-pipeline-${{ hashFiles('packages/pipeline/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-pipeline-
 
       - name: Run clippy
         run: cargo clippy --all-features -- -D warnings
