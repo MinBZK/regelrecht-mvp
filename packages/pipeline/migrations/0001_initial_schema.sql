@@ -22,7 +22,7 @@ CREATE TABLE jobs (
     payload     JSONB,
     result      JSONB,
     attempts    INTEGER     NOT NULL DEFAULT 0,
-    max_attempts INTEGER    NOT NULL DEFAULT 3,
+    max_attempts INTEGER    NOT NULL DEFAULT 3 CHECK (max_attempts >= 1),
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     started_at  TIMESTAMPTZ,
@@ -40,9 +40,9 @@ CREATE TABLE law_entries (
     law_id          TEXT PRIMARY KEY,
     law_name        TEXT,
     status          law_status  NOT NULL DEFAULT 'unknown',
-    harvest_job_id  UUID REFERENCES jobs(id),
-    enrich_job_id   UUID REFERENCES jobs(id),
-    quality_score   DOUBLE PRECISION,
+    harvest_job_id  UUID REFERENCES jobs(id) ON DELETE SET NULL,
+    enrich_job_id   UUID REFERENCES jobs(id) ON DELETE SET NULL,
+    quality_score   DOUBLE PRECISION CHECK (quality_score >= 0 AND quality_score <= 1),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );

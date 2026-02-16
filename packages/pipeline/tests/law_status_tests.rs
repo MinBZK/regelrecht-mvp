@@ -117,6 +117,43 @@ async fn test_set_quality_score() {
 }
 
 #[tokio::test]
+async fn test_set_quality_score_validation() {
+    let db = common::TestDb::new().await;
+
+    law_status::upsert_law(&db.pool, "test_law", None)
+        .await
+        .unwrap();
+
+    // Out of range
+    assert!(law_status::set_quality_score(&db.pool, "test_law", 1.5)
+        .await
+        .is_err());
+    assert!(law_status::set_quality_score(&db.pool, "test_law", -0.1)
+        .await
+        .is_err());
+
+    // NaN and infinity
+    assert!(
+        law_status::set_quality_score(&db.pool, "test_law", f64::NAN)
+            .await
+            .is_err()
+    );
+    assert!(
+        law_status::set_quality_score(&db.pool, "test_law", f64::INFINITY)
+            .await
+            .is_err()
+    );
+
+    // Boundary values should work
+    assert!(law_status::set_quality_score(&db.pool, "test_law", 0.0)
+        .await
+        .is_ok());
+    assert!(law_status::set_quality_score(&db.pool, "test_law", 1.0)
+        .await
+        .is_ok());
+}
+
+#[tokio::test]
 async fn test_get_law() {
     let db = common::TestDb::new().await;
 
@@ -168,4 +205,67 @@ async fn test_list_laws() {
         .unwrap();
     assert_eq!(harvested.len(), 1);
     assert_eq!(harvested[0].law_id, "law_b");
+}
+
+/// Test that operations work within a transaction for atomicity.
+#[tokio::test]
+async fn test_transaction_atomicity() {
+    let db = common::TestDb::new().await;
+
+    // Successful transaction: create job + upsert law + link them
+    let mut tx = db.pool.begin().await.unwrap();
+
+    let job = job_queue::create_job(&mut *tx, CreateJobRequest::new(JobType::Harvest, "tx_law"))
+        .await
+        .unwrap();
+
+    law_status::upsert_law(&mut *tx, "tx_law", Some("Transaction Law"))
+        .await
+        .unwrap();
+
+    law_status::set_harvest_job(&mut *tx, "tx_law", job.id)
+        .await
+        .unwrap();
+
+    law_status::update_status(&mut *tx, "tx_law", LawStatusValue::Harvesting)
+        .await
+        .unwrap();
+
+    tx.commit().await.unwrap();
+
+    // Verify everything was committed
+    let entry = law_status::get_law(&db.pool, "tx_law").await.unwrap();
+    assert_eq!(entry.status, LawStatusValue::Harvesting);
+    assert_eq!(entry.harvest_job_id, Some(job.id));
+}
+
+/// Test that a rolled-back transaction leaves no trace.
+#[tokio::test]
+async fn test_transaction_rollback() {
+    let db = common::TestDb::new().await;
+
+    // Start a transaction and create data, then drop it (implicit rollback)
+    {
+        let mut tx = db.pool.begin().await.unwrap();
+
+        job_queue::create_job(
+            &mut *tx,
+            CreateJobRequest::new(JobType::Harvest, "rollback_law"),
+        )
+        .await
+        .unwrap();
+
+        law_status::upsert_law(&mut *tx, "rollback_law", Some("Should Not Exist"))
+            .await
+            .unwrap();
+
+        tx.rollback().await.unwrap();
+    }
+
+    // Verify nothing was persisted
+    let result = law_status::get_law(&db.pool, "rollback_law").await;
+    assert!(result.is_err());
+
+    let jobs = job_queue::list_jobs(&db.pool, None).await.unwrap();
+    assert!(jobs.is_empty());
 }

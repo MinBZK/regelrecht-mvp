@@ -6,6 +6,6 @@ pub mod law_status;
 pub mod models;
 
 pub use config::PipelineConfig;
-pub use db::create_pool;
+pub use db::{create_pool, run_migrations};
 pub use error::PipelineError;
 pub use models::{Job, JobStatus, JobType, LawEntry, LawStatusValue, Priority};
