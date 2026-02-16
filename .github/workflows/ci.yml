@@ -329,7 +329,7 @@ jobs:
       run:
         working-directory: packages/pipeline
     env:
-      SQLX_OFFLINE: "true"
+      SQLX_OFFLINE: 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -400,7 +400,7 @@ jobs:
       run:
         working-directory: packages/pipeline
     env:
-      SQLX_OFFLINE: "true"
+      SQLX_OFFLINE: 'true'
     steps:
       - uses: actions/checkout@v4
 
