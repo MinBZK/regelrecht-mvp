@@ -12,7 +12,8 @@ Feature: Healthcare allowance calculation
     Then the standard premium calculation should fail with "No matching regeling found"
 
   Scenario: Person over 18 is entitled to healthcare allowance
-    Given the following RVIG "personal_data" data:
+    Given the calculation date is "2025-01-01"
+    And the following RVIG "personal_data" data:
       | bsn       | geboortedatum | verblijfsadres | land_verblijf |
       | 999993653 | 2005-01-01    | Amsterdam      | NEDERLAND     |
     And the following RVIG "relationship_data" data:
@@ -31,4 +32,4 @@ Feature: Healthcare allowance calculation
       | bsn       | spaargeld | beleggingen | onroerend_goed | schulden |
       | 999993653 | 0         | 0           | 0              | 0        |
     When the healthcare allowance law is executed
-    Then the allowance amount is "1358.93" euro
+    Then the allowance amount is "2096.92" euro

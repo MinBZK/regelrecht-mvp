@@ -34,9 +34,12 @@ use crate::article::Definition;
 use crate::config;
 use crate::error::{EngineError, Result};
 use crate::operations::ValueResolver;
-use crate::types::Value;
+use crate::trace::TraceBuilder;
+use crate::types::{PathNodeType, ResolveType, Value};
 use chrono::{Datelike, NaiveDate};
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// Execution context for article evaluation.
 ///
@@ -70,6 +73,9 @@ pub struct RuleContext {
 
     /// Cached Value representation of reference_date (avoids repeated allocation)
     reference_date_value: Value,
+
+    /// Optional shared trace builder for execution tracing
+    trace: Option<Rc<RefCell<TraceBuilder>>>,
 }
 
 impl RuleContext {
@@ -92,6 +98,7 @@ impl RuleContext {
             resolved_inputs: HashMap::new(),
             reference_date,
             reference_date_value,
+            trace: None,
         })
     }
 
@@ -201,7 +208,62 @@ impl RuleContext {
             resolved_inputs: self.resolved_inputs.clone(),
             reference_date: self.reference_date,
             reference_date_value: self.reference_date_value.clone(),
+            trace: self.trace.clone(), // Share the same trace builder
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Trace Methods
+    // -------------------------------------------------------------------------
+
+    /// Set a shared trace builder on this context.
+    pub fn set_trace(&mut self, trace: Rc<RefCell<TraceBuilder>>) {
+        self.trace = Some(trace);
+    }
+
+    /// Get a reference to the shared trace builder, if any.
+    pub fn trace(&self) -> Option<&Rc<RefCell<TraceBuilder>>> {
+        self.trace.as_ref()
+    }
+
+    /// Push a new node onto the trace stack. No-op if trace is None.
+    pub fn trace_push(&self, name: &str, node_type: PathNodeType) {
+        if let Some(ref trace) = self.trace {
+            trace.borrow_mut().push(name, node_type);
+        }
+    }
+
+    /// Pop the current node from the trace stack. No-op if trace is None.
+    pub fn trace_pop(&self) {
+        if let Some(ref trace) = self.trace {
+            trace.borrow_mut().pop();
+        }
+    }
+
+    /// Set the result on the current trace node. No-op if trace is None.
+    pub fn trace_set_result(&self, result: Value) {
+        if let Some(ref trace) = self.trace {
+            trace.borrow_mut().set_result(result);
+        }
+    }
+
+    /// Set the resolve type on the current trace node. No-op if trace is None.
+    pub fn trace_set_resolve_type(&self, rt: ResolveType) {
+        if let Some(ref trace) = self.trace {
+            trace.borrow_mut().set_resolve_type(rt);
+        }
+    }
+
+    /// Set a message on the current trace node. No-op if trace is None.
+    pub fn trace_set_message(&self, msg: impl Into<String>) {
+        if let Some(ref trace) = self.trace {
+            trace.borrow_mut().set_message(msg);
+        }
+    }
+
+    /// Check if tracing is active.
+    pub fn has_trace(&self) -> bool {
+        self.trace.is_some()
     }
 
     /// Resolve a variable name using the priority chain.
@@ -217,6 +279,32 @@ impl RuleContext {
     /// # Dot Notation
     /// Supports nested property access: `referencedate.year`, `person.name`
     fn resolve_variable(&self, path: &str) -> Result<Value> {
+        if self.trace.is_none() {
+            return self.resolve_variable_internal(path);
+        }
+
+        // Tracing path: push a Resolve node
+        self.trace_push(path, PathNodeType::Resolve);
+
+        let result = self.resolve_variable_internal(path);
+
+        match &result {
+            Ok(value) => {
+                self.trace_set_result(value.clone());
+            }
+            Err(_) => {
+                self.trace_set_message(format!(
+                    "Could not resolve value for {}",
+                    path.to_uppercase()
+                ));
+            }
+        }
+        self.trace_pop();
+        result
+    }
+
+    /// Internal variable resolution without tracing.
+    fn resolve_variable_internal(&self, path: &str) -> Result<Value> {
         // Handle dot notation for property access
         if let Some((base, property)) = path.split_once('.') {
             let base_value = self.resolve_variable(base)?;
@@ -225,31 +313,37 @@ impl RuleContext {
 
         // 1. Context variables (cached)
         if path == "referencedate" {
+            self.trace_set_resolve_type(ResolveType::Context);
             return Ok(self.reference_date_value.clone());
         }
 
         // 2. Local scope (FOREACH loop variables)
         if let Some(value) = self.local.get(path) {
+            self.trace_set_resolve_type(ResolveType::Local);
             return Ok(value.clone());
         }
 
         // 3. Outputs (calculated values)
         if let Some(value) = self.outputs.get(path) {
+            self.trace_set_resolve_type(ResolveType::Output);
             return Ok(value.clone());
         }
 
         // 4. Resolved inputs (cached cross-law results)
         if let Some(value) = self.resolved_inputs.get(path) {
+            self.trace_set_resolve_type(ResolveType::ResolvedInput);
             return Ok(value.clone());
         }
 
         // 5. Definitions (constants)
         if let Some(value) = self.definitions.get(path) {
+            self.trace_set_resolve_type(ResolveType::Definition);
             return Ok(value.clone());
         }
 
         // 6. Parameters (direct inputs)
         if let Some(value) = self.parameters.get(path) {
+            self.trace_set_resolve_type(ResolveType::Parameter);
             return Ok(value.clone());
         }
 
@@ -261,6 +355,26 @@ impl RuleContext {
 impl ValueResolver for RuleContext {
     fn resolve(&self, name: &str) -> Result<Value> {
         self.resolve_variable(name)
+    }
+
+    fn trace_push(&self, name: &str, node_type: PathNodeType) {
+        RuleContext::trace_push(self, name, node_type);
+    }
+
+    fn trace_pop(&self) {
+        RuleContext::trace_pop(self);
+    }
+
+    fn trace_set_result(&self, result: Value) {
+        RuleContext::trace_set_result(self, result);
+    }
+
+    fn trace_set_message(&self, msg: String) {
+        RuleContext::trace_set_message(self, msg);
+    }
+
+    fn has_trace(&self) -> bool {
+        RuleContext::has_trace(self)
     }
 }
 

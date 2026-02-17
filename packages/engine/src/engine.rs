@@ -25,9 +25,12 @@ use crate::article::{
 use crate::config;
 use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
-use crate::operations::{evaluate_value, execute_operation};
-use crate::types::Value;
+use crate::operations::{evaluate_value, execute_operation, values_equal, ValueResolver};
+use crate::trace::{PathNode, TraceBuilder};
+use crate::types::{PathNodeType, Value};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 /// Result of article execution
 #[derive(Debug, Clone)]
@@ -42,6 +45,8 @@ pub struct ArticleResult {
     pub law_id: String,
     /// Law UUID if available
     pub law_uuid: Option<String>,
+    /// Execution trace tree (only populated when tracing is enabled)
+    pub trace: Option<PathNode>,
 }
 
 /// Executes a single article's machine_readable.execution section.
@@ -105,6 +110,29 @@ impl<'a> ArticleEngine<'a> {
         self.evaluate_internal(parameters, calculation_date, requested_output, visited, 0)
     }
 
+    /// Execute this article's logic with trace support.
+    ///
+    /// Same as `evaluate_with_output` but accepts a shared trace builder.
+    pub fn evaluate_with_trace(
+        &self,
+        parameters: HashMap<String, Value>,
+        calculation_date: &str,
+        requested_output: Option<&str>,
+        trace: Rc<RefCell<TraceBuilder>>,
+    ) -> Result<ArticleResult> {
+        let mut visited = HashSet::new();
+        visited.insert(self.article.number.clone());
+
+        self.evaluate_internal_traced(
+            parameters,
+            calculation_date,
+            requested_output,
+            visited,
+            0,
+            Some(trace),
+        )
+    }
+
     /// Internal evaluation method that tracks visited articles for circular reference detection.
     ///
     /// # Arguments
@@ -120,6 +148,26 @@ impl<'a> ArticleEngine<'a> {
         requested_output: Option<&str>,
         visited: HashSet<String>,
         depth: usize,
+    ) -> Result<ArticleResult> {
+        self.evaluate_internal_traced(
+            parameters,
+            calculation_date,
+            requested_output,
+            visited,
+            depth,
+            None,
+        )
+    }
+
+    /// Internal evaluation with optional tracing.
+    fn evaluate_internal_traced(
+        &self,
+        parameters: HashMap<String, Value>,
+        calculation_date: &str,
+        requested_output: Option<&str>,
+        visited: HashSet<String>,
+        depth: usize,
+        trace: Option<Rc<RefCell<TraceBuilder>>>,
     ) -> Result<ArticleResult> {
         tracing::debug!(
             law_id = %self.law.id,
@@ -146,6 +194,11 @@ impl<'a> ArticleEngine<'a> {
         // Create execution context
         let mut context = RuleContext::new(parameters.clone(), calculation_date)?;
 
+        // Attach trace builder if provided
+        if let Some(ref tb) = trace {
+            context.set_trace(Rc::clone(tb));
+        }
+
         // Set definitions from article
         if let Some(definitions) = self.article.get_definitions() {
             context.set_definitions(definitions);
@@ -154,18 +207,17 @@ impl<'a> ArticleEngine<'a> {
         // Resolve inputs with sources (internal references)
         self.resolve_input_sources(&mut context, &parameters, calculation_date, &visited, depth)?;
 
-        // Execute actions
-        self.execute_actions(&mut context, requested_output)?;
+        // Execute actions (with trace instrumentation)
+        self.execute_actions_traced(&mut context, requested_output)?;
 
         // Build result
-        // Clone outputs and resolved_inputs since ArticleResult must own the data
-        // (it may outlive the context)
         let result = ArticleResult {
             outputs: context.outputs().clone(),
             resolved_inputs: context.resolved_inputs().clone(),
             article_number: self.article.number.clone(),
             law_id: self.law.id.clone(),
             law_uuid: self.law.uuid.clone(),
+            trace: None, // Trace is extracted by the caller (service layer)
         };
 
         tracing::debug!(
@@ -330,36 +382,38 @@ impl<'a> ArticleEngine<'a> {
             })
     }
 
-    /// Execute all actions in order.
-    ///
-    /// All actions are executed regardless of `requested_output` because:
-    /// 1. Later actions may depend on earlier outputs
-    /// 2. Python implementation returns all outputs from the article
-    ///
-    /// The `requested_output` parameter is only used for article lookup,
-    /// not for filtering actions within the article.
-    ///
-    /// # Arguments
-    /// * `context` - Execution context
-    /// * `_requested_output` - Unused (kept for API compatibility)
-    fn execute_actions(
+    /// Execute all actions in order, with optional trace instrumentation.
+    fn execute_actions_traced(
         &self,
         context: &mut RuleContext,
         _requested_output: Option<&str>,
     ) -> Result<()> {
         let actions = self.get_actions();
+        let tracing_active = context.has_trace();
 
         for action in actions {
-            // Skip actions without output
             let output_name = match &action.output {
                 Some(name) => name,
                 None => continue,
             };
 
-            // Evaluate the action and store output
+            if tracing_active {
+                context.trace_push(output_name, PathNodeType::Action);
+                context.trace_set_message(format!("Computing {}", output_name));
+            }
+
             let value = self.evaluate_action(action, context)?;
+
+            if tracing_active {
+                context.trace_set_result(value.clone());
+            }
+
             tracing::debug!("Output {} = {}", output_name, value);
-            context.set_output(output_name, value);
+            context.set_output(output_name, value.clone());
+
+            if tracing_active {
+                context.trace_pop();
+            }
         }
 
         Ok(())
@@ -387,9 +441,16 @@ impl<'a> ArticleEngine<'a> {
         }
 
         // Check for resolve (delegation to child regulations)
-        // Resolve is used for delegation patterns where a law delegates to regelingen
-        // Full implementation requires ServiceProvider (Phase 7)
+        // Resolve actions are pre-resolved by the service layer and injected as parameters.
+        // If the output was pre-resolved, use that value. Otherwise, error.
         if let Some(resolve) = &action.resolve {
+            // Check if pre-resolved by service layer (available via context parameters)
+            if let Some(output_name) = &action.output {
+                if let Ok(value) = context.resolve(output_name) {
+                    return Ok(value);
+                }
+            }
+
             let match_desc = resolve
                 .match_spec
                 .as_ref()
@@ -398,7 +459,7 @@ impl<'a> ArticleEngine<'a> {
 
             return Err(EngineError::DelegationError(format!(
                 "Resolve action requires ServiceProvider: type={}, output={}, match=[{}]. \
-                 Use input sources with pre-resolved values or implement ServiceProvider (Phase 7).",
+                 Use LawExecutionService to automatically resolve, or pass the value as a parameter.",
                 resolve.resolve_type, resolve.output, match_desc
             )));
         }
@@ -448,6 +509,8 @@ impl<'a> ArticleEngine<'a> {
             // so SWITCH must be nested inside `value` to work correctly
             cases: None,
             default: None,
+            // Unit for SUBTRACT_DATE
+            unit: action.unit.clone(),
         })
     }
 
@@ -533,22 +596,6 @@ pub fn matches_delegation_criteria(
         }
     }
     true
-}
-
-/// Compare two values for equality (with numeric coercion).
-///
-/// Handles Int/Float comparison like Python: `42 == 42.0` is true.
-/// Uses a tolerance of 1e-9 for floating point comparisons to handle
-/// computed values that should be "equal" but differ due to floating point arithmetic.
-fn values_equal(a: &Value, b: &Value) -> bool {
-    const TOLERANCE: f64 = 1e-9;
-    match (a, b) {
-        (Value::Int(i), Value::Float(f)) | (Value::Float(f), Value::Int(i)) => {
-            (*i as f64 - *f).abs() < TOLERANCE
-        }
-        (Value::Float(f1), Value::Float(f2)) => (*f1 - *f2).abs() < TOLERANCE,
-        _ => a == b,
-    }
 }
 
 /// Extract delegation info from a source specification.

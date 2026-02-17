@@ -5,7 +5,12 @@ use std::collections::HashMap;
 use std::fmt;
 
 /// Represents any value in the engine (similar to Python's Any)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+///
+/// Note: `PartialEq` is implemented manually so that `Float(NaN) == Float(NaN)`
+/// returns `true`. In the law execution domain, NaN represents invalid/missing
+/// data and two missing values are considered equal for comparison purposes.
+/// This matches the behavior of [`crate::operations::values_equal`].
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(untagged)]
 pub enum Value {
     /// Null/None value
@@ -23,6 +28,27 @@ pub enum Value {
     Array(Vec<Value>),
     /// Object/Map of values
     Object(HashMap<String, Value>),
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Int(a), Value::Int(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => {
+                // NaN == NaN is true in the law execution domain
+                if a.is_nan() && b.is_nan() {
+                    return true;
+                }
+                a == b
+            }
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => a == b,
+            _ => false,
+        }
+    }
 }
 
 impl Value {
@@ -213,6 +239,17 @@ pub enum Operation {
     // Conditional operations (2)
     If,
     Switch,
+
+    // Null checking operations (2)
+    IsNull,
+    NotNull,
+
+    // Membership testing operations (2)
+    In,
+    NotIn,
+
+    // Date operations (1)
+    SubtractDate,
 }
 
 impl Operation {
@@ -251,6 +288,21 @@ impl Operation {
     pub fn is_conditional(&self) -> bool {
         matches!(self, Operation::If | Operation::Switch)
     }
+
+    /// Check if this is a null checking operation
+    pub fn is_null_check(&self) -> bool {
+        matches!(self, Operation::IsNull | Operation::NotNull)
+    }
+
+    /// Check if this is a membership testing operation
+    pub fn is_membership(&self) -> bool {
+        matches!(self, Operation::In | Operation::NotIn)
+    }
+
+    /// Check if this is a date operation
+    pub fn is_date(&self) -> bool {
+        matches!(self, Operation::SubtractDate)
+    }
 }
 
 /// Regulatory layer types
@@ -287,24 +339,44 @@ pub enum ParameterType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PathNodeType {
+    /// Variable/value resolution step
     Resolve,
+    /// Operation execution (e.g., ADD, EQUALS)
     Operation,
+    /// Action execution within an article
     Action,
+    /// Requirement check
     Requirement,
+    /// Cross-law URI call
     UriCall,
+    /// Article-level execution
+    Article,
+    /// Delegation to another regulation
+    Delegation,
 }
 
 /// Resolve type for variable resolution
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ResolveType {
+    /// Value resolved from a regelrecht:// URI
     Uri,
+    /// Value resolved from input parameters
     Parameter,
+    /// Value resolved from article definitions (constants)
     Definition,
+    /// Value resolved from calculated outputs
     Output,
+    /// Value resolved from input specification
     Input,
+    /// Value resolved from local scope (loop variables)
     Local,
+    /// Value resolved from context variables (referencedate)
     Context,
+    /// Value resolved from cached cross-law results
+    ResolvedInput,
+    /// Value resolved from external data source
+    DataSource,
 }
 
 #[cfg(test)]
@@ -355,6 +427,18 @@ mod tests {
         assert!(Operation::Max.is_aggregate());
         assert!(Operation::And.is_logical());
         assert!(Operation::If.is_conditional());
+    }
+
+    #[test]
+    fn test_value_nan_equality() {
+        // NaN == NaN should be true (intentional domain decision for law execution)
+        assert_eq!(Value::Float(f64::NAN), Value::Float(f64::NAN));
+        // NaN != non-NaN
+        assert_ne!(Value::Float(f64::NAN), Value::Float(0.0));
+        assert_ne!(Value::Float(0.0), Value::Float(f64::NAN));
+        // Normal floats still work
+        assert_eq!(Value::Float(1.0), Value::Float(1.0));
+        assert_ne!(Value::Float(1.0), Value::Float(2.0));
     }
 
     #[test]

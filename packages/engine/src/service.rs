@@ -26,20 +26,26 @@
 //! ```
 
 use crate::article::{
-    Action, Article, ArticleBasedLaw, Input, LegalBasisForDefaults, SelectOnCriteria,
+    Action, Article, ArticleBasedLaw, Input, LegalBasisForDefaults, Resolve, SelectOnCriteria,
 };
 use crate::config;
 use crate::context::RuleContext;
+use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
 use crate::engine::{
     evaluate_select_on_criteria, get_delegation_info, ArticleEngine, ArticleResult,
 };
 use crate::error::{EngineError, Result};
 use crate::operations::evaluate_value;
+use crate::operations::values_equal;
 use crate::operations::ValueResolver;
 use crate::resolver::RuleResolver;
-use crate::types::Value;
+use crate::trace::TraceBuilder;
+use crate::types::{PathNodeType, RegulatoryLayer, ResolveType, Value};
 use crate::uri::RegelrechtUri;
+use chrono::NaiveDate;
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 // =============================================================================
 // Resolution Context
@@ -50,7 +56,9 @@ use std::collections::{HashMap, HashSet};
 /// Bundles the state needed for cycle detection and depth tracking
 /// during cross-law reference resolution. This reduces the number of
 /// parameters passed between internal resolution functions.
-#[derive(Clone)]
+///
+/// Uses a scoped push/pop pattern for the visited set to avoid
+/// cloning the HashSet on every cross-law descent.
 struct ResolutionContext<'a> {
     /// Date for calculations (YYYY-MM-DD)
     calculation_date: &'a str,
@@ -58,6 +66,8 @@ struct ResolutionContext<'a> {
     visited: HashSet<String>,
     /// Current resolution depth
     depth: usize,
+    /// Optional shared trace builder
+    trace: Option<Rc<RefCell<TraceBuilder>>>,
 }
 
 impl<'a> ResolutionContext<'a> {
@@ -67,20 +77,35 @@ impl<'a> ResolutionContext<'a> {
             calculation_date,
             visited: HashSet::new(),
             depth: 0,
+            trace: None,
         }
     }
 
-    /// Create a child context with a new visited key and incremented depth.
-    ///
-    /// Used when descending into a cross-law reference to track the resolution chain.
-    fn with_visited(&self, key: String) -> Self {
-        let mut new_visited = self.visited.clone();
-        new_visited.insert(key);
+    /// Create a new resolution context with trace builder.
+    fn with_trace(calculation_date: &'a str, trace: Rc<RefCell<TraceBuilder>>) -> Self {
         Self {
-            calculation_date: self.calculation_date,
-            visited: new_visited,
-            depth: self.depth + 1,
+            calculation_date,
+            visited: HashSet::new(),
+            depth: 0,
+            trace: Some(trace),
         }
+    }
+
+    /// Parse the calculation_date as NaiveDate for version selection.
+    fn reference_date(&self) -> Option<NaiveDate> {
+        NaiveDate::parse_from_str(self.calculation_date, "%Y-%m-%d").ok()
+    }
+
+    /// Enter a cross-law resolution scope: mark key as visited and increment depth.
+    fn enter(&mut self, key: String) {
+        self.visited.insert(key);
+        self.depth += 1;
+    }
+
+    /// Leave a cross-law resolution scope: unmark key and decrement depth.
+    fn leave(&mut self, key: &str) {
+        self.visited.remove(key);
+        self.depth -= 1;
     }
 
     /// Check if a key is already being resolved (cycle detection).
@@ -129,6 +154,7 @@ pub trait ServiceProvider {
     /// * `law_id` - The law that grants the delegation
     /// * `article` - The article number that grants the delegation
     /// * `criteria` - Evaluated select_on criteria to match
+    /// * `reference_date` - Optional date to select the appropriate law version
     ///
     /// # Returns
     /// Reference to the matching regulation, if found.
@@ -137,6 +163,7 @@ pub trait ServiceProvider {
         law_id: &str,
         article: &str,
         criteria: &HashMap<String, Value>,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Option<&ArticleBasedLaw>>;
 
     /// Get a law by ID.
@@ -187,12 +214,54 @@ pub trait ServiceProvider {
     ) -> Result<Value>;
 }
 
+/// Metadata about a loaded law.
+///
+/// Provides summary information about a law without requiring full article access.
+#[derive(Debug, Clone)]
+pub struct LawInfo {
+    /// Law identifier
+    pub id: String,
+    /// Regulatory layer
+    pub regulatory_layer: RegulatoryLayer,
+    /// Publication date
+    pub publication_date: String,
+    /// BWB identifier (for national laws)
+    pub bwb_id: Option<String>,
+    /// URL to official source
+    pub url: Option<String>,
+    /// List of output names produced by this law
+    pub outputs: Vec<String>,
+    /// Number of articles in the law
+    pub article_count: usize,
+}
+
+/// Parse a resolve type string to a `RegulatoryLayer` for filtering.
+///
+/// Maps resolve type strings (from YAML `resolve.type` fields) to the
+/// corresponding `RegulatoryLayer` enum variant.
+fn parse_regulatory_layer(resolve_type: &str) -> Option<RegulatoryLayer> {
+    match resolve_type.to_lowercase().as_str() {
+        "ministeriele_regeling" => Some(RegulatoryLayer::MinisterieleRegeling),
+        "wet" => Some(RegulatoryLayer::Wet),
+        "amvb" => Some(RegulatoryLayer::Amvb),
+        "gemeentelijke_verordening" => Some(RegulatoryLayer::GemeentelijkeVerordening),
+        "beleidsregel" => Some(RegulatoryLayer::Beleidsregel),
+        _ => None,
+    }
+}
+
 /// High-level service for executing laws with automatic cross-law resolution.
 ///
 /// `LawExecutionService` wraps a `RuleResolver` and implements `ServiceProvider`
 /// to enable automatic resolution of external references and delegations.
+/// It also supports external data sources via `DataSourceRegistry`.
 pub struct LawExecutionService {
     resolver: RuleResolver,
+    /// Registry for external data sources. Queried during law execution
+    /// to resolve inputs before falling back to cross-law resolution.
+    /// Acts as an override layer: if a data source provides a field,
+    /// it's used instead of triggering cross-law/delegation resolution.
+    data_registry: DataSourceRegistry,
 }
 
 impl Default for LawExecutionService {
@@ -206,6 +275,7 @@ impl LawExecutionService {
     pub fn new() -> Self {
         Self {
             resolver: RuleResolver::new(),
+            data_registry: DataSourceRegistry::new(),
         }
     }
 
@@ -246,8 +316,62 @@ impl LawExecutionService {
         parameters: HashMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
-        let res_ctx = ResolutionContext::new(calculation_date);
-        self.evaluate_law_output_internal(law_id, output_name, parameters, &res_ctx)
+        let mut res_ctx = ResolutionContext::new(calculation_date);
+        self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)
+    }
+
+    /// Execute a law output with tracing enabled.
+    ///
+    /// Same as `evaluate_law_output` but also returns an execution trace
+    /// in the `ArticleResult.trace` field.
+    pub fn evaluate_law_output_with_trace(
+        &self,
+        law_id: &str,
+        output_name: &str,
+        parameters: HashMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
+        let trace = Rc::new(RefCell::new(TraceBuilder::new()));
+
+        // Push the top-level article node
+        {
+            let mut tb = trace.borrow_mut();
+            tb.push(
+                format!("{} ({})", law_id, output_name),
+                PathNodeType::Article,
+            );
+            let mut sorted_params: Vec<_> = parameters
+                .iter()
+                .map(|(k, v)| format!("{}: {}", k, v))
+                .collect();
+            sorted_params.sort();
+            tb.set_message(format!(
+                "{} ({} {{{}}} {})",
+                law_id,
+                calculation_date,
+                sorted_params.join(", "),
+                output_name,
+            ));
+        }
+
+        let mut res_ctx = ResolutionContext::with_trace(calculation_date, Rc::clone(&trace));
+        let mut result =
+            self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)?;
+
+        // Drop res_ctx so it releases its Rc clone
+        drop(res_ctx);
+
+        // Set the result on the top-level article node and pop it
+        {
+            let mut tb = trace.borrow_mut();
+            if let Some(value) = result.outputs.get(output_name) {
+                tb.set_result(value.clone());
+            }
+            // Pop returns the completed top-level node
+            result.trace = tb.pop();
+        }
+
+        Ok(result)
     }
 
     /// Internal method with cycle tracking.
@@ -256,7 +380,7 @@ impl LawExecutionService {
         law_id: &str,
         output_name: &str,
         parameters: HashMap<String, Value>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         tracing::debug!(
             law_id = %law_id,
@@ -282,16 +406,16 @@ impl LawExecutionService {
             )));
         }
 
-        // Get the law
+        // Get the law (version-aware: use the same reference date as the article lookup)
         let law = self
             .resolver
-            .get_law(law_id)
+            .get_law_for_date(law_id, res_ctx.reference_date())
             .ok_or_else(|| EngineError::LawNotFound(law_id.to_string()))?;
 
         // Find the article
         let article = self
             .resolver
-            .get_article_by_output(law_id, output_name)
+            .get_article_by_output(law_id, output_name, res_ctx.reference_date())
             .ok_or_else(|| EngineError::OutputNotFound {
                 law_id: law_id.to_string(),
                 output: output_name.to_string(),
@@ -308,10 +432,15 @@ impl LawExecutionService {
         law: &ArticleBasedLaw,
         parameters: HashMap<String, Value>,
         requested_output: Option<&str>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         // Create execution context
         let mut context = RuleContext::new(parameters.clone(), res_ctx.calculation_date)?;
+
+        // Attach trace builder if available
+        if let Some(ref tb) = res_ctx.trace {
+            context.set_trace(Rc::clone(tb));
+        }
 
         // Set definitions from article
         if let Some(definitions) = article.get_definitions() {
@@ -320,6 +449,9 @@ impl LawExecutionService {
 
         // Resolve inputs with sources using ServiceProvider
         self.resolve_inputs_with_service(article, &mut context, &parameters, res_ctx)?;
+
+        // Pre-resolve any resolve actions in this article
+        let resolved_actions = self.pre_resolve_actions(article, law, &context, res_ctx)?;
 
         // Use ArticleEngine for action execution (it handles the internal logic)
         let engine = ArticleEngine::new(article, law);
@@ -330,8 +462,254 @@ impl LawExecutionService {
         for (name, value) in context.resolved_inputs() {
             combined_params.insert(name.clone(), value.clone());
         }
+        // Merge pre-resolved action outputs so the engine can pick them up
+        for (name, value) in resolved_actions {
+            combined_params.insert(name, value);
+        }
 
-        engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
+        // Use traced evaluation if trace is available
+        if let Some(ref tb) = res_ctx.trace {
+            engine.evaluate_with_trace(
+                combined_params,
+                res_ctx.calculation_date,
+                requested_output,
+                Rc::clone(tb),
+            )
+        } else {
+            engine.evaluate_with_output(combined_params, res_ctx.calculation_date, requested_output)
+        }
+    }
+
+    /// Pre-resolve all resolve actions in an article.
+    ///
+    /// Scans the article's actions for `resolve:` specifications and resolves
+    /// each one using `resolve_resolve_action()`. Returns a map of output names
+    /// to resolved values.
+    fn pre_resolve_actions(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        context: &RuleContext,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<HashMap<String, Value>> {
+        let mut resolved = HashMap::new();
+
+        let actions = article
+            .get_execution_spec()
+            .and_then(|exec| exec.actions.as_deref())
+            .unwrap_or(&[]);
+
+        for action in actions {
+            if let Some(resolve) = &action.resolve {
+                if let Some(output_name) = &action.output {
+                    let value = self.resolve_resolve_action(
+                        resolve,
+                        &law.id,
+                        &article.number,
+                        context,
+                        res_ctx,
+                    )?;
+                    resolved.insert(output_name.clone(), value);
+                }
+            }
+        }
+
+        Ok(resolved)
+    }
+
+    /// Resolve a single resolve action.
+    ///
+    /// Implements the Python `_evaluate_resolve()` algorithm:
+    /// 1. Find regulations by legal basis (filtered by resolve type)
+    /// 2. If match criteria exist, evaluate expected value from context
+    /// 3. For each candidate: execute to get match output, compare, skip on mismatch
+    /// 4. Execute matching candidate for requested output
+    /// 5. Require exactly 1 match (error on 0 or 2+)
+    fn resolve_resolve_action(
+        &self,
+        resolve: &Resolve,
+        law_id: &str,
+        article_number: &str,
+        context: &RuleContext,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<Value> {
+        let layer_filter = parse_regulatory_layer(&resolve.resolve_type);
+
+        tracing::debug!(
+            law_id = %law_id,
+            article = %article_number,
+            resolve_type = %resolve.resolve_type,
+            output = %resolve.output,
+            "Resolving action via legal basis"
+        );
+
+        // Find regulations that have this article as their legal_basis
+        let candidates = self.resolver.find_regulations_by_legal_basis(
+            law_id,
+            article_number,
+            layer_filter.as_ref(),
+            res_ctx.reference_date(),
+        );
+
+        if candidates.is_empty() {
+            return Err(EngineError::DelegationError(format!(
+                "No regulations found with legal_basis {}#{} (type={})",
+                law_id, article_number, resolve.resolve_type
+            )));
+        }
+
+        tracing::debug!(
+            candidates = candidates.len(),
+            ids = ?candidates.iter().map(|c| &c.id).collect::<Vec<_>>(),
+            "Found candidate regulations"
+        );
+
+        // Evaluate expected match value if match criteria exist
+        let expected_match_value = if let Some(match_spec) = &resolve.match_spec {
+            Some(evaluate_value(&match_spec.value, context, 0)?)
+        } else {
+            None
+        };
+
+        // Track matches: we need exactly one
+        let mut first_match: Option<(&str, Value)> = None;
+
+        for candidate_law in &candidates {
+            let candidate_id = &candidate_law.id;
+
+            // Find the article that produces the requested output
+            let candidate_article = match candidate_law.find_article_by_output(&resolve.output) {
+                Some(a) => a,
+                None => {
+                    tracing::debug!(
+                        candidate = %candidate_id,
+                        output = %resolve.output,
+                        "Candidate has no article with requested output, skipping"
+                    );
+                    continue;
+                }
+            };
+
+            // Phase 1: Check match criteria if present
+            if let (Some(match_spec), Some(expected)) = (&resolve.match_spec, &expected_match_value)
+            {
+                let match_result = self.try_evaluate_candidate(
+                    candidate_article,
+                    candidate_law,
+                    Some(&match_spec.output),
+                    res_ctx,
+                );
+
+                match match_result {
+                    Ok(result) => {
+                        let match_value = result.outputs.get(&match_spec.output);
+                        match match_value {
+                            Some(actual) if values_equal(actual, expected) => {
+                                tracing::debug!(
+                                    candidate = %candidate_id,
+                                    "Match criteria satisfied"
+                                );
+                            }
+                            Some(actual) => {
+                                tracing::debug!(
+                                    candidate = %candidate_id,
+                                    expected = %expected,
+                                    actual = %actual,
+                                    "Match criteria not met, skipping"
+                                );
+                                continue;
+                            }
+                            None => {
+                                tracing::debug!(
+                                    candidate = %candidate_id,
+                                    match_output = %match_spec.output,
+                                    "Match output not found, skipping"
+                                );
+                                continue;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::debug!(
+                            candidate = %candidate_id,
+                            error = %e,
+                            "Error evaluating match criteria, skipping"
+                        );
+                        continue;
+                    }
+                }
+            }
+
+            // Phase 2: Get the actual requested output
+            let output_result = self.try_evaluate_candidate(
+                candidate_article,
+                candidate_law,
+                Some(&resolve.output),
+                res_ctx,
+            );
+
+            match output_result {
+                Ok(result) => {
+                    if let Some(value) = result.outputs.get(&resolve.output).cloned() {
+                        // Check for multiple matches
+                        if let Some((prev_id, _)) = &first_match {
+                            return Err(EngineError::DelegationError(format!(
+                                "Multiple regulations match for {}#{} with resolve type '{}'. \
+                                 Found at least: [{}, {}]. \
+                                 Add more specific match criteria to ensure deterministic resolution.",
+                                law_id, article_number, resolve.resolve_type, prev_id, candidate_id
+                            )));
+                        }
+                        first_match = Some((candidate_id, value));
+                    } else {
+                        tracing::debug!(
+                            candidate = %candidate_id,
+                            output = %resolve.output,
+                            "Output not found in result, skipping"
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::debug!(
+                        candidate = %candidate_id,
+                        error = %e,
+                        "Error evaluating candidate, skipping"
+                    );
+                    continue;
+                }
+            }
+        }
+
+        match first_match {
+            Some((matched_id, value)) => {
+                tracing::info!(
+                    law_id = %law_id,
+                    article = %article_number,
+                    matched = %matched_id,
+                    "Resolved to unique regulation"
+                );
+                Ok(value)
+            }
+            None => Err(EngineError::DelegationError(format!(
+                "No matching regulation found for {}#{} with resolve type '{}' and match criteria {:?}",
+                law_id, article_number, resolve.resolve_type,
+                resolve.match_spec.as_ref().map(|m| &m.output)
+            ))),
+        }
+    }
+
+    /// Try to evaluate a candidate regulation's article.
+    ///
+    /// Used by resolve_resolve_action to evaluate match criteria and output values.
+    /// Returns the execution result, or an error if evaluation fails.
+    fn try_evaluate_candidate(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        requested_output: Option<&str>,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<ArticleResult> {
+        self.evaluate_article_with_service(article, law, HashMap::new(), requested_output, res_ctx)
     }
 
     /// Resolve input sources using ServiceProvider.
@@ -340,7 +718,7 @@ impl LawExecutionService {
         article: &Article,
         context: &mut RuleContext,
         parameters: &HashMap<String, Value>,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<()> {
         let inputs = self.get_inputs(article);
 
@@ -353,6 +731,33 @@ impl LawExecutionService {
             // Check if already provided as parameter
             if parameters.contains_key(&input.name) {
                 continue;
+            }
+
+            // Check DataSourceRegistry before cross-law resolution
+            if self.data_registry.source_count() > 0 {
+                if let Some(data_match) = self.data_registry.resolve(&input.name, parameters) {
+                    tracing::debug!(
+                        input = %input.name,
+                        source = %data_match.source_name,
+                        "Resolved input from data registry"
+                    );
+
+                    // Trace the data source resolution
+                    if let Some(ref tb) = res_ctx.trace {
+                        let mut tb = tb.borrow_mut();
+                        tb.push(&input.name, PathNodeType::Resolve);
+                        tb.set_resolve_type(ResolveType::DataSource);
+                        tb.set_result(data_match.value.clone());
+                        tb.set_message(format!(
+                            "Resolving from SOURCE {}: {}",
+                            data_match.source_name, data_match.value
+                        ));
+                        tb.pop();
+                    }
+
+                    context.set_resolved_input(&input.name, data_match.value);
+                    continue;
+                }
             }
 
             if let Some(delegation) = &source.delegation {
@@ -401,7 +806,7 @@ impl LawExecutionService {
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Check for circular reference before proceeding
         let key = format!("{}#{}", regulation, output);
@@ -412,25 +817,42 @@ impl LawExecutionService {
             )));
         }
 
+        // Trace cross-law call
+        if let Some(ref tb) = res_ctx.trace {
+            tb.borrow_mut()
+                .push(format!("{}#{}", regulation, output), PathNodeType::UriCall);
+        }
+
         // Build parameters for the target article
         let target_params = self.build_target_parameters(source_parameters, context)?;
 
-        // Create child context with this reference tracked
-        let child_ctx = res_ctx.with_visited(key);
+        // Enter cross-law resolution scope
+        res_ctx.enter(key.clone());
 
         // Execute the target article
-        let result =
-            self.evaluate_law_output_internal(regulation, output, target_params, &child_ctx)?;
+        let result = self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
 
-        // Extract the requested output
-        result
-            .outputs
-            .get(output)
-            .cloned()
-            .ok_or_else(|| EngineError::OutputNotFound {
-                law_id: regulation.to_string(),
-                output: output.to_string(),
-            })
+        // Leave scope (even on error, for correct cycle tracking)
+        res_ctx.leave(&key);
+
+        let value =
+            result?
+                .outputs
+                .get(output)
+                .cloned()
+                .ok_or_else(|| EngineError::OutputNotFound {
+                    law_id: regulation.to_string(),
+                    output: output.to_string(),
+                })?;
+
+        // Complete trace node
+        if let Some(ref tb) = res_ctx.trace {
+            let mut tb = tb.borrow_mut();
+            tb.set_result(value.clone());
+            tb.pop();
+        }
+
+        Ok(value)
     }
 
     /// Internal method for delegation input resolution with depth tracking.
@@ -440,7 +862,7 @@ impl LawExecutionService {
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Evaluate selection criteria
         let criteria = if let Some(criteria_spec) = delegation.select_on {
@@ -463,8 +885,12 @@ impl LawExecutionService {
         );
 
         // Find matching regulation
-        let regulation_opt =
-            self.find_delegated_regulation(delegation.law_id, delegation.article, &criteria)?;
+        let regulation_opt = self.find_delegated_regulation(
+            delegation.law_id,
+            delegation.article,
+            &criteria,
+            res_ctx.reference_date(),
+        )?;
 
         match regulation_opt {
             Some(regulation) => {
@@ -490,7 +916,14 @@ impl LawExecutionService {
                     "No matching regulation found, checking for defaults"
                 );
                 // No delegated regulation found - try to use defaults from the delegating article
-                self.try_execute_defaults(delegation, output, source_parameters, context, &criteria)
+                self.try_execute_defaults(
+                    delegation,
+                    output,
+                    source_parameters,
+                    context,
+                    &criteria,
+                    res_ctx,
+                )
             }
         }
     }
@@ -502,7 +935,7 @@ impl LawExecutionService {
         output: &str,
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
-        res_ctx: &ResolutionContext<'_>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Check for circular reference
         let key = format!("{}#{}", regulation.id, output);
@@ -523,15 +956,18 @@ impl LawExecutionService {
             "Executing delegated regulation"
         );
 
-        // Create child context with this reference tracked
-        let child_ctx = res_ctx.with_visited(key);
+        // Enter cross-law resolution scope
+        res_ctx.enter(key.clone());
 
         // Execute the delegated regulation with cycle tracking
         let result =
-            self.evaluate_law_output_internal(&regulation.id, output, target_params, &child_ctx)?;
+            self.evaluate_law_output_internal(&regulation.id, output, target_params, res_ctx);
+
+        // Leave scope (even on error, for correct cycle tracking)
+        res_ctx.leave(&key);
 
         let value =
-            result
+            result?
                 .outputs
                 .get(output)
                 .cloned()
@@ -559,10 +995,12 @@ impl LawExecutionService {
         source_parameters: Option<&HashMap<String, String>>,
         context: &RuleContext,
         criteria: &HashMap<String, Value>,
+        res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
-        // Get the delegating law and article
+        // Get the delegating law and article (version-aware)
         let law = self
-            .get_law(delegation.law_id)
+            .resolver
+            .get_law_for_date(delegation.law_id, res_ctx.reference_date())
             .ok_or_else(|| EngineError::LawNotFound(delegation.law_id.to_string()))?;
 
         let article = law
@@ -713,6 +1151,128 @@ impl LawExecutionService {
     pub fn resolver(&self) -> &RuleResolver {
         &self.resolver
     }
+
+    /// Get metadata about a loaded law.
+    ///
+    /// # Arguments
+    /// * `law_id` - The law identifier
+    ///
+    /// # Returns
+    /// `LawInfo` with metadata, or `None` if the law is not loaded.
+    pub fn get_law_info(&self, law_id: &str) -> Option<LawInfo> {
+        let law = self.resolver.get_law(law_id)?;
+
+        // Collect output names from all articles
+        let mut outputs = Vec::new();
+        for article in &law.articles {
+            if let Some(exec) = article.get_execution_spec() {
+                if let Some(output_specs) = &exec.output {
+                    for output in output_specs {
+                        outputs.push(output.name.clone());
+                    }
+                }
+            }
+        }
+
+        Some(LawInfo {
+            id: law.id.clone(),
+            regulatory_layer: law.regulatory_layer.clone(),
+            publication_date: law.publication_date.clone(),
+            bwb_id: law.bwb_id.clone(),
+            url: law.url.clone(),
+            outputs,
+            article_count: law.articles.len(),
+        })
+    }
+
+    /// List all (law_id, output_name) pairs across all loaded laws.
+    pub fn list_all_outputs(&self) -> Vec<(&str, &str)> {
+        self.resolver.list_all_outputs()
+    }
+
+    /// Get the total number of outputs across all loaded laws.
+    pub fn get_output_count(&self) -> usize {
+        self.resolver.output_count()
+    }
+
+    // -------------------------------------------------------------------------
+    // Data Source Management
+    // -------------------------------------------------------------------------
+
+    /// Add a data source to the registry.
+    ///
+    /// Data sources are queried in priority order (highest first) during
+    /// input resolution, before falling back to cross-law resolution.
+    pub fn add_data_source(&mut self, source: Box<dyn DataSource>) {
+        self.data_registry.add_source(source);
+    }
+
+    /// Add a dictionary-based data source.
+    ///
+    /// Convenience method for adding a `DictDataSource` with the given data.
+    ///
+    /// # Arguments
+    /// * `name` - Name identifier for this data source
+    /// * `priority` - Priority for resolution order (higher = checked first)
+    /// * `data` - Data as record_key -> field_name -> value
+    pub fn add_dict_source(
+        &mut self,
+        name: impl Into<String>,
+        priority: i32,
+        data: HashMap<String, HashMap<String, Value>>,
+    ) {
+        self.data_registry
+            .add_source(Box::new(DictDataSource::new(name, priority, data)));
+    }
+
+    /// Remove a data source by name.
+    pub fn remove_data_source(&mut self, name: &str) -> bool {
+        self.data_registry.remove_source(name)
+    }
+
+    /// Clear all data sources from the registry.
+    pub fn clear_data_sources(&mut self) {
+        self.data_registry.clear();
+    }
+
+    /// Register a dictionary data source from flat records.
+    ///
+    /// # Arguments
+    /// * `name` - Name identifier for this data source
+    /// * `key_field` - Field name to use as the record key (case-insensitive)
+    /// * `records` - List of records as field -> value maps
+    pub fn register_dict_source(
+        &mut self,
+        name: &str,
+        key_field: &str,
+        records: Vec<HashMap<String, Value>>,
+    ) -> Result<()> {
+        match DictDataSource::from_records(name, 10, key_field, records) {
+            Some(source) => {
+                self.data_registry.add_source(Box::new(source));
+                Ok(())
+            }
+            None => Err(EngineError::DataSourceError(format!(
+                "Key field '{}' not found in records for source '{}'",
+                key_field, name
+            ))),
+        }
+    }
+
+    /// Get the number of registered data sources.
+    pub fn data_source_count(&self) -> usize {
+        self.data_registry.source_count()
+    }
+
+    /// List all registered data source names.
+    pub fn list_data_sources(&self) -> Vec<&str> {
+        self.data_registry.list_sources()
+    }
+
+    /// Get direct access to the data registry.
+    pub fn data_registry(&self) -> &DataSourceRegistry {
+        &self.data_registry
+    }
 }
 
 impl ServiceProvider for LawExecutionService {
@@ -736,10 +1296,11 @@ impl ServiceProvider for LawExecutionService {
         law_id: &str,
         article: &str,
         criteria: &HashMap<String, Value>,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Option<&ArticleBasedLaw>> {
         Ok(self
             .resolver
-            .find_delegated_regulation(law_id, article, criteria))
+            .find_delegated_regulation(law_id, article, criteria, reference_date))
     }
 
     fn get_law(&self, law_id: &str) -> Option<&ArticleBasedLaw> {
@@ -754,13 +1315,13 @@ impl ServiceProvider for LawExecutionService {
         context: &RuleContext,
         calculation_date: &str,
     ) -> Result<Value> {
-        let res_ctx = ResolutionContext::new(calculation_date);
+        let mut res_ctx = ResolutionContext::new(calculation_date);
         self.resolve_external_input_internal(
             regulation,
             output,
             source_parameters,
             context,
-            &res_ctx,
+            &mut res_ctx,
         )
     }
 
@@ -774,7 +1335,7 @@ impl ServiceProvider for LawExecutionService {
         context: &RuleContext,
         calculation_date: &str,
     ) -> Result<Value> {
-        let res_ctx = ResolutionContext::new(calculation_date);
+        let mut res_ctx = ResolutionContext::new(calculation_date);
         let del_ref = DelegationRef {
             law_id: delegation_law_id,
             article: delegation_article,
@@ -785,7 +1346,7 @@ impl ServiceProvider for LawExecutionService {
             output,
             source_parameters,
             context,
-            &res_ctx,
+            &mut res_ctx,
         )
     }
 }
@@ -1365,5 +1926,674 @@ articles:
             result.outputs.get("adjusted_amount"),
             Some(&Value::Float(250.0))
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Resolve Action Tests
+    // -------------------------------------------------------------------------
+
+    fn make_resolve_parent_law() -> &'static str {
+        r#"
+$id: parent_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '4'
+    text: Article with resolve action
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+        actions:
+          - output: standaardpremie
+            resolve:
+              type: ministeriele_regeling
+              output: standaardpremie
+              match:
+                output: berekeningsjaar
+                value: $referencedate.year
+"#
+    }
+
+    fn make_matching_regeling(year: i64, premium: i64) -> String {
+        format!(
+            r#"
+$id: regeling_{year}
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2025-01-01'
+legal_basis:
+  - law_id: parent_law
+    article: '4'
+articles:
+  - number: '1'
+    text: Regeling for {year}
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+          - name: berekeningsjaar
+            type: number
+        actions:
+          - output: standaardpremie
+            value: {premium}
+          - output: berekeningsjaar
+            value: {year}
+"#
+        )
+    }
+
+    #[test]
+    fn test_service_resolve_action_standaardpremie() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_resolve_parent_law()).unwrap();
+        service
+            .load_law(&make_matching_regeling(2025, 211200))
+            .unwrap();
+        service
+            .load_law(&make_matching_regeling(2024, 197200))
+            .unwrap();
+
+        // Execute for 2025 - should resolve to regeling_2025
+        let result = service
+            .evaluate_law_output(
+                "parent_law",
+                "standaardpremie",
+                HashMap::new(),
+                "2025-01-01",
+            )
+            .unwrap();
+
+        assert_eq!(
+            result.outputs.get("standaardpremie"),
+            Some(&Value::Int(211200))
+        );
+
+        // Execute for 2024 - should resolve to regeling_2024
+        let result = service
+            .evaluate_law_output(
+                "parent_law",
+                "standaardpremie",
+                HashMap::new(),
+                "2024-06-15",
+            )
+            .unwrap();
+
+        assert_eq!(
+            result.outputs.get("standaardpremie"),
+            Some(&Value::Int(197200))
+        );
+    }
+
+    #[test]
+    fn test_resolve_action_no_match() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_resolve_parent_law()).unwrap();
+        // Load a regeling for 2023 only - no match for 2025
+        service
+            .load_law(&make_matching_regeling(2023, 180000))
+            .unwrap();
+
+        let result = service.evaluate_law_output(
+            "parent_law",
+            "standaardpremie",
+            HashMap::new(),
+            "2025-01-01",
+        );
+
+        assert!(
+            matches!(result, Err(EngineError::DelegationError(_))),
+            "Expected DelegationError for no match, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_resolve_action_multiple_matches() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_resolve_parent_law()).unwrap();
+        // Load two regelingen that both match 2025
+        service
+            .load_law(&make_matching_regeling(2025, 211200))
+            .unwrap();
+
+        // Create a second regeling with same year but different name
+        let duplicate = r#"
+$id: regeling_2025_alt
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2025-01-01'
+legal_basis:
+  - law_id: parent_law
+    article: '4'
+articles:
+  - number: '1'
+    text: Alternate regeling for 2025
+    machine_readable:
+      execution:
+        output:
+          - name: standaardpremie
+            type: number
+          - name: berekeningsjaar
+            type: number
+        actions:
+          - output: standaardpremie
+            value: 999999
+          - output: berekeningsjaar
+            value: 2025
+"#;
+        service.load_law(duplicate).unwrap();
+
+        let result = service.evaluate_law_output(
+            "parent_law",
+            "standaardpremie",
+            HashMap::new(),
+            "2025-01-01",
+        );
+
+        assert!(
+            matches!(result, Err(EngineError::DelegationError(_))),
+            "Expected DelegationError for multiple matches, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_resolve_action_without_match_criteria() {
+        // Resolve action without match spec - should match if exactly one candidate
+        let parent = r#"
+$id: simple_parent
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Simple resolve without match
+    machine_readable:
+      execution:
+        output:
+          - name: some_value
+            type: number
+        actions:
+          - output: some_value
+            resolve:
+              type: ministeriele_regeling
+              output: some_value
+"#;
+        let regeling = r#"
+$id: simple_regeling
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2025-01-01'
+legal_basis:
+  - law_id: simple_parent
+    article: '1'
+articles:
+  - number: '1'
+    text: Simple regeling
+    machine_readable:
+      execution:
+        output:
+          - name: some_value
+            type: number
+        actions:
+          - output: some_value
+            value: 42
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(parent).unwrap();
+        service.load_law(regeling).unwrap();
+
+        let result = service
+            .evaluate_law_output("simple_parent", "some_value", HashMap::new(), "2025-01-01")
+            .unwrap();
+
+        assert_eq!(result.outputs.get("some_value"), Some(&Value::Int(42)));
+    }
+
+    #[test]
+    fn test_resolve_action_no_regulations() {
+        // Resolve action when no regulations have this legal basis
+        let parent = r#"
+$id: orphan_parent
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Resolve with no candidates
+    machine_readable:
+      execution:
+        output:
+          - name: orphan_output
+            type: number
+        actions:
+          - output: orphan_output
+            resolve:
+              type: ministeriele_regeling
+              output: orphan_output
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(parent).unwrap();
+
+        let result = service.evaluate_law_output(
+            "orphan_parent",
+            "orphan_output",
+            HashMap::new(),
+            "2025-01-01",
+        );
+
+        assert!(
+            matches!(result, Err(EngineError::DelegationError(_))),
+            "Expected DelegationError, got: {:?}",
+            result
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // API Method Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_law_info() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_base_law()).unwrap();
+
+        let info = service.get_law_info("base_law").unwrap();
+        assert_eq!(info.id, "base_law");
+        assert_eq!(info.regulatory_layer, RegulatoryLayer::Wet);
+        assert_eq!(info.publication_date, "2025-01-01");
+        assert!(info.bwb_id.is_none());
+        assert!(info.url.is_none());
+        assert_eq!(info.outputs, vec!["base_value"]);
+        assert_eq!(info.article_count, 1);
+
+        // Non-existent law
+        assert!(service.get_law_info("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_list_all_outputs() {
+        let mut service = LawExecutionService::new();
+        service.load_law(make_base_law()).unwrap();
+        service.load_law(make_dependent_law()).unwrap();
+
+        let outputs = service.list_all_outputs();
+        assert!(outputs.contains(&("base_law", "base_value")));
+        assert!(outputs.contains(&("dependent_law", "doubled_value")));
+        assert_eq!(outputs.len(), 2);
+    }
+
+    #[test]
+    fn test_output_count() {
+        let mut service = LawExecutionService::new();
+        assert_eq!(service.get_output_count(), 0);
+
+        service.load_law(make_base_law()).unwrap();
+        assert_eq!(service.get_output_count(), 1);
+
+        service.load_law(make_dependent_law()).unwrap();
+        assert_eq!(service.get_output_count(), 2);
+    }
+
+    #[test]
+    fn test_parse_regulatory_layer_helper() {
+        assert_eq!(
+            parse_regulatory_layer("ministeriele_regeling"),
+            Some(RegulatoryLayer::MinisterieleRegeling)
+        );
+        assert_eq!(
+            parse_regulatory_layer("MINISTERIELE_REGELING"),
+            Some(RegulatoryLayer::MinisterieleRegeling)
+        );
+        assert_eq!(parse_regulatory_layer("wet"), Some(RegulatoryLayer::Wet));
+        assert_eq!(parse_regulatory_layer("amvb"), Some(RegulatoryLayer::Amvb));
+        assert_eq!(
+            parse_regulatory_layer("gemeentelijke_verordening"),
+            Some(RegulatoryLayer::GemeentelijkeVerordening)
+        );
+        assert_eq!(
+            parse_regulatory_layer("beleidsregel"),
+            Some(RegulatoryLayer::Beleidsregel)
+        );
+        assert_eq!(parse_regulatory_layer("unknown_type"), None);
+    }
+
+    // -------------------------------------------------------------------------
+    // Integration Tests with Real Regulation Files
+    // -------------------------------------------------------------------------
+
+    mod integration {
+        use super::*;
+        use std::path::PathBuf;
+
+        fn get_regulation_path() -> PathBuf {
+            let manifest_dir = env!("CARGO_MANIFEST_DIR");
+            PathBuf::from(manifest_dir)
+                .join("..")
+                .join("..")
+                .join("regulation")
+        }
+
+        #[test]
+        fn test_service_resolve_with_real_files() {
+            // Integration test: load real zorgtoeslagwet + regeling_standaardpremie
+            // and verify resolve action works end-to-end
+            let regulation_path = get_regulation_path();
+
+            let zorgtoeslagwet_path =
+                regulation_path.join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
+            let regeling_path = regulation_path
+                .join("nl/ministeriele_regeling/regeling_standaardpremie/2025-01-01.yaml");
+
+            let zt_law = ArticleBasedLaw::from_yaml_file(&zorgtoeslagwet_path).unwrap();
+            let rsp_law = ArticleBasedLaw::from_yaml_file(&regeling_path).unwrap();
+
+            let mut service = LawExecutionService::new();
+            service.load_law_struct(zt_law).unwrap();
+            service.load_law_struct(rsp_law).unwrap();
+
+            // Execute zorgtoeslagwet standaardpremie output
+            // This should resolve the regeling_standaardpremie via legal_basis
+            let result = service
+                .evaluate_law_output(
+                    "zorgtoeslagwet",
+                    "standaardpremie",
+                    HashMap::new(),
+                    "2025-01-01",
+                )
+                .unwrap();
+
+            // standaardpremie for 2025 = 211200 eurocent (€2112)
+            assert_eq!(
+                result.outputs.get("standaardpremie"),
+                Some(&Value::Int(211200)),
+                "Expected standaardpremie=211200 for 2025"
+            );
+        }
+
+        #[test]
+        fn test_load_from_directory() {
+            let regulation_path = get_regulation_path().join("nl");
+
+            let mut resolver = crate::resolver::RuleResolver::new();
+            let count = resolver.load_from_directory(&regulation_path).unwrap();
+
+            // Should load all YAML files from the regulation directory
+            assert!(
+                count >= 10,
+                "Expected at least 10 laws loaded from regulation/nl, got {}",
+                count
+            );
+
+            // Verify known laws are loaded
+            assert!(resolver.has_law("zorgtoeslagwet"));
+            assert!(resolver.has_law("regeling_standaardpremie"));
+            assert!(resolver.has_law("participatiewet"));
+        }
+
+        #[test]
+        fn test_get_law_info_real() {
+            let regulation_path = get_regulation_path();
+            let path = regulation_path.join("nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml");
+            let law = ArticleBasedLaw::from_yaml_file(&path).unwrap();
+
+            let mut service = LawExecutionService::new();
+            service.load_law_struct(law).unwrap();
+
+            let info = service.get_law_info("zorgtoeslagwet").unwrap();
+            assert_eq!(info.id, "zorgtoeslagwet");
+            assert_eq!(info.regulatory_layer, RegulatoryLayer::Wet);
+            assert!(info.article_count > 0);
+            assert!(!info.outputs.is_empty());
+            // Should include standaardpremie output
+            assert!(
+                info.outputs.contains(&"standaardpremie".to_string()),
+                "Expected standaardpremie in outputs: {:?}",
+                info.outputs
+            );
+        }
+    }
+
+    #[test]
+    fn test_cross_law_uses_version_aware_lookup() {
+        // Two versions of a referenced law with different definitions.
+        // Cross-law resolution should pick the correct version based on
+        // the reference date, not just the latest version.
+        // Version selection uses `valid_from` to determine applicability.
+        let base_v1 = r#"
+$id: versioned_base
+regulatory_layer: WET
+publication_date: '2024-01-01'
+valid_from: '2024-01-01'
+articles:
+  - number: '1'
+    text: Base value v1
+    machine_readable:
+      definitions:
+        BASE_VALUE:
+          value: 100
+      execution:
+        output:
+          - name: base_value
+            type: number
+        actions:
+          - output: base_value
+            value: $BASE_VALUE
+"#;
+        let base_v2 = r#"
+$id: versioned_base
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Base value v2
+    machine_readable:
+      definitions:
+        BASE_VALUE:
+          value: 200
+      execution:
+        output:
+          - name: base_value
+            type: number
+        actions:
+          - output: base_value
+            value: $BASE_VALUE
+"#;
+        let dependent = r#"
+$id: cross_law_consumer
+regulatory_layer: WET
+publication_date: '2024-01-01'
+articles:
+  - number: '1'
+    text: Uses versioned base
+    machine_readable:
+      execution:
+        input:
+          - name: external_base
+            type: number
+            source:
+              regulation: versioned_base
+              output: base_value
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            value: $external_base
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(base_v1).unwrap();
+        service.load_law(base_v2).unwrap();
+        service.load_law(dependent).unwrap();
+
+        // Reference date 2024-06-15 should use v1 (BASE_VALUE=100)
+        let result = service
+            .evaluate_law_output("cross_law_consumer", "result", HashMap::new(), "2024-06-15")
+            .unwrap();
+        assert_eq!(
+            result.outputs.get("result"),
+            Some(&Value::Int(100)),
+            "2024 reference date should resolve to v1 (100)"
+        );
+
+        // Reference date 2025-06-15 should use v2 (BASE_VALUE=200)
+        let result = service
+            .evaluate_law_output("cross_law_consumer", "result", HashMap::new(), "2025-06-15")
+            .unwrap();
+        assert_eq!(
+            result.outputs.get("result"),
+            Some(&Value::Int(200)),
+            "2025 reference date should resolve to v2 (200)"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // DataSourceRegistry Integration Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_data_registry_provides_input() {
+        // A law references a regulation for an input, but the data registry
+        // provides the value directly. The referenced regulation is NOT loaded,
+        // proving the registry short-circuits cross-law resolution.
+        let law = r#"
+$id: registry_test_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Has external reference resolved by registry
+    machine_readable:
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+            required: true
+        input:
+          - name: external_value
+            type: number
+            source:
+              regulation: nonexistent_law
+              output: some_output
+              parameters:
+                BSN: $BSN
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            operation: MULTIPLY
+            values:
+              - $external_value
+              - 3
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(law).unwrap();
+
+        // Register data source with the input field
+        let mut record = HashMap::new();
+        record.insert("BSN".to_string(), Value::String("123".to_string()));
+        record.insert("external_value".to_string(), Value::Int(42));
+
+        service
+            .register_dict_source("test_data", "BSN", vec![record])
+            .unwrap();
+
+        let mut params = HashMap::new();
+        params.insert("BSN".to_string(), Value::String("123".to_string()));
+
+        let result = service
+            .evaluate_law_output("registry_test_law", "result", params, "2025-01-01")
+            .unwrap();
+
+        // result = 42 * 3 = 126
+        assert_eq!(result.outputs.get("result"), Some(&Value::Int(126)));
+    }
+
+    #[test]
+    fn test_data_registry_fallback_to_cross_law() {
+        // Registry has no matching field → cross-law resolution should still work
+        let mut service = LawExecutionService::new();
+        service.load_law(make_base_law()).unwrap();
+        service.load_law(make_dependent_law()).unwrap();
+
+        // Register a data source with an unrelated field
+        let mut record = HashMap::new();
+        record.insert("key".to_string(), Value::String("x".to_string()));
+        record.insert("unrelated_field".to_string(), Value::Int(999));
+
+        service
+            .register_dict_source("unrelated_data", "key", vec![record])
+            .unwrap();
+
+        // Execute dependent law - should fall back to cross-law resolution
+        let result = service
+            .evaluate_law_output(
+                "dependent_law",
+                "doubled_value",
+                HashMap::new(),
+                "2025-01-01",
+            )
+            .unwrap();
+
+        // doubled_value = base_value (100) * 2 = 200
+        assert_eq!(result.outputs.get("doubled_value"), Some(&Value::Int(200)));
+    }
+
+    #[test]
+    fn test_parameters_take_priority_over_registry() {
+        // Both a parameter and a registry entry exist for the same field.
+        // The parameter should win because it's checked first.
+        let law = r#"
+$id: priority_test_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Tests parameter vs registry priority
+    machine_readable:
+      execution:
+        parameters:
+          - name: BSN
+            type: string
+          - name: external_value
+            type: number
+        input:
+          - name: external_value
+            type: number
+            source:
+              regulation: some_law
+              output: some_output
+              parameters:
+                BSN: $BSN
+        output:
+          - name: result
+            type: number
+        actions:
+          - output: result
+            value: $external_value
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(law).unwrap();
+
+        // Register data source with external_value = 100
+        let mut record = HashMap::new();
+        record.insert("BSN".to_string(), Value::String("123".to_string()));
+        record.insert("external_value".to_string(), Value::Int(100));
+
+        service
+            .register_dict_source("test_data", "BSN", vec![record])
+            .unwrap();
+
+        // Pass external_value = 50 as parameter (should win)
+        let mut params = HashMap::new();
+        params.insert("BSN".to_string(), Value::String("123".to_string()));
+        params.insert("external_value".to_string(), Value::Int(50));
+
+        let result = service
+            .evaluate_law_output("priority_test_law", "result", params, "2025-01-01")
+            .unwrap();
+
+        // Parameter value (50) should win over registry value (100)
+        assert_eq!(result.outputs.get("result"), Some(&Value::Int(50)));
     }
 }

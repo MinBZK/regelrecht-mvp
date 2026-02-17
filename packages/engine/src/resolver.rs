@@ -1,9 +1,18 @@
 //! Rule resolver for cross-law lookups
 //!
 //! Provides indexing and lookup functionality for laws, including:
-//! - Law registry by ID
+//! - Law registry by ID with multi-version support
 //! - Output index for fast article lookup by output name
 //! - Legal basis index for delegation lookups
+//! - Version selection based on reference_date
+//!
+//! # Multi-version Support
+//!
+//! Laws can have multiple versions with different `valid_from` dates. When looking up
+//! a law, you can optionally provide a `reference_date` to select the appropriate version:
+//! - Versions where `valid_from <= reference_date` are considered valid
+//! - The version with the most recent `valid_from` among valid versions is selected
+//! - If no `reference_date` is provided, the most recent version is used
 //!
 //! # Security
 //!
@@ -15,15 +24,32 @@ use crate::config;
 use crate::context::RuleContext;
 use crate::engine::{evaluate_select_on_criteria, matches_delegation_criteria};
 use crate::error::{EngineError, Result};
-use crate::types::Value;
+use crate::types::{RegulatoryLayer, Value};
+use chrono::NaiveDate;
 use std::collections::HashMap;
 
 /// Resolves cross-law references and provides law registry functionality.
 ///
 /// The resolver maintains several indexes for efficient lookups:
-/// - **Law registry**: All loaded laws by ID
+/// - **Law registry**: All loaded laws by ID, supporting multiple versions per ID
 /// - **Output index**: Maps (law_id, output_name) to article number
 /// - **Legal basis index**: Maps (law_id, article) to delegated regulations
+///
+/// # Multi-version Support
+///
+/// Multiple versions of the same law (same `$id`) can be loaded. Each version
+/// has a `valid_from` date. When querying, provide a `reference_date` to get
+/// the appropriate version:
+///
+/// ```ignore
+/// // Load two versions of the same law
+/// resolver.load_from_yaml(law_v1_yaml)?; // valid_from: 2024-01-01
+/// resolver.load_from_yaml(law_v2_yaml)?; // valid_from: 2025-01-01
+///
+/// // Get version for a specific date
+/// let law = resolver.get_law_for_date("my_law", Some(date!(2024, 6, 1)));
+/// // Returns v1 (valid_from 2024-01-01)
+/// ```
 ///
 /// # Example
 ///
@@ -34,19 +60,22 @@ use std::collections::HashMap;
 /// resolver.load_from_yaml(yaml_str)?;
 ///
 /// // Find article by output
-/// let article = resolver.get_article_by_output("zorgtoeslagwet", "standaardpremie");
+/// let article = resolver.get_article_by_output("zorgtoeslagwet", "standaardpremie", None);
 ///
 /// // Find delegated regulation
 /// let delegated = resolver.find_delegated_regulation(
 ///     "participatiewet",
 ///     "8",
 ///     &criteria,
+///     None, // Use latest version
 /// );
 /// ```
 pub struct RuleResolver {
-    /// Registry of loaded laws by ID
-    law_registry: HashMap<String, ArticleBasedLaw>,
+    /// Registry of loaded laws by ID, supporting multiple versions per law ID.
+    /// Each law ID maps to a list of versions, sorted by valid_from date (newest first).
+    law_versions: HashMap<String, Vec<ArticleBasedLaw>>,
     /// Index: (law_id, output_name) -> article_number
+    /// Note: This index uses the most recent version of each law
     output_index: HashMap<(String, String), String>,
     /// Index: (law_id, article) -> list of law IDs with this legal basis
     legal_basis_index: HashMap<(String, String), Vec<String>>,
@@ -62,7 +91,7 @@ impl RuleResolver {
     /// Create a new empty resolver.
     pub fn new() -> Self {
         Self {
-            law_registry: HashMap::new(),
+            law_versions: HashMap::new(),
             output_index: HashMap::new(),
             legal_basis_index: HashMap::new(),
         }
@@ -70,8 +99,8 @@ impl RuleResolver {
 
     /// Load a law into the resolver.
     ///
-    /// Updates all indexes with the law's articles and outputs.
-    /// If a law with the same ID already exists, it will be replaced.
+    /// If a law with the same ID and valid_from already exists, it will be replaced.
+    /// Otherwise, the new version is added to the version list.
     ///
     /// # Arguments
     /// * `law` - The law to load
@@ -84,14 +113,21 @@ impl RuleResolver {
     /// Enforces [`config::MAX_LOADED_LAWS`] to prevent memory exhaustion.
     pub fn load_law(&mut self, law: ArticleBasedLaw) -> Result<()> {
         let law_id = law.id.clone();
+        let valid_from = law.valid_from.clone();
 
-        // Check if this is a new law (not a replacement)
-        let is_replacement = self.law_registry.contains_key(&law_id);
+        // Count total laws across all versions
+        let total_laws: usize = self.law_versions.values().map(|v| v.len()).sum();
 
-        // Enforce law count limit for new laws
-        if !is_replacement && self.law_registry.len() >= config::MAX_LOADED_LAWS {
+        // Check if we're replacing an existing version (which doesn't increase count)
+        let is_replacement = self
+            .law_versions
+            .get(&law_id)
+            .is_some_and(|versions| versions.iter().any(|v| v.valid_from == valid_from));
+
+        // Enforce law count limit (applies to all new versions, not just new law IDs)
+        if !is_replacement && total_laws >= config::MAX_LOADED_LAWS {
             tracing::warn!(
-                current = self.law_registry.len(),
+                current = total_laws,
                 max = config::MAX_LOADED_LAWS,
                 law_id = %law_id,
                 "Maximum law count exceeded"
@@ -102,42 +138,46 @@ impl RuleResolver {
             )));
         }
 
-        // Remove old indexes if law already exists
-        if is_replacement {
-            tracing::debug!(law_id = %law_id, "Replacing existing law");
-            self.remove_indexes_for_law(&law_id);
+        // Extract legal_basis before moving law into the version list
+        let legal_basis = law.legal_basis.clone();
+
+        // Get or create the version list for this law ID
+        let versions = self.law_versions.entry(law_id.clone()).or_default();
+
+        // Check if we're replacing an existing version (same valid_from)
+        let existing_idx = versions.iter().position(|v| v.valid_from == valid_from);
+        if let Some(idx) = existing_idx {
+            tracing::debug!(law_id = %law_id, valid_from = ?valid_from, "Replacing existing version");
+            versions[idx] = law;
+        } else {
+            tracing::debug!(law_id = %law_id, valid_from = ?valid_from, "Adding new version");
+            versions.push(law);
         }
 
-        // Build output index
-        for article in &law.articles {
-            if let Some(exec) = article.get_execution_spec() {
-                if let Some(outputs) = &exec.output {
-                    for output in outputs {
-                        self.output_index.insert(
-                            (law_id.clone(), output.name.clone()),
-                            article.number.clone(),
-                        );
-                    }
+        // Sort versions by valid_from date (newest first)
+        versions.sort_by(|a, b| {
+            let a_date = a.valid_from.as_ref().and_then(|s| parse_date(s).ok());
+            let b_date = b.valid_from.as_ref().and_then(|s| parse_date(s).ok());
+            b_date.cmp(&a_date) // Newest first
+        });
+
+        // Rebuild indexes using the most recent version
+        self.rebuild_indexes_for_law(&law_id);
+
+        // Build legal basis index (if law has legal_basis metadata)
+        // This is per-law-ID, not per-version
+        if let Some(legal_bases) = &legal_basis {
+            for lb in legal_bases {
+                let key = (lb.law_id.clone(), lb.article.clone());
+                let candidates = self.legal_basis_index.entry(key).or_default();
+                if !candidates.contains(&law_id) {
+                    candidates.push(law_id.clone());
                 }
             }
         }
 
-        // Build legal basis index (if law has legal_basis metadata)
-        // A law can have multiple legal bases (Vec<LegalBasis>)
-        if let Some(legal_bases) = &law.legal_basis {
-            for legal_basis in legal_bases {
-                let key = (legal_basis.law_id.clone(), legal_basis.article.clone());
-                self.legal_basis_index
-                    .entry(key)
-                    .or_default()
-                    .push(law_id.clone());
-            }
-        }
-
-        // Store the law
-        self.law_registry.insert(law_id.clone(), law);
-
-        tracing::debug!(law_id = %law_id, total = self.law_registry.len(), "Law loaded");
+        let total_laws: usize = self.law_versions.values().map(|v| v.len()).sum();
+        tracing::debug!(law_id = %law_id, total = total_laws, "Law loaded");
         Ok(())
     }
 
@@ -161,9 +201,66 @@ impl RuleResolver {
         Ok(law_id)
     }
 
-    /// Get a law by ID.
+    /// Get a law by ID (returns the most recent version).
+    ///
+    /// This is a convenience method that returns the most recent version.
+    /// For version-aware lookups, use [`Self::get_law_for_date`].
     pub fn get_law(&self, law_id: &str) -> Option<&ArticleBasedLaw> {
-        self.law_registry.get(law_id)
+        self.law_versions
+            .get(law_id)
+            .and_then(|versions| versions.first())
+    }
+
+    /// Get a law by ID for a specific reference date.
+    ///
+    /// Selects the appropriate version based on the reference date:
+    /// - Versions where `valid_from <= reference_date` are considered valid
+    /// - The version with the most recent `valid_from` among valid versions is returned
+    /// - If `reference_date` is None, returns the most recent version
+    ///
+    /// # Arguments
+    /// * `law_id` - The law identifier
+    /// * `reference_date` - Optional date to select the appropriate version
+    ///
+    /// # Returns
+    /// Reference to the selected version, or None if no valid version exists.
+    pub fn get_law_for_date(
+        &self,
+        law_id: &str,
+        reference_date: Option<NaiveDate>,
+    ) -> Option<&ArticleBasedLaw> {
+        let versions = self.law_versions.get(law_id)?;
+
+        match reference_date {
+            None => versions.first(), // Return most recent
+            Some(ref_date) => self.select_version_for_date(versions, ref_date),
+        }
+    }
+
+    /// Select the appropriate version for a reference date.
+    ///
+    /// # Selection Logic
+    /// 1. Filter versions where `valid_from <= reference_date`
+    /// 2. Return the version with the most recent `valid_from`
+    /// 3. If no version has `valid_from`, return the most recent overall
+    fn select_version_for_date<'a>(
+        &self,
+        versions: &'a [ArticleBasedLaw],
+        reference_date: NaiveDate,
+    ) -> Option<&'a ArticleBasedLaw> {
+        // Filter valid versions (valid_from <= reference_date)
+        let valid_versions: Vec<&ArticleBasedLaw> = versions
+            .iter()
+            .filter(|v| {
+                v.valid_from
+                    .as_ref()
+                    .and_then(|s| parse_date(s).ok())
+                    .is_none_or(|valid_from| valid_from <= reference_date)
+            })
+            .collect();
+
+        // Return the first valid version (already sorted newest first)
+        valid_versions.first().copied()
     }
 
     /// Get an article by law ID and output name.
@@ -171,15 +268,19 @@ impl RuleResolver {
     /// # Arguments
     /// * `law_id` - The law identifier
     /// * `output` - The output name to find
+    /// * `reference_date` - Optional date to select the appropriate law version
     ///
     /// # Returns
     /// Reference to the article if found.
-    pub fn get_article_by_output(&self, law_id: &str, output: &str) -> Option<&Article> {
-        let article_number = self
-            .output_index
-            .get(&(law_id.to_string(), output.to_string()))?;
-        let law = self.law_registry.get(law_id)?;
-        law.find_article_by_number(article_number)
+    pub fn get_article_by_output(
+        &self,
+        law_id: &str,
+        output: &str,
+        reference_date: Option<NaiveDate>,
+    ) -> Option<&Article> {
+        let law = self.get_law_for_date(law_id, reference_date)?;
+        // Search directly in the version-specific law for the article with this output
+        law.find_article_by_output(output)
     }
 
     /// Find a delegated regulation matching the given criteria.
@@ -192,6 +293,7 @@ impl RuleResolver {
     /// * `law_id` - The law that grants the delegation
     /// * `article` - The article number that grants the delegation
     /// * `criteria` - Evaluated select_on criteria to match
+    /// * `reference_date` - Optional date to select the appropriate version
     ///
     /// # Returns
     /// Reference to the first matching regulation, or None.
@@ -200,6 +302,7 @@ impl RuleResolver {
         law_id: &str,
         article: &str,
         criteria: &HashMap<String, Value>,
+        reference_date: Option<NaiveDate>,
     ) -> Option<&ArticleBasedLaw> {
         // Find all laws with this legal basis
         let key = (law_id.to_string(), article.to_string());
@@ -214,8 +317,8 @@ impl RuleResolver {
 
         // Check each candidate against criteria
         for candidate_id in candidate_ids {
-            // Skip if law was removed (index may be stale)
-            let Some(law) = self.law_registry.get(candidate_id) else {
+            // Get the appropriate version of the candidate law
+            let Some(law) = self.get_law_for_date(candidate_id, reference_date) else {
                 continue;
             };
 
@@ -269,6 +372,7 @@ impl RuleResolver {
     /// * `article` - The article number that grants the delegation
     /// * `select_on` - Unevaluated select_on criteria
     /// * `context` - Context for variable resolution
+    /// * `reference_date` - Optional date to select the appropriate version
     ///
     /// # Returns
     /// Reference to the first matching regulation, or error.
@@ -278,40 +382,240 @@ impl RuleResolver {
         article: &str,
         select_on: &[crate::article::SelectOnCriteria],
         context: &RuleContext,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Option<&ArticleBasedLaw>> {
         let criteria = evaluate_select_on_criteria(select_on, context)?;
-        Ok(self.find_delegated_regulation(law_id, article, &criteria))
+        Ok(self.find_delegated_regulation(law_id, article, &criteria, reference_date))
     }
 
-    /// List all loaded law IDs.
+    /// Find all regulations that declare a given law+article as their legal basis.
+    ///
+    /// Optionally filters by regulatory layer.
+    ///
+    /// # Arguments
+    /// * `law_id` - The law that grants the delegation
+    /// * `article` - The article number that grants the delegation
+    /// * `layer_filter` - Optional regulatory layer to filter candidates
+    /// * `reference_date` - Optional date to select the appropriate version
+    ///
+    /// # Returns
+    /// List of references to matching laws.
+    pub fn find_regulations_by_legal_basis(
+        &self,
+        law_id: &str,
+        article: &str,
+        layer_filter: Option<&RegulatoryLayer>,
+        reference_date: Option<NaiveDate>,
+    ) -> Vec<&ArticleBasedLaw> {
+        let key = (law_id.to_string(), article.to_string());
+        let candidate_ids = match self.legal_basis_index.get(&key) {
+            Some(ids) => ids,
+            None => return Vec::new(),
+        };
+
+        let mut results = Vec::new();
+        for candidate_id in candidate_ids {
+            let Some(law) = self.get_law_for_date(candidate_id, reference_date) else {
+                continue;
+            };
+
+            // Filter by regulatory layer if specified
+            if let Some(filter) = layer_filter {
+                if &law.regulatory_layer != filter {
+                    continue;
+                }
+            }
+
+            results.push(law);
+        }
+
+        results
+    }
+
+    /// Get the number of entries in the output index.
+    ///
+    /// This counts the total number of (law_id, output_name) pairs across all laws.
+    pub fn output_count(&self) -> usize {
+        self.output_index.len()
+    }
+
+    /// List all (law_id, output_name) pairs from the output index.
+    pub fn list_all_outputs(&self) -> Vec<(&str, &str)> {
+        let mut outputs: Vec<(&str, &str)> = self
+            .output_index
+            .keys()
+            .map(|(law_id, output)| (law_id.as_str(), output.as_str()))
+            .collect();
+        outputs.sort();
+        outputs
+    }
+
+    /// Load all YAML law files from a directory (recursively).
+    ///
+    /// Scans the given directory for `.yaml` files and loads each one.
+    /// Files that fail to parse are logged as warnings and skipped.
+    ///
+    /// # Arguments
+    /// * `dir` - Path to the directory to scan
+    ///
+    /// # Returns
+    /// Number of successfully loaded law files.
+    ///
+    /// # Errors
+    /// Returns error if the directory cannot be read.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn load_from_directory(&mut self, dir: &std::path::Path) -> Result<usize> {
+        let mut count = 0;
+        self.load_from_directory_recursive(dir, &mut count)?;
+        Ok(count)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn load_from_directory_recursive(
+        &mut self,
+        dir: &std::path::Path,
+        count: &mut usize,
+    ) -> Result<()> {
+        use std::fs;
+
+        let entries = fs::read_dir(dir).map_err(|e| {
+            EngineError::LoadError(format!(
+                "Failed to read directory '{}': {}",
+                dir.display(),
+                e
+            ))
+        })?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| {
+                EngineError::LoadError(format!("Failed to read directory entry: {}", e))
+            })?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                self.load_from_directory_recursive(&path, count)?;
+            } else if path.extension().and_then(|e| e.to_str()) == Some("yaml") {
+                match ArticleBasedLaw::from_yaml_file(&path) {
+                    Ok(law) => match self.load_law(law) {
+                        Ok(()) => {
+                            *count += 1;
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                path = %path.display(),
+                                error = %e,
+                                "Failed to register law from file"
+                            );
+                        }
+                    },
+                    Err(e) => {
+                        tracing::warn!(
+                            path = %path.display(),
+                            error = %e,
+                            "Failed to parse YAML law file"
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// List all loaded law IDs (unique, not including versions).
     pub fn list_laws(&self) -> Vec<&str> {
-        let mut ids: Vec<&str> = self.law_registry.keys().map(|s| s.as_str()).collect();
+        let mut ids: Vec<&str> = self.law_versions.keys().map(|s| s.as_str()).collect();
         ids.sort();
         ids
     }
 
-    /// Get the number of loaded laws.
+    /// Get the number of unique law IDs (not counting versions).
     pub fn law_count(&self) -> usize {
-        self.law_registry.len()
+        self.law_versions.len()
     }
 
-    /// Check if a law is loaded.
+    /// Get the total number of loaded law versions.
+    pub fn version_count(&self) -> usize {
+        self.law_versions.values().map(|v| v.len()).sum()
+    }
+
+    /// Get the number of versions for a specific law.
+    pub fn version_count_for_law(&self, law_id: &str) -> usize {
+        self.law_versions.get(law_id).map(|v| v.len()).unwrap_or(0)
+    }
+
+    /// Check if a law is loaded (any version).
     pub fn has_law(&self, law_id: &str) -> bool {
-        self.law_registry.contains_key(law_id)
+        self.law_versions.contains_key(law_id)
     }
 
-    /// Unload a law from the resolver.
+    /// Unload all versions of a law from the resolver.
     ///
-    /// Removes the law and all its indexes.
+    /// Removes all versions of the law and all its indexes.
     ///
     /// # Returns
     /// `true` if the law was removed, `false` if it didn't exist.
     pub fn unload_law(&mut self, law_id: &str) -> bool {
-        if self.law_registry.remove(law_id).is_some() {
+        if self.law_versions.remove(law_id).is_some() {
             self.remove_indexes_for_law(law_id);
             true
         } else {
             false
+        }
+    }
+
+    /// Unload a specific version of a law.
+    ///
+    /// # Arguments
+    /// * `law_id` - The law identifier
+    /// * `valid_from` - The valid_from date of the version to remove
+    ///
+    /// # Returns
+    /// `true` if the version was removed, `false` if it didn't exist.
+    pub fn unload_law_version(&mut self, law_id: &str, valid_from: Option<&str>) -> bool {
+        let Some(versions) = self.law_versions.get_mut(law_id) else {
+            return false;
+        };
+
+        let original_len = versions.len();
+        versions.retain(|v| v.valid_from.as_deref() != valid_from);
+
+        if versions.len() < original_len {
+            if versions.is_empty() {
+                self.law_versions.remove(law_id);
+                self.remove_indexes_for_law(law_id);
+            } else {
+                // Rebuild indexes with the new most recent version
+                self.rebuild_indexes_for_law(law_id);
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Rebuild output indexes for a specific law using its most recent version.
+    fn rebuild_indexes_for_law(&mut self, law_id: &str) {
+        // Remove old output index entries
+        self.output_index.retain(|(id, _), _| id.as_str() != law_id);
+
+        // Add new output index entries from the most recent version
+        // Access law_versions directly to avoid borrowing self through get_law()
+        if let Some(versions) = self.law_versions.get(law_id) {
+            if let Some(law) = versions.first() {
+                for article in &law.articles {
+                    if let Some(exec) = article.get_execution_spec() {
+                        if let Some(outputs) = &exec.output {
+                            for output in outputs {
+                                self.output_index.insert(
+                                    (law_id.to_string(), output.name.clone()),
+                                    article.number.clone(),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -326,6 +630,12 @@ impl RuleResolver {
         }
         self.legal_basis_index.retain(|_, v| !v.is_empty());
     }
+}
+
+/// Parse a date string in ISO 8601 format (YYYY-MM-DD).
+fn parse_date(s: &str) -> Result<NaiveDate> {
+    NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|e| EngineError::InvalidOperation(format!("Failed to parse date '{}': {}", s, e)))
 }
 
 #[cfg(test)]
@@ -349,6 +659,28 @@ articles:
           - output: test_output
             value: 42
 "#
+    }
+
+    fn make_test_law_with_valid_from(valid_from: &str, value: i32) -> String {
+        format!(
+            r#"
+$id: test_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '{valid_from}'
+articles:
+  - number: '1'
+    text: Test article version {valid_from}
+    machine_readable:
+      execution:
+        output:
+          - name: test_output
+            type: number
+        actions:
+          - output: test_output
+            value: {value}
+"#
+        )
     }
 
     fn make_delegating_law() -> &'static str {
@@ -423,18 +755,18 @@ articles:
         resolver.load_from_yaml(make_test_law()).unwrap();
 
         let article = resolver
-            .get_article_by_output("test_law", "test_output")
+            .get_article_by_output("test_law", "test_output", None)
             .unwrap();
         assert_eq!(article.number, "1");
 
         // Non-existent output
         assert!(resolver
-            .get_article_by_output("test_law", "nonexistent")
+            .get_article_by_output("test_law", "nonexistent", None)
             .is_none());
 
         // Non-existent law
         assert!(resolver
-            .get_article_by_output("nonexistent", "test_output")
+            .get_article_by_output("nonexistent", "test_output", None)
             .is_none());
     }
 
@@ -463,7 +795,7 @@ articles:
 
         // Output index should also be removed
         assert!(resolver
-            .get_article_by_output("test_law", "test_output")
+            .get_article_by_output("test_law", "test_output", None)
             .is_none());
     }
 
@@ -510,7 +842,7 @@ articles:
         );
 
         let found = resolver
-            .find_delegated_regulation("participatiewet", "8", &criteria)
+            .find_delegated_regulation("participatiewet", "8", &criteria, None)
             .unwrap();
         assert_eq!(found.id, "0363_verordening");
         assert_eq!(found.gemeente_code, Some("0363".to_string()));
@@ -521,7 +853,7 @@ articles:
             Value::String("0518".to_string()),
         );
         let found = resolver
-            .find_delegated_regulation("participatiewet", "8", &criteria)
+            .find_delegated_regulation("participatiewet", "8", &criteria, None)
             .unwrap();
         assert_eq!(found.id, "0518_verordening");
 
@@ -530,7 +862,7 @@ articles:
             "gemeente_code".to_string(),
             Value::String("9999".to_string()),
         );
-        let found = resolver.find_delegated_regulation("participatiewet", "8", &criteria);
+        let found = resolver.find_delegated_regulation("participatiewet", "8", &criteria, None);
         assert!(found.is_none());
     }
 
@@ -539,7 +871,7 @@ articles:
         let mut resolver = RuleResolver::new();
         resolver.load_from_yaml(make_test_law()).unwrap();
 
-        // Load a different version of the same law
+        // Load a different version of the same law (same valid_from = None)
         let updated_yaml = r#"
 $id: test_law
 regulatory_layer: WET
@@ -558,18 +890,18 @@ articles:
 "#;
         resolver.load_from_yaml(updated_yaml).unwrap();
 
-        // Should have the new article
+        // Should have the new article (replacement since same valid_from)
         let law = resolver.get_law("test_law").unwrap();
         assert_eq!(law.articles[0].number, "2");
 
         // Old output should be gone
         assert!(resolver
-            .get_article_by_output("test_law", "test_output")
+            .get_article_by_output("test_law", "test_output", None)
             .is_none());
 
         // New output should exist
         assert!(resolver
-            .get_article_by_output("test_law", "new_output")
+            .get_article_by_output("test_law", "new_output", None)
             .is_some());
     }
 
@@ -585,7 +917,7 @@ articles:
 
         // Empty criteria - matches first candidate
         let criteria = HashMap::new();
-        let found = resolver.find_delegated_regulation("participatiewet", "8", &criteria);
+        let found = resolver.find_delegated_regulation("participatiewet", "8", &criteria, None);
 
         // Should find the regulation (the only one with this legal basis)
         assert!(found.is_some());
@@ -619,7 +951,7 @@ articles:
             Value::String("0518".to_string()),
         );
 
-        let found = resolver.find_delegated_regulation("participatiewet", "8", &criteria);
+        let found = resolver.find_delegated_regulation("participatiewet", "8", &criteria, None);
         assert!(found.is_some());
         assert_eq!(found.unwrap().id, "0518_verordening");
     }
@@ -652,5 +984,306 @@ articles:
         // Replacement should also succeed
         assert!(resolver.load_law(law).is_ok());
         assert_eq!(resolver.law_count(), 1); // Still 1 - replacement
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-version Support Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_resolver_multi_version_basic() {
+        let mut resolver = RuleResolver::new();
+
+        // Load two versions of the same law
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2024-01-01", 100))
+            .unwrap();
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2025-01-01", 200))
+            .unwrap();
+
+        // Should have 1 law with 2 versions
+        assert_eq!(resolver.law_count(), 1);
+        assert_eq!(resolver.version_count(), 2);
+        assert_eq!(resolver.version_count_for_law("test_law"), 2);
+
+        // get_law returns the most recent version
+        let law = resolver.get_law("test_law").unwrap();
+        assert_eq!(law.valid_from, Some("2025-01-01".to_string()));
+    }
+
+    #[test]
+    fn test_resolver_get_law_for_date() {
+        let mut resolver = RuleResolver::new();
+
+        // Load three versions
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2023-01-01", 100))
+            .unwrap();
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2024-06-01", 200))
+            .unwrap();
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2025-01-01", 300))
+            .unwrap();
+
+        // Query for different dates
+        let date_2023 = NaiveDate::from_ymd_opt(2023, 6, 1).unwrap();
+        let date_2024 = NaiveDate::from_ymd_opt(2024, 12, 1).unwrap();
+        let date_2025 = NaiveDate::from_ymd_opt(2025, 6, 1).unwrap();
+
+        // 2023-06-01: Should get 2023-01-01 version
+        let law = resolver
+            .get_law_for_date("test_law", Some(date_2023))
+            .unwrap();
+        assert_eq!(law.valid_from, Some("2023-01-01".to_string()));
+
+        // 2024-12-01: Should get 2024-06-01 version (most recent valid)
+        let law = resolver
+            .get_law_for_date("test_law", Some(date_2024))
+            .unwrap();
+        assert_eq!(law.valid_from, Some("2024-06-01".to_string()));
+
+        // 2025-06-01: Should get 2025-01-01 version
+        let law = resolver
+            .get_law_for_date("test_law", Some(date_2025))
+            .unwrap();
+        assert_eq!(law.valid_from, Some("2025-01-01".to_string()));
+
+        // None: Should get most recent version
+        let law = resolver.get_law_for_date("test_law", None).unwrap();
+        assert_eq!(law.valid_from, Some("2025-01-01".to_string()));
+    }
+
+    #[test]
+    fn test_resolver_get_law_for_date_no_valid_version() {
+        let mut resolver = RuleResolver::new();
+
+        // Load a version valid from 2025
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2025-01-01", 100))
+            .unwrap();
+
+        // Query for a date before any version is valid
+        let date_2024 = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+        let law = resolver.get_law_for_date("test_law", Some(date_2024));
+        assert!(law.is_none());
+    }
+
+    #[test]
+    fn test_resolver_version_replacement() {
+        let mut resolver = RuleResolver::new();
+
+        // Load a version
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2024-01-01", 100))
+            .unwrap();
+        assert_eq!(resolver.version_count(), 1);
+
+        // Load the same version again (same valid_from) - should replace
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2024-01-01", 200))
+            .unwrap();
+        assert_eq!(resolver.version_count(), 1); // Still 1, replaced
+
+        // Load a different version - should add
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2025-01-01", 300))
+            .unwrap();
+        assert_eq!(resolver.version_count(), 2);
+    }
+
+    #[test]
+    fn test_resolver_unload_version() {
+        let mut resolver = RuleResolver::new();
+
+        // Load two versions
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2024-01-01", 100))
+            .unwrap();
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2025-01-01", 200))
+            .unwrap();
+        assert_eq!(resolver.version_count(), 2);
+
+        // Unload one version
+        assert!(resolver.unload_law_version("test_law", Some("2024-01-01")));
+        assert_eq!(resolver.version_count(), 1);
+        assert!(resolver.has_law("test_law"));
+
+        // Unload remaining version
+        assert!(resolver.unload_law_version("test_law", Some("2025-01-01")));
+        assert_eq!(resolver.version_count(), 0);
+        assert!(!resolver.has_law("test_law"));
+    }
+
+    #[test]
+    fn test_resolver_article_by_output_with_date() {
+        let mut resolver = RuleResolver::new();
+
+        // Load two versions with different article numbers
+        let v1 = r#"
+$id: test_law
+regulatory_layer: WET
+publication_date: '2024-01-01'
+valid_from: '2024-01-01'
+articles:
+  - number: '1'
+    text: Article v1
+    machine_readable:
+      execution:
+        output:
+          - name: test_output
+            type: number
+        actions:
+          - output: test_output
+            value: 100
+"#;
+        let v2 = r#"
+$id: test_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '2'
+    text: Article v2
+    machine_readable:
+      execution:
+        output:
+          - name: test_output
+            type: number
+        actions:
+          - output: test_output
+            value: 200
+"#;
+        resolver.load_from_yaml(v1).unwrap();
+        resolver.load_from_yaml(v2).unwrap();
+
+        let date_2024 = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+        let date_2025 = NaiveDate::from_ymd_opt(2025, 6, 1).unwrap();
+
+        // Get article for 2024 - should get v1 article
+        let article = resolver
+            .get_article_by_output("test_law", "test_output", Some(date_2024))
+            .unwrap();
+        assert_eq!(article.number, "1");
+
+        // Get article for 2025 - should get v2 article
+        let article = resolver
+            .get_article_by_output("test_law", "test_output", Some(date_2025))
+            .unwrap();
+        assert_eq!(article.number, "2");
+    }
+
+    #[test]
+    fn test_resolver_mixed_valid_from() {
+        // Test mixing laws with and without valid_from
+        let mut resolver = RuleResolver::new();
+
+        // Load version without valid_from
+        resolver.load_from_yaml(make_test_law()).unwrap();
+
+        // Load version with valid_from
+        resolver
+            .load_from_yaml(&make_test_law_with_valid_from("2025-01-01", 200))
+            .unwrap();
+
+        assert_eq!(resolver.version_count(), 2);
+
+        // The version with valid_from should be sorted first (has a date)
+        // Version without valid_from should match any date
+        let date_2024 = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+        let law = resolver.get_law_for_date("test_law", Some(date_2024));
+        assert!(law.is_some()); // The None valid_from version should match
+    }
+
+    // -------------------------------------------------------------------------
+    // New Method Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_resolver_output_count() {
+        let mut resolver = RuleResolver::new();
+        assert_eq!(resolver.output_count(), 0);
+
+        resolver.load_from_yaml(make_test_law()).unwrap();
+        assert_eq!(resolver.output_count(), 1);
+
+        resolver.load_from_yaml(make_delegating_law()).unwrap();
+        assert_eq!(resolver.output_count(), 2);
+    }
+
+    #[test]
+    fn test_resolver_list_all_outputs() {
+        let mut resolver = RuleResolver::new();
+
+        resolver.load_from_yaml(make_test_law()).unwrap();
+        resolver.load_from_yaml(make_delegating_law()).unwrap();
+
+        let outputs = resolver.list_all_outputs();
+        assert_eq!(outputs.len(), 2);
+        assert!(outputs.contains(&("test_law", "test_output")));
+        assert!(outputs.contains(&("participatiewet", "delegation_granted")));
+    }
+
+    #[test]
+    fn test_resolver_find_regulations_by_legal_basis() {
+        let mut resolver = RuleResolver::new();
+
+        resolver.load_from_yaml(make_delegating_law()).unwrap();
+        resolver
+            .load_from_yaml(&make_delegated_regulation("0363"))
+            .unwrap();
+        resolver
+            .load_from_yaml(&make_delegated_regulation("0518"))
+            .unwrap();
+
+        // Find all regulations with this legal basis
+        let results = resolver.find_regulations_by_legal_basis("participatiewet", "8", None, None);
+        assert_eq!(results.len(), 2);
+
+        // Filter by regulatory layer
+        let results = resolver.find_regulations_by_legal_basis(
+            "participatiewet",
+            "8",
+            Some(&RegulatoryLayer::GemeentelijkeVerordening),
+            None,
+        );
+        assert_eq!(results.len(), 2);
+
+        // Filter by a layer that doesn't match
+        let results = resolver.find_regulations_by_legal_basis(
+            "participatiewet",
+            "8",
+            Some(&RegulatoryLayer::MinisterieleRegeling),
+            None,
+        );
+        assert_eq!(results.len(), 0);
+
+        // Non-existent law/article
+        let results = resolver.find_regulations_by_legal_basis("nonexistent", "1", None, None);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_resolver_load_from_directory() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let regulation_path = std::path::PathBuf::from(manifest_dir)
+            .join("..")
+            .join("..")
+            .join("regulation")
+            .join("nl");
+
+        let mut resolver = RuleResolver::new();
+        let count = resolver.load_from_directory(&regulation_path).unwrap();
+
+        assert!(
+            count >= 10,
+            "Expected at least 10 laws from regulation/nl, got {}",
+            count
+        );
+        assert!(resolver.has_law("zorgtoeslagwet"));
+        assert!(resolver.has_law("regeling_standaardpremie"));
+        assert!(resolver.has_law("participatiewet"));
     }
 }

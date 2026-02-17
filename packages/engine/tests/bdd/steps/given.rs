@@ -54,17 +54,10 @@ fn set_query_data(world: &mut RegelrechtWorld, step: &Step) {
 fn set_rvig_personal_data(world: &mut RegelrechtWorld, step: &Step) {
     if let Some(table) = &step.table {
         parse_external_data_table(table, &mut world.external_data.rvig_personal);
-        // Also add relevant fields to parameters for the engine
+        // Store BSN in parameters (required article parameter)
         for data in world.external_data.rvig_personal.values() {
-            if let Some(v) = data.get("geboortedatum") {
-                world
-                    .parameters
-                    .insert("geboortedatum".to_string(), v.clone());
-            }
-            if let Some(v) = data.get("land_verblijf") {
-                world
-                    .parameters
-                    .insert("land_verblijf".to_string(), v.clone());
+            if let Some(v) = data.get("bsn") {
+                world.parameters.insert("bsn".to_string(), v.clone());
             }
         }
     }
@@ -74,14 +67,6 @@ fn set_rvig_personal_data(world: &mut RegelrechtWorld, step: &Step) {
 fn set_rvig_relationship_data(world: &mut RegelrechtWorld, step: &Step) {
     if let Some(table) = &step.table {
         parse_external_data_table(table, &mut world.external_data.rvig_relationship);
-        // Add relevant fields to parameters
-        for data in world.external_data.rvig_relationship.values() {
-            if let Some(v) = data.get("partnerschap_type") {
-                world
-                    .parameters
-                    .insert("partnerschap_type".to_string(), v.clone());
-            }
-        }
     }
 }
 
@@ -89,14 +74,6 @@ fn set_rvig_relationship_data(world: &mut RegelrechtWorld, step: &Step) {
 fn set_rvz_insurance_data(world: &mut RegelrechtWorld, step: &Step) {
     if let Some(table) = &step.table {
         parse_external_data_table(table, &mut world.external_data.rvz_insurance);
-        // Add relevant fields to parameters
-        for data in world.external_data.rvz_insurance.values() {
-            if let Some(v) = data.get("polis_status") {
-                world
-                    .parameters
-                    .insert("polis_status".to_string(), v.clone());
-            }
-        }
     }
 }
 
@@ -104,14 +81,6 @@ fn set_rvz_insurance_data(world: &mut RegelrechtWorld, step: &Step) {
 fn set_bd_box1_data(world: &mut RegelrechtWorld, step: &Step) {
     if let Some(table) = &step.table {
         parse_external_data_table(table, &mut world.external_data.bd_box1);
-        // Add relevant fields to parameters
-        for data in world.external_data.bd_box1.values() {
-            for (key, value) in data {
-                if key != "bsn" {
-                    world.parameters.insert(key.clone(), value.clone());
-                }
-            }
-        }
     }
 }
 
@@ -119,14 +88,6 @@ fn set_bd_box1_data(world: &mut RegelrechtWorld, step: &Step) {
 fn set_bd_box2_data(world: &mut RegelrechtWorld, step: &Step) {
     if let Some(table) = &step.table {
         parse_external_data_table(table, &mut world.external_data.bd_box2);
-        // Add relevant fields to parameters
-        for data in world.external_data.bd_box2.values() {
-            for (key, value) in data {
-                if key != "bsn" {
-                    world.parameters.insert(key.clone(), value.clone());
-                }
-            }
-        }
     }
 }
 
@@ -134,14 +95,6 @@ fn set_bd_box2_data(world: &mut RegelrechtWorld, step: &Step) {
 fn set_bd_box3_data(world: &mut RegelrechtWorld, step: &Step) {
     if let Some(table) = &step.table {
         parse_external_data_table(table, &mut world.external_data.bd_box3);
-        // Add relevant fields to parameters
-        for data in world.external_data.bd_box3.values() {
-            for (key, value) in data {
-                if key != "bsn" {
-                    world.parameters.insert(key.clone(), value.clone());
-                }
-            }
-        }
     }
 }
 
