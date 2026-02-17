@@ -1,0 +1,21 @@
+{
+  "competent_authority": {
+    "name": "Belastingdienst/Toeslagen"
+  },
+  "unknown_field": "this should not be here",
+  "execution": {
+    "output": [
+      {
+        "name": "test",
+        "type": "boolean"
+      }
+    ],
+    "actions": [
+      {
+        "output": "test",
+        "operation": "INVALID_OP",
+        "value": true
+      }
+    ]
+  }
+}
