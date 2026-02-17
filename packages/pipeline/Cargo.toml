@@ -10,6 +10,9 @@ homepage = "https://github.com/MinBZK/regelrecht-mvp"
 keywords = ["law", "legal", "pipeline", "dutch", "regelrecht"]
 categories = ["database"]
 
+[features]
+test-utils = []
+
 [dependencies]
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -19,6 +22,10 @@ thiserror = "2.0"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 tracing = "0.1"
+reqwest = { version = "0.12", features = ["json"] }
+async-trait = "0.1"
+jsonschema = "0.28"
+serde_yaml_ng = "0.10"
 
 [dev-dependencies]
 testcontainers = "0.23"
@@ -26,6 +33,7 @@ testcontainers-modules = { version = "0.11", features = ["postgres"] }
 pretty_assertions = "1.4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wiremock = "0.6"
 
 [lints.clippy]
 unwrap_used = "warn"
