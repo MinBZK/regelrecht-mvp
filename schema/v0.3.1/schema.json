@@ -793,9 +793,51 @@
           "type": "string",
           "description": "Name of the output field this action computes"
         },
+        "operation": {
+          "$ref": "#/definitions/operationType"
+        },
         "value": {
           "$ref": "#/definitions/operationValue",
-          "description": "Direct value assignment"
+          "description": "Direct value assignment or comparison value"
+        },
+        "values": {
+          "type": "array",
+          "description": "Operands for arithmetic operations",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "subject": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Subject operand for comparison and date operations"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions for AND/OR operations",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "when": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Condition for IF operations"
+        },
+        "then": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when condition is true"
+        },
+        "else": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when condition is false"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "days",
+            "months",
+            "years"
+          ],
+          "description": "Unit for SUBTRACT_DATE operation"
         },
         "resolve": {
           "type": "object",
