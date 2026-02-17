@@ -76,9 +76,10 @@ machine_readable:
 - SUBTRACT_DATE: { operation: "SUBTRACT_DATE", values: ["$date1", "$date2"] }
 - CONCAT: { operation: "CONCAT", values: ["$a", "$b"] }
 
-## Logical Operations (use `conditions` array)
+## Logical Operations
 - AND: { operation: "AND", conditions: [{operation...}, {operation...}] }
 - OR: { operation: "OR", conditions: [{operation...}, {operation...}] }
+Note: standalone logicalOperation uses `conditions`. But inside an action's `values` array, use inline operations directly (see Actions below).
 
 ## Conditional Operations
 - IF: { operation: "IF", when: {operation...}, then: value, else: value }
@@ -90,15 +91,48 @@ machine_readable:
 
 # Actions
 
-Actions in the top-level `actions` array use a flat structure:
-- Required: `output` (string naming the output field)
-- Optional: `operation`, `value`, `values`, `resolve`, `legal_basis`
-- For AND/OR at action level: use `values` array (not `conditions`)
-  Wait - correction: at the action level, AND/OR operations should still be nested as inline operations within `values`. The action itself uses `operation` + `values`/`value`.
+Each action in the top-level `actions` array has this structure:
+- Required: `output` (string — which output field this action computes)
+- Allowed fields: `output`, `value`, `operation`, `values`, `resolve`, `legal_basis`
+- No other fields are allowed (the schema uses `additionalProperties: false`)
 
-Actually, the action schema allows: output, value, operation, values, resolve, legal_basis.
-For AND/OR at the action level: { output: "x", operation: "AND", values: [{operation...}, ...] }
-Note: The action uses `values` (not `conditions`) - but inline operations within values use their own schema (logicalOperation uses `conditions`).
+IMPORTANT: The `subject` field is NOT allowed at the action level. It only exists on inline comparison operations nested inside `values`.
+
+Examples of correct action patterns:
+
+Simple value assignment:
+  - output: "standaardpremie"
+    value: "$STANDAARDPREMIE"
+
+Arithmetic (uses `values` array):
+  - output: "leeftijd"
+    operation: "SUBTRACT_DATE"
+    values: ["$peildatum", "$geboortedatum"]
+
+AND/OR (uses `values` array with inline operations):
+  - output: "heeft_recht"
+    operation: "AND"
+    values:
+      - operation: "GREATER_THAN_OR_EQUAL"
+        subject: "$leeftijd"
+        value: 18
+      - operation: "EQUALS"
+        subject: "$is_verzekerd"
+        value: true
+
+Comparison (uses `value` with inline comparison in `values`):
+  - output: "onder_grens"
+    operation: "LESS_THAN_OR_EQUAL"
+    values: ["$toetsingsinkomen", "$GRENS"]
+
+Resolve from ministeriele regeling:
+  - output: "standaardpremie"
+    resolve:
+      type: "ministeriele_regeling"
+      output: "standaardpremie"
+      match:
+        output: "jaar"
+        value: "$jaar"
 
 # Variable References
 

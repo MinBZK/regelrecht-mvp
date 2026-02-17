@@ -117,22 +117,24 @@ impl LlmClient for AnthropicClient {
             messages: &request.messages,
         };
 
-        let retry_delays = [
+        let base_delays = [
             Duration::from_secs(1),
             Duration::from_secs(2),
             Duration::from_secs(4),
         ];
+        let max_attempts = base_delays.len() + 1;
 
         let mut last_error: Option<PipelineError> = None;
+        let mut next_delay = Duration::ZERO;
 
-        for (attempt, delay) in std::iter::once(&Duration::ZERO)
-            .chain(retry_delays.iter())
-            .enumerate()
-        {
+        for attempt in 0..max_attempts {
             if attempt > 0 {
-                debug!(attempt, "retrying LLM request after {:?}", delay);
-                tokio::time::sleep(*delay).await;
+                debug!(attempt, "retrying LLM request after {:?}", next_delay);
+                tokio::time::sleep(next_delay).await;
             }
+
+            // Reset to the base exponential delay for the next potential retry
+            next_delay = base_delays.get(attempt).copied().unwrap_or(base_delays[base_delays.len() - 1]);
 
             let resp = self
                 .http
@@ -163,6 +165,8 @@ impl LlmClient for AnthropicClient {
                     .and_then(|v| v.parse::<u64>().ok())
                     .unwrap_or(60);
                 warn!(attempt, retry_after, "LLM rate limited");
+                // Use the server-provided retry-after, at least as long as the base delay
+                next_delay = Duration::from_secs(retry_after).max(next_delay);
                 last_error = Some(PipelineError::LlmRateLimited {
                     retry_after_secs: retry_after,
                 });

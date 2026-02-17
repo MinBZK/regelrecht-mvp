@@ -231,6 +231,75 @@ fn test_extract_yaml_strips_fences() {
 }
 
 #[tokio::test]
+async fn test_fix_loop_schema_error_then_success() {
+    let mock_server = MockServer::start().await;
+
+    // First LLM response: invalid YAML (has unknown field that fails schema validation)
+    let invalid_yaml = r#"machine_readable:
+  unknown_top_level_field: "this will fail schema validation"
+  execution:
+    output:
+      - name: "heeft_recht"
+        type: "boolean"
+    actions:
+      - output: "heeft_recht"
+        value: true"#;
+
+    let first_resp = anthropic_response(invalid_yaml);
+
+    // Second LLM response: valid YAML (fixes the schema error)
+    let second_resp = anthropic_response(valid_machine_readable_yaml());
+
+    // Third LLM response: reverse validation passes
+    let validation_resp = anthropic_response("VALID");
+
+    // Use a counter via request ordering: first call returns invalid, second returns valid, third returns VALID
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&first_resp))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&second_resp))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&validation_resp))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+
+    let config = EnrichmentConfig::builder("test-key")
+        .api_base_url(mock_server.uri())
+        .max_fix_iterations(3)
+        .build();
+
+    let client = AnthropicClient::new(&config).expect("client creation");
+    let enricher = Enricher::new(&client, &config).expect("enricher creation");
+
+    let result = enricher
+        .enrich_article(&sample_article(), &sample_context())
+        .await;
+
+    assert!(result.is_ok(), "enrichment should succeed after fix: {:?}", result.err());
+
+    let result = result.expect("result");
+    assert_eq!(result.article_number, "2");
+    assert!(result.schema_valid, "schema should be valid after fix");
+    assert!(result.reverse_valid, "reverse validation should pass");
+    assert_eq!(result.iterations_used, 2, "should have taken 2 iterations (first failed, second passed)");
+    assert!(!result.machine_readable.is_empty());
+}
+
+#[tokio::test]
 async fn test_enrich_law_handles_failures() {
     let mock_server = MockServer::start().await;
 

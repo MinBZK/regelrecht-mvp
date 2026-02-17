@@ -1,7 +1,9 @@
+use std::fmt;
+
 use crate::error::{PipelineError, Result};
 
 /// Configuration for LLM-based enrichment.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct EnrichmentConfig {
     pub provider: String,
     pub model: String,
@@ -11,6 +13,21 @@ pub struct EnrichmentConfig {
     pub api_base_url: String,
     pub max_tokens: u32,
     pub timeout_secs: u64,
+}
+
+impl fmt::Debug for EnrichmentConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EnrichmentConfig")
+            .field("provider", &self.provider)
+            .field("model", &self.model)
+            .field("api_key", &"[REDACTED]")
+            .field("temperature", &self.temperature)
+            .field("max_fix_iterations", &self.max_fix_iterations)
+            .field("api_base_url", &self.api_base_url)
+            .field("max_tokens", &self.max_tokens)
+            .field("timeout_secs", &self.timeout_secs)
+            .finish()
+    }
 }
 
 impl EnrichmentConfig {

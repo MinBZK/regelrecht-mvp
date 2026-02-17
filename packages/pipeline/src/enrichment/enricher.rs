@@ -11,6 +11,10 @@ use crate::enrichment::types::{
 };
 use crate::error::{PipelineError, Result};
 
+/// Approximate context window limit (in tokens) for safety checks.
+/// Set conservatively below Claude's actual limit to leave headroom.
+const CONTEXT_TOKEN_LIMIT: u64 = 180_000;
+
 /// Main enrichment orchestrator.
 ///
 /// Generates machine_readable sections for law articles using an LLM,
@@ -73,6 +77,26 @@ impl<'a, C: LlmClient> Enricher<'a, C> {
                 input_tokens: response.input_tokens,
                 output_tokens: response.output_tokens,
             });
+
+            // Guard: if input tokens are approaching the context limit, stop iterating
+            // to avoid sending a request that will fail due to context overflow.
+            if response.input_tokens > CONTEXT_TOKEN_LIMIT {
+                warn!(
+                    article = article.number,
+                    iteration,
+                    input_tokens = response.input_tokens,
+                    limit = CONTEXT_TOKEN_LIMIT,
+                    "conversation approaching context window limit, stopping fix loop"
+                );
+                warnings.push(format!(
+                    "Stopped after iteration {iteration}: input tokens ({}) approaching context limit",
+                    response.input_tokens
+                ));
+                // Still try to use the response we got
+                let yaml_str = extract_yaml_from_response(&response.content);
+                last_yaml = yaml_str;
+                break;
+            }
 
             let yaml_str = extract_yaml_from_response(&response.content);
             last_yaml = yaml_str.clone();
@@ -247,41 +271,50 @@ impl<'a, C: LlmClient> Enricher<'a, C> {
 }
 
 /// Extract YAML content from an LLM response, stripping markdown fences if present.
+///
+/// When multiple fenced blocks exist, prefers the one containing `machine_readable:`.
+/// Falls back to the last fenced block, since LLMs often put explanatory blocks first.
 pub fn extract_yaml_from_response(response: &str) -> String {
     let trimmed = response.trim();
 
-    // Check for ```yaml ... ``` or ``` ... ```
-    if let Some(rest) = trimmed.strip_prefix("```yaml") {
-        if let Some(content) = rest.strip_suffix("```") {
-            return content.trim().to_string();
-        }
-    }
+    // Collect all fenced code blocks
+    let blocks = extract_fenced_blocks(trimmed);
 
-    if let Some(rest) = trimmed.strip_prefix("```yml") {
-        if let Some(content) = rest.strip_suffix("```") {
-            return content.trim().to_string();
+    if !blocks.is_empty() {
+        // Prefer a block that contains "machine_readable:"
+        if let Some(block) = blocks.iter().find(|b| b.contains("machine_readable:")) {
+            return block.trim().to_string();
         }
-    }
-
-    if let Some(rest) = trimmed.strip_prefix("```") {
-        if let Some(content) = rest.strip_suffix("```") {
-            return content.trim().to_string();
-        }
-    }
-
-    // Try to find fenced block anywhere in response
-    if let Some(start) = trimmed.find("```") {
-        let after_fence = &trimmed[start + 3..];
-        // Skip optional language identifier on the same line
-        let content_start = after_fence.find('\n').map(|i| i + 1).unwrap_or(0);
-        let content = &after_fence[content_start..];
-        if let Some(end) = content.find("```") {
-            return content[..end].trim().to_string();
+        // Otherwise use the last block (LLMs often put explanations first)
+        // Safety: blocks is non-empty (checked above), but use if-let to satisfy clippy
+        if let Some(block) = blocks.last() {
+            return block.trim().to_string();
         }
     }
 
     // No fences found, return as-is
     trimmed.to_string()
+}
+
+/// Extract all fenced code blocks from text.
+fn extract_fenced_blocks(text: &str) -> Vec<String> {
+    let mut blocks = Vec::new();
+    let mut remaining = text;
+
+    while let Some(start) = remaining.find("```") {
+        let after_fence = &remaining[start + 3..];
+        // Skip optional language identifier on the same line
+        let content_start = after_fence.find('\n').map(|i| i + 1).unwrap_or(0);
+        let content = &after_fence[content_start..];
+        if let Some(end) = content.find("```") {
+            blocks.push(content[..end].to_string());
+            remaining = &content[end + 3..];
+        } else {
+            break;
+        }
+    }
+
+    blocks
 }
 
 /// Convert a YAML string to a JSON value for schema validation.
