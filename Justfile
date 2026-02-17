@@ -44,6 +44,10 @@ pipeline-test:
 pipeline-check:
     cd packages/pipeline && SQLX_OFFLINE=true cargo check
 
+# Run harvest worker
+harvest-worker:
+    cd packages/pipeline && cargo run --bin regelrecht-harvest-worker
+
 # Start local Postgres for development
 db-up:
     docker compose up -d postgres
