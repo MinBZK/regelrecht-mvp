@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.1/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.3.1",
+  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.2/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.3.2",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations",
   "type": "object",
   "required": [
@@ -793,9 +793,51 @@
           "type": "string",
           "description": "Name of the output field this action computes"
         },
+        "operation": {
+          "$ref": "#/definitions/operationType"
+        },
         "value": {
           "$ref": "#/definitions/operationValue",
-          "description": "Direct value assignment"
+          "description": "Direct value assignment or comparison value"
+        },
+        "values": {
+          "type": "array",
+          "description": "Operands for arithmetic operations",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "subject": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Subject operand for comparison and date operations"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions for AND/OR operations",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        },
+        "when": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Condition for IF operations"
+        },
+        "then": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when condition is true"
+        },
+        "else": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Value when condition is false"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "days",
+            "months",
+            "years"
+          ],
+          "description": "Unit for SUBTRACT_DATE operation"
         },
         "resolve": {
           "type": "object",
