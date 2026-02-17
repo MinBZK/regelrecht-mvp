@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.3.0",
+  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.3.2/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.3.2",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations",
   "type": "object",
   "required": [
@@ -22,8 +22,8 @@
     },
     "valid_from": {
       "type": "string",
-      "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}|#.+)$",
-      "description": "Date when the law/regulation becomes effective (inwerkingtredingsdatum), or an internal reference starting with #"
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "Date when the law/regulation becomes effective (inwerkingtredingsdatum)"
     },
     "regulatory_layer": {
       "type": "string",
@@ -165,6 +165,53 @@
           },
           "machine_readable": {
             "$ref": "#/definitions/machineReadableSection"
+          },
+          "references": {
+            "type": "array",
+            "description": "Structured references to other laws/articles for runtime resolution",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "bwb_id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Reference ID used in markdown links (e.g., 'ref1')"
+                },
+                "bwb_id": {
+                  "type": "string",
+                  "pattern": "^BWBR[0-9]{7}$",
+                  "description": "BWB identifier of referenced law"
+                },
+                "artikel": {
+                  "type": "string",
+                  "description": "Article number in referenced law"
+                },
+                "lid": {
+                  "type": "string",
+                  "description": "Lid (paragraph) number"
+                },
+                "onderdeel": {
+                  "type": "string",
+                  "description": "Onderdeel (sub-item) letter/number"
+                },
+                "hoofdstuk": {
+                  "type": "string",
+                  "description": "Chapter number"
+                },
+                "paragraaf": {
+                  "type": "string",
+                  "description": "Paragraph number"
+                },
+                "afdeling": {
+                  "type": "string",
+                  "description": "Section number"
+                }
+              },
+              "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -412,7 +459,9 @@
                 "delegation": {
                   "type": "object",
                   "description": "Reference to a delegated regulation (e.g., gemeentelijke verordening)",
-                  "required": ["law_id", "article"],
+                  "required": [
+                    "select_on"
+                  ],
                   "properties": {
                     "law_id": {
                       "type": "string",
@@ -427,7 +476,10 @@
                       "description": "Generic criteria for selecting delegated regulation",
                       "items": {
                         "type": "object",
-                        "required": ["name", "value"],
+                        "required": [
+                          "name",
+                          "value"
+                        ],
                         "properties": {
                           "name": {
                             "type": "string",
@@ -440,8 +492,7 @@
                         }
                       }
                     }
-                  },
-                  "required": ["select_on"]
+                  }
                 },
                 "endpoint": {
                   "type": "string",
@@ -467,11 +518,22 @@
     "arithmeticOperation": {
       "type": "object",
       "description": "Arithmetic operations that compute numeric values",
-      "required": ["operation", "values"],
+      "required": [
+        "operation",
+        "values"
+      ],
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MIN", "MAX", "CONCAT", "SUBTRACT_DATE"]
+          "enum": [
+            "ADD",
+            "SUBTRACT",
+            "MULTIPLY",
+            "DIVIDE",
+            "MIN",
+            "MAX",
+            "CONCAT"
+          ]
         },
         "values": {
           "type": "array",
@@ -489,11 +551,17 @@
     "logicalOperation": {
       "type": "object",
       "description": "Logical operations that combine boolean conditions",
-      "required": ["operation", "conditions"],
+      "required": [
+        "operation",
+        "conditions"
+      ],
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["AND", "OR"]
+          "enum": [
+            "AND",
+            "OR"
+          ]
         },
         "conditions": {
           "type": "array",
@@ -511,11 +579,24 @@
     "comparisonOperation": {
       "type": "object",
       "description": "Comparison operations that compare values",
-      "required": ["operation", "subject"],
+      "required": [
+        "operation",
+        "subject"
+      ],
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["EQUALS", "NOT_EQUALS", "NOT_NULL", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN_OR_EQUAL", "IN", "NOT_IN"]
+          "enum": [
+            "EQUALS",
+            "NOT_EQUALS",
+            "NOT_NULL",
+            "GREATER_THAN",
+            "LESS_THAN",
+            "GREATER_THAN_OR_EQUAL",
+            "LESS_THAN_OR_EQUAL",
+            "IN",
+            "NOT_IN"
+          ]
         },
         "subject": {
           "$ref": "#/definitions/variableReference",
@@ -534,7 +615,11 @@
     "conditionalOperation": {
       "type": "object",
       "description": "Conditional operation (IF-WHEN-THEN-ELSE)",
-      "required": ["operation", "when", "then"],
+      "required": [
+        "operation",
+        "when",
+        "then"
+      ],
       "properties": {
         "operation": {
           "type": "string",
@@ -561,7 +646,10 @@
     "switchOperation": {
       "type": "object",
       "description": "Switch/case operation for multiple conditional branches",
-      "required": ["operation", "cases"],
+      "required": [
+        "operation",
+        "cases"
+      ],
       "properties": {
         "operation": {
           "type": "string",
@@ -572,7 +660,10 @@
           "description": "List of when/then pairs evaluated in order",
           "items": {
             "type": "object",
-            "required": ["when", "then"],
+            "required": [
+              "when",
+              "then"
+            ],
             "properties": {
               "when": {
                 "$ref": "#/definitions/operationValue",
@@ -599,17 +690,61 @@
     "otherOperation": {
       "type": "object",
       "description": "Other operations (NOT, FOREACH) - fallback with flexible properties",
-      "required": ["operation"],
+      "required": [
+        "operation"
+      ],
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["NOT", "FOREACH"]
+          "enum": [
+            "NOT",
+            "FOREACH"
+          ]
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis"
         }
       },
       "additionalProperties": true
+    },
+    "dateOperation": {
+      "type": "object",
+      "description": "Date arithmetic operations that compute date differences",
+      "required": [
+        "operation",
+        "subject",
+        "value"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "enum": [
+            "SUBTRACT_DATE"
+          ]
+        },
+        "subject": {
+          "$ref": "#/definitions/operationValue",
+          "description": "The first date (minuend)"
+        },
+        "value": {
+          "$ref": "#/definitions/operationValue",
+          "description": "The second date (subtrahend)"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "days",
+            "months",
+            "years"
+          ],
+          "default": "days",
+          "description": "Unit of measurement for the date difference"
+        },
+        "legal_basis": {
+          "$ref": "#/definitions/legalBasis"
+        }
+      },
+      "additionalProperties": false
     },
     "operationType": {
       "type": "string",
@@ -643,12 +778,27 @@
     "operation": {
       "description": "Executable operation that computes a value",
       "oneOf": [
-        { "$ref": "#/definitions/arithmeticOperation" },
-        { "$ref": "#/definitions/logicalOperation" },
-        { "$ref": "#/definitions/comparisonOperation" },
-        { "$ref": "#/definitions/conditionalOperation" },
-        { "$ref": "#/definitions/switchOperation" },
-        { "$ref": "#/definitions/otherOperation" }
+        {
+          "$ref": "#/definitions/arithmeticOperation"
+        },
+        {
+          "$ref": "#/definitions/logicalOperation"
+        },
+        {
+          "$ref": "#/definitions/comparisonOperation"
+        },
+        {
+          "$ref": "#/definitions/conditionalOperation"
+        },
+        {
+          "$ref": "#/definitions/switchOperation"
+        },
+        {
+          "$ref": "#/definitions/dateOperation"
+        },
+        {
+          "$ref": "#/definitions/otherOperation"
+        }
       ]
     },
     "operationValue": {
@@ -687,16 +837,6 @@
         "value": {
           "$ref": "#/definitions/operationValue",
           "description": "Direct value assignment"
-        },
-        "operation": {
-          "$ref": "#/definitions/operationType"
-        },
-        "values": {
-          "type": "array",
-          "description": "Operands for the operation",
-          "items": {
-            "$ref": "#/definitions/operationValue"
-          }
         },
         "resolve": {
           "type": "object",
@@ -804,7 +944,9 @@
             },
             {
               "type": "object",
-              "required": ["name"],
+              "required": [
+                "name"
+              ],
               "properties": {
                 "name": {
                   "type": "string",
@@ -812,7 +954,10 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["INSTANCE", "CATEGORY"],
+                  "enum": [
+                    "INSTANCE",
+                    "CATEGORY"
+                  ],
                   "default": "INSTANCE",
                   "description": "INSTANCE = specific organization (default), CATEGORY = must be resolved per context"
                 }
@@ -825,7 +970,10 @@
           "description": "What this article enables - e.g., authority to create lower-level regulations",
           "items": {
             "type": "object",
-            "required": ["regulatory_layer", "subject"],
+            "required": [
+              "regulatory_layer",
+              "subject"
+            ],
             "properties": {
               "regulatory_layer": {
                 "type": "string",
@@ -857,7 +1005,10 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["INSTANCE", "CATEGORY"]
+                    "enum": [
+                      "INSTANCE",
+                      "CATEGORY"
+                    ]
                   }
                 }
               },
@@ -875,10 +1026,18 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "type": { "type": "string" },
-                        "required": { "type": "boolean" },
-                        "description": { "type": "string" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "required": {
+                          "type": "boolean"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -888,9 +1047,15 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "type": { "type": "string" },
-                        "description": { "type": "string" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -915,7 +1080,9 @@
           "description": "Delegation pattern - this article provides legal basis for lower-level regulations",
           "items": {
             "type": "object",
-            "required": ["regulatory_layer"],
+            "required": [
+              "regulatory_layer"
+            ],
             "properties": {
               "regulatory_layer": {
                 "type": "string",
@@ -948,10 +1115,18 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "type": { "type": "string" },
-                        "required": { "type": "boolean" },
-                        "description": { "type": "string" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "required": {
+                          "type": "boolean"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -961,9 +1136,15 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "type": { "type": "string" },
-                        "description": { "type": "string" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   }

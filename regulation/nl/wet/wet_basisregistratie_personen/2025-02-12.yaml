@@ -364,10 +364,11 @@ articles:
             type: number
         actions:
           - output: leeftijd
-            operation: SUBTRACT_DATE
-            subject: $referencedate
-            value: $geboortedatum
-            unit: years
+            value:
+              operation: SUBTRACT_DATE
+              subject: $referencedate
+              value: $geboortedatum
+              unit: years
   - number: Artikel 2.8
     text: |-
       Artikel 2.8 1 De gegevens over de burgerlijke staat worden, indien zij feiten betreffen die zich in Nederland
