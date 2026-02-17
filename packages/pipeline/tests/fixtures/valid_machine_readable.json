@@ -1,0 +1,83 @@
+{
+  "competent_authority": {
+    "name": "Belastingdienst/Toeslagen"
+  },
+  "execution": {
+    "produces": {
+      "legal_character": "BESCHIKKING",
+      "decision_type": "TOEKENNING"
+    },
+    "parameters": [
+      {
+        "name": "bsn",
+        "type": "string",
+        "required": true,
+        "description": "Burgerservicenummer"
+      },
+      {
+        "name": "peildatum",
+        "type": "date",
+        "required": true,
+        "description": "Datum waarop het recht wordt getoetst"
+      }
+    ],
+    "input": [
+      {
+        "name": "geboortedatum",
+        "type": "date",
+        "source": {
+          "output": "geboortedatum",
+          "description": "Geboortedatum uit BRP"
+        }
+      },
+      {
+        "name": "is_verzekerd",
+        "type": "boolean",
+        "source": {
+          "regulation": "zorgverzekeringswet",
+          "output": "is_verzekerd",
+          "parameters": {
+            "bsn": "$bsn"
+          }
+        }
+      }
+    ],
+    "output": [
+      {
+        "name": "leeftijd",
+        "type": "number"
+      },
+      {
+        "name": "heeft_recht",
+        "type": "boolean",
+        "description": "Geeft aan of de persoon recht heeft op zorgtoeslag"
+      }
+    ],
+    "actions": [
+      {
+        "output": "leeftijd",
+        "operation": "SUBTRACT_DATE",
+        "values": [
+          "$peildatum",
+          "$geboortedatum"
+        ]
+      },
+      {
+        "output": "heeft_recht",
+        "operation": "AND",
+        "values": [
+          {
+            "operation": "GREATER_THAN_OR_EQUAL",
+            "subject": "$leeftijd",
+            "value": 18
+          },
+          {
+            "operation": "EQUALS",
+            "subject": "$is_verzekerd",
+            "value": true
+          }
+        ]
+      }
+    ]
+  }
+}

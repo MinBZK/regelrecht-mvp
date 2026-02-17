@@ -1,5 +1,6 @@
 pub mod config;
 pub mod db;
+pub mod enrichment;
 pub mod error;
 pub mod job_queue;
 pub mod law_status;
