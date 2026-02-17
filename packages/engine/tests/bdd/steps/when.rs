@@ -45,17 +45,29 @@ fn request_standard_premium(world: &mut RegelrechtWorld, year: String) {
 fn execute_healthcare_allowance(world: &mut RegelrechtWorld) {
     // Register raw external data as DataSources (no pre-computation).
     // The engine resolves through cross-law references automatically.
-    register_if_present(&mut world.service, "personal_data", &world.external_data.rvig_personal);
+    register_if_present(
+        &mut world.service,
+        "personal_data",
+        &world.external_data.rvig_personal,
+    );
     register_if_present(
         &mut world.service,
         "relationship_data",
         &world.external_data.rvig_relationship,
     );
-    register_if_present(&mut world.service, "insurance", &world.external_data.rvz_insurance);
+    register_if_present(
+        &mut world.service,
+        "insurance",
+        &world.external_data.rvz_insurance,
+    );
     register_if_present(&mut world.service, "box1", &world.external_data.bd_box1);
     register_if_present(&mut world.service, "box2", &world.external_data.bd_box2);
     register_if_present(&mut world.service, "box3", &world.external_data.bd_box3);
-    register_if_present(&mut world.service, "detenties", &world.external_data.dji_detenties);
+    register_if_present(
+        &mut world.service,
+        "detenties",
+        &world.external_data.dji_detenties,
+    );
 
     // Execute — engine resolves through cross-law references automatically.
     // BSN stays in parameters (set by set_rvig_personal_data in given.rs).

@@ -404,10 +404,7 @@ impl LawExecutionService {
             tracing::debug!(law_id, output_name, "Cache hit");
             if let Some(ref tb) = res_ctx.trace {
                 let mut tb = tb.borrow_mut();
-                tb.push(
-                    format!("{}#{}", law_id, output_name),
-                    PathNodeType::Cached,
-                );
+                tb.push(format!("{}#{}", law_id, output_name), PathNodeType::Cached);
                 if let Some(val) = cached_outputs.get(output_name) {
                     tb.set_result(val.clone());
                 }
@@ -463,8 +460,13 @@ impl LawExecutionService {
             })?;
 
         // Execute with service provider
-        let result =
-            self.evaluate_article_with_service(article, law, parameters, Some(output_name), res_ctx)?;
+        let result = self.evaluate_article_with_service(
+            article,
+            law,
+            parameters,
+            Some(output_name),
+            res_ctx,
+        )?;
 
         // --- Cache store (only on success) ---
         res_ctx.cache.insert(key, result.outputs.clone());
@@ -844,12 +846,12 @@ impl LawExecutionService {
                 // Internal reference (same-law) with output specified.
                 // Resolve through the service layer so cross-law inputs of the
                 // referenced article are properly handled.
-                let ref_article = law
-                    .find_article_by_output(output_name)
-                    .ok_or_else(|| EngineError::OutputNotFound {
+                let ref_article = law.find_article_by_output(output_name).ok_or_else(|| {
+                    EngineError::OutputNotFound {
                         law_id: law.id.clone(),
                         output: output_name.to_string(),
-                    })?;
+                    }
+                })?;
 
                 let ref_params = parameters.clone();
                 let result = self.evaluate_article_with_service(
