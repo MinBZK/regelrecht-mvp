@@ -2,8 +2,7 @@
 # https://embarkstudios.github.io/cargo-deny/
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "warn"
+unmaintained = "workspace"
 
 [licenses]
 unlicensed = "deny"
@@ -26,7 +25,7 @@ allow = [
 # r-efi is LGPL but only used on EFI platforms, not in our builds
 [[licenses.exceptions]]
 allow = ["LGPL-2.1-or-later"]
-name = "r-efi"
+crate = "r-efi"
 
 [bans]
 multiple-versions = "warn"
