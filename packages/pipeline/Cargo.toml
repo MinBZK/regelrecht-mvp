@@ -24,7 +24,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 tracing = "0.1"
 reqwest = { version = "0.12", features = ["json"] }
 async-trait = "0.1"
-jsonschema = "0.28"
+jsonschema = "0.40"
 serde_yaml_ng = "0.10"
 
 [dev-dependencies]

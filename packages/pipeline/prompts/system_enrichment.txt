@@ -79,7 +79,7 @@ machine_readable:
 ## Logical Operations
 - AND: { operation: "AND", conditions: [{operation...}, {operation...}] }
 - OR: { operation: "OR", conditions: [{operation...}, {operation...}] }
-Note: standalone logicalOperation uses `conditions`. But inside an action's `values` array, use inline operations directly (see Actions below).
+IMPORTANT: At the action level, NEVER use `conditions`. Always use `values` for AND/OR actions. The `conditions` field only exists on the standalone logicalOperation schema, not on the action schema.
 
 ## Conditional Operations
 - IF: { operation: "IF", when: {operation...}, then: value, else: value }
