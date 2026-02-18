@@ -35,7 +35,7 @@ pub async fn run_harvest_worker(config: WorkerConfig) -> Result<()> {
     )
     .await?;
 
-    let mut current_interval = config.poll_interval;
+    let mut current_interval = std::time::Duration::ZERO; // poll immediately on startup
 
     loop {
         tokio::select! {
@@ -105,12 +105,16 @@ async fn process_next_job(
         },
     };
 
-    // Update law status to harvesting
-    let _ = law_status::upsert_law(pool, &job.law_id, None).await;
-    let _ = law_status::update_status(pool, &job.law_id, LawStatusValue::Harvesting).await;
+    // Update law status to harvesting (best-effort, log on failure)
+    if let Err(e) = law_status::upsert_law(pool, &job.law_id, None).await {
+        tracing::warn!(error = %e, law_id = %job.law_id, "failed to upsert law entry before harvest");
+    }
+    if let Err(e) = law_status::update_status(pool, &job.law_id, LawStatusValue::Harvesting).await {
+        tracing::warn!(error = %e, law_id = %job.law_id, "failed to set status to harvesting");
+    }
 
     // Execute the harvest
-    match execute_and_commit(pool, repo, config, &payload, &job).await {
+    match execute_and_commit(repo, config, &payload, &job).await {
         Ok(result) => {
             tracing::info!(
                 job_id = %job.id,
@@ -153,7 +157,6 @@ async fn process_next_job(
 
 /// Execute the harvest and commit results to git.
 async fn execute_and_commit(
-    _pool: &PgPool,
     repo: &GitRepo,
     config: &WorkerConfig,
     payload: &HarvestPayload,

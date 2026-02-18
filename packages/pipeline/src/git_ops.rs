@@ -46,10 +46,10 @@ impl GitRepo {
 
     /// Commit staged changes. Returns `false` if there was nothing to commit.
     pub async fn commit(&self, message: &str) -> Result<bool> {
-        // Check if there are staged changes
-        let output = run_git(&self.path, &["status", "--porcelain"]).await?;
-        if output.trim().is_empty() {
-            tracing::debug!("nothing to commit");
+        // Check if there are staged changes (exit 0 = no diff, exit 1 = has diff)
+        let has_staged = has_staged_changes(&self.path).await?;
+        if !has_staged {
+            tracing::debug!("nothing staged to commit");
             return Ok(false);
         }
         run_git(&self.path, &["commit", "-m", message]).await?;
@@ -70,6 +70,23 @@ impl GitRepo {
     pub fn path(&self) -> &Path {
         &self.path
     }
+}
+
+/// Check if there are staged changes in the index.
+/// Returns `true` if there are changes staged for commit.
+async fn has_staged_changes(repo_path: &Path) -> Result<bool> {
+    let output = Command::new("git")
+        .args(["diff", "--cached", "--quiet"])
+        .current_dir(repo_path)
+        .output()
+        .await
+        .map_err(|e| PipelineError::Git {
+            message: format!("failed to execute git: {e}"),
+            stderr: String::new(),
+        })?;
+
+    // exit 0 = no differences (nothing staged), exit 1 = differences exist (has staged changes)
+    Ok(!output.status.success())
 }
 
 /// Execute a git command in the given directory and return stdout.

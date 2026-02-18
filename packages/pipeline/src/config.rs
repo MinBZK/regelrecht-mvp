@@ -82,8 +82,8 @@ impl WorkerConfig {
 
         let push_to_git = std::env::var("FEATURE_PUSH_TO_GIT")
             .ok()
-            .map(|v| v != "false" && v != "0")
-            .unwrap_or(true);
+            .map(|v| v == "true" || v == "1")
+            .unwrap_or(false);
 
         Ok(Self {
             database_url,

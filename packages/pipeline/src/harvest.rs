@@ -50,19 +50,20 @@ pub async fn execute_harvest(
     repo_path: &Path,
     output_base: &str,
 ) -> Result<(HarvestResult, Vec<PathBuf>)> {
-    let bwb_id = payload.bwb_id.clone();
-    let date = payload
+    let effective_date = payload
         .date
         .clone()
         .unwrap_or_else(|| Utc::now().format("%Y-%m-%d").to_string());
+    let bwb_id = payload.bwb_id.clone();
+    let date_for_download = effective_date.clone();
     let max_size_mb = payload.max_size_mb;
 
     // Download the law using the harvester crate (blocking HTTP)
     let law = tokio::task::spawn_blocking(move || {
         if let Some(max_mb) = max_size_mb {
-            regelrecht_harvester::download_law_with_max_size(&bwb_id, &date, max_mb)
+            regelrecht_harvester::download_law_with_max_size(&bwb_id, &date_for_download, max_mb)
         } else {
-            regelrecht_harvester::download_law(&bwb_id, &date)
+            regelrecht_harvester::download_law(&bwb_id, &date_for_download)
         }
     })
     .await??;
@@ -73,12 +74,6 @@ pub async fn execute_harvest(
     let article_count = law.articles.len();
     let warning_count = law.warning_count();
     let warnings = law.warnings.clone();
-
-    // Determine the effective date for file naming
-    let effective_date = payload
-        .date
-        .clone()
-        .unwrap_or_else(|| Utc::now().format("%Y-%m-%d").to_string());
 
     // Save the law YAML using the harvester's writer
     let output_base_path = repo_path.join(output_base);
