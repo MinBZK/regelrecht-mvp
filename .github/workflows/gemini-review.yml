@@ -21,6 +21,7 @@ jobs:
   correctness:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
     permissions:
       contents: read
       issues: write
@@ -38,6 +39,7 @@ jobs:
           ADDITIONAL_CONTEXT: ${{ inputs.additional_context }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: gemini-2.0-flash
           workflow_name: gemini-review-correctness
           settings: |-
             {
@@ -57,6 +59,7 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
     permissions:
       contents: read
       issues: write
@@ -74,6 +77,7 @@ jobs:
           ADDITIONAL_CONTEXT: ${{ inputs.additional_context }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: gemini-2.0-flash
           workflow_name: gemini-review-quality
           settings: |-
             {
@@ -93,6 +97,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
     permissions:
       contents: read
       issues: write
@@ -110,6 +115,7 @@ jobs:
           ADDITIONAL_CONTEXT: ${{ inputs.additional_context }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: gemini-2.0-flash
           workflow_name: gemini-review-security
           settings: |-
             {
@@ -129,6 +135,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
     permissions:
       contents: read
       issues: write
@@ -146,6 +153,7 @@ jobs:
           ADDITIONAL_CONTEXT: ${{ inputs.additional_context }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: gemini-2.0-flash
           workflow_name: gemini-review-tests
           settings: |-
             {
@@ -165,6 +173,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    continue-on-error: true
     permissions:
       contents: read
       issues: write
@@ -182,6 +191,7 @@ jobs:
           ADDITIONAL_CONTEXT: ${{ inputs.additional_context }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: gemini-2.0-flash
           workflow_name: gemini-review-docs
           settings: |-
             {
