@@ -1,16 +1,161 @@
-zorgtoeslagwet (2025-01-01 {bsn: 999993653, heeft_toeslagpartner: false, vermogen: 0} hoogte_zorgtoeslag)
+zorgtoeslagwet (2025-01-01 {bsn: 999993653} hoogte_zorgtoeslag)
 ║──Evaluating rules for zorgtoeslagwet (hoogte_zorgtoeslag)
-║   ├──Resolving $LEEFTIJD
-║   │   ├──Resolving from DATA_SOURCE: 20
-║   ├──Resolving $IS_VERZEKERDE
-║   │   ├──Resolving from DATA_SOURCE: True
-║   ├──Resolving $TOETSINGSINKOMEN
-║   │   ├──Resolving from DATA_SOURCE: 79547
+║   ├──URI call: wet_basisregistratie_personen#leeftijd
+║   ║   ├──Resolving $BSN
+║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ├──Resolving $GEBOORTEDATUM
+║   ║   │   ├──Resolving from DATA_SOURCE: '2005-01-01'
+║   ║   ├──Computing leeftijd
+║   ║   │   ├──Compute SUBTRACTDATE(...) = 20
+║   ║   │   │   ├──Resolving $REFERENCEDATE
+║   ║   │   │   │   ├──Resolving from CONTEXT: {'day': 1, 'iso': '2025-01-01', 'month': 1, 'year': 2025}
+║   ║   │   │   ├──Resolving $GEBOORTEDATUM
+║   ║   │   │   │   ├──Resolving from PARAMETERS: '2005-01-01'
+║   ║   ├──Result of leeftijd: 20
+║   ├──URI call: zorgverzekeringswet#is_verzekerd
+║   ║   ├──Resolving $BSN
+║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ├──Resolving $POLIS_STATUS
+║   ║   │   ├──Resolving from DATA_SOURCE: 'ACTIEF'
+║   ║   ├──URI call: penitentiaire_beginselenwet#is_gedetineerd
+║   ║   ║   ├──Resolving $BSN
+║   ║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ║   ├──Resolving $DETENTIESTATUS
+║   ║   ║   │   ├──Resolving from DATA_SOURCE: None
+║   ║   ║   ├──Resolving $INRICHTING_TYPE
+║   ║   ║   │   ├──Resolving from DATA_SOURCE: None
+║   ║   ║   ├──Computing is_gedetineerd
+║   ║   ║   │   ├──Compute AND(...) = False
+║   ║   ║   │   │   ├──Compute IN(...) = False
+║   ║   ║   │   │   │   ├──Resolving $INRICHTING_TYPE
+║   ║   ║   │   │   │   │   ├──Resolving from PARAMETERS: None
+║   ║   ║   │   │   │   ├──Resolving $GELDIGE_INRICHTINGSTYPEN
+║   ║   ║   │   │   │   │   ├──Resolving from DEFINITION: ['PENITENTIAIRE_INRICHTING', 'HUIS_VAN_BEWARING']
+║   ║   ║   ├──Result of is_gedetineerd: False
+║   ║   ├──Computing is_verzekerd
+║   ║   │   ├──Compute AND(...) = True
+║   ║   │   │   ├──Compute IN(...) = True
+║   ║   │   │   │   ├──Resolving $POLIS_STATUS
+║   ║   │   │   │   │   ├──Resolving from PARAMETERS: 'ACTIEF'
+║   ║   │   │   │   ├──Resolving $ACTIEVE_POLIS_STATUSSEN
+║   ║   │   │   │   │   ├──Resolving from DEFINITION: ['ACTIEF', 'GESCHORST_MET_TERUGWERKENDE_KRACHT']
+║   ║   │   │   ├──Compute NOTEQUALS(...) = True
+║   ║   │   │   │   ├──Resolving $IS_GEDETINEERD
+║   ║   │   │   │   │   ├──Resolving from PARAMETERS: False
+║   ║   ├──Result of is_verzekerd: True
+║   ├──URI call: algemene_wet_inkomensafhankelijke_regelingen#heeft_toeslagpartner
+║   ║   ├──Resolving $BSN
+║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ├──Resolving $PARTNERSCHAP_TYPE
+║   ║   │   ├──Resolving from DATA_SOURCE: 'GEEN'
+║   ║   ├──Computing heeft_toeslagpartner
+║   ║   │   ├──Compute IN(...) = False
+║   ║   │   │   ├──Resolving $PARTNERSCHAP_TYPE
+║   ║   │   │   │   ├──Resolving from PARAMETERS: 'GEEN'
+║   ║   │   │   ├──Resolving $GELDIGE_PARTNERTYPEN
+║   ║   │   │   │   ├──Resolving from DEFINITION: ['HUWELIJK', 'GEREGISTREERD_PARTNERSCHAP']
+║   ║   ├──Result of heeft_toeslagpartner: False
+║   ├──URI call: algemene_wet_inkomensafhankelijke_regelingen#toetsingsinkomen
+║   ║   ├──Resolving $BSN
+║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ├──URI call: wet_inkomstenbelasting_2001#toetsingsinkomen
+║   ║   ║   ├──Resolving $BSN
+║   ║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ║   ├──URI call: wet_inkomstenbelasting_2001#box1_inkomen
+║   ║   ║   ║   ├──Resolving $BSN
+║   ║   ║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ║   ║   ├──Resolving $LOON_UIT_DIENSTBETREKKING
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 79547
+║   ║   ║   ║   ├──Resolving $UITKERINGEN_EN_PENSIOENEN
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ║   ║   ├──Resolving $WINST_UIT_ONDERNEMING
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ║   ║   ├──Resolving $RESULTAAT_OVERIGE_WERKZAAMHEDEN
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ║   ║   ├──Resolving $EIGEN_WONING
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ║   ║   ├──Computing box1_inkomen
+║   ║   ║   ║   │   ├──Compute ADD(...) = 79547
+║   ║   ║   ║   │   │   ├──Resolving $LOON_UIT_DIENSTBETREKKING
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 79547
+║   ║   ║   ║   │   │   ├──Resolving $UITKERINGEN_EN_PENSIOENEN
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ║   │   │   ├──Resolving $WINST_UIT_ONDERNEMING
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ║   │   │   ├──Resolving $RESULTAAT_OVERIGE_WERKZAAMHEDEN
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ║   │   │   ├──Resolving $EIGEN_WONING
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ║   ├──Result of box1_inkomen: 79547
+║   ║   ║   ├──URI call: wet_inkomstenbelasting_2001#box2_inkomen
+║   ║   ║   ║   ├──Resolving $BSN
+║   ║   ║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ║   ║   ├──Resolving $REGULIERE_VOORDELEN
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ║   ║   ├──Resolving $VERVREEMDINGSVOORDELEN
+║   ║   ║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ║   ║   ├──Computing box2_inkomen
+║   ║   ║   ║   │   ├──Compute ADD(...) = 0
+║   ║   ║   ║   │   │   ├──Resolving $REGULIERE_VOORDELEN
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ║   │   │   ├──Resolving $VERVREEMDINGSVOORDELEN
+║   ║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ║   ├──Result of box2_inkomen: 0
+║   ║   ║   ├──Computing toetsingsinkomen
+║   ║   ║   │   ├──Compute ADD(...) = 79547
+║   ║   ║   │   │   ├──Resolving $BOX1_INKOMEN
+║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 79547
+║   ║   ║   │   │   ├──Resolving $BOX2_INKOMEN
+║   ║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ║   ├──Result of toetsingsinkomen: 79547
+║   ║   ├──Computing toetsingsinkomen
+║   ║   │   ├──Compute ADD(...) = 79547
+║   ║   │   │   ├──Resolving $VERZAMELINKOMEN
+║   ║   │   │   │   ├──Resolving from PARAMETERS: 79547
+║   ║   ├──Result of toetsingsinkomen: 79547
 ║   ├──URI call: regeling_standaardpremie#standaardpremie
 ║   ║   ├──Computing standaardpremie
 ║   ║   ├──Result of standaardpremie: 211200
 ║   ║   ├──Computing berekeningsjaar
 ║   ║   ├──Result of berekeningsjaar: 2025
+║   ├──URI call: wet_inkomstenbelasting_2001#rendementsgrondslag
+║   ║   ├──Resolving $BSN
+║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ├──Resolving $SPAARGELD
+║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ├──Resolving $BELEGGINGEN
+║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ├──Resolving $ONROEREND_GOED
+║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ├──Resolving $SCHULDEN
+║   ║   │   ├──Resolving from DATA_SOURCE: 0
+║   ║   ├──Computing rendementsgrondslag
+║   ║   │   ├──Compute SUBTRACT(...) = 0
+║   ║   │   │   ├──Compute ADD(...) = 0
+║   ║   │   │   │   ├──Resolving $SPAARGELD
+║   ║   │   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   │   │   │   ├──Resolving $BELEGGINGEN
+║   ║   │   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   │   │   │   ├──Resolving $ONROEREND_GOED
+║   ║   │   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   │   │   ├──Resolving $SCHULDEN
+║   ║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   ║   ├──Result of rendementsgrondslag: 0
+║   ├──URI call: algemene_wet_inkomensafhankelijke_regelingen#heeft_toeslagpartner
+║   ║   ├──Resolving $BSN
+║   ║   │   ├──Resolving from PARAMETERS: '999993653'
+║   ║   ├──CACHED: algemene_wet_inkomensafhankelijke_regelingen#heeft_toeslagpartner: False
+║   ├──Computing vermogen_onder_grens
+║   │   ├──Compute LESSTHANOREQUAL(...) = True
+║   │   │   ├──Resolving $VERMOGEN
+║   │   │   │   ├──Resolving from PARAMETERS: 0
+║   │   │   ├──Compute IF(...) = 14189600
+║   │   │   │   ├──Compute EQUALS(...) = False
+║   │   │   │   │   ├──Resolving $HEEFT_TOESLAGPARTNER
+║   │   │   │   │   │   ├──Resolving from PARAMETERS: False
+║   │   │   │   ├──Resolving $VERMOGENSGRENS_ALLEENSTAAND
+║   │   │   │   │   ├──Resolving from DEFINITION: 14189600
+║   ├──Result of vermogen_onder_grens: True
 ║   ├──Computing hoogte_zorgtoeslag
 ║   │   ├──Compute MAX(...) = 209691.78888
 ║   │   │   ├──Compute SUBTRACT(...) = 209691.78888
@@ -54,7 +199,7 @@ zorgtoeslagwet (2025-01-01 {bsn: 999993653, heeft_toeslagpartner: false, vermoge
 ║   │   │   │   │   ├──Resolving from PARAMETERS: True
 ║   │   │   ├──Compute EQUALS(...) = True
 ║   │   │   │   ├──Resolving $VERMOGEN_ONDER_GRENS
-║   │   │   │   │   ├──Resolving from RESOLVED_INPUT: True
+║   │   │   │   │   ├──Resolving from PARAMETERS: True
 ║   │   │   ├──Compute GREATERTHAN(...) = True
 ║   │   │   │   ├──Resolving $HOOGTE_ZORGTOESLAG
 ║   │   │   │   │   ├──Resolving from OUTPUT: 209691.78888

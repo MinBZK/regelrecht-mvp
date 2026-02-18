@@ -68,6 +68,8 @@ struct ResolutionContext<'a> {
     depth: usize,
     /// Optional shared trace builder
     trace: Option<Rc<RefCell<TraceBuilder>>>,
+    /// Per-execution memoization cache: canonical key → outputs map
+    cache: HashMap<String, HashMap<String, Value>>,
 }
 
 impl<'a> ResolutionContext<'a> {
@@ -78,6 +80,7 @@ impl<'a> ResolutionContext<'a> {
             visited: HashSet::new(),
             depth: 0,
             trace: None,
+            cache: HashMap::new(),
         }
     }
 
@@ -88,6 +91,7 @@ impl<'a> ResolutionContext<'a> {
             visited: HashSet::new(),
             depth: 0,
             trace: Some(trace),
+            cache: HashMap::new(),
         }
     }
 
@@ -112,6 +116,18 @@ impl<'a> ResolutionContext<'a> {
     fn is_visited(&self, key: &str) -> bool {
         self.visited.contains(key)
     }
+}
+
+/// Build a deterministic cache key from law_id, output_name, and parameters.
+fn cache_key(law_id: &str, output_name: &str, params: &HashMap<String, Value>) -> String {
+    let mut sorted: Vec<_> = params.iter().collect();
+    sorted.sort_by_key(|(k, _)| k.as_str());
+    let params_str: String = sorted
+        .iter()
+        .map(|(k, v)| format!("{}={:?}", k, v))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("{}#{}({})", law_id, output_name, params_str)
 }
 
 /// Reference to a delegation source for resolution.
@@ -382,6 +398,28 @@ impl LawExecutionService {
         parameters: HashMap<String, Value>,
         res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
+        // --- Cache check (before depth check: cached results don't increase depth) ---
+        let key = cache_key(law_id, output_name, &parameters);
+        if let Some(cached_outputs) = res_ctx.cache.get(&key) {
+            tracing::debug!(law_id, output_name, "Cache hit");
+            if let Some(ref tb) = res_ctx.trace {
+                let mut tb = tb.borrow_mut();
+                tb.push(format!("{}#{}", law_id, output_name), PathNodeType::Cached);
+                if let Some(val) = cached_outputs.get(output_name) {
+                    tb.set_result(val.clone());
+                }
+                tb.pop();
+            }
+            return Ok(ArticleResult {
+                outputs: cached_outputs.clone(),
+                resolved_inputs: HashMap::new(),
+                article_number: String::new(),
+                law_id: law_id.to_string(),
+                law_uuid: None,
+                trace: None,
+            });
+        }
+
         tracing::debug!(
             law_id = %law_id,
             output = %output_name,
@@ -422,7 +460,18 @@ impl LawExecutionService {
             })?;
 
         // Execute with service provider
-        self.evaluate_article_with_service(article, law, parameters, Some(output_name), res_ctx)
+        let result = self.evaluate_article_with_service(
+            article,
+            law,
+            parameters,
+            Some(output_name),
+            res_ctx,
+        )?;
+
+        // --- Cache store (only on success) ---
+        res_ctx.cache.insert(key, result.outputs.clone());
+
+        Ok(result)
     }
 
     /// Execute an article with ServiceProvider support.
@@ -448,7 +497,7 @@ impl LawExecutionService {
         }
 
         // Resolve inputs with sources using ServiceProvider
-        self.resolve_inputs_with_service(article, &mut context, &parameters, res_ctx)?;
+        self.resolve_inputs_with_service(article, law, &mut context, &parameters, res_ctx)?;
 
         // Pre-resolve any resolve actions in this article
         let resolved_actions = self.pre_resolve_actions(article, law, &context, res_ctx)?;
@@ -716,6 +765,7 @@ impl LawExecutionService {
     fn resolve_inputs_with_service(
         &self,
         article: &Article,
+        law: &ArticleBasedLaw,
         context: &mut RuleContext,
         parameters: &HashMap<String, Value>,
         res_ctx: &mut ResolutionContext<'_>,
@@ -760,6 +810,9 @@ impl LawExecutionService {
                 }
             }
 
+            // For cross-law/delegation resolution, output defaults to input name
+            let output_name = source.output.as_deref().unwrap_or(&input.name);
+
             if let Some(delegation) = &source.delegation {
                 // Delegation reference
                 let (del_law_id, del_article, select_on) = get_delegation_info(delegation);
@@ -771,7 +824,7 @@ impl LawExecutionService {
 
                 let value = self.resolve_delegation_input_internal(
                     &del_ref,
-                    &source.output,
+                    output_name,
                     source.parameters.as_ref(),
                     context,
                     res_ctx,
@@ -782,17 +835,40 @@ impl LawExecutionService {
                 // External reference
                 let value = self.resolve_external_input_internal(
                     regulation,
-                    &source.output,
+                    output_name,
                     source.parameters.as_ref(),
                     context,
                     res_ctx,
                 )?;
 
                 context.set_resolved_input(&input.name, value);
+            } else if source.output.is_some() {
+                // Internal reference (same-law) with output specified.
+                // Resolve through the service layer so cross-law inputs of the
+                // referenced article are properly handled.
+                let ref_article = law.find_article_by_output(output_name).ok_or_else(|| {
+                    EngineError::OutputNotFound {
+                        law_id: law.id.clone(),
+                        output: output_name.to_string(),
+                    }
+                })?;
+
+                let ref_params = parameters.clone();
+                let result = self.evaluate_article_with_service(
+                    ref_article,
+                    law,
+                    ref_params,
+                    Some(output_name),
+                    res_ctx,
+                )?;
+
+                if let Some(value) = result.outputs.get(output_name) {
+                    context.set_resolved_input(&input.name, value.clone());
+                }
             } else {
-                // Internal reference - handled by ArticleEngine
-                // We don't resolve these here because ArticleEngine handles them
-                // with proper circular reference detection within the same law
+                // Empty source (source: {}) — resolved from DataSourceRegistry only.
+                // If DataSourceRegistry didn't match above, leave unresolved
+                // (engine will use null/default).
             }
         }
 

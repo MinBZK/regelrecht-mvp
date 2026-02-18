@@ -78,6 +78,30 @@ articles:
       ingevolge het eerste lid, onderdeel c, tegelijkertijd meer dan één persoon als partner wordt aangemerkt, wijst de
       belanghebbende bij de aanvraag van de tegemoetkoming een van deze personen aan als partner.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel3
+    machine_readable:
+      definitions:
+        geldige_partnertypen:
+          value:
+            - HUWELIJK
+            - GEREGISTREERD_PARTNERSCHAP
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        input:
+          - name: partnerschap_type
+            type: string
+            source: {}
+        output:
+          - name: heeft_toeslagpartner
+            type: boolean
+        actions:
+          - output: heeft_toeslagpartner
+            value:
+              operation: IN
+              subject: $partnerschap_type
+              value: $geldige_partnertypen
   - number: Artikel 4
     text: |-
       Artikel 4. Kind 1. Kind is de bloedverwant of aanverwant in de neergaande lijn van de belanghebbende of zijn
@@ -164,6 +188,31 @@ articles:
       jaarinkomen. 7. Bij ministeriële regeling kunnen nadere regels worden gesteld voor de toepassing van het vierde tot
       en met het zesde lid.
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel8
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        input:
+          - name: verzamelinkomen
+            type: number
+            source:
+              regulation: wet_inkomstenbelasting_2001
+              output: toetsingsinkomen
+              parameters:
+                bsn: $bsn
+        output:
+          - name: toetsingsinkomen
+            type: amount
+            type_spec:
+              unit: eurocent
+        actions:
+          - output: toetsingsinkomen
+            operation: ADD
+            values:
+              - $verzamelinkomen
+              - 0
   - number: Artikel 9
     text: |-
       Artikel 9. Wijziging status vreemdelingen; partner of medebewoner is vreemdeling 1. Indien aan een vreemdeling
@@ -614,47 +663,3 @@ articles:
         actions:
           - output: wet_naam
             value: Algemene wet inkomensafhankelijke regelingen
-  - number: API-1
-    text: |-
-      SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining whether a person
-      has a toeslagpartner (benefit partner) as defined in the AWIR. A toeslagpartner is typically a spouse or registered
-      partner with whom the person shares a household for tax and benefit purposes. NOTE: This is not part of the
-      original AWIR text, but provides programmatic access to partnership status for other laws that need this
-      information.
-    url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#API-1
-    machine_readable:
-      execution:
-        parameters:
-          - name: bsn
-            type: string
-            required: true
-            description: Burgerservicenummer van de persoon
-        output:
-          - name: heeft_toeslagpartner
-            type: boolean
-            description: Geeft aan of de persoon een toeslagpartner heeft
-        actions:
-          - output: heeft_toeslagpartner
-            value: false
-  - number: API-2
-    text: |-
-      SYNTHETIC ARTICLE - API Endpoint This article provides a machine-readable endpoint for determining the
-      toetsingsinkomen (assessment income) of a person based on their BSN. The toetsingsinkomen is defined in Article 8.
-      of the AWIR as the verzamelinkomen (aggregate income) from the Wet inkomstenbelasting 2001, used to calculate
-      income-dependent benefits and allowances. NOTE: This is not part of the original AWIR text, but provides
-      programmatic access to income data for other laws that need this information.
-    url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#API-2
-    machine_readable:
-      execution:
-        parameters:
-          - name: bsn
-            type: string
-            required: true
-            description: Burgerservicenummer van de persoon
-        output:
-          - name: toetsingsinkomen
-            type: amount
-            description: Toetsingsinkomen in eurocent
-        actions:
-          - output: toetsingsinkomen
-            value: 0

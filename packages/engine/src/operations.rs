@@ -701,6 +701,31 @@ fn execute_not_null<R: ValueResolver>(
 // Membership Testing Operations
 // =============================================================================
 
+/// Resolve the membership check values from an operation.
+///
+/// Supports both `values: [...]` (inline list) and `value: $list_ref` (reference to a
+/// definition list). When `value` resolves to a non-array, it is wrapped in a single-element vec.
+fn resolve_membership_values<R: ValueResolver>(
+    op: &ActionOperation,
+    op_name: &str,
+    resolver: &R,
+    depth: usize,
+) -> Result<Vec<Value>> {
+    if let Some(values) = &op.values {
+        evaluate_values(values, resolver, depth)
+    } else if let Some(value) = &op.value {
+        let resolved = evaluate_value(value, resolver, depth)?;
+        match resolved {
+            Value::Array(items) => Ok(items),
+            other => Ok(vec![other]),
+        }
+    } else {
+        Err(EngineError::InvalidOperation(format!(
+            "{op_name} requires 'values' or 'value'"
+        )))
+    }
+}
+
 /// Execute IN operation: returns true if subject is in the values list.
 ///
 /// Uses Python-style numeric coercion for equality comparison.
@@ -709,12 +734,11 @@ fn execute_in<R: ValueResolver>(op: &ActionOperation, resolver: &R, depth: usize
         .subject
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("IN requires 'subject'".to_string()))?;
-    let values = get_values(op)?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
-    let evaluated_values = evaluate_values(values, resolver, depth)?;
+    let check_values = resolve_membership_values(op, "IN", resolver, depth)?;
 
-    for val in &evaluated_values {
+    for val in &check_values {
         if values_equal(&subject_val, val) {
             return Ok(Value::Bool(true));
         }
@@ -735,12 +759,11 @@ fn execute_not_in<R: ValueResolver>(
         .subject
         .as_ref()
         .ok_or_else(|| EngineError::InvalidOperation("NOT_IN requires 'subject'".to_string()))?;
-    let values = get_values(op)?;
 
     let subject_val = evaluate_value(subject, resolver, depth)?;
-    let evaluated_values = evaluate_values(values, resolver, depth)?;
+    let check_values = resolve_membership_values(op, "NOT_IN", resolver, depth)?;
 
-    for val in &evaluated_values {
+    for val in &check_values {
         if values_equal(&subject_val, val) {
             return Ok(Value::Bool(false));
         }
@@ -821,6 +844,22 @@ fn parse_date(value: &Value) -> Result<NaiveDate> {
                 s, e
             ))
         }),
+        // Handle referencedate objects with {iso, year, month, day}
+        Value::Object(obj) => {
+            if let Some(Value::String(iso)) = obj.get("iso") {
+                NaiveDate::parse_from_str(iso, "%Y-%m-%d").map_err(|e| {
+                    EngineError::InvalidOperation(format!(
+                        "Failed to parse date '{}': {}. Expected format: YYYY-MM-DD",
+                        iso, e
+                    ))
+                })
+            } else {
+                Err(EngineError::TypeMismatch {
+                    expected: "date string (YYYY-MM-DD) or object with 'iso' field".to_string(),
+                    actual: format!("{:?}", value),
+                })
+            }
+        }
         _ => Err(EngineError::TypeMismatch {
             expected: "date string (YYYY-MM-DD)".to_string(),
             actual: format!("{:?}", value),
@@ -3280,6 +3319,66 @@ mod tests {
             let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Int(4));
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // parse_date Tests (Object input)
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_subtract_date_with_object_subject() {
+        // Simulates $referencedate resolving to {iso: "2025-01-01", year: 2025, month: 1, day: 1}
+        let mut date_obj = HashMap::new();
+        date_obj.insert("iso".to_string(), Value::String("2025-01-01".to_string()));
+        date_obj.insert("year".to_string(), Value::Int(2025));
+        date_obj.insert("month".to_string(), Value::Int(1));
+        date_obj.insert("day".to_string(), Value::Int(1));
+
+        let resolver = TestResolver::new()
+            .with_var("referencedate", Value::Object(date_obj))
+            .with_var("geboortedatum", Value::String("2005-01-01".to_string()));
+
+        let op = ActionOperation {
+            operation: Operation::SubtractDate,
+            subject: Some(var("referencedate")),
+            value: Some(var("geboortedatum")),
+            values: None,
+            when: None,
+            then: None,
+            else_branch: None,
+            conditions: None,
+            cases: None,
+            default: None,
+            unit: Some("years".to_string()),
+        };
+
+        let result = execute_operation(&op, &resolver, 0).unwrap();
+        assert_eq!(result, Value::Int(20));
+    }
+
+    #[test]
+    fn test_subtract_date_object_without_iso_field() {
+        let mut date_obj = HashMap::new();
+        date_obj.insert("year".to_string(), Value::Int(2025));
+
+        let resolver = TestResolver::new().with_var("bad_date", Value::Object(date_obj));
+
+        let op = ActionOperation {
+            operation: Operation::SubtractDate,
+            subject: Some(var("bad_date")),
+            value: Some(lit("2020-01-01")),
+            values: None,
+            when: None,
+            then: None,
+            else_branch: None,
+            conditions: None,
+            cases: None,
+            default: None,
+            unit: Some("years".to_string()),
+        };
+
+        let result = execute_operation(&op, &resolver, 0);
+        assert!(matches!(result, Err(EngineError::TypeMismatch { .. })));
     }
 
     // -------------------------------------------------------------------------

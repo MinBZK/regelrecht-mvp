@@ -165,6 +165,7 @@ impl PathNode {
             PathNodeType::UriCall => "uri_call",
             PathNodeType::Article => "article",
             PathNodeType::Delegation => "delegation",
+            PathNodeType::Cached => "cached",
         };
 
         // Build the main line
@@ -424,6 +425,15 @@ impl PathNode {
                     child.render_box_node(lines, &child_prefix);
                 }
             }
+
+            PathNodeType::Cached => {
+                let result_str = self
+                    .result
+                    .as_ref()
+                    .map(|v| format!(": {}", format_value_display(v)))
+                    .unwrap_or_default();
+                lines.push(format!("{}├──CACHED: {}{}", prefix, self.name, result_str));
+            }
         }
     }
 
@@ -437,6 +447,7 @@ impl PathNode {
             PathNodeType::UriCall => "uri",
             PathNodeType::Article => "art",
             PathNodeType::Delegation => "del",
+            PathNodeType::Cached => "cache",
         };
 
         let result_str = self
@@ -513,9 +524,11 @@ fn format_value_display(value: &Value) -> String {
             format!("[{}]", items.join(", "))
         }
         Value::Object(obj) => {
-            let items: Vec<String> = obj
+            let mut keys: Vec<&String> = obj.keys().collect();
+            keys.sort();
+            let items: Vec<String> = keys
                 .iter()
-                .map(|(k, v)| format!("'{}': {}", k, format_value_display(v)))
+                .map(|k| format!("'{}': {}", k, format_value_display(&obj[k.as_str()])))
                 .collect();
             format!("{{{}}}", items.join(", "))
         }

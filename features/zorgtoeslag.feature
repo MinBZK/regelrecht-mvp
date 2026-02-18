@@ -31,5 +31,8 @@ Feature: Healthcare allowance calculation
     And the following BELASTINGDIENST "box3" data:
       | bsn       | spaargeld | beleggingen | onroerend_goed | schulden |
       | 999993653 | 0         | 0           | 0              | 0        |
+    And the following DJI "detenties" data:
+      | bsn       | detentiestatus | inrichting_type |
+      | 999993653 | null           | null            |
     When the healthcare allowance law is executed
     Then the allowance amount is "2096.92" euro

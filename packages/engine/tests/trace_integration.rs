@@ -43,23 +43,79 @@ fn load_all_regulations(service: &mut LawExecutionService) -> Result<usize, Stri
     Ok(count)
 }
 
+/// Helper to create a record HashMap from key-value pairs.
+fn record(entries: Vec<(&str, Value)>) -> HashMap<String, Value> {
+    entries
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect()
+}
+
 /// Set up a service with all regulations loaded and zorgtoeslag data registered.
 fn setup_zorgtoeslag_service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
     load_all_regulations(&mut service).expect("Failed to load regulations");
 
-    // Register derived data for zorgtoeslag Article 2 inputs.
-    // This mirrors the BDD step `execute_healthcare_allowance`.
-    let mut derived_record: HashMap<String, Value> = HashMap::new();
-    derived_record.insert("bsn".to_string(), Value::String("999993653".to_string()));
-    derived_record.insert("leeftijd".to_string(), Value::Int(20));
-    derived_record.insert("is_verzekerde".to_string(), Value::Bool(true));
-    derived_record.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
-    derived_record.insert("toetsingsinkomen".to_string(), Value::Int(79547));
+    // Register raw data sources (matching BDD scenario data)
+    let personal = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("geboortedatum", Value::String("2005-01-01".to_string())),
+    ]);
+    let relationship = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("partnerschap_type", Value::String("GEEN".to_string())),
+    ]);
+    let insurance = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("polis_status", Value::String("ACTIEF".to_string())),
+    ]);
+    let box1 = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("loon_uit_dienstbetrekking", Value::Int(79547)),
+        ("uitkeringen_en_pensioenen", Value::Int(0)),
+        ("winst_uit_onderneming", Value::Int(0)),
+        ("resultaat_overige_werkzaamheden", Value::Int(0)),
+        ("eigen_woning", Value::Int(0)),
+    ]);
+    let box2 = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("reguliere_voordelen", Value::Int(0)),
+        ("vervreemdingsvoordelen", Value::Int(0)),
+    ]);
+    let box3 = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("spaargeld", Value::Int(0)),
+        ("beleggingen", Value::Int(0)),
+        ("onroerend_goed", Value::Int(0)),
+        ("schulden", Value::Int(0)),
+    ]);
+    let detenties = record(vec![
+        ("bsn", Value::String("999993653".to_string())),
+        ("detentiestatus", Value::Null),
+        ("inrichting_type", Value::Null),
+    ]);
 
     service
-        .register_dict_source("derived_zorgtoeslag_inputs", "bsn", vec![derived_record])
-        .expect("Failed to register derived data source");
+        .register_dict_source("personal_data", "bsn", vec![personal])
+        .expect("Failed to register personal_data");
+    service
+        .register_dict_source("relationship_data", "bsn", vec![relationship])
+        .expect("Failed to register relationship_data");
+    service
+        .register_dict_source("insurance", "bsn", vec![insurance])
+        .expect("Failed to register insurance");
+    service
+        .register_dict_source("box1", "bsn", vec![box1])
+        .expect("Failed to register box1");
+    service
+        .register_dict_source("box2", "bsn", vec![box2])
+        .expect("Failed to register box2");
+    service
+        .register_dict_source("box3", "bsn", vec![box3])
+        .expect("Failed to register box3");
+    service
+        .register_dict_source("detenties", "bsn", vec![detenties])
+        .expect("Failed to register detenties");
 
     service
 }
@@ -70,8 +126,6 @@ fn test_zorgtoeslag_trace_output_format() {
 
     let mut params = HashMap::new();
     params.insert("bsn".to_string(), Value::String("999993653".to_string()));
-    params.insert("vermogen".to_string(), Value::Int(0));
-    params.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
 
     let result = service
         .evaluate_law_output_with_trace(
@@ -113,8 +167,6 @@ fn test_zorgtoeslag_trace_result_matches_non_trace() {
 
     let mut params = HashMap::new();
     params.insert("bsn".to_string(), Value::String("999993653".to_string()));
-    params.insert("vermogen".to_string(), Value::Int(0));
-    params.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
 
     // Execute with trace
     let traced_result = service
@@ -144,8 +196,6 @@ fn test_trace_disabled_by_default() {
 
     let mut params = HashMap::new();
     params.insert("bsn".to_string(), Value::String("999993653".to_string()));
-    params.insert("vermogen".to_string(), Value::Int(0));
-    params.insert("heeft_toeslagpartner".to_string(), Value::Bool(false));
 
     // Normal evaluation should not have a trace
     let result = service

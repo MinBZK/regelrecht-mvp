@@ -129,8 +129,10 @@ pub struct Source {
     /// Delegation specification for complex cross-law lookups
     #[serde(default)]
     pub delegation: Option<Delegation>,
-    /// Output field to retrieve from the source
-    pub output: String,
+    /// Output field to retrieve from the source.
+    /// When None (e.g. `source: {}`), the input is resolved from the DataSourceRegistry.
+    #[serde(default)]
+    pub output: Option<String>,
     /// Parameters to pass to the source execution
     #[serde(default)]
     pub parameters: Option<HashMap<String, String>>,
@@ -1087,7 +1089,7 @@ articles:
 
         let source = inputs[0].source.as_ref().unwrap();
         assert_eq!(source.regulation, Some("other_law".to_string()));
-        assert_eq!(source.output, "some_output");
+        assert_eq!(source.output, Some("some_output".to_string()));
         assert!(source.parameters.is_some());
     }
 
