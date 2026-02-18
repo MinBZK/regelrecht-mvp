@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "nl-NL"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+
+  path_instructions:
+    - path: "engine/**/*.py"
+      instructions: |
+        This is the core law execution engine. Pay attention to:
+        - Correctness of legal logic interpretation
+        - Type safety and proper error handling
+        - Cross-law reference resolution via regelrecht:// URIs
+        - All code must pass ty type checker
+
+    - path: "regulation/**/*.yaml"
+      instructions: |
+        These are machine-readable Dutch law files. Verify:
+        - Schema compliance with the v0.2.0 JSON schema
+        - Correct use of output names and cross-references
+        - Parameter types match expected values
+        - Legal text should be verbatim from official sources
+
+    - path: "frontend/**"
+      instructions: |
+        Static frontend served via nginx. Check for:
+        - Accessibility (WCAG compliance)
+        - No hardcoded URLs or secrets
+        - Clean HTML/CSS/JS
+
+    - path: "features/**/*.feature"
+      instructions: |
+        Gherkin BDD test files. Ensure:
+        - Scenarios are clear and testable
+        - Given/When/Then steps are well-structured
+        - Edge cases are covered
+
+    - path: ".github/workflows/**"
+      instructions: |
+        CI/CD workflows. Check for:
+        - Security best practices (pinned action versions, minimal permissions)
+        - No secrets in logs
+        - Proper caching and efficiency
+
+chat:
+  auto_reply: true
