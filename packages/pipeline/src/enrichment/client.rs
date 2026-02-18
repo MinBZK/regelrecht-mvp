@@ -45,6 +45,9 @@ pub trait LlmClient: Send + Sync {
 }
 
 /// Anthropic API client implementation.
+///
+/// NOTE: Do NOT derive `Debug` on this struct — `api_key` would be exposed.
+/// If Debug is needed, implement it manually with the key redacted.
 pub struct AnthropicClient {
     http: reqwest::Client,
     api_key: String,

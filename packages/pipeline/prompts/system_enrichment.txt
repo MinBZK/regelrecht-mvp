@@ -55,7 +55,7 @@ machine_readable:
 
 # Operation Types
 
-## Comparison Operations
+## Comparison Operations (for nested use inside `values`, NOT at action level)
 - EQUALS: { operation: "EQUALS", subject: "$var", value: X }
 - NOT_EQUALS: { operation: "NOT_EQUALS", subject: "$var", value: X }
 - GREATER_THAN: { operation: "GREATER_THAN", subject: "$var", value: X }
@@ -65,6 +65,7 @@ machine_readable:
 - IN: { operation: "IN", subject: "$var", value: [list] }
 - NOT_IN: { operation: "NOT_IN", subject: "$var", value: [list] }
 - NOT_NULL: { operation: "NOT_NULL", subject: "$var" }
+Note: These use `subject` which is only valid on nested operations inside `values`, never directly on a top-level action. For comparisons at the action level, use `values` array instead (see Actions below).
 
 ## Arithmetic Operations (use `values` array)
 - ADD: { operation: "ADD", values: ["$a", "$b"] }

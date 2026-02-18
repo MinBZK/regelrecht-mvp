@@ -51,6 +51,12 @@ impl EnrichmentConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(3);
 
+        if max_fix_iterations < 1 {
+            return Err(PipelineError::Config(
+                "LLM_MAX_FIX_ITERATIONS must be at least 1".into(),
+            ));
+        }
+
         let api_base_url = std::env::var("LLM_API_BASE_URL")
             .unwrap_or_else(|_| "https://api.anthropic.com".into());
 
