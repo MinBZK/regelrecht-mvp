@@ -1,11 +1,12 @@
-# cargo-deny configuration
+# cargo-deny configuration (v2)
 # https://embarkstudios.github.io/cargo-deny/
+version = 2
 
 [advisories]
-unmaintained = "workspace"
+# All advisories deny by default in v2
 
 [licenses]
-unlicensed = "deny"
+# Only explicitly allowed licenses are permitted; everything else is denied
 confidence-threshold = 0.93
 allow = [
     "MIT",
