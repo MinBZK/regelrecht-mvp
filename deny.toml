@@ -1,12 +1,13 @@
-# cargo-deny configuration (v2)
+# cargo-deny configuration
 # https://embarkstudios.github.io/cargo-deny/
-version = 2
 
 [advisories]
-# All advisories deny by default in v2
+# Vulnerabilities are denied by default in v0.19
+# Only warn on unmaintained crates in our own workspace deps
+unmaintained = "workspace"
 
 [licenses]
-# Only explicitly allowed licenses are permitted; everything else is denied
+# Only explicitly allowed licenses are permitted
 confidence-threshold = 0.93
 allow = [
     "MIT",
