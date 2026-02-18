@@ -19,6 +19,9 @@
 node_modules/
 frontend/dist/
 
+# Environment
+.env
+
 # Rust
 target/
 **/*.rs.bk
