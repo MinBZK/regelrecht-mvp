@@ -6,6 +6,7 @@ on:
     types:
       - opened
       - synchronize
+      - ready_for_review
   issue_comment:
     types:
       - created
@@ -27,7 +28,8 @@ jobs:
     if: |-
       (
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.draft == false
       ) || (
         github.event.sender.type == 'User' &&
         startsWith(github.event.comment.body || github.event.review.body || '', '@gemini-cli') &&
@@ -53,7 +55,7 @@ jobs:
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST;
 
-            if (eventType === 'pull_request.opened' || eventType === 'pull_request.synchronize') {
+            if (['pull_request.opened', 'pull_request.synchronize', 'pull_request.ready_for_review'].includes(eventType)) {
               core.setOutput('command', 'review');
             } else if (request.startsWith('@gemini-cli /review')) {
               core.setOutput('command', 'review');
