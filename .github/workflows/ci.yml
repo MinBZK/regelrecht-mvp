@@ -4,26 +4,8 @@ name: CI
 on:
   push:
     branches: [main]
-    paths:
-      - packages/engine/**
-      - packages/harvester/**
-      - features/**
-      - regulation/**
-      - schema/**
-      - script/**
-      - .pre-commit-config.yaml
-      - .github/workflows/ci.yml
   pull_request:
     branches: [main]
-    paths:
-      - packages/engine/**
-      - packages/harvester/**
-      - features/**
-      - regulation/**
-      - schema/**
-      - script/**
-      - .pre-commit-config.yaml
-      - .github/workflows/ci.yml
 
 permissions:
   contents: read
@@ -33,16 +15,41 @@ env:
   RUSTFLAGS: -Dwarnings
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ci:
+              - packages/engine/**
+              - packages/harvester/**
+              - features/**
+              - regulation/**
+              - schema/**
+              - script/**
+              - .pre-commit-config.yaml
+              - .github/workflows/ci.yml
+
   protect-schema:
     name: Protect schema versions
+    needs: changes
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+        if: needs.changes.outputs.ci == 'true'
         with:
           fetch-depth: 0
 
       - name: Check for modifications to released schema versions
+        if: needs.changes.outputs.ci == 'true'
         run: |
           # Get list of versioned schema directories that exist on main
           git fetch origin main
@@ -84,20 +91,34 @@ jobs:
 
           echo "Schema protection check passed"
 
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No schema changes, skipping"
+
   pre-commit:
     name: Pre-commit
+    needs: changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.ci == 'true'
 
       - uses: actions/setup-python@v5
+        if: needs.changes.outputs.ci == 'true'
         with:
           python-version: '3.12'
 
       - uses: pre-commit/action@v3.0.1
+        if: needs.changes.outputs.ci == 'true'
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No relevant changes, skipping pre-commit"
 
   check:
     name: Check
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -124,17 +145,18 @@ jobs:
 
   test:
     name: Test
+    needs: changes
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/engine
     steps:
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.ci == 'true'
 
       - name: Install Rust toolchain
+        if: needs.changes.outputs.ci == 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo registry
+        if: needs.changes.outputs.ci == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -146,10 +168,17 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Run tests
-        run: cargo test --all-features
+        if: needs.changes.outputs.ci == 'true'
+        run: cd packages/engine && cargo test --all-features
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No relevant changes, skipping tests"
 
   fmt:
     name: Format
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -167,6 +196,8 @@ jobs:
 
   clippy:
     name: Clippy
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -195,19 +226,20 @@ jobs:
 
   wasm:
     name: WASM Build
+    needs: changes
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/engine
     steps:
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.ci == 'true'
 
       - name: Install Rust toolchain
+        if: needs.changes.outputs.ci == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Cache cargo registry
+        if: needs.changes.outputs.ci == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -219,11 +251,18 @@ jobs:
             ${{ runner.os }}-cargo-wasm-
 
       - name: Build for WASM
-        run: cargo build --target wasm32-unknown-unknown --features wasm
+        if: needs.changes.outputs.ci == 'true'
+        run: cd packages/engine && cargo build --target wasm32-unknown-unknown --features wasm
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No relevant changes, skipping WASM build"
 
   # Harvester CI jobs
   harvester-check:
     name: Harvester Check
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -250,6 +289,8 @@ jobs:
 
   harvester-test:
     name: Harvester Test
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -276,6 +317,8 @@ jobs:
 
   harvester-fmt:
     name: Harvester Format
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -293,6 +336,8 @@ jobs:
 
   harvester-clippy:
     name: Harvester Clippy
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
