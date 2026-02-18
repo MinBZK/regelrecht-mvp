@@ -33,6 +33,3 @@ __pycache__/
 # Gemini CLI
 .gemini/*
 !.gemini/prompts/
-
-# Beads
-.beads/
