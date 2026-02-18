@@ -35,14 +35,40 @@ Laws use `regelrecht://` URIs for cross-references between regulations.
 - Use `pull_request_read.get_diff` for the actual diff
 
 
-## Review Criteria (priority order)
+## Review Criteria
 
-1. **Correctness** - Logic errors, unhandled edge cases, incorrect API usage
-2. **Security** - Injection, insecure data, secrets exposure
-3. **Efficiency** - Performance bottlenecks, unnecessary computation
-4. **Maintainability** - Readability, idiomatic Rust/YAML/HTML, modularity
-5. **Testing** - Adequate test coverage, edge cases in BDD features
-6. **Law-specific** - Correct schema usage, valid cross-law references, proper output definitions
+Review each PR against these categories. Focus your comments on the most impactful issues.
+
+### 1. Functional Correctness (highest priority)
+- Edge cases, foutafhandeling, return types, null checks
+- Logic errors, unhandled error paths
+- Incorrect API usage, type mismatches
+
+### 2. Code Quality & Maintainability
+- Complexity (cyclomatic, cognitive), DRY violations
+- Readability, idiomatic Rust/YAML/HTML
+- Modularity, clear abstractions
+
+### 3. Security (be conservative, allow false positives)
+- Injection, insecure data handling, secrets exposure
+- Flag potential issues even if uncertain — better safe than sorry
+- Suggest tools like semgrep/trivy where relevant
+
+### 4. Test Coverage & Quality (very important)
+- Unit tests AND integration tests should be top notch
+- Tests must serve as anti-regression safety net
+- Check: are edge cases tested? Are error paths tested?
+- Missing tests for new functionality is always worth flagging
+
+### 5. Documentation
+- Check that new features are reflected in docs
+- API changes should update relevant documentation
+- README/CLAUDE.md should stay in sync with code changes
+
+### 6. Law-specific (for regulation/ and engine/ files)
+- Correct schema usage, valid cross-law references
+- Proper output definitions, parameter types
+- regelrecht:// URI correctness
 
 
 ## Severity Levels

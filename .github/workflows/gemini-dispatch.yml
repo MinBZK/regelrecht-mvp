@@ -5,6 +5,7 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
   issue_comment:
     types:
       - created
@@ -52,7 +53,7 @@ jobs:
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST;
 
-            if (eventType === 'pull_request.opened') {
+            if (eventType === 'pull_request.opened' || eventType === 'pull_request.synchronize') {
               core.setOutput('command', 'review');
             } else if (request.startsWith('@gemini-cli /review')) {
               core.setOutput('command', 'review');
