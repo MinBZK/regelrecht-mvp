@@ -35,3 +35,8 @@ harvester-fmt:
 # Validate regulation YAML files
 validate *FILES:
     script/validate.sh {{FILES}}
+
+# Run security audit on all dependencies
+audit:
+    cargo audit
+    cd frontend && npm audit
