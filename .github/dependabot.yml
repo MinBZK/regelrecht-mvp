@@ -2,22 +2,18 @@
 version: 2
 updates:
   - package-ecosystem: cargo
-    directory: /packages/engine
+    directory: /packages
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     labels:
       - dependencies
       - rust
-
-  - package-ecosystem: cargo
-    directory: /packages/harvester
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - rust
+    groups:
+      rust-minor-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend
@@ -27,6 +23,20 @@ updates:
     labels:
       - dependencies
       - javascript
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
 
   - package-ecosystem: github-actions
     directory: /
@@ -36,3 +46,8 @@ updates:
     labels:
       - dependencies
       - github-actions
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch
