@@ -4,5 +4,18 @@
       "Bash(git commit --no-verify:*)",
       "Bash(git commit -n:*)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pre-commit run"
+          }
+        ]
+      }
+    ]
   }
 }
