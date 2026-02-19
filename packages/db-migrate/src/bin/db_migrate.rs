@@ -1,9 +1,14 @@
 use std::env;
 use std::io::Write;
 use std::net::TcpListener;
+use std::time::Duration;
 
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
+
+const MAX_RETRIES: u32 = 10;
+const RETRY_INTERVAL: Duration = Duration::from_secs(3);
+const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tokio::main]
 async fn main() {
@@ -23,17 +28,32 @@ async fn main() {
 
     tracing::info!("connecting to database...");
 
-    let pool = match PgPoolOptions::new()
-        .max_connections(2)
-        .connect(&database_url)
-        .await
-    {
-        Ok(pool) => pool,
-        Err(e) => {
-            tracing::error!(error = %e, "failed to connect to database");
-            std::process::exit(1);
+    let mut pool = None;
+    for attempt in 1..=MAX_RETRIES {
+        match PgPoolOptions::new()
+            .max_connections(2)
+            .acquire_timeout(ACQUIRE_TIMEOUT)
+            .connect(&database_url)
+            .await
+        {
+            Ok(p) => {
+                pool = Some(p);
+                break;
+            }
+            Err(e) => {
+                tracing::warn!(attempt, error = %e, "failed to connect to database, retrying...");
+                if attempt == MAX_RETRIES {
+                    tracing::error!("exhausted all {MAX_RETRIES} connection attempts");
+                    std::process::exit(1);
+                }
+                tokio::time::sleep(RETRY_INTERVAL).await;
+            }
         }
-    };
+    }
+    let pool = pool.unwrap_or_else(|| {
+        tracing::error!("unreachable: no pool after retry loop");
+        std::process::exit(1);
+    });
 
     tracing::info!("running migrations...");
 
