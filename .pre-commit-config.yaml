@@ -17,7 +17,7 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
-        args: [--strict, -c, .yamllint.yaml]
+        args: [--strict]
         types: [yaml]
 
   - repo: local
@@ -32,13 +32,6 @@ repos:
       - id: rust-lint
         name: Rust clippy lints
         entry: just lint
-        language: system
-        pass_filenames: false
-        types: [rust]
-
-      - id: rust-check
-        name: Cargo check
-        entry: just build-check
         language: system
         pass_filenames: false
         types: [rust]

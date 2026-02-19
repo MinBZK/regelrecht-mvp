@@ -36,7 +36,7 @@ just test-all   # Run all tests (unit + BDD + harvester)
 
 This repository uses pre-commit hooks for code quality:
 - **Standard hooks**: Trailing whitespace, end-of-file fixer, YAML checks, etc.
-- **yamllint**: YAML linting (config in `.yamllint.yaml`)
+- **yamllint**: YAML linting (config in `.yamllint`)
 - **Rust formatting**: `just format` (on `.rs` files)
 - **Rust linting**: `just lint` (on `.rs` files)
 - **Schema validation**: `just validate` (on `regulation/**/*.yaml` files)
