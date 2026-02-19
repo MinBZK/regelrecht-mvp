@@ -1,5 +1,5 @@
 ---
-name: "\U0001F500 Gemini Dispatch"
+name: 🔀 Gemini Dispatch
 
 on:
   pull_request:
@@ -33,7 +33,11 @@ jobs:
       ) || (
         github.event.sender.type == 'User' &&
         startsWith(github.event.comment.body || github.event.review.body || '', '@gemini-cli') &&
-        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || '')
+        contains(
+          fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+          github.event.comment.author_association ||
+          github.event.review.author_association || ''
+        )
       )
     runs-on: ubuntu-latest
     permissions:
@@ -46,7 +50,7 @@ jobs:
     steps:
       - name: Extract command
         id: extract_command
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7
         env:
           EVENT_TYPE: ${{ github.event_name }}.${{ github.event.action }}
           REQUEST: ${{ github.event.comment.body || github.event.review.body || '' }}
@@ -74,9 +78,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |-
           gh issue comment "${ISSUE_NUMBER}" \
-            --body "🤖 I've received your request and I'm working on it now! You can track progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." \
+            --body "🤖 Working on it! Track progress [in the logs](${RUN_URL})." \
             --repo "${{ github.repository }}"
 
   review:
