@@ -43,6 +43,12 @@ harvester-test:
 # Run all tests (engine + harvester)
 test-all: test harvester-test
 
+# --- Mutation testing ---
+
+# Run mutation testing on engine (in-place because tests use relative paths to regulation/)
+mutants *ARGS:
+    cd packages/engine && cargo mutants --in-place --timeout-multiplier 3 {{ARGS}}
+
 # --- Security ---
 
 # Run security audit on all dependencies (vulnerabilities, licenses, sources)
