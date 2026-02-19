@@ -3,7 +3,7 @@ FROM node:22-alpine AS frontend-builder
 WORKDIR /app
 COPY packages/admin/frontend-src/package.json packages/admin/frontend-src/package-lock.json* packages/admin/frontend-src/.npmrc ./
 RUN --mount=type=secret,id=GITHUB_TOKEN \
-    GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) npm ci
+    GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) npm install
 COPY packages/admin/frontend-src/ .
 # vite outDir is '../static' which resolves to /static from /app
 RUN npm run build
@@ -25,6 +25,7 @@ COPY --from=rust-builder /build/packages/admin/target/release/regelrecht-admin /
 COPY --from=frontend-builder /static /app/static
 
 WORKDIR /app
+ENV STATIC_DIR=/app/static
 USER app
 EXPOSE 8000
 CMD ["regelrecht-admin"]
