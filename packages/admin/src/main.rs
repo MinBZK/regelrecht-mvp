@@ -2,7 +2,7 @@ use std::env;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use axum::{Router, routing::get};
+use axum::{routing::get, Router};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::services::ServeDir;
 use tracing_subscriber::EnvFilter;
@@ -77,10 +77,12 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
     tracing::info!("listening on {addr}");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap_or_else(|e| {
-        tracing::error!(error = %e, "failed to bind on {addr}");
-        std::process::exit(1);
-    });
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!(error = %e, "failed to bind on {addr}");
+            std::process::exit(1);
+        });
 
     if let Err(e) = axum::serve(listener, app).await {
         tracing::error!(error = %e, "server error");
