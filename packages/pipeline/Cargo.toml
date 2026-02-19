@@ -14,6 +14,10 @@ categories = ["database"]
 name = "regelrecht-harvest-worker"
 path = "src/bin/harvest_worker.rs"
 
+[[bin]]
+name = "regelrecht-db-migrate"
+path = "src/bin/db_migrate.rs"
+
 [dependencies]
 regelrecht-harvester = { path = "../harvester" }
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
