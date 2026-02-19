@@ -20,3 +20,18 @@ pub struct LawEntry {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Job {
+    pub id: sqlx::types::Uuid,
+    pub job_type: String,
+    pub law_id: String,
+    pub status: String,
+    pub priority: i32,
+    pub attempts: i32,
+    pub max_attempts: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub started_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
+}

@@ -67,6 +67,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health))
         .route("/api/law_entries", get(handlers::list_law_entries))
+        .route("/api/jobs", get(handlers::list_jobs))
         .with_state(pool);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
