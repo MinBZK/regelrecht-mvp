@@ -21,7 +21,7 @@ jobs:
       contents: read
       deployments: write
       packages: write
-      environments: write
+      actions: write
 
     steps:
       - name: Cleanup stale PR preview environments
