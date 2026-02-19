@@ -65,7 +65,10 @@ jobs:
   deploy-preview:
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'closed' &&
+      github.actor != 'dependabot[bot]'
     permissions:
       pull-requests: write
     environment:
@@ -114,7 +117,10 @@ jobs:
 
   cleanup-preview:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.actor != 'dependabot[bot]'
     permissions:
       packages: write
       deployments: write
