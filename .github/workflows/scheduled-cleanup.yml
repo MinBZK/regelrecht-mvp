@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Cleanup stale PR preview environments
-        uses: RijksICTGilde/zad-actions/scheduled-cleanup@v1
+        uses: RijksICTGilde/zad-actions/scheduled-cleanup@v2
         with:
           api-key: ${{ secrets.RIG_API_KEY }}
           project-id: ${{ env.ZAD_PROJECT }}
