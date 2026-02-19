@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegelRecht - Admin</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <script type="module" src="/main.js"></script>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Top Navigation Bar -->
+    <rr-top-navigation-bar
+      title="RegelRecht admin"
+      no-logo
+      no-menu
+      utility-no-language-switch
+      utility-account-label="Admin"
+    >
+    </rr-top-navigation-bar>
+
+    <!-- Tab Bar -->
+    <nav id="tabs" class="tabs">
+      <!-- Rendered by app.js -->
+    </nav>
+
+    <!-- Main Content -->
+    <main class="app__content">
+      <!-- Toolbar: filters + pagination -->
+      <div class="toolbar">
+        <div id="filters" class="toolbar__filters">
+          <!-- Rendered by app.js -->
+        </div>
+
+        <div class="pagination">
+          <button id="pagination-prev" class="pagination__btn" title="Previous page" disabled>
+            <svg viewBox="0 0 16 16"><path d="M10 4l-4 4 4 4"/></svg>
+          </button>
+          <span id="pagination-info" class="pagination__info">1 / 1 (0 results)</span>
+          <button id="pagination-next" class="pagination__btn" title="Next page" disabled>
+            <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead id="table-head">
+            <!-- Rendered by app.js -->
+          </thead>
+          <tbody id="table-body">
+            <!-- Rendered by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
