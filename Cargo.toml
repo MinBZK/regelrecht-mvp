@@ -3,6 +3,9 @@ resolver = "2"
 members = [
     "packages/engine",
 ]
+exclude = [
+    "packages/admin",
+]
 
 [workspace.package]
 edition = "2021"
