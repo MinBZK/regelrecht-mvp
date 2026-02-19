@@ -24,7 +24,7 @@ validate *FILES:
     script/validate.sh {{FILES}}
 
 # Run all quality checks (format + lint + check + validate + tests)
-check: format lint build-check validate test-all
+check: format lint build-check validate test-all admin-fmt admin-lint admin-check admin-test
 
 # --- Tests ---
 
@@ -74,3 +74,11 @@ admin-check:
 # Lint admin Rust code
 admin-lint:
     cargo clippy --manifest-path packages/admin/Cargo.toml -- -D warnings
+
+# Format check admin Rust code
+admin-fmt:
+    cd packages/admin && cargo fmt --check
+
+# Run admin tests
+admin-test:
+    cargo test --manifest-path packages/admin/Cargo.toml
