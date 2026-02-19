@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '0 3 * * *'  # Elke nacht om 3:00 UTC
   workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'List stale environments without deleting'
+        type: boolean
+        default: false
 
 env:
   ZAD_PROJECT: regel-k4c
@@ -32,4 +37,5 @@ jobs:
           container-org: ${{ github.repository_owner }}
           container-name: regelrecht-mvp
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ inputs.dry-run || false }}
           github-admin-token: ${{ secrets.ADMIN_TOKEN }}
