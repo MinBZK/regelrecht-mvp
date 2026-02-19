@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use axum::{Router, routing::get};
 use sqlx::postgres::PgPoolOptions;
+use tower_http::services::ServeDir;
 use tracing_subscriber::EnvFilter;
 
 mod handlers;
@@ -68,7 +69,8 @@ async fn main() {
         .route("/health", get(health))
         .route("/api/law_entries", get(handlers::list_law_entries))
         .route("/api/jobs", get(handlers::list_jobs))
-        .with_state(pool);
+        .with_state(pool)
+        .fallback_service(ServeDir::new("static"));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
     tracing::info!("listening on {addr}");
