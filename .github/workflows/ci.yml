@@ -105,7 +105,7 @@ jobs:
       - uses: actions/checkout@v6
         if: needs.changes.outputs.ci == 'true'
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: needs.changes.outputs.ci == 'true'
         with:
           python-version: '3.12'
