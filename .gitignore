@@ -30,6 +30,9 @@ ENV/
 __pycache__/
 *.py[cod]
 
+# Mutation testing
+mutants.out/
+
 # Gemini CLI
 .gemini/*
 !.gemini/prompts/
