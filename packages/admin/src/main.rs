@@ -70,7 +70,9 @@ async fn main() {
         .route("/api/law_entries", get(handlers::list_law_entries))
         .route("/api/jobs", get(handlers::list_jobs))
         .with_state(pool)
-        .fallback_service(ServeDir::new("static"));
+        .fallback_service(ServeDir::new(
+            env::var("STATIC_DIR").unwrap_or_else(|_| "static".to_string()),
+        ));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
     tracing::info!("listening on {addr}");
