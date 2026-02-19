@@ -368,7 +368,7 @@ async function fetchData() {
     const json = await response.json();
 
     state.data = json.data || [];
-    state.totalCount = json.total ?? json.total_count ?? state.data.length;
+    state.totalCount = json.total ?? state.data.length;
     state.error = null;
   } catch (err) {
     console.error('Failed to fetch data:', err);
