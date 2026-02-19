@@ -94,7 +94,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: packages/db-migrate/Dockerfile
@@ -145,7 +145,7 @@ jobs:
         run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Deploy db-migrate to ZAD (Production)
-        uses: RijksICTGilde/zad-actions/deploy@v1
+        uses: RijksICTGilde/zad-actions/deploy@v2
         with:
           api-key: ${{ secrets.RIG_API_KEY }}
           project-id: ${{ env.ZAD_PROJECT }}
