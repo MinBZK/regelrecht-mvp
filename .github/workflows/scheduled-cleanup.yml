@@ -29,7 +29,7 @@ jobs:
         with:
           api-key: ${{ secrets.RIG_API_KEY }}
           project-id: ${{ env.ZAD_PROJECT }}
-          environment-pattern: '^pr[0-9]+$'
+          environment-pattern: '^pr[0-9]+'
           pr-number-pattern: 's/^pr//'
           delete-github-env: true
           delete-github-deployments: true
