@@ -16,6 +16,7 @@ jobs:
   mutants:
     name: Mutation Testing
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     defaults:
       run:
         working-directory: packages/engine
