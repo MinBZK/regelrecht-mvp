@@ -6,6 +6,9 @@ use axum::{Router, routing::get};
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
 
+mod handlers;
+mod models;
+
 const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RETRIES: u32 = 10;
 const RETRY_INTERVAL: Duration = Duration::from_secs(3);
@@ -63,6 +66,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
+        .route("/api/law_entries", get(handlers::list_law_entries))
         .with_state(pool);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
