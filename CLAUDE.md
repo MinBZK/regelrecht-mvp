@@ -22,16 +22,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 just            # List all available commands
+just format     # Check Rust formatting (cargo fmt --check)
+just lint        # Run clippy lints on all packages
+just build-check # Run cargo check on all packages
+just validate    # Validate regulation YAML files (all, or pass specific files)
+just check       # Run all quality checks (format + lint + check + validate + tests)
 just test       # Run Rust unit tests
 just bdd        # Run Rust BDD tests (cucumber-rs)
-just test-all   # Run all tests (unit + BDD)
+just test-all   # Run all tests (unit + BDD + harvester)
 ```
 
 ### Pre-commit Hooks
 
 This repository uses pre-commit hooks for code quality:
 - **Standard hooks**: Trailing whitespace, end-of-file fixer, YAML checks, etc.
-- **yamllint**: YAML linting for regulation files
+- **yamllint**: YAML linting (config in `.yamllint`)
+- **Rust formatting**: `just format` (on `.rs` files)
+- **Rust linting**: `just lint` (on `.rs` files)
+- **Schema validation**: `just validate` (on `regulation/**/*.yaml` files)
 
 **NEVER use `--no-verify` when committing.** Fix the underlying problem instead of bypassing hooks.
 
