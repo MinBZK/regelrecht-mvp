@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ci: ${{ steps.filter.outputs.ci }}
+      admin: ${{ steps.filter.outputs.admin }}
     steps:
       - uses: actions/checkout@v6.0.2
 
@@ -37,6 +38,10 @@ jobs:
               - Justfile
               - .pre-commit-config.yaml
               - .yamllint
+              - .github/workflows/ci.yml
+            admin:
+              - packages/admin/**
+              - Justfile
               - .github/workflows/ci.yml
 
   protect-schema:
@@ -242,3 +247,53 @@ jobs:
 
       - name: Run security audit
         run: just audit
+
+  admin:
+    name: Admin
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        if: needs.changes.outputs.admin == 'true'
+
+      - name: Install Rust toolchain
+        if: needs.changes.outputs.admin == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        if: needs.changes.outputs.admin == 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/admin/target
+          key: ${{ runner.os }}-cargo-admin-${{ hashFiles('packages/admin/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-admin-
+
+      - name: Install just
+        if: needs.changes.outputs.admin == 'true'
+        uses: extractions/setup-just@v3
+
+      - name: Check formatting
+        if: needs.changes.outputs.admin == 'true'
+        run: just admin-fmt
+
+      - name: Run clippy
+        if: needs.changes.outputs.admin == 'true'
+        run: just admin-lint
+
+      - name: Run cargo check
+        if: needs.changes.outputs.admin == 'true'
+        run: just admin-check
+
+      - name: Run tests
+        if: needs.changes.outputs.admin == 'true'
+        run: just admin-test
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.admin != 'true'
+        run: echo "No admin changes, skipping"
