@@ -10,7 +10,7 @@ ENV SQLX_OFFLINE=true
 RUN cargo build --release --bin regelrecht-db-migrate
 
 # Stage 2: Runtime
-FROM alpine:3.21
+FROM alpine:3.23
 RUN apk add --no-cache ca-certificates && \
     addgroup -S app && adduser -S app -G app
 
