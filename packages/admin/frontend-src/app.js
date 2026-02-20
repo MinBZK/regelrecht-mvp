@@ -20,7 +20,7 @@ const JOB_TYPES = ['harvest', 'enrich'];
 
 const TAB_CONFIG = {
   law_entries: {
-    endpoint: '/api/law_entries',
+    endpoint: 'api/law_entries',
     columns: [
       { key: 'law_id', label: 'Law ID', sortable: true },
       { key: 'law_name', label: 'Name', sortable: true },
@@ -34,7 +34,7 @@ const TAB_CONFIG = {
     ],
   },
   jobs: {
-    endpoint: '/api/jobs',
+    endpoint: 'api/jobs',
     columns: [
       { key: 'id', label: 'ID', sortable: true },
       { key: 'job_type', label: 'Type', sortable: true },
