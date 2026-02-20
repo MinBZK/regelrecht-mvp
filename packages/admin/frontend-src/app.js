@@ -151,7 +151,7 @@ function formatCell(value, key) {
   }
 
   // Dates
-  if (key === 'created_at' || key === 'updated_at') {
+  if (key.endsWith('_at')) {
     const date = new Date(value);
     if (!isNaN(date.getTime())) {
       return escapeHtml(DATE_FORMATTER.format(date));
