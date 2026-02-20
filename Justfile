@@ -24,7 +24,7 @@ validate *FILES:
     script/validate.sh {{FILES}}
 
 # Run all quality checks (format + lint + check + validate + tests)
-check: format lint build-check validate test-all admin-fmt admin-lint admin-check admin-test
+check: format lint build-check validate test-all admin-fmt admin-lint admin-check admin-test admin-frontend
 
 # --- Tests ---
 
@@ -56,6 +56,7 @@ audit:
     cargo deny check
     cd frontend && npm audit
     cd frontend && npx license-checker --production --failOn "GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0;SSPL-1.0;BUSL-1.1"
+    cd packages/admin/frontend-src && npm audit
 
 # --- Admin ---
 
@@ -65,7 +66,7 @@ admin:
 
 # Build admin frontend (requires GITHUB_TOKEN env var for npm)
 admin-frontend:
-    cd packages/admin/frontend-src && npm install && npm run build
+    cd packages/admin/frontend-src && npm ci && npm run build
 
 # Check admin Rust code
 admin-check:
