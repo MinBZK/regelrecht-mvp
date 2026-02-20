@@ -160,6 +160,10 @@ jobs:
       url: ${{ steps.deploy.outputs.url }}
 
     steps:
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Deploy admin to ZAD (Preview)
         uses: RijksICTGilde/zad-actions/deploy@v2
         with:
@@ -167,7 +171,7 @@ jobs:
           project-id: ${{ env.ZAD_PROJECT }}
           deployment-name: pr${{ github.event.pull_request.number }}
           component: harvester-admin
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ADMIN }}:pr-${{ github.event.pull_request.number }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ADMIN }}:sha-${{ steps.sha.outputs.short }}
           clone-from: regelrecht
           force-clone: false
 
@@ -179,7 +183,7 @@ jobs:
           project-id: ${{ env.ZAD_PROJECT }}
           deployment-name: pr${{ github.event.pull_request.number }}
           component: ${{ env.ZAD_COMPONENT }}
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.sha.outputs.short }}
           comment-on-pr: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-header: '## Preview Deployment'
