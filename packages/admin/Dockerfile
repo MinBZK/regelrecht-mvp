@@ -9,7 +9,7 @@ COPY packages/admin/frontend-src/ .
 RUN npm run build
 
 # Stage 2: Build Rust binary
-FROM rust:1.84-alpine AS rust-builder
+FROM rust:1.88-alpine AS rust-builder
 RUN apk add --no-cache musl-dev
 WORKDIR /build
 COPY packages/admin/ packages/admin/
