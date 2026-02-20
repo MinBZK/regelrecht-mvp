@@ -242,6 +242,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install admin frontend dependencies
+        working-directory: packages/admin/frontend-src
+        run: npm ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install just
         uses: extractions/setup-just@v3
 
@@ -293,6 +299,25 @@ jobs:
       - name: Run tests
         if: needs.changes.outputs.admin == 'true'
         run: just admin-test
+
+      - name: Setup Node.js
+        if: needs.changes.outputs.admin == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install admin frontend dependencies
+        if: needs.changes.outputs.admin == 'true'
+        working-directory: packages/admin/frontend-src
+        run: npm ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build admin frontend
+        if: needs.changes.outputs.admin == 'true'
+        working-directory: packages/admin/frontend-src
+        run: npm run build
 
       - name: Skip (no relevant changes)
         if: needs.changes.outputs.admin != 'true'
