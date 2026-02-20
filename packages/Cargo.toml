@@ -4,6 +4,9 @@ members = [
     "engine",
     "harvester",
 ]
+exclude = [
+    "admin",
+]
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
