@@ -2,8 +2,9 @@ use std::env;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use axum::{routing::get, Router};
+use axum::{extract::State, http::StatusCode, routing::get, Router};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
 use tower_http::services::ServeDir;
 use tracing_subscriber::EnvFilter;
 
@@ -14,8 +15,12 @@ const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RETRIES: u32 = 10;
 const RETRY_INTERVAL: Duration = Duration::from_secs(3);
 
-async fn health() -> &'static str {
-    "OK"
+async fn health(State(pool): State<PgPool>) -> Result<&'static str, StatusCode> {
+    sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(&pool)
+        .await
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    Ok("OK")
 }
 
 #[tokio::main]
