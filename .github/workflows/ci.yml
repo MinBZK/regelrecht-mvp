@@ -258,6 +258,9 @@ jobs:
     name: Admin
     needs: changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v6
         if: needs.changes.outputs.admin == 'true'
