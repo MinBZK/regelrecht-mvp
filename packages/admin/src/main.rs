@@ -70,6 +70,13 @@ async fn main() {
 
     tracing::info!("connected to database");
 
+    tracing::info!("running database migrations...");
+    if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
+        tracing::error!(error = %e, "failed to run migrations");
+        std::process::exit(1);
+    }
+    tracing::info!("migrations completed");
+
     let app = Router::new()
         .route("/health", get(health))
         .route("/api/law_entries", get(handlers::list_law_entries))
