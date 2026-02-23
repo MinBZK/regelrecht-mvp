@@ -59,7 +59,7 @@ const ALLOWED_SORT_COLUMNS_LAW: &[&str] = &[
 pub async fn list_law_entries(
     State(pool): State<PgPool>,
     Query(params): Query<LawEntriesQuery>,
-) -> Result<Json<PaginatedResponse<LawEntry>>, StatusCode> {
+) -> Result<Json<PaginatedResponse<LawEntry>>, (StatusCode, String)> {
     let limit = clamped_limit(params.limit);
     let offset = clamped_offset(params.offset);
 
@@ -68,7 +68,7 @@ pub async fn list_law_entries(
         ALLOWED_SORT_COLUMNS_LAW,
         "updated_at",
     )
-    .ok_or(StatusCode::BAD_REQUEST)?;
+    .ok_or((StatusCode::BAD_REQUEST, "invalid sort column".to_string()))?;
 
     let order = normalized_order(params.order.as_deref());
 
@@ -80,7 +80,7 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "count query failed");
-                StatusCode::INTERNAL_SERVER_ERROR
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             })?
     } else {
         sqlx::query_scalar("SELECT COUNT(*) FROM law_entries")
@@ -88,7 +88,7 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "count query failed");
-                StatusCode::INTERNAL_SERVER_ERROR
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             })?
     };
 
@@ -119,7 +119,7 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "data query failed");
-                StatusCode::INTERNAL_SERVER_ERROR
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             })?
     } else {
         sqlx::query_as::<_, LawEntry>(&query_str)
@@ -129,7 +129,7 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "data query failed");
-                StatusCode::INTERNAL_SERVER_ERROR
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             })?
     };
 
@@ -169,7 +169,7 @@ const ALLOWED_SORT_COLUMNS_JOB: &[&str] = &[
 pub async fn list_jobs(
     State(pool): State<PgPool>,
     Query(params): Query<JobsQuery>,
-) -> Result<Json<PaginatedResponse<Job>>, StatusCode> {
+) -> Result<Json<PaginatedResponse<Job>>, (StatusCode, String)> {
     let limit = clamped_limit(params.limit);
     let offset = clamped_offset(params.offset);
 
@@ -178,7 +178,7 @@ pub async fn list_jobs(
         ALLOWED_SORT_COLUMNS_JOB,
         "created_at",
     )
-    .ok_or(StatusCode::BAD_REQUEST)?;
+    .ok_or((StatusCode::BAD_REQUEST, "invalid sort column".to_string()))?;
 
     let order = normalized_order(params.order.as_deref());
 
@@ -215,7 +215,7 @@ pub async fn list_jobs(
 
     let total: i64 = count_query.fetch_one(&pool).await.map_err(|e| {
         tracing::error!(error = %e, "count query failed");
-        StatusCode::INTERNAL_SERVER_ERROR
+        (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
     })?;
 
     // Data query — sort column is validated against an allowlist above, so
@@ -241,7 +241,7 @@ pub async fn list_jobs(
 
     let data: Vec<Job> = data_query.fetch_all(&pool).await.map_err(|e| {
         tracing::error!(error = %e, "data query failed");
-        StatusCode::INTERNAL_SERVER_ERROR
+        (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
     })?;
 
     Ok(Json(PaginatedResponse {

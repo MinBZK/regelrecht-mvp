@@ -283,7 +283,7 @@ function renderTableBody() {
     const td = document.createElement('td');
     td.colSpan = config.columns.length;
     td.className = 'table-message table-message--error';
-    td.textContent = 'Failed to load data';
+    td.textContent = `Failed to load data: ${state.error}`;
     tr.appendChild(td);
     tbody.appendChild(tr);
     return;
@@ -362,7 +362,8 @@ async function fetchData() {
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`HTTP ${response.status} from ${url}${body ? ': ' + body.substring(0, 200) : ''}`);
     }
 
     const json = await response.json();
