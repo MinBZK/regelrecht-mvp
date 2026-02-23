@@ -79,8 +79,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
-        .route("/api/ping", get(|| async { "hello world" }))
-        .route("/api/law_entries", get(handlers::list_law_entries))
+.route("/api/law_entries", get(handlers::list_law_entries))
         .route("/api/jobs", get(handlers::list_jobs))
         .with_state(pool)
         .fallback_service(ServeDir::new(
