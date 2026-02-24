@@ -10,7 +10,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: minbzk/regelrecht-mvp
-  IMAGE_NAME_ADMIN: minbzk/regelrecht-mvp-admin
+  IMAGE_NAME_ADMIN: minbzk/regelrecht-admin
   ZAD_PROJECT: regel-k4c
   ZAD_COMPONENT: editor
 
@@ -237,7 +237,7 @@ jobs:
           deployment-name: pr${{ github.event.pull_request.number }}
           delete-container: true
           container-org: ${{ github.repository_owner }}
-          container-name: regelrecht-mvp-admin
+          container-name: regelrecht-admin
           container-tag: pr-${{ github.event.pull_request.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-admin-token: ${{ secrets.ADMIN_TOKEN }}
