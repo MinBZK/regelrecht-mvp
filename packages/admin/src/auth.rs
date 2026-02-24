@@ -15,7 +15,7 @@ use crate::state::AppState;
 const SESSION_KEY_CSRF: &str = "oidc_csrf";
 const SESSION_KEY_NONCE: &str = "oidc_nonce";
 const SESSION_KEY_PKCE_VERIFIER: &str = "oidc_pkce_verifier";
-const SESSION_KEY_AUTHENTICATED: &str = "authenticated";
+pub(crate) const SESSION_KEY_AUTHENTICATED: &str = "authenticated";
 const SESSION_KEY_SUB: &str = "person_sub";
 const SESSION_KEY_EMAIL: &str = "person_email";
 const SESSION_KEY_NAME: &str = "person_name";
@@ -159,7 +159,7 @@ pub async fn callback(
         .or_else(|| claims.preferred_username().map(|u| (**u).clone()))
         .unwrap_or_default();
 
-    let id_token_jwt = serde_json::to_string(id_token).unwrap_or_default();
+    let id_token_jwt = id_token.to_string();
 
     session.cycle_id().await.map_err(|e| {
         tracing::error!(error = %e, "failed to rotate session ID");

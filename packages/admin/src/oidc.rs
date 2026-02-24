@@ -1,6 +1,6 @@
 use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::{
-    ClientId, ClientSecret, EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl, RedirectUrl,
+    ClientId, ClientSecret, EndpointMaybeSet, EndpointNotSet, EndpointSet, RedirectUrl,
 };
 
 use crate::config::OidcConfig;
@@ -38,17 +38,8 @@ pub async fn discover_client(
         .await
         .map_err(|e| format!("failed to parse OIDC discovery JSON: {e}"))?;
 
-    let issuer = metadata_json
-        .get("issuer")
-        .and_then(|v| v.as_str())
-        .ok_or("missing 'issuer' in discovery document")?;
-
-    let issuer_url =
-        IssuerUrl::new(issuer.to_string()).map_err(|e| format!("invalid issuer URL: {e}"))?;
-
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, &http_client)
-        .await
-        .map_err(|e| format!("OIDC discovery failed: {e}"))?;
+    let provider_metadata: CoreProviderMetadata = serde_json::from_value(metadata_json)
+        .map_err(|e| format!("failed to parse provider metadata: {e}"))?;
 
     let token_url = provider_metadata
         .token_endpoint()

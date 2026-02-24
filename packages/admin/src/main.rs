@@ -12,7 +12,7 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tower_http::services::ServeDir;
 use tower_sessions::cookie::SameSite;
-use tower_sessions::{MemoryStore, SessionManagerLayer};
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 use tracing_subscriber::EnvFilter;
 
 mod auth;
@@ -114,6 +114,7 @@ async fn main() {
 
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store)
+        .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)))
         .with_same_site(SameSite::Lax)
         .with_http_only(true)
         .with_secure(app_state.config.is_auth_enabled());

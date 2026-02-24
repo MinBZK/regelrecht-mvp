@@ -342,7 +342,7 @@ function renderAll() {
 
 async function checkAuth() {
   try {
-    const response = await fetch('auth/status');
+    const response = await fetch('/auth/status');
     if (!response.ok) return { authenticated: false, oidc_configured: false };
     return await response.json();
   } catch {
@@ -355,7 +355,7 @@ function setupLogout() {
   if (!nav) return;
   nav.addEventListener('account-click', (e) => {
     e.preventDefault();
-    window.location.href = 'auth/logout';
+    window.location.href = '/auth/logout';
   });
 }
 
@@ -388,7 +388,7 @@ async function fetchData() {
     const response = await fetch(url);
 
     if (response.status === 401) {
-      window.location.href = 'auth/login';
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -483,7 +483,7 @@ async function init() {
   const authStatus = await checkAuth();
 
   if (authStatus.oidc_configured && !authStatus.authenticated) {
-    window.location.href = 'auth/login';
+    window.location.href = '/auth/login';
     return;
   }
 
