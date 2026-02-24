@@ -15,19 +15,6 @@ updates:
           - minor
           - patch
 
-  - package-ecosystem: cargo
-    directory: /packages/db-migrate
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - rust
-    groups:
-      rust-minor-patch:
-        update-types:
-          - minor
-          - patch
 
   - package-ecosystem: npm
     directory: /frontend
@@ -60,14 +47,6 @@ updates:
           - '29'
           - '31'
 
-  - package-ecosystem: docker
-    directory: /packages/db-migrate
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - docker
 
   - package-ecosystem: cargo
     directory: /packages/admin
