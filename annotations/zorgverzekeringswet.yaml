@@ -1,0 +1,93 @@
+annotations:
+- body:
+    classification: definition
+    data_type: string
+    description: ''
+    name: verzekeringsplichtige
+    purpose: classifying
+    type: TextualBody
+  motivation: classifying
+  resolution: found
+  status: draft
+  target:
+    article: Artikel 1
+    selector:
+      exact: degene die op grond van artikel 2 verplicht is zich krachtens een zorgverzekering te verzekeren of te laten verzekeren;
+      prefix: 'de: degene wiens risico van be'
+      suffix: 'o: een door de verzekeringneme'
+      type: TextQuoteSelector
+    source: regelrecht://unknown
+  type: Annotation
+- body:
+    classification: definition
+    data_type: string
+    description: ''
+    name: college_zorgverzekeringen_het_college_voor_zorgver
+    purpose: classifying
+    type: TextualBody
+  motivation: classifying
+  resolution: found
+  status: draft
+  target:
+    article: Artikel 1
+    selector:
+      exact: 'College zorgverzekeringen: het College voor zorgverzekeringen, genoemd in artikel 58, eerste lid ;'
+      prefix: 'nerieke verevening: bijstellin'
+      suffix: rag in relatie met de verschil
+      type: TextQuoteSelector
+    source: regelrecht://unknown
+  type: Annotation
+- body:
+    purpose: linking
+    source: regelrecht://BWB
+    type: SpecificResource
+  motivation: linking
+  resolution: found
+  status: draft
+  target:
+    article: Artikel 1
+    selector:
+      exact: artikel 39
+      prefix: en en het deelbedrag bij ander
+      suffix: ekeraars, per onderscheiden ca
+      type: TextQuoteSelector
+    source: regelrecht://unknown
+  type: Annotation
+- body:
+    classification: definition
+    data_type: string
+    description: ''
+    name: onze_minister
+    purpose: classifying
+    type: TextualBody
+  motivation: classifying
+  resolution: found
+  status: draft
+  target:
+    article: Artikel 1
+    selector:
+      exact: Onze Minister van Volksgezondheid, Welzijn en Sport
+      prefix: ' coördinatie van de wettelijke'
+      suffix: oegang tot het directe verzeke
+      type: TextQuoteSelector
+    source: regelrecht://unknown
+  type: Annotation
+- body:
+    classification: definition
+    data_type: string
+    description: ''
+    name: een_verzekeringsonderneming
+    purpose: classifying
+    type: TextualBody
+  motivation: classifying
+  resolution: found
+  status: draft
+  target:
+    article: Artikel 1
+    selector:
+      exact: een verzekeringsonderneming als bedoeld in de eerste richtlijn schadeverzekering
+      prefix: rneming als bedoeld in de eers
+      suffix: ' deze zorgverzekeringen aanbie'
+      type: TextQuoteSelector
+    source: regelrecht://unknown
+  type: Annotation

@@ -1,0 +1,209 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: verordening_individuele_inkomenstoeslag_amsterdam_2025
+uuid: cvdr734407-0001-0001-0001-000000000363
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2024-12-12'
+valid_from: '2025-01-01'
+gemeente_code: GM0363
+officiele_titel: Verordening Individuele inkomenstoeslag 2025
+url: https://lokaleregelgeving.overheid.nl/CVDR734407/1
+name: Verordening Individuele inkomenstoeslag Amsterdam 2025
+
+legal_basis:
+  - law_id: participatiewet
+    article: '8'
+    paragraph: '1'
+    part: 'b'
+    description: Gemeenteraad stelt regels over individuele inkomenstoeslag
+  - law_id: participatiewet
+    article: '36'
+    description: Individuele inkomenstoeslag
+
+articles:
+  - number: '1'
+    text: |
+      Begripsomschrijvingen
+
+      In deze verordening wordt verstaan onder:
+      a. inkomen: het inkomen als bedoeld in artikel 32 van de Participatiewet,
+         vermeerderd met de algemene bijstand;
+      b. peildatum: de datum van de aanvraag van de individuele inkomenstoeslag;
+      c. referteperiode: de periode van 36 maanden voorafgaand aan de peildatum.
+    url: https://lokaleregelgeving.overheid.nl/CVDR734407/1#Artikel1
+    machine_readable:
+      definitions:
+        REFERTEPERIODE_MAANDEN:
+          value: 36
+          description: Referteperiode voor beoordeling langdurig laag inkomen
+
+  - number: '2'
+    text: |
+      Indienen aanvraag
+
+      Een aanvraag voor de individuele inkomenstoeslag wordt ingediend op een door
+      het college vastgesteld formulier en geldt als een schriftelijke aanvraag
+      in de zin van de Algemene wet bestuursrecht.
+    url: https://lokaleregelgeving.overheid.nl/CVDR734407/1#Artikel2
+
+  - number: '3'
+    text: |
+      Langdurig laag inkomen
+
+      1. Een persoon heeft een langdurig laag inkomen indien het inkomen gedurende
+         de referteperiode niet hoger is dan 105 procent van de toepasselijke
+         bijstandsnorm.
+
+      2. Geringe overschrijdingen van de inkomensgrens (circa 5 euro per maand)
+         worden buiten beschouwing gelaten.
+    url: https://lokaleregelgeving.overheid.nl/CVDR734407/1#Artikel3
+    machine_readable:
+      definitions:
+        INKOMENSGRENS_PERCENTAGE:
+          value: 105
+          description: Percentage van bijstandsnorm als inkomensgrens
+        MARGE_EURO_PER_MAAND:
+          value: 5
+          description: Toegestane marge voor geringe overschrijding
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: gemiddeld_inkomen_referteperiode
+            type: number
+            required: true
+            description: Gemiddeld maandinkomen in de referteperiode (eurocent)
+          - name: bijstandsnorm
+            type: number
+            required: true
+            description: Toepasselijke bijstandsnorm (eurocent)
+        output:
+          - name: heeft_langdurig_laag_inkomen
+            type: boolean
+            description: Of de persoon langdurig laag inkomen heeft
+          - name: inkomensgrens
+            type: number
+            description: De berekende inkomensgrens (105% van norm)
+        actions:
+          - output: inkomensgrens
+            value:
+              operation: MULTIPLY
+              values:
+                - $bijstandsnorm
+                - 1.05
+          - output: heeft_langdurig_laag_inkomen
+            value:
+              operation: LESS_THAN_OR_EQUAL
+              subject: $gemiddeld_inkomen_referteperiode
+              value:
+                operation: ADD
+                values:
+                  - operation: MULTIPLY
+                    values:
+                      - $bijstandsnorm
+                      - 1.05
+                  - 500  # 5 euro marge in eurocent
+
+  - number: '4'
+    text: |
+      Hoogte individuele inkomenstoeslag
+
+      1. De individuele inkomenstoeslag bedraagt per kalenderjaar:
+         a. voor een alleenstaande: 350 euro;
+         b. voor een alleenstaande ouder: 450 euro;
+         c. voor gehuwden: 500 euro;
+         d. voor gehuwden met een of meer kinderen van 12 tot 18 jaar: 800 euro.
+
+      2. Indien een van de gehuwden ingevolge artikel 11 of 13 van de Participatiewet
+         geen recht heeft op bijstand, ontvangt de rechthebbende partner het bedrag
+         voor een alleenstaande of alleenstaande ouder.
+    url: https://lokaleregelgeving.overheid.nl/CVDR734407/1#Artikel4
+    machine_readable:
+      definitions:
+        BEDRAG_ALLEENSTAANDE:
+          value: 35000
+          description: Bedrag voor alleenstaande in eurocent (350 euro)
+        BEDRAG_ALLEENSTAANDE_OUDER:
+          value: 45000
+          description: Bedrag voor alleenstaande ouder in eurocent (450 euro)
+        BEDRAG_GEHUWDEN:
+          value: 50000
+          description: Bedrag voor gehuwden in eurocent (500 euro)
+        BEDRAG_GEHUWDEN_MET_KINDEREN_12_18:
+          value: 80000
+          description: Bedrag voor gehuwden met kinderen 12-18 in eurocent (800 euro)
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: huishoudtype
+            type: string
+            required: true
+            description: Type huishouden (alleenstaande/alleenstaande_ouder/gehuwden/gehuwden_met_kinderen_12_18)
+          - name: partner_uitgesloten
+            type: boolean
+            required: false
+            description: Of partner uitgesloten is o.g.v. art. 11 of 13 Participatiewet
+          - name: heeft_kinderen
+            type: boolean
+            required: false
+        output:
+          - name: toeslag_bedrag
+            type: number
+            description: Hoogte van de individuele inkomenstoeslag in eurocent
+        actions:
+          - output: toeslag_bedrag
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $partner_uitgesloten
+                value: true
+              then:
+                operation: IF
+                when:
+                  operation: EQUALS
+                  subject: $heeft_kinderen
+                  value: true
+                then: 45000  # alleenstaande ouder
+                else: 35000  # alleenstaande
+              else:
+                operation: SWITCH
+                cases:
+                  - when:
+                      operation: EQUALS
+                      subject: $huishoudtype
+                      value: alleenstaande
+                    then: 35000
+                  - when:
+                      operation: EQUALS
+                      subject: $huishoudtype
+                      value: alleenstaande_ouder
+                    then: 45000
+                  - when:
+                      operation: EQUALS
+                      subject: $huishoudtype
+                      value: gehuwden
+                    then: 50000
+                  - when:
+                      operation: EQUALS
+                      subject: $huishoudtype
+                      value: gehuwden_met_kinderen_12_18
+                    then: 80000
+
+  - number: '5'
+    text: |
+      Intrekking oude verordening
+
+      De Verordening individuele inkomenstoeslag 2024 Participatiewet wordt ingetrokken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR734407/1#Artikel5
+
+  - number: '6'
+    text: |
+      Inwerkingtreding en citeertitel
+
+      1. Deze verordening treedt in werking op 1 januari 2025.
+      2. Deze verordening wordt aangehaald als: Verordening individuele inkomenstoeslag 2025.
+    url: https://lokaleregelgeving.overheid.nl/CVDR734407/1#Artikel6

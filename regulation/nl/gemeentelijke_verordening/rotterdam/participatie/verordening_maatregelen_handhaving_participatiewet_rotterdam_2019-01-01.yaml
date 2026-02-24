@@ -1,0 +1,544 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: verordening_maatregelen_handhaving_participatiewet_rotterdam
+uuid: cvdr348678-0004-0001-0001-000000000599
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2018-12-20'
+valid_from: '2019-01-01'
+gemeente_code: GM0599
+officiele_titel: Verordening maatregelen en handhaving Participatiewet, IOAW en IOAZ
+  Rotterdam 2019
+url: https://lokaleregelgeving.overheid.nl/CVDR348678/4
+name: Verordening maatregelen en handhaving Participatiewet Rotterdam 2019
+
+legal_basis:
+  - law_id: participatiewet
+    article: '8'
+    paragraph: '1'
+    part: 'c'
+    description: Gemeenteraad stelt verordening vast voor verhogen en verlagen norm
+
+articles:
+  - number: '5'
+    text: |
+      Gedragingen
+
+      De gedragingen, bedoeld in artikel 18, tweede lid, van de Participatiewet,
+      worden onderscheiden in twee categorieen:
+
+      a. eerste categorie: het niet naar vermogen trachten arbeid in deeltijd te
+         verkrijgen, het niet of onvoldoende meewerken aan het opstellen, uitvoeren
+         en evalueren van een plan van aanpak, het niet of onvoldoende verrichten
+         van een door het college opgedragen tegenprestatie;
+
+      b. tweede categorie: het niet naar vermogen trachten algemeen geaccepteerde
+         arbeid te verkrijgen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR348678/4#Artikel5
+
+  - number: '6'
+    text: |
+      Hoogte en duur van de maatregel
+
+      1. De maatregel bij gedragingen als bedoeld in artikel 5 bedraagt:
+         a. eerste categorie: 30 procent van de bijstandsnorm gedurende een maand;
+         b. tweede categorie: 100 procent van de bijstandsnorm gedurende een maand.
+
+      2. De duur van de maatregel is een maand.
+    url: https://lokaleregelgeving.overheid.nl/CVDR348678/4#Artikel6
+    machine_readable:
+      definitions:
+        PERCENTAGE_CATEGORIE_1:
+          value: 30
+          description: Verlagingspercentage categorie 1
+        PERCENTAGE_CATEGORIE_2:
+          value: 100
+          description: Verlagingspercentage categorie 2
+        DUUR_MAANDEN:
+          value: 1
+          description: Standaard duur maatregel in maanden
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+          description: BSN van de belanghebbende
+        - name: gedragscategorie
+          type: number
+          required: false
+          description: Gedragscategorie (0=geen, 1 of 2)
+        output:
+        - name: verlaging_percentage
+          type: number
+          description: Verlagingspercentage conform art. 6 lid 1
+        - name: duur_maanden
+          type: number
+          description: Aantal maanden dat de verlaging duurt
+        actions:
+        - output: verlaging_percentage
+          value:
+            operation: SWITCH
+            cases:
+            - when:
+                operation: EQUALS
+                subject: $gedragscategorie
+                value: 0
+              then: 0
+            - when:
+                operation: EQUALS
+                subject: $gedragscategorie
+                value: 1
+              then: $PERCENTAGE_CATEGORIE_1
+            - when:
+                operation: EQUALS
+                subject: $gedragscategorie
+                value: 2
+              then: $PERCENTAGE_CATEGORIE_2
+        - output: duur_maanden
+          value:
+            operation: SWITCH
+            cases:
+            - when:
+                operation: EQUALS
+                subject: $gedragscategorie
+                value: 0
+              then: 0
+            - when:
+                operation: GREATER_THAN_OR_EQUAL
+                subject: $gedragscategorie
+                value: 1
+              then: $DUUR_MAANDEN
+
+  - number: '7'
+    text: |
+      Waarschuwing en het opleggen van een maatregel
+
+      1. Alvorens een maatregel op te leggen, kan het college volstaan met het geven
+         van een schriftelijke waarschuwing indien:
+         a. het een gedraging van de eerste categorie betreft, en
+         b. de belanghebbende niet eerder een maatregel of waarschuwing heeft
+            ontvangen.
+
+      2. Het college ziet af van een maatregel indien elke verwijtbaarheid ontbreekt.
+
+      3. Het college kan afzien van een maatregel indien daarvoor dringende redenen
+         aanwezig zijn.
+
+      4. Indien het college afziet van een maatregel op grond van dringende redenen,
+         wordt de belanghebbende hiervan schriftelijk in kennis gesteld.
+    url: https://lokaleregelgeving.overheid.nl/CVDR348678/4#Artikel7
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        Verwijtbaarheid (lid 2) en dringende redenen (lid 3) zijn open normen die
+        menselijke beoordeling vereisen. De waarschuwing bij eerste categorie
+        (lid 1) is een kan-bepaling.
+      open_norms:
+      - term: verwijtbaarheid
+        description: Beoordeling of elke verwijtbaarheid ontbreekt bij de
+          gedraging
+      - term: dringende_redenen
+        description: Beoordeling of dringende redenen aanwezig zijn om af te
+          zien van maatregel
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+          description: BSN van de belanghebbende
+        input:
+        - name: gedragscategorie
+          type: number
+          source:
+            output: gedragscategorie
+          description: Categorie van de gedraging (1 of 2)
+        - name: is_verwijtbaar
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of de gedraging verwijtbaar is
+          description: Gedraging is verwijtbaar - VEREIST MENSELIJKE BEOORDELING
+        - name: heeft_dringende_redenen
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of dringende redenen aanwezig
+              zijn
+          description: Dringende redenen voor afzien maatregel - VEREIST
+            MENSELIJKE BEOORDELING
+        - name: heeft_eerdere_maatregel_of_waarschuwing
+          type: boolean
+          source:
+            output: heeft_eerdere_maatregel_of_waarschuwing
+          description: Of belanghebbende eerder maatregel of waarschuwing heeft
+            gehad
+        output:
+        - name: wordt_maatregel_opgelegd
+          type: boolean
+          description: Of een maatregel wordt opgelegd
+        - name: wordt_waarschuwing_gegeven
+          type: boolean
+          description: Of volstaan wordt met een waarschuwing
+        - name: verlaging_percentage
+          type: number
+          description: Verlagingspercentage (0 indien geen maatregel)
+        - name: duur_maanden
+          type: number
+          description: Duur van de maatregel in maanden (0 indien geen)
+        actions:
+        - output: afzien_wegens_niet_verwijtbaar
+          value:
+            operation: NOT
+            value:
+              operation: EQUALS
+              subject: $is_verwijtbaar
+              value: true
+        - output: afzien_wegens_dringende_redenen
+          value:
+            operation: EQUALS
+            subject: $heeft_dringende_redenen
+            value: true
+        - output: kan_waarschuwing
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $gedragscategorie
+              value: 1
+            - operation: NOT
+              value:
+                operation: EQUALS
+                subject: $heeft_eerdere_maatregel_of_waarschuwing
+                value: true
+        - output: wordt_maatregel_opgelegd
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $is_verwijtbaar
+              value: true
+            - operation: NOT
+              value:
+                operation: EQUALS
+                subject: $heeft_dringende_redenen
+                value: true
+            - operation: NOT
+              value:
+                operation: EQUALS
+                subject: $kan_waarschuwing
+                value: true
+        - output: wordt_waarschuwing_gegeven
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $is_verwijtbaar
+              value: true
+            - operation: NOT
+              value:
+                operation: EQUALS
+                subject: $heeft_dringende_redenen
+                value: true
+            - operation: EQUALS
+              subject: $kan_waarschuwing
+              value: true
+        - output: verlaging_percentage
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $wordt_maatregel_opgelegd
+              value: true
+            then:
+              operation: SWITCH
+              cases:
+              - when:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 1
+                then: 30
+              - when:
+                  operation: EQUALS
+                  subject: $gedragscategorie
+                  value: 2
+                then: 100
+            else: 0
+        - output: duur_maanden
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $wordt_maatregel_opgelegd
+              value: true
+            then: 1
+            else: 0
+
+  - number: '9'
+    text: |
+      Tekortschietend besef van verantwoordelijkheid
+
+      1. Indien de belanghebbende door eigen toedoen een beroep moet doen op de
+         bijstand, wordt de bijstand verlaagd.
+
+      2. De verlaging bedraagt 20 procent van de bijstandsnorm gedurende de
+         periode die de belanghebbende eerder zelfstandig had kunnen voorzien
+         in de noodzakelijke kosten van het bestaan, met een maximum van 12
+         maanden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR348678/4#Artikel9
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        De beoordeling of de belanghebbende door eigen toedoen een beroep op
+        bijstand moet doen en de duur van de periode die hij zelfstandig had
+        kunnen voorzien vereisen menselijke beoordeling.
+      open_norms:
+      - term: tekortschietend_besef_van_verantwoordelijkheid
+        description: Beoordeling of belanghebbende door eigen toedoen beroep op
+          bijstand moet doen
+      definitions:
+        PERCENTAGE_TEKORTSCHIETEND_BESEF:
+          value: 20
+          description: Verlagingspercentage bij tekortschietend besef
+        MAX_DUUR_MAANDEN:
+          value: 12
+          description: Maximale duur verlaging in maanden
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        input:
+        - name: heeft_tekortschietend_besef
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of belanghebbende tekortschietend
+              besef van verantwoordelijkheid heeft getoond
+          description: Tekortschietend besef van verantwoordelijkheid - VEREIST
+            MENSELIJKE BEOORDELING
+        - name: periode_zelfstandig_voorzien_maanden
+          type: number
+          source:
+            human_input: true
+            description: Beoordeling door college van de periode die
+              belanghebbende zelfstandig had kunnen voorzien
+          description: Aantal maanden zelfstandig voorzienbaar - VEREIST
+            MENSELIJKE BEOORDELING
+        output:
+        - name: verlaging_percentage
+          type: number
+          description: Verlagingspercentage (20% of 0%)
+        - name: duur_maanden
+          type: number
+          description: Duur van de verlaging in maanden (max 12)
+        actions:
+        - output: verlaging_percentage
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $heeft_tekortschietend_besef
+              value: true
+            then: $PERCENTAGE_TEKORTSCHIETEND_BESEF
+            else: 0
+        - output: duur_maanden
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $heeft_tekortschietend_besef
+              value: true
+            then:
+              operation: MIN
+              values:
+              - $periode_zelfstandig_voorzien_maanden
+              - $MAX_DUUR_MAANDEN
+            else: 0
+
+  - number: '10'
+    text: |
+      Ernstige misdragingen
+
+      1. Bij ernstige misdragingen jegens het college of zijn ambtenaren,
+         onder omstandigheden die rechtstreeks verband houden met de
+         bijstandverlening, wordt de bijstand verlaagd.
+
+      2. De verlaging bedraagt 50 procent van de bijstandsnorm gedurende een
+         maand.
+    url: https://lokaleregelgeving.overheid.nl/CVDR348678/4#Artikel10
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        De beoordeling of sprake is van ernstige misdragingen en of deze
+        rechtstreeks verband houden met de bijstandverlening vereist
+        menselijke beoordeling.
+      open_norms:
+      - term: ernstige_misdragingen
+        description: Beoordeling of sprake is van ernstige misdragingen jegens
+          het college of ambtenaren
+      definitions:
+        PERCENTAGE_ERNSTIGE_MISDRAGINGEN:
+          value: 50
+          description: Verlagingspercentage bij ernstige misdragingen
+        DUUR_MAANDEN_MISDRAGINGEN:
+          value: 1
+          description: Duur verlaging bij ernstige misdragingen in maanden
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        input:
+        - name: heeft_ernstige_misdragingen
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of sprake is van ernstige
+              misdragingen
+          description: Ernstige misdragingen vastgesteld - VEREIST MENSELIJKE
+            BEOORDELING
+        output:
+        - name: verlaging_percentage
+          type: number
+          description: Verlagingspercentage (50% of 0%)
+        - name: duur_maanden
+          type: number
+          description: Duur van de verlaging in maanden
+        actions:
+        - output: verlaging_percentage
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $heeft_ernstige_misdragingen
+              value: true
+            then: $PERCENTAGE_ERNSTIGE_MISDRAGINGEN
+            else: 0
+        - output: duur_maanden
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $heeft_ernstige_misdragingen
+              value: true
+            then: $DUUR_MAANDEN_MISDRAGINGEN
+            else: 0
+
+  - number: '11'
+    text: |
+      Recidive
+
+      1. Indien de belanghebbende zich binnen twaalf maanden na het opleggen van
+         een maatregel opnieuw schuldig maakt aan een verwijtbare gedraging van
+         dezelfde categorie, wordt de duur van de maatregel verdubbeld.
+
+      2. Bij een derde of volgende herhaling van dezelfde gedraging binnen twaalf
+         maanden na de vorige maatregel wordt het percentage verhoogd met 50
+         procentpunt, tot een maximum van 100 procent.
+    url: https://lokaleregelgeving.overheid.nl/CVDR348678/4#Artikel11
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        De beoordeling of het een gedraging van dezelfde categorie betreft en
+        of de recidivetermijn van toepassing is vereist menselijke beoordeling
+        van de dossiergegevens.
+      open_norms:
+      - term: dezelfde_categorie_gedraging
+        description: Beoordeling of de herhaling dezelfde categorie gedraging
+          betreft
+      definitions:
+        RECIDIVETERMIJN_MAANDEN:
+          value: 12
+          description: Termijn waarbinnen recidive wordt beoordeeld
+        MAX_PERCENTAGE:
+          value: 100
+          description: Maximaal verlagingspercentage
+        VERHOGING_PROCENTPUNT:
+          value: 50
+          description: Verhoging percentage bij derde of volgende herhaling
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        input:
+        - name: is_recidive
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of sprake is van recidive
+              (dezelfde gedraging binnen 12 maanden)
+          description: Recidive vastgesteld - VEREIST MENSELIJKE BEOORDELING
+        - name: is_derde_of_volgende_herhaling
+          type: boolean
+          source:
+            output: is_derde_of_volgende_herhaling
+          description: Derde of volgende herhaling binnen 12 maanden
+        - name: basis_verlaging_percentage
+          type: number
+          source:
+            output: basis_verlaging_percentage
+          description: Basisverlagingspercentage uit art. 6
+        - name: basis_duur_maanden
+          type: number
+          source:
+            output: basis_duur_maanden
+          description: Basisduur maatregel uit art. 6
+        output:
+        - name: aangepast_verlaging_percentage
+          type: number
+          description: Verlagingspercentage na eventuele recidiveverhoging
+        - name: aangepaste_duur_maanden
+          type: number
+          description: Duur maatregel na eventuele recidiveverdubbeling
+        actions:
+        - output: aangepast_verlaging_percentage
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $is_derde_of_volgende_herhaling
+              value: true
+            then:
+              operation: MIN
+              values:
+              - operation: ADD
+                values:
+                - $basis_verlaging_percentage
+                - $VERHOGING_PROCENTPUNT
+              - $MAX_PERCENTAGE
+            else: $basis_verlaging_percentage
+        - output: aangepaste_duur_maanden
+          value:
+            operation: IF
+            when:
+              operation: AND
+              conditions:
+              - operation: EQUALS
+                subject: $is_recidive
+                value: true
+              - operation: NOT
+                value:
+                  operation: EQUALS
+                  subject: $is_derde_of_volgende_herhaling
+                  value: true
+            then:
+              operation: MULTIPLY
+              values:
+              - $basis_duur_maanden
+              - 2
+            else: $basis_duur_maanden

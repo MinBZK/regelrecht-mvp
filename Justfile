@@ -5,54 +5,73 @@
 default:
     @just --list
 
-# --- Quality checks ---
+# =============================================================================
+# Rust quality checks
+# =============================================================================
 
-# Check Rust formatting
+# Check Rust formatting (cargo fmt --check)
 format:
-    cd packages && cargo fmt --check --all
+    cargo fmt --all --check
 
-# Run clippy lints
+# Run clippy lints on all packages
 lint:
-    cd packages && cargo clippy --all-features -- -D warnings
+    cargo clippy --all-targets --all-features -- -D warnings
 
-# Run cargo check
+# Run cargo check on all packages
 build-check:
-    cd packages && cargo check --all-features
+    cargo check --all-targets --all-features
 
-# Validate regulation YAML files
-validate *FILES:
-    script/validate.sh {{FILES}}
+# =============================================================================
+# Validation
+# =============================================================================
+
+# Validate regulation YAML files (all, or pass specific files)
+validate *files:
+    #!/usr/bin/env bash
+    if [ -z "{{files}}" ]; then
+        ./script/validate.sh
+    else
+        ./script/validate.sh {{files}}
+    fi
+
+# =============================================================================
+# Tests
+# =============================================================================
+
+# Run Rust unit tests
+test:
+    cargo test --lib -p regelrecht-engine
+
+# Run Rust BDD tests (cucumber-rs)
+bdd:
+    cargo test --test bdd -p regelrecht-engine --features bdd -- --nocapture
+
+# Run all tests (unit + BDD)
+test-all: test bdd
+
+# =============================================================================
+# Combined checks
+# =============================================================================
 
 # Run all quality checks (format + lint + check + validate + tests)
 check: format lint build-check validate test-all
 
-# --- Tests ---
+# =============================================================================
+# Pre-commit hooks
+# =============================================================================
 
-# Run Rust unit and integration tests
-test:
-    cd packages/engine && cargo test --all-features
+# Pre-commit hooks draaien
+pre-commit:
+    pre-commit run --all-files
 
-# Run Rust BDD tests
-bdd:
-    cd packages/engine && cargo test --test bdd -- --nocapture
+# =============================================================================
+# Frontend development
+# =============================================================================
 
-# Run harvester tests
-harvester-test:
-    cd packages/harvester && cargo test
+# Start frontend dev server (Vite)
+dev:
+    cd frontend && npm run dev
 
-# Run all tests (engine + harvester)
-test-all: test harvester-test
-
-# --- Mutation testing ---
-
-# Run mutation testing on engine (in-place because tests use relative paths to regulation/)
-mutants *ARGS:
-    cd packages/engine && cargo mutants --in-place --timeout-multiplier 3 {{ARGS}}
-
-# --- Security ---
-
-# Run security audit on all dependencies (vulnerabilities, licenses, sources)
-audit:
-    cargo deny check
-    cd frontend && npm audit
-    cd frontend && npx license-checker --production --failOn "GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0;SSPL-1.0;BUSL-1.1"
+# YAML lint (requires yamllint)
+yamllint:
+    yamllint regulation/

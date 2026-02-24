@@ -1,0 +1,22 @@
+annotations:
+- body:
+    classification: definition
+    data_type: string
+    description: ''
+    name: 18 jarige
+    purpose: classifying
+    type: TextualBody
+  motivation: classifying
+  resolution: found
+  status: draft
+  target:
+    article: B1
+    selector:
+      exact: degenen die op de dag van de kandidaatstelling Nederlander zijn en op de dag van de stemming de leeftijd van achttien jaar hebben bereikt
+      prefix: |-
+        de dag van de
+        kandidaatstellin
+      suffix: van de kandidaatstelling hun w
+      type: TextQuoteSelector
+    source: regelrecht://unknown
+  type: Annotation

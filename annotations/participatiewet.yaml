@@ -1,0 +1,58 @@
+annotations:
+- type: Annotation
+  motivation: classifying
+  resolution: found
+  status: approved
+  target:
+    source: regelrecht://participatiewet
+    article: '3'
+    selector:
+      type: TextQuoteSelector
+      exact: gezamenlijke huishouding
+      prefix: 'de '
+      suffix: ' voeren'
+  body:
+    type: TextualBody
+    purpose: classifying
+    name: gezamenlijke_huishouding
+    classification: definition
+    data_type: boolean
+    description: Een gezamenlijke huishouding betreft twee personen
+- type: Annotation
+  motivation: linking
+  resolution: found
+  target:
+    source: regelrecht://participatiewet
+    article: '3'
+    selector:
+      type: TextQuoteSelector
+      exact: 'gehuwde: als partner geregistreerde'
+      prefix: ëindiging van een geregistreer
+      suffix: 'ood of
+
+        vermissing.
+
+        In deze wet'
+  body:
+    type: TextualBody
+    purpose: linking
+    name: is_gehuwd_of_geregistreerd
+    classification: input
+    value: Linked to is_gehuwd_of_geregistreerd
+  status: draft
+- type: Annotation
+  motivation: classifying
+  resolution: found
+  target:
+    source: regelrecht://participatiewet
+    article: '3'
+    selector:
+      type: TextQuoteSelector
+      exact: test tekst
+  body:
+    type: TextualBody
+    purpose: classifying
+    name: test_var
+    classification: definition
+    data_type: boolean
+  status: draft

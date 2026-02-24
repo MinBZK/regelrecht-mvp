@@ -1,0 +1,351 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: beleidsregels_bijzondere_bijstand_amsterdam_2025
+uuid: cvdr679865-0006-0001-0001-000000000363
+regulatory_layer: BELEIDSREGEL
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+gemeente_code: GM0363
+officiele_titel: Beleidsregels bijzondere bijstand gemeente Amsterdam
+url: https://lokaleregelgeving.overheid.nl/CVDR679865/6
+name: Beleidsregels bijzondere bijstand Amsterdam 2025
+
+# Grondslag: Participatiewet artikel 35
+legal_basis:
+  - law_id: participatiewet
+    article: '35'
+    description: Bijzondere bijstand
+
+articles:
+  # Hoofdstuk 5: Draagkracht
+
+  - number: '5.1.3'
+    text: |
+      Draagkrachtberekening
+
+      1. Inkomen tot de bijstandsnorm vermeerderd met EUR 100 (alleenstaande) of
+         EUR 300 (gehuwden/samenwonenden) is vrijgesteld.
+      2. Van het meerinkomen boven deze grens wordt 25% als draagkracht aangemerkt.
+      3. Voor duurzame gebruiksgoederen, kinderkosten en woonkostentoeslag geldt
+         100% van het meerinkomen als draagkracht.
+    url: https://lokaleregelgeving.overheid.nl/CVDR679865/6#Artikel5.1.3
+    machine_readable:
+      definitions:
+        VRIJ_INKOMEN_ALLEENSTAANDE:
+          value: 10000
+          description: Vrij inkomen boven norm voor alleenstaande (eurocent, EUR 100)
+        VRIJ_INKOMEN_GEHUWDEN:
+          value: 30000
+          description: Vrij inkomen boven norm voor gehuwden (eurocent, EUR 300)
+        DRAAGKRACHT_PERCENTAGE_STANDAARD:
+          value: 25
+          description: Percentage meerinkomen als draagkracht (standaard)
+        DRAAGKRACHT_PERCENTAGE_DUURZAAM:
+          value: 100
+          description: Percentage meerinkomen als draagkracht (duurzame goederen)
+      execution:
+        parameters:
+          - name: netto_inkomen
+            type: number
+            required: true
+            description: Netto maandinkomen (eurocent)
+          - name: bijstandsnorm
+            type: number
+            required: true
+            description: Toepasselijke bijstandsnorm (eurocent)
+          - name: is_alleenstaande
+            type: boolean
+            required: true
+            description: Of de aanvrager alleenstaande is
+          - name: is_duurzaam_gebruiksgoed
+            type: boolean
+            required: false
+            description: Of de aanvraag betreft duurzame gebruiksgoederen
+          - name: is_kinderkosten
+            type: boolean
+            required: false
+            description: Of de aanvraag betreft kinderkosten
+          - name: is_woonkostentoeslag
+            type: boolean
+            required: false
+            description: Of de aanvraag betreft woonkostentoeslag
+        output:
+          - name: inkomensgrens
+            type: number
+            description: Grens waarboven draagkracht wordt berekend (eurocent)
+          - name: draagkracht
+            type: number
+            description: Berekende draagkracht (eurocent per maand)
+        actions:
+          - output: inkomensgrens
+            value:
+              operation: ADD
+              values:
+                - $bijstandsnorm
+                - operation: IF
+                  when:
+                    operation: EQUALS
+                    subject: $is_alleenstaande
+                    value: true
+                  then: 10000
+                  else: 30000
+          - output: draagkracht
+            value:
+              operation: IF
+              when:
+                operation: LESS_THAN_OR_EQUAL
+                subject: $netto_inkomen
+                value: $inkomensgrens
+              then: 0
+              else:
+                operation: MULTIPLY
+                values:
+                  - operation: SUBTRACT
+                    values:
+                      - $netto_inkomen
+                      - $inkomensgrens
+                  - operation: DIVIDE
+                    values:
+                      - operation: IF
+                        when:
+                          operation: OR
+                          conditions:
+                            - operation: EQUALS
+                              subject: $is_duurzaam_gebruiksgoed
+                              value: true
+                            - operation: EQUALS
+                              subject: $is_kinderkosten
+                              value: true
+                            - operation: EQUALS
+                              subject: $is_woonkostentoeslag
+                              value: true
+                        then: 100
+                        else: 25
+                      - 100
+
+  - number: '5.1.4'
+    text: |
+      Vermogensgrenzen
+
+      1. De standaard vermogensvrijstelling is conform artikel 34 lid 3 Participatiewet.
+      2. Bij vermogen boven de grens blijft 2 maanden bijstandsnorm beschermd
+         (zonder kinderen) of 3 maanden (met kinderen).
+      3. Eigen woningvermogen tot EUR 235.000 wordt niet als vermogen aangemerkt.
+    url: https://lokaleregelgeving.overheid.nl/CVDR679865/6#Artikel5.1.4
+    machine_readable:
+      definitions:
+        BESCHERMD_VERMOGEN_MAANDEN_ZONDER_KINDEREN:
+          value: 2
+          description: Beschermd vermogen in maanden bijstandsnorm (zonder kinderen)
+        BESCHERMD_VERMOGEN_MAANDEN_MET_KINDEREN:
+          value: 3
+          description: Beschermd vermogen in maanden bijstandsnorm (met kinderen)
+        EIGEN_WONING_VRIJSTELLING:
+          value: 23500000
+          description: Vrijstelling eigen woningvermogen (eurocent, EUR 235.000)
+      execution:
+        parameters:
+          - name: vermogen
+            type: number
+            required: true
+            description: Totaal vermogen (eurocent)
+          - name: vermogensgrens
+            type: number
+            required: true
+            description: Vermogensgrens conform art. 34 lid 3 Participatiewet (eurocent)
+          - name: bijstandsnorm
+            type: number
+            required: true
+            description: Toepasselijke bijstandsnorm (eurocent)
+          - name: heeft_kinderen
+            type: boolean
+            required: true
+            description: Of de aanvrager kinderen heeft
+          - name: eigen_woningvermogen
+            type: number
+            required: false
+            description: Waarde eigen woning (eurocent)
+        output:
+          - name: beschermd_vermogen
+            type: number
+            description: Beschermd vermogen (eurocent)
+          - name: in_aanmerking_te_nemen_vermogen
+            type: number
+            description: Vermogen dat meetelt voor draagkracht (eurocent)
+        actions:
+          - output: beschermd_vermogen
+            value:
+              operation: MULTIPLY
+              values:
+                - $bijstandsnorm
+                - operation: IF
+                  when:
+                    operation: EQUALS
+                    subject: $heeft_kinderen
+                    value: true
+                  then: 3
+                  else: 2
+          - output: in_aanmerking_te_nemen_vermogen
+            value:
+              operation: MAX
+              values:
+                - 0
+                - operation: SUBTRACT
+                  values:
+                    - operation: SUBTRACT
+                      values:
+                        - $vermogen
+                        - operation: MIN
+                          values:
+                            - operation: IF
+                              when:
+                                operation: GREATER_THAN
+                                subject: $eigen_woningvermogen
+                                value: 0
+                              then: $eigen_woningvermogen
+                              else: 0
+                            - 23500000
+                    - $vermogensgrens
+
+  # Hoofdstuk 8: Jongerentoeslag
+
+  - number: '8'
+    text: |
+      Jongerentoeslag
+
+      Voor jongeren van 18 tot en met 20 jaar met kosten boven de jongerennorm:
+      a. alleenstaande 18 jaar: 30% van de gehuwdennorm;
+      b. alleenstaande 19-20 jaar: 35% van de gehuwdennorm;
+      c. gehuwden 18-20 jaar: 20% van de gehuwdennorm.
+    url: https://lokaleregelgeving.overheid.nl/CVDR679865/6#Artikel8
+    machine_readable:
+      definitions:
+        JONGERENTOESLAG_ALLEENSTAANDE_18:
+          value: 30
+          description: Toeslag alleenstaande 18 jaar (percentage gehuwdennorm)
+        JONGERENTOESLAG_ALLEENSTAANDE_19_20:
+          value: 35
+          description: Toeslag alleenstaande 19-20 jaar (percentage gehuwdennorm)
+        JONGERENTOESLAG_GEHUWDEN_18_20:
+          value: 20
+          description: Toeslag gehuwden 18-20 jaar (percentage gehuwdennorm)
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+            description: Leeftijd van de aanvrager
+          - name: is_alleenstaande
+            type: boolean
+            required: true
+            description: Of de aanvrager alleenstaande is
+          - name: gehuwdennorm
+            type: number
+            required: true
+            description: Bijstandsnorm voor gehuwden (eurocent)
+        output:
+          - name: heeft_recht_op_jongerentoeslag
+            type: boolean
+            description: Of recht bestaat op jongerentoeslag
+          - name: jongerentoeslag_bedrag
+            type: number
+            description: Hoogte jongerentoeslag (eurocent)
+        actions:
+          - output: heeft_recht_op_jongerentoeslag
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: 18
+                - operation: LESS_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: 20
+          - output: jongerentoeslag_bedrag
+            value:
+              operation: IF
+              when:
+                operation: NOT
+                subject:
+                  operation: AND
+                  conditions:
+                    - operation: GREATER_THAN_OR_EQUAL
+                      subject: $leeftijd
+                      value: 18
+                    - operation: LESS_THAN_OR_EQUAL
+                      subject: $leeftijd
+                      value: 20
+              then: 0
+              else:
+                operation: IF
+                when:
+                  operation: EQUALS
+                  subject: $is_alleenstaande
+                  value: false
+                then:
+                  operation: MULTIPLY
+                  values:
+                    - $gehuwdennorm
+                    - 0.20
+                else:
+                  operation: IF
+                  when:
+                    operation: EQUALS
+                    subject: $leeftijd
+                    value: 18
+                  then:
+                    operation: MULTIPLY
+                    values:
+                      - $gehuwdennorm
+                      - 0.30
+                  else:
+                    operation: MULTIPLY
+                    values:
+                      - $gehuwdennorm
+                      - 0.35
+
+  # Hoofdstuk 9: Woonkostentoeslag
+
+  - number: '9.1'
+    text: |
+      Woonkostentoeslag
+
+      1. Maandelijkse woonkosten tot EUR 400 worden beschouwd als algemene
+         kosten van bestaan en komen niet voor bijzondere bijstand in aanmerking.
+      2. Woonkosten boven EUR 400 per maand kunnen in aanmerking komen voor
+         woonkostentoeslag als bijzondere bijstand.
+      3. Het bedrag wordt jaarlijks aangepast op basis van de huurtoeslag wetgeving.
+    url: https://lokaleregelgeving.overheid.nl/CVDR679865/6#Artikel9.1
+    machine_readable:
+      definitions:
+        WOONKOSTEN_DREMPEL:
+          value: 40000
+          description: Drempel woonkosten voor bijzondere bijstand (eurocent, EUR 400)
+      execution:
+        parameters:
+          - name: maandelijkse_woonkosten
+            type: number
+            required: true
+            description: Maandelijkse woonkosten (eurocent)
+        output:
+          - name: komt_in_aanmerking_woonkostentoeslag
+            type: boolean
+            description: Of woonkosten in aanmerking komen voor toeslag
+          - name: woonkosten_boven_drempel
+            type: number
+            description: Woonkosten boven de drempel (eurocent)
+        actions:
+          - output: komt_in_aanmerking_woonkostentoeslag
+            value:
+              operation: GREATER_THAN
+              subject: $maandelijkse_woonkosten
+              value: 40000
+          - output: woonkosten_boven_drempel
+            value:
+              operation: MAX
+              values:
+                - 0
+                - operation: SUBTRACT
+                  values:
+                    - $maandelijkse_woonkosten
+                    - 40000

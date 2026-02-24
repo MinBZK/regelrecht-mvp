@@ -1,0 +1,369 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: beleidsregels_participatiewet_amsterdam_2025
+uuid: cvdr736729-0001-0001-0001-000000000363
+regulatory_layer: BELEIDSREGEL
+publication_date: '2025-01-21'
+valid_from: '2025-03-01'
+gemeente_code: GM0363
+officiele_titel: Beleidsregels Participatiewet, IOAW, IOAZ en Bbz van de Gemeente Amsterdam
+url: https://lokaleregelgeving.overheid.nl/CVDR736729
+name: Beleidsregels Participatiewet Amsterdam 2025
+
+# Grondslag: Participatiewet en Algemene wet bestuursrecht
+legal_basis:
+  - law_id: participatiewet
+    article: '4:81'
+    description: Beleidsregels op grond van Awb
+  - law_id: participatiewet
+    article: '31'
+    description: Inkomen
+  - law_id: participatiewet
+    article: '34'
+    description: Vermogen
+
+articles:
+  # Hoofdstuk 2: Bijstandsnorm
+
+  - number: '2.2'
+    text: |
+      Verlaging bijstandsnorm
+
+      1. De bijstandsnorm wordt met 20% verlaagd indien de belanghebbende geen
+         woonkosten heeft of geen woning in stand houdt.
+      2. De bijstandsnorm wordt met 10% verlaagd indien de belanghebbende gebruik
+         maakt van noodopvang of winterkoudeopvang.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel2.2
+    machine_readable:
+      definitions:
+        VERLAGING_PERCENTAGE_GEEN_WOONKOSTEN:
+          value: 20
+          description: Verlaging bijstandsnorm bij geen woonkosten (percentage)
+        VERLAGING_PERCENTAGE_NOODOPVANG:
+          value: 10
+          description: Verlaging bijstandsnorm bij gebruik noodopvang (percentage)
+      execution:
+        parameters:
+          - name: heeft_woonkosten
+            type: boolean
+            required: true
+            description: Of de belanghebbende woonkosten heeft
+          - name: houdt_woning_in_stand
+            type: boolean
+            required: true
+            description: Of de belanghebbende een woning in stand houdt
+          - name: gebruikt_noodopvang
+            type: boolean
+            required: false
+            description: Of de belanghebbende gebruik maakt van noodopvang
+          - name: bijstandsnorm
+            type: number
+            required: true
+            description: De toepasselijke bijstandsnorm (eurocent)
+        output:
+          - name: verlaging_percentage
+            type: number
+            description: Percentage waarmee de bijstandsnorm wordt verlaagd
+          - name: aangepaste_bijstandsnorm
+            type: number
+            description: De aangepaste bijstandsnorm na verlaging (eurocent)
+        actions:
+          - output: verlaging_percentage
+            value:
+              operation: IF
+              when:
+                operation: OR
+                conditions:
+                  - operation: EQUALS
+                    subject: $heeft_woonkosten
+                    value: false
+                  - operation: EQUALS
+                    subject: $houdt_woning_in_stand
+                    value: false
+              then: 20
+              else:
+                operation: IF
+                when:
+                  operation: EQUALS
+                  subject: $gebruikt_noodopvang
+                  value: true
+                then: 10
+                else: 0
+          - output: aangepaste_bijstandsnorm
+            value:
+              operation: MULTIPLY
+              values:
+                - $bijstandsnorm
+                - operation: SUBTRACT
+                  values:
+                    - 1
+                    - operation: DIVIDE
+                      values:
+                        - $verlaging_percentage
+                        - 100
+
+  - number: '2.4'
+    text: |
+      Giften
+
+      1. Giften tot een bedrag van EUR 1.800 per kalenderjaar hoeven niet gemeld
+         te worden en worden niet als inkomen aangemerkt.
+      2. Bij giften boven EUR 1.800 per kalenderjaar vindt individuele beoordeling
+         plaats.
+      3. Voorzieningen van charitatieve instellingen zoals voedselbanken en
+         kledingbanken worden niet als vermogen aangemerkt.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel2.4
+    machine_readable:
+      definitions:
+        GIFTEN_VRIJSTELLING_JAAR:
+          value: 180000
+          description: Jaarlijkse vrijstelling voor giften (eurocent, EUR 1.800)
+      execution:
+        parameters:
+          - name: totaal_giften_kalenderjaar
+            type: number
+            required: true
+            description: Totaal ontvangen giften in het kalenderjaar (eurocent)
+        output:
+          - name: giften_meldingsplicht
+            type: boolean
+            description: Of de giften gemeld moeten worden
+          - name: giften_als_inkomen
+            type: number
+            description: Bedrag aan giften dat als inkomen wordt aangemerkt (eurocent)
+        actions:
+          - output: giften_meldingsplicht
+            value:
+              operation: GREATER_THAN
+              subject: $totaal_giften_kalenderjaar
+              value: 180000
+          - output: giften_als_inkomen
+            value:
+              operation: IF
+              when:
+                operation: LESS_THAN_OR_EQUAL
+                subject: $totaal_giften_kalenderjaar
+                value: 180000
+              then: 0
+              else: $totaal_giften_kalenderjaar  # Individuele beoordeling nodig
+
+  # Hoofdstuk 3: Vermogen
+
+  - number: '3.2'
+    text: |
+      Incidentele inkomsten
+
+      Inkomsten uit hobby's tot een bedrag van EUR 1.200 per kalenderjaar zijn
+      vrijgesteld van meldingsplicht.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel3.2
+    machine_readable:
+      definitions:
+        HOBBY_INKOMSTEN_VRIJSTELLING:
+          value: 120000
+          description: Jaarlijkse vrijstelling voor hobby-inkomsten (eurocent, EUR 1.200)
+
+  - number: '3.4'
+    text: |
+      Vermogensberekening
+
+      Bij de berekening van het vermogen worden direct opeisbare schulden in
+      mindering gebracht op de in aanmerking te nemen bezittingen. Van dit
+      totaal wordt anderhalf keer de van toepassing zijnde maandnorm afgetrokken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel3.4
+    machine_readable:
+      definitions:
+        VERMOGEN_AFTREK_FACTOR:
+          value: 1.5
+          description: Factor voor aftrek maandnorm bij vermogensberekening
+      execution:
+        parameters:
+          - name: totale_bezittingen
+            type: number
+            required: true
+            description: Totale waarde bezittingen (eurocent)
+          - name: direct_opeisbare_schulden
+            type: number
+            required: true
+            description: Totale direct opeisbare schulden (eurocent)
+          - name: maandnorm
+            type: number
+            required: true
+            description: Toepasselijke maandnorm bijstand (eurocent)
+        output:
+          - name: berekend_vermogen
+            type: number
+            description: Het berekende vermogen na aftrek schulden en vrijstelling (eurocent)
+        actions:
+          - output: berekend_vermogen
+            value:
+              operation: SUBTRACT
+              values:
+                - operation: SUBTRACT
+                  values:
+                    - $totale_bezittingen
+                    - $direct_opeisbare_schulden
+                - operation: MULTIPLY
+                  values:
+                    - $maandnorm
+                    - 1.5
+
+  - number: '3.5'
+    text: |
+      Voertuigen en roerende zaken
+
+      Van de gezamenlijke waarde van roerende en onroerende zaken zoals voertuigen,
+      caravan, tuinhuisje, boot en camper, wordt bij aanvang van de algemene
+      bijstand de eerste EUR 5.000 vrijgelaten.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel3.5
+    machine_readable:
+      definitions:
+        VOERTUIGEN_VRIJSTELLING:
+          value: 500000
+          description: Vrijstelling voor voertuigen en roerende zaken (eurocent, EUR 5.000)
+      execution:
+        parameters:
+          - name: waarde_voertuigen_roerende_zaken
+            type: number
+            required: true
+            description: Waarde van voertuigen en roerende zaken (eurocent)
+        output:
+          - name: in_aanmerking_te_nemen_waarde
+            type: number
+            description: Waarde die meetelt voor vermogenstoets (eurocent)
+        actions:
+          - output: in_aanmerking_te_nemen_waarde
+            value:
+              operation: MAX
+              values:
+                - 0
+                - operation: SUBTRACT
+                  values:
+                    - $waarde_voertuigen_roerende_zaken
+                    - 500000
+
+  - number: '3.6'
+    text: |
+      Immateriele schadevergoeding
+
+      Voor zover een schadevergoeding voor immateriele schade meer bedraagt dan
+      EUR 47.500 wordt het meerdere van dat bedrag in aanmerking genomen als
+      vermogen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel3.6
+    machine_readable:
+      definitions:
+        IMMATERIELE_SCHADE_VRIJSTELLING:
+          value: 4750000
+          description: Vrijstelling immateriele schadevergoeding (eurocent, EUR 47.500)
+      execution:
+        parameters:
+          - name: immateriele_schadevergoeding
+            type: number
+            required: true
+            description: Ontvangen immateriele schadevergoeding (eurocent)
+        output:
+          - name: als_vermogen_aangemerkt
+            type: number
+            description: Bedrag dat als vermogen wordt aangemerkt (eurocent)
+        actions:
+          - output: als_vermogen_aangemerkt
+            value:
+              operation: MAX
+              values:
+                - 0
+                - operation: SUBTRACT
+                  values:
+                    - $immateriele_schadevergoeding
+                    - 4750000
+
+  # Hoofdstuk 4: Verrekening
+
+  - number: '4.1'
+    text: |
+      Maximum verrekening
+
+      Het maandelijks te verrekenen bedrag is, tenzij er uitdrukkelijke toestemming
+      is van de gerechtigde om hiervan af te wijken, nooit hoger dan EUR 150.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel4.1
+    machine_readable:
+      definitions:
+        MAX_VERREKENING_MAAND:
+          value: 15000
+          description: Maximum maandelijkse verrekening (eurocent, EUR 150)
+      execution:
+        parameters:
+          - name: te_verrekenen_bedrag
+            type: number
+            required: true
+            description: Het te verrekenen bedrag (eurocent)
+          - name: toestemming_afwijking
+            type: boolean
+            required: false
+            description: Of de gerechtigde toestemming heeft gegeven voor afwijking
+        output:
+          - name: werkelijk_verrekend
+            type: number
+            description: Het werkelijk te verrekenen bedrag (eurocent)
+        actions:
+          - output: werkelijk_verrekend
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $toestemming_afwijking
+                value: true
+              then: $te_verrekenen_bedrag
+              else:
+                operation: MIN
+                values:
+                  - $te_verrekenen_bedrag
+                  - 15000
+
+  # Hoofdstuk 5: Kostendelersnorm
+
+  - number: '5.1'
+    text: |
+      Vooropgezet tijdelijk verblijf
+
+      Bij een gedeelde woonsituatie kan uitstel van de kostendelersnorm worden
+      verleend voor maximaal 6 maanden, met mogelijkheid tot verlenging. Dit
+      geldt bij tijdelijk verblijf dat vooraf is bepaald.
+
+      Uitstel kostendelersnorm wordt verleend voor maximaal 12 maanden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR736729/1#Artikel5.1
+    machine_readable:
+      definitions:
+        KOSTENDELERSNORM_UITSTEL_MAANDEN:
+          value: 12
+          description: Maximaal uitstel kostendelersnorm (maanden)
+        TIJDELIJK_VERBLIJF_MAANDEN:
+          value: 6
+          description: Periode voor tijdelijk verblijf (maanden)
+      execution:
+        parameters:
+          - name: is_tijdelijk_verblijf
+            type: boolean
+            required: true
+            description: Of er sprake is van vooropgezet tijdelijk verblijf
+          - name: maanden_gedeelde_woning
+            type: number
+            required: true
+            description: Aantal maanden in gedeelde woonsituatie
+        output:
+          - name: kostendelersnorm_van_toepassing
+            type: boolean
+            description: Of de kostendelersnorm van toepassing is
+        actions:
+          - output: kostendelersnorm_van_toepassing
+            value:
+              operation: IF
+              when:
+                operation: AND
+                conditions:
+                  - operation: EQUALS
+                    subject: $is_tijdelijk_verblijf
+                    value: true
+                  - operation: LESS_THAN_OR_EQUAL
+                    subject: $maanden_gedeelde_woning
+                    value: 12
+              then: false
+              else: true

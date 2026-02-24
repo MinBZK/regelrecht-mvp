@@ -1,0 +1,404 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: verordening_individuele_inkomenstoeslag_rotterdam_2025
+uuid: cvdr741634-0001-0001-0001-000000000599
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2025-06-12'
+valid_from: '2025-07-01'
+gemeente_code: GM0599
+officiele_titel: Verordening individuele inkomenstoeslag Rotterdam 2025
+url: https://lokaleregelgeving.overheid.nl/CVDR741634/1
+name: Verordening individuele inkomenstoeslag Rotterdam 2025
+
+legal_basis:
+  - law_id: participatiewet
+    article: '8'
+    paragraph: '1'
+    part: 'b'
+    description: Gemeenteraad stelt regels over individuele inkomenstoeslag
+  - law_id: participatiewet
+    article: '36'
+    description: Individuele inkomenstoeslag
+
+articles:
+  - number: '1'
+    text: |
+      Begripsomschrijvingen
+
+      In deze verordening wordt verstaan onder:
+      a. inkomen: het inkomen als bedoeld in artikel 32 van de Participatiewet,
+         vermeerderd met de algemene bijstand;
+      b. peildatum: de datum van de aanvraag van de individuele inkomenstoeslag;
+      c. referteperiode: de periode van 36 maanden voorafgaand aan de peildatum.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel1
+    machine_readable:
+      definitions:
+        REFERTEPERIODE_MAANDEN:
+          value: 36
+          description: Referteperiode voor beoordeling langdurig laag inkomen
+
+  - number: '2'
+    text: |
+      Indienen aanvraag
+
+      Een aanvraag voor de individuele inkomenstoeslag wordt ingediend op een door
+      het college vastgesteld formulier.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel2
+
+  - number: '3'
+    text: |
+      Langdurig laag inkomen
+
+      1. Een persoon heeft een langdurig laag inkomen indien het inkomen gedurende
+         de referteperiode niet hoger is dan 105 procent van de toepasselijke
+         bijstandsnorm.
+
+      2. De individuele inkomenstoeslag wordt verleend indien het inkomen op de
+         peildatum niet hoger is dan 130 procent van de toepasselijke bijstandsnorm.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel3
+    machine_readable:
+      definitions:
+        INKOMENSGRENS_PERCENTAGE:
+          value: 130
+          description: Percentage van bijstandsnorm als inkomensgrens op peildatum
+        LAAG_INKOMEN_PERCENTAGE:
+          value: 105
+          description: Percentage van bijstandsnorm als grens voor langdurig laag
+            inkomen gedurende referteperiode
+      execution:
+        produces:
+          legal_character: WAARDEBEPALING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        - name: gemiddeld_inkomen_referteperiode
+          type: number
+          required: true
+          description: Gemiddeld maandinkomen in de referteperiode (eurocent)
+        - name: huidig_inkomen
+          type: number
+          required: true
+          description: Huidig maandinkomen op peildatum (eurocent)
+        - name: bijstandsnorm
+          type: number
+          required: true
+          description: Toepasselijke bijstandsnorm (eurocent)
+        output:
+        - name: heeft_langdurig_laag_inkomen
+          type: boolean
+          description: Of de persoon langdurig laag inkomen heeft (105% norm
+            gedurende referteperiode)
+        - name: inkomensgrens
+          type: number
+          description: De inkomensgrens op peildatum (130% van norm)
+        - name: voldoet_aan_inkomenseis
+          type: boolean
+          description: Of het huidig inkomen onder de 130% grens ligt
+        actions:
+        - output: grens_laag_inkomen
+          value:
+            operation: MULTIPLY
+            values:
+            - $bijstandsnorm
+            - 1.05
+        - output: heeft_langdurig_laag_inkomen
+          value:
+            operation: LESS_THAN_OR_EQUAL
+            subject: $gemiddeld_inkomen_referteperiode
+            value: $grens_laag_inkomen
+        - output: inkomensgrens
+          value:
+            operation: MULTIPLY
+            values:
+            - $bijstandsnorm
+            - 1.30
+        - output: voldoet_aan_inkomenseis
+          value:
+            operation: LESS_THAN_OR_EQUAL
+            subject: $huidig_inkomen
+            value: $inkomensgrens
+
+  - number: '4'
+    text: |
+      Hoogte individuele inkomenstoeslag
+
+      1. De individuele inkomenstoeslag bedraagt per kalenderjaar:
+         a. voor een alleenstaande: 200 euro;
+         b. voor een alleenstaande ouder: 300 euro;
+         c. voor gehuwden zonder kinderen: 300 euro;
+         d. voor gehuwden met een of meer kinderen: 400 euro.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel4
+    machine_readable:
+      definitions:
+        BEDRAG_ALLEENSTAANDE:
+          value: 20000
+          description: Bedrag voor alleenstaande in eurocent (€200)
+        BEDRAG_ALLEENSTAANDE_OUDER:
+          value: 30000
+          description: Bedrag voor alleenstaande ouder in eurocent (€300)
+        BEDRAG_GEHUWDEN_ZONDER_KINDEREN:
+          value: 30000
+          description: Bedrag voor gehuwden zonder kinderen in eurocent (€300)
+        BEDRAG_GEHUWDEN_MET_KINDEREN:
+          value: 40000
+          description: Bedrag voor gehuwden met kinderen in eurocent (€400)
+      execution:
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        - name: huishoudtype
+          type: string
+          required: true
+          description: Type huishouden (alleenstaande/alleenstaande_ouder/gehuwden_zonder_kinderen/gehuwden_met_kinderen)
+        output:
+        - name: toeslag_bedrag
+          type: amount
+          type_spec:
+            unit: eurocent
+          description: Hoogte van de individuele inkomenstoeslag in eurocent
+        actions:
+        - output: toeslag_bedrag
+          value:
+            operation: SWITCH
+            cases:
+            - when:
+                operation: EQUALS
+                subject: $huishoudtype
+                value: alleenstaande
+              then: $BEDRAG_ALLEENSTAANDE
+            - when:
+                operation: EQUALS
+                subject: $huishoudtype
+                value: alleenstaande_ouder
+              then: $BEDRAG_ALLEENSTAANDE_OUDER
+            - when:
+                operation: EQUALS
+                subject: $huishoudtype
+                value: gehuwden_zonder_kinderen
+              then: $BEDRAG_GEHUWDEN_ZONDER_KINDEREN
+            - when:
+                operation: EQUALS
+                subject: $huishoudtype
+                value: gehuwden_met_kinderen
+              then: $BEDRAG_GEHUWDEN_MET_KINDEREN
+
+  - number: '5'
+    text: |
+      Weigeringsgronden
+
+      1. De individuele inkomenstoeslag wordt geweigerd indien de aanvrager:
+         a. op de peildatum een opleiding volgt als bedoeld in de Wet
+            studiefinanciering 2000 of in de Wet tegemoetkoming onderwijsbijdrage
+            en schoolkosten;
+         b. in de 12 maanden voorafgaand aan de peildatum een opleiding als
+            bedoeld onder a heeft afgerond;
+         c. in de 12 maanden voorafgaand aan de peildatum een maatregel van 100
+            procent is opgelegd als bedoeld in artikel 18, tweede lid, van de
+            Participatiewet.
+
+      2. Het college kan in bijzondere individuele omstandigheden afwijken van het
+         eerste lid.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel5
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        Lid 2 bevat een hardheidsclausule: het college kan in bijzondere individuele
+        omstandigheden afwijken van de weigeringsgronden. Dit vereist menselijke
+        beoordeling van de individuele omstandigheden.
+      open_norms:
+      - term: bijzondere_individuele_omstandigheden
+        description: Hardheidsclausule - college kan afwijken bij bijzondere
+          individuele omstandigheden
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: TOEKENNING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        input:
+        - name: volgt_opleiding_op_peildatum
+          type: boolean
+          source:
+            output: volgt_opleiding_op_peildatum
+          description: Volgt opleiding conform WSF 2000 of WTOS op peildatum
+        - name: opleiding_afgerond_afgelopen_12_maanden
+          type: boolean
+          source:
+            output: opleiding_afgerond_afgelopen_12_maanden
+          description: Heeft opleiding afgerond in 12 maanden voor peildatum
+        - name: maatregel_100_procent_afgelopen_12_maanden
+          type: boolean
+          source:
+            output: maatregel_100_procent_afgelopen_12_maanden
+          description: Is maatregel van 100% opgelegd in 12 maanden voor
+            peildatum
+        - name: kan_afwijken_bijzondere_omstandigheden
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of bijzondere individuele
+              omstandigheden aanleiding geven om af te wijken van
+              weigeringsgronden
+          description: Hardheidsclausule - VEREIST MENSELIJKE BEOORDELING
+        - name: heeft_langdurig_laag_inkomen
+          type: boolean
+          source:
+            regulation: verordening_individuele_inkomenstoeslag_rotterdam_2025
+            output: heeft_langdurig_laag_inkomen
+            parameters:
+              bsn: $bsn
+          description: Uitkomst art. 3 langdurig laag inkomen
+        - name: voldoet_aan_inkomenseis
+          type: boolean
+          source:
+            regulation: verordening_individuele_inkomenstoeslag_rotterdam_2025
+            output: voldoet_aan_inkomenseis
+            parameters:
+              bsn: $bsn
+          description: Uitkomst art. 3 inkomenseis peildatum
+        output:
+        - name: heeft_recht_op_toeslag
+          type: boolean
+          description: Of de aanvrager recht heeft op individuele inkomenstoeslag
+        - name: weigeringsgrond
+          type: string
+          description: Reden van weigering indien van toepassing
+        actions:
+        - output: heeft_weigeringsgrond
+          value:
+            operation: AND
+            conditions:
+            - operation: NOT
+              value:
+                operation: EQUALS
+                subject: $kan_afwijken_bijzondere_omstandigheden
+                value: true
+            - operation: OR
+              conditions:
+              - operation: EQUALS
+                subject: $volgt_opleiding_op_peildatum
+                value: true
+              - operation: EQUALS
+                subject: $opleiding_afgerond_afgelopen_12_maanden
+                value: true
+              - operation: EQUALS
+                subject: $maatregel_100_procent_afgelopen_12_maanden
+                value: true
+        - output: weigeringsgrond
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $volgt_opleiding_op_peildatum
+              value: true
+            then: opleiding_op_peildatum
+            else:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $opleiding_afgerond_afgelopen_12_maanden
+                value: true
+              then: opleiding_recent_afgerond
+              else:
+                operation: IF
+                when:
+                  operation: EQUALS
+                  subject: $maatregel_100_procent_afgelopen_12_maanden
+                  value: true
+                then: maatregel_100_procent
+                else: geen
+        - output: heeft_recht_op_toeslag
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $heeft_langdurig_laag_inkomen
+              value: true
+            - operation: EQUALS
+              subject: $voldoet_aan_inkomenseis
+              value: true
+            - operation: NOT
+              value:
+                operation: EQUALS
+                subject: $heeft_weigeringsgrond
+                value: true
+
+  - number: '6'
+    text: |
+      Overgangsregeling
+
+      1. Een persoon die op grond van de Verordening individuele inkomenstoeslag
+         Rotterdam 2024 recht had op de inkomenstoeslag maar door de gewijzigde
+         inkomensgrens in deze verordening geen recht meer heeft, ontvangt eenmalig
+         een bedrag van 120 euro.
+
+      2. De overgangsregeling geldt voor aanvragen ingediend in het kalenderjaar
+         2025.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel6
+    machine_readable:
+      definitions:
+        OVERGANGS_BEDRAG:
+          value: 12000
+          description: Eenmalig overgangsbedrag in eurocent (€120)
+      execution:
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        input:
+        - name: had_recht_onder_vorige_verordening
+          type: boolean
+          source:
+            output: had_recht_onder_vorige_verordening
+          description: Had recht op toeslag onder Verordening 2024
+        - name: heeft_recht_huidige_verordening
+          type: boolean
+          source:
+            regulation: verordening_individuele_inkomenstoeslag_rotterdam_2025
+            output: heeft_recht_op_toeslag
+            parameters:
+              bsn: $bsn
+          description: Heeft recht op toeslag onder huidige verordening
+        output:
+        - name: heeft_recht_op_overgangsregeling
+          type: boolean
+          description: Of de persoon recht heeft op de overgangsregeling
+        - name: overgangs_bedrag
+          type: amount
+          type_spec:
+            unit: eurocent
+          description: Hoogte van het overgangsbedrag
+        actions:
+        - output: heeft_recht_op_overgangsregeling
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $had_recht_onder_vorige_verordening
+              value: true
+            - operation: EQUALS
+              subject: $heeft_recht_huidige_verordening
+              value: false
+        - output: overgangs_bedrag
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $heeft_recht_op_overgangsregeling
+              value: true
+            then: $OVERGANGS_BEDRAG
+            else: 0
+
+  - number: '7'
+    text: |
+      Inwerkingtreding en citeertitel
+
+      1. Deze verordening treedt in werking op 1 juli 2025.
+      2. Deze verordening wordt aangehaald als: Verordening individuele
+         inkomenstoeslag Rotterdam 2025.
+    url: https://lokaleregelgeving.overheid.nl/CVDR741634/1#Artikel7

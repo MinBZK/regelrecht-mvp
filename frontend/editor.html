@@ -9,6 +9,9 @@
   <script type="module" src="/main.js"></script>
 </head>
 <body>
+  <!-- Vue App Mount Point for Machine Action Sheet -->
+  <div id="vue-app"></div>
+
   <div class="app">
     <!-- Top Navigation Bar -->
     <rr-top-navigation-bar
@@ -332,7 +335,7 @@
                   <span class="section-item__label">bereken_normpremie</span>
                 </div>
                 <div class="section-item__actions">
-                  <rr-button variant="neutral-tinted" size="xs">Bewerk</rr-button>
+                  <rr-button variant="neutral-tinted" size="xs" onclick="openMachineActionSheet()">Bewerk</rr-button>
                   <rr-icon-button variant="neutral-tinted" size="xs">
                     <img src="assets/icons/ellipsis-horizontal.svg" alt="Meer" width="16" height="16">
                   </rr-icon-button>
@@ -343,7 +346,7 @@
                   <span class="section-item__label">bereken_zorgtoeslag</span>
                 </div>
                 <div class="section-item__actions">
-                  <rr-button variant="neutral-tinted" size="xs">Bewerk</rr-button>
+                  <rr-button variant="neutral-tinted" size="xs" onclick="openMachineActionSheet()">Bewerk</rr-button>
                   <rr-icon-button variant="neutral-tinted" size="xs">
                     <img src="assets/icons/ellipsis-horizontal.svg" alt="Meer" width="16" height="16">
                   </rr-icon-button>

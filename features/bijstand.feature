@@ -6,7 +6,7 @@ Feature: Bijstandsaanvraag via Participatiewet
   # Keten: Participatiewet (Rijkswet) + Afstemmingsverordening (Gemeente)
   #
   # Art. 11: Rechthebbenden - Nederlanders zonder middelen
-  # Art. 21: Normbedragen - €1.091,71 (alleenstaand) / €1.559,58 (gehuwd)
+  # Art. 21: Normbedragen 2026 - €1.401,50 (alleenstaand) / €2.002,13 (gehuwd)
   # Art. 8:  Delegatie - gemeente stelt verordening vast
   # Art. 18: Verlaging - bij niet nakomen verplichtingen
   #
@@ -18,7 +18,7 @@ Feature: Bijstandsaanvraag via Participatiewet
   # Formule: uitkering = normbedrag - (normbedrag × verlaging%)
 
   Background:
-    Given the calculation date is "2024-06-01"
+    Given the calculation date is "2026-01-15"
 
   # === Toekenningsscenario's voor burger uit Diemen (GM0384) ===
 
@@ -36,7 +36,7 @@ Feature: Bijstandsaanvraag via Participatiewet
       | gedragscategorie                       | 0            |
     When the bijstandsaanvraag is executed for participatiewet article 43
     Then the citizen has the right to bijstand
-    And the uitkering_bedrag is "109171" eurocent
+    And the uitkering_bedrag is "140150" eurocent
 
   Scenario: Gehuwde burger krijgt volledige bijstand
     Given a citizen with the following data:
@@ -52,7 +52,7 @@ Feature: Bijstandsaanvraag via Participatiewet
       | gedragscategorie                       | 0            |
     When the bijstandsaanvraag is executed for participatiewet article 43
     Then the citizen has the right to bijstand
-    And the uitkering_bedrag is "155958" eurocent
+    And the uitkering_bedrag is "200213" eurocent
 
   Scenario: Burger met gedragscategorie 1 krijgt 5% verlaging (Diemen)
     # Categorie 1: niet tijdig geregistreerd bij UWV
@@ -69,7 +69,7 @@ Feature: Bijstandsaanvraag via Participatiewet
       | gedragscategorie                       | 1            |
     When the bijstandsaanvraag is executed for participatiewet article 43
     Then the citizen has the right to bijstand
-    And the uitkering_bedrag is "103712" eurocent
+    And the uitkering_bedrag is "133142" eurocent
 
   Scenario: Burger met gedragscategorie 2 krijgt 30% verlaging (Diemen)
     # Categorie 2: niet meewerken aan plan van aanpak
@@ -86,7 +86,7 @@ Feature: Bijstandsaanvraag via Participatiewet
       | gedragscategorie                       | 2            |
     When the bijstandsaanvraag is executed for participatiewet article 43
     Then the citizen has the right to bijstand
-    And the uitkering_bedrag is "76420" eurocent
+    And the uitkering_bedrag is "98105" eurocent
 
   Scenario: Burger met gedragscategorie 3 krijgt 100% verlaging (Diemen)
     # Categorie 3: niet naar vermogen arbeid verkrijgen

@@ -1,0 +1,313 @@
+/**
+ * Extra CSS voor de RegelRecht Browser
+ * Styles voor relaties, badges, en dynamische elementen
+ */
+
+/* Hidden state */
+.hidden {
+  display: none !important;
+}
+
+/* Loading state */
+.loading {
+  padding: var(--spacing-4, 16px);
+  color: var(--color-slate-500, #64748b);
+  font-style: italic;
+}
+
+.error {
+  padding: var(--spacing-4, 16px);
+  color: var(--color-red-600, #dc2626);
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.badge--logic {
+  background: var(--color-blue-100, #dbeafe);
+  color: var(--color-blue-700, #1d4ed8);
+}
+
+.badge--required {
+  background: var(--color-orange-100, #ffedd5);
+  color: var(--color-orange-700, #c2410c);
+}
+
+/* Relations boxes */
+.relations-box {
+  margin: 8px 0;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.relations-box--depends {
+  background: var(--color-blue-50, #eff6ff);
+  border-left: 3px solid var(--color-blue-500, #3b82f6);
+}
+
+.relations-box--used-by {
+  background: var(--color-green-50, #f0fdf4);
+  border-left: 3px solid var(--color-green-500, #22c55e);
+}
+
+.relations-box__label {
+  font-weight: 600;
+  color: var(--color-slate-700, #334155);
+  margin-bottom: 6px;
+}
+
+.relations-box__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.relations-box__link {
+  display: inline-block;
+  padding: 4px 10px;
+  background: white;
+  border-radius: 4px;
+  color: var(--color-blue-600, #2563eb);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.relations-box__link:hover {
+  background: var(--color-blue-100, #dbeafe);
+  color: var(--color-blue-800, #1e40af);
+}
+
+/* Machine view input items with source */
+.machine-view__list-item--input {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 4px;
+}
+
+.machine-view__item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.machine-view__item-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  font-size: 0.8125rem;
+}
+
+.source-label {
+  color: var(--color-slate-500, #64748b);
+}
+
+.source-link {
+  color: var(--color-blue-600, #2563eb);
+  text-decoration: none;
+}
+
+.source-link:hover {
+  text-decoration: underline;
+}
+
+.source-output {
+  color: var(--color-slate-600, #475569);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+}
+
+/* Action items */
+.machine-view__list-item--action {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 8px;
+}
+
+.action-output {
+  font-weight: 600;
+  color: var(--color-slate-800, #1e293b);
+  font-family: var(--font-mono, monospace);
+}
+
+.action-logic {
+  padding: 8px 12px;
+  background: var(--color-slate-100, #f1f5f9);
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  color: var(--color-slate-700, #334155);
+  width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Machine view empty state */
+.machine-view__empty {
+  padding: var(--spacing-4, 16px);
+  color: var(--color-slate-500, #64748b);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Type spec styling */
+.machine-view__item-spec {
+  font-size: 0.75rem;
+  color: var(--color-slate-500, #64748b);
+  margin-left: 4px;
+}
+
+/* Improved list item for articles */
+.list__item .list__subtitle {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--color-slate-500, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* YAML view improvements */
+.yaml-view {
+  padding: var(--spacing-4, 16px);
+}
+
+.yaml-view pre {
+  background: var(--color-slate-900, #0f172a);
+  color: var(--color-slate-100, #f1f5f9);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.yaml-view code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Article text improvements */
+.article-text {
+  padding: var(--spacing-4, 16px);
+  line-height: 1.7;
+}
+
+.article-text h2 {
+  margin-bottom: 16px;
+  color: var(--color-slate-900, #0f172a);
+}
+
+.article-text p {
+  margin-bottom: 12px;
+  color: var(--color-slate-700, #334155);
+}
+
+.article-text p strong {
+  color: var(--color-slate-900, #0f172a);
+}
+
+/* Machine view section improvements */
+.machine-view {
+  padding: var(--spacing-4, 16px);
+}
+
+.machine-view__section {
+  margin-top: 20px;
+}
+
+.machine-view__heading {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-slate-800, #1e293b);
+  margin-bottom: 8px;
+}
+
+.machine-view__subtitle {
+  font-size: 0.8125rem;
+  color: var(--color-slate-500, #64748b);
+  margin-bottom: 12px;
+}
+
+.machine-view__text-preview {
+  background: var(--color-slate-50, #f8fafc);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.machine-view__preview-text {
+  font-size: 0.875rem;
+  color: var(--color-slate-600, #475569);
+  margin: 0;
+}
+
+.machine-view__list--box {
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-slate-200, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.machine-view__list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-slate-100, #f1f5f9);
+}
+
+.machine-view__list-item:last-child {
+  border-bottom: none;
+}
+
+.machine-view__list-item--metadata {
+  background: var(--color-slate-50, #f8fafc);
+}
+
+.machine-view__item-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  color: var(--color-slate-800, #1e293b);
+}
+
+.machine-view__item-label {
+  font-size: 0.8125rem;
+  color: var(--color-slate-600, #475569);
+}
+
+.machine-view__item-value {
+  font-weight: 500;
+  color: var(--color-slate-900, #0f172a);
+}
+
+.machine-view__item-type {
+  font-size: 0.75rem;
+  color: var(--color-slate-500, #64748b);
+  margin-left: 8px;
+}
+
+/* Scrollable areas */
+.scrollable {
+  overflow-y: auto;
+}
+
+/* Page footer */
+.page__footer {
+  display: flex;
+  gap: 12px;
+  padding: var(--spacing-4, 16px);
+  border-top: 1px solid var(--color-slate-200, #e2e8f0);
+  background: var(--color-white, #fff);
+}

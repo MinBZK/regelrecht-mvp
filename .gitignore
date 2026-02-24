@@ -1,3 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
 # IDE
 .vscode/
 .idea/
@@ -7,10 +34,18 @@
 
 # Claude Code
 .claude/settings.local.json
-.claude/*.local.*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Logs
 *.log
+
+# Claude Code
+.claude/*.local.*
+.claude/settings.local.json
 
 # Git worktrees
 .worktrees/
@@ -21,18 +56,6 @@ frontend/dist/
 
 # Rust
 target/
+Cargo.lock
 **/*.rs.bk
-*.pdb
-
-# Python (legacy, may exist in contributor environments)
-venv/
-ENV/
-__pycache__/
-*.py[cod]
-
-# Mutation testing
-mutants.out/
-
-# Gemini CLI
-.gemini/*
-!.gemini/prompts/
+.DS_Store

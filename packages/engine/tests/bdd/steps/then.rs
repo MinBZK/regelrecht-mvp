@@ -344,3 +344,178 @@ fn assert_allowance_amount_euro(world: &mut RegelrechtWorld, expected: String) {
         ),
     }
 }
+
+// =============================================================================
+// Gewone bijstand steps - Huishouden type assertions
+// =============================================================================
+
+#[then(regex = r#"^the huishouden_type is "([^"]+)"$"#)]
+fn assert_huishouden_type(world: &mut RegelrechtWorld, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let actual = world.get_output("huishouden_type");
+    match actual {
+        Some(Value::String(s)) => {
+            assert_eq!(
+                s, &expected,
+                "Expected huishouden_type to be '{}', got '{}'",
+                expected, s
+            );
+        }
+        _ => panic!(
+            "Expected huishouden_type to be a string, got {:?}",
+            actual
+        ),
+    }
+}
+
+// =============================================================================
+// Gewone bijstand steps - Generic boolean assertions
+// =============================================================================
+
+#[then(regex = r#"^(is_alleenstaande|is_alleenstaande_ouder|is_gehuwden|wordt_als_gehuwd_aangemerkt|is_gezamenlijke_huishouding|valt_onder_artikel_21|valt_onder_kostendelersnorm|heeft_recht_op_bijstand|is_uitgesloten_van_bijstand|heeft_recht_op_algemene_bijstand|heeft_onvoldoende_middelen|valt_onder_artikel_23) is (true|false)$"#)]
+fn assert_boolean_output(world: &mut RegelrechtWorld, field: String, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let expected_bool = expected == "true";
+    let actual = world.get_output(&field);
+
+    match actual {
+        Some(Value::Bool(b)) => {
+            assert_eq!(
+                *b, expected_bool,
+                "Expected {} to be {}, got {}",
+                field, expected_bool, b
+            );
+        }
+        _ => panic!("Expected {} to be a boolean, got {:?}", field, actual),
+    }
+}
+
+// =============================================================================
+// Gewone bijstand steps - Normbedragen assertions
+// =============================================================================
+
+#[then(regex = r#"^the norm_21_65 is "(\d+)" eurocent$"#)]
+fn assert_norm_21_65(world: &mut RegelrechtWorld, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let expected_amount: i64 = expected
+        .parse()
+        .unwrap_or_else(|_| panic!("Invalid eurocent value: {}", expected));
+
+    let actual = world.get_output("norm_21_65");
+    assert_eurocent_value(actual, expected_amount, "norm_21_65");
+}
+
+#[then(regex = r#"^the norm_inrichting is "(\d+)" eurocent$"#)]
+fn assert_norm_inrichting(world: &mut RegelrechtWorld, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let expected_amount: i64 = expected
+        .parse()
+        .unwrap_or_else(|_| panic!("Invalid eurocent value: {}", expected));
+
+    let actual = world.get_output("norm_inrichting");
+    assert_eurocent_value(actual, expected_amount, "norm_inrichting");
+}
+
+#[then(regex = r#"^the bijstand_bedrag is "(\d+)" eurocent$"#)]
+fn assert_bijstand_bedrag(world: &mut RegelrechtWorld, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let expected_amount: i64 = expected
+        .parse()
+        .unwrap_or_else(|_| panic!("Invalid eurocent value: {}", expected));
+
+    let actual = world.get_output("bijstand_bedrag");
+    assert_eurocent_value(actual, expected_amount, "bijstand_bedrag");
+}
+
+// =============================================================================
+// Gewone bijstand steps - Kostendelersnorm assertions
+// =============================================================================
+
+#[then(regex = r#"^aantal_kostendelers is (\d+)$"#)]
+fn assert_aantal_kostendelers(world: &mut RegelrechtWorld, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let expected_count: i64 = expected
+        .parse()
+        .unwrap_or_else(|_| panic!("Invalid count value: {}", expected));
+
+    let actual = world.get_output("aantal_kostendelers");
+    match actual {
+        Some(Value::Int(n)) => {
+            assert_eq!(
+                *n, expected_count,
+                "Expected aantal_kostendelers to be {}, got {}",
+                expected_count, n
+            );
+        }
+        Some(Value::Float(f)) => {
+            let actual_int = f.round() as i64;
+            assert_eq!(
+                actual_int, expected_count,
+                "Expected aantal_kostendelers to be {}, got {} (from {})",
+                expected_count, actual_int, f
+            );
+        }
+        _ => panic!(
+            "Expected aantal_kostendelers to be a number, got {:?}",
+            actual
+        ),
+    }
+}
+
+// =============================================================================
+// Helper functions
+// =============================================================================
+
+fn assert_eurocent_value(actual: Option<&Value>, expected: i64, field_name: &str) {
+    match actual {
+        Some(Value::Int(n)) => {
+            assert_eq!(
+                *n, expected,
+                "Expected {} to be {} eurocent, got {}",
+                field_name, expected, n
+            );
+        }
+        Some(Value::Float(f)) => {
+            let actual_int = f.round() as i64;
+            assert_eq!(
+                actual_int, expected,
+                "Expected {} to be {} eurocent, got {} (rounded from {})",
+                field_name, expected, actual_int, f
+            );
+        }
+        _ => panic!(
+            "Expected {} to be a number, got {:?}",
+            field_name, actual
+        ),
+    }
+}
