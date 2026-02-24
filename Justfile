@@ -5,56 +5,73 @@
 default:
     @just --list
 
-# Run pytest
-test:
-    uv run pytest
+# =============================================================================
+# Rust quality checks
+# =============================================================================
 
-# Run behave BDD tests
-behave:
-    uv run behave
-
-# Run alle tests (pytest + behave)
-test-all: test behave
-
-# Lint met ruff
-lint:
-    uv run ruff check .
-
-# Format met ruff
+# Check Rust formatting (cargo fmt --check)
 format:
-    uv run ruff format .
+    cargo fmt --all --check
 
-# Type check met ty
-typecheck:
-    uv run ty check
+# Run clippy lints on all packages
+lint:
+    cargo clippy --all-targets --all-features -- -D warnings
 
-# YAML lint
-yamllint:
-    uv run yamllint regulation/
+# Run cargo check on all packages
+build-check:
+    cargo check --all-targets --all-features
 
-# Valideer YAML tegen schema
-validate file:
-    uv run python script/validate.py {{file}}
+# =============================================================================
+# Validation
+# =============================================================================
 
-# Valideer alle regulation YAML files
-validate-all:
-    uv run python -c "import glob; import subprocess; [subprocess.run(['uv', 'run', 'python', 'script/validate.py', f]) for f in glob.glob('regulation/**/*.yaml', recursive=True)]"
+# Validate regulation YAML files (all, or pass specific files)
+validate *files:
+    #!/usr/bin/env bash
+    if [ -z "{{files}}" ]; then
+        ./script/validate.sh
+    else
+        ./script/validate.sh {{files}}
+    fi
 
-# Alle checks (lint + typecheck)
-check: lint typecheck
+# =============================================================================
+# Tests
+# =============================================================================
+
+# Run Rust unit tests
+test:
+    cargo test --lib -p regelrecht-engine
+
+# Run Rust BDD tests (cucumber-rs)
+bdd:
+    cargo test --test bdd -p regelrecht-engine --features bdd -- --nocapture
+
+# Run all tests (unit + BDD)
+test-all: test bdd
+
+# =============================================================================
+# Combined checks
+# =============================================================================
+
+# Run all quality checks (format + lint + check + validate + tests)
+check: format lint build-check validate test-all
+
+# =============================================================================
+# Pre-commit hooks
+# =============================================================================
 
 # Pre-commit hooks draaien
 pre-commit:
-    uv run pre-commit run --all-files
+    pre-commit run --all-files
 
-# Sync dependencies
-sync:
-    uv sync
-
-# Start de browser server
-serve:
-    uv run python server.py
+# =============================================================================
+# Frontend development
+# =============================================================================
 
 # Start frontend dev server (Vite)
 dev:
     cd frontend && npm run dev
+
+# YAML lint (requires yamllint)
+yamllint:
+    yamllint regulation/

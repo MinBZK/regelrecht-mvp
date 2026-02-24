@@ -86,3 +86,50 @@ fn register_if_present(
             .expect("Failed to register data source");
     }
 }
+
+// =============================================================================
+// Gewone bijstand steps - Huishouden type
+// =============================================================================
+
+#[when("I determine the huishouden_type for participatiewet")]
+fn determine_huishouden_type(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "huishouden_type");
+}
+
+// =============================================================================
+// Gewone bijstand steps - Normbedragen
+// =============================================================================
+
+#[when("I calculate the norm_21_65 for participatiewet")]
+fn calculate_norm_21_65(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "norm_21_65");
+}
+
+#[when("I calculate the kostendelersnorm for participatiewet")]
+fn calculate_kostendelersnorm(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "kostendelersnorm");
+}
+
+#[when("I calculate the norm_inrichting for participatiewet")]
+fn calculate_norm_inrichting(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "norm_inrichting");
+}
+
+// =============================================================================
+// Gewone bijstand steps - Recht op bijstand checks
+// =============================================================================
+
+#[when("I check heeft_recht_op_bijstand for participatiewet")]
+fn check_heeft_recht_op_bijstand(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "heeft_recht_op_bijstand");
+}
+
+#[when("I check is_uitgesloten_van_bijstand for participatiewet")]
+fn check_is_uitgesloten_van_bijstand(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "is_uitgesloten_van_bijstand");
+}
+
+#[when("I check heeft_recht_op_algemene_bijstand for participatiewet")]
+fn check_heeft_recht_op_algemene_bijstand(world: &mut RegelrechtWorld) {
+    world.execute_law("participatiewet", "heeft_recht_op_algemene_bijstand");
+}

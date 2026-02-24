@@ -35,6 +35,22 @@ fn set_citizen_data(world: &mut RegelrechtWorld, step: &Step) {
     }
 }
 
+#[given("a citizen with the following profile:")]
+fn set_citizen_profile(world: &mut RegelrechtWorld, step: &Step) {
+    // Same as "following data" - parse table to parameters
+    if let Some(table) = &step.table {
+        world.parameters = parse_table_to_params(table);
+
+        // Ensure BSN is present (generate test BSN if not provided)
+        if !world.parameters.contains_key("bsn") {
+            world.parameters.insert(
+                "bsn".to_string(),
+                regelrecht_engine::Value::String("123456789".to_string()),
+            );
+        }
+    }
+}
+
 // =============================================================================
 // Erfgrensbeplanting steps
 // =============================================================================
