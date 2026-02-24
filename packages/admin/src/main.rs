@@ -1,23 +1,38 @@
 use std::env;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Duration;
 
-use axum::{extract::State, http::StatusCode, routing::get, Router};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::middleware as axum_middleware;
+use axum::routing::get;
+use axum::Router;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tower_http::services::ServeDir;
+use tower_sessions::cookie::SameSite;
+use tower_sessions::{MemoryStore, SessionManagerLayer};
 use tracing_subscriber::EnvFilter;
 
+mod auth;
+mod config;
 mod handlers;
+mod middleware;
 mod models;
+mod oidc;
+mod state;
+
+use config::AppConfig;
+use state::AppState;
 
 const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RETRIES: u32 = 10;
 const RETRY_INTERVAL: Duration = Duration::from_secs(3);
 
-async fn health(State(pool): State<PgPool>) -> Result<&'static str, StatusCode> {
+async fn health(State(state): State<AppState>) -> Result<&'static str, StatusCode> {
     sqlx::query_scalar::<_, i32>("SELECT 1")
-        .fetch_one(&pool)
+        .fetch_one(&state.pool)
         .await
         .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
     Ok("OK")
@@ -30,6 +45,8 @@ async fn main() {
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
         )
         .init();
+
+    let app_config = AppConfig::from_env();
 
     let database_url = match env::var("DATABASE_SERVER_FULL") {
         Ok(url) => url,
@@ -63,7 +80,7 @@ async fn main() {
             }
         }
     }
-    let pool = pool.unwrap_or_else(|| {
+    let pool: PgPool = pool.unwrap_or_else(|| {
         tracing::error!("unreachable: no pool after retry loop");
         std::process::exit(1);
     });
@@ -77,11 +94,50 @@ async fn main() {
     }
     tracing::info!("migrations completed");
 
-    let app = Router::new()
-        .route("/health", get(health))
+    let oidc_client = if let Some(ref oidc_config) = app_config.oidc {
+        match oidc::discover_client(oidc_config, &app_config.base_url).await {
+            Ok((client, _metadata)) => Some(Arc::new(client)),
+            Err(e) => {
+                tracing::error!(error = %e, "OIDC discovery failed");
+                std::process::exit(1);
+            }
+        }
+    } else {
+        None
+    };
+
+    let app_state = AppState {
+        pool,
+        oidc_client,
+        config: Arc::new(app_config),
+    };
+
+    let session_store = MemoryStore::default();
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_same_site(SameSite::Lax)
+        .with_http_only(true)
+        .with_secure(app_state.config.is_auth_enabled());
+
+    let api_routes = Router::new()
         .route("/api/law_entries", get(handlers::list_law_entries))
         .route("/api/jobs", get(handlers::list_jobs))
-        .with_state(pool)
+        .route_layer(axum_middleware::from_fn_with_state(
+            app_state.clone(),
+            middleware::require_auth,
+        ));
+
+    let auth_routes = Router::new()
+        .route("/auth/login", get(auth::login))
+        .route("/auth/callback", get(auth::callback))
+        .route("/auth/logout", get(auth::logout))
+        .route("/auth/status", get(auth::status));
+
+    let app = Router::new()
+        .route("/health", get(health))
+        .merge(auth_routes)
+        .merge(api_routes)
+        .with_state(app_state)
+        .layer(session_layer)
         .fallback_service(ServeDir::new(
             env::var("STATIC_DIR").unwrap_or_else(|_| "static".to_string()),
         ));
