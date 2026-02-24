@@ -1,14 +1,27 @@
 use std::env;
-use std::io::Write;
-use std::net::TcpListener;
+use std::net::SocketAddr;
 use std::time::Duration;
 
+use axum::{extract::State, http::StatusCode, routing::get, Router};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
+use tower_http::services::ServeDir;
 use tracing_subscriber::EnvFilter;
 
+mod handlers;
+mod models;
+
+const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RETRIES: u32 = 10;
 const RETRY_INTERVAL: Duration = Duration::from_secs(3);
-const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(30);
+
+async fn health(State(pool): State<PgPool>) -> Result<&'static str, StatusCode> {
+    sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(&pool)
+        .await
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    Ok("OK")
+}
 
 #[tokio::main]
 async fn main() {
@@ -31,7 +44,7 @@ async fn main() {
     let mut pool = None;
     for attempt in 1..=MAX_RETRIES {
         match PgPoolOptions::new()
-            .max_connections(2)
+            .max_connections(5)
             .acquire_timeout(ACQUIRE_TIMEOUT)
             .connect(&database_url)
             .await
@@ -41,7 +54,7 @@ async fn main() {
                 break;
             }
             Err(e) => {
-                tracing::warn!(attempt, error = %e, "failed to connect to database, retrying...");
+                tracing::warn!(attempt, error = %e, "failed to connect, retrying...");
                 if attempt == MAX_RETRIES {
                     tracing::error!("exhausted all {MAX_RETRIES} connection attempts");
                     std::process::exit(1);
@@ -55,34 +68,36 @@ async fn main() {
         std::process::exit(1);
     });
 
-    tracing::info!("running migrations...");
+    tracing::info!("connected to database");
 
+    tracing::info!("running database migrations...");
     if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
         tracing::error!(error = %e, "failed to run migrations");
         std::process::exit(1);
     }
+    tracing::info!("migrations completed");
 
-    tracing::info!("migrations completed successfully");
+    let app = Router::new()
+        .route("/health", get(health))
+        .route("/api/law_entries", get(handlers::list_law_entries))
+        .route("/api/jobs", get(handlers::list_jobs))
+        .with_state(pool)
+        .fallback_service(ServeDir::new(
+            env::var("STATIC_DIR").unwrap_or_else(|_| "static".to_string()),
+        ));
 
-    // Serve minimal health endpoint on port 8000 (required by RIG liveprobe).
-    let listener = match TcpListener::bind("0.0.0.0:8000") {
-        Ok(l) => l,
-        Err(e) => {
-            tracing::error!(error = %e, "failed to bind health endpoint on port 8000");
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
+    tracing::info!("listening on {addr}");
+
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!(error = %e, "failed to bind on {addr}");
             std::process::exit(1);
-        }
-    };
+        });
 
-    tracing::info!("health endpoint listening on :8000");
-
-    for stream in listener.incoming() {
-        match stream {
-            Ok(mut stream) => {
-                let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK");
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, "failed to accept connection");
-            }
-        }
+    if let Err(e) = axum::serve(listener, app).await {
+        tracing::error!(error = %e, "server error");
+        std::process::exit(1);
     }
 }
