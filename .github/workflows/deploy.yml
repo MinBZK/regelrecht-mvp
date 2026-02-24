@@ -7,6 +7,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
 
+permissions: {}
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: minbzk/regelrecht-mvp
@@ -18,6 +20,8 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
+    permissions:
+      contents: read
     outputs:
       admin: ${{ steps.filter.outputs.admin }}
     steps:
