@@ -526,9 +526,9 @@ For each article that needs a `machine_readable` section:
 
 Before reporting, validate the updated YAML:
 
-**Step 13a: Run YAML linting**
+**Step 13a: Run validation (linting + schema)**
 ```bash
-uv run yamllint {LAW_FILE_PATH}
+just validate {LAW_FILE_PATH}
 ```
 
 This checks for:
@@ -536,13 +536,14 @@ This checks for:
 - Proper indentation
 - Quote usage
 - YAML formatting
+- JSON schema compliance
 
-**Step 13b: Run schema validation**
+**Step 13b: Run schema validation only**
 ```bash
-uv run python script/validate.py {LAW_FILE_PATH}
+just validate {LAW_FILE_PATH}
 ```
 
-This validates against the JSON schema.
+This validates against the JSON schema (serde + JSON Schema Draft-07).
 
 **If validation fails:**
 - Review schema errors carefully

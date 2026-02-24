@@ -10,40 +10,235 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
 jobs:
-  typecheck:
-    name: Type check
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ci:
+              - packages/engine/**
+              - packages/harvester/**
+              - features/**
+              - regulation/**
+              - schema/**
+              - script/**
+              - Justfile
+              - .pre-commit-config.yaml
+              - .yamllint
+              - .github/workflows/ci.yml
+
+  protect-schema:
+    name: Protect schema versions
+    needs: changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6.0.2
+        if: needs.changes.outputs.ci == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Check for modifications to released schema versions
+        if: needs.changes.outputs.ci == 'true'
+        run: |
+          # Get list of versioned schema directories that exist on main
+          git fetch origin main
+          EXISTING_VERSIONS=$(git ls-tree -d --name-only origin/main schema/ 2>/dev/null \
+            | grep -E '^schema/v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+
+          if [ -z "$EXISTING_VERSIONS" ]; then
+            echo "No existing schema versions on main, skipping check"
+            exit 0
+          fi
+
+          echo "Existing schema versions on main:"
+          echo "$EXISTING_VERSIONS"
+          echo ""
+
+          # Check if any of these directories have modifications in this PR
+          VIOLATIONS=""
+          for version_dir in $EXISTING_VERSIONS; do
+            # Check for modified or deleted files in this version directory
+            CHANGES=$(git diff --name-status origin/main...HEAD -- "$version_dir" | grep -E '^[MD]\s' || true)
+            if [ -n "$CHANGES" ]; then
+              VIOLATIONS="$VIOLATIONS
+          $CHANGES"
+            fi
+          done
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "Schema Protection Error!"
+            echo "=================================================="
+            echo ""
+            echo "Cannot modify or delete files in released schema versions:"
+            echo "$VIOLATIONS"
+            echo ""
+            echo "Schema versions are immutable once released to main."
+            echo "To make changes, create a new schema version directory."
+            echo "(schema/latest/ can be updated freely)"
+            exit 1
+          fi
+
+          echo "Schema protection check passed"
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No schema changes, skipping"
+
+  pre-commit:
+    name: Pre-commit
+    needs: changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
+        if: needs.changes.outputs.ci == 'true'
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v6
+        if: needs.changes.outputs.ci == 'true'
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: uv sync --all-groups
+      - name: Install just
+        if: needs.changes.outputs.ci == 'true'
+        uses: extractions/setup-just@v3
 
-      - name: Run ty type checker
-        run: uv run ty check
+      - name: Install Rust toolchain
+        if: needs.changes.outputs.ci == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        if: needs.changes.outputs.ci == 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/target
+          key: ${{ runner.os }}-cargo-precommit-${{ hashFiles('packages/**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-precommit-
+
+      - uses: pre-commit/action@v3.0.1
+        if: needs.changes.outputs.ci == 'true'
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No relevant changes, skipping pre-commit"
 
   test:
-    name: Run Tests
+    name: Test
+    needs: changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
+        if: needs.changes.outputs.ci == 'true'
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
+      - name: Install just
+        if: needs.changes.outputs.ci == 'true'
+        uses: extractions/setup-just@v3
+
+      - name: Install Rust toolchain
+        if: needs.changes.outputs.ci == 'true'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        if: needs.changes.outputs.ci == 'true'
+        uses: actions/cache@v5
         with:
-          python-version: '3.12'
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('packages/**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-
 
-      - name: Install dependencies
-        run: uv sync --all-groups
+      - name: Run all tests
+        if: needs.changes.outputs.ci == 'true'
+        run: just test-all
 
-      - name: Run pytest
-        run: uv run pytest tests/ -v
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No relevant changes, skipping tests"
 
-      - name: Run behave BDD tests
-        run: uv run behave features/ --tags="~@wip"
+  wasm:
+    name: WASM Build
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        if: needs.changes.outputs.ci == 'true'
+
+      - name: Install Rust toolchain
+        if: needs.changes.outputs.ci == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry
+        if: needs.changes.outputs.ci == 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/target
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('packages/**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-wasm-
+
+      - name: Build for WASM
+        if: needs.changes.outputs.ci == 'true'
+        run: cd packages/engine && cargo build --target wasm32-unknown-unknown --features wasm
+
+      - name: Skip (no relevant changes)
+        if: needs.changes.outputs.ci != 'true'
+        run: echo "No relevant changes, skipping WASM build"
+
+  # Security audit
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Run security audit
+        run: just audit

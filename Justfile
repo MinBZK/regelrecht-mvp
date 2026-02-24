@@ -5,48 +5,54 @@
 default:
     @just --list
 
-# Run pytest
-test:
-    uv run pytest
+# --- Quality checks ---
 
-# Run behave BDD tests
-behave:
-    uv run behave
-
-# Run alle tests (pytest + behave)
-test-all: test behave
-
-# Lint met ruff
-lint:
-    uv run ruff check .
-
-# Format met ruff
+# Check Rust formatting
 format:
-    uv run ruff format .
+    cd packages && cargo fmt --check --all
 
-# Type check met ty
-typecheck:
-    uv run ty check
+# Run clippy lints
+lint:
+    cd packages && cargo clippy --all-features -- -D warnings
 
-# YAML lint
-yamllint:
-    uv run yamllint regulation/
+# Run cargo check
+build-check:
+    cd packages && cargo check --all-features
 
-# Valideer YAML tegen schema
-validate file:
-    uv run python script/validate.py {{file}}
+# Validate regulation YAML files
+validate *FILES:
+    script/validate.sh {{FILES}}
 
-# Valideer alle regulation YAML files
-validate-all:
-    uv run python -c "import glob; import subprocess; [subprocess.run(['uv', 'run', 'python', 'script/validate.py', f]) for f in glob.glob('regulation/**/*.yaml', recursive=True)]"
+# Run all quality checks (format + lint + check + validate + tests)
+check: format lint build-check validate test-all
 
-# Alle checks (lint + typecheck)
-check: lint typecheck
+# --- Tests ---
 
-# Pre-commit hooks draaien
-pre-commit:
-    uv run pre-commit run --all-files
+# Run Rust unit and integration tests
+test:
+    cd packages/engine && cargo test --all-features
 
-# Sync dependencies
-sync:
-    uv sync
+# Run Rust BDD tests
+bdd:
+    cd packages/engine && cargo test --test bdd -- --nocapture
+
+# Run harvester tests
+harvester-test:
+    cd packages/harvester && cargo test
+
+# Run all tests (engine + harvester)
+test-all: test harvester-test
+
+# --- Mutation testing ---
+
+# Run mutation testing on engine (in-place because tests use relative paths to regulation/)
+mutants *ARGS:
+    cd packages/engine && cargo mutants --in-place --timeout-multiplier 3 {{ARGS}}
+
+# --- Security ---
+
+# Run security audit on all dependencies (vulnerabilities, licenses, sources)
+audit:
+    cargo deny check
+    cd frontend && npm audit
+    cd frontend && npx license-checker --production --failOn "GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0;SSPL-1.0;BUSL-1.1"

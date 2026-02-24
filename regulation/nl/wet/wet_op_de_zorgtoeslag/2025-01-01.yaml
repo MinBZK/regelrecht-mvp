@@ -78,16 +78,22 @@ articles:
             source:
               regulation: wet_basisregistratie_personen
               output: leeftijd
+              parameters:
+                bsn: $bsn
           - name: is_verzekerde
             type: boolean
             source:
               regulation: zorgverzekeringswet
               output: is_verzekerd
+              parameters:
+                bsn: $bsn
           - name: heeft_toeslagpartner
             type: boolean
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
               output: heeft_toeslagpartner
+              parameters:
+                bsn: $bsn
           # NB: Wet zorgtoeslag art. 1 verwijst direct naar WIB 2001 art. 2.18 voor toetsingsinkomen.
           # AWIR als bron is een indirecte aanname (AWIR verwijst ook naar WIB 2001 art. 2.18).
           - name: toetsingsinkomen
@@ -95,6 +101,8 @@ articles:
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
               output: toetsingsinkomen
+              parameters:
+                bsn: $bsn
             type_spec:
               unit: eurocent
           - name: standaardpremie
@@ -132,31 +140,45 @@ articles:
                               operation: EQUALS
                               subject: $heeft_toeslagpartner
                               value: true
-                            then: $drempelinkomen_aanvrager_met_toeslagpartner
-                            else: $drempelinkomen_alleenstaande
-                          - operation: IF
+                            then: $percentage_drempelinkomen_partner
+                            else: $percentage_drempelinkomen_alleenstaande
+                          - operation: MIN
+                            values:
+                              - $toetsingsinkomen
+                              - operation: IF
+                                when:
+                                  operation: EQUALS
+                                  subject: $heeft_toeslagpartner
+                                  value: true
+                                then: $drempelinkomen_aanvrager_met_toeslagpartner
+                                else: $drempelinkomen_alleenstaande
+                      - operation: IF
+                        when:
+                          operation: GREATER_THAN
+                          subject: $toetsingsinkomen
+                          value:
+                            operation: IF
                             when:
                               operation: EQUALS
                               subject: $heeft_toeslagpartner
                               value: true
-                            then: $percentage_drempelinkomen_partner
-                            else: $percentage_drempelinkomen_alleenstaande
-                      - operation: MULTIPLY
-                        values:
-                          - operation: MAX
-                            values:
-                              - 0
-                              - operation: SUBTRACT
-                                values:
-                                  - $toetsingsinkomen
-                                  - operation: IF
-                                    when:
-                                      operation: EQUALS
-                                      subject: $heeft_toeslagpartner
-                                      value: true
-                                    then: $drempelinkomen_aanvrager_met_toeslagpartner
-                                    else: $drempelinkomen_alleenstaande
-                          - $percentage_toetsingsinkomen
+                            then: $drempelinkomen_aanvrager_met_toeslagpartner
+                            else: $drempelinkomen_alleenstaande
+                        then:
+                          operation: MULTIPLY
+                          values:
+                            - operation: SUBTRACT
+                              values:
+                                - $toetsingsinkomen
+                                - operation: IF
+                                  when:
+                                    operation: EQUALS
+                                    subject: $heeft_toeslagpartner
+                                    value: true
+                                  then: $drempelinkomen_aanvrager_met_toeslagpartner
+                                  else: $drempelinkomen_alleenstaande
+                            - $percentage_toetsingsinkomen
+                        else: 0
           - output: heeft_recht_op_zorgtoeslag
             value:
               operation: AND
@@ -200,6 +222,8 @@ articles:
             source:
               regulation: wet_inkomstenbelasting_2001
               output: rendementsgrondslag
+              parameters:
+                bsn: $bsn
             type_spec:
               unit: eurocent
           - name: heeft_toeslagpartner
@@ -207,6 +231,8 @@ articles:
             source:
               regulation: algemene_wet_inkomensafhankelijke_regelingen
               output: heeft_toeslagpartner
+              parameters:
+                bsn: $bsn
         output:
           - name: vermogen_onder_grens
             type: boolean
