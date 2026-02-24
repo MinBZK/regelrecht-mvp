@@ -1,0 +1,118 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: verordening_tegenprestatie_participatiewet_amsterdam
+uuid: cvdr377479-0001-0001-0001-000000000363
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2015-01-01'
+valid_from: '2015-01-01'
+gemeente_code: GM0363
+officiele_titel: Verordening Tegenprestatie Participatiewet
+url: https://lokaleregelgeving.overheid.nl/CVDR377479
+name: Verordening Tegenprestatie Participatiewet Amsterdam
+
+# Grondslag: Participatiewet artikel 8a lid 1 onderdeel b
+legal_basis:
+  - law_id: participatiewet
+    article: '8a'
+    paragraph: '1'
+    part: 'b'
+    description: Verordening tegenprestatie
+
+articles:
+  - number: '1'
+    text: |
+      Begripsbepalingen
+
+      In deze verordening wordt verstaan onder:
+      a. tegenprestatie: onbeloonde, maatschappelijk nuttige werkzaamheden;
+      b. uitkeringsgerechtigde: persoon die recht heeft op algemene bijstand op grond
+         van de Participatiewet of uitkering op grond van de IOAW of IOAZ;
+      c. college: het college van burgemeester en wethouders van Amsterdam.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel1
+    machine_readable:
+      definitions:
+        TEGENPRESTATIE:
+          value: onbeloonde_maatschappelijk_nuttige_werkzaamheden
+          description: Definitie van tegenprestatie
+
+  - number: '2'
+    text: |
+      Tegenprestatie naar vermogen
+
+      Het college kan onbeloonde maatschappelijk nuttige werkzaamheden aanwijzen die
+      gelden als tegenprestatie en kan de uitkeringsgerechtigde verzoeken deze te
+      verrichten. Dit verzoek wordt alleen gedaan indien:
+      a. de uitkeringsgerechtigde geen uitzicht op arbeidsinschakeling heeft, en
+      b. de uitkeringsgerechtigde geen ondersteuning van het college ontvangt gericht
+         op arbeidsinschakeling.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel2
+    machine_readable:
+      definitions:
+        TEGENPRESTATIE_VRIJWILLIG:
+          value: true
+          description: In Amsterdam is de tegenprestatie vrijwillig (college KAN verzoeken)
+      execution:
+        parameters:
+          - name: heeft_uitzicht_op_arbeidsinschakeling
+            type: boolean
+            required: true
+            description: Of de persoon uitzicht heeft op arbeidsinschakeling
+          - name: ontvangt_ondersteuning_arbeidsinschakeling
+            type: boolean
+            required: true
+            description: Of de persoon ondersteuning ontvangt gericht op arbeidsinschakeling
+        output:
+          - name: kan_tegenprestatie_verzoeken
+            type: boolean
+            description: Of het college een tegenprestatie kan verzoeken
+        actions:
+          - output: kan_tegenprestatie_verzoeken
+            value:
+              operation: AND
+              conditions:
+                - operation: EQUALS
+                  subject: $heeft_uitzicht_op_arbeidsinschakeling
+                  value: false
+                - operation: EQUALS
+                  subject: $ontvangt_ondersteuning_arbeidsinschakeling
+                  value: false
+
+  - number: '3'
+    text: |
+      Informatie
+
+      Het college informeert de uitkeringsgerechtigde over de mogelijkheden tot het
+      verrichten van onbeloonde maatschappelijke werkzaamheden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel3
+
+  - number: '4'
+    text: |
+      Inlichtingenplicht
+
+      1. De uitkeringsgerechtigde verstrekt de door het college gevraagde inlichtingen
+         omtrent werkzaamheden in het kader van de tegenprestatie.
+      2. De uitkeringsgerechtigde meldt uit eigen beweging veranderingen in de
+         werkzaamheden die relevant zijn voor de tegenprestatie.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel4
+
+  - number: '5'
+    text: |
+      Rapportage aan de raad
+
+      Het college rapporteert jaarlijks aan de gemeenteraad over de uitvoering van
+      deze verordening en over het effect ervan.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel5
+
+  - number: '6'
+    text: |
+      Nadere regels
+
+      Het college kan nadere regels stellen ter uitvoering van deze verordening.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel6
+
+  - number: '7'
+    text: |
+      Citeertitel
+
+      Deze verordening wordt aangehaald als: Verordening Tegenprestatie Participatiewet.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377479/1#Artikel7

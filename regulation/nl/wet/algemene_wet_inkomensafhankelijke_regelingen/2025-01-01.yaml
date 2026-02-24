@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
 $id: algemene_wet_inkomensafhankelijke_regelingen
 regulatory_layer: WET
 publication_date: '2022-12-27'
@@ -632,8 +632,10 @@ articles:
         output:
           - name: heeft_toeslagpartner
             type: boolean
-            description: Geeft aan of de persoon een toeslagpartner heeft
+            description: Geeft aan of de persoon een toeslagpartner heeft volgens AWIR artikel 3
         actions:
+          # NOTE: Placeholder implementation - returns false for MVP
+          # Full implementation would query RVIG for relationship data
           - output: heeft_toeslagpartner
             value: false
   - number: API-2
@@ -654,7 +656,11 @@ articles:
         output:
           - name: toetsingsinkomen
             type: amount
-            description: Toetsingsinkomen in eurocent
+            type_spec:
+              unit: eurocent
+            description: Toetsingsinkomen in eurocent (gelijk aan verzamelinkomen volgens art. 8)
         actions:
+          # NOTE: Placeholder implementation - returns 0 for MVP
+          # Full implementation would query Belastingdienst for verzamelinkomen
           - output: toetsingsinkomen
             value: 0

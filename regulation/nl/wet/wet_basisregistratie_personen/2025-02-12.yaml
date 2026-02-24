@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
 $id: wet_basisregistratie_personen
 regulatory_layer: WET
 publication_date: '2021-08-26'
@@ -1987,3 +1987,227 @@ articles:
         actions:
           - output: leeftijd
             value: 0
+  # ==========================================================================
+  # SYNTHETIC API ARTICLES - Added 2026-01-21 for Participatiewet integration
+  # ==========================================================================
+  # Versie: 1.1.0
+  # Changelog:
+  # - v1.1.0 (2026-01-21): API articles toegevoegd voor Participatiewet
+  #   - API-2: nationaliteit_nederlander
+  #   - API-3: woont_in_nederland
+  #   - API-4: leeftijd_in_maanden
+  #   - API-5: geboortejaar
+  #   - API-6: is_alleenstaande
+  #   - API-7: burgerlijke_staat
+  # ==========================================================================
+  - number: API-2
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining if a person has Dutch nationality.
+      Based on the nationality data (nationaliteiten) stored in the BRP registration.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-2
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: nationaliteit_nederlander
+            type: boolean
+            description: Heeft de persoon de Nederlandse nationaliteit
+        actions:
+          # In werkelijkheid zou dit uit de BRP komen
+          # Hier placeholder - moet door engine worden opgelost via externe data
+          - output: nationaliteit_nederlander
+            value: true
+  - number: API-3
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining if a person resides in the Netherlands.
+      Based on the address data (verblijfplaats) stored in the BRP registration.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-3
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: woont_in_nederland
+            type: boolean
+            description: Woont de persoon in Nederland (heeft woonadres in Nederland)
+        actions:
+          # Placeholder - in werkelijkheid uit BRP verblijfplaats
+          - output: woont_in_nederland
+            value: true
+  - number: API-4
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining a person's age in months.
+      Needed for AOW pension age calculations which use months, not years.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-4
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: leeftijd_in_maanden
+            type: number
+            description: Leeftijd in maanden (voor AOW berekening)
+        actions:
+          # Placeholder - in werkelijkheid berekend uit geboortedatum
+          - output: leeftijd_in_maanden
+            value: 0
+  - number: API-5
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining a person's birth year.
+      Needed for AOW pension age table lookup.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-5
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: geboortejaar
+            type: number
+            description: Geboortejaar van de persoon
+        actions:
+          # Placeholder - in werkelijkheid uit BRP geboortedatum
+          - output: geboortejaar
+            value: 1960
+  - number: API-6
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining if a person is single (alleenstaande).
+      Based on marital status (burgerlijke staat) and household composition in the BRP.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-6
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: is_alleenstaande
+            type: boolean
+            description: Is de persoon alleenstaande (niet gehuwd, geen geregistreerd partnerschap)
+          - name: burgerlijke_staat
+            type: string
+            description: "Burgerlijke staat (ongehuwd, gehuwd, gescheiden, weduwe/weduwnaar)"
+        actions:
+          # Placeholder - in werkelijkheid uit BRP burgerlijke staat
+          - output: burgerlijke_staat
+            value: ongehuwd
+          - output: is_alleenstaande
+            value:
+              operation: IN
+              subject: $burgerlijke_staat
+              value:
+                - ongehuwd
+                - gescheiden
+                - weduwe
+                - weduwnaar
+  - number: API-7
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining if a person is married or
+      has a registered partnership. Based on the civil status (burgerlijke staat) stored in the BRP.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-7
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: is_gehuwd_of_geregistreerd
+            type: boolean
+            description: Is de persoon gehuwd of heeft geregistreerd partnerschap
+        actions:
+          # Placeholder - in werkelijkheid uit BRP burgerlijke staat
+          - output: is_gehuwd_of_geregistreerd
+            value: false
+  - number: API-8
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for determining if a person has co-residents
+      (medebewoners) at the same address. Based on address data in the BRP.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-8
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: heeft_medebewoner
+            type: boolean
+            description: Heeft de persoon een medebewoner op hetzelfde adres
+        actions:
+          # Placeholder - in werkelijkheid uit BRP adresgegevens
+          - output: heeft_medebewoner
+            value: false
+  - number: API-9
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for retrieving the municipality code where
+      a person is registered. Based on address data in the BRP.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-9
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: gemeente_code
+            type: string
+            description: Gemeentecode waar persoon staat ingeschreven (bijv. GM0384)
+        actions:
+          # Placeholder - in werkelijkheid uit BRP adresgegevens
+          - output: gemeente_code
+            value: GM0000
+  - number: API-10
+    text: |-
+      SYNTHETIC ARTICLE - API Endpoint
+      This article provides a machine-readable endpoint for retrieving the address where
+      a person is registered. Based on address data in the BRP.
+      NOTE: This is not part of the original Wet BRP text, but provides programmatic access to BRP data.
+    url: https://wetten.overheid.nl/BWBR0033715/2025-02-12#API-10
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: Burgerservicenummer van de persoon
+        output:
+          - name: adres
+            type: string
+            description: Adres waar persoon staat ingeschreven
+        actions:
+          # Placeholder - in werkelijkheid uit BRP adresgegevens
+          - output: adres
+            value: Onbekend

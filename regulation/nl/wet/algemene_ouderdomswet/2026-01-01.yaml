@@ -1,0 +1,253 @@
+---
+# ============================================================================
+# Algemene Ouderdomswet (AOW) - Artikel 7a (Pensioengerechtigde leeftijd)
+# ============================================================================
+# Versie: 1.0.0
+# Aangemaakt: 2026-01-21
+# Auteur: Claude Code (Opus 4.5)
+# Branch: feature/poc-income-laws
+#
+# Changelog:
+# - v1.0.0 (2026-01-21): Initiële versie met artikel 7a geformaliseerd
+#   - Pensioenleeftijden 2013-2025 gedefinieerd
+#   - Formule voor 2026+ nog niet geïmplementeerd (CBS levensverwachting)
+#
+# Dit bestand formaliseert artikel 7a van de AOW, dat de pensioengerechtigde
+# leeftijd definieert. Dit is nodig voor de Participatiewet artikelen 21 en 22
+# (verschillende normen voor pensioengerechtigden).
+# ============================================================================
+
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: algemene_ouderdomswet
+regulatory_layer: WET
+publication_date: '1956-05-31'
+valid_from: '2026-01-01'
+bwb_id: BWBR0002221
+url: https://wetten.overheid.nl/BWBR0002221/2026-01-01
+name: Algemene Ouderdomswet
+
+articles:
+  # ==========================================================================
+  # ARTIKEL 7a - PENSIOENGERECHTIGDE LEEFTIJD
+  # ==========================================================================
+  # Dit artikel definieert de pensioengerechtigde leeftijd die afhangt van
+  # het geboortejaar. Vanaf 2026 wordt de leeftijd jaarlijks aangepast op
+  # basis van de levensverwachting (CBS).
+  # ==========================================================================
+  - number: 7a
+    text: |-
+      **Pensioengerechtigde leeftijd en aanvangsleeftijd**
+
+      1. De pensioengerechtigde leeftijd en de aanvangsleeftijd bedragen voor degene die:
+
+      | Jaar waarin pensioenleeftijd bereikt | Pensioengerechtigde leeftijd | Aanvangsleeftijd |
+      |--------------------------------------|------------------------------|------------------|
+      | vóór 2013                            | 65 jaar                      | 15 jaar          |
+      | 2013                                 | 65 jaar en 1 maand           | 15 jaar en 1 maand |
+      | 2014                                 | 65 jaar en 2 maanden         | 15 jaar en 2 maanden |
+      | 2015                                 | 65 jaar en 3 maanden         | 15 jaar en 3 maanden |
+      | 2016                                 | 65 jaar en 6 maanden         | 15 jaar en 6 maanden |
+      | 2017                                 | 65 jaar en 9 maanden         | 15 jaar en 9 maanden |
+      | 2018                                 | 66 jaar                      | 16 jaar          |
+      | 2019-2021                            | 66 jaar en 4 maanden         | 16 jaar en 4 maanden |
+      | 2022                                 | 66 jaar en 7 maanden         | 16 jaar en 7 maanden |
+      | 2023                                 | 66 jaar en 10 maanden        | 16 jaar en 10 maanden |
+      | 2024-2027                            | 67 jaar                      | 17 jaar          |
+
+      2. Met ingang van 2028 worden de in het eerste lid genoemde leeftijden jaarlijks aangepast
+      volgens de formule: V = 2/3 × (L – 20,64) – (P – 67), waarbij:
+      - L = de door het CBS geraamde macro gemiddelde resterende levensverwachting op 65-jarige leeftijd
+      - P = de pensioengerechtigde leeftijd in het voorafgaande jaar
+
+      3. De aanpassing wordt door Onze Minister voor 1 november van het jaar voorafgaand aan het
+      jaar waarop de aanpassing betrekking heeft, bekendgemaakt in de Staatscourant.
+    url: https://wetten.overheid.nl/BWBR0002221/2026-01-01#Artikel7a
+    machine_readable:
+      # =======================================================================
+      # WETSANALYSE ARTIKEL 7a
+      # =======================================================================
+      # Juridische grammatica:
+      # - Rechtssubject: Ingezetene van Nederland
+      # - Rechtsfeit: Bereiken van de pensioengerechtigde leeftijd
+      # - Rechtsgevolg: Recht op AOW-uitkering / andere leeftijdsafhankelijke rechten
+      #
+      # Voor Participatiewet relevant:
+      # - Art. 21: Normen voor personen jonger dan pensioengerechtigde leeftijd
+      # - Art. 22: Normen voor pensioengerechtigden
+      # =======================================================================
+      definitions:
+        # Pensioenleeftijden per jaar (in maanden)
+        # 65 jaar = 780 maanden, 66 jaar = 792, 67 jaar = 804
+        PENSIOENLEEFTIJD_VOOR_2013:
+          value: 780
+        PENSIOENLEEFTIJD_2013:
+          value: 781
+        PENSIOENLEEFTIJD_2014:
+          value: 782
+        PENSIOENLEEFTIJD_2015:
+          value: 783
+        PENSIOENLEEFTIJD_2016:
+          value: 786
+        PENSIOENLEEFTIJD_2017:
+          value: 789
+        PENSIOENLEEFTIJD_2018:
+          value: 792
+        PENSIOENLEEFTIJD_2019_2021:
+          value: 796
+        PENSIOENLEEFTIJD_2022:
+          value: 799
+        PENSIOENLEEFTIJD_2023:
+          value: 802
+        PENSIOENLEEFTIJD_2024_2027:
+          value: 804
+      execution:
+        produces:
+          legal_character: WAARDEBEPALING
+          decision_type: GEEN_BESLUIT
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: BSN van de persoon
+          - name: geboortedatum
+            type: date
+            required: true
+            description: Geboortedatum van de persoon
+        input:
+          - name: leeftijd_in_maanden
+            type: number
+            description: Leeftijd in maanden op peildatum
+            source:
+              regulation: wet_basisregistratie_personen
+              output: leeftijd_in_maanden
+              parameters:
+                bsn: $bsn
+          - name: geboortejaar
+            type: number
+            description: Geboortejaar
+            source:
+              regulation: wet_basisregistratie_personen
+              output: geboortejaar
+              parameters:
+                bsn: $bsn
+        output:
+          - name: pensioengerechtigde_leeftijd_maanden
+            type: number
+            description: Pensioengerechtigde leeftijd in maanden
+          - name: pensioengerechtigde_leeftijd_jaren
+            type: number
+            description: Pensioengerechtigde leeftijd in jaren (afgerond)
+          - name: heeft_pensioengerechtigde_leeftijd_bereikt
+            type: boolean
+            description: Heeft de persoon de pensioengerechtigde leeftijd bereikt
+          - name: jaar_pensioen_bereikt
+            type: number
+            description: Kalenderjaar waarin pensioenleeftijd wordt bereikt
+        actions:
+          # Bepaal in welk jaar de pensioenleeftijd wordt bereikt
+          # Dit is een vereenvoudiging - eigenlijk moet je geboortedatum + pensioenleeftijd berekenen
+          - output: jaar_pensioen_bereikt
+            value:
+              operation: ADD
+              values:
+                - $geboortejaar
+                - 67
+          # Bepaal de pensioengerechtigde leeftijd op basis van het jaar
+          - output: pensioengerechtigde_leeftijd_maanden
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: LESS_THAN
+                    subject: $jaar_pensioen_bereikt
+                    value: 2013
+                  then: $PENSIOENLEEFTIJD_VOOR_2013
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2013
+                  then: $PENSIOENLEEFTIJD_2013
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2014
+                  then: $PENSIOENLEEFTIJD_2014
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2015
+                  then: $PENSIOENLEEFTIJD_2015
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2016
+                  then: $PENSIOENLEEFTIJD_2016
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2017
+                  then: $PENSIOENLEEFTIJD_2017
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2018
+                  then: $PENSIOENLEEFTIJD_2018
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: GREATER_THAN_OR_EQUAL
+                        subject: $jaar_pensioen_bereikt
+                        value: 2019
+                      - operation: LESS_THAN_OR_EQUAL
+                        subject: $jaar_pensioen_bereikt
+                        value: 2021
+                  then: $PENSIOENLEEFTIJD_2019_2021
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2022
+                  then: $PENSIOENLEEFTIJD_2022
+                - when:
+                    operation: EQUALS
+                    subject: $jaar_pensioen_bereikt
+                    value: 2023
+                  then: $PENSIOENLEEFTIJD_2023
+              # 2024-2027 en later: 67 jaar (804 maanden)
+              default: $PENSIOENLEEFTIJD_2024_2027
+          # Bereken in jaren (afgerond naar beneden)
+          - output: pensioengerechtigde_leeftijd_jaren
+            operation: DIVIDE
+            values:
+              - $pensioengerechtigde_leeftijd_maanden
+              - 12
+          # Check of persoon de pensioenleeftijd heeft bereikt
+          - output: heeft_pensioengerechtigde_leeftijd_bereikt
+            value:
+              operation: GREATER_THAN_OR_EQUAL
+              subject: $leeftijd_in_maanden
+              value: $pensioengerechtigde_leeftijd_maanden
+
+  # ==========================================================================
+  # ARTIKEL 1 - BEGRIPSBEPALINGEN
+  # ==========================================================================
+  - number: '1'
+    text: |-
+      **Begripsbepalingen**
+
+      Voor de toepassing van deze wet en de daarop berustende bepalingen wordt verstaan onder:
+
+      a. Onze Minister: Onze Minister van Sociale Zaken en Werkgelegenheid;
+
+      b. de Sociale verzekeringsbank: de Sociale verzekeringsbank, genoemd in hoofdstuk 6 van de Wet structuur
+      uitvoeringsorganisatie werk en inkomen;
+
+      c. pensioengerechtigde leeftijd: de leeftijd, bedoeld in artikel 7a, eerste lid;
+
+      d. aanvangsleeftijd: de leeftijd, bedoeld in artikel 7a, eerste lid;
+
+      e. bruto-ouderdomspensioen: het ouderdomspensioen, bedoeld in artikel 9;
+
+      f. bruto-vakantie-uitkering: de vakantie-uitkering, bedoeld in artikel 32, eerste lid, over het bruto-ouderdomspensioen;
+
+      g. inkomensondersteuning: de inkomensondersteuning, bedoeld in artikel 33a.
+    url: https://wetten.overheid.nl/BWBR0002221/2026-01-01#Artikel1

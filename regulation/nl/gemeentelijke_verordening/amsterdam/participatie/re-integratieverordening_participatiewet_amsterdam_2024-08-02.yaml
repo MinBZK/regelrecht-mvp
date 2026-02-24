@@ -1,0 +1,477 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: re_integratieverordening_participatiewet_amsterdam
+uuid: cvdr377485-0001-0001-0001-000000000363
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2024-08-02'
+valid_from: '2024-08-02'
+gemeente_code: GM0363
+officiele_titel: Re-integratieverordening Participatiewet Amsterdam
+url: https://lokaleregelgeving.overheid.nl/CVDR377485
+name: Re-integratieverordening Participatiewet Amsterdam
+
+# Grondslag: Participatiewet artikelen 6, 8, 8a, 10 en 10b
+legal_basis:
+  - law_id: participatiewet
+    article: '6'
+    description: Voorzieningen gericht op arbeidsinschakeling
+  - law_id: participatiewet
+    article: '8'
+    description: Verordening re-integratie en tegenprestatie
+  - law_id: participatiewet
+    article: '8a'
+    description: Verordening loonkostensubsidie
+  - law_id: participatiewet
+    article: '10'
+    description: Ondersteuning bij arbeidsinschakeling
+  - law_id: participatiewet
+    article: '10b'
+    description: Beschut werk
+
+articles:
+  # Hoofdstuk 1: Algemene bepalingen
+
+  - number: '1.1'
+    text: |
+      Begripsbepalingen
+
+      In deze verordening wordt verstaan onder:
+      a. algemeen geaccepteerde arbeid: arbeid die maatschappelijk aanvaard is;
+      b. ANW: Algemene nabestaandenwet;
+      c. arbeidsmarktregio: de arbeidsmarktregio Groot Amsterdam;
+      d. arbeidsinschakeling: het verkrijgen van algemeen geaccepteerde arbeid;
+      e. beschut werk: werk in een beschutte omgeving;
+      f. college: het college van burgemeester en wethouders van Amsterdam;
+      g. gesubsidieerd werk: dienstbetrekking met loonkostensubsidie;
+      h. loonkostensubsidie: subsidie als bedoeld in artikel 10d Participatiewet.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel1.1
+
+  - number: '1.2'
+    text: |
+      Doelgroep
+
+      Tot de doelgroep behoren inwoners onder de pensioengerechtigde leeftijd, waaronder:
+      a. uitkeringsgerechtigden;
+      b. niet-uitkeringsgerechtigden;
+      c. ANW-gerechtigden;
+      d. gesubsidieerde werknemers;
+      e. specifieke UWV-clienten waarmee afspraken zijn gemaakt.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel1.2
+    machine_readable:
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+            description: Leeftijd van de persoon
+          - name: pensioengerechtigde_leeftijd
+            type: number
+            required: true
+            description: AOW-leeftijd
+          - name: is_uitkeringsgerechtigde
+            type: boolean
+            required: false
+          - name: is_niet_uitkeringsgerechtigde
+            type: boolean
+            required: false
+          - name: is_anw_gerechtigde
+            type: boolean
+            required: false
+          - name: is_gesubsidieerde_werknemer
+            type: boolean
+            required: false
+          - name: is_uwv_client_met_afspraak
+            type: boolean
+            required: false
+        output:
+          - name: behoort_tot_doelgroep
+            type: boolean
+            description: Of de persoon tot de doelgroep behoort
+        actions:
+          - output: behoort_tot_doelgroep
+            value:
+              operation: AND
+              conditions:
+                - operation: LESS_THAN
+                  subject: $leeftijd
+                  value: $pensioengerechtigde_leeftijd
+                - operation: OR
+                  conditions:
+                    - operation: EQUALS
+                      subject: $is_uitkeringsgerechtigde
+                      value: true
+                    - operation: EQUALS
+                      subject: $is_niet_uitkeringsgerechtigde
+                      value: true
+                    - operation: EQUALS
+                      subject: $is_anw_gerechtigde
+                      value: true
+                    - operation: EQUALS
+                      subject: $is_gesubsidieerde_werknemer
+                      value: true
+                    - operation: EQUALS
+                      subject: $is_uwv_client_met_afspraak
+                      value: true
+
+  - number: '1.5'
+    text: |
+      Verantwoordelijkheden college
+
+      1. Het college ondersteunt de arbeidsinschakeling naar de kortste weg naar
+         algemeen geaccepteerde arbeid.
+      2. Het college zet de beschikbare budgetten in.
+      3. Het college vermijdt oneerlijke marktconcurrentie.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel1.5
+
+  - number: '1.6'
+    text: |
+      Ondersteuning bij re-integratie
+
+      1. Personen kunnen na overleg toegang krijgen tot ondersteuning.
+      2. Het college specificeert de inhoud, doelstellingen en duur van de voorziening
+         met motivering voor alternatieven.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel1.6
+
+  - number: '1.7'
+    text: |
+      Werkgevers
+
+      1. Samenwerking is toegestaan met werkgevers die voorzieningen ontvangen.
+      2. Werkgevers moeten informatie verstrekken, bijdragen aan doelbereiking,
+         en zich gedragen als verantwoordelijke werkgevers.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel1.7
+
+  - number: '1.8'
+    text: |
+      Proefplaatsingen
+
+      Het college kan uitkeringsgerechtigden toestaan om onbetaald proefwerk te
+      verrichten (maximaal 1 maand, verlengbaar met 1 maand) met behoud van uitkering.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel1.8
+    machine_readable:
+      definitions:
+        MAX_PROEFPLAATSING_MAANDEN:
+          value: 1
+          description: Maximale duur proefplaatsing in maanden
+        MAX_VERLENGING_MAANDEN:
+          value: 1
+          description: Maximale verlenging proefplaatsing in maanden
+      execution:
+        parameters:
+          - name: is_uitkeringsgerechtigde
+            type: boolean
+            required: true
+          - name: duur_maanden
+            type: number
+            required: true
+            description: Gevraagde duur van proefplaatsing in maanden
+          - name: is_verlenging
+            type: boolean
+            required: false
+        output:
+          - name: proefplaatsing_toegestaan
+            type: boolean
+            description: Of proefplaatsing is toegestaan
+          - name: max_duur_maanden
+            type: number
+            description: Maximale toegestane duur
+        actions:
+          - output: proefplaatsing_toegestaan
+            value:
+              operation: AND
+              conditions:
+                - operation: EQUALS
+                  subject: $is_uitkeringsgerechtigde
+                  value: true
+                - operation: LESS_THAN_OR_EQUAL
+                  subject: $duur_maanden
+                  value:
+                    operation: IF
+                    when:
+                      operation: EQUALS
+                      subject: $is_verlenging
+                      value: true
+                    then: 2
+                    else: 1
+          - output: max_duur_maanden
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $is_verlenging
+                value: true
+              then: 2
+              else: 1
+
+  # Hoofdstuk 2: Voorzieningen
+
+  - number: '2.1'
+    text: |
+      Voorzieningen
+
+      Het college kan begeleiding en meerdere soorten voorzieningen aanbieden:
+      a. jobcoaching;
+      b. persoonlijke ondersteuning;
+      c. beschut werk;
+      d. leerwerktrajecten (maximaal 6-12 maanden);
+      e. loonkostensubsidies;
+      f. scholing;
+      g. stageplekken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel2.1
+    machine_readable:
+      definitions:
+        VOORZIENINGEN:
+          value:
+            - jobcoaching
+            - persoonlijke_ondersteuning
+            - beschut_werk
+            - leerwerktrajecten
+            - loonkostensubsidies
+            - scholing
+            - stageplekken
+          description: Beschikbare voorzieningen voor re-integratie
+        MAX_LEERWERKTRAJECT_MAANDEN:
+          value: 12
+          description: Maximale duur leerwerktraject in maanden
+        MIN_LEERWERKTRAJECT_MAANDEN:
+          value: 6
+          description: Minimale duur leerwerktraject in maanden
+
+  - number: '2.2'
+    text: |
+      Exclusieve rechten
+
+      Het college kan exclusieve uitvoeringsrechten verlenen conform de
+      Aanbestedingswet 2012 voor de implementatie van voorzieningen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel2.2
+
+  - number: '2.3'
+    text: |
+      Afwegingsfactoren
+
+      Bij beslissingen weegt het college:
+      a. capaciteit en belemmeringen van de begunstigde;
+      b. vraag op de arbeidsmarkt;
+      c. beschikbaarheid van kinderopvang;
+      d. relevantie van opleiding;
+      e. kosten-batenanalyse.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel2.3
+    machine_readable:
+      definitions:
+        AFWEGINGSFACTOREN:
+          value:
+            - capaciteit_belemmeringen
+            - arbeidsmarktvraag
+            - kinderopvang_beschikbaarheid
+            - opleiding_relevantie
+            - kosten_baten
+          description: Factoren bij beslissing over voorzieningen
+
+  - number: '2.4'
+    text: |
+      Beeindiging
+
+      Voorzieningen kunnen worden beeindigd indien:
+      a. verplichtingen niet worden nagekomen;
+      b. werkgever niet meewerkt;
+      c. begunstigde niet meer tot doelgroep behoort;
+      d. verhuizing plaatsvindt;
+      e. alternatieve voorzieningen worden aangeboden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel2.4
+    machine_readable:
+      execution:
+        parameters:
+          - name: verplichtingen_nagekomen
+            type: boolean
+            required: true
+          - name: werkgever_werkt_mee
+            type: boolean
+            required: true
+          - name: nog_in_doelgroep
+            type: boolean
+            required: true
+          - name: is_verhuisd
+            type: boolean
+            required: true
+          - name: alternatief_aangeboden
+            type: boolean
+            required: true
+        output:
+          - name: kan_worden_beeindigd
+            type: boolean
+            description: Of de voorziening kan worden beeindigd
+        actions:
+          - output: kan_worden_beeindigd
+            value:
+              operation: OR
+              conditions:
+                - operation: EQUALS
+                  subject: $verplichtingen_nagekomen
+                  value: false
+                - operation: EQUALS
+                  subject: $werkgever_werkt_mee
+                  value: false
+                - operation: EQUALS
+                  subject: $nog_in_doelgroep
+                  value: false
+                - operation: EQUALS
+                  subject: $is_verhuisd
+                  value: true
+                - operation: EQUALS
+                  subject: $alternatief_aangeboden
+                  value: true
+
+  # Hoofdstuk 3: Specifieke voorzieningen
+
+  - number: '3a.1'
+    text: |
+      Loonkostensubsidie (Participatiewet)
+
+      1. Het college verstrekt subsidie aan werkgevers die doelgroepleden in
+         dienst nemen of recent hebben genomen.
+      2. De ontvangst wordt schriftelijk bevestigd.
+      3. Een forfaitair bedrag is mogelijk.
+      4. Maandelijkse betalingen vormen de subsidiebeslissing.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3a.1
+
+  - number: '3b.1'
+    text: |
+      Persoonlijke werkondersteuning
+
+      Twee vormen:
+      a. jobcoaching: deskundige methodische ondersteuning;
+      b. interne werkbegeleiding: dagelijkse begeleiding op de werkplek door een mentor.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3b.1
+    machine_readable:
+      definitions:
+        VORMEN_WERKONDERSTEUNING:
+          value:
+            - jobcoaching
+            - interne_werkbegeleiding
+          description: Vormen van persoonlijke werkondersteuning
+
+  - number: '3b.2'
+    text: |
+      Uitvoering jobcoaching
+
+      Het college waarborgt jobcoaching in natura en op subsidiebasis.
+      Kwaliteitsnormen, subsidiebedragen en verantwoording worden bij
+      regeling vastgesteld.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3b.2
+
+  - number: '3b.3'
+    text: |
+      Interne werkbegeleiding
+
+      Het college kan subsidie of ondersteuning in natura bieden ter
+      aanvulling op de aandacht van de jobcoach.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3b.3
+
+  - number: '3b.4'
+    text: |
+      Geintegreerde ondersteuning
+
+      Jobcoaches onderhouden contact met het netwerk van de begunstigde.
+      Met toestemming kunnen zij aanvullende ondersteuning bieden bij
+      arbeidsovergangen en voortgezette persoonlijke assistentie.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3b.4
+
+  - number: '3c.1'
+    text: |
+      Persoonlijke voorzieningen werk/opleiding
+
+      Het college kan verstrekken:
+      a. vervoersondersteuning;
+      b. intermediaire diensten voor personen met een beperking;
+      c. individuele werkplekaanpassingen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3c.1
+    machine_readable:
+      definitions:
+        PERSOONLIJKE_VOORZIENINGEN:
+          value:
+            - vervoersondersteuning
+            - intermediaire_diensten
+            - werkplekaanpassingen
+          description: Persoonlijke voorzieningen voor werk en opleiding
+
+  - number: '3c.2'
+    text: |
+      Voorzieningen zelfstandigen
+
+      Vergelijkbare ondersteuning is beschikbaar voor zelfstandigen met
+      bestaande of uit arbeid voortkomende beperkingen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3c.2
+
+  - number: '3d.1'
+    text: |
+      Premies/toeslagen
+
+      Het college kan premies toekennen voor:
+      a. afronding van stages;
+      b. proefplaatsingen.
+      Nadere regelingen bepalen bedragen en voorwaarden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3d.1
+
+  - number: '3d.2'
+    text: |
+      Compensatie bedrijfskosten
+
+      Het college kan compensatie voor niet-loonkosten bieden aan werkgevers
+      van gesubsidieerde werknemers.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3d.2
+
+  - number: '3d.3'
+    text: |
+      Compensatie ziekteverzuimrisico
+
+      Het college kan verzekering of compensatie bieden voor risico's
+      van arbeidsongeschiktheid.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel3d.3
+
+  # Hoofdstuk 4: Beschut werk
+
+  - number: '4.1'
+    text: |
+      Beschut werk
+
+      1. Het college kan in dienst nemen of dienstbetrekkingen met werkgevers
+         mogelijk maken voor beschut werk in aangepaste omgevingen.
+      2. Loonkostensubsidies en risicocompensatie zijn van toepassing.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel4.1
+
+  # Hoofdstuk 5: Toezicht
+
+  - number: '5.1'
+    text: |
+      Maatregelen bij misbruik
+
+      Voorzieningen kunnen worden teruggevorderd indien verstrekt op basis van
+      onjuiste informatie of indien verplichtingen niet zijn nagekomen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel5.1
+
+  # Hoofdstuk 6: Slotbepalingen
+
+  - number: '6.1'
+    text: |
+      Overgangsregels
+
+      1. Bepalingen uit eerdere regelingen blijven van kracht.
+      2. Het college beheert lopende arbeidsovereenkomsten en subsidies
+         uit ingetrokken wetten.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel6.1
+
+  - number: '6.2'
+    text: |
+      Onvoorziene gevallen
+
+      1. Het college beslist over zaken die niet zijn geregeld.
+      2. Het college kan afwijken van bepalingen wanneer toepassing tot
+         substantiele onbillijkheid leidt.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel6.2
+
+  - number: '6.3'
+    text: |
+      Citeertitel
+
+      Deze verordening wordt aangehaald als: Re-integratieverordening Participatiewet
+    url: https://lokaleregelgeving.overheid.nl/CVDR377485#Artikel6.3

@@ -1,0 +1,272 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: participatieverordening_rotterdam_2015
+uuid: cvdr361766-0005-0001-0001-000000000599
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2015-06-25'
+valid_from: '2015-07-01'
+gemeente_code: GM0599
+officiele_titel: Participatieverordening Rotterdam 2015
+url: https://lokaleregelgeving.overheid.nl/CVDR361766/5
+name: Participatieverordening Rotterdam 2015
+
+legal_basis:
+  - law_id: participatiewet
+    article: '8a'
+    paragraph: '1'
+    description: Gemeenteraad stelt verordening vast over ondersteuning bij
+      arbeidsinschakeling en participatieplaatsen
+  - law_id: participatiewet
+    article: '10d'
+    description: Loonkostensubsidie
+
+articles:
+  - number: '9'
+    text: |
+      Premie participatieplaats
+
+      1. Aan de belanghebbende die op een participatieplaats werkzaamheden verricht
+         als bedoeld in artikel 10a van de Participatiewet, kent het college een
+         premie toe indien:
+         a. de belanghebbende gedurende ten minste zes maanden aaneengesloten
+            werkzaamheden heeft verricht;
+         b. de werkzaamheden ten minste 20 uur per week bedragen; en
+         c. de belanghebbende naar het oordeel van het college voldoende
+            medewerking heeft verleend.
+
+      2. De premie bedraagt 150 euro per zes maanden.
+
+      3. De premie wordt betaald na afloop van elke periode van zes maanden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR361766/5#Artikel9
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        De beoordeling of de belanghebbende voldoende medewerking heeft verleend
+        (lid 1 sub c) is een subjectieve beoordeling door het college.
+      open_norms:
+      - term: voldoende_medewerking
+        description: Beoordeling door college of belanghebbende voldoende
+          medewerking heeft verleend aan participatieplaats
+      definitions:
+        PREMIE_PER_6_MAANDEN:
+          value: 15000
+          description: Premie per zes maanden in eurocent (€150)
+        MINIMUM_UREN_PER_WEEK:
+          value: 20
+          description: Minimaal aantal uren per week voor premie
+        MINIMUM_DUUR_MAANDEN:
+          value: 6
+          description: Minimaal aantal aaneengesloten maanden
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: TOEKENNING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+          description: BSN van de belanghebbende
+        input:
+        - name: uren_per_week
+          type: number
+          source:
+            output: uren_per_week
+          description: Aantal uren per week werkzaamheden op participatieplaats
+        - name: duur_maanden
+          type: number
+          source:
+            output: duur_maanden
+          description: Aantal aaneengesloten maanden werkzaam op
+            participatieplaats
+        - name: voldoende_medewerking
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of belanghebbende voldoende
+              medewerking heeft verleend
+          description: Voldoende medewerking verleend - VEREIST MENSELIJKE
+            BEOORDELING
+        output:
+        - name: heeft_recht_op_premie
+          type: boolean
+          description: Of de belanghebbende recht heeft op de premie
+        - name: premie_bedrag
+          type: amount
+          type_spec:
+            unit: eurocent
+          description: Hoogte van de premie
+        actions:
+        - output: voldoet_aan_duur
+          value:
+            operation: GREATER_THAN_OR_EQUAL
+            subject: $duur_maanden
+            value: $MINIMUM_DUUR_MAANDEN
+        - output: voldoet_aan_uren
+          value:
+            operation: GREATER_THAN_OR_EQUAL
+            subject: $uren_per_week
+            value: $MINIMUM_UREN_PER_WEEK
+        - output: heeft_recht_op_premie
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $voldoet_aan_duur
+              value: true
+            - operation: EQUALS
+              subject: $voldoet_aan_uren
+              value: true
+            - operation: EQUALS
+              subject: $voldoende_medewerking
+              value: true
+        - output: premie_bedrag
+          value:
+            operation: IF
+            when:
+              operation: EQUALS
+              subject: $heeft_recht_op_premie
+              value: true
+            then: $PREMIE_PER_6_MAANDEN
+            else: 0
+
+  - number: '14'
+    text: |
+      Loonkostensubsidie
+
+      1. Het college kan aan een werkgever loonkostensubsidie verlenen ten
+         behoeve van een persoon die behoort tot de doelgroep loonkostensubsidie
+         als bedoeld in artikel 10c van de Participatiewet.
+
+      2. De loonkostensubsidie wordt verleend indien:
+         a. de persoon een dienstbetrekking heeft of zal aangaan;
+         b. de loonwaarde van de persoon is vastgesteld door middel van een
+            loonwaardemeting.
+
+      3. De hoogte van de loonkostensubsidie is het verschil tussen het
+         wettelijk minimumloon en de vastgestelde loonwaarde, vermeerderd met
+         een vergoeding voor werkgeverslasten.
+    url: https://lokaleregelgeving.overheid.nl/CVDR361766/5#Artikel14
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        De vaststelling of een persoon behoort tot de doelgroep
+        loonkostensubsidie (lid 1) en de loonwaardemeting (lid 2b) vereisen
+        menselijke beoordeling en professioneel onderzoek.
+      open_norms:
+      - term: doelgroep_loonkostensubsidie
+        description: Beoordeling of persoon tot doelgroep behoort conform art.
+          10c Participatiewet
+      - term: loonwaarde
+        description: Loonwaarde vastgesteld door middel van professionele
+          loonwaardemeting
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: TOEKENNING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+          description: BSN van de werknemer
+        input:
+        - name: behoort_tot_doelgroep
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling of persoon tot doelgroep loonkostensubsidie
+              behoort
+          description: Behoort tot doelgroep loonkostensubsidie - VEREIST
+            MENSELIJKE BEOORDELING
+        - name: heeft_dienstbetrekking
+          type: boolean
+          source:
+            output: heeft_dienstbetrekking
+          description: Heeft of gaat dienstbetrekking aan
+        - name: loonwaarde_percentage
+          type: number
+          source:
+            human_input: true
+            description: Vastgestelde loonwaarde als percentage van het
+              wettelijk minimumloon op basis van loonwaardemeting
+          description: Loonwaarde percentage - VEREIST MENSELIJKE BEOORDELING
+            (loonwaardemeting)
+        output:
+        - name: heeft_recht_op_loonkostensubsidie
+          type: boolean
+          description: Of recht bestaat op loonkostensubsidie
+        actions:
+        - output: heeft_recht_op_loonkostensubsidie
+          value:
+            operation: AND
+            conditions:
+            - operation: EQUALS
+              subject: $behoort_tot_doelgroep
+              value: true
+            - operation: EQUALS
+              subject: $heeft_dienstbetrekking
+              value: true
+            - operation: GREATER_THAN
+              subject: $loonwaarde_percentage
+              value: 0
+
+  - number: '19'
+    text: |
+      Hardheidsclausule
+
+      Het college kan in bijzondere gevallen afwijken van de bepalingen in deze
+      verordening, indien toepassing daarvan tot onbillijkheden van overwegende
+      aard leidt of indien sprake is van onvoorziene omstandigheden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR361766/5#Artikel19
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        De hardheidsclausule is volledig afhankelijk van menselijke beoordeling.
+        Zowel "onbillijkheden van overwegende aard" als "onvoorziene
+        omstandigheden" zijn open normen die per individueel geval door het
+        college moeten worden beoordeeld.
+      open_norms:
+      - term: onbillijkheden_van_overwegende_aard
+        description: Beoordeling of toepassing van de verordening leidt tot
+          onbillijkheden van overwegende aard
+      - term: onvoorziene_omstandigheden
+        description: Beoordeling of sprake is van onvoorziene omstandigheden
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+        - name: bsn
+          type: string
+          required: true
+        input:
+        - name: heeft_onbillijkheden_overwegende_aard
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of toepassing leidt tot
+              onbillijkheden van overwegende aard
+          description: Onbillijkheden van overwegende aard - VEREIST MENSELIJKE
+            BEOORDELING
+        - name: heeft_onvoorziene_omstandigheden
+          type: boolean
+          source:
+            human_input: true
+            description: Beoordeling door college of sprake is van onvoorziene
+              omstandigheden
+          description: Onvoorziene omstandigheden - VEREIST MENSELIJKE
+            BEOORDELING
+        output:
+        - name: kan_afwijken
+          type: boolean
+          description: Of het college kan afwijken van de verordening
+        actions:
+        - output: kan_afwijken
+          value:
+            operation: OR
+            conditions:
+            - operation: EQUALS
+              subject: $heeft_onbillijkheden_overwegende_aard
+              value: true
+            - operation: EQUALS
+              subject: $heeft_onvoorziene_omstandigheden
+              value: true

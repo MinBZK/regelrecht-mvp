@@ -1,0 +1,451 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: maatregelenverordening_participatiewet_amsterdam
+uuid: cvdr358905-0001-0001-0001-000000000363
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2015-02-11'
+valid_from: '2015-01-01'
+gemeente_code: GM0363
+officiele_titel: Maatregelenverordening Participatiewet 2015
+url: https://lokaleregelgeving.overheid.nl/CVDR358905/1
+name: Maatregelenverordening Participatiewet Amsterdam 2015
+
+legal_basis:
+  - law_id: participatiewet
+    article: '18'
+    paragraph: '2'
+    description: Bevoegdheid college tot afstemmen bijstand op gedrag
+  - law_id: participatiewet
+    article: '8'
+    paragraph: '1'
+    part: 'c'
+    description: Gemeenteraad stelt verordening vast voor verhogen en verlagen norm
+
+articles:
+  - number: '1'
+    text: |
+      Begripsomschrijvingen
+
+      In deze verordening wordt verstaan onder:
+      a. bijstandsnorm: de op de belanghebbende van toepassing zijnde norm bedoeld in
+         paragraaf 3.2 Participatiewet of artikel 22 IOAW of artikel 22 IOAZ, inclusief
+         de van toepassing zijnde verhoging op grond van artikel 25 of artikel 26
+         Participatiewet minus een eventuele verlaging op grond van de artikelen 27, 28
+         of 29 Participatiewet;
+      b. maatregel: het verlagen van de bijstand op grond van artikel 18, tweede lid van
+         de Participatiewet.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel1
+
+  - number: '2'
+    text: |
+      Besluit tot opleggen maatregel
+
+      1. In het besluit tot opleggen van een maatregel worden in ieder geval vermeld:
+         a. de reden van de maatregel;
+         b. de duur van de maatregel;
+         c. het bedrag of het percentage waarmee de bijstand wordt verlaagd;
+         d. indien van toepassing, de reden om af te wijken van de standaard maatregel.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel2
+
+  - number: '3'
+    text: |
+      Afzien van maatregel
+
+      1. Het college ziet af van een maatregel indien elke verwijtbaarheid ontbreekt.
+      2. Het college ziet af van een maatregel indien de gedraging langer dan een jaar
+         geleden heeft plaatsgevonden.
+      3. Het college kan afzien van een maatregel indien daarvoor dringende redenen
+         aanwezig zijn.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel3
+    machine_readable:
+      requires_human_assessment: true
+      human_assessment_reason: |
+        Lid 1 vereist beoordeling of "elke verwijtbaarheid ontbreekt" - subjectieve norm.
+        Lid 2 vereist berekening of gedraging langer dan 1 jaar geleden is.
+        Lid 3 vereist beoordeling van "dringende redenen" - open norm.
+      definitions:
+        VERJARINGSTERMIJN_DAGEN:
+          value: 365
+          description: Termijn waarna gedraging verjaard is (1 jaar)
+      execution:
+        parameters:
+          - name: is_gedraging_verjaard
+            type: boolean
+            required: true
+            description: Of de gedraging langer dan een jaar geleden heeft plaatsgevonden
+          - name: is_verwijtbaar
+            type: boolean
+            required: true
+            description: Of de gedraging verwijtbaar is (menselijke beoordeling)
+          - name: zijn_dringende_redenen
+            type: boolean
+            required: false
+            description: Of er dringende redenen zijn om af te zien (menselijke beoordeling)
+        output:
+          - name: afzien_van_maatregel
+            type: boolean
+            description: Of moet worden afgezien van de maatregel
+        actions:
+          - output: afzien_van_maatregel
+            value:
+              operation: OR
+              conditions:
+                - operation: EQUALS
+                  subject: $is_verwijtbaar
+                  value: false
+                - operation: EQUALS
+                  subject: $is_gedraging_verjaard
+                  value: true
+                - operation: EQUALS
+                  subject: $zijn_dringende_redenen
+                  value: true
+
+  - number: '4'
+    text: |
+      Ingangsdatum en tijdvak
+
+      1. De maatregel wordt opgelegd met ingang van de kalendermaand volgend op de
+         datum van kennisgeving van het besluit.
+      2. Indien de bijstand nog niet is uitbetaald, kan de maatregel met terugwerkende
+         kracht worden opgelegd.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel4
+
+  - number: '5'
+    text: |
+      Berekeningsgrondslag
+
+      1. De maatregel wordt berekend over de op de belanghebbende van toepassing zijnde
+         bijstandsnorm.
+      2. De maatregel kan worden toegepast op de bijzondere bijstand indien aan
+         belanghebbende geen algemene bijstand wordt verstrekt.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel5
+
+  # Hoofdstuk 2: Niet-nakoming niet-uniforme arbeidsverplichtingen
+
+  - number: '6'
+    text: |
+      Categorieen en hoogte maatregel niet-uniforme arbeidsverplichtingen
+
+      1. Eerste categorie: 5 procent van de bijstandsnorm gedurende een maand bij:
+         a. het niet tijdig laten registreren als werkzoekende;
+         b. het niet of onvoldoende meewerken aan het verkrijgen of behouden van werk.
+
+      2. Tweede categorie: 10 procent van de bijstandsnorm gedurende een maand bij:
+         a. onvoldoende inspanning om werk te verkrijgen.
+
+      3. Derde categorie: 50 procent van de bijstandsnorm gedurende een maand bij:
+         a. het niet nakomen van overige verplichtingen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel6
+    machine_readable:
+      definitions:
+        PERCENTAGE_CATEGORIE_1:
+          value: 5
+          description: Verlagingspercentage categorie 1
+        PERCENTAGE_CATEGORIE_2:
+          value: 10
+          description: Verlagingspercentage categorie 2
+        PERCENTAGE_CATEGORIE_3:
+          value: 50
+          description: Verlagingspercentage categorie 3
+        DUUR_MAANDEN_STANDAARD:
+          value: 1
+          description: Standaard duur maatregel in maanden
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: BSN van de belanghebbende
+          - name: gedragscategorie_niet_uniform
+            type: number
+            required: true
+            description: Gedragscategorie (1, 2 of 3)
+          - name: is_recidive
+            type: boolean
+            required: false
+            description: Of sprake is van recidive binnen 12 maanden
+        output:
+          - name: verlaging_percentage
+            type: number
+            description: Percentage waarmee de bijstand wordt verlaagd
+          - name: duur_maanden
+            type: number
+            description: Duur van de maatregel in maanden
+        actions:
+          - output: verlaging_percentage
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie_niet_uniform
+                    value: 1
+                  then: 5
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie_niet_uniform
+                    value: 2
+                  then: 10
+                - when:
+                    operation: EQUALS
+                    subject: $gedragscategorie_niet_uniform
+                    value: 3
+                  then: 50
+          - output: duur_maanden
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $is_recidive
+                value: true
+              then: 2
+              else: 1
+
+  # Hoofdstuk 3: Niet-nakoming uniforme arbeidsverplichtingen
+
+  - number: '7'
+    text: |
+      Niet-nakoming uniforme arbeidsverplichtingen (artikel 18 lid 4)
+
+      1. Bij niet-nakoming van de geuniformeerde arbeidsverplichtingen als bedoeld in
+         artikel 18, vierde lid, van de Participatiewet:
+         a. eerste overtreding: 100 procent van de bijstandsnorm gedurende een maand;
+         b. tweede overtreding binnen 12 maanden: 100 procent gedurende twee maanden;
+         c. derde overtreding binnen 12 maanden: 100 procent gedurende drie maanden;
+         d. vierde en volgende overtreding: 100 procent gedurende drie maanden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel7
+    machine_readable:
+      definitions:
+        PERCENTAGE_UNIFORM:
+          value: 100
+          description: Verlagingspercentage voor uniforme arbeidsverplichtingen
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+          - name: aantal_overtredingen_12_maanden
+            type: number
+            required: true
+            description: Aantal overtredingen binnen 12 maanden inclusief huidige
+        output:
+          - name: verlaging_percentage
+            type: number
+            description: Altijd 100% voor uniforme arbeidsverplichtingen
+          - name: duur_maanden
+            type: number
+            description: Duur afhankelijk van aantal overtredingen
+        actions:
+          - output: verlaging_percentage
+            value: 100
+          - output: duur_maanden
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $aantal_overtredingen_12_maanden
+                    value: 1
+                  then: 1
+                - when:
+                    operation: EQUALS
+                    subject: $aantal_overtredingen_12_maanden
+                    value: 2
+                  then: 2
+                - when:
+                    operation: GREATER_THAN_OR_EQUAL
+                    subject: $aantal_overtredingen_12_maanden
+                    value: 3
+                  then: 3
+
+  # Hoofdstuk 4: Tekortschietend besef van verantwoordelijkheid
+
+  - number: '9'
+    text: |
+      Tekortschietend besef van verantwoordelijkheid
+
+      1. Verkwistend gedrag: 20 procent van de bijstandsnorm gedurende de periode van
+         verlengde bijstandsafhankelijkheid (maximaal 24 maanden).
+
+      2. Niet aanvragen voorliggende voorziening: tot 100 procent gedurende een maand.
+
+      3. Verrekening bijstand met bestuurlijke boete: 100 procent gedurende de eerste
+         drie maanden van de boete.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel9
+    machine_readable:
+      definitions:
+        PERCENTAGE_VERKWISTEND:
+          value: 20
+        MAX_DUUR_VERKWISTEND_MAANDEN:
+          value: 24
+        PERCENTAGE_VOORLIGGENDE:
+          value: 100
+        PERCENTAGE_BOETE:
+          value: 100
+        DUUR_BOETE_MAANDEN:
+          value: 3
+      execution:
+        parameters:
+          - name: type_tekortkoming
+            type: string
+            required: true
+            description: Type tekortkoming (verkwistend/voorliggende/boete)
+          - name: duur_verlengde_afhankelijkheid_maanden
+            type: number
+            required: false
+            description: Periode verlengde afhankelijkheid bij verkwistend gedrag
+        output:
+          - name: verlaging_percentage
+            type: number
+          - name: duur_maanden
+            type: number
+        actions:
+          - output: verlaging_percentage
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $type_tekortkoming
+                    value: verkwistend
+                  then: 20
+                - when:
+                    operation: EQUALS
+                    subject: $type_tekortkoming
+                    value: voorliggende
+                  then: 100
+                - when:
+                    operation: EQUALS
+                    subject: $type_tekortkoming
+                    value: boete
+                  then: 100
+          - output: duur_maanden
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $type_tekortkoming
+                    value: verkwistend
+                  then:
+                    operation: MIN
+                    values:
+                      - $duur_verlengde_afhankelijkheid_maanden
+                      - 24
+                - when:
+                    operation: EQUALS
+                    subject: $type_tekortkoming
+                    value: voorliggende
+                  then: 1
+                - when:
+                    operation: EQUALS
+                    subject: $type_tekortkoming
+                    value: boete
+                  then: 3
+
+  # Hoofdstuk 5: Ernstig misdragen
+
+  - number: '10'
+    text: |
+      Ernstig misdragen
+
+      1. Fysiek geweld tegen medewerkers: 100 procent van de bijstandsnorm gedurende
+         een maand.
+
+      2. Zaaksbeschadiging of bedreiging: 70 procent van de bijstandsnorm gedurende
+         een maand.
+
+      3. Bij recidive binnen 12 maanden wordt de duur verdubbeld.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel10
+    machine_readable:
+      definitions:
+        PERCENTAGE_FYSIEK_GEWELD:
+          value: 100
+        PERCENTAGE_ZAAKSBESCHADIGING:
+          value: 70
+      execution:
+        parameters:
+          - name: type_misdragen
+            type: string
+            required: true
+            description: Type misdragen (fysiek_geweld/zaaksbeschadiging)
+          - name: is_recidive
+            type: boolean
+            required: false
+        output:
+          - name: verlaging_percentage
+            type: number
+          - name: duur_maanden
+            type: number
+        actions:
+          - output: verlaging_percentage
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $type_misdragen
+                value: fysiek_geweld
+              then: 100
+              else: 70
+          - output: duur_maanden
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $is_recidive
+                value: true
+              then: 2
+              else: 1
+
+  - number: '11'
+    text: |
+      Overige verplichtingen
+
+      1. Niet nakomen overige verplichtingen: 10 procent gedurende een maand.
+      2. Niet meewerken aan onderzoek: 5 procent gedurende een maand.
+      3. Niet naleven controlevoorschriften bij ziekte: 10 procent gedurende een maand.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel11
+    machine_readable:
+      execution:
+        parameters:
+          - name: type_overige_verplichting
+            type: string
+            required: true
+            description: Type overige verplichting
+        output:
+          - name: verlaging_percentage
+            type: number
+          - name: duur_maanden
+            type: number
+        actions:
+          - output: verlaging_percentage
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $type_overige_verplichting
+                    value: overige
+                  then: 10
+                - when:
+                    operation: EQUALS
+                    subject: $type_overige_verplichting
+                    value: onderzoek
+                  then: 5
+                - when:
+                    operation: EQUALS
+                    subject: $type_overige_verplichting
+                    value: ziekte
+                  then: 10
+          - output: duur_maanden
+            value: 1
+
+  - number: '12'
+    text: |
+      Samenloop
+
+      1. Bij schending van meerdere verplichtingen wordt een maatregel opgelegd naar
+         het hoogste toepasselijke percentage.
+      2. Bij meerdere gedragingen worden afzonderlijke maatregelen opgelegd die in
+         beginsel gelijktijdig worden uitgevoerd.
+    url: https://lokaleregelgeving.overheid.nl/CVDR358905/1#Artikel12

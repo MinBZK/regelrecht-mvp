@@ -1,0 +1,594 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: nadere_regels_re_integratieverordening_amsterdam_2025
+uuid: cvdr377499-0001-0001-0001-000000000363
+regulatory_layer: BELEIDSREGEL
+publication_date: '2025-07-03'
+valid_from: '2025-07-03'
+gemeente_code: GM0363
+officiele_titel: Nadere regels bij de Re-integratieverordening Participatiewet
+url: https://lokaleregelgeving.overheid.nl/CVDR377499
+name: Nadere regels Re-integratieverordening Participatiewet Amsterdam
+
+# Grondslag: Re-integratieverordening Participatiewet Amsterdam
+legal_basis:
+  - law_id: re_integratieverordening_participatiewet_amsterdam
+    article: '6.1'
+    description: Nadere regels ter uitvoering van de Re-integratieverordening
+
+articles:
+  # Hoofdstuk 1: Algemene bepalingen
+
+  - number: '1.1'
+    text: |
+      Begripsbepalingen
+
+      In deze nadere regels wordt verstaan onder:
+      a. verordening: de Re-integratieverordening Participatiewet Amsterdam;
+      b. doelgroep: personen als bedoeld in artikel 1.2 van de verordening;
+      c. college: het college van burgemeester en wethouders van Amsterdam.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel1.1
+
+  - number: '1.2'
+    text: |
+      Hardheidsclausule
+
+      Het college kan afwijken van de bepalingen in deze nadere regels indien
+      toepassing daarvan leidt tot onevenredige hardheid.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel1.2
+
+  # Hoofdstuk 2: Premies en toeslagen
+
+  - number: '2.1'
+    text: |
+      Premie leerstage (27+)
+
+      1. Uitkeringsgerechtigden van 27 jaar en ouder ontvangen EUR 500 bij
+         succesvolle afronding van een leerstage van 6 maanden.
+      2. Bij kortere duur wordt de premie naar rato berekend.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel2.1
+    machine_readable:
+      definitions:
+        PREMIE_LEERSTAGE:
+          value: 50000
+          description: Premie leerstage voor 6 maanden (eurocent, EUR 500)
+        MINIMUM_LEEFTIJD_LEERSTAGE:
+          value: 27
+          description: Minimumleeftijd voor leerstage premie
+        LEERSTAGE_MAANDEN:
+          value: 6
+          description: Standaard duur leerstage (maanden)
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+            description: Leeftijd van de deelnemer
+          - name: is_uitkeringsgerechtigde
+            type: boolean
+            required: true
+          - name: duur_maanden
+            type: number
+            required: true
+            description: Duur van de leerstage in maanden
+          - name: succesvol_afgerond
+            type: boolean
+            required: true
+        output:
+          - name: heeft_recht_op_premie
+            type: boolean
+          - name: premie_bedrag
+            type: number
+            description: Premie bedrag (eurocent)
+        actions:
+          - output: heeft_recht_op_premie
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $leeftijd
+                  value: 27
+                - operation: EQUALS
+                  subject: $is_uitkeringsgerechtigde
+                  value: true
+                - operation: EQUALS
+                  subject: $succesvol_afgerond
+                  value: true
+          - output: premie_bedrag
+            value:
+              operation: IF
+              when:
+                operation: AND
+                conditions:
+                  - operation: GREATER_THAN_OR_EQUAL
+                    subject: $leeftijd
+                    value: 27
+                  - operation: EQUALS
+                    subject: $is_uitkeringsgerechtigde
+                    value: true
+                  - operation: EQUALS
+                    subject: $succesvol_afgerond
+                    value: true
+              then:
+                operation: MIN
+                values:
+                  - 50000
+                  - operation: MULTIPLY
+                    values:
+                      - operation: DIVIDE
+                        values:
+                          - 50000
+                          - 6
+                      - $duur_maanden
+              else: 0
+
+  - number: '2.2'
+    text: |
+      Premie proefplaats (27+)
+
+      1. Uitkeringsgerechtigden van 27 jaar en ouder ontvangen EUR 250 bij
+         voldoende deelname aan een proefplaatsing.
+      2. Bij kortere duur dan 2 maanden wordt de premie naar rato berekend.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel2.2
+    machine_readable:
+      definitions:
+        PREMIE_PROEFPLAATS:
+          value: 25000
+          description: Premie proefplaats (eurocent, EUR 250)
+        PROEFPLAATS_MAANDEN:
+          value: 2
+          description: Standaard duur proefplaats (maanden)
+      execution:
+        parameters:
+          - name: leeftijd
+            type: number
+            required: true
+          - name: is_uitkeringsgerechtigde
+            type: boolean
+            required: true
+          - name: duur_maanden
+            type: number
+            required: true
+          - name: voldoende_deelname
+            type: boolean
+            required: true
+        output:
+          - name: premie_bedrag
+            type: number
+            description: Premie proefplaats (eurocent)
+        actions:
+          - output: premie_bedrag
+            value:
+              operation: IF
+              when:
+                operation: AND
+                conditions:
+                  - operation: GREATER_THAN_OR_EQUAL
+                    subject: $leeftijd
+                    value: 27
+                  - operation: EQUALS
+                    subject: $is_uitkeringsgerechtigde
+                    value: true
+                  - operation: EQUALS
+                    subject: $voldoende_deelname
+                    value: true
+              then:
+                operation: IF
+                when:
+                  operation: GREATER_THAN_OR_EQUAL
+                  subject: $duur_maanden
+                  value: 2
+                then: 25000
+                else:
+                  operation: MULTIPLY
+                  values:
+                    - operation: DIVIDE
+                      values:
+                        - 25000
+                        - 2
+                    - $duur_maanden
+              else: 0
+
+  - number: '2.3'
+    text: |
+      Digitaal reistegoed
+
+      1. Deelnemers aan trajecten ontvangen digitaal reistegoed:
+         a. EUR 22,50 per maand bij 1-3 keer per week reizen;
+         b. EUR 45,00 per maand bij meer dan 3 keer per week reizen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel2.3
+    machine_readable:
+      definitions:
+        REISTEGOED_LAAG:
+          value: 2250
+          description: Reistegoed 1-3x per week (eurocent, EUR 22,50)
+        REISTEGOED_HOOG:
+          value: 4500
+          description: Reistegoed 3+ keer per week (eurocent, EUR 45,00)
+      execution:
+        parameters:
+          - name: reisdagen_per_week
+            type: number
+            required: true
+            description: Aantal reisdagen per week
+          - name: deelneemt_aan_traject
+            type: boolean
+            required: true
+        output:
+          - name: reistegoed_maand
+            type: number
+            description: Maandelijks reistegoed (eurocent)
+        actions:
+          - output: reistegoed_maand
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $deelneemt_aan_traject
+                value: false
+              then: 0
+              else:
+                operation: IF
+                when:
+                  operation: GREATER_THAN
+                  subject: $reisdagen_per_week
+                  value: 3
+                then: 4500
+                else:
+                  operation: IF
+                  when:
+                    operation: GREATER_THAN_OR_EQUAL
+                    subject: $reisdagen_per_week
+                    value: 1
+                  then: 2250
+                  else: 0
+
+  - number: '2.4'
+    text: |
+      Deeltijdwerkpremie
+
+      Uitkeringsgerechtigden die in deeltijd werken ontvangen een premie van
+      30% van het verdiende inkomen, met een maximum van 1/12 van de jaarlijkse
+      maximale vrijlating.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel2.4
+    machine_readable:
+      definitions:
+        DEELTIJDWERK_PREMIE_PERCENTAGE:
+          value: 30
+          description: Percentage van verdiend inkomen als premie
+
+  - number: '2.7'
+    text: |
+      Uitstroompremie (experimenteel)
+
+      Afhankelijk van de duur van de uitkering ontvangen uitstromers een premie:
+      a. korter dan 6 maanden: EUR 300;
+      b. 6 tot 12 maanden: EUR 500;
+      c. 12 tot 24 maanden: EUR 750;
+      d. langer dan 24 maanden: EUR 1.000.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel2.7
+    machine_readable:
+      definitions:
+        UITSTROOMPREMIE_KORT:
+          value: 30000
+          description: Uitstroompremie < 6 maanden (eurocent, EUR 300)
+        UITSTROOMPREMIE_6_12:
+          value: 50000
+          description: Uitstroompremie 6-12 maanden (eurocent, EUR 500)
+        UITSTROOMPREMIE_12_24:
+          value: 75000
+          description: Uitstroompremie 12-24 maanden (eurocent, EUR 750)
+        UITSTROOMPREMIE_LANG:
+          value: 100000
+          description: Uitstroompremie > 24 maanden (eurocent, EUR 1.000)
+      execution:
+        parameters:
+          - name: uitkeringsduur_maanden
+            type: number
+            required: true
+            description: Duur van de uitkering in maanden
+        output:
+          - name: uitstroompremie
+            type: number
+            description: Uitstroompremie (eurocent)
+        actions:
+          - output: uitstroompremie
+            value:
+              operation: IF
+              when:
+                operation: LESS_THAN
+                subject: $uitkeringsduur_maanden
+                value: 6
+              then: 30000
+              else:
+                operation: IF
+                when:
+                  operation: LESS_THAN
+                  subject: $uitkeringsduur_maanden
+                  value: 12
+                then: 50000
+                else:
+                  operation: IF
+                  when:
+                    operation: LESS_THAN
+                    subject: $uitkeringsduur_maanden
+                    value: 24
+                  then: 75000
+                  else: 100000
+
+  # Hoofdstuk 3: Jobcoaching
+
+  - number: '3.1'
+    text: |
+      Subsidie jobcoaching
+
+      1. De subsidie voor jobcoaching bedraagt:
+         a. EUR 2.700 voor de eerste 6 maanden;
+         b. EUR 1.350 voor verlengingsperiodes;
+         c. EUR 900 voor proefplaatsingen.
+      2. De jobcoach moet gecertificeerd zijn.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel3.1
+    machine_readable:
+      definitions:
+        SUBSIDIE_JOBCOACHING_EERSTE:
+          value: 270000
+          description: Subsidie jobcoaching eerste 6 maanden (eurocent, EUR 2.700)
+        SUBSIDIE_JOBCOACHING_VERLENGING:
+          value: 135000
+          description: Subsidie jobcoaching verlenging (eurocent, EUR 1.350)
+        SUBSIDIE_JOBCOACHING_PROEFPLAATS:
+          value: 90000
+          description: Subsidie jobcoaching proefplaats (eurocent, EUR 900)
+      execution:
+        parameters:
+          - name: is_eerste_periode
+            type: boolean
+            required: true
+          - name: is_proefplaatsing
+            type: boolean
+            required: false
+        output:
+          - name: subsidie_jobcoaching
+            type: number
+            description: Subsidie jobcoaching (eurocent)
+        actions:
+          - output: subsidie_jobcoaching
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $is_proefplaatsing
+                value: true
+              then: 90000
+              else:
+                operation: IF
+                when:
+                  operation: EQUALS
+                  subject: $is_eerste_periode
+                  value: true
+                then: 270000
+                else: 135000
+
+  # Hoofdstuk 4: Loonkostensubsidie
+
+  - number: '4.1'
+    text: |
+      Tijdelijke loonkostensubsidie
+
+      1. De maximale loonkostensubsidie bedraagt EUR 5.000 per jaar.
+      2. Verdeling: EUR 3.000 voor de eerste 6 maanden, EUR 2.000 voor de
+         tweede 6 maanden.
+      3. Voorwaarden:
+         a. minimaal 6 maanden contract;
+         b. minimaal 16 uur per week;
+         c. rechtmatig loon conform cao of wettelijk minimumloon.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel4.1
+    machine_readable:
+      definitions:
+        LOONKOSTENSUBSIDIE_MAX_JAAR:
+          value: 500000
+          description: Maximum loonkostensubsidie per jaar (eurocent, EUR 5.000)
+        LOONKOSTENSUBSIDIE_EERSTE_6:
+          value: 300000
+          description: Loonkostensubsidie eerste 6 maanden (eurocent, EUR 3.000)
+        LOONKOSTENSUBSIDIE_TWEEDE_6:
+          value: 200000
+          description: Loonkostensubsidie tweede 6 maanden (eurocent, EUR 2.000)
+        MIN_CONTRACT_MAANDEN:
+          value: 6
+          description: Minimale contractduur (maanden)
+        MIN_UREN_WEEK:
+          value: 16
+          description: Minimaal aantal uren per week
+      execution:
+        parameters:
+          - name: contractduur_maanden
+            type: number
+            required: true
+          - name: uren_per_week
+            type: number
+            required: true
+          - name: rechtmatig_loon
+            type: boolean
+            required: true
+          - name: maanden_in_dienst
+            type: number
+            required: true
+        output:
+          - name: voldoet_aan_voorwaarden
+            type: boolean
+          - name: loonkostensubsidie
+            type: number
+            description: Loonkostensubsidie (eurocent)
+        actions:
+          - output: voldoet_aan_voorwaarden
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $contractduur_maanden
+                  value: 6
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $uren_per_week
+                  value: 16
+                - operation: EQUALS
+                  subject: $rechtmatig_loon
+                  value: true
+          - output: loonkostensubsidie
+            value:
+              operation: IF
+              when:
+                operation: NOT
+                subject:
+                  operation: AND
+                  conditions:
+                    - operation: GREATER_THAN_OR_EQUAL
+                      subject: $contractduur_maanden
+                      value: 6
+                    - operation: GREATER_THAN_OR_EQUAL
+                      subject: $uren_per_week
+                      value: 16
+                    - operation: EQUALS
+                      subject: $rechtmatig_loon
+                      value: true
+              then: 0
+              else:
+                operation: IF
+                when:
+                  operation: LESS_THAN_OR_EQUAL
+                  subject: $maanden_in_dienst
+                  value: 6
+                then: 300000
+                else: 500000
+
+  # Hoofdstuk 8: Beschut werk
+
+  - number: '8.1'
+    text: |
+      Subsidie beschut werk
+
+      1. De subsidie voor beschut werk bedraagt EUR 10.000 per jaar bij een
+         36-urige werkweek.
+      2. Bij minder uren wordt de subsidie naar rato berekend.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel8.1
+    machine_readable:
+      definitions:
+        SUBSIDIE_BESCHUT_WERK:
+          value: 1000000
+          description: Subsidie beschut werk per jaar bij 36 uur (eurocent, EUR 10.000)
+        BESCHUT_WERK_UREN:
+          value: 36
+          description: Standaard werkweek beschut werk (uren)
+      execution:
+        parameters:
+          - name: uren_per_week
+            type: number
+            required: true
+        output:
+          - name: subsidie_beschut_werk
+            type: number
+            description: Jaarlijkse subsidie beschut werk (eurocent)
+        actions:
+          - output: subsidie_beschut_werk
+            value:
+              operation: MULTIPLY
+              values:
+                - 1000000
+                - operation: DIVIDE
+                  values:
+                    - operation: MIN
+                      values:
+                        - $uren_per_week
+                        - 36
+                    - 36
+
+  # Hoofdstuk 9: Perspectiefbaan
+
+  - number: '9.1'
+    text: |
+      Perspectiefbaan
+
+      1. De subsidie voor een perspectiefbaan bedraagt EUR 8.500 per jaar.
+      2. Maximale duur is 2 jaar.
+      3. Bij uitstroom naar ongesubsidieerd werk ontvangt de deelnemer een
+         transitiepremie van EUR 3.000 tot EUR 6.000.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel9.1
+    machine_readable:
+      definitions:
+        SUBSIDIE_PERSPECTIEFBAAN:
+          value: 850000
+          description: Subsidie perspectiefbaan per jaar (eurocent, EUR 8.500)
+        MAX_DUUR_PERSPECTIEFBAAN:
+          value: 2
+          description: Maximale duur perspectiefbaan (jaren)
+        TRANSITIEPREMIE_MIN:
+          value: 300000
+          description: Minimale transitiepremie (eurocent, EUR 3.000)
+        TRANSITIEPREMIE_MAX:
+          value: 600000
+          description: Maximale transitiepremie (eurocent, EUR 6.000)
+      execution:
+        parameters:
+          - name: jaren_in_perspectiefbaan
+            type: number
+            required: true
+          - name: stroomt_uit_naar_ongesubsidieerd
+            type: boolean
+            required: false
+        output:
+          - name: totale_subsidie
+            type: number
+            description: Totale subsidie perspectiefbaan (eurocent)
+          - name: transitiepremie
+            type: number
+            description: Transitiepremie bij uitstroom (eurocent)
+        actions:
+          - output: totale_subsidie
+            value:
+              operation: MULTIPLY
+              values:
+                - 850000
+                - operation: MIN
+                  values:
+                    - $jaren_in_perspectiefbaan
+                    - 2
+          - output: transitiepremie
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $stroomt_uit_naar_ongesubsidieerd
+                value: true
+              then:
+                operation: IF
+                when:
+                  operation: GREATER_THAN_OR_EQUAL
+                  subject: $jaren_in_perspectiefbaan
+                  value: 2
+                then: 600000
+                else: 300000
+              else: 0
+
+  # Hoofdstuk 11: Jongeren
+
+  - number: '11.1'
+    text: |
+      Jeugdwerkplaatsen
+
+      1. Subsidie voor jeugdwerkplaatsen omvat:
+         a. maandelijkse salariskosten plus werkgeverslasten;
+         b. EUR 6.000 per jaar voor coaching.
+      2. Maximale duur is 12 maanden.
+      3. Maximaal 15 deelnemers per jaar.
+    url: https://lokaleregelgeving.overheid.nl/CVDR377499#Artikel11.1
+    machine_readable:
+      definitions:
+        COACHING_SUBSIDIE_JEUGD:
+          value: 600000
+          description: Jaarlijkse coaching subsidie jeugdwerkplaats (eurocent, EUR 6.000)
+        MAX_DUUR_JEUGDWERKPLAATS:
+          value: 12
+          description: Maximale duur jeugdwerkplaats (maanden)
+        MAX_DEELNEMERS_JEUGD:
+          value: 15
+          description: Maximaal aantal deelnemers per jaar

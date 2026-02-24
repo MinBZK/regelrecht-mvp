@@ -1,0 +1,343 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$id: beleidsregels_handhaving_participatiewet_amsterdam_2021
+uuid: cvdr672805-0001-0001-0001-000000000363
+regulatory_layer: BELEIDSREGEL
+publication_date: '2021-12-14'
+valid_from: '2022-02-15'
+valid_to: '2024-08-31'
+gemeente_code: GM0363
+officiele_titel: Beleidsregels Handhaving, Participatiewet, IOAW, IOAZ en Bbz 2021
+url: https://lokaleregelgeving.overheid.nl/CVDR672805/1
+name: Beleidsregels Handhaving Participatiewet Amsterdam 2021
+
+# NB: Deze beleidsregels zijn vervallen per 31 augustus 2024.
+# Opgenomen voor historische referentie.
+
+# Grondslag: Participatiewet, IOAW, IOAZ en Bbz
+legal_basis:
+  - law_id: participatiewet
+    article: '18a'
+    description: Bestuurlijke boete
+  - law_id: participatiewet
+    article: '60'
+    description: Terugvordering
+
+articles:
+  # Boetebepalingen
+
+  - number: '3'
+    text: |
+      Hoogte boete naar mate van verwijtbaarheid
+
+      De boete wordt vastgesteld naar de mate van verwijtbaarheid:
+      a. bij opzet: 100% van het benadelingsbedrag;
+      b. bij grove schuld: 75% van het benadelingsbedrag;
+      c. bij normale verwijtbaarheid: 50% van het benadelingsbedrag;
+      d. bij verminderde verwijtbaarheid: 25% van het benadelingsbedrag.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel3
+    machine_readable:
+      definitions:
+        BOETE_PERCENTAGE_OPZET:
+          value: 100
+          description: Boetepercentage bij opzet
+        BOETE_PERCENTAGE_GROVE_SCHULD:
+          value: 75
+          description: Boetepercentage bij grove schuld
+        BOETE_PERCENTAGE_NORMAAL:
+          value: 50
+          description: Boetepercentage bij normale verwijtbaarheid
+        BOETE_PERCENTAGE_VERMINDERD:
+          value: 25
+          description: Boetepercentage bij verminderde verwijtbaarheid
+      execution:
+        parameters:
+          - name: benadelingsbedrag
+            type: number
+            required: true
+            description: Het benadelingsbedrag (eurocent)
+          - name: verwijtbaarheid
+            type: string
+            required: true
+            description: Mate van verwijtbaarheid (opzet/grove_schuld/normaal/verminderd)
+        output:
+          - name: boete_bedrag
+            type: number
+            description: Het boetebedrag (eurocent)
+          - name: boete_percentage
+            type: number
+            description: Toegepast boetepercentage
+        actions:
+          - output: boete_percentage
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $verwijtbaarheid
+                    value: opzet
+                  then: 100
+                - when:
+                    operation: EQUALS
+                    subject: $verwijtbaarheid
+                    value: grove_schuld
+                  then: 75
+                - when:
+                    operation: EQUALS
+                    subject: $verwijtbaarheid
+                    value: normaal
+                  then: 50
+                - when:
+                    operation: EQUALS
+                    subject: $verwijtbaarheid
+                    value: verminderd
+                  then: 25
+          - output: boete_bedrag
+            value:
+              operation: MULTIPLY
+              values:
+                - $benadelingsbedrag
+                - operation: DIVIDE
+                  values:
+                    - $boete_percentage
+                    - 100
+
+  - number: '4'
+    text: |
+      Waarschuwing in plaats van boete
+
+      1. Een waarschuwing wordt gegeven in plaats van een boete indien:
+         a. er geen benadelingsbedrag is, of
+         b. het benadelingsbedrag maximaal EUR 150 is, of
+         c. de overtreding binnen 60 dagen voor ontdekking zelf is gemeld.
+      2. Geen waarschuwing wordt gegeven indien:
+         a. in de voorafgaande 2 jaar een waarschuwing of boete is opgelegd, of
+         b. er sprake is van opzet.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel4
+    machine_readable:
+      definitions:
+        WAARSCHUWING_GRENS:
+          value: 15000
+          description: Maximaal benadelingsbedrag voor waarschuwing (eurocent, EUR 150)
+        ZELFMELDING_TERMIJN:
+          value: 60
+          description: Termijn voor zelfmelding in dagen
+        RECIDIVE_TERMIJN:
+          value: 2
+          description: Recidive termijn in jaren
+      execution:
+        parameters:
+          - name: benadelingsbedrag
+            type: number
+            required: true
+          - name: zelf_gemeld_binnen_60_dagen
+            type: boolean
+            required: false
+          - name: eerdere_waarschuwing_of_boete_2_jaar
+            type: boolean
+            required: true
+          - name: is_opzet
+            type: boolean
+            required: true
+        output:
+          - name: krijgt_waarschuwing
+            type: boolean
+            description: Of een waarschuwing wordt gegeven i.p.v. boete
+        actions:
+          - output: krijgt_waarschuwing
+            value:
+              operation: AND
+              conditions:
+                - operation: OR
+                  conditions:
+                    - operation: EQUALS
+                      subject: $benadelingsbedrag
+                      value: 0
+                    - operation: LESS_THAN_OR_EQUAL
+                      subject: $benadelingsbedrag
+                      value: 15000
+                    - operation: EQUALS
+                      subject: $zelf_gemeld_binnen_60_dagen
+                      value: true
+                - operation: EQUALS
+                  subject: $eerdere_waarschuwing_of_boete_2_jaar
+                  value: false
+                - operation: EQUALS
+                  subject: $is_opzet
+                  value: false
+
+  - number: '7'
+    text: |
+      Recidive
+
+      Bij recidive wordt de boete verhoogd met 50%:
+      - Recidive factor: 150% van het benadelingsbedrag.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel7
+    machine_readable:
+      definitions:
+        RECIDIVE_FACTOR:
+          value: 150
+          description: Boetepercentage bij recidive (150% van standaard)
+      execution:
+        parameters:
+          - name: basis_boete
+            type: number
+            required: true
+            description: De basis boete zonder recidive (eurocent)
+          - name: is_recidive
+            type: boolean
+            required: true
+        output:
+          - name: boete_met_recidive
+            type: number
+            description: Boete na toepassing recidive factor (eurocent)
+        actions:
+          - output: boete_met_recidive
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject: $is_recidive
+                value: true
+              then:
+                operation: MULTIPLY
+                values:
+                  - $basis_boete
+                  - 1.5
+              else: $basis_boete
+
+  # Maximale boetes
+
+  - number: '8'
+    text: |
+      Maximale boete
+
+      1. Bij opzet: maximaal EUR 87.000.
+      2. In overige gevallen: maximaal EUR 8.700.
+      3. De boete kan nooit hoger zijn dan 24 keer het bedrag boven de
+         beslagvrije voet.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel8
+    machine_readable:
+      definitions:
+        MAX_BOETE_OPZET:
+          value: 8700000
+          description: Maximale boete bij opzet (eurocent, EUR 87.000)
+        MAX_BOETE_OVERIG:
+          value: 870000
+          description: Maximale boete overige gevallen (eurocent, EUR 8.700)
+        MAX_BOETE_MAANDEN:
+          value: 24
+          description: Maximaal aantal maanden boven beslagvrije voet
+      execution:
+        parameters:
+          - name: berekende_boete
+            type: number
+            required: true
+            description: De berekende boete voor maximering (eurocent)
+          - name: is_opzet
+            type: boolean
+            required: true
+          - name: bedrag_boven_beslagvrije_voet
+            type: number
+            required: true
+            description: Maandelijks bedrag boven beslagvrije voet (eurocent)
+        output:
+          - name: definitieve_boete
+            type: number
+            description: De definitieve boete na maximering (eurocent)
+        actions:
+          - output: definitieve_boete
+            value:
+              operation: MIN
+              values:
+                - $berekende_boete
+                - operation: IF
+                  when:
+                    operation: EQUALS
+                    subject: $is_opzet
+                    value: true
+                  then: 8700000
+                  else: 870000
+                - operation: MULTIPLY
+                  values:
+                    - $bedrag_boven_beslagvrije_voet
+                    - 24
+
+  # Termijnen
+
+  - number: '10'
+    text: |
+      Inlichtingenplicht termijn
+
+      1. De inlichtingenplicht moet binnen 30 dagen worden nagekomen.
+      2. Bij zelfmelding binnen 60 dagen voor ontdekking kan een waarschuwing
+         worden gegeven.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel10
+    machine_readable:
+      definitions:
+        INLICHTINGENPLICHT_TERMIJN:
+          value: 30
+          description: Termijn voor nakoming inlichtingenplicht (dagen)
+        ZELFMELDING_TERMIJN:
+          value: 60
+          description: Termijn voor zelfmelding (dagen)
+
+  # Incasso en kwijtschelding
+
+  - number: '14'
+    text: |
+      Kwijtschelding schulden
+
+      1. Schulden kunnen worden kwijtgescholden na 10 jaar volledige
+         medewerking aan terugbetaling.
+      2. Bij fraude (opzet of grove schuld) wordt geen kwijtschelding verleend.
+      3. Bij recidive wordt kwijtschelding geblokkeerd.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel14
+    machine_readable:
+      definitions:
+        KWIJTSCHELDING_TERMIJN:
+          value: 10
+          description: Termijn voor kwijtschelding (jaren)
+      execution:
+        parameters:
+          - name: jaren_medewerking
+            type: number
+            required: true
+            description: Aantal jaren volledige medewerking
+          - name: is_fraude
+            type: boolean
+            required: true
+            description: Of er sprake is van fraude (opzet/grove schuld)
+          - name: is_recidive
+            type: boolean
+            required: true
+        output:
+          - name: komt_in_aanmerking_kwijtschelding
+            type: boolean
+            description: Of kwijtschelding mogelijk is
+        actions:
+          - output: komt_in_aanmerking_kwijtschelding
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $jaren_medewerking
+                  value: 10
+                - operation: EQUALS
+                  subject: $is_fraude
+                  value: false
+                - operation: EQUALS
+                  subject: $is_recidive
+                  value: false
+
+  # Hardheidsclausule
+
+  - number: '21'
+    text: |
+      Hardheidsclausule
+
+      Het college kan afwijken van deze beleidsregels indien toepassing leidt
+      tot onaanvaardbare sociale of financiele gevolgen voor de belanghebbende.
+      Dit vereist individuele beoordeling van incidentele situaties waarvoor
+      geen alternatieve oplossing beschikbaar is.
+    url: https://lokaleregelgeving.overheid.nl/CVDR672805/1#Artikel21

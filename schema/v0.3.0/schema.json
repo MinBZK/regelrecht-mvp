@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json",
+  "$id": "https://regelrecht.nl/schema/v0.3.0/schema.json",
   "title": "Machine-Readable Dutch Law Schema v0.3.0",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations",
   "type": "object",
@@ -108,6 +108,14 @@
           "article": {
             "type": "string",
             "description": "Article number that authorizes this regulation"
+          },
+          "paragraph": {
+            "type": "string",
+            "description": "Paragraph/lid number within the article"
+          },
+          "part": {
+            "type": "string",
+            "description": "Part/onderdeel within the paragraph (e.g., 'a', 'b', 'c')"
           },
           "description": {
             "type": "string",
@@ -408,6 +416,28 @@
                 "description": {
                   "type": "string",
                   "description": "Human-readable description or legal reference for this data source"
+                },
+                "human_input": {
+                  "type": "boolean",
+                  "description": "Indicates this input requires human assessment/judgment and cannot be derived from external data sources"
+                },
+                "external_data_source": {
+                  "type": "boolean",
+                  "description": "Indicates this input comes from an external data source not modeled in YAML (e.g., Belastingdienst, BRP)"
+                },
+                "regulation_selector": {
+                  "type": "object",
+                  "description": "Criteria for dynamically selecting the regulation based on runtime parameters",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "Type of selector (e.g., 'gemeente_code')"
+                    },
+                    "parameter": {
+                      "type": "string",
+                      "description": "Parameter reference to use for selection"
+                    }
+                  }
                 },
                 "delegation": {
                   "type": "object",
@@ -790,6 +820,33 @@
       "type": "object",
       "description": "Machine-readable interpretation of legal text",
       "properties": {
+        "requires_human_assessment": {
+          "type": "boolean",
+          "description": "Indicates this article contains open norms or discretionary powers that require human assessment and cannot be fully automated"
+        },
+        "human_assessment_reason": {
+          "type": "string",
+          "description": "Explanation of why human assessment is required for this article"
+        },
+        "open_norms": {
+          "type": "array",
+          "description": "List of open/vague legal terms in this article that require interpretation",
+          "items": {
+            "type": "object",
+            "required": ["term"],
+            "properties": {
+              "term": {
+                "type": "string",
+                "description": "The open norm/vague term in Dutch"
+              },
+              "description": {
+                "type": "string",
+                "description": "Explanation of why this term is open/vague and what interpretation is needed"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "endpoint": {
           "type": "string",
           "description": "Named endpoint for this article, making it callable from other regulations"
@@ -937,6 +994,10 @@
               "subject": {
                 "type": "string",
                 "description": "Subject matter (e.g., 'afstemming_bijstand', 'erfgrens_beplanting')"
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description of what this delegation enables"
               },
               "contract": {
                 "type": "object",

@@ -1,0 +1,512 @@
+---
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: participatieverordening_amsterdam
+uuid: cvdr723122-0001-0001-0001-000000000363
+regulatory_layer: GEMEENTELIJKE_VERORDENING
+publication_date: '2024-06-27'
+valid_from: '2024-09-15'
+gemeente_code: GM0363
+officiele_titel: Verordening van de raad van de gemeente Amsterdam houdende regels over burger-, overheids- en netwerkparticipatie (Participatieverordening gemeente Amsterdam)
+url: https://lokaleregelgeving.overheid.nl/CVDR723122
+name: Participatieverordening gemeente Amsterdam
+
+# Grondslag: Gemeentewet artikelen 147 en 150
+legal_basis:
+  - law_id: gemeentewet
+    article: '147'
+    description: Bevoegdheid gemeenteraad tot vaststellen verordeningen
+  - law_id: gemeentewet
+    article: '150'
+    description: Inspraakverordening
+
+articles:
+  # Hoofdstuk 1: Algemene bepalingen
+
+  - number: '1'
+    text: |
+      Begripsbepalingen
+
+      In deze verordening wordt verstaan onder:
+      a. bevoegd gezag: college van burgemeester en wethouders of de raad;
+      b. burgerparticipatie: het deelnemen van inwoners en belanghebbenden aan de voorbereiding,
+         uitvoering en evaluatie van gemeentelijk beleid;
+      c. buurtplatform: een groep bewoners die samenwerkt aan verbetering van de buurt;
+      d. buurtrechten: het uitdaagrecht, het biedrecht en het buurtplanrecht;
+      e. netwerkparticipatie: samenwerking tussen gemeente en bewonersgroepen/buurtplatformen;
+      f. overheidsparticipatie: de gemeente faciliteert bewonersinitiatieven via buurtrechten;
+      g. participatie: een proces waarbij individuen, groepen of organisaties betrokken worden bij,
+         invloed uitoefenen op of controle delen over collectieve vraagstukken;
+      h. participatieplan: document met expliciete keuzes over doel, doelgroep en invloed van participatie.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel1
+    machine_readable:
+      definitions:
+        TYPEN_PARTICIPATIE:
+          value:
+            - burgerparticipatie
+            - overheidsparticipatie
+            - netwerkparticipatie
+          description: De drie vormen van participatie in deze verordening
+        BUURTRECHTEN:
+          value:
+            - uitdaagrecht
+            - biedrecht
+            - buurtplanrecht
+          description: De drie buurtrechten binnen overheidsparticipatie
+
+  - number: '2'
+    text: |
+      Doel van de verordening
+
+      Deze verordening regelt de betrokkenheid van inwoners bij de voorbereiding, uitvoering en
+      evaluatie van gemeentelijk beleid en projecten. Het doel is een zorgvuldig, transparant en
+      navolgbaar participatieproces met expliciete keuzes over reikwijdte en invloed.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel2
+
+  # Hoofdstuk 2: Burgerparticipatie
+
+  - number: '3'
+    text: |
+      Reikwijdte
+
+      1. Het bevoegd gezag stelt een participatieplan op bij de ontwikkeling van beleid of projecten.
+      2. Geen participatieplan is vereist bij:
+         a. wettelijke uitsluiting van participatie;
+         b. geringe wijzigingen van bestaand beleid;
+         c. hogere regelgeving zonder beleidsruimte;
+         d. begrotings- en belastingzaken;
+         e. interne organisatorische aangelegenheden;
+         f. spoedeisende situaties;
+         g. situaties waarbij participatie kwetsbare groepen onevenredig kan schaden.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel3
+    machine_readable:
+      execution:
+        parameters:
+          - name: type_besluit
+            type: string
+            required: true
+            description: Type besluit of beleid
+          - name: is_wettelijk_uitgesloten
+            type: boolean
+            required: true
+          - name: is_geringe_wijziging
+            type: boolean
+            required: true
+          - name: is_hogere_regelgeving_zonder_ruimte
+            type: boolean
+            required: true
+          - name: is_begrotingszaak
+            type: boolean
+            required: true
+          - name: is_intern_organisatorisch
+            type: boolean
+            required: true
+          - name: is_spoedeisend
+            type: boolean
+            required: true
+          - name: kan_kwetsbare_groepen_schaden
+            type: boolean
+            required: true
+        output:
+          - name: participatieplan_vereist
+            type: boolean
+            description: Of een participatieplan verplicht is
+        actions:
+          - output: participatieplan_vereist
+            value:
+              operation: NOT
+              subject:
+                operation: OR
+                conditions:
+                  - operation: EQUALS
+                    subject: $is_wettelijk_uitgesloten
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_geringe_wijziging
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_hogere_regelgeving_zonder_ruimte
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_begrotingszaak
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_intern_organisatorisch
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_spoedeisend
+                    value: true
+                  - operation: EQUALS
+                    subject: $kan_kwetsbare_groepen_schaden
+                    value: true
+
+  - number: '4'
+    text: |
+      Uitgangspunten participatieplan
+
+      Bij het opstellen van het participatieplan houdt het bevoegd gezag rekening met:
+      a. zichtbaarheid van de impact van het voorstel;
+      b. gerichte benadering van betrokken groepen;
+      c. inspanningen om ondervertegenwoordigde groepen te bereiken;
+      d. de beschikbare beleidsruimte als indicator voor participatie-omvang;
+      e. vroegtijdige inzet van participatie.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel4
+
+  - number: '5'
+    text: |
+      Inhoud participatieplan
+
+      Het participatieplan bevat:
+      a. een expliciete en onderbouwde keuze voor een helder en haalbaar participatiedoel;
+      b. de doelgroep van de participatie;
+      c. inspanningen om ondervertegenwoordigde groepen te bereiken;
+      d. het niveau van invloed van deelnemers;
+      e. de geldende kaders;
+      f. de wijze van inbreng;
+      g. het moment van terugkoppeling.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel5
+    machine_readable:
+      definitions:
+        VERPLICHTE_ONDERDELEN_PARTICIPATIEPLAN:
+          value:
+            - participatiedoel
+            - doelgroep
+            - bereik_ondervertegenwoordigde_groepen
+            - niveau_invloed
+            - geldende_kaders
+            - wijze_inbreng
+            - moment_terugkoppeling
+          description: Verplichte onderdelen van een participatieplan
+
+  - number: '6'
+    text: |
+      Procedure reageren
+
+      Indien gekozen wordt voor de participatievorm "reageren", is afdeling 3.4 van de
+      Algemene wet bestuursrecht van toepassing.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel6
+    machine_readable:
+      execution:
+        parameters:
+          - name: participatievorm
+            type: string
+            required: true
+            description: Gekozen participatievorm
+        output:
+          - name: awb_34_van_toepassing
+            type: boolean
+            description: Of Awb afdeling 3.4 (uniforme openbare voorbereidingsprocedure) van toepassing is
+        actions:
+          - output: awb_34_van_toepassing
+            value:
+              operation: EQUALS
+              subject: $participatievorm
+              value: reageren
+
+  - number: '7'
+    text: |
+      Afronding participatieproces
+
+      Het bevoegd gezag rondt het participatieproces af met een gepubliceerd verslag dat bevat:
+      a. een overzicht van de gevolgde procedure;
+      b. een samenvatting van de inbreng;
+      c. een gemotiveerde reactie op de ingebrachte zienswijzen;
+      d. een reflectie op de mate waarin het participatiedoel is bereikt;
+      e. de gemaakte afspraken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel7
+    machine_readable:
+      definitions:
+        VERPLICHTE_ONDERDELEN_PARTICIPATIEVERSLAG:
+          value:
+            - overzicht_procedure
+            - samenvatting_inbreng
+            - gemotiveerde_reactie
+            - reflectie_doelbereik
+            - gemaakte_afspraken
+          description: Verplichte onderdelen van het participatieverslag
+
+  - number: '8'
+    text: |
+      Zorgplicht participatieproces
+
+      Het bevoegd gezag draagt zorg voor:
+      a. begrijpelijke communicatie;
+      b. documentatie die de consequenties van inbreng inzichtelijk maakt;
+      c. toegankelijke relevante documenten;
+      d. betrouwbare communicatie vanuit de gemeente;
+      e. duidelijkheid over vaststaande kaders versus flexibiliteit;
+      f. tijdige responsiviteit;
+      g. betrokkenheid van bestuurders bij vastgelopen processen.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel8
+    machine_readable:
+      definitions:
+        ZORGPLICHT_ELEMENTEN:
+          value:
+            - begrijpelijke_communicatie
+            - documentatie_consequenties
+            - toegankelijke_documenten
+            - betrouwbare_communicatie
+            - duidelijkheid_kaders
+            - tijdige_responsiviteit
+            - bestuurlijke_betrokkenheid
+
+  # Hoofdstuk 3: Buurtrechten (Overheidsparticipatie)
+
+  - number: '9'
+    text: |
+      Doel buurtrechten
+
+      De buurtrechten hebben tot doel:
+      a. het stimuleren van bewonersinitiatieven;
+      b. het bevorderen van samenwerking tussen gemeente en bewoners;
+      c. het bieden van ondersteuning en budget;
+      d. het creeren van beleidsruimte voor uitvoering;
+      e. het overdragen van eigenaarschap.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel9
+
+  - number: '10'
+    text: |
+      Onderwerp buurtrechten
+
+      Alle autonome taken van de gemeente Amsterdam kunnen onderwerp zijn van een buurtrecht,
+      met uitzondering van taken die aan de overheid zijn voorbehouden of zijn uitgesloten
+      op grond van artikelen 13 en 14.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel10
+
+  - number: '11'
+    text: |
+      Varianten buurtrechten
+
+      De buurtrechten omvatten:
+      a. uitdaagrecht: het uitvoeren van bestaande gemeentelijke taken met betere aansluiting
+         op de buurt;
+      b. biedrecht: het bieden op huur of aankoop van gemeentelijk vastgoed voor
+         maatschappelijke doeleinden;
+      c. buurtplanrecht: het doen van voorstellen voor de inrichting van de openbare ruimte.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel11
+    machine_readable:
+      definitions:
+        UITDAAGRECHT:
+          value: uitdaagrecht
+          description: Uitvoeren van bestaande gemeentelijke taken met betere aansluiting op de buurt
+        BIEDRECHT:
+          value: biedrecht
+          description: Bieden op huur of aankoop van gemeentelijk vastgoed voor maatschappelijke doeleinden
+        BUURTPLANRECHT:
+          value: buurtplanrecht
+          description: Voorstellen doen voor inrichting openbare ruimte
+
+  - number: '12'
+    text: |
+      Procedure en voorwaarden buurtrechten
+
+      1. Een verzoek om toepassing van een buurtrecht bevat:
+         a. een beschrijving van de taak of het vastgoed;
+         b. een begroting (bij voorkeur lager dan huidige kosten);
+         c. de juridische status van de initiatiefnemers;
+         d. de maatschappelijke waarde voor de buurt;
+         e. eventuele samenwerkingspartners;
+         f. de capaciteit voor uitvoering.
+      2. Het bevoegd gezag beslist binnen 26 weken, of 52 weken bij complexe zaken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel12
+    machine_readable:
+      definitions:
+        BESLISTERMIJN_STANDAARD_WEKEN:
+          value: 26
+          description: Standaard beslistermijn in weken
+        BESLISTERMIJN_COMPLEX_WEKEN:
+          value: 52
+          description: Beslistermijn voor complexe zaken in weken
+      execution:
+        parameters:
+          - name: is_complex
+            type: boolean
+            required: true
+            description: Of het verzoek als complex wordt aangemerkt
+        output:
+          - name: beslistermijn_weken
+            type: number
+            description: Maximale beslistermijn in weken
+        actions:
+          - output: beslistermijn_weken
+            value:
+              operation: IF
+              when: $is_complex
+              then: 52
+              else: 26
+
+  - number: '13'
+    text: |
+      Uitzonderingen buurtrechten
+
+      Buurtrechten zijn niet van toepassing op:
+      a. lopende uitvoeringsprojecten;
+      b. spoedeisende situaties;
+      c. zaken die kwetsbare groepen kunnen raken;
+      d. hogere regelgeving zonder beleidsruimte;
+      e. begrotings- en belastingzaken;
+      f. aanbestedingen boven de Europese drempels.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel13
+    machine_readable:
+      execution:
+        parameters:
+          - name: is_lopend_project
+            type: boolean
+            required: true
+          - name: is_spoedeisend
+            type: boolean
+            required: true
+          - name: raakt_kwetsbare_groepen
+            type: boolean
+            required: true
+          - name: is_hogere_regelgeving_zonder_ruimte
+            type: boolean
+            required: true
+          - name: is_begrotingszaak
+            type: boolean
+            required: true
+          - name: boven_europese_drempel
+            type: boolean
+            required: true
+        output:
+          - name: buurtrecht_mogelijk
+            type: boolean
+            description: Of een buurtrecht kan worden toegepast
+        actions:
+          - output: buurtrecht_mogelijk
+            value:
+              operation: NOT
+              subject:
+                operation: OR
+                conditions:
+                  - operation: EQUALS
+                    subject: $is_lopend_project
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_spoedeisend
+                    value: true
+                  - operation: EQUALS
+                    subject: $raakt_kwetsbare_groepen
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_hogere_regelgeving_zonder_ruimte
+                    value: true
+                  - operation: EQUALS
+                    subject: $is_begrotingszaak
+                    value: true
+                  - operation: EQUALS
+                    subject: $boven_europese_drempel
+                    value: true
+
+  - number: '14'
+    text: |
+      Goedkeuring en intrekking
+
+      1. Goedgekeurde initiatieven ontvangen passende ondersteuning.
+      2. Afspraken over proces, resultaten, budget en duur worden vastgelegd.
+      3. Bij niet-nakoming kan het buurtrecht worden ingetrokken.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel14
+
+  - number: '15'
+    text: |
+      Weigering
+
+      Een weigering bevat een motivering waarin wordt uitgelegd hoe de maatschappelijke waarde
+      is beoordeeld, ook buiten bestaande beleidskaders.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel15
+
+  # Hoofdstuk 4: Netwerkparticipatie (Buurtplatformen)
+
+  - number: '16'
+    text: |
+      Buurtplatformen
+
+      1. Een buurtplatform:
+         a. komt voort uit bewonersinitiatief;
+         b. overstijgt individuele complexen;
+         c. functioneert als buurtnetwerk gericht op buurtverbetering;
+         d. is aangesloten bij het Amsterdamse platformnetwerk;
+         e. opereert zonder ideologische of politieke doelstellingen;
+         f. heeft geen winstoogmerk.
+      2. Erkenning door het college geldt maximaal vier jaar.
+      3. Samenwerkingsafspraken omvatten:
+         a. contactpersonen;
+         b. vergaderfrequentie;
+         c. aandachtsgebieden;
+         d. samenwerkingsvormen;
+         e. communicatieaanpak;
+         f. ondersteuning en middelen;
+         g. conflictoplossing.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel16
+    machine_readable:
+      definitions:
+        MAX_ERKENNING_JAREN:
+          value: 4
+          description: Maximale duur erkenning buurtplatform in jaren
+        VOORWAARDEN_BUURTPLATFORM:
+          value:
+            - bewonersinitiatief
+            - overstijgt_individuele_complexen
+            - gericht_op_buurtverbetering
+            - aangesloten_platformnetwerk
+            - geen_ideologische_doelen
+            - geen_winstoogmerk
+          description: Voorwaarden voor erkenning als buurtplatform
+
+  # Hoofdstuk 5: Slotbepalingen
+
+  - number: '17'
+    text: |
+      Evaluatie en monitoring
+
+      De uitvoering wordt geevalueerd in jaar 1, 3 en 5, met jaarlijkse monitoringsrapportages.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel17
+    machine_readable:
+      definitions:
+        EVALUATIEJAREN:
+          value:
+            - 1
+            - 3
+            - 5
+          description: Jaren waarin evaluatie plaatsvindt na inwerkingtreding
+
+  - number: '18'
+    text: |
+      Overgangsrecht
+
+      Bestaande processen die voor 15 september 2024 substantieel zijn gestart, zijn
+      vrijgesteld van de verplichting tot het opstellen van een participatieplan.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel18
+    machine_readable:
+      definitions:
+        OVERGANGSRECHTDATUM:
+          value: '2024-09-15'
+          description: Datum waarvoor gestarte processen zijn vrijgesteld
+
+  - number: '19'
+    text: |
+      Intrekking
+
+      De Algemene Inspraakverordening (2016) wordt ingetrokken en hierin geintegreerd.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel19
+
+  - number: '20'
+    text: |
+      Wijzigingen gerelateerde verordeningen
+
+      Verwijzingen naar de ingetrokken verordening worden verwijderd uit de Verordening
+      op de stadsdelen en het stadsgebied Amsterdam 2022.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel20
+
+  - number: '21'
+    text: |
+      Inwerkingtreding
+
+      Deze verordening treedt in werking op 15 september 2024.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel21
+
+  - number: '22'
+    text: |
+      Citeertitel
+
+      Deze verordening wordt aangehaald als: Participatieverordening gemeente Amsterdam.
+    url: https://lokaleregelgeving.overheid.nl/CVDR723122#Artikel22

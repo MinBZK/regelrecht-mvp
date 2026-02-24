@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/poc-machine-law/refs/heads/main/schema/v0.3.0/schema.json
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
 $id: afstemmingsverordening_participatiewet_diemen
 regulatory_layer: GEMEENTELIJKE_VERORDENING
 publication_date: '2014-12-18'
@@ -12,12 +12,15 @@ name: Afstemmingsverordening Participatiewet Diemen 2015
 # Note: This YAML contains only articles 7 and 9 for the proof of concept.
 # The full verordening contains 20 articles.
 
-# Grondslag: Participatiewet artikel 8, eerste lid, onderdeel a
-# (gedelegeerd via artikel 18)
+# Grondslag: Participatiewet artikel 8, eerste lid, onderdeel c
+# (verwijst naar artikel 30 voor verhogen en verlagen van de norm)
+# NB: Onderdeel a en b zijn nog niet in werking getreden
 legal_basis:
   - law_id: participatiewet
     article: '8'
-    description: Artikel 8, eerste lid, onderdeel a - gemeentelijke verordening over verlaging bijstand
+    paragraph: '1'
+    part: 'c'
+    description: Artikel 8, eerste lid, onderdeel c - het verhogen en verlagen van de norm (verwijst naar artikel 30)
 
 articles:
   - number: '7'
@@ -63,7 +66,10 @@ articles:
           value: 5
         PERCENTAGE_CATEGORIE_2:
           value: 30
-        # Categorie 3: percentage komt uit Participatiewet art. 18 lid 5 (zie input)
+        # Categorie 3: percentage is wettelijk vastgesteld in Participatiewet art. 18 lid 5
+        PERCENTAGE_CATEGORIE_3:
+          value: 100
+          description: Verlagingspercentage voor categorie 3 (wettelijk bepaald op 100%)
         DUUR_MAANDEN:
           value: 1
       execution:
@@ -79,16 +85,6 @@ articles:
             type: number
             required: false
             description: Gedragscategorie (0=geen, 1, 2 of 3)
-        input:
-          # Categorie 3 percentage is vastgelegd in Participatiewet art. 18 lid 5
-          # Dit is GEEN gemeentelijke bevoegdheid - de rijkswet schrijft 100% voor
-          - name: percentage_categorie_3
-            type: number
-            description: Verlagingspercentage voor categorie 3 uit Participatiewet art. 18 lid 5
-            source:
-              regulation: participatiewet
-              output: verlaging_percentage_lid_5
-
         output:
           - name: verlaging_percentage
             type: number
@@ -120,7 +116,7 @@ articles:
                     operation: EQUALS
                     subject: $gedragscategorie
                     value: 3
-                  then: $percentage_categorie_3
+                  then: $PERCENTAGE_CATEGORIE_3
           - output: duur_maanden
             value:
               operation: SWITCH

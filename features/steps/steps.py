@@ -75,19 +75,19 @@ def step_when_bijstandsaanvraag_executed(context, article):
     if "bsn" not in parameters:
         parameters["bsn"] = "123456789"
 
-    # Set gedragscategorie in uitvoerder data (not as direct parameter)
-    # The engine will resolve this from uitvoerder data
-    gemeente_code = parameters.get("gemeente_code", "")
-    gedragscategorie = parameters.pop("gedragscategorie", 0)
-    LawExecutionService.set_gedragscategorie(
-        parameters["bsn"], gemeente_code, gedragscategorie
-    )
+    # Ensure gedragscategorie has a default value if not provided
+    if "gedragscategorie" not in parameters:
+        parameters["gedragscategorie"] = 0
+
+    # Ensure is_gelijkgestelde_vreemdeling has a default value
+    if "is_gelijkgestelde_vreemdeling" not in parameters:
+        parameters["is_gelijkgestelde_vreemdeling"] = False
 
     try:
-        # Call Article 43 via one of its outputs
+        # Call Article 43 via uitkering_bedrag to execute all actions
         result = service.evaluate_law_output(
             law_id="participatiewet",
-            output_name="heeft_recht_op_bijstand",
+            output_name="uitkering_bedrag",
             parameters=parameters,
             calculation_date=calculation_date,
         )
@@ -96,9 +96,6 @@ def step_when_bijstandsaanvraag_executed(context, article):
     except Exception as e:
         context.error = e
         context.result = None
-    finally:
-        # Clean up uitvoerder data
-        LawExecutionService.clear_uitvoerder_data()
 
 
 @then("the citizen has the right to bijstand")  # type: ignore[misc]
@@ -474,4 +471,323 @@ def step_then_minimale_afstand_m(context, amount):
     if abs(actual - expected) > 0.01:
         raise AssertionError(
             f"Expected minimale_afstand_m {expected}, but got {actual}"
+        )
+
+
+# === Gewone Bijstand step definitions ===
+
+
+@given("a citizen with the following profile:")  # type: ignore[misc]
+def step_given_citizen_profile(context):
+    """Store citizen profile data from table (key | value format)"""
+    context.citizen_profile = {}
+
+    def convert_value(val):
+        """Convert string value to appropriate type"""
+        if val == "true":
+            return True
+        elif val == "false":
+            return False
+        elif val == "null":
+            return None
+        else:
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    return val
+
+    if len(context.table.headings) == 2:
+        key = context.table.headings[0]
+        value = convert_value(context.table.headings[1])
+        context.citizen_profile[key] = value
+
+    for row in context.table:
+        key = row[0]
+        value = convert_value(row[1])
+        context.citizen_profile[key] = value
+
+
+@when("I determine the huishouden_type for participatiewet")  # type: ignore[misc]
+def step_when_determine_huishouden_type(context):
+    """Determine household type via Article 4"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="huishouden_type",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@when("I calculate the norm_21_65 for participatiewet")  # type: ignore[misc]
+def step_when_calculate_norm_21_65(context):
+    """Calculate norm for 21-65 year olds via Article 21"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="norm_21_65",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@when("I calculate the kostendelersnorm for participatiewet")  # type: ignore[misc]
+def step_when_calculate_kostendelersnorm(context):
+    """Calculate kostendelersnorm via Article 22a"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="norm_kostendeler",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@when("I check heeft_recht_op_bijstand for participatiewet")  # type: ignore[misc]
+def step_when_check_recht_op_bijstand(context):
+    """Check right to benefits via Article 11"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="heeft_recht_op_bijstand",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@when("I check is_uitgesloten_van_bijstand for participatiewet")  # type: ignore[misc]
+def step_when_check_uitgesloten(context):
+    """Check exclusion grounds via Article 13"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="is_uitgesloten_van_bijstand",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@when("I check heeft_recht_op_algemene_bijstand for participatiewet")  # type: ignore[misc]
+def step_when_check_recht_algemene_bijstand(context):
+    """Check right to general benefits via Article 19"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="heeft_recht_op_algemene_bijstand",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@when("I calculate the norm_inrichting for participatiewet")  # type: ignore[misc]
+def step_when_calculate_norm_inrichting(context):
+    """Calculate norm for institution stay via Article 23"""
+    from engine.service import LawExecutionService
+
+    service = LawExecutionService("regulation/nl")
+    calculation_date = getattr(context, "calculation_date", "2025-01-01")
+    parameters = context.citizen_profile.copy()
+
+    try:
+        result = service.evaluate_law_output(
+            law_id="participatiewet",
+            output_name="norm_inrichting",
+            parameters=parameters,
+            calculation_date=calculation_date,
+        )
+        context.result = result
+        context.error = None
+    except Exception as e:
+        context.error = e
+        context.result = None
+
+
+@then('the huishouden_type is "{expected_type}"')  # type: ignore[misc]
+def step_then_huishouden_type(context, expected_type):
+    """Verify the household type"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("huishouden_type")
+
+    if actual != expected_type:
+        raise AssertionError(
+            f"Expected huishouden_type '{expected_type}', but got '{actual}'"
+        )
+
+
+@then("{output_name} is true")  # type: ignore[misc]
+def step_then_output_is_true(context, output_name):
+    """Verify a boolean output or resolved input is true"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    # Check both output and input (for values resolved from other articles)
+    actual = result.output.get(output_name)
+    if actual is None:
+        actual = result.input.get(output_name)
+
+    if actual is not True:
+        raise AssertionError(
+            f"Expected {output_name} to be true, but got {actual}"
+        )
+
+
+@then("{output_name} is false")  # type: ignore[misc]
+def step_then_output_is_false(context, output_name):
+    """Verify a boolean output or resolved input is false"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    # Check both output and input (for values resolved from other articles)
+    actual = result.output.get(output_name)
+    if actual is None:
+        actual = result.input.get(output_name)
+
+    if actual is not False:
+        raise AssertionError(
+            f"Expected {output_name} to be false, but got {actual}"
+        )
+
+
+@then('the norm_21_65 is "{amount}" eurocent')  # type: ignore[misc]
+def step_then_norm_21_65(context, amount):
+    """Verify the norm amount for 21-65"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("norm_21_65")
+    if isinstance(actual, float):
+        actual = round(actual)
+    expected = int(amount)
+
+    if actual != expected:
+        raise AssertionError(
+            f"Expected norm_21_65 {expected}, but got {actual}"
+        )
+
+
+@then("{output_name} is {value:d}")  # type: ignore[misc]
+def step_then_output_is_number(context, output_name, value):
+    """Verify a numeric output"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get(output_name)
+    if isinstance(actual, float):
+        actual = round(actual)
+
+    if actual != value:
+        raise AssertionError(
+            f"Expected {output_name} to be {value}, but got {actual}"
+        )
+
+
+@then('the norm_inrichting is "{amount}" eurocent')  # type: ignore[misc]
+def step_then_norm_inrichting(context, amount):
+    """Verify the institution norm amount"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("norm_inrichting")
+    if isinstance(actual, float):
+        actual = round(actual)
+    expected = int(amount)
+
+    if actual != expected:
+        raise AssertionError(
+            f"Expected norm_inrichting {expected}, but got {actual}"
+        )
+
+
+@then('the bijstand_bedrag is "{amount}" eurocent')  # type: ignore[misc]
+def step_then_bijstand_bedrag(context, amount):
+    """Verify the calculated benefit amount"""
+    if context.error:
+        raise AssertionError(f"Execution failed: {context.error}")
+
+    result = context.result
+    actual = result.output.get("bijstand_bedrag")
+    if isinstance(actual, float):
+        actual = round(actual)
+    expected = int(amount)
+
+    if actual != expected:
+        raise AssertionError(
+            f"Expected bijstand_bedrag {expected}, but got {actual}"
         )

@@ -1,0 +1,217 @@
+---
+# ============================================================================
+# Vreemdelingenwet 2000 - Artikel 8 (Rechtmatig verblijf)
+# ============================================================================
+# Versie: 1.0.0
+# Aangemaakt: 2026-01-21
+# Auteur: Claude Code (Opus 4.5)
+# Branch: feature/poc-income-laws
+#
+# Changelog:
+# - v1.0.0 (2026-01-21): Initiële versie met artikel 8 geformaliseerd
+#   - Onderdelen a t/m m gedefinieerd
+#   - Output is_gelijkgesteld_participatiewet voor art. 11 lid 2 Pw
+#
+# Dit bestand formaliseert artikel 8 van de Vreemdelingenwet 2000, dat de
+# verschillende vormen van rechtmatig verblijf definieert. Dit is nodig voor
+# de Participatiewet artikel 11 lid 2 (gelijkstelling vreemdelingen).
+# ============================================================================
+
+$schema: https://regelrecht.nl/schema/v0.3.0/schema.json
+$id: vreemdelingenwet_2000
+regulatory_layer: WET
+publication_date: '2000-11-23'
+valid_from: '2026-01-01'
+bwb_id: BWBR0011823
+url: https://wetten.overheid.nl/BWBR0011823/2026-01-01
+name: Vreemdelingenwet 2000
+
+articles:
+  # ==========================================================================
+  # ARTIKEL 8 - RECHTMATIG VERBLIJF
+  # ==========================================================================
+  # Dit artikel definieert wanneer een vreemdeling rechtmatig in Nederland
+  # verblijft. Voor de Participatiewet zijn met name onderdelen a t/m e en l
+  # relevant (art. 11 lid 2 Participatiewet).
+  # ==========================================================================
+  - number: '8'
+    text: |-
+      **Rechtmatig verblijf**
+
+      De vreemdeling heeft in Nederland uitsluitend rechtmatig verblijf:
+
+      a. op grond van een verblijfsvergunning voor bepaalde tijd als bedoeld in artikel 14;
+
+      b. op grond van een verblijfsvergunning voor onbepaalde tijd als bedoeld in artikel 20, of een EU-verblijfsvergunning
+      voor langdurig ingezetenen als bedoeld in artikel 45a indien op het aan de vreemdeling verschafte document, bedoeld
+      in artikel 9, de aantekening "EG-langdurig ingezetene" is geplaatst;
+
+      c. op grond van een verblijfsvergunning voor bepaalde tijd als bedoeld in artikel 28;
+
+      d. op grond van een verblijfsvergunning voor onbepaalde tijd als bedoeld in artikel 33;
+
+      e. als gemeenschapsonderdaan zolang deze onderdaan verblijf houdt op grond van een regeling krachtens het Verdrag
+      tot oprichting van de Europese Gemeenschap dan wel de Overeenkomst betreffende de Europese Economische Ruimte;
+
+      f. in afwachting van de beslissing op een aanvraag tot het verlenen van de verblijfsvergunning, bedoeld in de
+      artikelen 14 en 28, terwijl bij of krachtens deze wet dan wel op grond van een rechterlijke beslissing uitzetting
+      van de aanvrager achterwege dient te blijven totdat op de aanvraag is beslist;
+
+      g. in afwachting van de beslissing op een aanvraag tot het verlenen van de verblijfsvergunning, bedoeld in de
+      artikelen 20 en 33, of tot het verlengen van de geldigheidsduur van de verblijfsvergunning, bedoeld in de artikelen
+      14 en 28, of een wijziging ervan, terwijl bij of krachtens deze wet uitzetting van de aanvrager achterwege dient te
+      blijven totdat op de aanvraag is beslist;
+
+      h. in afwachting van de beslissing op een bezwaarschrift of een beroepschrift, terwijl bij of krachtens deze wet dan
+      wel op grond van een rechterlijke beslissing uitzetting van de aanvrager achterwege dient te blijven totdat op het
+      bezwaarschrift of beroepschrift is beslist;
+
+      i. gedurende de vrije termijn, bedoeld in artikel 12, zolang het verblijf van de vreemdeling bij of krachtens
+      artikel 12 is toegestaan;
+
+      j. indien de vreemdeling verblijfsrecht ontleent aan het Associatiebesluit 1/80 van de Associatieraad EEG/Turkije;
+
+      k. indien tegen de uitzetting beletselen bestaan als bedoeld in artikel 64;
+
+      l. indien de vreemdeling verblijfsrecht heeft op grond van artikel 3.4, tweede lid, onderdeel b, van het Besluit
+      uitvoering Wet arbeid vreemdelingen 2022 en dit verblijfsrecht niet is beëindigd of geweigerd als bedoeld in
+      onderdeel k of n van dat lid;
+
+      m. indien de vreemdeling Oekraïner is als bedoeld in artikel 2, eerste lid, van het Uitvoeringsbesluit (EU)
+      2022/382 van de Raad.
+    url: https://wetten.overheid.nl/BWBR0011823/2026-01-01#Artikel8
+    machine_readable:
+      # =======================================================================
+      # WETSANALYSE ARTIKEL 8
+      # =======================================================================
+      # Juridische grammatica:
+      # - Rechtssubject: Vreemdeling (niet-Nederlander)
+      # - Rechtsfeit: Voldoen aan een van de onderdelen a-m
+      # - Rechtsgevolg: Rechtmatig verblijf in Nederland
+      #
+      # Voor Participatiewet art. 11 lid 2 zijn relevant:
+      # - Onderdelen a t/m e: Volledige verblijfsvergunningen
+      # - Onderdeel l: Arbeid vreemdelingen
+      # =======================================================================
+      definitions:
+        # Categorieën verblijfstitels
+        VERBLIJF_BEPAALDE_TIJD_REGULIER:
+          value: a
+        VERBLIJF_ONBEPAALDE_TIJD_REGULIER:
+          value: b
+        VERBLIJF_BEPAALDE_TIJD_ASIEL:
+          value: c
+        VERBLIJF_ONBEPAALDE_TIJD_ASIEL:
+          value: d
+        VERBLIJF_EU_BURGER:
+          value: e
+        VERBLIJF_PROCEDURE_AANVRAAG:
+          value: f
+        VERBLIJF_PROCEDURE_VERLENGING:
+          value: g
+        VERBLIJF_PROCEDURE_BEZWAAR:
+          value: h
+        VERBLIJF_VRIJE_TERMIJN:
+          value: i
+        VERBLIJF_TURKIJE_ASSOCIATIE:
+          value: j
+        VERBLIJF_UITZETTINGSBELETSEL:
+          value: k
+        VERBLIJF_ARBEID_VREEMDELINGEN:
+          value: l
+        VERBLIJF_OEKRAINE:
+          value: m
+      execution:
+        produces:
+          legal_character: TOETS
+          decision_type: GOEDKEURING
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+            description: BSN van de vreemdeling
+        input:
+          # Verblijfstitel moet komen uit IND-registratie
+          - name: verblijfstitel_code
+            type: string
+            description: "Code van de verblijfstitel (a t/m m)"
+            source:
+              description: "IND Basisvoorziening Vreemdelingen (BVV) - moet gekoppeld worden"
+        output:
+          - name: heeft_rechtmatig_verblijf
+            type: boolean
+            description: Heeft de vreemdeling rechtmatig verblijf conform artikel 8
+          - name: is_gelijkgesteld_participatiewet
+            type: boolean
+            description: "Voldoet aan art. 11 lid 2 Participatiewet (onderdelen a-e en l)"
+          - name: verblijfstitel_categorie
+            type: string
+            description: Categorie van het rechtmatig verblijf
+        actions:
+          # Check of verblijfstitel_code een geldige waarde is (a-m)
+          - output: heeft_rechtmatig_verblijf
+            value:
+              operation: IN
+              subject: $verblijfstitel_code
+              value:
+                - a
+                - b
+                - c
+                - d
+                - e
+                - f
+                - g
+                - h
+                - i
+                - j
+                - k
+                - l
+                - m
+          # Participatiewet art. 11 lid 2 verwijst naar onderdelen a t/m e en l
+          - output: is_gelijkgesteld_participatiewet
+            value:
+              operation: IN
+              subject: $verblijfstitel_code
+              value:
+                - a
+                - b
+                - c
+                - d
+                - e
+                - l
+            legal_basis:
+              law: Participatiewet
+              bwb_id: BWBR0015703
+              article: '11'
+              paragraph: '2'
+              explanation: "Gelijkstelling vreemdeling met Nederlander voor bijstand"
+          - output: verblijfstitel_categorie
+            value:
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: IN
+                    subject: $verblijfstitel_code
+                    value: [a, b]
+                  then: regulier
+                - when:
+                    operation: IN
+                    subject: $verblijfstitel_code
+                    value: [c, d]
+                  then: asiel
+                - when:
+                    operation: EQUALS
+                    subject: $verblijfstitel_code
+                    value: e
+                  then: eu_burger
+                - when:
+                    operation: IN
+                    subject: $verblijfstitel_code
+                    value: [f, g, h]
+                  then: procedure
+                - when:
+                    operation: EQUALS
+                    subject: $verblijfstitel_code
+                    value: m
+                  then: oekraine_bescherming
+              default: overig
