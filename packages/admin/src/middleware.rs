@@ -4,6 +4,7 @@ use axum::middleware::Next;
 use axum::response::Response;
 use tower_sessions::Session;
 
+use crate::auth::SESSION_KEY_AUTHENTICATED;
 use crate::state::AppState;
 
 pub async fn require_auth(
@@ -17,7 +18,7 @@ pub async fn require_auth(
     }
 
     let authenticated: bool = session
-        .get("authenticated")
+        .get(SESSION_KEY_AUTHENTICATED)
         .await
         .ok()
         .flatten()
