@@ -5,54 +5,56 @@
 default:
     @just --list
 
-# --- Quality checks ---
-
-# Check Rust formatting
-format:
-    cd packages && cargo fmt --check --all
-
-# Run clippy lints
-lint:
-    cd packages && cargo clippy --all-features -- -D warnings
-
-# Run cargo check
-build-check:
-    cd packages && cargo check --all-features
-
-# Validate regulation YAML files
-validate *FILES:
-    script/validate.sh {{FILES}}
-
-# Run all quality checks (format + lint + check + validate + tests)
-check: format lint build-check validate test-all
-
-# --- Tests ---
-
-# Run Rust unit and integration tests
+# Run pytest
 test:
-    cd packages/engine && cargo test --all-features
+    uv run pytest
 
-# Run Rust BDD tests
-bdd:
-    cd packages/engine && cargo test --test bdd -- --nocapture
+# Run behave BDD tests
+behave:
+    uv run behave
 
-# Run harvester tests
-harvester-test:
-    cd packages/harvester && cargo test
+# Run alle tests (pytest + behave)
+test-all: test behave
 
-# Run all tests (engine + harvester)
-test-all: test harvester-test
+# Lint met ruff
+lint:
+    uv run ruff check .
 
-# --- Mutation testing ---
+# Format met ruff
+format:
+    uv run ruff format .
 
-# Run mutation testing on engine (in-place because tests use relative paths to regulation/)
-mutants *ARGS:
-    cd packages/engine && cargo mutants --in-place --timeout-multiplier 3 {{ARGS}}
+# Type check met ty
+typecheck:
+    uv run ty check
 
-# --- Security ---
+# YAML lint
+yamllint:
+    uv run yamllint regulation/
 
-# Run security audit on all dependencies (vulnerabilities, licenses, sources)
-audit:
-    cargo deny check
-    cd frontend && npm audit
-    cd frontend && npx license-checker --production --failOn "GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0;SSPL-1.0;BUSL-1.1"
+# Valideer YAML tegen schema
+validate file:
+    uv run python script/validate.py {{file}}
+
+# Valideer alle regulation YAML files
+validate-all:
+    uv run python -c "import glob; import subprocess; [subprocess.run(['uv', 'run', 'python', 'script/validate.py', f]) for f in glob.glob('regulation/**/*.yaml', recursive=True)]"
+
+# Alle checks (lint + typecheck)
+check: lint typecheck
+
+# Pre-commit hooks draaien
+pre-commit:
+    uv run pre-commit run --all-files
+
+# Sync dependencies
+sync:
+    uv sync
+
+# Start de browser server
+serve:
+    uv run python server.py
+
+# Start frontend dev server (Vite)
+dev:
+    cd frontend && npm run dev

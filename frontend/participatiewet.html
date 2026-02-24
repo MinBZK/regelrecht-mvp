@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Participatiewet - Annotatie Browser</title>
+  <script src="/js/text-annotator.js"></script>
+  <!-- Blockly -->
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; }
+
+    .app { display: grid; grid-template-columns: 280px 1fr 320px; height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 16px; border-bottom: 1px solid #e2e8f0; }
+    .sidebar-header h1 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
+    .search { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem; }
+    .articles { flex: 1; overflow-y: auto; }
+    .article-item { display: block; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+    .article-item:hover { background: #f8fafc; }
+    .article-item.selected { background: #eff6ff; border-left: 3px solid #3b82f6; }
+    .article-item-num { font-weight: 500; }
+    .article-item-badges { margin-top: 4px; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.6875rem; margin-right: 4px; }
+    .badge-logic { background: #dbeafe; color: #1d4ed8; }
+    .badge-norm { background: #ffedd5; color: #c2410c; }
+
+    /* Main */
+    .main { padding: 24px; overflow-y: auto; }
+    .article-view { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .article-header { padding: 20px; border-bottom: 1px solid #e2e8f0; }
+    .article-title { font-size: 1.125rem; font-weight: 600; }
+    .article-url { display: inline-block; margin-top: 8px; font-size: 0.8125rem; color: #3b82f6; text-decoration: none; }
+    .article-url:hover { text-decoration: underline; }
+    .legend { padding: 12px 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+    .article-text { padding: 20px; line-height: 1.8; }
+    .article-text p { margin-bottom: 1em; }
+    .tip { padding: 12px 20px; background: #f0fdf4; border-top: 1px solid #e2e8f0; font-size: 0.8125rem; color: #15803d; }
+
+    /* Panel */
+    .panel { background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+    .panel-tabs { display: flex; border-bottom: 1px solid #e2e8f0; }
+    .panel-tab { flex: 1; padding: 12px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 0.8125rem; color: #64748b; }
+    .panel-tab:hover { background: #f8fafc; }
+    .panel-tab.active { color: #1e293b; border-bottom-color: #3b82f6; }
+    .panel-content { flex: 1; overflow-y: auto; }
+    .panel-section { display: none; padding: 16px; }
+    .panel-section.active { display: block; }
+    .panel-section h3 { font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: #475569; }
+
+    .empty { color: #94a3b8; font-style: italic; text-align: center; padding: 32px; }
+
+    /* Logic Linker styles */
+    .logic-var:hover { border-color: #3b82f6 !important; }
+    .logic-var.active { background: #eff6ff !important; border-color: #3b82f6 !important; }
+    .match-chip:hover { filter: brightness(0.95); }
+    .temp-highlight { outline: 2px solid #3b82f6 !important; outline-offset: 1px; }
+    .annotation { transition: outline 0.2s; cursor: pointer; }
+    .panel-section h4 { font-size: 0.8125rem; font-weight: 600; margin-bottom: 8px; color: #64748b; }
+
+    /* Tooltip styles */
+    .ann-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      max-width: 300px;
+      font-size: 0.875rem;
+    }
+
+    /* Highlight annotation markers */
+    .annotation {
+      padding: 1px 2px;
+      border-radius: 2px;
+      cursor: help;
+    }
+    .annotation[data-type="definition"] {
+      background: rgba(253, 224, 71, 0.35);
+      border-bottom: 2px solid #eab308;
+    }
+    .annotation[data-type="input"] {
+      background: rgba(147, 197, 253, 0.35);
+      border-bottom: 2px solid #3b82f6;
+    }
+    .annotation[data-type="output"] {
+      background: rgba(134, 239, 172, 0.35);
+      border-bottom: 2px solid #22c55e;
+    }
+    .annotation[data-type="openNorm"] {
+      background: rgba(249, 115, 22, 0.15);
+      border-bottom: 2px solid #f97316;
+    }
+    .annotation[data-type="logic"] {
+      background: rgba(168, 85, 247, 0.2);
+      border-bottom: 2px solid #a855f7;
+    }
+    .annotation[data-type="lawReference"] {
+      background: rgba(14, 165, 233, 0.2);
+      border-bottom: 2px solid #0ea5e9;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>Participatiewet</h1>
+        <input type="text" class="search" id="search" placeholder="Zoek artikel...">
+      </div>
+      <div class="articles" id="articles"></div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main" id="main">
+      <div class="empty">Selecteer een artikel</div>
+    </main>
+
+    <!-- Panel -->
+    <aside class="panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="overview">Overzicht</button>
+        <button class="panel-tab" data-tab="rules">Regels</button>
+        <button class="panel-tab" data-tab="annotations">Annotaties</button>
+      </div>
+      <div class="panel-content">
+        <div class="panel-section active" id="panel-overview">
+          <h3>Annotatie Overzicht</h3>
+          <div id="overview-content" class="empty">Selecteer een artikel</div>
+        </div>
+        <div class="panel-section" id="panel-rules">
+          <h3>Regel Builder</h3>
+          <div id="blockly-container" style="height: 400px; border: 1px solid #e2e8f0; border-radius: 4px;"></div>
+          <div style="margin-top: 12px;">
+            <button id="save-rule-btn" style="padding: 8px 16px; background: #154273; color: white; border: none; border-radius: 4px; cursor: pointer;">Regel Opslaan</button>
+            <button id="clear-rule-btn" style="padding: 8px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; margin-left: 8px;">Wissen</button>
+          </div>
+          <div id="rule-output" style="margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 4px; font-family: monospace; font-size: 0.75rem; display: none;"></div>
+        </div>
+        <div class="panel-section" id="panel-annotations">
+          <div class="empty">Selecteer een artikel</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const API = '';
+    const REG_ID = 'participatiewet';
+
+    let data = null;
+    let currentArticle = null;
+
+    // Init
+    async function init() {
+      // Initialize BWB mappings
+      await TextAnnotator.initBwbMappings();
+
+      const res = await fetch(`${API}/api/regulation/${REG_ID}`);
+      data = await res.json();
+      renderArticles();
+
+      // Event listeners
+      document.getElementById('search').addEventListener('input', e => renderArticles(e.target.value));
+      document.querySelectorAll('.panel-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+        });
+      });
+
+      // Auto-select article 3
+      const art3 = data.articles.find(a => a.number === '3');
+      if (art3) selectArticle(art3);
+    }
+
+    function renderArticles(filter = '') {
+      const q = filter.toLowerCase();
+      const filtered = data.articles.filter(a =>
+        !q || a.number.includes(q) || (a.text && a.text.toLowerCase().includes(q))
+      );
+
+      document.getElementById('articles').innerHTML = filtered.map(a => {
+        const hasLogic = a.actions?.length > 0;
+        const hasNorms = a.machine_readable?.open_norms?.length > 0;
+        return `
+          <div class="article-item ${a === currentArticle ? 'selected' : ''}" data-num="${a.number}">
+            <div class="article-item-num">Artikel ${a.number}</div>
+            <div class="article-item-badges">
+              ${hasLogic ? '<span class="badge badge-logic">Logic</span>' : ''}
+              ${hasNorms ? '<span class="badge badge-norm">Normen</span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.article-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const art = data.articles.find(a => a.number === el.dataset.num);
+          if (art) selectArticle(art);
+        });
+      });
+    }
+
+    function selectArticle(article) {
+      currentArticle = article;
+      // Add regulationId to article for TextAnnotator
+      article.regulationId = REG_ID;
+      renderArticles();
+
+      // Render main
+      const annotations = TextAnnotator.findAnnotations(article.text, article);
+      const html = TextAnnotator.renderFormatted(article.text, annotations);
+
+      document.getElementById('main').innerHTML = `
+        <div class="article-view">
+          <div class="article-header">
+            <div class="article-title">Artikel ${article.number}</div>
+            ${article.url ? `<a href="${article.url}" target="_blank" class="article-url">Bekijk op wetten.nl</a>` : ''}
+          </div>
+          <div class="legend">${TextAnnotator.renderLegend()}</div>
+          <div class="article-text" id="text-container">${html}</div>
+          <div class="tip">Selecteer tekst om te annoteren (W3C annotation wordt opgeslagen)</div>
+        </div>
+      `;
+
+      // Setup interactions with both legacy and W3C annotation callbacks
+      TextAnnotator.setup(
+        document.getElementById('text-container'),
+        article,
+        // Legacy open norm callback
+        async (normData) => {
+          const res = await fetch(`${API}/api/regulation/${REG_ID}/article/${article.number}/open_norm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(normData)
+          });
+          const result = await res.json();
+          if (result.status === 'ok') {
+            // Reload data and re-render
+            const newRes = await fetch(`${API}/api/regulation/${REG_ID}`);
+            data = await newRes.json();
+            currentArticle = data.articles.find(a => a.number === article.number);
+            selectArticle(currentArticle);
+          }
+        },
+        // W3C annotation callback
+        async (annotation) => {
+          const res = await fetch(`${API}/api/regulation/${REG_ID}/annotation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(annotation)
+          });
+          const result = await res.json();
+          if (result.status === 'ok') {
+            console.log('W3C annotation saved:', result.annotation);
+            // Update local data (voor panel updates)
+            if (!currentArticle.annotations) currentArticle.annotations = [];
+            currentArticle.annotations.push(result.annotation);
+            // Update annotations panel
+            document.getElementById('panel-annotations').innerHTML = `
+              <h3>W3C Annotaties</h3>
+              ${renderAnnotationsPanel(currentArticle)}
+            `;
+            setupAnnotationHandlers();
+          } else if (result.status === 'exists') {
+            throw new Error('Deze annotatie bestaat al');
+          } else {
+            throw new Error(result.message || 'Onbekende fout');
+          }
+        }
+      );
+
+      // Render panels
+      // Render Overview panel
+      renderOverview(article);
+
+      // Initialize Blockly with full article data
+      initBlockly(article);
+
+      // Render Annotations panel
+      document.getElementById('panel-annotations').innerHTML = `
+        <h3>W3C Annotaties</h3>
+        ${renderAnnotationsPanel(article)}
+      `;
+
+      // Setup annotation approval handlers
+      setupAnnotationHandlers();
+    }
+
+    function renderLogicBuilder(article) {
+      const actions = article.actions || [];
+      const outputs = article.output || [];
+      const definitions = article.definitions || {};
+      const inputs = article.input || [];
+      const parameters = article.parameters || [];
+
+      if (actions.length === 0 && outputs.length === 0) {
+        return '<p style="color:#64748b; font-style:italic;">Geen logica gedefinieerd voor dit artikel</p>';
+      }
+
+      // Available variables for logic
+      const vars = [
+        ...Object.keys(definitions).map(n => ({ name: n, type: 'definition', prefix: '' })),
+        ...inputs.map(i => ({ name: i.name, type: 'input', prefix: '$' })),
+        ...outputs.map(o => ({ name: o.name, type: 'output', prefix: '' })),
+        ...parameters.map(p => ({ name: p.name, type: 'parameter', prefix: '$' }))
+      ];
+
+      let html = `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:6px;">Beschikbare variabelen:</div>
+          <div style="display:flex; flex-wrap:wrap; gap:4px;">
+            ${vars.map(v => `
+              <span style="font-size:0.75rem; padding:2px 6px; background:${TextAnnotator.colors[v.type]?.bg || '#f1f5f9'}; border-radius:3px; font-family:monospace;">
+                ${v.prefix}${v.name}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      if (actions.length > 0) {
+        html += `
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:6px;">Gedefinieerde actions:</div>
+          ${actions.map((action, idx) => `
+            <div style="margin-bottom:8px; padding:8px; background:#f8fafc; border-radius:4px; border-left:3px solid #a855f7;">
+              <div style="font-family:monospace; font-size:0.8125rem;">
+                <strong>${action.output}</strong> = ${formatOperation(action)}
+              </div>
+            </div>
+          `).join('')}
+        `;
+      }
+
+      return html;
+    }
+
+    function formatOperation(action) {
+      if (action.value !== undefined) {
+        return typeof action.value === 'string' && action.value.startsWith('$')
+          ? `<span style="color:#3b82f6;">${action.value}</span>`
+          : `<span style="color:#16a34a;">${JSON.stringify(action.value)}</span>`;
+      }
+      if (action.operation) {
+        let args = '';
+        if (action.subject) args += `<span style="color:#3b82f6;">${action.subject}</span>`;
+        if (action.value !== undefined) args += `, ${formatOperationValue(action.value)}`;
+        if (action.values) args = action.values.map(formatOperationValue).join(', ');
+        if (action.conditions) args = action.conditions.map(formatOperationValue).join(', ');
+        if (action.when) args = `when: ${formatOperationValue(action.when)}, then: ${formatOperationValue(action.then)}${action.else ? `, else: ${formatOperationValue(action.else)}` : ''}`;
+        return `<span style="color:#a855f7;">${action.operation}</span>(${args})`;
+      }
+      return JSON.stringify(action);
+    }
+
+    function formatOperationValue(val) {
+      if (typeof val === 'string' && val.startsWith('$')) {
+        return `<span style="color:#3b82f6;">${val}</span>`;
+      }
+      if (typeof val === 'object' && val !== null) {
+        return formatOperation(val);
+      }
+      return `<span style="color:#16a34a;">${JSON.stringify(val)}</span>`;
+    }
+
+    function renderAnnotationsPanel(article) {
+      const annotations = article.annotations || [];
+
+      if (annotations.length === 0) {
+        return '<p style="color:#64748b; font-style:italic;">Geen annotaties voor dit artikel</p>';
+      }
+
+      const statusColors = {
+        draft: '#fbbf24',
+        approved: '#22c55e',
+        rejected: '#ef4444',
+        promoted: '#3b82f6'
+      };
+
+      return `
+        <div style="margin-bottom:12px;">
+          <button id="sync-preview-btn" style="padding:6px 12px; border:1px solid #e2e8f0; border-radius:4px; background:white; cursor:pointer; font-size:0.8125rem; margin-right:8px;">
+            Preview Sync
+          </button>
+          <button id="sync-execute-btn" style="padding:6px 12px; border:none; border-radius:4px; background:#154273; color:white; cursor:pointer; font-size:0.8125rem;">
+            Execute Sync
+          </button>
+        </div>
+        ${annotations.map((ann, idx) => `
+          <div class="annotation-card" data-idx="${idx}" style="margin-bottom:8px; padding:10px; background:#f8fafc; border-radius:6px; border-left:3px solid ${statusColors[ann.status] || '#94a3b8'};">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:6px;">
+              <div style="font-family:monospace; font-size:0.8125rem; font-weight:500;">
+                ${ann.body?.name || ann.target?.selector?.exact?.substring(0, 30) || 'Annotatie'}
+              </div>
+              <span style="font-size:0.6875rem; padding:2px 6px; background:${statusColors[ann.status] || '#e2e8f0'}; color:white; border-radius:3px;">
+                ${ann.status || 'unknown'}
+              </span>
+            </div>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:4px;">
+              Type: ${ann.body?.classification || ann.motivation || 'unknown'}
+              ${ann.body?.data_type ? ` | Data: ${ann.body.data_type}` : ''}
+            </div>
+            <div style="font-size:0.8125rem; color:#475569; font-style:italic; margin-bottom:8px;">
+              "${TextAnnotator.escapeHtml((ann.target?.selector?.exact || '').substring(0, 50))}${(ann.target?.selector?.exact || '').length > 50 ? '...' : ''}"
+            </div>
+            ${ann.status !== 'promoted' ? `
+              <div style="display:flex; gap:6px;">
+                <button class="approve-btn" data-idx="${idx}" style="padding:4px 8px; border:none; border-radius:3px; background:#22c55e; color:white; cursor:pointer; font-size:0.75rem;">
+                  Approve
+                </button>
+                <button class="reject-btn" data-idx="${idx}" style="padding:4px 8px; border:none; border-radius:3px; background:#ef4444; color:white; cursor:pointer; font-size:0.75rem;">
+                  Reject
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function setupAnnotationHandlers() {
+      // Approve/reject buttons
+      document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const idx = parseInt(btn.dataset.idx);
+          await changeAnnotationStatus(idx, 'approved');
+        };
+      });
+
+      document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const idx = parseInt(btn.dataset.idx);
+          await changeAnnotationStatus(idx, 'rejected');
+        };
+      });
+
+      // Sync buttons
+      const previewBtn = document.getElementById('sync-preview-btn');
+      const executeBtn = document.getElementById('sync-execute-btn');
+
+      if (previewBtn) {
+        previewBtn.onclick = async () => {
+          const res = await fetch(`${API}/api/sync/${REG_ID}/preview`);
+          const preview = await res.json();
+          alert(`Sync Preview:\n\nAnnotaties te syncen: ${preview.annotations_count}\nErrors: ${preview.errors.join(', ') || 'geen'}`);
+        };
+      }
+
+      if (executeBtn) {
+        executeBtn.onclick = async () => {
+          if (!confirm('Weet je zeker dat je alle goedgekeurde annotaties wilt syncen naar de wet YAML?')) return;
+          const res = await fetch(`${API}/api/sync/${REG_ID}/execute`, { method: 'POST' });
+          const result = await res.json();
+          alert(`Sync Result:\n\nGesynchroniseerd: ${result.synced_count}\nErrors: ${result.errors.join(', ') || 'geen'}`);
+          // Reload data
+          const newRes = await fetch(`${API}/api/regulation/${REG_ID}`);
+          data = await newRes.json();
+          if (currentArticle) {
+            currentArticle = data.articles.find(a => a.number === currentArticle.number);
+            selectArticle(currentArticle);
+          }
+        };
+      }
+    }
+
+    async function changeAnnotationStatus(idx, status) {
+      const res = await fetch(`${API}/api/annotation/${REG_ID}/${idx}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const result = await res.json();
+      if (result.status === 'ok') {
+        // Reload data
+        const newRes = await fetch(`${API}/api/regulation/${REG_ID}`);
+        data = await newRes.json();
+        if (currentArticle) {
+          currentArticle = data.articles.find(a => a.number === currentArticle.number);
+          selectArticle(currentArticle);
+        }
+      }
+    }
+
+    // =========================================================================
+    // Blockly Rule Builder
+    // =========================================================================
+
+    let blocklyWorkspace = null;
+
+    // Define custom blocks for article variables
+    function defineArticleBlocks(article) {
+      // Clear existing dynamic blocks
+      const existingBlocks = Object.keys(Blockly.Blocks).filter(k =>
+        k.startsWith('var_') || k.startsWith('input_') || k.startsWith('output_') || k.startsWith('set_')
+      );
+      existingBlocks.forEach(k => delete Blockly.Blocks[k]);
+
+      const inputs = [];
+      const outputs = [];
+
+      // Create blocks for inputs
+      (article.input || []).forEach(inp => {
+        const name = inp.name;
+        inputs.push({ name, type: inp.type || 'boolean' });
+
+        Blockly.Blocks[`input_${name}`] = {
+          init: function() {
+            this.appendDummyInput()
+              .appendField('📥')
+              .appendField(name);
+            this.setOutput(true, 'Boolean');
+            this.setColour(210);
+            this.setTooltip(`Input: ${name}`);
+          }
+        };
+      });
+
+      // Create blocks for outputs (getters and setters)
+      (article.output || []).forEach(out => {
+        const name = out.name;
+        outputs.push({ name, type: out.type || 'boolean' });
+
+        // Output getter
+        Blockly.Blocks[`output_${name}`] = {
+          init: function() {
+            this.appendDummyInput()
+              .appendField('📤')
+              .appendField(name);
+            this.setOutput(true, 'Boolean');
+            this.setColour(120);
+            this.setTooltip(`Output: ${name}`);
+          }
+        };
+
+        // Output setter (rule definition)
+        Blockly.Blocks[`set_${name}`] = {
+          init: function() {
+            this.appendValueInput('VALUE')
+              .setCheck('Boolean')
+              .appendField('📤 ' + name + ' =');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour(120);
+            this.setTooltip(`Stel ${name} in op waarde`);
+          }
+        };
+      });
+
+      // Create blocks for annotations
+      (article.annotations || []).forEach((ann, idx) => {
+        const name = ann.body?.name;
+        if (!name) return;
+        const classification = ann.body?.classification || 'unknown';
+        const colour = classification === 'definition' ? 60 : classification === 'input' ? 210 : 120;
+
+        Blockly.Blocks[`var_${name}`] = {
+          init: function() {
+            this.appendDummyInput()
+              .appendField('🏷️')
+              .appendField(name);
+            this.setOutput(true, 'Boolean');
+            this.setColour(colour);
+            this.setTooltip(`Annotatie: ${name} (${classification})`);
+          }
+        };
+      });
+
+      return { inputs, outputs };
+    }
+
+    // Convert YAML action to Blockly XML
+    function actionToBlocklyXml(action, yOffset) {
+      if (!action.output || !action.value) return '';
+
+      const outputName = action.output;
+      const valueXml = operationToBlocklyXml(action.value);
+
+      return `
+        <block type="set_${outputName}" x="20" y="${yOffset}">
+          <value name="VALUE">
+            ${valueXml}
+          </value>
+        </block>
+      `;
+    }
+
+    function operationToBlocklyXml(op) {
+      if (!op || typeof op !== 'object') {
+        // Literal value
+        if (typeof op === 'boolean') {
+          return `<block type="logic_boolean"><field name="BOOL">${op ? 'TRUE' : 'FALSE'}</field></block>`;
+        }
+        return '';
+      }
+
+      // Variable reference (starts with $)
+      if (typeof op === 'string' && op.startsWith('$')) {
+        const varName = op.substring(1);
+        return `<block type="input_${varName}"></block>`;
+      }
+
+      const operation = op.operation;
+
+      if (operation === 'EQUALS') {
+        const subject = op.subject?.startsWith('$') ? op.subject.substring(1) : op.subject;
+        const value = op.value;
+        return `
+          <block type="logic_compare">
+            <field name="OP">EQ</field>
+            <value name="A">
+              <block type="input_${subject}"></block>
+            </value>
+            <value name="B">
+              <block type="logic_boolean"><field name="BOOL">${value ? 'TRUE' : 'FALSE'}</field></block>
+            </value>
+          </block>
+        `;
+      }
+
+      if (operation === 'AND' || operation === 'OR') {
+        const conditions = op.conditions || [];
+        if (conditions.length === 0) return '';
+        if (conditions.length === 1) return operationToBlocklyXml(conditions[0]);
+
+        // Build nested AND/OR
+        let result = operationToBlocklyXml(conditions[0]);
+        for (let i = 1; i < conditions.length; i++) {
+          result = `
+            <block type="logic_operation">
+              <field name="OP">${operation}</field>
+              <value name="A">${result}</value>
+              <value name="B">${operationToBlocklyXml(conditions[i])}</value>
+            </block>
+          `;
+        }
+        return result;
+      }
+
+      if (operation === 'NOT') {
+        return `
+          <block type="logic_negate">
+            <value name="BOOL">${operationToBlocklyXml(op.value)}</value>
+          </block>
+        `;
+      }
+
+      return '';
+    }
+
+    // Initialize Blockly workspace
+    function initBlockly(article) {
+      const container = document.getElementById('blockly-container');
+      if (!container || !window.Blockly) return;
+
+      // Define blocks from article
+      const { inputs, outputs } = defineArticleBlocks(article);
+
+      // Build toolbox dynamically
+      const inputBlocks = inputs.map(i => `<block type="input_${i.name}"></block>`).join('');
+      const outputBlocks = outputs.map(o => `<block type="output_${o.name}"></block>`).join('');
+      const setBlocks = outputs.map(o => `<block type="set_${o.name}"></block>`).join('');
+
+      const annotationBlocks = (article.annotations || [])
+        .filter(a => a.body?.name)
+        .map(a => `<block type="var_${a.body.name}"></block>`)
+        .join('');
+
+      const toolbox = `
+        <xml>
+          <category name="📥 Inputs" colour="210">
+            ${inputBlocks || '<label text="Geen inputs"></label>'}
+          </category>
+          <category name="📤 Outputs" colour="120">
+            ${outputBlocks || '<label text="Geen outputs"></label>'}
+          </category>
+          <category name="📝 Regels" colour="160">
+            ${setBlocks || '<label text="Geen outputs"></label>'}
+          </category>
+          <category name="🏷️ Annotaties" colour="60">
+            ${annotationBlocks || '<label text="Geen annotaties"></label>'}
+          </category>
+          <category name="⚙️ Logica" colour="290">
+            <block type="logic_compare"></block>
+            <block type="logic_operation"></block>
+            <block type="logic_negate"></block>
+            <block type="logic_boolean"></block>
+          </category>
+        </xml>
+      `;
+
+      // Clear existing workspace
+      if (blocklyWorkspace) {
+        blocklyWorkspace.dispose();
+      }
+
+      // Create workspace
+      blocklyWorkspace = Blockly.inject(container, {
+        toolbox: toolbox,
+        grid: {
+          spacing: 20,
+          length: 3,
+          colour: '#ccc',
+          snap: true
+        },
+        zoom: {
+          controls: true,
+          wheel: true,
+          startScale: 0.8,
+          maxScale: 3,
+          minScale: 0.3
+        },
+        trashcan: true
+      });
+
+      // Load existing actions as blocks
+      const actions = article.actions || [];
+      if (actions.length > 0) {
+        let blocksXml = '<xml>';
+        let yOffset = 20;
+        actions.forEach((action, idx) => {
+          blocksXml += actionToBlocklyXml(action, yOffset);
+          yOffset += 80;
+        });
+        blocksXml += '</xml>';
+
+        try {
+          const xml = Blockly.utils.xml.textToDom(blocksXml);
+          Blockly.Xml.domToWorkspace(xml, blocklyWorkspace);
+        } catch (e) {
+          console.warn('Could not load existing rules:', e);
+        }
+      }
+
+      // Save rule button
+      document.getElementById('save-rule-btn').onclick = () => {
+        const code = Blockly.JavaScript.workspaceToCode(blocklyWorkspace);
+        const output = document.getElementById('rule-output');
+        output.style.display = 'block';
+        output.textContent = code || '// Geen regels gedefinieerd';
+        console.log('Generated rule:', code);
+      };
+
+      // Clear button
+      document.getElementById('clear-rule-btn').onclick = () => {
+        blocklyWorkspace.clear();
+        document.getElementById('rule-output').style.display = 'none';
+      };
+    }
+
+    // =========================================================================
+    // Annotations Overview
+    // =========================================================================
+
+    function renderOverview(article) {
+      const container = document.getElementById('overview-content');
+      if (!container) return;
+
+      const annotations = article.annotations || [];
+      const definitions = Object.keys(article.definitions || {});
+      const inputs = article.input || [];
+      const outputs = article.output || [];
+
+      if (annotations.length === 0 && definitions.length === 0 && inputs.length === 0 && outputs.length === 0) {
+        container.innerHTML = '<div class="empty">Geen variabelen of annotaties</div>';
+        return;
+      }
+
+      let html = '';
+
+      // Definitions from YAML
+      if (definitions.length > 0) {
+        html += `
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">DEFINITIES (YAML)</h4>
+            ${definitions.map(name => `
+              <div style="padding: 8px; margin-bottom: 4px; background: rgba(253, 224, 71, 0.2); border-left: 3px solid #eab308; border-radius: 4px;">
+                <span style="font-family: monospace; font-weight: 500;">${name}</span>
+                <span style="font-size: 0.6875rem; color: #64748b; margin-left: 8px;">= ${JSON.stringify(article.definitions[name]?.value)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // Inputs from YAML
+      if (inputs.length > 0) {
+        html += `
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">INPUTS (YAML)</h4>
+            ${inputs.map(inp => `
+              <div style="padding: 8px; margin-bottom: 4px; background: rgba(147, 197, 253, 0.2); border-left: 3px solid #3b82f6; border-radius: 4px;">
+                <span style="font-family: monospace; font-weight: 500;">${inp.name}</span>
+                <span style="font-size: 0.6875rem; color: #64748b; margin-left: 8px;">${inp.type || 'any'}</span>
+                ${inp.source?.regulation ? `<span style="font-size: 0.6875rem; color: #3b82f6; margin-left: 8px;">← ${inp.source.regulation}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // Outputs from YAML
+      if (outputs.length > 0) {
+        html += `
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">OUTPUTS (YAML)</h4>
+            ${outputs.map(out => `
+              <div style="padding: 8px; margin-bottom: 4px; background: rgba(134, 239, 172, 0.2); border-left: 3px solid #22c55e; border-radius: 4px;">
+                <span style="font-family: monospace; font-weight: 500;">${out.name}</span>
+                <span style="font-size: 0.6875rem; color: #64748b; margin-left: 8px;">${out.type || 'any'}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // W3C Annotations
+      if (annotations.length > 0) {
+        const statusColors = {
+          draft: '#fbbf24',
+          approved: '#22c55e',
+          rejected: '#ef4444',
+          promoted: '#3b82f6'
+        };
+
+        html += `
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">ANNOTATIES (W3C)</h4>
+            ${annotations.map((ann, idx) => {
+              const status = ann.status || 'draft';
+              const classification = ann.body?.classification || 'unknown';
+              const name = ann.body?.name || ann.target?.selector?.exact?.substring(0, 20) || 'Annotatie';
+              return `
+                <div style="padding: 8px; margin-bottom: 4px; background: #f8fafc; border-left: 3px solid ${statusColors[status] || '#94a3b8'}; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <span style="font-family: monospace; font-weight: 500;">${name}</span>
+                    <span style="font-size: 0.6875rem; padding: 1px 4px; background: #e2e8f0; border-radius: 2px; margin-left: 8px;">${classification}</span>
+                  </div>
+                  <span style="font-size: 0.6875rem; padding: 2px 6px; background: ${statusColors[status]}; color: white; border-radius: 3px;">${status}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    init();
+  </script>
+</body>
+</html>
