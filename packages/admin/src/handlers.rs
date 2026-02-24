@@ -80,7 +80,10 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "count query failed");
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".to_string())
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
             })?
     } else {
         sqlx::query_scalar("SELECT COUNT(*) FROM law_entries")
@@ -88,7 +91,10 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "count query failed");
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".to_string())
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
             })?
     };
 
@@ -119,7 +125,10 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "data query failed");
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".to_string())
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
             })?
     } else {
         sqlx::query_as::<_, LawEntry>(&query_str)
@@ -129,7 +138,10 @@ pub async fn list_law_entries(
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "data query failed");
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".to_string())
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
             })?
     };
 
@@ -215,7 +227,10 @@ pub async fn list_jobs(
 
     let total: i64 = count_query.fetch_one(&pool).await.map_err(|e| {
         tracing::error!(error = %e, "count query failed");
-        (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".to_string())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "internal server error".to_string(),
+        )
     })?;
 
     // Data query — sort column is validated against an allowlist above, so
@@ -241,7 +256,10 @@ pub async fn list_jobs(
 
     let data: Vec<Job> = data_query.fetch_all(&pool).await.map_err(|e| {
         tracing::error!(error = %e, "data query failed");
-        (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".to_string())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "internal server error".to_string(),
+        )
     })?;
 
     Ok(Json(PaginatedResponse {
