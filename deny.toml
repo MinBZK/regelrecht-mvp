@@ -22,6 +22,7 @@ allow = [
     "Unlicense",
     "Zlib",
     "EUPL-1.2",
+    "CDLA-Permissive-2.0",
 ]
 
 # r-efi is LGPL but only used on EFI platforms, not in our builds
