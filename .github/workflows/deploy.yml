@@ -162,6 +162,8 @@ jobs:
           deployment-name: pr${{ github.event.pull_request.number }}
           component: ${{ env.ZAD_COMPONENT }}
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.sha.outputs.short }}
+          clone-from: regelrecht
+          force-clone: false
           comment-on-pr: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-header: '## Preview Deployment'
@@ -241,3 +243,23 @@ jobs:
           container-tag: pr-${{ github.event.pull_request.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-admin-token: ${{ secrets.ADMIN_TOKEN }}
+
+      - name: Prune orphaned SHA-tagged images
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          for PACKAGE in ${{ github.event.repository.name }} regelrecht-admin; do
+            echo "Pruning sha-only images for $PACKAGE..."
+            gh api --paginate \
+              "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE}/versions" \
+              --jq '.[] | select(
+                (.metadata.container.tags | length == 0) or
+                (.metadata.container.tags | all(startswith("sha-")))
+              ) | .id' \
+            2>/dev/null | while read -r VERSION_ID; do
+              echo "Deleting $PACKAGE version $VERSION_ID"
+              gh api --method DELETE \
+                "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE}/versions/${VERSION_ID}" \
+              2>/dev/null || true
+            done
+          done
