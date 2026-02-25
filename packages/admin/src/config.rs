@@ -82,6 +82,10 @@ impl AppConfig {
     pub fn is_auth_enabled(&self) -> bool {
         self.oidc.is_some()
     }
+
+    pub fn is_secure(&self) -> bool {
+        self.base_url.starts_with("https://")
+    }
 }
 
 #[cfg(test)]

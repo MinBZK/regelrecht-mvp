@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: regelrecht_dev
       POSTGRES_DB: regelrecht_pipeline
     ports:
-      - "7101:5432"
+      - "8001:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -17,7 +17,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - "7100:8080"
+      - "8000:8080"
     volumes:
       - ./packages/admin/keycloak:/opt/keycloak/data/import
     command: start-dev --import-realm

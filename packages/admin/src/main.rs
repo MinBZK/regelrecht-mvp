@@ -124,7 +124,7 @@ async fn main() {
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)))
         .with_same_site(SameSite::Lax)
         .with_http_only(true)
-        .with_secure(app_state.config.is_auth_enabled());
+        .with_secure(app_state.config.is_secure());
 
     let api_routes = Router::new()
         .route("/api/law_entries", get(handlers::list_law_entries))
