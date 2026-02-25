@@ -1,0 +1,49 @@
+{
+  "realm": "regelrecht",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "allowed-user",
+        "description": "Users allowed to access the admin application"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "regelrecht-admin",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "dev-secret-only",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:7200/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:7200"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "email": "test@example.com",
+      "firstName": "Test",
+      "lastName": "User",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "allowed-user"
+      ]
+    }
+  ]
+}

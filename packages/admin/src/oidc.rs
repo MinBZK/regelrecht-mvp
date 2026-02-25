@@ -32,8 +32,7 @@ pub async fn discover_client(
 
     tracing::info!("discovering OIDC provider at {issuer_url}");
 
-    let issuer = IssuerUrl::new(issuer_url)
-        .map_err(|e| format!("invalid issuer URL: {e}"))?;
+    let issuer = IssuerUrl::new(issuer_url).map_err(|e| format!("invalid issuer URL: {e}"))?;
 
     let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http_client)
         .await

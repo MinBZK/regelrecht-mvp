@@ -67,8 +67,8 @@ impl AppConfig {
             ));
         }
 
-        let required_role = env::var("OIDC_REQUIRED_ROLE")
-            .unwrap_or_else(|_| "allowed-user".to_string());
+        let required_role =
+            env::var("OIDC_REQUIRED_ROLE").unwrap_or_else(|_| "allowed-user".to_string());
 
         Ok(OidcConfig {
             client_id,

@@ -12,7 +12,7 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tower_http::services::ServeDir;
 use tower_sessions::cookie::SameSite;
-use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
+use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::EnvFilter;
 
@@ -114,12 +114,6 @@ async fn main() {
     }
     tracing::info!("session store ready (PostgreSQL-backed)");
 
-    let _deletion_task = tokio::task::spawn(
-        session_store
-            .clone()
-            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
-
     let app_state = AppState {
         pool,
         oidc_client,
@@ -156,7 +150,11 @@ async fn main() {
             env::var("STATIC_DIR").unwrap_or_else(|_| "static".to_string()),
         ));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
+    let port: u16 = env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8000);
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("listening on {addr}");
 
     let listener = tokio::net::TcpListener::bind(addr)

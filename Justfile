@@ -84,3 +84,7 @@ admin-fmt:
 # Run admin tests
 admin-test:
     cargo test --manifest-path packages/admin/Cargo.toml
+
+# Run admin API locally with SSO (requires docker-compose up)
+admin-dev:
+    set -a && . packages/admin/.env.dev && set +a && PORT=7200 cargo run --manifest-path packages/admin/Cargo.toml
