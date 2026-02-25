@@ -96,7 +96,7 @@ async fn main() {
 
     let oidc_client = if let Some(ref oidc_config) = app_config.oidc {
         match oidc::discover_client(oidc_config, &app_config.base_url).await {
-            Ok((client, _metadata)) => Some(Arc::new(client)),
+            Ok(client) => Some(Arc::new(client)),
             Err(e) => {
                 tracing::error!(error = %e, "OIDC discovery failed");
                 std::process::exit(1);
