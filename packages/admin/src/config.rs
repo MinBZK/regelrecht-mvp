@@ -12,7 +12,7 @@ pub struct OidcConfig {
 #[derive(Clone, Debug)]
 pub struct AppConfig {
     pub oidc: Option<OidcConfig>,
-    pub base_url: String,
+    pub base_url: Option<String>,
 }
 
 impl AppConfig {
@@ -32,10 +32,15 @@ impl AppConfig {
             Some(client_id) => Some(Self::parse_oidc_config(client_id)?),
         };
 
-        let base_url = env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
+        let base_url = env::var("BASE_URL").ok();
 
         if oidc.is_some() {
             tracing::info!("OIDC authentication is enabled");
+            if base_url.is_some() {
+                tracing::info!("BASE_URL override set");
+            } else {
+                tracing::info!("BASE_URL will be derived from request Host header");
+            }
         } else {
             tracing::info!("OIDC authentication is disabled (dev mode)");
         }
@@ -198,12 +203,12 @@ mod tests {
     }
 
     #[test]
-    fn default_base_url() {
+    fn default_base_url_is_none() {
         let _lock = ENV_LOCK.lock();
         clear_oidc_env();
 
         let config = AppConfig::try_from_env().expect("should succeed");
-        assert_eq!(config.base_url, "http://localhost:8000");
+        assert!(config.base_url.is_none());
     }
 
     #[test]
@@ -213,7 +218,7 @@ mod tests {
         env::set_var("BASE_URL", "https://admin.example.com");
 
         let config = AppConfig::try_from_env().expect("should succeed");
-        assert_eq!(config.base_url, "https://admin.example.com");
+        assert_eq!(config.base_url.unwrap(), "https://admin.example.com");
 
         clear_oidc_env();
     }

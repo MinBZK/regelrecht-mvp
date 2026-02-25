@@ -1,6 +1,6 @@
 use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::{
-    ClientId, ClientSecret, EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl, RedirectUrl,
+    ClientId, ClientSecret, EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl,
 };
 
 use crate::config::OidcConfig;
@@ -16,7 +16,6 @@ pub type ConfiguredClient = CoreClient<
 
 pub async fn discover_client(
     oidc_config: &OidcConfig,
-    base_url: &str,
 ) -> Result<ConfiguredClient, String> {
     let http_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
@@ -44,15 +43,11 @@ pub async fn discover_client(
         .ok_or("provider metadata missing token_endpoint")?
         .clone();
 
-    let redirect_url = RedirectUrl::new(format!("{base_url}/auth/callback"))
-        .map_err(|e| format!("invalid redirect URL: {e}"))?;
-
     let client = CoreClient::from_provider_metadata(
         provider_metadata,
         ClientId::new(oidc_config.client_id.clone()),
         Some(ClientSecret::new(oidc_config.client_secret.clone())),
     )
-    .set_redirect_uri(redirect_url)
     .set_token_uri(token_url);
 
     tracing::info!("OIDC client configured successfully");
