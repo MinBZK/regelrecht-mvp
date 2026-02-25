@@ -12,7 +12,8 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tower_http::services::ServeDir;
 use tower_sessions::cookie::SameSite;
-use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
+use tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer};
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::EnvFilter;
 
 mod auth;
@@ -106,13 +107,25 @@ async fn main() {
         None
     };
 
+    let session_store = PostgresStore::new(pool.clone());
+    if let Err(e) = session_store.migrate().await {
+        tracing::error!(error = %e, "failed to create session table");
+        std::process::exit(1);
+    }
+    tracing::info!("session store ready (PostgreSQL-backed)");
+
+    let _deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
+
     let app_state = AppState {
         pool,
         oidc_client,
         config: Arc::new(app_config),
     };
 
-    let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store)
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)))
         .with_same_site(SameSite::Lax)
