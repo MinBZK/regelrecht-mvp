@@ -7,6 +7,9 @@ use openidconnect::{
     AuthenticationFlow, AuthorizationCode, CsrfToken, Nonce, PkceCodeChallenge, PkceCodeVerifier,
     Scope, TokenResponse,
 };
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
+use serde::Deserialize;
 use serde::Serialize;
 use tower_sessions::Session;
 
@@ -34,6 +37,11 @@ pub struct PersonInfo {
     pub sub: String,
     pub email: String,
     pub name: String,
+}
+
+#[derive(Deserialize)]
+struct RealmAccess {
+    roles: Vec<String>,
 }
 
 pub async fn login(
@@ -80,8 +88,10 @@ async fn session_insert(session: &Session, key: &str, value: String) -> Result<(
 
 #[derive(serde::Deserialize)]
 pub struct CallbackQuery {
-    pub code: String,
+    pub code: Option<String>,
     pub state: String,
+    pub error: Option<String>,
+    pub error_description: Option<String>,
 }
 
 pub async fn callback(
@@ -89,6 +99,17 @@ pub async fn callback(
     session: Session,
     axum::extract::Query(params): axum::extract::Query<CallbackQuery>,
 ) -> Result<Response, StatusCode> {
+    if let Some(ref error) = params.error {
+        let description = params.error_description.as_deref().unwrap_or("unknown");
+        tracing::warn!(error, description, "IdP returned error on callback");
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    let code = params.code.ok_or_else(|| {
+        tracing::warn!("callback missing authorization code");
+        StatusCode::BAD_REQUEST
+    })?;
+
     let client = app_state
         .oidc_client
         .as_ref()
@@ -125,11 +146,12 @@ pub async fn callback(
 
     let http_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
+        .timeout(std::time::Duration::from_secs(10))
         .build()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let token_response = client
-        .exchange_code(AuthorizationCode::new(params.code))
+        .exchange_code(AuthorizationCode::new(code))
         .set_pkce_verifier(PkceCodeVerifier::new(stored_pkce))
         .request_async(&http_client)
         .await
@@ -150,6 +172,23 @@ pub async fn callback(
             tracing::error!(error = %e, "ID token verification failed");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    let required_role = &app_state
+        .config
+        .oidc
+        .as_ref()
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
+        .required_role;
+
+    let has_role = extract_realm_roles(id_token.to_string().as_str())
+        .map(|roles| roles.contains(required_role))
+        .unwrap_or(false);
+
+    if !has_role {
+        let sub = claims.subject().as_str();
+        tracing::warn!(sub, role = %required_role, "user lacks required role");
+        return Err(StatusCode::FORBIDDEN);
+    }
 
     let sub = claims.subject().as_str().to_string();
     let email = claims.email().map(|e| (**e).clone()).unwrap_or_default();
@@ -265,4 +304,99 @@ pub async fn status(State(state): State<AppState>, session: Session) -> Json<Aut
         oidc_configured,
         person,
     })
+}
+
+#[derive(Deserialize)]
+struct JwtPayload {
+    realm_access: Option<RealmAccess>,
+}
+
+fn extract_realm_roles(jwt: &str) -> Option<Vec<String>> {
+    let payload_b64 = jwt.split('.').nth(1)?;
+    let payload_bytes = URL_SAFE_NO_PAD.decode(payload_b64).ok()?;
+    let payload: JwtPayload = serde_json::from_slice(&payload_bytes).ok()?;
+    Some(payload.realm_access?.roles)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use base64::Engine;
+
+    fn fake_jwt(payload_json: &str) -> String {
+        let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256"}"#);
+        let payload = URL_SAFE_NO_PAD.encode(payload_json);
+        format!("{header}.{payload}.fake-signature")
+    }
+
+    // --- CallbackQuery deserialization ---
+
+    #[test]
+    fn callback_query_success_response() {
+        let q: CallbackQuery =
+            serde_json::from_str(r#"{"code":"abc123","state":"csrf-token"}"#).unwrap();
+        assert_eq!(q.code.unwrap(), "abc123");
+        assert_eq!(q.state, "csrf-token");
+        assert!(q.error.is_none());
+        assert!(q.error_description.is_none());
+    }
+
+    #[test]
+    fn callback_query_error_response() {
+        let q: CallbackQuery = serde_json::from_str(
+            r#"{"state":"csrf-token","error":"access_denied","error_description":"User denied"}"#,
+        )
+        .unwrap();
+        assert!(q.code.is_none());
+        assert_eq!(q.error.unwrap(), "access_denied");
+        assert_eq!(q.error_description.unwrap(), "User denied");
+    }
+
+    #[test]
+    fn callback_query_missing_state_fails() {
+        let result: Result<CallbackQuery, _> =
+            serde_json::from_str(r#"{"code":"abc123"}"#);
+        assert!(result.is_err());
+    }
+
+    // --- extract_realm_roles ---
+
+    #[test]
+    fn extract_roles_with_valid_realm_access() {
+        let jwt = fake_jwt(r#"{"realm_access":{"roles":["allowed-user","viewer"]}}"#);
+        let roles = extract_realm_roles(&jwt).unwrap();
+        assert_eq!(roles, vec!["allowed-user", "viewer"]);
+    }
+
+    #[test]
+    fn extract_roles_missing_realm_access() {
+        let jwt = fake_jwt(r#"{"sub":"user1"}"#);
+        assert!(extract_realm_roles(&jwt).is_none());
+    }
+
+    #[test]
+    fn extract_roles_empty_roles_array() {
+        let jwt = fake_jwt(r#"{"realm_access":{"roles":[]}}"#);
+        let roles = extract_realm_roles(&jwt).unwrap();
+        assert!(roles.is_empty());
+    }
+
+    #[test]
+    fn extract_roles_invalid_jwt() {
+        assert!(extract_realm_roles("not-a-jwt").is_none());
+    }
+
+    #[test]
+    fn extract_roles_invalid_base64_payload() {
+        assert!(extract_realm_roles("header.!!!invalid!!!.sig").is_none());
+    }
+
+    #[test]
+    fn extract_roles_contains_check() {
+        let jwt = fake_jwt(r#"{"realm_access":{"roles":["allowed-user","editor"]}}"#);
+        let roles = extract_realm_roles(&jwt).unwrap();
+        assert!(roles.contains(&"allowed-user".to_string()));
+        assert!(!roles.contains(&"admin".to_string()));
+    }
 }
