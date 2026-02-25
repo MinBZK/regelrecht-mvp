@@ -84,6 +84,14 @@ updates:
     labels:
       - dependencies
       - docker
+    ignore:
+      - dependency-name: node
+        versions:
+          - '23'
+          - '25'
+          - '27'
+          - '29'
+          - '31'
 
   - package-ecosystem: github-actions
     directory: /
