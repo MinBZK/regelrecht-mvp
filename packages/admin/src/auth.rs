@@ -8,8 +8,8 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use openidconnect::core::CoreResponseType;
 use openidconnect::{
-    AuthenticationFlow, AuthorizationCode, CsrfToken, Nonce, PkceCodeChallenge, PkceCodeVerifier,
-    RedirectUrl, Scope, TokenResponse,
+    AuthenticationFlow, AuthorizationCode, CsrfToken, Nonce, OAuth2TokenResponse,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
 };
 use serde::Deserialize;
 use serde::Serialize;
@@ -218,7 +218,11 @@ pub async fn callback(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
         .required_role;
 
-    let realm_roles = extract_realm_roles(id_token.to_string().as_str());
+    // Check realm roles in the access token (Keycloak does not include
+    // realm_access in the ID token by default).
+    let access_token_secret = get_access_token_secret(&token_response);
+    let realm_roles = extract_realm_roles(access_token_secret)
+        .or_else(|| extract_realm_roles(id_token.to_string().as_str()));
     tracing::info!(
         sub = %claims.subject().as_str(),
         roles = ?realm_roles,
@@ -352,6 +356,10 @@ pub async fn status(State(state): State<AppState>, session: Session) -> Json<Aut
 #[derive(Deserialize)]
 struct JwtPayload {
     realm_access: Option<RealmAccess>,
+}
+
+fn get_access_token_secret(resp: &impl OAuth2TokenResponse) -> &str {
+    resp.access_token().secret()
 }
 
 fn extract_realm_roles(jwt: &str) -> Option<Vec<String>> {
