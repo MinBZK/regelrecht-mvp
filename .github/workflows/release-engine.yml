@@ -26,7 +26,7 @@ jobs:
             asset: evaluate-linux-amd64
 
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-latest
             binary: evaluate
             asset: evaluate-macos-amd64
 
