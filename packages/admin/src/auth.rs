@@ -28,22 +28,89 @@ const SESSION_KEY_NAME: &str = "person_name";
 const SESSION_KEY_ID_TOKEN: &str = "id_token_hint";
 
 fn base_url_from_request(config: &AppConfig, headers: &HeaderMap) -> String {
-    if let Some(ref base) = config.base_url {
-        return base.clone();
+    // Safety: startup validation in AppConfig::try_from_env ensures BASE_URL is
+    // set when OIDC is enabled. If we somehow get here without it, fall back to
+    // a safe default rather than panicking.
+    let Some(base_url) = config.base_url.as_deref() else {
+        tracing::error!("BASE_URL is not set — this should have been caught at startup");
+        return "https://localhost".to_string();
+    };
+
+    if !config.base_url_allow_dynamic {
+        return base_url.to_string();
     }
+
+    // Dynamic mode: try to derive from headers, validate against BASE_URL
+    match derive_url_from_headers(headers) {
+        Some(derived) => match validate_derived_url(&derived, config) {
+            Ok(()) => derived,
+            Err(reason) => {
+                tracing::warn!(
+                    derived_url = %derived,
+                    reason = %reason,
+                    "rejected header-derived URL, falling back to BASE_URL"
+                );
+                base_url.to_string()
+            }
+        },
+        None => base_url.to_string(),
+    }
+}
+
+fn derive_url_from_headers(headers: &HeaderMap) -> Option<String> {
+    let host = headers
+        .get("x-forwarded-host")
+        .or_else(|| headers.get("host"))
+        .and_then(|v| v.to_str().ok())?;
 
     let scheme = headers
         .get("x-forwarded-proto")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("https");
 
-    let host = headers
-        .get("x-forwarded-host")
-        .or_else(|| headers.get("host"))
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("localhost:8000");
+    Some(format!("{scheme}://{host}"))
+}
 
-    format!("{scheme}://{host}")
+fn validate_derived_url(derived: &str, config: &AppConfig) -> Result<(), String> {
+    // Parse scheme and host from derived URL
+    let (derived_scheme, derived_host) = derived
+        .split_once("://")
+        .ok_or_else(|| "invalid URL format".to_string())?;
+
+    // Reject suspicious characters that could enable URL confusion
+    if derived_host.contains('@') || derived_host.contains('\\') {
+        return Err(format!("suspicious characters in host: {derived_host}"));
+    }
+
+    // Validate scheme matches BASE_URL
+    if let Some(base_scheme) = config.base_url_scheme() {
+        if derived_scheme != base_scheme {
+            return Err(format!(
+                "scheme mismatch: derived={derived_scheme}, base={base_scheme}"
+            ));
+        }
+    }
+
+    // Validate domain suffix matches BASE_URL
+    if let Some(base_suffix) = config.base_url_domain_suffix() {
+        // Strip port from derived host for suffix comparison
+        let derived_host_no_port = derived_host.split(':').next().unwrap_or(derived_host);
+        let derived_suffix = derived_host_no_port
+            .find('.')
+            .map(|i| &derived_host_no_port[i..]);
+
+        match derived_suffix {
+            Some(suffix) if suffix == base_suffix => Ok(()),
+            Some(suffix) => Err(format!(
+                "domain suffix mismatch: derived={suffix}, base={base_suffix}"
+            )),
+            None => Err(format!(
+                "no domain suffix in derived host: {derived_host_no_port}"
+            )),
+        }
+    } else {
+        Err("BASE_URL has no domain suffix to validate against".to_string())
+    }
 }
 
 #[derive(Serialize)]
@@ -453,65 +520,166 @@ mod tests {
 
     // --- base_url_from_request ---
 
-    fn config_without_base_url() -> AppConfig {
-        AppConfig {
-            oidc: None,
-            base_url: None,
-        }
-    }
-
-    fn config_with_base_url(url: &str) -> AppConfig {
+    fn config_static(url: &str) -> AppConfig {
         AppConfig {
             oidc: None,
             base_url: Some(url.to_string()),
+            base_url_allow_dynamic: false,
         }
     }
 
+    fn config_dynamic(url: &str) -> AppConfig {
+        AppConfig {
+            oidc: None,
+            base_url: Some(url.to_string()),
+            base_url_allow_dynamic: true,
+        }
+    }
+
+    // --- Static mode tests ---
+
     #[test]
-    fn base_url_override_takes_precedence() {
-        let config = config_with_base_url("https://override.example.com");
+    fn static_mode_returns_base_url_ignoring_headers() {
+        let config = config_static("https://admin.rig.example.nl");
         let mut headers = HeaderMap::new();
-        headers.insert("host", HeaderValue::from_static("other.example.com"));
+        headers.insert("host", HeaderValue::from_static("evil.attacker.com"));
         assert_eq!(
             base_url_from_request(&config, &headers),
-            "https://override.example.com"
+            "https://admin.rig.example.nl"
         );
     }
 
     #[test]
-    fn base_url_from_host_header() {
-        let config = config_without_base_url();
-        let mut headers = HeaderMap::new();
-        headers.insert("host", HeaderValue::from_static("admin.example.com"));
+    fn static_mode_returns_base_url_with_no_headers() {
+        let config = config_static("https://admin.example.com");
+        let headers = HeaderMap::new();
         assert_eq!(
             base_url_from_request(&config, &headers),
             "https://admin.example.com"
         );
     }
 
+    // --- Dynamic mode tests ---
+
     #[test]
-    fn base_url_from_forwarded_headers() {
-        let config = config_without_base_url();
+    fn dynamic_mode_accepts_matching_suffix() {
+        let config = config_dynamic("https://admin.rig.example.nl");
         let mut headers = HeaderMap::new();
-        headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
         headers.insert(
             "x-forwarded-host",
-            HeaderValue::from_static("proxy.example.com"),
+            HeaderValue::from_static("pr42.rig.example.nl"),
         );
-        headers.insert("host", HeaderValue::from_static("internal:8000"));
+        headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
         assert_eq!(
             base_url_from_request(&config, &headers),
-            "https://proxy.example.com"
+            "https://pr42.rig.example.nl"
         );
     }
 
     #[test]
-    fn base_url_falls_back_to_localhost() {
-        let config = config_without_base_url();
+    fn dynamic_mode_rejects_wrong_domain() {
+        let config = config_dynamic("https://admin.rig.example.nl");
+        let mut headers = HeaderMap::new();
+        headers.insert("host", HeaderValue::from_static("evil.attacker.com"));
+        // Should fall back to BASE_URL
+        assert_eq!(
+            base_url_from_request(&config, &headers),
+            "https://admin.rig.example.nl"
+        );
+    }
+
+    #[test]
+    fn dynamic_mode_rejects_scheme_mismatch() {
+        let config = config_dynamic("https://admin.rig.example.nl");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-forwarded-host",
+            HeaderValue::from_static("pr42.rig.example.nl"),
+        );
+        headers.insert("x-forwarded-proto", HeaderValue::from_static("http"));
+        // Should fall back to BASE_URL
+        assert_eq!(
+            base_url_from_request(&config, &headers),
+            "https://admin.rig.example.nl"
+        );
+    }
+
+    #[test]
+    fn dynamic_mode_rejects_at_sign_in_host() {
+        let config = config_dynamic("https://admin.rig.example.nl");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-forwarded-host",
+            HeaderValue::from_static("user@evil.rig.example.nl"),
+        );
+        headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
+        assert_eq!(
+            base_url_from_request(&config, &headers),
+            "https://admin.rig.example.nl"
+        );
+    }
+
+    #[test]
+    fn dynamic_mode_rejects_backslash_in_host() {
+        let config = config_dynamic("https://admin.rig.example.nl");
+        let mut headers = HeaderMap::new();
+        headers.insert("host", HeaderValue::from_static("evil\\x.rig.example.nl"));
+        assert_eq!(
+            base_url_from_request(&config, &headers),
+            "https://admin.rig.example.nl"
+        );
+    }
+
+    #[test]
+    fn dynamic_mode_no_headers_falls_back() {
+        let config = config_dynamic("https://admin.rig.example.nl");
         let headers = HeaderMap::new();
         assert_eq!(
             base_url_from_request(&config, &headers),
-            "https://localhost:8000"
+            "https://admin.rig.example.nl"
         );
+    }
+
+    #[test]
+    fn dynamic_mode_forwarded_host_takes_priority_over_host() {
+        let config = config_dynamic("https://admin.rig.example.nl");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-forwarded-host",
+            HeaderValue::from_static("pr99.rig.example.nl"),
+        );
+        headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
+        headers.insert("host", HeaderValue::from_static("internal:8000"));
+        assert_eq!(
+            base_url_from_request(&config, &headers),
+            "https://pr99.rig.example.nl"
+        );
+    }
+
+    // --- derive_url_from_headers ---
+
+    #[test]
+    fn derive_url_returns_none_without_host() {
+        let headers = HeaderMap::new();
+        assert!(derive_url_from_headers(&headers).is_none());
+    }
+
+    #[test]
+    fn derive_url_defaults_to_https() {
+        let mut headers = HeaderMap::new();
+        headers.insert("host", HeaderValue::from_static("example.com"));
+        assert_eq!(
+            derive_url_from_headers(&headers).unwrap(),
+            "https://example.com"
+        );
+    }
+
+    // --- validate_derived_url ---
+
+    #[test]
+    fn validate_rejects_bare_hostname() {
+        let config = config_dynamic("https://admin.rig.example.nl");
+        let result = validate_derived_url("https://localhost", &config);
+        assert!(result.is_err());
     }
 }
