@@ -285,11 +285,16 @@ pub async fn callback(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
         .required_role;
 
-    // Check realm roles in the access token (Keycloak does not include
-    // realm_access in the ID token by default).
+    // Extract realm roles from the access token. Keycloak includes
+    // `realm_access` in the access token by default but not in the ID token.
+    //
+    // SAFETY: the access token is received directly from the token endpoint
+    // over TLS, authenticated by client_secret + PKCE. We decode the payload
+    // without cryptographic verification because the token endpoint itself is
+    // the trust anchor — this is standard for confidential OIDC clients.
+    // Do NOT pass untrusted/user-supplied JWTs to this function.
     let access_token_secret = get_access_token_secret(&token_response);
-    let realm_roles = extract_realm_roles(access_token_secret)
-        .or_else(|| extract_realm_roles(id_token.to_string().as_str()));
+    let realm_roles = extract_realm_roles(access_token_secret);
     tracing::info!(
         sub = %claims.subject().as_str(),
         roles = ?realm_roles,
@@ -429,6 +434,10 @@ fn get_access_token_secret(resp: &impl OAuth2TokenResponse) -> &str {
     resp.access_token().secret()
 }
 
+/// Decode `realm_access.roles` from a JWT payload without signature verification.
+///
+/// SAFETY: must only be called on tokens received directly from the trusted
+/// token endpoint over TLS. Never pass user-supplied or forwarded JWTs.
 fn extract_realm_roles(jwt: &str) -> Option<Vec<String>> {
     let payload_b64 = jwt.split('.').nth(1)?;
     let payload_bytes = URL_SAFE_NO_PAD.decode(payload_b64).ok()?;
