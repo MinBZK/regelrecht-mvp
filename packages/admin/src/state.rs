@@ -9,5 +9,6 @@ use crate::oidc::ConfiguredClient;
 pub struct AppState {
     pub pool: PgPool,
     pub oidc_client: Option<Arc<ConfiguredClient>>,
+    pub end_session_url: Option<String>,
     pub config: Arc<AppConfig>,
 }

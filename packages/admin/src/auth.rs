@@ -275,13 +275,9 @@ pub async fn logout(
 
     let base_url = base_url_from_request(&state.config, &headers);
 
-    if let Some(ref oidc) = state.config.oidc {
-        let end_session_url = format!(
-            "{}/realms/{}/protocol/openid-connect/logout",
-            oidc.keycloak_base_url.trim_end_matches('/'),
-            oidc.keycloak_realm
-        );
-
+    if let (Some(ref end_session_url), Some(ref oidc)) =
+        (&state.end_session_url, &state.config.oidc)
+    {
         let mut params = vec![
             ("post_logout_redirect_uri", base_url),
             ("client_id", oidc.client_id.clone()),

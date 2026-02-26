@@ -1,6 +1,7 @@
-use openidconnect::core::{CoreClient, CoreProviderMetadata};
+use openidconnect::core::CoreClient;
 use openidconnect::{
     ClientId, ClientSecret, EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl,
+    ProviderMetadataWithLogout,
 };
 
 use crate::config::OidcConfig;
@@ -14,31 +15,44 @@ pub type ConfiguredClient = CoreClient<
     EndpointMaybeSet,
 >;
 
-pub async fn discover_client(oidc_config: &OidcConfig) -> Result<ConfiguredClient, String> {
+pub struct DiscoveryResult {
+    pub client: ConfiguredClient,
+    pub end_session_url: Option<String>,
+}
+
+pub async fn discover_client(oidc_config: &OidcConfig) -> Result<DiscoveryResult, String> {
     let http_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(10))
         .build()
         .map_err(|e| format!("failed to build HTTP client: {e}"))?;
 
-    let issuer_url = format!(
-        "{}/realms/{}",
-        oidc_config.keycloak_base_url.trim_end_matches('/'),
-        oidc_config.keycloak_realm
-    );
+    tracing::info!("discovering OIDC provider at {}", oidc_config.issuer_url);
 
-    tracing::info!("discovering OIDC provider at {issuer_url}");
+    let issuer = IssuerUrl::new(oidc_config.issuer_url.clone())
+        .map_err(|e| format!("invalid issuer URL: {e}"))?;
 
-    let issuer = IssuerUrl::new(issuer_url).map_err(|e| format!("invalid issuer URL: {e}"))?;
-
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http_client)
-        .await
-        .map_err(|e| format!("OIDC discovery failed: {e}"))?;
+    let provider_metadata =
+        ProviderMetadataWithLogout::discover_async(issuer, &http_client)
+            .await
+            .map_err(|e| format!("OIDC discovery failed: {e}"))?;
 
     let token_url = provider_metadata
         .token_endpoint()
         .ok_or("provider metadata missing token_endpoint")?
         .clone();
+
+    let end_session_url = provider_metadata
+        .additional_metadata()
+        .end_session_endpoint
+        .as_ref()
+        .map(|url| url.url().to_string());
+
+    if let Some(ref url) = end_session_url {
+        tracing::info!("end_session_endpoint: {url}");
+    } else {
+        tracing::warn!("provider metadata does not include end_session_endpoint");
+    }
 
     let client = CoreClient::from_provider_metadata(
         provider_metadata,
@@ -49,5 +63,8 @@ pub async fn discover_client(oidc_config: &OidcConfig) -> Result<ConfiguredClien
 
     tracing::info!("OIDC client configured successfully");
 
-    Ok(client)
+    Ok(DiscoveryResult {
+        client,
+        end_session_url,
+    })
 }

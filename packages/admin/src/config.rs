@@ -4,8 +4,7 @@ use std::env;
 pub struct OidcConfig {
     pub client_id: String,
     pub client_secret: String,
-    pub keycloak_base_url: String,
-    pub keycloak_realm: String,
+    pub issuer_url: String,
     pub required_role: String,
 }
 
@@ -50,27 +49,15 @@ impl AppConfig {
 
     fn parse_oidc_config(client_id: String) -> Result<OidcConfig, String> {
         let client_secret = env::var("OIDC_CLIENT_SECRET").unwrap_or_default();
-        let keycloak_base_url = env::var("KEYCLOAK_BASE_URL").unwrap_or_default();
-        let keycloak_realm = env::var("KEYCLOAK_REALM").unwrap_or_default();
-
-        let mut missing = Vec::new();
         if client_secret.is_empty() {
-            missing.push("OIDC_CLIENT_SECRET");
-        }
-        if keycloak_base_url.is_empty() {
-            missing.push("KEYCLOAK_BASE_URL");
-        }
-        if keycloak_realm.is_empty() {
-            missing.push("KEYCLOAK_REALM");
+            return Err(
+                "OIDC_CLIENT_ID is set but OIDC_CLIENT_SECRET is missing. \
+                 Refusing to start without complete OIDC configuration."
+                    .to_string(),
+            );
         }
 
-        if !missing.is_empty() {
-            return Err(format!(
-                "OIDC_CLIENT_ID is set but required vars are missing: {}. \
-                 Refusing to start without complete OIDC configuration.",
-                missing.join(", ")
-            ));
-        }
+        let issuer_url = Self::resolve_issuer_url()?;
 
         let required_role =
             env::var("OIDC_REQUIRED_ROLE").unwrap_or_else(|_| "allowed-user".to_string());
@@ -78,10 +65,39 @@ impl AppConfig {
         Ok(OidcConfig {
             client_id,
             client_secret,
-            keycloak_base_url,
-            keycloak_realm,
+            issuer_url,
             required_role,
         })
+    }
+
+    fn resolve_issuer_url() -> Result<String, String> {
+        // OIDC_DISCOVERY_URL takes priority (RIG-style injection)
+        if let Ok(discovery_url) = env::var("OIDC_DISCOVERY_URL") {
+            if !discovery_url.is_empty() {
+                // Strip /.well-known/openid-configuration suffix if present
+                let issuer = discovery_url
+                    .strip_suffix("/.well-known/openid-configuration")
+                    .unwrap_or(&discovery_url);
+                tracing::info!("using OIDC_DISCOVERY_URL for issuer: {issuer}");
+                return Ok(issuer.to_string());
+            }
+        }
+
+        // Fallback: construct from KEYCLOAK_BASE_URL + KEYCLOAK_REALM
+        let base = env::var("KEYCLOAK_BASE_URL").unwrap_or_default();
+        let realm = env::var("KEYCLOAK_REALM").unwrap_or_default();
+
+        if !base.is_empty() && !realm.is_empty() {
+            let issuer = format!("{}/realms/{}", base.trim_end_matches('/'), realm);
+            tracing::info!("using KEYCLOAK_BASE_URL + KEYCLOAK_REALM for issuer: {issuer}");
+            return Ok(issuer);
+        }
+
+        Err(
+            "OIDC_CLIENT_ID is set but no issuer could be determined. \
+             Set OIDC_DISCOVERY_URL, or both KEYCLOAK_BASE_URL and KEYCLOAK_REALM."
+                .to_string(),
+        )
     }
 
     pub fn is_auth_enabled(&self) -> bool {
@@ -99,6 +115,7 @@ mod tests {
     const OIDC_VARS: &[&str] = &[
         "OIDC_CLIENT_ID",
         "OIDC_CLIENT_SECRET",
+        "OIDC_DISCOVERY_URL",
         "KEYCLOAK_BASE_URL",
         "KEYCLOAK_REALM",
         "OIDC_REQUIRED_ROLE",
@@ -129,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn complete_oidc_vars_enables_auth() {
+    fn complete_keycloak_vars_enables_auth() {
         let _lock = ENV_LOCK.lock();
         clear_oidc_env();
         set_complete_oidc_env();
@@ -139,14 +156,48 @@ mod tests {
         let oidc = config.oidc.unwrap();
         assert_eq!(oidc.client_id, "test-client");
         assert_eq!(oidc.client_secret, "secret");
-        assert_eq!(oidc.keycloak_base_url, "https://keycloak.example.com");
-        assert_eq!(oidc.keycloak_realm, "test-realm");
+        assert_eq!(
+            oidc.issuer_url,
+            "https://keycloak.example.com/realms/test-realm"
+        );
 
         clear_oidc_env();
     }
 
     #[test]
-    fn partial_oidc_config_is_hard_error() {
+    fn discovery_url_takes_priority_over_keycloak_vars() {
+        let _lock = ENV_LOCK.lock();
+        clear_oidc_env();
+        set_complete_oidc_env();
+        env::set_var(
+            "OIDC_DISCOVERY_URL",
+            "https://idp.example.com/realms/my-realm/.well-known/openid-configuration",
+        );
+
+        let config = AppConfig::try_from_env().expect("should succeed");
+        let oidc = config.oidc.unwrap();
+        assert_eq!(oidc.issuer_url, "https://idp.example.com/realms/my-realm");
+
+        clear_oidc_env();
+    }
+
+    #[test]
+    fn discovery_url_without_wellknown_suffix() {
+        let _lock = ENV_LOCK.lock();
+        clear_oidc_env();
+        env::set_var("OIDC_CLIENT_ID", "test-client");
+        env::set_var("OIDC_CLIENT_SECRET", "secret");
+        env::set_var("OIDC_DISCOVERY_URL", "https://idp.example.com/realms/myrealm");
+
+        let config = AppConfig::try_from_env().expect("should succeed");
+        let oidc = config.oidc.unwrap();
+        assert_eq!(oidc.issuer_url, "https://idp.example.com/realms/myrealm");
+
+        clear_oidc_env();
+    }
+
+    #[test]
+    fn missing_secret_is_hard_error() {
         let _lock = ENV_LOCK.lock();
         clear_oidc_env();
         env::set_var("OIDC_CLIENT_ID", "test-client");
@@ -155,24 +206,22 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.contains("OIDC_CLIENT_SECRET"));
-        assert!(err.contains("KEYCLOAK_BASE_URL"));
-        assert!(err.contains("KEYCLOAK_REALM"));
 
         clear_oidc_env();
     }
 
     #[test]
-    fn partial_config_missing_one_var() {
+    fn missing_issuer_is_hard_error() {
         let _lock = ENV_LOCK.lock();
         clear_oidc_env();
-        set_complete_oidc_env();
-        env::remove_var("OIDC_CLIENT_SECRET");
+        env::set_var("OIDC_CLIENT_ID", "test-client");
+        env::set_var("OIDC_CLIENT_SECRET", "secret");
 
         let result = AppConfig::try_from_env();
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("OIDC_CLIENT_SECRET"));
-        assert!(!err.contains("KEYCLOAK_BASE_URL"));
+        assert!(err.contains("OIDC_DISCOVERY_URL"));
+        assert!(err.contains("KEYCLOAK_BASE_URL"));
 
         clear_oidc_env();
     }

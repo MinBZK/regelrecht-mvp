@@ -95,16 +95,16 @@ async fn main() {
     }
     tracing::info!("migrations completed");
 
-    let oidc_client = if let Some(ref oidc_config) = app_config.oidc {
+    let (oidc_client, end_session_url) = if let Some(ref oidc_config) = app_config.oidc {
         match oidc::discover_client(oidc_config).await {
-            Ok(client) => Some(Arc::new(client)),
+            Ok(result) => (Some(Arc::new(result.client)), result.end_session_url),
             Err(e) => {
                 tracing::error!(error = %e, "OIDC discovery failed");
                 std::process::exit(1);
             }
         }
     } else {
-        None
+        (None, None)
     };
 
     let session_store = PostgresStore::new(pool.clone());
@@ -123,6 +123,7 @@ async fn main() {
     let app_state = AppState {
         pool,
         oidc_client,
+        end_session_url,
         config: Arc::new(app_config),
     };
 
