@@ -1,11 +1,48 @@
+//! Application configuration, loaded from environment variables.
+//!
+//! # Environment variables
+//!
+//! ## OIDC authentication (all required when `OIDC_CLIENT_ID` is set)
+//!
+//! | Variable              | Required | Description                                                |
+//! |-----------------------|----------|------------------------------------------------------------|
+//! | `OIDC_CLIENT_ID`      | yes*     | OAuth 2 client ID. Enables OIDC when set.                  |
+//! | `OIDC_CLIENT_SECRET`  | yes*     | OAuth 2 client secret.                                     |
+//! | `OIDC_DISCOVERY_URL`  | no       | Full OIDC discovery URL; takes priority over Keycloak vars.|
+//! | `KEYCLOAK_BASE_URL`   | no       | Keycloak base URL (fallback issuer construction).          |
+//! | `KEYCLOAK_REALM`      | no       | Keycloak realm (fallback issuer construction).             |
+//! | `OIDC_REQUIRED_ROLE`  | no       | Realm role required for access (default: `allowed-user`).  |
+//!
+//! *Required together — if `OIDC_CLIENT_ID` is set, `OIDC_CLIENT_SECRET` must also be set,
+//! and either `OIDC_DISCOVERY_URL` or both `KEYCLOAK_BASE_URL` + `KEYCLOAK_REALM`.
+//!
+//! ## Base URL & host validation
+//!
+//! | Variable                | Required | Description                                              |
+//! |-------------------------|----------|----------------------------------------------------------|
+//! | `BASE_URL`              | yes*     | Canonical base URL. Required when OIDC is enabled.       |
+//! | `BASE_URL_ALLOW_DYNAMIC`| no       | `true`/`1` to allow header-derived URLs within the       |
+//! |                         |          | `BASE_URL` domain suffix (for PR preview deploys).       |
+
 use std::env;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct OidcConfig {
     pub client_id: String,
     pub client_secret: String,
     pub issuer_url: String,
     pub required_role: String,
+}
+
+impl std::fmt::Debug for OidcConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OidcConfig")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &"[REDACTED]")
+            .field("issuer_url", &self.issuer_url)
+            .field("required_role", &self.required_role)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -54,7 +91,7 @@ impl AppConfig {
                 );
             }
         } else {
-            tracing::info!("OIDC authentication is disabled (dev mode)");
+            tracing::warn!("OIDC authentication is DISABLED — admin panel is unprotected");
         }
 
         if base_url_allow_dynamic && base_url.is_none() {

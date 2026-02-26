@@ -143,6 +143,12 @@ pub async fn login(
         .as_ref()
         .ok_or(StatusCode::NOT_IMPLEMENTED)?;
 
+    // Cycle the session ID to prevent session fixation attacks.
+    session.cycle_id().await.map_err(|e| {
+        tracing::error!(error = %e, "failed to cycle session ID");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     let base_url = base_url_from_request(&state.config, &headers);
     let redirect_url = RedirectUrl::new(format!("{base_url}/auth/callback")).map_err(|e| {
         tracing::error!(error = %e, "invalid redirect URL");
@@ -295,7 +301,7 @@ pub async fn callback(
     // Do NOT pass untrusted/user-supplied JWTs to this function.
     let access_token_secret = get_access_token_secret(&token_response);
     let realm_roles = extract_realm_roles(access_token_secret);
-    tracing::info!(
+    tracing::debug!(
         sub = %claims.subject().as_str(),
         roles = ?realm_roles,
         required = %required_role,
@@ -308,8 +314,7 @@ pub async fn callback(
         .unwrap_or(false);
 
     if !has_role {
-        let sub = claims.subject().as_str();
-        tracing::warn!(sub, role = %required_role, "user lacks required role");
+        tracing::warn!(role = %required_role, "user lacks required role");
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -341,7 +346,7 @@ pub async fn callback(
     session_insert(&session, SESSION_KEY_NAME, name.clone()).await?;
     session_insert(&session, SESSION_KEY_ID_TOKEN, id_token_jwt).await?;
 
-    tracing::info!(email = %email, "OIDC login successful");
+    tracing::debug!(email = %email, "OIDC login successful");
 
     Ok(Redirect::temporary(&format!("{base_url}/")).into_response())
 }

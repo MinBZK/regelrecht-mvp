@@ -31,6 +31,9 @@ urlencoding = "2"
 base64 = "0.22"
 time = "0.3"
 
+[dev-dependencies]
+tower-sessions-memory-store = "0.14"
+
 [workspace]
 
 [lints.clippy]

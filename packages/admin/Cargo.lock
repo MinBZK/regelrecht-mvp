@@ -1681,6 +1681,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tower-sessions",
+ "tower-sessions-memory-store",
  "tower-sessions-sqlx-store",
  "tracing",
  "tracing-subscriber",
