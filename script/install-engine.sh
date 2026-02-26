@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./script/install-engine.sh              # latest release
-#   ./script/install-engine.sh v0.1.0      # specific version
+#   ./script/install-engine.sh engine-v0.1.0  # specific version
 #   INSTALL_DIR=/usr/local/bin ./script/install-engine.sh  # custom install dir
 #
 # Environment variables:
@@ -49,4 +49,3 @@ curl "${CURL_OPTS[@]}" -o "${INSTALL_DIR}/evaluate" "${URL}"
 chmod +x "${INSTALL_DIR}/evaluate"
 
 echo "Installed: ${INSTALL_DIR}/evaluate"
-"${INSTALL_DIR}/evaluate" --version 2>/dev/null || true

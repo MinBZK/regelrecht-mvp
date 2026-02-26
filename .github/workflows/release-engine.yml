@@ -4,7 +4,7 @@ name: Release Engine Binary
 on:
   push:
     tags:
-      - "v*"
+      - "engine-v*"
 
 permissions:
   contents: write
@@ -26,7 +26,7 @@ jobs:
             asset: evaluate-linux-amd64
 
           - target: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-13
             binary: evaluate
             asset: evaluate-macos-amd64
 

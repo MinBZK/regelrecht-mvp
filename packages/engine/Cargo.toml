@@ -38,6 +38,10 @@ name = "validate"
 path = "src/bin/validate.rs"
 required-features = ["validate"]
 
+[[bin]]
+name = "evaluate"
+path = "src/bin/evaluate.rs"
+
 [[test]]
 name = "bdd"
 harness = false
