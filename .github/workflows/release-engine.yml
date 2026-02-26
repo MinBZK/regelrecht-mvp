@@ -50,14 +50,14 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             packages/target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('packages/**/Cargo.toml') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('packages/**/Cargo.toml', 'packages/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-cargo-release-
 
       - name: Build release binary
         run: |
           cd packages/engine
-          cargo build --release --bin evaluate --target ${{ matrix.target }}
+          cargo build --release --locked --bin evaluate --target ${{ matrix.target }}
 
       - name: Prepare artifact
         run: |
