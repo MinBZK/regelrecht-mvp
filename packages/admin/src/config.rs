@@ -50,11 +50,9 @@ impl AppConfig {
     fn parse_oidc_config(client_id: String) -> Result<OidcConfig, String> {
         let client_secret = env::var("OIDC_CLIENT_SECRET").unwrap_or_default();
         if client_secret.is_empty() {
-            return Err(
-                "OIDC_CLIENT_ID is set but OIDC_CLIENT_SECRET is missing. \
+            return Err("OIDC_CLIENT_ID is set but OIDC_CLIENT_SECRET is missing. \
                  Refusing to start without complete OIDC configuration."
-                    .to_string(),
-            );
+                .to_string());
         }
 
         let issuer_url = Self::resolve_issuer_url()?;
@@ -93,11 +91,9 @@ impl AppConfig {
             return Ok(issuer);
         }
 
-        Err(
-            "OIDC_CLIENT_ID is set but no issuer could be determined. \
+        Err("OIDC_CLIENT_ID is set but no issuer could be determined. \
              Set OIDC_DISCOVERY_URL, or both KEYCLOAK_BASE_URL and KEYCLOAK_REALM."
-                .to_string(),
-        )
+            .to_string())
     }
 
     pub fn is_auth_enabled(&self) -> bool {
@@ -187,7 +183,10 @@ mod tests {
         clear_oidc_env();
         env::set_var("OIDC_CLIENT_ID", "test-client");
         env::set_var("OIDC_CLIENT_SECRET", "secret");
-        env::set_var("OIDC_DISCOVERY_URL", "https://idp.example.com/realms/myrealm");
+        env::set_var(
+            "OIDC_DISCOVERY_URL",
+            "https://idp.example.com/realms/myrealm",
+        );
 
         let config = AppConfig::try_from_env().expect("should succeed");
         let oidc = config.oidc.unwrap();

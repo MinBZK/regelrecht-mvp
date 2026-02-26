@@ -32,10 +32,9 @@ pub async fn discover_client(oidc_config: &OidcConfig) -> Result<DiscoveryResult
     let issuer = IssuerUrl::new(oidc_config.issuer_url.clone())
         .map_err(|e| format!("invalid issuer URL: {e}"))?;
 
-    let provider_metadata =
-        ProviderMetadataWithLogout::discover_async(issuer, &http_client)
-            .await
-            .map_err(|e| format!("OIDC discovery failed: {e}"))?;
+    let provider_metadata = ProviderMetadataWithLogout::discover_async(issuer, &http_client)
+        .await
+        .map_err(|e| format!("OIDC discovery failed: {e}"))?;
 
     let token_url = provider_metadata
         .token_endpoint()
