@@ -218,7 +218,16 @@ pub async fn callback(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
         .required_role;
 
-    let has_role = extract_realm_roles(id_token.to_string().as_str())
+    let realm_roles = extract_realm_roles(id_token.to_string().as_str());
+    tracing::info!(
+        sub = %claims.subject().as_str(),
+        roles = ?realm_roles,
+        required = %required_role,
+        "checking realm roles"
+    );
+
+    let has_role = realm_roles
+        .as_ref()
         .map(|roles| roles.contains(required_role))
         .unwrap_or(false);
 
