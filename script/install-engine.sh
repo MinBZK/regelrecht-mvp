@@ -2,19 +2,19 @@
 # Install the regelrecht evaluate binary from GitHub releases.
 #
 # Usage:
-#   ./script/install-engine.sh              # latest release
+#   ./script/install-engine.sh                # latest release
 #   ./script/install-engine.sh engine-v0.1.0  # specific version
 #   INSTALL_DIR=/usr/local/bin ./script/install-engine.sh  # custom install dir
 #
 # Environment variables:
-#   INSTALL_DIR   - Directory to install the binary (default: /usr/local/bin)
+#   INSTALL_DIR   - Directory to install the binary (default: ~/.local/bin)
 #   GITHUB_TOKEN  - Optional token for private repos or rate limiting
 
 set -euo pipefail
 
 REPO="MinBZK/regelrecht-mvp"
 VERSION="${1:-latest}"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
 
 # Detect platform
 OS="$(uname -s)"
@@ -49,3 +49,13 @@ curl "${CURL_OPTS[@]}" -o "${INSTALL_DIR}/evaluate" "${URL}"
 chmod +x "${INSTALL_DIR}/evaluate"
 
 echo "Installed: ${INSTALL_DIR}/evaluate"
+
+# Check if install dir is in PATH
+case ":${PATH}:" in
+    *":${INSTALL_DIR}:"*) ;;
+    *)
+        echo ""
+        echo "NOTE: ${INSTALL_DIR} is not in your PATH."
+        echo "Add it with: export PATH=\"${INSTALL_DIR}:\${PATH}\""
+        ;;
+esac
