@@ -4,13 +4,13 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use openidconnect::core::CoreResponseType;
 use openidconnect::{
     AuthenticationFlow, AuthorizationCode, CsrfToken, Nonce, PkceCodeChallenge, PkceCodeVerifier,
     RedirectUrl, Scope, TokenResponse,
 };
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
 use serde::Deserialize;
 use serde::Serialize;
 use tower_sessions::Session;
@@ -394,8 +394,7 @@ mod tests {
 
     #[test]
     fn callback_query_missing_state_fails() {
-        let result: Result<CallbackQuery, _> =
-            serde_json::from_str(r#"{"code":"abc123"}"#);
+        let result: Result<CallbackQuery, _> = serde_json::from_str(r#"{"code":"abc123"}"#);
         assert!(result.is_err());
     }
 

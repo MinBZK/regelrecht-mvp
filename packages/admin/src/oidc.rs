@@ -14,9 +14,7 @@ pub type ConfiguredClient = CoreClient<
     EndpointMaybeSet,
 >;
 
-pub async fn discover_client(
-    oidc_config: &OidcConfig,
-) -> Result<ConfiguredClient, String> {
+pub async fn discover_client(oidc_config: &OidcConfig) -> Result<ConfiguredClient, String> {
     let http_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(10))
@@ -31,8 +29,7 @@ pub async fn discover_client(
 
     tracing::info!("discovering OIDC provider at {issuer_url}");
 
-    let issuer = IssuerUrl::new(issuer_url)
-        .map_err(|e| format!("invalid issuer URL: {e}"))?;
+    let issuer = IssuerUrl::new(issuer_url).map_err(|e| format!("invalid issuer URL: {e}"))?;
 
     let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http_client)
         .await
