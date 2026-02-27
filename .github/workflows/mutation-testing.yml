@@ -45,7 +45,7 @@ jobs:
         run: cargo mutants --in-place --timeout-multiplier 3
 
       - name: Upload mutation report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report
