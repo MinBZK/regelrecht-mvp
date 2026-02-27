@@ -22,7 +22,7 @@ jobs:
       ci: ${{ steps.filter.outputs.ci }}
       admin: ${{ steps.filter.outputs.admin }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         if: needs.changes.outputs.ci == 'true'
         with:
           fetch-depth: 0
@@ -107,7 +107,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         if: needs.changes.outputs.ci == 'true'
 
       - uses: actions/setup-python@v6
@@ -149,7 +149,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         if: needs.changes.outputs.ci == 'true'
 
       - name: Install just
@@ -185,7 +185,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         if: needs.changes.outputs.ci == 'true'
 
       - name: Install Rust toolchain
@@ -222,7 +222,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
