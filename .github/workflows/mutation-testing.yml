@@ -21,7 +21,7 @@ jobs:
       run:
         working-directory: packages/engine
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
