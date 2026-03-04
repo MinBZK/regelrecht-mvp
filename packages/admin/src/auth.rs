@@ -1,5 +1,5 @@
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -7,7 +7,7 @@ use base64::Engine;
 use openidconnect::core::CoreResponseType;
 use openidconnect::{
     AuthenticationFlow, AuthorizationCode, CsrfToken, Nonce, PkceCodeChallenge, PkceCodeVerifier,
-    Scope, TokenResponse,
+    RedirectUrl, Scope, TokenResponse,
 };
 use serde::Deserialize;
 use serde::Serialize;
@@ -23,6 +23,21 @@ const SESSION_KEY_SUB: &str = "person_sub";
 const SESSION_KEY_EMAIL: &str = "person_email";
 const SESSION_KEY_NAME: &str = "person_name";
 const SESSION_KEY_ID_TOKEN: &str = "id_token_hint";
+
+fn base_url_from_request(headers: &HeaderMap) -> String {
+    let host = headers
+        .get("x-forwarded-host")
+        .or_else(|| headers.get("host"))
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("localhost");
+
+    let scheme = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("https");
+
+    format!("{scheme}://{host}")
+}
 
 #[derive(Serialize)]
 pub struct AuthStatus {
@@ -46,12 +61,19 @@ struct RealmAccess {
 
 pub async fn login(
     State(state): State<AppState>,
+    headers: HeaderMap,
     session: Session,
 ) -> Result<Response, StatusCode> {
     let client = state
         .oidc_client
         .as_ref()
         .ok_or(StatusCode::NOT_IMPLEMENTED)?;
+
+    let base = base_url_from_request(&headers);
+    let redirect_url = RedirectUrl::new(format!("{base}/auth/callback")).map_err(|e| {
+        tracing::error!(error = %e, "invalid redirect URL");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -61,6 +83,7 @@ pub async fn login(
             CsrfToken::new_random,
             Nonce::new_random,
         )
+        .set_redirect_uri(std::borrow::Cow::Owned(redirect_url))
         .add_scope(Scope::new("openid".to_string()))
         .add_scope(Scope::new("email".to_string()))
         .add_scope(Scope::new("profile".to_string()))
@@ -96,6 +119,7 @@ pub struct CallbackQuery {
 
 pub async fn callback(
     State(app_state): State<AppState>,
+    headers: HeaderMap,
     session: Session,
     axum::extract::Query(params): axum::extract::Query<CallbackQuery>,
 ) -> Result<Response, StatusCode> {
@@ -144,6 +168,12 @@ pub async fn callback(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::BAD_REQUEST)?;
 
+    let base = base_url_from_request(&headers);
+    let redirect_url = RedirectUrl::new(format!("{base}/auth/callback")).map_err(|e| {
+        tracing::error!(error = %e, "invalid redirect URL");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     let http_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(10))
@@ -152,6 +182,7 @@ pub async fn callback(
 
     let token_response = client
         .exchange_code(AuthorizationCode::new(code))
+        .set_redirect_uri(std::borrow::Cow::Owned(redirect_url))
         .set_pkce_verifier(PkceCodeVerifier::new(stored_pkce))
         .request_async(&http_client)
         .await
@@ -220,12 +251,12 @@ pub async fn callback(
 
     tracing::info!(email = %email, "OIDC login successful");
 
-    let base = &app_state.config.base_url;
     Ok(Redirect::temporary(&format!("{base}/")).into_response())
 }
 
 pub async fn logout(
     State(state): State<AppState>,
+    headers: HeaderMap,
     session: Session,
 ) -> Result<Response, StatusCode> {
     let id_token_hint: Option<String> = session.get(SESSION_KEY_ID_TOKEN).await.ok().flatten();
@@ -235,6 +266,8 @@ pub async fn logout(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
+    let base = base_url_from_request(&headers);
+
     if let Some(ref oidc) = state.config.oidc {
         let end_session_url = format!(
             "{}/realms/{}/protocol/openid-connect/logout",
@@ -242,7 +275,6 @@ pub async fn logout(
             oidc.keycloak_realm
         );
 
-        let base = &state.config.base_url;
         let mut params = vec![
             ("post_logout_redirect_uri", base.clone()),
             ("client_id", oidc.client_id.clone()),
@@ -260,7 +292,6 @@ pub async fn logout(
         let redirect_url = format!("{end_session_url}?{query}");
         Ok(Redirect::temporary(&redirect_url).into_response())
     } else {
-        let base = &state.config.base_url;
         Ok(Redirect::temporary(&format!("{base}/")).into_response())
     }
 }
@@ -328,6 +359,49 @@ mod tests {
         let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256"}"#);
         let payload = URL_SAFE_NO_PAD.encode(payload_json);
         format!("{header}.{payload}.fake-signature")
+    }
+
+    // --- base_url_from_request ---
+
+    #[test]
+    fn base_url_uses_forwarded_headers() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-host", "admin.example.com".parse().unwrap());
+        headers.insert("x-forwarded-proto", "https".parse().unwrap());
+        assert_eq!(base_url_from_request(&headers), "https://admin.example.com");
+    }
+
+    #[test]
+    fn base_url_falls_back_to_host_header() {
+        let mut headers = HeaderMap::new();
+        headers.insert("host", "localhost:8000".parse().unwrap());
+        assert_eq!(base_url_from_request(&headers), "https://localhost:8000");
+    }
+
+    #[test]
+    fn base_url_forwarded_host_takes_precedence() {
+        let mut headers = HeaderMap::new();
+        headers.insert("host", "internal:8000".parse().unwrap());
+        headers.insert("x-forwarded-host", "public.example.com".parse().unwrap());
+        headers.insert("x-forwarded-proto", "https".parse().unwrap());
+        assert_eq!(
+            base_url_from_request(&headers),
+            "https://public.example.com"
+        );
+    }
+
+    #[test]
+    fn base_url_no_headers_defaults() {
+        let headers = HeaderMap::new();
+        assert_eq!(base_url_from_request(&headers), "https://localhost");
+    }
+
+    #[test]
+    fn base_url_http_scheme() {
+        let mut headers = HeaderMap::new();
+        headers.insert("host", "localhost:8000".parse().unwrap());
+        headers.insert("x-forwarded-proto", "http".parse().unwrap());
+        assert_eq!(base_url_from_request(&headers), "http://localhost:8000");
     }
 
     // --- CallbackQuery deserialization ---

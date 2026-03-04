@@ -96,7 +96,7 @@ async fn main() {
     tracing::info!("migrations completed");
 
     let oidc_client = if let Some(ref oidc_config) = app_config.oidc {
-        match oidc::discover_client(oidc_config, &app_config.base_url).await {
+        match oidc::discover_client(oidc_config).await {
             Ok(client) => Some(Arc::new(client)),
             Err(e) => {
                 tracing::error!(error = %e, "OIDC discovery failed");
@@ -124,7 +124,7 @@ async fn main() {
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)))
         .with_same_site(SameSite::Lax)
         .with_http_only(true)
-        .with_secure(app_state.config.is_secure());
+        .with_secure(app_state.config.is_auth_enabled());
 
     let api_routes = Router::new()
         .route("/api/law_entries", get(handlers::list_law_entries))

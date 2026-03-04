@@ -12,7 +12,6 @@ pub struct OidcConfig {
 #[derive(Clone, Debug)]
 pub struct AppConfig {
     pub oidc: Option<OidcConfig>,
-    pub base_url: String,
 }
 
 impl AppConfig {
@@ -32,15 +31,13 @@ impl AppConfig {
             Some(client_id) => Some(Self::parse_oidc_config(client_id)?),
         };
 
-        let base_url = env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
-
         if oidc.is_some() {
             tracing::info!("OIDC authentication is enabled");
         } else {
             tracing::info!("OIDC authentication is disabled (dev mode)");
         }
 
-        Ok(Self { oidc, base_url })
+        Ok(Self { oidc })
     }
 
     fn parse_oidc_config(client_id: String) -> Result<OidcConfig, String> {
@@ -82,10 +79,6 @@ impl AppConfig {
     pub fn is_auth_enabled(&self) -> bool {
         self.oidc.is_some()
     }
-
-    pub fn is_secure(&self) -> bool {
-        self.base_url.starts_with("https://")
-    }
 }
 
 #[cfg(test)]
@@ -101,7 +94,6 @@ mod tests {
         "KEYCLOAK_BASE_URL",
         "KEYCLOAK_REALM",
         "OIDC_REQUIRED_ROLE",
-        "BASE_URL",
     ];
 
     fn clear_oidc_env() {
@@ -197,27 +189,6 @@ mod tests {
 
         let config = AppConfig::try_from_env().expect("should succeed");
         assert_eq!(config.oidc.unwrap().required_role, "super-admin");
-
-        clear_oidc_env();
-    }
-
-    #[test]
-    fn default_base_url() {
-        let _lock = ENV_LOCK.lock();
-        clear_oidc_env();
-
-        let config = AppConfig::try_from_env().expect("should succeed");
-        assert_eq!(config.base_url, "http://localhost:8000");
-    }
-
-    #[test]
-    fn custom_base_url() {
-        let _lock = ENV_LOCK.lock();
-        clear_oidc_env();
-        env::set_var("BASE_URL", "https://admin.example.com");
-
-        let config = AppConfig::try_from_env().expect("should succeed");
-        assert_eq!(config.base_url, "https://admin.example.com");
 
         clear_oidc_env();
     }
