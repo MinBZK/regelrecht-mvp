@@ -33,13 +33,15 @@ fi
 # Start Grafana in the background
 /run.sh "$@" &
 GRAFANA_PID=$!
-trap 'kill -TERM $GRAFANA_PID' TERM INT
+SHUTDOWN=false
+trap 'SHUTDOWN=true; kill -TERM $GRAFANA_PID; wait $GRAFANA_PID' TERM INT
 
 # Configure Git Sync for dashboard version control if GITHUB_PAT is set.
 if [ -n "${GITHUB_PAT:-}" ]; then
   echo "Waiting for Grafana to become ready..."
   GRAFANA_READY=false
   for i in $(seq 1 30); do
+    [ "$SHUTDOWN" = true ] && break
     if wget -q -O /dev/null "http://localhost:${GF_SERVER_HTTP_PORT:-8000}/api/health" 2>/dev/null; then
       GRAFANA_READY=true
       break
@@ -52,6 +54,8 @@ if [ -n "${GITHUB_PAT:-}" ]; then
   else
   # Create repository CRD for Git Sync
   REPO_DIR=$(mktemp -d)
+  touch "${REPO_DIR}/repository.yaml"
+  chmod 600 "${REPO_DIR}/repository.yaml"
   cat > "${REPO_DIR}/repository.yaml" <<GITEOF
 apiVersion: provisioning.grafana.app/v0alpha1
 kind: Repository
@@ -77,7 +81,7 @@ secure:
 GITEOF
 
   export GRAFANA_SERVER="http://localhost:${GF_SERVER_HTTP_PORT:-8000}"
-  export GRAFANA_USER=admin
+  export GRAFANA_USER="${GF_SECURITY_ADMIN_USER:-admin}"
   export GRAFANA_PASSWORD="${GF_SECURITY_ADMIN_PASSWORD:-admin}"
   export GRAFANA_ORG_ID=1
 
