@@ -2,11 +2,14 @@
 $schema: https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.4.0/schema.json
 $id: kb_gelijkgestelde_dagen_2026_2028
 regulatory_layer: KONINKLIJK_BESLUIT
-publication_date: '2025-12-15'
-valid_from: '2026-01-01'
-name: Besluit gelijkstelling feestdagen Algemene termijnenwet 2026-2028
-bwb_id: BWBR0050001
-url: https://zoek.officielebekendmakingen.nl/stb-2025-400
+publication_date: '2025-07-21'
+valid_from: '2025-07-22'
+name: >-
+  Besluit van 1 juli 2025, nr. 2025001422 houdende gelijkstelling van
+  2 januari 2026, 15 mei 2026, 7 mei 2027, 28 april 2028 en 26 mei 2028
+  met een algemeen erkende feestdag
+bwb_id: BWBR0051300
+url: https://zoek.officielebekendmakingen.nl/stcrt-2025-24713.html
 legal_basis:
   - law_id: algemene_termijnenwet
     article: '3'
