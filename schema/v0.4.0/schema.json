@@ -717,7 +717,7 @@
     },
     "nextDayNotInOperation": {
       "type": "object",
-      "description": "Advance a date past weekends and non-working days",
+      "description": "Advance a date past excluded days (weekends if skip_weekends, plus listed dates)",
       "required": [
         "operation",
         "date",
@@ -734,6 +734,10 @@
         "non_working_days": {
           "$ref": "#/definitions/operationValue",
           "description": "Array of date strings to skip"
+        },
+        "skip_weekends": {
+          "type": "boolean",
+          "description": "Whether to also skip Saturdays and Sundays. Controlled by the law, not hardcoded."
         }
       },
       "additionalProperties": false

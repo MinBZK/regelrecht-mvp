@@ -200,6 +200,10 @@ pub struct ActionOperation {
     /// List of non-working days for NEXT_DAY_NOT_IN
     #[serde(default)]
     pub non_working_days: Option<ActionValue>,
+    /// Whether to skip Saturdays and Sundays in NEXT_DAY_NOT_IN
+    /// Controlled by the YAML, not hardcoded — the law defines which days to skip.
+    #[serde(default)]
+    pub skip_weekends: Option<bool>,
     /// Items for LIST operation
     #[serde(default)]
     pub items: Option<Vec<ActionValue>>,

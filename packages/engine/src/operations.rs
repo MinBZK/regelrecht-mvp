@@ -1206,10 +1206,12 @@ fn execute_next_day_not_in<R: ValueResolver>(
         }
     };
 
-    // Advance past weekends and non-working days (max 365 iterations)
+    let skip_weekends = op.skip_weekends.unwrap_or(false);
+
+    // Advance past excluded days (max 365 iterations)
     for _ in 0..365 {
-        let weekday = date.weekday().num_days_from_monday();
-        if weekday < 5 && !non_working_dates.contains(&date) {
+        let is_weekend = skip_weekends && date.weekday().num_days_from_monday() >= 5;
+        if !is_weekend && !non_working_dates.contains(&date) {
             break;
         }
         date = date.succ_opt().ok_or_else(|| {

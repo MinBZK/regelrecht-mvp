@@ -47,6 +47,7 @@ articles:
             value:
               operation: NEXT_DAY_NOT_IN
               date: $termijn_einddatum
+              skip_weekends: true
               non_working_days: $feestdagen
 
   - number: '2'
