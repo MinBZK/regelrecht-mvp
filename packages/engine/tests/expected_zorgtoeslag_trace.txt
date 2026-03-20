@@ -327,6 +327,9 @@ zorgtoeslagwet (2025-01-01 {bsn: 999993653} hoogte_zorgtoeslag)
 ║   │   ├──Computing bezwaartermijn_weken
 ║   ║──Result of bezwaartermijn_weken: 6
 ║   ├──HOOK: Hook algemene_wet_bestuursrecht art 6:8 skipped: parameter 'bekendmaking_datum' not available
+║   │   ├──URI call: algemene_wet_bestuursrecht#bezwaartermijn_weken
+║   │   ║   ├──Computing bezwaartermijn_weken
+║   │   ║   ├──Result of bezwaartermijn_weken: 6
 ║   │   ├──Action failed: Variable not found: bekendmaking_datum
 ║   │   │   ├──Error in ADD: Variable not found: bekendmaking_datum
 ║   │   │   │   ├──Resolving $BEKENDMAKING_DATUM

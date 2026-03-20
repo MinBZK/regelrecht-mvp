@@ -442,13 +442,19 @@ impl LawExecutionService {
             })?;
 
         // Execute with service provider
-        let result = self.evaluate_article_with_service(
+        let mut result = self.evaluate_article_with_service(
             article,
             law,
-            parameters,
+            parameters.clone(),
             Some(output_name),
             res_ctx,
         )?;
+
+        // Apply lex specialis overrides if a contextual law is set.
+        // This ensures that cross-law input resolution (e.g., AWB 6:8 resolving
+        // bezwaartermijn_weken from AWB 6:7) respects overrides from the contextual
+        // law (e.g., Vreemdelingenwet art 69 overriding 6 → 4 weeks).
+        self.apply_overrides_to_result(&mut result, law, article, &parameters, res_ctx)?;
 
         // --- Cache store (only on success) ---
         res_ctx.cache.insert(key, result.outputs.clone());
@@ -1300,9 +1306,6 @@ impl LawExecutionService {
         }
 
         let mut hook_outputs = HashMap::new();
-        // Accumulate parameters: each hook can see outputs from previously fired hooks.
-        // This allows AWB 6:8 to use bezwaartermijn_weken from AWB 6:7's (overridden) output.
-        let mut accumulated_params = parameters.clone();
 
         for (hook_law_id, hook_article_num, _filter) in matching_hooks {
             // Cycle detection: don't re-enter an article already on the stack
@@ -1354,10 +1357,15 @@ impl LawExecutionService {
             // Error handling: only VariableNotFound is expected (caller didn't provide
             // a parameter this hook needs, e.g. bekendmaking_datum). Other errors indicate
             // a bug in the hook YAML or engine logic and must propagate.
+            // Each hook resolves its own inputs independently via `input` declarations
+            // in the YAML (resolve_inputs_with_service). No accumulated state is shared
+            // between hooks — this makes firing order irrelevant and ensures each hook's
+            // cross-law input resolution goes through the full engine path, including
+            // override resolution.
             let hook_result = match self.execute_with_overrides(
                 hook_article,
                 hook_law,
-                accumulated_params.clone(),
+                parameters.clone(),
                 res_ctx,
             ) {
                 Ok(result) => result,
@@ -1404,49 +1412,34 @@ impl LawExecutionService {
             // Merge hook outputs (first writer wins within same hook point)
             for (name, value) in hook_result.outputs {
                 hook_outputs.entry(name.clone()).or_insert(value.clone());
-                // Make output available to subsequent hooks
-                accumulated_params.insert(name, value);
             }
         }
 
         Ok(hook_outputs)
     }
 
-    /// Execute an article, applying lex specialis overrides from the contextual law.
+    /// Apply lex specialis overrides from the contextual law to an article result.
     ///
-    /// For each output the article produces, check if the contextual law has an
-    /// override. If so, execute the overriding article for that output.
-    fn execute_with_overrides(
+    /// For each output the article produced, check if the contextual law has an
+    /// override declaration targeting it. If so, execute the overriding article
+    /// and replace the output value.
+    ///
+    /// This is called from both `evaluate_law_output_internal` (cross-law input
+    /// resolution) and `execute_with_overrides` (hook execution), ensuring that
+    /// overrides apply consistently regardless of how an article is reached.
+    fn apply_overrides_to_result(
         &self,
-        article: &Article,
+        result: &mut ArticleResult,
         law: &ArticleBasedLaw,
-        parameters: HashMap<String, Value>,
+        article: &Article,
+        parameters: &HashMap<String, Value>,
         res_ctx: &mut ResolutionContext<'_>,
-    ) -> Result<ArticleResult> {
-        // First execute the article normally
-        let visit_key = VisitedKey::Hook {
-            law_id: law.id.clone(),
-            article: article.number.clone(),
-        };
-        res_ctx.enter(visit_key.clone());
-
-        let mut result = self.evaluate_article_with_service(
-            article,
-            law,
-            parameters.clone(),
-            None, // No specific output requested; get all
-            res_ctx,
-        )?;
-
-        res_ctx.leave(&visit_key);
-
-        // Now check for overrides from the contextual law
+    ) -> Result<()> {
         let contextual_law_id = match &res_ctx.contextual_law_id {
             Some(id) => id.clone(),
-            None => return Ok(result), // No contextual law → no overrides
+            None => return Ok(()), // No contextual law → no overrides
         };
 
-        // Get the output names to check for overrides
         let output_names: Vec<String> = result.outputs.keys().cloned().collect();
 
         for output_name in output_names {
@@ -1474,7 +1467,6 @@ impl LawExecutionService {
 
             let (ovr_law_id, ovr_article_num) = contextual_overrides[0];
 
-            // Get the overriding law and article
             let ovr_law = match self
                 .resolver
                 .get_law_for_date(ovr_law_id, res_ctx.reference_date())
@@ -1537,6 +1529,34 @@ impl LawExecutionService {
                     .insert(output_name.clone(), ovr_value.clone());
             }
         }
+
+        Ok(())
+    }
+
+    /// Execute an article, applying lex specialis overrides from the contextual law.
+    ///
+    /// Used by `fire_hooks` to execute hook articles with override support.
+    fn execute_with_overrides(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        parameters: HashMap<String, Value>,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<ArticleResult> {
+        // Execute the article normally
+        let visit_key = VisitedKey::Hook {
+            law_id: law.id.clone(),
+            article: article.number.clone(),
+        };
+        res_ctx.enter(visit_key.clone());
+
+        let mut result =
+            self.evaluate_article_with_service(article, law, parameters.clone(), None, res_ctx)?;
+
+        res_ctx.leave(&visit_key);
+
+        // Apply overrides from the contextual law
+        self.apply_overrides_to_result(&mut result, law, article, &parameters, res_ctx)?;
 
         Ok(result)
     }
