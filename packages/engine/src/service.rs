@@ -1362,46 +1362,44 @@ impl LawExecutionService {
             // between hooks — this makes firing order irrelevant and ensures each hook's
             // cross-law input resolution goes through the full engine path, including
             // override resolution.
-            let hook_result = match self.execute_with_overrides(
-                hook_article,
-                hook_law,
-                parameters.clone(),
-                res_ctx,
-            ) {
-                Ok(result) => result,
-                Err(EngineError::VariableNotFound(ref var)) => {
-                    // Expected: caller didn't provide a parameter this hook needs.
-                    // Skip gracefully — not every caller provides every parameter.
-                    tracing::debug!(
-                        hook_law = %hook_law_id,
-                        hook_article = %hook_article_num,
-                        missing_var = %var,
-                        "Hook skipped: required parameter not available"
-                    );
-                    if let Some(ref tb) = res_ctx.trace {
-                        let mut tb = tb.borrow_mut();
-                        tb.set_message(format!(
-                            "Hook {} art {} skipped: parameter '{}' not available",
-                            hook_law_id, hook_article_num, var
-                        ));
-                        tb.pop();
+            let filtered_params = Self::filter_parameters_for_article(hook_article, parameters);
+            let hook_result =
+                match self.execute_with_overrides(hook_article, hook_law, filtered_params, res_ctx)
+                {
+                    Ok(result) => result,
+                    Err(EngineError::VariableNotFound(ref var)) => {
+                        // Expected: caller didn't provide a parameter this hook needs.
+                        // Skip gracefully — not every caller provides every parameter.
+                        tracing::debug!(
+                            hook_law = %hook_law_id,
+                            hook_article = %hook_article_num,
+                            missing_var = %var,
+                            "Hook skipped: required parameter not available"
+                        );
+                        if let Some(ref tb) = res_ctx.trace {
+                            let mut tb = tb.borrow_mut();
+                            tb.set_message(format!(
+                                "Hook {} art {} skipped: parameter '{}' not available",
+                                hook_law_id, hook_article_num, var
+                            ));
+                            tb.pop();
+                        }
+                        continue;
                     }
-                    continue;
-                }
-                Err(e) => {
-                    // Unexpected error: malformed hook YAML, type mismatch, etc.
-                    // Pop trace node before propagating.
-                    if let Some(ref tb) = res_ctx.trace {
-                        let mut tb = tb.borrow_mut();
-                        tb.set_message(format!(
-                            "Hook {} art {} failed: {}",
-                            hook_law_id, hook_article_num, e
-                        ));
-                        tb.pop();
+                    Err(e) => {
+                        // Unexpected error: malformed hook YAML, type mismatch, etc.
+                        // Pop trace node before propagating.
+                        if let Some(ref tb) = res_ctx.trace {
+                            let mut tb = tb.borrow_mut();
+                            tb.set_message(format!(
+                                "Hook {} art {} failed: {}",
+                                hook_law_id, hook_article_num, e
+                            ));
+                            tb.pop();
+                        }
+                        return Err(e);
                     }
-                    return Err(e);
-                }
-            };
+                };
 
             // Pop hook trace node
             if let Some(ref tb) = res_ctx.trace {
