@@ -1,6 +1,6 @@
 //! Operation execution for the RegelRecht engine
 //!
-//! This module implements the execution logic for all 21 operation types:
+//! This module implements the execution logic for all 24 operation types:
 //! - **Comparison (6):** EQUALS, NOT_EQUALS, GREATER_THAN, LESS_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL
 //! - **Arithmetic (4):** ADD, SUBTRACT, MULTIPLY, DIVIDE
 //! - **Aggregate (2):** MAX, MIN
@@ -8,7 +8,8 @@
 //! - **Conditional (2):** IF, SWITCH
 //! - **Null checking (2):** IS_NULL, NOT_NULL
 //! - **Membership testing (2):** IN, NOT_IN
-//! - **Date operations (1):** SUBTRACT_DATE
+//! - **Date operations (3):** SUBTRACT_DATE, DATE, DAY_OF_WEEK
+//! - **Collection operations (1):** LIST
 
 use crate::article::{ActionOperation, ActionValue};
 use crate::error::{EngineError, Result};
@@ -242,7 +243,6 @@ fn execute_operation_internal<R: ValueResolver>(
         Operation::SubtractDate => execute_subtract_date(op, resolver, depth),
         Operation::Date => execute_date(op, resolver, depth),
         Operation::DayOfWeek => execute_day_of_week(op, resolver, depth),
-        Operation::NextDayNotIn => execute_next_day_not_in(op, resolver, depth),
 
         // Collection operations
         Operation::List => execute_list(op, resolver, depth),
@@ -1168,58 +1168,6 @@ fn execute_day_of_week<R: ValueResolver>(
 
     // Monday = 0, Sunday = 6 (chrono's weekday().num_days_from_monday())
     Ok(Value::Int(date.weekday().num_days_from_monday() as i64))
-}
-
-/// Execute NEXT_DAY_NOT_IN operation: advance a date past weekends and listed dates.
-///
-/// Pure function — no domain knowledge. If the date falls on a Saturday (5),
-/// Sunday (6), or is in the non_working_days list, advance to the next day
-/// that isn't any of those. Max 365 iterations to prevent infinite loops.
-fn execute_next_day_not_in<R: ValueResolver>(
-    op: &ActionOperation,
-    resolver: &R,
-    depth: usize,
-) -> Result<Value> {
-    let date_value = op.date.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("NEXT_DAY_NOT_IN requires 'date'".to_string())
-    })?;
-    let non_working = op.non_working_days.as_ref().ok_or_else(|| {
-        EngineError::InvalidOperation("NEXT_DAY_NOT_IN requires 'non_working_days'".to_string())
-    })?;
-
-    let date_val = evaluate_value(date_value, resolver, depth)?;
-    let mut date = parse_date(&date_val)?;
-
-    let non_working_val = evaluate_value(non_working, resolver, depth)?;
-    let non_working_dates: Vec<NaiveDate> = match &non_working_val {
-        Value::Array(arr) => {
-            let mut dates = Vec::with_capacity(arr.len());
-            for v in arr {
-                dates.push(parse_date(v)?);
-            }
-            dates
-        }
-        _ => {
-            return Err(EngineError::InvalidOperation(
-                "NEXT_DAY_NOT_IN: non_working_days must be an array".to_string(),
-            ))
-        }
-    };
-
-    let skip_weekends = op.skip_weekends.unwrap_or(false);
-
-    // Advance past excluded days (max 365 iterations)
-    for _ in 0..365 {
-        let is_weekend = skip_weekends && date.weekday().num_days_from_monday() >= 5;
-        if !is_weekend && !non_working_dates.contains(&date) {
-            break;
-        }
-        date = date.succ_opt().ok_or_else(|| {
-            EngineError::InvalidOperation("NEXT_DAY_NOT_IN: date overflow".to_string())
-        })?;
-    }
-
-    Ok(Value::String(date.format("%Y-%m-%d").to_string()))
 }
 
 // =============================================================================

@@ -179,7 +179,7 @@ pub struct ActionOperation {
     /// Unit for SUBTRACT_DATE and ADD operations ("days", "months", "years", "weeks")
     #[serde(default)]
     pub unit: Option<String>,
-    /// Date field for ADD with unit (date arithmetic) and NEXT_DAY_NOT_IN
+    /// Date field for ADD with unit (date arithmetic)
     #[serde(default)]
     pub date: Option<ActionValue>,
     /// Year for DATE operation
@@ -197,13 +197,6 @@ pub struct ActionOperation {
     /// Weeks to add for ADD with unit
     #[serde(default)]
     pub weeks: Option<ActionValue>,
-    /// List of non-working days for NEXT_DAY_NOT_IN
-    #[serde(default)]
-    pub non_working_days: Option<ActionValue>,
-    /// Whether to skip Saturdays and Sundays in NEXT_DAY_NOT_IN
-    /// Controlled by the YAML, not hardcoded — the law defines which days to skip.
-    #[serde(default)]
-    pub skip_weekends: Option<bool>,
     /// Items for LIST operation
     #[serde(default)]
     pub items: Option<Vec<ActionValue>>,
@@ -232,14 +225,6 @@ impl ActionOperation {
                 if self.subject.is_none() && self.date.is_none() {
                     return Err(EngineError::InvalidOperation(format!(
                         "{}: DAY_OF_WEEK operation requires 'subject' or 'date' field",
-                        context
-                    )));
-                }
-            }
-            Operation::NextDayNotIn => {
-                if self.date.is_none() || self.non_working_days.is_none() {
-                    return Err(EngineError::InvalidOperation(format!(
-                        "{}: NEXT_DAY_NOT_IN operation requires 'date' and 'non_working_days' fields",
                         context
                     )));
                 }
@@ -315,7 +300,6 @@ impl ActionOperation {
             &self.day,
             &self.days,
             &self.weeks,
-            &self.non_working_days,
         ] {
             if let Some(ActionValue::Operation(nested)) = field {
                 nested.validate(context)?;

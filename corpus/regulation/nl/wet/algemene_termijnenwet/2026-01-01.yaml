@@ -43,12 +43,117 @@ articles:
           - name: verlengde_einddatum
             type: date
         actions:
+          # Art 1: "verlengd tot en met de eerstvolgende dag die niet een
+          # zaterdag, zondag of algemeen erkende feestdag is."
+          #
+          # A day is valid when: weekday (DAY_OF_WEEK < 5) AND not a feestdag.
+          # We check the original date and up to 9 successive days. This covers
+          # any realistic cluster of consecutive non-working days in Dutch law
+          # (worst case: ~6 days around Christmas/New Year with bridge days).
           - output: verlengde_einddatum
             value:
-              operation: NEXT_DAY_NOT_IN
-              date: $termijn_einddatum
-              skip_weekends: true
-              non_working_days: $feestdagen
+              operation: SWITCH
+              cases:
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: $termijn_einddatum}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: $termijn_einddatum
+                        value: $feestdagen
+                  then: $termijn_einddatum
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 1}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 1}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 1}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 2}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 2}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 2}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 3}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 3}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 3}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 4}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 4}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 4}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 5}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 5}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 5}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 6}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 6}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 6}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 7}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 7}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 7}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 8}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 8}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 8}
+                - when:
+                    operation: AND
+                    conditions:
+                      - operation: LESS_THAN
+                        subject: {operation: DAY_OF_WEEK, date: {operation: ADD, date: $termijn_einddatum, days: 9}}
+                        value: 5
+                      - operation: NOT_IN
+                        subject: {operation: ADD, date: $termijn_einddatum, days: 9}
+                        value: $feestdagen
+                  then: {operation: ADD, date: $termijn_einddatum, days: 9}
 
   - number: '2'
     text: |-

@@ -352,11 +352,10 @@ pub enum Operation {
     In,
     NotIn,
 
-    // Date operations (4)
+    // Date operations (3)
     SubtractDate,
     Date,
     DayOfWeek,
-    NextDayNotIn,
 
     // Collection operations (1)
     List,
@@ -413,10 +412,7 @@ impl Operation {
     pub fn is_date(&self) -> bool {
         matches!(
             self,
-            Operation::SubtractDate
-                | Operation::Date
-                | Operation::DayOfWeek
-                | Operation::NextDayNotIn
+            Operation::SubtractDate | Operation::Date | Operation::DayOfWeek
         )
     }
 
@@ -453,7 +449,6 @@ impl Operation {
             Operation::SubtractDate => "SUBTRACTDATE",
             Operation::Date => "DATE",
             Operation::DayOfWeek => "DAYOFWEEK",
-            Operation::NextDayNotIn => "NEXTDAYNOTIN",
             Operation::List => "LIST",
         }
     }

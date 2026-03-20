@@ -715,33 +715,6 @@
       },
       "additionalProperties": false
     },
-    "nextDayNotInOperation": {
-      "type": "object",
-      "description": "Advance a date past excluded days (weekends if skip_weekends, plus listed dates)",
-      "required": [
-        "operation",
-        "date",
-        "non_working_days"
-      ],
-      "properties": {
-        "operation": {
-          "type": "string",
-          "const": "NEXT_DAY_NOT_IN"
-        },
-        "date": {
-          "$ref": "#/definitions/operationValue"
-        },
-        "non_working_days": {
-          "$ref": "#/definitions/operationValue",
-          "description": "Array of date strings to skip"
-        },
-        "skip_weekends": {
-          "type": "boolean",
-          "description": "Whether to also skip Saturdays and Sundays. Controlled by the law, not hardcoded."
-        }
-      },
-      "additionalProperties": false
-    },
     "listOperation": {
       "type": "object",
       "description": "Construct an array from evaluated items",
@@ -880,7 +853,6 @@
         "SUBTRACT_DATE",
         "DATE",
         "DAY_OF_WEEK",
-        "NEXT_DAY_NOT_IN",
         "LIST"
       ]
     },
@@ -910,9 +882,6 @@
         },
         {
           "$ref": "#/definitions/dayOfWeekOperation"
-        },
-        {
-          "$ref": "#/definitions/nextDayNotInOperation"
         },
         {
           "$ref": "#/definitions/listOperation"

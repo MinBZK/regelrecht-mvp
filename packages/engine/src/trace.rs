@@ -543,8 +543,14 @@ impl PathNode {
                 lines.push(format!("{}├──HOOK: {}{}", prefix, msg, result_str));
 
                 let child_prefix = format!("{}│   ", prefix);
-                for child in &self.children {
-                    child.render_box_node(lines, &child_prefix);
+                for (i, child) in self.children.iter().enumerate() {
+                    child.render_box_node(
+                        lines,
+                        &child_prefix,
+                        i == self.children.len() - 1,
+                        false,
+                        None,
+                    );
                 }
             }
 
@@ -558,8 +564,14 @@ impl PathNode {
                 lines.push(format!("{}├──OVERRIDE: {}{}", prefix, msg, result_str));
 
                 let child_prefix = format!("{}│   ", prefix);
-                for child in &self.children {
-                    child.render_box_node(lines, &child_prefix);
+                for (i, child) in self.children.iter().enumerate() {
+                    child.render_box_node(
+                        lines,
+                        &child_prefix,
+                        i == self.children.len() - 1,
+                        false,
+                        None,
+                    );
                 }
             }
         }
