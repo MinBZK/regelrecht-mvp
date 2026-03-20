@@ -30,6 +30,7 @@
       "enum": [
         "GRONDWET",
         "WET",
+        "KONINKLIJK_BESLUIT",
         "AMVB",
         "MINISTERIELE_REGELING",
         "BELEIDSREGEL",
@@ -225,6 +226,7 @@
           "regulatory_layer": {
             "enum": [
               "WET",
+              "KONINKLIJK_BESLUIT",
               "AMVB",
               "MINISTERIELE_REGELING",
               "GRONDWET"
@@ -561,8 +563,8 @@
           ]
         },
         "subject": {
-          "$ref": "#/definitions/variableReference",
-          "description": "Variable to compare"
+          "$ref": "#/definitions/operationValue",
+          "description": "Value or variable to compare"
         },
         "value": {
           "$ref": "#/definitions/operationValue",
@@ -669,6 +671,143 @@
       },
       "additionalProperties": true
     },
+    "dateConstructOperation": {
+      "type": "object",
+      "description": "Construct a date from year/month/day components",
+      "required": [
+        "operation",
+        "year",
+        "month",
+        "day"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "DATE"
+        },
+        "year": {
+          "$ref": "#/definitions/operationValue"
+        },
+        "month": {
+          "$ref": "#/definitions/operationValue"
+        },
+        "day": {
+          "$ref": "#/definitions/operationValue"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dayOfWeekOperation": {
+      "type": "object",
+      "description": "Get day of week (0=Monday..6=Sunday) from a date",
+      "required": [
+        "operation",
+        "date"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "DAY_OF_WEEK"
+        },
+        "date": {
+          "$ref": "#/definitions/operationValue"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nextDayNotInOperation": {
+      "type": "object",
+      "description": "Advance a date past weekends and non-working days",
+      "required": [
+        "operation",
+        "date",
+        "non_working_days"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "NEXT_DAY_NOT_IN"
+        },
+        "date": {
+          "$ref": "#/definitions/operationValue"
+        },
+        "non_working_days": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Array of date strings to skip"
+        }
+      },
+      "additionalProperties": false
+    },
+    "listOperation": {
+      "type": "object",
+      "description": "Construct an array from evaluated items",
+      "required": [
+        "operation",
+        "items"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "LIST"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "dateAddOperation": {
+      "type": "object",
+      "description": "Add days or weeks to a date",
+      "required": [
+        "operation",
+        "date"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "ADD"
+        },
+        "date": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Base date"
+        },
+        "days": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Number of days to add"
+        },
+        "weeks": {
+          "$ref": "#/definitions/operationValue",
+          "description": "Number of weeks to add"
+        }
+      },
+      "additionalProperties": false
+    },
+    "listConcatOperation": {
+      "type": "object",
+      "description": "Concatenate multiple arrays into one",
+      "required": [
+        "operation",
+        "lists"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "const": "ADD"
+        },
+        "lists": {
+          "type": "array",
+          "description": "Arrays to concatenate",
+          "items": {
+            "$ref": "#/definitions/operationValue"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "dateOperation": {
       "type": "object",
       "description": "Date arithmetic operations that compute date differences",
@@ -734,7 +873,11 @@
         "IF",
         "SWITCH",
         "FOREACH",
-        "SUBTRACT_DATE"
+        "SUBTRACT_DATE",
+        "DATE",
+        "DAY_OF_WEEK",
+        "NEXT_DAY_NOT_IN",
+        "LIST"
       ]
     },
     "operation": {
@@ -757,6 +900,24 @@
         },
         {
           "$ref": "#/definitions/dateOperation"
+        },
+        {
+          "$ref": "#/definitions/dateConstructOperation"
+        },
+        {
+          "$ref": "#/definitions/dayOfWeekOperation"
+        },
+        {
+          "$ref": "#/definitions/nextDayNotInOperation"
+        },
+        {
+          "$ref": "#/definitions/listOperation"
+        },
+        {
+          "$ref": "#/definitions/dateAddOperation"
+        },
+        {
+          "$ref": "#/definitions/listConcatOperation"
         },
         {
           "$ref": "#/definitions/otherOperation"
@@ -911,6 +1072,7 @@
                 "enum": [
                   "GRONDWET",
                   "WET",
+                  "KONINKLIJK_BESLUIT",
                   "AMVB",
                   "MINISTERIELE_REGELING",
                   "BELEIDSREGEL",
@@ -1064,7 +1226,8 @@
                   "number",
                   "boolean",
                   "amount",
-                  "date"
+                  "date",
+                  "list"
                 ],
                 "description": "Data type of the expected value"
               },
@@ -1129,6 +1292,70 @@
               "gelet_op": {
                 "type": "string",
                 "description": "Legal reference text (e.g., 'Gelet op artikel 4 van de Wet op de zorgtoeslag')"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "hooks": {
+          "type": "array",
+          "description": "Hook declarations: this article fires when certain legal events occur (e.g., any BESCHIKKING triggers AWB 3:46 motiveringsplicht)",
+          "items": {
+            "type": "object",
+            "required": [
+              "hook_point",
+              "applies_to"
+            ],
+            "properties": {
+              "hook_point": {
+                "type": "string",
+                "enum": [
+                  "pre_actions",
+                  "post_actions"
+                ],
+                "description": "When to fire: before or after the target article's actions"
+              },
+              "applies_to": {
+                "type": "object",
+                "description": "Filter for which executions trigger this hook",
+                "properties": {
+                  "legal_character": {
+                    "type": "string",
+                    "description": "Legal character that triggers the hook (e.g., BESCHIKKING)"
+                  },
+                  "decision_type": {
+                    "type": "string",
+                    "description": "Decision type filter (optional, for more specific matching)"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "overrides": {
+          "type": "array",
+          "description": "Lex specialis override declarations: this article overrides a specific output from another law's article (e.g., Vreemdelingenwet art 69 overrides AWB 6:7 bezwaartermijn_weken)",
+          "items": {
+            "type": "object",
+            "required": [
+              "law",
+              "article",
+              "output"
+            ],
+            "properties": {
+              "law": {
+                "type": "string",
+                "description": "The $id of the law being overridden"
+              },
+              "article": {
+                "type": "string",
+                "description": "Article number being overridden"
+              },
+              "output": {
+                "type": "string",
+                "description": "Output name being overridden"
               }
             },
             "additionalProperties": false

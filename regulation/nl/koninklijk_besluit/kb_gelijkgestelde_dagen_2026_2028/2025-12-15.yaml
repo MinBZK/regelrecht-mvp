@@ -1,0 +1,40 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.4.0/schema.json
+$id: kb_gelijkgestelde_dagen_2026_2028
+regulatory_layer: KONINKLIJK_BESLUIT
+publication_date: '2025-12-15'
+valid_from: '2026-01-01'
+name: Besluit gelijkstelling feestdagen Algemene termijnenwet 2026-2028
+bwb_id: BWBR0050001
+url: https://zoek.officielebekendmakingen.nl/stb-2025-400
+legal_basis:
+  - law_id: algemene_termijnenwet
+    article: '3'
+    description: Gelet op artikel 3, derde lid, van de Algemene termijnenwet
+articles:
+  - number: '1'
+    url: https://zoek.officielebekendmakingen.nl/stb-2025-400
+    text: |-
+      Als feestdag in de zin van de Algemene termijnenwet worden
+      aangewezen: 2 januari 2026, 15 mei 2026, 7 mei 2027,
+      28 april 2028 en 26 mei 2028.
+    machine_readable:
+      implements:
+        - law: algemene_termijnenwet
+          article: '3'
+          open_term: gelijkgestelde_dagen
+          gelet_op: Gelet op artikel 3, derde lid, van de Algemene termijnenwet
+      execution:
+        output:
+          - name: gelijkgestelde_dagen
+            type: array
+        actions:
+          - output: gelijkgestelde_dagen
+            value:
+              operation: LIST
+              items:
+                - '2026-01-02'
+                - '2026-05-15'
+                - '2027-05-07'
+                - '2028-04-28'
+                - '2028-05-26'

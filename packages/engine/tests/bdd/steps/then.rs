@@ -205,6 +205,123 @@ fn assert_minimale_afstand_m(world: &mut RegelrechtWorld, expected: String) {
     }
 }
 
+// =============================================================================
+// Generic output assertion steps (bezwaartermijn and general)
+// =============================================================================
+
+#[then("the execution succeeds")]
+fn assert_execution_succeeds(world: &mut RegelrechtWorld) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+}
+
+#[then(regex = r#"^the output "([^"]+)" is "([^"]+)"$"#)]
+fn assert_output_is(world: &mut RegelrechtWorld, output_name: String, expected: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let actual = world.get_output(&output_name);
+    let expected_value = crate::helpers::value_conversion::convert_gherkin_value(&expected);
+
+    match (actual, &expected_value) {
+        (Some(Value::Int(a)), Value::Int(b)) => {
+            assert_eq!(
+                a, b,
+                "Expected output '{}' to be {}, got {}",
+                output_name, b, a
+            );
+        }
+        (Some(Value::Float(a)), Value::Int(b)) => {
+            let diff = (a - *b as f64).abs();
+            assert!(
+                diff < 0.001,
+                "Expected output '{}' to be {}, got {}",
+                output_name,
+                b,
+                a
+            );
+        }
+        (Some(Value::Bool(a)), Value::Bool(b)) => {
+            assert_eq!(
+                a, b,
+                "Expected output '{}' to be {}, got {}",
+                output_name, b, a
+            );
+        }
+        (Some(Value::String(a)), Value::String(b)) => {
+            assert_eq!(
+                a, b,
+                "Expected output '{}' to be '{}', got '{}'",
+                output_name, b, a
+            );
+        }
+        (Some(actual_val), _) => {
+            // Fallback: compare string representations
+            let actual_str = format!("{}", actual_val);
+            assert_eq!(
+                actual_str, expected,
+                "Expected output '{}' to be '{}', got '{}'",
+                output_name, expected, actual_str
+            );
+        }
+        (None, _) => {
+            let all_outputs: Vec<String> = world
+                .result
+                .as_ref()
+                .map(|r| r.outputs.keys().cloned().collect())
+                .unwrap_or_default();
+            panic!(
+                "Output '{}' not found. Available outputs: {:?}",
+                output_name, all_outputs
+            );
+        }
+    }
+}
+
+#[then(regex = r#"^the output "([^"]+)" contains "([^"]+)"$"#)]
+fn assert_output_contains(world: &mut RegelrechtWorld, output_name: String, expected_item: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let actual = world.get_output(&output_name);
+    match actual {
+        Some(Value::Array(items)) => {
+            let expected_value = Value::String(expected_item.clone());
+            assert!(
+                items.contains(&expected_value),
+                "Expected output '{}' to contain '{}', got {:?}",
+                output_name,
+                expected_item,
+                items
+            );
+        }
+        Some(Value::String(s)) => {
+            assert!(
+                s.contains(&expected_item),
+                "Expected output '{}' to contain '{}', got '{}'",
+                output_name,
+                expected_item,
+                s
+            );
+        }
+        _ => {
+            panic!(
+                "Expected output '{}' to be an array or string, got {:?}",
+                output_name, actual
+            );
+        }
+    }
+}
+
 // Zorgtoeslag steps
 
 #[then("the citizen has the right to healthcare allowance")]

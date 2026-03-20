@@ -145,8 +145,9 @@ pub enum ActionValue {
 }
 
 /// Represents an operation within an action
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ActionOperation {
+    #[serde(default)]
     pub operation: Operation,
     /// Subject for comparison operations
     #[serde(default)]
@@ -175,9 +176,36 @@ pub struct ActionOperation {
     /// Default value for SWITCH operations
     #[serde(default)]
     pub default: Option<ActionValue>,
-    /// Unit for SUBTRACT_DATE operation ("days", "months", "years")
+    /// Unit for SUBTRACT_DATE and ADD operations ("days", "months", "years", "weeks")
     #[serde(default)]
     pub unit: Option<String>,
+    /// Date field for ADD with unit (date arithmetic) and NEXT_DAY_NOT_IN
+    #[serde(default)]
+    pub date: Option<ActionValue>,
+    /// Year for DATE operation
+    #[serde(default)]
+    pub year: Option<ActionValue>,
+    /// Month for DATE operation
+    #[serde(default)]
+    pub month: Option<ActionValue>,
+    /// Day for DATE operation
+    #[serde(default)]
+    pub day: Option<ActionValue>,
+    /// Days to add for ADD with unit
+    #[serde(default)]
+    pub days: Option<ActionValue>,
+    /// Weeks to add for ADD with unit
+    #[serde(default)]
+    pub weeks: Option<ActionValue>,
+    /// List of non-working days for NEXT_DAY_NOT_IN
+    #[serde(default)]
+    pub non_working_days: Option<ActionValue>,
+    /// Items for LIST operation
+    #[serde(default)]
+    pub items: Option<Vec<ActionValue>>,
+    /// Lists for concatenation (ADD on arrays)
+    #[serde(default)]
+    pub lists: Option<Vec<ActionValue>>,
 }
 
 /// Action definition in execution spec
@@ -292,6 +320,47 @@ fn default_true() -> bool {
     true
 }
 
+/// Hook point in the execution lifecycle
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HookPoint {
+    /// Fires after open term resolution, before action execution
+    PreActions,
+    /// Fires after action execution, before result return
+    PostActions,
+}
+
+/// Filter predicate for hook matching
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HookFilter {
+    /// Match against execution.produces.legal_character
+    #[serde(default)]
+    pub legal_character: Option<String>,
+    /// Match against execution.produces.decision_type
+    #[serde(default)]
+    pub decision_type: Option<String>,
+}
+
+/// Declaration that this article hooks into other articles' execution lifecycle
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HookDeclaration {
+    /// When in the lifecycle this hook fires
+    pub hook_point: HookPoint,
+    /// Filter predicate: which articles this hook applies to
+    pub applies_to: HookFilter,
+}
+
+/// Declaration that this article overrides another article's output (lex specialis)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OverrideDeclaration {
+    /// The $id of the law being overridden
+    pub law: String,
+    /// The article number being overridden
+    pub article: String,
+    /// The specific output being replaced
+    pub output: String,
+}
+
 /// Declares that this article fills an open term from a higher-level law.
 /// Maps to the "Gelet op" clause in Dutch legislation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -324,6 +393,12 @@ pub struct MachineReadable {
     /// Declares which open terms from higher-level laws this article fills
     #[serde(default)]
     pub implements: Option<Vec<ImplementsDeclaration>>,
+    /// Lifecycle hooks: this article fires at specified points in other articles' execution
+    #[serde(default)]
+    pub hooks: Option<Vec<HookDeclaration>>,
+    /// Lex specialis overrides: this article replaces specific outputs from other articles
+    #[serde(default)]
+    pub overrides: Option<Vec<OverrideDeclaration>>,
 }
 
 /// Represents a single article in a law
@@ -412,6 +487,25 @@ impl Article {
         self.machine_readable
             .as_ref()
             .and_then(|mr| mr.implements.as_ref())
+    }
+
+    /// Get hook declarations from this article.
+    pub fn get_hooks(&self) -> Option<&Vec<HookDeclaration>> {
+        self.machine_readable
+            .as_ref()
+            .and_then(|mr| mr.hooks.as_ref())
+    }
+
+    /// Get override declarations from this article.
+    pub fn get_overrides(&self) -> Option<&Vec<OverrideDeclaration>> {
+        self.machine_readable
+            .as_ref()
+            .and_then(|mr| mr.overrides.as_ref())
+    }
+
+    /// Get the produces annotation from this article's execution spec.
+    pub fn get_produces(&self) -> Option<&Produces> {
+        self.get_execution_spec()?.produces.as_ref()
     }
 }
 

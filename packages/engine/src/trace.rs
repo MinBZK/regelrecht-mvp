@@ -166,6 +166,8 @@ impl PathNode {
             PathNodeType::Article => "article",
             PathNodeType::Cached => "cached",
             PathNodeType::OpenTermResolution => "open_term",
+            PathNodeType::HookResolution => "hook",
+            PathNodeType::OverrideResolution => "override",
         };
 
         // Build the main line
@@ -184,6 +186,8 @@ impl PathNode {
                 ResolveType::ResolvedInput => "resolved_input",
                 ResolveType::DataSource => "data_source",
                 ResolveType::OpenTerm => "open_term",
+                ResolveType::Hook => "hook",
+                ResolveType::Override => "override",
             };
             line.push_str(&format!(" [{}]", rt_str));
         }
@@ -528,6 +532,36 @@ impl PathNode {
                 // OpenTerm children are in double-line scope (cross-document)
                 self.render_double_children(lines, child_base, false, continuation);
             }
+
+            PathNodeType::HookResolution => {
+                let result_str = self
+                    .result
+                    .as_ref()
+                    .map(|v| format!(": {}", format_value_display(v)))
+                    .unwrap_or_default();
+                let msg = self.message.as_deref().unwrap_or(&self.name);
+                lines.push(format!("{}├──HOOK: {}{}", prefix, msg, result_str));
+
+                let child_prefix = format!("{}│   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+            }
+
+            PathNodeType::OverrideResolution => {
+                let result_str = self
+                    .result
+                    .as_ref()
+                    .map(|v| format!(": {}", format_value_display(v)))
+                    .unwrap_or_default();
+                let msg = self.message.as_deref().unwrap_or(&self.name);
+                lines.push(format!("{}├──OVERRIDE: {}{}", prefix, msg, result_str));
+
+                let child_prefix = format!("{}│   ", prefix);
+                for child in &self.children {
+                    child.render_box_node(lines, &child_prefix);
+                }
+            }
         }
     }
 
@@ -542,6 +576,8 @@ impl PathNode {
             PathNodeType::Article => "art",
             PathNodeType::Cached => "cache",
             PathNodeType::OpenTermResolution => "ot",
+            PathNodeType::HookResolution => "hook",
+            PathNodeType::OverrideResolution => "ovr",
         };
 
         let result_str = self
@@ -642,6 +678,8 @@ fn resolve_type_name(rt: &ResolveType) -> &'static str {
         ResolveType::ResolvedInput => "RESOLVED_INPUT",
         ResolveType::DataSource => "DATA_SOURCE",
         ResolveType::OpenTerm => "OPEN_TERM",
+        ResolveType::Hook => "HOOK",
+        ResolveType::Override => "OVERRIDE",
     }
 }
 

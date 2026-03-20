@@ -471,12 +471,9 @@ impl<'a> ArticleEngine<'a> {
             then: action.then.clone(),
             else_branch: action.else_branch.clone(),
             conditions: action.conditions.clone(),
-            // SWITCH-specific fields: Action struct doesn't have these,
-            // so SWITCH must be nested inside `value` to work correctly
-            cases: None,
-            default: None,
-            // Unit for SUBTRACT_DATE
+            // Unit for SUBTRACT_DATE and date arithmetic
             unit: action.unit.clone(),
+            ..Default::default()
         })
     }
 

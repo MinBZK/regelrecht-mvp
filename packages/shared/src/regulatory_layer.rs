@@ -19,6 +19,10 @@ pub enum RegulatoryLayer {
     #[default]
     Wet,
 
+    /// Royal decree (Koninklijk Besluit).
+    #[serde(rename = "KONINKLIJK_BESLUIT")]
+    KoninklijkBesluit,
+
     /// General administrative measure (Algemene Maatregel van Bestuur).
     #[serde(rename = "AMVB")]
     Amvb,
@@ -63,6 +67,7 @@ impl RegulatoryLayer {
         match self {
             Self::Grondwet => "GRONDWET",
             Self::Wet => "WET",
+            Self::KoninklijkBesluit => "KONINKLIJK_BESLUIT",
             Self::Amvb => "AMVB",
             Self::MinisterieleRegeling => "MINISTERIELE_REGELING",
             Self::Beleidsregel => "BELEIDSREGEL",
@@ -81,6 +86,7 @@ impl RegulatoryLayer {
         match self {
             Self::Grondwet => "grondwet",
             Self::Wet => "wet",
+            Self::KoninklijkBesluit => "koninklijk_besluit",
             Self::Amvb => "amvb",
             Self::MinisterieleRegeling => "ministeriele_regeling",
             Self::Beleidsregel => "beleidsregel",

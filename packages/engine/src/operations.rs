@@ -240,6 +240,12 @@ fn execute_operation_internal<R: ValueResolver>(
 
         // Date operations
         Operation::SubtractDate => execute_subtract_date(op, resolver, depth),
+        Operation::Date => execute_date(op, resolver, depth),
+        Operation::DayOfWeek => execute_day_of_week(op, resolver, depth),
+        Operation::NextDayNotIn => execute_next_day_not_in(op, resolver, depth),
+
+        // Collection operations
+        Operation::List => execute_list(op, resolver, depth),
     }
 }
 
@@ -361,12 +367,27 @@ where
 // Arithmetic Operations
 // =============================================================================
 
-/// Execute ADD operation: sum of all values.
+/// Execute ADD operation: sum of numbers, date arithmetic, or array concatenation.
+///
+/// Polymorphic dispatch:
+/// - If `date` field is present: date arithmetic (add days/weeks to a date)
+/// - If `lists` field is present: array concatenation
+/// - Otherwise: numeric sum (original behavior)
 fn execute_add<R: ValueResolver>(
     op: &ActionOperation,
     resolver: &R,
     depth: usize,
 ) -> Result<Value> {
+    // Polymorphic dispatch: date arithmetic
+    if op.date.is_some() {
+        return execute_date_add(op, resolver, depth);
+    }
+
+    // Polymorphic dispatch: array concatenation
+    if op.lists.is_some() {
+        return execute_concat(op, resolver, depth);
+    }
+
     let values = get_values(op)?;
     let evaluated = evaluate_values(values, resolver, depth)?;
 
@@ -1086,6 +1107,227 @@ fn type_error(expected: &str, actual: &Value) -> EngineError {
 }
 
 // =============================================================================
+// Date Construction Operations
+// =============================================================================
+
+/// Execute DATE operation: construct a date from year, month, day.
+///
+/// Returns a date string in ISO 8601 format (YYYY-MM-DD).
+fn execute_date<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    let year = op
+        .year
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE requires 'year'".to_string()))?;
+    let month = op
+        .month
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE requires 'month'".to_string()))?;
+    let day = op
+        .day
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE requires 'day'".to_string()))?;
+
+    let year_val = evaluate_value(year, resolver, depth)?
+        .as_int()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE: year must be a number".to_string()))?;
+    let month_val = evaluate_value(month, resolver, depth)?
+        .as_int()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE: month must be a number".to_string()))?;
+    let day_val = evaluate_value(day, resolver, depth)?
+        .as_int()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE: day must be a number".to_string()))?;
+
+    let date = NaiveDate::from_ymd_opt(year_val as i32, month_val as u32, day_val as u32)
+        .ok_or_else(|| {
+            EngineError::InvalidOperation(format!(
+                "DATE: invalid date {}-{}-{}",
+                year_val, month_val, day_val
+            ))
+        })?;
+
+    Ok(Value::String(date.format("%Y-%m-%d").to_string()))
+}
+
+/// Execute DAY_OF_WEEK operation: return day of week (0=Monday..6=Sunday).
+fn execute_day_of_week<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    let date_value = op
+        .date
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("DAY_OF_WEEK requires 'date'".to_string()))?;
+
+    let date_val = evaluate_value(date_value, resolver, depth)?;
+    let date = parse_date(&date_val)?;
+
+    // Monday = 0, Sunday = 6 (chrono's weekday().num_days_from_monday())
+    Ok(Value::Int(date.weekday().num_days_from_monday() as i64))
+}
+
+/// Execute NEXT_DAY_NOT_IN operation: advance a date past weekends and listed dates.
+///
+/// Pure function — no domain knowledge. If the date falls on a Saturday (5),
+/// Sunday (6), or is in the non_working_days list, advance to the next day
+/// that isn't any of those. Max 365 iterations to prevent infinite loops.
+fn execute_next_day_not_in<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    let date_value = op.date.as_ref().ok_or_else(|| {
+        EngineError::InvalidOperation("NEXT_DAY_NOT_IN requires 'date'".to_string())
+    })?;
+    let non_working = op.non_working_days.as_ref().ok_or_else(|| {
+        EngineError::InvalidOperation("NEXT_DAY_NOT_IN requires 'non_working_days'".to_string())
+    })?;
+
+    let date_val = evaluate_value(date_value, resolver, depth)?;
+    let mut date = parse_date(&date_val)?;
+
+    let non_working_val = evaluate_value(non_working, resolver, depth)?;
+    let non_working_dates: Vec<NaiveDate> = match &non_working_val {
+        Value::Array(arr) => {
+            let mut dates = Vec::with_capacity(arr.len());
+            for v in arr {
+                dates.push(parse_date(v)?);
+            }
+            dates
+        }
+        _ => {
+            return Err(EngineError::InvalidOperation(
+                "NEXT_DAY_NOT_IN: non_working_days must be an array".to_string(),
+            ))
+        }
+    };
+
+    // Advance past weekends and non-working days (max 365 iterations)
+    for _ in 0..365 {
+        let weekday = date.weekday().num_days_from_monday();
+        if weekday < 5 && !non_working_dates.contains(&date) {
+            break;
+        }
+        date = date.succ_opt().ok_or_else(|| {
+            EngineError::InvalidOperation("NEXT_DAY_NOT_IN: date overflow".to_string())
+        })?;
+    }
+
+    Ok(Value::String(date.format("%Y-%m-%d").to_string()))
+}
+
+// =============================================================================
+// Collection Operations
+// =============================================================================
+
+/// Execute LIST operation: evaluate items and collect into an array.
+fn execute_list<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    let items = op
+        .items
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("LIST requires 'items'".to_string()))?;
+
+    let mut result = Vec::with_capacity(items.len());
+    for item in items {
+        result.push(evaluate_value(item, resolver, depth)?);
+    }
+
+    Ok(Value::Array(result))
+}
+
+// =============================================================================
+// Polymorphic ADD extension for date arithmetic
+// =============================================================================
+
+/// Execute ADD with date arithmetic when a `date` field and `days`/`weeks` are present.
+///
+/// This extends the existing ADD operation to handle date + duration.
+/// Called from execute_add when the operation has date-specific fields.
+fn execute_date_add<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    let date_value = op
+        .date
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("DATE_ADD requires 'date'".to_string()))?;
+
+    let date_val = evaluate_value(date_value, resolver, depth)?;
+    let date = parse_date(&date_val)?;
+
+    // Determine the number of days to add
+    let total_days: i64 = if let Some(ref days_val) = op.days {
+        evaluate_value(days_val, resolver, depth)?
+            .as_int()
+            .ok_or_else(|| {
+                EngineError::InvalidOperation("DATE_ADD: days must be a number".to_string())
+            })?
+    } else if let Some(ref weeks_val) = op.weeks {
+        let weeks = evaluate_value(weeks_val, resolver, depth)?
+            .as_int()
+            .ok_or_else(|| {
+                EngineError::InvalidOperation("DATE_ADD: weeks must be a number".to_string())
+            })?;
+        weeks * 7
+    } else {
+        return Err(EngineError::InvalidOperation(
+            "DATE_ADD requires 'days' or 'weeks'".to_string(),
+        ));
+    };
+
+    let result = date
+        .checked_add_signed(chrono::Duration::days(total_days))
+        .ok_or_else(|| {
+            EngineError::InvalidOperation(format!(
+                "DATE_ADD: overflow adding {} days to {}",
+                total_days, date
+            ))
+        })?;
+
+    Ok(Value::String(result.format("%Y-%m-%d").to_string()))
+}
+
+// =============================================================================
+// Polymorphic ADD extension for array concatenation
+// =============================================================================
+
+/// Execute ADD with array concatenation when `lists` field is present.
+fn execute_concat<R: ValueResolver>(
+    op: &ActionOperation,
+    resolver: &R,
+    depth: usize,
+) -> Result<Value> {
+    let lists = op
+        .lists
+        .as_ref()
+        .ok_or_else(|| EngineError::InvalidOperation("CONCAT requires 'lists'".to_string()))?;
+
+    let mut result = Vec::new();
+    for list_val in lists {
+        let val = evaluate_value(list_val, resolver, depth)?;
+        match val {
+            Value::Array(arr) => result.extend(arr),
+            _ => {
+                return Err(EngineError::InvalidOperation(
+                    "CONCAT: each item in 'lists' must be an array".to_string(),
+                ))
+            }
+        }
+    }
+
+    Ok(Value::Array(result))
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
@@ -1153,6 +1395,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1174,6 +1417,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1195,6 +1439,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1216,6 +1461,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1237,6 +1483,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1260,6 +1507,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             assert_eq!(
                 execute_operation(&op, &resolver, 0).unwrap(),
@@ -1279,6 +1527,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             assert_eq!(
                 execute_operation(&op2, &resolver, 0).unwrap(),
@@ -1303,6 +1552,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             assert_eq!(
                 execute_operation(&op, &resolver, 0).unwrap(),
@@ -1322,6 +1572,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             assert_eq!(
                 execute_operation(&op2, &resolver, 0).unwrap(),
@@ -1347,6 +1598,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1370,6 +1622,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             let result = execute_operation(&op, &resolver, 0).unwrap();
             assert_eq!(result, Value::Bool(true));
@@ -1387,6 +1640,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             let result2 = execute_operation(&op2, &resolver, 0).unwrap();
             assert_eq!(result2, Value::Bool(true));
@@ -1404,6 +1658,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
             let result3 = execute_operation(&op3, &resolver, 0).unwrap();
             assert_eq!(result3, Value::Bool(true));
@@ -1432,6 +1687,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1453,6 +1709,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1474,6 +1731,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1495,6 +1753,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1516,6 +1775,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1537,6 +1797,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -1561,6 +1822,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1590,6 +1852,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1611,6 +1874,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1632,6 +1896,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1653,6 +1918,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1682,6 +1948,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1703,6 +1970,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1724,6 +1992,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1745,6 +2014,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1770,6 +2040,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             }));
 
             let op = ActionOperation {
@@ -1784,6 +2055,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1814,6 +2086,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1835,6 +2108,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1856,6 +2130,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1878,6 +2153,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             }));
 
             let op = ActionOperation {
@@ -1892,6 +2168,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1922,6 +2199,7 @@ mod tests {
                 ]),
                 default: Some(lit(0i64)),
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1952,6 +2230,7 @@ mod tests {
                 ]),
                 default: Some(lit(0i64)),
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -1982,6 +2261,7 @@ mod tests {
                 ]),
                 default: Some(lit(0i64)),
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2006,6 +2286,7 @@ mod tests {
                 }]),
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2039,6 +2320,7 @@ mod tests {
                             cases: None,
                             default: None,
                             unit: None,
+                            ..Default::default()
                         })),
                         then: lit(10i64),
                     },
@@ -2055,12 +2337,14 @@ mod tests {
                             cases: None,
                             default: None,
                             unit: None,
+                            ..Default::default()
                         })),
                         then: lit(20i64),
                     },
                 ]),
                 default: Some(lit(0i64)),
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2092,6 +2376,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             }));
 
             let op = ActionOperation {
@@ -2106,6 +2391,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2129,6 +2415,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             }));
 
             let then_branch = ActionValue::Operation(Box::new(ActionOperation {
@@ -2143,6 +2430,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             }));
 
             let else_branch = ActionValue::Operation(Box::new(ActionOperation {
@@ -2157,6 +2445,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             }));
 
             let op = ActionOperation {
@@ -2171,6 +2460,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2200,6 +2490,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2221,6 +2512,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2242,6 +2534,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2263,6 +2556,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2284,6 +2578,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2305,6 +2600,7 @@ mod tests {
                 cases: None,
                 default: Some(lit(0i64)),
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2327,6 +2623,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2353,6 +2650,7 @@ mod tests {
                     cases: None,
                     default: None,
                     unit: None,
+                    ..Default::default()
                 }));
             }
 
@@ -2510,6 +2808,7 @@ mod tests {
                 cases: None,
                 default: None,
                 unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2534,15 +2833,7 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::IsNull,
                 subject: Some(var("nullable")),
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2555,15 +2846,7 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::IsNull,
                 subject: Some(var("value")),
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2576,15 +2859,7 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::IsNull,
                 subject: Some(ActionValue::Literal(Value::Null)),
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2597,15 +2872,7 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::NotNull,
                 subject: Some(var("nullable")),
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2618,15 +2885,7 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::NotNull,
                 subject: Some(var("value")),
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2638,16 +2897,7 @@ mod tests {
             let resolver = TestResolver::new();
             let op = ActionOperation {
                 operation: Operation::IsNull,
-                subject: None,
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2668,15 +2918,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::In,
                 subject: Some(lit(42i64)),
-                value: None,
                 values: Some(vec![lit(10i64), lit(20i64), lit(42i64), lit(50i64)]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2689,15 +2932,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::In,
                 subject: Some(lit(99i64)),
-                value: None,
                 values: Some(vec![lit(10i64), lit(20i64), lit(42i64), lit(50i64)]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2710,15 +2946,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::In,
                 subject: Some(lit("apple")),
-                value: None,
                 values: Some(vec![lit("banana"), lit("apple"), lit("orange")]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2732,15 +2961,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::In,
                 subject: Some(lit(42i64)),
-                value: None,
                 values: Some(vec![lit(10i64), lit(42.0f64), lit(50i64)]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2753,15 +2975,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::NotIn,
                 subject: Some(lit(42i64)),
-                value: None,
                 values: Some(vec![lit(10i64), lit(20i64), lit(42i64), lit(50i64)]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2774,15 +2989,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::NotIn,
                 subject: Some(lit(99i64)),
-                value: None,
                 values: Some(vec![lit(10i64), lit(20i64), lit(42i64), lit(50i64)]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2802,15 +3010,8 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::In,
                 subject: Some(var("status")),
-                value: None,
                 values: Some(vec![lit("active"), lit("pending"), lit("inactive")]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2822,16 +3023,8 @@ mod tests {
             let resolver = TestResolver::new();
             let op = ActionOperation {
                 operation: Operation::In,
-                subject: None,
-                value: None,
                 values: Some(vec![lit(1i64), lit(2i64)]),
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2844,15 +3037,7 @@ mod tests {
             let op = ActionOperation {
                 operation: Operation::In,
                 subject: Some(lit(42i64)),
-                value: None,
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -2874,14 +3059,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-01-15")),
                 value: Some(lit("2025-01-10")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2895,14 +3074,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-01-10")),
                 value: Some(lit("2025-01-15")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2917,14 +3090,7 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-01-20")),
                 value: Some(lit("2025-01-01")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
-                unit: None,
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2938,14 +3104,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-05-15")),
                 value: Some(lit("2025-01-15")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2960,14 +3120,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-05-14")),
                 value: Some(lit("2025-01-15")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -2983,14 +3137,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-02-28")),
                 value: Some(lit("2025-01-31")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
             assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
 
@@ -2999,14 +3147,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-02-28")),
                 value: Some(lit("2025-01-29")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
             assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
 
@@ -3015,14 +3157,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-02-28")),
                 value: Some(lit("2025-01-30")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
             assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
 
@@ -3031,14 +3167,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-02-15")),
                 value: Some(lit("2025-01-31")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
             assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(0));
 
@@ -3047,14 +3177,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-04-30")),
                 value: Some(lit("2025-03-31")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
             assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
 
@@ -3063,14 +3187,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2024-02-29")),
                 value: Some(lit("2024-01-31")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("months".to_string()),
+                ..Default::default()
             };
             assert_eq!(execute_operation(&op, &resolver, 0).unwrap(), Value::Int(1));
         }
@@ -3082,14 +3200,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-06-15")),
                 value: Some(lit("2020-06-15")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3104,14 +3216,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-06-14")),
                 value: Some(lit("2020-06-15")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3125,14 +3231,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2020-01-01")),
                 value: Some(lit("2025-01-01")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3149,14 +3249,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(var("reference_date")),
                 value: Some(var("birth_date")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3170,14 +3264,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("15-01-2025")), // Wrong format
                 value: Some(lit("2025-01-10")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -3191,14 +3279,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-01-15")),
                 value: Some(lit("2025-01-10")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("weeks".to_string()), // Unsupported unit
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -3210,16 +3292,9 @@ mod tests {
             let resolver = TestResolver::new();
             let op = ActionOperation {
                 operation: Operation::SubtractDate,
-                subject: None,
                 value: Some(lit("2025-01-10")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -3233,14 +3308,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit(12345i64)), // Not a date string
                 value: Some(lit("2025-01-10")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0);
@@ -3255,14 +3324,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2024-03-01")),
                 value: Some(lit("2024-02-28")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3276,14 +3339,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2025-01-15")),
                 value: Some(lit("2025-01-15")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("days".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3299,14 +3356,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2001-02-28")),
                 value: Some(lit("2000-02-29")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3322,14 +3373,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2001-02-27")),
                 value: Some(lit("2000-02-29")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3344,14 +3389,8 @@ mod tests {
                 operation: Operation::SubtractDate,
                 subject: Some(lit("2004-02-29")),
                 value: Some(lit("2000-02-29")),
-                values: None,
-                when: None,
-                then: None,
-                else_branch: None,
-                conditions: None,
-                cases: None,
-                default: None,
                 unit: Some("years".to_string()),
+                ..Default::default()
             };
 
             let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3380,14 +3419,8 @@ mod tests {
             operation: Operation::SubtractDate,
             subject: Some(var("referencedate")),
             value: Some(var("geboortedatum")),
-            values: None,
-            when: None,
-            then: None,
-            else_branch: None,
-            conditions: None,
-            cases: None,
-            default: None,
             unit: Some("years".to_string()),
+            ..Default::default()
         };
 
         let result = execute_operation(&op, &resolver, 0).unwrap();
@@ -3405,14 +3438,8 @@ mod tests {
             operation: Operation::SubtractDate,
             subject: Some(var("bad_date")),
             value: Some(lit("2020-01-01")),
-            values: None,
-            when: None,
-            then: None,
-            else_branch: None,
-            conditions: None,
-            cases: None,
-            default: None,
             unit: Some("years".to_string()),
+            ..Default::default()
         };
 
         let result = execute_operation(&op, &resolver, 0);

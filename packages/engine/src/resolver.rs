@@ -19,7 +19,7 @@
 //! The resolver enforces a maximum number of loaded laws (see [`crate::config::MAX_LOADED_LAWS`])
 //! to prevent memory exhaustion attacks.
 
-use crate::article::{Article, ArticleBasedLaw};
+use crate::article::{Article, ArticleBasedLaw, HookFilter, HookPoint};
 use crate::config;
 use crate::error::{EngineError, Result};
 use crate::priority::{self, Candidate};
@@ -61,6 +61,9 @@ use std::collections::HashMap;
 /// // Find article by output
 /// let article = resolver.get_article_by_output("zorgtoeslagwet", "standaardpremie", None);
 /// ```
+/// Entry in the hooks index: (law_id, article_number, filter).
+type HookEntry = (String, String, HookFilter);
+
 pub struct RuleResolver {
     /// Registry of loaded laws by ID, supporting multiple versions per law ID.
     /// Each law ID maps to a list of versions, sorted by valid_from date (newest first).
@@ -70,6 +73,10 @@ pub struct RuleResolver {
     output_index: HashMap<(String, String), String>,
     /// IoC index: (law_id, article, open_term_id) -> list of (implementing_law_id, implementing_article_number)
     implements_index: HashMap<(String, String, String), Vec<(String, String)>>,
+    /// Hooks index: (hook_point, legal_character) -> list of hook entries
+    hooks_index: HashMap<(HookPoint, String), Vec<HookEntry>>,
+    /// Overrides index: (target_law, target_article, output) -> list of (overriding_law, overriding_article)
+    overrides_index: HashMap<(String, String, String), Vec<(String, String)>>,
 }
 
 impl Default for RuleResolver {
@@ -85,6 +92,8 @@ impl RuleResolver {
             law_versions: HashMap::new(),
             output_index: HashMap::new(),
             implements_index: HashMap::new(),
+            hooks_index: HashMap::new(),
+            overrides_index: HashMap::new(),
         }
     }
 
@@ -590,8 +599,93 @@ impl RuleResolver {
                             }
                         }
                     }
+
+                    // Hooks index
+                    if let Some(hook_decls) = article.get_hooks() {
+                        for decl in hook_decls {
+                            if let Some(ref lc) = decl.applies_to.legal_character {
+                                let key = (decl.hook_point, lc.clone());
+                                let entry = (
+                                    law_id.to_string(),
+                                    article.number.clone(),
+                                    decl.applies_to.clone(),
+                                );
+                                let candidates = self.hooks_index.entry(key).or_default();
+                                if !candidates
+                                    .iter()
+                                    .any(|(l, a, _)| l == law_id && a == &article.number)
+                                {
+                                    candidates.push(entry);
+                                }
+                            }
+                        }
+                    }
+
+                    // Overrides index
+                    if let Some(override_decls) = article.get_overrides() {
+                        for decl in override_decls {
+                            let key = (decl.law.clone(), decl.article.clone(), decl.output.clone());
+                            let entry = (law_id.to_string(), article.number.clone());
+                            let candidates = self.overrides_index.entry(key).or_default();
+                            if !candidates.contains(&entry) {
+                                candidates.push(entry);
+                            }
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    /// Find hooks matching a given hook point and legal character.
+    ///
+    /// Returns matching (law_id, article_number, HookFilter) entries.
+    /// Post-filters by decision_type if the hook's applies_to specifies one.
+    pub fn find_hooks(
+        &self,
+        hook_point: HookPoint,
+        legal_character: &str,
+        decision_type: Option<&str>,
+    ) -> Vec<(&str, &str, &HookFilter)> {
+        let key = (hook_point, legal_character.to_string());
+        match self.hooks_index.get(&key) {
+            Some(entries) => entries
+                .iter()
+                .filter(|(_, _, filter)| {
+                    // Post-filter by decision_type if the hook specifies one
+                    match (&filter.decision_type, decision_type) {
+                        (Some(filter_dt), Some(actual_dt)) => filter_dt == actual_dt,
+                        (Some(_), None) => false, // Hook requires a decision_type but article doesn't have one
+                        (None, _) => true,        // Hook doesn't filter on decision_type
+                    }
+                })
+                .map(|(law_id, art_num, filter)| (law_id.as_str(), art_num.as_str(), filter))
+                .collect(),
+            None => Vec::new(),
+        }
+    }
+
+    /// Find overrides for a specific (target_law, target_article, output) combination.
+    ///
+    /// Returns all overriding (law_id, article_number) entries.
+    /// Caller must filter by contextual_law_id.
+    pub fn find_overrides(
+        &self,
+        target_law: &str,
+        target_article: &str,
+        output: &str,
+    ) -> Vec<(&str, &str)> {
+        let key = (
+            target_law.to_string(),
+            target_article.to_string(),
+            output.to_string(),
+        );
+        match self.overrides_index.get(&key) {
+            Some(entries) => entries
+                .iter()
+                .map(|(law_id, art_num)| (law_id.as_str(), art_num.as_str()))
+                .collect(),
+            None => Vec::new(),
         }
     }
 
@@ -605,6 +699,18 @@ impl RuleResolver {
             candidates.retain(|(impl_law_id, _)| impl_law_id != law_id);
         }
         self.implements_index.retain(|_, v| !v.is_empty());
+
+        // Remove from hooks index
+        for candidates in self.hooks_index.values_mut() {
+            candidates.retain(|(hook_law_id, _, _)| hook_law_id != law_id);
+        }
+        self.hooks_index.retain(|_, v| !v.is_empty());
+
+        // Remove from overrides index
+        for candidates in self.overrides_index.values_mut() {
+            candidates.retain(|(ovr_law_id, _)| ovr_law_id != law_id);
+        }
+        self.overrides_index.retain(|_, v| !v.is_empty());
     }
 }
 

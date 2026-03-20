@@ -84,6 +84,30 @@ fn execute_healthcare_allowance(world: &mut RegelrechtWorld) {
     world.execute_law("zorgtoeslagwet", "hoogte_zorgtoeslag");
 }
 
+// =============================================================================
+// Bezwaartermijn steps
+// =============================================================================
+
+#[when("the zorgtoeslag beschikking is executed")]
+fn execute_zorgtoeslag_beschikking(world: &mut RegelrechtWorld) {
+    world.execute_law("zorgtoeslagwet", "heeft_recht_op_zorgtoeslag");
+}
+
+#[when("the vreemdelingenwet beschikking is executed")]
+fn execute_vreemdelingenwet_beschikking(world: &mut RegelrechtWorld) {
+    world.execute_law("vreemdelingenwet_2000", "verblijfsvergunning_verleend");
+}
+
+#[when("the feestdagen calendar is requested")]
+fn request_feestdagen_calendar(world: &mut RegelrechtWorld) {
+    world.execute_law("algemene_termijnenwet", "feestdagen");
+}
+
+#[when("the termijn extension is requested")]
+fn request_termijn_extension(world: &mut RegelrechtWorld) {
+    world.execute_law("algemene_termijnenwet", "verlengde_einddatum");
+}
+
 fn register_if_present(
     service: &mut regelrecht_engine::LawExecutionService,
     name: &str,

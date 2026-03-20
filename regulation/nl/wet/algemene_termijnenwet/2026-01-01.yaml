@@ -1,0 +1,196 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht-mvp/refs/heads/main/schema/v0.4.0/schema.json
+$id: algemene_termijnenwet
+regulatory_layer: WET
+publication_date: '2026-01-01'
+valid_from: '1964-07-29'
+name: Algemene termijnenwet
+bwb_id: BWBR0002448
+url: https://wetten.overheid.nl/BWBR0002448/2023-01-01
+articles:
+  - number: '1'
+    text: |-
+      Een in een wet gestelde termijn die op een zaterdag, zondag
+      of algemeen erkende feestdag eindigt, wordt verlengd tot en
+      met de eerstvolgende dag die niet een zaterdag, zondag of
+      algemeen erkende feestdag is.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel1
+    machine_readable:
+      execution:
+        parameters:
+          - name: termijn_einddatum
+            type: date
+            required: true
+            description: De einddatum van de termijn die mogelijk verlengd moet worden
+          - name: jaar
+            type: number
+            required: true
+            description: Het jaar waarvoor feestdagen berekend worden
+          - name: pasen_datum
+            type: date
+            required: true
+            description: Eerste Paasdag voor het betreffende jaar
+        input:
+          - name: feestdagen
+            type: array
+            source:
+              regulation: algemene_termijnenwet
+              output: feestdagen
+              parameters:
+                jaar: $jaar
+                pasen_datum: $pasen_datum
+        output:
+          - name: verlengde_einddatum
+            type: date
+        actions:
+          - output: verlengde_einddatum
+            value:
+              operation: NEXT_DAY_NOT_IN
+              date: $termijn_einddatum
+              non_working_days: $feestdagen
+
+  - number: '2'
+    text: |-
+      Een in een wet gestelde termijn van ten minste drie dagen
+      wordt, zo nodig, zoveel verlengd dat daarin ten minste twee
+      dagen voorkomen die niet een zaterdag, zondag of algemeen
+      erkende feestdag zijn.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel2
+
+  - number: '3'
+    text: |-
+      1. Algemeen erkende feestdagen in de zin van deze wet zijn:
+      de Nieuwjaarsdag, de Christelijke tweede Paas- en Pinksterdag,
+      de beide Kerstdagen, de Hemelvaartsdag, de dag waarop de
+      verjaardag van de Koning wordt gevierd en de vijfde mei.
+      2. Voor de toepassing van deze wet wordt de Goede Vrijdag met
+      de in het vorige lid genoemde dagen gelijkgesteld.
+      3. Wij kunnen bepaalde dagen voor de toepassing van deze wet
+      met de in het eerste lid genoemde gelijkstellen.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel3
+    machine_readable:
+      open_terms:
+        - id: gelijkgestelde_dagen
+          type: list
+          required: false
+          delegated_to: kroon
+          delegation_type: KONINKLIJK_BESLUIT
+          legal_basis: artikel 3 lid 3 Algemene termijnenwet
+          default:
+            actions:
+              - output: gelijkgestelde_dagen
+                value:
+                  operation: LIST
+                  items: []
+      execution:
+        parameters:
+          - name: jaar
+            type: number
+            required: true
+            description: Het jaar waarvoor feestdagen berekend worden
+          - name: pasen_datum
+            type: date
+            required: true
+            description: Eerste Paasdag voor het betreffende jaar
+        output:
+          - name: feestdagen
+            type: array
+        actions:
+          # Koningsdag: 27 april, verschuift naar 26 april als het zondag is
+          - output: koningsdag
+            value:
+              operation: IF
+              when:
+                operation: EQUALS
+                subject:
+                  operation: DAY_OF_WEEK
+                  date:
+                    operation: DATE
+                    year: $jaar
+                    month: 4
+                    day: 27
+                value: 6
+              then:
+                operation: DATE
+                year: $jaar
+                month: 4
+                day: 26
+              else:
+                operation: DATE
+                year: $jaar
+                month: 4
+                day: 27
+
+          # Vaste feestdagen (lid 1)
+          - output: vaste_feestdagen
+            value:
+              operation: LIST
+              items:
+                - operation: DATE
+                  year: $jaar
+                  month: 1
+                  day: 1
+                - $koningsdag
+                - operation: DATE
+                  year: $jaar
+                  month: 5
+                  day: 5
+                - operation: DATE
+                  year: $jaar
+                  month: 12
+                  day: 25
+                - operation: DATE
+                  year: $jaar
+                  month: 12
+                  day: 26
+
+          # Paasafhankelijke feestdagen (lid 1 + lid 2)
+          - output: paas_feestdagen
+            value:
+              operation: LIST
+              items:
+                - operation: ADD
+                  date: $pasen_datum
+                  days: -2
+                - operation: ADD
+                  date: $pasen_datum
+                  days: 1
+                - operation: ADD
+                  date: $pasen_datum
+                  days: 39
+                - operation: ADD
+                  date: $pasen_datum
+                  days: 50
+
+          # Samenvoeging: vaste + paasafhankelijk + gelijkgesteld (lid 3, IoC)
+          - output: feestdagen
+            value:
+              operation: ADD
+              lists:
+                - $vaste_feestdagen
+                - $paas_feestdagen
+                - $gelijkgestelde_dagen
+
+  - number: '4'
+    text: |-
+      De voorgaande artikelen zijn niet van toepassing op een
+      termijn die wordt uitgedrukt in maanden of jaren en meer
+      bedraagt dan drie maanden.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel4
+
+  - number: '5'
+    text: |-
+      Deze wet is uitsluitend van toepassing op termijnen
+      gesteld in wetten en in algemene maatregelen van bestuur.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel5
+
+  - number: '6'
+    text: |-
+      Termijnen van verjaring zijn van de toepassing van deze
+      wet uitgezonderd.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel6
+
+  - number: '7'
+    text: |-
+      Deze wet kan worden aangehaald als Algemene termijnenwet.
+    url: https://wetten.overheid.nl/BWBR0002448/2023-01-01#Artikel7

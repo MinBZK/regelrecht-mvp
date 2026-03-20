@@ -314,10 +314,11 @@ impl fmt::Display for Value {
 }
 
 /// Operation types supported by the engine
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Operation {
     // Comparison operations (6)
+    #[default]
     Equals,
     NotEquals,
     GreaterThan,
@@ -351,8 +352,14 @@ pub enum Operation {
     In,
     NotIn,
 
-    // Date operations (1)
+    // Date operations (4)
     SubtractDate,
+    Date,
+    DayOfWeek,
+    NextDayNotIn,
+
+    // Collection operations (1)
+    List,
 }
 
 impl Operation {
@@ -404,7 +411,18 @@ impl Operation {
 
     /// Check if this is a date operation
     pub fn is_date(&self) -> bool {
-        matches!(self, Operation::SubtractDate)
+        matches!(
+            self,
+            Operation::SubtractDate
+                | Operation::Date
+                | Operation::DayOfWeek
+                | Operation::NextDayNotIn
+        )
+    }
+
+    /// Check if this is a collection operation
+    pub fn is_collection(&self) -> bool {
+        matches!(self, Operation::List)
     }
 
     /// Get the operation name as a static uppercase string.
@@ -433,6 +451,10 @@ impl Operation {
             Operation::In => "IN",
             Operation::NotIn => "NOTIN",
             Operation::SubtractDate => "SUBTRACTDATE",
+            Operation::Date => "DATE",
+            Operation::DayOfWeek => "DAYOFWEEK",
+            Operation::NextDayNotIn => "NEXTDAYNOTIN",
+            Operation::List => "LIST",
         }
     }
 }
@@ -473,6 +495,10 @@ pub enum PathNodeType {
     Cached,
     /// Open term resolution via IoC (implements lookup)
     OpenTermResolution,
+    /// Hook resolution (lifecycle hook firing)
+    HookResolution,
+    /// Override resolution (lex specialis)
+    OverrideResolution,
 }
 
 /// Resolve type for variable resolution
@@ -499,6 +525,10 @@ pub enum ResolveType {
     DataSource,
     /// Value resolved via open term implementation (IoC)
     OpenTerm,
+    /// Value resolved via lifecycle hook
+    Hook,
+    /// Value resolved via lex specialis override
+    Override,
 }
 
 #[cfg(test)]

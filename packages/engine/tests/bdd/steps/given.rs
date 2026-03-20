@@ -47,6 +47,17 @@ fn set_query_data(world: &mut RegelrechtWorld, step: &Step) {
 }
 
 // =============================================================================
+// Bezwaartermijn steps
+// =============================================================================
+
+#[given("a bezwaartermijn query with the following data:")]
+fn set_bezwaartermijn_data(world: &mut RegelrechtWorld, step: &Step) {
+    if let Some(table) = &step.table {
+        world.parameters = parse_table_to_params(table);
+    }
+}
+
+// =============================================================================
 // Zorgtoeslag external data steps
 // =============================================================================
 

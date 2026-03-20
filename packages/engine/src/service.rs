@@ -25,7 +25,7 @@
 //! )?;
 //! ```
 
-use crate::article::{Article, ArticleBasedLaw, Execution, Input, MachineReadable};
+use crate::article::{Article, ArticleBasedLaw, Execution, HookPoint, Input, MachineReadable};
 use crate::config;
 use crate::context::RuleContext;
 use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
@@ -64,6 +64,8 @@ struct ResolutionContext<'a> {
     trace: Option<Rc<RefCell<TraceBuilder>>>,
     /// Per-execution memoization cache: canonical key → outputs map
     cache: HashMap<String, HashMap<String, Value>>,
+    /// The law that initiated the current execution chain (for override scoping)
+    contextual_law_id: Option<String>,
 }
 
 impl<'a> ResolutionContext<'a> {
@@ -75,6 +77,7 @@ impl<'a> ResolutionContext<'a> {
             depth: 0,
             trace: None,
             cache: HashMap::new(),
+            contextual_law_id: None,
         }
     }
 
@@ -86,6 +89,7 @@ impl<'a> ResolutionContext<'a> {
             depth: 0,
             trace: Some(trace),
             cache: HashMap::new(),
+            contextual_law_id: None,
         }
     }
 
@@ -287,6 +291,8 @@ impl LawExecutionService {
         calculation_date: &str,
     ) -> Result<ArticleResult> {
         let mut res_ctx = ResolutionContext::new(calculation_date);
+        // Set the contextual law for override scoping
+        res_ctx.contextual_law_id = Some(law_id.to_string());
         self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)
     }
 
@@ -325,6 +331,8 @@ impl LawExecutionService {
         }
 
         let mut res_ctx = ResolutionContext::with_trace(calculation_date, Rc::clone(&trace));
+        // Set the contextual law for override scoping
+        res_ctx.contextual_law_id = Some(law_id.to_string());
         let mut result =
             self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)?;
 
@@ -437,6 +445,9 @@ impl LawExecutionService {
         requested_output: Option<&str>,
         res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
+        // Save original parameters for post-hooks (they need caller params + outputs)
+        let original_params = parameters.clone();
+
         // Create execution context
         let mut context = RuleContext::new(parameters.clone(), res_ctx.calculation_date)?;
 
@@ -456,6 +467,10 @@ impl LawExecutionService {
         // Resolve open terms via IoC (implements index lookup)
         let open_term_values = self.resolve_open_terms(article, law, &context, res_ctx)?;
 
+        // Fire pre_actions hooks if article has `produces` annotation
+        let pre_hook_outputs =
+            self.fire_hooks(article, law, HookPoint::PreActions, &parameters, res_ctx)?;
+
         // Use ArticleEngine for action execution (it handles the internal logic)
         let engine = ArticleEngine::new(article, law);
 
@@ -468,6 +483,10 @@ impl LawExecutionService {
         // Merge open term values (IoC resolved)
         for (name, value) in open_term_values {
             combined_params.insert(name, value);
+        }
+        // Merge pre_actions hook outputs into context
+        for (name, value) in &pre_hook_outputs {
+            combined_params.insert(name.clone(), value.clone());
         }
 
         // Use traced evaluation if trace is available
@@ -485,6 +504,31 @@ impl LawExecutionService {
                 requested_output,
             )?
         };
+
+        // Merge pre_actions hook outputs into result
+        for (name, value) in pre_hook_outputs {
+            result.outputs.entry(name).or_insert(value);
+        }
+
+        // Fire post_actions hooks if article has `produces` annotation.
+        // Merge original caller parameters with article outputs so hooks can
+        // access both (e.g., AWB 6:8 needs bekendmaking_datum from caller AND
+        // bezwaartermijn_weken from earlier hooks).
+        let mut post_hook_params = original_params;
+        for (name, value) in &result.outputs {
+            post_hook_params.insert(name.clone(), value.clone());
+        }
+        let post_hook_outputs = self.fire_hooks(
+            article,
+            law,
+            HookPoint::PostActions,
+            &post_hook_params,
+            res_ctx,
+        )?;
+        // Merge post_actions hook outputs into result
+        for (name, value) in post_hook_outputs {
+            result.outputs.entry(name).or_insert(value);
+        }
 
         // Enforce TypeSpec: round eurocent outputs to integer.
         // This applies only to top-level article outputs (the API boundary).
@@ -712,6 +756,8 @@ impl LawExecutionService {
                             competent_authority: None,
                             open_terms: None,
                             implements: None,
+                            hooks: None,
+                            overrides: None,
                         }),
                     };
 
@@ -1194,6 +1240,250 @@ impl LawExecutionService {
     /// Get direct access to the data registry.
     pub fn data_registry(&self) -> &DataSourceRegistry {
         &self.data_registry
+    }
+
+    /// Fire hooks at a given hook point for an article with `produces` annotation.
+    ///
+    /// Returns a map of outputs from all matching hooks. If the article has no
+    /// `produces` annotation, returns an empty map (no hooks can match).
+    fn fire_hooks(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        hook_point: HookPoint,
+        parameters: &HashMap<String, Value>,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<HashMap<String, Value>> {
+        let produces = match article.get_produces() {
+            Some(p) => p,
+            None => return Ok(HashMap::new()), // No produces → no hooks can match
+        };
+
+        let legal_character = match &produces.legal_character {
+            Some(lc) => lc.as_str(),
+            None => return Ok(HashMap::new()),
+        };
+
+        let decision_type = produces.decision_type.as_deref();
+
+        let matching_hooks = self
+            .resolver
+            .find_hooks(hook_point, legal_character, decision_type);
+        if matching_hooks.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let mut hook_outputs = HashMap::new();
+        // Accumulate parameters: each hook can see outputs from previously fired hooks.
+        // This allows AWB 6:8 to use bezwaartermijn_weken from AWB 6:7's (overridden) output.
+        let mut accumulated_params = parameters.clone();
+
+        for (hook_law_id, hook_article_num, _filter) in matching_hooks {
+            // Cycle detection: don't re-enter an article already on the stack
+            let visit_key = format!("hook:{}#{}", hook_law_id, hook_article_num);
+            if res_ctx.visited.contains(&visit_key) {
+                continue;
+            }
+
+            // Get the hook's law and article
+            let hook_law = match self
+                .resolver
+                .get_law_for_date(hook_law_id, res_ctx.reference_date())
+            {
+                Some(l) => l,
+                None => continue,
+            };
+            let hook_article = match hook_law.find_article_by_number(hook_article_num) {
+                Some(a) => a,
+                None => continue,
+            };
+
+            tracing::debug!(
+                hook_law = %hook_law_id,
+                hook_article = %hook_article_num,
+                target_law = %law.id,
+                target_article = %article.number,
+                hook_point = ?hook_point,
+                "Firing hook"
+            );
+
+            // Trace hook resolution
+            if let Some(ref tb) = res_ctx.trace {
+                let mut tb = tb.borrow_mut();
+                tb.push(
+                    format!("{}#{}", hook_law_id, hook_article_num),
+                    PathNodeType::HookResolution,
+                );
+                tb.set_message(format!(
+                    "Hook: {} art {} fires at {:?} on {} art {}",
+                    hook_law_id, hook_article_num, hook_point, law.id, article.number
+                ));
+            }
+
+            // Check for overrides before executing the hook article.
+            // If hook execution fails (e.g., missing parameters), skip gracefully.
+            // Hooks are additive — a failing hook should not break the target execution.
+            let hook_result = match self.execute_with_overrides(
+                hook_article,
+                hook_law,
+                accumulated_params.clone(),
+                res_ctx,
+            ) {
+                Ok(result) => result,
+                Err(e) => {
+                    tracing::debug!(
+                        hook_law = %hook_law_id,
+                        hook_article = %hook_article_num,
+                        error = %e,
+                        "Hook execution skipped due to error"
+                    );
+                    // Pop hook trace node
+                    if let Some(ref tb) = res_ctx.trace {
+                        let mut tb = tb.borrow_mut();
+                        tb.pop();
+                    }
+                    continue;
+                }
+            };
+
+            // Pop hook trace node
+            if let Some(ref tb) = res_ctx.trace {
+                let mut tb = tb.borrow_mut();
+                tb.pop();
+            }
+
+            // Merge hook outputs (first writer wins within same hook point)
+            for (name, value) in hook_result.outputs {
+                hook_outputs.entry(name.clone()).or_insert(value.clone());
+                // Make output available to subsequent hooks
+                accumulated_params.insert(name, value);
+            }
+        }
+
+        Ok(hook_outputs)
+    }
+
+    /// Execute an article, applying lex specialis overrides from the contextual law.
+    ///
+    /// For each output the article produces, check if the contextual law has an
+    /// override. If so, execute the overriding article for that output.
+    fn execute_with_overrides(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        parameters: HashMap<String, Value>,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<ArticleResult> {
+        // First execute the article normally
+        let visit_key = format!("hook:{}#{}", law.id, article.number);
+        res_ctx.enter(visit_key.clone());
+
+        let mut result = self.evaluate_article_with_service(
+            article,
+            law,
+            parameters.clone(),
+            None, // No specific output requested; get all
+            res_ctx,
+        )?;
+
+        res_ctx.leave(&visit_key);
+
+        // Now check for overrides from the contextual law
+        let contextual_law_id = match &res_ctx.contextual_law_id {
+            Some(id) => id.clone(),
+            None => return Ok(result), // No contextual law → no overrides
+        };
+
+        // Get the output names to check for overrides
+        let output_names: Vec<String> = result.outputs.keys().cloned().collect();
+
+        for output_name in output_names {
+            let overrides = self
+                .resolver
+                .find_overrides(&law.id, &article.number, &output_name);
+
+            // Filter by contextual law
+            let contextual_overrides: Vec<_> = overrides
+                .into_iter()
+                .filter(|(ovr_law_id, _)| *ovr_law_id == contextual_law_id)
+                .collect();
+
+            if contextual_overrides.is_empty() {
+                continue;
+            }
+
+            if contextual_overrides.len() > 1 {
+                return Err(EngineError::InvalidOperation(format!(
+                    "Multiple overrides for {}#{} output '{}' from contextual law '{}'. \
+                     This is a law authoring error.",
+                    law.id, article.number, output_name, contextual_law_id
+                )));
+            }
+
+            let (ovr_law_id, ovr_article_num) = contextual_overrides[0];
+
+            // Get the overriding law and article
+            let ovr_law = match self
+                .resolver
+                .get_law_for_date(ovr_law_id, res_ctx.reference_date())
+            {
+                Some(l) => l,
+                None => continue,
+            };
+            let ovr_article = match ovr_law.find_article_by_number(ovr_article_num) {
+                Some(a) => a,
+                None => continue,
+            };
+
+            tracing::debug!(
+                override_law = %ovr_law_id,
+                override_article = %ovr_article_num,
+                target_output = %output_name,
+                "Applying lex specialis override"
+            );
+
+            // Trace override resolution
+            if let Some(ref tb) = res_ctx.trace {
+                let mut tb = tb.borrow_mut();
+                tb.push(
+                    format!("{}#{}", ovr_law_id, ovr_article_num),
+                    PathNodeType::OverrideResolution,
+                );
+                tb.set_message(format!(
+                    "Override: {} art {} replaces {}#{} output '{}'",
+                    ovr_law_id, ovr_article_num, law.id, article.number, output_name
+                ));
+            }
+
+            // Execute the overriding article
+            let ovr_visit_key = format!("override:{}#{}", ovr_law_id, ovr_article_num);
+            res_ctx.enter(ovr_visit_key.clone());
+
+            let ovr_result = self.evaluate_article_with_service(
+                ovr_article,
+                ovr_law,
+                parameters.clone(),
+                None,
+                res_ctx,
+            )?;
+
+            res_ctx.leave(&ovr_visit_key);
+
+            // Pop override trace node
+            if let Some(ref tb) = res_ctx.trace {
+                let mut tb = tb.borrow_mut();
+                tb.pop();
+            }
+
+            // Replace only the targeted output
+            if let Some(ovr_value) = ovr_result.outputs.get(&output_name) {
+                result
+                    .outputs
+                    .insert(output_name.clone(), ovr_value.clone());
+            }
+        }
+
+        Ok(result)
     }
 }
 
