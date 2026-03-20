@@ -208,6 +208,141 @@ pub struct ActionOperation {
     pub lists: Option<Vec<ActionValue>>,
 }
 
+impl ActionOperation {
+    /// Validate that required fields are present for this operation type.
+    ///
+    /// Called at parse time to catch structural errors early (at `just validate`
+    /// time rather than execution time). Returns an error if the operation is
+    /// missing fields it needs to execute.
+    pub fn validate(&self, context: &str) -> Result<()> {
+        match self.operation {
+            Operation::Date => {
+                if self.year.is_none() || self.month.is_none() || self.day.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: DATE operation requires 'year', 'month', and 'day' fields",
+                        context
+                    )));
+                }
+            }
+            Operation::DayOfWeek => {
+                if self.subject.is_none() && self.date.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: DAY_OF_WEEK operation requires 'subject' or 'date' field",
+                        context
+                    )));
+                }
+            }
+            Operation::NextDayNotIn => {
+                if self.date.is_none() || self.non_working_days.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: NEXT_DAY_NOT_IN operation requires 'date' and 'non_working_days' fields",
+                        context
+                    )));
+                }
+            }
+            Operation::List => {
+                if self.items.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: LIST operation requires 'items' field",
+                        context
+                    )));
+                }
+            }
+            Operation::If => {
+                if self.when.is_none() || self.then.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: IF operation requires 'when' and 'then' fields",
+                        context
+                    )));
+                }
+            }
+            Operation::Switch => {
+                if self.cases.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: SWITCH operation requires 'cases' field",
+                        context
+                    )));
+                }
+            }
+            Operation::Equals
+            | Operation::NotEquals
+            | Operation::GreaterThan
+            | Operation::LessThan
+            | Operation::GreaterThanOrEqual
+            | Operation::LessThanOrEqual => {
+                if self.subject.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: Comparison operation requires 'subject' field",
+                        context
+                    )));
+                }
+                if self.value.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: Comparison operation requires 'value' field",
+                        context
+                    )));
+                }
+            }
+            Operation::And | Operation::Or => {
+                if self.conditions.is_none() {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "{}: {} operation requires 'conditions' field",
+                        context,
+                        self.operation.name()
+                    )));
+                }
+            }
+            // ADD, SUBTRACT, MULTIPLY, DIVIDE, etc. validated at execution time
+            // (ADD is polymorphic, validation depends on which dispatch path is taken)
+            _ => {}
+        }
+
+        // Recursively validate nested operations
+        for field in [
+            &self.subject,
+            &self.value,
+            &self.when,
+            &self.then,
+            &self.else_branch,
+            &self.default,
+            &self.date,
+            &self.year,
+            &self.month,
+            &self.day,
+            &self.days,
+            &self.weeks,
+            &self.non_working_days,
+        ] {
+            if let Some(ActionValue::Operation(nested)) = field {
+                nested.validate(context)?;
+            }
+        }
+        for nested in [&self.values, &self.conditions, &self.items, &self.lists]
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|v| match v {
+                ActionValue::Operation(op) => Some(op),
+                _ => None,
+            })
+        {
+            nested.validate(context)?;
+        }
+        if let Some(cases) = &self.cases {
+            for case in cases {
+                if let ActionValue::Operation(nested) = &case.when {
+                    nested.validate(context)?;
+                }
+                if let ActionValue::Operation(nested) = &case.then {
+                    nested.validate(context)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Action definition in execution spec
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Action {
@@ -659,6 +794,9 @@ impl ArticleBasedLaw {
         // Validate array sizes after parsing
         law.validate_array_sizes()?;
 
+        // Validate operation structures (catch missing required fields early)
+        law.validate_operations()?;
+
         tracing::debug!(law_id = %law.id, articles = law.articles.len(), "Parsed law successfully");
 
         Ok(law)
@@ -788,6 +926,34 @@ impl ArticleBasedLaw {
             }
         }
 
+        Ok(())
+    }
+
+    /// Validate all operations in all articles for structural correctness.
+    ///
+    /// Catches missing required fields (e.g., DATE without year/month/day)
+    /// at parse time rather than execution time.
+    fn validate_operations(&self) -> Result<()> {
+        for article in &self.articles {
+            let Some(mr) = &article.machine_readable else {
+                continue;
+            };
+            let Some(exec) = &mr.execution else {
+                continue;
+            };
+            let Some(actions) = &exec.actions else {
+                continue;
+            };
+            let ctx = format!("{}#{}", self.id, article.number);
+            for action in actions {
+                if let Some(ActionValue::Operation(op)) = &action.value {
+                    op.validate(&ctx)?;
+                }
+                // Actions can also have inline operation fields (operation + values etc.)
+                // Those are converted to ActionOperation at execution time via action_to_operation,
+                // so we don't validate them here (they use a different code path).
+            }
+        }
         Ok(())
     }
 

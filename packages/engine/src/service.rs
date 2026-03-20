@@ -45,6 +45,26 @@ use std::rc::Rc;
 // Resolution Context
 // =============================================================================
 
+/// Typed key for the visited set, preventing string-encoding collisions.
+///
+/// Each resolution mechanism has its own variant, so a law_id containing
+/// `#` or `:` cannot collide with keys from other mechanisms.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum VisitedKey {
+    /// Cross-law reference: law_id + output_name
+    CrossLaw { law_id: String, output: String },
+    /// Open term resolution
+    OpenTerm {
+        law_id: String,
+        article: String,
+        term_id: String,
+    },
+    /// Hook execution
+    Hook { law_id: String, article: String },
+    /// Override execution
+    Override { law_id: String, article: String },
+}
+
 /// Context for tracking cross-law resolution state.
 ///
 /// Bundles the state needed for cycle detection and depth tracking
@@ -56,8 +76,8 @@ use std::rc::Rc;
 struct ResolutionContext<'a> {
     /// Date for calculations (YYYY-MM-DD)
     calculation_date: &'a str,
-    /// Set of law#output keys already being resolved (cycle detection)
-    visited: HashSet<String>,
+    /// Set of typed keys already being resolved (cycle detection)
+    visited: HashSet<VisitedKey>,
     /// Current resolution depth
     depth: usize,
     /// Optional shared trace builder
@@ -98,20 +118,20 @@ impl<'a> ResolutionContext<'a> {
         NaiveDate::parse_from_str(self.calculation_date, "%Y-%m-%d").ok()
     }
 
-    /// Enter a cross-law resolution scope: mark key as visited and increment depth.
-    fn enter(&mut self, key: String) {
+    /// Enter a resolution scope: mark key as visited and increment depth.
+    fn enter(&mut self, key: VisitedKey) {
         self.visited.insert(key);
         self.depth += 1;
     }
 
-    /// Leave a cross-law resolution scope: unmark key and decrement depth.
-    fn leave(&mut self, key: &str) {
+    /// Leave a resolution scope: unmark key and decrement depth.
+    fn leave(&mut self, key: &VisitedKey) {
         self.visited.remove(key);
         self.depth -= 1;
     }
 
     /// Check if a key is already being resolved (cycle detection).
-    fn is_visited(&self, key: &str) -> bool {
+    fn is_visited(&self, key: &VisitedKey) -> bool {
         self.visited.contains(key)
     }
 }
@@ -581,8 +601,11 @@ impl LawExecutionService {
 
         for term in open_terms {
             // Cycle detection: check if we're already resolving this open term
-            // Use \0 as separator to prevent key collisions when IDs contain #
-            let ot_key = format!("open_term:{}\0{}\0{}", law.id, article.number, term.id);
+            let ot_key = VisitedKey::OpenTerm {
+                law_id: law.id.clone(),
+                article: article.number.clone(),
+                term_id: term.id.clone(),
+            };
             if res_ctx.is_visited(&ot_key) {
                 tracing::warn!(
                     law_id = %law.id,
@@ -963,11 +986,14 @@ impl LawExecutionService {
         res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<Value> {
         // Check for circular reference before proceeding
-        let key = format!("{}#{}", regulation, output);
+        let key = VisitedKey::CrossLaw {
+            law_id: regulation.to_string(),
+            output: output.to_string(),
+        };
         if res_ctx.is_visited(&key) {
             return Err(EngineError::CircularReference(format!(
-                "Circular cross-law reference detected: {} is already being resolved",
-                key
+                "Circular cross-law reference detected: {}#{} is already being resolved",
+                regulation, output
             )));
         }
 
@@ -1280,8 +1306,11 @@ impl LawExecutionService {
 
         for (hook_law_id, hook_article_num, _filter) in matching_hooks {
             // Cycle detection: don't re-enter an article already on the stack
-            let visit_key = format!("hook:{}#{}", hook_law_id, hook_article_num);
-            if res_ctx.visited.contains(&visit_key) {
+            let visit_key = VisitedKey::Hook {
+                law_id: hook_law_id.to_string(),
+                article: hook_article_num.to_string(),
+            };
+            if res_ctx.is_visited(&visit_key) {
                 continue;
             }
 
@@ -1320,9 +1349,11 @@ impl LawExecutionService {
                 ));
             }
 
-            // Check for overrides before executing the hook article.
-            // If hook execution fails (e.g., missing parameters), skip gracefully.
-            // Hooks are additive — a failing hook should not break the target execution.
+            // Execute the hook article with override resolution.
+            //
+            // Error handling: only VariableNotFound is expected (caller didn't provide
+            // a parameter this hook needs, e.g. bekendmaking_datum). Other errors indicate
+            // a bug in the hook YAML or engine logic and must propagate.
             let hook_result = match self.execute_with_overrides(
                 hook_article,
                 hook_law,
@@ -1330,19 +1361,37 @@ impl LawExecutionService {
                 res_ctx,
             ) {
                 Ok(result) => result,
-                Err(e) => {
+                Err(EngineError::VariableNotFound(ref var)) => {
+                    // Expected: caller didn't provide a parameter this hook needs.
+                    // Skip gracefully — not every caller provides every parameter.
                     tracing::debug!(
                         hook_law = %hook_law_id,
                         hook_article = %hook_article_num,
-                        error = %e,
-                        "Hook execution skipped due to error"
+                        missing_var = %var,
+                        "Hook skipped: required parameter not available"
                     );
-                    // Pop hook trace node
                     if let Some(ref tb) = res_ctx.trace {
                         let mut tb = tb.borrow_mut();
+                        tb.set_message(format!(
+                            "Hook {} art {} skipped: parameter '{}' not available",
+                            hook_law_id, hook_article_num, var
+                        ));
                         tb.pop();
                     }
                     continue;
+                }
+                Err(e) => {
+                    // Unexpected error: malformed hook YAML, type mismatch, etc.
+                    // Pop trace node before propagating.
+                    if let Some(ref tb) = res_ctx.trace {
+                        let mut tb = tb.borrow_mut();
+                        tb.set_message(format!(
+                            "Hook {} art {} failed: {}",
+                            hook_law_id, hook_article_num, e
+                        ));
+                        tb.pop();
+                    }
+                    return Err(e);
                 }
             };
 
@@ -1375,7 +1424,10 @@ impl LawExecutionService {
         res_ctx: &mut ResolutionContext<'_>,
     ) -> Result<ArticleResult> {
         // First execute the article normally
-        let visit_key = format!("hook:{}#{}", law.id, article.number);
+        let visit_key = VisitedKey::Hook {
+            law_id: law.id.clone(),
+            article: article.number.clone(),
+        };
         res_ctx.enter(visit_key.clone());
 
         let mut result = self.evaluate_article_with_service(
@@ -1456,7 +1508,10 @@ impl LawExecutionService {
             }
 
             // Execute the overriding article
-            let ovr_visit_key = format!("override:{}#{}", ovr_law_id, ovr_article_num);
+            let ovr_visit_key = VisitedKey::Override {
+                law_id: ovr_law_id.to_string(),
+                article: ovr_article_num.to_string(),
+            };
             res_ctx.enter(ovr_visit_key.clone());
 
             let ovr_result = self.evaluate_article_with_service(

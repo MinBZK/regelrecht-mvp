@@ -556,7 +556,11 @@ impl RuleResolver {
         }
     }
 
-    /// Rebuild output and implements indexes for a specific law using its most recent version.
+    /// Rebuild output, implements, hooks, and overrides indexes for a specific law.
+    ///
+    /// Uses the most recent version of the law. Also validates for
+    /// conflicting overrides (two articles from the same law overriding
+    /// the same target output), which would produce non-deterministic results.
     fn rebuild_indexes_for_law(&mut self, law_id: &str) {
         // Remove old output index entries
         self.output_index.retain(|(id, _), _| id.as_str() != law_id);
@@ -626,7 +630,27 @@ impl RuleResolver {
                         for decl in override_decls {
                             let key = (decl.law.clone(), decl.article.clone(), decl.output.clone());
                             let entry = (law_id.to_string(), article.number.clone());
-                            let candidates = self.overrides_index.entry(key).or_default();
+                            let candidates = self.overrides_index.entry(key.clone()).or_default();
+
+                            // Detect conflicting overrides: two articles from the same law
+                            // overriding the same target output produces non-deterministic results.
+                            let same_law_duplicates: Vec<_> = candidates
+                                .iter()
+                                .filter(|(ovr_law, _)| ovr_law == law_id)
+                                .collect();
+                            if !same_law_duplicates.is_empty() {
+                                tracing::warn!(
+                                    law_id = %law_id,
+                                    article = %article.number,
+                                    target = format!("{}#{}:{}", key.0, key.1, key.2),
+                                    existing = ?same_law_duplicates,
+                                    "Conflicting overrides: multiple articles in '{}' override \
+                                     the same target output '{}#{}:{}'. This will cause a \
+                                     deterministic error at execution time.",
+                                    law_id, key.0, key.1, key.2
+                                );
+                            }
+
                             if !candidates.contains(&entry) {
                                 candidates.push(entry);
                             }
