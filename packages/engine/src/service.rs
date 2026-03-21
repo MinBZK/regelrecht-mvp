@@ -1493,11 +1493,29 @@ impl LawExecutionService {
                 .get_law_for_date(ovr_law_id, res_ctx.reference_date())
             {
                 Some(l) => l,
-                None => continue,
+                None => {
+                    tracing::warn!(
+                        override_law = %ovr_law_id,
+                        override_article = %ovr_article_num,
+                        target = format!("{}#{}:{}", law.id, article.number, output_name),
+                        "Override target law '{}' not found (not loaded or not valid at reference date)",
+                        ovr_law_id
+                    );
+                    continue;
+                }
             };
             let ovr_article = match ovr_law.find_article_by_number(ovr_article_num) {
                 Some(a) => a,
-                None => continue,
+                None => {
+                    tracing::warn!(
+                        override_law = %ovr_law_id,
+                        override_article = %ovr_article_num,
+                        target = format!("{}#{}:{}", law.id, article.number, output_name),
+                        "Override target article '{}' not found in law '{}'",
+                        ovr_article_num, ovr_law_id
+                    );
+                    continue;
+                }
             };
 
             tracing::debug!(

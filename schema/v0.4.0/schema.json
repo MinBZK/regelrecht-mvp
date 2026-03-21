@@ -738,10 +738,14 @@
     },
     "dateAddOperation": {
       "type": "object",
-      "description": "Add days or weeks to a date",
+      "description": "Add days or weeks to a date (exactly one of days or weeks required)",
       "required": [
         "operation",
         "date"
+      ],
+      "anyOf": [
+        {"required": ["days"]},
+        {"required": ["weeks"]}
       ],
       "properties": {
         "operation": {

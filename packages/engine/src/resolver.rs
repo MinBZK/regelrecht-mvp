@@ -158,7 +158,7 @@ impl RuleResolver {
         });
 
         // Rebuild indexes using the most recent version
-        self.rebuild_indexes_for_law(&law_id);
+        self.rebuild_indexes_for_law(&law_id)?;
 
         let total_laws: usize = self.law_versions.values().map(|v| v.len()).sum();
         tracing::debug!(law_id = %law_id, total = total_laws, "Law loaded");
@@ -534,9 +534,9 @@ impl RuleResolver {
     ///
     /// # Returns
     /// `true` if the version was removed, `false` if it didn't exist.
-    pub fn unload_law_version(&mut self, law_id: &str, valid_from: Option<&str>) -> bool {
+    pub fn unload_law_version(&mut self, law_id: &str, valid_from: Option<&str>) -> Result<bool> {
         let Some(versions) = self.law_versions.get_mut(law_id) else {
-            return false;
+            return Ok(false);
         };
 
         let original_len = versions.len();
@@ -548,20 +548,20 @@ impl RuleResolver {
                 self.remove_indexes_for_law(law_id);
             } else {
                 // Rebuild indexes with the new most recent version
-                self.rebuild_indexes_for_law(law_id);
+                self.rebuild_indexes_for_law(law_id)?;
             }
-            true
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
     /// Rebuild output, implements, hooks, and overrides indexes for a specific law.
     ///
-    /// Uses the most recent version of the law. Also validates for
-    /// conflicting overrides (two articles from the same law overriding
-    /// the same target output), which would produce non-deterministic results.
-    fn rebuild_indexes_for_law(&mut self, law_id: &str) {
+    /// Uses the most recent version of the law. Returns an error if
+    /// conflicting overrides are detected (two articles from the same law
+    /// overriding the same target output).
+    fn rebuild_indexes_for_law(&mut self, law_id: &str) -> Result<()> {
         // Remove old output index entries
         self.output_index.retain(|(id, _), _| id.as_str() != law_id);
 
@@ -633,22 +633,27 @@ impl RuleResolver {
                             let candidates = self.overrides_index.entry(key.clone()).or_default();
 
                             // Detect conflicting overrides: two articles from the same law
-                            // overriding the same target output produces non-deterministic results.
+                            // overriding the same target output is a law authoring error.
+                            // Fail at load time rather than deferring to execution time.
                             let same_law_duplicates: Vec<_> = candidates
                                 .iter()
                                 .filter(|(ovr_law, _)| ovr_law == law_id)
                                 .collect();
                             if !same_law_duplicates.is_empty() {
-                                tracing::warn!(
-                                    law_id = %law_id,
-                                    article = %article.number,
-                                    target = format!("{}#{}:{}", key.0, key.1, key.2),
-                                    existing = ?same_law_duplicates,
-                                    "Conflicting overrides: multiple articles in '{}' override \
-                                     the same target output '{}#{}:{}'. This will cause a \
-                                     deterministic error at execution time.",
-                                    law_id, key.0, key.1, key.2
-                                );
+                                return Err(EngineError::InvalidOperation(format!(
+                                    "Conflicting overrides in '{}': articles {} and {} both \
+                                     override '{}#{}:{}'",
+                                    law_id,
+                                    same_law_duplicates
+                                        .iter()
+                                        .map(|(_, a)| a.as_str())
+                                        .collect::<Vec<_>>()
+                                        .join(", "),
+                                    article.number,
+                                    key.0,
+                                    key.1,
+                                    key.2
+                                )));
                             }
 
                             if !candidates.contains(&entry) {
@@ -659,6 +664,7 @@ impl RuleResolver {
                 }
             }
         }
+        Ok(())
     }
 
     /// Find hooks matching a given hook point and legal character.
@@ -711,6 +717,55 @@ impl RuleResolver {
                 .collect(),
             None => Vec::new(),
         }
+    }
+
+    /// Validate that all override targets exist.
+    ///
+    /// Call after all laws have been loaded to detect override declarations
+    /// that point to nonexistent laws, articles, or outputs. Returns warnings
+    /// as a Vec of strings rather than erroring, since missing targets might
+    /// be due to laws not being loaded in this particular context.
+    pub fn validate_override_targets(&self) -> Vec<String> {
+        let mut warnings = Vec::new();
+        for ((target_law, target_article, target_output), overriders) in &self.overrides_index {
+            // Check if target law exists
+            let Some(law) = self.get_law_for_date(target_law, None) else {
+                for (ovr_law, ovr_art) in overriders {
+                    warnings.push(format!(
+                        "Override in {} art {} targets nonexistent law '{}'",
+                        ovr_law, ovr_art, target_law
+                    ));
+                }
+                continue;
+            };
+
+            // Check if target article exists
+            let Some(article) = law.find_article_by_number(target_article) else {
+                for (ovr_law, ovr_art) in overriders {
+                    warnings.push(format!(
+                        "Override in {} art {} targets nonexistent article '{}' in law '{}'",
+                        ovr_law, ovr_art, target_article, target_law
+                    ));
+                }
+                continue;
+            };
+
+            // Check if target output exists
+            let has_output = article
+                .get_execution_spec()
+                .and_then(|exec| exec.output.as_ref())
+                .is_some_and(|outputs| outputs.iter().any(|o| o.name == *target_output));
+
+            if !has_output {
+                for (ovr_law, ovr_art) in overriders {
+                    warnings.push(format!(
+                        "Override in {} art {} targets nonexistent output '{}' in {}#{}",
+                        ovr_law, ovr_art, target_output, target_law, target_article
+                    ));
+                }
+            }
+        }
+        warnings
     }
 
     /// Remove all indexes for a law.
@@ -1049,12 +1104,16 @@ articles:
         assert_eq!(resolver.version_count(), 2);
 
         // Unload one version
-        assert!(resolver.unload_law_version("test_law", Some("2024-01-01")));
+        assert!(resolver
+            .unload_law_version("test_law", Some("2024-01-01"))
+            .unwrap());
         assert_eq!(resolver.version_count(), 1);
         assert!(resolver.has_law("test_law"));
 
         // Unload remaining version
-        assert!(resolver.unload_law_version("test_law", Some("2025-01-01")));
+        assert!(resolver
+            .unload_law_version("test_law", Some("2025-01-01"))
+            .unwrap());
         assert_eq!(resolver.version_count(), 0);
         assert!(!resolver.has_law("test_law"));
     }
