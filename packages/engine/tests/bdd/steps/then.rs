@@ -284,6 +284,23 @@ fn assert_output_is(world: &mut RegelrechtWorld, output_name: String, expected: 
     }
 }
 
+#[then(regex = r#"^the output "([^"]+)" is not present$"#)]
+fn assert_output_not_present(world: &mut RegelrechtWorld, output_name: String) {
+    assert!(
+        world.is_success(),
+        "Expected successful execution, got error: {:?}",
+        world.error_message()
+    );
+
+    let actual = world.get_output(&output_name);
+    assert!(
+        actual.is_none(),
+        "Expected output '{}' to not be present, but got {:?}",
+        output_name,
+        actual
+    );
+}
+
 #[then(regex = r#"^the output "([^"]+)" contains "([^"]+)"$"#)]
 fn assert_output_contains(world: &mut RegelrechtWorld, output_name: String, expected_item: String) {
     assert!(

@@ -108,6 +108,11 @@ fn request_termijn_extension(world: &mut RegelrechtWorld) {
     world.execute_law("algemene_termijnenwet", "verlengde_einddatum");
 }
 
+#[when("the AWB bezwaartermijn is executed directly")]
+fn execute_awb_bezwaartermijn_directly(world: &mut RegelrechtWorld) {
+    world.execute_law("algemene_wet_bestuursrecht", "bezwaartermijn_weken");
+}
+
 fn register_if_present(
     service: &mut regelrecht_engine::LawExecutionService,
     name: &str,

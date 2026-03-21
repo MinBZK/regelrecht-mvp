@@ -130,3 +130,28 @@ Feature: Bezwaartermijn chain
     When the termijn extension is requested
     Then the execution succeeds
     And the output "verlengde_einddatum" is "2026-03-11"
+
+  # === Edge cases: no-override context ===
+
+  Scenario: AWB 6:7 without contextual law returns 6 weeks (no override)
+    # When AWB is executed directly (not via Vreemdelingenwet), no lex specialis
+    # override applies — bezwaartermijn stays at the default 6 weeks.
+    When the AWB bezwaartermijn is executed directly
+    Then the execution succeeds
+    And the output "bezwaartermijn_weken" is "6"
+
+  # === Edge cases: hook skip on missing parameter ===
+
+  Scenario: Hook skips gracefully when optional parameter is missing
+    # AWB 6:8 needs bekendmaking_datum for date calculation. When not
+    # provided, 6:8 should skip gracefully. AWB 3:46 and 6:7 (which
+    # don't need that parameter) should still fire.
+    Given a bezwaartermijn query with the following data:
+      | heeft_geldige_mvv     | true |
+      | heeft_geldig_document | true |
+    When the vreemdelingenwet beschikking is executed
+    Then the execution succeeds
+    And the output "motivering_vereist" is "true"
+    And the output "bezwaartermijn_weken" is "4"
+    And the output "bezwaartermijn_startdatum" is not present
+    And the output "bezwaartermijn_einddatum" is not present
