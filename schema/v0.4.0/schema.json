@@ -1294,10 +1294,28 @@
                 "properties": {
                   "legal_character": {
                     "type": "string",
-                    "description": "Legal character that triggers the hook (e.g., BESCHIKKING)"
+                    "enum": [
+                      "BESCHIKKING",
+                      "TOETS",
+                      "WAARDEBEPALING",
+                      "BESLUIT_VAN_ALGEMENE_STREKKING",
+                      "INFORMATIEF"
+                    ],
+                    "description": "Legal character that triggers the hook"
                   },
                   "decision_type": {
                     "type": "string",
+                    "enum": [
+                      "TOEKENNING",
+                      "AFWIJZING",
+                      "GOEDKEURING",
+                      "GEEN_BESLUIT",
+                      "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
+                      "BELEIDSREGEL",
+                      "VOORBEREIDINGSBESLUIT",
+                      "ANDERE_HANDELING",
+                      "AANSLAG"
+                    ],
                     "description": "Decision type filter (optional, for more specific matching)"
                   }
                 },
