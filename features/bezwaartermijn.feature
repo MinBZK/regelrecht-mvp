@@ -82,6 +82,7 @@ Feature: Bezwaartermijn chain
     And the output "verlengde_einddatum" is "2026-03-16"
 
   Scenario: Termijn ending on feestdag is extended past weekend
+    # Goede Vrijdag 3 apr → za 4 + zo 5 (Pasen) + ma 6 (2e Paasdag) → di 7 apr
     Given a bezwaartermijn query with the following data:
       | termijn_einddatum | 2026-04-03 |
       | jaar              | 2026       |
@@ -89,3 +90,43 @@ Feature: Bezwaartermijn chain
     When the termijn extension is requested
     Then the execution succeeds
     And the output "verlengde_einddatum" is "2026-04-07"
+
+  Scenario: Nieuwjaar + KB brugdag chain (4 days)
+    # do 1 jan (Nieuwjaar) + vr 2 jan (KB brugdag) + za 3 + zo 4 → ma 5 jan
+    Given a bezwaartermijn query with the following data:
+      | termijn_einddatum | 2026-01-01 |
+      | jaar              | 2026       |
+      | pasen_datum       | 2026-04-05 |
+    When the termijn extension is requested
+    Then the execution succeeds
+    And the output "verlengde_einddatum" is "2026-01-05"
+
+  Scenario: Hemelvaart + KB brugdag chain (4 days)
+    # do 14 mei (Hemelvaart) + vr 15 mei (KB brugdag) + za 16 + zo 17 → ma 18 mei
+    Given a bezwaartermijn query with the following data:
+      | termijn_einddatum | 2026-05-14 |
+      | jaar              | 2026       |
+      | pasen_datum       | 2026-04-05 |
+    When the termijn extension is requested
+    Then the execution succeeds
+    And the output "verlengde_einddatum" is "2026-05-18"
+
+  Scenario: Kerst chain (3 days)
+    # vr 25 dec (1e Kerstdag) + za 26 (2e Kerstdag) + zo 27 → ma 28 dec
+    Given a bezwaartermijn query with the following data:
+      | termijn_einddatum | 2026-12-25 |
+      | jaar              | 2026       |
+      | pasen_datum       | 2026-04-05 |
+    When the termijn extension is requested
+    Then the execution succeeds
+    And the output "verlengde_einddatum" is "2026-12-28"
+
+  Scenario: Weekday that is not a feestdag stays unchanged
+    # wo 11 mrt — gewone werkdag, geen verlenging
+    Given a bezwaartermijn query with the following data:
+      | termijn_einddatum | 2026-03-11 |
+      | jaar              | 2026       |
+      | pasen_datum       | 2026-04-05 |
+    When the termijn extension is requested
+    Then the execution succeeds
+    And the output "verlengde_einddatum" is "2026-03-11"
