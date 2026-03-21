@@ -1214,6 +1214,13 @@ fn execute_date_add<R: ValueResolver>(
     let date_val = evaluate_value(date_value, resolver, depth)?;
     let date = parse_date(&date_val)?;
 
+    // Reject ambiguous input: days and weeks are mutually exclusive
+    if op.days.is_some() && op.weeks.is_some() {
+        return Err(EngineError::InvalidOperation(
+            "DATE_ADD: 'days' and 'weeks' are mutually exclusive".to_string(),
+        ));
+    }
+
     // Determine the number of days to add
     let total_days: i64 = if let Some(ref days_val) = op.days {
         evaluate_value(days_val, resolver, depth)?

@@ -1368,8 +1368,31 @@ impl LawExecutionService {
                 {
                     Ok(result) => result,
                     Err(EngineError::VariableNotFound(ref var)) => {
-                        // Expected: caller didn't provide a parameter this hook needs.
-                        // Skip gracefully — not every caller provides every parameter.
+                        // Only skip gracefully if the missing variable is a declared
+                        // parameter of this hook article. This catches the legitimate
+                        // case where the caller didn't provide a parameter this hook
+                        // needs (e.g. bekendmaking_datum). If the variable is NOT a
+                        // declared parameter, it's likely a typo in the YAML (e.g.
+                        // $bekenmaking_datum) and should fail loudly.
+                        let is_declared_param = hook_article
+                            .get_execution_spec()
+                            .and_then(|exec| exec.parameters.as_ref())
+                            .is_some_and(|params| {
+                                params.iter().any(|p| p.name.eq_ignore_ascii_case(var))
+                            });
+
+                        if !is_declared_param {
+                            if let Some(ref tb) = res_ctx.trace {
+                                let mut tb = tb.borrow_mut();
+                                tb.set_message(format!(
+                                    "Hook {} art {} failed: unknown variable '{}'",
+                                    hook_law_id, hook_article_num, var
+                                ));
+                                tb.pop();
+                            }
+                            return Err(EngineError::VariableNotFound(var.clone()));
+                        }
+
                         tracing::debug!(
                             hook_law = %hook_law_id,
                             hook_article = %hook_article_num,
