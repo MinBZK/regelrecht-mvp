@@ -23,6 +23,7 @@ const RE_HARVESTABLE_STATUSES = ['unknown', 'queued', 'harvest_failed', 'harvest
 
 const TAB_CONFIG = {
   law_entries: {
+    label: 'Law Entries',
     endpoint: 'api/law_entries',
     columns: [
       { key: 'law_id', label: 'Law ID', sortable: true },
@@ -38,6 +39,7 @@ const TAB_CONFIG = {
     ],
   },
   jobs: {
+    label: 'Jobs',
     endpoint: 'api/jobs',
     columns: [
       { key: 'id', label: 'ID', sortable: true },
@@ -111,10 +113,6 @@ function $(selector, parent = document) {
   return parent.querySelector(selector);
 }
 
-function $$(selector, parent = document) {
-  return parent.querySelectorAll(selector);
-}
-
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -185,12 +183,13 @@ function renderTabs() {
   tabsEl.innerHTML = '';
 
   for (const tabKey of Object.keys(TAB_CONFIG)) {
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (tabKey === state.activeTab ? ' tab--active' : '');
-    btn.textContent = tabKey === 'law_entries' ? 'Law Entries' : 'Jobs';
-    btn.dataset.tab = tabKey;
-    btn.addEventListener('click', () => switchTab(tabKey));
-    tabsEl.appendChild(btn);
+    const item = document.createElement('rr-tab-bar-item');
+    item.textContent = TAB_CONFIG[tabKey].label;
+    if (tabKey === state.activeTab) {
+      item.setAttribute('selected', '');
+    }
+    item.addEventListener('click', () => switchTab(tabKey));
+    tabsEl.appendChild(item);
   }
 }
 
@@ -200,53 +199,54 @@ function renderFilters() {
 
   const config = TAB_CONFIG[state.activeTab];
 
+  const wrapper = document.createElement('div');
+  wrapper.className = 'filter-row';
+
   for (const filter of config.filters) {
-    const label = document.createElement('label');
-    label.className = 'toolbar__filter-label';
-    label.textContent = filter.label + ':';
-    label.setAttribute('for', `filter-${filter.key}`);
-
-    filtersEl.appendChild(label);
-
     if (filter.type === 'text') {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'toolbar__input';
-      input.id = `filter-${filter.key}`;
-      input.placeholder = filter.label;
-      input.value = state.filters[filter.key] || '';
-      input.addEventListener('change', (e) => {
-        onFilterChange(filter.key, e.target.value.trim());
-      });
-      filtersEl.appendChild(input);
-    } else {
-      const select = document.createElement('select');
-      select.className = 'toolbar__select';
-      select.id = `filter-${filter.key}`;
-      select.dataset.filterKey = filter.key;
+      const textField = document.createElement('rr-text-field');
+      textField.setAttribute('size', 'md');
+      textField.setAttribute('placeholder', filter.label);
+      textField.id = `filter-${filter.key}`;
 
-      const allOption = document.createElement('option');
-      allOption.value = '';
-      allOption.textContent = `All`;
-      select.appendChild(allOption);
-
-      for (const optionValue of filter.options) {
-        const option = document.createElement('option');
-        option.value = optionValue;
-        option.textContent = optionValue;
-        if (state.filters[filter.key] === optionValue) {
-          option.selected = true;
-        }
-        select.appendChild(option);
+      if (state.filters[filter.key]) {
+        textField.value = state.filters[filter.key];
       }
 
-      select.addEventListener('change', (e) => {
-        onFilterChange(filter.key, e.target.value);
+      let debounceTimer;
+      textField.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          onFilterChange(filter.key, getTextFieldValue(textField));
+        }, 300);
       });
 
-      filtersEl.appendChild(select);
+      wrapper.appendChild(textField);
+    } else {
+      const dropdown = document.createElement('rr-drop-down-field');
+      dropdown.setAttribute('size', 'md');
+      dropdown.setAttribute('placeholder', filter.label);
+      dropdown.id = `filter-${filter.key}`;
+
+      const options = [
+        { value: '', label: `All ${filter.label}` },
+        ...filter.options.map(v => ({ value: v, label: v })),
+      ];
+      dropdown.options = options;
+
+      if (state.filters[filter.key]) {
+        dropdown.value = state.filters[filter.key];
+      }
+
+      dropdown.addEventListener('change', (e) => {
+        onFilterChange(filter.key, e.detail?.value ?? e.target.value ?? '');
+      });
+
+      wrapper.appendChild(dropdown);
     }
   }
+
+  filtersEl.appendChild(wrapper);
 }
 
 function renderTableHead() {
@@ -356,17 +356,35 @@ function renderTableBody() {
 }
 
 function renderPagination() {
+  const container = $('#pagination-container');
+  container.innerHTML = '';
+
   const totalPages = Math.max(1, Math.ceil(state.totalCount / state.limit));
   const currentPage = Math.floor(state.offset / state.limit) + 1;
 
-  const infoEl = $('#pagination-info');
-  infoEl.textContent = `${currentPage} / ${totalPages} (${state.totalCount} results)`;
+  const prevBtn = document.createElement('rr-button');
+  prevBtn.setAttribute('variant', 'neutral-tinted');
+  prevBtn.setAttribute('size', 'md');
+  prevBtn.textContent = '\u2039';
+  prevBtn.title = 'Previous page';
+  if (currentPage <= 1) prevBtn.setAttribute('disabled', '');
+  prevBtn.addEventListener('click', onPrevPage);
 
-  const prevBtn = $('#pagination-prev');
-  const nextBtn = $('#pagination-next');
+  const info = document.createElement('span');
+  info.className = 'pagination-info';
+  info.textContent = `${currentPage} / ${totalPages} (${state.totalCount} results)`;
 
-  prevBtn.disabled = currentPage <= 1;
-  nextBtn.disabled = currentPage >= totalPages;
+  const nextBtn = document.createElement('rr-button');
+  nextBtn.setAttribute('variant', 'neutral-tinted');
+  nextBtn.setAttribute('size', 'md');
+  nextBtn.textContent = '\u203A';
+  nextBtn.title = 'Next page';
+  if (currentPage >= totalPages) nextBtn.setAttribute('disabled', '');
+  nextBtn.addEventListener('click', onNextPage);
+
+  container.appendChild(prevBtn);
+  container.appendChild(info);
+  container.appendChild(nextBtn);
 }
 
 function renderRowActions(row) {
@@ -499,10 +517,10 @@ function switchTab(tabKey) {
   state.totalCount = 0;
   state.error = null;
 
-  // Show harvest form on both law_entries and jobs tabs
-  const harvestForm = $('#harvest-form');
-  if (harvestForm) {
-    harvestForm.style.display = '';
+  // Show harvest form only on jobs tab
+  const harvestContainer = $('#harvest-form-container');
+  if (harvestContainer) {
+    harvestContainer.style.display = tabKey === 'jobs' ? '' : 'none';
   }
 
   renderTabs();
@@ -510,43 +528,24 @@ function switchTab(tabKey) {
   fetchData();
 }
 
-async function onResetJobs() {
-  if (!confirm('Are you sure? This will delete all non-processing jobs from the database.')) return;
-
-  const btn = $('#reset-jobs-btn');
-  btn.disabled = true;
-  btn.textContent = 'Deleting\u2026';
-
-  try {
-    const response = await fetch('api/jobs', { method: 'DELETE' });
-    if (response.status === 401) {
-      window.location.href = '/auth/login';
-      return;
-    }
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new Error(text || `HTTP ${response.status}`);
-    }
-    const result = await response.json();
-    btn.textContent = `Deleted ${result.deleted} jobs`;
-    setTimeout(() => { btn.textContent = 'Reset Jobs'; }, 2000);
-    fetchData();
-  } catch (err) {
-    alert('Reset failed: ' + err.message);
-    btn.textContent = 'Reset Jobs';
-  } finally {
-    btn.disabled = false;
-  }
+function getTextFieldValue(el) {
+  // rr-text-field may expose .value on host or only on the inner <input>
+  if (el.value != null && el.value !== '') return el.value;
+  const inner = el.shadowRoot?.querySelector('input');
+  return inner?.value ?? '';
 }
 
-async function onHarvestSubmit(e) {
-  e.preventDefault();
+async function onHarvestSubmit() {
   const input = $('#harvest-bwb-id');
-  const btn = $('#harvest-form .harvest-form__btn');
-  const bwbId = input.value.trim();
+  const btn = $('#harvest-btn');
+  const bwbId = getTextFieldValue(input).trim();
   if (!bwbId) return;
+  if (!/^BWBR\d{7}$/.test(bwbId)) {
+    alert('BWB ID format: BWBR followed by 7 digits (e.g. BWBR0018451)');
+    return;
+  }
 
-  btn.disabled = true;
+  btn.setAttribute('disabled', '');
   btn.textContent = 'Submitting\u2026';
 
   try {
@@ -556,11 +555,15 @@ async function onHarvestSubmit(e) {
       body: JSON.stringify({ bwb_id: bwbId }),
     });
     if (response.status === 401) {
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Harvest';
       window.location.href = '/auth/login';
       return;
     }
     if (response.status === 409) {
       alert('A harvest job for this law is already pending or processing.');
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Harvest';
       return;
     }
     if (!response.ok) {
@@ -570,12 +573,12 @@ async function onHarvestSubmit(e) {
     await response.json();
     input.value = '';
     btn.textContent = 'Queued \u2713';
-    btn.disabled = false;
+    btn.removeAttribute('disabled');
     setTimeout(() => { btn.textContent = 'Harvest'; }, 2000);
     fetchData();
   } catch (err) {
     alert('Harvest failed: ' + err.message);
-    btn.disabled = false;
+    btn.removeAttribute('disabled');
     btn.textContent = 'Harvest';
   }
 }
@@ -656,9 +659,9 @@ function viewJobsForLaw(lawId) {
   state.totalCount = 0;
   state.error = null;
 
-  const harvestForm = $('#harvest-form');
-  if (harvestForm) {
-    harvestForm.style.display = '';
+  const harvestContainer = $('#harvest-form-container');
+  if (harvestContainer) {
+    harvestContainer.style.display = '';
   }
 
   renderTabs();
@@ -981,20 +984,18 @@ async function init() {
 
   void fetchPlatformInfo().then(showDeploymentBadge);
 
-  // Bind pagination buttons
-  $('#pagination-prev').addEventListener('click', onPrevPage);
-  $('#pagination-next').addEventListener('click', onNextPage);
-
-  // Bind harvest form
-  const harvestForm = $('#harvest-form');
-  if (harvestForm) {
-    harvestForm.addEventListener('submit', onHarvestSubmit);
+  // Bind harvest button (rr-button is not form-associated, so we use click)
+  const harvestBtn = $('#harvest-btn');
+  if (harvestBtn) {
+    harvestBtn.addEventListener('click', onHarvestSubmit);
   }
 
-  // Bind reset jobs button
-  const resetBtn = $('#reset-jobs-btn');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', onResetJobs);
+  // Re-enable Enter-to-submit on the BWB ID input (no <form> to handle it)
+  const harvestInput = $('#harvest-bwb-id');
+  if (harvestInput) {
+    harvestInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') onHarvestSubmit();
+    });
   }
 
   // Bind detail panel close
