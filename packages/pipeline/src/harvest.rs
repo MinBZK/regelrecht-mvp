@@ -10,7 +10,8 @@ use regelrecht_harvester::manifest;
 
 /// Maximum recursion depth for follow-up harvest jobs.
 /// Prevents unbounded job creation from circular or deeply nested law references.
-pub const MAX_HARVEST_DEPTH: u32 = 1000;
+/// Matches the admin API cap so that omitting `max_depth` gives the same ceiling.
+pub const MAX_HARVEST_DEPTH: u32 = 10;
 
 /// Payload for a harvest job, stored as JSON in the job queue.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,6 +24,9 @@ pub struct HarvestPayload {
     /// Current recursion depth for follow-up harvests. `None` or `0` means this is a root job.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub depth: Option<u32>,
+    /// User-configured maximum harvest depth. When not set, falls back to `MAX_HARVEST_DEPTH`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_depth: Option<u32>,
 }
 
 /// Result of a successful harvest execution.
@@ -173,6 +177,7 @@ mod tests {
             date: Some("2025-01-01".to_string()),
             max_size_mb: Some(100),
             depth: Some(2),
+            max_depth: Some(5),
         };
 
         let json = serde_json::to_string(&payload).unwrap();
@@ -182,6 +187,7 @@ mod tests {
         assert_eq!(deserialized.date.as_deref(), Some("2025-01-01"));
         assert_eq!(deserialized.max_size_mb, Some(100));
         assert_eq!(deserialized.depth, Some(2));
+        assert_eq!(deserialized.max_depth, Some(5));
     }
 
     #[test]
