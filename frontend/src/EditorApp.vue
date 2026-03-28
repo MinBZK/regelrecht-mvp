@@ -96,6 +96,43 @@ function handleSave({ section, key, newKey, index, data }) {
   parseError.value = null;
 }
 
+// Initialize empty machine_readable scaffold
+function handleInitMr() {
+  machineReadable.value = {
+    definitions: {},
+    execution: {
+      parameters: [],
+      input: [],
+      output: [],
+      actions: [],
+    },
+  };
+  yamlSource.value = yaml.dump(machineReadable.value, dumpOpts);
+  parseError.value = null;
+}
+
+// Add a new action and open ActionSheet
+function handleAddAction() {
+  const mr = machineReadable.value || {};
+  if (!mr.execution) mr.execution = {};
+  if (!mr.execution.actions) mr.execution.actions = [];
+  const newAction = { output: '', value: '' };
+  mr.execution.actions.push(newAction);
+  machineReadable.value = { ...mr };
+  yamlSource.value = yaml.dump(machineReadable.value, dumpOpts);
+  parseError.value = null;
+  activeAction.value = newAction;
+}
+
+// Sync YAML when ActionSheet saves (mutations happened in-place)
+function handleActionSave() {
+  activeAction.value = null;
+  // Re-assign to trigger reactivity + re-dump YAML
+  machineReadable.value = JSON.parse(JSON.stringify(machineReadable.value));
+  yamlSource.value = yaml.dump(machineReadable.value, dumpOpts);
+  parseError.value = null;
+}
+
 function selectArticle(number) {
   activeAction.value = null;
   selectedArticleNumber.value = String(number);
@@ -257,6 +294,8 @@ function selectArticle(number) {
                   :editable="true"
                   @open-edit="activeEditItem = $event"
                   @open-action="activeAction = $event"
+                  @init-mr="handleInitMr"
+                  @add-action="handleAddAction"
                 />
               </rr-simple-section>
 
@@ -273,7 +312,7 @@ function selectArticle(number) {
     </rr-bar-split-view>
   </rr-app-view>
 
-  <ActionSheet :action="activeAction" :article="editedArticle" @close="activeAction = null" />
+  <ActionSheet :action="activeAction" :article="editedArticle" @close="activeAction = null" @save="handleActionSave" />
   <EditSheet :item="activeEditItem" @save="handleSave" @close="activeEditItem = null" />
 </template>
 
