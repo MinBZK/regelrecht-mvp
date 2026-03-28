@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { buildOperationTree, collectAvailableVariables } from '../utils/operationTree.js';
+import { buildOperationTree } from '../utils/operationTree.js';
 import OperationSettings from './OperationSettings.vue';
 
 const props = defineProps({
@@ -20,17 +20,6 @@ watch(() => props.action, () => {
 }, { immediate: true });
 
 const selectedOperation = computed(() => operationTree.value[selectedOpIndex.value] ?? null);
-
-const availableOutputs = computed(() => {
-  const outputs = props.article?.machine_readable?.execution?.output ?? [];
-  return outputs.map(o => o.name);
-});
-
-function updateActionOutput(event) {
-  if (props.action) {
-    props.action.output = event.target.value;
-  }
-}
 
 const parentOperations = computed(() => {
   const selected = selectedOperation.value;

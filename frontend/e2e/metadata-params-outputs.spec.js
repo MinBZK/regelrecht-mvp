@@ -1,42 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { interceptLaw, gotoEditor, selectArticle, readYamlPane } from './helpers.js';
-
-async function waitForSheet(page) {
-  await page.waitForFunction(() => {
-    const sheet = document.querySelector('rr-sheet');
-    if (!sheet) return false;
-    const dialog = sheet.shadowRoot?.querySelector('dialog');
-    return dialog?.open ?? false;
-  }, { timeout: 5000 });
-  await page.waitForTimeout(200);
-}
-
-async function fillSheetTextField(page, labelText, value) {
-  const sheet = page.locator('rr-sheet');
-  const listItem = sheet.locator(`rr-list-item:has(rr-text-cell:has-text("${labelText}"))`);
-  const input = listItem.locator('rr-text-field input');
-  await input.evaluate((el, val) => {
-    el.value = val;
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-  }, value);
-}
-
-async function selectSheetDropdown(page, labelText, value) {
-  const sheet = page.locator('rr-sheet');
-  const listItem = sheet.locator(`rr-list-item:has(rr-text-cell:has-text("${labelText}"))`);
-  const select = listItem.locator('select');
-  await select.evaluate((el, val) => {
-    el.value = val;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, value);
-}
-
-async function saveSheet(page) {
-  const sheet = page.locator('rr-sheet');
-  const btn = sheet.locator('rr-button:has-text("Opslaan")');
-  await btn.evaluate(el => el.click());
-  await page.waitForTimeout(300);
-}
+import { interceptLaw, gotoEditor, selectArticle, readYamlPane, waitForSheet, fillSheetTextField, selectSheetDropdown, saveSheet } from './helpers.js';
 
 test.describe('Parameters and Outputs', () => {
   test.beforeEach(async ({ page }) => {

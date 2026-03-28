@@ -150,3 +150,73 @@ export async function saveActionSheet(page) {
   await panel.locator('rr-button:has-text("Opslaan")').click();
   await page.waitForTimeout(200);
 }
+
+/**
+ * Wait for the rr-sheet dialog to be open (Lit component uses internal <dialog>).
+ * @param {import('@playwright/test').Page} page
+ */
+export async function waitForSheet(page) {
+  await page.waitForFunction(() => {
+    const sheet = document.querySelector('rr-sheet');
+    if (!sheet) return false;
+    const dialog = sheet.shadowRoot?.querySelector('dialog');
+    return dialog?.open ?? false;
+  }, { timeout: 5000 });
+  await page.waitForTimeout(200);
+}
+
+/**
+ * Fill an rr-text-field input inside rr-sheet by label text.
+ * Uses evaluate to bypass shadow DOM visibility issues.
+ */
+export async function fillSheetTextField(page, labelText, value) {
+  const sheet = page.locator('rr-sheet');
+  const listItem = sheet.locator(`rr-list-item:has(rr-text-cell:has-text("${labelText}"))`);
+  const input = listItem.locator('rr-text-field input');
+  await input.evaluate((el, val) => {
+    el.value = val;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }, value);
+}
+
+/**
+ * Fill an rr-number-field input inside rr-sheet by label text.
+ * Dispatches both native and custom events for Vue binding.
+ */
+export async function fillSheetNumberField(page, labelText, value) {
+  const sheet = page.locator('rr-sheet');
+  const listItem = sheet.locator(`rr-list-item:has(rr-text-cell:has-text("${labelText}"))`);
+  const numberField = listItem.locator('rr-number-field');
+  await numberField.evaluate((el, val) => {
+    const input = el.shadowRoot?.querySelector('input') ?? el.querySelector('input');
+    if (input) {
+      input.value = String(val);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    el.dispatchEvent(new CustomEvent('change', { detail: { value: Number(val) }, bubbles: true }));
+  }, value);
+}
+
+/**
+ * Select a value in an rr-dropdown inside rr-sheet by label text.
+ */
+export async function selectSheetDropdown(page, labelText, value) {
+  const sheet = page.locator('rr-sheet');
+  const listItem = sheet.locator(`rr-list-item:has(rr-text-cell:has-text("${labelText}"))`);
+  const select = listItem.locator('select');
+  await select.evaluate((el, val) => {
+    el.value = val;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
+/**
+ * Click "Opslaan" in the rr-sheet.
+ */
+export async function saveSheet(page) {
+  const sheet = page.locator('rr-sheet');
+  const btn = sheet.locator('rr-button:has-text("Opslaan")');
+  await btn.evaluate(el => el.click());
+  await page.waitForTimeout(300);
+}

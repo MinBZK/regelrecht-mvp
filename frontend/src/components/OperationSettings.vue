@@ -164,6 +164,16 @@ function changeOperationType(event) {
     delete node.when;
     delete node.then;
     delete node.else;
+  } else if (newType === 'SWITCH') {
+    if (!Array.isArray(node.cases)) node.cases = [];
+    if (node.default === undefined) node.default = '';
+    delete node.values;
+    delete node.conditions;
+    delete node.subject;
+    delete node.value;
+    delete node.when;
+    delete node.then;
+    delete node.else;
   } else if (ARITHMETIC_OPS.has(newType)) {
     // Needs values array
     if (!Array.isArray(node.values)) {
