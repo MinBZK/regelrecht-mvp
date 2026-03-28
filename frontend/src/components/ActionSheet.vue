@@ -8,7 +8,7 @@ const props = defineProps({
   article: { type: Object, default: null },
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'save']);
 
 const operationTree = computed(() => props.action ? buildOperationTree(props.action) : []);
 
@@ -75,6 +75,18 @@ onUnmounted(() => {
       <!-- Body -->
       <div class="action-sheet-body">
         <rr-simple-section>
+          <!-- Output binding -->
+          <rr-list variant="box" class="settings-list" data-testid="action-output-binding">
+            <rr-list-item size="md">
+              <rr-text-cell>Output</rr-text-cell>
+              <rr-cell>
+                <rr-text-field size="md" :value="action.output" @input="action.output = $event.target?.value ?? $event.detail?.value ?? action.output" data-testid="action-output-field"></rr-text-field>
+              </rr-cell>
+            </rr-list-item>
+          </rr-list>
+
+          <rr-spacer size="8"></rr-spacer>
+
           <!-- Section A: Bovenliggende operaties -->
           <template v-if="parentOperations.length">
             <rr-title-bar size="5">Bovenliggende operaties</rr-title-bar>
@@ -101,7 +113,7 @@ onUnmounted(() => {
 
       <!-- Footer -->
       <div class="action-sheet-footer">
-        <rr-button variant="accent-filled" size="md" full-width @click="emit('close')">
+        <rr-button variant="accent-filled" size="md" full-width @click="emit('save')">
           Opslaan
         </rr-button>
       </div>

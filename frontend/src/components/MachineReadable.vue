@@ -6,7 +6,7 @@ const props = defineProps({
   editable: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['open-action', 'open-edit']);
+const emit = defineEmits(['open-action', 'open-edit', 'init-mr', 'add-action']);
 
 const mr = computed(() => props.article?.machine_readable ?? null);
 const execution = computed(() => mr.value?.execution ?? null);
@@ -101,11 +101,15 @@ function addOutput() {
 </script>
 
 <template>
-  <div v-if="!mr" style="padding: 32px; color: var(--semantics-text-secondary-color, #999); text-align: center;">
-    Geen machine-leesbare gegevens voor dit artikel
+  <div v-if="!mr" data-testid="no-machine-readable" style="padding: 32px; color: var(--semantics-text-secondary-color, #999); text-align: center;">
+    <p>Geen machine-leesbare gegevens voor dit artikel</p>
+    <rr-spacer v-if="editable" size="8"></rr-spacer>
+    <rr-button v-if="editable" variant="accent-filled" size="md" data-testid="init-mr-btn" @click="emit('init-mr')">
+      Initialiseer machine_readable
+    </rr-button>
   </div>
 
-  <div v-else>
+  <div v-else data-testid="machine-readable">
     <!-- Metadata: produces -->
     <rr-list v-if="produces" variant="box">
       <rr-list-item v-if="produces.legal_character" size="md">
@@ -130,7 +134,7 @@ function addOutput() {
 
     <!-- Definities -->
     <template v-if="definitions.length || editable">
-      <rr-title-bar size="5">Definities</rr-title-bar>
+      <rr-title-bar size="5" data-testid="section-definitions">Definities</rr-title-bar>
       <rr-spacer size="4"></rr-spacer>
       <rr-list variant="box">
         <rr-list-item v-for="def in definitions" :key="def.name" size="md">
@@ -151,7 +155,7 @@ function addOutput() {
 
     <!-- Parameters -->
     <template v-if="parameters.length || editable">
-      <rr-title-bar size="5">Parameters</rr-title-bar>
+      <rr-title-bar size="5" data-testid="section-parameters">Parameters</rr-title-bar>
       <rr-spacer size="4"></rr-spacer>
       <rr-list variant="box">
         <rr-list-item v-for="(param, index) in parameters" :key="param.name" size="md">
@@ -172,7 +176,7 @@ function addOutput() {
 
     <!-- Inputs -->
     <template v-if="inputs.length || editable">
-      <rr-title-bar size="5">Inputs</rr-title-bar>
+      <rr-title-bar size="5" data-testid="section-inputs">Inputs</rr-title-bar>
       <rr-spacer size="4"></rr-spacer>
       <rr-list variant="box">
         <rr-list-item v-for="(input, index) in inputs" :key="input.name" size="md">
@@ -193,7 +197,7 @@ function addOutput() {
 
     <!-- Outputs -->
     <template v-if="outputs.length || editable">
-      <rr-title-bar size="5">Outputs</rr-title-bar>
+      <rr-title-bar size="5" data-testid="section-outputs">Outputs</rr-title-bar>
       <rr-spacer size="4"></rr-spacer>
       <rr-list variant="box">
         <rr-list-item v-for="(output, index) in outputs" :key="output.name" size="md">
@@ -213,8 +217,8 @@ function addOutput() {
     </template>
 
     <!-- Acties -->
-    <template v-if="actions.length">
-      <rr-title-bar size="5">Acties</rr-title-bar>
+    <template v-if="actions.length || editable">
+      <rr-title-bar size="5" data-testid="section-actions">Acties</rr-title-bar>
       <rr-spacer size="4"></rr-spacer>
       <rr-list variant="box">
         <rr-list-item v-for="(action, index) in actions" :key="index" size="md">
@@ -222,6 +226,12 @@ function addOutput() {
           <rr-cell>
             <rr-button variant="neutral-tinted" size="sm" @click="emit('open-action', action)">{{ editable ? 'Bewerk' : 'Bekijk' }}</rr-button>
           </rr-cell>
+        </rr-list-item>
+        <rr-list-item v-if="editable" size="md">
+          <rr-button variant="neutral-tinted" size="sm" data-testid="add-action-btn" @click="emit('add-action')">
+            <rr-icon slot="start" name="plus-small"></rr-icon>
+            Voeg actie toe
+          </rr-button>
         </rr-list-item>
       </rr-list>
       <rr-spacer size="12"></rr-spacer>
