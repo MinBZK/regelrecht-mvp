@@ -3,15 +3,43 @@ import { ref, computed, watch } from 'vue';
 import yaml from 'js-yaml';
 import { useLaw } from './composables/useLaw.js';
 import { useEngine } from './composables/useEngine.js';
+import { useFeatureFlags } from './composables/useFeatureFlags.js';
 import ArticleText from './components/ArticleText.vue';
 import ActionSheet from './components/ActionSheet.vue';
 import EditSheet from './components/EditSheet.vue';
+import FeatureFlagSettings from './components/FeatureFlagSettings.vue';
 import ScenarioBuilder from './components/ScenarioBuilder.vue';
 import ExecutionTraceView from './components/ExecutionTraceView.vue';
 
 const { law, lawId, rawYaml, articles, lawName, selectedArticle, selectedArticleNumber, loading, error } = useLaw();
+const { isEnabled } = useFeatureFlags();
+
+const settingsOpen = ref(false);
+
+const showMiddlePane = computed(() => isEnabled('panel.scenario_form') || isEnabled('panel.yaml_editor'));
+const showFormOption = computed(() => isEnabled('panel.scenario_form'));
+const showYamlOption = computed(() => isEnabled('panel.yaml_editor'));
+
+// Compute visible pane count and slot assignments for split view
+const visiblePanes = computed(() => {
+  const panes = [];
+  if (isEnabled('panel.article_text')) panes.push('text');
+  if (showMiddlePane.value) panes.push('middle');
+  if (isEnabled('panel.execution_trace')) panes.push('trace');
+  return panes;
+});
+const paneSlot = (name) => {
+  const idx = visiblePanes.value.indexOf(name);
+  return idx >= 0 ? `pane-${idx + 1}` : undefined;
+};
 
 const middlePaneView = ref('form');
+
+// Keep middlePaneView in sync with enabled options
+watch([showFormOption, showYamlOption], ([form, yaml]) => {
+  if (!form && middlePaneView.value === 'form' && yaml) middlePaneView.value = 'yaml';
+  if (!yaml && middlePaneView.value === 'yaml' && form) middlePaneView.value = 'form';
+}, { immediate: true });
 
 function onMiddlePaneChange(event) {
   const value = event.target?.value ?? event.detail?.[0];
@@ -149,6 +177,8 @@ function selectArticle(number) {
               <rr-toolbar-item>
                 <rr-button-bar size="md">
                   <rr-button variant="neutral-tinted" size="md" is-picker>RR Project</rr-button>
+                  <rr-icon-button variant="neutral-tinted" size="m" icon="gearshape" title="Instellingen" @click="settingsOpen = true">
+                  </rr-icon-button>
                   <rr-icon-button variant="neutral-tinted" size="m" icon="person-circle" has-menu title="Account">
                   </rr-icon-button>
                 </rr-button-bar>
@@ -179,10 +209,10 @@ function selectArticle(number) {
           Kon de wet niet laden: {{ error.message }}
         </div>
 
-        <!-- 3-column equal layout: Text | Form | Result -->
-        <rr-side-by-side-split-view v-else panes="3">
+        <!-- Dynamic column layout based on feature flags -->
+        <rr-side-by-side-split-view v-else :panes="String(visiblePanes.length)">
           <!-- Left: Article Text -->
-          <rr-split-view-pane slot="pane-1" background="tinted">
+          <rr-split-view-pane v-if="isEnabled('panel.article_text')" :slot="paneSlot('text')" background="tinted">
             <rr-page sticky-header>
               <rr-top-title-bar slot="header" title="Tekst"></rr-top-title-bar>
               <rr-simple-section>
@@ -192,10 +222,10 @@ function selectArticle(number) {
           </rr-split-view-pane>
 
           <!-- Middle: Form or YAML -->
-          <rr-split-view-pane slot="pane-2">
+          <rr-split-view-pane v-if="showMiddlePane" :slot="paneSlot('middle')">
             <rr-page sticky-header>
-              <rr-top-title-bar slot="header" title="Scenario's">
-                <rr-segmented-control slot="toolbar" size="md" :value="middlePaneView" @change="onMiddlePaneChange">
+              <rr-top-title-bar slot="header" :title="showFormOption ? 'Scenario\'s' : 'YAML'">
+                <rr-segmented-control v-if="showFormOption && showYamlOption" slot="toolbar" size="md" :value="middlePaneView" @change="onMiddlePaneChange">
                   <rr-segmented-control-item value="form">Scenario's</rr-segmented-control-item>
                   <rr-segmented-control-item value="yaml">YAML</rr-segmented-control-item>
                 </rr-segmented-control>
@@ -203,7 +233,7 @@ function selectArticle(number) {
               </rr-top-title-bar>
 
               <!-- Form view -->
-              <div v-if="middlePaneView === 'form'">
+              <div v-if="showFormOption && middlePaneView === 'form'">
                 <div v-if="engineInitError" class="editor-engine-error">
                   WASM engine failed to load: {{ engineInitError.message }}
                   <div class="editor-engine-error-hint">
@@ -222,7 +252,7 @@ function selectArticle(number) {
               </div>
 
               <!-- YAML view -->
-              <div v-if="middlePaneView === 'yaml'" class="editor-yaml-wrap">
+              <div v-if="showYamlOption && middlePaneView === 'yaml'" class="editor-yaml-wrap">
                 <textarea
                   :value="yamlSource"
                   @input="onYamlInput"
@@ -238,7 +268,7 @@ function selectArticle(number) {
           </rr-split-view-pane>
 
           <!-- Right: Execution Result -->
-          <rr-split-view-pane slot="pane-3">
+          <rr-split-view-pane v-if="isEnabled('panel.execution_trace')" :slot="paneSlot('trace')">
             <rr-page sticky-header>
               <rr-top-title-bar slot="header" title="Resultaat"></rr-top-title-bar>
 
@@ -257,6 +287,7 @@ function selectArticle(number) {
 
   <ActionSheet :action="activeAction" :article="editedArticle" @close="activeAction = null" />
   <EditSheet :item="activeEditItem" @save="handleSave" @close="activeEditItem = null" />
+  <FeatureFlagSettings :open="settingsOpen" @close="settingsOpen = false" />
 </template>
 
 <style>

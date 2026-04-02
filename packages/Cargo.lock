@@ -3643,8 +3643,10 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "regelrecht-corpus",
+ "regelrecht-pipeline",
  "serde",
  "serde_json",
+ "sqlx",
  "tokio",
  "tower-http",
  "tracing",
