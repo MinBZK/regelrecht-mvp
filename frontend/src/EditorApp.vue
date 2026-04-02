@@ -26,7 +26,7 @@ const visiblePanes = computed(() => {
   if (isEnabled('panel.article_text')) panes.push('text');
   if (showMiddlePane.value) panes.push('middle');
   if (isEnabled('panel.execution_trace')) panes.push('trace');
-  return panes;
+  return panes.length > 0 ? panes : ['text', 'middle', 'trace'];
 });
 const paneSlot = (name) => {
   const idx = visiblePanes.value.indexOf(name);
