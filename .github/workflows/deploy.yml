@@ -70,6 +70,7 @@ jobs:
     with:
       image-name: minbzk/regelrecht-editor
       dockerfile: frontend/Dockerfile
+      cache-scope: editor
     secrets: inherit
 
   build-admin:
