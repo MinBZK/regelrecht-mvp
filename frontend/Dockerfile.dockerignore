@@ -1,20 +1,16 @@
-.git
-.worktrees
-target
-node_modules
-features
-doc
-*.md
-*.png
-.vscode
-.idea
-.claude
-.pytest_cache
-__pycache__
+# Dockerfile-specific .dockerignore for the editor build.
+# BuildKit resolves this by naming convention (Dockerfile.dockerignore).
+# This replaces the root .dockerignore so the full repo context is
+# available, while still excluding unnecessary files.
+**/.git
+**/.vscode
+**/.idea
+**/.worktrees
+**/node_modules
+**/dist
+**/target
+**/*.md
+**/__pycache__
+**/.pytest_cache
 .github
-# Exclude packages not needed for editor-api build
-packages/admin
-packages/harvester
-packages/pipeline
-packages/tui
-# Keep: packages/editor-api, packages/corpus, packages/engine, packages/shared, packages/Cargo.*
+.claude
