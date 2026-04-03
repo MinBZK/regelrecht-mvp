@@ -5,14 +5,16 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::middleware as axum_middleware;
-use axum::routing::get;
+use axum::routing::{get, put};
 use axum::Router;
+use sqlx::postgres::PgPoolOptions;
 use tokio::sync::RwLock;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
 mod corpus_handlers;
+mod feature_flags;
 mod middleware;
 mod state;
 
@@ -29,8 +31,26 @@ async fn main() {
     let static_dir = env::var("STATIC_DIR").unwrap_or_else(|_| "static".to_string());
     let corpus_state = init_corpus(&static_dir).await;
 
+    let pool = match env::var("DATABASE_URL") {
+        Ok(url) => match PgPoolOptions::new().max_connections(2).connect(&url).await {
+            Ok(p) => {
+                tracing::info!("connected to database for feature flags");
+                Some(p)
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "failed to connect to database, feature flags will use defaults");
+                None
+            }
+        },
+        Err(_) => {
+            tracing::info!("DATABASE_URL not set, feature flags will use defaults");
+            None
+        }
+    };
+
     let app_state = AppState {
         corpus: Arc::new(RwLock::new(corpus_state)),
+        pool,
     };
 
     let index_file = PathBuf::from(&static_dir).join("index.html");
@@ -49,6 +69,11 @@ async fn main() {
         .route(
             "/api/corpus/laws/{law_id}/scenarios/{filename}",
             get(corpus_handlers::get_scenario),
+        )
+        .route("/api/feature-flags", get(feature_flags::list_feature_flags))
+        .route(
+            "/api/feature-flags/{key}",
+            put(feature_flags::update_feature_flag),
         );
 
     let app = Router::new()
