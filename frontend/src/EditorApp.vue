@@ -175,12 +175,13 @@ function selectArticle(number) {
             </rr-toolbar-start-area>
             <rr-toolbar-end-area>
               <rr-toolbar-item>
+                <rr-icon-button variant="neutral-tinted" size="m" title="Instellingen" @click="settingsOpen = true">
+                  <rr-icon name="gear" slot="__icon"></rr-icon>
+                </rr-icon-button>
+              </rr-toolbar-item>
+              <rr-toolbar-item>
                 <rr-button-bar size="md">
                   <rr-button variant="neutral-tinted" size="md" is-picker>RR Project</rr-button>
-                  <rr-icon-button variant="neutral-tinted" size="m" icon="gear" title="Instellingen" @click="settingsOpen = true">
-                  </rr-icon-button>
-                  <rr-icon-button variant="neutral-tinted" size="m" icon="person-circle" has-menu title="Account">
-                  </rr-icon-button>
                 </rr-button-bar>
               </rr-toolbar-item>
             </rr-toolbar-end-area>
