@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::middleware as axum_middleware;
-use axum::routing::{get, put};
+use axum::routing::get;
 use axum::Router;
 use tokio::sync::{Mutex, RwLock};
 use tower_http::services::{ServeDir, ServeFile};
@@ -97,11 +97,7 @@ async fn main() {
             "/api/corpus/laws/{law_id}/scenarios/{filename}",
             get(corpus_handlers::get_scenario),
         )
-        .route("/api/feature-flags", get(feature_flags::list_feature_flags))
-        .route(
-            "/api/feature-flags/{key}",
-            put(feature_flags::update_feature_flag),
-        );
+        .route("/api/feature-flags", get(feature_flags::list_feature_flags));
 
     // Protected API routes — require authentication when OIDC is enabled.
     // Write endpoints (PUT/DELETE) for scenarios live here so they cannot be
@@ -132,6 +128,10 @@ async fn main() {
         .route(
             "/api/favorites/{law_id}",
             axum::routing::put(favorites::add).delete(favorites::remove),
+        )
+        .route(
+            "/api/feature-flags/{key}",
+            axum::routing::put(feature_flags::update_feature_flag),
         )
         .route_layer(axum_middleware::from_fn_with_state(
             app_state.clone(),
