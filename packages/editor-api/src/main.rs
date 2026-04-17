@@ -20,6 +20,7 @@ use tracing_subscriber::EnvFilter;
 mod config;
 mod corpus_handlers;
 mod favorites;
+mod feature_flags;
 mod middleware;
 mod state;
 
@@ -95,7 +96,8 @@ async fn main() {
         .route(
             "/api/corpus/laws/{law_id}/scenarios/{filename}",
             get(corpus_handlers::get_scenario),
-        );
+        )
+        .route("/api/feature-flags", get(feature_flags::list_feature_flags));
 
     // Protected API routes — require authentication when OIDC is enabled.
     // Write endpoints (PUT/DELETE) for scenarios live here so they cannot be
@@ -126,6 +128,10 @@ async fn main() {
         .route(
             "/api/favorites/{law_id}",
             axum::routing::put(favorites::add).delete(favorites::remove),
+        )
+        .route(
+            "/api/feature-flags/{key}",
+            axum::routing::put(feature_flags::update_feature_flag),
         )
         .route_layer(axum_middleware::from_fn_with_state(
             app_state.clone(),
