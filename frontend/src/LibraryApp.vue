@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, shallowRef } from 'vue';
+import { ref, computed, shallowRef, watch } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import yaml from 'js-yaml';
 import ArticleText from './components/ArticleText.vue';
@@ -263,6 +263,17 @@ onBeforeRouteUpdate((to) => {
   }
 });
 
+// When a harvested law becomes available, reload the corpus and select it.
+async function onHarvestAvailable(slug) {
+  await fetch('/api/corpus/reload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ law_ids: [slug] }),
+  }).catch(() => {});
+  await loadIndex();
+  selectLaw(slug);
+}
+
 // Initial load from route
 if (route.params.lawId) {
   selectedLawId.value = route.params.lawId;
@@ -461,6 +472,7 @@ loadIndex();
     :laws="laws"
     :anchor-rect="searchAnchorRect"
     @select-law="selectLaw"
+    @harvest-available="onHarvestAvailable"
   />
 </template>
 
