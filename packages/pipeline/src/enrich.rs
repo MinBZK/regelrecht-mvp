@@ -414,12 +414,16 @@ pub async fn create_enrich_corpus(
     // an absolute path it cannot handle.
     let normalized = normalize_yaml_path(yaml_path)?;
 
+    // Derive the law directory once — used for both sparse checkout and
+    // checking out missing files from development.
+    let law_dir = Path::new(&normalized)
+        .parent()
+        .map(|p| p.to_string_lossy().to_string())
+        .filter(|d| !d.is_empty());
+
     // Sparse checkout: only the law directory + features/
-    if let Some(law_dir) = Path::new(&normalized).parent() {
-        let law_dir_str = law_dir.to_string_lossy().to_string();
-        if !law_dir_str.is_empty() {
-            config.sparse_paths = Some(vec![law_dir_str, "features".to_string()]);
-        }
+    if let Some(ref dir) = law_dir {
+        config.sparse_paths = Some(vec![dir.clone(), "features".to_string()]);
     }
 
     // Use a separate checkout directory per branch + job to avoid conflicts
@@ -434,6 +438,21 @@ pub async fn create_enrich_corpus(
 
     let mut client = CorpusClient::new(config);
     client.ensure_repo().await?;
+
+    // Check out the specific law file from development so newly harvested
+    // laws are available. Without this, laws harvested after the enrichment
+    // branch was created would be missing and cause "file not found" errors.
+    //
+    // Uses the file path (not directory) so `ls-files --error-unmatch` checks
+    // the exact file. A directory check would pass if any older version exists,
+    // missing newly harvested versions of the same law.
+    //
+    // Uses checkout (not merge) so the file addition ends up in the same
+    // commit as the enrichment — which survives `git rebase` in commit_and_push.
+    client
+        .checkout_from_branch("development", &[&normalized])
+        .await?;
+
     Ok(client)
 }
 
