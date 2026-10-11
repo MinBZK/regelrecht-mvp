@@ -762,6 +762,24 @@ export async function startReplay(data, context, { at = 0, faqId = null } = {}) 
   }
 }
 
+/** The demo is not shown smaller than this, however narrow the window. */
+const MIN_FIT = 0.7;
+
+/**
+ * Show the demo at the size it was recorded in. A take made in a wide window
+ * replays in a narrower one with the same words on less room: lines wrap,
+ * and what the presenter points at slides out of view. On a window narrower
+ * than the recording the demo (not the rail) is scaled down to fit, the way
+ * the presenter zoomed out his own browser.
+ */
+function fitDemo() {
+  const recorded = currentTrack()?.viewport?.width ?? timeline?.main?.viewport?.width;
+  const zoom = recorded ? Math.max(MIN_FIT, Math.min(1, window.innerWidth / recorded)) : 1;
+  const root = document.documentElement;
+  root.classList.toggle('rr-replay-fit', zoom < 0.999);
+  root.style.setProperty('--rr-demo-zoom', String(Math.round(zoom * 1000) / 1000));
+}
+
 let starting = false;
 
 async function begin(data, context, { at, faqId }) {
@@ -790,6 +808,7 @@ async function begin(data, context, { at, faqId }) {
   adoptLocale(SOURCE_LOCALE);
   await nextTick();
   replay.active = true;
+  window.addEventListener('resize', fitDemo);
   const loading = seekToken;
   replay.faq = null;
   document.addEventListener('pointerdown', onViewerAct, true);
@@ -803,6 +822,7 @@ async function begin(data, context, { at, faqId }) {
     fail();
     return;
   }
+  fitDemo();
   // A jump made while the track was loading (a chapter picked, the arrows)
   // already put the demo where the viewer wants it.
   if (seekToken !== loading) return;
@@ -820,6 +840,9 @@ export function stopReplay() {
   document.removeEventListener('pointerdown', onViewerAct, true);
   document.removeEventListener('keydown', onViewerAct, true);
   uninstallClock();
+  window.removeEventListener('resize', fitDemo);
+  document.documentElement.classList.remove('rr-replay-fit');
+  document.documentElement.style.removeProperty('--rr-demo-zoom');
   unwatchMode?.();
   unwatchMode = null;
   replay.active = false;

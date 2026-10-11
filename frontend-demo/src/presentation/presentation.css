@@ -55,6 +55,15 @@ html.rr-presenting:not(.rr-presenting-full):not(.rr-deck-hidden) {
   --rr-sheet-fade: 0;
 }
 
+/* The recorded walkthrough in a window narrower than the one it was recorded
+ * in (walkthrough/replay.js sets the factor): the demo is scaled down so its
+ * lines break where they did for the presenter. The rail keeps its size.
+ * Percentages and viewport units are not scaled by `zoom`, so the demo still
+ * fills the height and the sheet offset still ends at the rail. */
+html.rr-replay-fit #app {
+  zoom: var(--rr-demo-zoom, 1);
+}
+
 /* An answer in which the presenter only talks (walkthrough/ReplayOverlay.vue
  * shows the face large on the right): the question keeps clear of it. */
 html.rr-face .deck.full .stage {

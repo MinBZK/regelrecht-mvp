@@ -91,6 +91,8 @@ A take can also begin with the demo in a state the log does not explain: a scena
 
 A replay can still break when the demo changes: a button that is renamed or removed is no longer found. The replay then goes to the right tab itself (it also records the route of every navigation), but a click inside the tab is lost. Record the affected chapter again; a take can start at any slide.
 
+In a window narrower than the one the take was recorded in, the demo next to the rail is scaled down to the recorded width (CSS `zoom`, never below 70 percent), so its lines break where they did for the presenter and what he scrolled to is on screen; the rail keeps its size. A recorded Escape closes the sheet, dialog or popover it was pressed in, which a made-up key event does not do by itself.
+
 On a screen narrower than 1024 pixels the demo and the rail do not fit side by side. The page says so and points to a larger screen. It used to play the recording of the window as a video there, but that video shows the slides of the recording day, not the ones corrected afterwards, and nothing at all where the presenter had the deck off; the build no longer renders it.
 
 The player's layer over the demo (the bubble, the cursor and its ripple, the captions) is custom CSS in `src/walkthrough/Replay*.vue`, because the design system has no video or pointer components. The cursor and the captions are placed in the browser's top layer, so they stay visible over a sheet or dialog the replay opens.

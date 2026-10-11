@@ -67,8 +67,28 @@ export function setChecked(el, checked) {
 export function key(el, keyName) {
   const field = fieldOf(el);
   const init = { key: keyName, bubbles: true, composed: true, cancelable: true };
-  field.dispatchEvent(new KeyboardEvent('keydown', init));
+  const taken = !field.dispatchEvent(new KeyboardEvent('keydown', init));
   field.dispatchEvent(new KeyboardEvent('keyup', init));
+  // Escape closes the sheet, dialog or popover it is pressed in. That is the
+  // browser's doing, and a made-up key event does not set it off.
+  if (keyName === 'Escape' && !taken) closeAround(el);
+}
+
+/** Close the innermost open sheet, dialog or popover around `el`, as Escape does. */
+function closeAround(el) {
+  for (let n = el; n; n = n.parentElement ?? n.getRootNode?.()?.host) {
+    if (n.tagName === 'DIALOG' && n.open) {
+      // A design-system sheet closes through its own method, so it knows.
+      const host = n.getRootNode?.()?.host;
+      if (typeof host?.hide === 'function') host.hide();
+      else if (n.dispatchEvent(new Event('cancel', { cancelable: true }))) n.close();
+      return;
+    }
+    if (n.matches?.('[popover]:popover-open')) {
+      n.hidePopover();
+      return;
+    }
+  }
 }
 
 export function scrollTo(el, top, left = 0) {
