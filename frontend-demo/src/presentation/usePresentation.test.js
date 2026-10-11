@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { deckFor, usePresentation } from './usePresentation.js';
+import { deckFor, escapeStops, usePresentation } from './usePresentation.js';
 import { adoptLocale } from '../i18n/index.js';
 
 // De presentatie hangt één keydown-luisteraar aan het venster en houdt die
@@ -261,6 +261,26 @@ describe('usePresentation toetsafvang', () => {
     press('Escape');
     expect(p.active.value).toBe(false);
     expect(document.documentElement.classList.contains('rr-presenting')).toBe(false);
+  });
+
+  it('Escape in een open paneel sluit dat paneel en laat het dek staan', async () => {
+    await p.start(1);
+    const dialog = document.createElement('dialog');
+    dialog.setAttribute('open', '');
+    document.body.appendChild(dialog);
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+    expect(p.active.value).toBe(true);
+    dialog.remove();
+  });
+
+  it('Escape stopt het dek niet tijdens een opname', async () => {
+    await p.start(1);
+    escapeStops.value = false;
+    press('Escape');
+    expect(p.active.value).toBe(true);
+    escapeStops.value = true;
+    press('Escape');
+    expect(p.active.value).toBe(false);
   });
 
   it('Escape werkt ook gewoon met het dek in beeld', async () => {

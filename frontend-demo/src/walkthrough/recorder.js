@@ -24,6 +24,7 @@
 import { reactive } from 'vue';
 import { micConstraints } from './micCheck.js';
 import { camConstraints } from './camCheck.js';
+import { escapeStops } from '../presentation/usePresentation.js';
 
 export const SNAPSHOT_KEY = 'rr-walkthrough-snapshots-v1';
 const ENDPOINT = '/__walkthrough/takes';
@@ -115,6 +116,7 @@ function fail(e) {
   recorder.error = String(e?.message ?? e);
   recorder.errorKey = e?.key ?? null;
   recorder.phase = 'error';
+  escapeStops.value = true;
   teardown();
 }
 
@@ -267,6 +269,7 @@ export async function startRecording({ meta = {} } = {}) {
     camRec?.start(CHUNK_MS);
     await started;
     recorder.phase = 'recording';
+    escapeStops.value = false;
     session.tick = setInterval(() => {
       recorder.elapsed = clock() ?? 0;
       // The log is small; rewriting it every few seconds means a crash keeps it.
@@ -302,6 +305,7 @@ export async function stopRecording() {
   if (!session || recorder.phase !== 'recording') return;
   const s = session;
   recorder.phase = 'saving';
+  escapeStops.value = true;
   s.events.push({ t: clock(), type: 'end' });
   clearInterval(s.tick);
   await Promise.all([stopped(s.app), stopped(s.camRec)]);

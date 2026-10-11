@@ -70,6 +70,8 @@ export function deckFor(slides, profileKey) {
 }
 
 const active = ref(false);
+/** Whether Escape stops the deck. The recorder switches it off for the length of a take. */
+export const escapeStops = ref(true);
 const index = ref(0);
 const slidesRef = ref([]);
 /**
@@ -258,6 +260,10 @@ function onKey(e) {
   // Bewust vóór de poort hieronder, want die is precies de toestand waarin je
   // eruit wilt.
   if (e.key === 'Escape' && active.value) {
+    // An open sheet or dialog takes its own Escape: closing the trace must not
+    // end the presentation with it. During a take Escape never stops the deck,
+    // because every slide after it would be missing from the recording.
+    if (!escapeStops.value || pathMatches(e, 'dialog[open], [popover]')) return;
     stop();
     return;
   }
