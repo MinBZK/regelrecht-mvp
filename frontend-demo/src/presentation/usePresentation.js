@@ -21,7 +21,7 @@ import { localeRouteName, pageForConfigPath, splitConfigPath } from '../router.j
  * It is read back to its page here and resolved against the active locale, so
  * a deck presented in English opens the English tabs.
  */
-function slideTarget(path) {
+export function slideTarget(path) {
   if (!path || !router) return null;
   const parts = splitConfigPath(path);
   if (!parts) return path;
@@ -70,6 +70,8 @@ export function deckFor(slides, profileKey) {
 }
 
 const active = ref(false);
+/** Whether Escape stops the deck. The recorder switches it off for the length of a take. */
+export const escapeStops = ref(true);
 const index = ref(0);
 const slidesRef = ref([]);
 /**
@@ -258,6 +260,10 @@ function onKey(e) {
   // Bewust vóór de poort hieronder, want die is precies de toestand waarin je
   // eruit wilt.
   if (e.key === 'Escape' && active.value) {
+    // An open sheet or dialog takes its own Escape: closing the trace must not
+    // end the presentation with it. During a take Escape never stops the deck,
+    // because every slide after it would be missing from the recording.
+    if (!escapeStops.value || pathMatches(e, 'dialog[open], [popover]')) return;
     stop();
     return;
   }
@@ -296,7 +302,11 @@ function onKey(e) {
   }
 }
 
-function start(i = 0) {
+/**
+ * Start the deck at slide `i`. `keys: false` leaves the keyboard alone: the
+ * recorded walkthrough drives the deck itself and has its own keys.
+ */
+function start(i = 0, { keys = true } = {}) {
   // Het dek ligt vast zodra de presentatie loopt: een dia die van persona
   // wisselt (Merijns dek eindigt bij Claudia) gooit het niet halverwege om.
   if (!active.value) {
@@ -306,7 +316,7 @@ function start(i = 0) {
   if (!total.value) return;
   active.value = true;
   document.documentElement.classList.add('rr-presenting');
-  if (!listening) {
+  if (keys && !listening) {
     window.addEventListener('keydown', onKey);
     listening = true;
   }
