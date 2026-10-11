@@ -138,6 +138,44 @@ def slide_at(events: list[dict], t: float) -> dict | None:
     return current
 
 
+def add_chapters(events: list[dict], extra: list[dict], deck_len: int, take: str = "", states: dict | None = None) -> tuple[list[dict], list[dict]]:
+    """Chapters written after recording, as slide events in the take's log.
+
+    A presenter can stop the deck and go on through the tabs; that stretch has
+    no slide events, and so no chapters and a rail that keeps showing the last
+    slide. `extra` (`takes.<take>.chapters` in walkthrough.yaml) gives such a
+    stretch its own slides: `{at, title, ...}`, in take time. Each becomes a
+    slide appended to the deck and a slide event at `at`, on the tab the
+    presenter was on (the first segment of the last route before it), so
+    showing the slide does not navigate away.
+
+    The recorder stored no snapshot of the demo at these moments. `states`
+    holds the ones measured afterwards (`walkthrough states`), by `at`; until
+    then the replay reaches such a chapter from the last one that has one.
+
+    Returns the events with the new ones in place and the slides to append.
+    """
+    out = list(events)
+    slides: list[dict] = []
+    for k, c in enumerate(sorted(extra, key=lambda c: float(c["at"]))):
+        at = float(c["at"]) * 1000
+        before = [e for e in events if e.get("t", 0) <= at]
+        route = next((e.get("path") for e in reversed(before) if e.get("type") == "route"), None)
+        profile = next((e.get("profile") for e in reversed(before) if e.get("type") == "slide"), None)
+        slide = {"kind": "demo", **{key: v for key, v in c.items() if key != "at"}}
+        if slide["kind"] == "demo" and "route" not in slide and route:
+            slide["route"] = "/" + route.strip("/").split("/")[0]
+        # The deck takes its persona from the last slide that names one, and
+        # the recorded deck may end on another persona's slide.
+        if profile and "profile" not in slide:
+            slide["profile"] = profile
+        slides.append(slide)
+        state = (states or {}).get(str(float(c["at"])))
+        out.append({"t": at, "type": "slide", "index": deck_len + k, "slide": slide, "profile": profile, "state": state, "added": [take, float(c["at"])]})
+    out.sort(key=lambda e: e.get("t", 0))
+    return out, slides
+
+
 def chapters(track: Track, events_by_take: dict[str, list[dict]], overrides: dict | None = None) -> list[dict]:
     """Chapter boundaries in the output, one per slide, merged across cuts.
 
@@ -170,7 +208,7 @@ def chapters(track: Track, events_by_take: dict[str, list[dict]], overrides: dic
         slide.update(overrides.get(index, overrides.get(str(index), {})) or {})
         if result and at - result[-1]["start"] < 0.05:
             result.pop()
-        result.append({"start": round(at, 3), "slideIndex": index, "slide": slide, "profile": e.get("profile"), "state": e.get("state")})
+        result.append({"start": round(at, 3), "slideIndex": index, "slide": slide, "profile": e.get("profile"), "state": e.get("state"), **({"added": e["added"]} if e.get("added") else {})})
     if not result:
         result.append({"start": 0.0, "slideIndex": 0, "slide": {}, "profile": None, "state": None})
     result[0]["start"] = 0.0

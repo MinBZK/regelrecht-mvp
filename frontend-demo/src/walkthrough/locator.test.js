@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { describe as describeEl, loosen, resolve, signature } from './locator.js';
+import { describe as describeEl, loosen, passingData, resolve, signature } from './locator.js';
 import { installClock, uninstallClock } from './clock.js';
 import { centerOf, graphView, showView } from './graphBridge.js';
 
@@ -161,5 +161,28 @@ describe('graph camera', () => {
     expect(showView({ cx: 1, cy: 2, zoom: 1.5 }, 140)).toBe(true);
     expect(calls).toEqual([[1, 2, { zoom: 1.5, duration: 140 }]]);
     graphView.api = null;
+  });
+});
+
+describe('data attributes that do not last', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('tells a made-up id and a passing state from a name', () => {
+    expect(passingData('data-run', 'run-mv3t513c')).toBe(true);
+    expect(passingData('data-case', 'zaak-mv3t9uim-3j4xe')).toBe(true);
+    expect(passingData('data-focused', '')).toBe(true);
+    expect(passingData('data-run', 'vergelijking')).toBe(false);
+    expect(passingData('data-highlight', 'complete-data')).toBe(false);
+  });
+
+  it('leaves them out of a description, and finds a take that still has them', () => {
+    document.body.innerHTML = '<button data-run="run-zz9y8x7w" data-highlight="tab">Tweede</button>';
+    const button = document.querySelector('button');
+    expect(signature(button)).toEqual({ tag: 'button', type: 'submit', '@data-highlight': 'tab' });
+    // Recorded on another day: another run id, and focus on the item.
+    const recorded = [{ tag: 'button', type: 'submit', '@data-run': 'run-mv3t513c', '@data-focused': '', '@data-highlight': 'tab', nth: 0 }];
+    expect(resolve(recorded)).toBe(button);
   });
 });

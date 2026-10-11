@@ -79,15 +79,19 @@ Answers come in two kinds. A judgement (how open norms are handled, what the leg
 
 How the replay holds up:
 
-- **Finding elements.** A click is stored as a description of the element, not a position: per scope (the document, then each shadow root of a design-system component on the way) the element's tag and what names it to a person, such as its text, label or link. The replay looks that up in the live page. Links are stored without their origin, and when an exact match fails, numbers in labels ("Wetten, 79") are ignored. A recording made at one window width replays at another; this was checked between 1100 and 1920 pixels wide, with the rail next to the demo (`src/walkthrough/locator.js`).
+- **Finding elements.** A data attribute that holds an id made up at run time (the id of a simulation run or of a case) or a passing state (the menu item that had focus) is left out of the description. A click is stored as a description of the element, not a position: per scope (the document, then each shadow root of a design-system component on the way) the element's tag and what names it to a person, such as its text, label or link. The replay looks that up in the live page. Links are stored without their origin, and when an exact match fails, numbers in labels ("Wetten, 79") are ignored. A recording made at one window width replays at another; this was checked between 1100 and 1920 pixels wide, with the rail next to the demo (`src/walkthrough/locator.js`).
 - **Waiting.** An element that is not there yet, because a tab is still loading or the engine is computing, is waited for, and the voice pauses with it.
 - **The date.** While a replay runs, `Date` answers with the moment of the recording plus the time into it (`clock.js`), so amounts and deadlines are those of the recording day.
 - **Jumping.** Every chapter carries the demo state as it was when its slide came up. A jump restores that state, mounts the tabs fresh and replays the chapter's actions up to the target, fast.
 - **The viewer's own session.** The replay drives the same store, but does not write it to `localStorage`, and leaving the walkthrough puts the viewer's own state back.
 
+A presenter can switch the deck off during a take and go on through the tabs. That stretch has no slide changes, so it would be one long chapter with the last slide next to it. `chapters:` under the take in `walkthrough.yaml` gives it chapters afterwards: a moment in the take and the text of a slide. The recorder stored no state of the demo at those moments, so `just walkthrough states` plays the walkthrough once on the dev server, in real time, and stores the state at each added chapter in the take's folder; the next build gives those chapters their snapshot. Next to the deck the tab bar is hidden, so a recorded click on a tab that the replay cannot see is followed as the link it is. A recorded "Demo resetten" puts the demo in its default mode, which has no rail; the replay keeps the rail.
+
+A take can also begin with the demo in a state the log does not explain: a scenario already run in a tab that was still open, for instance. `actions:` under the take adds the missing clicks, each with a moment and the description of its element.
+
 A replay can still break when the demo changes: a button that is renamed or removed is no longer found. The replay then goes to the right tab itself (it also records the route of every navigation), but a click inside the tab is lost. Record the affected chapter again; a take can start at any slide.
 
-On a screen narrower than 1024 pixels the demo and the rail do not fit side by side, and the page plays the recording of the window as a video instead, with its captions.
+On a screen narrower than 1024 pixels the demo and the rail do not fit side by side. The page says so and points to a larger screen. It used to play the recording of the window as a video there, but that video shows the slides of the recording day, not the ones corrected afterwards, and nothing at all where the presenter had the deck off; the build no longer renders it.
 
 The player's layer over the demo (the bubble, the cursor and its ripple, the captions) is custom CSS in `src/walkthrough/Replay*.vue`, because the design system has no video or pointer components. The cursor and the captions are placed in the browser's top layer, so they stay visible over a sheet or dialog the replay opens.
 
@@ -104,7 +108,7 @@ The recorder is a panel in the top left corner, present only in the dev server a
 - the microphone (echo cancellation, noise suppression and automatic gain off);
 - the webcam, optionally;
 - the actions (`capture.js`): clicks, typing with its value after every keystroke, selects and checkboxes, Enter and Escape, scrolling, and the deck's slide changes and the routes;
-- the whole window as video, for phones and for the shareable MP4.
+- the whole window as video, which the correction step takes its stills from.
 
 What is typed is recorded, because the replay has to type it again. It is demo input with fictitious personas, said aloud in the same take. The state of the demo is stored with every slide change, which is what a jump restores and what lets one chapter be recorded again from its own starting point.
 
@@ -118,7 +122,7 @@ During a take the panel leaves the screen and the tab title starts with "● REC
 just walkthrough prepare     # last take: extract, clean the voice, transcribe, correct, draft cuts
 just walkthrough transcript  # the spoken text per slide
 just walkthrough build       # walkthrough.yaml to voice, video, captions and timeline.json
-just walkthrough export      # a shareable MP4 per track
+just walkthrough states      # the demo's state at chapters added in walkthrough.yaml (dev server on)
 just walkthrough status      # which takes exist and how far each one is processed
 just walkthrough check       # how a take sounds, in numbers, with a verdict per line
 just walkthrough script      # a draft script per slide of a take, for the generated voice
@@ -158,7 +162,7 @@ voice:
 
 `elevenlabs` reads the API key from `ELEVENLABS_API_KEY` or from `.walkthrough/.env`, which is not in git. Generated lines are cached by a hash of their text and voice settings, so a rebuild only pays for lines that changed. Where a track contains generated speech, the player says so next to its controls ("De stem in de hoofdstukken is gegenereerd met AI"), as the AI Act asks of generated speech that can pass for a person. The webcam bubble shows only during the recorded parts at the start (`cam.until`). On a full slide (the opening, or an answer without a tab) the bubble is large next to the slide; once a slide opens the demo it shrinks to a corner of the rail.
 
-A track with generated chapters has no recording of the window, so a phone gets a message instead of the video, and `walkthrough export` skips it; an MP4 of such a track has to be recorded from the replay itself, which is not built yet.
+No track has a rendered recording of the window any more, so `walkthrough export` has nothing to turn into an MP4. A shareable MP4 has to be recorded from the replay itself, which is not built yet.
 
 ### From recording to release
 

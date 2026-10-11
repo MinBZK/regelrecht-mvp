@@ -54,6 +54,21 @@ export function generatedId(id) {
 const MADE_UP = new Set(['id', 'name']);
 
 /**
+ * A data attribute that says nothing lasting about an element: the state it
+ * happens to be in (`data-focused` on the menu item under the pointer), or an
+ * id the app made up at run time (`data-run="run-mv3t513c"`, a case id). A
+ * made-up id shows as a part of six characters or more that mixes letters and
+ * digits; a name like `vergelijking` or `complete-data` does not.
+ */
+const STATE_DATA = new Set(['data-focused', 'data-highlighted', 'data-hovered', 'data-pressed', 'data-active']);
+export function passingData(attr, value) {
+  if (STATE_DATA.has(attr)) return true;
+  return String(value ?? '')
+    .split(/[-_:]/)
+    .some((part) => part.length >= 6 && /\d/.test(part) && /[a-z]/i.test(part));
+}
+
+/**
  * Text that names a whole page rather than one control: anything this long
  * is a container's content, and it changes whenever the content does (a law
  * added to the corpus). A loose match drops it and goes by the element.
@@ -113,7 +128,7 @@ export function signature(el) {
     if (v) sig[`@${a}`] = v;
   }
   for (const a of el.getAttributeNames?.() ?? []) {
-    if (a.startsWith('data-') && !a.startsWith('data-v-')) sig[`@${a}`] = el.getAttribute(a);
+    if (a.startsWith('data-') && !a.startsWith('data-v-') && !passingData(a, el.getAttribute(a))) sig[`@${a}`] = el.getAttribute(a);
   }
   // Text only when nothing else names it: a list item with a law's name, a
   // plain button. Long or empty text says little.
@@ -131,6 +146,7 @@ function matches(el, sig) {
     if (k === 'tag' || k === '__masked') continue;
     // Takes recorded before generated ids were left out still carry them.
     if (MADE_UP.has(k) && generatedId(v)) continue;
+    if (k.startsWith('@data-') && passingData(k.slice(1), v)) continue;
     const have = read(el, k);
     if ((sig.__masked && have != null ? MASK(have) : have) !== v) return false;
   }

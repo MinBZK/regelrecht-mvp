@@ -19,7 +19,7 @@ Wat waar staat:
 | ruwe opnames (beeld, stem, camera, eventlog) | `.walkthrough/takes/<take>/` | nee |
 | wat de kijker ziet: segmenten, knippen, diateksten, vragen | `corpus/demo/walkthrough/walkthrough.yaml` | ja |
 | het resultaat: tijdlijn en ondertitels | `corpus/demo/walkthrough/timeline.json`, `*.vtt` | ja |
-| de media (stem, camera, schermvideo) | GitHub-release `walkthrough-<datum>` | release, openbaar |
+| de media (stem, camera) | GitHub-release `walkthrough-<datum>` | release, openbaar |
 
 ## De commando's
 
@@ -32,6 +32,7 @@ just walkthrough build             # walkthrough.yaml -> media, timeline.json, o
 just walkthrough subtitles         # kortere ondertitels voor wat gezegd is (daarna weer build)
 just walkthrough verify            # elk hoofdstuk headless terugspelen; meldt gemiste handelingen (ook in CI)
 just walkthrough anchors           # scrollankers meten voor opnames van vóór de ankers
+just walkthrough states            # de demostand vastleggen bij achteraf toegevoegde hoofdstukken
 just walkthrough publish <tag>     # media naar een GitHub-release (openbaar)
 just walkthrough test              # de pytest-suite van de pijplijn
 ```
@@ -116,6 +117,39 @@ niet.
   Dat hoofdstuk moet opnieuw. Opnames van vóór 3 oktober 2026 missen de
   scrolls binnen panelen van het ontwerpsysteem.
 
+## Het dek stond uit, of de opname begon halverwege
+
+- **Geen dia's in een deel van de opname** (`dia's` in `check` houdt eerder
+  op dan de opname, of er staan `deck`-events met `active: false` in
+  `events.json`): de presentator zette het dek uit en liep via de tabbladen
+  verder. Dat is geen reden om opnieuw op te nemen. Leid de overgangen af uit
+  het transcript en de tabwissels en geef dat deel achteraf hoofdstukken:
+  ```yaml
+  takes:
+    <take>:
+      chapters:
+        - at: 842.1            # take-tijd, vlak voor de zin die het onderdeel opent
+          overline: De burger
+          title: Eén burger, Merijn
+          lead: Alles waar Merijn recht op heeft, berekend door de wet zelf.
+          bullets: [...]
+          route: /portaal      # het tabblad; zonder `route` dat van de laatste tabwissel
+        - at: 1270.4
+          kind: closing        # een dia zonder tabblad, voor de afsluiting
+          title: Van wet naar digitale werking
+  ```
+  Daarna `build`, dan `just walkthrough states` (dev-server aan; speelt de
+  rondleiding één keer in echte tijd af en legt per hoofdstuk de stand van
+  de demo vast, zodat een sprong ernaartoe direct is), dan opnieuw `build`.
+  `states` opnieuw draaien na elke wijziging aan knippen of hoofdstukken
+  vóór dat deel.
+- **De opname begint met iets dat al gedaan was** (een scenario dat al
+  uitgevoerd was, een paneel dat al openstond; `verify` mist dan de eerste
+  klik): de staat van een tabblad zit niet in de demostand. Zet de
+  ontbrekende handelingen erbij onder `actions:` van de opname, met `at`,
+  `type`, `fx`/`fy` en het `target` zoals `events.json` het voor zo'n klik
+  noteert. Kijk in `app.cfr.mp4` hoe het scherm er bij het begin uitzag.
+
 ## Pauzes en tussenzinnen
 
 - **Pauzes**: zegt de presentator "kijk gerust even zelf rond", "klik zelf
@@ -130,7 +164,11 @@ niet.
     <take>:
       auto_pauses: false   # niets automatisch in deze opname
   ```
-  Controleer na een build of `main.pauses` in `timeline.json` klopt.
+  Controleer na een build of `main.pauses` in `timeline.json` klopt. Zegt de
+  presentator na de uitnodiging nog iets ("dan gaan we zo weer verder"), zet
+  de gevonden pauze dan uit en een nieuwe na die zin. Lees ook het hele
+  transcript na op uitnodigingen in andere woorden ("voel je vrij om hier
+  rond te kijken"); die vindt de build niet.
 - **Tussenzinnen** (bumpers): korte stukjes uit een opname in de eigen stem,
   gezegd als de kijker zelf gaat klikken (`wait`) en als hij verder drukt
   (`resume`). Neem ze op in een losse take ("Ga je gang, kijk maar even rond,

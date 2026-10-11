@@ -14,6 +14,7 @@
     walkthrough voices           the voices on the ElevenLabs account (the clone's id)
     walkthrough check <take>     how a take sounds, in numbers, with a verdict per line
     walkthrough anchors          scroll anchors for takes recorded without them (dev server on)
+    walkthrough states           the demo's state at chapters added in walkthrough.yaml (dev server on)
     walkthrough subtitles        shorter subtitles for what was said, in subtitles.yaml (then build)
     (verify: `just walkthrough verify` runs frontend-demo/scripts/verify-walkthrough.mjs)
     walkthrough publish <tag>    the media into a GitHub release (asks first)
@@ -43,6 +44,7 @@ from .timeline import (
     CutError,
     apply_subtitles,
     find_invitations,
+    add_chapters,
     place_pauses,
     build_track,
     captions,
@@ -408,7 +410,8 @@ def pauses_for(cfg: dict, take: str, words: list[dict]) -> list[dict]:
         if p.get("take") != take:
             continue
         at = float(p["at"])
-        if p.get("off"):
+        # YAML 1.1 reads a bare `off` as the boolean false, also as a key.
+        if p.get("off", p.get(False)):
             found = [f for f in found if abs(f["at"] - at) > 1.0]
         else:
             found.append({"at": at, "start": at, **({"hint": p["hint"]} if p.get("hint") else {})})
@@ -468,6 +471,24 @@ def render_recorded(name: str, segments: list[dict], cfg: dict, overrides: dict,
     infos = {t: take_info(t) for t in takes}
     durations = {t: infos[t]["duration"] for t in takes}
     events = {t: read_json(take_dir(t) / "events.json", []) for t in takes}
+    # Chapters written after recording get their slides behind the deck of the
+    # take that leads the track, since that is the deck the replay shows.
+    lead = segments[0]["take"]
+    added: list[dict] = []
+    for t in takes:
+        extra = ((cfg.get("takes") or {}).get(t) or {}).get("chapters") or []
+        if not extra:
+            continue
+        deck_len = len(deck_of(lead, {})) + len(added)
+        events[t], more = add_chapters(events[t], extra, deck_len, t, read_json(take_dir(t) / "states.json", {}))
+        added += more
+    # Actions written after recording (`actions:` under a take): what the
+    # presenter had done before the take began and the log therefore lacks,
+    # such as a scenario already run in a tab that was still open.
+    for t in takes:
+        extra = ((cfg.get("takes") or {}).get(t) or {}).get("actions") or []
+        if extra:
+            events[t] = sorted(events[t] + [{"t": float(a["at"]) * 1000, **{k: v for k, v in a.items() if k != "at"}} for a in extra], key=lambda e: e.get("t", 0))
     words = {t: words_for(cfg, t) for t in takes}
     cuts = {t: cuts_for(cfg, t) for t in takes}
     for t in takes:
@@ -484,17 +505,15 @@ def render_recorded(name: str, segments: list[dict], cfg: dict, overrides: dict,
     has_cam = all((take_dir(t) / "cam.cfr.mp4").exists() for t in takes)
     say(f"{name}: {len(track.pieces)} opgenomen stukken, {track.duration:.1f}s{', met webcam' if has_cam else ''}")
 
-    # Video and webcam piece by piece, each a whole number of frames, then
-    # joined without re-encoding. One filter graph over all pieces would have
-    # ffmpeg buffer raw frames of one take while it waits on another.
-    vlist, clist = [], []
+    # The webcam piece by piece, each a whole number of frames, then joined
+    # without re-encoding. One filter graph over all pieces would have ffmpeg
+    # buffer raw frames of one take while it waits on another. The recording
+    # of the window is not rendered: the walkthrough is the demo replaying,
+    # and a screen too small for that is told so instead of shown a video
+    # whose slides are the ones of the recording day.
+    clist = []
     for i, p in enumerate(track.pieces):
         n = media.frames(p.length)
-        # A take of another window size is letterboxed into the first one's.
-        vf = f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p"
-        out = workdir / f"{name}-v{i:04d}.mp4"
-        ffmpeg("-ss", p.start, "-i", take_dir(p.take) / "app.cfr.mp4", "-an", "-vf", vf, "-frames:v", n, "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-g", FPS * 4, out)
-        vlist.append(out)
         if has_cam:
             crop = cam_crop(p.take)
             offset = infos[p.take].get("camOffset") or 0
@@ -527,14 +546,14 @@ def render_recorded(name: str, segments: list[dict], cfg: dict, overrides: dict,
     return {
         "duration": round(track.duration, 3),
         "voice": raw,
-        "video": vlist,
+        "video": None,
         "cam": clist if has_cam else None,
         "size": (width, height),
         "chapters": chapters(track, events, overrides),
         "events": remap_actions(track, events),
         "words": remap_words(track, words),
         "pauses": place_pauses(track, {t: pauses_for(cfg, t, words[t]) for t in takes}),
-        "slides": deck_of(lead, overrides),
+        "slides": deck_of(lead, overrides) + added,
         "recordedAt": meta.get("startedAt"),
         "viewport": meta.get("viewport"),
         "pieces": [{"take": p.take, "from": p.start, "to": p.end, "at": p.out} for p in track.pieces],
@@ -723,7 +742,7 @@ def render_track(name: str, segments: list[dict], cfg: dict, overrides: dict, de
 SUBTITLES = CORPUS / "subtitles.yaml"
 
 SUBTITLE_PROMPT = """Hieronder staan de ondertitels van een gesproken rondleiding door de demo
-van RegelRecht (wetten als machine-uitvoerbare regels), als JSON-lijst, in
+van RegelRecht (wetten als machine-uitvoerbare regels), genummerd, in
 volgorde. Het is spreektaal, letterlijk uitgeschreven. Maak er ondertitels
 van die prettig lezen.
 
@@ -738,11 +757,16 @@ Regels:
   andere.
 
 {context}
-Antwoord met alleen een JSON-lijst van strings, even lang als de invoer,
-in dezelfde volgorde.
+De invoer is een JSON-object van nummer naar ondertitel. Antwoord met
+alleen een JSON-object met precies dezelfde nummers, elk met zijn korte
+ondertitel.
 
 {cues}
 """
+
+
+# How many captions go to the model in one question.
+SUBTITLE_BATCH = 50
 
 
 def shown_subtitles() -> dict[str, str]:
@@ -775,30 +799,47 @@ def subtitles() -> None:
     terms = load_config(required=False).get("glossary") or []
     context = ("Begrippen: " + ", ".join(terms) + ".\n") if terms else ""
     say(f"{len(todo)} ondertitels inkorten met een taalmodel")
-    r = subprocess.run(
-        ["claude", "-p", "--model", "sonnet", "--tools", ""],
-        input=SUBTITLE_PROMPT.format(context=context, cues=json.dumps(todo, ensure_ascii=False, indent=0)),
-        capture_output=True,
-        text=True,
-    )
-    out = r.stdout.strip()
-    out = out[out.find("[") : out.rfind("]") + 1]
-    try:
-        short = json.loads(out)
-    except json.JSONDecodeError:
-        raise SystemExit(f"het taalmodel gaf geen JSON-lijst terug:\n{r.stdout[:500]}{r.stderr[:300]}")
-    if len(short) != len(todo) or not all(isinstance(s, str) and s.strip() for s in short):
-        raise SystemExit(f"het taalmodel gaf {len(short)} ondertitels voor {len(todo)}; niets overgenomen")
-    entries = (yaml.safe_load(SUBTITLES.read_text()) if SUBTITLES.exists() else None) or []
-    entries += [{"gezegd": a, "ondertitel": " ".join(b.split())} for a, b in zip(todo, short)]
     header = (
         "---\n# Ondertitels: wat er gezegd is, en wat er in beeld komt.\n"
         "# `just walkthrough subtitles` vult nieuwe aan; corrigeer gerust met de hand.\n"
         "# Een rebuild (`just walkthrough build`) zet ze in beeld.\n"
     )
-    SUBTITLES.write_text(header + yaml.safe_dump(entries, allow_unicode=True, sort_keys=False, width=1000))
-    shorter = sum(1 for a, b in zip(todo, short) if len(b) < len(a))
-    say(f"{len(todo)} ondertitels in {SUBTITLES.relative_to(ROOT)}, {shorter} korter; draai `just walkthrough build`")
+    entries = (yaml.safe_load(SUBTITLES.read_text()) if SUBTITLES.exists() else None) or []
+    done = shorter = 0
+    # In batches: over a few hundred lines the model merges or drops one, and
+    # then the answer no longer lines up with the question. Each batch that
+    # does line up is written straight away, so a rerun only asks what is left.
+    for i in range(0, len(todo), SUBTITLE_BATCH):
+        batch = todo[i : i + SUBTITLE_BATCH]
+        short = None
+        for _ in range(2):
+            r = subprocess.run(
+                ["claude", "-p", "--model", "sonnet", "--tools", ""],
+                input=SUBTITLE_PROMPT.format(context=context, cues=json.dumps({str(n + 1): c for n, c in enumerate(batch)}, ensure_ascii=False, indent=0)),
+                capture_output=True,
+                text=True,
+            )
+            out = r.stdout.strip()
+            try:
+                got = json.loads(out[out.find("{") : out.rfind("}") + 1])
+            except json.JSONDecodeError:
+                continue
+            # Numbered, so a line the model merged into its neighbour shows
+            # as a missing number instead of shifting every line after it.
+            got = [got.get(str(n + 1)) for n in range(len(batch))] if isinstance(got, dict) else []
+            if got and all(isinstance(x, str) and x.strip() for x in got):
+                short = got
+                break
+        if short is None:
+            say(f"  {i + 1}-{i + len(batch)}: het antwoord paste niet op de vraag; overgeslagen")
+            continue
+        entries += [{"gezegd": a, "ondertitel": " ".join(b.split())} for a, b in zip(batch, short)]
+        SUBTITLES.write_text(header + yaml.safe_dump(entries, allow_unicode=True, sort_keys=False, width=1000))
+        done += len(batch)
+        shorter += sum(1 for a, b in zip(batch, short) if len(b) < len(a))
+    say(f"{done} van {len(todo)} ondertitels in {SUBTITLES.relative_to(ROOT)}, {shorter} korter; draai `just walkthrough build`")
+    if done < len(todo):
+        raise SystemExit("niet alles is ingekort; draai `just walkthrough subtitles` nog een keer")
 
 
 def build(release: str | None = None) -> None:
@@ -1021,6 +1062,37 @@ def publish(tag: str, yes: bool) -> None:
     say(f"klaar: timeline.json wijst naar {tag}. Commit corpus/demo/walkthrough/ en de Docker-build haalt de media op.")
 
 
+def states(url: str) -> None:
+    """The demo's state at each chapter written after recording.
+
+    Replays the main line on the dev server at `url` and stores, per added
+    chapter (`chapters:` under a take in walkthrough.yaml), the state the demo
+    is in when it starts, in the take's states.json. A rebuild then gives
+    those chapters a snapshot, so a jump to one restores it directly.
+    """
+    timeline = read_json(CORPUS / "timeline.json")
+    if not timeline:
+        raise SystemExit("nog geen timeline.json; draai eerst `walkthrough build`")
+    added = [c for c in timeline["main"]["chapters"] if c.get("added")]
+    if not added:
+        say("geen hoofdstukken die achteraf zijn toegevoegd")
+        return
+    subprocess.run(["node", str(ROOT / "frontend-demo" / "scripts" / "copy-demo-corpus.mjs")], check=True, capture_output=True)
+    vp = timeline["main"].get("viewport") or {"width": 1600, "height": 1000}
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "vp.json").write_text(json.dumps(vp))
+        say(f"{len(added)} hoofdstukken: de rondleiding afspelen en de stand vastleggen (dit duurt een paar minuten)")
+        uv_run(PLAYWRIGHT, "python", HERE / "states_run.py", CORPUS / "timeline.json", Path(tmp) / "vp.json", Path(tmp) / "out.json", url)
+        found = json.loads((Path(tmp) / "out.json").read_text())
+    by_take: dict[str, dict] = {}
+    for key, state in found.items():
+        take, at = json.loads(key)
+        by_take.setdefault(take, {})[str(float(at))] = state
+    for take, per in by_take.items():
+        (take_dir(take) / "states.json").write_text(json.dumps(per, ensure_ascii=False))
+        say(f"{take}: {len(per)} standen; draai `just walkthrough build` opnieuw")
+
+
 def anchors(url: str) -> None:
     """Scroll anchors for the takes in the walkthrough that lack them.
 
@@ -1205,6 +1277,8 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("subtitles", help="kortere ondertitels laten maken, in subtitles.yaml")
     p = sub.add_parser("anchors", help="scrollankers meten voor oudere opnames")
     p.add_argument("--url", default="http://127.0.0.1:7400", help="de dev-server")
+    p = sub.add_parser("states", help="de demostand vastleggen bij achteraf toegevoegde hoofdstukken")
+    p.add_argument("--url", default="http://127.0.0.1:7400", help="de dev-server")
     p = sub.add_parser("publish", help="media in een GitHub-release zetten")
     p.add_argument("tag", help="bijvoorbeeld walkthrough-2026-10")
     p.add_argument("--yes", action="store_true", help="niet vragen")
@@ -1231,6 +1305,8 @@ def main(argv: list[str] | None = None) -> None:
         subtitles()
     elif args.cmd == "anchors":
         anchors(args.url)
+    elif args.cmd == "states":
+        states(args.url)
     elif args.cmd == "export":
         export()
     elif args.cmd == "script":

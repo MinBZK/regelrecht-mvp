@@ -1,6 +1,7 @@
 import pytest
 
 from walkthrough.timeline import (
+    add_chapters,
     CutError,
     build_track,
     captions,
@@ -256,3 +257,23 @@ def test_returning_to_a_take_does_not_replay_what_came_before():
     clicks = [a["t"] for a in remap_actions(track, events) if a["type"] == "click"]
     # The click at 2 s once, in the first piece; the one at 21 s in the third.
     assert clicks == [2, 16]
+
+
+def test_add_chapters_gives_a_stretch_without_slides_its_own():
+    events = [
+        {"t": 0, "type": "slide", "index": 0, "slide": {"title": "a"}, "profile": "merijn", "state": {"x": 1}},
+        {"t": 5000, "type": "route", "path": "/simulatie"},
+        {"t": 9000, "type": "route", "path": "/portaal/aanvraag/huurtoeslag"},
+        {"t": 20000, "type": "click"},
+    ]
+    out, slides = add_chapters(events, [{"at": 9.5, "title": "Mijn overheid"}], deck_len=14)
+    added = [e for e in out if e["type"] == "slide" and e["index"] == 14]
+    assert len(added) == 1
+    # on the tab the presenter was on, so showing the slide does not navigate
+    assert slides == [{"kind": "demo", "title": "Mijn overheid", "route": "/portaal", "profile": "merijn"}]
+    assert added[0]["profile"] == "merijn" and added[0]["state"] is None
+    assert [e["t"] for e in out] == sorted(e["t"] for e in out)
+
+    track = build_track([{"take": "a"}], {"a": []}, {"a": 30.0})
+    found = chapters(track, {"a": out})
+    assert [(c["slideIndex"], c["start"]) for c in found] == [(0, 0.0), (14, 9.5)]

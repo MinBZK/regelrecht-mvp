@@ -8,7 +8,9 @@
  * voice says. This finds that before it ships: it opens /rondleiding on a dev
  * server in a headless, muted Chromium, jumps to the end of every chapter
  * (which applies all of its actions, fast) and reports each action whose
- * element was not found, per chapter, in two window sizes.
+ * element was not found, per chapter, in two window sizes. A chapter with a
+ * miss is replayed once at the recorded pace before it counts, so a slow
+ * machine does not turn the check red.
  *
  *   node frontend-demo/scripts/verify-walkthrough.mjs [--url URL] [--size WxH ...]
  *
@@ -103,8 +105,21 @@ async function verify(browser, base, timeline, size) {
       const end = Math.round((c.end - 0.3) * 1000) / 1000;
       await page.evaluate((t) => window.__rrReplay.seek(t, { play: false }), end);
       await page.waitForFunction((t) => Math.abs(window.__rrReplay.replay.now - t) < 0.05, end, { timeout: 300_000 });
-      const misses = await page.evaluate(() => window.__rrReplay.replay.misses.map((m) => ({ t: m.t, type: m.type })));
-      const fresh = misses.slice(seen);
+      const readMisses = () => page.evaluate(() => window.__rrReplay.replay.misses.map((m) => ({ t: m.t, type: m.type })));
+      let misses = await readMisses();
+      let fresh = misses.slice(seen);
+      // Fast, a click can come before the demo is ready for it (a request
+      // that waits for the engine), and how often depends on the machine.
+      // A chapter that missed something is played once more at the recorded
+      // pace; only what is missed then counts.
+      if (fresh.length) {
+        seen = misses.length;
+        await page.evaluate((t) => window.__rrReplay.seek(t, { play: false, careful: true }), end);
+        await page.waitForFunction((t) => Math.abs(window.__rrReplay.replay.now - t) < 0.05, end, { timeout: 900_000 });
+        misses = await readMisses();
+        fresh = misses.slice(seen);
+        console.log(`     (hoofdstuk ${i} opnieuw, op tempo van de opname)`);
+      }
       seen = misses.length;
       missed += fresh.length;
       const loose = (await page.evaluate(() => window.__rrReplay.replay.loose.map((m) => ({ t: m.t, type: m.type, what: m.what })))).slice(seenLoose);

@@ -18,7 +18,7 @@
  * back. While it runs, the viewer's own state is set aside and not written
  * to storage; leaving restores it.
  */
-import { nextTick, reactive } from 'vue';
+import { nextTick, reactive, watch } from 'vue';
 import { adoptLocale, currentLocale, setViewerLocale, t } from '../i18n/index.js';
 import { setPersistence } from '../store/demoStore.js';
 import { localeRouteName, pageForConfigPath } from '../router.js';
@@ -74,6 +74,7 @@ let raf = 0;
 let mainPosition = 0;
 let backup = null;
 let previousLocale = null;
+let unwatchMode = null;
 let seekToken = 0;
 
 export function currentTrack() {
@@ -149,7 +150,9 @@ function current(token) {
  */
 async function find(target, { timeout = 4000, fast = false, token = seekToken, event = null } = {}) {
   const started = performance.now();
-  const limit = fast ? 1500 : timeout;
+  // Fast, the demo still needs its time: the engine computes after an answer
+  // before the next field is there. Waiting costs only when nothing comes.
+  const limit = fast ? Math.min(timeout, 3000) : timeout;
   let paused = false;
   for (;;) {
     if (!current(token)) {
@@ -225,6 +228,12 @@ function ripple(p) {
   }, 700);
 }
 
+/** A control that does not take a click now, itself or the component it is in. */
+function disabled(el) {
+  const host = el.getRootNode?.()?.host;
+  return [el, host].some((n) => n && (n.disabled === true || n.getAttribute?.('aria-disabled') === 'true'));
+}
+
 async function apply(e, { fast = false, token = seekToken } = {}) {
   const { router, presentation } = ctx;
   const opts = { fast, token };
@@ -236,7 +245,12 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       if (e.slideIndex != null) await presentation.goTo(e.slideIndex);
       return;
     case 'slide':
-      if (presentation.index.value !== e.index || !presentation.active.value) await presentation.goTo(e.index);
+      if (presentation.index.value !== e.index || !presentation.active.value) {
+        await presentation.goTo(e.index);
+        // The slide opens its tab on its own time; a click applied right
+        // behind it (fast) would land before the tab is there.
+        if (fast) await sleep(200);
+      }
       return;
     case 'route': {
       // Routes follow from clicks. Only when a click did not get there (a
@@ -251,6 +265,18 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       return;
     }
     case 'click': {
+      // A link to a tab that is not on screen: next to the deck the tab bar
+      // has no room and is hidden, while the presenter may have recorded
+      // with the deck off and clicked it. Go where the link goes.
+      const href = (e.target ?? []).map((step) => step.href).find((h) => typeof h === 'string' && h.startsWith('/'));
+      if (href) {
+        const link = resolve(e.target);
+        const box = link?.getBoundingClientRect?.();
+        if (!box || !box.width || !box.height) {
+          if (!samePage(href)) await router.push(href).catch(() => {});
+          return;
+        }
+      }
       const el = await find(e.target, { ...opts, event: e });
       if (!el && current(token)) noteMiss(e);
       if (!el || !current(token)) return;
@@ -260,7 +286,16 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
         showCursorAt(p);
         ripple(p);
       }
+      // Fast, the clicks come faster than the demo answers: a button that
+      // waits for the engine (submit, after the calculation) is still
+      // disabled, and a click on it would be lost with everything after it.
+      if (fast) {
+        const until = performance.now() + 2000;
+        while (disabled(el) && performance.now() < until && current(token)) await sleep(40);
+      }
       click(el, e);
+      // And let the demo take the click in before the next one.
+      if (fast) await sleep(150);
       return;
     }
     case 'input': {
@@ -451,7 +486,7 @@ function still(token) {
  * Bring the demo to how it was at `t` and continue from there. The chapter's
  * recorded state, then the chapter's events up to `t`, applied fast.
  */
-export async function seek(t, { play: playAfter = replay.playing } = {}) {
+export async function seek(t, { play: playAfter = replay.playing, careful = false } = {}) {
   const track = currentTrack();
   if (!track || !ctx) return;
   seekToken += 1;
@@ -473,7 +508,10 @@ export async function seek(t, { play: playAfter = replay.playing } = {}) {
   let i = 0;
   const target = Math.max(0, Math.min(track.duration, t));
   try {
-    const ci = Math.max(0, chapterAt(track, target));
+    // A chapter written after recording has no snapshot of its own: start
+    // from the last one that has, and replay through to the target.
+    let ci = Math.max(0, chapterAt(track, target));
+    while (ci > 0 && !track.chapters[ci].state) ci -= 1;
     const chapter = track.chapters[ci];
     replay.now = chapter.start;
     applyState(chapter.state);
@@ -496,6 +534,15 @@ export async function seek(t, { play: playAfter = replay.playing } = {}) {
       const e = events[i];
       replay.now = e.t;
       await apply(e, { fast: true, token });
+      // Where the presenter waited before going on, the demo was busy: a
+      // sheet closing, the engine recalculating. Leave it a moment as well.
+      const after = events[i + 1];
+      const gap = after && after.t <= target ? after.t - e.t : 0;
+      // Careful (the verify run's second look at a chapter that missed
+      // something): the recorded pace, with long waits shortened, so a miss
+      // that remains is the demo's and not the speed's.
+      if (careful) await sleep(Math.min(gap, 2) * 1000);
+      else if (gap > 1.5 && (e.type === 'click' || e.type === 'key' || e.type === 'change')) await sleep(400);
     }
   } finally {
     if (busyOwner === token) busyOwner = null;
@@ -725,6 +772,15 @@ async function begin(data, context, { at, faqId }) {
   ctx.presentation.stop();
   backup = clone(ctx.demo.state);
   setPersistence(false);
+  // The replay always shows the rail. A recorded "Demo resetten" puts the
+  // demo back in its default mode, which has no rail; keep it.
+  unwatchMode = watch(
+    () => ctx.demo.state.presentationMode,
+    (mode) => {
+      if (replay.active && mode !== 'zelfstandig') ctx.demo.state.presentationMode = 'zelfstandig';
+    },
+    { flush: 'sync' },
+  );
   // The recording is Dutch; its slides and the controls it clicks are found
   // by their Dutch text, and the voice names them. The demo runs in Dutch for
   // the length of the replay; the player's own controls stay in the viewer's
@@ -764,6 +820,8 @@ export function stopReplay() {
   document.removeEventListener('pointerdown', onViewerAct, true);
   document.removeEventListener('keydown', onViewerAct, true);
   uninstallClock();
+  unwatchMode?.();
+  unwatchMode = null;
   replay.active = false;
   replay.faq = null;
   replay.invite = null;
@@ -801,5 +859,5 @@ export function audioTime() {
 // A handle for scripted checks against the dev server (the Playwright runs
 // that verify a recording); not in the production bundle.
 if (import.meta.env.DEV && typeof window !== 'undefined') {
-  window.__rrReplay = { replay, play, pause, seek, openFaq, backToMain, scrollAnchor, deckIndex: () => ctx?.presentation?.index?.value };
+  window.__rrReplay = { replay, play, pause, seek, openFaq, backToMain, scrollAnchor, deckIndex: () => ctx?.presentation?.index?.value, state: () => clone(ctx?.demo?.state), track: currentTrack };
 }
