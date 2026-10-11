@@ -3655,20 +3655,6 @@
     ]
    },
    {
-    "t": 199.725,
-    "type": "click",
-    "target": [
-     {
-      "tag": "button",
-      "type": "button",
-      "textContent": "reference_date:",
-      "nth": 0
-     }
-    ],
-    "fx": 0.05192012288786482,
-    "fy": 0.6296296296296297
-   },
-   {
     "t": 199.733,
     "type": "scroll",
     "target": [
