@@ -380,12 +380,18 @@ export function findAnchor(container, anchor) {
  * scaled to how far this layout can scroll; without that, the pixels.
  */
 export function scrollTarget(container, e) {
+  const max = container.scrollHeight - container.clientHeight;
+  // Scrolled all the way: what the presenter wanted on screen is the end (or
+  // the start), wherever the anchor lands. The anchor of such a scroll is
+  // often a paragraph taller than the box, whose top says little about what
+  // is at the bottom once the text wraps differently.
+  if (e.max > 0 && (e.top ?? 0) >= e.max - 2) return Math.max(0, max);
+  if (e.max > 0 && (e.top ?? 0) <= 1) return 0;
   const a = findAnchor(container, e.anchor);
   if (a) {
     const box = viewBox(container);
     return Math.max(0, Math.round(container.scrollTop + (a.getBoundingClientRect().top - box.top) - e.anchor.at * box.height));
   }
-  const max = container.scrollHeight - container.clientHeight;
   if (e.max > 0 && max > 0) return Math.round(((e.top ?? 0) * max) / e.max);
   return e.top ?? 0;
 }

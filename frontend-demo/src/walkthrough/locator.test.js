@@ -54,6 +54,9 @@ describe('locator', () => {
     Object.defineProperty(box, 'scrollHeight', { value: 1100 });
     Object.defineProperty(box, 'clientHeight', { value: 100 });
     expect(scrollTarget(box, { top: 250, max: 500 })).toBe(500);
+    // Scrolled to the end: the end, also when the anchor would land elsewhere.
+    expect(scrollTarget(box, { top: 787, max: 786, anchor })).toBe(1000);
+    expect(scrollTarget(box, { top: 0, max: 786, anchor })).toBe(0);
   });
 
   it('finds a page again when its text changed, and a field by a renumbered name', () => {
