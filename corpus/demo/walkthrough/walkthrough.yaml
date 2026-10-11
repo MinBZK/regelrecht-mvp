@@ -40,17 +40,10 @@ glossary:
 #     - take: 2026-10-02T11-30-00
 main:
   segments:
-    # Opening tot en met de introductie.
-    - take: 2026-10-03T19-38-01
-      to: 149.6
-    # De wet, opnieuw opgenomen: het scrollen door de YAML staat erin.
-    - take: 2026-10-03T21-10-06
-      from: 2.3
-      to: 141.6
-    # Vanaf de graaf weer de eerste opname, tot en met de simulatie.
-    - take: 2026-10-03T19-38-01
-      from: 314.05
-      to: 745.4
+    # De hele doorloop van 11 oktober, in een keer opgenomen.
+    - take: 2026-10-11T14-24-13
+      from: 1.0
+      to: 1290.2
 
 # Per opname wat eruit gaat. `just walkthrough prepare` zet een voorstel in
 # .walkthrough/takes/<take>/cuts.suggested.yaml.
@@ -59,27 +52,173 @@ main:
 #     cuts:
 #       - {from: 12.3, to: 15.8, reason: dubbele zin}
 takes:
-  2026-10-03T21-10-06:
+  2026-10-11T14-24-13:
     cuts:
-      - {from: 4.02, to: 4.6, reason: stilte van 1.4s}
-      - {from: 6.59, to: 7.12, reason: stilte van 1.3s}
-      - {from: 89.02, to: 89.52, reason: stilte van 1.3s}
-      - {from: 113.14, to: 114.54, reason: stilte van 2.2s}
-      - {from: 134.77, to: 135.36, reason: stilte van 1.4s}
-  2026-10-03T19-38-01:
+      - {from: 14.56, to: 15.09, reason: stilte van 1.3s}
+      - {from: 17.73, to: 18.18, reason: stilte van 1.2s}
+      - {from: 46.5, to: 58.47, reason: 'herstart: ''voor beleidsmakers, voor mensen die...'''}
+      - {from: 110.59, to: 111.45, reason: stilte van 1.7s}
+      - {from: 175.42, to: 176.16, reason: stilte van 1.5s}
+      - {from: 265.93, to: 266.44, reason: stilte van 1.3s}
+      - {from: 269.6, to: 270.03, reason: stilte van 1.2s}
+      - {from: 305.63, to: 308.74, reason: stilte van 3.9s}
+      - {from: 338.13, to: 338.66, reason: stilte van 1.3s}
+      - {from: 346.73, to: 347.28, reason: stilte van 1.4s}
+      - {from: 356.23, to: 359.97, reason: stilte van 4.5s}
+      - {from: 387.61, to: 389.25, reason: stilte van 2.4s}
+      - {from: 405.27, to: 406.68, reason: stilte van 2.2s}
+      - {from: 494.29, to: 494.72, reason: stilte van 1.2s}
+      - {from: 554.34, to: 555.1, reason: stilte van 1.6s}
+      - {from: 567.18, to: 571.21, reason: stilte van 4.8s}
+      - {from: 576.13, to: 576.63, reason: stilte van 1.3s}
+      - {from: 591.59, to: 592.39, reason: stilte van 1.6s}
+      - {from: 599.04, to: 599.77, reason: stilte van 1.5s}
+      - {from: 642.72, to: 646.33, reason: stilte van 4.4s}
+      - {from: 740.21, to: 740.77, reason: stilte van 1.4s}
+      - {from: 767.71, to: 768.58, reason: stilte van 1.7s}
+      - {from: 778.66, to: 779.06, reason: stilte van 1.2s}
+      - {from: 807.92, to: 808.47, reason: stilte van 1.3s}
+      - {from: 840.12, to: 841.37, reason: stilte van 2.1s}
+      - {from: 925.61, to: 926.79, reason: stilte van 2.0s}
+      - {from: 987.84, to: 988.29, reason: stilte van 1.2s}
+      - {from: 996.62, to: 997.23, reason: stilte van 1.4s}
+      - {from: 1015.65, to: 1016.73, reason: stilte van 1.9s}
+      - {from: 1030.7, to: 1031.11, reason: stilte van 1.2s}
+      - {from: 1059.98, to: 1060.43, reason: stilte van 1.2s}
+      - {from: 1106.82, to: 1108.23, reason: stilte van 2.2s}
+      - {from: 1166.54, to: 1167.13, reason: stilte van 1.4s}
+      - {from: 1189.1, to: 1189.54, reason: stilte van 1.2s}
+      - {from: 1203.97, to: 1204.4, reason: stilte van 1.2s}
+      - {from: 1268.73, to: 1269.18, reason: stilte van 1.2s}
+      - {from: 1290.3, to: 1290.93, reason: stilte van 1.4s}
+      - {from: 1291.77, to: 1293.46, reason: stilte van 2.5s}
+    # Vanaf de simulatie zette de presentator het dek uit en liep hij via de
+    # tabbladen verder. Die stukken krijgen hier achteraf hun hoofdstuk, met
+    # een dia die volgt wat er gezegd wordt. `at` is take-tijd; zonder `route`
+    # blijft de demo op het tabblad waar de presentator was.
+    chapters:
+      - at: 842.1
+        overline: De burger
+        title: Eén burger, Merijn
+        lead: Alles waar Merijn recht op heeft, berekend door de wet zelf.
+        bullets:
+          - Dezelfde gegevens als in de trace van zojuist.
+          - 'Zorgtoeslag aanvragen: direct toegekend.'
+          - Geen rekenhulp, maar de regel waarmee ook de Dienst Toeslagen rekent.
+        route: /portaal
+      - at: 927.0
+        overline: Aanvragen
+        title: Alleen vragen wat de overheid niet weet
+        lead: De huurtoeslag vraagt alleen de huur en de servicekosten.
+        bullets:
+          - Klopt een gegeven niet? Merijn corrigeert het.
+          - Het bedrag rekent direct mee.
+          - Een behandelaar beoordeelt de wijziging.
+        route: /portaal
+      - at: 1017.0
+        overline: Veelgestelde vraag
+        title: Kan dit niet proactief?
+        lead: Technisch misschien, maar de overheid weet niet alles.
+        bullets:
+          - Een erfenis staat in geen register.
+          - Ten onrechte toekennen betekent later terugbetalen.
+          - Dat vraagt politieke keuzes.
+        route: /portaal
+      - at: 1109.5
+        overline: De behandelaar
+        title: Hetzelfde recht, andere kant van de balie
+        lead: De aanvraag komt binnen met de berekening die Merijn zag.
+        bullets:
+          - De wijziging goedkeuren of afwijzen.
+          - Toekennen of afwijzen, met motivering.
+        route: /zaaksysteem
+      - at: 1151.4
+        overline: Bezwaar
+        title: Ook de Awb is een regelwerk
+        lead: Of bezwaar mogelijk is, staat in het regelwerk en niet in het scherm.
+        bullets:
+          - Eén keer geïnterpreteerd, overal bruikbaar.
+          - 'Ook voor andere proceswetten: Archiefwet, AVG, Woo.'
+        route: /portaal
+      - at: 1270.4
+        kind: closing
+        overline: Demo RegelRecht
+        title: Van wet naar digitale werking
+        lines:
+          - Compleet verhaal, **geen eindproduct**
+          - We maken beleid **door te doen**
+        link:
+          href: https://regelrecht.rijks.app
+          label: regelrecht.rijks.app
+
+  # De antwoorden op de eerste drie vragen, achter elkaar opgenomen.
+  2026-10-11T14-53-23:
     cuts:
-      - {from: 7.41, to: 8.02, reason: stilte van 1.4s}
-      - {from: 70.65, to: 71.13, reason: stilte van 1.3s}
-      - {from: 87.63, to: 88.08, reason: stilte van 1.3s}
-      - {from: 208.53, to: 209.08, reason: stilte van 1.4s}
-      - {from: 251.5, to: 253.4, reason: 'verspreking: zorgverzekerden, sorry'}
-      - {from: 379.12, to: 379.81, reason: stilte van 1.5s}
-      - {from: 557.78, to: 558.45, reason: stilte van 1.5s}
-      - {from: 568.77, to: 569.78, reason: stilte van 1.8s}
-      - {from: 691.43, to: 691.94, reason: stilte van 1.3s}
-      - {from: 695.06, to: 695.59, reason: stilte van 1.3s}
-      - {from: 699.25, to: 707.1, reason: zoeken in het smalle scherm}
-      - {from: 743.24, to: 743.83, reason: stilte van 1.4s}
+      - {from: 5.05, to: 5.65, reason: stilte van 1.4s}
+      - {from: 6.46, to: 6.95, reason: stilte van 1.3s}
+      - {from: 86.55, to: 87.15, reason: stilte van 1.4s}
+      - {from: 97.17, to: 97.68, reason: stilte van 1.3s}
+      - {from: 145.85, to: 150.32, reason: stilte van 5.3s}
+      - {from: 193.04, to: 193.59, reason: stilte van 1.4s}
+      - {from: 205.48, to: 206.2, reason: stilte van 1.5s}
+      - {from: 208.51, to: 211.98, reason: stilte van 4.3s}
+      - {from: 222.47, to: 223.37, reason: stilte van 1.7s}
+      - {from: 248.08, to: 248.99, reason: stilte van 1.7s}
+      - {from: 253.7, to: 254.68, reason: stilte van 1.8s}
+      - {from: 284.42, to: 285.27, reason: stilte van 1.6s}
+      - {from: 294.82, to: 295.5, reason: stilte van 1.5s}
+      - {from: 303.03, to: 303.44, reason: stilte van 1.2s}
+      - {from: 326.66, to: 328.21, reason: stilte van 2.3s}
+      - {from: 337.07, to: 337.5, reason: stilte van 1.2s}
+      - {from: 369.11, to: 371.01, reason: stilte van 2.7s}
+  # Het antwoord op de vraag over de volgorde van artikelen. De opname begon
+  # met de eerste twee scenario's al uitgevoerd en het eerste opengeklapt; die
+  # handelingen staan niet in het log en komen hier vooraf.
+  2026-10-11T15-04-59:
+    actions:
+      - at: 3.0
+        type: click
+        fx: 0.5
+        fy: 0.5
+        target:
+          - {tag: nldd-button, text: Uitvoeren, startIcon: play, type: button, nth: 1}
+          - {tag: button, type: button, textContent: Uitvoeren, nth: 0}
+      - at: 3.6
+        type: click
+        fx: 0.5
+        fy: 0.5
+        target:
+          - {tag: nldd-button, text: Uitvoeren, startIcon: play, type: button, nth: 0}
+          - {tag: button, type: button, textContent: Uitvoeren, nth: 0}
+      - at: 4.4
+        type: click
+        fx: 0.5
+        fy: 0.5
+        target:
+          - {tag: nldd-icon-cell, icon: chevron-right, nth: 0}
+    cuts:
+      - {from: 70.55, to: 72.32, reason: stilte van 2.6s}
+      - {from: 98.65, to: 99.08, reason: stilte van 1.2s}
+      - {from: 109.13, to: 110.27, reason: stilte van 1.9s}
+
+# Waar de speler stopt om de kijker zelf te laten rondkijken. De uitnodigingen
+# vindt de build zelf; hier staat wat anders moet. De presentator zegt na de
+# uitnodiging nog wat de kijker kan doen en "dan gaan we zo weer verder", dus
+# de pauze valt na die zin en niet na de uitnodiging zelf.
+pauses:
+  - {take: 2026-10-11T14-24-13, at: 291.75, off: true}
+  - take: 2026-10-11T14-24-13
+    at: 305.4
+    hint: Klik rond, zoom in en volg de lijnen tussen wetten.
+  - take: 2026-10-11T14-24-13
+    at: 566.0
+    hint: Speel met de scenario's en volg de trace.
+  - {take: 2026-10-11T14-24-13, at: 837.83, off: true}
+  - take: 2026-10-11T14-24-13
+    at: 839.9
+    hint: Probeer een andere wetswijziging en vergelijk.
+  # "klik gewoon rond" in de afsluiting is geen pauze
+  - {take: 2026-10-11T14-24-13, at: 1285.09, off: true}
 
 # Tekst op een dia aanpassen zonder nieuwe opname, op dia-index.
 #
@@ -87,7 +226,7 @@ takes:
 #     title: De wet, machine-leesbaar
 #     lead: Elk artikel staat er twee keer in, als tekst en als regels.
 slides:
-  # Wat in de opname van 3 oktober gezegd wordt, kort.
+  # Wat in de opname van 11 oktober gezegd wordt, kort.
   1:
     lines:
       - Iedere uitvoeringsorganisatie
@@ -103,13 +242,14 @@ slides:
     lead: Zorgtoeslag hangt af van verzekerd zijn, en dat van detentie.
     bullets:
       - Volg de lijn van wet naar wet.
-      - Alle wetten samen vormen een kluwen rond de inkomstenbelasting.
+      - 'Dezelfde naam, andere definitie: de machine wijst naar de juiste.'
+      - Overzicht van wat meeverandert bij een wijziging.
   7:
     lead: Voorbeelden uit de memorie van toelichting, uitgevoerd.
     bullets:
-      - '**Testbaar**: werkt de wet zoals bedoeld?'
-      - '**Navolgbaar**: welke gegevens, welke wetten.'
-      - Onder de 18 stopt het vroeg, zonder naar detentie te kijken.
+      - '**Uitvoeren** geeft een trace: welke wet, welk gegeven.'
+      - 'Onder de 18 stopt het vroeg: dataminimalisatie.'
+      - Een taalmodel maakt de eerste versie; een jurist beoordeelt.
   8:
     title: Wat doet een wijziging met iedereen?
     lead: Alle wetten tegelijk op een populatie.
@@ -141,4 +281,36 @@ slides:
 #         to: 4.5
 #       - script: faq-eigen-wet
 #     offer: {chapter: 7, after: 10}
-faq: []
+faq:
+  - id: open-normen
+    question: Wat gebeurt er met open normen?
+    segments:
+      - {take: 2026-10-11T14-53-23, from: 3.0, to: 146.2}
+    # na "of iemand voldoet aan de voorwaarden"
+    offer: {take: 2026-10-11T14-24-13, at: 165.3}
+  - id: juridisch-bindend
+    question: Is dit juridisch bindend?
+    segments:
+      - {take: 2026-10-11T14-53-23, from: 150.3, to: 208.7}
+    # na "dat is een interpretatie van die wet"
+    offer: {take: 2026-10-11T14-24-13, at: 149.9}
+  - id: volgorde-artikelen
+    question: Maakt de volgorde van artikelen uit?
+    segments:
+      - {take: 2026-10-11T15-04-59, from: 2.5, to: 109.4}
+    # na "er zit automatisch iets van dataminimalisatie in"
+    offer: {take: 2026-10-11T14-24-13, at: 554.1}
+  - id: vertaling-klopt
+    question: Hoe weten we of de vertaling klopt?
+    segments:
+      - {take: 2026-10-11T14-53-23, from: 212.8, to: 369.4}
+    # na het stuk over hoe de regelwerken gemaakt worden
+    offer: {take: 2026-10-11T14-24-13, at: 642.5}
+
+# Wat de presentator zegt als de kijker zelf gaat klikken (wait) en als hij
+# verder drukt (resume): stukjes uit een losse opname, in take-tijd.
+bumpers:
+  wait:
+    - {take: 2026-10-11T14-47-20, from: 3.55, to: 7.2}
+  resume:
+    - {take: 2026-10-11T14-47-20, from: 9.75, to: 12.75}
