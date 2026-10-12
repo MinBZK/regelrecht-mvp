@@ -152,6 +152,7 @@ A law rulework contains no chronolex words: no event names, no chronolexogram ty
 | A hook on the submission | Awb 4:2, 4:13, Awir 16, voorschot policy art. 3 | More fields on the same application |
 | `produces.moment` | Awb 4:13 lid 1 | The application counts from the moment of receipt |
 | `legal_character: BESCHIKKING` with `decides_on` | Zorgtoeslagwet 2 | One decision chronolexogram per decision stage (VOORSCHOT, TOEKENNING), linked to the application |
+| A parameter with origin `BELANGHEBBENDE` on the decision requested | The rent, for the huurtoeslag | A field only on an application that requests that decision (Awir 15 lid 2) |
 | `legal_character: BESCHIKKING` without `decides_on` | AWR 11 | A decision ex officio, linked to nothing |
 | One date in a stage's `requires` | `dagtekening_voorschot` | The cell fills in the day of the decision |
 | `origin` with `rol: TIJDVAK` | `berekeningsjaar` | The year the decision is about |
@@ -226,6 +227,8 @@ Each value carries its source. The decision stores that with its chronolexogram 
 **In code:** `Cell::lexostatuses` lists them, and `Cell::read_lexostatus` reads one. In the browser the calls are `cell.lexostatuses(...)` and `cell.readLexostatus(...)`. `read_lexostatus` returns the values and the chronolexograms they come from. For `aanvraag` that is the application chronolexogram. For a policy article it is every chronolexogram of the case: the engine does not report which chronolexograms the article actually used.
 
 **In the demo:** Case system → "Lexostatuses".
+
+[Reduction and Synthesis](/components/zorgtoeslag-reduction-and-synthesis) shows when and how each lexostatus is read, with one step worked out down to the YAML.
 
 ## Merijn's case
 
@@ -334,5 +337,6 @@ just demo-check    # laws, scenarios, frontend tests, WASM and build
 ## Further reading
 
 - [Demo](/components/demo): the screens
+- [Reduction and Synthesis](/components/zorgtoeslag-reduction-and-synthesis): every reduction and synthesis in the demo, with one worked out in full
 - [RFC-022](/rfcs/rfc-022): the cell model; RFC-045 to RFC-050: the decisions behind this page
 - [RFC-008](/rfcs/rfc-008) and [Hooks and Reactive Execution](/concepts/hooks-and-reactive-execution): procedures, stages and hooks
