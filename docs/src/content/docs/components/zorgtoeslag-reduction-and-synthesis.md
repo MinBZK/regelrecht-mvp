@@ -64,9 +64,9 @@ Two reductions also give a day. Art. 5 gives `datum_vaststelling_aanslag`, which
 
 Merijn applied on 6 January 2025. The voorschot of € 1.695 was granted the same day. The first payment order went out that day too, and the bank credited it. This section follows the second payment order, on 1 February 2025.
 
-### When: the cell gives the day, the demo clock asks
+### When: the cell computes the days, the clock triggers them
 
-The policy article says on which day an order arises. The cell turns that into dates. The demo only asks.
+The policy article says on which day an order arises. The cell turns that into dates. The demo clock asks the cell for those dates and then has the cell execute each one.
 
 The `executed_on` block of voorschot policy art. 1 holds the rule:
 
@@ -84,7 +84,12 @@ executed_on:
 2025-01-06, 2025-02-01, 2025-03-01   (period: year 2025)
 ```
 
-On each clock step, `executeDue` in `frontend-demo/src/data/clock.js` asks `dueExecutions` per execution event and case. For each day it gets, it calls `execute`. `once_per: month` makes a second order in February impossible.
+Each time the clock moves forward, `executeDue` in `frontend-demo/src/data/clock.js` does two things per case and per execution event:
+
+1. It asks the cell: "on which days up to the new reference date is this execution due?" (`dueExecutions`).
+2. For each day it gets back and has not done yet, it tells the cell to execute the article on that day (`execute`). The cell then records the chronolexogram, or nothing if the policy says no order arises.
+
+`once_per: month` makes a second order in February impossible.
 
 ### Why: Awir 22 and the voorschot policy
 
@@ -291,7 +296,7 @@ produces:
 | `fields` | The outputs that become fields of the chronolexogram |
 | `period` | The order concerns one berekeningsjaar. The cell executes per year of the voorschotten in the case, and passes the year as `berekeningsjaar` |
 | `executed_on.parameter` | The cell fills `maand` with the day of execution |
-| `executed_on.once_per`, `day` | One order per month, on the 1st (see [When](#when-the-cell-gives-the-day-the-demo-clock-asks)) |
+| `executed_on.once_per`, `day` | One order per month, on the 1st (see [When](#when-the-cell-computes-the-days-the-clock-triggers-them)) |
 | `record_when` | A chronolexogram arises only if `opdracht_wordt_gegeven` is true. In December 2025 it is false for 2025, so nothing is recorded |
 | `until` | Once the case has a TOEKENNING decision for the year, no order of that year arises |
 
