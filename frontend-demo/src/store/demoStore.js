@@ -25,7 +25,7 @@ import { verdictOf } from '../data/format.js';
 import { driftOf } from '../data/caseDrift.js';
 import { isEntrypointFor, subjectOf } from '../data/entrypoints.js';
 import { assignClaimOwnership } from '../data/claimOwnership.js';
-import { applicationValues, eventsForLaw, gramsOfCase as gramsFor, momentOn } from '../data/chronolex.js';
+import { applicationValues, eventsForLaw, gramsOfCase as gramsFor, momentOn, othersRequestable } from '../data/chronolex.js';
 import { materialiseRecord, tablesFromProfiles } from '../data/materialize.js';
 import { addMonths, comingDates, dayOf, decisionDue, fixedDates, nextExecution, nextMoment, periodEnd } from '../data/moments.js';
 import { advanceTo as advanceClock, executeDue as executeDueOn } from '../data/clock.js';
@@ -346,11 +346,12 @@ function applicationShape(lawEntry) {
  * en de peildatum ingevuld.
  */
 function applicationValuesFor(lawEntry, shape, params = personaParams()) {
-  return applicationValues(shape, profile.value?.application, {
+  const tokens = {
     bsn: params.bsn,
     reference_date: state.referenceDate,
     reference_year: Number(state.referenceDate.slice(0, 4)),
-  });
+  };
+  return applicationValues(shape, profile.value?.application, tokens, chronolexFor(lawEntry)?.decisions ?? []);
 }
 
 /**
@@ -763,6 +764,14 @@ function followingDecisionsOf(c, chrono, now) {
  */
 function clockDecisionsOf(chrono) {
   const own = new Set([chrono.application.name, ...chrono.decisions.map((d) => d.name)]);
+  // Wat een aanvraag om een andere wet vraagt (de huurtoeslag naast de
+  // zorgtoeslag): dat besluit hoort bij die zaak.
+  let others = new Set();
+  try {
+    others = othersRequestable(chrono.wasmCell.shape(engine.value, chrono.application.name, state.referenceDate), chrono.decisions);
+  } catch {
+    // Zonder vorm van de aanvraag komt de fout bij de aanvraag zelf boven.
+  }
   const out = [];
   for (const e of chrono.cell.events) {
     if (own.has(e.name) || !e.decided_on) continue;
@@ -774,7 +783,7 @@ function clockDecisionsOf(chrono) {
     } catch {
       continue;
     }
-    if (isClockDecision(e, shape, chrono.application.establishes, own)) out.push(e);
+    if (isClockDecision(e, shape, chrono.application.establishes, own, others)) out.push(e);
   }
   return out;
 }

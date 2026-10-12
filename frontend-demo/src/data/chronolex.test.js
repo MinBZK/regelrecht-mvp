@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applicationValues, cellsOfService, eventsForLaw, gramsOfCase, momentOn, provisionLabel, provisionTarget, externalArticleUrl, fieldText } from './chronolex.js';
+import { applicationValues, cellsOfService, eventsForLaw, gramsOfCase, momentOn, othersRequestable, provisionLabel, provisionTarget, externalArticleUrl, fieldText, requestedDecision } from './chronolex.js';
 
 const cell = {
   id: 'toeslagen',
@@ -78,6 +78,41 @@ describe('applicationValues', () => {
   it('laat een veld weg zonder waarde, en een onbekend token ook', () => {
     expect(applicationValues(shape, { bsn: '$onbekend' }, tokens)).toEqual({});
     expect(applicationValues(shape, undefined, tokens)).toEqual({});
+  });
+});
+
+describe('de gevraagde beschikking bij meer besluiten op één aanvraag', () => {
+  // Zorgtoeslag en huurtoeslag op de aanvraag van Awir 15: de cel zet het
+  // veld niet vast, maar biedt de keuzes aan (Awb 4:2 lid 1 onder c).
+  const shape = {
+    fields: [
+      { name: 'bsn' },
+      { name: 'gevraagde_beschikking', options: ['zorgtoeslagwet#2', 'huurtoeslagwet#21'] },
+    ],
+  };
+  const zorgtoeslag = [{ name: 'voorschot_verleend', establishes: 'zorgtoeslagwet#2' }, { name: 'zorgtoeslag_toegekend', establishes: 'zorgtoeslagwet#2' }];
+  const huurtoeslag = [{ name: 'huurtoeslag_toegekend', establishes: 'huurtoeslagwet#21' }];
+
+  it('vult de keuze van de wet van de tegel in, niet wat het profiel zegt', () => {
+    const configured = { bsn: '$bsn', gevraagde_beschikking: 'iets anders' };
+    expect(applicationValues(shape, configured, { bsn: '999100001' }, zorgtoeslag)).toEqual({ bsn: '999100001', gevraagde_beschikking: 'zorgtoeslagwet#2' });
+    expect(applicationValues(shape, configured, { bsn: '999100001' }, huurtoeslag).gevraagde_beschikking).toBe('huurtoeslagwet#21');
+  });
+
+  it('laat het veld leeg als geen keuze bij de wet hoort; de cel weigert dan', () => {
+    expect(applicationValues(shape, {}, {}, [])).toEqual({});
+    expect(requestedDecision(shape.fields[1], [{ establishes: 'andere_wet#1' }])).toBeNull();
+  });
+
+  it('noemt de keuzes van de andere wetten, en geen besluit dat niemand vraagt', () => {
+    expect([...othersRequestable(shape, zorgtoeslag)]).toEqual(['huurtoeslagwet#21']);
+    expect([...othersRequestable(shape, huurtoeslag)]).toEqual(['zorgtoeslagwet#2']);
+    expect(othersRequestable({ fields: [{ name: 'gevraagde_beschikking', fixed: 'zorgtoeslagwet#2' }] }, zorgtoeslag).size).toBe(0);
+  });
+
+  it('noemt een gekozen beschikking bij naam van de bepaling', () => {
+    const corpus = { lawById: () => ({ name: 'Zorgtoeslag' }) };
+    expect(fieldText('zorgtoeslagwet#2', shape.fields[1], null, corpus)).toBe('Zorgtoeslag, art. 2');
   });
 });
 

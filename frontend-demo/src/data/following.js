@@ -49,10 +49,13 @@ export function withPeriod(inputs, parameter, period) {
  * klok neemt en de levensloop van de zaak niet: een besluit (decretogram)
  * met een dag van de houder (`decided_on`) dat naar de aanvraag van de wet
  * verwijst (`applicationArticle`), en dat niet de aanvraag of een besluit
- * van de levensloop is (`own`). De terugvordering van Awir 26.
+ * van de levensloop is (`own`). De terugvordering van Awir 26. Een besluit
+ * dat een andere aanvraag op dezelfde wet vraagt (`othersAsked`, de
+ * huurtoeslag naast de zorgtoeslag op Awir 15) hoort bij die aanvraag, niet
+ * bij deze.
  */
-export function isClockDecision(event, shape, applicationArticle, own) {
-  if (own.has(event.name) || !event.decided_on || !shape) return false;
+export function isClockDecision(event, shape, applicationArticle, own, othersAsked = new Set()) {
+  if (own.has(event.name) || othersAsked.has(event.establishes) || !event.decided_on || !shape) return false;
   const onApplication = Object.values(shape.refers_to ?? {}).some((r) => r.required && r.to === applicationArticle);
   return shape.type === 'decretogram' && onApplication;
 }

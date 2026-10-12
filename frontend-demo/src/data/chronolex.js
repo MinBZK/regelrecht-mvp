@@ -58,16 +58,41 @@ export function cellsOfService(corpus, service) {
  * uit `tokens` (`$bsn`, `$reference_date`, `$reference_year`). Een veld zonder
  * waarde blijft weg (een onvolledige aanvraag is nog steeds een aanvraag, Awb
  * 4:5). Wat de cel zelf invult (een veld met `fixed`) vult de persona niet in.
+ * Een veld met keuzes (`options`: de gevraagde beschikking, als er op de
+ * aanvraag meer besluiten worden genomen) vult de persona met de keuze van de
+ * wet die zij aanvraagt (`requestedDecision`, uit `decisions`).
  */
-export function applicationValues(shape, configured, tokens = {}) {
+export function applicationValues(shape, configured, tokens = {}, decisions = []) {
   const resolve = (v) => (typeof v === 'string' && v.startsWith('$') ? tokens[v.slice(1)] : v);
   const values = {};
   for (const field of shape?.fields ?? []) {
     if (field.fixed != null) continue;
-    const value = resolve(configured?.[field.name]);
+    const value = field.options?.length ? requestedDecision(field, decisions) : resolve(configured?.[field.name]);
     if (value !== undefined && value !== null && value !== '') values[field.name] = value;
   }
   return values;
+}
+
+/**
+ * De keuze in het veld `field` (`options`) die een van de besluiten
+ * `decisions` vestigt (de gebeurtenissen van de wet van de tegel, uit
+ * `eventsForLaw`): de beschikking die de aanvraag vraagt (Awb 4:2 lid 1 onder
+ * c). `null` als geen keuze bij die wet hoort.
+ */
+export function requestedDecision(field, decisions) {
+  return (field?.options ?? []).find((o) => decisions.some((d) => d.establishes === o)) ?? null;
+}
+
+/**
+ * De besluiten die op de aanvraag `shape` gevraagd kunnen worden, maar niet
+ * door een aanvraag om de wet met de besluiten `decisions`: de keuzes van de
+ * gevraagde beschikking die een andere wet vestigt (de huurtoeslag op een
+ * aanvraag om zorgtoeslag). Een besluit dat niemand vraagt (de
+ * terugvordering) is er geen keuze en staat er dus niet in.
+ */
+export function othersRequestable(shape, decisions) {
+  const own = new Set(decisions.map((d) => d.establishes));
+  return new Set((shape?.fields ?? []).flatMap((f) => f.options ?? []).filter((o) => !own.has(o)));
 }
 
 /**
@@ -158,16 +183,16 @@ export function externalArticleUrl(doc, article, date = null) {
 /**
  * De waarde van een veld van een gram zoals een mens haar leest, naar wat de
  * wet over het veld zegt. `field` is het veld uit de vorm van de gebeurtenis
- * (WasmCell.shape: `type`, `fixed`), `spec` de declaratie in de wet die het
- * besluit neemt. Een veld dat de cel vastzet (de gevraagde beschikking) is
- * een bepaling: bij naam. Een geheel getal zonder eenheid blijft een getal
+ * (WasmCell.shape: `type`, `fixed`, `options`), `spec` de declaratie in de
+ * wet die het besluit neemt. De gevraagde beschikking (vastgezet door de cel,
+ * of gekozen uit `options`) is een bepaling: bij naam. Een geheel getal zonder eenheid blijft een getal
  * zonder groepering ("2026", niet "2.026"). Zonder declaratie in het
  * besluitartikel (een veld dat een andere wet vraagt of geeft, zoals het
  * geschatte inkomen van Awir 16) leest de waarde naar het type van het veld:
  * een bedrag is een bedrag.
  */
 export function fieldText(value, field = null, spec = null, corpus = null) {
-  if (field?.fixed != null) return provisionLabel(corpus, value);
+  if (field?.fixed != null || field?.options?.includes(value)) return provisionLabel(corpus, value);
   if (field?.type === 'number' && !spec?.type_spec?.unit && Number.isInteger(value)) return String(value);
   return formatValue(value, spec ?? field);
 }

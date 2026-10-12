@@ -57,6 +57,17 @@ describe('isClockDecision', () => {
     expect(isClockDecision({ name: 'terugvordering', decided_on: 'beleid#6' }, { ...onApplication, refers_to: {} }, 'awir#15', own)).toBe(false);
     expect(isClockDecision({ name: 'nabetaling', decided_on: 'beleid#6' }, { ...onApplication, type: 'executogram' }, 'awir#15', own)).toBe(false);
   });
+  it('niet een besluit dat een aanvraag om een andere wet vraagt, wel de terugvordering', () => {
+    // Twee zaken op Awir 15: de zorgtoeslag en de huurtoeslag. De zaak om
+    // zorgtoeslag neemt het huurtoeslagbesluit niet; de terugvordering, die
+    // niemand vraagt, blijft bij de zaak waarop zij besluit.
+    const others = new Set(['huurtoeslagwet#21']);
+    const huurtoeslag = { name: 'huurtoeslag_toegekend', establishes: 'huurtoeslagwet#21', decided_on: 'beleid#5' };
+    const terugvordering = { name: 'terugvordering', establishes: 'awir#26', decided_on: 'beleid#6' };
+    expect(isClockDecision(huurtoeslag, onApplication, 'awir#15', own, others)).toBe(false);
+    expect(isClockDecision(huurtoeslag, onApplication, 'awir#15', own)).toBe(true);
+    expect(isClockDecision(terugvordering, onApplication, 'awir#15', own, others)).toBe(true);
+  });
 });
 
 describe('exOfficioToTake', () => {
