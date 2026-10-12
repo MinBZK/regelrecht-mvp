@@ -161,7 +161,8 @@ How to check whether a key belongs in the law: can you explain it to a jurist wi
 
 Recording words appear in three places, all outside the law itself.
 
-- **The fictitious executing policies** have a `produces.extensions.chronolex` block on the articles that pay or answer. The law format has no word yet for "a payment arises here". The block names the type (`executogram`), the day (`executed_on`), when a chronolexogram arises (`record_when`), until when (`until`), what it refers to (`refers_to`), and how a repeated message is recognised (`identified_by`).
+- **The fictitious executing policies** have a `produces.extensions.chronolex` block on the articles that pay or answer. The law format has no word yet for "a payment arises here". The block names the type (`executogram`), the parameter the day goes into and how often it may arise (`executed_on`), when a chronolexogram arises (`record_when`), until when (`until`), what it refers to (`refers_to`), and how a repeated message is recognised (`identified_by`).
+- **The streams of Toeslagen** name, per execution, the policy article that gives its days (`executed_on`), as they name the article that gives the day of a decision (`decided_on`). The days themselves are in that article: art. 5 of the voorschot policy, art. 9 and 10 of the toekenning policy.
 - **The Belastingdienst stream** names the year of an aanslag (`period: {parameter: belastingjaar}`). Schema v0.8.0 cannot yet say that in the law for a decision nobody applied for.
 - **The chronicle policy** gives each article an `endpoint`. The cell uses it as the name of the lexostatus.
 
@@ -292,6 +293,7 @@ What happens at each step:
 
 | Guard | Prevents |
 |---|---|
+| `executed_on` (stream) | An execution on a day the policy does not give |
 | `once_per: month` | A second payment order in the same month and year |
 | `until: {stage: TOEKENNING}` | Installments after the toekenning of that year |
 | `decided_on` | A decision before the day the policy gives. The exception is the first voorschot, which answers the application |

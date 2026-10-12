@@ -58,27 +58,58 @@ A reduction runs when a synthesis needs it. It has no trigger of its own. It alw
 
 "Chronicle policy" is `fictief_beleid_kroniek_toeslagen`. "Bank chronicle policy" is `fictief_beleid_kroniek_bank`. Both are fictitious. The bank's article has no `endpoint`, so it is no named lexostatus.
 
-Two reductions also give a day. Art. 5 gives `datum_vaststelling_aanslag`, which the toekenning policy art. 3 turns into the day of the toekenning. Art. 6 gives `terug_te_vorderen` and `dagtekening_toekenning`, which toekenning policy art. 6 turns into the day of the terugvordering.
+Two reductions also give a day. Art. 5 gives `datum_vaststelling_aanslag`, which the toekenning policy art. 3 turns into the day of the toekenning. Art. 6 gives `terug_te_vorderen` and `dagtekening_toekenning`, which toekenning policy art. 6 turns into the day of the terugvordering. Three more dagtekeningen give the days of an execution: `dagtekening_voorschot` (art. 1) for the payment orders, `dagtekening_toekenning` (art. 6) for the nabetaling and `dagtekening_terugvordering` (art. 8) for the incasso.
 
 ## Worked example: Merijn's payment order of 1 February 2025
 
 Merijn applied on 6 January 2025. The voorschot of € 1.695 was granted the same day. The first payment order went out that day too, and the bank credited it. This section follows the second payment order, on 1 February 2025.
 
-### When: the cell computes the days, the clock triggers them
+### When: a policy article gives the days, the clock triggers them
 
-The policy article says on which day an order arises. The cell turns that into dates. The demo clock asks the cell for those dates and then has the cell execute each one.
+A policy article says on which days an order is given. The cell asks it for dates. The demo clock asks the cell for those dates and then has the cell execute each one.
 
-The `executed_on` block of voorschot policy art. 1 holds the rule:
+The stream names the article, as it names the article that gives the day of a decision:
+
+```yaml
+# corpus/demo/cells/toeslagen/streams/zorgtoeslag_betalingen.yaml
+- name: betaalopdracht_gegeven
+  establishes: fictief_beleid_termijnbedrag_voorschot#1
+  reads: [{regulation: fictief_beleid_kroniek_toeslagen}]
+  executed_on: fictief_beleid_termijnbedrag_voorschot#5
+```
+
+Voorschot policy art. 5 gives the next day after a given day: the day of the voorschot, and after that the 1st of the next month.
 
 ```yaml
 # corpus/demo/regulation/nl/fictief_beleid_termijnbedrag_voorschot/TOESLAGEN-2025-01-01.yaml
-executed_on:
-  parameter: maand
-  once_per: month
-  day: 1
+- output: dag_betaalopdracht
+  value:
+    operation: IF
+    cases:
+      - when:
+          operation: EQUALS
+          subject: $dagtekening_voorschot
+          value: null
+        then: null
+      # De dag van het voorschot zelf.
+      - when:
+          operation: LESS_THAN
+          subject: $maand
+          value: $dagtekening_voorschot
+        then: $dagtekening_voorschot
+    # Daarna de eerste van de maand na `maand`.
+    default:
+      operation: DATE_ADD
+      date:
+        operation: START_OF
+        date: $maand
+        in: month
+      months: 1
 ```
 
-`Cell::due_executions` in `packages/cel/src/cell.rs` reads it. It gives one day per month: the 1st, but never before the latest chronolexogram the order refers to. The voorschot holds from 6 January, so January's day is 6 January. Asked on 6 January through 31 March, the cell answered:
+`Cell::due_executions` in `packages/cel/src/cell.rs` asks this article per berekeningsjaar. It passes what the case reads (here `dagtekening_voorschot`, from reduction art. 1) and the previous day in `maand`, the parameter art. 1 takes its day in. It starts at the day before the application, or at the last day the caller already asked. It stops when the article gives no day, or one after the end of the range. The cell adds no calendar of its own. It only leaves out what cannot be recorded: a year without a voorschot, a year with a toekenning (`until`), and a month that already has an order (`once_per`).
+
+The voorschot is dated 6 January. Asked on 6 January through 31 March, the article gave 6 January, then 1 February and 1 March:
 
 ```text
 2025-01-06, 2025-02-01, 2025-03-01   (period: year 2025)
@@ -89,7 +120,7 @@ Each time the clock moves forward, `executeDue` in `frontend-demo/src/data/clock
 1. It asks the cell: "on which days up to the new reference date is this execution due?" (`dueExecutions`).
 2. For each day it gets back and has not done yet, it tells the cell to execute the article on that day (`execute`). The cell then records the chronolexogram, or nothing if the policy says no order arises.
 
-`once_per: month` makes a second order in February impossible.
+`once_per: month` makes a second order in February impossible. Whether an order arises on a day at all is for art. 1 to say (`record_when`).
 
 ### Why: Awir 22 and the voorschot policy
 
@@ -285,7 +316,6 @@ produces:
           executed_on:
             parameter: maand
             once_per: month
-            day: 1
           record_when: opdracht_wordt_gegeven
           until:
             stage: TOEKENNING
@@ -299,7 +329,7 @@ produces:
 | `fields` | The outputs that become fields of the chronolexogram |
 | `period` | The order concerns one berekeningsjaar. The cell executes per year of the voorschotten in the case, and passes the year as `berekeningsjaar` |
 | `executed_on.parameter` | The cell fills `maand` with the day of execution |
-| `executed_on.once_per`, `day` | One order per month, on the 1st (see [When](#when-the-cell-computes-the-days-the-clock-triggers-them)) |
+| `executed_on.once_per` | At most one order per month. The days come from art. 5 (see [When](#when-a-policy-article-gives-the-days-the-clock-triggers-them)) |
 | `record_when` | A chronolexogram arises only if `opdracht_wordt_gegeven` is true. In December 2025 it is false for 2025, so nothing is recorded |
 | `until` | Once the case has a TOEKENNING decision for the year, no order of that year arises |
 
@@ -432,7 +462,7 @@ The demo carries the order to the bank along a channel in `corpus/demo/demo-conf
 
 ### Nabetaling
 
-- **When:** on the day of the toekenning. `executed_on` says the 1st of the month, but never before the toekenning it refers to. If the bank refuses, the next order goes out on the 1st of the next month.
+- **When:** on the day of the toekenning. Toekenning policy art. 9 gives that day from `dagtekening_toekenning`, and after it the 1st of every month. If the bank refuses, the next order goes out on the 1st of the next month.
 - **Why:** Awir 24 lid 1: what is left to pay is paid out. Toekenning policy art. 4: on the day of the toekenning, to the account.
 - **How:** `Cell::execute` on `nabetaling_opgedragen`. It arises only while `openstaande_nabetaling` is above zero.
 - **Input:** `rekening` (art. 2), `toekenning` (art. 6), `nabetaling` (art. 7).
@@ -448,7 +478,7 @@ The demo carries the order to the bank along a channel in `corpus/demo/demo-conf
 
 ### Incasso
 
-- **When:** the 1st of the month after the terugvordering. `executed_on` would allow the day of the terugvordering itself. The article blocks that: `incasso_wordt_opgedragen` requires a day after `dagtekening_terugvordering`.
+- **When:** the 1st of the month after the terugvordering, and the 1st of every month after that while something is open. Toekenning policy art. 10 gives those days from `dagtekening_terugvordering`. Art. 7 also requires a day after the dagtekening (`incasso_wordt_opgedragen`).
 - **Why:** Awir 28 says only that it must be paid. Toekenning policy art. 7 adds the debit from the account, assuming consent.
 - **How:** `Cell::execute` on `incasso_opgedragen`.
 - **Input:** `rekening` (art. 2), `terugvordering` (art. 8).
