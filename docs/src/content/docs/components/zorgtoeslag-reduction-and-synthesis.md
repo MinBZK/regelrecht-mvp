@@ -122,9 +122,12 @@ events:
 ```yaml
 # corpus/demo/cells/toeslagen/cell.yaml
 registers:
-  fictief_beleid_kroniek_toeslagen#kroniek:
+  dossier:
     chronicle: toeslagen
+    read_by: [fictief_beleid_kroniek_toeslagen]
 ```
+
+The register is the dossier of Toeslagen. The law asks for it with origin `DOSSIER`. It is not named after the policy that reads it, because the policy is only how the dossier is read. A provenance names it `belastingdienst_toeslagen#dossier`.
 
 **The cell turns the chronicle into rows.** `register::rows` in `packages/cel/src/register.rs` gives one row per chronolexogram that holds at the moment of reading. A row has the chronolexogram's fields, plus `id`, `event`, `stage`, `root` (the application of the case), `period`, `sequence` (its place in time order), `effective_date` and a few more. On 1 February at 09:00 the chronicle holds four chronolexograms: the application (sequence 0), the voorschot (1), January's order (2) and January's payment (3).
 
@@ -336,7 +339,7 @@ This is the chronolexogram the cell recorded, from a run of the demo corpus. The
       "provenance": {
         "source": "lexostatus",
         "lexostatus": "voorschot",
-        "register": "fictief_beleid_kroniek_toeslagen#kroniek",
+        "register": "belastingdienst_toeslagen#dossier",
         "article": "fictief_beleid_kroniek_toeslagen#1"
       }
     },

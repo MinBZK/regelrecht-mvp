@@ -165,7 +165,7 @@ Recording words appear in three places, all outside the law itself.
 - **The Belastingdienst stream** names the year of an aanslag (`period: {parameter: belastingjaar}`). Schema v0.8.0 cannot yet say that in the law for a decision nobody applied for.
 - **The chronicle policy** gives each article an `endpoint`. The cell uses it as the name of the lexostatus.
 
-The engine sees a chronicle as an ordinary register. `fictief_beleid_kroniek_toeslagen` has an input `grams` with `source: {}`. Only `registers:` in the cell configuration says that this input is the chronicle `toeslagen`.
+The engine sees a chronicle as an ordinary register. `fictief_beleid_kroniek_toeslagen` has an input `grams` with `source: {}`. Only `registers:` in the cell configuration says that this input is the chronicle `toeslagen`. There the register is called `dossier`, after the body's own file that the law asks for (origin `DOSSIER`), not after the policy that reads it.
 
 ## Files
 
