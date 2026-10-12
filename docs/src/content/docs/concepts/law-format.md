@@ -44,7 +44,7 @@ The walkthrough follows article 3 of the Wet op de zorgtoeslag, from `corpus/reg
 A file opens with the metadata that identifies the regulation:
 
 ```yaml
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json
 $id: wet_op_de_zorgtoeslag
 regulatory_layer: WET
 publication_date: '2024-12-20'

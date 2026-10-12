@@ -77,7 +77,7 @@ if (!currentLine) {
 }
 
 // 2. The example immutable-tag URL must point at the latest version's tag+dir.
-const expectedUrl = `https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-${latest}/schema/${latest}/schema.json`;
+const expectedUrl = `https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-${latest}/schema/${latest}/schema.json`;
 if (!page.includes(expectedUrl)) {
   problems.push(`the example schema URL does not point at ${latest} (expected ${expectedUrl})`);
 }

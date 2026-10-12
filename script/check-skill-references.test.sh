@@ -103,7 +103,7 @@ root="$(mktemp -d)"
 fixture "$root"
 rm -f "$root/schema/latest"
 mkdir -p "$root/schema/v0.5.4"
-echo 'Gebruik https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
+echo 'Gebruik https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
     > "$root/.claude/skills/demo/SKILL.md"
 expect 0 "terugval op de hoogste versiemap" "$root"
 rm -rf "$root"
@@ -111,7 +111,7 @@ rm -rf "$root"
 # --- 7. Een muteerbare $schema-URL is rood ---------------------------------
 root="$(mktemp -d)"
 fixture "$root"
-echo 'Gebruik https://raw.githubusercontent.com/MinBZK/regelrecht/refs/heads/main/schema/v0.5.6/schema.json' \
+echo 'Gebruik https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/heads/main/schema/v0.5.6/schema.json' \
     > "$root/.claude/skills/demo/SKILL.md"
 expect 1 "refs/heads/main-URL" "$root"
 rm -rf "$root"
@@ -119,7 +119,7 @@ rm -rf "$root"
 # --- 8. Een tag-URL op een oudere schemaversie is rood ---------------------
 root="$(mktemp -d)"
 fixture "$root"
-echo 'Gebruik https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.5.0/schema/v0.5.0/schema.json' \
+echo 'Gebruik https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.5.0/schema/v0.5.0/schema.json' \
     > "$root/.claude/skills/demo/SKILL.md"
 expect 1 "tag-URL op oude versie" "$root"
 rm -rf "$root"
@@ -127,7 +127,7 @@ rm -rf "$root"
 # --- 9. De geldende tag-URL is groen ---------------------------------------
 root="$(mktemp -d)"
 fixture "$root"
-echo 'Gebruik https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
+echo 'Gebruik https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
     > "$root/.claude/skills/demo/SKILL.md"
 expect 0 "geldende tag-URL" "$root"
 rm -rf "$root"
@@ -135,9 +135,17 @@ rm -rf "$root"
 # --- 10. De poort volgt schema/latest mee ----------------------------------
 root="$(mktemp -d)"
 fixture "$root" v0.6.0
-echo 'Gebruik https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
+echo 'Gebruik https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
     > "$root/.claude/skills/demo/SKILL.md"
 expect 1 "URL loopt achter op schema/latest" "$root"
+rm -rf "$root"
+
+# --- 11. De oude org-URL is rood, ook op de geldende versie ----------------
+root="$(mktemp -d)"
+fixture "$root"
+echo 'Gebruik https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.5.6/schema/v0.5.6/schema.json' \
+    > "$root/.claude/skills/demo/SKILL.md"
+expect 1 "MinBZK-URL na de verhuizing" "$root"
 rm -rf "$root"
 
 if [ "$failures" -gt 0 ]; then

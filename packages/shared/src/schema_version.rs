@@ -19,7 +19,7 @@ pub const CURRENT_SCHEMA_VERSION: &str = "v0.8.1";
 /// The immutable tag form (RFC-013), matching the convention in
 /// `corpus/regulation/`, so written files never point at a moving target.
 pub const SCHEMA_URL: &str = concat!(
-    "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-",
+    "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-",
     "v0.8.1",
     "/schema/",
     "v0.8.1",
