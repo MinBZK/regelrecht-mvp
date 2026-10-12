@@ -336,6 +336,18 @@ fn with_voorschot(
     decided: &str,
     income: i64,
 ) -> (Cell, Gram, Gram) {
+    with_voorschot_on(service, data, received, decided, income, ESTIMATE)
+}
+
+/// [`with_voorschot`] with `estimate` as the income the application expects.
+fn with_voorschot_on(
+    service: &mut LawExecutionService,
+    data: &std::path::Path,
+    received: &str,
+    decided: &str,
+    income: i64,
+    estimate: i64,
+) -> (Cell, Gram, Gram) {
     let received = at(received);
     let mut cell = Cell::open(
         &demo().join("cells/toeslagen/cell.yaml"),
@@ -351,7 +363,7 @@ fn with_voorschot(
             json!({
                 "bsn": BSN,
                 "aangevraagd_berekeningsjaar": 2025,
-                "vermoedelijk_toetsingsinkomen": ESTIMATE,
+                "vermoedelijk_toetsingsinkomen": estimate,
                 "rekeningnummer": ACCOUNT,
             })
             .as_object()
@@ -2951,4 +2963,265 @@ fn the_cell_gives_the_period_and_refuses_one_that_is_no_year() {
         .unwrap_err();
     assert!(matches!(e, Error::Refused(_)), "{e}");
     assert!(e.to_string().contains("not as a whole number"), "{e}");
+}
+
+/// The days of `event` the cell gives for the case `root` after `after`
+/// through `through` at `now` on which a gram arises, each with the gram it
+/// would record (previewed, not recorded).
+fn arising(
+    cell: &Cell,
+    service: &LawExecutionService,
+    event: &str,
+    root: &str,
+    after: Option<&str>,
+    through: &str,
+    now: &str,
+) -> Vec<(String, Gram)> {
+    cell.due_executions(
+        service,
+        event,
+        root,
+        after.map(|a| a.parse().unwrap()),
+        through.parse().unwrap(),
+        at(now),
+    )
+    .unwrap_or_else(|e| panic!("{event}: {e}"))
+    .into_iter()
+    .filter_map(|d| {
+        cell.preview_execution_in(
+            service,
+            event,
+            root,
+            d.day,
+            d.period.map(|p| p.value),
+            at(now),
+        )
+        .unwrap_or_else(|e| panic!("{event} {}: {e}", d.day))
+        .map(|g| (d.day.to_string(), g))
+    })
+    .collect()
+}
+
+/// The walkthrough of the demo with Merijn (docs: zorgtoeslag
+/// chronolexography): he applies on 6 January 2025 expecting € 22.000; the
+/// aanslagen set € 16.000 over 2025 and € 32.000 over 2026. Every day and
+/// amount the page shows: the voorschot of € 1.695, its termijnen of
+/// € 154,09 (the last € 154,10) on 6 January and the first of February to
+/// November, the voorschot for 2026 on 1 November with termijnen of € 141,25
+/// from 1 December, the toekenning over 2025 of € 1.809 with a nabetaling of
+/// € 114 on 15 April 2026, and the toekenning over 2026 of € 1.505 with a
+/// terugvordering of € 190, collected from 1 May 2027.
+#[test]
+fn the_walkthrough_of_merijn_keeps_its_days_and_amounts() {
+    let data = tempfile::tempdir().unwrap();
+    let mut service = regulations();
+    register_aanslagen(
+        &mut service,
+        &[
+            (2025, "2026-04-15", 1_600_000),
+            (2026, "2027-04-15", 3_200_000),
+        ],
+    );
+    let (mut cell, application, voorschot) = with_voorschot_on(
+        &mut service,
+        data.path(),
+        "2025-01-06T10:15:00+01:00",
+        "2025-01-06T11:00:00+01:00",
+        2_200_000,
+        2_200_000,
+    );
+    let root = application.id.clone();
+    let on_application = || BTreeMap::from([("on_application".to_string(), root.clone())]);
+    assert_eq!(amount(&voorschot, "voorschotbedrag"), 169_500);
+
+    let termijnen = |orders: &[Gram]| -> Vec<(String, i32, i64)> {
+        orders
+            .iter()
+            .map(|o| {
+                (
+                    o.effective_at[..10].to_string(),
+                    o.period.unwrap().value,
+                    amount(o, "termijnbedrag"),
+                )
+            })
+            .collect()
+    };
+    // 2025: 6 January, then the first of February to October.
+    let mut orders = pay_due(
+        &mut cell,
+        &service,
+        &root,
+        None,
+        "2025-10-31",
+        "2025-10-31T12:00:00+01:00",
+    );
+    let mut expected: Vec<(String, i32, i64)> = vec![("2025-01-06".into(), 2025, 15_409)];
+    for month in 2..=10 {
+        expected.push((format!("2025-{month:02}-01"), 2025, 15_409));
+    }
+    assert_eq!(termijnen(&orders), expected);
+
+    // The voorschot for 2026 on 1 November 2025.
+    let due = cell
+        .due_decision(
+            &service,
+            "voorschot_verleend",
+            &root,
+            at("2025-10-31T13:00:00+01:00"),
+        )
+        .unwrap();
+    assert_eq!(due.day, Some("2025-11-01".parse().unwrap()));
+    let next = cell
+        .decide(
+            &service,
+            "voorschot_verleend",
+            on_application(),
+            BTreeMap::new(),
+            at("2025-11-01T09:00:00+01:00"),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(next.period, Some(year(2026)));
+    assert_eq!(amount(&next, "voorschotbedrag"), 169_500);
+
+    // The last termijn of 2025 on 1 November; those of 2026 from 1 December.
+    let spring = pay_due(
+        &mut cell,
+        &service,
+        &root,
+        Some("2025-10-31"),
+        "2026-04-14",
+        "2026-04-14T12:00:00+02:00",
+    );
+    let mut expected: Vec<(String, i32, i64)> = vec![
+        ("2025-11-01".into(), 2025, 15_410),
+        ("2025-12-01".into(), 2026, 14_125),
+    ];
+    for month in 1..=4 {
+        expected.push((format!("2026-{month:02}-01"), 2026, 14_125));
+    }
+    assert_eq!(termijnen(&spring), expected);
+    orders.extend(spring);
+    let paid_2025: i64 = of_year(&orders, 2025)
+        .iter()
+        .map(|o| amount(o, "termijnbedrag"))
+        .sum();
+    assert_eq!(paid_2025, 169_500);
+
+    // The aanslag over 2025 and the toekenning on its day: € 1.809, € 114
+    // to pay out, ordered that same day.
+    let mut belastingdienst = belastingdienst(&service, data.path(), "2025-01-06");
+    aanslag(
+        &service,
+        &mut belastingdienst,
+        &mut cell,
+        2025,
+        "2026-04-15T09:00:00+02:00",
+    );
+    let toekenning = cell
+        .decide(
+            &service,
+            "zorgtoeslag_toegekend",
+            on_application(),
+            BTreeMap::new(),
+            at("2026-04-15T10:00:00+02:00"),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(toekenning.period, Some(year(2025)));
+    assert_eq!(amount(&toekenning, "toegekende_tegemoetkoming"), 180_900);
+    assert_eq!(amount(&toekenning, "nog_uit_te_betalen"), 11_400);
+    let nabetaling = arising(
+        &cell,
+        &service,
+        "nabetaling_opgedragen",
+        &root,
+        None,
+        "2026-06-30",
+        "2026-04-15T11:00:00+02:00",
+    );
+    let (day, order) = &nabetaling[0];
+    assert_eq!(day, "2026-04-15");
+    assert_eq!(amount(order, "bedrag"), 11_400);
+    cell.execute_in(
+        &service,
+        "nabetaling_opgedragen",
+        &root,
+        "2026-04-15".parse().unwrap(),
+        Some(2025),
+        at("2026-04-15T11:00:00+02:00"),
+    )
+    .unwrap()
+    .unwrap();
+
+    // The termijnen of 2026 run on through November; 2025 has ended.
+    let rest = pay_due(
+        &mut cell,
+        &service,
+        &root,
+        Some("2026-04-14"),
+        "2026-11-30",
+        "2026-11-30T12:00:00+01:00",
+    );
+    let expected: Vec<(String, i32, i64)> = (5..=11)
+        .map(|month| (format!("2026-{month:02}-01"), 2026, 14_125))
+        .collect();
+    assert_eq!(termijnen(&rest), expected);
+    orders.extend(rest);
+    let paid_2026: i64 = of_year(&orders, 2026)
+        .iter()
+        .map(|o| amount(o, "termijnbedrag"))
+        .sum();
+    assert_eq!(paid_2026, 169_500);
+
+    // The aanslag over 2026 and the toekenning on its day: € 1.505, € 190
+    // to recover by a terugvordering that same day.
+    aanslag(
+        &service,
+        &mut belastingdienst,
+        &mut cell,
+        2026,
+        "2027-04-15T09:00:00+02:00",
+    );
+    let toekenning = cell
+        .decide(
+            &service,
+            "zorgtoeslag_toegekend",
+            on_application(),
+            BTreeMap::new(),
+            at("2027-04-15T10:00:00+02:00"),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(toekenning.period, Some(year(2026)));
+    assert_eq!(amount(&toekenning, "toegekende_tegemoetkoming"), 150_500);
+    assert_eq!(amount(&toekenning, "terug_te_vorderen"), 19_000);
+    let due = cell
+        .due_decision(
+            &service,
+            "terugvordering_vastgesteld",
+            &root,
+            at("2027-04-15T11:00:00+02:00"),
+        )
+        .unwrap();
+    assert_eq!(due.day, Some("2027-04-15".parse().unwrap()));
+    let terugvordering = cell
+        .decide(
+            &service,
+            "terugvordering_vastgesteld",
+            on_application(),
+            BTreeMap::from([("berekeningsjaar".to_string(), channel(json!(2026)))]),
+            at("2027-04-15T11:00:00+02:00"),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(amount(&terugvordering, "terugvorderingsbedrag"), 19_000);
+    let incasso = arising(
+        &cell,
+        &service,
+        "incasso_opgedragen",
+        &root,
+        None,
+        "2027-06-30",
+        "2027-04-15T12:00:00+02:00",
+    );
+    let (day, order) = &incasso[0];
+    assert_eq!(day, "2027-05-01");
+    assert_eq!(amount(order, "incassobedrag"), 19_000);
 }
