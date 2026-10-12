@@ -63,6 +63,10 @@ pub struct LexostatusField {
     /// decision requested is the decision taken on the application.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fixed: Option<serde_json::Value>,
+    /// The values the applicant chooses from: the decisions that may be
+    /// requested, when more than one is taken on the application.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub options: Vec<serde_json::Value>,
     /// Whether an event of the cell reads it from this lexostatus for the
     /// decision it takes or the article it executes: the part of the law's
     /// interface this lexostatus implements.
@@ -80,6 +84,7 @@ impl LexostatusField {
             description: None,
             moment: false,
             fixed: f.fixed.clone(),
+            options: f.options.clone(),
             read: false,
         }
     }
@@ -430,12 +435,29 @@ impl Cell {
                     field.declared_by
                 )));
             }
+            if !field.options.is_empty() && !field.options.contains(value) {
+                return Err(refused(format!(
+                    "'{name}' is {value}, and the decisions taken on '{event}' are {:?}",
+                    field.options
+                )));
+            }
             if !shape::fits(field.type_, value) {
                 return Err(refused(format!(
                     "'{name}' is not a {:?} ({})",
                     field.type_, field.declared_by
                 )));
             }
+        }
+        // A choice the law leaves to the applicant and the cell cannot make
+        // (which of several decisions he asks, Awb 4:2 lid 1 onder c) must be
+        // made: without it, no decision on the application is the one asked.
+        if let Some(f) = shape.fields.iter().find(|f| {
+            f.fixed.is_none() && !f.options.is_empty() && !submitted.contains_key(&f.name)
+        }) {
+            return Err(refused(format!(
+                "'{event}' asks which of {:?} is requested ('{}', {})",
+                f.options, f.name, f.declared_by
+            )));
         }
         // The moment of recording is the moment that counts; the provisions
         // it rests on are the law's `effective_at` entries (none if the law
@@ -603,12 +625,19 @@ impl Cell {
                 }
                 let given = self.given_by_reads(service, &asker.read_by.event, day)?;
                 let period = asker.shape.period.as_ref().map(|p| p.parameter.as_str());
+                // A decision one of several on the application reads which
+                // one it requests (see `Self::prepare`).
+                let establishes = serde_json::Value::String(asker.shape.establishes.clone());
                 let takes: Vec<&String> = all
                     .iter()
-                    .map(|f| &f.name)
-                    .filter(|n| {
-                        asker.asked.contains(n) && !given.contains(n) && Some(n.as_str()) != period
+                    .filter(|f| {
+                        let n = &f.name;
+                        f.options.contains(&establishes)
+                            || (asker.asked.contains(n)
+                                && !given.contains(n)
+                                && Some(n.as_str()) != period)
                     })
+                    .map(|f| &f.name)
                     .collect();
                 if takes.is_empty() {
                     continue;
@@ -709,6 +738,7 @@ impl Cell {
                         description: o.description.clone(),
                         moment: false,
                         fixed: None,
+                        options: Vec::new(),
                         read: wanted.contains(&o.name),
                     })
                     .collect();
@@ -1111,6 +1141,26 @@ impl Cell {
         if let Some(root) = root {
             if let Some(submission) = self.submission_of(service, &shape, today)? {
                 let (from_application, _) = self.read_submission(&submission, root, now)?;
+                // A decision that may be requested on the application is taken
+                // only on an application that requests it (Awb 4:2 lid 1
+                // onder c): no zorgtoeslag on an application for huurtoeslag.
+                // A decision that follows another (the terugvordering of Awir
+                // 26) is not one the applicant chooses, and is not checked.
+                let wanted = serde_json::Value::String(shape.establishes.clone());
+                if let Some(asked) = submission
+                    .fields
+                    .iter()
+                    .find(|f| f.options.contains(&wanted))
+                {
+                    let given = from_application.get(&asked.name).map(|i| &i.value);
+                    if given != Some(&wanted) {
+                        return Err(refused(format!(
+                            "'{event}' takes {}, and the application '{root}' requests {}",
+                            shape.establishes,
+                            given.map_or("nothing".to_string(), ToString::to_string)
+                        )));
+                    }
+                }
                 for (name, input) in from_application {
                     if Some(&name) != period_parameter.as_ref() {
                         read.entry(name).or_insert(input);

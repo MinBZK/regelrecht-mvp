@@ -39,9 +39,16 @@ pub struct FieldDef {
     /// The article that declares it (`<regulation>#<article>`).
     pub declared_by: String,
     /// A value the cell fills in itself, not the applicant: the decision
-    /// requested (Awb 4:2 lid 1 onder c) is the decision taken on the
+    /// requested (Awb 4:2 lid 1 onder c), when one decision is taken on the
     /// application.
     pub fixed: Option<serde_json::Value>,
+    /// The values the applicant may choose from: the decisions that may be
+    /// requested (Awb 4:2 lid 1 onder c) when more than one is taken on the
+    /// application (the zorgtoeslag and the huurtoeslag on the application of
+    /// Awir 15). Empty for any other field, and when one decision is taken
+    /// (then `fixed` holds it).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub options: Vec<serde_json::Value>,
 }
 
 /// The shape of the grams of one event.
@@ -542,6 +549,7 @@ fn submission_moment(shape: &Shape, parameters: &[Parameter]) -> Result<Option<F
                     legal_basis: vec![grondslag.clone()],
                     declared_by: shape.establishes.clone(),
                     fixed: None,
+                    options: Vec::new(),
                 });
             }
         }
@@ -843,23 +851,29 @@ fn submission_fields(
             requested.push(decision);
         }
     }
-    let decision = match requested.as_slice() {
-        [one] => one,
-        [] => {
-            return Err(setup(format!(
-                "{}: no decision is taken on this submission (produces.decides_on) whose procedure has a stage for the submission (the first stage of the default procedure, by name or `is`)",
-                shape.establishes
-            )))
-        }
-        more => {
-            return Err(setup(format!(
-                "{}: {} decisions are taken on this submission; this cell records one",
-                shape.establishes,
-                more.len()
-            )))
-        }
+    // More than one decision may be asked on it (Awir 15: the zorgtoeslag,
+    // the huurtoeslag): the applicant names the one he asks (Awb 4:2 lid 1
+    // onder c), and the cell offers them as the choices. They share the
+    // legal character, so the general law applies once.
+    let Some(decision) = requested.first() else {
+        return Err(setup(format!(
+            "{}: no decision is taken on this submission (produces.decides_on) whose procedure has a stage for the submission (the first stage of the default procedure, by name or `is`)",
+            shape.establishes
+        )));
     };
-    let decision_reference = format!("{}#{}", decision.law_id, decision.article_number);
+    if let Some(other) = requested
+        .iter()
+        .find(|d| d.legal_character != decision.legal_character)
+    {
+        return Err(setup(format!(
+            "{}: the decisions taken on this submission differ in legal character ({} and {}); this cell records one",
+            shape.establishes, decision.legal_character, other.legal_character
+        )));
+    }
+    let references: Vec<String> = requested
+        .iter()
+        .map(|d| format!("{}#{}", d.law_id, d.article_number))
+        .collect();
     // The application belongs to the first stage of the procedure of that
     // decision (Awb: AANVRAAG).
     if shape.stage.is_none() {
@@ -924,7 +938,8 @@ fn submission_fields(
         }
     }
 
-    // The decision requested is the decision taken on the application.
+    // The decision requested: the one decision taken on the application,
+    // or the choice of the applicant among several.
     for input in &model.inputs {
         let role = origin(&input.parameter, &shape.establishes)?.and_then(|o| o.rol);
         if role != Some(OriginRole::GevraagdBesluit) {
@@ -935,7 +950,15 @@ fn submission_fields(
             .iter_mut()
             .find(|f| f.name == input.parameter.name)
         {
-            f.fixed = Some(serde_json::Value::String(decision_reference.clone()));
+            if let [one] = references.as_slice() {
+                f.fixed = Some(serde_json::Value::String(one.clone()));
+            } else {
+                f.options = references
+                    .iter()
+                    .cloned()
+                    .map(serde_json::Value::String)
+                    .collect();
+            }
         }
     }
 
@@ -964,6 +987,7 @@ fn part_fields(
         legal_basis,
         declared_by: reference.to_string(),
         fixed: None,
+        options: Vec::new(),
     };
     Ok(match &entry.fields {
         None => Vec::new(),
