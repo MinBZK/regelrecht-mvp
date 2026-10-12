@@ -67,7 +67,7 @@ If pods aren't running, verify the images exist:
 ```bash
 # Check what tags exist for this PR
 for pkg in regelrecht-editor regelrecht-admin regelrecht-harvester-worker; do
-  gh api --paginate "/orgs/MinBZK/packages/container/${pkg}/versions" \
+  gh api --paginate "/orgs/NederlandseDigitaleDienst/packages/container/${pkg}/versions" \
     --jq ".[] | select(.metadata.container.tags | any(test(\"pr-{N}\"))) | .metadata.container.tags"
 done
 ```

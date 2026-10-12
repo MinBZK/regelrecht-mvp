@@ -224,14 +224,14 @@ gh replies "The merge strategy for main is set by the merge queue". That is a no
 A command that succeeded does not mean the pull request is in the queue. Ask:
 
 ```bash
-gh api graphql -f query='{repository(owner:"MinBZK",name:"regelrecht"){
+gh api graphql -f query='{repository(owner:"NederlandseDigitaleDienst",name:"regelrecht"){
   pullRequest(number:<nr>){state mergeQueueEntry{state position}}}}'
 ```
 
 A pull request that drops out of the queue stays `OPEN`, so waiting for the state to become something other than `OPEN` waits forever after a drop. Follow `mergeQueueEntry` instead: `MERGED` means done, and `OPEN` with `mergeQueueEntry: null` means it dropped out. The reason is in the timeline:
 
 ```bash
-gh api graphql -f query='{repository(owner:"MinBZK",name:"regelrecht"){
+gh api graphql -f query='{repository(owner:"NederlandseDigitaleDienst",name:"regelrecht"){
   pullRequest(number:<nr>){timelineItems(last:5,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){
   nodes{... on RemovedFromMergeQueueEvent{createdAt reason}}}}}}'
 ```
