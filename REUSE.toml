@@ -44,12 +44,22 @@ path = [
 SPDX-FileCopyrightText = "Staat der Nederlanden (Ministerie van Binnenlandse Zaken en Koninkrijksrelaties)"
 SPDX-License-Identifier = "EUPL-1.2"
 
+# De ondertitels van de opgenomen rondleiding door de demo: de tekst die de
+# presentator (een medewerker, in functie) uitspreekt, ingekort tot
+# ondertitels. Eigen werk, dus dezelfde licentie als de code; de geluids- en
+# beeldopnames zelf staan niet in deze repository maar in een GitHub-release.
+[[annotations]]
+path = "corpus/demo/walkthrough/*.vtt"
+SPDX-FileCopyrightText = "Staat der Nederlanden (Ministerie van Binnenlandse Zaken en Koninkrijksrelaties)"
+SPDX-License-Identifier = "EUPL-1.2"
+
 # Eigen beeldmateriaal: het regelrecht-icoon en schermafbeeldingen van de
 # eigen applicaties.
 [[annotations]]
 path = [
   "**/public/regelrecht-icon.svg",
   "docs/src/assets/editor-notities-screenshot.png",
+  "docs/src/assets/portaal-en-screenshot.png",
   "docs/src/assets/portaal-screenshot.png",
   "docs/src/assets/simulatie-screenshot.png",
 ]
