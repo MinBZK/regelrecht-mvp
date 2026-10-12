@@ -38,9 +38,10 @@ articles:
         # Een betaalopdracht is een feit in de kroniek van Toeslagen
         # (chronolex, een executogram: de uitvoering van het voorschot). Een
         # termijn die nog moet komen is geen feit (RFC-050): de cel voert dit
-        # artikel uit op een dag (`executed_on`) en legt alleen een gram vast
-        # als er die maand iets te betalen is (`record_when`). Of de termijn
-        # ook betaald is, zegt pas de bank (artikel 2).
+        # artikel uit op de dagen die artikel 5 geeft (`executed_on` van de
+        # stroom), met die dag in `maand`, en legt alleen een gram vast als er
+        # die maand iets te betalen is (`record_when`). Of de termijn ook
+        # betaald is, zegt pas de bank (artikel 2).
         # - refers_to: het voorschot, als het besluit in de fase VOORSCHOT
         #   van de procedure tegemoetkoming van de Awir. Zo noemt dit beleid
         #   geen toeslag.
@@ -80,11 +81,6 @@ articles:
                   executed_on:
                     parameter: maand
                     once_per: month
-                    # Eigen keuze van dit fictieve beleid, niet uit de wet:
-                    # Toeslagen betaalt een termijn op de eerste van de maand,
-                    # of op de dag van het voorschot als dat later in de maand
-                    # valt. Art. 22 Awir zegt alleen in welke maand.
-                    day: 1
                   record_when: opdracht_wordt_gegeven
                   until:
                     stage: TOEKENNING
@@ -492,3 +488,65 @@ articles:
                     month: 11
                     day: 1
               default: null
+
+  # FICTIEF, eigen keuze in de modellering. Op welke dag Toeslagen een
+  # betaalopdracht geeft, zegt de wet niet: art. 22 Awir zegt alleen in welke
+  # maand een termijn valt. De cel voert artikel 1 uit op de dagen die dit
+  # artikel geeft (`executed_on` van de stroom), zoals zij een besluit neemt
+  # op de dag die het beleid geeft (`decided_on`). Zij vraagt telkens de
+  # eerstvolgende dag na een dag (`maand`, de parameter waarin artikel 1 zijn
+  # dag krijgt), per berekeningsjaar, met het voorschot zoals de kroniek het
+  # teruggeeft. Of er op zo'n dag een opdracht ontstaat, zegt artikel 1: ook
+  # in een maand zonder termijn, als er een mislukte termijn openstaat.
+  - number: '5'
+    url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel22
+    text: >-
+      FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. De
+      Dienst Toeslagen geeft de betaalopdrachten van artikel 1 voor een
+      voorschot op de dag van het voorschot, en daarna op de eerste dag van
+      elke maand. Zonder voorschot geeft zij er geen.
+    machine_readable:
+      execution:
+        parameters:
+          - name: dagtekening_voorschot
+            type: date
+            required: false
+            nullable: true
+            description: >-
+              De dagtekening van het laatste voorschot over het
+              berekeningsjaar; leeg als er geen is.
+          - name: maand
+            type: date
+            required: true
+            description: De dag waarna de eerstvolgende dag wordt gevraagd.
+        output:
+          - name: dag_betaalopdracht
+            type: date
+            nullable: true
+            description: >-
+              De eerstvolgende dag na `maand` waarop de Dienst Toeslagen een
+              betaalopdracht voor het voorschot geeft; leeg zonder voorschot.
+        actions:
+          - output: dag_betaalopdracht
+            value:
+              operation: IF
+              cases:
+                - when:
+                    operation: EQUALS
+                    subject: $dagtekening_voorschot
+                    value: null
+                  then: null
+                # De dag van het voorschot zelf.
+                - when:
+                    operation: LESS_THAN
+                    subject: $maand
+                    value: $dagtekening_voorschot
+                  then: $dagtekening_voorschot
+              # Daarna de eerste van de maand na `maand`.
+              default:
+                operation: DATE_ADD
+                date:
+                  operation: START_OF
+                  date: $maand
+                  in: month
+                months: 1

@@ -3,8 +3,10 @@
 # - betaalopdracht_gegeven: Toeslagen geeft de bank opdracht een termijn te
 #   betalen. Wanneer en hoeveel, zegt de wet door haar uit te voeren: art. 22
 #   Awir en het (fictieve) uitvoeringsbeleid van Toeslagen over de
-#   uitbetaling (art. 1). De cel voert het beleid per maand uit en legt
-#   alleen een gram vast als er die maand iets te betalen is. Het voorschot,
+#   uitbetaling (art. 1). De cel voert het beleid uit op de dagen die
+#   art. 5 van dat beleid geeft (`executed_on`), zoals zij een besluit neemt
+#   op de dag die het beleid geeft (`decided_on`), en legt alleen een gram
+#   vast als er die maand iets te betalen is. Het voorschot,
 #   de rekening uit de aanvraag en wat er achterstallig is, leest de cel uit
 #   haar eigen kroniek met het beleid van Toeslagen daarover
 #   (fictief_beleid_kroniek_toeslagen), met de aanvraag als `root`.
@@ -18,6 +20,7 @@ events:
   - name: betaalopdracht_gegeven
     establishes: fictief_beleid_termijnbedrag_voorschot#1
     reads: [{regulation: fictief_beleid_kroniek_toeslagen}]
+    executed_on: fictief_beleid_termijnbedrag_voorschot#5
   - name: voorschottermijn_betaald
     establishes: fictief_beleid_termijnbedrag_voorschot#2
   - name: betaling_mislukt

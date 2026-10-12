@@ -114,6 +114,14 @@ pub struct Event {
     /// takes (see `Cell::check_due`).
     #[serde(default)]
     pub decided_on: Option<String>,
+    /// For an execution executed on a day (`executed_on` in its law): the
+    /// article (`<regulation>#<article>`) that gives the next day the holder
+    /// executes it, after a given day (see [`crate::Cell::due_executions`]).
+    /// Like `decided_on`, its one date output is that day, and null is no
+    /// day; it is asked with what the case reads, the period, and the day
+    /// after which, in the parameter the execution takes its day in.
+    #[serde(default)]
+    pub executed_on: Option<String>,
     /// For a decision on no submission (ex officio, such as the aanslag of
     /// AWR 11): the parameter that gives the period it concerns. The law
     /// names the period of a decision on an application with origin role

@@ -26,8 +26,8 @@ use serde::Serialize;
 use crate::config::Event;
 use crate::error::{setup, Result};
 use crate::extension::{
-    self, Chronolex, EffectiveAt, Establishment, Every, ExecutedOn, Extends, Fields,
-    PeriodParameter, PeriodUnit, Reference, Until,
+    self, Chronolex, EffectiveAt, Establishment, ExecutedOn, Extends, Fields, PeriodParameter,
+    PeriodUnit, Reference, Until,
 };
 
 /// One field of a gram, as the law declares it.
@@ -657,20 +657,6 @@ fn check_execution(shape: &Shape, article: &Article) -> Result<()> {
             return Err(at(format!("record_when: output '{when}' is not a boolean")));
         }
     }
-    if let Some(on) = &shape.executed_on {
-        match (on.day, on.once_per) {
-            (None, _) => {}
-            (Some(day), Some(Every::Month)) if (1..=31).contains(&day) => {}
-            (Some(day), Some(Every::Month)) => {
-                return Err(at(format!("executed_on: day {day} is no day of a month")))
-            }
-            (Some(_), None) => {
-                return Err(at(
-                    "executed_on: a day needs a period it is the day of (once_per)".to_string(),
-                ))
-            }
-        }
-    }
     // The value that identifies a received message comes with the message:
     // a parameter it must carry, not something the article computes.
     if let Some(key) = &shape.identified_by {
@@ -1218,6 +1204,7 @@ articles:
             stage: None,
             reads: Vec::new(),
             decided_on: None,
+            executed_on: None,
             period: None,
             subject: Vec::new(),
             first_period: None,
@@ -1287,6 +1274,7 @@ articles:
             stage: stage.map(str::to_string),
             reads: Vec::new(),
             decided_on: None,
+            executed_on: None,
             period: None,
             subject: Vec::new(),
             first_period: None,
@@ -1386,6 +1374,7 @@ articles:
             stage: None,
             reads: Vec::new(),
             decided_on: None,
+            executed_on: None,
             period: None,
             subject: Vec::new(),
             first_period: None,

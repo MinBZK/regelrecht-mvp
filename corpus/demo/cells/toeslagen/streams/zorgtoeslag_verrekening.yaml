@@ -5,7 +5,8 @@
 # daarover (fictief_beleid_toekenning_toeslagen). Wat er al is opgedragen en
 # ingevorderd, leest de cel uit haar eigen kroniek met het beleid van
 # Toeslagen daarover (fictief_beleid_kroniek_toeslagen), met de aanvraag als
-# `root`.
+# `root`. Op welke dagen Toeslagen een opdracht geeft, zegt dat beleid ook
+# (`executed_on`): art. 9 voor de nabetaling, art. 10 voor de incasso.
 # - inkomensgegeven_ontvangen: het inkomensgegeven dat de inspecteur
 #   verstrekt (AWR 21e lid 1), bij ontvangst vastgelegd (art. 1).
 # - nabetaling_opgedragen: Toeslagen geeft de bank opdracht uit te betalen
@@ -27,6 +28,7 @@ events:
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '2'}
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '6'}
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '7'}
+    executed_on: fictief_beleid_toekenning_toeslagen#9
   - name: nabetaling_betaald
     establishes: fictief_beleid_toekenning_toeslagen#5
   - name: nabetaling_mislukt
@@ -36,6 +38,7 @@ events:
     reads:
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '2'}
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '8'}
+    executed_on: fictief_beleid_toekenning_toeslagen#10
   - name: terugvordering_geind
     establishes: fictief_beleid_toekenning_toeslagen#8
   - name: incasso_mislukt

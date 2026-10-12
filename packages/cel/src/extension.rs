@@ -25,7 +25,7 @@
 //!         type: executogram
 //!         refers_to: {besluit: {stage: BESLUIT, required: true}}
 //!         fields: [bedrag]
-//!         executed_on: {parameter: maand, once_per: month, day: 1}
+//!         executed_on: {parameter: maand, once_per: month}
 //!         record_when: betaling_in_maand
 //!         until: {stage: EINDE}
 //!       - event: bijgeschreven           # on receipt, once per reference
@@ -128,19 +128,16 @@ pub struct Establishment {
 }
 
 /// The day an execution is executed on: the parameter of the article it goes
-/// into, and how often the fact may arise per reference.
+/// into, and how often the fact may arise per reference. Which days those
+/// are, is not here: an article of the policy of whoever executes the law
+/// gives them, named by the stream (`executed_on` of its event, see
+/// [`crate::config::Event::executed_on`]).
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExecutedOn {
     pub parameter: String,
     #[serde(default)]
     pub once_per: Option<Every>,
-    /// The day of the period of `once_per` the execution falls on (`day: 1`,
-    /// the first of the month), or the first day the execution may arise if
-    /// that is later. Which day it is, is the choice of whoever executes the
-    /// law; the cell does not choose it.
-    #[serde(default)]
-    pub day: Option<u32>,
 }
 
 /// How often an execution may arise for the gram it refers to.

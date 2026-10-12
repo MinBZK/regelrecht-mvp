@@ -1302,69 +1302,6 @@ impl Cell {
             })
     }
 
-    /// The day the article `reference` gives the decision whose parameters
-    /// are `inputs`, in the law on `day`: its one output of type date, with
-    /// what of `inputs` it declares as a parameter. `None` if it gives none
-    /// (null).
-    fn decided_on(
-        &self,
-        service: &LawExecutionService,
-        reference: &str,
-        inputs: &BTreeMap<String, Input>,
-        day: NaiveDate,
-    ) -> Result<Option<NaiveDate>> {
-        let (law_id, number) = shape::split_reference(reference)?;
-        let law = service
-            .resolver()
-            .get_law_for_date(law_id, Some(day))
-            .ok_or_else(|| setup(format!("decided_on: '{law_id}' has no version on {day}")))?;
-        let execution = law
-            .articles
-            .iter()
-            .find(|a| a.number == number)
-            .and_then(|a| a.get_execution_spec())
-            .ok_or_else(|| setup(format!("decided_on: no article {reference} on {day}")))?;
-        let dates: Vec<&str> = execution
-            .output
-            .iter()
-            .flatten()
-            .filter(|o| o.output_type == ParameterType::Date)
-            .map(|o| o.name.as_str())
-            .collect();
-        let [output] = dates.as_slice() else {
-            return Err(setup(format!(
-                "decided_on: {reference} has {} outputs of type date; the day a decision is taken is one",
-                dates.len()
-            )));
-        };
-        let declared: Vec<&str> = execution
-            .parameters
-            .iter()
-            .flatten()
-            .map(|p| p.name.as_str())
-            .collect();
-        let parameters = values(
-            inputs
-                .iter()
-                .filter(|(name, _)| declared.contains(&name.as_str())),
-        );
-        let result = service.evaluate_law(law_id, &[output], parameters, &day.to_string())?;
-        // A day that rests on a fact nobody has yet (an inkomensgegeven that
-        // has not arrived) is no day yet.
-        if matches!(result.outputs.get(*output), Some(Value::Unknown(_))) {
-            return Ok(None);
-        }
-        match result.outputs.get(*output).map(shape::to_json) {
-            None | Some(serde_json::Value::Null) => Ok(None),
-            Some(serde_json::Value::String(text)) => NaiveDate::parse_from_str(&text, "%Y-%m-%d")
-                .map(Some)
-                .map_err(|e| setup(format!("decided_on: {reference} gives '{text}': {e}"))),
-            Some(other) => Err(setup(format!(
-                "decided_on: {reference} gives {other}, not a date"
-            ))),
-        }
-    }
-
     /// The next decision of `event` on the case `root`, as the case holds at
     /// `now`: the period it concerns, and the day the holder takes it, if
     /// the stream names an article that gives it (`decided_on`) and that
@@ -1401,7 +1338,7 @@ impl Cell {
                 ..
             } = self.prepare(service, event, Some(root), BTreeMap::new(), now)?;
             let due = match reference.as_deref() {
-                Some(reference) => self.decided_on(service, reference, &available, day)?,
+                Some(reference) => day_from(service, "decided_on", reference, &available, day)?,
                 None => None,
             };
             return Ok(DueDecision { period, day: due });
@@ -1436,7 +1373,7 @@ impl Cell {
                 period,
                 ..
             } = self.prepare(service, event, Some(root), extra, now)?;
-            if let Some(due) = self.decided_on(service, reference, &available, day)? {
+            if let Some(due) = day_from(service, "decided_on", reference, &available, day)? {
                 return Ok(DueDecision {
                     period,
                     day: Some(due),
@@ -1561,7 +1498,7 @@ impl Cell {
                     provenance: serde_json::json!({"source": "period"}),
                 },
             );
-            if let Some(due) = self.decided_on(service, &reference, &inputs, day)? {
+            if let Some(due) = day_from(service, "decided_on", &reference, &inputs, day)? {
                 return Ok(DueDecision {
                     period: Some(period),
                     day: Some(due),
@@ -1832,7 +1769,7 @@ impl Cell {
         if !due {
             return Ok(());
         }
-        match self.decided_on(service, reference, available, day)? {
+        match day_from(service, "decided_on", reference, available, day)? {
             Some(due) if due > today => Err(refused(format!(
                 "'{event}' for {} is taken on {due} ({reference}), not on {today}",
                 concerns()
@@ -2253,24 +2190,31 @@ impl Cell {
 
     /// The days up to `through` on which the execution `event` is executed
     /// for the case `root`, as the case holds at `now`, each with the period
-    /// it is executed for: per period of `executed_on.once_per`, the day the
-    /// law (or the policy executing it) gives as `executed_on.day`, or the
-    /// first day the execution may arise if that is later; only days after
-    /// `after` (what the caller already asked), and no period in which the
-    /// case already has a gram of the event. Whether a gram arises on such a
-    /// day is for [`Self::execute_in`] to say. In the order of the days.
+    /// it is executed for; only days after `after` (what the caller already
+    /// asked), or after the day before the case began. Whether a gram arises
+    /// on such a day is for [`Self::execute_in`] to say. In the order of the
+    /// days.
+    ///
+    /// Which days those are, says the policy of the holder, as for a
+    /// decision: the stream names the article that gives them (`executed_on`
+    /// of the event). The cell asks it for the next day after a day, from
+    /// `after` on, until it gives none or one after `through`. It asks with
+    /// what the case reads (`reads`, at `now`), the period, and the day after
+    /// which, in the parameter the execution takes its day in. A day that
+    /// does not lie after the one asked is an error in the policy.
     ///
     /// An execution that concerns a period (`period` of its law) is executed
     /// per period of the grams its required references admit: one voorschot
     /// per berekeningsjaar, each paid in its own termijnen, which may fall in
-    /// the same month. Each period is on its own: its references, its
-    /// months, and the gram that ends it.
+    /// the same month. Each period is on its own: its references, its days,
+    /// and the gram that ends it.
     ///
-    /// The first day an execution may arise is the moment of the latest
-    /// gram each of its references admits (it may not lie before one); none
-    /// while a required reference has no gram, and none once the case has a
-    /// gram of the stage that ends it (`until`). `through` may lie after
-    /// `now`: these are the days the law executes on, not facts.
+    /// What the cell keeps is about recording, not about the calendar: no
+    /// days while a required reference has no gram, none once the case has a
+    /// gram of the stage that ends it (`until`), and with `once_per: month`
+    /// no day in a month in which the case already has a gram of the event
+    /// for the period. `through` may lie after `now`: these are the days the
+    /// law executes on, not facts.
     pub fn due_executions(
         &self,
         service: &LawExecutionService,
@@ -2280,60 +2224,82 @@ impl Cell {
         through: NaiveDate,
         now: DateTime<FixedOffset>,
     ) -> Result<Vec<DueExecution>> {
+        let reference = self.event(event)?.1.executed_on.clone().ok_or_else(|| {
+            setup(format!(
+                "'{event}' says not on which days it is executed (`executed_on` in its stream)"
+            ))
+        })?;
         let (shape, chronicle) = self.shape(service, event, now.date_naive())?;
         let executed_on = executed_on(&shape)?;
-        let (Some(Every::Month), Some(day_of_month)) = (executed_on.once_per, executed_on.day)
-        else {
-            return Err(setup(format!(
-                "{}: '{event}' says not on which day of which period it is executed (executed_on: once_per and day)",
-                shape.establishes
-            )));
-        };
         let (grams, case) = self.case_at(&chronicle, root, now)?;
-        let root_moment = grams
+        let began = grams
             .find(root)
             .map(|g| lexostatus::moment(g, &g.effective_at))
             .transpose()?
-            .ok_or_else(|| refused(format!("no gram '{root}' in chronicle '{chronicle}'")))?;
+            .ok_or_else(|| refused(format!("no gram '{root}' in chronicle '{chronicle}'")))?
+            .date_naive();
+        let from = match after {
+            Some(after) => after,
+            None => began
+                .pred_opt()
+                .ok_or_else(|| setup(format!("no day before {began}")))?,
+        };
+        let period_parameter = shape.period.as_ref().map(|p| p.parameter.as_str());
         let mut days = Vec::new();
         for period in execution_periods(&shape, &case) {
-            if ended(&shape, &case, root, period).is_err() {
+            if ended(&shape, &case, root, period).is_err()
+                || references(&shape, &case, period).is_none()
+            {
                 continue;
             }
-            let Some(references) = references(&shape, &case, period) else {
-                continue;
+            let done: Vec<(i32, u32)> = if executed_on.once_per == Some(Every::Month) {
+                case.iter()
+                    .filter(|g| g.name == event && in_period(g, period))
+                    .map(|g| {
+                        lexostatus::moment(g, &g.effective_at).map(|m| month_of(m.date_naive()))
+                    })
+                    .collect::<Result<_>>()?
+            } else {
+                Vec::new()
             };
-            // From the root, or the latest gram a reference names.
-            let mut start = root_moment;
-            for gram in references.values() {
-                start = start.max(lexostatus::moment(gram, &gram.effective_at)?);
+            let mut inputs =
+                self.read_case(service, event, root, period_parameter.zip(period), now)?;
+            if let (Some(parameter), Some(value)) = (period_parameter, period) {
+                inputs.insert(
+                    parameter.to_string(),
+                    Input {
+                        value: serde_json::Value::from(value),
+                        provenance: serde_json::json!({"source": "period"}),
+                    },
+                );
             }
-            let done: Vec<(i32, u32)> = case
-                .iter()
-                .filter(|g| g.name == event && in_period(g, period))
-                .map(|g| lexostatus::moment(g, &g.effective_at).map(|m| month_of(m.date_naive())))
-                .collect::<Result<_>>()?;
-
-            let mut month = month_of(start.date_naive());
-            while let Some(first) = NaiveDate::from_ymd_opt(month.0, month.1, 1) {
-                if first > through {
+            let mut day = from;
+            loop {
+                inputs.insert(
+                    executed_on.parameter.clone(),
+                    Input {
+                        value: serde_json::Value::String(day.to_string()),
+                        provenance: serde_json::json!({"source": "execution"}),
+                    },
+                );
+                let first = day
+                    .succ_opt()
+                    .ok_or_else(|| setup(format!("no day after {day}")))?;
+                let Some(next) = day_from(service, "executed_on", &reference, &inputs, first)?
+                else {
+                    break;
+                };
+                if next <= day {
+                    return Err(setup(format!(
+                        "executed_on: {reference} gives {next} as the day after {day}"
+                    )));
+                }
+                if next > through {
                     break;
                 }
-                let last = last_day_of_month(first);
-                // The day does not depend on when the cell is asked: on the
-                // day the referred gram holds, the execution holds from that
-                // gram's moment (see `execute`), not from the next day.
-                let day = first
-                    .with_day(day_of_month.min(last.day()))
-                    .unwrap_or(last)
-                    .max(start.date_naive());
-                if month_of(day) == month
-                    && day <= through
-                    && after.is_none_or(|a| day > a)
-                    && !done.contains(&month)
-                {
+                if !done.contains(&month_of(next)) {
                     days.push(DueExecution {
-                        day,
+                        day: next,
                         period: period.map(|value| Period {
                             unit: shape
                                 .period
@@ -2343,11 +2309,7 @@ impl Cell {
                         }),
                     });
                 }
-                month = if month.1 == 12 {
-                    (month.0 + 1, 1)
-                } else {
-                    (month.0, month.1 + 1)
-                };
+                day = next;
             }
         }
         days.sort_by_key(|d| (d.day, d.period.map(|p| p.value)));
@@ -2602,6 +2564,70 @@ impl Cell {
     }
 }
 
+/// The day the article `reference` gives, with `inputs`, in the law on
+/// `day`: its one output of type date, with what of `inputs` it declares
+/// as a parameter. `None` if it gives none (null), or rests on a fact
+/// nobody has yet. `key` is what names the article (`decided_on`,
+/// `executed_on`), for the errors.
+fn day_from(
+    service: &LawExecutionService,
+    key: &str,
+    reference: &str,
+    inputs: &BTreeMap<String, Input>,
+    day: NaiveDate,
+) -> Result<Option<NaiveDate>> {
+    let (law_id, number) = shape::split_reference(reference)?;
+    let law = service
+        .resolver()
+        .get_law_for_date(law_id, Some(day))
+        .ok_or_else(|| setup(format!("{key}: '{law_id}' has no version on {day}")))?;
+    let execution = law
+        .articles
+        .iter()
+        .find(|a| a.number == number)
+        .and_then(|a| a.get_execution_spec())
+        .ok_or_else(|| setup(format!("{key}: no article {reference} on {day}")))?;
+    let dates: Vec<&str> = execution
+        .output
+        .iter()
+        .flatten()
+        .filter(|o| o.output_type == ParameterType::Date)
+        .map(|o| o.name.as_str())
+        .collect();
+    let [output] = dates.as_slice() else {
+        return Err(setup(format!(
+            "{key}: {reference} has {} outputs of type date; the day it gives is one",
+            dates.len()
+        )));
+    };
+    let declared: Vec<&str> = execution
+        .parameters
+        .iter()
+        .flatten()
+        .map(|p| p.name.as_str())
+        .collect();
+    let parameters = values(
+        inputs
+            .iter()
+            .filter(|(name, _)| declared.contains(&name.as_str())),
+    );
+    let result = service.evaluate_law(law_id, &[output], parameters, &day.to_string())?;
+    // A day that rests on a fact nobody has yet (an inkomensgegeven that
+    // has not arrived) is no day yet.
+    if matches!(result.outputs.get(*output), Some(Value::Unknown(_))) {
+        return Ok(None);
+    }
+    match result.outputs.get(*output).map(shape::to_json) {
+        None | Some(serde_json::Value::Null) => Ok(None),
+        Some(serde_json::Value::String(text)) => NaiveDate::parse_from_str(&text, "%Y-%m-%d")
+            .map(Some)
+            .map_err(|e| setup(format!("{key}: {reference} gives '{text}': {e}"))),
+        Some(other) => Err(setup(format!(
+            "{key}: {reference} gives {other}, not a date"
+        ))),
+    }
+}
+
 /// What [`Cell::prepare`] works out for a decision.
 struct Prepared {
     inputs: BTreeMap<String, Input>,
@@ -2779,14 +2805,6 @@ fn month_of(day: NaiveDate) -> (i32, u32) {
     (day.year(), day.month())
 }
 
-/// The last day of the month of `first`.
-fn last_day_of_month(first: NaiveDate) -> NaiveDate {
-    first
-        .checked_add_months(chrono::Months::new(1))
-        .and_then(|next| next.pred_opt())
-        .unwrap_or(first)
-}
-
 /// The start of `day` in the offset of `now`.
 fn start_of(day: NaiveDate, now: &DateTime<FixedOffset>) -> Result<DateTime<FixedOffset>> {
     day.and_hms_opt(0, 0, 0)
@@ -2932,6 +2950,7 @@ articles:
             stage: None,
             reads: Vec::new(),
             decided_on: None,
+            executed_on: None,
             period: None,
             subject: Vec::new(),
             first_period: None,
