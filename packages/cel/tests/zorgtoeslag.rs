@@ -363,7 +363,7 @@ fn toeslagen_decides_on_the_application_and_records_the_decision() {
             provenance: json!({
                 "source": "lexostatus",
                 "lexostatus": "uitbetaald",
-                "register": "fictief_beleid_kroniek_toeslagen#kroniek",
+                "register": "belastingdienst_toeslagen#dossier",
                 "article": "fictief_beleid_kroniek_toeslagen#3a",
             }),
         },
@@ -882,7 +882,7 @@ fn a_decision_reads_the_application_and_policy_articles() {
         json!({
             "source": "lexostatus",
             "lexostatus": "schatting_inkomen",
-            "register": "fictief_beleid_kroniek_toeslagen#kroniek",
+            "register": "belastingdienst_toeslagen#dossier",
             "article": "fictief_beleid_kroniek_toeslagen#4",
         })
     );
@@ -1271,7 +1271,7 @@ fn a_reading_counts_only_what_holds_at_its_moment() {
         json!({
             "source": "lexostatus",
             "lexostatus": "voorschot",
-            "register": "fictief_beleid_kroniek_toeslagen#kroniek",
+            "register": "belastingdienst_toeslagen#dossier",
             "article": "fictief_beleid_kroniek_toeslagen#1",
         })
     );
@@ -1299,20 +1299,62 @@ fn a_cell_whose_register_is_not_bound_does_not_start() {
 /// An event can only read a policy that reads a register of the cell.
 #[test]
 fn an_event_reading_a_policy_without_register_is_refused() {
+    let e = config_with_registers("").unwrap_err();
+    assert!(e.to_string().contains("reads no register"), "{e}");
+}
+
+/// The fixture cell with `registers` as its `registers:` section.
+fn config_with_registers(registers: &str) -> regelrecht_cel::Result<CellConfig> {
     let fixture = cell_yaml().parent().unwrap().to_path_buf();
     let read = |f: &str| std::fs::read_to_string(fixture.join(f)).unwrap();
     let cell = read("cell.yaml");
-    let without = &cell[..cell.find("registers:").unwrap()];
-    let e = CellConfig::from_yaml(
-        without,
+    let cell = format!("{}{registers}", &cell[..cell.find("registers:").unwrap()]);
+    CellConfig::from_yaml(
+        &cell,
         &[
             &read("streams/zorgtoeslag_aanvragen.yaml"),
             &read("streams/zorgtoeslag_besluiten.yaml"),
             &read("streams/zorgtoeslag_betalingen.yaml"),
         ],
     )
+}
+
+/// A register is named after the dossier of the recording actor, not after
+/// the policy that reads it; provenance names it `<recording_actor>#<name>`.
+#[test]
+fn a_register_is_named_after_the_dossier_of_the_recording_actor() {
+    let config = CellConfig::load(&cell_yaml()).unwrap();
+    let [register] = config.registers.as_slice() else {
+        panic!("{:?}", config.registers)
+    };
+    assert_eq!(register.policy, "fictief_beleid_kroniek_toeslagen");
+    assert_eq!(register.name, "dossier");
+    assert_eq!(register.key(), "belastingdienst_toeslagen#dossier");
+}
+
+/// A policy reads one register of the cell: listed under two, it is refused.
+#[test]
+fn a_policy_under_two_registers_is_refused() {
+    let e = config_with_registers(
+        "registers:\n  dossier:\n    chronicle: toeslagen\n    read_by: [fictief_beleid_kroniek_toeslagen]\n  archief:\n    chronicle: toeslagen\n    read_by: [fictief_beleid_kroniek_toeslagen]\n",
+    )
     .unwrap_err();
-    assert!(e.to_string().contains("reads no register"), "{e}");
+    assert!(e.to_string().contains("more than one register"), "{e}");
+}
+
+/// A register no policy reads, or one named like a key, is refused.
+#[test]
+fn a_register_without_readers_or_with_a_key_as_name_is_refused() {
+    let e = config_with_registers(
+        "registers:\n  dossier:\n    chronicle: toeslagen\n    read_by: []\n",
+    )
+    .unwrap_err();
+    assert!(e.to_string().contains("read by no policy"), "{e}");
+    let e = config_with_registers(
+        "registers:\n  belastingdienst_toeslagen#dossier:\n    chronicle: toeslagen\n    read_by: [fictief_beleid_kroniek_toeslagen]\n",
+    )
+    .unwrap_err();
+    assert!(e.to_string().contains("without '#'"), "{e}");
 }
 
 /// The application, the voorschot in March on `estimate`, every termijn of
@@ -1426,7 +1468,7 @@ fn a_toekenning_above_the_voorschot_pays_out_the_rest() {
             "provenance": {
                     "source": "lexostatus",
                     "lexostatus": "uitbetaald",
-                    "register": "fictief_beleid_kroniek_toeslagen#kroniek",
+                    "register": "belastingdienst_toeslagen#dossier",
                     "article": "fictief_beleid_kroniek_toeslagen#3a",
                 },
         })

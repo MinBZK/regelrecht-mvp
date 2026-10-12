@@ -125,10 +125,10 @@ pub enum LexostatusDescription {
         read_by: Vec<ReadBy>,
     },
     /// An article of a policy of the holder. `name` is its `endpoint` (or
-    /// `<policy>#<article>`), `provision` the article, `register` the name
-    /// the binding gives the register, `register_input` the input without a
-    /// source (`source: {}`) the chronicle is given as; `outputs` every
-    /// output of the article.
+    /// `<policy>#<article>`), `provision` the article, `register` the
+    /// register as a provenance names it (`<recording_actor>#<register>`),
+    /// `register_input` the input without a source (`source: {}`) the
+    /// chronicle is given as; `outputs` every output of the article.
     Policy {
         name: String,
         provision: String,
@@ -767,7 +767,7 @@ impl Cell {
                     provision: provision.clone(),
                     policy: policy.clone(),
                     article: article.number.clone(),
-                    register: register.name.clone(),
+                    register: register.key(),
                     chronicle: register.chronicle.clone(),
                     register_input: register_input.clone(),
                     inputs,

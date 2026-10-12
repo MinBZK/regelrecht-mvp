@@ -6,9 +6,12 @@
 //! of the holder, with one input without a source (`source: {}`), executed by
 //! the engine. Which chronicle that input is, says only the cell
 //! configuration (`registers:` in `cell.yaml`); the policy names no system.
+//! The register is named after what it is for the holder (its `dossier`, the
+//! origin DOSSIER the law asks), not after the policy: a provenance names it
+//! `<recording_actor>#<register>`.
 //!
-//! The cell registers a [`RegisterSource`] per binding with the engine
-//! ([`bind`]), scoped to the policy. The source answers with the rows the
+//! The cell registers a [`RegisterSource`] with the engine per policy that
+//! reads a register ([`bind`]), scoped to the policy. The source answers with the rows the
 //! cell gives it for the duration of one reading ([`with_rows`]): the grams of
 //! the chronicle that hold at the moment of reading, one row per gram, in the
 //! order they hold ([`rows`]). A gram that holds only later is not in it.
@@ -38,9 +41,15 @@ thread_local! {
     static ROWS: RefCell<BTreeMap<String, Value>> = const { RefCell::new(BTreeMap::new()) };
 }
 
-/// The name of the engine data source of a register of `cell`.
+/// The name of the engine data source of a register of `cell`, for the
+/// policy that reads it (a source is scoped to one policy).
 pub fn source_name(cell: &str, register: &Register) -> String {
-    format!("kroniek {cell}/{} ({})", register.chronicle, register.key())
+    format!(
+        "kroniek {cell}/{} ({}, read by {})",
+        register.chronicle,
+        register.key(),
+        register.policy
+    )
 }
 
 /// A register as an engine data source: the one source-less input of a
@@ -145,8 +154,9 @@ pub fn check_bound(service: &LawExecutionService, cell: &str, register: &Registe
         return Ok(());
     }
     Err(setup(format!(
-        "register '{}' of cell '{cell}' is not bound with the engine (register::bind)",
-        register.key()
+        "register '{}' of cell '{cell}', read by policy '{}', is not bound with the engine (register::bind)",
+        register.key(),
+        register.policy
     )))
 }
 

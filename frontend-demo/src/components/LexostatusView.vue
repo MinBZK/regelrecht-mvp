@@ -273,7 +273,7 @@ const cells = computed(() => {
             <!-- Met een artikel in het beleid van de houder dat de kroniek als register leest. -->
             <template v-else-if="l.kind === 'policy'">
               <nldd-list-item size="sm">
-                <nldd-text-cell size="sm" :overline="t('lexo.register')" :text="`${l.policy}#${l.register}`" :supporting-text="t('lexo.register.supporting', { chronicle: l.chronicle, input: l.register_input })"></nldd-text-cell>
+                <nldd-text-cell size="sm" :overline="t('lexo.register')" :text="l.register" :supporting-text="t('lexo.register.supporting', { chronicle: l.chronicle, input: l.register_input })"></nldd-text-cell>
               </nldd-list-item>
               <nldd-list-item size="sm">
                 <nldd-text-cell size="sm" :overline="t('lexo.article')" :text="l.provision" :supporting-text="l.outputs.join(', ')"></nldd-text-cell>

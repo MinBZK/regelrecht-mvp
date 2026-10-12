@@ -10,9 +10,11 @@ recording_actor: fictieve_bank
 streams:
   - streams/overboekingen.yaml
   - streams/incasso.yaml
-# De kroniek die het (fictieve) beleid van de bank terugleest (RFC-045 §1):
-# wat er op een rekening is bijgeschreven en afgeschreven, voor het saldo bij
-# een incasso.
+# Het dossier van de bank (RFC-045 §1): wat er op een rekening is
+# bijgeschreven en afgeschreven, voor het saldo bij een incasso. Het register
+# heet naar het dossier van de bank, niet naar het (fictieve) beleid dat het
+# leest. Een herkomst noemt het `fictieve_bank#dossier`.
 registers:
-  fictief_beleid_kroniek_bank#boekingen:
+  dossier:
     chronicle: rekeningen
+    read_by: [fictief_beleid_kroniek_bank]

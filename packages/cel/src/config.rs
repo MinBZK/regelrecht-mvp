@@ -6,11 +6,19 @@
 //! id: toeslagen
 //! recording_actor: belastingdienst_toeslagen
 //! streams: [streams/zorgtoeslag_aanvragen.yaml]
-//! # The chronicle a policy of the holder reads back (`source: {}`), bound to
-//! # it as a register (`<policy>#<name of the register>`, RFC-045 §1).
+//! # The dossier of the recording actor (the law asks it with origin
+//! # DOSSIER), a chronicle of the cell; the policies of the holder that read
+//! # it as their input without a source (`source: {}`, RFC-045 §1).
 //! registers:
-//!   fictief_beleid_kroniek_toeslagen#kroniek: {chronicle: toeslagen}
+//!   dossier:
+//!     chronicle: toeslagen
+//!     read_by: [fictief_beleid_kroniek_toeslagen]
 //! ```
+//!
+//! A register is named after what it is for the holder, not after the
+//! policy that reads it: the law gives the interface (origin DOSSIER), a
+//! policy only how to read it. Provenance names it
+//! `<recording_actor>#<register>`, such as `belastingdienst_toeslagen#dossier`.
 //!
 //! A stream only registers an event and the article that establishes it;
 //! what the fact contains, the law says (see [`crate::shape`]).
@@ -31,32 +39,40 @@ pub struct CellFile {
     pub recording_actor: String,
     /// Stream files, relative to `cell.yaml`.
     pub streams: Vec<PathBuf>,
-    /// The chronicles of this cell that a policy reads as a register, per
-    /// `<policy>#<name of the register>` (see [`crate::register`]).
+    /// The chronicles of this cell that policies of the holder read as a
+    /// register, by the name of the register (see [`crate::register`]).
     #[serde(default)]
     pub registers: BTreeMap<String, RegisterBinding>,
 }
 
-/// Which chronicle of the cell a register is.
+/// Which chronicle of the cell a register is, and the policies of the
+/// holder that read it.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RegisterBinding {
     pub chronicle: String,
+    /// The policies whose one input without a source (`source: {}`) is this
+    /// register. A policy reads one register of the cell.
+    pub read_by: Vec<String>,
 }
 
-/// A register of the cell: the policy that reads it (its one input without a
-/// source, `source: {}`), the name the binding gives it, and the chronicle.
+/// A register of the cell as one policy reads it: the policy (its one input
+/// without a source, `source: {}`), the holder of the register (the
+/// recording actor of the cell), the name of the register, and its
+/// chronicle. A register read by two policies is two of these.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Register {
     pub policy: String,
+    pub holder: String,
     pub name: String,
     pub chronicle: String,
 }
 
 impl Register {
-    /// `<policy>#<name>`, as the binding and a provenance name it.
+    /// `<holder>#<name>`, as a provenance names the register: the same for
+    /// every policy that reads it.
     pub fn key(&self) -> String {
-        format!("{}#{}", self.policy, self.name)
+        format!("{}#{}", self.holder, self.name)
     }
 }
 
@@ -219,30 +235,40 @@ impl CellConfig {
                 )));
             }
         }
-        let mut registers = Vec::new();
-        for (key, binding) in &file.registers {
-            let Some((policy, name)) = key.split_once('#') else {
+        let mut registers: Vec<Register> = Vec::new();
+        for (name, binding) in &file.registers {
+            if name.is_empty() || name.contains('#') {
                 return Err(setup(format!(
-                    "register '{key}' is not <policy>#<name of the register>"
-                )));
-            };
-            if !streams.iter().any(|s| s.chronicle == binding.chronicle) {
-                return Err(setup(format!(
-                    "register '{key}' is chronicle '{}', which no stream of cell '{}' records in",
-                    binding.chronicle, file.id
-                )));
-            }
-            if registers.iter().any(|r: &Register| r.policy == policy) {
-                return Err(setup(format!(
-                    "policy '{policy}' reads more than one register of cell '{}'; it reads one",
+                    "register '{name}' of cell '{}': a register is named without '#' (provenance names it <recording_actor>#<register>)",
                     file.id
                 )));
             }
-            registers.push(Register {
-                policy: policy.to_string(),
-                name: name.to_string(),
-                chronicle: binding.chronicle.clone(),
-            });
+            if !streams.iter().any(|s| s.chronicle == binding.chronicle) {
+                return Err(setup(format!(
+                    "register '{name}' is chronicle '{}', which no stream of cell '{}' records in",
+                    binding.chronicle, file.id
+                )));
+            }
+            if binding.read_by.is_empty() {
+                return Err(setup(format!(
+                    "register '{name}' of cell '{}' is read by no policy (`read_by`)",
+                    file.id
+                )));
+            }
+            for policy in &binding.read_by {
+                if let Some(other) = registers.iter().find(|r| r.policy == *policy) {
+                    return Err(setup(format!(
+                        "policy '{policy}' reads more than one register of cell '{}' ('{}' and '{name}'); it reads one",
+                        file.id, other.name
+                    )));
+                }
+                registers.push(Register {
+                    policy: policy.clone(),
+                    holder: file.recording_actor.clone(),
+                    name: name.clone(),
+                    chronicle: binding.chronicle.clone(),
+                });
+            }
         }
         for s in &streams {
             for e in &s.events {

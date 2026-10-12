@@ -1581,7 +1581,10 @@ fn the_demo_cell_describes_and_reads_its_lexostatuses_with_their_grams() {
         ["zorgtoeslag_toegekend"]
     );
     let voorschot_status = by_name("voorschot");
-    assert_eq!(voorschot_status["register"], "kroniek");
+    assert_eq!(
+        voorschot_status["register"],
+        "belastingdienst_toeslagen#dossier"
+    );
     assert_eq!(voorschot_status["chronicle"], "toeslagen");
     assert_eq!(voorschot_status["register_input"], "grams");
     assert_eq!(voorschot_status["article"], "1");
