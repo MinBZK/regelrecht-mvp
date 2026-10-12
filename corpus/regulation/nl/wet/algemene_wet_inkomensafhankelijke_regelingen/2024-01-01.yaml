@@ -32,7 +32,7 @@ name: '#wet_naam'
 # deze fasen, niet op elke beschikking. Dat de fasen hier staan en niet in de
 # tekst, is een keuze in de modellering: de wet regelt het voorschot (art. 16)
 # en de toekenning (art. 14 lid 1, art. 19) elk als eigen beschikking op de
-# aanvraag. Ontwerpnotitie: packages/cel/ONTWERP-proces-zorgtoeslag.md, par. 3.
+# aanvraag.
 # Elk van die besluiten wordt bekendgemaakt (Awb 3:40 en 3:41 gelden per
 # besluit), dus elk heeft een eigen fase BEKENDMAKING; daarop haakt Awb 6:8,
 # zodat de bezwaartermijn per besluit loopt. Ook dat is een eigen keuze in de
@@ -1674,7 +1674,7 @@ articles:
       b. de schuld waarvoor beslag is gelegd niet geheel is voldaan.
     url: https://wetten.overheid.nl/BWBR0018472/2024-01-01#Artikel22
     machine_readable:
-      # Een regel per maand (ontwerpnotitie par. 4, besloten 6 oktober 2026):
+      # Een regel per maand (besloten 6 oktober 2026):
       # het artikel zegt voor een maand of daarin een termijn van het voorschot
       # valt, uit de dagtekening van de beschikking die het voorschot verleent.
       # Een termijn die nog moet komen is geen feit; wie wil weten of er in een
@@ -1865,8 +1865,7 @@ articles:
       # - lid 2: de verleende voorschotten worden verrekend met de
       #   tegemoetkoming. Verrekend wordt wat is uitbetaald, niet wat is
       #   verleend: een termijn die nooit is betaald, valt niet te verrekenen
-      #   (eigen keuze, zoals de ontwerpnotitie
-      #   packages/cel/ONTWERP-proces-zorgtoeslag.md par. 5). Wat is uitbetaald
+      #   (eigen keuze). Wat is uitbetaald
       #   is een gegeven uit het dossier van de uitvoerder.
       # - lid 1: wat er na de verrekening nog uit te betalen is, binnen vier
       #   weken na de dagtekening van de beschikking.

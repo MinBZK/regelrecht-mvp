@@ -2,8 +2,7 @@
 //! VOORSCHOT en TOEKENNING, waarop de Awir en de Awb haken.
 //!
 //! De wetten hieronder zijn een verkleinde versie van het prototype uit de
-//! ontwerpnotitie (`packages/cel/ONTWERP-proces-zorgtoeslag.md`, "Uitwerking na
-//! de spike"). Ze zijn synthetisch: ze bewijzen wat de engine moet kunnen, niet
+//! spike van 7 oktober 2026. Ze zijn synthetisch: ze bewijzen wat de engine moet kunnen, niet
 //! wat de wet zegt.
 
 // Allowed crate-wide: test helpers outside a `#[test]` fn may unwrap, expect and

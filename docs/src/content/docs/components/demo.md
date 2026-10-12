@@ -55,7 +55,7 @@ For zorgtoeslag the demo also records every legal fact in a chronicle: the appli
 What you see of it:
 
 - **Portal**: "What the law asks" lists the fields of the application, each with its article. "Payments" shows what was received and what is still to come.
-- **Case system**: a case has a Chronicle tab, with the facts and, below them, the next moment the law gives. Next to "Cases" on the board are "Chronicle", with every gram the cell stores, and "Lexostatuses", with what the cell reads from its chronicle to decide.
+- **Case system**: a case has a Chronicle tab, with the facts and, below them, the next moment the law gives. Next to "Cases" on the board are "Chronicle", with every chronolexogram the cell stores, and "Lexostatuses", with what the cell reads from its chronicle to decide.
 - **Clock**: the reference date only moves forward. Use "To the next moment" or Demo → "Reference date" in the menu. To go back, reset the demo.
 - **Citizen**: the bank account, its balance and its transfers.
 

@@ -13,8 +13,8 @@ competent_authority:
 # Geen legal_basis: geen artikel machtigt dit fictieve beleid met zoveel
 # woorden. Het werkt art. 19, 24 en 28 Awir uit (zie hieronder).
 # FICTIEF. Geen bekendgemaakt beleid van de Dienst Toeslagen, maar eigen
-# keuzes in de modellering (ontwerpnotitie
-# packages/cel/ONTWERP-proces-zorgtoeslag.md, par. 5b). De Awir zegt dat de
+# keuzes in de modellering.
+# De Awir zegt dat de
 # toekenning volgt op de aanslag (art. 19), dat een nabetaling binnen vier
 # weken wordt uitbetaald (art. 24 lid 1) en dat een terugvordering binnen zes
 # weken wordt betaald (art. 28 lid 1). Hoe Toeslagen het inkomensgegeven
@@ -156,8 +156,7 @@ articles:
   # belastbare loon, AWR art. 21 onder e, 2°) zijn niet gemodelleerd: de
   # Belastingdienst-cel van de demo stelt alleen aanslagen vast. Wie over
   # een jaar geen aanslag krijgt, krijgt dus geen toekenning over dat jaar;
-  # de cel geeft daarvoor geen dag. Open punt in de ontwerpnotitie
-  # (packages/cel/ONTWERP-proces-zorgtoeslag.md, par. 11).
+  # de cel geeft daarvoor geen dag. Dit is een open punt.
   - number: '3'
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel19
     text: >-

@@ -7,7 +7,7 @@ The demo follows one zorgtoeslag case from the application to the final settleme
 
 ## Scope and status
 
-- **Proof of concept**, built in PR #1679 (the application), #1683 (application and decision in the demo) and #1689 (the whole process). The design note `packages/cel/ONTWERP-proces-zorgtoeslag.md` gives the source of each decision.
+- **Proof of concept**, built in PR #1679 (the application), #1683 (application and decision in the demo) and #1689 (the whole process).
 - **Not the law as Toeslagen executes it.** Only the articles the process needs are modeled: Awir 8, 14, 15, 16, 19, 22, 24, 26, 26a, 28 and AWR 11, 21, 21c, 21e. Zorgtoeslagwet 2 lid 5 (entitlement per month) is not modeled.
 - **Some ruleworks are fictitious**: the Toeslagen policies, the inspecteur's planning and the bank. Their names start with `fictief`, and every article text says `FICTIEF`.
 - **The decisions behind the design** are in RFC-045 to RFC-050.
@@ -22,7 +22,7 @@ Every step of the zorgtoeslag process comes from an article of law or of policy,
 
 ### The steps
 
-Edge labels say what triggers a step: **law**, **policy** (fictitious), or **demo**. Each step is recorded as one or more grams in the chronicle of the organization that takes it.
+Edge labels say what triggers a step: **law**, **policy** (fictitious), or **demo**. Each step is recorded as one or more chronolexograms in the chronicle of the organization that takes it.
 
 ```mermaid
 flowchart TB
@@ -47,7 +47,7 @@ flowchart TB
   K -->|"law Awir 24: left to pay<br/>policy: same day"| N
   K -->|"law Awir 24, 26a: to recover above the threshold<br/>policy: same day"| R
   R -->|"policy: 1st of the next month"| C
-  P(["policy: planning of the inspecteur"]) --> S
+  P(["Belastingdienst planning in Merijn's data"]) -->|"policy: the aanslag is set on the planned day"| S
 ```
 
 | # | Step | Law: what it says | Policy (fictitious): what it adds | When | Merijn |
@@ -113,10 +113,10 @@ Two kinds of policy articles appear in this table.
 Three zones work together.
 
 - **regelrecht** executes the law. The engine knows procedures and stages (RFC-008), fires hooks (RFC-007), and runs one stage of a procedure with `execute_stage_at`. It stores nothing.
-- **chronolex** is the cell. It derives the shape of each fact from the law, has the engine execute it, checks its guards, and stores the result as a gram in its chronicle. There are three cells: Toeslagen, the Belastingdienst and the bank.
+- **chronolex** is the cell. It derives the shape of each fact from the law, has the engine execute it, checks its guards, and stores the result as a chronolexogram in its chronicle. There are three cells: Toeslagen, the Belastingdienst and the bank.
 - **demo** is the browser app. It holds the clock and asks the cells what is due on each day. It carries messages between the cells along the configured channels. It knows no law, event or field by name.
 
-Everything runs in the browser as one WebAssembly module (`packages/cel` with the `wasm` feature). It exports the engine (`WasmEngine`) and the cell (`WasmCell`). Grams are kept in `localStorage`.
+Everything runs in the browser as one WebAssembly module (`packages/cel` with the `wasm` feature). It exports the engine (`WasmEngine`) and the cell (`WasmCell`). Chronolexograms are kept in `localStorage`.
 
 ```mermaid
 flowchart LR
@@ -144,23 +144,23 @@ flowchart LR
 
 ## What the law says, what the cell derives
 
-A law rulework contains no chronolex words: no event names, no gram types. The cell derives the recording from ordinary law keys.
+A law rulework contains no chronolex words: no event names, no chronolexogram types. The cell derives the recording from ordinary law keys.
 
 | Key in the rulework | Example | What the cell derives |
 |---|---|---|
-| `produces.submission: {kind: AANVRAAG}` | Awir 15 | An application gram. Its fields are the parameters the applicant fills in (origin `BELANGHEBBENDE` or `KANAAL`) |
+| `produces.submission: {kind: AANVRAAG}` | Awir 15 | An application chronolexogram. Its fields are the parameters the applicant fills in (origin `BELANGHEBBENDE` or `KANAAL`) |
 | A hook on the submission | Awb 4:2, 4:13, Awir 16, voorschot policy art. 3 | More fields on the same application |
 | `produces.moment` | Awb 4:13 lid 1 | The application counts from the moment of receipt |
-| `legal_character: BESCHIKKING` with `decides_on` | Zorgtoeslagwet 2 | One decision gram per decision stage (VOORSCHOT, TOEKENNING), linked to the application |
+| `legal_character: BESCHIKKING` with `decides_on` | Zorgtoeslagwet 2 | One decision chronolexogram per decision stage (VOORSCHOT, TOEKENNING), linked to the application |
 | `legal_character: BESCHIKKING` without `decides_on` | AWR 11 | A decision ex officio, linked to nothing |
 | One date in a stage's `requires` | `dagtekening_voorschot` | The cell fills in the day of the decision |
 | `origin` with `rol: TIJDVAK` | `berekeningsjaar` | The year the decision is about |
 
-How to check whether a key belongs in the law: can you explain it to a jurist without the words gram, chronicle, cell or chronolex? Then it is law. Otherwise it belongs in the cell configuration or in policy.
+How to check whether a key belongs in the law: can you explain it to a jurist without the words chronolexogram, chronicle, cell or chronolex? Then it is law. Otherwise it belongs in the cell configuration or in policy.
 
 Recording words appear in three places, all outside the law itself.
 
-- **The fictitious executing policies** have a `produces.extensions.chronolex` block on the articles that pay or answer. The law format has no word yet for "a payment arises here". The block names the type (`executogram`), the day (`executed_on`), when a gram arises (`record_when`), until when (`until`), what it refers to (`refers_to`), and how a repeated message is recognised (`identified_by`).
+- **The fictitious executing policies** have a `produces.extensions.chronolex` block on the articles that pay or answer. The law format has no word yet for "a payment arises here". The block names the type (`executogram`), the day (`executed_on`), when a chronolexogram arises (`record_when`), until when (`until`), what it refers to (`refers_to`), and how a repeated message is recognised (`identified_by`).
 - **The Belastingdienst stream** names the year of an aanslag (`period: {parameter: belastingjaar}`). Schema v0.8.0 cannot yet say that in the law for a decision nobody applied for.
 - **The chronicle policy** gives each article an `endpoint`. The cell uses it as the name of the lexostatus.
 
@@ -191,14 +191,14 @@ All paths are under `corpus/demo/`.
 | `regulation/nl/fictie*` (policy) | When, how much per installment, which account, how to collect |
 | `cells/toeslagen/cell.yaml` | The recording actor (Awir 14 lid 1), and which register is the chronicle |
 | `cells/<cell>/streams/` | Per event: its name, the article it is recorded on, and which policy gives its day (`decided_on`) or its inputs (`reads`) |
-| `demo-config.yaml` | What Merijn fills in, which gram goes to which cell (`channels`), for whom the Belastingdienst decides (`ex_officio`), and what the portal and the Citizen screen show |
+| `demo-config.yaml` | What Merijn fills in, which chronolexogram goes to which cell (`channels`), for whom the Belastingdienst decides (`ex_officio`), and what the portal and the Citizen screen show |
 | `profiles.yaml`, `bindings.yaml` | Merijn's bank account and opening balance, and per year the day and amount of his aanslag |
 
 The main corpus has its own Awir and Zorgtoeslagwet. `packages/cel/tests/zorgtoeslag.rs` tests on those. `packages/cel/tests/demo_corpus.rs` runs the whole process on the demo corpus.
 
 ## Lexostatuses
 
-A lexostatus is what a cell reads from its own chronicle to take a decision. It is not stored. The cell computes it again each time, from the grams that hold at that moment.
+A lexostatus is what a cell reads from its own chronicle to take a decision. It is not stored. The cell computes it again each time, from the chronolexograms that hold at that moment.
 
 The law decides what a cell must deliver: the parameters that the deciding articles ask for, by name and type. The cell decides how. In order of preference ([RFC-047](/rfcs/rfc-047)):
 
@@ -221,9 +221,9 @@ The law decides what a cell must deliver: the parameters that the deciding artic
 
 The articles are per berekeningsjaar. The toekenning over 2025 only sets off what was paid on 2025.
 
-Each value carries its source. The decision stores that with its gram under `inputs`, so the chronicle shows where every input came from.
+Each value carries its source. The decision stores that with its chronolexogram under `inputs`, so the chronicle shows where every input came from.
 
-**In code:** `Cell::lexostatuses` lists them, and `Cell::read_lexostatus` reads one. In the browser the calls are `cell.lexostatuses(...)` and `cell.readLexostatus(...)`. A reading also returns the grams it is based on. For `aanvraag` that is the application. For a policy article it is every gram of the case, because the engine does not report which rows an article used.
+**In code:** `Cell::lexostatuses` lists them, and `Cell::read_lexostatus` reads one. In the browser the calls are `cell.lexostatuses(...)` and `cell.readLexostatus(...)`. `read_lexostatus` returns the values and the chronolexograms they come from. For `aanvraag` that is the application chronolexogram. For a policy article it is every chronolexogram of the case: the engine does not report which chronolexograms the article actually used.
 
 **In the demo:** Case system → "Lexostatuses".
 
@@ -254,7 +254,7 @@ sequenceDiagram
   T-->>B: order, via channel
 ```
 
-| When | Gram | Year | Key facts |
+| When | Chronolexogram | Year | Key facts |
 |---|---|---|---|
 | 6 Jan 2025 | `aanvraag_ontvangen` | 2025 | expected income € 22.000, account, BSN |
 | 6 Jan 2025 | `voorschot_verleend` | 2025 | € 1.695 |
@@ -270,9 +270,9 @@ sequenceDiagram
 
 What happens at each step:
 
-- **Application.** The portal shows the fields the law asks for, each with the article that asks it. The cell gets them by running Awir 15 with its hooks on an empty application. The gram's `legal_basis` is Awir 15. The legal basis of each field is under `field_basis`.
+- **Application.** The portal shows the fields the law asks for, each with the article that asks it. The cell gets them by running Awir 15 with its hooks on an empty application. The chronolexogram's `legal_basis` is Awir 15. The legal basis of each field is under `field_basis`.
 - **Voorschot.** Awir 16 replaces the toetsingsinkomen with the expected income. Awir 14 rounds the result: € 1.694,88 becomes € 1.695. The cell applies the law versions in force on 1 January of the year the decision is about.
-- **Installments.** Awir 22 says which months have an installment. Policy art. 1 says how much it is. A gram is only recorded when the policy says an order is given, so December 2025 has no installment for 2025. The bank credits or refuses each order. What the bank refuses is added to the next order. Only credited amounts count as paid.
+- **Installments.** Awir 22 says which months have an installment. Policy art. 1 says how much it is. A chronolexogram is only recorded when the policy says an order is given, so December 2025 has no installment for 2025. The bank credits or refuses each order. What the bank refuses is added to the next order. Only credited amounts count as paid.
 - **Aanslag.** The Belastingdienst decides ex officio, only for people with an open case. `Cell::due_ex_officio` gives the next year without an aanslag and its day. For Merijn that includes 2024, which no case reads.
 - **Toekenning.** It is taken on the day of the aanslag. Awir 24 sets off what was paid. Awir 19 gives the latest date. Awir 26a leaves small amounts unrecovered. After the toekenning, no installment of that year can arise anymore (`until: TOEKENNING`).
 - **Terugvordering and incasso.** The terugvordering is its own decision, in the procedure `terugvordering` (Awir 26, 28). The incasso is on the 1st of the next month. The bank refuses it if the balance is too low, and then it is tried again the next month.
@@ -280,7 +280,7 @@ What happens at each step:
 
 ## Time
 
-- **One clock that only moves forward.** Everything is recorded on the reference date. A chronicle refuses a gram dated before its last one. To go back, reset the demo.
+- **One clock that only moves forward.** Everything is recorded on the reference date. A chronicle refuses a chronolexogram dated before its last one. To go back, reset the demo.
 - **When the clock skips days**, every skipped day is processed as of that day.
 - **A future event is not a fact.** Below the facts, a case shows "What the law gives as the next moment": the cell runs the law without recording anything (`previewExecution`, `previewDecision`). "To the next moment" moves the clock to the earliest of those dates.
 - **Messages.** A message that does not arrive goes to the outbox and is offered again at every clock step. Each cell records one answer per message, so a message offered twice is not recorded twice.
@@ -296,12 +296,12 @@ What happens at each step:
 | Required reference | An installment without a voorschot, or a bank answer without an order |
 | One answer per message (`answered`) | Recording a message twice when it is offered again |
 | `not_addressed` | An answer recorded by an article it is not meant for |
-| Recording order | A gram dated before the chronicle's last one |
+| Recording order | A chronolexogram dated before the chronicle's last one |
 | Outbox (demo) | Losing a message that did not arrive |
 
 ## Own choices and open questions
 
-The design note lists every choice with its source. The main ones:
+The main choices:
 
 - **The procedure `tegemoetkoming`** and its stages are a modeling choice. The Awir has two decisions on one application (voorschot and toekenning), but gives no list of stages.
 - **Zorgtoeslagwet 2 decides.** The Awir works as the "Awb of the toeslagen": articles 16, 19, 24 and 26a hook onto that decision.
@@ -336,4 +336,3 @@ just demo-check    # laws, scenarios, frontend tests, WASM and build
 - [Demo](/components/demo): the screens
 - [RFC-022](/rfcs/rfc-022): the cell model; RFC-045 to RFC-050: the decisions behind this page
 - [RFC-008](/rfcs/rfc-008) and [Hooks and Reactive Execution](/concepts/hooks-and-reactive-execution): procedures, stages and hooks
-- `packages/cel/ONTWERP-proces-zorgtoeslag.md`: the design note (Dutch), every decision and its source
