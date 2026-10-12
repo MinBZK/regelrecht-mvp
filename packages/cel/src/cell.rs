@@ -67,6 +67,11 @@ pub struct LexostatusField {
     /// requested, when more than one is taken on the application.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub options: Vec<serde_json::Value>,
+    /// The decisions that ask it of the application: it is a field only of
+    /// an application that requests one of them. Empty for a field every
+    /// application asks.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub for_decisions: Vec<String>,
     /// Whether an event of the cell reads it from this lexostatus for the
     /// decision it takes or the article it executes: the part of the law's
     /// interface this lexostatus implements.
@@ -85,6 +90,7 @@ impl LexostatusField {
             moment: false,
             fixed: f.fixed.clone(),
             options: f.options.clone(),
+            for_decisions: f.for_decisions.clone(),
             read: false,
         }
     }
@@ -459,6 +465,19 @@ impl Cell {
                 f.options, f.name, f.declared_by
             )));
         }
+        // What only a decision asks (the rent, for the huurtoeslag) is a
+        // field of an application that requests that decision, and of no
+        // other.
+        let requested = shape.requested(submitted);
+        for name in submitted.keys() {
+            if let Some(f) = shape.field(name).filter(|f| !f.asked_on(requested)) {
+                return Err(refused(format!(
+                    "the law does not ask '{name}' in '{event}' requesting {}: only {} asks it",
+                    requested.map_or("no decision".to_string(), ToString::to_string),
+                    f.for_decisions.join(", ")
+                )));
+            }
+        }
         // The moment of recording is the moment that counts; the provisions
         // it rests on are the law's `effective_at` entries (none if the law
         // names none).
@@ -739,6 +758,7 @@ impl Cell {
                         moment: false,
                         fixed: None,
                         options: Vec::new(),
+                        for_decisions: Vec::new(),
                         read: wanted.contains(&o.name),
                     })
                     .collect();

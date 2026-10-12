@@ -5,8 +5,10 @@
 //! model of the application ([`regelrecht_engine::Submission`]): the articles
 //! that take part and what each asks. Every part contributes what it asks of
 //! the belanghebbende; Awb 4:2 on every application for a beschikking, the
-//! establishing article with what is its own. For a decision the fields are
-//! its outputs. What each article establishes or extends is read from what
+//! establishing article with what is its own. The decision requested adds
+//! what its article asks of the belanghebbende, as a field only of an
+//! application that requests it (Awir 15 lid 2). For a decision the fields
+//! are its outputs. What each article establishes or extends is read from what
 //! the law says in its own words ([`extension::derive`]), or from an explicit
 //! `extensions.chronolex` block if the article has one.
 
@@ -49,6 +51,23 @@ pub struct FieldDef {
     /// (then `fixed` holds it).
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub options: Vec<serde_json::Value>,
+    /// The decisions that ask it of the application, `<regulation>#<article>`:
+    /// a field is asked only on an application that requests one of them.
+    /// Empty for a field every application asks (the establishing article
+    /// and the hooks on it). See [`FieldDef::asked_on`].
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub for_decisions: Vec<String>,
+}
+
+impl FieldDef {
+    /// Whether an application that requests `requested` asks this field:
+    /// one every application asks, or one the decision requested asks.
+    pub fn asked_on(&self, requested: Option<&serde_json::Value>) -> bool {
+        self.for_decisions.is_empty()
+            || requested
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|r| self.for_decisions.iter().any(|d| d == r))
+    }
 }
 
 /// The shape of the grams of one event.
@@ -97,6 +116,20 @@ pub struct Shape {
 impl Shape {
     pub fn field(&self, name: &str) -> Option<&FieldDef> {
         self.fields.iter().find(|f| f.name == name)
+    }
+
+    /// The decision an application of this shape requests, with `submitted`
+    /// as the applicant filled it in: the value the cell fixes, or the
+    /// applicant's choice among the options. `None` if the application names
+    /// no decision requested, or the applicant has not chosen.
+    pub fn requested<'v>(
+        &'v self,
+        submitted: &'v serde_json::Map<String, serde_json::Value>,
+    ) -> Option<&'v serde_json::Value> {
+        self.fields
+            .iter()
+            .find(|f| f.fixed.is_some() || !f.options.is_empty())
+            .and_then(|f| f.fixed.as_ref().or_else(|| submitted.get(&f.name)))
     }
 
     /// Whether a gram of the event arises on receipt of what another party
@@ -550,6 +583,7 @@ fn submission_moment(shape: &Shape, parameters: &[Parameter]) -> Result<Option<F
                     declared_by: shape.establishes.clone(),
                     fixed: None,
                     options: Vec::new(),
+                    for_decisions: Vec::new(),
                 });
             }
         }
@@ -938,6 +972,29 @@ fn submission_fields(
         }
     }
 
+    // What the decision requested needs, the applicant gives with the
+    // application (Awir 15 lid 2: "de voor de beslissing op de aanvraag
+    // benodigde informatie"): the parameters of the deciding article that
+    // the applicant or the channel supplies. No article lists them one by
+    // one, so such a field rests only on what its own origin names. It is a
+    // field of an application that requests that decision, not of one that
+    // requests another (the rent on an application for huurtoeslag, not on
+    // one for zorgtoeslag). Its period is the one the application asks for
+    // (see `submission_period`), not a field of its own.
+    for reference in &references {
+        let (_, article) = article_on(service, reference, day)?;
+        let mut parameters = Vec::new();
+        for p in declared_parameters(article) {
+            if origin(&p, reference)?.and_then(|o| o.rol) != Some(OriginRole::Tijdvak) {
+                parameters.push(p);
+            }
+        }
+        for mut field in supplied_fields(reference, &parameters)? {
+            field.for_decisions = vec![reference.clone()];
+            merge_field(&mut shape.fields, field);
+        }
+    }
+
     // The decision requested: the one decision taken on the application,
     // or the choice of the applicant among several.
     for input in &model.inputs {
@@ -966,10 +1023,18 @@ fn submission_fields(
 }
 
 /// A field asked by two articles is one field (one question), with both
-/// legal bases.
+/// legal bases. Asked on every application by one of them, it is asked on
+/// every application; else on an application for any decision that asks it.
 fn merge_field(fields: &mut Vec<FieldDef>, field: FieldDef) {
     match fields.iter_mut().find(|f| f.name == field.name) {
-        Some(existing) => push_new(&mut existing.legal_basis, &field.legal_basis),
+        Some(existing) => {
+            push_new(&mut existing.legal_basis, &field.legal_basis);
+            if field.for_decisions.is_empty() {
+                existing.for_decisions.clear();
+            } else if !existing.for_decisions.is_empty() {
+                push_new(&mut existing.for_decisions, &field.for_decisions);
+            }
+        }
         None => fields.push(field),
     }
 }
@@ -988,29 +1053,11 @@ fn part_fields(
         declared_by: reference.to_string(),
         fixed: None,
         options: Vec::new(),
+        for_decisions: Vec::new(),
     };
     Ok(match &entry.fields {
         None => Vec::new(),
-        // Only what the applicant or the channel supplies is content of the
-        // application.
-        Some(Fields::Parameters) => {
-            let mut out = Vec::new();
-            for p in parameters {
-                let Some(o) = origin(p, reference)? else {
-                    continue;
-                };
-                if matches!(o.waarde, OriginValue::Belanghebbende | OriginValue::Kanaal) {
-                    // No grondslag where the law does not say who supplies
-                    // it: the field rests on nothing it names.
-                    out.push(def(
-                        &p.name,
-                        Some(p.param_type),
-                        o.grondslag.iter().cloned().collect(),
-                    ));
-                }
-            }
-            out
-        }
+        Some(Fields::Parameters) => supplied_fields(reference, parameters)?,
         Some(Fields::Outputs) => outputs
             .iter()
             .map(|o| def(&o.name, Some(o.output_type), vec![reference.to_string()]))
@@ -1042,6 +1089,31 @@ fn part_fields(
             })
             .collect::<Result<_>>()?,
     })
+}
+
+/// The parameters of the article `reference` that the applicant or the
+/// channel supplies: only that is content of the application. A field rests
+/// on the grondslag its origin names, and on nothing where the law does not
+/// say who supplies it.
+fn supplied_fields(reference: &str, parameters: &[Parameter]) -> Result<Vec<FieldDef>> {
+    let mut out = Vec::new();
+    for p in parameters {
+        let Some(o) = origin(p, reference)? else {
+            continue;
+        };
+        if matches!(o.waarde, OriginValue::Belanghebbende | OriginValue::Kanaal) {
+            out.push(FieldDef {
+                name: p.name.clone(),
+                type_: Some(p.param_type),
+                legal_basis: o.grondslag.iter().cloned().collect(),
+                declared_by: reference.to_string(),
+                fixed: None,
+                options: Vec::new(),
+                for_decisions: Vec::new(),
+            });
+        }
+    }
+    Ok(out)
 }
 
 /// The origin of a parameter. One the law-model kept as invalid is an error

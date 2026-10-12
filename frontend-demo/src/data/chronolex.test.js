@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applicationValues, cellsOfService, eventsForLaw, gramsOfCase, momentOn, othersRequestable, provisionLabel, provisionTarget, externalArticleUrl, fieldText, requestedDecision } from './chronolex.js';
+import { applicationValues, cellsOfService, fieldsFor, eventsForLaw, gramsOfCase, momentOn, othersRequestable, provisionLabel, provisionTarget, externalArticleUrl, fieldText, requestedDecision } from './chronolex.js';
 
 const cell = {
   id: 'toeslagen',
@@ -108,6 +108,16 @@ describe('de gevraagde beschikking bij meer besluiten op één aanvraag', () => 
     expect([...othersRequestable(shape, zorgtoeslag)]).toEqual(['huurtoeslagwet#21']);
     expect([...othersRequestable(shape, huurtoeslag)]).toEqual(['zorgtoeslagwet#2']);
     expect(othersRequestable({ fields: [{ name: 'gevraagde_beschikking', fixed: 'zorgtoeslagwet#2' }] }, zorgtoeslag).size).toBe(0);
+  });
+
+  it('vraagt wat alleen een besluit vraagt alleen op een aanvraag om dat besluit', () => {
+    // Awir 15 lid 2: de huur vraagt alleen de huurtoeslag.
+    const withRent = { fields: [...shape.fields, { name: 'huurprijs', for_decisions: ['huurtoeslagwet#21'] }] };
+    expect(fieldsFor(withRent, huurtoeslag).map((f) => f.name)).toEqual(['bsn', 'gevraagde_beschikking', 'huurprijs']);
+    expect(fieldsFor(withRent, zorgtoeslag).map((f) => f.name)).toEqual(['bsn', 'gevraagde_beschikking']);
+    const configured = { huurprijs: 650 };
+    expect(applicationValues(withRent, configured, {}, huurtoeslag).huurprijs).toBe(650);
+    expect(applicationValues(withRent, configured, {}, zorgtoeslag)).not.toHaveProperty('huurprijs');
   });
 
   it('noemt een gekozen beschikking bij naam van de bepaling', () => {

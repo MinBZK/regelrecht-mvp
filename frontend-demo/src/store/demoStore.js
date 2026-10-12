@@ -25,7 +25,7 @@ import { verdictOf } from '../data/format.js';
 import { driftOf } from '../data/caseDrift.js';
 import { isEntrypointFor, subjectOf } from '../data/entrypoints.js';
 import { assignClaimOwnership } from '../data/claimOwnership.js';
-import { applicationValues, eventsForLaw, gramsOfCase as gramsFor, momentOn, othersRequestable } from '../data/chronolex.js';
+import { applicationValues, eventsForLaw, fieldsFor, gramsOfCase as gramsFor, momentOn, othersRequestable } from '../data/chronolex.js';
 import { materialiseRecord, tablesFromProfiles } from '../data/materialize.js';
 import { addMonths, comingDates, dayOf, decisionDue, fixedDates, nextExecution, nextMoment, periodEnd } from '../data/moments.js';
 import { advanceTo as advanceClock, executeDue as executeDueOn } from '../data/clock.js';
@@ -328,12 +328,16 @@ function chronolexFor(lawEntry) {
   return { ...found, wasmCell: cells.value[found.cell.id] };
 }
 
-/** Wat de aanvraag om deze wet bevat volgens de wet, of null. */
+/**
+ * Wat de aanvraag om deze wet bevat volgens de wet, of null: alleen de velden
+ * die een aanvraag om haar besluiten vraagt (`fieldsFor`).
+ */
 function applicationShape(lawEntry) {
   const c = chronolexFor(lawEntry);
   if (!c) return null;
   try {
-    return c.wasmCell.shape(engine.value, c.application.name, state.referenceDate);
+    const shape = c.wasmCell.shape(engine.value, c.application.name, state.referenceDate);
+    return { ...shape, fields: fieldsFor(shape, c.decisions) };
   } catch (e) {
     console.warn('Vorm van de aanvraag niet af te leiden:', e);
     return null;

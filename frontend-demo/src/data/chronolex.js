@@ -65,12 +65,23 @@ export function cellsOfService(corpus, service) {
 export function applicationValues(shape, configured, tokens = {}, decisions = []) {
   const resolve = (v) => (typeof v === 'string' && v.startsWith('$') ? tokens[v.slice(1)] : v);
   const values = {};
-  for (const field of shape?.fields ?? []) {
+  for (const field of fieldsFor(shape, decisions)) {
     if (field.fixed != null) continue;
     const value = field.options?.length ? requestedDecision(field, decisions) : resolve(configured?.[field.name]);
     if (value !== undefined && value !== null && value !== '') values[field.name] = value;
   }
   return values;
+}
+
+/**
+ * De velden van de aanvraag `shape` om de wet met de besluiten `decisions`:
+ * wat elke aanvraag vraagt, en wat een van die besluiten vraagt
+ * (`for_decisions`, Awir 15 lid 2). De huur staat op een aanvraag om
+ * huurtoeslag, niet op een aanvraag om zorgtoeslag.
+ */
+export function fieldsFor(shape, decisions) {
+  const own = new Set(decisions.map((d) => d.establishes));
+  return (shape?.fields ?? []).filter((f) => !f.for_decisions?.length || f.for_decisions.some((d) => own.has(d)));
 }
 
 /**

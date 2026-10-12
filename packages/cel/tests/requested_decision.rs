@@ -4,7 +4,9 @@
 //! `testaanvraag#1` establishes the application, `toeslag_a#1` and
 //! `toeslag_b#1` each decide on it in the procedure that starts with it, and
 //! `terugvordering#1` decides on it in a procedure without an application
-//! (it follows a decision, as Awir 26 follows the toekenning).
+//! (it follows a decision, as Awir 26 follows the toekenning). `toeslag_b#1`
+//! asks the belanghebbende for `huurprijs` (as the huurtoeslag asks the rent),
+//! and for the `bsn` the application asks anyway.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -55,8 +57,18 @@ articles:
         actions: [{output: ontvangen, value: true}]
 ";
 
+/// What `toeslag_b#1` asks besides what the other decisions ask.
+const B_PARAMETERS: &str = "
+          - {name: bsn, type: string, required: true, origin: {waarde: BELANGHEBBENDE}}
+          - {name: huurprijs, type: amount, required: true, origin: {waarde: BELANGHEBBENDE}}";
+
 /// A decision `id#1` on the application, in the procedure `procedure`.
 fn decision(id: &str, procedure: &str) -> String {
+    let parameters = if id == "toeslag_b" {
+        B_PARAMETERS
+    } else {
+        "\n          - {name: bsn, type: string, required: true}"
+    };
     format!(
         r"
 $id: {id}
@@ -73,8 +85,7 @@ articles:
           decision_type: TOEKENNING
           procedure_id: {procedure}
           decides_on: [testaanvraag#1]
-        parameters:
-          - {{name: bsn, type: string, required: true}}
+        parameters:{parameters}
         output: [{{name: bedrag, type: number}}]
         actions: [{{output: bedrag, value: 1}}]
 "
@@ -239,4 +250,108 @@ fn only_the_decision_asked_is_taken_on_the_application() {
         .unwrap_or_else(|e| panic!("{e}"));
     cell.decision_inputs(&service, "terugvordering_besloten", &gram.id, now)
         .unwrap_or_else(|e| panic!("{e}"));
+}
+
+/// The shape of the application in a cell with `decisions`.
+fn application_shape(cell: &Cell, service: &LawExecutionService) -> regelrecht_cel::shape::Shape {
+    cell.shape(service, "aanvraag_ontvangen", "2025-05-01".parse().unwrap())
+        .unwrap_or_else(|e| panic!("{e}"))
+        .0
+}
+
+/// What the decision requested asks of the belanghebbende is a field of an
+/// application that requests it, and of no other (Awir 15 lid 2). No article
+/// lists it, so it rests on no provision of its own.
+#[test]
+fn a_field_the_requested_decision_asks_is_a_field_of_an_application_for_it() {
+    let service = service(&["toeslag_a", "toeslag_b"]);
+    let cell = cell(&service, &["toeslag_a", "toeslag_b"]);
+    let shape = application_shape(&cell, &service);
+    let huurprijs = shape.field("huurprijs").expect("toeslag_b asks the rent");
+    assert_eq!(huurprijs.for_decisions, vec![B.to_string()]);
+    assert_eq!(huurprijs.declared_by, B);
+    assert!(huurprijs.legal_basis.is_empty());
+    assert!(huurprijs.asked_on(Some(&json!(B))));
+    assert!(!huurprijs.asked_on(Some(&json!(A))));
+    // Asked by the application and by the decision: one field, on every
+    // application.
+    let bsn: Vec<_> = shape.fields.iter().filter(|f| f.name == "bsn").collect();
+    assert_eq!(bsn.len(), 1);
+    assert!(bsn[0].for_decisions.is_empty());
+    // The lexostatus of the application says it too.
+    let statuses = cell
+        .lexostatuses(&service, "2025-05-01".parse().unwrap())
+        .unwrap_or_else(|e| panic!("{e}"));
+    let field = statuses
+        .into_iter()
+        .find_map(|l| match l {
+            LexostatusDescription::Submission { fields, .. } => {
+                fields.into_iter().find(|f| f.name == "huurprijs")
+            }
+            LexostatusDescription::Policy { .. } => None,
+        })
+        .expect("the application holds the rent");
+    assert_eq!(field.for_decisions, vec![B.to_string()]);
+    assert!(field.read, "toeslag_b reads it");
+}
+
+#[test]
+fn a_field_of_another_decision_is_refused() {
+    let service = service(&["toeslag_a", "toeslag_b"]);
+    let mut cell = cell(&service, &["toeslag_a", "toeslag_b"]);
+    let mut submitted = application(Some(A));
+    submitted.insert("huurprijs".into(), json!(650));
+    let e = cell
+        .record_submission(
+            &service,
+            "aanvraag_ontvangen",
+            &submitted,
+            at("2025-05-01T10:00:00+02:00"),
+        )
+        .unwrap_err();
+    assert!(matches!(e, Error::Refused(_)), "{e}");
+    assert!(e.to_string().contains("huurprijs"), "{e}");
+    assert!(e.to_string().contains(B), "{e}");
+}
+
+/// The decision requested reads what it asks from the application.
+#[test]
+fn the_requested_decision_reads_its_field_from_the_application() {
+    let service = service(&["toeslag_a", "toeslag_b"]);
+    let mut cell = cell(&service, &["toeslag_a", "toeslag_b"]);
+    let now = at("2025-05-01T10:00:00+02:00");
+    let mut submitted = application(Some(B));
+    submitted.insert("huurprijs".into(), json!(650));
+    let gram = cell
+        .record_submission(&service, "aanvraag_ontvangen", &submitted, now)
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(gram.fields["huurprijs"], json!(650));
+    assert!(!gram.field_basis.contains_key("huurprijs"));
+
+    let inputs = cell
+        .decision_inputs(&service, "toeslag_b_besloten", &gram.id, now)
+        .unwrap_or_else(|e| panic!("{e}"));
+    let huurprijs = &inputs["huurprijs"];
+    assert_eq!(huurprijs.value, json!(650));
+    assert_eq!(huurprijs.provenance["source"], "lexostatus");
+    assert_eq!(huurprijs.provenance["article"], B);
+}
+
+/// One decision on the application: its fields are always fields of it.
+#[test]
+fn with_one_decision_its_fields_are_always_asked() {
+    let service = service(&["toeslag_b"]);
+    let mut cell = cell(&service, &["toeslag_b"]);
+    let mut submitted = application(None);
+    submitted.insert("huurprijs".into(), json!(650));
+    let gram = cell
+        .record_submission(
+            &service,
+            "aanvraag_ontvangen",
+            &submitted,
+            at("2025-05-01T10:00:00+02:00"),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(gram.fields["gevraagde_beschikking"], json!(B));
+    assert_eq!(gram.fields["huurprijs"], json!(650));
 }
