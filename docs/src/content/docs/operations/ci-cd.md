@@ -165,7 +165,7 @@ The gate runs the copy of its own script from the base branch, not the one in th
 
 What none of this reaches is the `review-gate` job itself, which lives in the workflow file the PR brings along. A PR that keeps the job name **Claude review completed** and replaces its steps with `run: true` reports green without running the script, and nothing inside the script can prevent that. Closing that hole takes a rule outside the pull request: a ruleset or CODEOWNERS entry over `.github/workflows/**`, or a gate triggered by `workflow_run` that judges the review run from the outside. Until then the gate protects against mistakes, not against someone determined to route around it.
 
-Every red outcome states what was established and names no cause it has not tested. An earlier version told every clean PR that the review action had skipped itself over a workflow change, on PRs that changed no workflow at all ([issue #1178](https://github.com/MinBZK/regelrecht/issues/1178)).
+Every red outcome states what was established and names no cause it has not tested. An earlier version told every clean PR that the review action had skipped itself over a workflow change, on PRs that changed no workflow at all ([issue #1178](https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1178)).
 
 #### Critical findings block
 
@@ -216,7 +216,7 @@ The logic lives in `script/require-security-approval.sh`, with `script/require-s
 ### Putting a pull request in the queue
 
 ```bash
-gh pr merge <nr> -R MinBZK/regelrecht --squash
+gh pr merge <nr> -R NederlandseDigitaleDienst/regelrecht --squash
 ```
 
 gh replies "The merge strategy for main is set by the merge queue". That is a notice, not an error. gh refuses `--delete-branch` while the queue is on, and it is not needed: the repository deletes the head branch itself after the merge.
@@ -241,7 +241,7 @@ gh api graphql -f query='{repository(owner:"MinBZK",name:"regelrecht"){
 A failure in the queue does not show on the pull request. Its checks stay green; the red run belongs to the queue branch. This finds it:
 
 ```bash
-gh run list -R MinBZK/regelrecht --event merge_group --limit 20 \
+gh run list -R NederlandseDigitaleDienst/regelrecht --event merge_group --limit 20 \
   --json databaseId,headBranch,workflowName,conclusion \
   --jq '.[] | select(.headBranch | test("pr-<nr>-"))'
 ```

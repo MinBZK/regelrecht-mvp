@@ -168,5 +168,5 @@ EUPL-1.2 - See [LICENSE](../../LICENSE) for details.
 
 ## Links
 
-- [GitHub Repository](https://github.com/MinBZK/regelrecht)
+- [GitHub Repository](https://github.com/NederlandseDigitaleDienst/regelrecht)
 - [npm Package](https://www.npmjs.com/package/regelrecht-engine)

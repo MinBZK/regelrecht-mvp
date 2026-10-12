@@ -13,8 +13,8 @@ edition = "2021"
 authors = ["MinBZK <noreply@minbzk.nl>"]
 description = "Generates the code-derived architecture model (model.json) for the regelrecht workspace"
 license = "EUPL-1.2"
-repository = "https://github.com/MinBZK/regelrecht"
-homepage = "https://github.com/MinBZK/regelrecht"
+repository = "https://github.com/NederlandseDigitaleDienst/regelrecht"
+homepage = "https://github.com/NederlandseDigitaleDienst/regelrecht"
 publish = false
 
 [[bin]]

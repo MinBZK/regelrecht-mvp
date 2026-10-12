@@ -16,7 +16,7 @@ This is the shortest path from nothing to a working build. Running the editor an
 ## Clone and build
 
 ```bash
-git clone https://github.com/MinBZK/regelrecht.git
+git clone https://github.com/NederlandseDigitaleDienst/regelrecht.git
 cd regelrecht
 just dev-setup    # once per machine: mold, and one target dir shared by all worktrees
 just build-check  # cargo check over the whole workspace

@@ -25,7 +25,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(here, '..');
 const timelinePath = resolve(appRoot, '..', 'corpus', 'demo', 'walkthrough', 'timeline.json');
 const dest = resolve(appRoot, 'public', 'walkthrough');
-const REPO = 'MinBZK/regelrecht';
+const REPO = 'NederlandseDigitaleDienst/regelrecht';
 
 /** Every media file the timeline names, with its checksum. */
 export function mediaFiles(timeline, { audioOnly = false } = {}) {

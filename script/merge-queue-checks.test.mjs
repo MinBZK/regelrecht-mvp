@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 const WORKFLOW_DIR = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
 
 // De verplichte checks op main, zoals de branch protection ze kent:
-//   gh api repos/MinBZK/regelrecht/branches/main/protection \
+//   gh api repos/NederlandseDigitaleDienst/regelrecht/branches/main/protection \
 //     --jq '.required_status_checks.contexts[]'
 //
 // Deze lijst is met de hand bijgehouden en de twee richtingen zijn níét

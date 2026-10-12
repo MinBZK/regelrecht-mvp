@@ -32,10 +32,10 @@ If a PR number is given, check if the deploy workflow ran for the latest commit:
 
 ```bash
 # Get latest commit on PR
-gh pr view {N} --repo MinBZK/regelrecht --json headRefOid,headRefName -q '{sha: .headRefOid, branch: .headRefName}'
+gh pr view {N} --repo NederlandseDigitaleDienst/regelrecht --json headRefOid,headRefName -q '{sha: .headRefOid, branch: .headRefName}'
 
 # Check if deploy workflow triggered for that commit
-gh run list --repo MinBZK/regelrecht --branch {branch} --workflow deploy.yml --json headSha,status,conclusion --limit 3
+gh run list --repo NederlandseDigitaleDienst/regelrecht --branch {branch} --workflow deploy.yml --json headSha,status,conclusion --limit 3
 ```
 
 Report:
@@ -107,16 +107,16 @@ When creating a manual deployment (after user approval), use `pr-{N}` tags (NEVE
 curl -s -X POST -H "X-API-Key: $RIG_API_KEY" -H "Content-Type: application/json" \
   "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/:upsert-deployment" \
   -d '{"deploymentName": "{name}", "cloneFrom": "regelrecht", "components": [
-    {"reference": "editor", "image": "ghcr.io/minbzk/regelrecht-editor:pr-{N}"}
+    {"reference": "editor", "image": "ghcr.io/nederlandsedigitaledienst/regelrecht-editor:pr-{N}"}
   ]}'
 
 # PR with backend changes (all three images exist):
 curl -s -X POST -H "X-API-Key: $RIG_API_KEY" -H "Content-Type: application/json" \
   "https://operations-manager.rig.prd1.gn2.quattro.rijksapps.nl/api/projects/regel-k4c/:upsert-deployment" \
   -d '{"deploymentName": "{name}", "cloneFrom": "regelrecht", "components": [
-    {"reference": "editor", "image": "ghcr.io/minbzk/regelrecht-editor:pr-{N}"},
-    {"reference": "harvester-admin", "image": "ghcr.io/minbzk/regelrecht-admin:pr-{N}"},
-    {"reference": "harvester-worker", "image": "ghcr.io/minbzk/regelrecht-harvester-worker:pr-{N}"}
+    {"reference": "editor", "image": "ghcr.io/nederlandsedigitaledienst/regelrecht-editor:pr-{N}"},
+    {"reference": "harvester-admin", "image": "ghcr.io/nederlandsedigitaledienst/regelrecht-admin:pr-{N}"},
+    {"reference": "harvester-worker", "image": "ghcr.io/nederlandsedigitaledienst/regelrecht-harvester-worker:pr-{N}"}
   ]}'
 ```
 
