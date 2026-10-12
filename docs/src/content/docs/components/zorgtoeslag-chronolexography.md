@@ -17,6 +17,64 @@ Keep its limits in mind.
 - **Some ruleworks are fictitious.** No published policy of the Dienst Toeslagen says how high an installment is, when a nabetaling is paid, how a terugvordering is collected or how Toeslagen reads its own chronicle; no published planning says on which day the inspecteur sets an aanslag; and the bank is made up. The verzamelinkomen in an aanslag is a given of the demo, not a computation under the Wet IB 2001. These ruleworks say so in their name and in every article text (`FICTIEF`), and the policy that reads the chronicle is marked as an assumption (*aanname*) made on behalf of the Dienst Toeslagen.
 - **The cell is the compact core of the chronolex work on the branch poc/chronolex.** It has no forms, no HTTP and no transport of its own. The decisions this work rests on are recorded in RFC-045 (reading a chronicle back as policy of the holder), RFC-046 (the application), RFC-047 (the cell's interface comes from the law), RFC-048 (origin), RFC-049 (the law says what arises) and RFC-050 (a case over time).
 
+## The process: which law, which policy
+
+Every step of the zorgtoeslag process comes from an article of law or of policy, never from the demo or the cell. The pattern is the same at every step.
+
+- **The law says what may or must happen, and what its content is.** Who applies (Awir 15), how high the zorgtoeslag is (Zorgtoeslagwet 2), that there is a voorschot (Awir 16), in which months it is paid (Awir 22), how the toekenning is set off against it (Awir 24), when something is recovered (Awir 26, 26a).
+- **Policy says when and how, where the law leaves that open.** On which day a decision is taken, how much an installment is, which account the money goes to, how a recovery is collected. No such policy is published, so these articles are fictitious (`fictief_beleid_*`), and each says so in its text.
+- **The demo only moves the clock.** On each day it asks the cells what the law and the policy make due, and carries messages between the cells.
+
+### The steps
+
+Edge labels say what triggers a step: **law**, **policy** (fictitious), or **demo**. Each step is recorded as one or more grams in the chronicle of the organization that takes it.
+
+```mermaid
+flowchart TB
+  A["1 · Application<br/><i>citizen → Toeslagen</i>"]
+  V["2 · Voorschot<br/><i>Toeslagen, decision</i>"]
+  T["3 · Installments<br/><i>Toeslagen → bank → Toeslagen</i>"]
+  S["4 · Aanslag inkomstenbelasting<br/><i>Belastingdienst, decision</i>"]
+  I["5 · Inkomensgegeven received<br/><i>Belastingdienst → Toeslagen</i>"]
+  K["6 · Toekenning and settlement<br/><i>Toeslagen, decision</i>"]
+  N["7a · Nabetaling<br/><i>Toeslagen → bank</i>"]
+  R["7b · Terugvordering<br/><i>Toeslagen, decision</i>"]
+  C["8 · Incasso<br/><i>Toeslagen → bank</i>"]
+  VN["2' · Voorschot for the next year<br/><i>Toeslagen, decision</i>"]
+
+  A -->|"demo: at once, no manual review"| V
+  V -->|"law Awir 22: which months<br/>policy: on the 1st, how much"| T
+  A -.->|"law Awir 15 lid 5: application counts for later years<br/>policy: on 1 November"| VN
+  VN --> T
+  S -->|"law AWR 21e: provide the inkomensgegeven"| I
+  I -->|"policy: on the day of the aanslag"| K
+  K -->|"law Awir 24: ends the installments of that year"| T
+  K -->|"law Awir 24: left to pay<br/>policy: same day"| N
+  K -->|"law Awir 24, 26a: to recover above the threshold<br/>policy: same day"| R
+  R -->|"policy: 1st of the next month"| C
+  P(["policy: planning of the inspecteur"]) --> S
+```
+
+| # | Step | Law: what it says | Policy (fictitious): what it adds | When | Merijn |
+|---|---|---|---|---|---|
+| 1 | **Application** | Awir 15: the applicant applies, for a berekeningsjaar; lid 5: the application also counts for later years. Awb 4:2: name, address, date, signature, the decision asked for. Awb 4:13: the decision period runs from receipt. Awir 16: the expected income | `fictief_beleid_termijnbedrag_voorschot` art. 3: the account number | When the citizen submits | 6 Jan 2025, expects € 22.000 |
+| 2 | **Voorschot** | Zorgtoeslagwet 2: the amount, a beschikking on the application. Awir 16: a voorschot on the expected income. Awir 8: toetsingsinkomen. Awir 14: rounding. Awb 3:46, 6:7, 6:8: reasons, objection period, announcement | `fictief_beleid_kroniek_toeslagen` art. 4: read the expected income from the application | Demo: straight after the application (no manual review) | € 1.695 |
+| 3 | **Installments** | Awir 22: one installment per month, from the month of the voorschot through November (the next year: December through November) | `fictief_beleid_termijnbedrag_voorschot` art. 1: equal parts, on the 1st, to the account; art. 2: paid when the bank credits it. `fictieve_bankvoorwaarden` art. 1: the bank credits unless the account is unknown or blocked | Policy: the 1st of each month | 11 × ± € 154 |
+| 4 | **Aanslag** | AWR 11: the inspecteur sets the aanslag, ex officio. AWR 21c, 21e: from it follows the inkomensgegeven, which Toeslagen receives | `fictief_beleid_aanslagregeling` art. 1: the day, from the inspecteur's planning | Policy: the planned day | 15 Apr 2026, € 16.000 over 2025 |
+| 5 | **Inkomensgegeven received** | AWR 21e lid 1: the inspecteur provides it to Toeslagen | `fictief_beleid_toekenning_toeslagen` art. 1: Toeslagen records each inkomensgegeven it receives | When the message arrives | 15 Apr 2026 |
+| 6 | **Toekenning and settlement** | Zorgtoeslagwet 2: the definitive amount. Awir 8: toetsingsinkomen. Awir 19: the latest date of the toekenning. Awir 24: set off against the voorschot; left to pay, or to recover; the payment date | `fictief_beleid_toekenning_toeslagen` art. 2: the toetsingsinkomen is the inkomensgegeven; art. 3: decide on the day of the aanslag | Policy: the day of the aanslag | € 1.809, € 114 to pay |
+| 7a | **Nabetaling** | Awir 24: what is left to pay is paid out | `fictief_beleid_toekenning_toeslagen` art. 4: on the day of the toekenning, to the account; art. 5: paid when the bank credits it | Policy: same day as the toekenning | € 114 |
+| 7b | **Terugvordering** | Awir 26: recovery is a beschikking. Awir 26a: nothing below the threshold. Awir 28: to be paid within six weeks | `fictief_beleid_toekenning_toeslagen` art. 6: on the day of the toekenning, if there is something to recover | Policy: same day as the toekenning | over 2026: € 190 (15 Apr 2027) |
+| 8 | **Incasso** | none: the law says only that it must be paid (Awir 28) | `fictief_beleid_toekenning_toeslagen` art. 7: debit from the account (assumption: the citizen consented); art. 8: collected when the bank debits it. `fictieve_bankvoorwaarden` art. 2: the bank debits unless the account is unknown or blocked or the balance is too low | Policy: the 1st of the month after the terugvordering | 1 May 2027 |
+| 2' | **Voorschot for the next year** | Awir 15 lid 5: no new application needed. Awir 16 lid 2: before the year begins | `fictief_beleid_termijnbedrag_voorschot` art. 4: on 1 November | Policy: 1 November | 1 Nov 2025, for 2026 |
+
+Two kinds of policy articles appear in this table.
+
+- **Policy that decides or acts:** `fictief_beleid_termijnbedrag_voorschot`, `fictief_beleid_toekenning_toeslagen`, `fictief_beleid_aanslagregeling`, `fictieve_bankvoorwaarden`.
+- **Policy that only reads back what happened:** `fictief_beleid_kroniek_toeslagen` and `fictief_beleid_kroniek_bank`. For example: what was paid on 2025, which voorschot holds, what is still open. Those articles do not appear as a step, because they are what a step *reads*. [Lexostatuses](#lexostatuses) lists them.
+
+[Merijn's case, step by step](#merijns-case-step-by-step) walks through the same steps with the dates and amounts. The rest of this page is the machinery that carries them out.
+
 ## Components and their boundaries
 
 Three zones take part. **regelrecht** is the law in the law format and the engine that executes it. **chronolex** is the cell: it decides which facts arise, records them as grams, and reads them back. **demo** is the browser application around both: one clock, a portal, a case system, and the transport between cells.
