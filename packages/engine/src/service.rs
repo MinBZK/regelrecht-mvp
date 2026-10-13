@@ -25,7 +25,10 @@
 //! )?;
 //! ```
 
-use crate::article::{Article, ArticleBasedLaw, Execution, HookPoint, Input, MachineReadable};
+use crate::article::{
+    Article, ArticleBasedLaw, Execution, HookPoint, Input, MachineReadable, ProcedureDefinition,
+    Stage, StageRequirement,
+};
 use crate::config;
 use crate::context::{LazyInputs, RuleContext};
 use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
@@ -128,6 +131,12 @@ struct ResolutionContext<'a> {
     /// it departs from, so it does not apply to it. Keyed like
     /// [`override_key`] and [`implementation_key`].
     held_back: HashSet<String>,
+    /// The article executed at one stage of its procedure (RFC-008), as
+    /// `(law_id, article_number)`, set by [`LawExecutionService::execute_stage`]
+    /// and [`LawExecutionService::execute_stage_at`]. Only for that article do
+    /// the hooks on its submission wait for their own stage (RFC-047); an
+    /// article run outside a procedure fires them on every run (RFC-045).
+    staged_article: Option<(String, String)>,
 }
 
 /// Parse the calculation date, rejecting malformed input: an unparseable date
@@ -219,6 +228,7 @@ impl<'a> ResolutionContext<'a> {
             declaration_version_notes: Vec::new(),
             declarations_not_in_force: Vec::new(),
             held_back: HashSet::new(),
+            staged_article: None,
         })
     }
 
@@ -1254,6 +1264,30 @@ pub struct Submission {
     /// The establishing article first, then every hook on the submission in
     /// the order the engine fires them (`pre_actions`, then `post_actions`).
     pub articles: Vec<SubmissionArticle>,
+    /// When the establishing article follows a procedure (RFC-008): the stage
+    /// at which the hooks on the submission fire, named after its kind, such
+    /// as the Awb stage AANVRAAG (RFC-047). Execute that stage with
+    /// [`LawExecutionService::execute_stage_at`] to run them. `None` outside a
+    /// procedure: every run of the article fires them.
+    pub stage: Option<String>,
+}
+
+/// One stage of the procedure a decision article follows (RFC-008), as
+/// [`LawExecutionService::execute_stage_at`] runs it: what the stage requires
+/// to be entered, and the articles that take part. A runtime that takes the
+/// decision reads here what it must supply (RFC-047).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProcedureStage {
+    /// The procedure the article follows.
+    pub procedure_id: String,
+    /// The stage, as the procedure names it.
+    pub stage: String,
+    /// What the stage requires to be entered, such as the date of the
+    /// decision.
+    pub requires: Vec<StageRequirement>,
+    /// The article first, then every hook that fires on it at this stage, in
+    /// the order the engine fires them (`pre_actions`, then `post_actions`).
+    pub articles: Vec<SubmissionArticle>,
 }
 
 /// An article that takes part in a submission.
@@ -1726,6 +1760,143 @@ impl LawExecutionService {
         calculation_date: &str,
     ) -> Result<Option<Submission>> {
         let ref_date = Some(parse_calculation_date(calculation_date)?);
+        let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
+        let Some(kind) = article
+            .get_produces()
+            .and_then(|p| p.submission.as_ref())
+            .map(|s| s.kind.clone())
+        else {
+            return Ok(None);
+        };
+        // In a procedure the hooks wait for the stage named after the kind;
+        // a procedure without that stage would never fire them.
+        let stage = match self.procedure_of(law_id, article)? {
+            None => None,
+            Some(procedure) if procedure.stages.iter().any(|s| s.name == kind) => {
+                Some(kind.clone())
+            }
+            Some(procedure) => {
+                return Err(EngineError::InvalidOperation(format!(
+                    "{law_id} article {article_number} establishes an {kind} and follows \
+                     procedure '{}', which has no stage {kind} for the hooks on it to fire at",
+                    procedure.id
+                )))
+            }
+        };
+        let articles = self.taking_part(law, article, ref_date, |hook_point| {
+            self.resolver
+                .find_submission_hooks(hook_point, &kind, law_id, article_number)
+        });
+        Ok(Some(Submission {
+            kind,
+            articles,
+            stage,
+        }))
+    }
+
+    /// What executing article `article_number` of `law_id` at stage
+    /// `stage_name` of its procedure involves, in the version in force on
+    /// `calculation_date`: what the stage requires, the article, and the
+    /// hooks that fire on it at that stage. What
+    /// [`Self::execute_stage_at`] runs, before running it.
+    ///
+    /// Fails when the article follows no procedure or its procedure has no
+    /// such stage.
+    pub fn procedure_stage(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        stage_name: &str,
+        calculation_date: &str,
+    ) -> Result<ProcedureStage> {
+        let ref_date = Some(parse_calculation_date(calculation_date)?);
+        let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
+        let (procedure, stage) = self.stage_of(law_id, article, stage_name)?;
+        let articles = self.taking_part(law, article, ref_date, |hook_point| {
+            self.hooks_firing_on(hook_point, article, law, &stage.name, true)
+        });
+        Ok(ProcedureStage {
+            procedure_id: procedure.id.clone(),
+            stage: stage.name.clone(),
+            requires: stage.requires.clone().unwrap_or_default(),
+            articles,
+        })
+    }
+
+    /// Execute one stage of the procedure that article `article_number` of
+    /// `law_id` follows, in the version in force on `calculation_date`, on a
+    /// fresh state (RFC-008, RFC-047): the article, with the hooks that fire
+    /// at that stage, and nothing carried over from an earlier stage.
+    ///
+    /// Where [`Self::execute_stage`] walks the procedure and carries what each
+    /// stage produced into the next, this runs exactly the stage named. It is
+    /// for a caller that keeps its own record of each step, such as a cell
+    /// that records an application at the stage AANVRAAG and later takes the
+    /// decision at the stage BESLUIT.
+    ///
+    /// `outputs` are the outputs of the article to compute, as for
+    /// [`Self::evaluate_law`]; `None` computes all of them, and an empty list
+    /// none, so only the hooks run. Fails when the article follows no
+    /// procedure, its procedure has no stage `stage_name`, or a value the
+    /// stage requires is not among `parameters`.
+    pub fn execute_stage_at(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        stage_name: &str,
+        outputs: Option<&[&str]>,
+        parameters: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
+        let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
+        let (procedure, stage) = self.stage_of(law_id, article, stage_name)?;
+        let missing: Vec<&str> = stage
+            .requires
+            .iter()
+            .flatten()
+            .map(|req| req.name.as_str())
+            .filter(|name| !parameters.contains_key(*name))
+            .collect();
+        if !missing.is_empty() {
+            return Err(EngineError::InvalidOperation(format!(
+                "stage '{stage_name}' of procedure '{}' requires {}",
+                procedure.id,
+                missing.join(", ")
+            )));
+        }
+        let mut res_ctx = ResolutionContext::new(calculation_date)?;
+        res_ctx.contextual_law_id = Some(law_id.to_string());
+        res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
+        self.note_declaration_versions(&mut res_ctx);
+        let mut result = self.evaluate_article_with_service(
+            article,
+            law,
+            parameters,
+            outputs,
+            &stage.name,
+            &mut res_ctx,
+        )?;
+        result
+            .delegation_refusals
+            .clone_from(&res_ctx.delegation_refusals);
+        result
+            .declaration_version_notes
+            .clone_from(&res_ctx.declaration_version_notes);
+        result
+            .declarations_not_in_force
+            .clone_from(&res_ctx.declarations_not_in_force);
+        Ok(result)
+    }
+
+    /// Article `article_number` of `law_id` in the version in force on
+    /// `calculation_date`, with that version.
+    fn article_in_force(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        calculation_date: &str,
+    ) -> Result<(&ArticleBasedLaw, &Article)> {
+        let ref_date = Some(parse_calculation_date(calculation_date)?);
         let law = self
             .resolver
             .get_law_for_date_reported(law_id, ref_date)
@@ -1735,23 +1906,27 @@ impl LawExecutionService {
                 "the version of {law_id} in force on {calculation_date} has no article {article_number}"
             ))
         })?;
-        let Some(kind) = article
-            .get_produces()
-            .and_then(|p| p.submission.as_ref())
-            .map(|s| s.kind.clone())
-        else {
-            return Ok(None);
-        };
+        Ok((law, article))
+    }
+
+    /// The article first, then the hooks `hooks` names per hook point
+    /// (`pre_actions`, then `post_actions`) that have a version in force on
+    /// `ref_date`. A hook not in force does not fire, so it is left out here
+    /// too (an execution records that skip on its trace and receipt).
+    fn taking_part<'s>(
+        &'s self,
+        law: &ArticleBasedLaw,
+        article: &Article,
+        ref_date: Option<NaiveDate>,
+        hooks: impl Fn(HookPoint) -> Vec<&'s HookEntry>,
+    ) -> Vec<SubmissionArticle> {
         let mut articles = vec![SubmissionArticle {
-            law_id: law_id.to_string(),
-            article_number: article_number.to_string(),
+            law_id: law.id.clone(),
+            article_number: article.number.clone(),
             hook_point: None,
         }];
         for hook_point in [HookPoint::PreActions, HookPoint::PostActions] {
-            for h in self
-                .resolver
-                .find_submission_hooks(hook_point, &kind, law_id, article_number)
-            {
+            for h in hooks(hook_point) {
                 let in_force = self
                     .resolver
                     .get_law_for_date(&h.law_id, ref_date)
@@ -1765,7 +1940,71 @@ impl LawExecutionService {
                 }
             }
         }
-        Ok(Some(Submission { kind, articles }))
+        articles
+    }
+
+    /// The procedure that the decision `article` of `law_id` produces
+    /// follows (RFC-008), or `None` when it has none.
+    ///
+    /// An article that produces nothing with a legal character has no
+    /// lifecycle to begin with; beyond that, only "this legal character has no
+    /// procedure in the corpus" may fall through to single-stage execution. A
+    /// procedure that was asked for by name and not found must not: dropping
+    /// it would drop the stages it imposes — the hearing, the notification,
+    /// the objection period — and the decision would look complete while the
+    /// person it is about never got what the procedure owes them.
+    pub fn procedure_of(
+        &self,
+        law_id: &str,
+        article: &Article,
+    ) -> Result<Option<&ProcedureDefinition>> {
+        let produces = article.get_produces();
+        let procedure_id = produces.and_then(|p| p.procedure_id.as_deref());
+        let Some(lc) = produces.and_then(|p| p.legal_character.as_deref()) else {
+            return Ok(None);
+        };
+        match self.resolver.find_procedure_reported(lc, procedure_id) {
+            Ok(def) => Ok(Some(def)),
+            Err(ProcedureMiss::NoneForCharacter) => Ok(None),
+            Err(ProcedureMiss::NamedNotFound(id)) => Err(EngineError::ResolutionError(format!(
+                "{law_id} article {} asks for procedure '{id}' for legal character \
+                 '{lc}', which no loaded law defines. Executing without it would drop \
+                 the stages that procedure imposes.",
+                article.number
+            ))),
+            Err(ProcedureMiss::DefaultDangling(id)) => Err(EngineError::ResolutionError(format!(
+                "legal character '{lc}' has '{id}' registered as its default procedure, \
+                 but no definition of '{id}' is loaded"
+            ))),
+        }
+    }
+
+    /// The procedure `article` of `law_id` follows and its stage
+    /// `stage_name`. Fails when the article follows no procedure or the
+    /// procedure has no such stage.
+    fn stage_of(
+        &self,
+        law_id: &str,
+        article: &Article,
+        stage_name: &str,
+    ) -> Result<(&ProcedureDefinition, &Stage)> {
+        let procedure = self.procedure_of(law_id, article)?.ok_or_else(|| {
+            EngineError::InvalidOperation(format!(
+                "{law_id} article {} follows no procedure, so it has no stage '{stage_name}'",
+                article.number
+            ))
+        })?;
+        let stage = procedure
+            .stages
+            .iter()
+            .find(|s| s.name == stage_name)
+            .ok_or_else(|| {
+                EngineError::InvalidOperation(format!(
+                    "Stage '{stage_name}' not found in procedure '{}'",
+                    procedure.id
+                ))
+            })?;
+        Ok((procedure, stage))
     }
 
     /// Internal stage execution with optional tracing.
@@ -1792,43 +2031,8 @@ impl LawExecutionService {
                 output: output_name.to_string(),
             })?;
 
-        // Check if this article produces something with a procedure
-        let produces = article.get_produces();
-        let legal_character = produces.and_then(|p| p.legal_character.as_deref());
-        let procedure_id = produces.and_then(|p| p.procedure_id.as_deref());
-
-        // Look up the procedure definition. An article that produces nothing
-        // with a legal character has no lifecycle to begin with; beyond that,
-        // only "this legal character has no procedure in the corpus" may fall
-        // through to single-stage execution. A procedure that was asked for by
-        // name and not found must not: dropping it would drop the stages it
-        // imposes — the hearing, the notification, the objection period — and
-        // the decision would look complete while the person it is about never
-        // got what the procedure owes them.
-        let procedure = match legal_character {
-            None => None,
-            Some(lc) => match self.resolver.find_procedure_reported(lc, procedure_id) {
-                Ok(def) => Some(def),
-                Err(ProcedureMiss::NoneForCharacter) => None,
-                Err(ProcedureMiss::NamedNotFound(id)) => {
-                    return Err(EngineError::ResolutionError(format!(
-                        "{law_id} article {} asks for procedure '{id}' for legal character \
-                         '{lc}', which no loaded law defines. Executing without it would drop \
-                         the stages that procedure imposes.",
-                        article.number
-                    )));
-                }
-                Err(ProcedureMiss::DefaultDangling(id)) => {
-                    return Err(EngineError::ResolutionError(format!(
-                        "legal character '{lc}' has '{id}' registered as its default procedure, \
-                         but no definition of '{id}' is loaded"
-                    )));
-                }
-            },
-        };
-
         // If no procedure, fall through to normal single-stage execution
-        let Some(procedure) = procedure else {
+        let Some(procedure) = self.procedure_of(law_id, article)? else {
             let result = if let Some(tb) = trace {
                 self.evaluate_law_output_with_shared_trace(
                     law_id,
@@ -1912,6 +2116,7 @@ impl LawExecutionService {
             ResolutionContext::new(calculation_date)?
         };
         res_ctx.contextual_law_id = Some(stage_state.contextual_law.clone());
+        res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
         self.note_declaration_versions(&mut res_ctx);
 
         // Execute the article with stage-aware hook firing.
@@ -2267,17 +2472,18 @@ impl LawExecutionService {
     /// only; whether a hook is in force on the date is for
     /// [`Self::fireable_hooks`].
     ///
-    /// Hooks on a submission ignore `stage`: an article that has both a staged
-    /// procedure and `produces.submission` fires the submission hooks at every
-    /// `execute_stage` call. No corpus article combines both yet; the slice
-    /// that adds the decision on the application decides at which stage they
-    /// fire (RFC-045, Tradeoffs).
+    /// `staged` says the article runs at one stage of its procedure. The
+    /// hooks on its submission then fire only at the stage named after the
+    /// kind of submission, such as the Awb stage AANVRAAG, so recording the
+    /// application and taking the decision on it are two steps (RFC-047).
+    /// Outside a procedure they fire on every run.
     fn hooks_firing_on(
         &self,
         hook_point: HookPoint,
         article: &Article,
         law: &ArticleBasedLaw,
         stage: &str,
+        staged: bool,
     ) -> Vec<&HookEntry> {
         let Some(produces) = article.get_produces() else {
             return Vec::new();
@@ -2289,7 +2495,11 @@ impl LawExecutionService {
             }
             None => Vec::new(),
         };
-        if let Some(submission) = &produces.submission {
+        if let Some(submission) = produces
+            .submission
+            .as_ref()
+            .filter(|s| !staged || s.kind == stage)
+        {
             for h in self.resolver.find_submission_hooks(
                 hook_point,
                 &submission.kind,
@@ -2346,7 +2556,11 @@ impl LawExecutionService {
             (None, Some(k)) => (format!("submission {k}"), format!("submission {k}")),
             (None, None) => return None,
         };
-        let matching_hooks = self.hooks_firing_on(hook_point, article, law, stage);
+        let staged = res_ctx
+            .staged_article
+            .as_ref()
+            .is_some_and(|(l, a)| *l == law.id && *a == article.number);
+        let matching_hooks = self.hooks_firing_on(hook_point, article, law, stage, staged);
         let subject = format!("hook point {} on {on}", hook_point.as_str());
         // The establishing article, for `established_by`: `law` and
         // `article` are rebound to the hook's own below.
@@ -2421,6 +2635,7 @@ impl LawExecutionService {
                                                     }
                                                     (None, Some(k)) => {
                                                         kind == Some(k.as_str())
+                                                            && (!staged || k == stage)
                                                             && submission_filter_admits(
                                                                 f,
                                                                 establishing_law,
@@ -3638,6 +3853,22 @@ impl LawExecutionService {
             res_ctx.leave(&ot_key);
             return Ok(value);
         }
+        // A norm the law leaves to an authority per case
+        // (`decided_per_case_by`) and that no regulation fills: the
+        // authority's judgement for this case comes from the caller, under the
+        // term's id (RFC-047). An implementation above wins, because it is
+        // the general specification; the judgement wins over a default.
+        if let Some(by) = &term.decided_per_case_by {
+            if let Some(value) = parameters.get(&term.id) {
+                res_ctx.trace_set_result(value.clone());
+                res_ctx.trace_set_message(format!(
+                    "Open term '{}' decided in this case by {by}",
+                    term.id
+                ));
+                res_ctx.leave(&ot_key);
+                return Ok(value.clone());
+            }
+        }
         let value = if let Some(ref default) = term.default {
             // No implementation found, or a silent one — execute default actions
             tracing::debug!(
@@ -3758,10 +3989,19 @@ impl LawExecutionService {
                 term.id
             ));
             res_ctx.leave(&ot_key);
-            return Err(EngineError::ResolutionError(format!(
-                "Required open term '{}' on {}#{} has no implementation and no default",
-                term.id, law.id, article.number
-            )));
+            return Err(EngineError::ResolutionError(
+                match &term.decided_per_case_by {
+                    Some(by) => format!(
+                        "Required open term '{}' on {}#{} is decided per case by {by}, \
+                     and no judgement was given for this case",
+                        term.id, law.id, article.number
+                    ),
+                    None => format!(
+                        "Required open term '{}' on {}#{} has no implementation and no default",
+                        term.id, law.id, article.number
+                    ),
+                },
+            ));
         } else {
             // Not required, no implementation, no default — resolve as null
             // so downstream actions can check for null and fall back to their
