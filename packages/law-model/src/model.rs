@@ -171,6 +171,71 @@ pub struct Parameter {
     pub temporal: Option<Temporal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub legal_basis: Option<ProvisionReference>,
+    /// Who supplies this parameter, per the law (RFC-048). Metadata for a
+    /// process runtime and an editor; the engine does not read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<Origin>,
+}
+
+/// Who supplies a parameter, per the law (RFC-048). `grondslag` names the
+/// provision (`<regulation>#<article>`, optionally ` lid <n>`) whose text says
+/// who supplies it; a basis reasoned from other provisions is left out.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, try_from = "RawOrigin")]
+pub struct Origin {
+    pub waarde: OriginValue,
+    /// With `REGISTER`, and only then: the regulation by or under which the
+    /// register is kept.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub register: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grondslag: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawOrigin {
+    waarde: OriginValue,
+    #[serde(default)]
+    register: Option<String>,
+    #[serde(default)]
+    grondslag: Option<String>,
+}
+
+impl TryFrom<RawOrigin> for Origin {
+    type Error = String;
+
+    fn try_from(raw: RawOrigin) -> Result<Self, Self::Error> {
+        match (raw.waarde, &raw.register) {
+            (OriginValue::Register, None) => {
+                Err("origin REGISTER names the regulation of the register in `register`".into())
+            }
+            (waarde, Some(_)) if waarde != OriginValue::Register => {
+                Err("`register` belongs only to origin REGISTER".into())
+            }
+            _ => Ok(Origin {
+                waarde: raw.waarde,
+                register: raw.register,
+                grondslag: raw.grondslag,
+            }),
+        }
+    }
+}
+
+/// The five origins of a parameter (RFC-048).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum OriginValue {
+    /// What the applicant supplies or chooses: the content of the application.
+    Belanghebbende,
+    /// A fact from the course of the case at the administrative body.
+    Dossier,
+    /// A judgement the administrative body gives when it decides.
+    Oordeel,
+    /// A fact from a register kept by or under a regulation.
+    Register,
+    /// What the intake channel says: who logs in, and on whose behalf.
+    Kanaal,
 }
 
 impl Parameter {

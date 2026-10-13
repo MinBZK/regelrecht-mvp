@@ -24,8 +24,8 @@ pub use model::{
     ArticleRequirement, AuthorityType, Case, CombineOp, CompetentAuthority, Declaration,
     DeclaredProperty, Definition, Execution, HookDeclaration, HookFilter, HookPoint,
     ImplementsDeclaration, Input, LegalBasis, MachineReadable, Marking, MarkingResolution,
-    OpenTerm, OpenTermDefault, Output, OverrideDeclaration, Parameter, Placement,
-    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produces,
+    OpenTerm, OpenTermDefault, Origin, OriginValue, Output, OverrideDeclaration, Parameter,
+    Placement, PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produces,
     ProvisionReference, ResolveSpec, Source, Stage, StageRequirement, Temporal, TypeSpec,
     UntranslatableEntry,
 };

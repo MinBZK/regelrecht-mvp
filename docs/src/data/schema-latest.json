@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.7.1/schema/v0.7.1/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.7.1",
+  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.0",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -686,6 +686,9 @@
             "required": {
               "type": "boolean",
               "description": "Whether the caller must pass this parameter. Defaults to true: an omitted required parameter is an error. A parameter declared `required: false` that the caller omits resolves to an unknown value that names the parameter (RFC-036), so a law can declare application-form fields another law never passes."
+            },
+            "origin": {
+              "$ref": "#/definitions/origin"
             }
           }
         }
@@ -2186,6 +2189,73 @@
         }
       },
       "additionalProperties": false
+    },
+    "provisionGround": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$",
+      "description": "A provision, `<regulation>#<article>`, optionally followed by ` lid <n>`. The article holds letters, digits, `:`, `.`, `_`, `-` and spaces (Kieswet `G 1`, Awb `4:13`), and starts and ends with a letter or digit.",
+      "examples": [
+        "leerplichtwet_1969#13a lid 1",
+        "algemene_wet_bestuursrecht#4:2"
+      ]
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "waarde"
+      ],
+      "properties": {
+        "waarde": {
+          "type": "string",
+          "enum": [
+            "BELANGHEBBENDE",
+            "DOSSIER",
+            "OORDEEL",
+            "REGISTER",
+            "KANAAL"
+          ],
+          "description": "Who supplies the value. BELANGHEBBENDE: the applicant supplies or chooses it. DOSSIER: a fact from the course of the case. OORDEEL: a judgement the administrative body gives when it decides. REGISTER: a fact from a register kept by or under the regulation in `register`. KANAAL: what the intake channel says."
+        },
+        "register": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "With REGISTER only: the `$id` of the regulation that sets up the register."
+        },
+        "grondslag": {
+          "$ref": "#/definitions/provisionGround",
+          "description": "The provision that says who supplies the value. Only when the text of that provision says so: a basis reasoned from other provisions is left out, and the reasoning goes in a comment."
+        }
+      },
+      "if": {
+        "properties": {
+          "waarde": {
+            "const": "REGISTER"
+          }
+        },
+        "required": [
+          "waarde"
+        ]
+      },
+      "then": {
+        "required": [
+          "register"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "register"
+          ]
+        }
+      },
+      "description": "Who supplies a parameter, per the law, with the provision that says so (RFC-048). Metadata for a process runtime and an editor; the engine does not read it.",
+      "examples": [
+        {
+          "waarde": "BELANGHEBBENDE",
+          "grondslag": "leerplichtwet_1969#13a lid 1"
+        }
+      ]
     }
   }
 }

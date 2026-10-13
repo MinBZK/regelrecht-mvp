@@ -62,6 +62,7 @@ export const sidebar: Record<string, SidebarGroup[]> = {
         { text: 'Cross-Law References', link: '/concepts/cross-law-references' },
         { text: 'Inversion of Control', link: '/concepts/inversion-of-control' },
         { text: 'Hooks and Reactive Execution', link: '/concepts/hooks-and-reactive-execution' },
+        { text: 'Chronolexography', link: '/concepts/chronolexography' },
         { text: 'Competent Authority', link: '/concepts/competent-authority' },
       ],
     },
