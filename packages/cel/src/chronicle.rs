@@ -11,7 +11,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
-use regelrecht_law_model::ProvisionReference;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -19,8 +18,9 @@ use crate::error::{refused, setup, Result};
 
 /// A recorded fact: one application, as the law describes it.
 ///
-/// Every key says something a jurist can check against the law: the article
-/// that establishes the fact, and per value the provisions it rests on.
+/// The gram does not repeat the law. Its establishing article and the day it
+/// was recorded name the law version in force; the provisions each field and
+/// output rest on follow from that version.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gram {
     /// Its own id, a uuid v7.
@@ -41,8 +41,6 @@ pub struct Gram {
     /// What the application holds: the values supplied, and `null` for a
     /// field left out that can be absent, as the engine received them.
     pub fields: BTreeMap<String, Value>,
-    /// Per field, the articles that ask it.
-    pub field_basis: BTreeMap<String, Vec<String>>,
     /// Fields that cannot be absent and that the application left out. An
     /// incomplete application is still recorded (Awb 4:5).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -51,8 +49,6 @@ pub struct Gram {
     /// those of the hooks on the submission, such as the last day of the
     /// decision period (Awb 4:13).
     pub outputs: BTreeMap<String, Value>,
-    /// Per output, the article that computed it.
-    pub output_basis: BTreeMap<String, String>,
 }
 
 /// The moment that counts for a gram, as recorded.
@@ -66,8 +62,6 @@ pub struct GramMoment {
     pub on: NaiveDate,
     /// The article that names the moment.
     pub declared_by: String,
-    /// The provision that says why it counts (`produces.moment.legal_basis`).
-    pub legal_basis: ProvisionReference,
 }
 
 /// The grams of one cell, in the order they were recorded.

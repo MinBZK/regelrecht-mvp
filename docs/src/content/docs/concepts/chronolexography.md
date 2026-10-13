@@ -55,23 +55,17 @@ A cell, here a school, records the application as one gram in its chronicle. The
   "moment": {
     "parameter": "datum_ontvangst",
     "on": "2026-10-13",
-    "declared_by": "algemene_wet_bestuursrecht#4:13",
-    "legal_basis": { "law": "Algemene wet bestuursrecht", "article": "4:13", "paragraph": "1" }
+    "declared_by": "algemene_wet_bestuursrecht#4:13"
   },
   "fields": { "eerste_verlofdag": "2027-02-01", "adres_aanvrager": null },
-  "field_basis": {
-    "eerste_verlofdag": ["leerplichtwet_1969#13a"],
-    "adres_aanvrager": ["algemene_wet_bestuursrecht#4:2"]
-  },
-  "outputs": { "redelijke_beslistermijn_einddatum": "2026-12-08" },
-  "output_basis": { "redelijke_beslistermijn_einddatum": "algemene_wet_bestuursrecht#4:13" }
+  "outputs": { "redelijke_beslistermijn_einddatum": "2026-12-08" }
 }
 ```
 
 - Fields are all parameters of art. 13a and of its Awb hooks, except the moment. The cell refuses a field no article asks, and a value of the wrong type. A field that can be absent and was left out is `null` in the gram, as the engine received it. One that cannot be absent is listed under `missing`: an incomplete application is still recorded (Awb 4:5).
-- The moment that counts (`datum_ontvangst`) has its own key, `moment`, with its `legal_basis`. The cell fills it with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
+- The moment that counts (`datum_ontvangst`) has its own key, `moment`, with the article that names it. The cell fills it with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
 - Recording runs art. 13a, so the Awb hooks run too, and their outputs go in the gram.
-- `field_basis` gives per field the articles that ask it.
+- The gram does not repeat the law. Which articles ask a field and which article computed an output follow from the law version in force on `recorded_on`.
 - The chronicle refuses a gram dated before the last one.
 
 **Try it:** `cargo test --manifest-path packages/cel/Cargo.toml`

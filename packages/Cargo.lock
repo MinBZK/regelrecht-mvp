@@ -3969,7 +3969,6 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "regelrecht-engine",
- "regelrecht-law-model",
  "serde",
  "serde_json",
  "tempfile",

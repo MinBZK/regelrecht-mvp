@@ -76,7 +76,6 @@ impl Cell {
         // unknown to the engine, and the gram names it as missing: an
         // incomplete application is still an application (Awb 4:5).
         let mut fields = BTreeMap::new();
-        let mut field_basis = BTreeMap::new();
         let mut missing = Vec::new();
         for field in &shape.fields {
             let value = match supplied.get(&field.name) {
@@ -88,13 +87,11 @@ impl Cell {
                 }
             };
             fields.insert(field.name.clone(), value);
-            field_basis.insert(field.name.clone(), field.declared_by.clone());
         }
         let moment = shape.moment.as_ref().map(|m| GramMoment {
             parameter: m.parameter.clone(),
             on,
             declared_by: m.declared_by.clone(),
-            legal_basis: m.legal_basis.clone(),
         });
 
         // The engine gets the fields and the moment.
@@ -112,30 +109,16 @@ impl Cell {
         let result = service.evaluate_law(law_id, &outputs, parameters, &on.to_string())?;
 
         let mut output_values = BTreeMap::new();
-        let mut output_basis = BTreeMap::new();
         for (name, value) in &result.outputs {
-            let by = match result.output_provenance.get(name) {
-                Some(
-                    OutputProvenance::Direct { law_id, article }
-                    | OutputProvenance::Reactive {
-                        law_id, article, ..
-                    }
-                    | OutputProvenance::Override { law_id, article },
-                ) => format!("{law_id}#{article}"),
-                // An output an override voids is not in `outputs`.
-                Some(OutputProvenance::Voided { .. }) => continue,
-                // Every output the engine gives has a provenance; without
-                // one the gram could not say what the output rests on.
-                None => {
-                    return Err(setup(format!(
-                        "the engine gave output '{name}' of {} without saying which article computed it",
-                        shape.legal_basis()
-                    )))
-                }
-            };
+            // An output an override voids is not in `outputs`.
+            if matches!(
+                result.output_provenance.get(name),
+                Some(OutputProvenance::Voided { .. })
+            ) {
+                continue;
+            }
             let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
             output_values.insert(name.clone(), value);
-            output_basis.insert(name.clone(), by);
         }
 
         let gram = Gram {
@@ -146,10 +129,8 @@ impl Cell {
             recorded_on: on,
             moment,
             fields,
-            field_basis,
             missing,
             outputs: output_values,
-            output_basis,
         };
         Ok(self.chronicle.append(gram)?.clone())
     }

@@ -91,13 +91,6 @@ fn the_shape_of_the_application_comes_from_the_law() {
     let moment = shape.moment.unwrap();
     assert_eq!(moment.parameter.as_deref(), Some("datum_ontvangst"));
     assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#4:13");
-    assert_eq!(
-        (
-            moment.legal_basis.article.as_deref(),
-            moment.legal_basis.paragraph.as_deref()
-        ),
-        (Some("4:13"), Some("1"))
-    );
 }
 
 #[test]
@@ -115,31 +108,12 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
     assert_eq!(gram.fields["eerste_verlofdag"], json!("2027-02-01"));
     assert_eq!(gram.fields.len(), 8);
     assert!(!gram.fields.contains_key("datum_ontvangst"));
-    assert!(!gram.field_basis.contains_key("datum_ontvangst"));
 
-    // The receipt the cell filled in, with the provision that says why it
-    // counts.
+    // The receipt the cell filled in.
     let moment = gram.moment.as_ref().unwrap();
     assert_eq!(moment.parameter.as_deref(), Some("datum_ontvangst"));
     assert_eq!(moment.on, day("2026-10-13"));
     assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#4:13");
-    assert_eq!(
-        (
-            moment.legal_basis.article.as_deref(),
-            moment.legal_basis.paragraph.as_deref()
-        ),
-        (Some("4:13"), Some("1"))
-    );
-
-    // Per field the article that asks it.
-    assert_eq!(
-        gram.field_basis["bsn_jongere"],
-        vec!["leerplichtwet_1969#13a"]
-    );
-    assert_eq!(
-        gram.field_basis["naam_aanvrager"],
-        vec!["algemene_wet_bestuursrecht#4:2"]
-    );
 
     // What the article and the Awb hooks gave.
     assert_eq!(gram.outputs["verlof_aangevraagd"], json!(true));
@@ -151,14 +125,13 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
         gram.outputs["redelijke_beslistermijn_einddatum"],
         json!("2026-12-08")
     );
-    assert_eq!(
-        gram.output_basis["verlof_aangevraagd"],
-        "leerplichtwet_1969#13a"
-    );
-    assert_eq!(
-        gram.output_basis["redelijke_beslistermijn_einddatum"],
-        "algemene_wet_bestuursrecht#4:13"
-    );
+    // The gram does not repeat the law: what each field and output rests
+    // on follows from the law in force on `recorded_on`.
+    let serialized = serde_json::to_value(&gram).unwrap();
+    assert!(serialized.get("field_basis").is_none());
+    assert!(serialized.get("output_basis").is_none());
+    assert!(serialized["moment"].get("legal_basis").is_none());
+    assert_eq!(serialized["legal_basis"], "leerplichtwet_1969#13a");
 
     assert_eq!(cell.grams(), [gram]);
 }
@@ -181,13 +154,8 @@ fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
         );
         // Left out or `null`, the gram shows what the engine received.
         assert_eq!(gram.fields["adres_aanvrager"], Value::Null);
-        assert_eq!(
-            gram.field_basis["adres_aanvrager"],
-            vec!["algemene_wet_bestuursrecht#4:2"]
-        );
     }
     assert_eq!(grams[0].fields, grams[1].fields);
-    assert_eq!(grams[0].field_basis, grams[1].field_basis);
 }
 
 #[test]
