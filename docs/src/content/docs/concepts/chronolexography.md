@@ -12,6 +12,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | Feature | Rulework | RFC |
 |---|---|---|
 | [The application, with the Awb on it](#the-application-with-the-awb-on-it) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-045](/rfcs/rfc-045) |
+| [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046): chronolexography as a layer |
 
 ## The application, with the Awb on it
 
@@ -40,3 +41,33 @@ hooks:
 - What the head needs to decide, such as the judgement under art. 11 onder f, is not part of the application. It belongs to the decision.
 
 **Try it:** `just bdd`, which runs `corpus/regulation/nl/wet/leerplichtwet_1969/scenarios/vakantieverlof_aanvraag.feature`
+
+## The application in the chronicle
+
+A cell, here a school, records the application as one chronolexogram in its chronicle. Chronolexography is an optional layer: it lives in `packages/cel`, and the law and the engine do not know it. The law names no fields for the record; the cell derives them from the keys above.
+
+```json
+{
+  "kind": "AANVRAAG",
+  "grondslag": "leerplichtwet_1969#13a",
+  "recording_actor": "obs_de_klimop",
+  "recorded_on": "2026-10-13",
+  "moment": {
+    "parameter": "datum_ontvangst",
+    "on": "2026-10-13",
+    "declared_by": "algemene_wet_bestuursrecht#4:13"
+  },
+  "fields": { "eerste_verlofdag": "2027-02-01", "adres_aanvrager": null },
+  "outputs": { "redelijke_beslistermijn_einddatum": "2026-12-08" }
+}
+```
+
+- The fields are the parameters of art. 13a and its Awb hooks, minus the moment. The cell refuses an unknown field and a value of the wrong type.
+- A field left out is `null` when it can be absent. Otherwise it goes under `missing`, and the application is still recorded (Awb 4:5).
+- `moment` holds the day of receipt. The cell fills it with the day of recording; that the two are the same day is the cell's assumption.
+- Recording runs art. 13a and its hooks. Their outputs go in `outputs`.
+- The chronolexogram does not repeat the law. Which article asks a field follows from the law version in force on `recorded_on`.
+
+The chronicle refuses a chronolexogram dated before the last one.
+
+**Try it:** `cargo test --manifest-path packages/cel/Cargo.toml`

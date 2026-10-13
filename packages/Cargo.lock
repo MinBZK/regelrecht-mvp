@@ -3964,6 +3964,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "regelrecht-cel"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "regelrecht-engine",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "uuid",
+]
+
+[[package]]
 name = "regelrecht-corpus"
 version = "0.1.0"
 dependencies = [

@@ -77,6 +77,7 @@ regelrecht/
 ├── packages/
 │   ├── engine/           # Execution engine (native, WASM, CLI)
 │   ├── law-model/        # Rust implementation of the schema contract
+│   ├── cel/              # Records applications in a chronicle (chronolexography)
 │   ├── corpus/           # Library for reading ruleworks
 │   ├── harvester/        # BWB / CVDR download and conversion
 │   ├── pipeline/         # Job queue, harvest and enrich workers
@@ -109,4 +110,5 @@ regelrecht/
 
 - [How RegelRecht Works](/concepts/how-it-works) - the concepts behind the engine
 - [Engine](/components/engine) - execution engine architecture
+- [Chronolexography](/concepts/chronolexography) - how the `cel` crate records an application in a chronicle
 - [RFC Index](../rfcs/) - all design decisions
