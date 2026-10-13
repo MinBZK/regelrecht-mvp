@@ -297,3 +297,174 @@ fn an_article_with_two_matching_hooks_on_an_application_fires_once() {
         .count();
     assert_eq!(nine, 1, "{articles:?}");
 }
+
+/// An article that hooks onto what `applies_to` names at
+/// `hook_point` and outputs `{output}: true`.
+fn hook_article(number: &str, hook_point: &str, applies_to: &str, output: &str) -> String {
+    format!(
+        r#"
+  - number: '{number}'
+    text: Een vereiste bij de aanvraag.
+    machine_readable:
+      hooks:
+        - hook_point: {hook_point}
+          applies_to: {{{applies_to}}}
+      execution:
+        output:
+          - {{name: {output}, type: boolean}}
+        actions:
+          - {{output: {output}, value: true}}
+"#
+    )
+}
+
+/// The header of a law `id` whose version is in force from `valid_from`.
+fn law_header(id: &str, valid_from: &str) -> String {
+    format!(
+        "$id: {id}\nregulatory_layer: WET\npublication_date: '{valid_from}'\n\
+         valid_from: '{valid_from}'\narticles:"
+    )
+}
+
+/// Only a hook of the same article of the same law is the same hook. Two
+/// articles of one law, or the same article number in two laws, are two
+/// requirements on the application and both fire.
+#[test]
+fn hooks_of_other_articles_or_other_laws_on_an_application_all_fire() {
+    let general = GENERAL_LAW.to_string()
+        + &hook_article(
+            "12",
+            "pre_actions",
+            "submission: AANVRAAG",
+            "bijlage_gevraagd",
+        );
+    let other = law_header("wet_ander", "2026-01-01")
+        + &hook_article(
+            "9",
+            "pre_actions",
+            "submission: AANVRAAG",
+            "handtekening_gevraagd",
+        );
+    let mut service = LawExecutionService::new();
+    service.load_law(SPECIAL_LAW).unwrap();
+    service.load_law(&general).unwrap();
+    service.load_law(&other).unwrap();
+
+    let mut hooks: Vec<(&str, &str)> = service
+        .resolver()
+        .find_submission_hooks(HookPoint::PreActions, "AANVRAAG", "wet_verlof", "1")
+        .into_iter()
+        .map(|h| (h.law_id(), h.article_number()))
+        .collect();
+    hooks.sort_unstable();
+    assert_eq!(
+        hooks,
+        vec![
+            ("wet_algemeen", "12"),
+            ("wet_algemeen", "9"),
+            ("wet_ander", "9"),
+        ]
+    );
+
+    let r = service
+        .evaluate_law_output("wet_verlof", "verlof_aangevraagd", naam(), "2026-06-01")
+        .unwrap();
+    for output in ["naam_gegeven", "bijlage_gevraagd", "handtekening_gevraagd"] {
+        assert_eq!(
+            r.outputs.get(output),
+            Some(&Value::Bool(true)),
+            "{output}: {:?}",
+            r.outputs
+        );
+    }
+}
+
+/// An article that is both a decision and an application gets the hooks on
+/// the decision and those on the application. Only the same article of the
+/// same law hooking onto both fires once; another article of that law, or the
+/// same article number in another law, is a hook of its own.
+#[test]
+fn hooks_on_the_decision_and_the_application_of_other_articles_all_fire() {
+    let special = SPECIAL_LAW.replace(
+        "        produces:\n          submission: {kind: AANVRAAG}\n        output:\n          - {name: verlof_aangevraagd",
+        "        produces:\n          legal_character: BESCHIKKING\n          submission: {kind: AANVRAAG}\n        output:\n          - {name: verlof_aangevraagd",
+    );
+    assert_ne!(special, SPECIAL_LAW);
+    let general = GENERAL_LAW.to_string()
+        + &hook_article(
+            "12",
+            "pre_actions",
+            "legal_character: BESCHIKKING",
+            "motivering_gevraagd",
+        );
+    let other = law_header("wet_ander", "2026-01-01")
+        + &hook_article(
+            "12",
+            "pre_actions",
+            "submission: AANVRAAG",
+            "handtekening_gevraagd",
+        );
+    let mut service = LawExecutionService::new();
+    service.load_law(&special).unwrap();
+    service.load_law(&general).unwrap();
+    service.load_law(&other).unwrap();
+
+    let r = service
+        .evaluate_law_output("wet_verlof", "verlof_aangevraagd", naam(), "2026-06-01")
+        .unwrap();
+    for output in [
+        "motivering_gevraagd",
+        "naam_gegeven",
+        "handtekening_gevraagd",
+    ] {
+        assert_eq!(
+            r.outputs.get(output),
+            Some(&Value::Bool(true)),
+            "{output}: {:?}",
+            r.outputs
+        );
+    }
+}
+
+/// After a renumbering the hook on the application exists on this date under
+/// another number. It does not fire (the undated index misses it), but the
+/// reason names the article that carries it: a hook on this kind of
+/// submission that admits this establishing article. A hook on another kind
+/// of submission, or one narrowed to another article's application, is not
+/// the renumbered hook.
+#[test]
+fn a_renumbered_hook_on_an_application_is_named_in_the_reason() {
+    let oud = law_header("wet_awb", "2026-01-01")
+        + &hook_article("12", "pre_actions", "submission: AANVRAAG", "naam_12")
+        + &hook_article("13", "pre_actions", "submission: BEZWAAR", "naam_13")
+        + &hook_article(
+            "14",
+            "pre_actions",
+            "submission: AANVRAAG, established_by: 'wet_verlof#2'",
+            "naam_14",
+        );
+    let nieuw = law_header("wet_awb", "2027-01-01")
+        + &hook_article("4", "pre_actions", "submission: AANVRAAG", "naam_4");
+    let mut service = LawExecutionService::new();
+    service.load_law(SPECIAL_LAW).unwrap();
+    service.load_law(&oud).unwrap();
+    service.load_law(&nieuw).unwrap();
+
+    let r = service
+        .evaluate_law_output("wet_verlof", "verlof_aangevraagd", naam(), "2026-06-01")
+        .unwrap();
+    assert!(!r.outputs.contains_key("naam_4"), "{:?}", r.outputs);
+    assert_eq!(
+        r.declarations_not_in_force
+            .iter()
+            .map(|n| (n.article.as_str(), n.subject.as_str(), n.reason.as_str()))
+            .collect::<Vec<_>>(),
+        vec![(
+            "4",
+            "hook point pre_actions on submission AANVRAAG",
+            "the version of wet_awb in force on this date (valid_from 2026-01-01) has no \
+             article 4; article 12 of that version declares a hook that fires at the same \
+             point on this submission"
+        )]
+    );
+}
