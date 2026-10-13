@@ -2569,10 +2569,8 @@ fn vocabulary_of_yaml(raw: &str) -> Vocabulary {
 /// so handing an agent the new vocabulary for a v0.6.x law yields a file that
 /// its own schema rejects.
 fn schema_has_markings(version: &str) -> bool {
-    let mut parts = version.trim_start_matches('v').split('.');
-    let mut next = || parts.next().and_then(|p| p.parse::<u32>().ok());
-    match (next(), next(), next()) {
-        (Some(major), Some(minor), Some(patch)) => (major, minor, patch) >= (0, 7, 0),
+    match regelrecht_shared::parse_schema_version(version) {
+        Some(parsed) => parsed >= (0, 7, 0),
         // An unparseable version is not an old one: treat it as current
         // rather than sending an agent back to fields the schema dropped.
         _ => true,

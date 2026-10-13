@@ -974,6 +974,21 @@ export function legalBasisFields(): Field[] {
 }
 
 /**
+ * A string definition (`articleReference`): no field table, only the
+ * description and the pattern. It has its own section because a field links
+ * to it (`established_by`).
+ */
+export function stringDefinition(
+  name: 'articleReference',
+): { description: string; pattern: string } {
+  const node = defs[name] ?? {};
+  return {
+    description: renderDescription(node.description ?? ''),
+    pattern: node.pattern ?? '',
+  };
+}
+
+/**
  * What may appear wherever an operation takes a value.
  *
  * In the schema this is `operationValue`, a bare `oneOf` with no description:
@@ -1041,6 +1056,7 @@ export function referenceHeadings(): { depth: number; slug: string; text: string
     for (const sub of subStructuresFor(kind.slug)) h(4, sub.slug, sub.title);
   }
   h(3, 'legal-basis', 'Legal basis');
+  h(3, 'article-reference', 'Article reference');
 
   // Everything otherSubStructures() renders, at the depth the component uses.
   // Listed from the same function rather than by hand: the earlier version

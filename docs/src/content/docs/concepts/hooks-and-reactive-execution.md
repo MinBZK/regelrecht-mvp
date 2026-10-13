@@ -51,6 +51,8 @@ execution:
 
 The engine builds a hook index at load time. When it encounters an article with a `produces` annotation, it checks the index for matching hooks and fires them.
 
+A hook can also apply to an application instead of a decision: `applies_to.submission: AANVRAAG` fires on every article whose `produces` says it establishes one ([RFC-045](/rfcs/rfc-045)). Awb 4:2 and 4:13 work this way; see [Chronolexography](/concepts/chronolexography#the-application-with-the-awb-on-it).
+
 ## The objection-deadline chain
 
 Awb hooks compose into a chain:

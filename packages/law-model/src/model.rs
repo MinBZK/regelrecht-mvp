@@ -259,6 +259,40 @@ pub struct Produces {
     /// When absent, the default procedure for the legal_character is used.
     #[serde(default)]
     pub procedure_id: Option<String>,
+    /// The article establishes something a belanghebbende submits, such as
+    /// an application (Awb 1:3 lid 3), that the general law hooks onto with
+    /// `applies_to.submission` (RFC-045). Next to the legal character of the
+    /// article's own outputs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub submission: Option<Submission>,
+    /// The moment that counts in law for what this article produces, such as
+    /// the receipt of an application (Awb 4:13 lid 1). Metadata for a process
+    /// runtime; the engine does not read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub moment: Option<Moment>,
+}
+
+/// What an article establishes that a belanghebbende submits (RFC-045).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Submission {
+    /// The kind of submission, as the law names it: `AANVRAAG` (Awb 1:3 lid
+    /// 3).
+    pub kind: String,
+}
+
+/// The moment that counts in law for what an article produces (RFC-045).
+/// With `parameter`, that parameter's value is the moment; without it, the
+/// moment is the one at which a runtime records the fact.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Moment {
+    /// The parameter whose value is the moment.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameter: Option<String>,
+    /// The provision that says why this moment counts, in the schema's
+    /// `legalBasis` shape. Required by the schema.
+    pub legal_basis: ProvisionReference,
 }
 
 /// A single case in an IF operation (cases/default syntax)
@@ -847,6 +881,64 @@ pub struct HookFilter {
     /// When absent, defaults to BESLUIT for backward compatibility.
     #[serde(default)]
     pub stage: Option<String>,
+    /// Match articles that establish a submission of this kind (RFC-045),
+    /// such as `AANVRAAG`: Awb 4:2 applies to every application. A hook names
+    /// either this or `legal_character`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub submission: Option<String>,
+    /// With `submission`: only the submission that this article establishes
+    /// (`<regulation>#<article>`, without a paragraph). A hook without it
+    /// applies to every submission of the kind.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_article_reference"
+    )]
+    pub established_by: Option<String>,
+}
+
+/// Whether `s` is an article reference of the schema (`articleReference`):
+/// `<regulation>#<article>` with no ` lid <n>` (schema pattern
+/// `^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$`, `not` the
+/// pattern ` lid [0-9]`). An article with a space, such as Kieswet `G 1`, is
+/// one.
+pub fn is_article_reference(s: &str) -> bool {
+    let Some((regulation, article)) = s.split_once('#') else {
+        return false;
+    };
+    let alnum = |c: char| c.is_ascii_alphanumeric();
+    let names_paragraph = s
+        .match_indices(" lid ")
+        .any(|(i, m)| s[i + m.len()..].starts_with(|c: char| c.is_ascii_digit()));
+    !regulation.is_empty()
+        && regulation
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+        && article.starts_with(alnum)
+        && article.ends_with(alnum)
+        && article
+            .chars()
+            .all(|c| alnum(c) || matches!(c, ':' | '.' | '_' | ' ' | '-'))
+        && !names_paragraph
+}
+
+/// Deserialize an optional string that, when present, must be an
+/// [`is_article_reference`].
+fn optional_article_reference<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| {
+            if is_article_reference(&s) {
+                Ok(s)
+            } else {
+                Err(serde::de::Error::custom(format!(
+                    "'{s}' is not <regulation>#<article> without a paragraph"
+                )))
+            }
+        })
+        .transpose()
 }
 
 /// Declaration that an article fires as a hook on matching lifecycle events (RFC-007)

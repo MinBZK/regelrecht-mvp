@@ -346,12 +346,14 @@ fn declaration_fingerprint(law: &ArticleBasedLaw) -> Vec<String> {
         if let Some(hooks) = article.get_hooks() {
             for decl in hooks {
                 parts.push(format!(
-                    "hook\0{}\0{:?}\0{:?}\0{:?}\0{:?}",
+                    "hook\0{}\0{:?}\0{:?}\0{:?}\0{:?}\0{:?}\0{:?}",
                     article.number,
                     decl.hook_point,
                     decl.applies_to.legal_character,
                     decl.applies_to.decision_type,
-                    decl.applies_to.stage
+                    decl.applies_to.stage,
+                    decl.applies_to.submission,
+                    decl.applies_to.established_by
                 ));
             }
         }
@@ -376,10 +378,35 @@ pub(crate) struct LawArticleRef {
 }
 
 /// A hook index entry linking a hook declaration to the law and article that defined it.
-pub(crate) struct HookEntry {
+pub struct HookEntry {
     pub(crate) law_id: String,
     pub(crate) article_number: String,
     filter: HookFilter,
+}
+
+impl HookEntry {
+    /// The law that declares the hook.
+    pub fn law_id(&self) -> &str {
+        &self.law_id
+    }
+
+    /// The article that fires as the hook.
+    pub fn article_number(&self) -> &str {
+        &self.article_number
+    }
+
+    /// What the hook applies to.
+    pub fn filter(&self) -> &HookFilter {
+        &self.filter
+    }
+}
+
+/// What a hook is filed under in the hooks index: the legal character of a
+/// decision (RFC-007) or the kind of a submission (RFC-045).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum HookTarget {
+    Decision(String),
+    Submission(String),
 }
 
 /// Resolves cross-law references and provides law registry functionality.
@@ -426,9 +453,10 @@ pub struct RuleResolver {
     output_index: HashMap<String, String>,
     /// IoC index: (law_id, article, open_term_id) -> list of implementing articles
     implements_index: HashMap<(String, String, String), Vec<LawArticleRef>>,
-    /// Hook index: (hook_point, legal_character) -> list of (law_id, article_number, filter)
-    /// Enables O(1) lookup of hooks that should fire for a given lifecycle event.
-    hooks_index: HashMap<(HookPoint, String), Vec<HookEntry>>,
+    /// Hook index: (hook_point, legal character or submission kind) -> list of
+    /// (law_id, article_number, filter). Enables O(1) lookup of hooks that
+    /// should fire for a given lifecycle event or submission.
+    hooks_index: HashMap<(HookPoint, HookTarget), Vec<HookEntry>>,
     /// Override index: (target_law, target_article, output) -> list of overriding articles
     /// Enables O(1) lookup of lex specialis overrides for a given output.
     overrides_index: HashMap<(String, String, String), Vec<LawArticleRef>>,
@@ -665,19 +693,23 @@ impl RuleResolver {
         Ok(())
     }
 
-    /// Refuse a hook that does not say which legal character it applies to.
+    /// Refuse a hook that does not say which legal character or which kind of
+    /// submission it applies to, that says both, or that narrows itself with
+    /// a field of the other kind (RFC-045).
     ///
-    /// The hooks index is keyed by (hook_point, legal_character), so a hook
-    /// without one has no key. Dropping it while loading the rest of the law is
+    /// The hooks index is keyed by (hook_point, legal_character) or, for a
+    /// hook on a submission, by (hook_point, kind), so a hook without either
+    /// has no key. Dropping it while loading the rest of the law is
     /// the worst of the three options: the article declares that it fires on an
     /// event, the engine keeps that article, and the hook never fires — a
     /// motiveringsplicht or a bezwaartermijn that quietly does not happen.
     ///
     /// Reading it as "applies to every legal character" is the other tempting
-    /// option, and it is guesswork: schema v0.7.0 makes `legal_character`
-    /// required on `applies_to`, so nothing in the corpus says what an absent
-    /// one would mean. The model is more permissive than the schema, which is
-    /// exactly why this check exists here. Like the unknown `delegation_type`
+    /// option, and it is guesswork: since schema v0.7.0 `applies_to` requires
+    /// `legal_character` (or, since v0.8.0, `submission`), so nothing in the
+    /// corpus says what an absent one would mean. The model is more
+    /// permissive than the schema, which is exactly why this check exists
+    /// here. Like the unknown `delegation_type`
     /// in [`Self::matches_delegation`], it is a safety net a schema-conformant
     /// corpus never trips.
     fn check_hook_filters(law: &ArticleBasedLaw) -> Result<()> {
@@ -686,10 +718,28 @@ impl RuleResolver {
                 continue;
             };
             for decl in hooks {
-                if decl.applies_to.legal_character.is_none() {
+                let f = &decl.applies_to;
+                let problem = match (&f.legal_character, &f.submission) {
+                    (None, None) => Some(
+                        "hook declares neither applies_to.legal_character nor \
+                         applies_to.submission, so it can never fire",
+                    ),
+                    (Some(_), Some(_)) => Some(
+                        "hook declares both applies_to.legal_character and applies_to.submission; \
+                         a hook applies to a decision or to a submission (RFC-045)",
+                    ),
+                    (Some(_), None) if f.established_by.is_some() => {
+                        Some("applies_to.established_by only narrows a hook on a submission")
+                    }
+                    (None, Some(_)) if f.stage.is_some() || f.decision_type.is_some() => Some(
+                        "a hook on a submission takes no stage or decision_type; \
+                         established_by narrows it",
+                    ),
+                    _ => None,
+                };
+                if let Some(problem) = problem {
                     return Err(EngineError::LoadError(format!(
-                        "law '{}' article {}: hook declares no applies_to.legal_character, \
-                         so it can never fire",
+                        "law '{}' article {}: {problem}",
                         law.id, article.number
                     )));
                 }
@@ -1443,20 +1493,27 @@ impl RuleResolver {
                         }
                     }
 
-                    // Hooks index. A hook without a legal_character never gets
-                    // here: `load_law` refuses the law, because there is no
-                    // honest key to file it under (see `check_hook_filters`).
+                    // Hooks index. A hook with neither a legal_character nor
+                    // a submission never gets here: `load_law` refuses the
+                    // law, because there is no honest key to file it under
+                    // (see `check_hook_filters`).
                     if let Some(hook_decls) = article.get_hooks() {
                         for decl in hook_decls {
-                            if let Some(ref legal_char) = decl.applies_to.legal_character {
-                                let key = (decl.hook_point, legal_char.clone());
-                                let entry = HookEntry {
-                                    law_id: law_id.to_string(),
-                                    article_number: article.number.clone(),
-                                    filter: decl.applies_to.clone(),
-                                };
-                                self.hooks_index.entry(key).or_default().push(entry);
-                            }
+                            let f = &decl.applies_to;
+                            let target = match (&f.legal_character, &f.submission) {
+                                (Some(lc), _) => HookTarget::Decision(lc.clone()),
+                                (None, Some(kind)) => HookTarget::Submission(kind.clone()),
+                                (None, None) => continue,
+                            };
+                            let entry = HookEntry {
+                                law_id: law_id.to_string(),
+                                article_number: article.number.clone(),
+                                filter: f.clone(),
+                            };
+                            self.hooks_index
+                                .entry((decl.hook_point, target))
+                                .or_default()
+                                .push(entry);
                         }
                     }
 
@@ -1598,7 +1655,10 @@ impl RuleResolver {
         decision_type: Option<&str>,
         stage: &str,
     ) -> Vec<&HookEntry> {
-        let key = (hook_point, legal_character.to_string());
+        let key = (
+            hook_point,
+            HookTarget::Decision(legal_character.to_string()),
+        );
         let Some(entries) = self.hooks_index.get(&key) else {
             return Vec::new();
         };
@@ -1607,6 +1667,40 @@ impl RuleResolver {
             .iter()
             .filter(|entry| hook_filter_admits(&entry.filter, decision_type, stage))
             .collect()
+    }
+
+    /// Find the hooks at `hook_point` on a submission of `kind` that article
+    /// `article_number` of `law_id` establishes (RFC-045), such as Awb 4:2 on
+    /// every `AANVRAAG`. A hook with `established_by` only fires on the
+    /// submission of that one article. Public so that a runtime can ask which
+    /// articles take part in a submission by the same rule the engine fires
+    /// them. Each hook article comes back once.
+    pub fn find_submission_hooks(
+        &self,
+        hook_point: HookPoint,
+        kind: &str,
+        law_id: &str,
+        article_number: &str,
+    ) -> Vec<&HookEntry> {
+        let key = (hook_point, HookTarget::Submission(kind.to_string()));
+        let Some(entries) = self.hooks_index.get(&key) else {
+            return Vec::new();
+        };
+        let mut hooks: Vec<&HookEntry> = Vec::new();
+        for e in entries
+            .iter()
+            .filter(|e| submission_filter_admits(&e.filter, law_id, article_number))
+        {
+            // An article with two matching hooks at this point (one on every
+            // application, one on this article's) fires once.
+            if !hooks
+                .iter()
+                .any(|h| h.law_id == e.law_id && h.article_number == e.article_number)
+            {
+                hooks.push(e);
+            }
+        }
+        hooks
     }
 
     /// Find overrides for a specific article output.
@@ -1738,6 +1832,21 @@ pub(crate) fn hook_filter_admits(
         Some(filter_dt) => decision_type == Some(filter_dt),
         None => true,
     }
+}
+
+/// Whether a hook filter on a submission admits the submission that article
+/// `article_number` of `law_id` establishes, apart from its kind (which the
+/// hooks index is keyed on): without `established_by` every submission of the
+/// kind, with it only the submission of that article (RFC-045).
+pub(crate) fn submission_filter_admits(
+    filter: &HookFilter,
+    law_id: &str,
+    article_number: &str,
+) -> bool {
+    filter.established_by.as_deref().is_none_or(|r| {
+        r.split_once('#')
+            .is_some_and(|(law, article)| law == law_id && article == article_number)
+    })
 }
 
 /// Whether a `valid_from` is an internal reference rather than a date.

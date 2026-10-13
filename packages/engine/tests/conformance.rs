@@ -70,6 +70,7 @@ const KNOWN_GAPS: &[&str] = &[
     // design decision, not as a gap to accept.
     "open_term_type_array.yaml", // schema allows 5 open-term types; the model reads the full 7-wide ParameterType
     "hook_without_legal_character.yaml", // schema requires + enums `applies_to.legal_character`; model has Option<String>, and the resolver then refuses the law at load (`check_hook_filters`) — leniency stops at the model boundary
+    "hook_submission_with_legal_character.yaml", // schema v0.8.0 lets a hook name a decision or a submission (`oneOf`); model has both as Option<String>, and the resolver refuses the law at load (`check_hook_filters`), as for the fixture above
     "produces_unknown_legal_character.yaml", // schema pins 5 legal characters; model reads any string
     "produces_unknown_decision_type.yaml",   // schema pins 9 decision types; model reads any string
     "temporal_unknown_type.yaml", // schema pins period|point_in_time; model reads any string

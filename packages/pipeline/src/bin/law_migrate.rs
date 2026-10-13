@@ -79,12 +79,14 @@ fn migrate_one(path: &Path, write: bool) -> std::io::Result<bool> {
     println!(
         "  from:      {} -> {}",
         result.from_version.as_deref().unwrap_or("unknown"),
-        law_migrate::TARGET_VERSION
+        result.to_version
     );
     println!(
         "  change:    {}",
         if result.structural_changes {
             "schema line + machine_readable sections"
+        } else if result.yaml == yaml {
+            "none (already at this version)"
         } else {
             "schema line only"
         }
@@ -96,7 +98,7 @@ fn migrate_one(path: &Path, write: bool) -> std::io::Result<bool> {
         let total: usize = result.dropped.iter().map(|d| d.count).sum();
         println!(
             "  dropped:   {total} value(s) with no field in {}",
-            law_migrate::TARGET_VERSION
+            result.to_version
         );
         let mut by_field: std::collections::BTreeMap<&str, usize> =
             std::collections::BTreeMap::new();
