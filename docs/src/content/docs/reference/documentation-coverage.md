@@ -54,6 +54,7 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-044 | Rulework (regelwerk) as the name for a regulation in YAML (partially applied) | [Glossary](./glossary#regelrecht-specific-terms) |
 | RFC-045 | The application as something the Awb hooks onto (`submission`, `moment`) | [Chronolexography](../concepts/chronolexography#the-application-with-the-awb-on-it), [Schema](./schema) |
 | RFC-046 | Chronolexography is an optional layer on RegelRecht (`packages/cel`) | [Chronolexography](../concepts/chronolexography#the-application-in-the-chronicle), [Architecture](../guide/architecture) |
+| RFC-047 | The decision on the application (stages, `decided_per_case_by`, `Cell::decide`) | [Chronolexography](../concepts/chronolexography#the-decision-on-the-application), [Schema](./schema) |
 
 ## Backlog
 
