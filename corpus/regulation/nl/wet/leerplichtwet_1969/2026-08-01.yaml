@@ -967,12 +967,14 @@ articles:
     machine_readable:
       execution:
         parameters:
-          # Wie de aanvraag doet en voor wie volgt uit lid 1 ("op aanvraag van de in artikel 2,
-          # eerste lid, bedoelde personen"); wie welk gegeven aanlevert zegt de tekst niet
-          # letterlijk, dus deze velden hebben geen grondslag.
+          # De tekst zegt niet letterlijk wie welk gegeven aanlevert, dus geen veld heeft een
+          # grondslag. Wie de aanvraag doet volgt uit lid 1 ("op aanvraag van de in artikel 2,
+          # eerste lid, bedoelde personen"). Het beroepsvereiste is OORDEEL: het hoofd beslist
+          # op de aanvraag (lid 1) en moet daarvoor artikel 11, onder f, beoordelen. "ouder" in de
+          # naam staat kort voor de in artikel 2, eerste lid, bedoelde personen.
           - name: bsn_aanvrager
             type: string
-            description: Burgerservicenummer van de ouder of verzorger die het verlof aanvraagt.
+            description: Burgerservicenummer van de in artikel 2, eerste lid, bedoelde persoon die het verlof aanvraagt.
             origin:
               waarde: KANAAL
           - name: bsn_jongere
@@ -993,14 +995,16 @@ articles:
           - name: beroep_ouder_staat_alleen_vakantie_buiten_schoolvakanties_toe
             type: boolean
             description: >-
-              Of de jongere vanwege de specifieke aard van het beroep van een ouder slechts buiten de
-              schoolvakanties met hen op vakantie kan gaan (artikel 11, onder f).
+              Of de jongere vanwege de specifieke aard van het beroep van één van de in artikel 2, eerste
+              lid, bedoelde personen slechts buiten de schoolvakanties met hen op vakantie kan gaan
+              (artikel 11, onder f).
             origin:
               waarde: OORDEEL
-              grondslag: leerplichtwet_1969#13a lid 1
-          - name: begin_schooljaar
+          - name: eerste_lesdag_schooljaar
             type: date
-            description: Eerste dag van het schooljaar van de school, voor de eerste twee lesweken (lid 2).
+            description: >-
+              Eerste lesdag van het schooljaar op de school van de jongere, voor de eerste twee lesweken
+              (lid 2).
             origin:
               waarde: DOSSIER
     references:

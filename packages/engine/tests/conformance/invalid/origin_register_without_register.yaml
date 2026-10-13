@@ -9,7 +9,7 @@ name: Testregeling registerherkomst zonder register
 url: https://example.invalid/law
 articles:
   - number: '1'
-    text: Een parameter uit een register noemt het register (RFC-048).
+    text: Een parameter uit een register noemt het register (RFC-045).
     url: https://example.invalid/law/artikel/1
     machine_readable:
       execution:

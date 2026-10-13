@@ -9,7 +9,7 @@ name: Testregeling herkomst van parameters
 url: https://example.invalid/law
 articles:
   - number: '1'
-    text: Elke parameter zegt wie hem aanlevert (RFC-048).
+    text: Elke parameter zegt wie hem aanlevert (RFC-045).
     url: https://example.invalid/law/artikel/1
     machine_readable:
       execution:

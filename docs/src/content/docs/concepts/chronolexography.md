@@ -26,15 +26,14 @@ A parameter says who supplies its value, with `origin`. The law decides this, no
   type: boolean
   origin:
     waarde: OORDEEL
-    grondslag: leerplichtwet_1969#13a lid 1
 ```
 
 - `BELANGHEBBENDE`: the parent fills it in.
 - `OORDEEL`: the head of the school judges it.
-- `DOSSIER`: the school already knows it, such as the first day of the school year.
+- `DOSSIER`: the school already holds it, from the course of the case or its own records, such as the first school day after the summer holiday.
 - `KANAAL`: the login says it, such as the parent's BSN.
 - `REGISTER`: a register supplies it; `register` names the regulation that keeps it.
 
-`grondslag` appears only when the text of the provision says who supplies the value.
+`grondslag` names the provision, and appears only when its text says who supplies the value. Art. 13a says that for none of its parameters, so none has one. An Awb 4:2 field would: lid 1 says the application contains the name of the applicant (`grondslag: algemene_wet_bestuursrecht#4:2 lid 1`).
 
 **Try it:** `just validate corpus/regulation/nl/wet/leerplichtwet_1969/2026-08-01.yaml`

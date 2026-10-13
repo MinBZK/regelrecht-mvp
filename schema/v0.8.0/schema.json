@@ -2215,7 +2215,7 @@
             "REGISTER",
             "KANAAL"
           ],
-          "description": "Who supplies the value. BELANGHEBBENDE: the applicant supplies or chooses it. DOSSIER: a fact from the course of the case. OORDEEL: a judgement the administrative body gives when it decides. REGISTER: a fact from a register kept by or under the regulation in `register`. KANAAL: what the intake channel says."
+          "description": "Who supplies the value. BELANGHEBBENDE: the applicant supplies or chooses it. DOSSIER: a fact the administrative body already holds, from the course of the case or its own records. OORDEEL: a judgement the administrative body gives when it decides. REGISTER: a fact from a register kept by or under the regulation in `register`. KANAAL: what the intake channel says."
         },
         "register": {
           "type": "string",
@@ -2249,11 +2249,11 @@
           ]
         }
       },
-      "description": "Who supplies a parameter, per the law, with the provision that says so (RFC-048). Metadata for a process runtime and an editor; the engine does not read it.",
+      "description": "Who supplies a parameter, per the law, with the provision that says so (RFC-045). Metadata for a process runtime and an editor; the engine does not read it.",
       "examples": [
         {
           "waarde": "BELANGHEBBENDE",
-          "grondslag": "leerplichtwet_1969#13a lid 1"
+          "grondslag": "algemene_wet_bestuursrecht#4:2 lid 1"
         }
       ]
     }

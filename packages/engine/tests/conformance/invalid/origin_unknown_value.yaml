@@ -9,7 +9,7 @@ name: Testregeling onbekende herkomst
 url: https://example.invalid/law
 articles:
   - number: '1'
-    text: De herkomst is een van vijf vaste waarden (RFC-048).
+    text: De herkomst is een van vijf vaste waarden (RFC-045).
     url: https://example.invalid/law/artikel/1
     machine_readable:
       execution:

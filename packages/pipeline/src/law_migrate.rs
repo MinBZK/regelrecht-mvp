@@ -1,10 +1,16 @@
-//! Lift a law file to schema v0.7.1.
+//! Lift a law file to schema v0.7.1, and leave a newer one as it is.
+//!
+//! A file that already declares a newer version (v0.8.0 and up) is left
+//! alone: moving its `$schema` back would claim a contract that may lack
+//! fields the file uses, such as `origin` (v0.8.0). It comes back unchanged
+//! and is validated against its own version.
 //!
 //! v0.7.1 is v0.7.0 with six field descriptions corrected and nothing else, so
 //! every statement below about v0.7.0's shape holds for the target unchanged.
-//! The target is the newest release rather than v0.7.0 itself because the
-//! harvester stamps v0.7.1 on new files: migrating one of those must not move
-//! its `$schema` back a version.
+//! The target is v0.7.1 rather than v0.7.0 itself because files stamped
+//! v0.7.1 exist: migrating one of those must not move its `$schema` back a
+//! version. The harvester now stamps v0.8.0, which is additive on v0.7.1, so
+//! such a file passes through unchanged (see above).
 //!
 //! Two jobs, and they are deliberately unequal in ambition.
 //!
@@ -98,13 +104,16 @@ pub struct Migration {
     pub yaml: String,
     /// The version the file declared before migration, when recognised.
     pub from_version: Option<String>,
+    /// The version the result declares: [`TARGET_VERSION`], or the file's own
+    /// version when that is newer and the file was left alone.
+    pub to_version: String,
     /// Whether anything beyond the `$schema` line changed.
     pub structural_changes: bool,
     /// Required fields of the new shape with no source in the old one.
     pub blockers: Vec<Blocker>,
     /// Old fields with no counterpart in v0.7.0.
     pub dropped: Vec<Dropped>,
-    /// Schema errors of the *migrated* file, against [`TARGET_VERSION`].
+    /// Schema errors of the *migrated* file, against `to_version`.
     pub schema_errors: Vec<String>,
 }
 
@@ -116,7 +125,8 @@ impl Migration {
     }
 }
 
-/// Migrate one law file to [`TARGET_VERSION`].
+/// Migrate one law file to [`TARGET_VERSION`], or leave it alone when it
+/// declares a newer version.
 ///
 /// `Err` is reserved for a file this module cannot read at all — unparseable
 /// YAML, or a document that is not a mapping. Everything else, including a
@@ -130,6 +140,25 @@ pub fn migrate(yaml: &str) -> Result<Migration, String> {
         .as_ref()
         .and_then(regelrecht_engine::schema::detect_version)
         .map(str::to_string);
+
+    if let Some(newer) = from_version.as_deref().filter(|v| is_newer_than_target(v)) {
+        let schema_errors = as_json(&doc).map_or_else(
+            || vec!["file is not representable as JSON".to_string()],
+            |json| {
+                regelrecht_engine::schema::validation_errors_for(newer, &json)
+                    .unwrap_or_else(|e| vec![format!("schema validation failed: {e}")])
+            },
+        );
+        return Ok(Migration {
+            yaml: yaml.to_string(),
+            to_version: newer.to_string(),
+            from_version,
+            structural_changes: false,
+            blockers: Vec::new(),
+            dropped: Vec::new(),
+            schema_errors,
+        });
+    }
 
     let mut blockers = Vec::new();
     let mut dropped = Vec::new();
@@ -171,12 +200,28 @@ pub fn migrate(yaml: &str) -> Result<Migration, String> {
 
     Ok(Migration {
         yaml: migrated,
+        to_version: TARGET_VERSION.to_string(),
         from_version,
         structural_changes,
         blockers,
         dropped,
         schema_errors,
     })
+}
+
+/// Whether `version` (`vX.Y.Z`) is newer than [`TARGET_VERSION`]. An
+/// unparseable version is not newer, so it is migrated as before.
+fn is_newer_than_target(version: &str) -> bool {
+    fn parse(v: &str) -> Option<(u32, u32, u32)> {
+        let mut parts = v.strip_prefix('v')?.split('.').map(str::parse::<u32>);
+        let version = (
+            parts.next()?.ok()?,
+            parts.next()?.ok()?,
+            parts.next()?.ok()?,
+        );
+        parts.next().is_none().then_some(version)
+    }
+    matches!((parse(version), parse(TARGET_VERSION)), (Some(v), Some(t)) if v > t)
 }
 
 fn as_json(value: &Value) -> Option<serde_json::Value> {
@@ -550,6 +595,19 @@ articles:
             before, after,
             "the folded block scalar must survive the bump untouched"
         );
+    }
+
+    #[test]
+    fn a_v0_8_0_law_is_not_moved_back() {
+        let v080 = BARE.replace(
+            "refs/heads/main/schema/v0.3.1",
+            "refs/tags/schema-v0.8.0/schema/v0.8.0",
+        );
+        let m = migrate(&v080).expect("migrates");
+        assert_eq!(m.from_version.as_deref(), Some("v0.8.0"));
+        assert_eq!(m.to_version, "v0.8.0");
+        assert_eq!(m.yaml, v080, "a newer file must come back byte for byte");
+        assert!(m.is_clean(), "{:?}", m.schema_errors);
     }
 
     #[test]

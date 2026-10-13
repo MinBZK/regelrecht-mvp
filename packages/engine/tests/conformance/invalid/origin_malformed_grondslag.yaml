@@ -1,0 +1,27 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json
+$id: test_conformance_origin_malformed_grondslag
+regulatory_layer: MINISTERIELE_REGELING
+publication_date: '2026-10-13'
+valid_from: '2026-10-13'
+bwb_id: BWBR0099992
+name: Testregeling herkomst met misvormde grondslag
+url: https://example.invalid/law
+articles:
+  - number: '1'
+    text: Een grondslag noemt een bepaling als regeling#artikel (RFC-045).
+    url: https://example.invalid/law/artikel/1
+    machine_readable:
+      execution:
+        parameters:
+          - name: naam_aanvrager
+            type: string
+            origin:
+              waarde: BELANGHEBBENDE
+              grondslag: artikel 4:2 Awb
+        output:
+          - name: bekend
+            type: boolean
+        actions:
+          - output: bekend
+            value: true

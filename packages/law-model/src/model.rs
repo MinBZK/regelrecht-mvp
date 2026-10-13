@@ -171,17 +171,17 @@ pub struct Parameter {
     pub temporal: Option<Temporal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub legal_basis: Option<ProvisionReference>,
-    /// Who supplies this parameter, per the law (RFC-048). Metadata for a
+    /// Who supplies this parameter, per the law (RFC-045). Metadata for a
     /// process runtime and an editor; the engine does not read it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<Origin>,
 }
 
-/// Who supplies a parameter, per the law (RFC-048). `grondslag` names the
+/// Who supplies a parameter, per the law (RFC-045). `grondslag` names the
 /// provision (`<regulation>#<article>`, optionally ` lid <n>`) whose text says
 /// who supplies it; a basis reasoned from other provisions is left out.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, try_from = "RawOrigin")]
+#[serde(try_from = "RawOrigin")]
 pub struct Origin {
     pub waarde: OriginValue,
     /// With `REGISTER`, and only then: the regulation by or under which the
@@ -213,22 +213,62 @@ impl TryFrom<RawOrigin> for Origin {
             (waarde, Some(_)) if waarde != OriginValue::Register => {
                 Err("`register` belongs only to origin REGISTER".into())
             }
-            _ => Ok(Origin {
-                waarde: raw.waarde,
-                register: raw.register,
-                grondslag: raw.grondslag,
-            }),
+            _ => {
+                if let Some(register) = raw.register.as_deref().filter(|r| !is_regulation_id(r)) {
+                    return Err(format!(
+                        "origin `register` {register:?} is not a regulation `$id` (^[a-z][a-z0-9_]*$)"
+                    ));
+                }
+                if let Some(grondslag) =
+                    raw.grondslag.as_deref().filter(|g| !is_provision_ground(g))
+                {
+                    return Err(format!(
+                        "origin `grondslag` {grondslag:?} is not a provision (`<regulation>#<article>`)"
+                    ));
+                }
+                Ok(Origin {
+                    waarde: raw.waarde,
+                    register: raw.register,
+                    grondslag: raw.grondslag,
+                })
+            }
         }
     }
 }
 
-/// The five origins of a parameter (RFC-048).
+/// Schema `origin.register`: `^[a-z][a-z0-9_]*$`.
+fn is_regulation_id(s: &str) -> bool {
+    s.starts_with(|c: char| c.is_ascii_lowercase())
+        && s.chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
+/// Schema `provisionGround`:
+/// `^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$`.
+fn is_provision_ground(s: &str) -> bool {
+    let Some((regulation, article)) = s.split_once('#') else {
+        return false;
+    };
+    let alnum = |c: char| c.is_ascii_alphanumeric();
+    !regulation.is_empty()
+        && regulation
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+        && article.starts_with(alnum)
+        && article.ends_with(alnum)
+        && article
+            .chars()
+            .all(|c| alnum(c) || matches!(c, ':' | '.' | '_' | ' ' | '-'))
+}
+
+/// The five origins of a parameter (RFC-045).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum OriginValue {
     /// What the applicant supplies or chooses: the content of the application.
     Belanghebbende,
-    /// A fact from the course of the case at the administrative body.
+    /// A fact the administrative body already holds, from the course of the
+    /// case or its own records.
     Dossier,
     /// A judgement the administrative body gives when it decides.
     Oordeel,
