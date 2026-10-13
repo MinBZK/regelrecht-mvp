@@ -978,7 +978,8 @@ articles:
         # Lid 1 noemt de vakantie "bedoeld in artikel 11, onder f": de jongere
         # kan vanwege de specifieke aard van het beroep van een ouder slechts
         # buiten de schoolvakanties met hem op vakantie. Of dat zo is, oordeelt
-        # het hoofd per aanvraag; het hoofd verleent het verlof (lid 1).
+        # het hoofd per aanvraag: lid 1 noemt het geval "indien het hoofd op
+        # aanvraag ... verlof heeft verleend".
         - id: alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder
           type: boolean
           required: true
@@ -1020,7 +1021,10 @@ articles:
             description: Of het verlof betrekking heeft op de eerste twee lesweken van het schooljaar (lid 2).
           - name: verlof_verleend
             type: boolean
-            description: Of het hoofd het verlof verleent (lid 1).
+            description: >-
+              Of het hoofd het verlof verleent (lid 1). Lid 2 noemt alleen wanneer
+              het niet kan; "eenmaal per schooljaar" en het evenredige deel voor
+              een kwalificatieplichtige jongere zijn nog niet getoetst.
         actions:
           # Lid 2: "ten hoogste tien dagen". Verlof is verlof om de school niet
           # te bezoeken (lid 1), dus een dag telt als de jongere anders naar
