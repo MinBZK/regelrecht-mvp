@@ -12,6 +12,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | Feature | Rulework | RFC |
 |---|---|---|
 | [The application, with the Awb on it](#the-application-with-the-awb-on-it) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-045](/rfcs/rfc-045) |
+| [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046) |
 
 ## The application, with the Awb on it
 
@@ -40,3 +41,31 @@ hooks:
 - What the head needs to decide, such as the judgement under art. 11 onder f, is not part of the application. It belongs to the decision.
 
 **Try it:** `just bdd`, which runs `corpus/regulation/nl/wet/leerplichtwet_1969/scenarios/vakantieverlof_aanvraag.feature`
+
+## The application in the chronicle
+
+A cell, here a school, records the application as one gram in its chronicle. The law names no fields for it; the cell derives them from the keys above.
+
+```json
+{
+  "kind": "AANVRAAG",
+  "legal_basis": "leerplichtwet_1969#13a",
+  "holder": "obs_de_klimop",
+  "recorded_on": "2026-10-13",
+  "fields": { "eerste_verlofdag": "2027-02-01", "datum_ontvangst": "2026-10-13" },
+  "field_basis": {
+    "eerste_verlofdag": ["leerplichtwet_1969#13a"],
+    "datum_ontvangst": ["algemene_wet_bestuursrecht#4:13", "algemene_wet_bestuursrecht#4:13 lid 1"]
+  },
+  "outputs": { "redelijke_beslistermijn_einddatum": "2026-12-08" },
+  "output_basis": { "redelijke_beslistermijn_einddatum": "algemene_wet_bestuursrecht#4:13" }
+}
+```
+
+- Fields are all parameters of art. 13a and of its Awb hooks. The cell refuses a field no article asks, and a value of the wrong type.
+- The cell fills the moment that counts (`datum_ontvangst`) with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
+- Recording runs art. 13a, so the Awb hooks run too, and their outputs go in the gram.
+- `field_basis` gives per field the articles that ask it, and for the moment also its `legal_basis`.
+- The chronicle refuses a gram dated before the last one.
+
+**Try it:** `cargo test --manifest-path packages/cel/Cargo.toml`
