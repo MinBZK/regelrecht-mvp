@@ -14,6 +14,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | [The application, with the Awb on it](#the-application-with-the-awb-on-it) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-045](/rfcs/rfc-045) |
 | [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046): chronolexography as a layer |
 | [The decision on the application](#the-decision-on-the-application) | Leerplichtwet 1969 art. 13a, Awb 3:46, 6:7 and 6:8, fictitious school policy | [RFC-047](/rfcs/rfc-047) |
+| [Once per school year](#once-per-school-year) | Leerplichtwet 1969 art. 13a lid 2, fictitious school policy | [RFC-048](/rfcs/rfc-048) |
 
 ## The application, with the Awb on it
 
@@ -113,6 +114,27 @@ The cell records the decision as a second chronolexogram that refers to the appl
 - What the decision needs comes from the application first, then from the school's policy (`implements`), then from the head when deciding (`decided_per_case_by`). The chronolexogram repeats neither the basis nor the source of a field or output: both follow from the law on `recorded_on` and from `refers_to`.
 - The test: at most ten school days (Monday to Friday), not in the first two lesweken, and the two facts of art. 11 onder f: a parent's profession of a specific nature, and leave outside the school holidays. The head judges both. A refusal is `verlof_verleend: false`.
 - The cell refuses a second decision on one application, and a decision dated before it. It makes the decision known on the day it takes it, so Awb 6:8 counts the objection period from there; that is the cell's assumption.
-- Not modeled yet: "eenmaal per schooljaar", and the proportional share for a young person who is kwalificatieplichtig (lid 2, second sentence).
+- Not modeled yet: the proportional share for a young person who is kwalificatieplichtig (lid 2, second sentence).
 
 **Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature`, or `cargo test --manifest-path packages/cel/Cargo.toml`
+
+## Once per school year
+
+The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for it as an open term, `verlof_al_verleend_in_schooljaar`. An article of the school's fictitious policy fills it by reading the head's earlier decisions back. The cell supplies those decisions from its chronicle.
+
+```yaml
+# fictief_beleid_verleend_verlof_obs_de_klimop, article 1
+implements:
+  - {law: leerplichtwet_1969, article: 13a, open_term: verlof_al_verleend_in_schooljaar}
+input:
+  - name: eerdere_besluiten
+    type: array
+    source: {}
+```
+
+- The cell recognizes the list by its shape: an `array` input without a source, in a policy that fills an open term of the deciding article. There is no configuration.
+- Each row is an earlier decision under art. 13a, with its fields and outputs: `bsn_jongere`, `eerste_verlofdag`, `verlof_verleend`.
+- The policy counts a decision that granted leave to the same child, with its first leave day in the same school year (1 August to 31 July). A refusal does not count.
+- The decision records the value with `field_source` `policy`, like the first lesdag.
+
+**Try it:** `just bdd`, which runs `verleend_verlof.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`
