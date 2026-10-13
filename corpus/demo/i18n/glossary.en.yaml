@@ -261,6 +261,7 @@ words:
   betaaldatum: payment date
   betaalkenmerk: payment reference
   betaalopdracht: payment order
+  betaling: payment
   betalingen: payments
   beveiligingsplan: security plan
   bevestigd: confirmed
@@ -574,6 +575,7 @@ words:
   ouder: parent
   ouder1: parent1
   ouder2: parent2
+  overboeking: transfer
   overbrengdatum: transfer date
   overgebracht: transferred
   overheid: government
@@ -780,6 +782,7 @@ words:
   voor: for
   voordelen: gains
   voorschot: advance
+  voorschottermijn: advance instalment
   voorschotbedrag: advance amount
   voorschriften: conditions
   voorwaarden: conditions
