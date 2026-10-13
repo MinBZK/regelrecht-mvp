@@ -974,6 +974,21 @@ export function legalBasisFields(): Field[] {
 }
 
 /**
+ * A string definition (`provisionGround`, `articleReference`): no field
+ * table, only the description and the pattern. Each has its own section
+ * because fields link to it (`produces.moment.legal_basis`, `established_by`).
+ */
+export function stringDefinition(
+  name: 'provisionGround' | 'articleReference',
+): { description: string; pattern: string } {
+  const node = defs[name] ?? {};
+  return {
+    description: renderDescription(node.description ?? ''),
+    pattern: node.pattern ?? '',
+  };
+}
+
+/**
  * What may appear wherever an operation takes a value.
  *
  * In the schema this is `operationValue`, a bare `oneOf` with no description:

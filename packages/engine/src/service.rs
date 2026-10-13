@@ -34,9 +34,9 @@ use crate::error::{EngineError, Result};
 use crate::operations::ValueResolver;
 use crate::priority;
 use crate::resolver::{
-    hook_filter_admits, missing_article_reason, DeclarationKind, DeclarationNotInForce,
-    DeclarationsFromOtherVersion, DelegationRefusal, HookEntry, LawArticleRef, ProcedureMiss,
-    RuleResolver, SelectionReason,
+    hook_filter_admits, missing_article_reason, submission_filter_admits, DeclarationKind,
+    DeclarationNotInForce, DeclarationsFromOtherVersion, DelegationRefusal, HookEntry,
+    LawArticleRef, ProcedureMiss, RuleResolver, SelectionReason,
 };
 use crate::trace::{LegalAnchor, TraceBuilder, ValueSource};
 use crate::types::{
@@ -1241,6 +1241,31 @@ pub enum ExecutionOutcome {
     },
 }
 
+/// The articles that take part when an article that establishes a
+/// submission runs (RFC-045): "Leerplichtwet 13a says there is an application;
+/// the Awb says what every application also holds". Executing the article
+/// fires the hooks; this names them, so a runtime that composes the form or
+/// the record of the submission takes them from the engine instead of
+/// collecting them itself.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Submission {
+    /// The kind of submission (`produces.submission.kind`), such as `AANVRAAG`.
+    pub kind: String,
+    /// The establishing article first, then every hook on the submission in
+    /// the order the engine fires them (`pre_actions`, then `post_actions`).
+    pub articles: Vec<SubmissionArticle>,
+}
+
+/// An article that takes part in a submission.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubmissionArticle {
+    pub law_id: String,
+    pub article_number: String,
+    /// `None` for the article that establishes the submission, otherwise the
+    /// point at which it fires as a hook.
+    pub hook_point: Option<HookPoint>,
+}
+
 /// High-level service for executing laws with automatic cross-law resolution.
 ///
 /// `LawExecutionService` wraps a `RuleResolver` and implements `ServiceProvider`
@@ -1683,6 +1708,64 @@ impl LawExecutionService {
             calculation_date,
             None,
         )
+    }
+
+    /// What executing article `article_number` of `law_id` involves when it
+    /// establishes a submission (RFC-045), in the version in force on
+    /// `calculation_date`: the article and the hooks on the submission, by the
+    /// rule [`Self::fire_hooks`] fires them. Executing the article, through
+    /// [`Self::evaluate_law_output`] or [`Self::execute_stage`], runs them and
+    /// puts their outputs in the result. `None` when the article establishes
+    /// no submission. A hook whose law or article has no version in force on
+    /// that date does not fire, so it is left out here too (an execution
+    /// records that skip on its trace and receipt).
+    pub fn submission(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        calculation_date: &str,
+    ) -> Result<Option<Submission>> {
+        let ref_date = Some(parse_calculation_date(calculation_date)?);
+        let law = self
+            .resolver
+            .get_law_for_date_reported(law_id, ref_date)
+            .map_err(|reason| selection_error(law_id, calculation_date, reason))?;
+        let article = law.find_article_by_number(article_number).ok_or_else(|| {
+            EngineError::ResolutionError(format!(
+                "the version of {law_id} in force on {calculation_date} has no article {article_number}"
+            ))
+        })?;
+        let Some(kind) = article
+            .get_produces()
+            .and_then(|p| p.submission.as_ref())
+            .map(|s| s.kind.clone())
+        else {
+            return Ok(None);
+        };
+        let mut articles = vec![SubmissionArticle {
+            law_id: law_id.to_string(),
+            article_number: article_number.to_string(),
+            hook_point: None,
+        }];
+        for hook_point in [HookPoint::PreActions, HookPoint::PostActions] {
+            for h in self
+                .resolver
+                .find_submission_hooks(hook_point, &kind, law_id, article_number)
+            {
+                let in_force = self
+                    .resolver
+                    .get_law_for_date(&h.law_id, ref_date)
+                    .is_some_and(|l| l.find_article_by_number(&h.article_number).is_some());
+                if in_force {
+                    articles.push(SubmissionArticle {
+                        law_id: h.law_id.clone(),
+                        article_number: h.article_number.clone(),
+                        hook_point: Some(hook_point),
+                    });
+                }
+            }
+        }
+        Ok(Some(Submission { kind, articles }))
     }
 
     /// Internal stage execution with optional tracing.
@@ -2178,32 +2261,96 @@ impl LawExecutionService {
         Ok(result)
     }
 
+    /// The hooks at `hook_point` on what `article` of `law` produces: on the
+    /// decision (its legal character, at this stage) and on the submission it
+    /// establishes (RFC-045), in that order, each article once. Index entries
+    /// only; whether a hook is in force on the date is for
+    /// [`Self::fireable_hooks`].
+    ///
+    /// Hooks on a submission ignore `stage`: an article that has both a staged
+    /// procedure and `produces.submission` fires the submission hooks at every
+    /// `execute_stage` call. No corpus article combines both yet; the slice
+    /// that adds the decision on the application decides at which stage they
+    /// fire (RFC-045, Tradeoffs).
+    fn hooks_firing_on(
+        &self,
+        hook_point: HookPoint,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        stage: &str,
+    ) -> Vec<&HookEntry> {
+        let Some(produces) = article.get_produces() else {
+            return Vec::new();
+        };
+        let mut hooks = match produces.legal_character.as_deref() {
+            Some(lc) => {
+                self.resolver
+                    .find_hooks(hook_point, lc, produces.decision_type.as_deref(), stage)
+            }
+            None => Vec::new(),
+        };
+        if let Some(submission) = &produces.submission {
+            for h in self.resolver.find_submission_hooks(
+                hook_point,
+                &submission.kind,
+                &law.id,
+                &article.number,
+            ) {
+                // An article that hooks onto both the decision and the
+                // submission of this article fires once.
+                if !hooks
+                    .iter()
+                    .any(|e| e.law_id == h.law_id && e.article_number == h.article_number)
+                {
+                    hooks.push(h);
+                }
+            }
+        }
+        hooks
+    }
+
     /// The hooks at `hook_point` that fire on `article` at this stage, as
     /// [`Self::fire_hooks`] runs them and [`Self::hook_parameter_names`] reads
-    /// them, with the legal character they attach to. A hook not in force on
-    /// the date comes back as the record of why; one already executing is
-    /// left out. `None` when the article produces nothing a hook attaches to.
+    /// them, with what they attach to as the trace names it ("BESCHIKKING
+    /// stage BESLUIT", "submission AANVRAAG"). A hook not in force on the date comes back as
+    /// the record of why; one already executing is left out. `None` when the
+    /// article produces nothing a hook attaches to.
     #[allow(clippy::type_complexity)]
-    fn fireable_hooks<'s, 'x>(
+    fn fireable_hooks<'s>(
         &'s self,
         hook_point: HookPoint,
-        article: &'x Article,
+        article: &Article,
+        law: &ArticleBasedLaw,
         stage: &str,
         res_ctx: &ResolutionContext<'_>,
     ) -> Option<(
-        &'x str,
+        String,
         Vec<std::result::Result<FireableHook<'s>, DeclarationNotInForce>>,
     )> {
         let produces = article.get_produces()?;
-        let legal_character = produces.legal_character.as_deref()?;
+        let legal_character = produces.legal_character.as_deref();
         let decision_type = produces.decision_type.as_deref();
-        let matching_hooks =
-            self.resolver
-                .find_hooks(hook_point, legal_character, decision_type, stage);
-        let subject = format!(
-            "hook point {} on {legal_character} at stage {stage}",
-            hook_point.as_str()
-        );
+        let kind = produces.submission.as_ref().map(|s| s.kind.as_str());
+        // What the hooks fire on, as the trace names it ("BESCHIKKING stage
+        // BESLUIT") and as the record of a hook not in force names it
+        // ("... at stage BESLUIT").
+        let (trace_label, on) = match (legal_character, kind) {
+            (Some(lc), Some(k)) => (
+                format!("{lc} stage {stage}, submission {k}"),
+                format!("{lc} at stage {stage}, submission {k}"),
+            ),
+            (Some(lc), None) => (
+                format!("{lc} stage {stage}"),
+                format!("{lc} at stage {stage}"),
+            ),
+            (None, Some(k)) => (format!("submission {k}"), format!("submission {k}")),
+            (None, None) => return None,
+        };
+        let matching_hooks = self.hooks_firing_on(hook_point, article, law, stage);
+        let subject = format!("hook point {} on {on}", hook_point.as_str());
+        // The establishing article, for `established_by`: `law` and
+        // `article` are rebound to the hook's own below.
+        let (establishing_law, establishing_article) = (law.id.as_str(), article.number.as_str());
         let ref_date = res_ctx.reference_date();
         let hooks = matching_hooks
             .iter()
@@ -2248,7 +2395,11 @@ impl LawExecutionService {
                         not_in_force(missing_article_reason(
                             law,
                             &hook_entry.article_number,
-                            "a hook that fires at the same point on this decision",
+                            if hook_entry.filter().submission.is_none() {
+                                "a hook that fires at the same point on this decision"
+                            } else {
+                                "a hook that fires at the same point on this submission"
+                            },
                             |candidate| {
                                 let offered = matching_hooks.iter().any(|h| {
                                     h.law_id == hook_entry.law_id
@@ -2257,14 +2408,27 @@ impl LawExecutionService {
                                 !offered
                                     && candidate.get_hooks().is_some_and(|decls| {
                                         decls.iter().any(|d| {
+                                            let f = &d.applies_to;
                                             d.hook_point == hook_point
-                                                && d.applies_to.legal_character.as_deref()
-                                                    == Some(legal_character)
-                                                && hook_filter_admits(
-                                                    &d.applies_to,
-                                                    decision_type,
-                                                    stage,
-                                                )
+                                                && match (&f.legal_character, &f.submission) {
+                                                    (Some(lc), _) => {
+                                                        legal_character == Some(lc.as_str())
+                                                            && hook_filter_admits(
+                                                                f,
+                                                                decision_type,
+                                                                stage,
+                                                            )
+                                                    }
+                                                    (None, Some(k)) => {
+                                                        kind == Some(k.as_str())
+                                                            && submission_filter_admits(
+                                                                f,
+                                                                establishing_law,
+                                                                establishing_article,
+                                                            )
+                                                    }
+                                                    (None, None) => false,
+                                                }
                                         })
                                     })
                             },
@@ -2277,7 +2441,7 @@ impl LawExecutionService {
                 })
             })
             .collect();
-        Some((legal_character, hooks))
+        Some((trace_label, hooks))
     }
 
     /// The parameters the hooks at `hook_point` on this article declare: the
@@ -2286,10 +2450,11 @@ impl LawExecutionService {
         &self,
         hook_point: HookPoint,
         article: &Article,
+        law: &ArticleBasedLaw,
         stage: &str,
         res_ctx: &ResolutionContext<'_>,
     ) -> BTreeSet<String> {
-        self.fireable_hooks(hook_point, article, stage, res_ctx)
+        self.fireable_hooks(hook_point, article, law, stage, res_ctx)
             .map(|(_, hooks)| {
                 hooks
                     .into_iter()
@@ -2313,8 +2478,9 @@ impl LawExecutionService {
     ) -> Demand {
         let plan = self.override_plan(article, law, res_ctx);
         let read_before_actions =
-            self.hook_parameter_names(HookPoint::PreActions, article, stage, res_ctx);
-        let post_hooks = self.hook_parameter_names(HookPoint::PostActions, article, stage, res_ctx);
+            self.hook_parameter_names(HookPoint::PreActions, article, law, stage, res_ctx);
+        let post_hooks =
+            self.hook_parameter_names(HookPoint::PostActions, article, law, stage, res_ctx);
         // What the post hooks read, and what the replacing overrides of the
         // computed outputs read; `None` means every output is computed.
         let read_after = |computed: Option<&BTreeSet<String>>| -> BTreeSet<String> {
@@ -2432,7 +2598,7 @@ impl LawExecutionService {
         &self,
         hook_point: HookPoint,
         article: &Article,
-        _law: &ArticleBasedLaw,
+        law: &ArticleBasedLaw,
         stage: &str,
         parameters: &BTreeMap<String, Value>,
         res_ctx: &mut ResolutionContext<'_>,
@@ -2444,8 +2610,7 @@ impl LawExecutionService {
         let hook_point_str = hook_point.as_str();
 
         // Only fire hooks if the article declares what it produces
-        let Some((legal_character, hooks)) =
-            self.fireable_hooks(hook_point, article, stage, res_ctx)
+        let Some((on, hooks)) = self.fireable_hooks(hook_point, article, law, stage, res_ctx)
         else {
             return Ok((hook_outputs, hook_provenance));
         };
@@ -2456,8 +2621,7 @@ impl LawExecutionService {
 
         tracing::debug!(
             hook_point = ?hook_point,
-            legal_character = legal_character,
-            stage = stage,
+            on = %on,
             matches = hooks.len(),
             "Firing hooks"
         );
@@ -2487,8 +2651,8 @@ impl LawExecutionService {
                 PathNodeType::HookResolution,
             );
             res_ctx.trace_set_message(format!(
-                "Hook {:?} on {} stage {} → {}:{}",
-                hook_point, legal_character, stage, hook_law_id, hook_article_number
+                "Hook {:?} on {} → {}:{}",
+                hook_point, on, hook_law_id, hook_article_number
             ));
 
             // Enter scope for cycle detection

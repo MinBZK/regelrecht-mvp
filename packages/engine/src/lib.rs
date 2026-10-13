@@ -73,9 +73,12 @@ pub use operations::{evaluate_value, execute_operation, ValueResolver};
 pub use receipt::ExecutionReceipt;
 pub use resolver::{
     DeclarationKind, DeclarationNotInForce, DeclarationsFromOtherVersion, DelegationRefusal,
-    ImplementationLookup, ProcedureMiss, RuleResolver,
+    HookEntry, ImplementationLookup, ProcedureMiss, RuleResolver,
 };
-pub use service::{ExecutionOutcome, LawExecutionService, LawInfo, ServiceProvider, StageState};
+pub use service::{
+    ExecutionOutcome, LawExecutionService, LawInfo, ServiceProvider, StageState, Submission,
+    SubmissionArticle,
+};
 pub use trace::{PathNode, TraceBuilder};
 pub use types::{
     Connectivity, LegalStatus, MissingFact, MissingKind, Operation, ParameterType, PathNodeType,

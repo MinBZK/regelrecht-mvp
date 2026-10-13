@@ -24,6 +24,7 @@ import {
   enumBlocks,
   schemaStats,
   legalBasisFields,
+  stringDefinition,
   operandForms,
   articleFields,
   machineReadableSubStructures,
@@ -310,6 +311,18 @@ const others = otherSubStructures();
 </p>
 
 <SchemaFieldTable fields={legalBasisFields()} label="Fields of a legal basis citation" />
+
+<h3 id="provision-ground">Provision ground</h3>
+
+<p set:html={stringDefinition('provisionGround').description} />
+
+<nldd-text size="sm" color="secondary"><code>{stringDefinition('provisionGround').pattern}</code></nldd-text>
+
+<h3 id="article-reference">Article reference</h3>
+
+<p set:html={stringDefinition('articleReference').description} />
+
+<nldd-text size="sm" color="secondary"><code>{stringDefinition('articleReference').pattern}</code></nldd-text>
 
 <h2 id="operations">Operations</h2>
 
