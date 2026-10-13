@@ -350,6 +350,8 @@ const ANCHOR_OVERRIDES: Record<string, string> = {
   machineReadableSection: 'machine-readable',
   operationType: 'operations',
   operation: 'operations',
+  // The form of a `grondslag`; documented with the origin that carries it.
+  provisionGround: 'origin',
 };
 
 function defAnchor(name: string): string {
@@ -971,6 +973,16 @@ export function enumBlocks(): EnumBlock[] {
  */
 export function legalBasisFields(): Field[] {
   return fieldsOf(defs.legalBasis ?? {});
+}
+
+/**
+ * `origin`: who supplies a parameter, with the provision that says so.
+ *
+ * Its own section because a parameter's type links to it, and because the
+ * reader of an application wants the list of who-supplies-what in one place.
+ */
+export function originFields(): Field[] {
+  return fieldsOf(defs.origin ?? {});
 }
 
 /**

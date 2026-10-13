@@ -24,6 +24,7 @@ import {
   enumBlocks,
   schemaStats,
   legalBasisFields,
+  originFields,
   operandForms,
   articleFields,
   machineReadableSubStructures,
@@ -310,6 +311,19 @@ const others = otherSubStructures();
 </p>
 
 <SchemaFieldTable fields={legalBasisFields()} label="Fields of a legal basis citation" />
+
+<h3 id="origin">Origin</h3>
+
+<p>
+  Who supplies the value of a parameter, and the provision that says so: the
+  applicant, the administrative body from what it already holds, a judgement of
+  the administrative body, a register or the intake channel. The engine does not
+  read it; a process runtime does. A <code>grondslag</code> has the form
+  <code>&lt;regulation&gt;#&lt;article&gt;</code>, optionally followed by
+  <code>lid &lt;n&gt;</code>: <code>algemene_wet_bestuursrecht#4:2 lid 1</code>.
+</p>
+
+<SchemaFieldTable fields={originFields()} label="Fields of an origin" />
 
 <h2 id="operations">Operations</h2>
 
