@@ -52,20 +52,26 @@ A cell, here a school, records the application as one gram in its chronicle. The
   "legal_basis": "leerplichtwet_1969#13a",
   "holder": "obs_de_klimop",
   "recorded_on": "2026-10-13",
-  "fields": { "eerste_verlofdag": "2027-02-01", "datum_ontvangst": "2026-10-13" },
+  "moment": {
+    "parameter": "datum_ontvangst",
+    "on": "2026-10-13",
+    "declared_by": "algemene_wet_bestuursrecht#4:13",
+    "legal_basis": ["algemene_wet_bestuursrecht#4:13 lid 1"]
+  },
+  "fields": { "eerste_verlofdag": "2027-02-01", "adres_aanvrager": null },
   "field_basis": {
     "eerste_verlofdag": ["leerplichtwet_1969#13a"],
-    "datum_ontvangst": ["algemene_wet_bestuursrecht#4:13", "algemene_wet_bestuursrecht#4:13 lid 1"]
+    "adres_aanvrager": ["algemene_wet_bestuursrecht#4:2"]
   },
   "outputs": { "redelijke_beslistermijn_einddatum": "2026-12-08" },
   "output_basis": { "redelijke_beslistermijn_einddatum": "algemene_wet_bestuursrecht#4:13" }
 }
 ```
 
-- Fields are all parameters of art. 13a and of its Awb hooks. The cell refuses a field no article asks, and a value of the wrong type.
-- The cell fills the moment that counts (`datum_ontvangst`) with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
+- Fields are all parameters of art. 13a and of its Awb hooks, except the moment. The cell refuses a field no article asks, and a value of the wrong type. A field that can be absent and was left out is `null` in the gram, as the engine received it.
+- The moment that counts (`datum_ontvangst`) has its own key, `moment`, with its `legal_basis`. The cell fills it with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
 - Recording runs art. 13a, so the Awb hooks run too, and their outputs go in the gram.
-- `field_basis` gives per field the articles that ask it, and for the moment also its `legal_basis`.
+- `field_basis` gives per field the articles that ask it.
 - The chronicle refuses a gram dated before the last one.
 
 **Try it:** `cargo test --manifest-path packages/cel/Cargo.toml`

@@ -2,9 +2,10 @@
 //!
 //! The engine names the articles that take part in a submission
 //! ([`LawExecutionService::submission`]): the article that establishes it and
-//! the hooks on it. Their parameters are what the application holds. A
-//! `produces.moment` on one of them names the moment that counts, such as
-//! the receipt (Awb 4:13 lid 1); the cell fills that one, not the applicant.
+//! the hooks on it. Their parameters are what the application holds, but
+//! one: a `produces.moment` on one of them names the moment that counts,
+//! such as the receipt (Awb 4:13 lid 1). That parameter is the moment, not
+//! part of the application (RFC-045); the cell fills it, not the applicant.
 
 use chrono::NaiveDate;
 use regelrecht_engine::{Article, LawExecutionService, ParameterType};
@@ -18,7 +19,8 @@ pub struct Field {
     pub name: String,
     #[serde(rename = "type")]
     pub type_: ParameterType,
-    /// Whether `null` (absence) is a value it can take (RFC-036).
+    /// Whether `null` (absence) is a value it can take (RFC-036): only when
+    /// every article that asks it says so.
     pub nullable: bool,
     /// The articles that ask it, `<regulation>#<article>`, in the order they
     /// take part. Two articles that ask the same datum with the same type
@@ -55,9 +57,10 @@ pub struct Shape {
     pub article: String,
     /// The outputs of the establishing article: executing them runs it.
     pub outputs: Vec<String>,
-    /// Every parameter of the articles that take part, the establishing
-    /// article first, then the hooks in the order they fire. A name two
-    /// articles declare is the first one's.
+    /// What the application holds: every parameter of the articles that
+    /// take part, the establishing article first, then the hooks in the
+    /// order they fire. A name two articles declare is one field. The
+    /// moment's parameter is not among them.
     pub fields: Vec<Field>,
     pub moment: Option<Moment>,
 }
@@ -72,12 +75,7 @@ impl Shape {
         self.fields.iter().find(|f| f.name == name)
     }
 
-    /// The fields the applicant fills in: all but the moment, which the cell
-    /// fills.
-    pub fn supplied(&self) -> impl Iterator<Item = &Field> {
-        self.fields.iter().filter(|f| !self.is_moment(&f.name))
-    }
-
+    /// Whether `name` is the parameter that holds the moment that counts.
     pub fn is_moment(&self, name: &str) -> bool {
         self.moment
             .as_ref()
@@ -134,7 +132,9 @@ pub fn derive(
                     declared_by: vec![declared_by.clone()],
                 }),
                 // Two articles ask the same datum: one field, resting on both.
+                // It can be absent only if both say so.
                 Some(f) if f.type_ == p.param_type => {
+                    f.nullable &= p.is_nullable();
                     if !f.declared_by.contains(&declared_by) {
                         f.declared_by.push(declared_by.clone());
                     }
@@ -157,15 +157,19 @@ pub fn derive(
                 )));
             }
             if let Some(name) = &m.parameter {
-                if !execution
-                    .parameters
-                    .iter()
-                    .flatten()
-                    .any(|p| &p.name == name)
-                {
-                    return Err(setup(format!(
-                        "{declared_by}: the moment is parameter '{name}', which it does not declare"
-                    )));
+                match execution.parameters.iter().flatten().find(|p| &p.name == name) {
+                    None => {
+                        return Err(setup(format!(
+                            "{declared_by}: the moment is parameter '{name}', which it does not declare"
+                        )))
+                    }
+                    Some(p) if p.param_type != ParameterType::Date => {
+                        return Err(setup(format!(
+                            "{declared_by}: the moment is parameter '{name}', which is a {:?}, not a Date",
+                            p.param_type
+                        )))
+                    }
+                    Some(_) => {}
                 }
             }
             shape.moment = Some(Moment {
@@ -174,6 +178,10 @@ pub fn derive(
                 legal_basis: m.legal_basis.clone(),
             });
         }
+    }
+    // The moment is no part of what the application holds.
+    if let Some(name) = shape.moment.as_ref().and_then(|m| m.parameter.clone()) {
+        shape.fields.retain(|f| f.name != name);
     }
     if shape.outputs.is_empty() {
         return Err(setup(format!(
@@ -198,7 +206,7 @@ fn article_on<'s>(
 /// Whether a supplied value fits the field. `null` fits a field that can
 /// be absent (RFC-036): an application may leave it empty (Awb 4:5 asks to
 /// complete it; it is still an application). An amount is in whole
-/// eurocents.
+/// eurocents. A date is written `YYYY-MM-DD`, and only so.
 pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
     use serde_json::Value as J;
     match (field.type_, value) {
@@ -207,7 +215,8 @@ pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
         (ParameterType::Number, J::Number(_)) => true,
         (ParameterType::Amount, J::Number(n)) => n.is_i64() || n.is_u64(),
         (ParameterType::Boolean, J::Bool(_)) => true,
-        (ParameterType::Date, J::String(s)) => NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok(),
+        (ParameterType::Date, J::String(s)) => NaiveDate::parse_from_str(s, "%Y-%m-%d")
+            .is_ok_and(|d| d.format("%Y-%m-%d").to_string() == *s),
         (ParameterType::Array, J::Array(_)) => true,
         (ParameterType::Object, J::Object(_)) => true,
         _ => false,

@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, OutputProvenance, Value};
 use serde_json::Map;
 
-use crate::chronicle::{Chronicle, Gram};
+use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::error::{refused, setup, Result};
 use crate::shape::{self, Shape};
 
@@ -55,9 +55,10 @@ impl Cell {
     /// supplied in `supplied`.
     ///
     /// The cell refuses a field the law does not ask, the moment that counts
-    /// (the cell fills it), and a value of the wrong type. A
-    /// field may be left out. It fills the moment with `on`, executes the
-    /// article (so the hooks on the submission run) and appends one gram.
+    /// (the cell fills it), and a value of the wrong type. A field may be
+    /// left out. It takes `on` as the moment, passes it to the engine,
+    /// executes the article (so the hooks on the submission run) and
+    /// appends one gram.
     pub fn record_submission(
         &mut self,
         service: &LawExecutionService,
@@ -69,44 +70,39 @@ impl Cell {
         let shape = shape::derive(service, law_id, article, on)?;
         check_supplied(&shape, supplied)?;
 
-        let mut fields: BTreeMap<String, serde_json::Value> = supplied
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect();
-        let mut field_basis: BTreeMap<String, Vec<String>> = supplied
-            .keys()
-            .filter_map(|name| shape.field(name))
-            .map(|f| (f.name.clone(), f.declared_by.clone()))
-            .collect();
-        if let Some(moment) = &shape.moment {
-            if let Some(name) = &moment.parameter {
-                fields.insert(name.clone(), serde_json::Value::String(on.to_string()));
-                let mut basis = shape.field(name).map_or_else(
-                    || vec![moment.declared_by.clone()],
-                    |f| f.declared_by.clone(),
-                );
-                for b in &moment.legal_basis {
-                    if !basis.contains(b) {
-                        basis.push(b.clone());
-                    }
-                }
-                field_basis.insert(name.clone(), basis);
-            }
-        }
-
         // A field the application leaves out and that can be absent is
-        // absent: the application is what the applicant sent (RFC-036).
-        // One that cannot be absent stays unknown to the engine.
-        let mut parameters: BTreeMap<String, Value> = shape
-            .supplied()
-            .filter(|f| f.nullable && !supplied.contains_key(&f.name))
-            .map(|f| (f.name.clone(), Value::Null))
+        // absent: the application is what the applicant sent (RFC-036), and
+        // the gram says so with `null`. One that cannot be absent stays
+        // unknown to the engine and out of the gram.
+        let mut fields = BTreeMap::new();
+        let mut field_basis = BTreeMap::new();
+        for field in &shape.fields {
+            let value = match supplied.get(&field.name) {
+                Some(value) => value.clone(),
+                None if field.nullable => serde_json::Value::Null,
+                None => continue,
+            };
+            fields.insert(field.name.clone(), value);
+            field_basis.insert(field.name.clone(), field.declared_by.clone());
+        }
+        let moment = shape.moment.as_ref().map(|m| GramMoment {
+            parameter: m.parameter.clone(),
+            on,
+            declared_by: m.declared_by.clone(),
+            legal_basis: m.legal_basis.clone(),
+        });
+
+        // The engine gets the fields and the moment.
+        let mut parameters: BTreeMap<String, Value> = fields
+            .iter()
+            .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
-        parameters.extend(
-            fields
-                .iter()
-                .map(|(k, v)| (k.clone(), Value::from(v.clone()))),
-        );
+        if let Some(name) = moment.as_ref().and_then(|m| m.parameter.as_ref()) {
+            parameters.insert(
+                name.clone(),
+                Value::from(serde_json::Value::String(on.to_string())),
+            );
+        }
         let outputs: Vec<&str> = shape.outputs.iter().map(String::as_str).collect();
         let result = service.evaluate_law(law_id, &outputs, parameters, &on.to_string())?;
 
@@ -143,6 +139,7 @@ impl Cell {
             legal_basis: shape.legal_basis(),
             holder: self.holder.clone(),
             recorded_on: on,
+            moment,
             fields,
             field_basis,
             outputs: output_values,
@@ -156,18 +153,18 @@ impl Cell {
 fn check_supplied(shape: &Shape, supplied: &Map<String, serde_json::Value>) -> Result<()> {
     let submission = shape.legal_basis();
     for (name, value) in supplied {
+        if let Some(moment) = shape.moment.as_ref().filter(|_| shape.is_moment(name)) {
+            return Err(refused(format!(
+                "'{name}' is the moment that counts ({}); the cell records it",
+                moment.declared_by
+            )));
+        }
         let field = shape.field(name).ok_or_else(|| {
             refused(format!(
                 "the law does not ask '{name}' in the {} of {submission}",
                 shape.kind
             ))
         })?;
-        if shape.is_moment(name) {
-            return Err(refused(format!(
-                "'{name}' is the moment that counts ({}); the cell records it",
-                field.first_declared_by()
-            )));
-        }
         if !shape::fits(field, value) {
             return Err(refused(format!(
                 "'{name}' is {value}, which does not fit a {}{:?} ({})",

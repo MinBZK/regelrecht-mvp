@@ -71,7 +71,8 @@ fn the_shape_of_the_application_comes_from_the_law() {
     // Every parameter of art. 13a and of the Awb hooks on its application,
     // but the moment, which the cell fills.
     let supplied: Vec<(&str, &str)> = shape
-        .supplied()
+        .fields
+        .iter()
         .map(|f| (f.name.as_str(), f.first_declared_by()))
         .collect();
     assert_eq!(
@@ -107,13 +108,24 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
     assert_eq!(gram.recorded_on, day("2026-10-13"));
     assert_eq!(uuid_version(&gram.id), 7);
 
-    // What the parent supplied, and the receipt the cell filled in.
+    // What the parent supplied; the receipt is no part of it.
     assert_eq!(gram.fields["eerste_verlofdag"], json!("2027-02-01"));
-    assert_eq!(gram.fields["datum_ontvangst"], json!("2026-10-13"));
-    assert_eq!(gram.fields.len(), 9);
+    assert_eq!(gram.fields.len(), 8);
+    assert!(!gram.fields.contains_key("datum_ontvangst"));
+    assert!(!gram.field_basis.contains_key("datum_ontvangst"));
 
-    // Per field the article that asks it, and for the moment the provision
-    // that says why it counts.
+    // The receipt the cell filled in, with the provision that says why it
+    // counts.
+    let moment = gram.moment.as_ref().unwrap();
+    assert_eq!(moment.parameter.as_deref(), Some("datum_ontvangst"));
+    assert_eq!(moment.on, day("2026-10-13"));
+    assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#4:13");
+    assert_eq!(
+        moment.legal_basis,
+        vec!["algemene_wet_bestuursrecht#4:13 lid 1"]
+    );
+
+    // Per field the article that asks it.
     assert_eq!(
         gram.field_basis["bsn_jongere"],
         vec!["leerplichtwet_1969#13a"]
@@ -121,13 +133,6 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
     assert_eq!(
         gram.field_basis["naam_aanvrager"],
         vec!["algemene_wet_bestuursrecht#4:2"]
-    );
-    assert_eq!(
-        gram.field_basis["datum_ontvangst"],
-        vec![
-            "algemene_wet_bestuursrecht#4:13",
-            "algemene_wet_bestuursrecht#4:13 lid 1"
-        ]
     );
 
     // What the article and the Awb hooks gave.
@@ -159,13 +164,24 @@ fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
     empty.insert("adres_aanvrager".into(), Value::Null);
     let mut left_out = application();
     left_out.remove("adres_aanvrager");
-    for supplied in [empty, left_out] {
-        let gram = record(&mut cell, &supplied, "2026-10-13").unwrap();
+    let grams: Vec<_> = [empty, left_out]
+        .iter()
+        .map(|supplied| record(&mut cell, supplied, "2026-10-13").unwrap())
+        .collect();
+    for gram in &grams {
         assert_eq!(
             gram.outputs["aanvraag_bevat_wat_artikel_4_2_eist"],
             json!(false)
         );
+        // Left out or `null`, the gram shows what the engine received.
+        assert_eq!(gram.fields["adres_aanvrager"], Value::Null);
+        assert_eq!(
+            gram.field_basis["adres_aanvrager"],
+            vec!["algemene_wet_bestuursrecht#4:2"]
+        );
     }
+    assert_eq!(grams[0].fields, grams[1].fields);
+    assert_eq!(grams[0].field_basis, grams[1].field_basis);
 }
 
 #[test]

@@ -31,14 +31,16 @@ pub struct Gram {
     pub legal_basis: String,
     /// The cell that recorded it: the holder of the chronicle.
     pub holder: String,
-    /// The day the cell recorded it. For an application this is also the day
-    /// of receipt, when the law makes receipt the moment that counts.
+    /// The day the cell recorded it.
     pub recorded_on: NaiveDate,
-    /// What the applicant supplied, and the moment that counts.
+    /// The moment that counts, when the law names one (`produces.moment`).
+    /// It is not part of what the application holds (RFC-045).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub moment: Option<GramMoment>,
+    /// What the application holds: the values supplied, and `null` for a
+    /// field left out that can be absent, as the engine received them.
     pub fields: BTreeMap<String, Value>,
-    /// Per field, the provisions it rests on: the articles that ask it, and
-    /// for the moment that counts the provisions that say why it counts
-    /// (`produces.moment.legal_basis`).
+    /// Per field, the articles that ask it.
     pub field_basis: BTreeMap<String, Vec<String>>,
     /// What executing the establishing article gave: its own outputs and
     /// those of the hooks on the submission, such as the last day of the
@@ -46,6 +48,21 @@ pub struct Gram {
     pub outputs: BTreeMap<String, Value>,
     /// Per output, the article that computed it.
     pub output_basis: BTreeMap<String, String>,
+}
+
+/// The moment that counts for a gram, as recorded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GramMoment {
+    /// The parameter the law names for it, which the engine received the
+    /// moment in. Absent when the law names none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameter: Option<String>,
+    /// The day it fell on. The cell takes the day it records the gram.
+    pub on: NaiveDate,
+    /// The article that names the moment.
+    pub declared_by: String,
+    /// The provisions that say why it counts (`produces.moment.legal_basis`).
+    pub legal_basis: Vec<String>,
 }
 
 /// The grams of one cell, in the order they were recorded.
