@@ -23,7 +23,10 @@ articles:
           moment:
             parameter: datum_ontvangst
             legal_basis:
-              - test_conformance_submission#1
+              law: Testwet aanvraag
+              bwb_id: BWBR0099995
+              article: '1'
+              paragraph: '1'
         parameters:
           - name: datum_ontvangst
             type: date

@@ -974,12 +974,12 @@ export function legalBasisFields(): Field[] {
 }
 
 /**
- * A string definition (`provisionGround`, `articleReference`): no field
- * table, only the description and the pattern. Each has its own section
- * because fields link to it (`produces.moment.legal_basis`, `established_by`).
+ * A string definition (`articleReference`): no field table, only the
+ * description and the pattern. It has its own section because a field links
+ * to it (`established_by`).
  */
 export function stringDefinition(
-  name: 'provisionGround' | 'articleReference',
+  name: 'articleReference',
 ): { description: string; pattern: string } {
   const node = defs[name] ?? {};
   return {
@@ -1056,7 +1056,6 @@ export function referenceHeadings(): { depth: number; slug: string; text: string
     for (const sub of subStructuresFor(kind.slug)) h(4, sub.slug, sub.title);
   }
   h(3, 'legal-basis', 'Legal basis');
-  h(3, 'provision-ground', 'Provision ground');
   h(3, 'article-reference', 'Article reference');
 
   // Everything otherSubStructures() renders, at the depth the component uses.

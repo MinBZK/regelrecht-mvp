@@ -284,15 +284,15 @@ pub struct Submission {
 /// The moment that counts in law for what an article produces (RFC-045).
 /// With `parameter`, that parameter's value is the moment; without it, the
 /// moment is the one at which a runtime records the fact.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Moment {
     /// The parameter whose value is the moment.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parameter: Option<String>,
-    /// The provisions that say why this moment counts
-    /// (`<regulation>#<article>`, optionally ` lid <n>`).
-    pub legal_basis: Vec<String>,
+    /// The provision that says why this moment counts, in the schema's
+    /// `legalBasis` shape. Required by the schema.
+    pub legal_basis: ProvisionReference,
 }
 
 /// A single case in an IF operation (cases/default syntax)
@@ -897,13 +897,19 @@ pub struct HookFilter {
     pub established_by: Option<String>,
 }
 
-/// Schema `provisionGround`:
-/// `^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$`.
-fn is_provision_ground(s: &str) -> bool {
+/// Whether `s` is an article reference of the schema (`articleReference`):
+/// `<regulation>#<article>` with no ` lid <n>` (schema pattern
+/// `^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$`, `not` the
+/// pattern ` lid [0-9]`). An article with a space, such as Kieswet `G 1`, is
+/// one.
+pub fn is_article_reference(s: &str) -> bool {
     let Some((regulation, article)) = s.split_once('#') else {
         return false;
     };
     let alnum = |c: char| c.is_ascii_alphanumeric();
+    let names_paragraph = s
+        .match_indices(" lid ")
+        .any(|(i, m)| s[i + m.len()..].starts_with(|c: char| c.is_ascii_digit()));
     !regulation.is_empty()
         && regulation
             .chars()
@@ -913,17 +919,7 @@ fn is_provision_ground(s: &str) -> bool {
         && article
             .chars()
             .all(|c| alnum(c) || matches!(c, ':' | '.' | '_' | ' ' | '-'))
-}
-
-/// Whether `s` is an article reference of the schema (`articleReference`):
-/// a [`provisionGround`](is_provision_ground) without a paragraph, so
-/// `<regulation>#<article>` with no ` lid <n>` (schema: `not` the pattern
-/// ` lid [0-9]`). An article with a space, such as Kieswet `G 1`, is one.
-pub fn is_article_reference(s: &str) -> bool {
-    let names_paragraph = s
-        .match_indices(" lid ")
-        .any(|(i, m)| s[i + m.len()..].starts_with(|c: char| c.is_ascii_digit()));
-    is_provision_ground(s) && !names_paragraph
+        && !names_paragraph
 }
 
 /// Deserialize an optional string that, when present, must be an

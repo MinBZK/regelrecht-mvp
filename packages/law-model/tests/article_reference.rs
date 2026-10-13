@@ -1,5 +1,5 @@
-//! `established_by` names an article (`articleReference`, RFC-045): a
-//! provisionGround without a paragraph.
+//! `established_by` names an article (`articleReference`, RFC-045):
+//! `<regulation>#<article>` without a paragraph.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -23,7 +23,7 @@ articles:
 }
 
 #[test]
-fn an_article_reference_is_a_provision_ground_without_a_paragraph() {
+fn an_article_reference_names_an_article_without_a_paragraph() {
     for ok in [
         "leerplichtwet_1969#13a",
         "algemene_wet_bestuursrecht#4:13",
@@ -56,4 +56,38 @@ fn established_by_reads_an_article_with_a_space_and_refuses_a_paragraph() {
         .unwrap_err()
         .to_string();
     assert!(e.contains("without a paragraph"), "{e}");
+}
+
+fn law_with_moment(legal_basis: &str) -> Result<ArticleBasedLaw, serde_yaml_ng::Error> {
+    serde_yaml_ng::from_str(&format!(
+        r#"
+$id: test_moment
+regulatory_layer: WET
+publication_date: '2026-10-13'
+articles:
+  - number: '1'
+    text: De ontvangst telt.
+    machine_readable:
+      execution:
+        produces:
+          moment:
+            parameter: datum_ontvangst
+            legal_basis: {legal_basis}
+"#
+    ))
+}
+
+/// `produces.moment.legal_basis` cites a provision the way every other
+/// `legal_basis` on a field or an action does; there is no string form.
+#[test]
+fn the_moment_cites_its_provision_as_a_legal_basis_object() {
+    let law = law_with_moment("{law: Algemene wet bestuursrecht, article: '4:13', paragraph: '1'}")
+        .expect("a legalBasis object parses");
+    let moment = law.articles[0]
+        .get_produces()
+        .and_then(|p| p.moment.as_ref())
+        .expect("moment");
+    assert_eq!(moment.legal_basis.article.as_deref(), Some("4:13"));
+    assert_eq!(moment.legal_basis.paragraph.as_deref(), Some("1"));
+    assert!(law_with_moment("'algemene_wet_bestuursrecht#4:13 lid 1'").is_err());
 }

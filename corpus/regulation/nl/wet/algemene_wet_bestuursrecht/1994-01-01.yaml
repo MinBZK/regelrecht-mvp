@@ -150,7 +150,12 @@ articles:
           moment:
             parameter: datum_ontvangst
             legal_basis:
-              - algemene_wet_bestuursrecht#4:13 lid 1
+              law: Algemene wet bestuursrecht
+              bwb_id: BWBR0005537
+              article: '4:13'
+              paragraph: '1'
+              url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel4:13
+              juriconnect: jci1.3:c:BWBR0005537&artikel=4:13&lid=1&z=2024-01-01&g=2024-01-01
         parameters:
           - name: datum_ontvangst
             type: date

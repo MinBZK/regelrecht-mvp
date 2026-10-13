@@ -1919,21 +1919,21 @@
                       "description": "The parameter of this article whose value is the moment, such as the date of receipt. Absent when the moment is the one at which a runtime records the fact."
                     },
                     "legal_basis": {
-                      "type": "array",
-                      "minItems": 1,
-                      "items": {
-                        "$ref": "#/definitions/provisionGround"
-                      },
-                      "description": "The provisions that say why this moment counts, `<regulation>#<article>`, optionally with ` lid <n>`."
+                      "$ref": "#/definitions/legalBasis",
+                      "description": "The provision that says why this moment counts."
                     }
                   },
                   "description": "The moment that counts in law for what this article produces (RFC-045), such as the receipt of an application (Awb 4:13 lid 1). Metadata for a process runtime; the engine does not read it.",
                   "examples": [
                     {
                       "parameter": "datum_ontvangst",
-                      "legal_basis": [
-                        "algemene_wet_bestuursrecht#4:13 lid 1"
-                      ]
+                      "legal_basis": {
+                        "law": "Algemene wet bestuursrecht",
+                        "bwb_id": "BWBR0005537",
+                        "article": "4:13",
+                        "paragraph": "1",
+                        "url": "https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel4:13"
+                      }
                     }
                   ]
                 }
@@ -2292,22 +2292,13 @@
       },
       "additionalProperties": false
     },
-    "provisionGround": {
-      "type": "string",
-      "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$",
-      "description": "A provision, `<regulation>#<article>`, optionally followed by ` lid <n>`. The article holds letters, digits, `:`, `.`, `_`, `-` and spaces (Kieswet `G 1`, Awb `4:13`), and starts and ends with a letter or digit.",
-      "examples": [
-        "leerplichtwet_1969#13a lid 1",
-        "algemene_wet_bestuursrecht#4:2"
-      ]
-    },
     "articleReference": {
       "type": "string",
       "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$",
       "not": {
         "pattern": " lid [0-9]"
       },
-      "description": "An article of a regulation, `<regulation>#<article>`: a provisionGround without ` lid <n>`. The article holds letters, digits, `:`, `.`, `_`, `-` and spaces (Kieswet `G 1`, Awb `4:13`), and starts and ends with a letter or digit.",
+      "description": "An article of a regulation, `<regulation>#<article>`, without ` lid <n>`. The article holds letters, digits, `:`, `.`, `_`, `-` and spaces (Kieswet `G 1`, Awb `4:13`), and starts and ends with a letter or digit.",
       "examples": [
         "leerplichtwet_1969#13a",
         "kieswet#G 1"
