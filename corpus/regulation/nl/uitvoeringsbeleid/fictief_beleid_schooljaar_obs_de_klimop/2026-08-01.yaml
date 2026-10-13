@@ -15,6 +15,9 @@ competent_authority:
 # Geen legal_basis: geen artikel machtigt dit beleid met zoveel woorden.
 # Artikel 13a, tweede lid, van de Leerplichtwet 1969 noemt "de eerste twee
 # lesweken van het schooljaar"; wanneer die beginnen, staat hier.
+# Het formaat kent geen scope voor een school (alleen gemeente_code,
+# provincie_code en waterschap_code), dus dit fictieve beleid geldt voor elke
+# school zolang die scope er niet is.
 articles:
   - number: '1'
     text: >-
