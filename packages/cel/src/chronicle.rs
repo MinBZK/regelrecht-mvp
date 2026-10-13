@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
+use regelrecht_law_model::ProvisionReference;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -61,8 +62,8 @@ pub struct GramMoment {
     pub on: NaiveDate,
     /// The article that names the moment.
     pub declared_by: String,
-    /// The provisions that say why it counts (`produces.moment.legal_basis`).
-    pub legal_basis: Vec<String>,
+    /// The provision that says why it counts (`produces.moment.legal_basis`).
+    pub legal_basis: ProvisionReference,
 }
 
 /// The grams of one cell, in the order they were recorded.

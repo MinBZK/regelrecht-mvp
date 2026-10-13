@@ -56,7 +56,7 @@ A cell, here a school, records the application as one gram in its chronicle. The
     "parameter": "datum_ontvangst",
     "on": "2026-10-13",
     "declared_by": "algemene_wet_bestuursrecht#4:13",
-    "legal_basis": ["algemene_wet_bestuursrecht#4:13 lid 1"]
+    "legal_basis": { "law": "Algemene wet bestuursrecht", "article": "4:13", "paragraph": "1" }
   },
   "fields": { "eerste_verlofdag": "2027-02-01", "adres_aanvrager": null },
   "field_basis": {

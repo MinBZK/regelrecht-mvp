@@ -92,8 +92,11 @@ fn the_shape_of_the_application_comes_from_the_law() {
     assert_eq!(moment.parameter.as_deref(), Some("datum_ontvangst"));
     assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#4:13");
     assert_eq!(
-        moment.legal_basis,
-        vec!["algemene_wet_bestuursrecht#4:13 lid 1"]
+        (
+            moment.legal_basis.article.as_deref(),
+            moment.legal_basis.paragraph.as_deref()
+        ),
+        (Some("4:13"), Some("1"))
     );
 }
 
@@ -121,8 +124,11 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
     assert_eq!(moment.on, day("2026-10-13"));
     assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#4:13");
     assert_eq!(
-        moment.legal_basis,
-        vec!["algemene_wet_bestuursrecht#4:13 lid 1"]
+        (
+            moment.legal_basis.article.as_deref(),
+            moment.legal_basis.paragraph.as_deref()
+        ),
+        (Some("4:13"), Some("1"))
     );
 
     // Per field the article that asks it.

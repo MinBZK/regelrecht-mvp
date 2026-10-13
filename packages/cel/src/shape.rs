@@ -9,6 +9,7 @@
 
 use chrono::NaiveDate;
 use regelrecht_engine::{Article, LawExecutionService, ParameterType};
+use regelrecht_law_model::ProvisionReference;
 use serde::Serialize;
 
 use crate::error::{refused, setup, Result};
@@ -44,8 +45,8 @@ pub struct Moment {
     pub parameter: Option<String>,
     /// The article that names the moment.
     pub declared_by: String,
-    /// The provisions that say why it counts.
-    pub legal_basis: Vec<String>,
+    /// The provision that says why it counts.
+    pub legal_basis: ProvisionReference,
 }
 
 /// What a gram of a submission holds, as the law in force on a day says.

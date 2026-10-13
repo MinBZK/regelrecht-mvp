@@ -84,7 +84,7 @@ articles:
         produces:
           moment:
             parameter: datum_ontvangst
-            legal_basis: [wet_ontvangst#2]
+            legal_basis: {{law: Wet ontvangst, article: '2'}}
         parameters:
           - name: datum_ontvangst
             type: {type_}
