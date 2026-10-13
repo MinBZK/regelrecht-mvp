@@ -1,0 +1,373 @@
+//! The configuration of a cell: who records, which facts (streams), and
+//! which chronicle a policy of the holder reads back (registers).
+//!
+//! ```yaml
+//! # cells/<cell>/cell.yaml
+//! id: toeslagen
+//! recording_actor: belastingdienst_toeslagen
+//! streams: [streams/zorgtoeslag_aanvragen.yaml]
+//! # The dossier of the recording actor (the law asks it with origin
+//! # DOSSIER), a chronicle of the cell; the policies of the holder that read
+//! # it as their input without a source (`source: {}`, RFC-045 §1).
+//! registers:
+//!   dossier:
+//!     chronicle: toeslagen
+//!     read_by: [fictief_beleid_kroniek_toeslagen]
+//! ```
+//!
+//! A register is named after what it is for the holder, not after the
+//! policy that reads it: the law gives the interface (origin DOSSIER), a
+//! policy only how to read it. Provenance names it
+//! `<recording_actor>#<register>`, such as `belastingdienst_toeslagen#dossier`.
+//!
+//! A stream registers an event and the article that establishes it; what
+//! the fact contains, the law says (see [`crate::shape`]). For an execution
+//! (an event the article yields, `produces.events`), the stream also says
+//! what the cell keeps about recording it, which is no part of the law:
+//!
+//! ```yaml
+//! - name: betaalopdracht_gegeven
+//!   establishes: fictief_beleid_termijnbedrag_voorschot#1
+//!   refers_to:                       # the gram it executes
+//!     voorschot: {stage: VOORSCHOT, required: true}
+//!   period: {parameter: berekeningsjaar, unit: year}
+//!   executed_on:                     # on the days a policy article gives
+//!     days: fictief_beleid_termijnbedrag_voorschot#5
+//!     parameter: maand               # the parameter the day goes into
+//!     once_per: month
+//!   until: {stage: TOEKENNING}       # no gram once the case has this stage
+//! - name: overboeking_bijgeschreven  # a receipt: no `executed_on`
+//!   establishes: fictieve_bankvoorwaarden#1
+//!   identified_by: betaalkenmerk     # one gram per value
+//! ```
+
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+
+use crate::error::{setup, Result};
+use crate::extension::{PeriodParameter, Reference};
+
+/// `cell.yaml`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CellFile {
+    pub id: String,
+    /// Who records the facts of this cell (RFC-022 §2).
+    pub recording_actor: String,
+    /// Stream files, relative to `cell.yaml`.
+    pub streams: Vec<PathBuf>,
+    /// The chronicles of this cell that policies of the holder read as a
+    /// register, by the name of the register (see [`crate::register`]).
+    #[serde(default)]
+    pub registers: BTreeMap<String, RegisterBinding>,
+}
+
+/// Which chronicle of the cell a register is, and the policies of the
+/// holder that read it.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RegisterBinding {
+    pub chronicle: String,
+    /// The policies whose one input without a source (`source: {}`) is this
+    /// register. A policy reads one register of the cell.
+    pub read_by: Vec<String>,
+}
+
+/// A register of the cell as one policy reads it: the policy (its one input
+/// without a source, `source: {}`), the holder of the register (the
+/// recording actor of the cell), the name of the register, and its
+/// chronicle. A register read by two policies is two of these.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Register {
+    pub policy: String,
+    pub holder: String,
+    pub name: String,
+    pub chronicle: String,
+}
+
+impl Register {
+    /// `<holder>#<name>`, as a provenance names the register: the same for
+    /// every policy that reads it.
+    pub fn key(&self) -> String {
+        format!("{}#{}", self.holder, self.name)
+    }
+}
+
+/// A stream file: the events a cell records in one chronicle.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Stream {
+    #[serde(rename = "$id")]
+    pub id: String,
+    pub recording_actor: String,
+    pub chronicle: String,
+    pub events: Vec<Event>,
+}
+
+/// An event: its name in the chronicle, and the article that establishes it
+/// (`<regulation>#<article>`).
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Event {
+    pub name: String,
+    pub establishes: String,
+    /// For a decision of an article that decides at more than one stage of
+    /// its procedure (Awir: the voorschot and the toekenning): the stage
+    /// this event records. Not needed when the article decides at one.
+    #[serde(default)]
+    pub stage: Option<String>,
+    /// What the cell reads the parameters of the decision or execution from
+    /// for its case besides the application (see
+    /// [`crate::Cell::decision_inputs`]): a policy of the holder that reads a
+    /// register of the cell, or one article of it; one or a list.
+    #[serde(default, deserialize_with = "one_or_more")]
+    pub reads: Vec<Read>,
+    /// The article (`<regulation>#<article>`) that gives the day the holder
+    /// takes the decision, for the period it concerns (see
+    /// [`crate::Cell::due_decision`], [`crate::Cell::due_ex_officio`]). Its
+    /// one date output is that day; null is no day yet, and then the
+    /// decision is not due, except the decision the application asks for,
+    /// for the period it asks for, which whoever answers the application
+    /// takes (see `Cell::check_due`).
+    #[serde(default)]
+    pub decided_on: Option<String>,
+    /// For an execution (an event of `produces.events`): which gram it
+    /// refers to, per name: a decision of a stage it executes, or the order
+    /// a receipt answers. A required reference that is not there is
+    /// refused. A decision takes its reference from the law (`decides_on`).
+    #[serde(default)]
+    pub refers_to: BTreeMap<String, Reference>,
+    /// For an execution executed on a day: on which days, and how (see
+    /// [`ExecutedOn`]). An execution without it arises on receipt of what
+    /// another party sends (see [`crate::Cell::receive`]).
+    #[serde(default)]
+    pub executed_on: Option<ExecutedOn>,
+    /// For a receipt (an execution without `executed_on`): the parameter
+    /// whose value identifies the message, such as the reference of a
+    /// payment order. The cell records one answer per value: a message whose
+    /// value a gram of the article already holds is refused as answered, so
+    /// a sender that delivers again records nothing twice, also when the
+    /// message refers to no gram of the receiving cell.
+    #[serde(default)]
+    pub identified_by: Option<String>,
+    /// For an execution: no gram arises once the case has a gram of this
+    /// stage (what follows from it is derived, not recorded).
+    #[serde(default)]
+    pub until: Option<Until>,
+    /// The parameter that gives the period the fact concerns: the cell
+    /// applies the law of that period, not of the day it records. For a
+    /// decision on an application the law names it, with origin role
+    /// TIJDVAK, and the stream does not. For a decision on no submission (ex
+    /// officio, such as the aanslag of AWR 11), and for an execution, the
+    /// stream says it (own choice). Optional: many facts concern no period.
+    #[serde(default)]
+    pub period: Option<PeriodParameter>,
+    /// For a decision on no submission (with `period`): the parameters that
+    /// say whom it concerns, such as the BSN of the aanslag. The cell takes
+    /// such a decision once per period per subject: two decisions with the
+    /// same values for these parameters and the same period are the same
+    /// decision, whatever else they were given. Required with `period`.
+    #[serde(default)]
+    pub subject: Vec<String>,
+    /// For a decision on no submission (with `period`): the first period the
+    /// holder decides over, for every subject. Without it, the cell starts
+    /// at the first decision about the subject, or, before the first, at the
+    /// period before the one of now (see [`crate::Cell::due_ex_officio`],
+    /// which asks nothing before it, and refuses more than
+    /// [`crate::cell::MAX_EX_OFFICIO_PERIODS`] periods before now).
+    #[serde(default)]
+    pub first_period: Option<i32>,
+}
+
+/// The days an execution is executed on.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExecutedOn {
+    /// The article (`<regulation>#<article>`) of the holder's policy that
+    /// gives the next day the holder executes it, after a given day (see
+    /// [`crate::Cell::due_executions`]). Like `decided_on`, its one date
+    /// output is that day, and null is no day; it is asked with what the
+    /// case reads, the period, and the day after which, in `parameter`.
+    pub days: String,
+    /// The date parameter of the executed article the day goes into.
+    pub parameter: String,
+    /// How often the fact may arise for the case and the period.
+    #[serde(default)]
+    pub once_per: Option<Every>,
+}
+
+/// How often an execution may arise for the case and the period.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Every {
+    /// Once per calendar month.
+    Month,
+}
+
+/// The stage whose gram ends an execution.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Until {
+    pub stage: String,
+}
+
+/// One source of the parameters of an event's case: a policy of the holder
+/// (in the law format) that reads a register of the cell. The cell executes
+/// it with the case's `root` (and the period the case is read for) as
+/// parameters and takes its outputs (`{regulation: <policy>}`), or only
+/// those of one article (`{regulation: <policy>, article: <number>}`). What
+/// a decision asks of the application it is taken on, it reads from that
+/// application without a `reads` (see [`crate::Cell::decision_inputs`]).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Read {
+    pub regulation: String,
+    #[serde(default)]
+    pub article: Option<String>,
+}
+
+impl Read {
+    /// Whether it reads article `number` of `policy`: that article, or the
+    /// whole policy.
+    pub fn reads_article(&self, policy: &str, number: &str) -> bool {
+        self.regulation == policy && self.article.as_deref().is_none_or(|a| a == number)
+    }
+}
+
+impl std::fmt::Display for Read {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.article {
+            None => write!(f, "policy '{}'", self.regulation),
+            Some(article) => write!(f, "policy '{}#{article}'", self.regulation),
+        }
+    }
+}
+
+/// One read or a list of them.
+fn one_or_more<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<Read>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMore {
+        More(Vec<Read>),
+        One(Read),
+    }
+    Ok(match OneOrMore::deserialize(d)? {
+        OneOrMore::One(read) => vec![read],
+        OneOrMore::More(reads) => reads,
+    })
+}
+
+/// A cell's configuration, with its streams read.
+#[derive(Debug, Clone)]
+pub struct CellConfig {
+    pub id: String,
+    pub recording_actor: String,
+    pub streams: Vec<Stream>,
+    pub registers: Vec<Register>,
+}
+
+fn read_text(path: &Path) -> Result<String> {
+    std::fs::read_to_string(path).map_err(|e| setup(format!("{}: {e}", path.display())))
+}
+
+fn parse_yaml<T: serde::de::DeserializeOwned>(what: &str, text: &str) -> Result<T> {
+    serde_yaml_ng::from_str(text).map_err(|e| setup(format!("{what}: {e}")))
+}
+
+impl CellConfig {
+    /// Read `cell.yaml` and the files it names.
+    pub fn load(cell_yaml: &Path) -> Result<Self> {
+        let cell_text = read_text(cell_yaml)?;
+        let file: CellFile = parse_yaml(&cell_yaml.display().to_string(), &cell_text)?;
+        let dir = cell_yaml.parent().unwrap_or(Path::new("."));
+        let streams = file
+            .streams
+            .iter()
+            .map(|p| read_text(&dir.join(p)))
+            .collect::<Result<Vec<_>>>()?;
+        Self::from_yaml(
+            &cell_text,
+            &streams.iter().map(String::as_str).collect::<Vec<_>>(),
+        )
+    }
+
+    /// A configuration from its texts: `cell.yaml` and each stream it names
+    /// (the paths in `cell.yaml` are not followed).
+    pub fn from_yaml(cell: &str, streams: &[&str]) -> Result<Self> {
+        let file: CellFile = parse_yaml("cell", cell)?;
+        let streams = streams
+            .iter()
+            .map(|s| parse_yaml::<Stream>("stream", s))
+            .collect::<Result<Vec<_>>>()?;
+        for s in &streams {
+            if s.recording_actor != file.recording_actor {
+                return Err(setup(format!(
+                    "stream '{}' is recorded by '{}', the cell by '{}'",
+                    s.id, s.recording_actor, file.recording_actor
+                )));
+            }
+        }
+        let mut registers: Vec<Register> = Vec::new();
+        for (name, binding) in &file.registers {
+            if name.is_empty() || name.contains('#') {
+                return Err(setup(format!(
+                    "register '{name}' of cell '{}': a register is named without '#' (provenance names it <recording_actor>#<register>)",
+                    file.id
+                )));
+            }
+            if !streams.iter().any(|s| s.chronicle == binding.chronicle) {
+                return Err(setup(format!(
+                    "register '{name}' is chronicle '{}', which no stream of cell '{}' records in",
+                    binding.chronicle, file.id
+                )));
+            }
+            if binding.read_by.is_empty() {
+                return Err(setup(format!(
+                    "register '{name}' of cell '{}' is read by no policy (`read_by`)",
+                    file.id
+                )));
+            }
+            for policy in &binding.read_by {
+                if let Some(other) = registers.iter().find(|r| r.policy == *policy) {
+                    return Err(setup(format!(
+                        "policy '{policy}' reads more than one register of cell '{}' ('{}' and '{name}'); it reads one",
+                        file.id, other.name
+                    )));
+                }
+                registers.push(Register {
+                    policy: policy.clone(),
+                    holder: file.recording_actor.clone(),
+                    name: name.clone(),
+                    chronicle: binding.chronicle.clone(),
+                });
+            }
+        }
+        for s in &streams {
+            for e in &s.events {
+                for read in &e.reads {
+                    if !registers.iter().any(|r| r.policy == read.regulation) {
+                        return Err(setup(format!(
+                            "stream '{}', event '{}' reads policy '{}', which reads no register of the cell (`registers` in cell.yaml)",
+                            s.id, e.name, read.regulation
+                        )));
+                    }
+                }
+            }
+        }
+        Ok(Self {
+            id: file.id,
+            recording_actor: file.recording_actor,
+            streams,
+            registers,
+        })
+    }
+
+    /// The event by name, with its stream.
+    pub fn event(&self, name: &str) -> Option<(&Stream, &Event)> {
+        self.streams
+            .iter()
+            .find_map(|s| s.events.iter().find(|e| e.name == name).map(|e| (s, e)))
+    }
+}

@@ -15,7 +15,7 @@ The demo shows in one workspace what RegelRecht does: the machine-readable law, 
 
 ## What it does
 
-The workspace opens on a landing page (the house icon) with a short explanation, a button that starts the presentation, and a QR code that points at the demo itself, so someone in the audience can follow along on a phone. After it come seven tabs, in the order of a presentation. The labels below are the English ones, with the Dutch in parentheses.
+The workspace opens on a landing page (the house icon) with a short explanation, a button that starts the presentation, and a QR code that points at the demo itself, so someone in the audience can follow along on a phone. After it come eight tabs, in the order of a presentation. The labels below are the English ones, with the Dutch in parentheses.
 
 1. **Presentation** (*Presentatie*): the slide deck in Rijkshuisstijl blue. The intro is shown full screen; after that the deck sits on the left as a rail, and each slide opens the tab it is about, switches persona and points at what the presenter means. The slides are content (`demo-config.yaml`), not code. Each persona has its own deck: a slide with `decks` belongs to that persona's story, the other slides are shared, and the deck is picked from the chosen persona when the presentation starts. Merijn's deck ends with Claudia; Claudia's deck stays with her, from the precario by-law to the terrace permit the municipality grants. A slide that names no law (`/regelwerken`) opens the chosen persona's `default_law`. Esc closes the deck and leaves the demo where it is; Shift+P opens it from anywhere.
 2. **Ruleworks** (*Regelwerken*): the rulework of a law as a collapsible YAML tree, prepared per story (`expanded_paths` in `demo-config.yaml`: a path opens itself and everything above it, the rest stays closed; `folded_paths` names nodes on such a path that start closed for the presenter to open, with what lies below them already prepared). Every `source.regulation` is a link that opens the referenced law; a back button retraces the references followed. The list of all laws, grouped per organization, is a side panel that is closed by default.
@@ -29,7 +29,9 @@ The workspace opens on a landing page (the house icon) with a short explanation,
 
    ![The My government tab for the persona Merijn: one card per regulation (kindgebonden budget, zorgtoeslag, bijstand, huurtoeslag, inkomstenbelasting) with the computed outcome, the number of data items used, and buttons to apply, see the calculation or read the law text.](../../../assets/portaal-screenshot.png)
 
-7. **Case system** (*Zaaksysteem*): the case handler's side, per executing organization. It has a board with cases to assess, cases to announce and cases that have been announced, the regulations the organization executes, the engine's recalculation next to the result applied for, citizen corrections awaiting review, granting or refusing, announcing, and objection. Announcing is a separate action, because the Awb treats the decision (article 1:3) and its announcement (article 3:41) as two moments, and only the second starts the objection period. By default the demo announces a decision as soon as it is taken ("Announce decisions straight away" in the menu); switching that off brings the announcement back as a step of its own.
+7. **Citizen** (*Burger*): what happens outside government as a result of its decisions, for the active persona or the party acted for. Per party that is not government (`consequences` in `demo-config.yaml`), it shows what that party's cell recorded about the persona. For now that is the fictional bank: the account number, the balance (opening balance plus what the bank credited, minus what it debited) and every credited, debited or refused transfer or incasso, from the bank's chronicle. The party's name comes from `services.yaml`; a health insurer or an employer would be another entry in the list, with its own `view`. A bank account does not belong in *Mijn overheid*, which is why this is a screen of its own.
+
+8. **Case system** (*Zaaksysteem*): the case handler's side, per executing organization. It has a board with cases to assess, cases to announce and cases that have been announced, the regulations the organization executes, the engine's recalculation next to the result applied for, citizen corrections awaiting review, granting or refusing, announcing, and objection. Announcing is a separate action, because the Awb treats the decision (article 1:3) and its announcement (article 3:41) as two moments, and only the second starts the objection period. By default the demo announces a decision as soon as it is taken ("Announce decisions straight away" in the menu); switching that off brings the announcement back as a step of its own.
 
 The toolbar switches the profile (Merijn, a citizen; Claudia, a business owner). With the authorizations feature on, "Acting for" offers the people or businesses the active profile may act for, when the law gives more than one option. The menu then holds four groups:
 
@@ -45,6 +47,17 @@ The demo corpus in `corpus/demo/` holds the laws migrated from the POC (`regulat
 Everything the demo computes happens in the browser; the one exception is the optional "why" explanation below. The engine runs as WebAssembly in the browser, the same engine as in the editor. At build time the demo corpus is copied to `public/data`. Persona data (`profiles.yaml`) is materialized per law into records through `bindings.yaml` and registered with the engine as a law-scoped data source; approved citizen corrections are layered on top as a second source with a higher priority. Applications, corrections and settings live in `localStorage`, so a page refresh during a presentation loses nothing.
 
 An application for a *beschikking* passes through the phases the Awb gives it (RFC-007, RFC-008). In each phase the engine fires the hooks that belong to it and reports which piece of data it still lacks; the demo supplies it at the moment it exists, and stores the state with the case. That is how the objection period arrives as a date from the law, and how a special law that departs from article 6:7 is taken into account without extra code.
+
+### Zorgtoeslag as a chronicle
+
+For zorgtoeslag the demo also records every legal fact in a chronicle: the application, the voorschot, the installments, the aanslag, the toekenning and the settlement. Three cells run in the browser next to the engine: Toeslagen, the Belastingdienst and a fictitious bank. [Zorgtoeslag as Chronolexography](/components/zorgtoeslag-chronolexography) explains which law and policy carry each step.
+
+What you see of it:
+
+- **Portal**: "What the law asks" lists the fields of the application, each with its article. "Payments" shows what was received and what is still to come.
+- **Case system**: a case has a Chronicle tab, with the facts and, below them, the next moment the law gives. Next to "Cases" on the board are "Chronicle", with every chronolexogram the cell stores, and "Lexostatuses", with what the cell reads from its chronicle to decide.
+- **Clock**: the reference date only moves forward. Use "To the next moment" or Demo → "Reference date" in the menu. To go back, reset the demo.
+- **Citizen**: the bank account, its balance and its transfers.
 
 ### The "why" explanation
 

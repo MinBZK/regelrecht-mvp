@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.7.1/schema/v0.7.1/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.7.1",
+  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.0",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -406,6 +406,10 @@
                   "type": "string",
                   "description": "Stage name (e.g., AANVRAAG, BESLUIT, BEKENDMAKING)."
                 },
+                "is": {
+                  "type": "string",
+                  "description": "The stage of the default procedure this stage is an instance of: a procedure with a provisional and a final decision gives both stages `is: BESLUIT`. A hook whose applies_to.stage names it also fires on this stage, so the hooks on every decision apply to each decision of the procedure. It must name a stage of the default procedure for the same legal character; the validator refuses another name."
+                },
                 "description": {
                   "type": "string",
                   "description": "Human-readable description."
@@ -686,6 +690,9 @@
             "required": {
               "type": "boolean",
               "description": "Whether the caller must pass this parameter. Defaults to true: an omitted required parameter is an error. A parameter declared `required: false` that the caller omits resolves to an unknown value that names the parameter (RFC-036), so a law can declare application-form fields another law never passes."
+            },
+            "origin": {
+              "$ref": "#/definitions/origin"
             }
           }
         }
@@ -1884,6 +1891,56 @@
                 "procedure_id": {
                   "type": "string",
                   "description": "Selects a specific AWB procedure variant. When absent, the default procedure for the legal_character is used."
+                },
+                "submission": {
+                  "type": "object",
+                  "required": [
+                    "kind"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "AANVRAAG"
+                      ],
+                      "description": "What the belanghebbende submits. AANVRAAG: a request to take a decision (Awb 1:3 lid 3)."
+                    }
+                  },
+                  "description": "The article establishes a submission of a belanghebbende, such as an application . Hooks with applies_to.submission fire when the article runs. Independent of the legal character of the article's own outputs."
+                },
+                "decides_on": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/definitions/articleReference"
+                  },
+                  "description": "The articles (`<regulation>#<article>`) that establish the submission this decision is taken on, as the text says (\"besluit op de aanvraag\"). A hook with applies_to.decided_by reads the legal character of this article."
+                },
+                "events": {
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "The events that executing this article yields, such as a payment order that is given or a transfer that is credited. Executing the article yields an event when the output named in `when` is true. One article can yield several events, each on its own output.",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "when"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]*$",
+                        "description": "The name of the event, unique within the article."
+                      },
+                      "when": {
+                        "type": "string",
+                        "description": "The name of a boolean output of this article. Executing the article yields the event when that output is true."
+                      }
+                    }
+                  }
                 }
               },
               "description": "What executing this article yields in legal terms: its legal character, the kind of decision it is, and the procedure that governs it. Not merely annotation: `legal_character` and `decision_type` select which hooks fire, and `legal_character` with `procedure_id` selects the Awb procedure, so an article's outputs and how it runs both depend on what is declared here."
@@ -1958,14 +2015,84 @@
                   },
                   "stage": {
                     "type": "string",
-                    "description": "Lifecycle stage at which this hook fires (e.g., BESLUIT, BEKENDMAKING). Defaults to BESLUIT."
+                    "description": "Lifecycle stage at which this hook fires (e.g., BESLUIT, BEKENDMAKING). Defaults to BESLUIT. Also matches a stage whose `is` names this stage."
+                  },
+                  "submission": {
+                    "type": "string",
+                    "enum": [
+                      "AANVRAAG"
+                    ],
+                    "description": "Match articles that establish a submission of this kind. A hook names either legal_character or submission."
+                  },
+                  "decided_by": {
+                    "type": "string",
+                    "enum": [
+                      "BESCHIKKING",
+                      "TOETS",
+                      "WAARDEBEPALING",
+                      "BESLUIT_VAN_ALGEMENE_STREKKING",
+                      "INFORMATIEF",
+                      "RECHTSPOSITIE"
+                    ],
+                    "description": "With submission: only a submission on which decisions of this legal character are taken (produces.decides_on of the decision article)."
+                  },
+                  "established_by": {
+                    "$ref": "#/definitions/articleReference",
+                    "description": "With submission: only the submission that this article (`<regulation>#<article>`) establishes with produces.submission, such as the policy of one authority that works out the application of one specific law. Without it the hook applies to every submission of the kind."
                   }
                 },
-                "required": [
-                  "legal_character"
-                ],
                 "additionalProperties": false,
-                "description": "Which decisions of other articles this hook fires on. `legal_character` is required; adding `decision_type` or `stage` narrows it further."
+                "description": "Which decisions (legal_character, optionally decision_type and stage) or which submissions (submission, optionally decided_by and established_by) of other articles this hook fires on.",
+                "oneOf": [
+                  {
+                    "required": [
+                      "legal_character"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "submission"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "decided_by"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "established_by"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "submission"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "legal_character"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "stage"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "decision_type"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false
@@ -2186,6 +2313,138 @@
         }
       },
       "additionalProperties": false
+    },
+    "articleReference": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*#[A-Za-z0-9]([A-Za-z0-9:._-]*[A-Za-z0-9])?$",
+      "description": "An article of a regulation, `<regulation>#<article>`, without a paragraph: no space, so no ` lid <n>`."
+    },
+    "provisionGround": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$",
+      "description": "A provision, `<regulation>#<article>`, optionally followed by ` lid <n>`. The article holds letters, digits, `:`, `.`, `_`, `-` and spaces (Kieswet `G 1`, Awb `4:13`), and starts and ends with a letter or digit."
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "waarde"
+      ],
+      "properties": {
+        "waarde": {
+          "type": "string",
+          "enum": [
+            "BELANGHEBBENDE",
+            "DOSSIER",
+            "OORDEEL",
+            "REGISTER",
+            "KANAAL"
+          ],
+          "description": "Who supplies the value. BELANGHEBBENDE: the applicant supplies or chooses it. DOSSIER: a fact from the course of the case. OORDEEL: a judgement the administrative body gives when it decides. REGISTER: a fact from a register kept by or under the regulation in `register`. KANAAL: what the intake channel says."
+        },
+        "register": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "With REGISTER only: the `$id` of the regulation that sets up the register."
+        },
+        "grondslag": {
+          "$ref": "#/definitions/provisionGround",
+          "description": "The provision that says who supplies the value. Only when the text of that provision says so: a basis reasoned from other provisions is left out, and the reasoning goes in a comment."
+        },
+        "rol": {
+          "type": "string",
+          "enum": [
+            "TIJDVAK",
+            "GEVRAAGD_BESLUIT",
+            "BESLUIT"
+          ],
+          "description": "What the parameter is within the decision requested (TIJDVAK, the period, and GEVRAAGD_BESLUIT, the decision requested, both only with BELANGHEBBENDE: the applicant chooses them, Awb 4:2 lid 1), or the decision already taken that it is about (BESLUIT, only with DOSSIER: the runtime gives it)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "waarde": {
+                "const": "REGISTER"
+              }
+            },
+            "required": [
+              "waarde"
+            ]
+          },
+          "then": {
+            "required": [
+              "register"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "rol": {
+                "const": "TIJDVAK"
+              }
+            },
+            "required": [
+              "rol"
+            ]
+          },
+          "then": {
+            "properties": {
+              "waarde": {
+                "const": "BELANGHEBBENDE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "rol": {
+                "const": "GEVRAAGD_BESLUIT"
+              }
+            },
+            "required": [
+              "rol"
+            ]
+          },
+          "then": {
+            "properties": {
+              "waarde": {
+                "const": "BELANGHEBBENDE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "rol": {
+                "const": "BESLUIT"
+              }
+            },
+            "required": [
+              "rol"
+            ]
+          },
+          "then": {
+            "properties": {
+              "waarde": {
+                "const": "DOSSIER"
+              }
+            }
+          }
+        }
+      ],
+      "description": "Who supplies a parameter, per the law, with the provision that says so. Metadata for a process runtime and an editor; the engine does not read it, and the law-model keeps an invalid one as written instead of refusing the law."
     }
   }
 }

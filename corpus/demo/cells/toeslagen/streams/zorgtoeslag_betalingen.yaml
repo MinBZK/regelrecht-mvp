@@ -1,0 +1,63 @@
+---
+# De uitvoering van het voorschot, in drie feiten.
+# - betaalopdracht_gegeven: Toeslagen geeft de bank opdracht een termijn te
+#   betalen. Hoeveel, en of er die maand een opdracht is, zegt de wet door
+#   haar uit te voeren: art. 22 Awir en het (fictieve) uitvoeringsbeleid van
+#   Toeslagen over de uitbetaling (art. 1). Het voorschot, de rekening uit de
+#   aanvraag en wat er achterstallig is, leest de cel uit haar eigen kroniek
+#   met het beleid van Toeslagen daarover (fictief_beleid_kroniek_toeslagen),
+#   met de aanvraag als `root`.
+# - voorschottermijn_betaald en betaling_mislukt: het antwoord van de bank,
+#   bij ontvangst vastgelegd (art. 2 van hetzelfde beleid). Pas een betaalde
+#   termijn telt als uitbetaald (Awir 24 lid 2).
+$id: zorgtoeslag_betalingen
+recording_actor: belastingdienst_toeslagen
+chronicle: toeslagen
+events:
+  - name: betaalopdracht_gegeven
+    establishes: fictief_beleid_termijnbedrag_voorschot#1
+    reads: [{regulation: fictief_beleid_kroniek_toeslagen}]
+    # Het voorschot, als het besluit in de fase VOORSCHOT van de procedure
+    # tegemoetkoming van de Awir. Zo noemt het beleid geen toeslag.
+    refers_to:
+      voorschot: {stage: VOORSCHOT, required: true}
+    # De termijnen rekenen met het beleid van het berekeningsjaar, ook de
+    # termijn in december ervoor (art. 22 lid 1 Awir). Een aanvraag geldt ook
+    # voor de jaren erna (art. 15 lid 5 Awir) en elk jaar heeft een eigen
+    # voorschot; de cel voert art. 1 per berekeningsjaar van die voorschotten
+    # uit, met dat jaar als `berekeningsjaar`. In december kan zo een termijn
+    # van het lopende jaar en de eerste van het volgende vallen.
+    period: {parameter: berekeningsjaar, unit: year}
+    # De cel voert art. 1 uit op de dagen die art. 5 van het beleid geeft
+    # (`days`), zoals zij een besluit neemt op de dag die het beleid geeft
+    # (`decided_on`), met die dag in `maand`. Een termijn die nog moet komen,
+    # is geen feit (RFC-050).
+    #
+    # Per aanvraag en per berekeningsjaar ten hoogste één betaalopdracht per
+    # maand (`once_per`; art. 22 lid 1 Awir: "telkens een maand later"), ook
+    # na een herziening van het voorschot. Een mislukte termijn wacht niet op
+    # een nieuwe opdracht in dezelfde maand: hij gaat mee met de opdracht van
+    # de volgende uitvoeringsdag van hetzelfde berekeningsjaar (eigen keuze
+    # van het fictieve beleid).
+    executed_on:
+      days: fictief_beleid_termijnbedrag_voorschot#5
+      parameter: maand
+      once_per: month
+    # Na de toekenning over een berekeningsjaar wordt op het voorschot van
+    # dat jaar geen termijn meer betaald; de termijnen van een volgend jaar
+    # lopen door. Eigen keuze, gelezen uit art. 24 lid 2 Awir en art. 1 van
+    # het beleid ("tot de toekenning"): de voorschotten worden met de
+    # tegemoetkoming verrekend, dus wat dan nog niet betaald is, komt niet
+    # meer. Dat volgt uit de toekenning en wordt geen eigen gram.
+    until: {stage: TOEKENNING}
+  # Het antwoord van de bank verwijst naar de betaalopdracht die het
+  # beantwoordt: een tweede antwoord op dezelfde opdracht legt de cel niet nog
+  # eens vast.
+  - name: voorschottermijn_betaald
+    establishes: fictief_beleid_termijnbedrag_voorschot#2
+    refers_to:
+      betaalopdracht: {to: fictief_beleid_termijnbedrag_voorschot#1, required: true}
+  - name: betaling_mislukt
+    establishes: fictief_beleid_termijnbedrag_voorschot#2
+    refers_to:
+      betaalopdracht: {to: fictief_beleid_termijnbedrag_voorschot#1, required: true}
