@@ -20,7 +20,7 @@ profiles:
     # Graaf: the laws that tell this persona's story (detentie -> verzekerd -> zorgtoeslag)
     graph_laws: [penitentiaire_beginselenwet, zvw, zorgtoeslagwet]
     zaaksysteem_service: TOESLAGEN
-    # Wat Merijn invult op een aanvraag die in een kroniek komt (chronolex):
+    # Wat Merijn invult op een aanvraag die in een kroniek komt:
     # per veld dat de wet vraagt de waarde. Welke velden er zijn, zegt de wet;
     # een veld zonder waarde hier blijft leeg. De demo vult `$bsn` (de BSN
     # van de persona), `$reference_date` (de peildatum) en `$reference_year`

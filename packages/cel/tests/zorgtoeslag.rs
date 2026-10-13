@@ -1077,12 +1077,16 @@ fn a_voorschot_before_the_year_is_paid_in_twelve_termijnen() {
         first.fields.keys().collect::<Vec<_>>(),
         [
             "bedrag",
+            "bedrag_per_termijn",
+            "deel_ineens",
             "meegenomen_achterstand",
+            "opdracht_wordt_gegeven",
             "rekeningnummer_begunstigde",
+            "termijn_wordt_betaald",
             "termijnbedrag",
             "uitvoerdatum"
         ],
-        "only what the law names"
+        "every output of the article, and nothing else: it is given nothing from outside"
     );
     // What it was paid on: the voorschot read back, and the month.
     assert_eq!(first.inputs["voorschotbedrag"]["value"], voorschotbedrag);

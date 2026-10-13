@@ -12,8 +12,8 @@ use serde_json::Map;
 
 use crate::chronicle::{Chronicle, Gram, Period};
 use crate::config::{CellConfig, Event, Read, Register, Stream};
+use crate::config::{Every, ExecutedOn};
 use crate::error::{refused, setup, Result};
-use crate::extension::{Every, ExecutedOn};
 use crate::lexostatus;
 use crate::register;
 use crate::shape::{self, Shape};
@@ -1829,8 +1829,9 @@ impl Cell {
     /// one arises. Returns `None` if it does not. Which days to ask is
     /// [`Self::due_executions`].
     ///
-    /// What the law declares (`extensions.chronolex` of the article) decides
-    /// every step; the cell knows no case:
+    /// What the law says (the event in `produces.events` of the article) and
+    /// what the stream keeps about it decide every step; the cell knows no
+    /// case:
     /// - `refers_to`: each reference is resolved within the case, to the
     ///   latest gram it admits that holds at `now` (by stage, or by the
     ///   article that establishes it). A required one that is not there is
@@ -1840,7 +1841,8 @@ impl Cell {
     /// - the parameters are what the lexostatuses the event `reads` give at
     ///   `now`, kept to the parameters of the article, and `on` in the
     ///   parameter of `executed_on`. With a `period`, the law of the period.
-    /// - `record_when`: the boolean output that says whether a gram arises.
+    /// - `when` of the event: the boolean output that says whether a gram
+    ///   arises.
     /// - `executed_on.once_per`: a second gram of the event in the same case
     ///   in the same month is refused, whatever gram it refers to.
     ///
@@ -1918,11 +1920,11 @@ impl Cell {
 
     /// Record what arises on receipt of what another party sends (a channel,
     /// RFC-022): execute `article` once with `inputs`, and record a gram of
-    /// every event of the cell that establishes it on receipt (an execution
-    /// with `record_when` and no `executed_on`) whose `record_when` is true.
-    /// `refers_to` names the grams of this cell the received message is
-    /// about (a payment order this cell gave); each event takes the
-    /// references its law declares, a required one must be there, and a name
+    /// every event of the cell that establishes it on receipt (an event the
+    /// article yields, with no `executed_on` in its stream) whose `when` is
+    /// true. `refers_to` names the grams of this cell the received message
+    /// is about (a payment order this cell gave); each event takes the
+    /// references its stream declares, a required one must be there, and a name
     /// no event declares is refused. Which article receives what, is for the
     /// caller (the transport between cells) to say; what arises, says the law.
     ///
@@ -2224,13 +2226,9 @@ impl Cell {
         through: NaiveDate,
         now: DateTime<FixedOffset>,
     ) -> Result<Vec<DueExecution>> {
-        let reference = self.event(event)?.1.executed_on.clone().ok_or_else(|| {
-            setup(format!(
-                "'{event}' says not on which days it is executed (`executed_on` in its stream)"
-            ))
-        })?;
         let (shape, chronicle) = self.shape(service, event, now.date_naive())?;
         let executed_on = executed_on(&shape)?;
+        let reference = executed_on.days.clone();
         let (grams, case) = self.case_at(&chronicle, root, now)?;
         let began = grams
             .find(root)
@@ -2490,7 +2488,7 @@ impl Cell {
         };
         let when = shape.record_when.clone().ok_or_else(|| {
             setup(format!(
-                "{}: '{event}' says not when it arises (record_when)",
+                "{}: '{event}' is no event the article yields (produces.events)",
                 shape.establishes
             ))
         })?;
@@ -2710,8 +2708,8 @@ fn recorded_inputs(inputs: BTreeMap<String, Input>) -> BTreeMap<String, serde_js
 fn executed_on(shape: &Shape) -> Result<ExecutedOn> {
     shape.executed_on.clone().ok_or_else(|| {
         refused(format!(
-            "'{}' is not an execution: {} declares no executed_on",
-            shape.event, shape.establishes
+            "'{}' is not executed on a day: its stream gives no executed_on",
+            shape.event
         ))
     })
 }
@@ -2935,25 +2933,23 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - {event: gebeurd, type: decretogram, fields: outputs}
-        output: [{name: y, type: number}]
-        actions: [{output: y, value: 1}]
+          events:
+            - {name: gebeurd, when: z}
+        parameters: [{name: dag, type: date, required: true}]
+        output: [{name: y, type: number}, {name: z, type: boolean}]
+        actions: [{output: y, value: 1}, {output: z, value: true}]
 ",
             )
             .unwrap();
         let event = crate::config::Event {
             name: "gebeurd".into(),
             establishes: "testwet#1".into(),
-            stage: None,
-            reads: Vec::new(),
-            decided_on: None,
-            executed_on: None,
-            period: None,
-            subject: Vec::new(),
-            first_period: None,
+            executed_on: Some(ExecutedOn {
+                days: "testwet#2".into(),
+                parameter: "dag".into(),
+                once_per: None,
+            }),
+            ..Default::default()
         };
         let shape = shape::derive(&service, &event, "2024-06-01".parse().unwrap()).unwrap();
         let e = fields_of(&shape, &BTreeMap::new(), &BTreeMap::new()).unwrap_err();
@@ -2961,7 +2957,10 @@ articles:
         assert!(e.to_string().contains("'y'"), "{e}");
         let fields = fields_of(
             &shape,
-            &BTreeMap::from([("y".to_string(), Value::Int(1))]),
+            &BTreeMap::from([
+                ("y".to_string(), Value::Int(1)),
+                ("z".to_string(), Value::Bool(true)),
+            ]),
             &BTreeMap::new(),
         )
         .unwrap();

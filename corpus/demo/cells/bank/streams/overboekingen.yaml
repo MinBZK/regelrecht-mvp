@@ -1,12 +1,20 @@
 ---
 # Een overboeking die bij de bank binnenkomt. De bank voert haar voorwaarden
 # uit bij ontvangst; die zeggen of de overboeking wordt bijgeschreven of
-# geweigerd (`record_when`), en wat het gram bevat.
+# geweigerd, en wat het gram bevat.
+#
+# Het betaalkenmerk van de opdrachtgever reist mee als veld, niet als
+# verwijzing: het gram van de opdracht ligt in een andere kroniek. Dat kenmerk
+# identificeert de overboeking (`identified_by`): een tweede overboeking met
+# hetzelfde kenmerk legt de bank niet nog eens vast (laatste zin van art. 1),
+# ook niet als de opdrachtgever haar opnieuw aanbiedt.
 $id: overboekingen
 recording_actor: fictieve_bank
 chronicle: rekeningen
 events:
   - name: overboeking_bijgeschreven
     establishes: fictieve_bankvoorwaarden#1
+    identified_by: betaalkenmerk
   - name: overboeking_geweigerd
     establishes: fictieve_bankvoorwaarden#1
+    identified_by: betaalkenmerk

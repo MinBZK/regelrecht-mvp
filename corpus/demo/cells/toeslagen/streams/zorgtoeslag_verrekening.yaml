@@ -6,7 +6,7 @@
 # ingevorderd, leest de cel uit haar eigen kroniek met het beleid van
 # Toeslagen daarover (fictief_beleid_kroniek_toeslagen), met de aanvraag als
 # `root`. Op welke dagen Toeslagen een opdracht geeft, zegt dat beleid ook
-# (`executed_on`): art. 9 voor de nabetaling, art. 10 voor de incasso.
+# (`executed_on.days`): art. 9 voor de nabetaling, art. 10 voor de incasso.
 # - inkomensgegeven_ontvangen: het inkomensgegeven dat de inspecteur
 #   verstrekt (AWR 21e lid 1), bij ontvangst vastgelegd (art. 1).
 # - nabetaling_opgedragen: Toeslagen geeft de bank opdracht uit te betalen
@@ -16,30 +16,62 @@
 # - incasso_opgedragen: Toeslagen geeft de bank opdracht het bedrag van de
 #   terugvordering af te schrijven (Awir 28 lid 1, art. 7), en het antwoord
 #   van de bank: terugvordering_geind of incasso_mislukt (art. 8).
+#
+# Een antwoord van de bank verwijst naar de opdracht die het beantwoordt
+# (`refers_to`); een opdracht verwijst naar het besluit dat zij uitvoert, en
+# betreft het berekeningsjaar daarvan (`period`). Per maand ten hoogste één
+# opdracht (`once_per`): weigert de bank, dan gaat het bedrag mee met de
+# opdracht van de volgende dag die het beleid geeft.
 $id: zorgtoeslag_verrekening
 recording_actor: belastingdienst_toeslagen
 chronicle: toeslagen
 events:
+  # Het kenmerk van de aanslag identificeert het bericht (`identified_by`):
+  # hetzelfde inkomensgegeven twee keer bezorgd, legt de cel één keer vast.
   - name: inkomensgegeven_ontvangen
     establishes: fictief_beleid_toekenning_toeslagen#1
+    identified_by: kenmerk_aanslag
+  # De toekenning, als het besluit in de fase TOEKENNING van de procedure
+  # tegemoetkoming; zo noemt het beleid geen toeslag.
   - name: nabetaling_opgedragen
     establishes: fictief_beleid_toekenning_toeslagen#4
     reads:
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '2'}
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '6'}
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '7'}
-    executed_on: fictief_beleid_toekenning_toeslagen#9
+    refers_to:
+      toekenning: {stage: TOEKENNING, required: true}
+    period: {parameter: berekeningsjaar, unit: year}
+    executed_on:
+      days: fictief_beleid_toekenning_toeslagen#9
+      parameter: dag
+      once_per: month
   - name: nabetaling_betaald
     establishes: fictief_beleid_toekenning_toeslagen#5
+    refers_to:
+      betaalopdracht: {to: fictief_beleid_toekenning_toeslagen#4, required: true}
   - name: nabetaling_mislukt
     establishes: fictief_beleid_toekenning_toeslagen#5
+    refers_to:
+      betaalopdracht: {to: fictief_beleid_toekenning_toeslagen#4, required: true}
+  # De terugvordering, als het besluit in de fase TERUGVORDERING.
   - name: incasso_opgedragen
     establishes: fictief_beleid_toekenning_toeslagen#7
     reads:
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '2'}
       - {regulation: fictief_beleid_kroniek_toeslagen, article: '8'}
-    executed_on: fictief_beleid_toekenning_toeslagen#10
+    refers_to:
+      terugvordering: {stage: TERUGVORDERING, required: true}
+    period: {parameter: berekeningsjaar, unit: year}
+    executed_on:
+      days: fictief_beleid_toekenning_toeslagen#10
+      parameter: dag
+      once_per: month
   - name: terugvordering_geind
     establishes: fictief_beleid_toekenning_toeslagen#8
+    refers_to:
+      incassoopdracht: {to: fictief_beleid_toekenning_toeslagen#7, required: true}
   - name: incasso_mislukt
     establishes: fictief_beleid_toekenning_toeslagen#8
+    refers_to:
+      incassoopdracht: {to: fictief_beleid_toekenning_toeslagen#7, required: true}

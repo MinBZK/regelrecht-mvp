@@ -1,0 +1,25 @@
+---
+# An event an article yields names the boolean output that says when
+# (`produces.events[].when`).
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json
+$id: test_conformance_event_without_when
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2025-01-01'
+url: https://example.invalid/event
+competent_authority:
+  name: Een instantie
+articles:
+  - number: '1'
+    url: https://example.invalid/event/1
+    text: De instantie geeft een opdracht.
+    machine_readable:
+      execution:
+        produces:
+          events:
+            - name: opdracht_gegeven
+        output:
+          - name: gegeven
+            type: boolean
+        actions:
+          - output: gegeven
+            value: true

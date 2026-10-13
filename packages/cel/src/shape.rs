@@ -8,9 +8,10 @@
 //! establishing article with what is its own. The decision requested adds
 //! what its article asks of the belanghebbende, as a field only of an
 //! application that requests it (Awir 15 lid 2). For a decision the fields
-//! are its outputs. What each article establishes or extends is read from what
-//! the law says in its own words ([`extension::derive`]), or from an explicit
-//! `extensions.chronolex` block if the article has one.
+//! are its outputs. For an execution they are what it was given from outside
+//! and its outputs. What each article establishes or extends is read from
+//! what the law says in its own words ([`extension::derive`]); what the cell
+//! keeps about an execution, from its stream ([`Event`]).
 
 use std::collections::BTreeMap;
 
@@ -23,11 +24,11 @@ use regelrecht_law_model::{
 };
 use serde::Serialize;
 
-use crate::config::Event;
+use crate::config::{Event, ExecutedOn, Until};
 use crate::error::{setup, Result};
 use crate::extension::{
-    self, Chronolex, EffectiveAt, Establishment, ExecutedOn, Extends, Fields, PeriodParameter,
-    PeriodUnit, Reference, Until,
+    self, Chronolex, EffectiveAt, Establishment, Extends, Fields, PeriodParameter, PeriodUnit,
+    Reference,
 };
 
 /// One field of a gram, as the law declares it.
@@ -93,15 +94,16 @@ pub struct Shape {
     pub outputs: Vec<String>,
     /// The parameters of the establishing article.
     pub parameters: Vec<String>,
-    /// For an execution: the parameter the day goes into (see
-    /// [`crate::Cell::execute`]).
+    /// For an execution executed on a day: which days, and the parameter the
+    /// day goes into (see [`crate::Cell::execute`]), from the stream.
     pub executed_on: Option<ExecutedOn>,
-    /// For an execution: the boolean output that says whether a gram arises.
+    /// For an execution: the boolean output that says whether a gram arises
+    /// (`when` in `produces.events`).
     pub record_when: Option<String>,
     /// For a receipt: the parameter whose value identifies the message;
-    /// one gram of the article per value.
+    /// one gram of the article per value. From the stream.
     pub identified_by: Option<String>,
-    /// For an execution: the stage whose gram ends it.
+    /// For an execution: the stage whose gram ends it. From the stream.
     pub until: Option<Until>,
     /// For a decision: the parameter that is the date it bears, which the
     /// cell fills with the day the decision is taken.
@@ -133,8 +135,8 @@ impl Shape {
     }
 
     /// Whether a gram of the event arises on receipt of what another party
-    /// sends: an execution that says when it arises (`record_when`) but on
-    /// no day (`executed_on`). See [`crate::Cell::receive`].
+    /// sends: an event the article yields (`produces.events`) on no day
+    /// (no `executed_on` in its stream). See [`crate::Cell::receive`].
     pub fn is_receipt(&self) -> bool {
         self.record_when.is_some() && self.executed_on.is_none()
     }
@@ -216,11 +218,11 @@ fn declared_parameters(article: &Article) -> Vec<Parameter> {
 /// that period.
 ///
 /// Only the absence of the event falls through to a later version: no
-/// version in force, no such article, or an article that names no such
-/// event in its `extensions.chronolex`. A version in force that does name
-/// the event but cannot give it a shape (a reference it cannot resolve, an
-/// execution without `executed_on`) is an error in the law that applies, and
-/// a later version must not hide it.
+/// version in force, no such article, or an article that establishes no
+/// such event. A version in force that does establish the event but cannot
+/// give it a shape (a `when` that is no output, a reference it cannot
+/// resolve) is an error in the law that applies, and a later version must
+/// not hide it.
 pub fn derive_for(service: &LawExecutionService, event: &Event, day: NaiveDate) -> Result<Shape> {
     let first = match derive(service, event, day) {
         Ok(shape) => return Ok(shape),
@@ -247,8 +249,8 @@ pub fn derive_for(service: &LawExecutionService, event: &Event, day: NaiveDate) 
 
 /// Whether the version of the law in force on `day` establishes `event`:
 /// it has the article, and the article establishes what the event names.
-/// A block that cannot be read counts as establishing it, so its error is
-/// the one reported.
+/// An article whose establishments cannot be read counts as establishing
+/// it, so its error is the one reported.
 fn establishes_event(service: &LawExecutionService, event: &Event, day: NaiveDate) -> bool {
     let Ok((_, article)) = article_on(service, &event.establishes, day) else {
         return false;
@@ -260,8 +262,8 @@ fn establishes_event(service: &LawExecutionService, event: &Event, day: NaiveDat
     }
 }
 
-/// What an article establishes or extends: its explicit chronolex block, or
-/// what the law says in its own words ([`extension::derive`]). For a
+/// What an article establishes or extends, as the law says it in its own
+/// words ([`extension::derive`]). For a
 /// decision, the stages of its procedure that are a decision say where it
 /// is taken, as the procedure reads on `day`. A procedure the article names
 /// and no loaded law defines is an error, not a decision without stages: the
@@ -272,9 +274,6 @@ fn chronolex_of(
     reference: &str,
     day: NaiveDate,
 ) -> Result<Option<Chronolex>> {
-    if let Some(explicit) = extension::of_article(article, reference).map_err(setup)? {
-        return Ok(Some(explicit));
-    }
     let (law_id, _) = split_reference(reference)?;
     let procedure = service
         .procedure_of(law_id, article, Some(day))
@@ -290,33 +289,35 @@ fn chronolex_of(
     extension::derive(article, &decision_stages).map_err(|e| setup(format!("{reference}: {e}")))
 }
 
-/// The establishment of `chronolex` that `event` records. In an explicit
-/// block it is the one named after the event; in a derived one it is the
+/// The establishment of `chronolex` that `event` records: the event the
+/// article yields under that name (`produces.events`), or else the
 /// article's own establishment, at the stage the stream names if the
 /// article decides at more than one.
 fn entry_of<'c>(chronolex: &'c Chronolex, event: &Event) -> Result<&'c Establishment> {
     let establishes = &event.establishes;
-    if !chronolex.derived {
-        let entry = chronolex
-            .establishes
+    let named: Vec<&Establishment> = chronolex.own().filter(|e| e.event.is_some()).collect();
+    if !named.is_empty() {
+        let entry = named
             .iter()
             .find(|e| e.event.as_deref() == Some(event.name.as_str()))
+            .copied()
             .ok_or_else(|| {
                 setup(format!(
-                    "{establishes}: establishes no event '{}'",
-                    event.name
+                    "{establishes}: yields no event '{}'; it yields {}",
+                    event.name,
+                    named
+                        .iter()
+                        .filter_map(|e| e.event.as_deref())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 ))
             })?;
-        // The block names the stage itself; a stream that names another
-        // contradicts it, and is not silently overruled.
+        // An event the article yields is taken at no stage of a procedure.
         if let Some(stage) = &event.stage {
-            if entry.stage.as_deref() != Some(stage.as_str()) {
-                return Err(setup(format!(
-                    "{establishes}: the stream records '{}' at stage {stage}, the article at {}",
-                    event.name,
-                    entry.stage.as_deref().unwrap_or("no stage")
-                )));
-            }
+            return Err(setup(format!(
+                "{establishes}: the stream records '{}' at stage {stage}; an event the article yields has no stage",
+                event.name
+            )));
         }
         return Ok(entry);
     }
@@ -357,7 +358,7 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
     let (law, article) = article_on(service, establishes, day)?;
     let chronolex = chronolex_of(service, article, establishes, day)?.ok_or_else(|| {
         setup(format!(
-            "{establishes}: establishes nothing: no produces.submission, no BESCHIKKING, no hook on a submission, and no extensions.chronolex"
+            "{establishes}: establishes nothing: no produces.submission, no BESCHIKKING, no hook on a submission, and no produces.events"
         ))
     })?;
     let entry = entry_of(&chronolex, event)?;
@@ -372,7 +373,7 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
         fields: Vec::new(),
         effective_at: entry.effective_at.clone(),
         refers_to: entry.refers_to.clone(),
-        period: entry.period.clone(),
+        period: None,
         legal_character: produces.and_then(|p| p.legal_character.clone()),
         decision_type: produces.and_then(|p| p.decision_type.clone()),
         outputs: declared_outputs(article)
@@ -383,13 +384,14 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
             .into_iter()
             .map(|p| p.name)
             .collect(),
-        executed_on: entry.executed_on.clone(),
+        executed_on: None,
         record_when: entry.record_when.clone(),
-        identified_by: entry.identified_by.clone(),
-        until: entry.until.clone(),
+        identified_by: None,
+        until: None,
         dated_by: entry.dated_by.clone(),
         moment: None,
     };
+    execution_rules(&mut shape, event)?;
     for (name, reference) in &shape.refers_to {
         reference
             .check(name)
@@ -431,72 +433,38 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
                 &declared_parameters(article),
                 &declared_outputs(article),
             )?;
-            // What the decision concerns, if the law says it concerns a
-            // period: the parameter with origin role TIJDVAK among what the
-            // decision asks at its stage (Awir 14 jo. 15: "een tegemoetkoming
-            // met betrekking tot een berekeningsjaar").
-            if chronolex.derived {
-                if let Some(stage) = &entry.stage {
-                    shape.period = tijdvak(service, &shape, stage, day)?;
-                }
-            }
-            // A decision on no submission: the period the stream names.
-            if let Some(period) = &event.period {
-                if shape.period.is_some() {
-                    return Err(setup(format!(
-                        "{establishes}: the law names the period of '{}'; the stream does not name it too",
-                        event.name
-                    )));
-                }
-                if shape.refers_to.values().any(|r| r.required) {
-                    return Err(setup(format!(
-                        "{establishes}: '{}' is taken on a submission; its period is the one the law names (origin role TIJDVAK)",
-                        event.name
-                    )));
-                }
-                if !shape.parameters.contains(&period.parameter) {
-                    return Err(setup(format!(
-                        "{establishes}: the stream says '{}' gives the period of '{}', and the article declares no such parameter",
-                        period.parameter, event.name
-                    )));
-                }
-                // Whom it concerns: without it, the cell cannot tell a
-                // second decision about the same subject from a first about
-                // another.
-                if event.subject.is_empty() {
-                    return Err(setup(format!(
-                        "{establishes}: '{}' is taken on no submission; the stream names the parameters that say whom it concerns (`subject`)",
-                        event.name
-                    )));
-                }
-                for name in &event.subject {
-                    if name == &period.parameter || !shape.parameters.contains(name) {
+            if shape.record_when.is_some() {
+                // An execution: the period the stream names, if it concerns
+                // one.
+                if let Some(period) = &event.period {
+                    if !shape.parameters.contains(&period.parameter) {
                         return Err(setup(format!(
-                            "{establishes}: the stream says '{name}' says whom '{}' concerns, and the article declares no such parameter besides its period",
-                            event.name
+                            "{establishes}: the stream says '{}' gives the period of '{}', and the article declares no such parameter",
+                            period.parameter, event.name
                         )));
                     }
+                    shape.period = Some(period.clone());
                 }
-                shape.period = Some(period.clone());
-            } else if !event.subject.is_empty() || event.first_period.is_some() {
-                return Err(setup(format!(
-                    "{establishes}: '{}' names a `subject` or a `first_period`, which only a decision on no submission (with `period` in its stream) has",
-                    event.name
-                )));
-            }
-            // A decision taken at a stage of its procedure is the article
-            // with the hooks that fire at that stage (a general law that hooks
-            // onto every besluit, or onto one stage). What they produce is
-            // part of the decision too, unless the law names the fields one
-            // by one.
-            let named = matches!(entry.fields, Some(Fields::Named(_)));
-            if let (Some(stage), false) = (&entry.stage, named) {
-                let at = stage_inputs(service, &shape, stage, day)?;
-                for part in at.articles.iter().filter(|a| a.hook.is_some()) {
-                    let reference = format!("{}#{}", part.law_id, part.article_number);
-                    let (_, hook) = article_on(service, &reference, day)?;
-                    for field in part_fields(entry, &reference, &[], &declared_outputs(hook))? {
-                        merge_field(&mut shape.fields, field);
+                if !event.subject.is_empty() || event.first_period.is_some() {
+                    return Err(setup(format!(
+                        "{establishes}: '{}' names a `subject` or a `first_period`, which only a decision on no submission (with `period` in its stream) has",
+                        event.name
+                    )));
+                }
+            } else {
+                decision_period(service, &mut shape, entry, event, day)?;
+                // A decision taken at a stage of its procedure is the article
+                // with the hooks that fire at that stage (a general law that
+                // hooks onto every besluit, or onto one stage). What they
+                // produce is part of the decision too.
+                if let Some(stage) = &entry.stage {
+                    let at = stage_inputs(service, &shape, stage, day)?;
+                    for part in at.articles.iter().filter(|a| a.hook.is_some()) {
+                        let reference = format!("{}#{}", part.law_id, part.article_number);
+                        let (_, hook) = article_on(service, &reference, day)?;
+                        for field in part_fields(entry, &reference, &[], &declared_outputs(hook))? {
+                            merge_field(&mut shape.fields, field);
+                        }
                     }
                 }
             }
@@ -513,6 +481,104 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
         }
     }
     Ok(shape)
+}
+
+/// The period a decision concerns. The law names it for a decision on an
+/// application (origin role TIJDVAK among what the decision asks at its
+/// stage); for a decision on no submission the stream names it, with whom
+/// it concerns (`subject`).
+fn decision_period(
+    service: &LawExecutionService,
+    shape: &mut Shape,
+    entry: &Establishment,
+    event: &Event,
+    day: NaiveDate,
+) -> Result<()> {
+    let establishes = event.establishes.as_str();
+    // What the decision concerns, if the law says it concerns a period: the
+    // parameter with origin role TIJDVAK among what the decision asks at its
+    // stage (Awir 14 jo. 15: "een tegemoetkoming met betrekking tot een
+    // berekeningsjaar").
+    if let Some(stage) = &entry.stage {
+        shape.period = tijdvak(service, shape, stage, day)?;
+    }
+    // A decision on no submission: the period the stream names.
+    if let Some(period) = &event.period {
+        if shape.period.is_some() {
+            return Err(setup(format!(
+                "{establishes}: the law names the period of '{}'; the stream does not name it too",
+                event.name
+            )));
+        }
+        if shape.refers_to.values().any(|r| r.required) {
+            return Err(setup(format!(
+                "{establishes}: '{}' is taken on a submission; its period is the one the law names (origin role TIJDVAK)",
+                event.name
+            )));
+        }
+        if !shape.parameters.contains(&period.parameter) {
+            return Err(setup(format!(
+                "{establishes}: the stream says '{}' gives the period of '{}', and the article declares no such parameter",
+                period.parameter, event.name
+            )));
+        }
+        // Whom it concerns: without it, the cell cannot tell a second
+        // decision about the same subject from a first about another.
+        if event.subject.is_empty() {
+            return Err(setup(format!(
+                "{establishes}: '{}' is taken on no submission; the stream names the parameters that say whom it concerns (`subject`)",
+                event.name
+            )));
+        }
+        for name in &event.subject {
+            if name == &period.parameter || !shape.parameters.contains(name) {
+                return Err(setup(format!(
+                    "{establishes}: the stream says '{name}' says whom '{}' concerns, and the article declares no such parameter besides its period",
+                    event.name
+                )));
+            }
+        }
+        shape.period = Some(period.clone());
+    } else if !event.subject.is_empty() || event.first_period.is_some() {
+        return Err(setup(format!(
+            "{establishes}: '{}' names a `subject` or a `first_period`, which only a decision on no submission (with `period` in its stream) has",
+            event.name
+        )));
+    }
+    Ok(())
+}
+
+/// What the stream keeps about an execution (an event of `produces.events`):
+/// the gram it refers to (`refers_to`), its days (`executed_on`), the value
+/// that identifies a message (`identified_by`) and the stage that ends it
+/// (`until`). None of it is in the law. For any other event the stream
+/// gives none of these.
+fn execution_rules(shape: &mut Shape, event: &Event) -> Result<()> {
+    if shape.record_when.is_none() {
+        let given: Vec<&str> = [
+            ("refers_to", !event.refers_to.is_empty()),
+            ("executed_on", event.executed_on.is_some()),
+            ("identified_by", event.identified_by.is_some()),
+            ("until", event.until.is_some()),
+        ]
+        .into_iter()
+        .filter_map(|(key, given)| given.then_some(key))
+        .collect();
+        if !given.is_empty() {
+            return Err(setup(format!(
+                "{}: the stream gives '{}' {}, which only an event the article yields (produces.events) has",
+                shape.establishes,
+                event.name,
+                given.join(", ")
+            )));
+        }
+        return Ok(());
+    }
+    shape.refers_to = event.refers_to.clone();
+    shape.executed_on = event.executed_on.clone();
+    shape.identified_by = event.identified_by.clone();
+    shape.until = event.until.clone();
+    Ok(())
 }
 
 /// The period a decision at `stage` concerns: the one parameter with origin
@@ -649,12 +715,17 @@ fn check_execution(shape: &Shape, article: &Article) -> Result<()> {
     }
     if let Some(when) = &shape.record_when {
         let declared = declared_outputs(article);
-        let o = declared
-            .iter()
-            .find(|o| &o.name == when)
-            .ok_or_else(|| at(format!("record_when: the article has no output '{when}'")))?;
+        let o = declared.iter().find(|o| &o.name == when).ok_or_else(|| {
+            at(format!(
+                "produces.events: '{}' arises when '{when}', and the article has no such output",
+                shape.event
+            ))
+        })?;
         if o.output_type != ParameterType::Boolean {
-            return Err(at(format!("record_when: output '{when}' is not a boolean")));
+            return Err(at(format!(
+                "produces.events: '{}' arises when '{when}', which is not a boolean",
+                shape.event
+            )));
         }
     }
     // The value that identifies a received message comes with the message:
@@ -662,7 +733,7 @@ fn check_execution(shape: &Shape, article: &Article) -> Result<()> {
     if let Some(key) = &shape.identified_by {
         if !shape.is_receipt() {
             return Err(at(format!(
-                "identified_by: '{}' is no receipt (record_when, no executed_on)",
+                "identified_by: '{}' is no receipt (an event the article yields, with no executed_on)",
                 shape.event
             )));
         }
@@ -695,16 +766,6 @@ fn check_execution(shape: &Shape, article: &Article) -> Result<()> {
     {
         return Err(at(format!(
             "'{}' is a receipt: it needs a required refers_to or identified_by, so a message delivered again is not recorded twice",
-            shape.event
-        )));
-    }
-    // An execution is executed on a day (`executed_on`), or on receipt of
-    // what another party sends (no `executed_on`, see `Cell::receive`); it
-    // says when a gram arises, and is taken at no stage of a procedure.
-    let execution = shape.executed_on.is_some() || shape.record_when.is_some();
-    if execution && (shape.record_when.is_none() || shape.stage.is_some()) {
-        return Err(at(format!(
-            "'{}' is an execution: it needs record_when, and is taken at no stage",
             shape.event
         )));
     }
@@ -916,9 +977,7 @@ fn submission_fields(
             .iter()
             .filter(|e| match (&part.hook, &e.extends) {
                 // The establishing article: its own event.
-                (None, None) => {
-                    chronolex.derived || e.event.as_deref() == Some(shape.event.as_str())
-                }
+                (None, None) => e.event.is_none(),
                 // A hook: what extends every submission of this kind.
                 (Some(_), Some(Extends { submission })) => {
                     Some(submission.to_lowercase()) == shape.subtype
@@ -1048,32 +1107,19 @@ fn part_fields(
             .iter()
             .map(|o| def(&o.name, Some(o.output_type), vec![reference.to_string()]))
             .collect(),
-        // An output, or a parameter of the article: what it was given (the
-        // reference a channel delivered with, say).
-        Some(Fields::Named(names)) => names
-            .iter()
-            .map(|name| {
-                if let Some(o) = outputs.iter().find(|o| &o.name == name) {
-                    return Ok(def(
-                        &o.name,
-                        Some(o.output_type),
-                        vec![reference.to_string()],
-                    ));
-                }
-                let p = parameters.iter().find(|p| &p.name == name).ok_or_else(|| {
-                    setup(format!(
-                        "{reference}: fields: the article has no output or parameter '{name}'"
-                    ))
-                })?;
-                // Without an origin, the article that declares it; with one,
-                // its grondslag, if the law gives one.
-                let basis = match origin(p, reference)? {
-                    None => vec![reference.to_string()],
-                    Some(o) => o.grondslag.iter().cloned().collect(),
-                };
-                Ok(def(&p.name, Some(p.param_type), basis))
-            })
-            .collect::<Result<_>>()?,
+        // What it was given from outside (the reference a channel delivered
+        // with, say), then every output; an output that has the name of a
+        // parameter is one field.
+        Some(Fields::ParametersAndOutputs) => {
+            let mut fields = supplied_fields(reference, parameters)?;
+            for o in outputs {
+                merge_field(
+                    &mut fields,
+                    def(&o.name, Some(o.output_type), vec![reference.to_string()]),
+                );
+            }
+            fields
+        }
     })
 }
 
@@ -1143,14 +1189,14 @@ pub fn to_json(value: &Value) -> serde_json::Value {
 mod tests {
     use super::*;
 
-    /// A version of `testwet` valid from `valid_from`, whose article 1 holds
-    /// `chronolex` as its `extensions.chronolex` (or none).
-    fn version(valid_from: &str, chronolex: Option<&str>) -> String {
-        let extensions = chronolex.map_or(String::new(), |c| {
+    /// A version of `testwet` valid from `valid_from`, whose article 1
+    /// yields the events `events` (or none).
+    fn version(valid_from: &str, events: Option<&str>) -> String {
+        let produces = events.map_or(String::new(), |e| {
             format!(
-                "        produces:\n          extensions:\n            chronolex:\n{}",
-                c.lines()
-                    .map(|l| format!("              {l}\n"))
+                "        produces:\n          events:\n{}",
+                e.lines()
+                    .map(|l| format!("            {l}\n"))
                     .collect::<String>()
             )
         });
@@ -1168,22 +1214,26 @@ articles:
     url: https://example.org/testwet#1
     machine_readable:
       execution:
-{extensions}        parameters:
+{produces}        parameters:
           - name: x
             type: number
             required: true
+            origin: {{waarde: KANAAL, grondslag: testwet#1}}
         output:
           - name: y
             type: number
+          - name: z
+            type: boolean
         actions:
           - output: y
             value: $x
+          - output: z
+            value: true
 "
         )
     }
 
-    const ESTABLISHES: &str =
-        "establishes:\n  - event: gebeurd\n    type: decretogram\n    fields: outputs";
+    const ESTABLISHES: &str = "- {name: gebeurd, when: z}";
 
     fn service(versions: &[String]) -> LawExecutionService {
         let mut service = LawExecutionService::new();
@@ -1197,17 +1247,13 @@ articles:
         s.parse().unwrap()
     }
 
+    /// The receipt of `testwet#1`, one gram per value of `x`.
     fn gebeurd() -> Event {
         Event {
             name: "gebeurd".into(),
             establishes: "testwet#1".into(),
-            stage: None,
-            reads: Vec::new(),
-            decided_on: None,
-            executed_on: None,
-            period: None,
-            subject: Vec::new(),
-            first_period: None,
+            identified_by: Some("x".into()),
+            ..Default::default()
         }
     }
 
@@ -1218,16 +1264,21 @@ articles:
             version("2025-01-01", Some(ESTABLISHES)),
         ]);
         let shape = derive_for(&service, &gebeurd(), day("2024-11-20")).unwrap();
-        assert_eq!(shape.outputs, vec!["y".to_string()]);
+        assert_eq!(shape.outputs, vec!["y".to_string(), "z".to_string()]);
+        // What it was given from outside, and every output.
+        let fields: Vec<&str> = shape.fields.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(fields, ["x", "y", "z"]);
+        assert_eq!(shape.type_, "executogram");
+        assert_eq!(shape.record_when.as_deref(), Some("z"));
     }
 
     #[test]
     fn a_version_that_establishes_the_event_but_fails_does_not_fall_through() {
         // The version in force names the event, with an output that is not
         // there: an error in the law that applies, not an absence.
-        let broken = format!("{ESTABLISHES}\n    record_when: bestaat_niet");
+        let broken = "- {name: gebeurd, when: bestaat_niet}";
         let service = service(&[
-            version("2024-01-01", Some(&broken)),
+            version("2024-01-01", Some(broken)),
             version("2025-01-01", Some(ESTABLISHES)),
         ]);
         let e = derive_for(&service, &gebeurd(), day("2024-11-20")).unwrap_err();
@@ -1238,7 +1289,7 @@ articles:
     fn without_any_version_that_establishes_the_event_the_first_error_stands() {
         let service = service(&[version("2024-01-01", None), version("2025-01-01", None)]);
         let e = derive_for(&service, &gebeurd(), day("2024-11-20")).unwrap_err();
-        assert!(e.to_string().contains("no extensions.chronolex"), "{e}");
+        assert!(e.to_string().contains("no produces.events"), "{e}");
     }
     /// A decision on an application of `testwet#1`, in a law with its own
     /// procedure `eigen`; `produces` is the rest of its `produces` block.
@@ -1272,12 +1323,7 @@ articles:
             name: "besloten".into(),
             establishes: "testbesluit#1".into(),
             stage: stage.map(str::to_string),
-            reads: Vec::new(),
-            decided_on: None,
-            executed_on: None,
-            period: None,
-            subject: Vec::new(),
-            first_period: None,
+            ..Default::default()
         }
     }
 
@@ -1316,24 +1362,49 @@ articles:
     }
 
     #[test]
-    fn a_stream_stage_must_match_the_stage_of_an_explicit_block() {
-        let service = service(&[decision(
-            "          procedure_id: eigen
-          extensions:
-            chronolex:
-              establishes:
-                - {event: besloten, type: decretogram, stage: BESLUIT, fields: outputs}",
-        )]);
-        derive(&service, &besloten(Some("BESLUIT")), day("2024-06-01")).unwrap();
-        derive(&service, &besloten(None), day("2024-06-01")).unwrap();
-        let e = derive(&service, &besloten(Some("VOORSCHOT")), day("2024-06-01")).unwrap_err();
-        assert!(e.to_string().contains("stage VOORSCHOT"), "{e}");
+    fn an_event_the_article_yields_has_no_stage() {
+        let service = service(&[version("2024-01-01", Some(ESTABLISHES))]);
+        let mut event = gebeurd();
+        event.stage = Some("BESLUIT".into());
+        let e = derive(&service, &event, day("2024-06-01")).unwrap_err();
+        assert!(e.to_string().contains("has no stage"), "{e}");
     }
 
-    /// A law whose article 1 is received (`record_when: ontvangen`, no
-    /// `executed_on`) as `gekregen`, with `entry` the rest of its entry;
-    /// parameter `kenmerk` is `required` as given, output `bedrag` is computed.
-    fn receipt(entry: &str, required: bool) -> String {
+    #[test]
+    fn a_stream_names_an_event_the_article_yields() {
+        let service = service(&[version("2024-01-01", Some(ESTABLISHES))]);
+        let mut event = gebeurd();
+        event.name = "anders".into();
+        let e = derive(&service, &event, day("2024-06-01")).unwrap_err();
+        assert!(e.to_string().contains("yields no event 'anders'"), "{e}");
+    }
+
+    #[test]
+    fn an_article_names_an_event_once() {
+        let twice = "- {name: gebeurd, when: z}\n- {name: gebeurd, when: z}";
+        let service = service(&[version("2024-01-01", Some(twice))]);
+        let e = derive(&service, &gebeurd(), day("2024-06-01")).unwrap_err();
+        assert!(e.to_string().contains("names 'gebeurd' twice"), "{e}");
+    }
+
+    #[test]
+    fn a_decision_takes_no_execution_rules_from_its_stream() {
+        let service = service(&[
+            version("2024-01-01", None),
+            decision("          procedure_id: eigen\n          decides_on: [testwet#1]"),
+        ]);
+        let mut event = besloten(None);
+        event.until = Some(Until {
+            stage: "BESLUIT".into(),
+        });
+        let e = derive(&service, &event, day("2024-06-01")).unwrap_err();
+        assert!(e.to_string().contains("gives 'besloten' until"), "{e}");
+    }
+
+    /// A law whose article 1 yields `gekregen` when `ontvangen`, on receipt;
+    /// parameter `kenmerk` comes with the message and is `required` as
+    /// given, output `bedrag` is computed.
+    fn receipt(required: bool) -> String {
         format!(
             "$id: ontvangstwet
 regulatory_layer: WET
@@ -1345,18 +1416,13 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: gekregen
-                  type: executogram
-                  fields: [kenmerk, bedrag]
-                  record_when: ontvangen
-{entry}
+          events:
+            - {{name: gekregen, when: ontvangen}}
         parameters:
           - name: kenmerk
             type: string
             required: {required}
+            origin: {{waarde: KANAAL, grondslag: ontvangstwet#1}}
         output:
           - {{name: ontvangen, type: boolean}}
           - {{name: bedrag, type: number}}
@@ -1367,34 +1433,44 @@ articles:
         )
     }
 
-    fn gekregen() -> Event {
-        Event {
+    /// The receipt `gekregen`, with `stream` as what its stream adds.
+    fn derive_receipt(stream: impl FnOnce(&mut Event), required: bool) -> Result<Shape> {
+        let service = service(&[receipt(required)]);
+        let mut event = Event {
             name: "gekregen".into(),
             establishes: "ontvangstwet#1".into(),
-            stage: None,
-            reads: Vec::new(),
-            decided_on: None,
-            executed_on: None,
-            period: None,
-            subject: Vec::new(),
-            first_period: None,
-        }
+            ..Default::default()
+        };
+        stream(&mut event);
+        derive(&service, &event, day("2024-06-01"))
     }
 
-    fn derive_receipt(entry: &str, required: bool) -> Result<Shape> {
-        let service = service(&[receipt(entry, required)]);
-        derive(&service, &gekregen(), day("2024-06-01"))
+    fn identified_by(key: &str) -> impl FnOnce(&mut Event) + '_ {
+        move |e| e.identified_by = Some(key.to_string())
+    }
+
+    fn refers_to(required: bool) -> impl FnOnce(&mut Event) {
+        move |e| {
+            e.refers_to = BTreeMap::from([(
+                "opdracht".to_string(),
+                Reference {
+                    to: Some("ontvangstwet#1".into()),
+                    stage: None,
+                    required,
+                },
+            )])
+        }
     }
 
     #[test]
     fn a_receipt_identified_by_a_required_parameter_is_a_shape() {
-        let shape = derive_receipt("                  identified_by: kenmerk", true).unwrap();
+        let shape = derive_receipt(identified_by("kenmerk"), true).unwrap();
         assert_eq!(shape.identified_by.as_deref(), Some("kenmerk"));
     }
 
     #[test]
     fn a_receipt_that_cannot_tell_a_message_delivered_again_is_an_error() {
-        let e = derive_receipt("", true).unwrap_err();
+        let e = derive_receipt(|_| {}, true).unwrap_err();
         assert!(matches!(e, crate::Error::Setup(_)), "{e}");
         assert!(
             e.to_string()
@@ -1402,27 +1478,24 @@ articles:
             "{e}"
         );
         // A reference that is not required does not tell it either.
-        let optional =
-            "                  refers_to:\n                    opdracht: {to: ontvangstwet#1}";
-        let e = derive_receipt(optional, true).unwrap_err();
+        let e = derive_receipt(refers_to(false), true).unwrap_err();
         assert!(
             e.to_string()
                 .contains("needs a required refers_to or identified_by"),
             "{e}"
         );
-        let required = "                  refers_to:\n                    opdracht: {to: ontvangstwet#1, required: true}";
-        derive_receipt(required, true).unwrap();
+        derive_receipt(refers_to(true), true).unwrap();
     }
 
     #[test]
     fn a_receipt_identified_by_a_parameter_that_is_not_required_is_an_error() {
-        let e = derive_receipt("                  identified_by: kenmerk", false).unwrap_err();
+        let e = derive_receipt(identified_by("kenmerk"), false).unwrap_err();
         assert!(e.to_string().contains("'kenmerk' is not required"), "{e}");
     }
 
     #[test]
     fn a_receipt_identified_by_an_output_is_an_error() {
-        let e = derive_receipt("                  identified_by: bedrag", true).unwrap_err();
+        let e = derive_receipt(identified_by("bedrag"), true).unwrap_err();
         assert!(e.to_string().contains("'bedrag' is an output"), "{e}");
     }
 }

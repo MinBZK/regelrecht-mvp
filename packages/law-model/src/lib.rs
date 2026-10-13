@@ -26,7 +26,7 @@ pub use model::{
     ImplementsDeclaration, Input, LegalBasis, MachineReadable, Marking, MarkingResolution, Moment,
     OpenTerm, OpenTermDefault, Origin, OriginOverride, OriginRole, OriginValue, Output,
     OverrideDeclaration, Parameter, Placement, PlacementContainer, Preamble, ProcedureAppliesTo,
-    ProcedureDefinition, Produces, ProvisionReference, ResolveSpec, Source, Specifies, Stage,
-    StageRequirement, Submission, Temporal, TypeSpec, UntranslatableEntry,
+    ProcedureDefinition, ProducedEvent, Produces, ProvisionReference, ResolveSpec, Source,
+    Specifies, Stage, StageRequirement, Submission, Temporal, TypeSpec, UntranslatableEntry,
 };
 pub use value::{MissingFact, MissingKind, Operation, ParameterType, RegulatoryLayer, Value};

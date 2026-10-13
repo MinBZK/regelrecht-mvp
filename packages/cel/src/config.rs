@@ -20,15 +20,34 @@
 //! policy only how to read it. Provenance names it
 //! `<recording_actor>#<register>`, such as `belastingdienst_toeslagen#dossier`.
 //!
-//! A stream only registers an event and the article that establishes it;
-//! what the fact contains, the law says (see [`crate::shape`]).
+//! A stream registers an event and the article that establishes it; what
+//! the fact contains, the law says (see [`crate::shape`]). For an execution
+//! (an event the article yields, `produces.events`), the stream also says
+//! what the cell keeps about recording it, which is no part of the law:
+//!
+//! ```yaml
+//! - name: betaalopdracht_gegeven
+//!   establishes: fictief_beleid_termijnbedrag_voorschot#1
+//!   refers_to:                       # the gram it executes
+//!     voorschot: {stage: VOORSCHOT, required: true}
+//!   period: {parameter: berekeningsjaar, unit: year}
+//!   executed_on:                     # on the days a policy article gives
+//!     days: fictief_beleid_termijnbedrag_voorschot#5
+//!     parameter: maand               # the parameter the day goes into
+//!     once_per: month
+//!   until: {stage: TOEKENNING}       # no gram once the case has this stage
+//! - name: overboeking_bijgeschreven  # a receipt: no `executed_on`
+//!   establishes: fictieve_bankvoorwaarden#1
+//!   identified_by: betaalkenmerk     # one gram per value
+//! ```
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::error::{setup, Result};
+use crate::extension::{PeriodParameter, Reference};
 
 /// `cell.yaml`.
 #[derive(Debug, Clone, Deserialize)]
@@ -89,7 +108,7 @@ pub struct Stream {
 
 /// An event: its name in the chronicle, and the article that establishes it
 /// (`<regulation>#<article>`).
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Event {
     pub name: String,
@@ -114,22 +133,37 @@ pub struct Event {
     /// takes (see `Cell::check_due`).
     #[serde(default)]
     pub decided_on: Option<String>,
-    /// For an execution executed on a day (`executed_on` in its law): the
-    /// article (`<regulation>#<article>`) that gives the next day the holder
-    /// executes it, after a given day (see [`crate::Cell::due_executions`]).
-    /// Like `decided_on`, its one date output is that day, and null is no
-    /// day; it is asked with what the case reads, the period, and the day
-    /// after which, in the parameter the execution takes its day in.
+    /// For an execution (an event of `produces.events`): which gram it
+    /// refers to, per name: a decision of a stage it executes, or the order
+    /// a receipt answers. A required reference that is not there is
+    /// refused. A decision takes its reference from the law (`decides_on`).
     #[serde(default)]
-    pub executed_on: Option<String>,
-    /// For a decision on no submission (ex officio, such as the aanslag of
-    /// AWR 11): the parameter that gives the period it concerns. The law
-    /// names the period of a decision on an application with origin role
-    /// TIJDVAK, which the schema allows only for what the applicant
-    /// chooses; for a decision nobody applied for, the stream says it (own
-    /// choice). Refused when the law already names one.
+    pub refers_to: BTreeMap<String, Reference>,
+    /// For an execution executed on a day: on which days, and how (see
+    /// [`ExecutedOn`]). An execution without it arises on receipt of what
+    /// another party sends (see [`crate::Cell::receive`]).
     #[serde(default)]
-    pub period: Option<crate::extension::PeriodParameter>,
+    pub executed_on: Option<ExecutedOn>,
+    /// For a receipt (an execution without `executed_on`): the parameter
+    /// whose value identifies the message, such as the reference of a
+    /// payment order. The cell records one answer per value: a message whose
+    /// value a gram of the article already holds is refused as answered, so
+    /// a sender that delivers again records nothing twice, also when the
+    /// message refers to no gram of the receiving cell.
+    #[serde(default)]
+    pub identified_by: Option<String>,
+    /// For an execution: no gram arises once the case has a gram of this
+    /// stage (what follows from it is derived, not recorded).
+    #[serde(default)]
+    pub until: Option<Until>,
+    /// The parameter that gives the period the fact concerns: the cell
+    /// applies the law of that period, not of the day it records. For a
+    /// decision on an application the law names it, with origin role
+    /// TIJDVAK, and the stream does not. For a decision on no submission (ex
+    /// officio, such as the aanslag of AWR 11), and for an execution, the
+    /// stream says it (own choice). Optional: many facts concern no period.
+    #[serde(default)]
+    pub period: Option<PeriodParameter>,
     /// For a decision on no submission (with `period`): the parameters that
     /// say whom it concerns, such as the BSN of the aanslag. The cell takes
     /// such a decision once per period per subject: two decisions with the
@@ -145,6 +179,38 @@ pub struct Event {
     /// [`crate::cell::MAX_EX_OFFICIO_PERIODS`] periods before now).
     #[serde(default)]
     pub first_period: Option<i32>,
+}
+
+/// The days an execution is executed on.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExecutedOn {
+    /// The article (`<regulation>#<article>`) of the holder's policy that
+    /// gives the next day the holder executes it, after a given day (see
+    /// [`crate::Cell::due_executions`]). Like `decided_on`, its one date
+    /// output is that day, and null is no day; it is asked with what the
+    /// case reads, the period, and the day after which, in `parameter`.
+    pub days: String,
+    /// The date parameter of the executed article the day goes into.
+    pub parameter: String,
+    /// How often the fact may arise for the case and the period.
+    #[serde(default)]
+    pub once_per: Option<Every>,
+}
+
+/// How often an execution may arise for the case and the period.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Every {
+    /// Once per calendar month.
+    Month,
+}
+
+/// The stage whose gram ends an execution.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Until {
+    pub stage: String,
 }
 
 /// One source of the parameters of an event's case: a policy of the holder

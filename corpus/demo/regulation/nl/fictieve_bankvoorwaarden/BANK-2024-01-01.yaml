@@ -25,30 +25,19 @@ articles:
       nogmaals uit.
     machine_readable:
       execution:
-        # De bank legt elke ontvangen overboeking vast in haar kroniek
-        # `rekeningen`: bijgeschreven of geweigerd. Welke van de twee, zegt
-        # dit artikel (`record_when`). Er is geen dag waarop de bank dit
-        # uitvoert: zij voert het uit als de overboeking binnenkomt (geen
-        # `executed_on`). Het kenmerk van de opdrachtgever reist mee als veld,
-        # niet als verwijzing: het gram van de opdracht ligt in een andere
-        # kroniek. Dat kenmerk identificeert de overboeking
-        # (`identified_by`): een tweede overboeking met hetzelfde kenmerk
-        # verwerkt de bank niet (laatste zin van het artikel), ook niet als
-        # de opdrachtgever haar opnieuw aanbiedt.
+        # Een overboeking wordt bijgeschreven of geweigerd; welke van de
+        # twee, zegt dit artikel (`bijgeschreven`, `geweigerd`). De bank voert
+        # het uit als de overboeking binnenkomt. Het betaalkenmerk van de
+        # opdrachtgever onderscheidt de ene overboeking van de andere: een
+        # tweede overboeking met hetzelfde kenmerk verwerkt de bank niet
+        # (laatste zin van het artikel), ook niet als de opdrachtgever haar
+        # opnieuw aanbiedt.
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: overboeking_bijgeschreven
-                  type: executogram
-                  fields: [betaalkenmerk, rekeningnummer, uitvoerdatum, bedrag, bijgeschreven, bijgeschreven_bedrag, reden]
-                  record_when: bijgeschreven
-                  identified_by: betaalkenmerk
-                - event: overboeking_geweigerd
-                  type: executogram
-                  fields: [betaalkenmerk, rekeningnummer, uitvoerdatum, bedrag, bijgeschreven, bijgeschreven_bedrag, reden]
-                  record_when: geweigerd
-                  identified_by: betaalkenmerk
+          events:
+            - name: overboeking_bijgeschreven
+              when: bijgeschreven
+            - name: overboeking_geweigerd
+              when: geweigerd
         parameters:
           - name: rekeningnummer
             type: string
@@ -134,40 +123,17 @@ articles:
       nogmaals uit.
     machine_readable:
       execution:
-        # De bank legt elke ontvangen incasso vast in haar kroniek
-        # `rekeningen`: afgeschreven of geweigerd, bij ontvangst, zoals een
-        # overboeking (artikel 1). Het saldo leest zij uit haar eigen kroniek
+        # Een incasso wordt afgeschreven of geweigerd, als zij binnenkomt,
+        # zoals een overboeking (artikel 1). Het saldo leest zij uit haar eigen kroniek
         # met haar (fictieve) beleid daarover (fictief_beleid_kroniek_bank,
         # `reads` in haar stroom): het beginsaldo plus wat zij bijschreef,
         # minus wat zij afschreef.
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: incasso_afgeschreven
-                  type: executogram
-                  fields:
-                    - incassokenmerk
-                    - rekeningnummer
-                    - uitvoerdatum
-                    - bedrag
-                    - afgeschreven
-                    - afgeschreven_bedrag
-                    - reden_incasso
-                  record_when: afgeschreven
-                  identified_by: incassokenmerk
-                - event: incasso_geweigerd
-                  type: executogram
-                  fields:
-                    - incassokenmerk
-                    - rekeningnummer
-                    - uitvoerdatum
-                    - bedrag
-                    - afgeschreven
-                    - afgeschreven_bedrag
-                    - reden_incasso
-                  record_when: incasso_geweigerd
-                  identified_by: incassokenmerk
+          events:
+            - name: incasso_afgeschreven
+              when: afgeschreven
+            - name: incasso_geweigerd
+              when: incasso_geweigerd
         parameters:
           - name: rekeningnummer
             type: string

@@ -1,7 +1,6 @@
 ---
-# Tier C: who supplies a parameter (`origin`, RFC-048), and a namespaced
-# integration block on `produces` (`extensions`, RFC-022 §3.2), with the keys
-# of the `chronolex` namespace.
+# Tier C: who supplies a parameter (`origin`, RFC-048), and the events an
+# article yields (`produces.events`).
 $schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json
 $id: test_conformance_origin
 regulatory_layer: UITVOERINGSBELEID
@@ -17,15 +16,11 @@ articles:
       execution:
         produces:
           legal_character: TOETS
-          extensions:
-            chronolex:
-              establishes:
-                - event: aanvraag_ingediend
-                  type: submission
-              reads:
-                filter: {event: aanvraag_ingediend}
-            een_andere_runtime:
-              sleutel: waarde
+          events:
+            - name: aanvraag_volledig
+              when: volledig
+            - name: aanvraag_onvolledig
+              when: onvolledig
         parameters:
           - name: tijdvak
             type: string
@@ -48,6 +43,10 @@ articles:
         output:
           - name: volledig
             type: boolean
+          - name: onvolledig
+            type: boolean
         actions:
           - output: volledig
             value: true
+          - output: onvolledig
+            value: false

@@ -35,55 +35,14 @@ articles:
       ook in een maand zonder termijn, tot de toekenning.
     machine_readable:
       execution:
-        # Een betaalopdracht is een feit in de kroniek van Toeslagen
-        # (chronolex, een executogram: de uitvoering van het voorschot). Een
-        # termijn die nog moet komen is geen feit (RFC-050): de cel voert dit
-        # artikel uit op de dagen die artikel 5 geeft (`executed_on` van de
-        # stroom), met die dag in `maand`, en legt alleen een gram vast als er
-        # die maand iets te betalen is (`record_when`). Of de termijn ook
-        # betaald is, zegt pas de bank (artikel 2).
-        # - refers_to: het voorschot, als het besluit in de fase VOORSCHOT
-        #   van de procedure tegemoetkoming van de Awir. Zo noemt dit beleid
-        #   geen toeslag.
-        # - period: de termijnen rekenen met het beleid van het
-        #   berekeningsjaar, ook de termijn in december ervoor (art. 22 lid 1).
-        #   Een aanvraag geldt ook voor de jaren erna (art. 15 lid 5 Awir) en
-        #   elk jaar heeft een eigen voorschot; de cel voert dit artikel per
-        #   berekeningsjaar van die voorschotten uit, met dat jaar als
-        #   `berekeningsjaar`. In december kan zo een termijn van het lopende
-        #   jaar en de eerste van het volgende vallen (art. 22 lid 1).
-        # - once_per: per aanvraag en per berekeningsjaar ten hoogste één
-        #   betaalopdracht per maand (art. 22 lid 1: "telkens een maand
-        #   later"), ook na een herziening van het voorschot. Een mislukte
-        #   termijn wacht niet op een nieuwe opdracht in dezelfde maand: hij
-        #   gaat mee met de opdracht van de volgende uitvoeringsdag van
-        #   hetzelfde berekeningsjaar (eigen keuze van dit fictieve beleid).
-        # - until: na de toekenning over een berekeningsjaar wordt op het
-        #   voorschot van dat jaar geen termijn meer betaald; de termijnen van
-        #   een volgend jaar lopen door. Eigen keuze, gelezen uit art. 24 lid 2
-        #   Awir: de voorschotten worden met de tegemoetkoming verrekend, dus
-        #   wat dan nog niet betaald is, komt niet meer. Dat volgt uit de
-        #   toekenning en wordt geen eigen gram.
+        # Dit artikel levert een betaalopdracht op als er die maand iets te
+        # betalen is (`opdracht_wordt_gegeven`). Een termijn die nog moet
+        # komen, is nog geen betaalopdracht. Of de termijn ook betaald is,
+        # zegt pas de bank (artikel 2).
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: betaalopdracht_gegeven
-                  type: executogram
-                  refers_to:
-                    voorschot:
-                      stage: VOORSCHOT
-                      required: true
-                  fields: [termijnbedrag, meegenomen_achterstand, bedrag, rekeningnummer_begunstigde, uitvoerdatum]
-                  period:
-                    parameter: berekeningsjaar
-                    unit: year
-                  executed_on:
-                    parameter: maand
-                    once_per: month
-                  record_when: opdracht_wordt_gegeven
-                  until:
-                    stage: TOEKENNING
+          events:
+            - name: betaalopdracht_gegeven
+              when: opdracht_wordt_gegeven
         parameters:
           - name: voorschotbedrag
             type: amount
@@ -314,28 +273,13 @@ articles:
     machine_readable:
       execution:
         # Het antwoord van de bank komt binnen over een kanaal (origin
-        # KANAAL). De cel legt het vast bij ontvangst (geen `executed_on`):
-        # betaald of mislukt, elk met een verwijzing naar de betaalopdracht.
+        # KANAAL): betaald of mislukt.
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: voorschottermijn_betaald
-                  type: executogram
-                  refers_to:
-                    betaalopdracht:
-                      to: fictief_beleid_termijnbedrag_voorschot#1
-                      required: true
-                  fields: [betaald_bedrag]
-                  record_when: uitgevoerd
-                - event: betaling_mislukt
-                  type: executogram
-                  refers_to:
-                    betaalopdracht:
-                      to: fictief_beleid_termijnbedrag_voorschot#1
-                      required: true
-                  fields: [mislukt_bedrag, reden]
-                  record_when: niet_uitgevoerd
+          events:
+            - name: voorschottermijn_betaald
+              when: uitgevoerd
+            - name: betaling_mislukt
+              when: niet_uitgevoerd
         parameters:
           - name: bijgeschreven
             type: boolean

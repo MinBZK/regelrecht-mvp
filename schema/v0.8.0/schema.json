@@ -1918,42 +1918,26 @@
                   },
                   "description": "The articles (`<regulation>#<article>`) that establish the submission this decision is taken on, as the text says (\"besluit op de aanvraag\"). A hook with applies_to.decided_by reads the legal character of this article."
                 },
-                "extensions": {
-                  "type": "object",
-                  "description": "Namespaced integration blocks (RFC-022 §3.2): each integration owns one key and the shape inside it. The engine does not read them; a runtime that knows the namespace does. Kept as written by the law-model.",
-                  "propertyNames": {
-                    "pattern": "^[a-z][a-z0-9_]*$"
-                  },
-                  "additionalProperties": {
-                    "type": "object"
-                  },
-                  "properties": {
-                    "chronolex": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "description": "The chronolex runtime (RFC-022): which facts this article establishes and how the article reads them back from a chronicle. The runtime validates the shape inside each key when it loads the law.",
-                      "properties": {
-                        "establishes": {
-                          "type": "array",
-                          "items": {
-                            "type": "object"
-                          },
-                          "description": "The grams this article establishes (`event`), or extends (`extends`), with their fields and references."
-                        },
-                        "reads": {
-                          "oneOf": [
-                            {
-                              "type": "object"
-                            },
-                            {
-                              "type": "array",
-                              "items": {
-                                "type": "object"
-                              }
-                            }
-                          ],
-                          "description": "How this article reads its input back from a chronicle; one reading, or one per paragraph."
-                        }
+                "events": {
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "The events that executing this article yields, such as a payment order that is given or a transfer that is credited. Executing the article yields an event when the output named in `when` is true. One article can yield several events, each on its own output.",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "when"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]*$",
+                        "description": "The name of the event, unique within the article."
+                      },
+                      "when": {
+                        "type": "string",
+                        "description": "The name of a boolean output of this article. Executing the article yields the event when that output is true."
                       }
                     }
                   }

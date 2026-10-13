@@ -5,8 +5,8 @@
 #   Awir en het (fictieve) uitvoeringsbeleid van Toeslagen over de
 #   uitbetaling (art. 1). De cel voert het beleid uit op de dagen die
 #   art. 5 van dat beleid geeft (`executed_on`), zoals zij een besluit neemt
-#   op de dag die het beleid geeft (`decided_on`), en legt alleen een gram
-#   vast als er die maand iets te betalen is. Het voorschot,
+#   op de dag die het beleid geeft (`decided_on`); art. 1 zegt of er die
+#   maand iets te betalen is. Het voorschot,
 #   de rekening uit de aanvraag en wat er achterstallig is, leest de cel uit
 #   haar eigen kroniek met het beleid van Toeslagen daarover
 #   (fictief_beleid_kroniek_toeslagen), met de aanvraag als `root`.
@@ -20,8 +20,19 @@ events:
   - name: betaalopdracht_gegeven
     establishes: fictief_beleid_termijnbedrag_voorschot#1
     reads: [{regulation: fictief_beleid_kroniek_toeslagen}]
-    executed_on: fictief_beleid_termijnbedrag_voorschot#5
+    refers_to:
+      voorschot: {stage: VOORSCHOT, required: true}
+    period: {parameter: berekeningsjaar, unit: year}
+    executed_on:
+      days: fictief_beleid_termijnbedrag_voorschot#5
+      parameter: maand
+      once_per: month
+    until: {stage: TOEKENNING}
   - name: voorschottermijn_betaald
     establishes: fictief_beleid_termijnbedrag_voorschot#2
+    refers_to:
+      betaalopdracht: {to: fictief_beleid_termijnbedrag_voorschot#1, required: true}
   - name: betaling_mislukt
     establishes: fictief_beleid_termijnbedrag_voorschot#2
+    refers_to:
+      betaalopdracht: {to: fictief_beleid_termijnbedrag_voorschot#1, required: true}

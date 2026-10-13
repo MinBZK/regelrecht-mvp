@@ -27,10 +27,8 @@ articles:
   # lid 1); hier op een staand verzoek van Toeslagen (eigen keuze). Alleen
   # het inkomensgegeven rust op AWR 21e lid 1; de betrokkene, het jaar, de
   # dag en het kenmerk van de aanslag noemt dat lid niet, die rusten op dit
-  # artikel van het beleid. De cel legt
-  # het vast bij ontvangst (geen `executed_on`). Het kenmerk van de aanslag
-  # identificeert het bericht (`identified_by`): hetzelfde inkomensgegeven
-  # twee keer bezorgd, legt zij één keer vast.
+  # artikel van het beleid. Het kenmerk van de aanslag onderscheidt het ene
+  # inkomensgegeven van het andere.
   - number: '1'
     url: https://wetten.overheid.nl/BWBR0002320/2025-01-01#Artikel21e
     text: >-
@@ -46,14 +44,9 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: inkomensgegeven_ontvangen
-                  type: executogram
-                  fields: [kenmerk_aanslag, bsn, kalenderjaar, inkomensgegeven, datum_vaststelling_aanslag]
-                  record_when: inkomensgegeven_ontvangen
-                  identified_by: kenmerk_aanslag
+          events:
+            - name: inkomensgegeven_ontvangen
+              when: inkomensgegeven_ontvangen
         parameters:
           - name: kenmerk_aanslag
             type: string
@@ -190,17 +183,11 @@ articles:
           - output: dag_toekenning
             value: $datum_vaststelling_aanslag
 
-  # Een nabetaling is een feit in de kroniek van Toeslagen (een executogram:
-  # de uitvoering van de toekenning). De cel voert dit artikel uit op de
-  # dagen die artikel 9 geeft (`executed_on` van de stroom), met die dag in
-  # `dag`, en legt alleen een gram vast als er iets uit te betalen is
-  # (`record_when`).
-  # - refers_to: de toekenning, als het besluit in de fase TOEKENNING van de
-  #   procedure tegemoetkoming; zo noemt dit beleid geen toeslag.
-  # - period: per berekeningsjaar, het jaar van die toekenning.
-  # - once_per: één opdracht per maand. Weigert de bank, dan gaat het bedrag
-  #   mee met de opdracht van de volgende dag die artikel 9 geeft: de eerste
-  #   van de volgende maand.
+  # Een nabetaling voert de toekenning uit. Dit artikel levert een
+  # opdracht op als er iets uit te betalen is
+  # (`nabetaling_wordt_opgedragen`), op de dagen die artikel 9 geeft, met die
+  # dag in `dag`. Weigert de bank, dan gaat het bedrag mee met de opdracht
+  # van de volgende dag die artikel 9 geeft: de eerste van de volgende maand.
   - number: '4'
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel24
     text: >-
@@ -214,23 +201,9 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: nabetaling_opgedragen
-                  type: executogram
-                  refers_to:
-                    toekenning:
-                      stage: TOEKENNING
-                      required: true
-                  fields: [bedrag, rekeningnummer_begunstigde, uitvoerdatum]
-                  period:
-                    parameter: berekeningsjaar
-                    unit: year
-                  executed_on:
-                    parameter: dag
-                    once_per: month
-                  record_when: nabetaling_wordt_opgedragen
+          events:
+            - name: nabetaling_opgedragen
+              when: nabetaling_wordt_opgedragen
         parameters:
           - name: nog_uit_te_betalen
             type: amount
@@ -293,7 +266,7 @@ articles:
             value: $dag
 
   # Het antwoord van de bank op een nabetaling, over een kanaal (origin
-  # KANAAL), vastgelegd bij ontvangst, met een verwijzing naar de opdracht.
+  # KANAAL).
   # Zoals bij de voorschottermijnen telt pas wat de bank bijschreef.
   - number: '5'
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel24
@@ -305,25 +278,11 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: nabetaling_betaald
-                  type: executogram
-                  refers_to:
-                    betaalopdracht:
-                      to: fictief_beleid_toekenning_toeslagen#4
-                      required: true
-                  fields: [nabetaald_bedrag]
-                  record_when: nabetaling_uitgevoerd
-                - event: nabetaling_mislukt
-                  type: executogram
-                  refers_to:
-                    betaalopdracht:
-                      to: fictief_beleid_toekenning_toeslagen#4
-                      required: true
-                  fields: [niet_nabetaald_bedrag, reden_nabetaling]
-                  record_when: nabetaling_niet_uitgevoerd
+          events:
+            - name: nabetaling_betaald
+              when: nabetaling_uitgevoerd
+            - name: nabetaling_mislukt
+              when: nabetaling_niet_uitgevoerd
         parameters:
           - name: bijgeschreven
             type: boolean
@@ -431,17 +390,14 @@ articles:
                   then: $dagtekening_toekenning
               default: null
 
-  # Een incasso is een feit in de kroniek van Toeslagen (een executogram: de
-  # uitvoering van de terugvordering). Art. 28 lid 1 Awir legt de betaling
+  # Een incasso voert de terugvordering uit. Art. 28 lid 1 Awir legt de betaling
   # bij de belanghebbende; dat Toeslagen het bedrag int van zijn rekening, is
   # een aanname van dit fictieve beleid (de belanghebbende heeft daarvoor
   # toestemming gegeven).
-  # - refers_to: de terugvordering, als het besluit in de fase
-  #   TERUGVORDERING; period: het berekeningsjaar daarvan.
-  # - executed_on: op de dagen die artikel 10 geeft (`executed_on` van de
-  #   stroom), met die dag in `dag`; once_per: één opdracht per maand.
-  #   Weigert de bank (saldo te laag), dan blijft het openstaan en volgt op
-  #   de volgende dag van artikel 10 een nieuwe opdracht.
+  # Dit artikel levert een opdracht op als er iets te innen is
+  # (`incasso_wordt_opgedragen`), op de dagen die artikel 10 geeft, met die
+  # dag in `dag`. Weigert de bank (saldo te laag), dan blijft het openstaan
+  # en volgt op de volgende dag van artikel 10 een nieuwe opdracht.
   - number: '7'
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel28
     text: >-
@@ -455,23 +411,9 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: incasso_opgedragen
-                  type: executogram
-                  refers_to:
-                    terugvordering:
-                      stage: TERUGVORDERING
-                      required: true
-                  fields: [incassobedrag, rekeningnummer_debiteur, incassodatum]
-                  period:
-                    parameter: berekeningsjaar
-                    unit: year
-                  executed_on:
-                    parameter: dag
-                    once_per: month
-                  record_when: incasso_wordt_opgedragen
+          events:
+            - name: incasso_opgedragen
+              when: incasso_wordt_opgedragen
         parameters:
           - name: terugvorderingsbedrag
             type: amount
@@ -541,7 +483,7 @@ articles:
             value: $dag
 
   # Het antwoord van de bank op een incasso, over een kanaal (origin
-  # KANAAL), vastgelegd bij ontvangst, met een verwijzing naar de opdracht.
+  # KANAAL).
   - number: '8'
     url: https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel28
     text: >-
@@ -552,25 +494,11 @@ articles:
     machine_readable:
       execution:
         produces:
-          extensions:
-            chronolex:
-              establishes:
-                - event: terugvordering_geind
-                  type: executogram
-                  refers_to:
-                    incassoopdracht:
-                      to: fictief_beleid_toekenning_toeslagen#7
-                      required: true
-                  fields: [geind_bedrag]
-                  record_when: incasso_uitgevoerd
-                - event: incasso_mislukt
-                  type: executogram
-                  refers_to:
-                    incassoopdracht:
-                      to: fictief_beleid_toekenning_toeslagen#7
-                      required: true
-                  fields: [niet_geind_bedrag, reden_incasso]
-                  record_when: incasso_niet_uitgevoerd
+          events:
+            - name: terugvordering_geind
+              when: incasso_uitgevoerd
+            - name: incasso_mislukt
+              when: incasso_niet_uitgevoerd
         parameters:
           - name: afgeschreven
             type: boolean

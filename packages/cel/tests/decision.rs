@@ -13,7 +13,8 @@ use regelrecht_engine::LawExecutionService;
 use serde_json::json;
 
 /// A version of `testbesluit` valid from `valid_from`, whose decision is
-/// `amount`, dated by `dated_by`.
+/// `amount`, dated by `dated_by` (`produces.moment`), over the year `jaar`
+/// the applicant names (origin role TIJDVAK).
 fn version(valid_from: &str, amount: i64, dated_by: &str) -> String {
     format!(
         r#"
@@ -38,17 +39,12 @@ articles:
           legal_character: BESCHIKKING
           decision_type: TOEKENNING
           procedure_id: eigen
-          extensions:
-            chronolex:
-              establishes:
-                - event: besloten
-                  type: decretogram
-                  stage: BESLUIT
-                  fields: outputs
-                  period: {{parameter: jaar, unit: year}}
-                  dated_by: {dated_by}
+          moment: {{parameter: {dated_by}}}
         parameters:
-          - {{name: jaar, type: number, required: true}}
+          - name: jaar
+            type: number
+            required: true
+            origin: {{waarde: BELANGHEBBENDE, grondslag: testbesluit#1, rol: TIJDVAK}}
         output: [{{name: bedrag, type: number}}]
         actions: [{{output: bedrag, value: {amount}}}]
 "#
@@ -255,14 +251,6 @@ articles:
           legal_character: BESCHIKKING
           decision_type: TOEKENNING
           procedure_id: aanslag
-          extensions:
-            chronolex:
-              establishes:
-                - event: aanslag
-                  type: decretogram
-                  stage: BESLUIT
-                  fields: outputs
-                  dated_by: besluitdatum
         parameters:
           - {{name: bsn, type: string, required: true}}
           - {{name: jaar, type: number, required: true}}
