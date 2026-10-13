@@ -15,7 +15,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 
 ## The application, with the Awb on it
 
-Article 13a says it establishes an application (`AANVRAAG`). The Awb hooks onto every application, so submitting one also runs Awb 4:2 and 4:13. The fields of the application are the parameters of art. 13a plus those of the hooks.
+Article 13a says it establishes an application (`AANVRAAG`). The Awb hooks onto every application, so submitting one also runs Awb 4:2 and 4:13. The fields of the application are the parameters of art. 13a plus those of the hooks. One exception: the parameter a hook names in `produces.moment`, here `datum_ontvangst` from Awb 4:13, is the moment of receipt and no field of the application.
 
 ```yaml
 # Leerplichtwet 1969, art. 13a

@@ -27,6 +27,21 @@ articles:
     url: https://example.com/BWBR0000001#Artikel1
 "#;
 
+/// A v0.7.1 law whose `$schema` names a branch instead of the release tag.
+const LAW_ON_A_BRANCH_URL: &str = r#"$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/heads/main/schema/v0.7.1/schema.json
+$id: testwet
+regulatory_layer: WET
+publication_date: '2025-12-20'
+valid_from: '2026-01-01'
+bwb_id: BWBR0000001
+url: https://example.com/BWBR0000001
+name: Testwet
+articles:
+  - number: '1'
+    text: Een artikel zonder model.
+    url: https://example.com/BWBR0000001#Artikel1
+"#;
+
 fn run(file: &Path) -> (Option<i32>, String) {
     let out = Command::new(env!("CARGO_BIN_EXE_law-migrate"))
         .arg(file)
@@ -58,4 +73,12 @@ fn a_file_that_cannot_be_migrated_turns_the_run_red() {
     let (code, out) = run(&law_file(dir.path(), "dit is: [geen geldige yaml"));
     assert_eq!(code, Some(1), "{out}");
     assert!(out.contains("cannot migrate"), "{out}");
+}
+
+#[test]
+fn a_rewritten_schema_line_is_reported_even_at_the_same_version() {
+    let dir = tempfile::tempdir().unwrap();
+    let (code, out) = run(&law_file(dir.path(), LAW_ON_A_BRANCH_URL));
+    assert_eq!(code, Some(0), "{out}");
+    assert!(out.contains("change:    schema line only"), "{out}");
 }

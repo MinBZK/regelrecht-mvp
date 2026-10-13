@@ -26,9 +26,36 @@ pub const SCHEMA_URL: &str = concat!(
     "/schema.json"
 );
 
+/// Parse a schema version of the form `vX.Y.Z` into its three numbers.
+///
+/// Returns `None` for anything else (missing `v`, too few or too many parts,
+/// a non-numeric part). What an unparseable version means is the caller's
+/// call, so this does not pick a fallback.
+pub fn parse_schema_version(version: &str) -> Option<(u32, u32, u32)> {
+    let mut parts = version.strip_prefix('v')?.split('.').map(str::parse::<u32>);
+    let parsed = (
+        parts.next()?.ok()?,
+        parts.next()?.ok()?,
+        parts.next()?.ok()?,
+    );
+    parts.next().is_none().then_some(parsed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_schema_version_reads_vxyz_only() {
+        assert_eq!(parse_schema_version("v0.8.0"), Some((0, 8, 0)));
+        assert_eq!(parse_schema_version("v1.12.3"), Some((1, 12, 3)));
+        assert!(parse_schema_version(CURRENT_SCHEMA_VERSION).is_some());
+        assert_eq!(parse_schema_version("0.8.0"), None);
+        assert_eq!(parse_schema_version("v0.8"), None);
+        assert_eq!(parse_schema_version("v0.8.0.1"), None);
+        assert_eq!(parse_schema_version("v0.x.0"), None);
+        assert_eq!(parse_schema_version("nonsense"), None);
+    }
     use std::path::Path;
 
     /// Repo root, derived from this crate's manifest dir (`packages/shared`).

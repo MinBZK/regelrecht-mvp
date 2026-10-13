@@ -58,6 +58,7 @@
 //! `enables` is dropped whole: the contract that consolidated the four flag
 //! fields into two removed it, and there is nothing in v0.7.0 that holds it.
 
+use regelrecht_shared::parse_schema_version;
 use serde_yaml_ng::{Mapping, Value};
 
 /// `$schema` URL a migrated file declares.
@@ -213,16 +214,14 @@ pub fn migrate(yaml: &str) -> Result<Migration, String> {
 /// Whether `version` (`vX.Y.Z`) is newer than [`TARGET_VERSION`]. An
 /// unparseable version is not newer, so it is migrated as before.
 fn is_newer_than_target(version: &str) -> bool {
-    fn parse(v: &str) -> Option<(u32, u32, u32)> {
-        let mut parts = v.strip_prefix('v')?.split('.').map(str::parse::<u32>);
-        let version = (
-            parts.next()?.ok()?,
-            parts.next()?.ok()?,
-            parts.next()?.ok()?,
-        );
-        parts.next().is_none().then_some(version)
+    match (
+        parse_schema_version(version),
+        parse_schema_version(TARGET_VERSION),
+    ) {
+        (Some(v), Some(t)) => v > t,
+        // Unparseable: not newer, so the file is migrated as before.
+        _ => false,
     }
-    matches!((parse(version), parse(TARGET_VERSION)), (Some(v), Some(t)) if v > t)
 }
 
 fn as_json(value: &Value) -> Option<serde_json::Value> {

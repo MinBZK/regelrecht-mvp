@@ -85,7 +85,7 @@ fn migrate_one(path: &Path, write: bool) -> std::io::Result<bool> {
         "  change:    {}",
         if result.structural_changes {
             "schema line + machine_readable sections"
-        } else if result.from_version.as_deref() == Some(result.to_version.as_str()) {
+        } else if result.yaml == yaml {
             "none (already at this version)"
         } else {
             "schema line only"

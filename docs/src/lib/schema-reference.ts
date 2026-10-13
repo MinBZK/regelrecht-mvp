@@ -1056,6 +1056,8 @@ export function referenceHeadings(): { depth: number; slug: string; text: string
     for (const sub of subStructuresFor(kind.slug)) h(4, sub.slug, sub.title);
   }
   h(3, 'legal-basis', 'Legal basis');
+  h(3, 'provision-ground', 'Provision ground');
+  h(3, 'article-reference', 'Article reference');
 
   // Everything otherSubStructures() renders, at the depth the component uses.
   // Listed from the same function rather than by hand: the earlier version

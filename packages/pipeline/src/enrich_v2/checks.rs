@@ -1309,13 +1309,13 @@ pub fn dangling_bindings(doc: &Value) -> Vec<Finding> {
     findings
 }
 
-/// Whether the engine may fire hooks on this entry: `fire_hooks` returns
-/// early unless `execution.produces` carries a `legal_character`.
+/// Whether the engine may fire hooks on this entry: only when
+/// `execution.produces` carries a `legal_character` (a hook on a decision) or
+/// a `submission` (a hook on an application, RFC-045).
 fn receives_hook_outputs(mr: &Value) -> bool {
     mr.get("execution")
         .and_then(|e| e.get("produces"))
-        .and_then(|p| p.get("legal_character"))
-        .is_some()
+        .is_some_and(|p| p.get("legal_character").is_some() || p.get("submission").is_some())
 }
 
 // --- traversal helpers -------------------------------------------------
@@ -5712,6 +5712,29 @@ articles:
             soft.iter().any(|d| d.contains("$referencedate")),
             "{soft:?}"
         );
+    }
+
+    /// A hook on an application (RFC-045) delivers its outputs to the article
+    /// that establishes the application, so reading one there is no dangling
+    /// binding, as for a hook on a decision.
+    #[test]
+    fn dangling_bindings_accepts_a_hook_output_on_an_application() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        produces:
+          submission:
+            kind: AANVRAAG
+        output:
+          - name: volledig
+        actions:
+          - output: volledig
+            value: $aanvraag_bevat_wat_artikel_4_2_eist
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        assert_eq!(dangling_bindings(&doc), Vec::<Finding>::new());
     }
 
     /// A loop variable exists inside its own loop and nowhere else, and a
