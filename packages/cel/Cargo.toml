@@ -1,0 +1,24 @@
+[package]
+name = "regelrecht-cel"
+version = "0.1.0"
+edition = "2021"
+authors = ["MinBZK <noreply@minbzk.nl>"]
+description = "Een cel die een aanvraag uit de wet vastlegt in haar kroniek (chronolexografie, RFC-046)"
+license = "EUPL-1.2"
+repository = "https://github.com/MinBZK/regelrecht"
+publish = false
+
+[dependencies]
+regelrecht-engine = { path = "../engine" }
+regelrecht-law-model = { path = "../law-model" }
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid = { workspace = true, features = ["v7"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
