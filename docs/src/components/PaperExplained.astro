@@ -1,6 +1,12 @@
 ---
 /*
- * The position paper "Rules as Executed" in plain language, in seven steps.
+ * The position paper "Rules as Executed" in plain language.
+ *
+ * The page is an argument, so its parts carry a title and no number: the
+ * problem the paper starts from, why that problem is a constitutional one, the
+ * proposal, and what follows from it. The example of the two housemates opens
+ * the first part and returns in the next two (the "case" cards); every other
+ * part has an example of its own.
  *
  * The text is in ~/lib/paper-explained-content (Dutch source, English
  * translation); what is taken from the paper itself (Figure 1's YAML, Table 1,
@@ -9,11 +15,11 @@
  * cannot differ from what the paper says. The paper is frozen; this page
  * explains it and is not part of it.
  *
- * Every step has the same shape, so that a phone shows one thing at a time: a
- * heading, the point in a paragraph or two, at most one figure, and a "more
- * from the paper" button that opens the rest of the text and the sections of
- * the paper in a sheet (PaperMore). Nothing the page says is left out; the
- * secondary text is folded away, not cut.
+ * Every part has the same shape, so that a phone shows one thing at a time: a
+ * heading, the point in a few paragraphs, an example, and a "more from the
+ * paper" button that opens the rest of the text and the sections of the paper
+ * in a sheet (PaperMore). Nothing the page says is left out; the secondary
+ * text is folded away, not cut.
  *
  * Only components from the NLDD Designsysteem, and no CSS of its own. Lists of
  * terms and values are a <dl> inside nldd-rich-text, which the design system
@@ -57,17 +63,18 @@ const figureOne = codeFigure('fig:narra-example');
 const table = landscape();
 const matrix = actors(lang);
 
-// The chapters in order, with the sections of the paper each one explains.
+// The parts in order, with the sections of the paper each one explains.
 const chapters: { id: string; title: string; refs: SectionRef[] }[] = [
-  { id: 'gepubliceerd', title: t.published.title, refs: [section('sec:introduction'), section('sec:intelligibilitygap')] },
-  { id: 'meekijken', title: t.power.title, refs: [section('sec:executivedominance'), section('sec:substitute'), section('sec:broaderpattern')] },
-  { id: 'voorstel', title: t.binding.title, refs: [section('sec:format'), section('sec:legalstatus'), section('sec:whochooses')] },
+  { id: 'probleem', title: t.problem.title, refs: [section('sec:introduction'), section('sec:intelligibilitygap'), section('sec:broaderpattern')] },
+  { id: 'macht', title: t.power.title, refs: [section('sec:constitutional'), section('sec:executivedominance'), section('sec:intelligibilitygap'), section('sec:substitute'), section('sec:court')] },
+  { id: 'voorstel', title: t.binding.title, refs: [section('sec:priorwork'), section('sec:format'), section('sec:legalstatus'), section('sec:whochooses')] },
   { id: 'bonnetje', title: t.receipt.title, refs: [section('sec:attestation'), section('sec:traceaccess')] },
+  { id: 'tijd', title: t.time.title, refs: [section('sec:versionedartifact'), section('sec:versioning')] },
   { id: 'afwijken', title: t.default.title, refs: [section('sec:overrides'), section('sec:autooverrides')] },
   { id: 'grenzen', title: t.limits.title, refs: [section('sec:cannotbuildback'), section('sec:gaming'), section('sec:agenda'), section('sec:conclusion')] },
   { id: 'rules-as-code', title: t.veterans.title, refs: [section('sec:priorwork'), section('sec:cnl'), section('sec:translation')] },
 ];
-const ch = Object.fromEntries(chapters.map((c, i) => [c.id, { ...c, n: i + 1 }]));
+const ch = Object.fromEntries(chapters.map((c) => [c.id, c]));
 
 const words = { yes: t.yes, part: t.part, no: t.no };
 const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-padding-block': '64' };
@@ -90,9 +97,9 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   <nldd-title size="5"><h2 id="px-toc">{t.header.tocLabel}</h2></nldd-title>
   <nldd-spacer size="8" />
   <nldd-list type="navigation" aria-labelledby="px-toc" appearance="box-tinted">
-    {chapters.map((c, i) => (
+    {chapters.map((c) => (
       <nldd-list-item href={`#${c.id}`}>
-        <nldd-text-cell text={`${i + 1}. ${c.title}`} />
+        <nldd-text-cell text={c.title} />
       </nldd-list-item>
     ))}
   </nldd-list>
@@ -100,26 +107,27 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   <nldd-link href="#rules-as-code" size="md" end-icon="chevron-right" text={t.header.veterans} />
 </nldd-simple-section>
 
-{/* 1 ------------------------------------------------------------------ */}
-<nldd-simple-section id={ch.gepubliceerd.id} background="tinted" {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch.gepubliceerd.n}</nldd-text>
-  <nldd-spacer size="4" />
-  <nldd-title size="2"><h2>{t.published.title}</h2></nldd-title>
+{/* The problem ---------------------------------------------------------- */}
+<nldd-simple-section id={ch.probleem.id} background="tinted" {...padding}>
+  <nldd-title size="2"><h2>{t.problem.title}</h2></nldd-title>
   <nldd-spacer size="16" />
-  <nldd-rich-text><p>{t.published.p1}</p></nldd-rich-text>
+  {/* The problem itself comes first and large: everything below follows from it. */}
+  <nldd-text size="lg" weight="medium">{t.problem.core}</nldd-text>
+  <nldd-spacer size="16" />
+  <nldd-rich-text><p>{t.problem.p1}</p></nldd-rich-text>
   <nldd-spacer size="24" />
   <nldd-card background="base">
-    <nldd-container padding="20" sm-padding="16" data-px-switch={t.published.options[0].id}>
-      <nldd-title size="5"><h3 id="px-case-label">{t.published.caseLabel}</h3></nldd-title>
+    <nldd-container padding="20" sm-padding="16" data-px-switch={t.problem.options[0].id}>
+      <nldd-title size="5"><h3 id="px-case-label">{t.problem.caseLabel}</h3></nldd-title>
       <nldd-spacer size="4" />
-      <nldd-text size="sm" color="secondary">{t.published.caseIntro}</nldd-text>
+      <nldd-text size="sm" color="secondary">{t.problem.caseIntro}</nldd-text>
       <nldd-spacer size="12" />
       <nldd-segmented-control accessible-labeled-by="px-case-label" width="full" data-control hidden>
-        {t.published.options.map((o) => <nldd-segmented-control-item value={o.id} text={o.short} />)}
+        {t.problem.options.map((o) => <nldd-segmented-control-item value={o.id} text={o.short} />)}
       </nldd-segmented-control>
       <nldd-spacer size="16" />
       <nldd-container aria-live="polite">
-        {t.published.options.map((o) => (
+        {t.problem.options.map((o) => (
           <nldd-container data-panel={o.id} gap="8">
             <nldd-text size="sm" weight="bold" data-panel-label>{o.label}</nldd-text>
             <nldd-container layout="wrap" gap="8">
@@ -130,28 +138,42 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
         ))}
       </nldd-container>
       <nldd-spacer size="16" />
-      <nldd-text size="sm" color="secondary">{t.published.caseNote}</nldd-text>
+      <nldd-text size="sm" color="secondary">{t.problem.caseNote}</nldd-text>
       <nldd-spacer size="8" />
-      <nldd-link href={t.published.caseLink.href} lang="nl" size="sm" end-icon="external-link" text={t.published.caseLink.text} />
+      <nldd-link href={t.problem.caseLink.href} lang="nl" size="sm" end-icon="external-link" text={t.problem.caseLink.text} />
     </nldd-container>
   </nldd-card>
   <nldd-spacer size="24" />
-  <nldd-title size="4"><h3>{t.published.demandLabel}</h3></nldd-title>
+  <nldd-title size="4"><h3>{t.problem.demandLabel}</h3></nldd-title>
   <nldd-spacer size="8" />
-  <nldd-text size="lg" weight="medium">{t.published.demand}</nldd-text>
+  <nldd-text size="lg" weight="medium">{t.problem.demand}</nldd-text>
   <nldd-spacer size="24" />
-  <PaperMore title={t.published.title} label={t.more} close={t.close} refsLabel={t.readInPaper} refs={ch.gepubliceerd.refs}>
-    <nldd-rich-text>{t.published.more.map((p) => <p>{p}</p>)}</nldd-rich-text>
+  <PaperMore title={t.problem.title} label={t.more} close={t.close} refsLabel={t.readInPaper} refs={ch.probleem.refs}>
+    <nldd-rich-text>{t.problem.more.map((p) => <p>{p}</p>)}</nldd-rich-text>
   </PaperMore>
 </nldd-simple-section>
 
-{/* 2 ------------------------------------------------------------------ */}
-<nldd-simple-section id={ch.meekijken.id} {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch.meekijken.n}</nldd-text>
-  <nldd-spacer size="4" />
+{/* The constitutional argument ------------------------------------------ */}
+<nldd-simple-section id={ch.macht.id} {...padding}>
   <nldd-title size="2"><h2>{t.power.title}</h2></nldd-title>
   <nldd-spacer size="16" />
-  <nldd-rich-text><p>{t.power.p1}</p></nldd-rich-text>
+  <nldd-rich-text>{t.power.intro.map((p) => <p>{p}</p>)}</nldd-rich-text>
+  <nldd-spacer size="24" />
+  <nldd-card background="tinted">
+    <nldd-container padding="20" sm-padding="16" gap="8">
+      <nldd-title size="5"><h3>{t.power.case.label}</h3></nldd-title>
+      <nldd-text>{t.power.case.text}</nldd-text>
+    </nldd-container>
+  </nldd-card>
+  <nldd-spacer size="24" />
+  <nldd-title size="4"><h3>{t.power.demandsLabel}</h3></nldd-title>
+  <nldd-spacer size="8" />
+  <nldd-rich-text>
+    <dl>
+      {t.power.demands.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}
+    </dl>
+    <p>{t.power.p3}</p>
+  </nldd-rich-text>
   <nldd-spacer size="24" />
   <nldd-container data-px-switch="now">
     <nldd-title size="5"><h3 id="px-matrix-now">{t.power.matrixLabel}</h3></nldd-title>
@@ -175,18 +197,23 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
     ))}
   </nldd-container>
   <nldd-spacer size="24" />
-  <PaperMore title={t.power.title} label={t.more} close={t.close} refsLabel={t.readInPaper} refs={ch.meekijken.refs}>
+  <PaperMore title={t.power.title} label={t.more} close={t.close} refsLabel={t.readInPaper} refs={ch.macht.refs}>
     <nldd-rich-text>{t.power.more.map((p) => <p>{p}</p>)}</nldd-rich-text>
   </PaperMore>
 </nldd-simple-section>
 
-{/* 3 ------------------------------------------------------------------ */}
+{/* The proposal --------------------------------------------------------- */}
 <nldd-simple-section id={ch.voorstel.id} background="tinted" {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch.voorstel.n}</nldd-text>
-  <nldd-spacer size="4" />
   <nldd-title size="2"><h2>{t.binding.title}</h2></nldd-title>
   <nldd-spacer size="16" />
-  <nldd-rich-text><p>{t.binding.p1}</p></nldd-rich-text>
+  <nldd-rich-text>{t.binding.intro.map((p) => <p>{p}</p>)}</nldd-rich-text>
+  <nldd-spacer size="24" />
+  <nldd-card background="base">
+    <nldd-container padding="20" sm-padding="16" gap="8">
+      <nldd-title size="5"><h3>{t.binding.case.label}</h3></nldd-title>
+      <nldd-text>{t.binding.case.text}</nldd-text>
+    </nldd-container>
+  </nldd-card>
   <nldd-spacer size="24" />
   <nldd-container data-px-switch="now">
     <nldd-title size="5"><h3 id="px-flow">{t.binding.flowLabel}</h3></nldd-title>
@@ -243,10 +270,8 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   </PaperMore>
 </nldd-simple-section>
 
-{/* 4 ------------------------------------------------------------------ */}
+{/* The receipt ---------------------------------------------------------- */}
 <nldd-simple-section id={ch.bonnetje.id} {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch.bonnetje.n}</nldd-text>
-  <nldd-spacer size="4" />
   <nldd-title size="2"><h2>{t.receipt.title}</h2></nldd-title>
   <nldd-spacer size="16" />
   <nldd-rich-text><p>{t.receipt.p1}</p><p>{t.receipt.p2}</p></nldd-rich-text>
@@ -327,15 +352,39 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   </PaperMore>
 </nldd-simple-section>
 
-{/* 5 ------------------------------------------------------------------ */}
-<nldd-simple-section id={ch.afwijken.id} background="tinted" {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch.afwijken.n}</nldd-text>
-  <nldd-spacer size="4" />
+{/* Back in time --------------------------------------------------------- */}
+<nldd-simple-section id={ch.tijd.id} background="tinted" {...padding}>
+  <nldd-title size="2"><h2>{t.time.title}</h2></nldd-title>
+  <nldd-spacer size="16" />
+  <nldd-rich-text>{t.time.intro.map((p) => <p>{p}</p>)}</nldd-rich-text>
+  <nldd-spacer size="24" />
+  <nldd-card background="base">
+    <nldd-container padding="20" sm-padding="16" gap="8">
+      <nldd-title size="5"><h3>{t.time.caseLabel}</h3></nldd-title>
+      <nldd-text size="sm" color="secondary">{t.time.caseIntro}</nldd-text>
+      <nldd-rich-text>
+        <dl>
+          {t.time.caseRows.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}
+        </dl>
+      </nldd-rich-text>
+      <nldd-text>{t.time.caseNote}</nldd-text>
+    </nldd-container>
+  </nldd-card>
+  <nldd-spacer size="24" />
+  <nldd-rich-text><p>{t.time.p3}</p></nldd-rich-text>
+  <nldd-spacer size="24" />
+  <PaperMore title={t.time.title} label={t.more} close={t.close} refsLabel={t.readInPaper} refs={ch.tijd.refs}>
+    <nldd-rich-text>{t.time.more.map((p) => <p>{p}</p>)}</nldd-rich-text>
+  </PaperMore>
+</nldd-simple-section>
+
+{/* Departing from the outcome ------------------------------------------- */}
+<nldd-simple-section id={ch.afwijken.id} {...padding}>
   <nldd-title size="2"><h2>{t.default.title}</h2></nldd-title>
   <nldd-spacer size="16" />
   <nldd-rich-text><p>{t.default.p1}</p></nldd-rich-text>
   <nldd-spacer size="24" />
-  <nldd-card background="base">
+  <nldd-card background="tinted">
     <nldd-container padding="20" sm-padding="16" data-px-switch={t.default.variants[1].id}>
       <nldd-title size="5"><h3 id="px-override">{t.default.variantsLabel}</h3></nldd-title>
       <nldd-spacer size="12" />
@@ -362,10 +411,8 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   </PaperMore>
 </nldd-simple-section>
 
-{/* 6 ------------------------------------------------------------------ */}
-<nldd-simple-section id={ch.grenzen.id} {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch.grenzen.n}</nldd-text>
-  <nldd-spacer size="4" />
+{/* What this does not fix ----------------------------------------------- */}
+<nldd-simple-section id={ch.grenzen.id} background="tinted" {...padding}>
   <nldd-title size="2"><h2>{t.limits.title}</h2></nldd-title>
   <nldd-spacer size="16" />
   <nldd-rich-text>
@@ -374,6 +421,7 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
       {t.limits.explicit.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}
     </dl>
     <p>{t.limits.explicitNote}</p>
+    <p>{t.limits.avoidable}</p>
     <p>{t.limits.p2}</p>
   </nldd-rich-text>
   <nldd-spacer size="24" />
@@ -386,10 +434,8 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   </PaperMore>
 </nldd-simple-section>
 
-{/* 7 ------------------------------------------------------------------ */}
-<nldd-simple-section id={ch['rules-as-code'].id} background="tinted" {...padding}>
-  <nldd-text size="sm" weight="medium" color="secondary">{t.step} {ch['rules-as-code'].n}</nldd-text>
-  <nldd-spacer size="4" />
+{/* For people who already work on rules as code ------------------------- */}
+<nldd-simple-section id={ch['rules-as-code'].id} {...padding}>
   <nldd-title size="2"><h2>{t.veterans.title}</h2></nldd-title>
   <nldd-spacer size="16" />
   <nldd-rich-text><p>{t.veterans.p1}</p><p>{t.veterans.p2}</p></nldd-rich-text>

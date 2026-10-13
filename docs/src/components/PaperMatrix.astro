@@ -1,7 +1,7 @@
 ---
 /*
  * A yes/partly/no table for the plain-language paper page: who can do what
- * (step 2) and the earlier approaches compared (step 7).
+ * (the part on power) and the earlier approaches compared (the last part).
  *
  * An nldd-table with a header row, so the columns are visible as columns: the
  * first names the actor or approach, the others carry one tag each ("ja",
@@ -16,7 +16,7 @@ import type { Cell } from '~/lib/paper-explained-content';
 interface Row {
   label: string;
   cells: Cell[];
-  /** Marks the row (the paper's own proposal in step 7). */
+  /** Marks the row (the paper's own proposal in the last part). */
   highlight?: boolean;
 }
 
@@ -30,8 +30,8 @@ interface Props {
   background?: 'base' | 'tinted';
   /**
    * 'equal' shares the width over the value columns (long, wrapping headers,
-   * step 2); 'fit' sizes them to their one-word header on a narrow table so
-   * the first column gets the rest (step 7, where it holds the longer names).
+   * the part on power); 'fit' sizes them to their one-word header on a narrow table so
+   * the first column gets the rest (the last part, where it holds the longer names).
    */
   tracks?: 'equal' | 'fit';
 }

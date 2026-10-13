@@ -1,10 +1,10 @@
 ---
 /*
- * "Meer uit het paper": the secondary text of one step of the plain-language
+ * "Meer uit het paper": the secondary text of one part of the plain-language
  * paper page, behind a button, in an nldd-sheet.
  *
- * Each step shows its point and one figure; the rest of what the page says
- * about that step, and the sections of the paper it explains, open in a sheet
+ * Each part shows its point and an example; the rest of what the page says
+ * about that part, and the sections of the paper it explains, open in a sheet
  * (from the bottom on a phone, from the side on a wide screen). Nothing is cut,
  * it is folded away. The sheet holds an nldd-page with an nldd-top-title-bar,
  * as the design system asks; ~/scripts/paper-explained.ts moves it to the
@@ -16,7 +16,7 @@
 import type { SectionRef } from '~/lib/paper-explained';
 
 interface Props {
-  /** The step's title; the sheet's title bar and accessible name. */
+  /** The part's title; the sheet's title bar and accessible name. */
   title: string;
   /** Button text, "Meer uit het paper". */
   label: string;
