@@ -55,7 +55,13 @@ pub struct Shape {
     pub law_id: String,
     pub article: String,
     /// The outputs of the establishing article: executing them runs it.
+    /// Empty when the article follows a procedure: its outputs are then the
+    /// decision on the application (RFC-047), and recording the application
+    /// runs only the hooks, at [`Shape::stage`].
     pub outputs: Vec<String>,
+    /// The stage of the article's procedure at which the hooks on the
+    /// application fire, such as AANVRAAG; `None` outside a procedure.
+    pub stage: Option<String>,
     /// What the application holds: every parameter of the articles that
     /// take part, the establishing article first, then the hooks in the
     /// order they fire. A name two articles declare is one field. The
@@ -104,6 +110,7 @@ pub fn derive(
         law_id: law_id.to_string(),
         article: article.to_string(),
         outputs: Vec::new(),
+        stage: submission.stage,
         fields: Vec::new(),
         moment: None,
     };
@@ -114,7 +121,7 @@ pub fn derive(
         let Some(execution) = found.get_execution_spec() else {
             continue;
         };
-        if part.hook_point.is_none() {
+        if part.hook_point.is_none() && shape.stage.is_none() {
             shape.outputs = execution
                 .output
                 .iter()
@@ -123,30 +130,13 @@ pub fn derive(
                 .collect();
         }
         for p in execution.parameters.iter().flatten() {
-            match shape.fields.iter_mut().find(|f| f.name == p.name) {
-                None => shape.fields.push(Field {
-                    name: p.name.clone(),
-                    type_: p.param_type,
-                    nullable: p.is_nullable(),
-                    declared_by: vec![declared_by.clone()],
-                }),
-                // Two articles ask the same datum: one field, resting on both.
-                // It can be absent only if both say so.
-                Some(f) if f.type_ == p.param_type => {
-                    f.nullable &= p.is_nullable();
-                    if !f.declared_by.contains(&declared_by) {
-                        f.declared_by.push(declared_by.clone());
-                    }
-                }
-                Some(f) => {
-                    return Err(setup(format!(
-                        "{reference}: '{}' is declared by {} and by {declared_by} with another \
-                         type; the application cannot hold both",
-                        p.name,
-                        f.first_declared_by()
-                    )))
-                }
-            }
+            let field = Field {
+                name: p.name.clone(),
+                type_: p.param_type,
+                nullable: p.is_nullable(),
+                declared_by: vec![declared_by.clone()],
+            };
+            add_field(&mut shape.fields, field, &reference)?;
         }
         if let Some(m) = execution.produces.as_ref().and_then(|p| p.moment.as_ref()) {
             if let Some(other) = &shape.moment {
@@ -181,7 +171,7 @@ pub fn derive(
     if let Some(name) = shape.moment.as_ref().and_then(|m| m.parameter.clone()) {
         shape.fields.retain(|f| f.name != name);
     }
-    if shape.outputs.is_empty() {
+    if shape.outputs.is_empty() && shape.stage.is_none() {
         return Err(setup(format!(
             "{reference} establishes a submission but has no output to execute it by"
         )));
@@ -189,7 +179,34 @@ pub fn derive(
     Ok(shape)
 }
 
-fn article_on<'s>(
+/// Add `field` to `fields`. Two articles that ask the same datum make one
+/// field, resting on both; it can be absent only if both say so. A different
+/// type is an error in the law: one chronolexogram cannot hold both.
+pub(crate) fn add_field(fields: &mut Vec<Field>, field: Field, reference: &str) -> Result<()> {
+    match fields.iter_mut().find(|f| f.name == field.name) {
+        None => fields.push(field),
+        Some(f) if f.type_ == field.type_ => {
+            f.nullable &= field.nullable;
+            for by in field.declared_by {
+                if !f.declared_by.contains(&by) {
+                    f.declared_by.push(by);
+                }
+            }
+        }
+        Some(f) => {
+            return Err(setup(format!(
+                "{reference}: '{}' is declared by {} and by {} with another type; \
+                 one chronolexogram cannot hold both",
+                field.name,
+                f.first_declared_by(),
+                field.first_declared_by()
+            )))
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn article_on<'s>(
     service: &'s LawExecutionService,
     law_id: &str,
     number: &str,

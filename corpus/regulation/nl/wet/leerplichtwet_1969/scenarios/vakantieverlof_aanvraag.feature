@@ -1,7 +1,9 @@
 Feature: De aanvraag om vakantieverlof, met de Awb erop
   Artikel 13a vestigt een aanvraag (RFC-045). De Awb haakt op elke aanvraag:
   artikel 4:2 zegt wat de aanvraag ten minste bevat, artikel 4:13 wanneer
-  de redelijke beslistermijn in ieder geval is verstreken.
+  de redelijke beslistermijn in ieder geval is verstreken. Buiten de
+  procedure van de Awb voert de engine het artikel in één keer uit, met de
+  beslissing erop (RFC-047): daarom staat het oordeel van het hoofd erbij.
 
   Background:
     Given the calculation date is "2026-10-13"
@@ -18,9 +20,9 @@ Feature: De aanvraag om vakantieverlof, met de Awb erop
       | dagtekening           | 2026-10-12            |
       | gevraagde_beschikking | vakantieverlof        |
       | datum_ontvangst       | 2026-10-13            |
-    When I evaluate "verlof_aangevraagd" of "leerplichtwet_1969"
+      | alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder | true |
+    When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
-    Then output "verlof_aangevraagd" is true
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" is true
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" has reactive provenance
     Then output "redelijke_beslistermijn_einddatum" equals "2026-12-08"
@@ -37,6 +39,7 @@ Feature: De aanvraag om vakantieverlof, met de Awb erop
       | dagtekening           | 2026-10-12            |
       | gevraagde_beschikking | vakantieverlof        |
       | datum_ontvangst       | 2026-10-13            |
-    When I evaluate "verlof_aangevraagd" of "leerplichtwet_1969"
+      | alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder | true |
+    When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" is false
