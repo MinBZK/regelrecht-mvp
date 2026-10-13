@@ -723,8 +723,13 @@ fn the_school_year_runs_from_august_to_july() {
     let july = apply_and_decide(&mut cell, "2027-07-19", "2027-07-23", "2027-06-02");
     assert_eq!(july.fields[ONCE], json!(true));
     assert_eq!(july.outputs["verlof_verleend"], json!(false));
-    // Leave starting on 2 August is in the next one.
-    let august = apply_and_decide(&mut cell, "2027-08-02", "2027-08-06", "2027-06-02");
+    // Leave starting on 2 August is in the next one. Decided in that school
+    // year, the first lesdag comes from next year's policy too.
+    let august = apply_and_decide(&mut cell, "2027-08-02", "2027-08-06", "2027-08-02");
+    assert_eq!(
+        august.fields["eerste_lesdag_schooljaar"],
+        json!("2027-08-30")
+    );
     assert_eq!(august.fields[ONCE], json!(false));
     assert_eq!(august.outputs["verlof_verleend"], json!(true));
 }
@@ -780,4 +785,40 @@ fn the_chronicle_is_bound_for_the_decision_only() {
     )
     .unwrap();
     assert!(service.data_registry().list_sources().is_empty());
+}
+
+#[test]
+fn a_source_that_already_answers_the_list_is_not_shadowed() {
+    let mut service = service();
+    service.add_dict_source(
+        "elders",
+        10,
+        [(
+            "999990019".to_string(),
+            [(
+                "eerdere_besluiten".to_string(),
+                regelrecht_engine::Value::Null,
+            )]
+            .into(),
+        )]
+        .into(),
+    );
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let e = cell
+        .decide(
+            &mut service,
+            LAW,
+            ARTICLE,
+            &app.id,
+            &judgement(true, true),
+            day("2026-10-20"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("another data source answers")),
+        "{e}"
+    );
+    assert_eq!(service.data_registry().list_sources(), ["elders"]);
+    assert_eq!(cell.grams().len(), 1);
 }

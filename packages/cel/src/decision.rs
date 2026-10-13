@@ -280,7 +280,8 @@ pub fn derive(
 }
 
 /// The input of `article` of `policy` that the cell answers from its
-/// chronicle: the one of type `array` without a source. A source-less
+/// chronicle: the one of type `array` with an empty source (`source: {}`,
+/// at most a `description`). A source-less
 /// input of another type is not the chronicle, and is left to whatever
 /// else answers it. Two such lists in one article are refused: the cell
 /// would not know which one it is.
@@ -290,9 +291,12 @@ fn chronicle_input(policy: &str, article: &Article) -> Result<Option<ChronicleIn
         .iter()
         .filter(|i| i.input_type == ParameterType::Array)
         .filter(|i| {
-            i.source
-                .as_ref()
-                .is_some_and(|s| s.regulation.is_none() && s.output.is_none())
+            i.source.as_ref().is_some_and(|s| {
+                s.regulation.is_none()
+                    && s.output.is_none()
+                    && s.parameters.is_none()
+                    && s.endpoint.is_none()
+            })
         })
         .map(|i| i.name.as_str())
         .collect();

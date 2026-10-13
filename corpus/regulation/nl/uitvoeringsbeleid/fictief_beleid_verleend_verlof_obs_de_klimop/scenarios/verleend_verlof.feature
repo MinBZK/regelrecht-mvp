@@ -17,7 +17,8 @@ Feature: Eerder verleend vakantieverlof bij OBS De Klimop
       | bsn_jongere | eerste_verlofdag | verlof_verleend |
     When I evaluate "verlof_al_verleend_in_schooljaar" of "fictief_beleid_verleend_verlof_obs_de_klimop"
     Then output "verlof_al_verleend_in_schooljaar" is false
-    Then output "schooljaar_van_het_gevraagde_verlof" equals 2026
+    Then output "begin_schooljaar" equals "2026-08-01"
+    Then output "einde_schooljaar" equals "2027-07-31"
 
   Scenario: Verlof verleend in hetzelfde schooljaar telt
     Given parameter "eerdere_besluiten" is the collection:

@@ -241,7 +241,7 @@ impl Cell {
             &self.recording_actor,
             &shape.chronicle_inputs,
             &rows,
-        );
+        )?;
         let ran = run_stages(
             service,
             &shape,

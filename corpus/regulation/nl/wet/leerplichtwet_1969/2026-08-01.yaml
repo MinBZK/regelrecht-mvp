@@ -1006,7 +1006,11 @@ articles:
         # Lid 2: "kan door het hoofd slechts eenmaal ... per schooljaar worden
         # verleend". Of het hoofd de jongere dit schooljaar al verlof verleende,
         # weet het uit zijn eigen besluiten. Hoe het die terugleest, zegt deze
-        # wet niet; dat staat in het beleid van de school.
+        # wet niet; dat staat in het beleid van de school. Eigen keuze: het
+        # schooljaar van het verlof is dat van de eerste verlofdag. De eerste
+        # lesdag hierboven komt uit het beleid dat geldt op de dag van het
+        # besluit; verlof in het volgende schooljaar wordt zo getoetst aan de
+        # eerste lesdag van het lopende, tot het besluit in dat volgende valt.
         - id: verlof_al_verleend_in_schooljaar
           type: boolean
           required: true

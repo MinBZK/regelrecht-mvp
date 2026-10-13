@@ -117,8 +117,9 @@ Feature: Het besluit op de aanvraag om vakantieverlof
 
   Scenario: Een tweede verlof in hetzelfde schooljaar wordt geweigerd
     # Het hoofd verleende deze jongere in oktober al verlof. Of dat zo is,
-    # leest het fictieve beleid van de school uit de eerdere besluiten. Het
-    # burgerservicenummer staat er als getal, zoals een tabelcel het leest.
+    # leest het fictieve beleid van de school uit de eerdere besluiten. Een
+    # tabelcel leest het burgerservicenummer in de parameters als getal, dus
+    # staat het ook in het eerdere besluit als getal.
     Given the following "OBS De Klimop, besluit in oktober" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
       | bsn_jongere | eerdere_besluiten |
       | 999990020   | [{"bsn_jongere": 999990020, "eerste_verlofdag": "2026-10-05", "verlof_verleend": true}] |

@@ -13,7 +13,12 @@
 //! the policy's to say, not the cell's.
 //!
 //! The cell binds the list as an engine data source scoped to the policy,
-//! for the length of one decision ([`bind`], [`unbind`]).
+//! for the length of one decision ([`bind`], [`unbind`]). A panic during
+//! the decision leaves it registered; the next decision replaces it.
+//!
+//! Inside a FOREACH every field of a row is also a local under its own
+//! name (RFC-016), so a policy reads row fields as `$besluit.<field>` and
+//! keeps what the application asks outside the loop.
 
 use std::collections::BTreeMap;
 
@@ -55,31 +60,40 @@ pub fn rows(grams: &[Gram], shape: &DecisionShape) -> Result<Value> {
 }
 
 /// Register `rows` as the answer to each input of `inputs`, scoped to its
-/// policy. Returns the names of the sources, for [`unbind`].
+/// policy. Returns the names of the sources, for [`unbind`]. Another data
+/// source that already answers the input is refused: the cell would shadow
+/// it without a word.
 pub fn bind(
     service: &mut LawExecutionService,
     recording_actor: &str,
     inputs: &[ChronicleInput],
     rows: &Value,
-) -> Vec<String> {
-    inputs
-        .iter()
-        .map(|input| {
-            let name = format!(
-                "chronicle of {recording_actor}, read by {}.{}",
-                input.policy, input.input
-            );
-            // A source of the same name is one this cell left behind.
-            service.remove_data_source(&name);
-            service.add_data_source(Box::new(ChronicleSource {
-                name: name.clone(),
-                policy: input.policy.clone(),
-                input: input.input.clone(),
-                rows: rows.clone(),
-            }));
-            name
-        })
-        .collect()
+) -> Result<Vec<String>> {
+    let mut names = Vec::new();
+    for input in inputs {
+        let name = format!(
+            "chronicle of {recording_actor}, read by {}.{}",
+            input.policy, input.input
+        );
+        // A source of the same name is one this cell left behind.
+        service.remove_data_source(&name);
+        if service.data_registry().has_field(&input.input) {
+            unbind(service, &names);
+            return Err(setup(format!(
+                "another data source answers '{}', which {} reads as the chronicle of \
+                 '{recording_actor}'",
+                input.input, input.policy
+            )));
+        }
+        service.add_data_source(Box::new(ChronicleSource {
+            name: name.clone(),
+            policy: input.policy.clone(),
+            input: input.input.clone(),
+            rows: rows.clone(),
+        }));
+        names.push(name);
+    }
+    Ok(names)
 }
 
 /// Remove the sources [`bind`] registered.
@@ -122,5 +136,64 @@ impl DataSource for ChronicleSource {
     }
     fn key_fields(&self) -> Option<&[String]> {
         Some(&[])
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+    use serde_json::json;
+
+    fn shape() -> DecisionShape {
+        DecisionShape {
+            kind: "BESCHIKKING".into(),
+            law_id: "leerplichtwet_1969".into(),
+            article: "13a".into(),
+            submission_kind: "AANVRAAG".into(),
+            stages: Vec::new(),
+            inputs: Vec::new(),
+            chronicle_inputs: Vec::new(),
+        }
+    }
+
+    fn gram(kind: &str, grondslag: &str, refers_to: Option<&str>) -> Gram {
+        Gram {
+            id: format!("{kind}-{grondslag}"),
+            kind: kind.into(),
+            grondslag: grondslag.into(),
+            refers_to: refers_to.map(str::to_string),
+            recording_actor: "obs_de_klimop".into(),
+            recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
+            moment: None,
+            fields: [("eerste_verlofdag".to_string(), json!("2027-02-01"))].into(),
+            missing: Vec::new(),
+            field_source: BTreeMap::new(),
+            outputs: [("verlof_verleend".to_string(), json!(true))].into(),
+        }
+    }
+
+    #[test]
+    fn rows_are_the_decisions_under_the_article_with_fields_and_outputs() {
+        let grams = [
+            gram("AANVRAAG", "leerplichtwet_1969#13a", None),
+            gram("BESCHIKKING", "leerplichtwet_1969#13a", Some("a")),
+            gram("BESCHIKKING", "leerplichtwet_1969#11", Some("b")),
+        ];
+        let rows = serde_json::to_value(rows(&grams, &shape()).unwrap()).unwrap();
+        assert_eq!(
+            rows,
+            json!([{ "eerste_verlofdag": "2027-02-01", "verlof_verleend": true }])
+        );
+    }
+
+    #[test]
+    fn a_name_that_is_a_field_and_another_output_is_refused() {
+        let mut decision = gram("BESCHIKKING", "leerplichtwet_1969#13a", Some("a"));
+        decision
+            .outputs
+            .insert("eerste_verlofdag".into(), json!("2027-03-01"));
+        assert!(rows(&[decision], &shape()).is_err());
     }
 }
