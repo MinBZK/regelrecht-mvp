@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.8.0",
+  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.1",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -1786,7 +1786,7 @@
               },
               "decided_per_case_by": {
                 "type": "string",
-                "description": "The authority that fills this norm in the individual case while no general specification exists, with the article that makes it competent. Which authority may decide is a property of the law, so it belongs here. Its answer needs a motivation (Awb 3:46) and is part of the besluit rather than a ground for it, which is what separates a discretionary power from a value that is merely missing."
+                "description": "The authority that fills this norm in the individual case while no general specification exists, with the article that makes it competent. Which authority may decide is a property of the law, so it belongs here. Its answer needs a motivation (Awb 3:46) and is part of the besluit rather than a ground for it, which is what separates a discretionary power from a value that is merely missing. When no implementation fills the term, the judgement for the case is supplied with the execution, under the term's id (RFC-047)."
               }
             },
             "additionalProperties": false
@@ -1900,7 +1900,7 @@
                       "description": "What the belanghebbende submits. AANVRAAG: a request to take a decision (Awb 1:3 lid 3)."
                     }
                   },
-                  "description": "The article establishes a submission of a belanghebbende, such as an application (RFC-045). Hooks with applies_to.submission fire when the article runs. Independent of the legal character of the article's own outputs.",
+                  "description": "The article establishes a submission of a belanghebbende, such as an application (RFC-045). Hooks with applies_to.submission fire when the article runs. When the article also produces a legal_character with a procedure, its outputs are the decision on the submission, and in a staged execution the hooks on the submission fire only at the stage named after the kind, such as AANVRAAG (RFC-047).",
                   "examples": [
                     {
                       "kind": "AANVRAAG"
@@ -2017,7 +2017,7 @@
                     "enum": [
                       "AANVRAAG"
                     ],
-                    "description": "Match articles that establish a submission of this kind (produces.submission.kind). A hook names either legal_character or submission (RFC-045)."
+                    "description": "Match articles that establish a submission of this kind (produces.submission.kind). A hook names either legal_character or submission (RFC-045). For an article that follows a procedure, a staged execution fires the hook at the stage named after the kind (RFC-047)."
                   },
                   "established_by": {
                     "$ref": "#/definitions/articleReference",
