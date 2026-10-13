@@ -12,7 +12,11 @@
 //!    regulation fills (`implements`);
 //! 3. the deciding authority, at the time of the decision: an open term the
 //!    law leaves to it per case (`decided_per_case_by`), or a parameter of a
-//!    hook the application does not hold;
+//!    hook the application does not hold. A regulation may also fill a term
+//!    the law leaves to the authority, and say nothing for some cases (null);
+//!    the authority may then still supply its judgement, and the engine
+//!    decides which applies: the regulation where it fills the term, the
+//!    judgement where it is silent;
 //! 4. the cell: a date the stage requires, which is the day of the decision.
 
 use chrono::NaiveDate;
@@ -51,6 +55,12 @@ pub struct Input {
     #[serde(flatten)]
     pub field: Field,
     pub source: Source,
+    /// For a judgement of the deciding authority ([`Source::Caller`]) on a
+    /// term a regulation also fills: the regulation goes first, so the
+    /// judgement may be left out, and the engine sets it aside where the
+    /// regulation fills the term for the case.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub policy_first: bool,
 }
 
 /// What a decision on an application holds, as the law in force on a day
@@ -174,7 +184,11 @@ pub fn derive(
     }
     // The open terms of the deciding article: a regulation fills one, or
     // the deciding authority judges it per case. Another open term is the
-    // law's own (a default, or absent) and asks nothing.
+    // law's own (a default, or absent) and asks nothing. A term the law
+    // leaves to the authority stays the authority's to supply even when a
+    // regulation fills it: the regulation may be silent for this case, and
+    // the engine's precedence decides (RFC-047).
+    let mut policy_first: Vec<String> = Vec::new();
     for term in deciding.get_open_terms().into_iter().flatten() {
         let filled = !service
             .resolver()
@@ -182,7 +196,11 @@ pub fn derive(
             .implementations
             .is_empty();
         let source = match (filled, &term.decided_per_case_by) {
-            (true, _) => Source::Policy,
+            (true, Some(_)) => {
+                policy_first.push(term.id.clone());
+                Source::Caller
+            }
+            (true, None) => Source::Policy,
             (false, Some(_)) => Source::Caller,
             (false, None) => continue,
         };
@@ -200,7 +218,12 @@ pub fn derive(
         .into_iter()
         .map(|field| {
             let source = sources.remove(&field.name).unwrap_or(Source::Caller);
-            Input { field, source }
+            let policy_first = policy_first.contains(&field.name);
+            Input {
+                field,
+                source,
+                policy_first,
+            }
         })
         .collect();
     Ok(DecisionShape {

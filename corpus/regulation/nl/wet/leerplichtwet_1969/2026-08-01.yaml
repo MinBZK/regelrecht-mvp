@@ -971,6 +971,10 @@ articles:
         # Lid 2: "de eerste twee lesweken van het schooljaar". Wanneer het
         # schooljaar van een school begint, zegt deze wet niet; dat staat in
         # het beleid van de school.
+        # Bewust zonder delegated_to, expected_source of decided_per_case_by
+        # (de enrich-check open-term meldt dat): de wet wijst niemand aan die
+        # dit invult. Het eigen beleid van de school vult het in, hier het
+        # fictieve beleid fictief_beleid_schooljaar_obs_de_klimop.
         - id: eerste_lesdag_schooljaar
           type: date
           required: true
@@ -1024,7 +1028,10 @@ articles:
             description: >-
               Of het hoofd het verlof verleent (lid 1). Lid 2 noemt alleen wanneer
               het niet kan; "eenmaal per schooljaar" en het evenredige deel voor
-              een kwalificatieplichtige jongere zijn nog niet getoetst.
+              een kwalificatieplichtige jongere zijn nog niet getoetst. Geweigerd
+              wordt ook verlof waarvan de laatste verlofdag vóór de eerste ligt,
+              en verlof dat geen dag van maandag tot en met vrijdag omvat: dan
+              is er geen schoolbezoek om verlof voor te verlenen.
         actions:
           # Lid 2: "ten hoogste tien dagen". Verlof is verlof om de school niet
           # te bezoeken (lid 1), dus een dag telt als de jongere anders naar
@@ -1109,6 +1116,10 @@ articles:
           # Lid 1 met artikel 11, onder f, en lid 2. "Eenmaal per schooljaar"
           # (lid 2) en het evenredige deel voor een kwalificatieplichtige
           # jongere (lid 2, tweede volzin) zijn nog niet gemodelleerd.
+          # Eigen keuze: verlof is verlof om de school niet te bezoeken (lid 1),
+          # dus een aanvraag met de laatste verlofdag vóór de eerste, of zonder
+          # één dag van maandag tot en met vrijdag (alleen een weekend), wordt
+          # geweigerd.
           - output: verlof_verleend
             value:
               operation: AND
@@ -1121,6 +1132,9 @@ articles:
                     to: $laatste_verlofdag
                     in: days
                   value: 0
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $verlofdagen
+                  value: 1
                 - operation: LESS_THAN_OR_EQUAL
                   subject: $verlofdagen
                   value: 10

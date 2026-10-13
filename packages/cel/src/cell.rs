@@ -5,7 +5,9 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use chrono::NaiveDate;
-use regelrecht_engine::{ArticleResult, LawExecutionService, OutputProvenance, Value};
+use regelrecht_engine::{
+    ArticleResult, LawExecutionService, OutputProvenance, ParameterType, Value,
+};
 use serde_json::Map;
 
 use crate::chronicle::{Chronicle, Gram, GramMoment};
@@ -123,6 +125,13 @@ impl Cell {
                     .procedure_stage(law_id, article, stage, &date)?
                     .requires;
                 for req in requires {
+                    if req.req_type != ParameterType::Date {
+                        return Err(setup(format!(
+                            "stage {stage} of {law_id}#{article} requires '{}', a {:?}; the cell \
+                             fills only a date (the day of recording)",
+                            req.name, req.req_type
+                        )));
+                    }
                     parameters.entry(req.name).or_insert_with(|| day.clone());
                 }
                 service.execute_stage_at(law_id, article, stage, Some(&[]), parameters, &date)?
@@ -198,6 +207,9 @@ impl Cell {
                 },
                 Source::Caller => match supplied.get(name) {
                     Some(value) => Some(value.clone()),
+                    // A regulation fills it first; where it is silent for
+                    // this case, the engine says the judgement is missing.
+                    None if input.policy_first => None,
                     None if input.field.nullable => Some(serde_json::Value::Null),
                     None => {
                         return Err(refused(format!(
@@ -236,11 +248,25 @@ impl Cell {
             )?;
             collect_outputs(&result, &mut output_values)?;
             for input in &shape.inputs {
-                if let (Source::Policy, Some(value)) =
-                    (&input.source, result.resolved_inputs.get(&input.field.name))
-                {
-                    let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
-                    fields.insert(input.field.name.clone(), value);
+                let name = &input.field.name;
+                let Some(value) = result.resolved_inputs.get(name) else {
+                    continue;
+                };
+                let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
+                match &input.source {
+                    Source::Policy => {
+                        fields.insert(name.clone(), value);
+                    }
+                    // A judgement on a term a regulation also fills: the
+                    // gram takes what the engine used. A value other than
+                    // the judgement came from the regulation, which the
+                    // engine prefers. Where the two agree, the gram names
+                    // the judgement (RFC-047).
+                    Source::Caller if input.policy_first && supplied.get(name) != Some(&value) => {
+                        fields.insert(name.clone(), value);
+                        field_source.insert(name.clone(), Source::Policy);
+                    }
+                    _ => {}
                 }
             }
         }

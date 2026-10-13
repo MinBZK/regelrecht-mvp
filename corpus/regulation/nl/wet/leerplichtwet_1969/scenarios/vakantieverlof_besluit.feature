@@ -68,3 +68,24 @@ Feature: Het besluit op de aanvraag om vakantieverlof
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlof_verleend" is false
+
+  Scenario: Verlof voor alleen een weekend wordt geweigerd
+    Given the following parameters:
+      | bsn_jongere       | 999990019  |
+      | eerste_verlofdag  | 2027-02-06 |
+      | laatste_verlofdag | 2027-02-07 |
+      | alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder | true |
+    When I evaluate "verlof_verleend" of "leerplichtwet_1969"
+    Then the execution succeeds
+    Then output "verlofdagen" equals 0
+    Then output "verlof_verleend" is false
+
+  Scenario: Verlof met de laatste verlofdag vóór de eerste wordt geweigerd
+    Given the following parameters:
+      | bsn_jongere       | 999990019  |
+      | eerste_verlofdag  | 2027-02-05 |
+      | laatste_verlofdag | 2027-02-01 |
+      | alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder | true |
+    When I evaluate "verlof_verleend" of "leerplichtwet_1969"
+    Then the execution succeeds
+    Then output "verlof_verleend" is false

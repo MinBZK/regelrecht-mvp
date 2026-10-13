@@ -10,7 +10,9 @@
 // panic too, because that is how a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use regelrecht_engine::{HookPoint, LawExecutionService, SubmissionArticle, Value};
+use regelrecht_engine::{
+    ExecutionOutcome, HookPoint, LawExecutionService, SubmissionArticle, Value,
+};
 use std::collections::BTreeMap;
 
 /// A procedure, a hook on every application and one on the decision.
@@ -106,6 +108,26 @@ articles:
           - {name: grond_aanwezig, type: boolean}
         actions:
           - {output: grond_aanwezig, value: true}
+"#;
+
+/// A regulation that says nothing for this case: it returns null.
+const SILENT_POLICY: &str = r#"
+$id: beleid_verlof_zwijgt
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2026-01-01'
+valid_from: '2026-01-01'
+url: https://example.org/beleid-zwijgt
+articles:
+  - number: '1'
+    text: Over de grond zegt dit beleid niets.
+    machine_readable:
+      implements:
+        - {law: wet_verlof, article: '1', open_term: grond_aanwezig}
+      execution:
+        output:
+          - {name: grond_aanwezig, type: boolean, nullable: true}
+        actions:
+          - {output: grond_aanwezig, value: null}
 "#;
 
 const DAY: &str = "2026-10-13";
@@ -305,4 +327,129 @@ fn a_regulation_that_fills_the_norm_wins_over_the_judgement() {
         )
         .unwrap();
     assert_eq!(result.outputs["verlof_verleend"], Value::Bool(true));
+
+    // The judgement is set aside, and the trace says by what.
+    let traced = service
+        .evaluate_law_output_with_trace(
+            "wet_verlof",
+            "verlof_verleend",
+            params(&[
+                ("dagen", Value::Int(5)),
+                ("grond_aanwezig", Value::Bool(false)),
+            ]),
+            DAY,
+        )
+        .unwrap();
+    let trace = traced.trace.as_ref().unwrap().render_box_drawing();
+    assert!(
+        trace.contains(
+            "the judgement of het hoofd for this case is set aside by beleid_verlof article 1"
+        ),
+        "{trace}"
+    );
+
+    // Without a judgement there is nothing to set aside, and the trace does
+    // not claim there was.
+    let traced = service
+        .evaluate_law_output_with_trace(
+            "wet_verlof",
+            "verlof_verleend",
+            params(&[("dagen", Value::Int(5))]),
+            DAY,
+        )
+        .unwrap();
+    let trace = traced.trace.as_ref().unwrap().render_box_drawing();
+    assert!(
+        trace.contains("implemented by beleid_verlof article 1") && !trace.contains("set aside"),
+        "{trace}"
+    );
+}
+
+#[test]
+fn a_regulation_silent_for_the_case_leaves_the_norm_to_the_judgement() {
+    let service = service(&[GENERAL_LAW, SPECIAL_LAW, SILENT_POLICY]);
+    let run = |judgement: Option<bool>| {
+        let mut p = params(&[("dagen", Value::Int(5)), ("besluit_datum", date(DAY))]);
+        if let Some(j) = judgement {
+            p.insert("grond_aanwezig".into(), Value::Bool(j));
+        }
+        service.execute_stage_at(
+            "wet_verlof",
+            "1",
+            "BESLUIT",
+            Some(&["verlof_verleend"]),
+            p,
+            DAY,
+        )
+    };
+    assert_eq!(
+        run(Some(false)).unwrap().outputs["verlof_verleend"],
+        Value::Bool(false)
+    );
+    assert_eq!(
+        run(Some(true)).unwrap().outputs["verlof_verleend"],
+        Value::Bool(true)
+    );
+    let e = run(None).unwrap_err();
+    assert!(
+        e.to_string().contains("decided per case by het hoofd"),
+        "{e}"
+    );
+}
+
+#[test]
+fn walking_the_procedure_asks_the_judgement_only_at_the_decision() {
+    let service = service(&[GENERAL_LAW, SPECIAL_LAW]);
+    // At AANVRAAG only the hooks on the application run: no judgement, and
+    // no output of the article itself.
+    let outcome = service
+        .execute_stage(
+            "wet_verlof",
+            "verlof_verleend",
+            None,
+            params(&[
+                ("dagen", Value::Int(5)),
+                ("naam_aanvrager", Value::String("J. Jansen".into())),
+                ("aanvraag_datum", date(DAY)),
+            ]),
+            DAY,
+        )
+        .unwrap();
+    let ExecutionOutcome::Yielded {
+        state,
+        outputs,
+        pending_inputs,
+    } = outcome
+    else {
+        panic!("the walker should wait for the decision date");
+    };
+    assert_eq!(state.current_stage, "BESLUIT");
+    assert_eq!(pending_inputs, ["besluit_datum"]);
+    assert_eq!(
+        outputs.keys().map(String::as_str).collect::<Vec<_>>(),
+        ["naam_gegeven"]
+    );
+
+    // At BESLUIT the head's judgement decides, and BEKENDMAKING follows.
+    let outcome = service
+        .execute_stage(
+            "wet_verlof",
+            "verlof_verleend",
+            Some(state),
+            params(&[
+                ("grond_aanwezig", Value::Bool(true)),
+                ("besluit_datum", date(DAY)),
+            ]),
+            DAY,
+        )
+        .unwrap();
+    let ExecutionOutcome::Complete(result) = outcome else {
+        panic!("the walker should complete after BEKENDMAKING");
+    };
+    assert_eq!(result.outputs["verlof_verleend"], Value::Bool(true));
+    assert_eq!(result.outputs["motivering_vereist"], Value::Bool(true));
+    assert_eq!(
+        result.outputs["naam_gegeven"],
+        Value::String("J. Jansen".into())
+    );
 }
