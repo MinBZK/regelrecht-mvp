@@ -1,15 +1,21 @@
 Feature: Het besluit op de aanvraag om vakantieverlof
   Het hoofd verleent verlof op aanvraag (artikel 13a, eerste lid), voor de
   vakantie bedoeld in artikel 11, onder f, voor ten hoogste tien dagen en
-  niet in de eerste twee lesweken van het schooljaar (tweede lid). De eerste
-  lesdag komt uit het (fictieve) beleid van de school; de twee gegevens
-  van artikel 11, onder f (het beroep van een ouder en verlof buiten de
-  schoolvakanties), oordeelt het hoofd. Het besluit is een beschikking: de Awb
-  vraagt een motivering (3:46) en opent een bezwaartermijn van zes weken (6:7).
+  niet in de eerste twee lesweken van het schooljaar, en slechts eenmaal per
+  schooljaar (tweede lid). De eerste lesdag komt uit het (fictieve) beleid van
+  de school; de twee gegevens van artikel 11, onder f (het beroep van een ouder
+  en verlof buiten de schoolvakanties), oordeelt het hoofd. Het besluit is een
+  beschikking: de Awb vraagt een motivering (3:46) en opent een bezwaartermijn
+  van zes weken (6:7).
 
   Background:
     Given the calculation date is "2026-10-20"
     Given law "algemene_wet_bestuursrecht" is loaded
+    # Het hoofd nam nog geen besluit op een aanvraag van deze jongere
+    # (artikel 13a, tweede lid: eenmaal per schooljaar).
+    Given the following "OBS De Klimop" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
+      | bsn_jongere | eerdere_besluiten |
+      | 999990019   | []                |
 
   Scenario: Vijf schooldagen buiten de eerste twee lesweken worden verleend
     Given the following parameters:
@@ -107,4 +113,23 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | verlof_valt_buiten_schoolvakanties | true |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
+    Then output "verlof_verleend" is false
+
+  Scenario: Een tweede verlof in hetzelfde schooljaar wordt geweigerd
+    # Het hoofd verleende deze jongere in oktober al verlof. Of dat zo is,
+    # leest het fictieve beleid van de school uit de eerdere besluiten. Het
+    # burgerservicenummer staat er als getal, zoals een tabelcel het leest.
+    Given the following "OBS De Klimop, besluit in oktober" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
+      | bsn_jongere | eerdere_besluiten |
+      | 999990020   | [{"bsn_jongere": 999990020, "eerste_verlofdag": "2026-10-05", "verlof_verleend": true}] |
+    Given the following parameters:
+      | bsn_jongere       | 999990020  |
+      | eerste_verlofdag  | 2027-02-01 |
+      | laatste_verlofdag | 2027-02-05 |
+      | specifieke_aard_beroep_ouder       | true |
+      | verlof_valt_buiten_schoolvakanties | true |
+    When I evaluate "verlof_verleend" of "leerplichtwet_1969"
+    Then the execution succeeds
+    Then output "verlofdagen" equals 5
+    Then output "verlof_raakt_eerste_twee_lesweken" is false
     Then output "verlof_verleend" is false

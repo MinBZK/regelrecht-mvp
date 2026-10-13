@@ -1003,6 +1003,16 @@ articles:
           description: >-
             Of het gevraagde verlof buiten de schoolvakanties valt (artikel 11,
             onder f).
+        # Lid 2: "kan door het hoofd slechts eenmaal ... per schooljaar worden
+        # verleend". Of het hoofd de jongere dit schooljaar al verlof verleende,
+        # weet het uit zijn eigen besluiten. Hoe het die terugleest, zegt deze
+        # wet niet; dat staat in het beleid van de school.
+        - id: verlof_al_verleend_in_schooljaar
+          type: boolean
+          required: true
+          description: >-
+            Of het hoofd de jongere in het schooljaar van het gevraagde verlof
+            al verlof als bedoeld in het eerste lid verleende.
       execution:
         # Lid 1: het hoofd verleent verlof "op aanvraag". Dit artikel brengt
         # twee dingen voort (RFC-047). De aanvraag (RFC-045), waar de Awb op
@@ -1048,11 +1058,11 @@ articles:
             type: boolean
             description: >-
               Of het hoofd het verlof verleent (lid 1). Lid 2 noemt alleen wanneer
-              het niet kan; "eenmaal per schooljaar" en het evenredige deel voor
-              een kwalificatieplichtige jongere zijn nog niet getoetst. Geweigerd
-              wordt ook verlof waarvan de laatste verlofdag vóór de eerste ligt,
-              en verlof dat geen dag van maandag tot en met vrijdag omvat: dan
-              is er geen schoolbezoek om verlof voor te verlenen.
+              het niet kan; het evenredige deel voor een kwalificatieplichtige
+              jongere is nog niet getoetst. Geweigerd wordt ook verlof waarvan
+              de laatste verlofdag vóór de eerste ligt, en verlof dat geen dag
+              van maandag tot en met vrijdag omvat: dan is er geen schoolbezoek
+              om verlof voor te verlenen.
         actions:
           # Lid 2: "ten hoogste tien dagen". Verlof is verlof om de school niet
           # te bezoeken (lid 1), dus een dag telt als de jongere anders naar
@@ -1134,10 +1144,9 @@ articles:
                     to: $laatste_verlofdag
                     in: days
                   value: 0
-          # Lid 1 met artikel 11, onder f (beide gegevens), en lid 2. "Eenmaal
-          # per schooljaar"
-          # (lid 2) en het evenredige deel voor een kwalificatieplichtige
-          # jongere (lid 2, tweede volzin) zijn nog niet gemodelleerd.
+          # Lid 1 met artikel 11, onder f (beide gegevens), en lid 2. Het evenredige deel voor
+          # een kwalificatieplichtige jongere (lid 2, tweede volzin) is nog
+          # niet gemodelleerd.
           # Eigen keuze: verlof is verlof om de school niet te bezoeken (lid 1),
           # dus een aanvraag met de laatste verlofdag vóór de eerste, of zonder
           # één dag van maandag tot en met vrijdag (alleen een weekend), wordt
@@ -1163,6 +1172,9 @@ articles:
                   value: 10
                 - operation: NOT
                   value: $verlof_raakt_eerste_twee_lesweken
+                # Lid 2: "slechts eenmaal ... per schooljaar".
+                - operation: NOT
+                  value: $verlof_al_verleend_in_schooljaar
     references:
       - id: ref1
         bwb_id: BWBR0002628

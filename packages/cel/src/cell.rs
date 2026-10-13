@@ -13,6 +13,7 @@ use serde_json::Map;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
+use crate::reading;
 use crate::shape::{self, Shape};
 
 /// A cell. It holds who it is and its chronicle, not the law: every call
@@ -164,7 +165,10 @@ impl Cell {
     /// recorded as chronolexogram `application`, on `on` (RFC-047).
     ///
     /// What the decision asks comes from the application, the holder's
-    /// policy and the cell ([`decision::derive`]); `supplied` holds what the
+    /// policy and the cell ([`decision::derive`]). A policy that reads the
+    /// chronicle back gets this cell's earlier decisions under the article
+    /// ([`reading`], RFC-048); the service holds them as a data source
+    /// during the decision only. `supplied` holds what the
     /// deciding authority supplies itself, such as a judgement the law
     /// leaves to it per case. The cell refuses an application that is not
     /// in its chronicle or not one of this article, one already decided on,
@@ -174,7 +178,7 @@ impl Cell {
     /// decision on or after the application.
     pub fn decide(
         &mut self,
-        service: &LawExecutionService,
+        service: &mut LawExecutionService,
         law_id: &str,
         article: &str,
         application: &str,
@@ -231,40 +235,22 @@ impl Cell {
             .iter()
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
-        let date = on.to_string();
-        let mut output_values = BTreeMap::new();
-        for stage in &shape.stages {
-            // Every stage computes the decision's outputs, so a hook at a
-            // later stage can read them; they are the same at each.
-            let result = service.execute_stage_at(
-                law_id,
-                article,
-                &stage.stage,
-                None,
-                parameters.clone(),
-                &date,
-            )?;
-            collect_outputs(&result, &mut output_values)?;
-            for input in &shape.inputs {
-                let name = &input.field.name;
-                let Some(value) = result.resolved_inputs.get(name) else {
-                    continue;
-                };
-                let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
-                match &input.source {
-                    Source::Policy => {
-                        fields.insert(name.clone(), value);
-                    }
-                    // A judgement on a term a regulation also fills: the
-                    // gram takes what the engine used, which is the
-                    // regulation's value where it fills the term (RFC-047).
-                    Source::Caller if input.policy_first => {
-                        fields.insert(name.clone(), value);
-                    }
-                    _ => {}
-                }
-            }
-        }
+        let rows = reading::rows(self.grams(), &shape)?;
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            &shape.chronicle_inputs,
+            &rows,
+        );
+        let ran = run_stages(
+            service,
+            &shape,
+            parameters,
+            on,
+            &mut fields,
+        );
+        reading::unbind(service, &bound);
+        let output_values = ran?;
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
@@ -311,6 +297,52 @@ impl Cell {
         }
         Ok(gram)
     }
+}
+
+/// Run the stages of a decision on `on`: add what a policy filled to
+/// `fields`, and return the outputs.
+fn run_stages(
+    service: &LawExecutionService,
+    shape: &DecisionShape,
+    parameters: BTreeMap<String, Value>,
+    on: NaiveDate,
+    fields: &mut BTreeMap<String, serde_json::Value>,
+) -> Result<BTreeMap<String, serde_json::Value>> {
+    let date = on.to_string();
+    let mut outputs = BTreeMap::new();
+    for stage in &shape.stages {
+        // Every stage computes the decision's outputs, so a hook at a later
+        // stage can read them; they are the same at each.
+        let result = service.execute_stage_at(
+            &shape.law_id,
+            &shape.article,
+            &stage.stage,
+            None,
+            parameters.clone(),
+            &date,
+        )?;
+        collect_outputs(&result, &mut outputs)?;
+        for input in &shape.inputs {
+            let name = &input.field.name;
+            let Some(value) = result.resolved_inputs.get(name) else {
+                continue;
+            };
+            let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
+            match &input.source {
+                Source::Policy => {
+                    fields.insert(name.clone(), value);
+                }
+                // A judgement on a term a regulation also fills: the gram
+                // takes what the engine used, which is the regulation's
+                // value where it fills the term (RFC-047).
+                Source::Caller if input.policy_first => {
+                    fields.insert(name.clone(), value);
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(outputs)
 }
 
 fn json_date(on: NaiveDate) -> Value {

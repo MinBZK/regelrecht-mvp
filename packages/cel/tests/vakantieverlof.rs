@@ -9,7 +9,7 @@
 use std::path::Path;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{decision, shape, Cell, Error, Gram, Source};
+use regelrecht_cel::{decision, shape, Cell, ChronicleInput, Error, Gram, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
@@ -23,7 +23,11 @@ const RECORDING_ACTOR: &str = "obs_de_klimop";
 /// starts.
 const POLICY: &str = "fictief_beleid_schooljaar_obs_de_klimop";
 
-/// The Leerplichtwet, the Awb and the school's policy from the corpus.
+/// The fictitious policy of the school that reads its earlier decisions
+/// back (RFC-048).
+const READING_POLICY: &str = "fictief_beleid_verleend_verlof_obs_de_klimop";
+
+/// The Leerplichtwet, the Awb and the school's policies from the corpus.
 fn service() -> LawExecutionService {
     let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
@@ -31,6 +35,7 @@ fn service() -> LawExecutionService {
         format!("wet/{LAW}"),
         format!("wet/{AWB}"),
         format!("uitvoeringsbeleid/{POLICY}"),
+        format!("uitvoeringsbeleid/{READING_POLICY}"),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -326,7 +331,7 @@ fn decide(
     supplied: &Map<String, Value>,
     on: &str,
 ) -> Result<Gram, Error> {
-    cell.decide(&service(), LAW, ARTICLE, application, supplied, day(on))
+    cell.decide(&mut service(), LAW, ARTICLE, application, supplied, day(on))
 }
 
 #[test]
@@ -351,7 +356,17 @@ fn the_decision_asks_from_the_application_the_policy_the_head_and_the_cell() {
             ("eerste_lesdag_schooljaar", &policy),
             (PROFESSION, &Source::Caller),
             (OUTSIDE_HOLIDAYS, &Source::Caller),
+            ("verlof_al_verleend_in_schooljaar", &policy),
         ]
+    );
+    // The reading policy asks for the earlier decisions as a list without a
+    // source: that list is the cell's chronicle (RFC-048).
+    assert_eq!(
+        shape.chronicle_inputs,
+        vec![ChronicleInput {
+            policy: READING_POLICY.into(),
+            input: "eerdere_besluiten".into(),
+        }]
     );
 }
 
@@ -645,4 +660,124 @@ fn an_application_that_lacks_what_the_decision_needs_is_not_decided_on() {
         "{e}"
     );
     assert_eq!(cell.grams().len(), 1);
+}
+
+// ---------------------------------------------------------------------------
+// Once per school year: the school's policy reads the chronicle back (RFC-048)
+// ---------------------------------------------------------------------------
+
+const ONCE: &str = "verlof_al_verleend_in_schooljaar";
+
+/// Apply for leave from `first` to `last` on `on`, and decide on it the
+/// same day with the ground of art. 11 onder f.
+fn apply_and_decide(cell: &mut Cell, first: &str, last: &str, on: &str) -> Gram {
+    let app = applied(cell, first, last, on);
+    decide(cell, &app.id, &judgement(true, true), on).unwrap()
+}
+
+#[test]
+fn a_first_application_in_the_school_year_is_granted() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let gram = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+    assert_eq!(gram.fields[ONCE], json!(false));
+    // The value came from the policy; which article read what follows from
+    // the law in force on `recorded_on`.
+    assert_eq!(gram.field_source[ONCE], Source::Policy);
+}
+
+#[test]
+fn a_second_application_in_the_same_school_year_is_refused() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    apply_and_decide(&mut cell, "2026-10-05", "2026-10-09", "2026-09-21");
+    // Five days in May: on their own they would be granted.
+    let gram = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    assert_eq!(gram.fields[ONCE], json!(true));
+    assert_eq!(gram.field_source[ONCE], Source::Policy);
+    assert_eq!(gram.outputs["verlofdagen"], json!(5));
+    assert_eq!(
+        gram.outputs["verlof_raakt_eerste_twee_lesweken"],
+        json!(false)
+    );
+    assert_eq!(gram.outputs["verlof_verleend"], json!(false));
+}
+
+#[test]
+fn an_application_in_the_next_school_year_is_granted() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    // Leave in October 2027 is in the school year 2027-2028, whose first
+    // lesdag comes from next year's policy.
+    let gram = apply_and_decide(&mut cell, "2027-10-04", "2027-10-08", "2027-09-20");
+    assert_eq!(gram.fields["eerste_lesdag_schooljaar"], json!("2027-08-30"));
+    assert_eq!(gram.fields[ONCE], json!(false));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn the_school_year_runs_from_august_to_july() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    // Granted leave at the end of the school year 2026-2027.
+    apply_and_decide(&mut cell, "2027-07-26", "2027-07-30", "2027-06-01");
+    // Leave starting in July is in the same school year.
+    let july = apply_and_decide(&mut cell, "2027-07-19", "2027-07-23", "2027-06-02");
+    assert_eq!(july.fields[ONCE], json!(true));
+    assert_eq!(july.outputs["verlof_verleend"], json!(false));
+    // Leave starting on 2 August is in the next one.
+    let august = apply_and_decide(&mut cell, "2027-08-02", "2027-08-06", "2027-06-02");
+    assert_eq!(august.fields[ONCE], json!(false));
+    assert_eq!(august.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn a_refusal_does_not_count() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    // Eleven school days: refused.
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-15", "2026-10-20");
+    assert_eq!(refused.outputs["verlof_verleend"], json!(false));
+    let gram = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-27");
+    assert_eq!(gram.fields[ONCE], json!(false));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn leave_for_another_child_does_not_count() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    let mut supplied = application();
+    supplied.insert("bsn_jongere".into(), json!("999990020"));
+    let app = record(&mut cell, &supplied, "2026-10-21").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-21").unwrap();
+    assert_eq!(gram.fields[ONCE], json!(false));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn the_head_does_not_supply_what_the_policy_reads_from_the_chronicle() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let mut supplied = judgement(true, true);
+    supplied.insert(ONCE.into(), json!(false));
+    let e = decide(&mut cell, &app.id, &supplied, "2026-10-20").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("the policy")),
+        "{e}"
+    );
+}
+
+#[test]
+fn the_chronicle_is_bound_for_the_decision_only() {
+    let mut service = service();
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    cell.decide(
+        &mut service,
+        LAW,
+        ARTICLE,
+        &app.id,
+        &judgement(true, true),
+        day("2026-10-20"),
+    )
+    .unwrap();
+    assert!(service.data_registry().list_sources().is_empty());
 }

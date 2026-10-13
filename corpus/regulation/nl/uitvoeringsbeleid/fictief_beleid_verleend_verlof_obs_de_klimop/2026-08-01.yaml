@@ -1,0 +1,136 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
+$id: fictief_beleid_verleend_verlof_obs_de_klimop
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2026-07-01'
+valid_from: '2026-08-01'
+# FICTIEF. OBS De Klimop bestaat niet en dit is geen bekendgemaakt beleid,
+# maar een eigen keuze in de modellering. Er is geen bekendmaking; de url wijst
+# daarom naar het artikel dat dit beleid uitwerkt.
+url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
+name: Eerder verleend vakantieverlof bij OBS De Klimop (fictief beleid)
+competent_authority:
+  name: Het hoofd van OBS De Klimop
+# Geen legal_basis: geen artikel machtigt dit beleid met zoveel woorden.
+# Artikel 13a, tweede lid, van de Leerplichtwet 1969 laat het hoofd verlof
+# "slechts eenmaal ... per schooljaar" verlenen. Hoe het hoofd uit zijn eigen
+# besluiten leest of dat al gebeurde, staat hier (RFC-048). Het formaat kent
+# geen scope voor een school, dus dit fictieve beleid geldt voor elke school.
+articles:
+  - number: '1'
+    text: >-
+      FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid.
+      1. Het hoofd heeft de jongere in een schooljaar al verlof verleend als het
+      eerder op een aanvraag om vakantieverlof besloot de jongere verlof te
+      verlenen, en de eerste verlofdag van dat verlof in hetzelfde schooljaar
+      valt als de eerste verlofdag van het gevraagde verlof. Een weigering telt
+      niet.
+      2. Een schooljaar loopt van 1 augustus tot en met 31 juli van het jaar
+      erna.
+    url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
+    machine_readable:
+      implements:
+        - law: leerplichtwet_1969
+          article: 13a
+          open_term: verlof_al_verleend_in_schooljaar
+      execution:
+        parameters:
+          - name: bsn_jongere
+            type: string
+            description: Burgerservicenummer van de jongere voor wie verlof wordt gevraagd.
+          - name: eerste_verlofdag
+            type: date
+            description: Eerste dag van het gevraagde verlof.
+        input:
+          # De besluiten die het hoofd eerder nam op een aanvraag om
+          # vakantieverlof, elk met de jongere (bsn_jongere), de eerste
+          # verlofdag (eerste_verlofdag) en of verlof is verleend
+          # (verlof_verleend). Ze staan in de eigen administratie van het
+          # hoofd; welke dat is, zegt dit beleid niet.
+          - name: eerdere_besluiten
+            type: array
+            source: {}
+        output:
+          # Hulpuitvoer: binnen de FOREACH zijn `$bsn_jongere` en
+          # `$eerste_verlofdag` de velden van het eerdere besluit (RFC-016),
+          # dus de gevraagde waarden staan erbuiten.
+          - name: jongere_van_de_aanvraag
+            type: string
+            description: De jongere voor wie verlof wordt gevraagd.
+          # Lid 2. Een schooljaar heet naar het jaar waarin het begint.
+          - name: schooljaar_van_het_gevraagde_verlof
+            type: number
+            description: Het jaar waarin het schooljaar van de eerste verlofdag van het gevraagde verlof begint.
+          - name: verlof_al_verleend_in_schooljaar
+            type: boolean
+            description: >-
+              Of het hoofd de jongere in het schooljaar van het gevraagde verlof
+              al verlof verleende.
+        actions:
+          - output: jongere_van_de_aanvraag
+            value: $bsn_jongere
+          # Lid 2: vanaf 1 augustus begint het schooljaar van dat jaar,
+          # daarvóór loopt het schooljaar van het jaar ervoor.
+          - output: schooljaar_van_het_gevraagde_verlof
+            value:
+              operation: IF
+              cases:
+                - when:
+                    operation: GREATER_THAN_OR_EQUAL
+                    subject:
+                      operation: DATE_PART
+                      date: $eerste_verlofdag
+                      in: month
+                    value: 8
+                  then:
+                    operation: DATE_PART
+                    date: $eerste_verlofdag
+                    in: year
+              default:
+                operation: SUBTRACT
+                values:
+                  - operation: DATE_PART
+                    date: $eerste_verlofdag
+                    in: year
+                  - 1
+          # Lid 1: een eerder besluit dat verlof verleende aan dezelfde
+          # jongere, met een eerste verlofdag in hetzelfde schooljaar (lid 2).
+          - output: verlof_al_verleend_in_schooljaar
+            value:
+              operation: FOREACH
+              collection: $eerdere_besluiten
+              as: besluit
+              filter:
+                operation: AND
+                conditions:
+                  - operation: EQUALS
+                    subject: $besluit.verlof_verleend
+                    value: true
+                  - operation: EQUALS
+                    subject: $besluit.bsn_jongere
+                    value: $jongere_van_de_aanvraag
+                  - operation: EQUALS
+                    subject:
+                      operation: IF
+                      cases:
+                        - when:
+                            operation: GREATER_THAN_OR_EQUAL
+                            subject:
+                              operation: DATE_PART
+                              date: $besluit.eerste_verlofdag
+                              in: month
+                            value: 8
+                          then:
+                            operation: DATE_PART
+                            date: $besluit.eerste_verlofdag
+                            in: year
+                      default:
+                        operation: SUBTRACT
+                        values:
+                          - operation: DATE_PART
+                            date: $besluit.eerste_verlofdag
+                            in: year
+                          - 1
+                    value: $schooljaar_van_het_gevraagde_verlof
+              body: true
+              combine: OR

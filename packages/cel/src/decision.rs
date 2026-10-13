@@ -18,9 +18,14 @@
 //!    decides which applies: the regulation where it fills the term, the
 //!    judgement where it is silent;
 //! 4. the cell: a date the stage requires, which is the day of the decision.
+//!
+//! A policy that fills an open term may read the chronicle back: an input of
+//! type `array` without a source (`source: {}`) is answered by the cell with
+//! its earlier decisions under the deciding article ([`ChronicleInput`],
+//! [`crate::reading`], RFC-048).
 
 use chrono::NaiveDate;
-use regelrecht_engine::{LawExecutionService, ParameterType, ProcedureStage};
+use regelrecht_engine::{Article, LawExecutionService, ParameterType, ProcedureStage};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -82,6 +87,22 @@ pub struct DecisionShape {
     pub stages: Vec<ProcedureStage>,
     /// Everything the stages ask, the deciding article first.
     pub inputs: Vec<Input>,
+    /// The inputs of the filling policies that the cell answers from its
+    /// chronicle.
+    pub chronicle_inputs: Vec<ChronicleInput>,
+}
+
+/// An input of the recording actor's policy that the cell answers from its
+/// own chronicle (RFC-048): an input of type `array` without a source
+/// (`source: {}`), in a regulation that fills an open term of the deciding
+/// article. The policy names no system; that the list is the chronicle
+/// follows from where the policy stands and what it asks.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChronicleInput {
+    /// The policy, by `$id`.
+    pub policy: String,
+    /// The input, by name.
+    pub input: String,
 }
 
 impl DecisionShape {
@@ -202,12 +223,19 @@ pub fn derive(
     // regulation fills it: the regulation may be silent for this case, and
     // the engine's precedence decides (RFC-047).
     let mut policy_first: Vec<String> = Vec::new();
+    let mut chronicle_inputs: Vec<ChronicleInput> = Vec::new();
     for term in deciding.get_open_terms().into_iter().flatten() {
-        let filled = !service
+        let implementations = service
             .resolver()
             .find_implementations(law_id, article, term, Some(day), &HashMap::new())?
-            .implementations
-            .is_empty();
+            .implementations;
+        for (policy, implementing) in &implementations {
+            let found = chronicle_input(&policy.id, implementing)?;
+            if let Some(found) = found.filter(|f| !chronicle_inputs.contains(f)) {
+                chronicle_inputs.push(found);
+            }
+        }
+        let filled = !implementations.is_empty();
         let source = match (filled, &term.decided_per_case_by) {
             (true, Some(_)) => {
                 policy_first.push(term.id.clone());
@@ -247,5 +275,38 @@ pub fn derive(
         application: application_reference,
         stages,
         inputs,
+        chronicle_inputs,
     })
+}
+
+/// The input of `article` of `policy` that the cell answers from its
+/// chronicle: the one of type `array` without a source. A source-less
+/// input of another type is not the chronicle, and is left to whatever
+/// else answers it. Two such lists in one article are refused: the cell
+/// would not know which one it is.
+fn chronicle_input(policy: &str, article: &Article) -> Result<Option<ChronicleInput>> {
+    let lists: Vec<&str> = article
+        .get_inputs()
+        .iter()
+        .filter(|i| i.input_type == ParameterType::Array)
+        .filter(|i| {
+            i.source
+                .as_ref()
+                .is_some_and(|s| s.regulation.is_none() && s.output.is_none())
+        })
+        .map(|i| i.name.as_str())
+        .collect();
+    match lists.as_slice() {
+        [] => Ok(None),
+        [one] => Ok(Some(ChronicleInput {
+            policy: policy.to_string(),
+            input: (*one).to_string(),
+        })),
+        more => Err(setup(format!(
+            "{policy}#{} reads more than one list without a source ({}); the cell answers \
+             one with its chronicle",
+            article.number,
+            more.join(", ")
+        ))),
+    }
 }
