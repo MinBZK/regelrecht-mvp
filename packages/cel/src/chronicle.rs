@@ -118,10 +118,19 @@ impl Chronicle {
             if let Some(dir) = path.parent() {
                 std::fs::create_dir_all(dir)?;
             }
-            let line = serde_json::to_string(&gram).map_err(|e| setup(e.to_string()))?;
+            let mut line = serde_json::to_string(&gram).map_err(|e| setup(e.to_string()))?;
+            line.push('\n');
             let mut file = OpenOptions::new().create(true).append(true).open(path)?;
-            writeln!(file, "{line}")?;
-            file.sync_data()?;
+            // All or nothing: a write that fails halfway is cut off again, so
+            // no half line is left for the next gram or the next `open`.
+            let before = file.metadata()?.len();
+            if let Err(e) = file
+                .write_all(line.as_bytes())
+                .and_then(|()| file.sync_data())
+            {
+                let _ = file.set_len(before);
+                return Err(e.into());
+            }
         }
         self.grams.push(gram);
         Ok(&self.grams[self.grams.len() - 1])
