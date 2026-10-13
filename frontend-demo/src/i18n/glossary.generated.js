@@ -236,6 +236,7 @@ export default {
       "betaald": "paid",
       "betaaldatum": "payment date",
       "betaalkenmerk": "payment reference",
+      "betaalopdracht": "payment order",
       "betalingen": "payments",
       "beveiligingsplan": "security plan",
       "bevestigd": "confirmed",
