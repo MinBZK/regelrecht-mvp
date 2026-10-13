@@ -99,7 +99,7 @@ pub struct Shape {
     pub executed_on: Option<ExecutedOn>,
     /// For an execution: the boolean output that says whether a gram arises
     /// (`when` in `produces.events`).
-    pub record_when: Option<String>,
+    pub when: Option<String>,
     /// For a receipt: the parameter whose value identifies the message;
     /// one gram of the article per value. From the stream.
     pub identified_by: Option<String>,
@@ -138,7 +138,7 @@ impl Shape {
     /// sends: an event the article yields (`produces.events`) on no day
     /// (no `executed_on` in its stream). See [`crate::Cell::receive`].
     pub fn is_receipt(&self) -> bool {
-        self.record_when.is_some() && self.executed_on.is_none()
+        self.when.is_some() && self.executed_on.is_none()
     }
 
     /// The legal basis of a gram of the event: the article that establishes
@@ -385,7 +385,7 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
             .map(|p| p.name)
             .collect(),
         executed_on: None,
-        record_when: entry.record_when.clone(),
+        when: entry.when.clone(),
         identified_by: None,
         until: None,
         dated_by: entry.dated_by.clone(),
@@ -433,7 +433,7 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
                 &declared_parameters(article),
                 &declared_outputs(article),
             )?;
-            if shape.record_when.is_some() {
+            if shape.when.is_some() {
                 // An execution: the period the stream names, if it concerns
                 // one.
                 if let Some(period) = &event.period {
@@ -444,12 +444,6 @@ pub fn derive(service: &LawExecutionService, event: &Event, day: NaiveDate) -> R
                         )));
                     }
                     shape.period = Some(period.clone());
-                }
-                if !event.subject.is_empty() || event.first_period.is_some() {
-                    return Err(setup(format!(
-                        "{establishes}: '{}' names a `subject` or a `first_period`, which only a decision on no submission (with `period` in its stream) has",
-                        event.name
-                    )));
                 }
             } else {
                 decision_period(service, &mut shape, entry, event, day)?;
@@ -554,7 +548,7 @@ fn decision_period(
 /// (`until`). None of it is in the law. For any other event the stream
 /// gives none of these.
 fn execution_rules(shape: &mut Shape, event: &Event) -> Result<()> {
-    if shape.record_when.is_none() {
+    if shape.when.is_none() {
         let given: Vec<&str> = [
             ("refers_to", !event.refers_to.is_empty()),
             ("executed_on", event.executed_on.is_some()),
@@ -573,6 +567,12 @@ fn execution_rules(shape: &mut Shape, event: &Event) -> Result<()> {
             )));
         }
         return Ok(());
+    }
+    if event.decided_on.is_some() || !event.subject.is_empty() || event.first_period.is_some() {
+        return Err(setup(format!(
+            "{}: the stream gives '{}' a decided_on, subject or first_period, which only a decision has",
+            shape.establishes, event.name
+        )));
     }
     shape.refers_to = event.refers_to.clone();
     shape.executed_on = event.executed_on.clone();
@@ -713,7 +713,7 @@ fn check_execution(shape: &Shape, article: &Article) -> Result<()> {
             )));
         }
     }
-    if let Some(when) = &shape.record_when {
+    if let Some(when) = &shape.when {
         let declared = declared_outputs(article);
         let o = declared.iter().find(|o| &o.name == when).ok_or_else(|| {
             at(format!(
@@ -1269,7 +1269,7 @@ articles:
         let fields: Vec<&str> = shape.fields.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(fields, ["x", "y", "z"]);
         assert_eq!(shape.type_, "executogram");
-        assert_eq!(shape.record_when.as_deref(), Some("z"));
+        assert_eq!(shape.when.as_deref(), Some("z"));
     }
 
     #[test]
@@ -1399,6 +1399,27 @@ articles:
         });
         let e = derive(&service, &event, day("2024-06-01")).unwrap_err();
         assert!(e.to_string().contains("gives 'besloten' until"), "{e}");
+    }
+
+    #[test]
+    fn an_execution_takes_no_decision_keys_from_its_stream() {
+        let service = service(&[version("2024-01-01", Some(ESTABLISHES))]);
+        let mut event = gebeurd();
+        event.decided_on = Some("testwet#2".into());
+        let e = derive(&service, &event, day("2024-06-01")).unwrap_err();
+        assert!(e.to_string().contains("which only a decision has"), "{e}");
+    }
+
+    #[test]
+    fn an_article_that_decides_yields_no_events() {
+        let service = service(&[
+            version("2024-01-01", None),
+            decision(
+                "          procedure_id: eigen\n          decides_on: [testwet#1]\n          events: [{name: besloten, when: y}]",
+            ),
+        ]);
+        let e = derive(&service, &besloten(None), day("2024-06-01")).unwrap_err();
+        assert!(e.to_string().contains("records one of the two"), "{e}");
     }
 
     /// A law whose article 1 yields `gekregen` when `ontvangen`, on receipt;

@@ -2053,7 +2053,7 @@ impl Cell {
         // gram arises, and every output a gram holds.
         let mut asked: Vec<&str> = Vec::new();
         for (shape, _) in &shapes {
-            for name in shape.record_when.iter().chain(
+            for name in shape.when.iter().chain(
                 shape
                     .fields
                     .iter()
@@ -2072,7 +2072,7 @@ impl Cell {
             if !arises(
                 &shape,
                 &result.outputs,
-                shape.record_when.as_deref().unwrap_or_default(),
+                shape.when.as_deref().unwrap_or_default(),
             )? {
                 continue;
             }
@@ -2226,6 +2226,11 @@ impl Cell {
         through: NaiveDate,
         now: DateTime<FixedOffset>,
     ) -> Result<Vec<DueExecution>> {
+        if self.event(event)?.1.executed_on.is_none() {
+            return Err(setup(format!(
+                "'{event}' says not on which days it is executed (`executed_on` in its stream)"
+            )));
+        }
         let (shape, chronicle) = self.shape(service, event, now.date_naive())?;
         let executed_on = executed_on(&shape)?;
         let reference = executed_on.days.clone();
@@ -2486,7 +2491,7 @@ impl Cell {
         } else {
             self.shape(service, event, day)?.0
         };
-        let when = shape.record_when.clone().ok_or_else(|| {
+        let when = shape.when.clone().ok_or_else(|| {
             setup(format!(
                 "{}: '{event}' is no event the article yields (produces.events)",
                 shape.establishes

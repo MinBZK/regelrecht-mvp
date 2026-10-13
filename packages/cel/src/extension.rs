@@ -54,7 +54,7 @@ pub struct Establishment {
     /// For an event: the boolean output of the article that says whether it
     /// arises (`when`). The cell executes the article and records a gram only
     /// if it is true: the law says when a gram arises, not the cell.
-    pub record_when: Option<String>,
+    pub when: Option<String>,
     /// For a decision: the parameter that is the date the decision bears
     /// (its dagtekening). The cell fills it with the day the decision is
     /// taken; every other value its stage requires must be given.
@@ -245,11 +245,14 @@ pub fn derive(article: &Article, decision_stages: &[&Stage]) -> Result<Option<Ch
             });
         }
     }
-    for event in produces
-        .and_then(|p| p.events.as_ref())
-        .into_iter()
-        .flatten()
-    {
+    let events = produces.and_then(|p| p.events.as_ref());
+    if events.is_some() && !establishes.is_empty() {
+        return Err(
+            "produces.events on an article that establishes a submission or takes a decision; the cell records one of the two"
+                .to_string(),
+        );
+    }
+    for event in events.into_iter().flatten() {
         if establishes
             .iter()
             .any(|e| e.event.as_deref() == Some(event.name.as_str()))
@@ -260,7 +263,7 @@ pub fn derive(article: &Article, decision_stages: &[&Stage]) -> Result<Option<Ch
             event: Some(event.name.clone()),
             type_: Some("executogram".to_string()),
             fields: Some(Fields::ParametersAndOutputs),
-            record_when: Some(event.when.clone()),
+            when: Some(event.when.clone()),
             ..Default::default()
         });
     }
