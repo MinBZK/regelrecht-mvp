@@ -43,6 +43,10 @@ pub struct Gram {
     pub fields: BTreeMap<String, Value>,
     /// Per field, the articles that ask it.
     pub field_basis: BTreeMap<String, Vec<String>>,
+    /// Fields that cannot be absent and that the application left out. An
+    /// incomplete application is still recorded (Awb 4:5).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing: Vec<String>,
     /// What executing the establishing article gave: its own outputs and
     /// those of the hooks on the submission, such as the last day of the
     /// decision period (Awb 4:13).

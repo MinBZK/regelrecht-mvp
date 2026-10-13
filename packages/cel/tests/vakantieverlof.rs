@@ -294,3 +294,18 @@ fn a_chronicle_in_a_file_reads_back_what_was_recorded() {
 fn uuid_version(id: &str) -> usize {
     uuid::Uuid::parse_str(id).unwrap().get_version_num()
 }
+
+#[test]
+fn a_left_out_field_that_cannot_be_absent_is_named_as_missing() {
+    // Awb 4:5: an incomplete application is still an application. The gram
+    // records it, and says what it lacks.
+    let mut cell = Cell::in_memory(HOLDER);
+    let mut supplied = application();
+    supplied.remove("eerste_verlofdag");
+    let gram = record(&mut cell, &supplied, "2026-10-13").unwrap();
+    assert_eq!(gram.missing, vec!["eerste_verlofdag"]);
+    assert!(!gram.fields.contains_key("eerste_verlofdag"));
+
+    let complete = record(&mut cell, &application(), "2026-10-13").unwrap();
+    assert!(complete.missing.is_empty());
+}

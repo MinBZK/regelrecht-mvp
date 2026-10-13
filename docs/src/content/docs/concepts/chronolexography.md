@@ -68,7 +68,7 @@ A cell, here a school, records the application as one gram in its chronicle. The
 }
 ```
 
-- Fields are all parameters of art. 13a and of its Awb hooks, except the moment. The cell refuses a field no article asks, and a value of the wrong type. A field that can be absent and was left out is `null` in the gram, as the engine received it.
+- Fields are all parameters of art. 13a and of its Awb hooks, except the moment. The cell refuses a field no article asks, and a value of the wrong type. A field that can be absent and was left out is `null` in the gram, as the engine received it. One that cannot be absent is listed under `missing`: an incomplete application is still recorded (Awb 4:5).
 - The moment that counts (`datum_ontvangst`) has its own key, `moment`, with its `legal_basis`. The cell fills it with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
 - Recording runs art. 13a, so the Awb hooks run too, and their outputs go in the gram.
 - `field_basis` gives per field the articles that ask it.

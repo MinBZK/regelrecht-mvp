@@ -73,14 +73,19 @@ impl Cell {
         // A field the application leaves out and that can be absent is
         // absent: the application is what the applicant sent (RFC-036), and
         // the gram says so with `null`. One that cannot be absent stays
-        // unknown to the engine and out of the gram.
+        // unknown to the engine, and the gram names it as missing: an
+        // incomplete application is still an application (Awb 4:5).
         let mut fields = BTreeMap::new();
         let mut field_basis = BTreeMap::new();
+        let mut missing = Vec::new();
         for field in &shape.fields {
             let value = match supplied.get(&field.name) {
                 Some(value) => value.clone(),
                 None if field.nullable => serde_json::Value::Null,
-                None => continue,
+                None => {
+                    missing.push(field.name.clone());
+                    continue;
+                }
             };
             fields.insert(field.name.clone(), value);
             field_basis.insert(field.name.clone(), field.declared_by.clone());
@@ -142,6 +147,7 @@ impl Cell {
             moment,
             fields,
             field_basis,
+            missing,
             outputs: output_values,
             output_basis,
         };
