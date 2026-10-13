@@ -68,14 +68,21 @@ Merijn applied on 6 January 2025. The voorschot of € 1.695 was granted the sam
 
 A policy article says on which days an order is given. The cell asks it for dates. The demo clock asks the cell for those dates and then has the cell execute each one.
 
-The stream names the article, as it names the article that gives the day of a decision:
+The stream names the article (`executed_on.days`), as it names the article that gives the day of a decision (`decided_on`). The other keys are explained [below](#how-the-law-and-the-stream-share-the-work).
 
 ```yaml
 # corpus/demo/cells/toeslagen/streams/zorgtoeslag_betalingen.yaml
 - name: betaalopdracht_gegeven
   establishes: fictief_beleid_termijnbedrag_voorschot#1
   reads: [{regulation: fictief_beleid_kroniek_toeslagen}]
-  executed_on: fictief_beleid_termijnbedrag_voorschot#5
+  refers_to:
+    voorschot: {stage: VOORSCHOT, required: true}
+  period: {parameter: berekeningsjaar, unit: year}
+  executed_on:
+    days: fictief_beleid_termijnbedrag_voorschot#5
+    parameter: maand
+    once_per: month
+  until: {stage: TOEKENNING}
 ```
 
 Voorschot policy art. 5 gives the next day after a given day: the day of the voorschot, and after that the 1st of the next month.
@@ -120,7 +127,7 @@ Each time the clock moves forward, `executeDue` in `frontend-demo/src/data/clock
 1. It asks the cell: "on which days up to the new reference date is this execution due?" (`dueExecutions`).
 2. For each day it gets back and has not done yet, it tells the cell to execute the article on that day (`execute`). The cell then records the chronolexogram, or nothing if the policy says no order arises.
 
-`once_per: month` makes a second order in February impossible. Whether an order arises on a day at all is for art. 1 to say (`record_when`).
+`once_per: month` makes a second order in February impossible. Whether an order arises on a day at all is for art. 1 to say (the `when` of its event).
 
 ### Why: Awir 22 and the voorschot policy
 
@@ -295,43 +302,39 @@ The cell now executes voorschot policy art. 1 with these inputs, on the day of t
 
 For February: Awir 22 says there is an installment (`termijn_in_maand` true), 11 in total, none paid at once. February is neither the first nor the last. So `termijnbedrag` is 169500 / 11 rounded down: 15409. Nothing is in arrears, so `bedrag` is 15409 too.
 
-The same article tells the cell what to record. That is the `produces.extensions.chronolex` block:
+### How the law and the stream share the work
+
+The article says which event it yields, and when. That is `produces.events`, an ordinary key of the law format:
 
 ```yaml
 # corpus/demo/regulation/nl/fictief_beleid_termijnbedrag_voorschot/TOESLAGEN-2025-01-01.yaml
 produces:
-  extensions:
-    chronolex:
-      establishes:
-        - event: betaalopdracht_gegeven
-          type: executogram
-          refers_to:
-            voorschot:
-              stage: VOORSCHOT
-              required: true
-          fields: [termijnbedrag, meegenomen_achterstand, bedrag, rekeningnummer_begunstigde, uitvoerdatum]
-          period:
-            parameter: berekeningsjaar
-            unit: year
-          executed_on:
-            parameter: maand
-            once_per: month
-          record_when: opdracht_wordt_gegeven
-          until:
-            stage: TOEKENNING
+  events:
+    - name: betaalopdracht_gegeven
+      when: opdracht_wordt_gegeven
 ```
 
-| Key | What it does here |
+The cell derives the rest of the record from the article:
+
+| What | Where it comes from |
 |---|---|
-| `event` | The name of the chronolexogram. The stream event has the same name |
-| `type` | `executogram`: the execution of a decision. A decision is a `decretogram` |
+| Name | `name`. The stream event has the same name |
+| When it arises | `when`: only if `opdracht_wordt_gegeven` is true. In December 2025 it is false for 2025, so nothing is recorded |
+| Type | `executogram`, because the article yields it as an event. A decision is a `decretogram` |
+| Fields | What the article was given from outside (origin `BELANGHEBBENDE` or `KANAAL`, here nothing) and all its outputs |
+
+What the cell keeps about recording it is in the stream, shown [above](#when-a-policy-article-gives-the-days-the-clock-triggers-them):
+
+| Key in the stream | What it does here |
+|---|---|
 | `refers_to.voorschot` | The order refers to the VOORSCHOT decision of the case for the same year. `required: true`: without a voorschot there is no order |
-| `fields` | The outputs that become fields of the chronolexogram |
 | `period` | The order concerns one berekeningsjaar. The cell executes per year of the voorschotten in the case, and passes the year as `berekeningsjaar` |
+| `executed_on.days` | Art. 5 gives the days |
 | `executed_on.parameter` | The cell fills `maand` with the day of execution |
-| `executed_on.once_per` | At most one order per month. The days come from art. 5 (see [When](#when-a-policy-article-gives-the-days-the-clock-triggers-them)) |
-| `record_when` | A chronolexogram arises only if `opdracht_wordt_gegeven` is true. In December 2025 it is false for 2025, so nothing is recorded |
+| `executed_on.once_per` | At most one order per month |
 | `until` | Once the case has a TOEKENNING decision for the year, no order of that year arises |
+
+None of these keys is law. The law does not say which earlier decision a payment order belongs to, which year a payment is booked under, or that the cell skips a month that already has one. A receipt, such as the answer of the bank, has no `executed_on`. It arises when the message arrives, and its stream says how the cell recognises a message it already has: by the order it refers to, or by a value it carries (`identified_by`).
 
 ### Output: the recorded chronolexogram
 
@@ -358,8 +361,12 @@ This is the chronolexogram the cell recorded, from a run of the demo corpus. The
   "refers_to": {"voorschot": "01a13179-4172-735b-9fa8-ddf2f505268d"},
   "fields": {
     "bedrag": 15409,
+    "bedrag_per_termijn": 15409,
+    "deel_ineens": 0,
     "meegenomen_achterstand": 0,
+    "opdracht_wordt_gegeven": true,
     "rekeningnummer_begunstigde": "NL00TEST0123456789",
+    "termijn_wordt_betaald": true,
     "termijnbedrag": 15409,
     "uitvoerdatum": "2025-02-01"
   },
@@ -387,7 +394,7 @@ What each part says:
 - **`refers_to.voorschot`** is the id of the voorschot decision. The chronicle derives the case from it: the voorschot refers to the application.
 - **`effective_at`** is when the order holds. The order is executed on its own day, so it holds from the moment the cell executed it. For a day the clock skipped, it holds from the start of that day.
 - **`legal_basis`** is the policy article. Awir 22 is not in it. Awir 22 only feeds the article through its inputs.
-- **`field_basis`** gives the provisions per field. The real record has all five fields. Two are shown here.
+- **`field_basis`** gives the provisions per field. The real record has all nine fields. Two are shown here.
 - **`inputs`** records every parameter with its value and where it came from. Four came from a reduction, with the article that gave them. `berekeningsjaar` came from the period, and `maand` from the execution day.
 
 ### Next: to the bank and back
@@ -426,7 +433,7 @@ The demo carries the order to the bank along a channel in `corpus/demo/demo-conf
 
 - **When:** the message from the Belastingdienst cell arrives.
 - **Why:** AWR 21e lid 1: the inspecteur provides the inkomensgegeven. Toekenning policy art. 1: Toeslagen records each one it receives.
-- **How:** `Cell::receive` on toekenning policy art. 1. `identified_by: kenmerk_aanslag` records each aanslag once.
+- **How:** `Cell::receive` on toekenning policy art. 1. `identified_by: kenmerk_aanslag` in the stream records each aanslag once.
 - **Input:** the channel fills `kenmerk_aanslag`, `bsn`, `kalenderjaar`, `inkomensgegeven` and `datum_vaststelling_aanslag` from the aanslag. No reduction.
 - **Output:** executogram `inkomensgegeven_ontvangen`. It refers to nothing: the aanslag lives in another cell.
 

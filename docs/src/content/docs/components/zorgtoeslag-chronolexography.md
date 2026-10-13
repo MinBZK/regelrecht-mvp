@@ -144,7 +144,7 @@ flowchart LR
 
 ## What the law says, what the cell derives
 
-A law rulework contains no chronolex words: no event names, no chronolexogram types. The cell derives the recording from ordinary law keys.
+A law rulework contains no chronolex words: no chronolexogram types, no recording block. The cell derives the recording from ordinary law keys.
 
 | Key in the rulework | Example | What the cell derives |
 |---|---|---|
@@ -156,13 +156,13 @@ A law rulework contains no chronolex words: no event names, no chronolexogram ty
 | `legal_character: BESCHIKKING` without `decides_on` | AWR 11 | A decision ex officio, linked to nothing |
 | One date in a stage's `requires` | `dagtekening_voorschot` | The cell fills in the day of the decision |
 | `origin` with `rol: TIJDVAK` | `berekeningsjaar` | The year the decision is about |
+| `produces.events` with `name` and `when` | `betaalopdracht_gegeven` when `opdracht_wordt_gegeven` | An execution chronolexogram, only when that boolean output is true. Its fields are what the article was given from outside (origin `BELANGHEBBENDE` or `KANAAL`) and all its outputs |
 
 How to check whether a key belongs in the law: can you explain it to a jurist without the words chronolexogram, chronicle, cell or chronolex? Then it is law. Otherwise it belongs in the cell configuration or in policy.
 
 Recording words appear in three places, all outside the law itself.
 
-- **The fictitious executing policies** have a `produces.extensions.chronolex` block on the articles that pay or answer. The law format has no word yet for "a payment arises here". The block names the type (`executogram`), the parameter the day goes into and how often it may arise (`executed_on`), when a chronolexogram arises (`record_when`), until when (`until`), what it refers to (`refers_to`), and how a repeated message is recognised (`identified_by`).
-- **The streams of Toeslagen** name, per execution, the policy article that gives its days (`executed_on`), as they name the article that gives the day of a decision (`decided_on`). The days themselves are in that article: art. 5 of the voorschot policy, art. 9 and 10 of the toekenning policy.
+- **The streams of Toeslagen and the bank** say what the cell keeps about each execution. `refers_to` names the chronolexogram it executes or answers. `period` names the parameter that gives its year. `executed_on` names the policy article that gives its days (`days`), the parameter the day goes into, and how often it may arise (`once_per`), as `decided_on` names the article that gives the day of a decision. `until` names the stage after which nothing arises, and `identified_by` how a repeated message is recognised. The days themselves are in the policy: art. 5 of the voorschot policy, art. 9 and 10 of the toekenning policy.
 - **The Belastingdienst stream** names the year of an aanslag (`period: {parameter: belastingjaar}`). Schema v0.8.0 cannot yet say that in the law for a decision nobody applied for.
 - **The chronicle policy** gives each article an `endpoint`. The cell uses it as the name of the lexostatus.
 
@@ -317,7 +317,7 @@ The main choices:
 
 Open:
 
-- The law format has no word for a payment ("an execution arises here"). The executing policies need an explicit block for it.
+- Only fictitious policy yields events (`produces.events`). Whether a payment in statute (Awb 4:87) needs more than a name and a `when` is open.
 - Without an aanslag there is no toekenning. Awir 19 lid 2 and the inkomensgegeven without an aanslag (AWR 21 onder e, 2°) are not modeled.
 - No article says which data an application must contain, such as the BSN. See [RFC-046](/rfcs/rfc-046), open question 4.
 - Whether a policy article can be a grondslag. See [RFC-047](/rfcs/rfc-047), open question 4.
