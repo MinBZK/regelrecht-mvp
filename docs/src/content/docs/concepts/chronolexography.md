@@ -12,7 +12,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | Feature | Rulework | RFC |
 |---|---|---|
 | [The application, with the Awb on it](#the-application-with-the-awb-on-it) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-045](/rfcs/rfc-045) |
-| [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046) |
+| [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046): chronolexography as a layer |
 
 ## The application, with the Awb on it
 
@@ -44,13 +44,13 @@ hooks:
 
 ## The application in the chronicle
 
-A cell, here a school, records the application as one gram in its chronicle. The law names no fields for it; the cell derives them from the keys above.
+A cell, here a school, records the application as one chronolexogram in its chronicle. Chronolexography is an optional layer: it lives in `packages/cel`, and the law and the engine do not know it. The law names no fields for the record; the cell derives them from the keys above.
 
 ```json
 {
   "kind": "AANVRAAG",
-  "legal_basis": "leerplichtwet_1969#13a",
-  "holder": "obs_de_klimop",
+  "grondslag": "leerplichtwet_1969#13a",
+  "recording_actor": "obs_de_klimop",
   "recorded_on": "2026-10-13",
   "moment": {
     "parameter": "datum_ontvangst",
@@ -62,10 +62,12 @@ A cell, here a school, records the application as one gram in its chronicle. The
 }
 ```
 
-- Fields are all parameters of art. 13a and of its Awb hooks, except the moment. The cell refuses a field no article asks, and a value of the wrong type. A field that can be absent and was left out is `null` in the gram, as the engine received it. One that cannot be absent is listed under `missing`: an incomplete application is still recorded (Awb 4:5).
-- The moment that counts (`datum_ontvangst`) has its own key, `moment`, with the article that names it. The cell fills it with the day it records the application, and refuses it from the applicant. That receipt and recording fall on one day is the cell's assumption, not the law's.
-- Recording runs art. 13a, so the Awb hooks run too, and their outputs go in the gram.
-- The gram does not repeat the law. Which articles ask a field and which article computed an output follow from the law version in force on `recorded_on`.
-- The chronicle refuses a gram dated before the last one.
+- The fields are the parameters of art. 13a and its Awb hooks, minus the moment. The cell refuses an unknown field and a value of the wrong type.
+- A field left out is `null` when it can be absent. Otherwise it goes under `missing`, and the application is still recorded (Awb 4:5).
+- `moment` holds the day of receipt. The cell fills it with the day of recording; that the two are the same day is the cell's assumption.
+- Recording runs art. 13a and its hooks. Their outputs go in `outputs`.
+- The chronolexogram does not repeat the law. Which article asks a field follows from the law version in force on `recorded_on`.
+
+The chronicle refuses a chronolexogram dated before the last one.
 
 **Try it:** `cargo test --manifest-path packages/cel/Cargo.toml`
