@@ -402,7 +402,7 @@ The demo carries the order to the bank along a channel in `corpus/demo/demo-conf
 
 - **When:** the applicant submits in the portal.
 - **Why:** Awir 15 lets the applicant apply. Awb 4:2 and 4:13, Awir 16 and voorschot policy art. 3 hook onto the application and add fields: name, address, signature, expected income, account.
-- **How:** `Cell::record_submission` on the event `aanvraag_ontvangen`. The cell runs Awir 15 with its hooks to know the fields.
+- **How:** `Cell::record_submission` on the event `aanvraag_ontvangen`. The cell runs Awir 15 with its hooks to know the fields. Awb 4:2 lid 1 onder c adds `gevraagde_beschikking`, the decision that is requested. If only one decision is taken on the application (zorgtoeslag), the cell fixes it. If there are several, the applicant chooses, and the cell refuses an application without a choice. A field that only one decision asks for (the rent, for huurtoeslag) is allowed only on an application for that decision.
 - **Input:** what the applicant fills in. No reduction.
 - **Output:** a chronolexogram of type `submission`, subtype `aanvraag`. Awb 4:13 makes `effective_at` the moment of receipt.
 
