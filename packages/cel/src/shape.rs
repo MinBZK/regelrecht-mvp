@@ -1,4 +1,4 @@
-//! The shape of an application's gram, derived from the law.
+//! The shape of an application's chronolexogram, derived from the law.
 //!
 //! The engine names the articles that take part in a submission
 //! ([`LawExecutionService::submission`]): the article that establishes it and
@@ -46,7 +46,8 @@ pub struct Moment {
     pub declared_by: String,
 }
 
-/// What a gram of a submission holds, as the law in force on a day says.
+/// What a chronolexogram of a submission holds, as the law in force on a day
+/// says.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Shape {
     /// The kind of submission, `produces.submission.kind` (`AANVRAAG`).
@@ -65,7 +66,7 @@ pub struct Shape {
 
 impl Shape {
     /// The establishing article, `<regulation>#<article>`.
-    pub fn legal_basis(&self) -> String {
+    pub fn grondslag(&self) -> String {
         format!("{}#{}", self.law_id, self.article)
     }
 

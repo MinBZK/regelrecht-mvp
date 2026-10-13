@@ -16,7 +16,7 @@ const LAW: &str = "leerplichtwet_1969";
 const ARTICLE: &str = "13a";
 const AWB: &str = "algemene_wet_bestuursrecht";
 /// A fictional school.
-const HOLDER: &str = "obs_de_klimop";
+const RECORDING_ACTOR: &str = "obs_de_klimop";
 
 /// The Leerplichtwet and the Awb from the corpus.
 fn service() -> LawExecutionService {
@@ -95,12 +95,12 @@ fn the_shape_of_the_application_comes_from_the_law() {
 
 #[test]
 fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let gram = record(&mut cell, &application(), "2026-10-13").unwrap();
 
     assert_eq!(gram.kind, "AANVRAAG");
-    assert_eq!(gram.legal_basis, "leerplichtwet_1969#13a");
-    assert_eq!(gram.holder, HOLDER);
+    assert_eq!(gram.grondslag, "leerplichtwet_1969#13a");
+    assert_eq!(gram.recording_actor, RECORDING_ACTOR);
     assert_eq!(gram.recorded_on, day("2026-10-13"));
     assert_eq!(uuid_version(&gram.id), 7);
 
@@ -125,20 +125,20 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
         gram.outputs["redelijke_beslistermijn_einddatum"],
         json!("2026-12-08")
     );
-    // The gram does not repeat the law: what each field and output rests
-    // on follows from the law in force on `recorded_on`.
+    // The chronolexogram does not repeat the law: what each field and output
+    // rests on follows from the law in force on `recorded_on`.
     let serialized = serde_json::to_value(&gram).unwrap();
     assert!(serialized.get("field_basis").is_none());
     assert!(serialized.get("output_basis").is_none());
-    assert!(serialized["moment"].get("legal_basis").is_none());
-    assert_eq!(serialized["legal_basis"], "leerplichtwet_1969#13a");
+    assert!(serialized["moment"].get("grondslag").is_none());
+    assert_eq!(serialized["grondslag"], "leerplichtwet_1969#13a");
 
     assert_eq!(cell.grams(), [gram]);
 }
 
 #[test]
 fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let mut empty = application();
     empty.insert("adres_aanvrager".into(), Value::Null);
     let mut left_out = application();
@@ -152,7 +152,8 @@ fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
             gram.outputs["aanvraag_bevat_wat_artikel_4_2_eist"],
             json!(false)
         );
-        // Left out or `null`, the gram shows what the engine received.
+        // Left out or `null`, the chronolexogram shows what the engine
+        // received.
         assert_eq!(gram.fields["adres_aanvrager"], Value::Null);
     }
     assert_eq!(grams[0].fields, grams[1].fields);
@@ -160,7 +161,7 @@ fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
 
 #[test]
 fn a_field_the_law_does_not_ask_is_refused() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let mut supplied = application();
     supplied.insert("bestemming".into(), json!("Lissabon"));
     let e = record(&mut cell, &supplied, "2026-10-13").unwrap_err();
@@ -173,7 +174,7 @@ fn a_field_the_law_does_not_ask_is_refused() {
 
 #[test]
 fn the_moment_that_counts_is_not_the_applicants_to_supply() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let mut supplied = application();
     // The receipt is the moment that counts; the cell records it.
     supplied.insert("datum_ontvangst".into(), json!("2026-10-01"));
@@ -187,7 +188,7 @@ fn the_moment_that_counts_is_not_the_applicants_to_supply() {
 
 #[test]
 fn a_value_of_the_wrong_type_is_refused() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let mut supplied = application();
     supplied.insert("eerste_verlofdag".into(), json!("volgende week"));
     let e = record(&mut cell, &supplied, "2026-10-13").unwrap_err();
@@ -199,7 +200,7 @@ fn a_value_of_the_wrong_type_is_refused() {
 
 #[test]
 fn null_is_refused_for_a_field_that_cannot_be_absent() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let mut supplied = application();
     supplied.insert("bsn_jongere".into(), Value::Null);
     let e = record(&mut cell, &supplied, "2026-10-13").unwrap_err();
@@ -212,7 +213,7 @@ fn null_is_refused_for_a_field_that_cannot_be_absent() {
 
 #[test]
 fn an_article_that_establishes_no_submission_is_refused() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let e = cell
         .record_submission(&service(), LAW, "2", &Map::new(), day("2026-10-13"))
         .unwrap_err();
@@ -224,7 +225,7 @@ fn an_article_that_establishes_no_submission_is_refused() {
 
 #[test]
 fn a_gram_dated_before_the_last_one_is_refused() {
-    let mut cell = Cell::in_memory(HOLDER);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     record(&mut cell, &application(), "2026-10-13").unwrap();
     // The same day is fine.
     record(&mut cell, &application(), "2026-10-13").unwrap();
@@ -239,13 +240,13 @@ fn a_gram_dated_before_the_last_one_is_refused() {
 #[test]
 fn a_chronicle_in_a_file_reads_back_what_was_recorded() {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join(HOLDER).join("aanvragen.jsonl");
+    let path = dir.path().join(RECORDING_ACTOR).join("aanvragen.jsonl");
     let recorded = {
-        let mut cell = Cell::open(HOLDER, &path).unwrap();
+        let mut cell = Cell::open(RECORDING_ACTOR, &path).unwrap();
         assert!(cell.grams().is_empty());
         record(&mut cell, &application(), "2026-10-13").unwrap()
     };
-    let mut cell = Cell::open(HOLDER, &path).unwrap();
+    let mut cell = Cell::open(RECORDING_ACTOR, &path).unwrap();
     assert_eq!(cell.grams(), [recorded]);
     // The clock of the file holds after reopening.
     let e = record(&mut cell, &application(), "2026-10-01").unwrap_err();
@@ -254,7 +255,7 @@ fn a_chronicle_in_a_file_reads_back_what_was_recorded() {
         "{e}"
     );
 
-    // Another holder does not open this chronicle.
+    // Another recording actor does not open this chronicle.
     let e = Cell::open("obs_het_anker", &path).unwrap_err();
     assert!(matches!(e, Error::Setup(_)), "{e}");
 }
@@ -265,9 +266,9 @@ fn uuid_version(id: &str) -> usize {
 
 #[test]
 fn a_left_out_field_that_cannot_be_absent_is_named_as_missing() {
-    // Awb 4:5: an incomplete application is still an application. The gram
-    // records it, and says what it lacks.
-    let mut cell = Cell::in_memory(HOLDER);
+    // Awb 4:5: an incomplete application is still an application. The
+    // chronolexogram records it, and says what it lacks.
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let mut supplied = application();
     supplied.remove("eerste_verlofdag");
     let gram = record(&mut cell, &supplied, "2026-10-13").unwrap();

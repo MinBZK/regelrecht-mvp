@@ -1,9 +1,9 @@
-//! The gram, and the chronicle a cell appends grams to.
+//! The chronolexogram, and the chronicle a cell appends chronolexograms to.
 //!
-//! A chronicle is append-only. It lives in memory, or in a JSON Lines file
-//! with one gram per line, written (and synced) before the gram is added in
-//! memory. A chronicle has one writer: two cells open on the same file do
-//! not see each other's grams.
+//! A chronicle is append-only. It lives in memory, or in a JSON Lines file with
+//! one chronolexogram per line, written (and synced) before the chronolexogram
+//! is added in memory. A chronicle has one writer: two cells open on the same
+//! file do not see each other's chronolexograms.
 
 use std::collections::BTreeMap;
 use std::fs::OpenOptions;
@@ -16,11 +16,12 @@ use serde_json::Value;
 
 use crate::error::{refused, setup, Result};
 
-/// A recorded fact: one application, as the law describes it.
+/// A chronolexogram (`Gram` for short): one recorded application, as the law
+/// describes it.
 ///
-/// The gram does not repeat the law. Its establishing article and the day it
-/// was recorded name the law version in force; the provisions each field and
-/// output rest on follow from that version.
+/// The chronolexogram does not repeat the law. Its establishing article and the
+/// day it was recorded name the law version in force; the provisions each field
+/// and output rest on follow from that version.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gram {
     /// Its own id, a uuid v7.
@@ -28,10 +29,11 @@ pub struct Gram {
     /// What the law says arises, in its own word: the kind of the
     /// submission (`produces.submission.kind`), such as `AANVRAAG`.
     pub kind: String,
-    /// The article that establishes it, `<regulation>#<article>`.
-    pub legal_basis: String,
-    /// The cell that recorded it: the holder of the chronicle.
-    pub holder: String,
+    /// The article that establishes it, `<regulation>#<article>` (RFC-022
+    /// `grondslag`).
+    pub grondslag: String,
+    /// The cell that recorded it (RFC-022 `recording_actor`).
+    pub recording_actor: String,
     /// The day the cell recorded it.
     pub recorded_on: NaiveDate,
     /// The moment that counts, when the law names one (`produces.moment`).
@@ -51,20 +53,21 @@ pub struct Gram {
     pub outputs: BTreeMap<String, Value>,
 }
 
-/// The moment that counts for a gram, as recorded.
+/// The moment that counts for a chronolexogram, as recorded.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GramMoment {
     /// The parameter the law names for it, which the engine received the
     /// moment in. Absent when the law names none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parameter: Option<String>,
-    /// The day it fell on. The cell takes the day it records the gram.
+    /// The day it fell on. The cell takes the day it records the
+    /// chronolexogram.
     pub on: NaiveDate,
     /// The article that names the moment.
     pub declared_by: String,
 }
 
-/// The grams of one cell, in the order they were recorded.
+/// The chronolexograms of one cell, in the order they were recorded.
 #[derive(Debug, Default)]
 pub struct Chronicle {
     /// The file it is kept in; `None` for a chronicle in memory.
@@ -78,9 +81,10 @@ impl Chronicle {
         Self::default()
     }
 
-    /// Open the chronicle in the JSON Lines file at `path`, reading the grams
-    /// already there. A missing file is an empty chronicle. The grams in the
-    /// file must keep the rules of [`Chronicle::append`].
+    /// Open the chronicle in the JSON Lines file at `path`, reading the
+    /// chronolexograms already there. A missing file is an empty chronicle. The
+    /// chronolexograms in the file must keep the rules of
+    /// [`Chronicle::append`].
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref().to_path_buf();
         let text = match std::fs::read_to_string(&path) {
@@ -106,10 +110,11 @@ impl Chronicle {
         &self.grams
     }
 
-    /// Append a gram: to the file first (if there is one), then to memory.
+    /// Append a chronolexogram: to the file first (if there is one), then to
+    /// memory.
     ///
-    /// The chronicle has one clock and it only moves forward: a gram dated
-    /// before the last gram is refused. The same day is fine.
+    /// The chronicle has one clock and it only moves forward: a chronolexogram
+    /// dated before the last chronolexogram is refused. The same day is fine.
     pub fn append(&mut self, gram: Gram) -> Result<&Gram> {
         self.check(&gram)?;
         if let Some(path) = &self.path {
@@ -120,7 +125,8 @@ impl Chronicle {
             line.push('\n');
             let mut file = OpenOptions::new().create(true).append(true).open(path)?;
             // All or nothing: a write that fails halfway is cut off again, so
-            // no half line is left for the next gram or the next `open`.
+            // no half line is left for the next chronolexogram or the next
+            // `open`.
             let before = file.metadata()?.len();
             if let Err(e) = file
                 .write_all(line.as_bytes())
@@ -137,13 +143,13 @@ impl Chronicle {
     fn check(&self, gram: &Gram) -> Result<()> {
         if self.grams.iter().any(|g| g.id == gram.id) {
             return Err(refused(format!(
-                "gram '{}' is already in the chronicle",
+                "chronolexogram '{}' is already in the chronicle",
                 gram.id
             )));
         }
         match self.grams.last() {
             Some(last) if gram.recorded_on < last.recorded_on => Err(refused(format!(
-                "gram '{}' is dated {}, before the last gram of the chronicle ('{}', {}): \
+                "chronolexogram '{}' is dated {}, before the last chronolexogram of the chronicle ('{}', {}): \
                  the chronicle does not go back in time",
                 gram.id, gram.recorded_on, last.id, last.recorded_on
             ))),

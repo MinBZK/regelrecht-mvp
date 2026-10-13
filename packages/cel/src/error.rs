@@ -5,12 +5,12 @@
 pub enum Error {
     /// The law or the chronicle does not give the cell what it needs: two
     /// articles that ask one datum differently, a chronicle line that is no
-    /// gram.
+    /// chronolexogram.
     #[error("setup: {0}")]
     Setup(String),
     /// A request the cell refuses: an article that establishes no
     /// submission, a field the law does not ask, the moment that counts, a
-    /// value of the wrong type, a gram dated before the last.
+    /// value of the wrong type, a chronolexogram dated before the last.
     #[error("refused: {0}")]
     Refused(String),
     /// The engine failed.
