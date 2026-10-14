@@ -133,7 +133,7 @@ input:
 ```
 
 - The cell recognizes the list by its shape: an `array` input without a source, in a policy that fills an open term of the deciding article. There is no configuration.
-- Each row is an earlier decision under art. 13a, with its fields and outputs: `bsn_jongere`, `eerste_verlofdag`, `verlof_verleend`.
+- Each row is an earlier decision of the `BESCHIKKING` item of art. 13a, with its fields and outputs: `bsn_jongere` and `eerste_verlofdag` from the application, `verlof_verleend` from the item's `outputs`.
 - The policy counts a decision that granted leave to the same child, with its first leave day in the same school year (1 August to 31 July). A refusal does not count.
 - The decision records the value in `fields`, like the first lesdag.
 

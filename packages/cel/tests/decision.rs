@@ -252,7 +252,7 @@ articles:
 
 #[test]
 fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article() {
-    let service = service(&[GENERAL_LAW, SPLIT_LAW]);
+    let mut service = service(&[GENERAL_LAW, SPLIT_LAW]);
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     assert_eq!(shape.application, "wet_verlof_fictief#2");
     let mut cell = Cell::in_memory("fictieve_school");
@@ -260,7 +260,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
         .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
         .unwrap();
     let gram = cell
-        .decide(&service, LAW, "1", &app.id, &Map::new(), day())
+        .decide(&mut service, LAW, "1", &app.id, &Map::new(), day())
         .unwrap();
     assert_eq!(gram.refers_to.as_deref(), Some(app.id.as_str()));
     assert_eq!(gram.grondslag, "wet_verlof_fictief#1");

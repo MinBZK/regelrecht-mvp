@@ -7,7 +7,10 @@
 //! for those decisions as a list without a source ([`crate::decision::ChronicleInput`]).
 //!
 //! The cell answers that list and nothing else: one row per decision in its
-//! chronicle under the deciding article, before this one. A row holds the
+//! chronicle of the deciding article's decision item, before this one. An
+//! article has at most one `produces` item per type, so the item is the
+//! gram's `grondslag` and `kind`; the application it decided on asked for
+//! it with `requests`, in this article or another. A row holds the
 //! decision's fields and outputs under their own names, so a policy reads
 //! `$besluit.verlof_verleend` as the law names it. Which decisions count is
 //! the policy's to say, not the cell's.
@@ -30,8 +33,8 @@ use crate::chronicle::Gram;
 use crate::decision::DecisionShape;
 use crate::error::{setup, Result};
 
-/// The earlier decisions in `grams` under the deciding article of `shape`,
-/// as rows: the fields, then the outputs. A name that is both a field and
+/// The earlier decisions in `grams` of the decision item of `shape` (its
+/// type under the deciding article), as rows: the fields, then the outputs. A name that is both a field and
 /// an output with another value is refused: the row would hide one.
 pub fn rows(grams: &[Gram], shape: &DecisionShape) -> Result<Value> {
     let grondslag = shape.grondslag();
@@ -182,6 +185,7 @@ mod tests {
             law_id: "leerplichtwet_1969".into(),
             article: "13a".into(),
             submission_kind: "AANVRAAG".into(),
+            application: "leerplichtwet_1969#13a".into(),
             stages: Vec::new(),
             inputs: Vec::new(),
             chronicle_inputs: Vec::new(),
