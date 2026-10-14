@@ -1310,12 +1310,16 @@ pub fn dangling_bindings(doc: &Value) -> Vec<Finding> {
 }
 
 /// Whether the engine may fire hooks on this entry: only when
-/// `execution.produces` carries a `legal_character` (a hook on a decision) or
-/// a `submission` (a hook on an application, RFC-045).
+/// `execution.produces`, or one of its items when it is a list (schema
+/// v0.8.2), carries a `legal_character` (a hook on a decision) or a
+/// `submission` (a hook on an application, RFC-045).
 fn receives_hook_outputs(mr: &Value) -> bool {
-    mr.get("execution")
-        .and_then(|e| e.get("produces"))
-        .is_some_and(|p| p.get("legal_character").is_some() || p.get("submission").is_some())
+    let attaches = |p: &Value| p.get("legal_character").is_some() || p.get("submission").is_some();
+    match mr.get("execution").and_then(|e| e.get("produces")) {
+        Some(Value::Sequence(items)) => items.iter().any(attaches),
+        Some(p) => attaches(p),
+        None => false,
+    }
 }
 
 // --- traversal helpers -------------------------------------------------
@@ -5727,6 +5731,30 @@ articles:
         produces:
           submission:
             kind: AANVRAAG
+        output:
+          - name: volledig
+        actions:
+          - output: volledig
+            value: $aanvraag_bevat_wat_artikel_4_2_eist
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        assert_eq!(dangling_bindings(&doc), Vec::<Finding>::new());
+    }
+
+    /// The same when `produces` is a list (schema v0.8.2): an item that
+    /// establishes the application is enough.
+    #[test]
+    fn dangling_bindings_accepts_a_hook_output_when_produces_is_a_list() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        produces:
+          - submission:
+              kind: AANVRAAG
+          - legal_character: BESCHIKKING
+            outputs: [volledig]
         output:
           - name: volledig
         actions:

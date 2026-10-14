@@ -602,6 +602,16 @@ export interface SubStructure {
  * Driven off the schema rather than a hand-written list: a new inline-object
  * field appears here on its own once the schema has it.
  */
+/**
+ * The fields of one thing an article produces. `execution.produces` is that
+ * object, or from schema v0.8.2 one of it or a list of them, with the item
+ * under `definitions.producesItem`.
+ */
+function producesItem(): SchemaNode {
+  const produces = defs.machineReadableSection?.properties?.execution?.properties?.produces;
+  return defs.producesItem ?? produces ?? {};
+}
+
 function expandInline(
   owner: SchemaNode,
   pathPrefix: string,
@@ -679,7 +689,13 @@ export function otherSubStructures(): Record<string, SubStructure[]> {
       'enables[].',
       ['for', 'interface'],
     ),
-    execution: expandInline(exec, 'execution.', ['produces']),
+    // `produces` is one object or a list of them (schema v0.8.2); its
+    // fields are those of one item.
+    execution: expandInline(
+      { properties: { produces: { ...producesItem(), description: exec.properties?.produces?.description } } },
+      'execution.',
+      ['produces'],
+    ),
     action: expandInline(defs.action ?? {}, 'action.', ['resolve']),
     hooks: expandInline(
       mrs.properties?.hooks?.items ?? {},
@@ -914,15 +930,13 @@ export function enumBlocks(): EnumBlock[] {
     {
       path: 'machine_readable.execution.produces.legal_character',
       title: 'Legal character',
-      node: defs.machineReadableSection?.properties?.execution?.properties?.produces?.properties
-        ?.legal_character,
+      node: producesItem().properties?.legal_character,
       key: 'legal_character',
     },
     {
       path: 'machine_readable.execution.produces.decision_type',
       title: 'Decision type',
-      node: defs.machineReadableSection?.properties?.execution?.properties?.produces?.properties
-        ?.decision_type,
+      node: producesItem().properties?.decision_type,
       key: 'decision_type',
     },
     {

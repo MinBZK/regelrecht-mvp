@@ -48,6 +48,13 @@ describe('producesBeschikking', () => {
     expect(producesBeschikking(null)).toBe(false);
   });
 
+  it('herkent de beschikking in een lijst van wat een artikel voortbrengt', () => {
+    // Leerplichtwet art. 13a: de aanvraag en het besluit erop (schema v0.8.2).
+    const produces = [{ submission: { kind: 'AANVRAAG' } }, { legal_character: 'BESCHIKKING' }];
+    expect(producesBeschikking(law(produces))).toBe(true);
+    expect(producesBeschikking(law([{ submission: { kind: 'AANVRAAG' } }]))).toBe(false);
+  });
+
   it('kijkt naar alle artikelen, niet alleen het eerste', () => {
     // De Wet op de zorgtoeslag heeft het recht (art. 2) én een vermogenstoets
     // (art. 3); één artikel dat een beschikking geeft, maakt de wet een ingang.

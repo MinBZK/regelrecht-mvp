@@ -543,6 +543,9 @@ impl RuleResolver {
         // RFC-036: an unknown is produced by resolution, never written by a
         // law. Refuse a document that carries the serialized sentinel.
         crate::load_check::reject_unknown_literals(&law)?;
+        // RFC-047: a law that produces several things in one article divides
+        // its outputs over them without ambiguity.
+        crate::load_check::reject_ambiguous_produces(&law)?;
 
         // RFC-036/RFC-037: hold the law to its own declarations before it can
         // run, so the editor sees the same findings as `just validate`. The

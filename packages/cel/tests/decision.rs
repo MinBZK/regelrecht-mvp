@@ -42,8 +42,8 @@ articles:
           - {output: motivering_vereist, value: true}
 "#;
 
-/// Article 1 establishes an application and is the decision on it; the head
-/// judges per case whether the ground applies.
+/// Article 1 establishes an application and decides on it, two things it
+/// produces; the head judges per case whether the ground applies.
 const SPECIAL_LAW: &str = r#"
 $id: wet_verlof_fictief
 regulatory_layer: WET
@@ -59,8 +59,9 @@ articles:
           decided_per_case_by: het hoofd
       execution:
         produces:
-          legal_character: BESCHIKKING
-          submission: {kind: AANVRAAG}
+          - submission: {kind: AANVRAAG}
+          - legal_character: BESCHIKKING
+            outputs: [verlof_verleend]
         parameters:
           - {name: dagen, type: number}
         output:

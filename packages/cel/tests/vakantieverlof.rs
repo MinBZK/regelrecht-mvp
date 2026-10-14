@@ -129,8 +129,9 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
     assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#4:13");
 
     // What the Awb hooks gave. Art. 13a follows the Awb procedure, so
-    // recording the application runs only the hooks on it: its own outputs
-    // are the decision, and no hook on the decision fires yet.
+    // recording the application runs its stage AANVRAAG: the outputs of
+    // art. 13a belong to the decision (`produces`), and no hook on the
+    // decision fires yet.
     assert_eq!(gram.outputs.len(), 2);
     assert_eq!(
         gram.outputs["aanvraag_bevat_wat_artikel_4_2_eist"],

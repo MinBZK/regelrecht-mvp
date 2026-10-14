@@ -102,11 +102,12 @@ pub fn derive(
     let reference = format!("{law_id}#{article}");
     let deciding = article_on(service, law_id, article, day)
         .ok_or_else(|| refused(format!("{reference} has no version in force on {day}")))?;
-    let produces = deciding.get_produces();
-    let kind = produces
+    let decision = deciding.get_decision();
+    let kind = decision
         .and_then(|p| p.legal_character.clone())
         .ok_or_else(|| refused(format!("{reference} takes no decision (legal_character)")))?;
-    let submission_kind = produces
+    let submission_kind = deciding
+        .get_submission()
         .and_then(|p| p.submission.as_ref())
         .map(|s| s.kind.clone())
         .ok_or_else(|| {
@@ -120,15 +121,9 @@ pub fn derive(
         .iter()
         .map(|stage| service.procedure_stage(law_id, article, stage, &date))
         .collect::<std::result::Result<Vec<_>, _>>()?;
-    // The deciding article's own outputs: a hook may read one as a
-    // parameter, and the execution supplies it at every stage.
-    let outputs: Vec<&str> = deciding
-        .get_execution_spec()
-        .and_then(|e| e.output.as_ref())
-        .into_iter()
-        .flatten()
-        .map(|o| o.name.as_str())
-        .collect();
+    // The decision's outputs: a hook may read one as a parameter, and the
+    // execution supplies it at every stage.
+    let outputs: Vec<&str> = decision.map(|d| deciding.outputs_of(d)).unwrap_or_default();
 
     let mut fields: Vec<Field> = Vec::new();
     let mut sources: HashMap<String, Source> = HashMap::new();

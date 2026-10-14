@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
 $id: leerplichtwet_1969
 regulatory_layer: WET
 publication_date: '2022-04-04'
@@ -1004,14 +1004,18 @@ articles:
             Of het gevraagde verlof buiten de schoolvakanties valt (artikel 11,
             onder f).
       execution:
-        # Lid 1: het hoofd verleent verlof "op aanvraag". Dit artikel vestigt
-        # die aanvraag (RFC-045), zodat de Awb erop haakt, en het verlenen of
-        # weigeren is een beschikking (Awb 1:3) die de procedure van de Awb
-        # volgt (RFC-047).
+        # Lid 1: het hoofd verleent verlof "op aanvraag". Dit artikel brengt
+        # twee dingen voort (RFC-047). De aanvraag (RFC-045), waar de Awb op
+        # haakt. En het verlenen of weigeren, een beschikking (Awb 1:3) die de
+        # procedure van de Awb volgt, met de uitvoer die daarbij hoort.
         produces:
-          legal_character: BESCHIKKING
-          submission:
-            kind: AANVRAAG
+          - submission:
+              kind: AANVRAAG
+          - legal_character: BESCHIKKING
+            outputs:
+              - verlofdagen
+              - verlof_raakt_eerste_twee_lesweken
+              - verlof_verleend
         parameters:
           # Alleen de inhoud van de aanvraag. Naam en adres van de aanvrager vraagt Awb 4:2
           # erbij. Wat het hoofd verder nodig heeft om te beslissen, staat bij de open

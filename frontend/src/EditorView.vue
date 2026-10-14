@@ -2,6 +2,7 @@
 import { ref, computed, reactive, watch, watchEffect, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import * as yaml from 'js-yaml';
+import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
 import { useLaw, fetchLaw } from './composables/useLaw.js';
 import { useCorpusLaws } from './composables/useCorpusLaws.js';
 import { useEngine } from './composables/useEngine.js';
@@ -2310,11 +2311,23 @@ function handleSave({ section, key, newKey, index, data }) {
     mr.execution.output.push(data);
   } else if (section === 'produces') {
     if (!mr.execution.produces) mr.execution.produces = {};
-    if (data == null) delete mr.execution.produces[key];
-    else mr.execution.produces[key] = data;
-    // Drop the container once every field is cleared, otherwise the YAML
-    // dump emits a bare `produces: {}` which the schema rejects.
-    if (Object.keys(mr.execution.produces).length === 0) {
+    // In the list form (schema v0.8.2) the fields belong to the decision
+    // item, the one MachineReadable shows; a list without one gets one.
+    const list = Array.isArray(mr.execution.produces) ? mr.execution.produces : null;
+    let target = list ? producedDecision(list) : mr.execution.produces;
+    if (!target) {
+      if (data == null) target = {};
+      else list.push((target = {}));
+    }
+    if (data == null) delete target[key];
+    else target[key] = data;
+    // Drop what every field was cleared from, otherwise the YAML dump emits
+    // a bare `produces: {}` (or an empty item) which the schema rejects.
+    if (list) {
+      const index = list.indexOf(target);
+      if (index >= 0 && Object.keys(target).length === 0) list.splice(index, 1);
+      if (list.length === 0) delete mr.execution.produces;
+    } else if (Object.keys(mr.execution.produces).length === 0) {
       delete mr.execution.produces;
     }
   }

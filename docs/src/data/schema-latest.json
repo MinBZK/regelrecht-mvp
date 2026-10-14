@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.8.1",
+  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.2",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -1852,93 +1852,39 @@
           "description": "The executable logic of this article: what it needs, what it computes and what it yields.",
           "properties": {
             "produces": {
-              "type": "object",
-              "properties": {
-                "legal_character": {
-                  "type": "string",
-                  "enum": [
-                    "BESCHIKKING",
-                    "TOETS",
-                    "WAARDEBEPALING",
-                    "BESLUIT_VAN_ALGEMENE_STREKKING",
-                    "INFORMATIEF",
-                    "RECHTSPOSITIE"
-                  ],
-                  "description": "Legal character of the output. BESCHIKKING: a besluit not of general scope (Awb art. 1:3 lid 2). RECHTSPOSITIE: a legal position of a person that arises by operation of law, without a besluit and without an aanvraag (voting rights, majority, nationality)."
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/producesItem"
                 },
-                "decision_type": {
-                  "type": "string",
-                  "enum": [
-                    "TOEKENNING",
-                    "AFWIJZING",
-                    "GOEDKEURING",
-                    "GEEN_BESLUIT",
-                    "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
-                    "BELEIDSREGEL",
-                    "VOORBEREIDINGSBESLUIT",
-                    "ANDERE_HANDELING",
-                    "AANSLAG"
-                  ],
-                  "description": "The kind of decision this output is, within its legal character. `GEEN_BESLUIT` is the value for an article that establishes a fact rather than deciding anything."
-                },
-                "procedure_id": {
-                  "type": "string",
-                  "description": "Selects a specific AWB procedure variant. When absent, the default procedure for the legal_character is used."
-                },
-                "submission": {
-                  "type": "object",
-                  "required": [
-                    "kind"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "kind": {
-                      "type": "string",
-                      "enum": [
-                        "AANVRAAG"
-                      ],
-                      "description": "What the belanghebbende submits. AANVRAAG: a request to take a decision (Awb 1:3 lid 3)."
-                    }
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/producesItem"
                   },
-                  "description": "The article establishes a submission of a belanghebbende, such as an application (RFC-045). Hooks with applies_to.submission fire when the article runs. When the article also produces a legal_character with a procedure, its outputs are the decision on the submission, and in a staged execution the hooks on the submission fire only at the stage named after the kind, such as AANVRAAG (RFC-047).",
-                  "examples": [
-                    {
+                  "minItems": 1,
+                  "description": "Several things the article yields, each its own item, such as an application (submission) and the decision on it (legal_character) with the outputs that belong to it (RFC-047)."
+                }
+              ],
+              "description": "What executing this article yields in legal terms. One object for an article that yields one thing, the form most laws use. A list when the article yields more than one thing, such as an application and the decision on it, with each item naming its outputs (RFC-047).",
+              "examples": [
+                {
+                  "legal_character": "BESCHIKKING",
+                  "decision_type": "TOEKENNING"
+                },
+                [
+                  {
+                    "submission": {
                       "kind": "AANVRAAG"
                     }
-                  ]
-                },
-                "moment": {
-                  "type": "object",
-                  "required": [
-                    "legal_basis"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "parameter": {
-                      "type": "string",
-                      "description": "The parameter of this article whose value is the moment, such as the date of receipt. Absent when the moment is the one at which a runtime records the fact."
-                    },
-                    "legal_basis": {
-                      "$ref": "#/definitions/legalBasis",
-                      "description": "The provision that says why this moment counts."
-                    }
                   },
-                  "description": "The moment that counts in law for what this article produces (RFC-045), such as the receipt of an application (Awb 4:13 lid 1). Metadata for a process runtime; the engine does not read it.",
-                  "examples": [
-                    {
-                      "parameter": "datum_ontvangst",
-                      "legal_basis": {
-                        "law": "Algemene wet bestuursrecht",
-                        "bwb_id": "BWBR0005537",
-                        "article": "4:13",
-                        "paragraph": "1",
-                        "url": "https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel4:13"
-                      }
-                    }
-                  ]
-                }
-              },
-              "description": "What executing this article yields in legal terms: its legal character, the kind of decision it is, and the procedure that governs it. Not merely annotation: `legal_character` and `decision_type` select which hooks fire, and `legal_character` with `procedure_id` selects the Awb procedure, so an article's outputs and how it runs both depend on what is declared here."
+                  {
+                    "legal_character": "BESCHIKKING",
+                    "outputs": [
+                      "verlof_verleend"
+                    ]
+                  }
+                ]
+              ]
             },
             "parameters": {
               "type": "array",
@@ -2303,6 +2249,104 @@
         "leerplichtwet_1969#13a",
         "kieswet#G 1"
       ]
+    },
+    "producesItem": {
+      "type": "object",
+      "properties": {
+        "legal_character": {
+          "type": "string",
+          "enum": [
+            "BESCHIKKING",
+            "TOETS",
+            "WAARDEBEPALING",
+            "BESLUIT_VAN_ALGEMENE_STREKKING",
+            "INFORMATIEF",
+            "RECHTSPOSITIE"
+          ],
+          "description": "Legal character of the output. BESCHIKKING: a besluit not of general scope (Awb art. 1:3 lid 2). RECHTSPOSITIE: a legal position of a person that arises by operation of law, without a besluit and without an aanvraag (voting rights, majority, nationality)."
+        },
+        "decision_type": {
+          "type": "string",
+          "enum": [
+            "TOEKENNING",
+            "AFWIJZING",
+            "GOEDKEURING",
+            "GEEN_BESLUIT",
+            "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
+            "BELEIDSREGEL",
+            "VOORBEREIDINGSBESLUIT",
+            "ANDERE_HANDELING",
+            "AANSLAG"
+          ],
+          "description": "The kind of decision this output is, within its legal character. `GEEN_BESLUIT` is the value for an article that establishes a fact rather than deciding anything."
+        },
+        "procedure_id": {
+          "type": "string",
+          "description": "Selects a specific AWB procedure variant. When absent, the default procedure for the legal_character is used."
+        },
+        "submission": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "AANVRAAG"
+              ],
+              "description": "What the belanghebbende submits. AANVRAAG: a request to take a decision (Awb 1:3 lid 3)."
+            }
+          },
+          "description": "The article establishes a submission of a belanghebbende, such as an application (RFC-045). Hooks with applies_to.submission fire when the article runs. In a staged execution of an article that follows a procedure, they fire at the stage named after the kind, such as AANVRAAG (RFC-047). An article that establishes the application and also decides on it lists the two as separate items of produces.",
+          "examples": [
+            {
+              "kind": "AANVRAAG"
+            }
+          ]
+        },
+        "moment": {
+          "type": "object",
+          "required": [
+            "legal_basis"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "parameter": {
+              "type": "string",
+              "description": "The parameter of this article whose value is the moment, such as the date of receipt. Absent when the moment is the one at which a runtime records the fact."
+            },
+            "legal_basis": {
+              "$ref": "#/definitions/legalBasis",
+              "description": "The provision that says why this moment counts."
+            }
+          },
+          "description": "The moment that counts in law for what this article produces (RFC-045), such as the receipt of an application (Awb 4:13 lid 1). Metadata for a process runtime; the engine does not read it.",
+          "examples": [
+            {
+              "parameter": "datum_ontvangst",
+              "legal_basis": {
+                "law": "Algemene wet bestuursrecht",
+                "bwb_id": "BWBR0005537",
+                "article": "4:13",
+                "paragraph": "1",
+                "url": "https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel4:13"
+              }
+            }
+          ]
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "The names of this article's outputs that belong to this produced thing, such as the outputs of the decision. Only needed when produces is a list. An item without outputs yields every output that no other item lists. In a staged execution, the stage named after a submission's kind computes the outputs of that submission, and every other stage those of the decision (RFC-047)."
+        }
+      },
+      "description": "One thing that executing this article yields in legal terms: its legal character, the kind of decision it is, the procedure that governs it, or a submission it establishes. Not merely annotation: `legal_character` and `decision_type` select which hooks fire, and `legal_character` with `procedure_id` selects the Awb procedure, so an article's outputs and how it runs both depend on what is declared here."
     }
   }
 }

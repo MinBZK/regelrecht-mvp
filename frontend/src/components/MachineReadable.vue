@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject, ref, toRef, watch, nextTick } from 'vue';
 import { humanize } from '../utils/outputFormat.js';
+import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
 import { useCorpusLaws } from '../composables/useCorpusLaws.js';
 import BreakableName from './BreakableName.vue';
 import RowActionsMenu from './RowActionsMenu.vue';
@@ -103,7 +104,14 @@ const definitions = computed(() => {
   });
 });
 
-const produces = computed(() => execution.value?.produces ?? null);
+// The decision the article produces: the object form itself, or in a list
+// (schema v0.8.2) the item with a legal character. The fields below show and
+// edit that item; EditorView patches the same one.
+const produces = computed(() => {
+  const raw = execution.value?.produces;
+  if (raw == null) return null;
+  return producedDecision(raw) ?? {};
+});
 
 // Enum values copied from the law schema. Keep in sync with
 // schema/latest/schema.json → execution.produces.legal_character.enum

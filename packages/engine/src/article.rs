@@ -25,7 +25,7 @@ pub use regelrecht_law_model::{
     DeclaredProperty, Definition, Execution, HookDeclaration, HookFilter, HookPoint,
     ImplementsDeclaration, Input, LegalBasis, MachineReadable, Marking, MarkingResolution,
     OpenTerm, OpenTermDefault, Output, OverrideDeclaration, Parameter, Placement,
-    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produces,
+    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produces, ProducesList,
     ProvisionReference, ResolveSpec, Source, Stage, StageRequirement, Temporal, TypeSpec,
     UntranslatableEntry,
 };

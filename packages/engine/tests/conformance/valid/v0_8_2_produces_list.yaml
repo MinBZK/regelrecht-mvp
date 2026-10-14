@@ -1,0 +1,34 @@
+---
+# Tier C: an article that produces two things (schema v0.8.2, RFC-047): the
+# application it establishes and the decision on it, with the outputs that
+# belong to the decision.
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+$id: test_conformance_produces_list
+regulatory_layer: WET
+publication_date: '2026-10-14'
+valid_from: '2026-10-14'
+bwb_id: BWBR0099994
+name: Testwet besluit op aanvraag
+url: https://example.invalid/produces-list
+articles:
+  - number: '1'
+    url: https://example.invalid/produces-list/1
+    text: Het hoofd verleent op aanvraag verlof.
+    machine_readable:
+      execution:
+        produces:
+          - submission:
+              kind: AANVRAAG
+          - legal_character: BESCHIKKING
+            decision_type: TOEKENNING
+            outputs:
+              - verlof_verleend
+        parameters:
+          - name: dagen
+            type: number
+        output:
+          - name: verlof_verleend
+            type: boolean
+        actions:
+          - output: verlof_verleend
+            value: true

@@ -122,6 +122,17 @@ describe('MachineReadable', () => {
       expect(opts).toContain('toekenning');
     });
 
+    it('shows the decision of a produces list (schema v0.8.2)', () => {
+      const article = createArticle();
+      article.machine_readable.execution.produces = [
+        { submission: { kind: 'AANVRAAG' } },
+        { legal_character: 'BESCHIKKING', decision_type: 'AFWIJZING', outputs: ['heeft_recht'] },
+      ];
+      const wrapper = mount(MachineReadable, { props: { article, editable: true } });
+      expect(wrapper.find('select[aria-label="Juridische basis"]').element.value).toBe('BESCHIKKING');
+      expect(wrapper.find('select[aria-label="Besluit-type"]').element.value).toBe('AFWIJZING');
+    });
+
     it('shows empty state when no machine_readable', () => {
       const wrapper = mount(MachineReadable, {
         props: { article: { number: '1' }, editable: true },

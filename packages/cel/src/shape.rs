@@ -138,7 +138,7 @@ pub fn derive(
             };
             add_field(&mut shape.fields, field, &reference)?;
         }
-        if let Some(m) = execution.produces.as_ref().and_then(|p| p.moment.as_ref()) {
+        if let Some(m) = found.get_produced().iter().find_map(|p| p.moment.as_ref()) {
             if let Some(other) = &shape.moment {
                 return Err(setup(format!(
                     "{reference}: two articles name the moment that counts ({} and {declared_by})",

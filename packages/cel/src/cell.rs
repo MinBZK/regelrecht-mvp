@@ -117,9 +117,10 @@ impl Cell {
         }
         let date = on.to_string();
         let result = match &shape.stage {
-            // In a procedure, only the hooks on the application run, at its
-            // own stage; the article's outputs are the decision (RFC-047).
-            // A date the stage requires is the day of recording.
+            // In a procedure, the application is recorded at its own stage,
+            // with the outputs that belong to it and the hooks on it; the
+            // decision's outputs wait for the stages of the decision
+            // (RFC-047). A date the stage requires is the day of recording.
             Some(stage) => {
                 let requires = service
                     .procedure_stage(law_id, article, stage, &date)?
@@ -134,7 +135,7 @@ impl Cell {
                     }
                     parameters.entry(req.name).or_insert_with(|| day.clone());
                 }
-                service.execute_stage_at(law_id, article, stage, Some(&[]), parameters, &date)?
+                service.execute_stage_at(law_id, article, stage, None, parameters, &date)?
             }
             None => {
                 let outputs: Vec<&str> = shape.outputs.iter().map(String::as_str).collect();
@@ -233,7 +234,7 @@ impl Cell {
         let date = on.to_string();
         let mut output_values = BTreeMap::new();
         for stage in &shape.stages {
-            // Every stage computes the article's outputs, so a hook at a
+            // Every stage computes the decision's outputs, so a hook at a
             // later stage can read them; they are the same at each.
             let result = service.execute_stage_at(
                 law_id,

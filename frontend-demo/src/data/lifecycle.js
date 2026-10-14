@@ -26,16 +26,19 @@
  * het moment door de fase beschreven.
  */
 
+import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
+
 /**
  * Of een burger of bedrijf deze regeling kan aanvragen. Een beschikking wel,
  * een aanslag niet: die legt de overheid op (Claudia's precario, de IB), ook al
  * is het een beschikking. Tegel en aanvraag vragen het hier, zodat niet de ene
  * knop het weet en de andere niet.
  *
- * @param {{legal_character?: string, decision_type?: string}|null} produces
+ * @param {object|object[]|null} produces `execution.produces`, in either form
  */
 export function canBeApplied(produces) {
-  return produces?.legal_character === 'BESCHIKKING' && produces?.decision_type !== 'AANSLAG';
+  const decision = producedDecision(produces);
+  return decision?.legal_character === 'BESCHIKKING' && decision?.decision_type !== 'AANSLAG';
 }
 
 /**

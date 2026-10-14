@@ -13,12 +13,12 @@ This page owns the field-level detail, down to which operands each operation tak
 
 ## Current Version
 
-The current schema version is **v0.8.1**.
+The current schema version is **v0.8.2**.
 
 Schema URLs use immutable git tags to guarantee reproducibility. The format is:
 
 ```
-https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
+https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
 ```
 
 The tag `schema-vX.Y.Z` is created when a schema version is released. Using tags instead of `refs/heads/main` ensures that the schema a version of a rulework references can never change underneath it. See [RFC-013](/rfcs/rfc-013) for the rationale.
@@ -31,6 +31,7 @@ This table is the single source of truth for which schema version introduced whi
 
 | Version | Introduces | RFC |
 |---------|-----------|-----|
+| v0.8.2 | `execution.produces` may be a list of produced things instead of one object, such as an application (`submission`) and the decision on it (`legal_character`). An item names the outputs that belong to it with `outputs`; an item without `outputs` yields the outputs no other item lists. In a staged execution the stage named after a submission's kind computes that submission's outputs, every other stage the decision's. The object form is unchanged, so a file valid under v0.8.1 is valid under v0.8.2 unchanged | [RFC-047](/rfcs/rfc-047) |
 | v0.8.1 | Descriptions only. An article that establishes a submission and also produces a `legal_character` with a procedure is the decision on that submission; in a staged execution the hooks on the submission fire at the stage named after its kind (`AANVRAAG`). An open term with `decided_per_case_by` that no implementation fills takes the authority's judgement for the case from the execution. No keyword that affects validation changed, so a file valid under v0.8.0 is valid under v0.8.1 unchanged | [RFC-047](/rfcs/rfc-047) |
 | v0.8.0 | `produces.submission` (`kind: AANVRAAG`): the article establishes an application. `produces.moment`: the moment that counts in law, with a `legal_basis` citation of the provision behind it. A hook applies to a decision (`legal_character`) or to a submission (`submission`, optionally narrowed with `established_by`), not both. Additive: a file valid under v0.7.1 is valid under v0.8.0 unchanged | [RFC-045](/rfcs/rfc-045) |
 | v0.7.1 | Descriptions only: six field descriptions said the Rust law-model drops or cannot read a field it does read (`endpoint`, `requires`, `references`, `resolve` and `legal_basis` on an action, and the preamble's `machine_readable`); they now say what the model and the engine do with it. No keyword that affects validation changed, so a file valid under v0.7.0 is valid under v0.7.1 unchanged | [RFC-040](/rfcs/rfc-040) |

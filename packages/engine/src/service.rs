@@ -139,6 +139,23 @@ struct ResolutionContext<'a> {
     staged_article: Option<(String, String)>,
 }
 
+/// The outputs `article` computes at stage `stage` of its procedure
+/// (RFC-047). For an article that produces several things, such as an
+/// application and the decision on it: those of the submission whose kind
+/// names the stage, and at every other stage those of the decision. `None`,
+/// every output, for an article that produces one thing.
+fn outputs_at_stage<'a>(article: &'a Article, stage: &str) -> Option<Vec<&'a str>> {
+    if !article.produces_several() {
+        return None;
+    }
+    let item = article
+        .get_produced()
+        .iter()
+        .find(|p| p.submission.as_ref().is_some_and(|s| s.kind == stage))
+        .or_else(|| article.get_decision())?;
+    Some(article.outputs_of(item))
+}
+
 /// Parse the calculation date, rejecting malformed input: an unparseable date
 /// must not silently bypass `valid_from`/`valid_to` version selection (RFC-019).
 fn parse_calculation_date(calculation_date: &str) -> Result<NaiveDate> {
@@ -759,7 +776,7 @@ fn rule_reads(article: &Article, output: &str) -> BTreeSet<String> {
     let declared: BTreeSet<String> = declared_parameter_names(article).collect();
     let passes_parameters_on = article.get_inputs().iter().any(|i| i.source.is_some())
         || article.get_open_terms().is_some_and(|t| !t.is_empty())
-        || article.get_produces().is_some();
+        || !article.get_produced().is_empty();
     if passes_parameters_on {
         return declared;
     }
@@ -1762,7 +1779,7 @@ impl LawExecutionService {
         let ref_date = Some(parse_calculation_date(calculation_date)?);
         let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
         let Some(kind) = article
-            .get_produces()
+            .get_submission()
             .and_then(|p| p.submission.as_ref())
             .map(|s| s.kind.clone())
         else {
@@ -1835,8 +1852,11 @@ impl LawExecutionService {
     /// decision at the stage BESLUIT.
     ///
     /// `outputs` are the outputs of the article to compute, as for
-    /// [`Self::evaluate_law`]; `None` computes all of them, and an empty list
-    /// none, so only the hooks run. Fails when the article follows no
+    /// [`Self::evaluate_law`], and an empty list none, so only the hooks run.
+    /// `None` computes what the stage is about: every output, or for an
+    /// article that produces several things the outputs of the submission
+    /// the stage is named after, and at any other stage those of the
+    /// decision (RFC-047). Fails when the article follows no
     /// procedure, its procedure has no stage `stage_name`, or a value the
     /// stage requires is not among `parameters`.
     pub fn execute_stage_at(
@@ -1868,11 +1888,14 @@ impl LawExecutionService {
         res_ctx.contextual_law_id = Some(law_id.to_string());
         res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
         self.note_declaration_versions(&mut res_ctx);
+        let outputs = outputs
+            .map(<[&str]>::to_vec)
+            .or_else(|| outputs_at_stage(article, &stage.name));
         let mut result = self.evaluate_article_with_service(
             article,
             law,
             parameters,
-            outputs,
+            outputs.as_deref(),
             &stage.name,
             &mut res_ctx,
         )?;
@@ -1958,7 +1981,7 @@ impl LawExecutionService {
         law_id: &str,
         article: &Article,
     ) -> Result<Option<&ProcedureDefinition>> {
-        let produces = article.get_produces();
+        let produces = article.get_decision();
         let procedure_id = produces.and_then(|p| p.procedure_id.as_deref());
         let Some(lc) = produces.and_then(|p| p.legal_character.as_deref()) else {
             return Ok(None);
@@ -2119,28 +2142,17 @@ impl LawExecutionService {
         res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
         self.note_declaration_versions(&mut res_ctx);
 
-        // At the stage named after the submission the article establishes
-        // (RFC-047), only the hooks on that submission run: an article that
-        // is both application and decision decides at a later stage, with
-        // what that stage requires. This is what `execute_stage_at` does with
-        // `Some(&[])`. Any other stage accumulates every output for the
-        // stages after it.
-        let establishes_submission_here = article
-            .get_produces()
-            .and_then(|p| p.submission.as_ref())
-            .is_some_and(|s| s.kind == stage.name);
-        let stage_outputs: Option<&[&str]> = if establishes_submission_here {
-            Some(&[])
-        } else {
-            None
-        };
+        // A stage accumulates the outputs it computes for the stages after
+        // it: every output, or for an article that produces several things
+        // those of the thing this stage is about (RFC-047).
+        let stage_outputs = outputs_at_stage(article, &stage.name);
 
         // Execute the article with stage-aware hook firing.
         let result = self.evaluate_article_with_service(
             article,
             law,
             stage_params,
-            stage_outputs,
+            stage_outputs.as_deref(),
             &stage.name,
             &mut res_ctx,
         )?;
@@ -2500,19 +2512,19 @@ impl LawExecutionService {
         stage: &str,
         staged: bool,
     ) -> Vec<&HookEntry> {
-        let Some(produces) = article.get_produces() else {
-            return Vec::new();
-        };
-        let mut hooks = match produces.legal_character.as_deref() {
-            Some(lc) => {
-                self.resolver
-                    .find_hooks(hook_point, lc, produces.decision_type.as_deref(), stage)
-            }
+        let decision = article.get_decision();
+        let mut hooks = match decision.and_then(|d| d.legal_character.as_deref()) {
+            Some(lc) => self.resolver.find_hooks(
+                hook_point,
+                lc,
+                decision.and_then(|d| d.decision_type.as_deref()),
+                stage,
+            ),
             None => Vec::new(),
         };
-        if let Some(submission) = produces
-            .submission
-            .as_ref()
+        if let Some(submission) = article
+            .get_submission()
+            .and_then(|p| p.submission.as_ref())
             .filter(|s| !staged || s.kind == stage)
         {
             for h in self.resolver.find_submission_hooks(
@@ -2552,10 +2564,13 @@ impl LawExecutionService {
         String,
         Vec<std::result::Result<FireableHook<'s>, DeclarationNotInForce>>,
     )> {
-        let produces = article.get_produces()?;
-        let legal_character = produces.legal_character.as_deref();
-        let decision_type = produces.decision_type.as_deref();
-        let kind = produces.submission.as_ref().map(|s| s.kind.as_str());
+        let decision = article.get_decision();
+        let legal_character = decision.and_then(|p| p.legal_character.as_deref());
+        let decision_type = decision.and_then(|p| p.decision_type.as_deref());
+        let kind = article
+            .get_submission()
+            .and_then(|p| p.submission.as_ref())
+            .map(|s| s.kind.as_str());
         // What the hooks fire on, as the trace names it ("BESCHIKKING stage
         // BESLUIT") and as the record of a hook not in force names it
         // ("... at stage BESLUIT").

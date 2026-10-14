@@ -58,8 +58,8 @@ articles:
           - {output: motivering_vereist, value: true}
 "#;
 
-/// Article 1 establishes an application and is the decision on it; the
-/// head judges per case whether the ground applies.
+/// Article 1 establishes an application and decides on it, two things it
+/// produces; the head judges per case whether the ground applies.
 const SPECIAL_LAW: &str = r#"
 $id: wet_verlof
 regulatory_layer: WET
@@ -75,8 +75,9 @@ articles:
           decided_per_case_by: het hoofd
       execution:
         produces:
-          legal_character: BESCHIKKING
-          submission: {kind: AANVRAAG}
+          - submission: {kind: AANVRAAG}
+          - legal_character: BESCHIKKING
+            outputs: [verlof_verleend]
         parameters:
           - {name: dagen, type: number}
         output:
@@ -163,7 +164,7 @@ fn the_application_stage_fires_only_the_hooks_on_the_application() {
             "wet_verlof",
             "1",
             "AANVRAAG",
-            Some(&[]),
+            None,
             params(&[
                 ("dagen", Value::Int(5)),
                 ("naam_aanvrager", Value::String("J. Jansen".into())),
@@ -172,9 +173,37 @@ fn the_application_stage_fires_only_the_hooks_on_the_application() {
             DAY,
         )
         .unwrap();
-    // No output of the article itself, and no hook on the decision: the
-    // judgement is not asked yet.
+    // Only the outputs of the application, none here, and no hook on the
+    // decision: the judgement is not asked yet.
     assert_eq!(names(&result), ["naam_gegeven"]);
+}
+
+/// The object form of `produces` names one thing, so every stage computes
+/// every output, as before the list form existed (schema v0.8.2).
+#[test]
+fn an_article_that_produces_one_thing_computes_every_output_at_every_stage() {
+    let one_thing = SPECIAL_LAW.replace(
+        "          - submission: {kind: AANVRAAG}\n          - legal_character: BESCHIKKING\n            outputs: [verlof_verleend]\n",
+        "          legal_character: BESCHIKKING\n          submission: {kind: AANVRAAG}\n",
+    );
+    assert_ne!(one_thing, SPECIAL_LAW, "the fixture names the list form");
+    let service = service(&[GENERAL_LAW, &one_thing]);
+    let result = service
+        .execute_stage_at(
+            "wet_verlof",
+            "1",
+            "AANVRAAG",
+            None,
+            params(&[
+                ("dagen", Value::Int(5)),
+                ("naam_aanvrager", Value::String("J. Jansen".into())),
+                ("aanvraag_datum", date(DAY)),
+                ("grond_aanwezig", Value::Bool(true)),
+            ]),
+            DAY,
+        )
+        .unwrap();
+    assert_eq!(names(&result), ["naam_gegeven", "verlof_verleend"]);
 }
 
 #[test]
@@ -400,8 +429,8 @@ fn a_regulation_silent_for_the_case_leaves_the_norm_to_the_judgement() {
 #[test]
 fn walking_the_procedure_asks_the_judgement_only_at_the_decision() {
     let service = service(&[GENERAL_LAW, SPECIAL_LAW]);
-    // At AANVRAAG only the hooks on the application run: no judgement, and
-    // no output of the article itself.
+    // At AANVRAAG the application runs with the hooks on it: no judgement,
+    // and no output of the decision.
     let outcome = service
         .execute_stage(
             "wet_verlof",

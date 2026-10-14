@@ -8,6 +8,12 @@
 //! included. A law that wrote one would put an invented provenance into an
 //! outcome, so the loader walks every literal in the definitions and the
 //! actions and refuses the document.
+//!
+//! An article that produces several things (schema v0.8.2) divides its
+//! outputs over them. The loader refuses a list that names an output the
+//! article lacks, gives one output to two items, or has two decisions or two
+//! submissions, since the engine would then not know which one a stage is
+//! about (RFC-047).
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
@@ -45,6 +51,50 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
                     return Err(unknown_literal(law, &article.number, where_));
                 }
             }
+        }
+    }
+    Ok(())
+}
+
+/// Refuse an article whose `produces` list does not divide its outputs over
+/// one decision and one submission at most (schema v0.8.2, RFC-047).
+pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
+    for article in &law.articles {
+        let produced = article.get_produced();
+        let refuse = |why: String| {
+            Err(EngineError::LoadError(format!(
+                "law '{}': article {} {why} (RFC-047)",
+                law.id, article.number
+            )))
+        };
+        for (what, count) in [
+            (
+                "decisions (legal_character)",
+                produced
+                    .iter()
+                    .filter(|p| p.legal_character.is_some())
+                    .count(),
+            ),
+            (
+                "submissions",
+                produced.iter().filter(|p| p.submission.is_some()).count(),
+            ),
+        ] {
+            if count > 1 {
+                return refuse(format!("produces {count} {what}; it may produce one"));
+            }
+        }
+        let mut listed: Vec<&str> = Vec::new();
+        for name in produced.iter().filter_map(|p| p.outputs.as_ref()).flatten() {
+            if !article.has_output(name) {
+                return refuse(format!(
+                    "lists output '{name}' under produces, but declares no such output"
+                ));
+            }
+            if listed.contains(&name.as_str()) {
+                return refuse(format!("gives output '{name}' to two things it produces"));
+            }
+            listed.push(name);
         }
     }
     Ok(())
@@ -227,6 +277,66 @@ articles:
             matches!(err, EngineError::LoadError(_)) && err.to_string().contains("RFC-036"),
             "{case}: got {err:?}"
         );
+    }
+
+    /// An article with `produces` as a list, with `items` spliced in.
+    fn law_producing(items: &str) -> String {
+        format!(
+            r#"
+$id: lijst
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: t
+    machine_readable:
+      execution:
+        produces:
+{items}
+        output:
+          - name: x
+            type: boolean
+        actions:
+          - output: x
+            value: true
+"#
+        )
+    }
+
+    #[test]
+    fn a_produces_list_that_divides_the_outputs_loads() {
+        let yaml = law_producing(
+            "          - submission: {kind: AANVRAAG}\n          - legal_character: BESCHIKKING\n            outputs: [x]",
+        );
+        let mut service = LawExecutionService::new();
+        service.load_law(&yaml).expect("a well-divided list loads");
+    }
+
+    #[test]
+    fn a_produces_list_must_divide_the_outputs_unambiguously() {
+        for (items, why) in [
+            (
+                "          - legal_character: BESCHIKKING\n            outputs: [y]",
+                "lists output 'y' under produces",
+            ),
+            (
+                "          - submission: {kind: AANVRAAG}\n            outputs: [x]\n          - legal_character: BESCHIKKING\n            outputs: [x]",
+                "gives output 'x' to two things",
+            ),
+            (
+                "          - legal_character: BESCHIKKING\n          - legal_character: TOETS",
+                "produces 2 decisions",
+            ),
+        ] {
+            let mut service = LawExecutionService::new();
+            let err = service
+                .load_law(&law_producing(items))
+                .expect_err("an ambiguous list must not load");
+            assert!(
+                matches!(err, EngineError::LoadError(_)) && err.to_string().contains(why),
+                "{why}: got {err:?}"
+            );
+        }
     }
 
     /// Not an Unknown: a sentinel without a usable `missing` list stays a
