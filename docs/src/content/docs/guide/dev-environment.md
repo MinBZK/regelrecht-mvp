@@ -138,7 +138,7 @@ CORPUS_REGISTRY_LOCAL_PATH=../corpus-registry.local.yaml
 The create-traject form then offers "Lokale map: Monorepo corpus" next to
 GitHub, selected by default. In such a traject:
 
-- The "Bewerkt" list in the library is what `git status` reports under the
+- The library section "In dit traject" is what `git status` reports under the
   directory. Outside a git repository the list stays empty.
 - Every traject that writes to the same directory shares its files. Use a
   GitHub traject when work has to stay apart.
