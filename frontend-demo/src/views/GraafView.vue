@@ -244,11 +244,17 @@ function fitAll() {
   refit();
 }
 // vue-flow's fit-view-on-init runs before the nodes exist (the corpus arrives
-// async); refit whenever the set of laws changes.
-watch(() => [shownLaws.value.map((l) => l.id).join(), !!focus.value], async () => {
-  await nextTick();
-  refit();
-});
+// async); refit whenever the set of laws changes, and when the profile puts a
+// law in focus. A law the viewer clicks is selected where it is: zooming out
+// to the whole picture made exactly that law unreadable.
+watch(
+  () => [shownLaws.value.map((l) => l.id).join(), !!focus.value],
+  async ([ids], old) => {
+    await nextTick();
+    if (old && ids === old[0] && !focusFromProfile.value) return;
+    refit();
+  },
+);
 
 const focusLaw = computed(() => (focus.value ? corpus.value?.lawById(focus.value) : null));
 const uses = computed(() => (focus.value ? graph.value.edges.filter((e) => e.data.from === focus.value).map((e) => corpus.value.lawById(e.data.to)) : []));
