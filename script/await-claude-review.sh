@@ -167,8 +167,14 @@ while :; do
   status=''
   [ -n "$job" ] && status=$(jq -r '.status // ""' <<<"$job" 2>/dev/null)
 
+  # Vlak na het afronden geeft de jobs-API een job soms nog zonder stappen;
+  # een paar seconden later staan ze er wel. Zonder stappen is het bewijs nog
+  # niet te lezen, dus dat telt als nog niet klaar en niet als een job zonder
+  # bewijsstap.
   if [ "$status" = "completed" ]; then
-    break
+    steps_pending=$(jq -r '(has("steps") | not) or (.steps == [])' <<<"$job" 2>/dev/null)
+    [ "$steps_pending" != "true" ] && break
+    status='completed, nog zonder stappen'
   fi
 
   if [ "$(date +%s)" -ge "$deadline" ]; then
@@ -177,6 +183,9 @@ while :; do
     fi
     if [ -z "$job" ]; then
       blocked "Na ${MAX_WAIT_SECONDS}s zit er geen job \`${JOB_NAME}\` in workflow-run ${RUN_ID}. De review is niet gestart; start de hele workflow opnieuw via de Actions-tab (\"Re-run all jobs\")."
+    fi
+    if [ "$status" = 'completed, nog zonder stappen' ]; then
+      blocked "\`${JOB_NAME}\` is afgerond, maar na ${MAX_WAIT_SECONDS}s geeft de jobs-API nog geen stappen, dus het bewijs dat er gereviewd is valt niet te lezen. Dat is geen uitspraak over de review zelf; draai deze job opnieuw. $(jq -r '.html_url // ""' <<<"$job")"
     fi
     blocked "Na ${MAX_WAIT_SECONDS}s is \`${JOB_NAME}\` nog niet klaar (status \`${status}\`). Draai deze job opnieuw zodra de review af is."
   fi
