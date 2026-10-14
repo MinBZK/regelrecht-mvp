@@ -691,7 +691,7 @@ mod tests {
     fn foreach_over(body: ActionValue, combine: Option<CombineOp>) -> ActionOperation {
         ActionOperation::Foreach {
             collection: var("items"),
-            as_name: "x".to_string(),
+            as_name: Some("x".to_string()),
             body,
             filter: None,
             combine,
@@ -742,7 +742,7 @@ mod tests {
 
         let in_collection = ActionOperation::Foreach {
             collection: bad.clone(),
-            as_name: "x".to_string(),
+            as_name: Some("x".to_string()),
             body: lit(1i64),
             filter: None,
             combine: Some(CombineOp::Add),
@@ -754,7 +754,7 @@ mod tests {
 
         let in_filter = ActionOperation::Foreach {
             collection: var("items"),
-            as_name: "x".to_string(),
+            as_name: Some("x".to_string()),
             body: lit(1i64),
             filter: Some(bad),
             combine: Some(CombineOp::Add),

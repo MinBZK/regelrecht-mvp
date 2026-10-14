@@ -10,7 +10,7 @@
 //! so the walk goes through [`crate::article::ActionOperation::operands`], which is exhaustive
 //! over the operation variants.
 
-use crate::article::{Action, ActionOperation, ActionValue, Article};
+use crate::article::{foreach_binding, Action, ActionOperation, ActionValue, Article};
 use crate::types::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -169,11 +169,13 @@ pub(crate) fn reference_base(reference: &str) -> Option<&str> {
 }
 
 /// Every `$name` an action refers to, by its base name. A name a FOREACH
-/// binds (`as`) is its element inside `body` and `filter`, not a reference to
-/// an output or input of that name. The fields of an object element, which a
-/// FOREACH also exposes as bare names, are not known here and still count:
-/// that over-includes, which is safe for the closure, but a field named like
-/// an output that reads the FOREACH's own output is reported as a cycle.
+/// binds (`as`, or `item` without it) is its element inside `body` and
+/// `filter`, not a reference to an output or input of that name. A FOREACH
+/// without `as` also exposes the fields of an object element as bare names;
+/// those are not known here and still count: that over-includes, which is
+/// safe for the closure, but a field named like an output that reads the
+/// FOREACH's own output is reported as a cycle. With `as` no field is bound
+/// by its own name (RFC-049), so every other bare name is a real reference.
 pub(crate) fn referenced_names(action: &Action) -> BTreeSet<String> {
     let mut names = BTreeSet::new();
     action
@@ -195,7 +197,7 @@ fn visit_value(value: &ActionValue, bound: &BTreeSet<&str>, names: &mut BTreeSet
             } => {
                 visit_value(collection, bound, names);
                 let mut inner = bound.clone();
-                inner.insert(as_name.as_str());
+                inner.insert(foreach_binding(as_name.as_deref()));
                 std::iter::once(body)
                     .chain(filter)
                     .for_each(|operand| visit_value(operand, &inner, names));
