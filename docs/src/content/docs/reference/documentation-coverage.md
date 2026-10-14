@@ -57,6 +57,7 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-047 | The decision on the application (stages, `decided_per_case_by`, `Cell::decide`) | [Chronolexography](../concepts/chronolexography#the-decision-on-the-application), [Schema](./schema) |
 | RFC-048 | A cell reads its chronicle back through a reduction (`REDUCTIE`, `source: {decisions}`, `reading`) | [Chronolexography](../concepts/chronolexography#once-per-school-year) |
 | RFC-049 | FOREACH with `as` binds only its name | [Collections](../concepts/collections#the-element-binding) |
+| RFC-050 | The objection is a second submission (`BEZWAAR`, `record_objection`, `decide_on_objection`) | [Chronolexography](../concepts/chronolexography#the-objection), [Schema](./schema) |
 
 ## Backlog
 
