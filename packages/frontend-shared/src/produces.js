@@ -9,7 +9,7 @@
  */
 
 /** The submission kinds a list item's `type` can name; any other is a legal character. */
-export const SUBMISSION_KINDS = ['AANVRAAG'];
+export const SUBMISSION_KINDS = ['AANVRAAG', 'BEZWAAR'];
 
 /** Every produced item, in the order written: one for the object form. */
 export function producedItems(produces) {
