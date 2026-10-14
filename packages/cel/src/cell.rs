@@ -235,22 +235,15 @@ impl Cell {
             .iter()
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
-        let rows = reading::rows(self.grams(), &shape)?;
-        let bound = reading::bind(
-            service,
-            &self.recording_actor,
-            &shape.chronicle_inputs,
-            &rows,
-        )?;
-        let ran = run_stages(
-            service,
+        let bound = reading::bind(service, &self.recording_actor, &shape, self.grams())?;
+        let output_values = run_stages(
+            &bound,
             &shape,
             parameters,
             on,
             &mut fields,
-        );
-        reading::unbind(service, &bound);
-        let output_values = ran?;
+        )?;
+        drop(bound);
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),

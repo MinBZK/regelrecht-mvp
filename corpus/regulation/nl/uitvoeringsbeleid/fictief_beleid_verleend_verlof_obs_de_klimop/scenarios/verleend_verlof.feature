@@ -55,3 +55,10 @@ Feature: Eerder verleend vakantieverlof bij OBS De Klimop
       | 999990019   | 2026-08-01       | true            |
     When I evaluate "verlof_al_verleend_in_schooljaar" of "fictief_beleid_verleend_verlof_obs_de_klimop"
     Then output "verlof_al_verleend_in_schooljaar" is true
+
+  Scenario: Verlof op 31 juli hoort nog bij het schooljaar dat eindigt
+    Given parameter "eerdere_besluiten" is the collection:
+      | bsn_jongere | eerste_verlofdag | verlof_verleend |
+      | 999990019   | 2027-07-31       | true            |
+    When I evaluate "verlof_al_verleend_in_schooljaar" of "fictief_beleid_verleend_verlof_obs_de_klimop"
+    Then output "verlof_al_verleend_in_schooljaar" is true
