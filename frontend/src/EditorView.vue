@@ -42,6 +42,7 @@ import ActionSheet from './components/ActionSheet.vue';
 import EditSheet from './components/EditSheet.vue';
 import SearchPopover from './components/SearchPopover.vue';
 import MachineReadable from './components/MachineReadable.vue';
+import RegelRijmPane from './regelrijm/RegelRijmPane.vue';
 import MachineEmptyState from './components/MachineEmptyState.vue';
 import ScenarioBuilder from './components/ScenarioBuilder.vue';
 import ExecutionTraceView from './components/ExecutionTraceView.vue';
@@ -127,6 +128,8 @@ const { isEnabled } = useFeatureFlags();
 const VIEW_DEFINITIONS = [
   { id: 'text', flag: 'panel.article_text', label: 'Tekst' },
   { id: 'machine', flag: 'panel.machine_readable', label: 'Machine' },
+  // RFC-054: the rules of the article as readable text. Experimental.
+  { id: 'regelrijm', flag: 'panel.regelrijm', label: 'RegelRijm' },
   { id: 'scenario', flag: 'panel.scenario_form', label: "Scenario's" },
   { id: 'yaml', flag: 'panel.yaml_editor', label: 'YAML' },
   { id: 'notes', flag: 'panel.notes', label: 'Notities' },
@@ -2522,6 +2525,18 @@ function handleAddAction() {
   activeAction.value = newAction;
 }
 
+// A name in the RegelRijm pane that another article computes: go there, the
+// way a deep link does (the route watcher switches law or article).
+function handleRegelRijmNavigate({
+  lawId: targetLaw,
+  articleNumber,
+}: {
+  lawId: string;
+  articleNumber: string;
+}) {
+  router.push(editorRouteFor(targetLaw, articleNumber));
+}
+
 function handleOpenAction(action: ExecutionAction) {
   actionSnapshot = JSON.stringify(machineReadable.value);
   activeActionIsNew.value = false;
@@ -3258,6 +3273,18 @@ async function handleActionSave() {
                   @save="handleMachineReadableSave"
                   @patch="handleSave"
                   @delete="handleDelete"
+                />
+              </nldd-simple-section>
+
+              <!-- RegelRijm (RFC-054, experimental) -->
+              <nldd-simple-section v-else-if="view === 'regelrijm'" width="full">
+                <RegelRijmPane
+                  :article="editedArticle"
+                  :law="law"
+                  :law-id="lawId"
+                  :traject-ref="activeTrajectRef"
+                  @open-action="handleOpenAction"
+                  @navigate="handleRegelRijmNavigate"
                 />
               </nldd-simple-section>
 
