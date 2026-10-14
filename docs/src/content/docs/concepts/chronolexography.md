@@ -89,18 +89,12 @@ The head of the school decides on the application. Art. 13a is also that decisio
     "specifieke_aard_beroep_ouder": true,
     "verlof_valt_buiten_schoolvakanties": true
   },
-  "field_source": {
-    "eerste_verlofdag": { "from": "application" },
-    "eerste_lesdag_schooljaar": { "from": "policy" },
-    "specifieke_aard_beroep_ouder": { "from": "caller" },
-    "verlof_valt_buiten_schoolvakanties": { "from": "caller" }
-  },
   "outputs": { "verlofdagen": 5, "verlof_verleend": true, "bezwaartermijn_weken": 6 }
 }
 ```
 
 - Each hook fires at its own stage: Awb 4:2 and 4:13 at AANVRAAG, Awb 3:46 and 6:7 at BESLUIT, 6:8 at BEKENDMAKING.
-- What the decision needs comes from the application first, then from the school's policy (`implements`), then from the head when deciding (`decided_per_case_by`). `field_source` records which. The chronolexogram repeats no basis per field or output: that follows from the law on `recorded_on`.
+- What the decision needs comes from the application first, then from the school's policy (`implements`), then from the head when deciding (`decided_per_case_by`). The chronolexogram repeats neither the basis nor the source of a field or output: both follow from the law on `recorded_on` and from `refers_to`.
 - The test: at most ten school days (Monday to Friday), not in the first two lesweken, and the two facts of art. 11 onder f: a parent's profession of a specific nature, and leave outside the school holidays. The head judges both. A refusal is `verlof_verleend: false`.
 - The cell refuses a second decision on one application, and a decision dated before it. It makes the decision known on the day it takes it, so Awb 6:8 counts the objection period from there; that is the cell's assumption.
 - Not modeled yet: "eenmaal per schooljaar", and the proportional share for a young person who is kwalificatieplichtig (lid 2, second sentence).

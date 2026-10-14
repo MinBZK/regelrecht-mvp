@@ -376,21 +376,17 @@ fn five_school_days_outside_the_first_two_weeks_on_the_ground_of_11f_are_granted
     // what rests on which provision follows from the law on `recorded_on`.
     let json = serde_json::to_value(&gram).unwrap();
     assert!(json.get("field_basis").is_none() && json.get("output_basis").is_none());
+    // Nor where each value came from: that follows from the law and
+    // `refers_to`, so there is no `field_source`.
+    assert!(json.get("field_source").is_none());
 
-    // Where each value came from.
+    // The values the decision used.
     assert_eq!(gram.fields["eerste_verlofdag"], json!("2027-02-01"));
-    assert_eq!(gram.field_source["eerste_verlofdag"], Source::Application);
     assert_eq!(gram.fields["eerste_lesdag_schooljaar"], json!("2026-08-31"));
-    assert_eq!(
-        gram.field_source["eerste_lesdag_schooljaar"],
-        Source::Policy
-    );
     for judged in [PROFESSION, OUTSIDE_HOLIDAYS] {
         assert_eq!(gram.fields[judged], json!(true), "{judged}");
-        assert_eq!(gram.field_source[judged], Source::Caller, "{judged}");
     }
     assert_eq!(gram.fields["besluit_datum"], json!("2026-10-20"));
-    assert_eq!(gram.field_source["besluit_datum"], Source::Cell);
     // What the application holds and the decision does not ask stays in
     // the application gram.
     assert!(!gram.fields.contains_key("naam_aanvrager"));

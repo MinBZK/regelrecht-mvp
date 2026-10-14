@@ -146,7 +146,6 @@ fn where_the_regulation_is_silent_the_judgement_decides() {
     let gram = decide(&service, 5, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     assert_eq!(gram.fields["grond_aanwezig"], json!(false));
-    assert_eq!(gram.field_source["grond_aanwezig"], Source::Caller);
 
     // Without the judgement, nothing decides the norm for this case.
     let e = decide(&service, 5, json!({})).unwrap_err();
@@ -162,12 +161,10 @@ fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
     let gram = decide(&service, 2, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
-    assert_eq!(gram.field_source["grond_aanwezig"], Source::Policy);
 
     // The judgement may be left out.
     let gram = decide(&service, 2, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
-    assert_eq!(gram.field_source["grond_aanwezig"], Source::Policy);
 }
 
 #[test]

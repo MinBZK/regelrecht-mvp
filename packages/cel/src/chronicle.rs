@@ -14,7 +14,6 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::decision::Source;
 use crate::error::{refused, setup, Result};
 
 /// A chronolexogram (`Gram` for short): one recorded application, or the
@@ -54,12 +53,6 @@ pub struct Gram {
     /// incomplete application is still recorded (Awb 4:5).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub missing: Vec<String>,
-    /// For a decision, per field where its value comes from: the
-    /// application, the recording actor's policy, the deciding authority or
-    /// the cell (RFC-047). That is no part of the law, so the chronolexogram
-    /// records it. Empty for an application: the applicant supplied it all.
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub field_source: BTreeMap<String, Source>,
     /// What executing the establishing article gave: its own outputs and
     /// those of the hooks on the submission, such as the last day of the
     /// decision period (Awb 4:13).

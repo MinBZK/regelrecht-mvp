@@ -154,7 +154,6 @@ impl Cell {
             moment,
             fields,
             missing,
-            field_source: BTreeMap::new(),
             outputs: output_values,
         };
         Ok(self.chronicle.append(gram)?.clone())
@@ -189,7 +188,6 @@ impl Cell {
         // application that lacks what the decision needs (Awb 4:5) is not
         // decided on here: the cell does not guess the value.
         let mut fields = BTreeMap::new();
-        let mut field_source = BTreeMap::new();
         for input in &shape.inputs {
             let name = &input.field.name;
             let value = match &input.source {
@@ -226,7 +224,6 @@ impl Cell {
             if let Some(value) = value {
                 fields.insert(name.clone(), value);
             }
-            field_source.insert(name.clone(), input.source.clone());
         }
 
         let parameters: BTreeMap<String, Value> = fields
@@ -258,13 +255,10 @@ impl Cell {
                         fields.insert(name.clone(), value);
                     }
                     // A judgement on a term a regulation also fills: the
-                    // gram takes what the engine used. A value other than
-                    // the judgement came from the regulation, which the
-                    // engine prefers. Where the two agree, the gram names
-                    // the judgement (RFC-047).
-                    Source::Caller if input.policy_first && supplied.get(name) != Some(&value) => {
+                    // gram takes what the engine used, which is the
+                    // regulation's value where it fills the term (RFC-047).
+                    Source::Caller if input.policy_first => {
                         fields.insert(name.clone(), value);
-                        field_source.insert(name.clone(), Source::Policy);
                     }
                     _ => {}
                 }
@@ -280,7 +274,6 @@ impl Cell {
             moment: None,
             fields,
             missing: Vec::new(),
-            field_source,
             outputs: output_values,
         };
         Ok(self.chronicle.append(gram)?.clone())

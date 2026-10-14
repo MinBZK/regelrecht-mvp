@@ -10,9 +10,8 @@
 //! run, and appends one chronolexogram to the chronicle ([`chronicle`]).
 //!
 //! The decision on an application is a second chronolexogram ([`decision`],
-//! RFC-047). It refers to the application, and per field it says where the
-//! value comes from: the application, the recording actor's policy, the
-//! deciding authority or the cell. Reading the chronicle back through policy
+//! RFC-047). It refers to the application; where each value comes from
+//! follows from the law and that reference. Reading the chronicle back through policy
 //! and objections are later slices.
 
 pub mod cell;
