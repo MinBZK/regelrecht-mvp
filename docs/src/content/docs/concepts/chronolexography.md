@@ -7,6 +7,33 @@ Chronolexography records each legal fact (an application, a decision, an objecti
 
 The running example is vakantieverlof: a parent asks the head of a school for leave outside the school holidays (Leerplichtwet 1969, art. 13a).
 
+## How the parts fit together
+
+| Part | What it is | Where |
+|---|---|---|
+| Law | Art. 13a (the application, the decision and its test); Awb 4:2, 4:13, 3:46, 6:7 and 6:8 as hooks | `corpus/regulation/` |
+| Policy | Fictitious school policy: the first school day (`implements`) and the bounds of a school year | `corpus/regulation/nl/uitvoeringsbeleid/` |
+| Reduction | "Did the head already grant leave this school year?", over the school's own decisions | `corpus/cells/obs_de_klimop/reducties/` |
+| Engine | Executes articles: hooks per stage, cross-law sources, open terms, data sources. Stores nothing | `packages/engine` |
+| Cell | The school: keeps the chronicle, derives what it records, executes through the engine | `packages/cel` |
+
+**Recording the application** (`Cell::record_submission`):
+
+1. The parent supplies the fields: the child, the leave days, name and address.
+2. The cell takes the fields from the law: the parameters of the `AANVRAAG` item and of the Awb hooks on it.
+3. The engine runs art. 13a at stage AANVRAAG. Awb 4:2 says whether the application is complete, Awb 4:13 gives the decision period.
+4. The cell appends one chronolexogram of kind `AANVRAAG`.
+
+**Taking the decision** (`Cell::decide`):
+
+1. The cell finds the application through `requests: leerplichtwet_1969#13a`.
+2. It gathers each input of the decision by name: from the application, from policy (`implements`), from a reduction of its own, or from the head (the two judgements under art. 11 onder f).
+3. For the reduction, the cell binds its own decisions to `source: {decisions: leerplichtwet_1969#13a}`. The engine runs the reduction, which asks the school policy for the bounds of the school year and returns one answer.
+4. The engine runs art. 13a at stages BESLUIT and BEKENDMAKING: the test, and Awb 3:46, 6:7 and 6:8.
+5. The cell appends a chronolexogram of kind `BESCHIKKING` that refers to the application.
+
+Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. The cell connects the parts by name and keeps the record. The engine only executes.
+
 ## What works
 
 | Feature | Rulework | RFC |
