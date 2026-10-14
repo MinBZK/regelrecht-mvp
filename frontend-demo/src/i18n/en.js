@@ -966,6 +966,7 @@ export default {
   'walkthrough.invite.wait.title': 'Go ahead',
   'walkthrough.invite.wait.body': 'Take your time. Press Continue to resume the walkthrough.',
   'walkthrough.phone': 'The walkthrough plays along in the real demo, and that does not fit on a small screen. Open it on a laptop or another large screen.',
+  'walkthrough.restoring': 'Putting the demo back',
   'walkthrough.ai_voice': "The voice in the chapters is generated with AI, from the presenter's own voice.",
   'recorder.mic.label': 'Microphone',
   'recorder.mic.test': 'Test microphone',

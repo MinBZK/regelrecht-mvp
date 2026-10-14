@@ -181,6 +181,9 @@ onUnmounted(() => {
     <span v-for="r in replay.ripples" :key="r.id" class="ripple" :style="{ left: `${r.x}px`, top: `${r.y}px` }" aria-hidden="true"></span>
 
     <p v-if="cue" class="caption" lang="nl" aria-hidden="true">{{ cue.text }}</p>
+    <div v-if="replay.restoring" class="restoring">
+      <nldd-activity-indicator show-text :text="t('walkthrough.restoring')" timing="instant" size="48"></nldd-activity-indicator>
+    </div>
     </div>
 
     <nldd-sheet ref="sheet" placement="right" width="560px" :accessible-label="t('walkthrough.transcript.title')" @close="transcript.open = false">
@@ -281,6 +284,18 @@ onUnmounted(() => {
     transform: scale(1.4);
     opacity: 0;
   }
+}
+/* While a jump puts the demo back: the demo is covered, the rail is not. */
+.restoring {
+  position: fixed;
+  inset: 0 0 0 36vw;
+  display: grid;
+  place-items: center;
+  background: var(--semantics-surfaces-base-background-color);
+  pointer-events: auto;
+}
+.overlay.full .restoring {
+  inset: 0;
 }
 .caption {
   position: fixed;

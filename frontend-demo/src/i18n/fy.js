@@ -861,6 +861,7 @@ export default {
   "walkthrough.invite.wait.title": "Gean dyn gong",
   "walkthrough.invite.wait.body": "Sjoch rêstich om. Druk op Fierder om fierder te gean mei de rûnlieding.",
   "walkthrough.phone": "De rûnlieding spilet de echte demo mei, en dat past net op in lyts skerm. Iepenje him op in laptop of in oar grut skerm.",
+  "walkthrough.restoring": "De demo wurdt weromset",
   "walkthrough.ai_voice": "De stim yn de haadstikken is makke mei AI, op basis fan de stim fan de presintator.",
   "recorder.mic.label": "Mikrofoan",
   "recorder.mic.test": "Mikrofoan teste",

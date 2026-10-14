@@ -987,6 +987,7 @@ export default {
   'walkthrough.invite.wait.title': 'Ga je gang',
   'walkthrough.invite.wait.body': 'Kijk rustig rond. Druk op Verder om de rondleiding te hervatten.',
   'walkthrough.phone': 'De rondleiding speelt de echte demo mee, en dat past niet op een klein scherm. Open hem op een laptop of een ander groot scherm.',
+  'walkthrough.restoring': 'De demo wordt teruggezet',
   'walkthrough.ai_voice': 'De stem in de hoofdstukken is gegenereerd met AI, op basis van de stem van de presentator.',
   'recorder.mic.label': 'Microfoon',
   'recorder.mic.test': 'Microfoon testen',

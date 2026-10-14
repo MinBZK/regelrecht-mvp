@@ -42,6 +42,8 @@ export const replay = reactive({
   waiting: false,
   /** The viewer clicked along; play restores the recorded state first. */
   diverged: false,
+  /** A jump is putting the demo back; the replay's fast catch-up is covered. */
+  restoring: false,
   faq: null,
   cues: [],
   cursor: { x: 0, y: 0, visible: false },
@@ -507,6 +509,12 @@ export async function seek(t, { play: playAfter = replay.playing, careful = fals
   replay.cursor.visible = false;
   let i = 0;
   const target = Math.max(0, Math.min(track.duration, t));
+  // A jump that takes a moment replays the chapter's clicks at speed, which
+  // looks like the demo going every which way. Cover it after a beat, so a
+  // quick jump does not flash.
+  const cover = setTimeout(() => {
+    if (seeking === token) replay.restoring = true;
+  }, 250);
   try {
     // A chapter written after recording has no snapshot of its own: start
     // from the last one that has, and replay through to the target.
@@ -545,8 +553,12 @@ export async function seek(t, { play: playAfter = replay.playing, careful = fals
       else if (gap > 1.5 && (e.type === 'click' || e.type === 'key' || e.type === 'change')) await sleep(400);
     }
   } finally {
+    clearTimeout(cover);
     if (busyOwner === token) busyOwner = null;
-    if (seeking === token) seeking = null;
+    if (seeking === token) {
+      seeking = null;
+      replay.restoring = false;
+    }
   }
   if (!still(token)) return;
   next = i;

@@ -675,6 +675,7 @@ export default {
   "walkthrough.play": "e7ed",
   "walkthrough.prev_chapter": "4209",
   "walkthrough.progress_at": "768d",
+  "walkthrough.restoring": "9a8b",
   "walkthrough.speed": "900d",
   "walkthrough.transcript.close": "dc80",
   "walkthrough.transcript.open": "05c4",

@@ -169,6 +169,13 @@ anders in de vertaling voor, dus er is ook geen eerdere keuze om op te leunen.
 - **`profiles.claudia.portal_tab_label`** staat nu op `Myn oerheid`, gelijk
   aan dat van Merijn.
 
+## 8. De opgenomen rondleiding
+
+- **`walkthrough.restoring`** staat op `De demo wurdt weromset` ("De demo
+  wordt teruggezet", terwijl de speler na het rondklikken de stand
+  terugzet). Of `weromsette` hier het gangbare werkwoord is, is niet
+  nagekeken.
+
 ## Hoe je een correctie doorvoert
 
 De schermteksten staan in `frontend-demo/src/i18n/fy.js`, één sleutel per regel.
