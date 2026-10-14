@@ -226,13 +226,21 @@ fn only_a_reduction_reads_decisions() {
 
 #[test]
 fn decisions_stand_alone_and_name_an_article() {
-    refused(
-        &variant(
-            "decisions: leerplichtwet_1969#13a",
-            "decisions: leerplichtwet_1969#13a\n              regulation: leerplichtwet_1969",
-        ),
-        "no regulation, output, parameters or endpoint",
-    );
+    // Each narrowing key on its own is refused, not only in company.
+    for narrowing in [
+        "regulation: leerplichtwet_1969",
+        "output: verlof_verleend",
+        "parameters:\n                bsn_jongere: $bsn_jongere",
+        "endpoint: verlof",
+    ] {
+        refused(
+            &variant(
+                "decisions: leerplichtwet_1969#13a",
+                &format!("decisions: leerplichtwet_1969#13a\n              {narrowing}"),
+            ),
+            "no regulation, output, parameters or endpoint",
+        );
+    }
     refused(
         &variant(
             "decisions: leerplichtwet_1969#13a",
