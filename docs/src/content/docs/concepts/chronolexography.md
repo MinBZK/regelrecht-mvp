@@ -14,7 +14,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | [The application, with the Awb on it](#the-application-with-the-awb-on-it) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-045](/rfcs/rfc-045) |
 | [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046): chronolexography as a layer |
 | [The decision on the application](#the-decision-on-the-application) | Leerplichtwet 1969 art. 13a, Awb 3:46, 6:7 and 6:8, fictitious school policy | [RFC-047](/rfcs/rfc-047) |
-| [Once per school year](#once-per-school-year) | Leerplichtwet 1969 art. 13a lid 2, fictitious school policy | [RFC-048](/rfcs/rfc-048) |
+| [Once per school year](#once-per-school-year) | Leerplichtwet 1969 art. 13a lid 2, fictitious school policy, the school's reduction | [RFC-048](/rfcs/rfc-048) |
 
 ## The application, with the Awb on it
 
@@ -120,21 +120,36 @@ The cell records the decision as a second chronolexogram that refers to the appl
 
 ## Once per school year
 
-The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for it as an open term, `verlof_al_verleend_in_schooljaar`. An article of the school's fictitious policy fills it by reading the head's earlier decisions back. The cell supplies those decisions from its chronicle.
+The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for it as an open term, `verlof_al_verleend_in_schooljaar`. The school's fictitious policy fills it from the leave the head granted. Who supplies that list, the policy does not say.
 
 ```yaml
 # fictief_beleid_verleend_verlof_obs_de_klimop, article 1
 implements:
   - {law: leerplichtwet_1969, article: 13a, open_term: verlof_al_verleend_in_schooljaar}
 input:
-  - name: eerdere_besluiten
+  - name: verleende_verloven
     type: array
     source: {}
 ```
 
-- The cell recognizes the list by its shape: an `array` input without a source, in a policy that fills an open term of the deciding article. There is no configuration.
-- Each row is an earlier decision of the `BESCHIKKING` item of art. 13a, with its fields and outputs: `bsn_jongere` and `eerste_verlofdag` from the application, `verlof_verleend` from the item's `outputs`.
-- The policy counts a decision that granted leave to the same child, with its first leave day in the same school year (1 August to 31 July). A refusal does not count.
+In a cell, the list comes from a reduction: rulework of the kind `REDUCTIE`, kept with the cell at `corpus/cells/obs_de_klimop/reducties/`. It reads the decisions taken under art. 13a and keeps the ones that granted leave.
+
+```yaml
+# reductie_verleende_verloven, article 1
+input:
+  - name: besluiten
+    type: array
+    source:
+      decisions: leerplichtwet_1969#13a
+output:
+  - name: verleende_verloven
+    type: array
+```
+
+- Each decision is a row with its fields and outputs: `bsn_jongere` and `eerste_verlofdag` from the application, `verlof_verleend` from the item's `outputs`. The reduction leaves out a refusal.
+- The cell connects the two by name: a reduction output `verleende_verloven` answers the policy's input of that name, for that policy and for one decision.
+- The policy counts granted leave of the same child with its first leave day in the same school year (1 August to 31 July).
+- Only a reduction reads `decisions`, only a data source answers it, and a reduction does not act on law (no `implements`, `hooks` or `overrides`). It lives outside `corpus/regulation`, so the corpus loaders do not load it; `just validate` does check it.
 - The decision records the value in `fields`, like the first lesdag.
 
-**Try it:** `just bdd`, which runs `verleend_verlof.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`
+**Try it:** `just bdd`, which runs `verleend_verlof.feature` next to the policy with the list supplied by the scenario, or `cargo test --manifest-path packages/cel/Cargo.toml`

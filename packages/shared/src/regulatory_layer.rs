@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 /// Types of regulatory documents in Dutch law.
 ///
-/// Aligned with schema v0.5.2 regulatory_layer enum.
+/// Aligned with schema v0.8.2 regulatory_layer enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum RegulatoryLayer {
     /// Constitutional law (Grondwet).
@@ -62,6 +62,12 @@ pub enum RegulatoryLayer {
     /// Water board ordinance (Waterschapsverordening).
     #[serde(rename = "WATERSCHAPS_VERORDENING")]
     WaterschapsVerordening,
+
+    /// No regulation: a reduction of a cell over its own chronicle (RFC-022
+    /// §4, RFC-048). It is kept with its cell, not in the corpus of
+    /// regulations, and fills no open term.
+    #[serde(rename = "REDUCTIE")]
+    Reductie,
 }
 
 impl RegulatoryLayer {
@@ -82,6 +88,7 @@ impl RegulatoryLayer {
             Self::GemeentelijkeVerordening => "GEMEENTELIJKE_VERORDENING",
             Self::ProvincialeVerordening => "PROVINCIALE_VERORDENING",
             Self::WaterschapsVerordening => "WATERSCHAPS_VERORDENING",
+            Self::Reductie => "REDUCTIE",
         }
     }
 
@@ -100,6 +107,7 @@ impl RegulatoryLayer {
         Self::GemeentelijkeVerordening,
         Self::ProvincialeVerordening,
         Self::WaterschapsVerordening,
+        Self::Reductie,
     ];
 
     /// Parse a layer from the string form used in YAML/JSON (e.g. "AMVB").
@@ -128,6 +136,7 @@ impl RegulatoryLayer {
             Self::GemeentelijkeVerordening => "gemeentelijke_verordening",
             Self::ProvincialeVerordening => "provinciale_verordening",
             Self::WaterschapsVerordening => "waterschaps_verordening",
+            Self::Reductie => "reducties",
         }
     }
 }
@@ -213,6 +222,16 @@ mod tests {
             RegulatoryLayer::WaterschapsVerordening.as_dir_name(),
             "waterschaps_verordening"
         );
+    }
+
+    #[test]
+    fn test_reductie_is_a_layer_of_its_own() {
+        assert_eq!(
+            RegulatoryLayer::from_yaml_str("REDUCTIE"),
+            Some(RegulatoryLayer::Reductie)
+        );
+        assert_eq!(RegulatoryLayer::Reductie.as_str(), "REDUCTIE");
+        assert_eq!(RegulatoryLayer::Reductie.as_dir_name(), "reducties");
     }
 
     #[test]

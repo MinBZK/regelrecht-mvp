@@ -55,7 +55,7 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-045 | The application as something the Awb hooks onto (`submission`, `moment`) | [Chronolexography](../concepts/chronolexography#the-application-with-the-awb-on-it), [Schema](./schema) |
 | RFC-046 | Chronolexography is an optional layer on RegelRecht (`packages/cel`) | [Chronolexography](../concepts/chronolexography#the-application-in-the-chronicle), [Architecture](../guide/architecture) |
 | RFC-047 | The decision on the application (stages, `decided_per_case_by`, `Cell::decide`) | [Chronolexography](../concepts/chronolexography#the-decision-on-the-application), [Schema](./schema) |
-| RFC-048 | Reading the chronicle back is policy of the recording actor (`source: {}` list, `reading`) | [Chronolexography](../concepts/chronolexography#once-per-school-year) |
+| RFC-048 | A cell reads its chronicle back through a reduction (`REDUCTIE`, `source: {decisions}`, `reading`) | [Chronolexography](../concepts/chronolexography#once-per-school-year) |
 | RFC-049 | FOREACH with `as` binds only its name | [Collections](../concepts/collections#the-element-binding) |
 
 ## Backlog

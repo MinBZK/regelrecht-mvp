@@ -8,11 +8,11 @@ Feature: De aanvraag om vakantieverlof, met de Awb erop
   Background:
     Given the calculation date is "2026-10-13"
     Given law "algemene_wet_bestuursrecht" is loaded
-    # Het hoofd nam nog geen besluit op een aanvraag van deze jongere
-    # (artikel 13a, tweede lid: eenmaal per schooljaar).
+    # Het hoofd verleende deze jongere nog geen verlof (artikel 13a, tweede
+    # lid: eenmaal per schooljaar).
     Given the following "OBS De Klimop" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
-      | bsn_jongere | eerdere_besluiten |
-      | 999990019   | []                |
+      | bsn_jongere | verleende_verloven |
+      | 999990019   | []                 |
 
   Scenario: Een volledige aanvraag geeft de velden van 4:2 en de beslistermijn van 4:13
     Given the following parameters:

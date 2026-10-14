@@ -47,6 +47,9 @@ pub fn layer_rank(layer: &RegulatoryLayer) -> u8 {
         RegulatoryLayer::GemeentelijkeVerordening => 10,
         RegulatoryLayer::Beleidsregel => 11,
         RegulatoryLayer::Uitvoeringsbeleid => 12,
+        // No regulation (RFC-048): a reduction fills no open term, the loader
+        // refuses one that tries, so it never meets a candidate to rank.
+        RegulatoryLayer::Reductie => 13,
     }
 }
 

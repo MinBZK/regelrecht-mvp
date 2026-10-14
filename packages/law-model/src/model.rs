@@ -130,6 +130,8 @@ pub struct TypeSpec {
 /// Defines where an input value comes from. Can be:
 /// - Simple regulation reference: `regulation: "other_law"` + `output: "field_name"`
 /// - Same-law reference: `output: "field_name"` (resolved within the same law)
+/// - The decisions taken under an article: `decisions: "<regulation>#<article>"`
+///   (schema v0.8.2, RFC-048), only in a `REDUCTIE`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
     /// Simple cross-law reference (law ID)
@@ -148,6 +150,18 @@ pub struct Source {
     /// Human-readable description or legal reference for this data source
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// The decisions taken under this article, `<regulation>#<article>`
+    /// (schema v0.8.2, RFC-048): a list with one row per decision. Only a
+    /// data source answers it, such as the cell that holds the decisions in
+    /// its chronicle, or the caller with a parameter of that name; no
+    /// regulation is executed for it. Only a rulework
+    /// with `regulatory_layer: REDUCTIE` may read it.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_article_reference"
+    )]
+    pub decisions: Option<String>,
 }
 
 /// Parameter definition in execution spec

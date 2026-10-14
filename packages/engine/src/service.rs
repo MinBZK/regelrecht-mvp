@@ -4271,6 +4271,22 @@ impl LawExecutionService {
             return Ok(Some(data_match.value));
         }
 
+        // The decisions taken under an article (RFC-048): only a data source
+        // answers them, such as the cell that holds them in its chronicle.
+        // No regulation is executed for them, and no source is no empty
+        // list: a reduction over decisions nobody supplied would say that
+        // none were taken.
+        if let Some(decisions) = &source.decisions {
+            let _guard = res_ctx.trace_guard(&input.name, PathNodeType::Resolve);
+            let message = format!(
+                "input '{}' of {} reads the decisions taken under {decisions}, and no data \
+                 source supplies them",
+                input.name, law.id
+            );
+            res_ctx.trace_set_message(message.clone());
+            return Err(EngineError::DataSourceError(message));
+        }
+
         // For cross-law resolution, output defaults to input name
         let output_name = source.output.as_deref().unwrap_or(&input.name);
 

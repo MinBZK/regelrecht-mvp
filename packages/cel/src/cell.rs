@@ -13,15 +13,16 @@ use serde_json::Map;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
-use crate::reading;
+use crate::reading::{self, Reduction};
 use crate::shape::{self, Shape};
 
-/// A cell. It holds who it is and its chronicle, not the law: every call
-/// that needs the law gets the service that executes it.
+/// A cell. It holds who it is, its chronicle and its reductions, not the
+/// law: every call that needs the law gets the service that executes it.
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
     chronicle: Chronicle,
+    reductions: Vec<Reduction>,
 }
 
 impl Cell {
@@ -44,6 +45,7 @@ impl Cell {
         Ok(Self {
             recording_actor,
             chronicle,
+            reductions: Vec::new(),
         })
     }
 
@@ -52,7 +54,50 @@ impl Cell {
         Self {
             recording_actor: recording_actor.into(),
             chronicle: Chronicle::in_memory(),
+            reductions: Vec::new(),
         }
+    }
+
+    /// The cell with the reductions in its directory `dir`, one version per
+    /// file at `<dir>/reducties/<id>/<valid_from>.yaml` (RFC-048). A file
+    /// that is no `REDUCTIE`, or whose `$id` is not its directory's name, is
+    /// an error. Without a `reducties` directory the cell has none.
+    pub fn with_reductions(mut self, dir: impl AsRef<Path>) -> Result<Self> {
+        let root = dir.as_ref().join("reducties");
+        if !root.is_dir() {
+            return Ok(self);
+        }
+        let mut paths = Vec::new();
+        for entry in std::fs::read_dir(&root)? {
+            let id_dir = entry?.path();
+            if !id_dir.is_dir() {
+                continue;
+            }
+            for version in std::fs::read_dir(&id_dir)? {
+                let path = version?.path();
+                if path.extension().is_some_and(|x| x == "yaml") {
+                    paths.push(path);
+                }
+            }
+        }
+        paths.sort();
+        for path in paths {
+            let reduction = Reduction::parse(std::fs::read_to_string(&path)?)
+                .map_err(|e| setup(format!("{}: {e}", path.display())))?;
+            let named = path
+                .parent()
+                .and_then(Path::file_name)
+                .is_some_and(|name| name == reduction.id());
+            if !named {
+                return Err(setup(format!(
+                    "{}: the reduction '{}' is not in a directory of that name",
+                    path.display(),
+                    reduction.id()
+                )));
+            }
+            self.reductions.push(reduction);
+        }
+        Ok(self)
     }
 
     pub fn recording_actor(&self) -> &str {
@@ -165,10 +210,11 @@ impl Cell {
     /// recorded as chronolexogram `application`, on `on` (RFC-047).
     ///
     /// What the decision asks comes from the application, the holder's
-    /// policy and the cell ([`decision::derive`]). A policy that reads the
-    /// chronicle back gets this cell's earlier decisions under the article
-    /// ([`reading`], RFC-048); the service holds them as a data source
-    /// during the decision only. `supplied` holds what the
+    /// policy and the cell ([`decision::derive`]). A policy input without a
+    /// source that one of the cell's reductions yields gets what the
+    /// reduction makes of the chronicle ([`reading`], RFC-048); the service
+    /// holds the reductions and their answers during the decision only.
+    /// `supplied` holds what the
     /// deciding authority supplies itself, such as a judgement the law
     /// leaves to it per case. The cell refuses an application that is not
     /// in its chronicle or not one of this article, one already decided on,
@@ -235,7 +281,14 @@ impl Cell {
             .iter()
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
-        let bound = reading::bind(service, &self.recording_actor, &shape, self.grams())?;
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            &shape,
+            self.grams(),
+            &self.reductions,
+            on,
+        )?;
         let output_values = run_stages(&bound, &shape, parameters, on, &mut fields)?;
         drop(bound);
         let gram = Gram {

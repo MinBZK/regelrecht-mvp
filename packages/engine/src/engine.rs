@@ -365,6 +365,17 @@ impl<'a> ArticleEngine<'a> {
                     });
                 }
             }
+            // The decisions taken under an article come from a data source
+            // only (RFC-048); this engine has none, so they must be passed.
+            if let Some(decisions) = &source.decisions {
+                if !parameters.contains_key(&input.name) {
+                    return Err(EngineError::DataSourceError(format!(
+                        "input '{}' reads the decisions taken under {decisions}, and no data \
+                         source supplies them",
+                        input.name
+                    )));
+                }
+            }
             // Internal (`source.output`) and empty (`source: {}`) inputs need no
             // action here: resolved by the service when present in parameters,
             // otherwise intentionally left unresolved.

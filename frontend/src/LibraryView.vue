@@ -1274,6 +1274,7 @@ const REGULATORY_LAYER_LABELS = {
   GEMEENTELIJKE_VERORDENING: 'Gemeentelijke verordening',
   PROVINCIALE_VERORDENING: 'Provinciale verordening',
   WATERSCHAPS_VERORDENING: 'Waterschapsverordening',
+  REDUCTIE: 'Reductie',
 };
 
 function formatLawDate(value) {
