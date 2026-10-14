@@ -47,12 +47,12 @@ Feature: Het bezwaar en de beslissing erop
 
   Scenario: Een bezwaarschrift na het einde van de termijn is niet ontvankelijk
     # Ontvangen op de dag na de laatste dag van de termijn. Artikel 6:11
-    # (verschoonbare termijnoverschrijding) is niet gemodelleerd.
+    # (verschoonbare termijnoverschrijding) is niet gemodelleerd. Er vindt
+    # geen heroverweging plaats (lid 1), dus er is geen oordeel over.
     Given the following parameters:
       | datum_ontvangst_bezwaarschrift | 2026-12-02 |
       | bezwaartermijn_einddatum       | 2026-12-01 |
       | bezwaarschrift_tijdig_ingediend | false     |
-      | heroverweging_geeft_aanleiding_tot_herroeping | true |
     When I evaluate "bestreden_besluit_herroepen" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "bezwaarschrift_tijdig_ingediend" is false

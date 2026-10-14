@@ -488,8 +488,9 @@ pub struct Produces {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Submission {
-    /// The kind of submission, as the law names it: `AANVRAAG` (Awb 1:3 lid
-    /// 3).
+    /// The kind of submission, as the law names it: one of
+    /// [`SUBMISSION_KINDS`], `AANVRAAG` (Awb 1:3 lid 3) or `BEZWAAR` (Awb 1:5
+    /// lid 1).
     pub kind: String,
 }
 

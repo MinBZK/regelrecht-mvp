@@ -127,16 +127,19 @@ impl Cell {
         on: NaiveDate,
     ) -> Result<Gram> {
         let shape = shape::derive(service, law_id, article, on)?;
-        if let Some((law, number)) = shape.requests.as_deref().and_then(|r| r.split_once('#')) {
-            let asked = decision::derive(service, law, number, on)?;
-            if asked.outputs.iter().any(|o| o == decision::REVOKES) {
-                return Err(refused(format!(
-                    "the {} of {} asks for a decision on a contested decision; it is recorded \
-                     with `record_objection`",
-                    shape.kind,
-                    shape.grondslag()
-                )));
-            }
+        // Read from the law, not derived: an application whose decision
+        // cannot be derived on this day is still an application.
+        if shape
+            .requests
+            .as_deref()
+            .is_some_and(|r| decision::decides_on_objection(service, r, on))
+        {
+            return Err(refused(format!(
+                "the {} of {} asks for a decision on a contested decision; it is recorded \
+                 with `record_objection`",
+                shape.kind,
+                shape.grondslag()
+            )));
         }
         check_supplied(&shape, supplied, &[], &[])?;
         self.record(service, &shape, supplied, Filled::default(), on)
@@ -309,14 +312,21 @@ impl Cell {
         on: NaiveDate,
         inputs: impl FnOnce(&Bound<'_>) -> Result<Values>,
     ) -> Result<(Values, Values)> {
+        // Leaving out one decision changes no other row: whether a decision
+        // was revoked follows from the objections against it.
+        let grams: Vec<Gram> = self
+            .grams()
+            .iter()
+            .filter(|g| except != Some(g.id.as_str()))
+            .cloned()
+            .collect();
         let bound = reading::bind(
             service,
             &self.recording_actor,
             shape,
             supplied,
-            self.grams(),
+            &grams,
             &self.reductions,
-            except,
             on,
         )?;
         let mut fields = inputs(&bound)?;

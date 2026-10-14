@@ -73,18 +73,18 @@ impl Reduction {
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
 /// whose legal character is `kind`, as rows: the fields, then the outputs,
-/// then [`REVOKES`]: whether a decision on an objection revoked it.
-/// `except` leaves one out, such as the decision under heroverweging. A name
-/// that is both a field and an output with another value is refused: the
-/// row would hide one. So is a decision that holds [`REVOKES`] itself.
-pub fn rows(grams: &[Gram], grondslag: &str, kind: &str, except: Option<&str>) -> Result<Value> {
+/// then [`REVOKES`]: whether a decision on an objection revoked it. A
+/// decision on an objection holds [`REVOKES`] itself and keeps it: it can
+/// never be revoked, as no objection lies against it (Awb 7:1 lid 1 onder
+/// a). A name that is both a field and an output with another value is
+/// refused: the row would hide one. So is another decision that holds
+/// [`REVOKES`] itself.
+pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     let mut rows = Vec::new();
-    for gram in grams.iter().filter(|g| {
-        g.refers_to.is_some()
-            && g.kind == kind
-            && g.grondslag == grondslag
-            && except != Some(g.id.as_str())
-    }) {
+    for gram in grams
+        .iter()
+        .filter(|g| g.refers_to.is_some() && g.kind == kind && g.grondslag == grondslag)
+    {
         let mut row: Map<String, serde_json::Value> = gram.fields.clone().into_iter().collect();
         for (name, value) in &gram.outputs {
             match row.get(name) {
@@ -100,6 +100,10 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str, except: Option<&str>) -
                 }
             }
         }
+        if gram.outputs.contains_key(REVOKES) && refers_to_objection(grams, gram) {
+            rows.push(serde_json::Value::Object(row));
+            continue;
+        }
         if row.contains_key(REVOKES) {
             return Err(setup(format!(
                 "chronolexogram '{}' holds '{REVOKES}' itself; its row says with that name whether \
@@ -112,6 +116,15 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str, except: Option<&str>) -
         rows.push(serde_json::Value::Object(row));
     }
     Ok(Value::from(serde_json::Value::Array(rows)))
+}
+
+/// Whether `gram` refers to an objection: a chronolexogram that itself
+/// refers to a decision.
+fn refers_to_objection(grams: &[Gram], gram: &Gram) -> bool {
+    grams
+        .iter()
+        .find(|g| gram.refers_to.as_deref() == Some(g.id.as_str()))
+        .is_some_and(|objection| objection.refers_to.is_some())
 }
 
 /// The decision on an objection against `decision` that revoked it: a
@@ -137,8 +150,8 @@ struct Answer {
 
 /// Bind the reductions of the cell for a decision of `shape` on `day`,
 /// until the returned guard drops: each reduction that yields an input of
-/// the decision reads the decisions in `grams`, without `except` (see
-/// [`rows`]). [`Bound::answer`] runs them.
+/// the decision reads the decisions in `grams` (see [`rows`]).
+/// [`Bound::answer`] runs them.
 ///
 /// Refused, before a reduction runs: two reductions that yield one input,
 /// an output of another type than the input, an input that the
@@ -147,9 +160,6 @@ struct Answer {
 /// another data source that already answers the decisions for a reduction
 /// (the cell would shadow it without a word). A source scoped to another
 /// law does not answer for them.
-// The decision, what it is supplied, the chronicle and the day: each is
-// its own input, and bundling them would only hide that.
-#[allow(clippy::too_many_arguments)]
 pub fn bind<'a>(
     service: &'a mut LawExecutionService,
     recording_actor: &str,
@@ -157,7 +167,6 @@ pub fn bind<'a>(
     supplied: &Map<String, serde_json::Value>,
     grams: &[Gram],
     reductions: &[Reduction],
-    except: Option<&str>,
     day: NaiveDate,
 ) -> Result<Bound<'a>> {
     let mut bound = Bound {
@@ -185,7 +194,7 @@ pub fn bind<'a>(
         for (input, decisions) in decision_inputs(&bound, &id, day) {
             refuse_shadowing(&bound, &input, &id, recording_actor)?;
             let kind = decision_kind(&bound, &decisions, day)?;
-            let value = rows(grams, &decisions, &kind, except)?;
+            let value = rows(grams, &decisions, &kind)?;
             bound.add(ListSource {
                 name: format!(
                     "decisions under {decisions} in the chronicle of {recording_actor}, read by \
@@ -483,8 +492,7 @@ mod tests {
             gram("BESCHIKKING", "leerplichtwet_1969#11", Some("b")),
             gram("TOETS", GRONDSLAG, Some("c")),
         ];
-        let rows =
-            serde_json::to_value(rows(&grams, GRONDSLAG, "BESCHIKKING", None).unwrap()).unwrap();
+        let rows = serde_json::to_value(rows(&grams, GRONDSLAG, "BESCHIKKING").unwrap()).unwrap();
         assert_eq!(
             rows,
             json!([{
@@ -501,7 +509,7 @@ mod tests {
         decision
             .outputs
             .insert("eerste_verlofdag".into(), json!("2027-03-01"));
-        assert!(rows(&[decision], GRONDSLAG, "BESCHIKKING", None).is_err());
+        assert!(rows(&[decision], GRONDSLAG, "BESCHIKKING").is_err());
     }
 
     /// A deciding law whose article 1 is a BESCHIKKING, and a reduction
@@ -657,7 +665,6 @@ articles:
             &none(),
             &decisions(),
             &reductions,
-            None,
             day(),
         )
         .unwrap();
@@ -698,7 +705,6 @@ articles:
             &none(),
             &[clash.clone()],
             &reductions,
-            None,
             day(),
         )
         .unwrap();
@@ -714,7 +720,6 @@ articles:
             &none(),
             &[clash],
             &reductions,
-            None,
             day()
         )
         .is_err());
@@ -737,7 +742,6 @@ articles:
             &none(),
             &decisions(),
             &both,
-            None,
             day(),
         )
         .err()
@@ -751,7 +755,6 @@ articles:
             &none(),
             &decisions(),
             &typed,
-            None,
             day(),
         )
         .err()
@@ -773,7 +776,6 @@ articles:
             &none(),
             &decisions(),
             &reductions,
-            None,
             day(),
         )
         .err()
@@ -794,7 +796,6 @@ articles:
             &supplied,
             &decisions(),
             &reductions,
-            None,
             day(),
         )
         .err()
@@ -825,7 +826,6 @@ articles:
             &none(),
             &decisions(),
             &reductions,
-            None,
             day(),
         )
         .unwrap();
@@ -863,7 +863,6 @@ articles:
                 &none(),
                 &decisions(),
                 &reductions,
-                None,
                 on,
             )
             .unwrap();
@@ -884,7 +883,6 @@ articles:
             &none(),
             &decisions(),
             &reductions,
-            None,
             day(),
         )
         .unwrap();
@@ -906,7 +904,6 @@ articles:
                 &none(),
                 &decisions(),
                 &reductions,
-                None,
                 day(),
             )
             .err()
@@ -932,7 +929,6 @@ articles:
             &none(),
             &decisions(),
             &reductions,
-            None,
             day(),
         )
         .err()
@@ -960,7 +956,6 @@ articles:
                 &none(),
                 &decisions(),
                 &reductions,
-                None,
                 day(),
             )?;
             Err(setup("the decision failed"))
@@ -977,7 +972,6 @@ articles:
                 &none(),
                 &decisions(),
                 &reductions,
-                None,
                 day(),
             )
             .unwrap();

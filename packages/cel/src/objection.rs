@@ -10,9 +10,9 @@
 //! the cell takes from that decision. A field of the application the
 //! contested decision took, the objection may change.
 //!
-//! [`Cell::decide_on_objection`] applies the contested decision's article
-//! anew on the facts of that day (Awb 7:11 lid 1, ex nunc): the
-//! application as the objection changes it, the policy in force, the
+//! For an admissible objection, [`Cell::decide_on_objection`] applies the
+//! contested decision's article anew on the facts of that day (Awb 7:11 lid
+//! 1, ex nunc): the application as the objection changes it, the policy in force, the
 //! chronicle without the contested decision. The heroverweging gives cause
 //! when that decision differs from the contested one in an output of the
 //! article; that is the judgement the deciding article asks. When the
@@ -66,6 +66,19 @@ impl Cell {
     ) -> Result<Gram> {
         let contested = self.contested(contested)?.clone();
         let shape = shape::derive(service, law_id, article, on)?;
+        if !shape
+            .requests
+            .as_deref()
+            .is_some_and(|r| decision::decides_on_objection(service, r, on))
+        {
+            return Err(refused(format!(
+                "the {} of {} asks for no decision on a contested decision ('{}'); it is no \
+                 objection, and is recorded with `record_submission`",
+                shape.kind,
+                shape.grondslag(),
+                decision::REVOKES
+            )));
+        }
         // What the contested decision took and gave, in the law it was
         // taken under.
         let taken_on = contested.recorded_on;
@@ -103,9 +116,13 @@ impl Cell {
     /// Decide, under article `article` of `law_id`, on the objection
     /// recorded as chronolexogram `objection`, on `on` (Awb 7:11).
     ///
-    /// The cell applies the contested decision's article anew (the
-    /// heroverweging) and answers the one judgement the deciding article
-    /// asks per case with whether that differs from the contested decision.
+    /// The cell first asks whether the decision would revoke the contested
+    /// one if the heroverweging gave cause. If not, the objection is not
+    /// admissible and is not reconsidered (Awb 7:11 lid 1): the judgement
+    /// stays null. Otherwise it applies the contested decision's article
+    /// anew (the heroverweging) and answers the one judgement the deciding
+    /// article asks per case with whether that differs from the contested
+    /// decision.
     /// `supplied` holds what the deciding authority supplies itself: a
     /// judgement the contested decision's article asks, given anew; left
     /// out, the one of the contested decision stands. It appends the
@@ -160,38 +177,56 @@ impl Cell {
             }
         };
 
-        // The heroverweging: the contested decision's article anew.
-        let anew_shape = self.decision_shape_of(service, &contested, on)?;
-        check_objection_supplied(&shape, &anew_shape, &judgement, supplied)?;
-        let application = self.application_of(&contested)?.clone();
-        let (anew, anew_outputs) = self.take(
-            service,
-            &anew_shape,
-            supplied,
-            Some(&contested.id),
-            on,
-            |bound| {
-                heroverweging(
-                    &anew_shape,
-                    &objected,
-                    &application,
-                    &contested,
-                    supplied,
-                    bound,
-                    on,
-                )
-            },
-        )?;
-        let differs = anew_shape
-            .outputs
-            .iter()
-            .any(|o| anew_outputs.get(o) != contested.outputs.get(o));
-
-        // The decision on the objection.
-        let (fields, outputs) = self.take(service, &shape, supplied, None, on, |bound| {
-            on_objection(&shape, &objected, &judgement, differs, supplied, bound, on)
-        })?;
-        let revokes = outputs.get(decision::REVOKES) == Some(&J::Bool(true));
+        // The decision on the objection, with the heroverweging's answer to
+        // `judgement`, or without it (`None`).
+        let take = |service: &mut LawExecutionService, cause: Option<bool>| {
+            self.take(service, &shape, supplied, None, on, |bound| {
+                on_objection(&shape, &objected, &judgement, cause, supplied, bound, on)
+            })
+        };
+        // Admissibility first (Awb 7:11 lid 1): where the decision does not
+        // revoke even if the heroverweging gives cause, the objection is not
+        // reconsidered on the merits, and the decision records no answer.
+        let (fields, outputs) = take(service, Some(true))?;
+        let mut anew = None;
+        let (fields, outputs) = if revokes(&outputs) {
+            // The heroverweging: the contested decision's article anew.
+            let anew_shape = self.decision_shape_of(service, &contested, on)?;
+            check_objection_supplied(&shape, Some(&anew_shape), &judgement, supplied)?;
+            let application = self.application_of(&contested)?.clone();
+            let (anew_fields, anew_outputs) = self.take(
+                service,
+                &anew_shape,
+                supplied,
+                Some(&contested.id),
+                on,
+                |bound| {
+                    heroverweging(
+                        &anew_shape,
+                        &objected,
+                        &application,
+                        &contested,
+                        supplied,
+                        bound,
+                        on,
+                    )
+                },
+            )?;
+            let differs = anew_shape
+                .outputs
+                .iter()
+                .any(|o| anew_outputs.get(o) != contested.outputs.get(o));
+            anew = Some((anew_shape, anew_fields, anew_outputs));
+            if differs {
+                (fields, outputs)
+            } else {
+                take(service, Some(false))?
+            }
+        } else {
+            check_objection_supplied(&shape, None, &judgement, supplied)?;
+            take(service, None)?
+        };
+        let revokes = revokes(&outputs);
         let mut grams = vec![Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
@@ -206,7 +241,7 @@ impl Cell {
         }];
         // Awb 7:11 lid 2: revoked, and in its place the decision the
         // heroverweging gave. Both or neither land in the chronicle.
-        if revokes {
+        if let (true, Some((anew_shape, anew, anew_outputs))) = (revokes, anew) {
             grams.push(Gram {
                 id: uuid::Uuid::now_v7().to_string(),
                 kind: anew_shape.kind.clone(),
@@ -352,13 +387,14 @@ fn heroverweging(
 
 /// What the decision of `shape` on the objection `objected` asks, but what
 /// one of the cell's reductions in `bound` yields. The heroverweging
-/// answers `judgement` with `differs` (Awb 7:11 lid 1); whether the
-/// objection came in on time comes from the objection (Awb 6:9).
+/// answers `judgement` with `cause` (Awb 7:11 lid 1); without a
+/// heroverweging it is null, not judged. Whether the objection came in on
+/// time comes from the objection (Awb 6:9).
 fn on_objection(
     shape: &DecisionShape,
     objected: &Gram,
     judgement: &str,
-    differs: bool,
+    cause: Option<bool>,
     supplied: &Map<String, J>,
     bound: &Bound<'_>,
     on: NaiveDate,
@@ -367,7 +403,7 @@ fn on_objection(
     for input in &shape.inputs {
         let name = &input.field.name;
         let value = match &input.source {
-            _ if name == judgement => Some(J::Bool(differs)),
+            _ if name == judgement => Some(cause.map_or(J::Null, J::Bool)),
             Source::Application => objected.held(name).cloned(),
             Source::Caller if bound.answers(name) => None,
             Source::Caller => match supplied.get(name) {
@@ -389,6 +425,12 @@ fn on_objection(
         }
     }
     Ok(fields)
+}
+
+/// Whether the decision on an objection with `outputs` revokes the
+/// contested decision.
+fn revokes(outputs: &Values) -> bool {
+    outputs.get(decision::REVOKES) == Some(&J::Bool(true))
 }
 
 /// The fields of the application that the decision of `shape` takes from
@@ -431,10 +473,12 @@ fn gives(service: &LawExecutionService, shape: &DecisionShape, on: NaiveDate) ->
 
 /// Refuse what the deciding authority does not supply on an objection: a
 /// name neither decision asks of it, the judgement the heroverweging
-/// answers, a value of the wrong type.
+/// answers, a value of the wrong type. Without a heroverweging (`anew` is
+/// `None`), a judgement for it is refused too: an objection that is not
+/// admissible is not reconsidered (Awb 7:11 lid 1).
 fn check_objection_supplied(
     shape: &DecisionShape,
-    anew: &DecisionShape,
+    anew: Option<&DecisionShape>,
     judgement: &str,
     supplied: &Map<String, J>,
 ) -> Result<()> {
@@ -445,15 +489,19 @@ fn check_objection_supplied(
                 shape.grondslag()
             )));
         }
-        let input = [shape, anew]
-            .iter()
+        let input = std::iter::once(shape)
+            .chain(anew)
             .filter_map(|s| s.input(name))
             .find(|i| i.source == Source::Caller)
-            .ok_or_else(|| {
-                refused(format!(
+            .ok_or_else(|| match anew {
+                Some(_) => refused(format!(
                     "the decision on the objection does not ask '{name}' of the deciding \
                      authority"
-                ))
+                )),
+                None => refused(format!(
+                    "the objection is not reconsidered on the merits (Awb 7:11 lid 1), so the \
+                     decision on it asks no '{name}' of the deciding authority"
+                )),
             })?;
         if !shape::fits(&input.field, value) {
             return Err(refused(format!(

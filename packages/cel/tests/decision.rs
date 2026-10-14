@@ -287,3 +287,31 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
     let e = decision::derive(&service, LAW, "1", day()).unwrap_err();
     assert!(e.to_string().contains("no application asks"), "{e}");
 }
+
+#[test]
+fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
+    // A second article asks for the same decision, so the decision of
+    // article 1 cannot be derived; the application is still recorded.
+    let second = r#"
+  - number: '3'
+    text: Verlof wordt ook aangevraagd bij de directie.
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+            requests: wet_verlof_fictief#1
+            parameters: [dagen]
+        parameters:
+          - {name: dagen, type: number}
+"#;
+    let split = format!("{SPLIT_LAW}{}", second.trim_start_matches('\n'));
+    let service = service(&[GENERAL_LAW, &split]);
+    let e = decision::derive(&service, LAW, "1", day()).unwrap_err();
+    assert!(e.to_string().contains("several applications"), "{e}");
+    let mut cell = Cell::in_memory("fictieve_school");
+    let app = cell
+        .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
+        .unwrap();
+    assert_eq!(app.kind, "AANVRAAG");
+    assert_eq!(cell.grams().len(), 1);
+}

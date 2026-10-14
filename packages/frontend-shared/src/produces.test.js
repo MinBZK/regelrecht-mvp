@@ -34,6 +34,17 @@ describe('produces', () => {
     expect(submissionKindOf(list[1])).toBeNull();
   });
 
+  it('reads an objection as a submission, and the decision on it as the decision (Awb 7:11)', () => {
+    const objection = [
+      { type: 'BEZWAAR', requests: 'algemene_wet_bestuursrecht#7:11' },
+      { type: 'BESCHIKKING', outputs: ['bezwaar_ontvankelijk', 'bestreden_besluit_herroepen'] },
+    ];
+    expect(legalCharacterOf({ type: 'BEZWAAR' })).toBeNull();
+    expect(submissionKindOf({ type: 'BEZWAAR' })).toBe('BEZWAAR');
+    expect(producedDecision(objection)).toBe(objection[1]);
+    expect(producedSubmission(objection)).toBe(objection[0]);
+  });
+
   it('gives the decision in the object form terms', () => {
     expect(decisionOf(list)).toEqual({ legal_character: 'BESCHIKKING', decision_type: 'TOEKENNING', procedure_id: undefined });
     expect(decisionOf(object).legal_character).toBe('BESCHIKKING');

@@ -464,11 +464,12 @@ articles:
     url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel7:11
     machine_readable:
       # Of de heroverweging aanleiding geeft, oordeelt het bestuursorgaan per
-      # bezwaar (lid 2).
+      # bezwaar (lid 2). Alleen bij een ontvankelijk bezwaar: anders vindt
+      # geen heroverweging plaats (lid 1) en blijft het oordeel leeg.
       open_terms:
         - id: heroverweging_geeft_aanleiding_tot_herroeping
           type: boolean
-          required: true
+          required: false
           decided_per_case_by: het bestuursorgaan (artikel 7:11, tweede lid)
           description: >-
             Of de heroverweging van het bestreden besluit aanleiding geeft het te
@@ -514,12 +515,17 @@ articles:
           - output: bezwaar_ontvankelijk
             value: $bezwaarschrift_tijdig_ingediend
           # Lid 2. Het nieuwe besluit "voor zover nodig" is het besluit dat de
-          # heroverweging geeft; dit artikel berekent het niet zelf.
+          # heroverweging geeft; dit artikel berekent het niet zelf. Bij een
+          # niet-ontvankelijk bezwaar is er geen oordeel over de heroverweging
+          # (lid 1). Eigen keuze: zonder oordeel herroept het bestuursorgaan
+          # niet.
           - output: bestreden_besluit_herroepen
             value:
               operation: AND
               conditions:
                 - $bezwaar_ontvankelijk
+                - operation: NOT
+                  value: {operation: EQUALS, subject: $heroverweging_geeft_aanleiding_tot_herroeping, value: null}
                 - $heroverweging_geeft_aanleiding_tot_herroeping
 
   - number: '7:12'
