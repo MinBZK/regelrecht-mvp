@@ -4,18 +4,15 @@ Feature: Het besluit op de aanvraag om vakantieverlof
   niet in de eerste twee lesweken van het schooljaar, en slechts eenmaal per
   schooljaar (tweede lid). De eerste lesdag komt uit het (fictieve) beleid van
   de school; de twee gegevens van artikel 11, onder f (het beroep van een ouder
-  en verlof buiten de schoolvakanties), oordeelt het hoofd. Het besluit is een
+  en verlof buiten de schoolvakanties), oordeelt het hoofd. Of het hoofd de
+  jongere dit schooljaar al verlof verleende, is een parameter: de cel van de
+  school leidt het af uit haar besluiten (RFC-048). Het besluit is een
   beschikking: de Awb vraagt een motivering (3:46) en opent een bezwaartermijn
   van zes weken (6:7).
 
   Background:
     Given the calculation date is "2026-10-20"
     Given law "algemene_wet_bestuursrecht" is loaded
-    # Het hoofd verleende deze jongere nog geen verlof (artikel 13a, tweede
-    # lid: eenmaal per schooljaar).
-    Given the following "OBS De Klimop" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
-      | bsn_jongere | verleende_verloven |
-      | 999990019   | []                 |
 
   Scenario: Vijf schooldagen buiten de eerste twee lesweken worden verleend
     Given the following parameters:
@@ -24,6 +21,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-05 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlof_verleend" is true
@@ -41,6 +39,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-12 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlofdagen" equals 10
@@ -53,6 +52,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-15 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlofdagen" equals 11
@@ -65,6 +65,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2026-09-11 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlof_raakt_eerste_twee_lesweken" is true
@@ -77,6 +78,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-05 |
       | specifieke_aard_beroep_ouder       | false |
       | verlof_valt_buiten_schoolvakanties | true  |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlof_verleend" is false
@@ -88,6 +90,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-05 |
       | specifieke_aard_beroep_ouder       | true  |
       | verlof_valt_buiten_schoolvakanties | false |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlof_verleend" is false
@@ -99,6 +102,7 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-07 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlofdagen" equals 0
@@ -111,24 +115,22 @@ Feature: Het besluit op de aanvraag om vakantieverlof
       | laatste_verlofdag | 2027-02-01 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlof_verleend" is false
 
   Scenario: Een tweede verlof in hetzelfde schooljaar wordt geweigerd
-    # Het hoofd verleende deze jongere in oktober al verlof. Of dat zo is,
-    # leest het fictieve beleid van de school uit de verleende verloven. Een
-    # tabelcel leest het burgerservicenummer in de parameters als getal, dus
-    # staat het ook in het verleende verlof als getal.
-    Given the following "OBS De Klimop, verlof in oktober" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
-      | bsn_jongere | verleende_verloven |
-      | 999990020   | [{"bsn_jongere": 999990020, "eerste_verlofdag": "2026-10-05"}] |
+    # Het hoofd verleende deze jongere dit schooljaar al verlof. Of dat zo
+    # is, leidt de cel van de school af uit haar besluiten (RFC-048); hier
+    # geeft het scenario het als parameter.
     Given the following parameters:
       | bsn_jongere       | 999990020  |
       | eerste_verlofdag  | 2027-02-01 |
       | laatste_verlofdag | 2027-02-05 |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | true |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "verlofdagen" equals 5

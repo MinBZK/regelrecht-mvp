@@ -120,36 +120,34 @@ The cell records the decision as a second chronolexogram that refers to the appl
 
 ## Once per school year
 
-The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for it as an open term, `verlof_al_verleend_in_schooljaar`. The school's fictitious policy fills it from the leave the head granted. Who supplies that list, the policy does not say.
+The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for the answer as a parameter, `verlof_al_verleend_in_schooljaar`, that is no field of the application. Who supplies it, the law does not say.
+
+In a cell, a reduction gives the answer: rulework of the kind `REDUCTIE`, kept with the cell at `corpus/cells/obs_de_klimop/reducties/`. It finds the decisions taken under art. 13a and asks the school's fictitious policy in which school year the asked leave falls.
 
 ```yaml
-# fictief_beleid_verleend_verlof_obs_de_klimop, article 1
-implements:
-  - {law: leerplichtwet_1969, article: 13a, open_term: verlof_al_verleend_in_schooljaar}
-input:
-  - name: verleende_verloven
-    type: array
-    source: {}
-```
-
-In a cell, the list comes from a reduction: rulework of the kind `REDUCTIE`, kept with the cell at `corpus/cells/obs_de_klimop/reducties/`. It reads the decisions taken under art. 13a and keeps the ones that granted leave.
-
-```yaml
-# reductie_verleende_verloven, article 1
+# reductie_verlof_al_verleend_in_schooljaar, article 1
+parameters:
+  - {name: bsn_jongere, type: string}
+  - {name: eerste_verlofdag, type: date}
 input:
   - name: besluiten
     type: array
     source:
       decisions: leerplichtwet_1969#13a
+  - name: begin_schooljaar
+    type: date
+    source:
+      regulation: fictief_beleid_schooljaargrenzen_obs_de_klimop
+      parameters: {datum: $eerste_verlofdag}
 output:
-  - name: verleende_verloven
-    type: array
+  - name: verlof_al_verleend_in_schooljaar
+    type: boolean
 ```
 
-- Each decision is a row with its fields and outputs: `bsn_jongere` and `eerste_verlofdag` from the application, `verlof_verleend` from the item's `outputs`. The reduction leaves out a refusal.
-- The cell connects the two by name: a reduction output `verleende_verloven` answers the policy's input of that name, for that policy and for one decision.
-- The policy counts granted leave of the same child with its first leave day in the same school year (1 August to 31 July).
-- Only a reduction reads `decisions`, only a data source answers it, and a reduction does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`). It lives outside `corpus/regulation`, so the corpus loaders do not load it; `just validate` does check it.
-- The decision records the value in `fields`, like the first lesdag.
+- Each decision is a row with its fields and outputs, such as `bsn_jongere`, `eerste_verlofdag` and `verlof_verleend`. A refusal does not count.
+- The policy says only that a school year runs from 1 August to 31 July. It reads no decisions.
+- The cell connects reduction and decision by name. It passes the decision's inputs as the reduction's parameters and the answer to the decision, and refuses a name that something else also supplies.
+- Only a reduction reads `decisions`, and a reduction does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`). The corpus loaders leave it out; `just validate` checks it.
+- The decision records the answer in `fields`, like a field of the application.
 
-**Try it:** `just bdd`, which runs `verleend_verlof.feature` next to the policy with the list supplied by the scenario, or `cargo test --manifest-path packages/cel/Cargo.toml`
+**Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature` with the answer as a parameter and `schooljaargrenzen.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`

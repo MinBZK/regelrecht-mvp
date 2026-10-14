@@ -9,8 +9,8 @@
 use std::path::Path;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{decision, shape, Cell, Error, Gram, PolicyInput, Source};
-use regelrecht_engine::{LawExecutionService, ParameterType};
+use regelrecht_cel::{decision, shape, Cell, Error, Gram, Source};
+use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
 const LAW: &str = "leerplichtwet_1969";
@@ -23,12 +23,13 @@ const RECORDING_ACTOR: &str = "obs_de_klimop";
 /// starts.
 const POLICY: &str = "fictief_beleid_schooljaar_obs_de_klimop";
 
-/// The fictitious policy of the school that reads the leave it granted
-/// (RFC-048).
-const READING_POLICY: &str = "fictief_beleid_verleend_verlof_obs_de_klimop";
+/// The fictitious policy of the school that says in which school year a
+/// day falls; the school's reduction calls it (RFC-048).
+const SCHOOL_YEAR: &str = "fictief_beleid_schooljaargrenzen_obs_de_klimop";
 
-/// The list that policy reads, and that the school's reduction yields.
-const GRANTED: &str = "verleende_verloven";
+/// The school's reduction, and the input of the decision it yields.
+const REDUCTION: &str = "reductie_verlof_al_verleend_in_schooljaar";
+const ONCE: &str = "verlof_al_verleend_in_schooljaar";
 
 /// The Leerplichtwet, the Awb and the school's policies from the corpus.
 fn service() -> LawExecutionService {
@@ -38,7 +39,7 @@ fn service() -> LawExecutionService {
         format!("wet/{LAW}"),
         format!("wet/{AWB}"),
         format!("uitvoeringsbeleid/{POLICY}"),
-        format!("uitvoeringsbeleid/{READING_POLICY}"),
+        format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -366,23 +367,14 @@ fn the_decision_asks_from_the_application_the_policy_the_head_and_the_cell() {
             ("bsn_jongere", &Source::Application),
             ("eerste_verlofdag", &Source::Application),
             ("laatste_verlofdag", &Source::Application),
+            // Not an application field: the cell's reduction yields it.
+            (ONCE, &Source::Caller),
             ("besluit_datum", &Source::Cell),
             ("bekendmaking_datum", &Source::Cell),
             ("eerste_lesdag_schooljaar", &policy),
             (PROFESSION, &Source::Caller),
             (OUTSIDE_HOLIDAYS, &Source::Caller),
-            ("verlof_al_verleend_in_schooljaar", &policy),
         ]
-    );
-    // The reading policy asks for the granted leave as a list without a
-    // source; it does not say who supplies it (RFC-048).
-    assert_eq!(
-        shape.policy_inputs,
-        vec![PolicyInput {
-            policy: READING_POLICY.into(),
-            input: GRANTED.into(),
-            type_: ParameterType::Array,
-        }]
     );
 }
 
@@ -682,11 +674,10 @@ fn an_application_that_lacks_what_the_decision_needs_is_not_decided_on() {
 }
 
 // ---------------------------------------------------------------------------
-// Once per school year: the school's reduction reads the chronicle back, the
-// policy reads what it yields (RFC-048)
+// Once per school year: the school's reduction reads the chronicle back,
+// calls the school's policy for the school year, and the decision takes its
+// answer by name (RFC-048)
 // ---------------------------------------------------------------------------
-
-const ONCE: &str = "verlof_al_verleend_in_schooljaar";
 
 /// Apply for leave from `first` to `last` on `on`, and decide on it the
 /// same day with the ground of art. 11 onder f.
@@ -700,8 +691,8 @@ fn a_first_application_in_the_school_year_is_granted() {
     let mut cell = cell();
     let gram = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
-    // The value the policy gave; which article read what follows from the
-    // law in force on `recorded_on`.
+    // The reduction's answer, kept with the decision like an application
+    // field.
     assert_eq!(gram.fields[ONCE], json!(false));
 }
 
@@ -777,20 +768,37 @@ fn leave_for_another_child_does_not_count() {
 }
 
 #[test]
-fn the_head_does_not_supply_what_the_policy_reads_from_the_chronicle() {
+fn the_school_year_ends_on_31_july_and_the_next_begins_on_1_august() {
+    let mut cell = cell();
+    // Granted leave whose first day is Saturday 31 July 2027.
+    let last = apply_and_decide(&mut cell, "2027-07-31", "2027-08-06", "2027-06-01");
+    assert_eq!(last.outputs["verlof_verleend"], json!(true));
+    // So the school year 2026-2027 has its leave.
+    let july = apply_and_decide(&mut cell, "2027-07-12", "2027-07-16", "2027-06-02");
+    assert_eq!(july.fields[ONCE], json!(true));
+    assert_eq!(july.outputs["verlof_verleend"], json!(false));
+    // Leave whose first day is Sunday 1 August 2027 is in the next one.
+    let first = apply_and_decide(&mut cell, "2027-08-01", "2027-08-06", "2027-06-03");
+    assert_eq!(first.fields[ONCE], json!(false));
+    assert_eq!(first.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn the_head_does_not_supply_what_the_reduction_yields() {
     let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let mut supplied = judgement(true, true);
     supplied.insert(ONCE.into(), json!(false));
     let e = decide(&mut cell, &app.id, &supplied, "2026-10-20").unwrap_err();
     assert!(
-        matches!(&e, Error::Refused(m) if m.contains("the policy")),
+        matches!(&e, Error::Refused(m) if m.contains(REDUCTION) && m.contains("deciding authority")),
         "{e}"
     );
+    assert_eq!(cell.grams().len(), 1);
 }
 
 #[test]
-fn the_reduction_and_its_answer_are_bound_for_the_decision_only() {
+fn the_reduction_and_the_decisions_it_reads_are_bound_for_the_decision_only() {
     let mut service = service();
     let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
@@ -804,18 +812,18 @@ fn the_reduction_and_its_answer_are_bound_for_the_decision_only() {
     )
     .unwrap();
     assert!(service.data_registry().list_sources().is_empty());
-    assert!(!service.has_law("reductie_verleende_verloven"));
+    assert!(!service.has_law(REDUCTION));
 }
 
 #[test]
-fn a_source_that_already_answers_the_list_is_not_shadowed() {
+fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
     let mut service = service();
     service.add_dict_source(
         "elders",
         10,
         [(
             "999990019".to_string(),
-            [(GRANTED.to_string(), regelrecht_engine::Value::Null)].into(),
+            [("besluiten".to_string(), regelrecht_engine::Value::Null)].into(),
         )]
         .into(),
     );
@@ -832,7 +840,7 @@ fn a_source_that_already_answers_the_list_is_not_shadowed() {
         )
         .unwrap_err();
     assert!(
-        matches!(&e, Error::Setup(m) if m.contains("another data source answers")),
+        matches!(&e, Error::Setup(m) if m.contains("another data source answers 'besluiten'")),
         "{e}"
     );
     assert_eq!(service.data_registry().list_sources(), ["elders"]);
@@ -840,63 +848,36 @@ fn a_source_that_already_answers_the_list_is_not_shadowed() {
 }
 
 #[test]
-fn the_policy_reads_a_list_from_elsewhere_just_as_well() {
-    // A cell without the reduction, and the granted leave from another
-    // system, for this policy only.
-    let mut service = service();
-    let leave = json!([{ "bsn_jongere": "999990019", "eerste_verlofdag": "2026-10-05" }]);
-    service
-        .register_dict_source_for_law(
-            READING_POLICY,
-            "leerlingadministratie",
-            "bsn_jongere",
-            vec![[
-                (
-                    "bsn_jongere".to_string(),
-                    regelrecht_engine::Value::String("999990019".into()),
-                ),
-                (GRANTED.to_string(), regelrecht_engine::Value::from(leave)),
-            ]
-            .into()],
-            10,
-        )
-        .unwrap();
+fn without_the_reduction_the_head_supplies_it_as_any_input() {
+    // A cell without the reduction: the law asks the value by name and
+    // names no supplier, so the deciding authority gives it.
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
-    let gram = cell
-        .decide(
-            &mut service,
-            LAW,
-            ARTICLE,
-            &app.id,
-            &judgement(true, true),
-            day("2027-03-01"),
-        )
-        .unwrap();
+    let mut supplied = judgement(true, true);
+    supplied.insert(ONCE.into(), json!(true));
+    let gram = decide(&mut cell, &app.id, &supplied, "2027-03-01").unwrap();
     assert_eq!(gram.fields[ONCE], json!(true));
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
 }
 
 #[test]
-fn without_the_reduction_or_another_supplier_the_list_is_not_known() {
+fn without_the_reduction_or_the_head_it_is_not_known() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    // Nobody supplies the granted leave: the outcome is not known, and says
-    // for lack of what (RFC-036).
-    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
-    let outcome = &gram.outputs["verlof_verleend"];
-    assert_eq!(outcome["__unknown"], json!(true));
-    assert_eq!(outcome["missing"][0]["name"], json!(GRANTED));
-    assert_eq!(outcome["missing"][0]["law"], json!(READING_POLICY));
+    let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains(&format!("asks '{ONCE}'"))),
+        "{e}"
+    );
 }
 
 #[test]
 fn the_cell_keeps_only_reductions() {
     let dir = tempfile::tempdir().unwrap();
     let policy = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
-        "../../corpus/regulation/nl/uitvoeringsbeleid/{READING_POLICY}/2026-08-01.yaml"
+        "../../corpus/regulation/nl/uitvoeringsbeleid/{SCHOOL_YEAR}/2026-08-01.yaml"
     ));
-    let here = dir.path().join("reducties").join(READING_POLICY);
+    let here = dir.path().join("reducties").join(SCHOOL_YEAR);
     std::fs::create_dir_all(&here).unwrap();
     std::fs::copy(policy, here.join("2026-08-01.yaml")).unwrap();
     let e = Cell::in_memory(RECORDING_ACTOR)
@@ -912,7 +893,7 @@ fn the_cell_keeps_only_reductions() {
     let elsewhere = dir.path().join("reducties").join("anders");
     std::fs::create_dir_all(&elsewhere).unwrap();
     std::fs::copy(
-        cell_dir().join("reducties/reductie_verleende_verloven/2026-08-01.yaml"),
+        cell_dir().join(format!("reducties/{REDUCTION}/2026-08-01.yaml")),
         elsewhere.join("2026-08-01.yaml"),
     )
     .unwrap();

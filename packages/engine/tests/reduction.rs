@@ -1,6 +1,8 @@
 //! A reduction (`regulatory_layer: REDUCTIE`, schema v0.8.2, RFC-048) reads
 //! the decisions taken under an article (`source.decisions`). Only a data
-//! source answers that input, and only a reduction may ask it.
+//! source answers that input, and only a reduction may ask it. For the logic
+//! it calls policy like any rulework (`source.regulation`), and it returns
+//! the answer the decision takes as input.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -12,19 +14,34 @@ use regelrecht_engine::{
 };
 use serde_json::json;
 
-const REDUCTION: &str = "reductie_verleende_verloven";
+const REDUCTION: &str = "reductie_verlof_al_verleend_in_schooljaar";
+const ONCE: &str = "verlof_al_verleend_in_schooljaar";
+/// The policy the reduction calls for the school year.
+const SCHOOL_YEAR: &str = "fictief_beleid_schooljaargrenzen_obs_de_klimop";
 
-/// The reduction of the fictional school, from its cell directory.
-fn reduction_yaml() -> String {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
-        "../../corpus/cells/obs_de_klimop/reducties/{REDUCTION}/2026-08-01.yaml"
-    ));
+fn corpus(path: &str) -> String {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus")
+        .join(path);
     std::fs::read_to_string(path).unwrap()
 }
 
+/// The reduction of the fictional school, from its cell directory.
+fn reduction_yaml() -> String {
+    corpus(&format!(
+        "cells/obs_de_klimop/reducties/{REDUCTION}/2026-08-01.yaml"
+    ))
+}
+
+/// The reduction, and the school's policy it calls.
 fn service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
     service.load_law(&reduction_yaml()).unwrap();
+    service
+        .load_law(&corpus(&format!(
+            "regulation/nl/uitvoeringsbeleid/{SCHOOL_YEAR}/2026-08-01.yaml"
+        )))
+        .unwrap();
     service
 }
 
@@ -39,16 +56,23 @@ fn decision(bsn: &str, first: &str, granted: bool) -> serde_json::Value {
     })
 }
 
-fn granted(service: &LawExecutionService) -> serde_json::Value {
-    let result = service
-        .evaluate_law(
-            REDUCTION,
-            &["verleende_verloven"],
-            BTreeMap::new(),
-            "2027-03-01",
-        )
-        .unwrap();
-    serde_json::to_value(&result.outputs["verleende_verloven"]).unwrap()
+fn evaluate(
+    service: &LawExecutionService,
+    bsn: &str,
+    first: &str,
+) -> regelrecht_engine::Result<regelrecht_engine::ArticleResult> {
+    let parameters = BTreeMap::from([
+        ("bsn_jongere".to_string(), Value::String(bsn.into())),
+        ("eerste_verlofdag".to_string(), Value::String(first.into())),
+    ]);
+    service.evaluate_law(REDUCTION, &[ONCE], parameters, "2027-03-01")
+}
+
+/// Whether the head already granted `bsn` leave in the school year of
+/// `first`.
+fn already(service: &LawExecutionService, bsn: &str, first: &str) -> bool {
+    let result = evaluate(service, bsn, first).unwrap();
+    result.outputs[ONCE] == Value::Bool(true)
 }
 
 /// The decisions as one list, whatever the criteria, for `law` only: what
@@ -98,35 +122,68 @@ fn supply(service: &mut LawExecutionService, decisions: serde_json::Value) {
 }
 
 #[test]
-fn the_granted_leave_is_the_decisions_that_granted_it() {
+fn leave_granted_to_the_child_in_the_school_year_counts() {
     let mut service = service();
-    let decisions = json!([
-        decision("999990019", "2026-10-05", true),
-        decision("999990019", "2027-02-01", false),
-        decision("999990020", "2027-05-10", true),
-    ]);
-    supply(&mut service, decisions.clone());
-    assert_eq!(granted(&service), json!([decisions[0], decisions[2]]));
+    supply(
+        &mut service,
+        json!([decision("999990019", "2026-10-05", true)]),
+    );
+    assert!(already(&service, "999990019", "2027-05-10"));
 }
 
 #[test]
-fn no_decisions_is_no_granted_leave() {
+fn a_refusal_another_child_or_another_school_year_does_not_count() {
+    let mut service = service();
+    supply(
+        &mut service,
+        json!([
+            decision("999990019", "2026-10-05", false),
+            decision("999990020", "2026-10-05", true),
+            decision("999990019", "2026-07-27", true),
+            decision("999990019", "2027-08-02", true),
+        ]),
+    );
+    assert!(!already(&service, "999990019", "2027-05-10"));
+}
+
+#[test]
+fn the_reduction_asks_the_policy_for_the_school_year_of_the_first_day() {
+    let mut service = service();
+    supply(
+        &mut service,
+        json!([decision("999990019", "2027-07-31", true)]),
+    );
+    // 31 July is the last day of the school year 2026-2027 and 1 August the
+    // first of the next, as the policy says.
+    assert!(already(&service, "999990019", "2026-08-01"));
+    assert!(!already(&service, "999990019", "2027-08-01"));
+    let result = evaluate(&service, "999990019", "2027-08-01").unwrap();
+    assert_eq!(
+        result.resolved_inputs["begin_schooljaar"],
+        Value::String("2027-08-01".into())
+    );
+    // Without the policy the school year is not known, nor the answer.
+    let mut alone = LawExecutionService::new();
+    alone.load_law(&reduction_yaml()).unwrap();
+    supply(
+        &mut alone,
+        json!([decision("999990019", "2027-07-31", true)]),
+    );
+    let answer = evaluate(&alone, "999990019", "2027-08-01").map(|r| r.outputs[ONCE].clone());
+    assert!(!matches!(answer, Ok(Value::Bool(_))), "{answer:?}");
+}
+
+#[test]
+fn no_decisions_is_no_leave_granted() {
     let mut service = service();
     supply(&mut service, json!([]));
-    assert_eq!(granted(&service), json!([]));
+    assert!(!already(&service, "999990019", "2027-05-10"));
 }
 
 #[test]
 fn decisions_nobody_supplies_are_an_error_not_an_empty_list() {
     let service = service();
-    let e = service
-        .evaluate_law(
-            REDUCTION,
-            &["verleende_verloven"],
-            BTreeMap::new(),
-            "2027-03-01",
-        )
-        .unwrap_err();
+    let e = evaluate(&service, "999990019", "2027-05-10").unwrap_err();
     let message = e.to_string();
     assert!(matches!(e, EngineError::DataSourceError(_)), "{message}");
     assert!(
@@ -139,14 +196,7 @@ fn decisions_nobody_supplies_are_an_error_not_an_empty_list() {
 fn a_source_for_another_law_does_not_answer_the_decisions() {
     let mut service = service();
     supply_for(&mut service, "een_andere_wet", json!([]));
-    assert!(service
-        .evaluate_law(
-            REDUCTION,
-            &["verleende_verloven"],
-            BTreeMap::new(),
-            "2027-03-01"
-        )
-        .is_err());
+    assert!(evaluate(&service, "999990019", "2027-05-10").is_err());
 }
 
 /// The reduction with its layer or its input changed.
@@ -212,9 +262,9 @@ fn a_reduction_does_not_act_on_law() {
     );
     refused(
         &variant(
-            "      execution:\n        input:",
+            "      execution:\n        # Wat",
             "      execution:\n        produces:\n          legal_character: BESCHIKKING\n          \
-             decision_type: TOEKENNING\n        input:",
+             decision_type: TOEKENNING\n        # Wat",
         ),
         "does not act on law (produces)",
     );

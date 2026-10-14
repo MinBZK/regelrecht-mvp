@@ -210,12 +210,12 @@ impl Cell {
     /// recorded as chronolexogram `application`, on `on` (RFC-047).
     ///
     /// What the decision asks comes from the application, the holder's
-    /// policy and the cell ([`decision::derive`]). A policy input without a
-    /// source that one of the cell's reductions yields gets what the
-    /// reduction makes of the chronicle ([`reading`], RFC-048); the service
-    /// holds the reductions and their answers during the decision only.
-    /// `supplied` holds what the
-    /// deciding authority supplies itself, such as a judgement the law
+    /// policy and the cell ([`decision::derive`]). An input that one of the
+    /// cell's reductions yields, and nothing else supplies, is what that
+    /// reduction makes of the chronicle, run with the decision's inputs by
+    /// name ([`reading`], RFC-048); the service holds the reductions during
+    /// the decision only. `supplied` holds what the deciding authority
+    /// supplies itself, such as a judgement the law
     /// leaves to it per case. The cell refuses an application that is not
     /// in its chronicle or not one of this article, one already decided on,
     /// a value it takes from elsewhere, and a value of the wrong type. It
@@ -234,6 +234,15 @@ impl Cell {
         let shape = decision::derive(service, law_id, article, on)?;
         let applied = self.application(&shape, application)?;
         check_decision_supplied(&shape, supplied)?;
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            &shape,
+            supplied,
+            self.grams(),
+            &self.reductions,
+            on,
+        )?;
 
         // What the decision asks, from where the law says it comes. An
         // application that lacks what the decision needs (Awb 4:5) is not
@@ -254,6 +263,8 @@ impl Cell {
                     }
                     None => None,
                 },
+                // One of the cell's reductions yields it, below.
+                Source::Caller if bound.answers(name) => None,
                 Source::Caller => match supplied.get(name) {
                     Some(value) => Some(value.clone()),
                     // A regulation fills it first; where it is silent for
@@ -277,18 +288,13 @@ impl Cell {
             }
         }
 
+        let answered = bound.answer(&fields, on)?;
+        fields.extend(answered);
+
         let parameters: BTreeMap<String, Value> = fields
             .iter()
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
-        let bound = reading::bind(
-            service,
-            &self.recording_actor,
-            &shape,
-            self.grams(),
-            &self.reductions,
-            on,
-        )?;
         let output_values = run_stages(&bound, &shape, parameters, on, &mut fields)?;
         drop(bound);
         let gram = Gram {

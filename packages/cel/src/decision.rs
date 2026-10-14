@@ -19,13 +19,12 @@
 //!    judgement where it is silent;
 //! 4. the cell: a date the stage requires, which is the day of the decision.
 //!
-//! A policy that fills an open term may ask for an input without a source
-//! (`source: {}`, [`PolicyInput`]). The policy does not say who supplies it;
-//! the cell answers it where one of its reductions yields an output by that
-//! name ([`crate::reading`], RFC-048).
+//! An input the deciding authority would supply may instead come from one of
+//! the cell's reductions, where one yields it by name. That follows from the
+//! cell, not from the law ([`crate::reading`], RFC-048).
 
 use chrono::NaiveDate;
-use regelrecht_engine::{Article, LawExecutionService, ParameterType, ProcedureStage};
+use regelrecht_engine::{LawExecutionService, ParameterType, ProcedureStage};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -87,21 +86,6 @@ pub struct DecisionShape {
     pub stages: Vec<ProcedureStage>,
     /// Everything the stages ask, the deciding article first.
     pub inputs: Vec<Input>,
-    /// The inputs without a source of the filling policies.
-    pub policy_inputs: Vec<PolicyInput>,
-}
-
-/// An input without a source (`source: {}`) of a regulation that fills an
-/// open term of the deciding article. The policy does not say who supplies
-/// it: a data source, a scenario, or the cell, through one of its
-/// reductions (RFC-048).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PolicyInput {
-    /// The policy, by `$id`.
-    pub policy: String,
-    /// The input, by name.
-    pub input: String,
-    pub type_: ParameterType,
 }
 
 impl DecisionShape {
@@ -222,20 +206,12 @@ pub fn derive(
     // regulation fills it: the regulation may be silent for this case, and
     // the engine's precedence decides (RFC-047).
     let mut policy_first: Vec<String> = Vec::new();
-    let mut policy_inputs: Vec<PolicyInput> = Vec::new();
     for term in deciding.get_open_terms().into_iter().flatten() {
-        let implementations = service
+        let filled = !service
             .resolver()
             .find_implementations(law_id, article, term, Some(day), &HashMap::new())?
-            .implementations;
-        for (policy, implementing) in &implementations {
-            for found in inputs_without_source(&policy.id, implementing) {
-                if !policy_inputs.contains(&found) {
-                    policy_inputs.push(found);
-                }
-            }
-        }
-        let filled = !implementations.is_empty();
+            .implementations
+            .is_empty();
         let source = match (filled, &term.decided_per_case_by) {
             (true, Some(_)) => {
                 policy_first.push(term.id.clone());
@@ -275,29 +251,5 @@ pub fn derive(
         application: application_reference,
         stages,
         inputs,
-        policy_inputs,
     })
-}
-
-/// The inputs of `article` of `policy` with an empty source (`source: {}`,
-/// at most a `description`): the policy names no supplier.
-fn inputs_without_source(policy: &str, article: &Article) -> Vec<PolicyInput> {
-    article
-        .get_inputs()
-        .iter()
-        .filter(|i| {
-            i.source.as_ref().is_some_and(|s| {
-                s.regulation.is_none()
-                    && s.output.is_none()
-                    && s.parameters.is_none()
-                    && s.endpoint.is_none()
-                    && s.decisions.is_none()
-            })
-        })
-        .map(|i| PolicyInput {
-            policy: policy.to_string(),
-            input: i.name.clone(),
-            type_: i.input_type,
-        })
-        .collect()
 }

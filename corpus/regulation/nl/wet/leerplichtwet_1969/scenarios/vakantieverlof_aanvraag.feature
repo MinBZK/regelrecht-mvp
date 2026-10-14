@@ -8,11 +8,6 @@ Feature: De aanvraag om vakantieverlof, met de Awb erop
   Background:
     Given the calculation date is "2026-10-13"
     Given law "algemene_wet_bestuursrecht" is loaded
-    # Het hoofd verleende deze jongere nog geen verlof (artikel 13a, tweede
-    # lid: eenmaal per schooljaar).
-    Given the following "OBS De Klimop" data with key "bsn_jongere" for law "fictief_beleid_verleend_verlof_obs_de_klimop":
-      | bsn_jongere | verleende_verloven |
-      | 999990019   | []                 |
 
   Scenario: Een volledige aanvraag geeft de velden van 4:2 en de beslistermijn van 4:13
     Given the following parameters:
@@ -27,6 +22,7 @@ Feature: De aanvraag om vakantieverlof, met de Awb erop
       | datum_ontvangst       | 2026-10-13            |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" is true
@@ -47,6 +43,7 @@ Feature: De aanvraag om vakantieverlof, met de Awb erop
       | datum_ontvangst       | 2026-10-13            |
       | specifieke_aard_beroep_ouder       | true |
       | verlof_valt_buiten_schoolvakanties | true |
+      | verlof_al_verleend_in_schooljaar   | false |
     When I evaluate "verlof_verleend" of "leerplichtwet_1969"
     Then the execution succeeds
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" is false

@@ -6,19 +6,21 @@
 //! (`corpus/cells/<cell>/reducties/<id>/<valid_from>.yaml`) and only the cell
 //! loads it. It asks for the decisions taken under an article with
 //! `source: {decisions: <regulation>#<article>}`; the cell answers that input
-//! with one row per decision in its chronicle ([`rows`]).
+//! with one row per decision in its chronicle ([`rows`]). For the logic it
+//! calls law or policy like any rulework (`source.regulation`).
 //!
-//! What a reduction yields reaches a policy by name. A policy that fills an
-//! open term of the deciding article asks for an input without a source
-//! ([`crate::decision::PolicyInput`]). Where a reduction of the cell yields
-//! an output by that name, the cell runs the reduction and answers the input
-//! with it, scoped to that policy. The policy names no reduction and no
-//! cell, so a scenario or another system can supply the same list.
+//! What a reduction yields is an answer, and it reaches the decision by
+//! name. Where a reduction of the cell yields an output named like an input
+//! of the decision that nothing else supplies, the cell runs the reduction
+//! with the decision's own inputs as parameters, by name, and passes its
+//! answer to the decision as it passes a field of the application. The law
+//! names no reduction and no cell, so a scenario or another system can
+//! supply the same value.
 //!
-//! All of it is bound for the length of one decision ([`bind`]): the
-//! reductions are loaded into the service, and the decisions and what the
-//! reductions yield are data sources. It goes when the [`Bound`] guard
-//! drops, so an error or a panic during the decision leaves nothing behind.
+//! The reductions and the decisions they read are bound for the length of
+//! one decision ([`bind`]): the reductions are loaded into the service, and
+//! the decisions are data sources. They go when the [`Bound`] guard drops,
+//! so an error or a panic during the decision leaves nothing behind.
 
 use std::collections::BTreeMap;
 
@@ -29,8 +31,8 @@ use regelrecht_engine::{
 use serde_json::Map;
 
 use crate::chronicle::Gram;
-use crate::decision::{DecisionShape, PolicyInput};
-use crate::error::{setup, Result};
+use crate::decision::{DecisionShape, Source};
+use crate::error::{refused, setup, Result};
 use crate::shape::article_on;
 
 /// One version of a reduction of the cell, as written.
@@ -93,19 +95,29 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     Ok(Value::from(serde_json::Value::Array(rows)))
 }
 
-/// Answer each input without a source of the filling policies of `shape`
-/// that one of `reductions` yields, on `day`, until the returned guard
-/// drops. The reductions that do are run over the decisions in `grams`.
+/// An input of the decision that a reduction of the cell yields.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Answer {
+    input: String,
+    reduction: String,
+}
+
+/// Bind the reductions of the cell for a decision of `shape` on `day`,
+/// until the returned guard drops: each reduction that yields an input of
+/// the decision reads the decisions in `grams`. [`Bound::answer`] runs them.
 ///
 /// Refused, before a reduction runs: two reductions that yield one input,
-/// an output of another type than the input, a law already loaded under a
-/// reduction's `$id`, and another data source that already answers an input
-/// for its policy or reduction (the cell would shadow it without a word). A
-/// source scoped to another law does not answer for them.
+/// an output of another type than the input, an input that the
+/// application, the policy, the cell or the deciding authority (`supplied`)
+/// also supplies, a law already loaded under a reduction's `$id`, and
+/// another data source that already answers the decisions for a reduction
+/// (the cell would shadow it without a word). A source scoped to another
+/// law does not answer for them.
 pub fn bind<'a>(
     service: &'a mut LawExecutionService,
     recording_actor: &str,
     shape: &DecisionShape,
+    supplied: &Map<String, serde_json::Value>,
     grams: &[Gram],
     reductions: &[Reduction],
     day: NaiveDate,
@@ -114,10 +126,8 @@ pub fn bind<'a>(
         service,
         sources: Vec::new(),
         laws: Vec::new(),
+        answers: Vec::new(),
     };
-    if shape.policy_inputs.is_empty() || reductions.is_empty() {
-        return Ok(bound);
-    }
     for reduction in reductions {
         if !bound.laws.contains(&reduction.id) {
             if bound.service.has_law(&reduction.id) {
@@ -131,21 +141,11 @@ pub fn bind<'a>(
         }
         bound.service.load_law(&reduction.yaml)?;
     }
+    bound.answers = answers(&bound, shape, supplied, day)?;
 
-    let answers = answers(&bound, &shape.policy_inputs, day)?;
-    for (input, _) in &answers {
-        refuse_shadowing(&bound, &input.input, &input.policy, recording_actor)?;
-    }
-    let mut run: Vec<&str> = Vec::new();
-    for (_, id) in &answers {
-        if !run.contains(&id.as_str()) {
-            run.push(id);
-        }
-    }
-
-    for id in &run {
-        for (input, decisions) in decision_inputs(&bound, id, day) {
-            refuse_shadowing(&bound, &input, id, recording_actor)?;
+    for id in bound.run() {
+        for (input, decisions) in decision_inputs(&bound, &id, day) {
+            refuse_shadowing(&bound, &input, &id, recording_actor)?;
             let kind = decision_kind(&bound, &decisions, day)?;
             let value = rows(grams, &decisions, &kind)?;
             bound.add(ListSource {
@@ -153,82 +153,75 @@ pub fn bind<'a>(
                     "decisions under {decisions} in the chronicle of {recording_actor}, read by \
                      {id}.{input}"
                 ),
-                scope: (*id).to_string(),
+                scope: id.clone(),
                 field: input,
                 value,
-                source_type: "chronicle",
-            });
-        }
-    }
-
-    let date = day.to_string();
-    for id in &run {
-        let outputs: Vec<&str> = answers
-            .iter()
-            .filter(|(_, by)| by == id)
-            .map(|(input, _)| input.input.as_str())
-            .collect();
-        let result = bound
-            .service
-            .evaluate_law(id, &outputs, BTreeMap::new(), &date)?;
-        for (input, _) in answers.iter().filter(|(_, by)| by == id) {
-            let value = result
-                .outputs
-                .get(&input.input)
-                .cloned()
-                .ok_or_else(|| setup(format!("reduction {id} yielded no '{}'", input.input)))?;
-            bound.add(ListSource {
-                name: format!(
-                    "reduction {id} of {recording_actor}, read by {}.{}",
-                    input.policy, input.input
-                ),
-                scope: input.policy.clone(),
-                field: input.input.clone(),
-                value,
-                source_type: "reduction",
             });
         }
     }
     Ok(bound)
 }
 
-/// For each policy input that a loaded reduction yields on `day`, that
-/// reduction's `$id`.
-fn answers<'s>(
+/// For each input of the decision that a reduction in force on `day`
+/// yields, that reduction.
+fn answers(
     bound: &Bound<'_>,
-    inputs: &'s [PolicyInput],
+    shape: &DecisionShape,
+    supplied: &Map<String, serde_json::Value>,
     day: NaiveDate,
-) -> Result<Vec<(&'s PolicyInput, String)>> {
+) -> Result<Vec<Answer>> {
+    let decision = shape.grondslag();
     let mut answers = Vec::new();
-    for input in inputs {
+    for input in &shape.inputs {
+        let name = &input.field.name;
         let mut by: Vec<&str> = Vec::new();
         for id in &bound.laws {
             let Some(output) = in_force(bound, id, day)
-                .and_then(|law| law.find_article_by_output(&input.input))
-                .and_then(|article| article.find_output(&input.input))
+                .and_then(|law| law.find_article_by_output(name))
+                .and_then(|article| article.find_output(name))
             else {
                 continue;
             };
-            if output.output_type != input.type_ {
+            if output.output_type != input.field.type_ {
                 return Err(setup(format!(
-                    "reduction {id} yields '{}' as {:?}, which {} asks as {:?}",
-                    input.input, output.output_type, input.policy, input.type_
+                    "reduction {id} yields '{name}' as {:?}, which {decision} asks as {:?}",
+                    output.output_type, input.field.type_
                 )));
             }
             by.push(id);
         }
-        match by.as_slice() {
-            [] => {}
-            [one] => answers.push((input, (*one).to_string())),
+        let reduction = match by.as_slice() {
+            [] => continue,
+            [one] => (*one).to_string(),
             several => {
                 return Err(setup(format!(
-                    "several reductions yield '{}', which {} asks ({})",
-                    input.input,
-                    input.policy,
+                    "several reductions yield '{name}', which {decision} asks ({})",
                     several.join(", ")
                 )))
             }
+        };
+        let also = match input.source {
+            Source::Caller if supplied.contains_key(name) => {
+                return Err(refused(format!(
+                    "'{name}' of the decision of {decision} comes from reduction {reduction} of \
+                     the cell, not from the deciding authority"
+                )))
+            }
+            Source::Caller if input.policy_first => Some("the policy"),
+            Source::Caller => None,
+            Source::Application => Some("the application"),
+            Source::Policy => Some("the policy"),
+            Source::Cell => Some("the cell (the day of the decision)"),
+        };
+        if let Some(also) = also {
+            return Err(setup(format!(
+                "reduction {reduction} yields '{name}', which {decision} also takes from {also}"
+            )));
         }
+        answers.push(Answer {
+            input: name.clone(),
+            reduction,
+        });
     }
     Ok(answers)
 }
@@ -281,18 +274,83 @@ fn refuse_shadowing(
     Ok(())
 }
 
-/// The service with the reductions and their answers bound; dropping it
-/// removes what [`bind`] added.
+/// The service with the reductions and the decisions they read bound;
+/// dropping it removes what [`bind`] added.
 pub struct Bound<'a> {
     service: &'a mut LawExecutionService,
     sources: Vec<String>,
     laws: Vec<String>,
+    answers: Vec<Answer>,
 }
 
 impl Bound<'_> {
     fn add(&mut self, source: ListSource) {
         self.sources.push(source.name.clone());
         self.service.add_data_source(Box::new(source));
+    }
+
+    /// The reductions that yield an input of the decision, each once.
+    fn run(&self) -> Vec<String> {
+        let mut run: Vec<String> = Vec::new();
+        for answer in &self.answers {
+            if !run.contains(&answer.reduction) {
+                run.push(answer.reduction.clone());
+            }
+        }
+        run
+    }
+
+    /// Whether a reduction of the cell yields the decision's input `name`.
+    pub fn answers(&self, name: &str) -> bool {
+        self.answers.iter().any(|a| a.input == name)
+    }
+
+    /// Run the reductions that yield an input of the decision on `day`, each
+    /// with the decision's inputs in `fields` as parameters, by name, and
+    /// return what they yield for it. A parameter of a reduction that the
+    /// decision does not hold is refused.
+    pub fn answer(
+        &self,
+        fields: &BTreeMap<String, serde_json::Value>,
+        day: NaiveDate,
+    ) -> Result<BTreeMap<String, serde_json::Value>> {
+        let date = day.to_string();
+        let mut answered = BTreeMap::new();
+        for id in self.run() {
+            let mut parameters = BTreeMap::new();
+            for name in in_force(self, &id, day)
+                .into_iter()
+                .flat_map(|law| &law.articles)
+                .filter_map(|article| article.get_execution_spec()?.parameters.as_ref())
+                .flatten()
+                .map(|p| &p.name)
+            {
+                let value = fields.get(name).ok_or_else(|| {
+                    setup(format!(
+                        "reduction {id} asks '{name}', which the decision does not hold"
+                    ))
+                })?;
+                parameters.insert(name.clone(), Value::from(value.clone()));
+            }
+            let outputs: Vec<&str> = self
+                .answers
+                .iter()
+                .filter(|a| a.reduction == id)
+                .map(|a| a.input.as_str())
+                .collect();
+            let result = self
+                .service
+                .evaluate_law(&id, &outputs, parameters, &date)?;
+            for name in outputs {
+                let value = result
+                    .outputs
+                    .get(name)
+                    .ok_or_else(|| setup(format!("reduction {id} yielded no '{name}'")))?;
+                let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
+                answered.insert(name.to_string(), value);
+            }
+        }
+        Ok(answered)
     }
 }
 
@@ -314,13 +372,13 @@ impl Drop for Bound<'_> {
     }
 }
 
-/// A list as the answer to one input of one rulework.
+/// The decisions in the chronicle as the answer to one input of one
+/// reduction.
 struct ListSource {
     name: String,
     scope: String,
     field: String,
     value: Value,
-    source_type: &'static str,
 }
 
 impl DataSource for ListSource {
@@ -331,12 +389,12 @@ impl DataSource for ListSource {
         100
     }
     fn source_type(&self) -> &str {
-        self.source_type
+        "chronicle"
     }
     fn has_field(&self, field: &str) -> bool {
         field == self.field
     }
-    /// The whole list, whatever the criteria: the rulework selects.
+    /// The whole list, whatever the criteria: the reduction selects.
     fn get(&self, field: &str, _criteria: &BTreeMap<String, Value>) -> Option<Value> {
         (field == self.field).then(|| self.value.clone())
     }
@@ -355,6 +413,9 @@ impl DataSource for ListSource {
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
+    use crate::decision::Input;
+    use crate::error::Error;
+    use crate::shape::Field;
     use regelrecht_engine::ParameterType;
     use serde_json::json;
 
@@ -401,7 +462,8 @@ mod tests {
     }
 
     /// A deciding law whose article 1 is a BESCHIKKING, and a reduction
-    /// `id` that yields `output` (of `type_`) from its decisions.
+    /// `id` that yields `output` (of `type_`) from its decisions, with the
+    /// parameter `bsn`.
     const DECIDING: &str = r#"
 $id: wet_fictief
 regulatory_layer: WET
@@ -439,6 +501,9 @@ articles:
     url: https://example.org/reductie#1
     machine_readable:
       execution:
+        parameters:
+          - name: bsn
+            type: string
         input:
           - name: besluiten
             type: array
@@ -461,15 +526,23 @@ articles:
         service
     }
 
-    fn policy_input(policy: &str, input: &str) -> PolicyInput {
-        PolicyInput {
-            policy: policy.into(),
-            input: input.into(),
-            type_: ParameterType::Array,
+    fn input(name: &str, type_: ParameterType, source: Source) -> Input {
+        Input {
+            field: Field {
+                name: name.into(),
+                type_,
+                nullable: false,
+                declared_by: vec!["wet_fictief#1".into()],
+            },
+            source,
+            policy_first: false,
         }
     }
 
-    fn shape(inputs: Vec<PolicyInput>) -> DecisionShape {
+    /// A decision that asks `bsn` from the application, and `inputs` besides.
+    fn shape(inputs: Vec<Input>) -> DecisionShape {
+        let mut all = vec![input("bsn", ParameterType::String, Source::Application)];
+        all.extend(inputs);
         DecisionShape {
             kind: "BESCHIKKING".into(),
             law_id: "wet_fictief".into(),
@@ -477,9 +550,13 @@ articles:
             submission_kind: "AANVRAAG".into(),
             application: "wet_fictief#1".into(),
             stages: Vec::new(),
-            inputs: Vec::new(),
-            policy_inputs: inputs,
+            inputs: all,
         }
+    }
+
+    /// A decision that asks the list `name` of nobody else.
+    fn asking(name: &str) -> DecisionShape {
+        shape(vec![input(name, ParameterType::Array, Source::Caller)])
     }
 
     fn decisions() -> Vec<Gram> {
@@ -490,6 +567,14 @@ articles:
 
     fn day() -> NaiveDate {
         NaiveDate::from_ymd_opt(2026, 10, 20).unwrap()
+    }
+
+    fn none() -> Map<String, serde_json::Value> {
+        Map::new()
+    }
+
+    fn fields() -> BTreeMap<String, serde_json::Value> {
+        [("bsn".to_string(), json!("999990019"))].into()
     }
 
     /// A source of `field`, bound to `law` if given.
@@ -515,83 +600,153 @@ articles:
     #[test]
     fn a_reduction_answers_the_input_of_its_name_and_goes_with_the_guard() {
         let mut service = service();
-        let shape = shape(vec![
-            policy_input("beleid_a", "verleend_lijst"),
-            policy_input("beleid_b", "verleend_lijst"),
-            policy_input("beleid_a", "iets_anders"),
-        ]);
+        let mut shape = asking("verleend_lijst");
+        shape
+            .inputs
+            .push(input("iets_anders", ParameterType::Array, Source::Caller));
         let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
         let bound = bind(
             &mut service,
             ACTOR,
             &shape,
+            &none(),
             &decisions(),
             &reductions,
             day(),
         )
         .unwrap();
-        // The decisions for the reduction, its answer for each policy.
-        assert_eq!(bound.data_registry().source_count(), 3);
-        let answer = bound
-            .data_registry()
-            .resolve_for_law("verleend_lijst", &BTreeMap::new(), Some("beleid_b"))
-            .unwrap();
+        // The decisions for the reduction.
+        assert_eq!(bound.data_registry().source_count(), 1);
+        assert!(bound.answers("verleend_lijst"));
+        assert!(!bound.answers("iets_anders"));
+        let answered = bound.answer(&fields(), day()).unwrap();
         assert_eq!(
-            serde_json::to_value(answer.value).unwrap(),
-            json!([{ "eerste_verlofdag": "2027-02-01", "verleend": true }])
+            serde_json::to_value(answered).unwrap(),
+            json!({ "verleend_lijst": [{ "eerste_verlofdag": "2027-02-01", "verleend": true }] })
         );
-        assert!(!bound
-            .data_registry()
-            .has_field_for_law("iets_anders", Some("beleid_a")));
+        // A parameter of the reduction the decision does not hold.
+        let e = bound.answer(&BTreeMap::new(), day()).unwrap_err();
+        assert!(e.to_string().contains("asks 'bsn'"), "{e}");
         drop(bound);
         assert!(sources(&service).is_empty());
         assert!(!service.has_law("reductie_a"));
     }
 
     #[test]
-    fn without_a_matching_input_no_reduction_runs() {
+    fn without_a_matching_input_no_reduction_reads_the_chronicle() {
         let mut clash = gram("BESCHIKKING", "wet_fictief#1", Some("a"));
         clash
             .outputs
             .insert("eerste_verlofdag".into(), json!("2027-03-01"));
         let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
         let mut service = service();
-        let other = shape(vec![policy_input("beleid_a", "iets_anders")]);
+        let other = asking("iets_anders");
         let bound = bind(
             &mut service,
             ACTOR,
             &other,
+            &none(),
             &[clash.clone()],
             &reductions,
             day(),
         )
         .unwrap();
         assert_eq!(bound.data_registry().source_count(), 0);
+        assert!(bound.answer(&fields(), day()).unwrap().is_empty());
         drop(bound);
         // A reduction that runs does meet the clash.
-        let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
-        assert!(bind(&mut service, ACTOR, &reading, &[clash], &reductions, day()).is_err());
+        let reading = asking("verleend_lijst");
+        assert!(bind(
+            &mut service,
+            ACTOR,
+            &reading,
+            &none(),
+            &[clash],
+            &reductions,
+            day()
+        )
+        .is_err());
         assert!(sources(&service).is_empty());
         assert!(!service.has_law("reductie_a"));
     }
 
     #[test]
     fn two_reductions_of_one_input_or_another_type_are_refused() {
-        let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
+        let reading = asking("verleend_lijst");
         let mut service = service();
         let both = [
             reduction("reductie_a", "verleend_lijst", "array"),
             reduction("reductie_b", "verleend_lijst", "array"),
         ];
-        let e = bind(&mut service, ACTOR, &reading, &decisions(), &both, day())
-            .err()
-            .unwrap();
+        let e = bind(
+            &mut service,
+            ACTOR,
+            &reading,
+            &none(),
+            &decisions(),
+            &both,
+            day(),
+        )
+        .err()
+        .unwrap();
         assert!(e.to_string().contains("several reductions"), "{e}");
         let typed = [reduction("reductie_a", "verleend_lijst", "boolean")];
-        let e = bind(&mut service, ACTOR, &reading, &decisions(), &typed, day())
-            .err()
-            .unwrap();
+        let e = bind(
+            &mut service,
+            ACTOR,
+            &reading,
+            &none(),
+            &decisions(),
+            &typed,
+            day(),
+        )
+        .err()
+        .unwrap();
         assert!(e.to_string().contains("asks as Array"), "{e}");
+        assert!(sources(&service).is_empty());
+        assert_eq!(service.law_count(), 1);
+    }
+
+    #[test]
+    fn an_input_that_something_else_supplies_is_refused() {
+        let mut service = service();
+        let reductions = [reduction("reductie_a", "bsn", "string")];
+        // The application holds it.
+        let e = bind(
+            &mut service,
+            ACTOR,
+            &shape(Vec::new()),
+            &none(),
+            &decisions(),
+            &reductions,
+            day(),
+        )
+        .err()
+        .unwrap();
+        assert!(
+            matches!(&e, Error::Setup(m) if m.contains("also takes from the application")),
+            "{e}"
+        );
+        // The deciding authority supplies it.
+        let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
+        let supplied: Map<String, serde_json::Value> = [("verleend_lijst".to_string(), json!([]))]
+            .into_iter()
+            .collect();
+        let e = bind(
+            &mut service,
+            ACTOR,
+            &asking("verleend_lijst"),
+            &supplied,
+            &decisions(),
+            &reductions,
+            day(),
+        )
+        .err()
+        .unwrap();
+        assert!(
+            matches!(&e, Error::Refused(m) if m.contains("not from the deciding authority")),
+            "{e}"
+        );
         assert!(sources(&service).is_empty());
         assert_eq!(service.law_count(), 1);
     }
@@ -600,9 +755,8 @@ articles:
     fn a_reduction_that_answers_inputs_apart_runs_once() {
         let mut service = service();
         let reading = shape(vec![
-            policy_input("beleid_a", "lijst_a"),
-            policy_input("beleid_a", "lijst_b"),
-            policy_input("beleid_b", "lijst_a"),
+            input("lijst_a", ParameterType::Array, Source::Caller),
+            input("lijst_b", ParameterType::Array, Source::Caller),
         ]);
         let reductions = [
             reduction("reductie_a", "lijst_a", "array"),
@@ -612,13 +766,16 @@ articles:
             &mut service,
             ACTOR,
             &reading,
+            &none(),
             &decisions(),
             &reductions,
             day(),
         )
         .unwrap();
-        // The decisions once per reduction, and one answer per input.
-        assert_eq!(bound.data_registry().source_count(), 5);
+        // The decisions once per reduction.
+        assert_eq!(bound.data_registry().source_count(), 2);
+        let answered = bound.answer(&fields(), day()).unwrap();
+        assert_eq!(answered.keys().collect::<Vec<_>>(), ["lijst_a", "lijst_b"]);
     }
 
     #[test]
@@ -633,106 +790,86 @@ articles:
         )
         .unwrap();
         let reading = shape(vec![
-            policy_input("beleid_a", "lijst_oud"),
-            policy_input("beleid_a", "lijst_nieuw"),
+            input("lijst_oud", ParameterType::Array, Source::Caller),
+            input("lijst_nieuw", ParameterType::Array, Source::Caller),
         ]);
         let reductions = [older, newer];
         let before = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
-        let bound = bind(
-            &mut service,
-            ACTOR,
-            &reading,
-            &decisions(),
-            &reductions,
-            before,
-        )
-        .unwrap();
-        let registry = bound.data_registry();
-        assert!(registry.has_field_for_law("lijst_oud", Some("beleid_a")));
-        assert!(!registry.has_field_for_law("lijst_nieuw", Some("beleid_a")));
-        drop(bound);
-        let bound = bind(
-            &mut service,
-            ACTOR,
-            &reading,
-            &decisions(),
-            &reductions,
-            day(),
-        )
-        .unwrap();
-        let registry = bound.data_registry();
-        assert!(!registry.has_field_for_law("lijst_oud", Some("beleid_a")));
-        assert!(registry.has_field_for_law("lijst_nieuw", Some("beleid_a")));
+        for (on, yields, not) in [
+            (before, "lijst_oud", "lijst_nieuw"),
+            (day(), "lijst_nieuw", "lijst_oud"),
+        ] {
+            let bound = bind(
+                &mut service,
+                ACTOR,
+                &reading,
+                &none(),
+                &decisions(),
+                &reductions,
+                on,
+            )
+            .unwrap();
+            assert!(bound.answers(yields));
+            assert!(!bound.answers(not));
+        }
     }
 
     #[test]
     fn a_source_scoped_to_another_law_does_not_block_the_reading() {
         let mut service = service();
-        service.add_data_source(other_source("verleend_lijst", Some("andere_wet")));
-        let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
+        service.add_data_source(other_source("besluiten", Some("andere_wet")));
         let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
         let bound = bind(
             &mut service,
             ACTOR,
-            &reading,
+            &asking("verleend_lijst"),
+            &none(),
             &decisions(),
             &reductions,
             day(),
         )
         .unwrap();
-        assert_eq!(bound.data_registry().source_count(), 3);
+        assert_eq!(bound.data_registry().source_count(), 2);
         drop(bound);
         assert_eq!(sources(&service), ["elders"]);
     }
 
     #[test]
-    fn a_source_that_answers_the_policy_or_the_reduction_is_refused_before_anything_runs() {
-        for law in [None, Some("beleid_a")] {
+    fn a_source_that_answers_the_decisions_for_the_reduction_is_refused() {
+        for law in [None, Some("reductie_a")] {
             let mut service = service();
-            service.add_data_source(other_source("verleend_lijst", law));
-            let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
+            service.add_data_source(other_source("besluiten", law));
             let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
             let e = bind(
                 &mut service,
                 ACTOR,
-                &reading,
+                &asking("verleend_lijst"),
+                &none(),
                 &decisions(),
                 &reductions,
                 day(),
             )
             .err()
             .unwrap();
-            assert!(e.to_string().contains("another data source answers"), "{e}");
+            assert!(
+                e.to_string()
+                    .contains("another data source answers 'besluiten'"),
+                "{e}"
+            );
             assert_eq!(sources(&service), ["elders"]);
+            assert!(!service.has_law("reductie_a"));
         }
-        let mut service = service();
-        service.add_data_source(other_source("besluiten", Some("reductie_a")));
-        let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
-        let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
-        let e = bind(
-            &mut service,
-            ACTOR,
-            &reading,
-            &decisions(),
-            &reductions,
-            day(),
-        )
-        .err()
-        .unwrap();
-        assert!(e.to_string().contains("'besluiten'"), "{e}");
-        assert_eq!(sources(&service), ["elders"]);
-        assert!(!service.has_law("reductie_a"));
     }
 
     #[test]
     fn a_law_already_loaded_under_the_id_is_not_replaced() {
         let mut service = service();
         let reductions = [reduction("wet_fictief", "verleend_lijst", "array")];
-        let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
         let e = bind(
             &mut service,
             ACTOR,
-            &reading,
+            &asking("verleend_lijst"),
+            &none(),
             &decisions(),
             &reductions,
             day(),
@@ -751,11 +888,19 @@ articles:
 
     #[test]
     fn an_error_or_a_panic_after_bind_leaves_nothing_behind() {
-        let reading = shape(vec![policy_input("beleid_a", "verleend_lijst")]);
+        let reading = asking("verleend_lijst");
         let reductions = [reduction("reductie_a", "verleend_lijst", "array")];
         let mut service = service();
         let early = |service: &mut LawExecutionService| -> Result<()> {
-            let _bound = bind(service, ACTOR, &reading, &decisions(), &reductions, day())?;
+            let _bound = bind(
+                service,
+                ACTOR,
+                &reading,
+                &none(),
+                &decisions(),
+                &reductions,
+                day(),
+            )?;
             Err(setup("the decision failed"))
         };
         assert!(early(&mut service).is_err());
@@ -767,6 +912,7 @@ articles:
                 &mut service,
                 ACTOR,
                 &reading,
+                &none(),
                 &decisions(),
                 &reductions,
                 day(),
