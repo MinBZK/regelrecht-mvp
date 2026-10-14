@@ -56,7 +56,8 @@
 //! - **T4** A literal assigned to an output has the output's type.
 
 use crate::article::{
-    Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, CombineOp, Source,
+    foreach_binding, Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, CombineOp,
+    Source,
 };
 use crate::types::{ParameterType, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -234,6 +235,24 @@ enum Nullness {
     Unknown,
 }
 
+/// What one `FOREACH` binds in its `filter` and `body`.
+struct Binding {
+    /// The element: its `as`, or `item` when it has none.
+    name: String,
+    /// Whether an object element's fields are also bound under their own
+    /// names, which is the case only without `as` (RFC-051). Any bare name
+    /// may then be a field of the data, so the checker claims nothing.
+    fields: bool,
+}
+
+impl ArticleChecker<'_, '_> {
+    /// Whether `name` is, or may be, bound by the innermost enclosing
+    /// `FOREACH` or named by an outer one.
+    fn is_bound(&self, name: &str) -> bool {
+        self.bound.last().is_some_and(|b| b.fields) || self.bound.iter().any(|b| b.name == name)
+    }
+}
+
 /// What the checker knows about one expression.
 #[derive(Debug, Clone)]
 struct Info {
@@ -368,9 +387,9 @@ struct ArticleChecker<'l, 'f> {
     article: &'l Article,
     lookup: &'f dyn Fn(&str) -> Option<&'l ArticleBasedLaw>,
     symbols: BTreeMap<String, Symbol>,
-    /// Names bound by an enclosing `FOREACH`; they shadow the declarations
-    /// and the checker claims nothing about them.
-    bound: Vec<String>,
+    /// What each enclosing `FOREACH` binds; those names shadow the
+    /// declarations and the checker claims nothing about them.
+    bound: Vec<Binding>,
     /// Outputs computed by an earlier action of this article that are an
     /// absence test in disguise, with what they establish.
     derived: BTreeMap<String, Derived>,
@@ -784,7 +803,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
             };
             return Info::present(ty, &describe);
         }
-        if self.bound.iter().any(|b| b == root) {
+        if self.is_bound(root) {
             return Info {
                 ty: None,
                 nullness: Nullness::Unknown,
@@ -1022,7 +1041,10 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                 // A null collection iterates nothing (RFC-036), so the
                 // collection need not be established present.
                 self.check_expr(collection, facts, OPERAND);
-                self.bound.push(as_name.clone());
+                self.bound.push(Binding {
+                    name: foreach_binding(as_name.as_deref()).to_string(),
+                    fields: as_name.is_none(),
+                });
                 // The body runs only for the elements the filter lets
                 // through, so what the filter established holds in the body.
                 let mut body_facts = facts.clone();
@@ -1299,7 +1321,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
     /// same name shadows the output.
     fn derived_facts(&self, condition: &ActionValue) -> Option<&Derived> {
         let path = reference_of(condition)?;
-        if path.contains('.') || self.bound.iter().any(|b| b == path) {
+        if path.contains('.') || self.is_bound(path) {
             return None;
         }
         self.derived.get(path)
@@ -2051,6 +2073,67 @@ actions:
             Rule::N4,
             "'huur' may be absent and is used in ADD",
         );
+    }
+
+    #[test]
+    fn a_foreach_without_as_makes_no_claim_about_a_bare_name_in_its_body() {
+        // Without `as`, an object element binds its fields under their own
+        // names, so `$huur` in the body may be the element's field rather
+        // than the declared input, and the checker claims nothing. With
+        // `as`, only that name is bound (RFC-051), and `$huur` is the input.
+        let with_as = n4_law(
+            r#"  - output: uitkomst
+    value:
+      operation: FOREACH
+      collection: $kinderen
+      as: kind
+      body:
+        operation: ADD
+        values:
+          - $huur
+          - $kind.bedrag
+      combine: ADD
+"#,
+        )
+        .replace(
+            "  - name: partner\n",
+            "  - name: kinderen\n    type: array\n    source: {}\n  - name: partner\n",
+        );
+        assert_only(
+            &with_as,
+            Rule::N4,
+            "'huur' may be absent and is used in ADD",
+        );
+        let without_as = with_as
+            .replace("      as: kind\n", "")
+            .replace("$kind.bedrag", "$item.bedrag");
+        assert!(without_as != with_as);
+        assert_clean(&without_as);
+        // The claim comes back in a nested FOREACH with `as`: its body runs in
+        // a scope of its own, where the outer element's fields are not bound.
+        let nested = n4_law(
+            r#"  - output: uitkomst
+    value:
+      operation: FOREACH
+      collection: $kinderen
+      body:
+        operation: FOREACH
+        collection: $item.leden
+        as: lid
+        body:
+          operation: ADD
+          values:
+            - $huur
+            - $lid.bedrag
+        combine: ADD
+      combine: ADD
+"#,
+        )
+        .replace(
+            "  - name: partner\n",
+            "  - name: kinderen\n    type: array\n    source: {}\n  - name: partner\n",
+        );
+        assert_only(&nested, Rule::N4, "'huur' may be absent and is used in ADD");
     }
 
     #[test]

@@ -638,8 +638,12 @@ pub enum ActionOperation {
     #[serde(rename = "FOREACH")]
     Foreach {
         collection: ActionValue,
-        #[serde(default = "default_foreach_as", rename = "as")]
-        as_name: String,
+        /// The binding as written. `None` when the law omits `as`: the
+        /// element is then bound as `item` and an object element's fields are
+        /// also bound under their own names. With `as` given, only that name
+        /// is bound (RFC-051). See [`foreach_binding`].
+        #[serde(default, rename = "as", skip_serializing_if = "Option::is_none")]
+        as_name: Option<String>,
         body: ActionValue,
         #[serde(default)]
         filter: Option<ActionValue>,
@@ -721,8 +725,12 @@ pub enum CombineOp {
 ///
 /// Neutral and language-independent, so it does not collide with the Dutch
 /// domain names laws use for their own variables.
-fn default_foreach_as() -> String {
-    "item".to_string()
+pub const DEFAULT_FOREACH_AS: &str = "item";
+
+/// The name a FOREACH binds its element to: its `as`, or
+/// [`DEFAULT_FOREACH_AS`] when it has none.
+pub fn foreach_binding(as_name: Option<&str>) -> &str {
+    as_name.unwrap_or(DEFAULT_FOREACH_AS)
 }
 
 impl ActionOperation {

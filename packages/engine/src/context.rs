@@ -551,7 +551,7 @@ impl ValueResolver for RuleContext<'_> {
     fn execute_foreach_op(
         &self,
         collection: &ActionValue,
-        as_name: &str,
+        as_name: Option<&str>,
         body: &ActionValue,
         filter: Option<&ActionValue>,
         combine: Option<&CombineOp>,

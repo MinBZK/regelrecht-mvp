@@ -41,14 +41,18 @@ The article is in the corpus and not yet modeled; this is what modeling it would
 
 `as` names the current element, and that name exists only inside `filter` and `body`. It shadows an outer variable of the same name. `FOREACH` is the only operation that introduces a name rather than reading one.
 
-When the elements are objects, both forms work:
+With `as`, a field of an object element is read through the binding, and a bare name is whatever it is outside the loop ([RFC-051](/rfcs/rfc-051)):
 
 ```yaml
-body: $medebewoner.bijdrage    # dot notation, preferred
-body: $bijdrage                # the object's fields are also injected as locals
+as: medebewoner
+body: $medebewoner.bijdrage    # the element's field
+filter:
+  operation: EQUALS
+  subject: $medebewoner.bsn
+  value: $bsn                  # the outer variable, not the field
 ```
 
-Prefer the dot notation. A flattened field can collide with something in an outer scope, and the prefixed form says which collection the value came from.
+Without `as`, the element is `$item`, and the fields of an object element are also bound under their own names: `$bijdrage` reads `$item.bijdrage`, and shadows an outer `$bijdrage`. Existing laws use that form. New ones should name the element.
 
 ## Nesting
 
