@@ -1,7 +1,7 @@
 /**
  * What a law article produces (`execution.produces`), in either form the
  * schema allows: one object, the form most laws use, or a list of produced
- * things, such as an application and the decision on it (schema v0.8.2,
+ * things, such as an application and the decision on it (schema v0.8.1,
  * RFC-047). Readers go through these helpers so neither form is missed.
  */
 

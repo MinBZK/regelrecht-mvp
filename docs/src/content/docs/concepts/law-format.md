@@ -210,7 +210,7 @@ The set is short on purpose. An operation earns its place when a real law needs 
 
 `produces` states what executing the article yields in legal terms. Article 3 is a `TOETS`: it tests a condition, and its outcome feeds the decision article 2 takes. Article 2 declares a `BESCHIKKING`, and that difference matters to the engine. The legal character selects which procedural hooks fire, such as the objection period the Awb attaches to a beschikking, so an article's outcome and the procedure around it both depend on this declaration. [Hooks and Reactive Execution](/concepts/hooks-and-reactive-execution#the-produces-annotation) explains the mechanism, and the [glossary](/reference/glossary#legal-character) defines each value.
 
-An article that yields more than one thing writes `produces` as a list, one item per thing (schema v0.8.2). Leerplichtwet 1969 art. 13a establishes the application for leave and decides on it; the item for the decision names its outputs under `outputs`. The [decision on the application](/concepts/chronolexography#the-decision-on-the-application) shows it, and [RFC-047](/rfcs/rfc-047) gives the rules.
+An article that yields more than one thing writes `produces` as a list, one item per thing (schema v0.8.1). Leerplichtwet 1969 art. 13a establishes the application for leave and decides on it; the item for the decision names its outputs under `outputs`. The [decision on the application](/concepts/chronolexography#the-decision-on-the-application) shows it, and [RFC-047](/rfcs/rfc-047) gives the rules.
 
 ## Type Specifications
 

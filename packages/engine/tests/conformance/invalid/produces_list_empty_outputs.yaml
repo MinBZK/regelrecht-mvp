@@ -1,6 +1,6 @@
 ---
-# A produced thing that names its outputs names at least one (schema v0.8.2).
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+# A produced thing that names its outputs names at least one (schema v0.8.1).
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
 $id: test_conformance_produces_list_empty_outputs
 regulatory_layer: WET
 bwb_id: BWBR9999905

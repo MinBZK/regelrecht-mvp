@@ -105,7 +105,7 @@ const definitions = computed(() => {
 });
 
 // The decision the article produces: the object form itself, or in a list
-// (schema v0.8.2) the item with a legal character. The fields below show and
+// (schema v0.8.1) the item with a legal character. The fields below show and
 // edit that item; EditorView patches the same one.
 const produces = computed(() => {
   const raw = execution.value?.produces;

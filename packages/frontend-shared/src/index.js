@@ -18,5 +18,5 @@ export { useColorScheme } from './useColorScheme.js';
 // Engine value helpers (RFC-036): one definition of the Unknown value shape
 // for the editor, the demo and the Gherkin runner.
 export { isUnknown, missingFacts } from './values.js';
-// What an article produces, in the object form or as a list (schema v0.8.2).
+// What an article produces, in the object form or as a list (schema v0.8.1).
 export { producedItems, producedDecision, producedSubmission } from './produces.js';

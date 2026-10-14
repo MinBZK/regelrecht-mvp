@@ -122,7 +122,7 @@ describe('MachineReadable', () => {
       expect(opts).toContain('toekenning');
     });
 
-    it('shows the decision of a produces list (schema v0.8.2)', () => {
+    it('shows the decision of a produces list (schema v0.8.1)', () => {
       const article = createArticle();
       article.machine_readable.execution.produces = [
         { submission: { kind: 'AANVRAAG' } },

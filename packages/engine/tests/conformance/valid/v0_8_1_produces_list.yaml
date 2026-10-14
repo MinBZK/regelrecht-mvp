@@ -1,8 +1,8 @@
 ---
-# Tier C: an article that produces two things (schema v0.8.2, RFC-047): the
+# Tier C: an article that produces two things (schema v0.8.1, RFC-047): the
 # application it establishes and the decision on it, with the outputs that
 # belong to the decision.
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
 $id: test_conformance_produces_list
 regulatory_layer: WET
 publication_date: '2026-10-14'

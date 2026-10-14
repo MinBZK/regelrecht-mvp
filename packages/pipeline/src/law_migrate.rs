@@ -2,7 +2,7 @@
 //!
 //! A file that already declares a newer version (v0.8.0 and up) is left
 //! alone: a newer version may carry fields v0.7.1 lacks, such as
-//! `produces.submission` (v0.8.0) or `produces` as a list (v0.8.2), so
+//! `produces.submission` (v0.8.0) or `produces` as a list (v0.8.1), so
 //! moving its `$schema` back would claim a contract the file breaks. It
 //! comes back unchanged and is validated
 //! against its own version.

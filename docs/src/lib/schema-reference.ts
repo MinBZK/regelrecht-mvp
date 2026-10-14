@@ -604,7 +604,7 @@ export interface SubStructure {
  */
 /**
  * The fields of one thing an article produces. `execution.produces` is that
- * object, or from schema v0.8.2 one of it or a list of them, with the item
+ * object, or from schema v0.8.1 one of it or a list of them, with the item
  * under `definitions.producesItem`.
  */
 function producesItem(): SchemaNode {
@@ -689,7 +689,7 @@ export function otherSubStructures(): Record<string, SubStructure[]> {
       'enables[].',
       ['for', 'interface'],
     ),
-    // `produces` is one object or a list of them (schema v0.8.2); its
+    // `produces` is one object or a list of them (schema v0.8.1); its
     // fields are those of one item.
     execution: expandInline(
       { properties: { produces: { ...producesItem(), description: exec.properties?.produces?.description } } },

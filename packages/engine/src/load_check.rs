@@ -9,7 +9,7 @@
 //! outcome, so the loader walks every literal in the definitions and the
 //! actions and refuses the document.
 //!
-//! An article that produces several things (schema v0.8.2) divides its
+//! An article that produces several things (schema v0.8.1) divides its
 //! outputs over them. The loader refuses a list that names an output the
 //! article lacks, gives one output to two items, or has two decisions or two
 //! submissions, since the engine would then not know which one a stage is
@@ -57,7 +57,7 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// Refuse an article whose `produces` list does not divide its outputs over
-/// one decision and one submission at most (schema v0.8.2, RFC-047).
+/// one decision and one submission at most (schema v0.8.1, RFC-047).
 pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
     for article in &law.articles {
         let produced = article.get_produced();

@@ -1311,7 +1311,7 @@ pub fn dangling_bindings(doc: &Value) -> Vec<Finding> {
 
 /// Whether the engine may fire hooks on this entry: only when
 /// `execution.produces`, or one of its items when it is a list (schema
-/// v0.8.2), carries a `legal_character` (a hook on a decision) or a
+/// v0.8.1), carries a `legal_character` (a hook on a decision) or a
 /// `submission` (a hook on an application, RFC-045).
 fn receives_hook_outputs(mr: &Value) -> bool {
     let attaches = |p: &Value| p.get("legal_character").is_some() || p.get("submission").is_some();
@@ -5741,7 +5741,7 @@ articles:
         assert_eq!(dangling_bindings(&doc), Vec::<Finding>::new());
     }
 
-    /// The same when `produces` is a list (schema v0.8.2): an item that
+    /// The same when `produces` is a list (schema v0.8.1): an item that
     /// establishes the application is enough.
     #[test]
     fn dangling_bindings_accepts_a_hook_output_when_produces_is_a_list() {

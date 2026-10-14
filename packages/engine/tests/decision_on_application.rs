@@ -179,7 +179,7 @@ fn the_application_stage_fires_only_the_hooks_on_the_application() {
 }
 
 /// The object form of `produces` names one thing, so every stage computes
-/// every output, as before the list form existed (schema v0.8.2).
+/// every output, as before the list form existed (schema v0.8.1).
 #[test]
 fn an_article_that_produces_one_thing_computes_every_output_at_every_stage() {
     let one_thing = SPECIAL_LAW.replace(

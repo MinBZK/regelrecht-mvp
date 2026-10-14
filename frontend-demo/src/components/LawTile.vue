@@ -192,7 +192,7 @@ function correctOutcome(name, value) {
   });
 }
 // De beslissing van het eerste artikel dat iets voortbrengt, in beide vormen
-// van `produces` (schema v0.8.2).
+// van `produces` (schema v0.8.1).
 const produces = computed(() => {
   for (const a of doc.value.articles ?? []) {
     const p = a.machine_readable?.execution?.produces;

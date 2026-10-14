@@ -2311,7 +2311,7 @@ function handleSave({ section, key, newKey, index, data }) {
     mr.execution.output.push(data);
   } else if (section === 'produces') {
     if (!mr.execution.produces) mr.execution.produces = {};
-    // In the list form (schema v0.8.2) the fields belong to the decision
+    // In the list form (schema v0.8.1) the fields belong to the decision
     // item, the one MachineReadable shows; a list without one gets one.
     const list = Array.isArray(mr.execution.produces) ? mr.execution.produces : null;
     let target = list ? producedDecision(list) : mr.execution.produces;

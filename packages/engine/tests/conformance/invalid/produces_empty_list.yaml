@@ -1,6 +1,6 @@
 ---
-# A list of produced things holds at least one (schema v0.8.2).
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+# A list of produced things holds at least one (schema v0.8.1).
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
 $id: test_conformance_produces_empty_list
 regulatory_layer: WET
 bwb_id: BWBR9999906

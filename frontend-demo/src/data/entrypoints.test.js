@@ -49,7 +49,7 @@ describe('producesBeschikking', () => {
   });
 
   it('herkent de beschikking in een lijst van wat een artikel voortbrengt', () => {
-    // Leerplichtwet art. 13a: de aanvraag en het besluit erop (schema v0.8.2).
+    // Leerplichtwet art. 13a: de aanvraag en het besluit erop (schema v0.8.1).
     const produces = [{ submission: { kind: 'AANVRAAG' } }, { legal_character: 'BESCHIKKING' }];
     expect(producesBeschikking(law(produces))).toBe(true);
     expect(producesBeschikking(law([{ submission: { kind: 'AANVRAAG' } }]))).toBe(false);

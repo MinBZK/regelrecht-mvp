@@ -18,7 +18,7 @@ describe('canBeApplied', () => {
     expect(canBeApplied(null)).toBe(false);
   });
 
-  it('reads the decision in a produces list (schema v0.8.2)', () => {
+  it('reads the decision in a produces list (schema v0.8.1)', () => {
     const produces = [{ submission: { kind: 'AANVRAAG' } }, { legal_character: 'BESCHIKKING' }];
     expect(canBeApplied(produces)).toBe(true);
     expect(canBeApplied([{ submission: { kind: 'AANVRAAG' } }])).toBe(false);

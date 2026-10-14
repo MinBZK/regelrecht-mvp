@@ -245,7 +245,7 @@ impl Output {
 
 /// What an article produces: one object, the form most laws write, or a
 /// list of produced things, such as an application and the decision on it
-/// (schema v0.8.2, RFC-047). Serializes back in the form it was written in.
+/// (schema v0.8.1, RFC-047). Serializes back in the form it was written in.
 ///
 /// Read it through [`Article::get_produced`], [`Article::get_decision`],
 /// [`Article::get_submission`] and [`Article::outputs_of`], so a reader
@@ -303,7 +303,7 @@ pub struct Produces {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub moment: Option<Moment>,
     /// The article's outputs that belong to this produced thing, when the
-    /// article produces more than one (schema v0.8.2). Without it, the item
+    /// article produces more than one (schema v0.8.1). Without it, the item
     /// yields every output no other item lists; read it through
     /// [`Article::outputs_of`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1499,7 +1499,7 @@ impl Article {
     }
 
     /// Whether this article produces more than one thing, so its outputs are
-    /// divided over the items (schema v0.8.2).
+    /// divided over the items (schema v0.8.1).
     pub fn produces_several(&self) -> bool {
         self.get_produced().len() > 1
     }
