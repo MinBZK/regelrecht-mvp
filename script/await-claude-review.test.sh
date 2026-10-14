@@ -177,6 +177,8 @@ steps_json() {
 
 # Een job zonder `steps`-sleutel; die is in het API-schema optioneel.
 JOB_ZONDER_STEPS='{"jobs":[{"name":"claude-review","status":"completed","conclusion":"success","html_url":"http://example.invalid/job"}]}'
+# Vlak na het afronden geeft de API de job soms met een lege stappenlijst.
+JOB_LEGE_STEPS='{"jobs":[{"name":"claude-review","status":"completed","conclusion":"success","steps":[],"html_url":"http://example.invalid/job"}]}'
 # Een `steps`-waarde die geen lijst is: dan valt er niets te tellen.
 JOB_ONLEESBARE_STEPS='{"jobs":[{"name":"claude-review","status":"completed","conclusion":"success","steps":"geen lijst","html_url":"http://example.invalid/job"}]}'
 # De bewijsstap staat er wel, maar zonder conclusie.
@@ -419,7 +421,18 @@ jobs_are "$DONE_NO_PROOF_STEP"
 check "job zonder bewijsstap: rood" 1 "kent geen stap" "kent geen stap" -- MAX_WAIT_SECONDS=0
 reset_fixtures
 jobs_are "$JOB_ZONDER_STEPS"
-check "job zonder stappenlijst: rood" 1 "kent geen stap" "kent geen stap" -- MAX_WAIT_SECONDS=0
+check "job zonder stappenlijst, ook na het wachten: rood, draai opnieuw" 1 "nog geen stappen" "draai deze job opnieuw" -- MAX_WAIT_SECONDS=0
+reset_fixtures
+jobs_are "$JOB_LEGE_STEPS"
+check "job met lege stappenlijst, ook na het wachten: rood, draai opnieuw" 1 "nog geen stappen" "draai deze job opnieuw" -- MAX_WAIT_SECONDS=0
+# De API levert de stappen een poll later: de poort wacht erop in plaats van
+# te concluderen dat de bewijsstap ontbreekt.
+reset_fixtures
+jobs_are "$JOB_LEGE_STEPS" "$DONE_OK"
+check "stappen komen een poll later: groen" 0 "review afgerond (success)" "Wat hij niet bewijst" -- MAX_WAIT_SECONDS=60
+reset_fixtures
+jobs_are "$JOB_ZONDER_STEPS" "$DONE_OK"
+check "stappenlijst komt een poll later: groen" 0 "review afgerond (success)" "Wat hij niet bewijst" -- MAX_WAIT_SECONDS=60
 # Twee stappen met dezelfde naam: de poort kiest daar geen winnaar uit, want dan
 # zou één toegevoegde stap het bewijs kunnen overstemmen.
 reset_fixtures
