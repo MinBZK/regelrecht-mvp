@@ -82,6 +82,7 @@ articles:
         produces:
           - type: AANVRAAG
             requests: wet_verlof#1
+            outputs: [aangevraagd]
         output:
           - {name: aangevraagd, type: boolean}
         actions:

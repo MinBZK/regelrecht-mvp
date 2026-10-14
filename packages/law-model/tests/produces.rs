@@ -46,13 +46,30 @@ fn a_list_item_says_what_it_is_with_type_and_owns_its_parameters_and_outputs() {
     assert_eq!(submission.legal_character(), None);
     assert_eq!(submission.requests(), Some("wet_verlof#1"));
     assert_eq!(article.parameters_of(submission), ["dagen"]);
-    // The submission lists no outputs: it yields those no other item lists.
-    assert_eq!(article.outputs_of(submission), ["ontvangen"]);
+    // The submission lists no outputs, so it yields none.
+    assert!(article.outputs_of(submission).is_empty());
     let decision = article.get_decision().unwrap();
     assert_eq!(decision.legal_character(), Some("BESCHIKKING"));
     assert_eq!(decision.decision_type(), Some("TOEKENNING"));
     assert_eq!(article.outputs_of(decision), ["verlof_verleend"]);
     assert!(article.parameters_of(decision).is_empty());
+}
+
+#[test]
+fn the_decision_without_outputs_yields_every_output_no_item_lists() {
+    let law = law("          - type: AANVRAAG
+            requests: wet_verlof#1
+            parameters: [dagen]
+          - type: BESCHIKKING")
+    .unwrap();
+    let article = &law.articles[0];
+    let submission = article.get_submission().unwrap();
+    assert!(article.outputs_of(submission).is_empty());
+    let decision = article.get_decision().unwrap();
+    assert_eq!(
+        article.outputs_of(decision),
+        ["verlof_verleend", "ontvangen"]
+    );
 }
 
 #[test]
@@ -98,5 +115,24 @@ fn a_list_item_refuses_the_fields_of_the_object_form_and_a_requests_that_names_n
             law(produces).is_err(),
             "{why} must not parse in a list item"
         );
+    }
+}
+
+/// Each form reports its own error, not that the value matches neither form.
+#[test]
+fn an_error_inside_either_form_is_reported_as_written() {
+    for (produces, expected) in [
+        (
+            "          legal_character: BESCHIKKING\n          submission: {kind: AANVRAAG, soort: x}",
+            "unknown field `soort`",
+        ),
+        (
+            "          - type: AANVRAAG\n            soort: x",
+            "unknown field `soort`",
+        ),
+    ] {
+        let message = law(produces).unwrap_err().to_string();
+        assert!(message.contains(expected), "got: {message}");
+        assert!(!message.contains("did not match any variant"), "got: {message}");
     }
 }

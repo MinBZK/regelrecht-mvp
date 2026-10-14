@@ -28,4 +28,5 @@ export {
   producedItems,
   producedSubmission,
   submissionKindOf,
+  withDecisionField,
 } from './produces.js';

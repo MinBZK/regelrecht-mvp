@@ -6,6 +6,7 @@ import {
   producedItems,
   producedSubmission,
   submissionKindOf,
+  withDecisionField,
 } from './produces.js';
 
 const object = { legal_character: 'BESCHIKKING', submission: { kind: 'AANVRAAG' } };
@@ -46,5 +47,24 @@ describe('produces', () => {
     expect(producedSubmission(undefined)).toBeNull();
     expect(producedDecision([{ type: 'AANVRAAG' }])).toBeNull();
     expect(decisionOf(null)).toBeNull();
+  });
+
+  it('patches a field of the decision, in either form', () => {
+    expect(withDecisionField(object, 'decision_type', 'TOEKENNING')).toEqual({ ...object, decision_type: 'TOEKENNING' });
+    expect(withDecisionField(undefined, 'decision_type', 'TOEKENNING')).toEqual({ decision_type: 'TOEKENNING' });
+    expect(withDecisionField({ decision_type: 'TOEKENNING' }, 'decision_type', null)).toBeUndefined();
+    const patched = withDecisionField(list, 'decision_type', 'AFWIJZING');
+    expect(patched[1].decision_type).toBe('AFWIJZING');
+    expect(list[1].decision_type).toBe('TOEKENNING');
+    expect(withDecisionField(list, 'legal_character', 'TOETS')[1].type).toBe('TOETS');
+    expect(withDecisionField(list, 'legal_character', null)).toEqual([list[0]]);
+    expect(withDecisionField([list[1]], 'legal_character', null)).toBeUndefined();
+  });
+
+  it('leaves a list without a decision alone, until a legal character adds one', () => {
+    const application = [list[0]];
+    expect(withDecisionField(application, 'decision_type', 'TOEKENNING')).toBe(application);
+    expect(withDecisionField(application, 'legal_character', null)).toBe(application);
+    expect(withDecisionField(application, 'legal_character', 'BESCHIKKING')).toEqual([list[0], { type: 'BESCHIKKING' }]);
   });
 });

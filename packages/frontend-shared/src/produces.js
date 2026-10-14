@@ -67,3 +67,35 @@ export function decisionOf(produces) {
     procedure_id: decision.procedure_id,
   };
 }
+
+/**
+ * `produces` with one field of its decision set to `data`, or cleared when
+ * `data` is `null`, as the editor's dropdowns patch it; `undefined` when
+ * nothing is left, so no bare `produces: {}` reaches the YAML. Does not
+ * mutate `produces`.
+ *
+ * In a list the field belongs to the decision item, and `legal_character` is
+ * that item's `type`. Setting a legal character on a list without a decision
+ * adds one, and clearing it removes the item, which is nothing without a
+ * type. Any other field of a list without a decision is left alone: there is
+ * no decision to hold it yet.
+ */
+export function withDecisionField(produces, key, data) {
+  if (!Array.isArray(produces)) {
+    const next = { ...(produces ?? {}) };
+    if (data == null) delete next[key];
+    else next[key] = data;
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+  const field = key === 'legal_character' ? 'type' : key;
+  const list = produces.map((item) => ({ ...item }));
+  let target = producedDecision(list);
+  if (!target) {
+    if (data == null || field !== 'type') return produces;
+    list.push((target = {}));
+  }
+  if (data == null) delete target[field];
+  else target[field] = data;
+  const kept = target.type == null ? list.filter((item) => item !== target) : list;
+  return kept.length > 0 ? kept : undefined;
+}

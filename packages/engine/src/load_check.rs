@@ -11,9 +11,9 @@
 //!
 //! An article that produces several things (schema v0.8.1) lists them, one
 //! item per type, each with its own parameters and outputs. The loader
-//! refuses a list with two items of one type, an output given to two items,
-//! a parameter or output the article lacks, or a submission that requests a
-//! decision this law does not take (RFC-047).
+//! refuses a list with two items of one type, an output given to two items
+//! or to none, a parameter or output the article lacks, or a submission that
+//! requests a decision this law does not take (RFC-047).
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
@@ -57,7 +57,7 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
-/// items of one type, does not divide its outputs over its items, names a
+/// items of one type, does not give each output to exactly one item, names a
 /// parameter or output the article lacks, or has a submission that requests
 /// a decision this law does not take. One item per type makes article and
 /// type name an item, so nothing in the list needs a name of its own; a
@@ -136,6 +136,21 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 return refuse(format!("gives output '{name}' to two things it produces"));
             }
             listed.push(name);
+        }
+        if let Some(name) = article
+            .get_outputs()
+            .iter()
+            .map(|o| o.name.as_str())
+            .find(|name| {
+                !produced
+                    .iter()
+                    .any(|&p| article.outputs_of(p).contains(name))
+            })
+        {
+            return refuse(format!(
+                "declares output '{name}', but nothing it produces yields it; \
+                 a submission yields only the outputs it lists"
+            ));
         }
         for &item in &produced {
             for name in article.parameters_of(item) {
@@ -365,6 +380,25 @@ articles:
         service.load_law(&yaml).expect("a well-divided list loads");
     }
 
+    /// A submission without `outputs` yields none, so the decision without
+    /// `outputs` takes every output and the list is not ambiguous.
+    #[test]
+    fn a_submission_without_outputs_leaves_every_output_to_the_decision() {
+        let yaml = law_producing(
+            "          - type: AANVRAAG\n            parameters: [p]\n          - type: BESCHIKKING",
+        );
+        let mut service = LawExecutionService::new();
+        service
+            .load_law(&yaml)
+            .expect("the decision takes the outputs no item lists");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let article = &law.articles[0];
+        let submission = article.get_submission().expect("a submission");
+        let decision = article.get_decision().expect("a decision");
+        assert!(article.outputs_of(submission).is_empty());
+        assert_eq!(article.outputs_of(decision), ["x"]);
+    }
+
     #[test]
     fn a_produces_list_must_divide_the_outputs_unambiguously() {
         for (items, why) in [
@@ -399,6 +433,14 @@ articles:
             (
                 "          - type: AANVRAAG\n            requests: lijst#1",
                 "which takes no decision",
+            ),
+            (
+                "          - type: AANVRAAG\n            parameters: [p]",
+                "declares output 'x', but nothing it produces yields it",
+            ),
+            (
+                "          - type: AANVRAAG\n            outputs: [x]\n          - type: BESCHIKKING\n            outputs: [x]",
+                "gives output 'x' to two things",
             ),
         ] {
             let mut service = LawExecutionService::new();

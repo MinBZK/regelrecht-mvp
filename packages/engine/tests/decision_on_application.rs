@@ -180,6 +180,31 @@ fn the_application_stage_fires_only_the_hooks_on_the_application() {
     assert_eq!(names(&result), ["naam_gegeven"]);
 }
 
+/// A decision item without `outputs` takes every output, and the submission
+/// without `outputs` none: recording the application still does not ask the
+/// head's judgement.
+#[test]
+fn a_decision_without_outputs_leaves_the_application_stage_without_the_judgement() {
+    let special = SPECIAL_LAW.replace("            outputs: [verlof_verleend]\n", "");
+    assert_ne!(special, SPECIAL_LAW);
+    let service = service(&[GENERAL_LAW, &special]);
+    let result = service
+        .execute_stage_at(
+            "wet_verlof",
+            "1",
+            "AANVRAAG",
+            None,
+            params(&[
+                ("dagen", Value::Int(5)),
+                ("naam_aanvrager", Value::String("J. Jansen".into())),
+                ("aanvraag_datum", date(DAY)),
+            ]),
+            DAY,
+        )
+        .unwrap();
+    assert_eq!(names(&result), ["naam_gegeven"]);
+}
+
 /// The object form of `produces` names one thing, so every stage computes
 /// every output, as before the list form existed (schema v0.8.1).
 #[test]

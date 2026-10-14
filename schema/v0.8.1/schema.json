@@ -2378,7 +2378,7 @@
           },
           "minItems": 1,
           "uniqueItems": true,
-          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. An item without it yields every output that no other item lists. Every name must be an output of the article, and an output belongs to one item at most; the loader checks both. In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision (RFC-047)."
+          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. A submission without it yields none; the decision without it yields every output that no other item lists. Every name must be an output of the article, and every output belongs to exactly one item; the loader checks both. In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision (RFC-047)."
         },
         "decision_type": {
           "type": "string",

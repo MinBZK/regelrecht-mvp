@@ -46,6 +46,8 @@ articles:
             requests: andere_wet#3
             parameters:
               - adres
+            outputs:
+              - aanvraag_ingediend
             moment:
               parameter: datum_ontvangst
               legal_basis:

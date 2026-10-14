@@ -105,12 +105,22 @@ const definitions = computed(() => {
 });
 
 // The decision the article produces, in the object form's terms: the object
-// itself, or in a list (schema v0.8.1) the item with a decision `type`. The
-// fields below show and edit it; EditorView patches the same item.
+// itself, as written, or in a list (schema v0.8.1) the item with a decision
+// `type`. The fields below show and edit it; EditorView patches the same
+// item.
 const produces = computed(() => {
   const raw = execution.value?.produces;
   if (raw == null) return null;
+  if (!Array.isArray(raw)) return raw;
   return decisionOf(raw) ?? {};
+});
+
+// Whether there is a decision to hold the decision-only fields. A list
+// without a decision item has none until a legal character adds one, so
+// its decision type is not offered before then.
+const hasDecision = computed(() => {
+  const raw = execution.value?.produces;
+  return !Array.isArray(raw) || decisionOf(raw) != null;
 });
 
 // Enum values copied from the law schema. Keep in sync with
@@ -352,7 +362,7 @@ function addOutput() {
         </nldd-cell>
         <nldd-text-cell v-else horizontal-alignment="right" :text="humanize(produces.legal_character)"></nldd-text-cell>
       </nldd-list-item>
-      <nldd-list-item v-if="produces.decision_type || editable" size="md">
+      <nldd-list-item v-if="hasDecision && (produces.decision_type || editable)" size="md">
         <nldd-text-cell text="Besluit-type" min-width="120px"></nldd-text-cell>
         <nldd-spacer-cell size="8"></nldd-spacer-cell>
         <nldd-cell v-if="editable" width="full" min-width="120px" max-width="280px">

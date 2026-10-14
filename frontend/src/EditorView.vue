@@ -2,7 +2,7 @@
 import { ref, computed, reactive, watch, watchEffect, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import * as yaml from 'js-yaml';
-import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
+import { withDecisionField } from '@regelrecht/frontend-shared/produces.js';
 import { useLaw, fetchLaw } from './composables/useLaw.js';
 import { useCorpusLaws } from './composables/useCorpusLaws.js';
 import { useEngine } from './composables/useEngine.js';
@@ -2310,30 +2310,9 @@ function handleSave({ section, key, newKey, index, data }) {
   } else if (section === 'add-output') {
     mr.execution.output.push(data);
   } else if (section === 'produces') {
-    if (!mr.execution.produces) mr.execution.produces = {};
-    // In the list form (schema v0.8.1) the fields belong to the decision
-    // item, the one MachineReadable shows, and its legal character is its
-    // `type`. Setting a legal character on a list without a decision adds
-    // one; clearing it removes the item, which is nothing without a type.
-    const list = Array.isArray(mr.execution.produces) ? mr.execution.produces : null;
-    const field = list && key === 'legal_character' ? 'type' : key;
-    let target = list ? producedDecision(list) : mr.execution.produces;
-    if (!target) {
-      if (data == null || field !== 'type') target = {};
-      else list.push((target = {}));
-    }
-    if (data == null) delete target[field];
-    else target[field] = data;
-    // Drop what every field was cleared from, otherwise the YAML dump emits
-    // a bare `produces: {}` (or an item without a type) which the schema
-    // rejects.
-    if (list) {
-      const index = list.indexOf(target);
-      if (index >= 0 && target.type == null) list.splice(index, 1);
-      if (list.length === 0) delete mr.execution.produces;
-    } else if (Object.keys(mr.execution.produces).length === 0) {
-      delete mr.execution.produces;
-    }
+    const produces = withDecisionField(mr.execution.produces, key, data);
+    if (produces === undefined) delete mr.execution.produces;
+    else mr.execution.produces = produces;
   }
 
   machineReadable.value = mr;

@@ -133,6 +133,25 @@ describe('MachineReadable', () => {
       expect(wrapper.find('select[aria-label="Besluit-type"]').element.value).toBe('AFWIJZING');
     });
 
+    it('offers no decision type for a produces list without a decision', () => {
+      const article = createArticle();
+      article.machine_readable.execution.produces = [
+        { type: 'AANVRAAG', requests: 'test#1', parameters: ['bsn'] },
+      ];
+      const wrapper = mount(MachineReadable, { props: { article, editable: true } });
+      expect(wrapper.find('select[aria-label="Juridische basis"]').element.value).toBe('');
+      expect(wrapper.find('select[aria-label="Besluit-type"]').exists()).toBe(false);
+    });
+
+    it('shows a produces object as written, also without a legal character', () => {
+      const article = createArticle();
+      article.machine_readable.execution.produces = { decision_type: 'TOEKENNING' };
+      const read = mount(MachineReadable, { props: { article, editable: false } });
+      expect(read.findAll('nldd-text-cell').some((c) => c.attributes('text') === 'Besluit-type')).toBe(true);
+      const edit = mount(MachineReadable, { props: { article, editable: true } });
+      expect(edit.find('select[aria-label="Besluit-type"]').element.value).toBe('TOEKENNING');
+    });
+
     it('shows empty state when no machine_readable', () => {
       const wrapper = mount(MachineReadable, {
         props: { article: { number: '1' }, editable: true },

@@ -251,11 +251,14 @@ impl Output {
 /// [`Article::get_submission`], [`Article::outputs_of`] and
 /// [`Article::parameters_of`], so a reader
 /// handles both forms alike.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+///
+/// Deserialized by the shape of the value, a sequence or a map, so an error
+/// inside either form reaches the reader as written instead of as "matches
+/// no variant".
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum ProducesList {
-    /// A list of produced things, each with its own `type`. Tried
-    /// first: a list never reads as the object form.
+    /// A list of produced things, each with its own `type`.
     Many(Vec<ProducedItem>),
     /// One produced thing, the object form.
     One(Box<Produces>),
@@ -268,6 +271,38 @@ impl ProducesList {
             Self::Many(items) => items.iter().map(Produced::Item).collect(),
             Self::One(item) => vec![Produced::Object(item.as_ref())],
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for ProducesList {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct FormVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for FormVisitor {
+            type Value = ProducesList;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a list of produced items or one produces object")
+            }
+
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                seq: A,
+            ) -> Result<Self::Value, A::Error> {
+                Vec::deserialize(serde::de::value::SeqAccessDeserializer::new(seq))
+                    .map(ProducesList::Many)
+            }
+
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                map: A,
+            ) -> Result<Self::Value, A::Error> {
+                Produces::deserialize(serde::de::value::MapAccessDeserializer::new(map))
+                    .map(|p| ProducesList::One(Box::new(p)))
+            }
+        }
+
+        deserializer.deserialize_any(FormVisitor)
     }
 }
 
@@ -294,8 +329,8 @@ pub struct ProducedItem {
     /// an application.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parameters: Option<Vec<String>>,
-    /// The article's outputs this item yields. Without it, the item yields
-    /// every output no other item lists.
+    /// The article's outputs this item yields. Without it, a submission
+    /// yields none and the decision every output no other item lists.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Vec<String>>,
     /// For a submission: the article whose decision it asks for,
@@ -1635,12 +1670,16 @@ impl Article {
     }
 
     /// The names of the outputs that belong to `item`, one of
-    /// [`Self::get_produced`]: those it lists under `outputs`, or else every
-    /// output of the article that no other item lists. For the object form
-    /// that is every output.
+    /// [`Self::get_produced`]: those it lists under `outputs`. An item that
+    /// lists none yields nothing if it is a submission, and if it is the
+    /// decision every output of the article that no other item lists. For
+    /// the object form that is every output.
     pub fn outputs_of<'a>(&'a self, item: Produced<'a>) -> Vec<&'a str> {
         if let Some(listed) = item.listed_outputs() {
             return listed.iter().map(String::as_str).collect();
+        }
+        if matches!(item, Produced::Item(i) if i.is_submission()) {
+            return Vec::new();
         }
         let produced = self.get_produced();
         self.get_outputs()

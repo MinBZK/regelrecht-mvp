@@ -241,6 +241,7 @@ articles:
           - type: AANVRAAG
             requests: wet_verlof_fictief#1
             parameters: [dagen]
+            outputs: [aangevraagd]
         parameters:
           - {name: dagen, type: number}
         output:
