@@ -166,6 +166,11 @@ impl Reduction {
             valid_from: self.valid_from,
         })
     }
+
+    /// The reduction as written.
+    pub fn yaml(&self) -> &str {
+        &self.yaml
+    }
 }
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),

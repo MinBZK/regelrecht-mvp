@@ -47,7 +47,9 @@ The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` 
 - **`statisch`**: a Vue app built into this image with `POC_BASE=/<slug>/` and served from `/app/static/<slug>` with its own single-page fallback. Today these are `frontend-poc-terugbetaalregimes/` and `frontend-poc-nieuwkomersbekostiging/`, each with its case corpus under `corpus-poc/`. They run the engine as WASM in the browser.
 - **`proxy`**: a PoC that runs as its own component, not published on the web, and is forwarded to in-cluster at `http://{deployment}-{upstream}:8000`. The deployment name comes from the pod's hostname, so a preview reaches its own upstream and not production's. Outside the cluster, `POC_UPSTREAM_<SLUG>` sets the address. The path is forwarded unchanged and cookies pass both ways, because the proxied app keeps its own session.
 
-The one proxied PoC today is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
+The first proxied PoC is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
+
+The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays through an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, using the cell from `packages/cel`: the application, the head's decision, the objection and the decision on it, a trial decision under a temporarily edited article 13a, the chronicle and the school's reduction. Its chronicle lives in memory, shared by every visitor, and is empty after a restart. Its regelwerken come from `corpus/regulation/`, not from `corpus-poc/`.
 
 ### The gate
 
@@ -63,7 +65,7 @@ The list of cases comes from `POC_ASSISTENT_CASUSSEN` in `start.sh`, not from th
 
 ### Image and deployment
 
-`packages/poc-portal/Dockerfile` builds the engine to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal and napp deploy as two ZAD components, `poc` and `napp`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds the engine, `script/deploy-filters.mjs` ties the `poc` component to two crates, the portal binary and the engine, so an engine change rebuilds the image even though the portal itself does not depend on the engine.
+`packages/poc-portal/Dockerfile` builds the engine to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal, napp and vakantieverlof deploy as three ZAD components, `poc`, `napp` and `vakantieverlof`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds the engine, `script/deploy-filters.mjs` ties the `poc` component to two crates, the portal binary and the engine, so an engine change rebuilds the image even though the portal itself does not depend on the engine.
 
 ## Running locally
 
@@ -112,8 +114,19 @@ napp runs as its own component and reads its own variables. The defaults below a
 | `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_DISCOVERY_URL` | none | SSO Rijk through the shared auth crate; without them only the mock login is available |
 | `OIDC_REQUIRED_ROLE` | realm membership | Role required after login; unset, membership of the ZAD realm is enough |
 
+### vakantieverlof
+
+The image sets the port to `8000`, the base path to `/vakantieverlof/` and the corpus to `/app/corpus`. `just poc-vakantieverlof` runs it locally.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VERLOF_PORT` | `8410` | Listening port |
+| `VERLOF_BASE_PATH` | `/` | Path prefix; must match the portal path |
+| `VERLOF_STATIC_DIR` | `frontend-poc-vakantieverlof/dist` in the repository | Built frontend |
+| `VERLOF_CORPUS_DIR` | `corpus/` in the repository | The regelwerken under `regulation/nl` and the cell under `cells/obs_de_klimop` |
+
 ## Further reading
 
 - [Shared Frontend Package](./frontend-shared) - the saved-state, variant and runner modules the static PoCs use
 - [Demo](./demo) - the one public entry on the index
-- [Deployment](/operations/deployment) - the `poc` and `napp` components
+- [Deployment](/operations/deployment) - the `poc`, `napp` and `vakantieverlof` components

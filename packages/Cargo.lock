@@ -4214,6 +4214,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "regelrecht-poc-vakantieverlof"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "http-body-util",
+ "regelrecht-cel",
+ "regelrecht-engine",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "tower-http 0.7.1",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "regelrecht-shared"
 version = "0.1.0"
 dependencies = [
