@@ -298,7 +298,9 @@ fn a_left_out_field_that_cannot_be_absent_is_named_as_missing() {
 // The decision on the application (RFC-047)
 // ---------------------------------------------------------------------------
 
-const JUDGEMENT: &str = "alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder";
+/// The two facts of art. 11, onder f, both judged by the head.
+const PROFESSION: &str = "specifieke_aard_beroep_ouder";
+const OUTSIDE_HOLIDAYS: &str = "verlof_valt_buiten_schoolvakanties";
 
 /// An application for leave from `first` to `last`, recorded on `on`.
 fn applied(cell: &mut Cell, first: &str, last: &str, on: &str) -> Gram {
@@ -308,9 +310,13 @@ fn applied(cell: &mut Cell, first: &str, last: &str, on: &str) -> Gram {
     record(cell, &supplied, on).unwrap()
 }
 
-/// The head's judgement under art. 11, onder f.
-fn judgement(holds: bool) -> Map<String, Value> {
-    json!({ JUDGEMENT: holds }).as_object().unwrap().clone()
+/// The head's judgements under art. 11, onder f: the profession of a parent,
+/// and leave outside the school holidays.
+fn judgement(profession: bool, outside_holidays: bool) -> Map<String, Value> {
+    json!({ PROFESSION: profession, OUTSIDE_HOLIDAYS: outside_holidays })
+        .as_object()
+        .unwrap()
+        .clone()
 }
 
 fn decide(
@@ -342,7 +348,8 @@ fn the_decision_asks_from_the_application_the_policy_the_head_and_the_cell() {
             ("besluit_datum", &Source::Cell),
             ("bekendmaking_datum", &Source::Cell),
             ("eerste_lesdag_schooljaar", &policy),
-            (JUDGEMENT, &Source::Caller),
+            (PROFESSION, &Source::Caller),
+            (OUTSIDE_HOLIDAYS, &Source::Caller),
         ]
     );
 }
@@ -351,7 +358,7 @@ fn the_decision_asks_from_the_application_the_policy_the_head_and_the_cell() {
 fn five_school_days_outside_the_first_two_weeks_on_the_ground_of_11f_are_granted() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
 
     assert_eq!(gram.kind, "BESCHIKKING");
     assert_eq!(gram.grondslag, "leerplichtwet_1969#13a");
@@ -378,8 +385,10 @@ fn five_school_days_outside_the_first_two_weeks_on_the_ground_of_11f_are_granted
         gram.field_source["eerste_lesdag_schooljaar"],
         Source::Policy
     );
-    assert_eq!(gram.fields[JUDGEMENT], json!(true));
-    assert_eq!(gram.field_source[JUDGEMENT], Source::Caller);
+    for judged in [PROFESSION, OUTSIDE_HOLIDAYS] {
+        assert_eq!(gram.fields[judged], json!(true), "{judged}");
+        assert_eq!(gram.field_source[judged], Source::Caller, "{judged}");
+    }
     assert_eq!(gram.fields["besluit_datum"], json!("2026-10-20"));
     assert_eq!(gram.field_source["besluit_datum"], Source::Cell);
     // What the application holds and the decision does not ask stays in
@@ -391,7 +400,7 @@ fn five_school_days_outside_the_first_two_weeks_on_the_ground_of_11f_are_granted
 fn the_awb_hooks_on_the_decision_land_in_its_gram_and_not_in_the_application() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
 
     // Which Awb articles take part at which stage follows from the law.
     let shape = decision::derive(&service(), LAW, ARTICLE, day("2026-10-20")).unwrap();
@@ -430,7 +439,7 @@ fn eleven_school_days_are_refused() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     // Monday 1 up to and including Monday 15 February.
     let app = applied(&mut cell, "2027-02-01", "2027-02-15", "2026-10-13");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
     assert_eq!(gram.outputs["verlofdagen"], json!(11));
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     // A refusal is a decision too: it is motivated and open to objection.
@@ -442,7 +451,7 @@ fn eleven_school_days_are_refused() {
 fn two_weeks_with_the_weekend_between_are_ten_school_days() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-12", "2026-10-13");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
     assert_eq!(gram.outputs["verlofdagen"], json!(10));
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
 }
@@ -453,7 +462,7 @@ fn leave_in_the_first_two_weeks_of_the_school_year_is_refused() {
     // The school year starts on Monday 31 August; the second week ends on
     // Sunday 13 September.
     let app = applied(&mut cell, "2026-09-10", "2026-09-11", "2026-08-20");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-08-25").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-08-25").unwrap();
     assert_eq!(gram.outputs["verlofdagen"], json!(2));
     assert_eq!(
         gram.outputs["verlof_raakt_eerste_twee_lesweken"],
@@ -463,7 +472,7 @@ fn leave_in_the_first_two_weeks_of_the_school_year_is_refused() {
 
     // The week after is fine.
     let app = applied(&mut cell, "2026-09-14", "2026-09-18", "2026-08-25");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-08-25").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-08-25").unwrap();
     assert_eq!(
         gram.outputs["verlof_raakt_eerste_twee_lesweken"],
         json!(false)
@@ -472,25 +481,42 @@ fn leave_in_the_first_two_weeks_of_the_school_year_is_refused() {
 }
 
 #[test]
-fn without_the_ground_of_11f_leave_is_refused() {
+fn without_a_profession_of_a_specific_nature_leave_is_refused() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let gram = decide(&mut cell, &app.id, &judgement(false), "2026-10-20").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(false, true), "2026-10-20").unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
-    assert_eq!(gram.fields[JUDGEMENT], json!(false));
+    assert_eq!(gram.fields[PROFESSION], json!(false));
 }
 
 #[test]
-fn a_decision_needs_the_judgement_of_the_head() {
+fn leave_within_the_school_holidays_is_refused() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let e = decide(&mut cell, &app.id, &Map::new(), "2026-10-20").unwrap_err();
-    assert!(
-        matches!(&e, Error::Refused(m) if m.contains(&format!("asks '{JUDGEMENT}'"))),
-        "{e}"
-    );
-    let mut wrong = Map::new();
-    wrong.insert(JUDGEMENT.into(), json!("ja"));
+    let gram = decide(&mut cell, &app.id, &judgement(true, false), "2026-10-20").unwrap();
+    assert_eq!(gram.outputs["verlof_verleend"], json!(false));
+    assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
+}
+
+#[test]
+fn a_decision_needs_both_judgements_of_the_head() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    for (judged, other) in [
+        (PROFESSION, OUTSIDE_HOLIDAYS),
+        (OUTSIDE_HOLIDAYS, PROFESSION),
+    ] {
+        let mut supplied = judgement(true, true);
+        supplied.remove(judged);
+        let e = decide(&mut cell, &app.id, &supplied, "2026-10-20").unwrap_err();
+        assert!(
+            matches!(&e, Error::Refused(m)
+                if m.contains(&format!("asks '{judged}'")) && !m.contains(&format!("'{other}'"))),
+            "{e}"
+        );
+    }
+    let mut wrong = judgement(true, true);
+    wrong.insert(PROFESSION.into(), json!("ja"));
     let e = decide(&mut cell, &app.id, &wrong, "2026-10-20").unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("does not fit a Boolean")),
@@ -512,7 +538,7 @@ fn the_head_does_not_supply_what_comes_from_elsewhere() {
         ),
         ("besluit_datum", json!("2026-10-01"), "the cell"),
     ] {
-        let mut supplied = judgement(true);
+        let mut supplied = judgement(true, true);
         supplied.insert(name.into(), value);
         let e = decide(&mut cell, &app.id, &supplied, "2026-10-20").unwrap_err();
         assert!(
@@ -520,7 +546,7 @@ fn the_head_does_not_supply_what_comes_from_elsewhere() {
             "{e}"
         );
     }
-    let mut supplied = judgement(true);
+    let mut supplied = judgement(true, true);
     supplied.insert("bestemming".into(), json!("Lissabon"));
     let e = decide(&mut cell, &app.id, &supplied, "2026-10-20").unwrap_err();
     assert!(
@@ -536,7 +562,7 @@ fn a_decision_refers_to_an_application_of_this_cell_that_is_not_decided_yet() {
     let e = decide(
         &mut cell,
         "019a0000-0000-7000-8000-000000000000",
-        &judgement(true),
+        &judgement(true, true),
         "2026-10-20",
     )
     .unwrap_err();
@@ -546,14 +572,14 @@ fn a_decision_refers_to_an_application_of_this_cell_that_is_not_decided_yet() {
     );
 
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let decided = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap();
-    let e = decide(&mut cell, &app.id, &judgement(false), "2026-10-21").unwrap_err();
+    let decided = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
+    let e = decide(&mut cell, &app.id, &judgement(false, true), "2026-10-21").unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("already decided on")),
         "{e}"
     );
     // A decision is no application to decide on.
-    let e = decide(&mut cell, &decided.id, &judgement(true), "2026-10-21").unwrap_err();
+    let e = decide(&mut cell, &decided.id, &judgement(true, true), "2026-10-21").unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("is a BESCHIKKING")),
         "{e}"
@@ -565,13 +591,13 @@ fn a_decision_refers_to_an_application_of_this_cell_that_is_not_decided_yet() {
 fn a_decision_is_not_dated_before_its_application() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let e = decide(&mut cell, &app.id, &judgement(true), "2026-10-12").unwrap_err();
+    let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-12").unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("does not go back")),
         "{e}"
     );
     // The same day is fine.
-    decide(&mut cell, &app.id, &judgement(true), "2026-10-13").unwrap();
+    decide(&mut cell, &app.id, &judgement(true, true), "2026-10-13").unwrap();
 }
 
 #[test]
@@ -581,7 +607,7 @@ fn a_decision_reads_back_from_the_file() {
     let recorded = {
         let mut cell = Cell::open(RECORDING_ACTOR, &path).unwrap();
         let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-        let gram = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap();
+        let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
         vec![app, gram]
     };
     let cell = Cell::open(RECORDING_ACTOR, &path).unwrap();
@@ -593,7 +619,7 @@ fn leave_that_ends_on_the_first_lesdag_touches_the_first_two_weeks() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     // Ending on Monday 31 August, the first lesdag: refused.
     let app = applied(&mut cell, "2026-08-24", "2026-08-31", "2026-08-03");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-08-03").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-08-03").unwrap();
     assert_eq!(
         gram.outputs["verlof_raakt_eerste_twee_lesweken"],
         json!(true)
@@ -602,7 +628,7 @@ fn leave_that_ends_on_the_first_lesdag_touches_the_first_two_weeks() {
 
     // Ending the day before: it does not touch them.
     let app = applied(&mut cell, "2026-08-24", "2026-08-30", "2026-08-03");
-    let gram = decide(&mut cell, &app.id, &judgement(true), "2026-08-03").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-08-03").unwrap();
     assert_eq!(
         gram.outputs["verlof_raakt_eerste_twee_lesweken"],
         json!(false)
@@ -616,7 +642,7 @@ fn an_application_that_lacks_what_the_decision_needs_is_not_decided_on() {
     supplied.remove("laatste_verlofdag");
     let app = record(&mut cell, &supplied, "2026-10-13").unwrap();
     assert_eq!(app.missing, vec!["laatste_verlofdag"]);
-    let e = decide(&mut cell, &app.id, &judgement(true), "2026-10-20").unwrap_err();
+    let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("lacks 'laatste_verlofdag'")),
         "{e}"

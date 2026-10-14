@@ -980,18 +980,29 @@ articles:
           required: true
           description: De eerste dag waarop de school in het schooljaar les geeft.
         # Lid 1 noemt de vakantie "bedoeld in artikel 11, onder f": de jongere
-        # kan vanwege de specifieke aard van het beroep van een ouder slechts
-        # buiten de schoolvakanties met hem op vakantie. Of dat zo is, oordeelt
-        # het hoofd per aanvraag: lid 1 noemt het geval "indien het hoofd op
-        # aanvraag ... verlof heeft verleend".
-        - id: alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder
+        # kan "vanwege de specifieke aard van het beroep" van een ouder
+        # "slechts buiten de schoolvakanties met hen op vakantie". Dat zijn
+        # twee gegevens: het beroep laat vakantie in de schoolvakanties niet
+        # toe, en het gevraagde verlof valt buiten de schoolvakanties. Beide
+        # oordeelt het hoofd per aanvraag: lid 1 noemt het geval "indien het
+        # hoofd op aanvraag ... verlof heeft verleend".
+        - id: specifieke_aard_beroep_ouder
           type: boolean
           required: true
           decided_per_case_by: het hoofd (artikel 13a, eerste lid)
           description: >-
-            Of de jongere vanwege de specifieke aard van het beroep van een van
-            de in artikel 2, eerste lid, bedoelde personen slechts buiten de
+            Of een van de in artikel 2, eerste lid, bedoelde personen een beroep
+            heeft van zo specifieke aard dat de jongere niet binnen de
             schoolvakanties met hen op vakantie kan gaan (artikel 11, onder f).
+        # Voor nu een oordeel van het hoofd bij het besluit; de school kent
+        # haar vakanties. Het is geen veld van de aanvraag.
+        - id: verlof_valt_buiten_schoolvakanties
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd (artikel 13a, eerste lid)
+          description: >-
+            Of het gevraagde verlof buiten de schoolvakanties valt (artikel 11,
+            onder f).
       execution:
         # Lid 1: het hoofd verleent verlof "op aanvraag". Dit artikel vestigt
         # die aanvraag (RFC-045), zodat de Awb erop haakt, en het verlenen of
@@ -1113,7 +1124,8 @@ articles:
                     to: $laatste_verlofdag
                     in: days
                   value: 0
-          # Lid 1 met artikel 11, onder f, en lid 2. "Eenmaal per schooljaar"
+          # Lid 1 met artikel 11, onder f (beide gegevens), en lid 2. "Eenmaal
+          # per schooljaar"
           # (lid 2) en het evenredige deel voor een kwalificatieplichtige
           # jongere (lid 2, tweede volzin) zijn nog niet gemodelleerd.
           # Eigen keuze: verlof is verlof om de school niet te bezoeken (lid 1),
@@ -1124,7 +1136,8 @@ articles:
             value:
               operation: AND
               conditions:
-                - $alleen_buiten_schoolvakanties_op_vakantie_door_beroep_ouder
+                - $specifieke_aard_beroep_ouder
+                - $verlof_valt_buiten_schoolvakanties
                 - operation: GREATER_THAN_OR_EQUAL
                   subject:
                     operation: DATE_DIFF
