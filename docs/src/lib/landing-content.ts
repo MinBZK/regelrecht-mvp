@@ -169,7 +169,7 @@ export interface LandingContent {
 const SIGNUP_NL_PATH = '/aanmelden'
 const SIGNUP_EN_PATH = '/en/signup'
 const GUIDE_PATH = '/guide/what-is-regelrecht'
-const GITHUB = 'https://github.com/MinBZK/regelrecht'
+const GITHUB = 'https://github.com/NederlandseDigitaleDienst/regelrecht'
 
 export const content: Record<'nl' | 'en', LandingContent> = {
   nl: {

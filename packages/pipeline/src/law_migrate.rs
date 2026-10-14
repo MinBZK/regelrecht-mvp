@@ -64,7 +64,7 @@ use serde_yaml_ng::{Mapping, Value};
 
 /// `$schema` URL a migrated file declares.
 pub const SCHEMA_URL: &str =
-    "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.7.1/schema/v0.7.1/schema.json";
+    "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.7.1/schema/v0.7.1/schema.json";
 
 /// The schema version this module migrates to.
 pub const TARGET_VERSION: &str = "v0.7.1";

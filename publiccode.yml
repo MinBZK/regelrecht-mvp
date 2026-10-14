@@ -4,7 +4,7 @@
 publiccodeYmlVersion: '0.7'
 
 name: RegelRecht
-url: https://github.com/MinBZK/regelrecht
+url: https://github.com/NederlandseDigitaleDienst/regelrecht
 landingURL: https://regelrecht.rijks.app
 roadmap: https://regelrecht.rijks.app/roadmap
 logo: docs/public/regelrecht-icon.svg

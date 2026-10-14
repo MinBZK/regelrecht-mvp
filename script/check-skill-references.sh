@@ -106,9 +106,9 @@ fi
 
 # --- 2. Schema-URL's -------------------------------------------------------
 
-expected="https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-$latest/schema/$latest/schema.json"
+expected="https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-$latest/schema/$latest/schema.json"
 # Een vX.Y.Z-vorm is een sjabloon (zie hierboven) en telt niet mee.
-url_re='https://raw\.githubusercontent\.com/MinBZK/regelrecht/[^[:space:]`"'"'"')]*schema\.json'
+url_re='https://raw\.githubusercontent\.com/(MinBZK|NederlandseDigitaleDienst)/regelrecht/[^[:space:]`"'"'"')]*schema\.json'
 
 { grep -rhoE "$url_re" "$SKILLS" 2>/dev/null || true; } |
     sort -u |

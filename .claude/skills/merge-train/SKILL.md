@@ -37,7 +37,7 @@ de merge blokkeert.
 **Bijwerken doe je met de merge-variant, niet met rebase.**
 
 ```bash
-gh api --method PUT repos/MinBZK/regelrecht/pulls/<nr>/update-branch
+gh api --method PUT repos/NederlandseDigitaleDienst/regelrecht/pulls/<nr>/update-branch
 ```
 
 Die zet er een merge-commit bovenop die GitHub zelf tekent, dus de branch blijft
@@ -75,7 +75,7 @@ je niet; die liggen bij hun auteur.
 
 ```bash
 git fetch origin main
-gh pr list -R MinBZK/regelrecht --state open --limit 200 \
+gh pr list -R NederlandseDigitaleDienst/regelrecht --state open --limit 200 \
   --json number,title,isDraft,mergeStateStatus,author,headRefName
 ```
 
@@ -93,7 +93,7 @@ Welke bestanden een PR raakt staat niet in die lijst, en zonder die bestanden ku
 je de uitsluitingen uit "Vaste regels" niet toepassen. Haal ze per kandidaat op:
 
 ```bash
-gh pr diff <nr> -R MinBZK/regelrecht --name-only
+gh pr diff <nr> -R NederlandseDigitaleDienst/regelrecht --name-only
 ```
 
 Raakt er ook maar één pad `corpus/regulation/**`, `schema/**`,
@@ -109,13 +109,13 @@ Stel eerst vast dát hij achterloopt. `update-branch` op een branch die al bij i
 geeft een fout, en die fout lijkt op de fout bij een conflict:
 
 ```bash
-gh api repos/MinBZK/regelrecht/compare/main...<headRefName> --jq .behind_by
+gh api repos/NederlandseDigitaleDienst/regelrecht/compare/main...<headRefName> --jq .behind_by
 ```
 
 Is die `0`, sla deze stap dan over. Anders:
 
 ```bash
-gh api --method PUT repos/MinBZK/regelrecht/pulls/<nr>/update-branch
+gh api --method PUT repos/NederlandseDigitaleDienst/regelrecht/pulls/<nr>/update-branch
 ```
 
 Wacht daarna tot de nieuwe checks starten. Werkt de aanroep niet terwijl
@@ -139,7 +139,7 @@ groen op `Test` dekt ze.
 Wacht op precies deze zeven en op niets anders.
 
 ```bash
-gh pr checks <nr> -R MinBZK/regelrecht
+gh pr checks <nr> -R NederlandseDigitaleDienst/regelrecht
 ```
 
 Die aanroep rapporteert over de actuele head-SHA, wat na een `update-branch` uit
@@ -168,7 +168,7 @@ onder "Reviewbevindingen" gaat over de vraag of deze PR wel mag, en terugdraaien
 kan daarna alleen met een revert-PR die zelf weer een ronde door de trein moet.
 
 ```bash
-gh pr merge <nr> -R MinBZK/regelrecht --squash
+gh pr merge <nr> -R NederlandseDigitaleDienst/regelrecht --squash
 ```
 
 Main mergt via een merge queue, dus dit zet de PR in de rij en mergt hem niet
@@ -194,9 +194,9 @@ eruit:
 
 ```bash
 git fetch origin main && git rev-parse origin/main
-gh run list -R MinBZK/regelrecht --workflow "Build and Deploy" \
+gh run list -R NederlandseDigitaleDienst/regelrecht --workflow "Build and Deploy" \
   --commit <sha> --json databaseId,status,conclusion
-gh api repos/MinBZK/regelrecht/actions/runs/<id>/jobs \
+gh api repos/NederlandseDigitaleDienst/regelrecht/actions/runs/<id>/jobs \
   --jq '.jobs[] | "\(.name)\t\(.conclusion)"'
 ```
 
@@ -229,7 +229,7 @@ Verse `origin/main` ophalen en opnieuw beginnen. Verifieer voor elke volgende
 merge dat de gekozen PR bij is met `main`:
 
 ```bash
-gh api repos/MinBZK/regelrecht/compare/main...<headRefName> --jq .behind_by
+gh api repos/NederlandseDigitaleDienst/regelrecht/compare/main...<headRefName> --jq .behind_by
 ```
 
 `behind_by` staat niet in `gh pr list` of `gh pr view`; die kennen alleen
@@ -248,8 +248,8 @@ De bevindingen staan op twee plekken: een sticky comment op de PR en losse
 inline comments bij de regels.
 
 ```bash
-gh pr view <nr> -R MinBZK/regelrecht --json comments --jq '.comments[].body'
-gh api repos/MinBZK/regelrecht/pulls/<nr>/comments --jq '.[].body'
+gh pr view <nr> -R NederlandseDigitaleDienst/regelrecht --json comments --jq '.comments[].body'
+gh api repos/NederlandseDigitaleDienst/regelrecht/pulls/<nr>/comments --jq '.[].body'
 ```
 
 Lees ze pas als `Claude review completed` klaar is. Elke nieuwe review-run wist

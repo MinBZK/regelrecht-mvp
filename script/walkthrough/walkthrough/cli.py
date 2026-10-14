@@ -1047,7 +1047,7 @@ def publish(tag: str, yes: bool) -> None:
     if missing:
         raise SystemExit(f"ontbreken in {PUBLIC.relative_to(ROOT)}: {missing}; draai `just walkthrough build` opnieuw")
     size = sum(f.stat().st_size for f in files) / 1e6
-    repo = "MinBZK/regelrecht"
+    repo = "NederlandseDigitaleDienst/regelrecht"
     say(f"Release {tag} op {repo}: {len(files)} bestanden, {size:.0f} MB. Een release is openbaar.")
     if not yes:
         if input("Doorgaan? [j/N] ").strip().lower() not in ("j", "ja", "y", "yes"):

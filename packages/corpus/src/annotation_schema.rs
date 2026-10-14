@@ -404,7 +404,7 @@ pub fn first_note_not_targeting_law(
 mod tests {
     use super::*;
 
-    const SCHEMA_URL: &str = "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/heads/main/schema/v0.5.3/annotation-schema.json";
+    const SCHEMA_URL: &str = "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/heads/main/schema/v0.5.3/annotation-schema.json";
 
     #[test]
     fn schema_compiles() {

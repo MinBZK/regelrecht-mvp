@@ -270,7 +270,7 @@ EUPL-1.2 - See [LICENSE](../../LICENSE) for details.
 
 ## Links
 
-- [GitHub Repository](https://github.com/MinBZK/regelrecht)
+- [GitHub Repository](https://github.com/NederlandseDigitaleDienst/regelrecht)
 - [Schema Documentation](https://raw.githubusercontent.com/MinBZK/regelrecht/refs/heads/main/schema/v0.3.1/schema.json)
 - [wetten.overheid.nl](https://wetten.overheid.nl) - Official Dutch law viewer
 - [BWB Repository](https://repository.officiele-overheidspublicaties.nl/bwb) - Raw BWB data

@@ -74,5 +74,5 @@ export const scenarioDemo = {
 
   /** Where it comes from, for the citation under the runner. */
   path: SCENARIO,
-  url: `https://github.com/MinBZK/regelrecht/blob/main/${SCENARIO}`,
+  url: `https://github.com/NederlandseDigitaleDienst/regelrecht/blob/main/${SCENARIO}`,
 };

@@ -70,7 +70,7 @@ If the file points to an older version (e.g. v0.3.2, v0.4.0, or v0.5.0), update 
 to the tag form for that version:
 
 ```
-https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json
+https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json
 ```
 
 The tag form is required by RFC-013: a `refs/heads/main` URL points at a moving

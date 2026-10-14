@@ -58,7 +58,7 @@ The reasoning behind each rule is in the header of the script concerned.
 
 ## Debugging a failed preview deploy
 
-Tell a timeout apart from an error first. A message that the wait ran out ("Timed out after 900s waiting for the task; it may still be running") says only that ZAD took longer than the window. The deployment carries on, and the preview usually comes up a little later. Before the window went from 300 to 900 seconds, failed and successful runs overlapped completely in duration ([#1144](https://github.com/MinBZK/regelrecht/issues/1144)), so a timeout on its own tells you nothing about the application.
+Tell a timeout apart from an error first. A message that the wait ran out ("Timed out after 900s waiting for the task; it may still be running") says only that ZAD took longer than the window. The deployment carries on, and the preview usually comes up a little later. Before the window went from 300 to 900 seconds, failed and successful runs overlapped completely in duration ([#1144](https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1144)), so a timeout on its own tells you nothing about the application.
 
 An error with a status or an exception in it is the diagnostic case. Then:
 
@@ -114,7 +114,7 @@ zad logs --deployment regelrecht --lines 50
 
 # Add a new component
 zad component add docs \
-    --image ghcr.io/minbzk/regelrecht-docs:latest \
+    --image ghcr.io/nederlandsedigitaledienst/regelrecht-docs:latest \
     --deployment regelrecht \
     --port 8000 \
     --service publish-on-web

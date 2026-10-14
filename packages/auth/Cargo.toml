@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["MinBZK <noreply@minbzk.nl>"]
 description = "RegelRecht shared OIDC/SSO authentication"
 license = "EUPL-1.2"
-repository = "https://github.com/MinBZK/regelrecht"
+repository = "https://github.com/NederlandseDigitaleDienst/regelrecht"
 
 [dependencies]
 axum.workspace = true

@@ -12,4 +12,4 @@
 # live in their own repos with their own CODEOWNERS. When enforced, this
 # is the content half of the two-layer review; the schema/resolve half is
 # validate-annotations in CI (warn-only for orphaned/ambiguous, RFC-018 §8).
-/corpus/annotations/ @MinBZK/regelrecht-team
+/corpus/annotations/ @NederlandseDigitaleDienst/regelrecht
