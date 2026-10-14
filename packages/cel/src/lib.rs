@@ -9,14 +9,19 @@
 //! own key in the chronolexogram. Recording executes the article, so the hooks
 //! run, and appends one chronolexogram to the chronicle ([`chronicle`]).
 //!
-//! Decisions, lexostatuses and objections are later slices.
+//! The decision on an application is a second chronolexogram ([`decision`],
+//! RFC-047). It refers to the application; where each value comes from
+//! follows from the law and that reference. Reading the chronicle back through policy
+//! and objections are later slices.
 
 pub mod cell;
 pub mod chronicle;
+pub mod decision;
 pub mod error;
 pub mod shape;
 
 pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
+pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
 pub use shape::{Field, Moment, Shape};

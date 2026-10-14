@@ -602,6 +602,19 @@ export interface SubStructure {
  * Driven off the schema rather than a hand-written list: a new inline-object
  * field appears here on its own once the schema has it.
  */
+/**
+ * The two forms of `execution.produces` (schema v0.8.1): the object most
+ * laws write, and the list whose items each carry a `type`, under
+ * `definitions.producedItem`. Before v0.8.1 `produces` was only the object.
+ */
+function producesForms(): { object: SchemaNode; list: SchemaNode | null } {
+  const produces: SchemaNode =
+    defs.machineReadableSection?.properties?.execution?.properties?.produces ?? {};
+  const object = produces.oneOf?.find((n) => n.type === 'object') ?? produces;
+  const list = produces.oneOf?.find((n) => n.type === 'array') ?? null;
+  return { object, list };
+}
+
 function expandInline(
   owner: SchemaNode,
   pathPrefix: string,
@@ -679,7 +692,30 @@ export function otherSubStructures(): Record<string, SubStructure[]> {
       'enables[].',
       ['for', 'interface'],
     ),
-    execution: expandInline(exec, 'execution.', ['produces']),
+    // `produces` is one object or a list of items (schema v0.8.1): a table
+    // for each form.
+    execution: [
+      ...expandInline(
+        { properties: { produces: { ...producesForms().object, description: exec.properties?.produces?.description } } },
+        'execution.',
+        ['produces'],
+      ),
+      ...(producesForms().list
+        ? expandInline(
+            {
+              properties: {
+                produces: {
+                  type: 'array',
+                  items: defs.producedItem ?? {},
+                  description: producesForms().list?.description,
+                },
+              },
+            },
+            'execution.',
+            ['produces'],
+          ).map((sub) => ({ ...sub, slug: 'produces-list', title: 'produces (list)' }))
+        : []),
+    ],
     action: expandInline(defs.action ?? {}, 'action.', ['resolve']),
     hooks: expandInline(
       mrs.properties?.hooks?.items ?? {},
@@ -914,15 +950,13 @@ export function enumBlocks(): EnumBlock[] {
     {
       path: 'machine_readable.execution.produces.legal_character',
       title: 'Legal character',
-      node: defs.machineReadableSection?.properties?.execution?.properties?.produces?.properties
-        ?.legal_character,
+      node: producesForms().object.properties?.legal_character,
       key: 'legal_character',
     },
     {
       path: 'machine_readable.execution.produces.decision_type',
       title: 'Decision type',
-      node: defs.machineReadableSection?.properties?.execution?.properties?.produces?.properties
-        ?.decision_type,
+      node: producesForms().object.properties?.decision_type,
       key: 'decision_type',
     },
     {

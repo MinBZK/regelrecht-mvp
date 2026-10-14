@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
 $id: leerplichtwet_1969
 regulatory_layer: WET
 publication_date: '2022-04-04'
@@ -965,17 +965,67 @@ articles:
       [ref3]: https://wetten.overheid.nl/BWBR0002628#Artikel4c
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
     machine_readable:
+      # Wat het hoofd naast de aanvraag nodig heeft om te beslissen. Geen
+      # parameters: die vormen de aanvraag (RFC-045).
+      open_terms:
+        # Lid 2: "de eerste twee lesweken van het schooljaar". Wanneer het
+        # schooljaar van een school begint, zegt deze wet niet; dat staat in
+        # het beleid van de school.
+        # Bewust zonder delegated_to, expected_source of decided_per_case_by
+        # (de enrich-check open-term meldt dat): de wet wijst niemand aan die
+        # dit invult. Het eigen beleid van de school vult het in, hier het
+        # fictieve beleid fictief_beleid_schooljaar_obs_de_klimop.
+        - id: eerste_lesdag_schooljaar
+          type: date
+          required: true
+          description: De eerste dag waarop de school in het schooljaar les geeft.
+        # Lid 1 noemt de vakantie "bedoeld in artikel 11, onder f": de jongere
+        # kan "vanwege de specifieke aard van het beroep" van een ouder
+        # "slechts buiten de schoolvakanties met hen op vakantie". Dat zijn
+        # twee gegevens: het beroep laat vakantie in de schoolvakanties niet
+        # toe, en het gevraagde verlof valt buiten de schoolvakanties. Beide
+        # oordeelt het hoofd per aanvraag: lid 1 noemt het geval "indien het
+        # hoofd op aanvraag ... verlof heeft verleend".
+        - id: specifieke_aard_beroep_ouder
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd (artikel 13a, eerste lid)
+          description: >-
+            Of een van de in artikel 2, eerste lid, bedoelde personen een beroep
+            heeft van zo specifieke aard dat de jongere niet binnen de
+            schoolvakanties met hen op vakantie kan gaan (artikel 11, onder f).
+        # Voor nu een oordeel van het hoofd bij het besluit; de school kent
+        # haar vakanties. Het is geen veld van de aanvraag.
+        - id: verlof_valt_buiten_schoolvakanties
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd (artikel 13a, eerste lid)
+          description: >-
+            Of het gevraagde verlof buiten de schoolvakanties valt (artikel 11,
+            onder f).
       execution:
-        # Lid 1: het hoofd verleent verlof "op aanvraag"; dit artikel vestigt die
-        # aanvraag (RFC-045), zodat de Awb erop haakt. De toets van lid 2 volgt
-        # later.
+        # Lid 1: het hoofd verleent verlof "op aanvraag". Dit artikel brengt
+        # twee dingen voort (RFC-047). De aanvraag (RFC-045), waar de Awb op
+        # haakt, met wat zij bevat en het besluit dat zij vraagt (Awb 4:2 lid
+        # 1, onder c). En het verlenen of weigeren, een beschikking (Awb 1:3)
+        # die de procedure van de Awb volgt, met de uitvoer die daarbij hoort.
         produces:
-          submission:
-            kind: AANVRAAG
+          - type: AANVRAAG
+            requests: leerplichtwet_1969#13a
+            parameters:
+              - bsn_jongere
+              - eerste_verlofdag
+              - laatste_verlofdag
+          - type: BESCHIKKING
+            decision_type: TOEKENNING
+            outputs:
+              - verlofdagen
+              - verlof_raakt_eerste_twee_lesweken
+              - verlof_verleend
         parameters:
           # Alleen de inhoud van de aanvraag. Naam en adres van de aanvrager vraagt Awb 4:2
-          # erbij. Wat het hoofd nodig heeft om te beslissen (artikel 11, onder f, en de
-          # eerste twee lesweken van lid 2) volgt bij het besluit.
+          # erbij. Wat het hoofd verder nodig heeft om te beslissen, staat bij de open
+          # begrippen hierboven.
           - name: bsn_jongere
             type: string
             description: Burgerservicenummer van de jongere voor wie verlof wordt gevraagd.
@@ -986,12 +1036,133 @@ articles:
             type: date
             description: Laatste dag waarop de jongere de school niet bezoekt.
         output:
-          - name: verlof_aangevraagd
+          - name: verlofdagen
+            type: number
+            description: >-
+              Het aantal dagen verlof (lid 2): de dagen van maandag tot en met
+              vrijdag van de eerste tot en met de laatste verlofdag.
+          - name: verlof_raakt_eerste_twee_lesweken
             type: boolean
-            description: Of verlof is aangevraagd (lid 1, "op aanvraag").
+            description: Of het verlof betrekking heeft op de eerste twee lesweken van het schooljaar (lid 2).
+          - name: verlof_verleend
+            type: boolean
+            description: >-
+              Of het hoofd het verlof verleent (lid 1). Lid 2 noemt alleen wanneer
+              het niet kan; "eenmaal per schooljaar" en het evenredige deel voor
+              een kwalificatieplichtige jongere zijn nog niet getoetst. Geweigerd
+              wordt ook verlof waarvan de laatste verlofdag vóór de eerste ligt,
+              en verlof dat geen dag van maandag tot en met vrijdag omvat: dan
+              is er geen schoolbezoek om verlof voor te verlenen.
         actions:
-          - output: verlof_aangevraagd
-            value: true
+          # Lid 2: "ten hoogste tien dagen". Verlof is verlof om de school niet
+          # te bezoeken (lid 1), dus een dag telt als de jongere anders naar
+          # school zou gaan. Eigen keuze: dat zijn maandag tot en met vrijdag.
+          # Feestdagen en schoolvakanties binnen de periode tellen mee; het
+          # rooster van de school is niet gemodelleerd.
+          # Telling: hele weken tussen de maandag van de eerste en die van de
+          # laatste verlofdag, maal vijf, plus de werkdagen in de laatste week
+          # tot en met de laatste verlofdag, min die in de eerste week vóór de
+          # eerste verlofdag.
+          - output: verlofdagen
+            value:
+              operation: SUBTRACT
+              values:
+                - operation: ADD
+                  values:
+                    - operation: MULTIPLY
+                      values:
+                        - 5
+                        - operation: FLOOR
+                          precision: 0
+                          value:
+                            operation: DIVIDE
+                            values:
+                              - operation: SUBTRACT
+                                values:
+                                  - operation: ADD
+                                    values:
+                                      - operation: DATE_DIFF
+                                        from: $eerste_verlofdag
+                                        to: $laatste_verlofdag
+                                        in: days
+                                      - operation: DAY_OF_WEEK
+                                        date: $eerste_verlofdag
+                                  - operation: DAY_OF_WEEK
+                                    date: $laatste_verlofdag
+                              - 7
+                    - operation: MIN
+                      values:
+                        - operation: ADD
+                          values:
+                            - operation: DAY_OF_WEEK
+                              date: $laatste_verlofdag
+                            - 1
+                        - 5
+                - operation: MIN
+                  values:
+                    - operation: DAY_OF_WEEK
+                      date: $eerste_verlofdag
+                    - 5
+          # Lid 2: "geen betrekking hebben op de eerste twee lesweken". Eigen
+          # keuze: een lesweek loopt van maandag tot en met zondag, en de
+          # eerste is de week van de eerste lesdag. Het verlof raakt ze als
+          # het begint vóór het einde van de tweede lesweek en eindigt op of
+          # na de eerste lesdag.
+          - output: verlof_raakt_eerste_twee_lesweken
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject:
+                    operation: DATE_DIFF
+                    from: $eerste_verlofdag
+                    to:
+                      operation: DATE_ADD
+                      date: $eerste_lesdag_schooljaar
+                      days:
+                        operation: SUBTRACT
+                        values:
+                          - 13
+                          - operation: DAY_OF_WEEK
+                            date: $eerste_lesdag_schooljaar
+                    in: days
+                  value: 0
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject:
+                    operation: DATE_DIFF
+                    from: $eerste_lesdag_schooljaar
+                    to: $laatste_verlofdag
+                    in: days
+                  value: 0
+          # Lid 1 met artikel 11, onder f (beide gegevens), en lid 2. "Eenmaal
+          # per schooljaar"
+          # (lid 2) en het evenredige deel voor een kwalificatieplichtige
+          # jongere (lid 2, tweede volzin) zijn nog niet gemodelleerd.
+          # Eigen keuze: verlof is verlof om de school niet te bezoeken (lid 1),
+          # dus een aanvraag met de laatste verlofdag vóór de eerste, of zonder
+          # één dag van maandag tot en met vrijdag (alleen een weekend), wordt
+          # geweigerd.
+          - output: verlof_verleend
+            value:
+              operation: AND
+              conditions:
+                - $specifieke_aard_beroep_ouder
+                - $verlof_valt_buiten_schoolvakanties
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject:
+                    operation: DATE_DIFF
+                    from: $eerste_verlofdag
+                    to: $laatste_verlofdag
+                    in: days
+                  value: 0
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject: $verlofdagen
+                  value: 1
+                - operation: LESS_THAN_OR_EQUAL
+                  subject: $verlofdagen
+                  value: 10
+                - operation: NOT
+                  value: $verlof_raakt_eerste_twee_lesweken
     references:
       - id: ref1
         bwb_id: BWBR0002628

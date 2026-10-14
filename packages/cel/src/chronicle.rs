@@ -16,8 +16,8 @@ use serde_json::Value;
 
 use crate::error::{refused, setup, Result};
 
-/// A chronolexogram (`Gram` for short): one recorded application, as the law
-/// describes it.
+/// A chronolexogram (`Gram` for short): one recorded application, or the
+/// decision on one, as the law describes it.
 ///
 /// The chronolexogram does not repeat the law. Its establishing article and the
 /// day it was recorded name the law version in force; the provisions each field
@@ -27,11 +27,17 @@ pub struct Gram {
     /// Its own id, a uuid v7.
     pub id: String,
     /// What the law says arises, in its own word: the kind of the
-    /// submission (`produces.submission.kind`), such as `AANVRAAG`.
+    /// submission (`produces.submission.kind`), such as `AANVRAAG`, or the
+    /// legal character of a decision (`produces.legal_character`), such as
+    /// `BESCHIKKING`.
     pub kind: String,
-    /// The article that establishes it, `<regulation>#<article>` (RFC-022
-    /// `grondslag`).
+    /// The article that establishes it or decides, `<regulation>#<article>`
+    /// (RFC-022 `grondslag`).
     pub grondslag: String,
+    /// The chronolexogram it refers to: for a decision, the application it
+    /// is taken on (RFC-047).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refers_to: Option<String>,
     /// The cell that recorded it (RFC-022 `recording_actor`).
     pub recording_actor: String,
     /// The day the cell recorded it.

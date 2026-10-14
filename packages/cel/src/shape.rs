@@ -2,8 +2,11 @@
 //!
 //! The engine names the articles that take part in a submission
 //! ([`LawExecutionService::submission`]): the article that establishes it and
-//! the hooks on it. Their parameters are what the application holds, but
-//! one: a `produces.moment` on one of them names the moment that counts,
+//! the hooks on it. What they ask is what the application holds: the
+//! parameters the submission item lists when `produces` is a list (RFC-047),
+//! every parameter of the establishing article in the object form, and every
+//! parameter of each hook. But one: a `produces.moment` on one of them names
+//! the moment that counts,
 //! such as the receipt (Awb 4:13 lid 1). That parameter is the moment, not
 //! part of the application (RFC-045); the cell fills it, not the applicant.
 
@@ -55,13 +58,24 @@ pub struct Shape {
     pub law_id: String,
     pub article: String,
     /// The outputs of the establishing article: executing them runs it.
+    /// Empty when the article follows a procedure: its outputs are then the
+    /// decision on the application (RFC-047), and recording the application
+    /// runs only the hooks, at [`Shape::stage`].
     pub outputs: Vec<String>,
-    /// What the application holds: every parameter of the articles that
-    /// take part, the establishing article first, then the hooks in the
-    /// order they fire. A name two articles declare is one field. The
+    /// The stage of the article's procedure at which the hooks on the
+    /// application fire, such as AANVRAAG; `None` outside a procedure.
+    pub stage: Option<String>,
+    /// What the application holds: the parameters of the submission (the
+    /// item's `parameters` in the list form, every parameter of the
+    /// establishing article in the object form), then those of the hooks in
+    /// the order they fire. A name two articles declare is one field. The
     /// moment's parameter is not among them.
     pub fields: Vec<Field>,
     pub moment: Option<Moment>,
+    /// The article whose decision the application asks for,
+    /// `<regulation>#<article>` (`requests`, RFC-047); `None` when the law
+    /// names none.
+    pub requests: Option<String>,
 }
 
 impl Shape {
@@ -104,8 +118,10 @@ pub fn derive(
         law_id: law_id.to_string(),
         article: article.to_string(),
         outputs: Vec::new(),
+        stage: submission.stage,
         fields: Vec::new(),
         moment: None,
+        requests: service.requested_decision(law_id, article, &day.to_string())?,
     };
     for part in &submission.articles {
         let declared_by = format!("{}#{}", part.law_id, part.article_number);
@@ -114,41 +130,35 @@ pub fn derive(
         let Some(execution) = found.get_execution_spec() else {
             continue;
         };
-        if part.hook_point.is_none() {
-            shape.outputs = execution
-                .output
-                .iter()
-                .flatten()
-                .map(|o| o.name.clone())
+        // The establishing article contributes what its submission
+        // contains: in the list form of `produces` the item's own
+        // `parameters`, in the object form every parameter (RFC-047). A
+        // hook contributes every parameter it declares.
+        let item = found.get_submission().filter(|_| part.hook_point.is_none());
+        if let Some(item) = item.filter(|_| shape.stage.is_none()) {
+            shape.outputs = found
+                .outputs_of(item)
+                .into_iter()
+                .map(str::to_string)
                 .collect();
         }
+        let asked: Option<Vec<&str>> = item.map(|i| found.parameters_of(i));
         for p in execution.parameters.iter().flatten() {
-            match shape.fields.iter_mut().find(|f| f.name == p.name) {
-                None => shape.fields.push(Field {
-                    name: p.name.clone(),
-                    type_: p.param_type,
-                    nullable: p.is_nullable(),
-                    declared_by: vec![declared_by.clone()],
-                }),
-                // Two articles ask the same datum: one field, resting on both.
-                // It can be absent only if both say so.
-                Some(f) if f.type_ == p.param_type => {
-                    f.nullable &= p.is_nullable();
-                    if !f.declared_by.contains(&declared_by) {
-                        f.declared_by.push(declared_by.clone());
-                    }
-                }
-                Some(f) => {
-                    return Err(setup(format!(
-                        "{reference}: '{}' is declared by {} and by {declared_by} with another \
-                         type; the application cannot hold both",
-                        p.name,
-                        f.first_declared_by()
-                    )))
-                }
+            if asked
+                .as_ref()
+                .is_some_and(|names| !names.contains(&p.name.as_str()))
+            {
+                continue;
             }
+            let field = Field {
+                name: p.name.clone(),
+                type_: p.param_type,
+                nullable: p.is_nullable(),
+                declared_by: vec![declared_by.clone()],
+            };
+            add_field(&mut shape.fields, field, &reference)?;
         }
-        if let Some(m) = execution.produces.as_ref().and_then(|p| p.moment.as_ref()) {
+        if let Some(m) = found.get_produced().into_iter().find_map(|p| p.moment()) {
             if let Some(other) = &shape.moment {
                 return Err(setup(format!(
                     "{reference}: two articles name the moment that counts ({} and {declared_by})",
@@ -181,7 +191,7 @@ pub fn derive(
     if let Some(name) = shape.moment.as_ref().and_then(|m| m.parameter.clone()) {
         shape.fields.retain(|f| f.name != name);
     }
-    if shape.outputs.is_empty() {
+    if shape.outputs.is_empty() && shape.stage.is_none() {
         return Err(setup(format!(
             "{reference} establishes a submission but has no output to execute it by"
         )));
@@ -189,7 +199,34 @@ pub fn derive(
     Ok(shape)
 }
 
-fn article_on<'s>(
+/// Add `field` to `fields`. Two articles that ask the same datum make one
+/// field, resting on both; it can be absent only if both say so. A different
+/// type is an error in the law: one chronolexogram cannot hold both.
+pub(crate) fn add_field(fields: &mut Vec<Field>, field: Field, reference: &str) -> Result<()> {
+    match fields.iter_mut().find(|f| f.name == field.name) {
+        None => fields.push(field),
+        Some(f) if f.type_ == field.type_ => {
+            f.nullable &= field.nullable;
+            for by in field.declared_by {
+                if !f.declared_by.contains(&by) {
+                    f.declared_by.push(by);
+                }
+            }
+        }
+        Some(f) => {
+            return Err(setup(format!(
+                "{reference}: '{}' is declared by {} and by {} with another type; \
+                 one chronolexogram cannot hold both",
+                field.name,
+                f.first_declared_by(),
+                field.first_declared_by()
+            )))
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn article_on<'s>(
     service: &'s LawExecutionService,
     law_id: &str,
     number: &str,

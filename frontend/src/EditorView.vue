@@ -2,6 +2,7 @@
 import { ref, computed, reactive, watch, watchEffect, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import * as yaml from 'js-yaml';
+import { withDecisionField } from '@regelrecht/frontend-shared/produces.js';
 import { useLaw, fetchLaw } from './composables/useLaw.js';
 import { useCorpusLaws } from './composables/useCorpusLaws.js';
 import { useEngine } from './composables/useEngine.js';
@@ -2309,14 +2310,9 @@ function handleSave({ section, key, newKey, index, data }) {
   } else if (section === 'add-output') {
     mr.execution.output.push(data);
   } else if (section === 'produces') {
-    if (!mr.execution.produces) mr.execution.produces = {};
-    if (data == null) delete mr.execution.produces[key];
-    else mr.execution.produces[key] = data;
-    // Drop the container once every field is cleared, otherwise the YAML
-    // dump emits a bare `produces: {}` which the schema rejects.
-    if (Object.keys(mr.execution.produces).length === 0) {
-      delete mr.execution.produces;
-    }
+    const produces = withDecisionField(mr.execution.produces, key, data);
+    if (produces === undefined) delete mr.execution.produces;
+    else mr.execution.produces = produces;
   }
 
   machineReadable.value = mr;

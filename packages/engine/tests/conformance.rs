@@ -73,6 +73,11 @@ const KNOWN_GAPS: &[&str] = &[
     "hook_submission_with_legal_character.yaml", // schema v0.8.0 lets a hook name a decision or a submission (`oneOf`); model has both as Option<String>, and the resolver refuses the law at load (`check_hook_filters`), as for the fixture above
     "produces_unknown_legal_character.yaml", // schema pins 5 legal characters; model reads any string
     "produces_unknown_decision_type.yaml",   // schema pins 9 decision types; model reads any string
+    "produces_empty_list.yaml", // schema v0.8.1 wants at least one produced thing in a list; the model reads an empty list as producing nothing, which is what an absent `produces` means
+    "produces_list_empty_outputs.yaml", // schema v0.8.1 wants at least one name under `outputs`; the model reads an empty list as an item that yields no output, which is what the schema means to rule out but harmless at run time
+    "produces_list_unknown_type.yaml", // schema v0.8.1 pins `type` to a submission kind or a legal character; the model reads any string, and an unknown one as a legal character, as for `produces_unknown_legal_character`
+    "produces_list_requests_on_decision.yaml", // schema v0.8.1 allows `requests` only on a submission (`if`/`then`); the model has it on every item, and the loader refuses it (`reject_ambiguous_produces`)
+    "produces_list_decision_type_on_submission.yaml", // schema v0.8.1 allows `decision_type` and `procedure_id` only on a decision; the model has them on every item, and a submission's are never read
     "temporal_unknown_type.yaml", // schema pins period|point_in_time; model reads any string
     "start_of_week_unit.yaml", // schema pins START_OF `in` to year|month; model reads any string, engine errors at runtime (same family as date_part_plural_unit)
     //
