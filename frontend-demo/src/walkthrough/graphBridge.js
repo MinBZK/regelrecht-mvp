@@ -8,8 +8,13 @@
  * coordinates, plus the zoom: a position in pixels would land elsewhere on a
  * screen of another size.
  *
+ * Dragging a law aside is the same kind of action: the graph reports which
+ * node moved and by how much from where the layout put it, and the replay
+ * moves it there again. Relative to the layout, so a take still lands right
+ * after the layout itself shifted.
+ *
  * GraafView fills `graphView.api` while it is mounted; the recorder sets
- * `graphView.onView` while a take runs.
+ * `graphView.onView` and `graphView.onNodeMove` while a take runs.
  */
 
 export const graphView = {
@@ -17,6 +22,8 @@ export const graphView = {
   api: null,
   /** Called with `{ cx, cy, zoom }` whenever the view moves. */
   onView: null,
+  /** Called with `{ id, dx, dy, ms }` when a node was dragged: its offset from the layout, and how long the drag took. */
+  onNodeMove: null,
 };
 
 /** The middle of the pane in graph coordinates, from a vue-flow viewport. */
@@ -26,6 +33,13 @@ export function centerOf(viewport, dimensions) {
   const h = dimensions?.height ?? 0;
   const round = (n) => Math.round(n * 10) / 10;
   return { cx: round((w / 2 - x) / zoom), cy: round((h / 2 - y) / zoom), zoom: Math.round(zoom * 1000) / 1000 };
+}
+
+/** Move node `id` to `dx, dy` from where the layout puts it, over `duration` ms. False when no graph is mounted. */
+export function moveNode(id, dx, dy, duration = 0) {
+  const api = graphView.api;
+  if (!api?.moveNode) return false;
+  return api.moveNode(id, dx, dy, duration);
 }
 
 /** Tell the graph to look at `view`, over `duration` ms. False when no graph is mounted. */

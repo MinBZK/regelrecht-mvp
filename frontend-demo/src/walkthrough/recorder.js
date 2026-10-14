@@ -133,7 +133,10 @@ export function logEvent(event) {
   if (!session || recorder.phase !== 'recording') return;
   const t = clock();
   if (t == null) return;
-  session.events.push({ t, ...event });
+  // `ago`: the action began that many ms before it was logged (a drag ends
+  // where it is reported). The build sorts the events by time.
+  const { ago = 0, ...rest } = event;
+  session.events.push({ t: t - ago, ...rest });
 }
 
 /** Keep the last state seen at the start of every slide, for a retake from there. */

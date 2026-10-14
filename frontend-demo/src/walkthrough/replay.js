@@ -25,7 +25,7 @@ import { localeRouteName, pageForConfigPath } from '../router.js';
 import { click, setChecked, setValue, key as pressKey, scrollTo } from './actions.js';
 import { installClock, uninstallClock } from './clock.js';
 import { resolve, scrollAnchor, scrollTarget } from './locator.js';
-import { graphView, showView } from './graphBridge.js';
+import { graphView, moveNode, showView } from './graphBridge.js';
 import { CAPTIONS_BASE, MEDIA_BASE, chapterAt, parseVtt, pauseDue, pickClip } from './timeline.js';
 import { resetViews } from './viewEpoch.js';
 
@@ -194,7 +194,7 @@ async function find(target, { timeout = 4000, fast = false, token = seekToken, e
  */
 function noteMiss(e) {
   const last = e.target?.at?.(-1) ?? {};
-  replay.misses.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? '?' });
+  replay.misses.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? e.id ?? '?' });
   if (import.meta.env.DEV) console.warn('[walkthrough] niet gevonden:', e.type, last);
 }
 
@@ -207,7 +207,7 @@ function noteMiss(e) {
  */
 function noteLoose(e) {
   const last = e.target?.at?.(-1) ?? {};
-  replay.loose.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? '?' });
+  replay.loose.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? e.id ?? '?' });
 }
 
 function pointIn(el, fx = 0.5, fy = 0.5) {
@@ -333,6 +333,17 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       // A short glide between the samples (ten a second) looks like the
       // presenter's own drag; a jump just lands.
       if (current(token)) showView(e, fast ? 0 : 140);
+      return;
+    }
+    case 'node': {
+      const deadline = performance.now() + (fast ? 800 : 1500);
+      while (!graphView.api && performance.now() < deadline) {
+        await sleep(60);
+        if (!current(token)) return;
+      }
+      if (!current(token)) return;
+      // The drag at its own pace, capped: a slow drag still lands while the voice is on it.
+      if (!moveNode(e.id, e.dx ?? 0, e.dy ?? 0, fast ? 0 : Math.min(e.ms ?? 400, 1200))) noteMiss(e);
       return;
     }
     case 'scroll': {

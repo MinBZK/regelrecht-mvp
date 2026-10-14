@@ -152,6 +152,11 @@ takes:
           label: regelrecht.rijks.app
 
   # De antwoorden op de eerste drie vragen, achter elkaar opgenomen.
+    # Bij "raad eens welke dit zou kunnen zijn" sleept de presentator de
+    # inkomstenbelasting uit het cluster. Toen legde de recorder het verslepen
+    # van een wet nog niet vast; afgelezen uit de schermopname.
+    actions:
+      - {at: 286.0, type: node, id: wet_inkomstenbelasting, dx: -430, dy: 1100, ms: 500}
   2026-10-11T14-53-23:
     cuts:
       - {from: 5.05, to: 5.65, reason: stilte van 1.4s}

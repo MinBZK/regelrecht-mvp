@@ -36,19 +36,52 @@ const { t } = useI18n();
 const demo = useDemo();
 const { corpus, profile, portalLaws, dataVersion } = demo;
 // Same store id as the <VueFlow> below, otherwise fitView talks to a different instance.
-const { fitView, zoomIn, zoomOut, setCenter, getViewport, dimensions } = useVueFlow({ id: 'demo-graph' });
+const { fitView, zoomIn, zoomOut, setCenter, getViewport, dimensions, findNode } = useVueFlow({ id: 'demo-graph' });
 
 // The recorded walkthrough follows and steers the graph's camera through this
 // bridge (walkthrough/graphBridge.js): panning and zooming leave no clicked
 // element behind for it to replay.
 onMounted(() => {
-  graphView.api = { setCenter, getViewport, dimensions };
+  graphView.api = { setCenter, getViewport, dimensions, moveNode };
 });
 onUnmounted(() => {
   if (graphView.api?.setCenter === setCenter) graphView.api = null;
 });
 function onViewportChange(viewport) {
   graphView.onView?.(centerOf(viewport, dimensions.value));
+}
+/** Where the layout puts a node; a drag is recorded and replayed relative to it. */
+function laidOut(id) {
+  return graph.value.nodes.find((n) => n.id === id)?.position ?? null;
+}
+let dragStarted = 0;
+function onNodeDragStart() {
+  dragStarted = performance.now();
+}
+function onNodeDragStop({ nodes, node }) {
+  const ms = Math.round(performance.now() - dragStarted);
+  for (const n of nodes?.length ? nodes : [node]) {
+    const base = laidOut(n.id);
+    if (base) graphView.onNodeMove?.({ id: n.id, dx: Math.round(n.position.x - base.x), dy: Math.round(n.position.y - base.y), ms });
+  }
+}
+/** Put a node `dx, dy` away from its place in the layout, gliding over `duration` ms. */
+function moveNode(id, dx, dy, duration = 0) {
+  const node = findNode(id);
+  const base = laidOut(id);
+  if (!node || !base) return false;
+  const to = { x: base.x + dx, y: base.y + dy };
+  const from = { ...node.position };
+  const steps = Math.max(1, Math.round(duration / 16));
+  let i = 0;
+  const step = () => {
+    i += 1;
+    const f = i / steps;
+    node.position = { x: from.x + (to.x - from.x) * f, y: from.y + (to.y - from.y) * f };
+    if (i < steps) setTimeout(step, 16);
+  };
+  step();
+  return true;
 }
 // The law list is a sheet, closed until asked for; the presets live in the toolbar.
 const splitView = ref(null);
@@ -314,6 +347,8 @@ function unique(laws) {
             :elevate-edges-on-select="false"
             @node-click="onNodeClick"
             @node-double-click="onNodeDoubleClick"
+            @node-drag-start="onNodeDragStart"
+            @node-drag-stop="onNodeDragStop"
             @pane-click="onPaneClick"
             @nodes-initialized="refit"
             @viewport-change="onViewportChange"
