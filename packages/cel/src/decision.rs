@@ -7,7 +7,7 @@
 //! comes, in this order of preference, from:
 //!
 //! 1. the application: a parameter of the deciding article, or one the
-//!    application holds by the same name;
+//!    application holds or gives (a hook's output) by the same name;
 //! 2. the recording actor's policy: an open term of the deciding article that a
 //!    regulation fills (`implements`);
 //! 3. the deciding authority, at the time of the decision: an open term the
@@ -36,6 +36,12 @@ use crate::shape::{self, add_field, article_on, Field};
 /// stages of the Awb procedure for a beschikking. The cell announces the
 /// decision on the day it takes it: that is its assumption, not the law's.
 pub const STAGES: [&str; 2] = ["BESLUIT", "BEKENDMAKING"];
+
+/// The output of the article deciding on an objection that says whether it
+/// revokes the contested decision (Awb 7:11 lid 2). The one Awb name the cell
+/// knows, as it knows the [`STAGES`]: it takes a new decision when it is
+/// true, and a decision it revoked counts no more (RFC-050).
+pub const REVOKES: &str = "bestreden_besluit_herroepen";
 
 /// Where the value of a field of a decision comes from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -86,6 +92,11 @@ pub struct DecisionShape {
     pub stages: Vec<ProcedureStage>,
     /// Everything the stages ask, the deciding article first.
     pub inputs: Vec<Input>,
+    /// The outputs of the decision (its item in `produces`): what it decides.
+    pub outputs: Vec<String>,
+    /// The open terms of the deciding article that the authority judges per
+    /// case (`decided_per_case_by`) and no regulation fills.
+    pub judgements: Vec<String>,
 }
 
 impl DecisionShape {
@@ -170,7 +181,9 @@ pub fn derive(
                     declared_by: vec![declared_by.clone()],
                 };
                 add_field(&mut fields, field, &reference)?;
-                let source = if application.field(&p.name).is_some() {
+                let source = if application.field(&p.name).is_some()
+                    || application.given.contains(&p.name)
+                {
                     Source::Application
                 } else {
                     Source::Caller
@@ -206,6 +219,7 @@ pub fn derive(
     // regulation fills it: the regulation may be silent for this case, and
     // the engine's precedence decides (RFC-047).
     let mut policy_first: Vec<String> = Vec::new();
+    let mut judgements: Vec<String> = Vec::new();
     for term in deciding.get_open_terms().into_iter().flatten() {
         let filled = !service
             .resolver()
@@ -218,7 +232,10 @@ pub fn derive(
                 Source::Caller
             }
             (true, None) => Source::Policy,
-            (false, Some(_)) => Source::Caller,
+            (false, Some(_)) => {
+                judgements.push(term.id.clone());
+                Source::Caller
+            }
             (false, None) => continue,
         };
         let field = Field {
@@ -251,5 +268,7 @@ pub fn derive(
         application: application_reference,
         stages,
         inputs,
+        outputs: outputs.iter().map(|o| (*o).to_string()).collect(),
+        judgements,
     })
 }

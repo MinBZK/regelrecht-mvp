@@ -14,12 +14,18 @@
 //! follows from the law and that reference. The cell reads its chronicle
 //! back through its reductions ([`reading`], RFC-048): rulework of the kind
 //! `REDUCTIE` that it keeps itself, whose outputs answer the decision's
-//! inputs by name. Objections are a later slice.
+//! inputs by name.
+//!
+//! An objection is a second submission against a decision ([`objection`],
+//! RFC-050). The decision on it applies the contested decision's article
+//! anew; when that revokes the contested decision, the cell takes the new
+//! decision in its place.
 
 pub mod cell;
 pub mod chronicle;
 pub mod decision;
 pub mod error;
+pub mod objection;
 pub mod reading;
 pub mod shape;
 
@@ -27,5 +33,6 @@ pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
 pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
+pub use objection::ObjectionDecision;
 pub use reading::Reduction;
 pub use shape::{Field, Moment, Shape};

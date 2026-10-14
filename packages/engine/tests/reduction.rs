@@ -46,13 +46,15 @@ fn service() -> LawExecutionService {
 }
 
 /// A decision under art. 13a, as the cell gives it: the fields and the
-/// outputs of the decision under their own names.
+/// outputs of the decision under their own names, and whether a decision
+/// on an objection revoked it (RFC-050).
 fn decision(bsn: &str, first: &str, granted: bool) -> serde_json::Value {
     json!({
         "bsn_jongere": bsn,
         "eerste_verlofdag": first,
         "laatste_verlofdag": first,
         "verlof_verleend": granted,
+        "bestreden_besluit_herroepen": false,
     })
 }
 
@@ -143,6 +145,15 @@ fn a_refusal_another_child_or_another_school_year_does_not_count() {
             decision("999990019", "2027-08-02", true),
         ]),
     );
+    assert!(!already(&service, "999990019", "2027-05-10"));
+}
+
+#[test]
+fn a_grant_revoked_on_objection_does_not_count() {
+    let mut service = service();
+    let mut revoked = decision("999990019", "2026-10-05", true);
+    revoked["bestreden_besluit_herroepen"] = json!(true);
+    supply(&mut service, json!([revoked]));
     assert!(!already(&service, "999990019", "2027-05-10"));
 }
 

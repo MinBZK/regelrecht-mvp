@@ -9,6 +9,9 @@
 //! the moment that counts,
 //! such as the receipt (Awb 4:13 lid 1). That parameter is the moment, not
 //! part of the application (RFC-045); the cell fills it, not the applicant.
+//! And what a hook on the submission outputs, such as whether an objection
+//! came in on time (Awb 6:9), is what the submission gives, not what it
+//! asks (RFC-050).
 
 use chrono::NaiveDate;
 use regelrecht_engine::{Article, LawExecutionService, ParameterType};
@@ -53,7 +56,8 @@ pub struct Moment {
 /// says.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Shape {
-    /// The kind of submission, `produces.submission.kind` (`AANVRAAG`).
+    /// The kind of submission, `produces.submission.kind` (`AANVRAAG`,
+    /// `BEZWAAR`).
     pub kind: String,
     pub law_id: String,
     pub article: String,
@@ -76,6 +80,10 @@ pub struct Shape {
     /// `<regulation>#<article>` (`requests`, RFC-047); `None` when the law
     /// names none.
     pub requests: Option<String>,
+    /// The outputs of the hooks on the submission: what recording it gives.
+    /// A parameter of that name is no field; a decision takes it from the
+    /// chronolexogram's `outputs` (RFC-050).
+    pub given: Vec<String>,
 }
 
 impl Shape {
@@ -122,6 +130,7 @@ pub fn derive(
         fields: Vec::new(),
         moment: None,
         requests: service.requested_decision(law_id, article, &day.to_string())?,
+        given: Vec::new(),
     };
     for part in &submission.articles {
         let declared_by = format!("{}#{}", part.law_id, part.article_number);
@@ -130,6 +139,11 @@ pub fn derive(
         let Some(execution) = found.get_execution_spec() else {
             continue;
         };
+        if part.hook_point.is_some() {
+            shape
+                .given
+                .extend(execution.output.iter().flatten().map(|o| o.name.clone()));
+        }
         // The establishing article contributes what its submission
         // contains: in the list form of `produces` the item's own
         // `parameters`, in the object form every parameter (RFC-047). A
@@ -187,10 +201,14 @@ pub fn derive(
             });
         }
     }
-    // The moment is no part of what the application holds.
+    // The moment is no part of what the application holds, and neither is
+    // what a hook on it gives.
     if let Some(name) = shape.moment.as_ref().and_then(|m| m.parameter.clone()) {
         shape.fields.retain(|f| f.name != name);
     }
+    let given = std::mem::take(&mut shape.given);
+    shape.fields.retain(|f| !given.contains(&f.name));
+    shape.given = given;
     if shape.outputs.is_empty() && shape.stage.is_none() {
         return Err(setup(format!(
             "{reference} establishes a submission but has no output to execute it by"

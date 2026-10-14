@@ -16,8 +16,8 @@ use serde_json::Value;
 
 use crate::error::{refused, setup, Result};
 
-/// A chronolexogram (`Gram` for short): one recorded application, or the
-/// decision on one, as the law describes it.
+/// A chronolexogram (`Gram` for short): one recorded application or
+/// objection, or the decision on one, as the law describes it.
 ///
 /// The chronolexogram does not repeat the law. Its establishing article and the
 /// day it was recorded name the law version in force; the provisions each field
@@ -27,15 +27,17 @@ pub struct Gram {
     /// Its own id, a uuid v7.
     pub id: String,
     /// What the law says arises, in its own word: the kind of the
-    /// submission (`produces.submission.kind`), such as `AANVRAAG`, or the
+    /// submission (`produces.submission.kind`), such as `AANVRAAG` or
+    /// `BEZWAAR`, or the
     /// legal character of a decision (`produces.legal_character`), such as
     /// `BESCHIKKING`.
     pub kind: String,
     /// The article that establishes it or decides, `<regulation>#<article>`
     /// (RFC-022 `grondslag`).
     pub grondslag: String,
-    /// The chronolexogram it refers to: for a decision, the application it
-    /// is taken on (RFC-047).
+    /// The chronolexogram it refers to: for a decision, the application or
+    /// objection it is taken on (RFC-047, RFC-050); for an objection, the
+    /// decision it contests.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refers_to: Option<String>,
     /// The cell that recorded it (RFC-022 `recording_actor`).
@@ -57,6 +59,14 @@ pub struct Gram {
     /// those of the hooks on the submission, such as the last day of the
     /// decision period (Awb 4:13).
     pub outputs: BTreeMap<String, Value>,
+}
+
+impl Gram {
+    /// The value it holds under `name`: a field, or else an output (what a
+    /// hook on a submission gave, RFC-050).
+    pub fn held(&self, name: &str) -> Option<&Value> {
+        self.fields.get(name).or_else(|| self.outputs.get(name))
+    }
 }
 
 /// The moment that counts for a chronolexogram, as recorded.
@@ -122,13 +132,34 @@ impl Chronicle {
     /// The chronicle has one clock and it only moves forward: a chronolexogram
     /// dated before the last chronolexogram is refused. The same day is fine.
     pub fn append(&mut self, gram: Gram) -> Result<&Gram> {
-        self.check(&gram)?;
+        self.append_all(vec![gram])?;
+        Ok(&self.grams[self.grams.len() - 1])
+    }
+
+    /// Append `grams` together: all of them, or none. Such as the decision
+    /// on an objection and the new decision that takes the place of the
+    /// revoked one (RFC-050), which half written would leave a revocation
+    /// without its replacement.
+    pub fn append_all(&mut self, grams: Vec<Gram>) -> Result<&[Gram]> {
+        let before = self.grams.len();
+        for gram in &grams {
+            // Checked against the chronicle and the ones before it.
+            if let Err(e) = self.check(gram) {
+                self.grams.truncate(before);
+                return Err(e);
+            }
+            self.grams.push(gram.clone());
+        }
+        self.grams.truncate(before);
         if let Some(path) = &self.path {
             if let Some(dir) = path.parent() {
                 std::fs::create_dir_all(dir)?;
             }
-            let mut line = serde_json::to_string(&gram).map_err(|e| setup(e.to_string()))?;
-            line.push('\n');
+            let mut line = String::new();
+            for gram in &grams {
+                line.push_str(&serde_json::to_string(gram).map_err(|e| setup(e.to_string()))?);
+                line.push('\n');
+            }
             let mut file = OpenOptions::new().create(true).append(true).open(path)?;
             // All or nothing: a write that fails halfway is cut off again, so
             // no half line is left for the next chronolexogram or the next
@@ -142,8 +173,8 @@ impl Chronicle {
                 return Err(e.into());
             }
         }
-        self.grams.push(gram);
-        Ok(&self.grams[self.grams.len() - 1])
+        self.grams.extend(grams);
+        Ok(&self.grams[before..])
     }
 
     fn check(&self, gram: &Gram) -> Result<()> {

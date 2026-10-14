@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.3/schema/v0.8.3/schema.json
 $id: algemene_wet_bestuursrecht
 regulatory_layer: WET
 publication_date: '2026-01-01'
@@ -183,6 +183,98 @@ articles:
               date: $datum_ontvangst
               weeks: 8
 
+  - number: '6:4'
+    text: |-
+      1. Het maken van bezwaar geschiedt door het indienen van een
+      bezwaarschrift bij het bestuursorgaan dat het besluit heeft genomen.
+      2. Het instellen van administratief beroep geschiedt door het indienen
+      van een beroepschrift bij het beroepsorgaan.
+      3. Het instellen van beroep bij een bestuursrechter geschiedt door het
+      indienen van een beroepschrift bij die rechter.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel6:4
+    # Niet uitvoerbaar gemaakt. Lid 1 zegt bij wie het bezwaarschrift wordt
+    # ingediend, zoals artikel 4:1 dat voor de aanvraag zegt. Het bezwaar zelf
+    # ontstaat bij het artikel dat erop beslist (7:11), zoals de aanvraag om
+    # vakantieverlof bij artikel 13a van de Leerplichtwet 1969 (RFC-050).
+
+  - number: '6:5'
+    text: |-
+      1. Het bezwaar- of beroepschrift wordt ondertekend en bevat ten minste:
+      a. de naam en het adres van de indiener;
+      b. de dagtekening;
+      c. een omschrijving van het besluit waartegen het bezwaar of beroep is
+      gericht;
+      d. de gronden van het bezwaar of beroep.
+      2. Bij het beroepschrift wordt zo mogelijk een afschrift van het besluit
+      waarop het geschil betrekking heeft, overgelegd.
+      3. Indien het bezwaar- of beroepschrift in een vreemde taal is gesteld en
+      een vertaling voor een goede behandeling van het bezwaar of beroep
+      noodzakelijk is, dient de indiener zorg te dragen voor een vertaling.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel6:5
+    machine_readable:
+      # Lid 1, voor het bezwaarschrift. Het beroepschrift (lid 1 en 2) en de
+      # vertaling (lid 3) zijn niet gemodelleerd. Wat volgt als het
+      # bezwaarschrift niet voldoet, regelt artikel 6:6; dat is niet
+      # gemodelleerd.
+      hooks:
+        - hook_point: pre_actions
+          applies_to:
+            submission: BEZWAAR
+      execution:
+        parameters:
+          - name: bezwaarschrift_ondertekend
+            type: boolean
+            nullable: true
+            required: false
+            description: Of het bezwaarschrift is ondertekend (lid 1, aanhef).
+          - name: naam_indiener
+            type: string
+            nullable: true
+            required: false
+            description: De naam van de indiener (lid 1, onder a).
+          - name: adres_indiener
+            type: string
+            nullable: true
+            required: false
+            description: Het adres van de indiener (lid 1, onder a).
+          - name: dagtekening_bezwaarschrift
+            type: date
+            nullable: true
+            required: false
+            description: De dagtekening van het bezwaarschrift (lid 1, onder b).
+          - name: omschrijving_bestreden_besluit
+            type: string
+            nullable: true
+            required: false
+            description: Een omschrijving van het besluit waartegen het bezwaar is gericht (lid 1, onder c).
+          - name: gronden_bezwaar
+            type: string
+            nullable: true
+            required: false
+            description: De gronden van het bezwaar (lid 1, onder d).
+        output:
+          - name: bezwaarschrift_bevat_wat_artikel_6_5_eist
+            type: boolean
+            description: Of het bezwaarschrift is ondertekend en ten minste de gegevens van lid 1 bevat.
+        actions:
+          - output: bezwaarschrift_bevat_wat_artikel_6_5_eist
+            value:
+              operation: AND
+              conditions:
+                - operation: EQUALS
+                  subject: $bezwaarschrift_ondertekend
+                  value: true
+                - operation: NOT
+                  value: {operation: EQUALS, subject: $naam_indiener, value: null}
+                - operation: NOT
+                  value: {operation: EQUALS, subject: $adres_indiener, value: null}
+                - operation: NOT
+                  value: {operation: EQUALS, subject: $dagtekening_bezwaarschrift, value: null}
+                - operation: NOT
+                  value: {operation: EQUALS, subject: $omschrijving_bestreden_besluit, value: null}
+                - operation: NOT
+                  value: {operation: EQUALS, subject: $gronden_bezwaar, value: null}
+
   - number: '6:7'
     text: |-
       De termijn voor het indienen van een bezwaar- of
@@ -248,3 +340,208 @@ articles:
               operation: DATE_ADD
               date: $bekendmaking_datum
               weeks: $bezwaartermijn_weken
+
+  - number: '6:9'
+    text: |-
+      1. Een bezwaar- of beroepschrift is tijdig ingediend indien het voor het
+      einde van de termijn is ontvangen.
+      2. Bij verzending per post is een bezwaar- of beroepschrift tijdig
+      ingediend indien het voor het einde van de termijn ter post is bezorgd,
+      mits het niet later dan een week na afloop van de termijn is ontvangen.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel6:9
+    machine_readable:
+      # Lid 1: of het bezwaarschrift op tijd is, hangt af van de ontvangst. Dat
+      # is het moment dat voor het bezwaar rechtens telt. Lid 2 (verzending
+      # per post) is niet gemodelleerd. Een te laat bezwaarschrift is nog
+      # steeds een bezwaarschrift; artikel 6:11 (verschoonbare
+      # termijnoverschrijding) is niet gemodelleerd.
+      hooks:
+        - hook_point: post_actions
+          applies_to:
+            submission: BEZWAAR
+      execution:
+        produces:
+          moment:
+            parameter: datum_ontvangst_bezwaarschrift
+            legal_basis:
+              law: Algemene wet bestuursrecht
+              bwb_id: BWBR0005537
+              article: '6:9'
+              paragraph: '1'
+              url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel6:9
+              juriconnect: jci1.3:c:BWBR0005537&artikel=6:9&lid=1&z=2024-01-01&g=2024-01-01
+        parameters:
+          - name: datum_ontvangst_bezwaarschrift
+            type: date
+            required: false
+            description: De dag waarop het bestuursorgaan het bezwaarschrift ontving (lid 1).
+          - name: bezwaartermijn_einddatum
+            type: date
+            required: false
+            description: De laatste dag van de termijn voor het indienen van het bezwaarschrift (artikelen 6:7 en 6:8).
+        output:
+          - name: bezwaarschrift_tijdig_ingediend
+            type: boolean
+            description: Of het bezwaarschrift voor het einde van de termijn is ontvangen (lid 1).
+        actions:
+          # "voor het einde van de termijn": uiterlijk op de laatste dag.
+          - output: bezwaarschrift_tijdig_ingediend
+            value:
+              operation: GREATER_THAN_OR_EQUAL
+              subject:
+                operation: DATE_DIFF
+                from: $datum_ontvangst_bezwaarschrift
+                to: $bezwaartermijn_einddatum
+                in: days
+              value: 0
+
+  - number: '7:2'
+    text: |-
+      1. Voordat een bestuursorgaan op het bezwaar beslist, stelt het
+      belanghebbenden in de gelegenheid te worden gehoord.
+      2. Het bestuursorgaan stelt daarvan in ieder geval de indiener van het
+      bezwaarschrift op de hoogte alsmede de belanghebbenden die bij de
+      voorbereiding van het besluit hun zienswijze naar voren hebben gebracht.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel7:2
+    # Niet gemodelleerd. Het horen is een handeling vóór de beslissing op het
+    # bezwaar, geen berekening.
+
+  - number: '7:10'
+    text: |-
+      1. Het bestuursorgaan beslist binnen zes weken of – indien een commissie
+      als bedoeld in artikel 7:13 is ingesteld – binnen twaalf weken, gerekend
+      vanaf de dag na die waarop de termijn voor het indienen van het
+      bezwaarschrift is verstreken.
+      2. De termijn wordt opgeschort gerekend vanaf de dag na die waarop de
+      indiener is verzocht een verzuim als bedoeld in artikel 6:6 te
+      herstellen, tot de dag waarop het verzuim is hersteld of de daarvoor
+      gestelde termijn ongebruikt is verstreken.
+      3. Het bestuursorgaan kan de beslissing voor ten hoogste zes weken
+      verdagen.
+      4. Verder uitstel is mogelijk voor zover:
+      a. alle belanghebbenden daarmee instemmen,
+      b. de indiener van het bezwaarschrift daarmee instemt en andere
+      belanghebbenden daardoor niet in hun belangen kunnen worden geschaad, of
+      c. dit nodig is in verband met de naleving van wettelijke
+      procedurevoorschriften.
+      5. Indien toepassing is gegeven aan het tweede, derde of vierde lid, doet
+      het bestuursorgaan hiervan schriftelijk mededeling aan belanghebbenden.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel7:10
+    machine_readable:
+      # Lid 1, zonder commissie als bedoeld in artikel 7:13. Opschorting (lid 2),
+      # verdaging (lid 3) en verder uitstel (lid 4) zijn niet gemodelleerd.
+      hooks:
+        - hook_point: post_actions
+          applies_to:
+            submission: BEZWAAR
+      execution:
+        parameters:
+          - name: bezwaartermijn_einddatum
+            type: date
+            required: false
+            description: De laatste dag van de termijn voor het indienen van het bezwaarschrift (artikelen 6:7 en 6:8).
+        output:
+          - name: beslistermijn_bezwaar_einddatum
+            type: date
+            description: De laatste dag waarop het bestuursorgaan op het bezwaar beslist (lid 1).
+        actions:
+          # Telling als bij artikel 6:8: de dag na het verstrijken van de
+          # bezwaartermijn is de eerste dag, dus zes weken eindigen op de
+          # laatste dag van de bezwaartermijn plus zes weken.
+          - output: beslistermijn_bezwaar_einddatum
+            value:
+              operation: DATE_ADD
+              date: $bezwaartermijn_einddatum
+              weeks: 6
+
+  - number: '7:11'
+    text: |-
+      1. Indien het bezwaar ontvankelijk is, vindt op grondslag daarvan een
+      heroverweging van het bestreden besluit plaats.
+      2. Voor zover de heroverweging daartoe aanleiding geeft, herroept het
+      bestuursorgaan het bestreden besluit en neemt het voor zover nodig in de
+      plaats daarvan een nieuw besluit.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel7:11
+    machine_readable:
+      # Of de heroverweging aanleiding geeft, oordeelt het bestuursorgaan per
+      # bezwaar (lid 2).
+      open_terms:
+        - id: heroverweging_geeft_aanleiding_tot_herroeping
+          type: boolean
+          required: true
+          decided_per_case_by: het bestuursorgaan (artikel 7:11, tweede lid)
+          description: >-
+            Of de heroverweging van het bestreden besluit aanleiding geeft het te
+            herroepen (tweede lid).
+      execution:
+        # Lid 1: de heroverweging vindt plaats "op grondslag van" het bezwaar.
+        # Dit artikel brengt twee dingen voort, zoals artikel 13a van de
+        # Leerplichtwet 1969 de aanvraag en het besluit erop (RFC-047,
+        # RFC-050). Het bezwaar, waar de Awb op haakt (6:5, 6:9, 7:10), en de
+        # beslissing waar het om vraagt. Het bevat geen parameter van dit
+        # artikel: wat het bevat, vragen de haken. En de beslissing op het
+        # bezwaar, een besluit dat de procedure van de Awb volgt, met de
+        # uitvoer die daarbij hoort. Eigen keuze: de beslissing op bezwaar
+        # tegen een beschikking is zelf een beschikking. Bezwaar tegen een
+        # ander besluit is niet gemodelleerd.
+        produces:
+          - type: BEZWAAR
+            requests: algemene_wet_bestuursrecht#7:11
+          - type: BESCHIKKING
+            outputs:
+              - bezwaar_ontvankelijk
+              - bestreden_besluit_herroepen
+        parameters:
+          # Wat artikel 6:9 bij het bezwaarschrift geeft; de indiener levert
+          # het niet aan.
+          - name: bezwaarschrift_tijdig_ingediend
+            type: boolean
+            description: Of het bezwaarschrift tijdig is ingediend (artikel 6:9).
+        output:
+          - name: bezwaar_ontvankelijk
+            type: boolean
+            description: >-
+              Of het bezwaar ontvankelijk is (lid 1). Alleen de termijn is
+              getoetst (artikel 6:9); de overige vereisten en artikel 6:11 nog
+              niet.
+          - name: bestreden_besluit_herroepen
+            type: boolean
+            description: Of het bestuursorgaan het bestreden besluit herroept (lid 2).
+        actions:
+          # Eigen keuze: lid 1 zegt niet wanneer een bezwaar ontvankelijk is.
+          # Hier alleen de termijn (artikel 6:9); de overige vereisten
+          # (artikelen 1:2, 6:5 met 6:6) en artikel 6:11 nog niet.
+          - output: bezwaar_ontvankelijk
+            value: $bezwaarschrift_tijdig_ingediend
+          # Lid 2. Het nieuwe besluit "voor zover nodig" is het besluit dat de
+          # heroverweging geeft; dit artikel berekent het niet zelf.
+          - output: bestreden_besluit_herroepen
+            value:
+              operation: AND
+              conditions:
+                - $bezwaar_ontvankelijk
+                - $heroverweging_geeft_aanleiding_tot_herroeping
+
+  - number: '7:12'
+    text: |-
+      1. De beslissing op het bezwaar dient te berusten op een deugdelijke
+      motivering, die bij de bekendmaking van de beslissing wordt vermeld.
+      Daarbij wordt, indien ingevolge artikel 7:3 van het horen is afgezien,
+      tevens aangegeven op welke grond dat is geschied.
+      2. De beslissing wordt bekendgemaakt door toezending of uitreiking aan
+      degenen tot wie zij is gericht. Betreft het een besluit dat niet tot een
+      of meer belanghebbenden is gericht, dan wordt de beslissing tevens
+      bekendgemaakt op dezelfde wijze als waarop dat besluit bekendgemaakt is,
+      tenzij het bestreden besluit in stand wordt gelaten.
+      3. Zo spoedig mogelijk na de bekendmaking van de beslissing wordt hiervan
+      mededeling gedaan aan de belanghebbenden die in bezwaar of bij de
+      voorbereiding van het bestreden besluit hun zienswijze naar voren hebben
+      gebracht.
+      4. Bij de mededeling, bedoeld in het derde lid, is artikel 6:23 van
+      overeenkomstige toepassing en wordt met het oog op de aanvang van de
+      beroepstermijn zo duidelijk mogelijk aangegeven wanneer de bekendmaking
+      van de beslissing overeenkomstig het tweede lid heeft plaatsgevonden.
+    url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel7:12
+    # Niet apart gemodelleerd. De beslissing op het bezwaar is een beschikking
+    # (zie 7:11), dus artikel 3:46 haakt er al op en geeft motivering_vereist.
+    # Lid 2 tot en met 4 (bekendmaking en mededeling) zijn niet gemodelleerd.
