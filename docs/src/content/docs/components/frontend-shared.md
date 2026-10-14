@@ -74,6 +74,28 @@ These came in with the proof-of-concepts behind the [PoC Portal](./poc-portal). 
 | `lib/diff.ts` | A line diff (longest common subsequence) for showing a change to a law's YAML, with no dependency |
 | `components/` | `Panel.vue` (a collapsible section), `ColumnMenu.vue` (a menu to pick variants as columns), `AssistantNotices.vue` (notices from the policy assistant) and `OptimizationPathChart.vue` (the path the assistant takes toward a target, which needs the optional `echarts` peer dependency) |
 
+### RegelRijm (`./regelrijm/index.js`)
+
+RegelRijm reads an action tree as Dutch: `[hoogte zorgtoeslag] wordt:
+afgerond op hele centen ( het deel van … boven … )`. It is generated from the
+YAML each time a rule is shown, never written by hand, and the same tree always
+gives the same text. The grammar, the choices that keep two trees from reading
+alike, and the editor pane are in [RFC-054](/rfcs/rfc-054).
+
+| Export | Purpose |
+|--------|---------|
+| `renderAction(action, { article, glossary })` | The full reading of one action, as text and as a token stream for HTML |
+| `renderFocus(action, path, { article, depth, open })` | The reading of one operation, with operations deeper than `depth` folded into their signature, `⟨bedrag uit [a] en [b]⟩`: what the part gives and which inputs it reads. `open` holds path keys (`pathKey`) of folded parts to show one level deeper |
+| `articleContext(article, glossary)` | The declared units, the vocabulary and the article's constants, built once per article |
+| `untranslated(segments)`, `references(segments)` | The names a reading shows without a term, and every name it refers to |
+
+A name without a term reads as `[humanised name]`; a glossary (`naam: term`)
+is optional and can be passed in by the caller, so a corpus kept elsewhere keeps
+its words out of this package. The tests next to the module read every action in
+`corpus/regulation` back to its tree with a parser that exists
+only in `test-support/`. `scripts/regelrijm-report.mjs <dir>` reports per corpus
+how many rules read on one line and which names have no term.
+
 ## Further reading
 
 - [Editor](./frontend) - the main consumer, and the reference for this package
