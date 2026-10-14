@@ -4,7 +4,7 @@
  * circle, the captions, the cursor that shows where the presenter clicks, and
  * the transcript panel. Also the player's keys.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useViewerI18n } from '../i18n/index.js';
 import { usePresentation } from '../presentation/usePresentation.js';
 import { PLAYER_KEYS, audioTime, backToMain, currentTrack, replay, seek, togglePlay } from './replay.js';
@@ -74,6 +74,30 @@ function raise() {
 }
 watch(() => [replay.cursor.x, replay.cursor.y, replay.ripples.length, cue.value?.text], raise);
 onMounted(raise);
+
+// The cover while a jump restores the demo: a layer of its own, because the
+// pointer layer is aria-hidden and its status message has to be heard. Raised
+// again as the restore goes on, above a sheet or dialog it opens.
+const restoreLayer = ref(null);
+function raiseCover() {
+  const el = restoreLayer.value;
+  if (!el?.showPopover) return;
+  try {
+    if (el.matches(':popover-open')) {
+      // Already on top: leave it, or a screen reader hears the status again.
+      const r = el.getBoundingClientRect();
+      if (el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))) return;
+      el.hidePopover();
+    }
+    el.showPopover();
+  } catch {
+    /* not supported: the cover stays in normal stacking */
+  }
+}
+watch(
+  () => replay.restoring && replay.now,
+  () => replay.restoring && nextTick(raiseCover),
+);
 
 // ---- the transcript ------------------------------------------------------------------
 
@@ -184,9 +208,9 @@ onUnmounted(() => {
     <span v-for="r in replay.restoring ? [] : replay.ripples" :key="r.id" class="ripple" :style="{ left: `${r.x}px`, top: `${r.y}px` }" aria-hidden="true"></span>
 
     <p v-if="cue" class="caption" lang="nl" aria-hidden="true">{{ cue.text }}</p>
-    <div v-if="replay.restoring" class="restoring">
-      <nldd-activity-indicator show-text :text="t('walkthrough.restoring')" timing="instant" size="48"></nldd-activity-indicator>
     </div>
+    <div v-if="replay.restoring" ref="restoreLayer" popover="manual" class="restoring">
+      <nldd-activity-indicator show-text :text="t('walkthrough.restoring')" timing="instant" size="48"></nldd-activity-indicator>
     </div>
 
     <nldd-sheet ref="sheet" placement="right" width="560px" :accessible-label="t('walkthrough.transcript.title')" @close="transcript.open = false">
@@ -288,10 +312,18 @@ onUnmounted(() => {
     opacity: 0;
   }
 }
-/* While a jump puts the demo back: the demo is covered, the rail is not. */
+/* While a jump puts the demo back: the demo is covered, the rail is not.
+   A popover, so the browser's own popover box is reset like the pointer layer. */
 .restoring {
   position: fixed;
   inset: 0 0 0 36vw;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.restoring:popover-open {
   display: grid;
   place-items: center;
   background: var(--semantics-surfaces-base-background-color);
