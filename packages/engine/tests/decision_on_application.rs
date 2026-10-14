@@ -75,8 +75,10 @@ articles:
           decided_per_case_by: het hoofd
       execution:
         produces:
-          - submission: {kind: AANVRAAG}
-          - legal_character: BESCHIKKING
+          - type: AANVRAAG
+            requests: wet_verlof#1
+            parameters: [dagen]
+          - type: BESCHIKKING
             outputs: [verlof_verleend]
         parameters:
           - {name: dagen, type: number}
@@ -183,7 +185,7 @@ fn the_application_stage_fires_only_the_hooks_on_the_application() {
 #[test]
 fn an_article_that_produces_one_thing_computes_every_output_at_every_stage() {
     let one_thing = SPECIAL_LAW.replace(
-        "          - submission: {kind: AANVRAAG}\n          - legal_character: BESCHIKKING\n            outputs: [verlof_verleend]\n",
+        "          - type: AANVRAAG\n            requests: wet_verlof#1\n            parameters: [dagen]\n          - type: BESCHIKKING\n            outputs: [verlof_verleend]\n",
         "          legal_character: BESCHIKKING\n          submission: {kind: AANVRAAG}\n",
     );
     assert_ne!(one_thing, SPECIAL_LAW, "the fixture names the list form");

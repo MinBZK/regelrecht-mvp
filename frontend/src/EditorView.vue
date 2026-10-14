@@ -2312,20 +2312,24 @@ function handleSave({ section, key, newKey, index, data }) {
   } else if (section === 'produces') {
     if (!mr.execution.produces) mr.execution.produces = {};
     // In the list form (schema v0.8.1) the fields belong to the decision
-    // item, the one MachineReadable shows; a list without one gets one.
+    // item, the one MachineReadable shows, and its legal character is its
+    // `type`. Setting a legal character on a list without a decision adds
+    // one; clearing it removes the item, which is nothing without a type.
     const list = Array.isArray(mr.execution.produces) ? mr.execution.produces : null;
+    const field = list && key === 'legal_character' ? 'type' : key;
     let target = list ? producedDecision(list) : mr.execution.produces;
     if (!target) {
-      if (data == null) target = {};
+      if (data == null || field !== 'type') target = {};
       else list.push((target = {}));
     }
-    if (data == null) delete target[key];
-    else target[key] = data;
+    if (data == null) delete target[field];
+    else target[field] = data;
     // Drop what every field was cleared from, otherwise the YAML dump emits
-    // a bare `produces: {}` (or an empty item) which the schema rejects.
+    // a bare `produces: {}` (or an item without a type) which the schema
+    // rejects.
     if (list) {
       const index = list.indexOf(target);
-      if (index >= 0 && Object.keys(target).length === 0) list.splice(index, 1);
+      if (index >= 0 && target.type == null) list.splice(index, 1);
       if (list.length === 0) delete mr.execution.produces;
     } else if (Object.keys(mr.execution.produces).length === 0) {
       delete mr.execution.produces;

@@ -1,28 +1,69 @@
 /**
  * What a law article produces (`execution.produces`), in either form the
  * schema allows: one object, the form most laws use, or a list of produced
- * things, such as an application and the decision on it (schema v0.8.1,
- * RFC-047). Readers go through these helpers so neither form is missed.
+ * items, such as an application and the decision on it (schema v0.8.1,
+ * RFC-047). A list item says what it is with `type`: a submission kind
+ * (`AANVRAAG`) or a legal character (`BESCHIKKING`). The object form says it
+ * with `submission.kind` and `legal_character`. Readers go through these
+ * helpers so neither form is missed.
  */
 
-/** Every produced thing, in the order written: one for the object form. */
+/** The submission kinds a list item's `type` can name; any other is a legal character. */
+export const SUBMISSION_KINDS = ['AANVRAAG'];
+
+/** Every produced item, in the order written: one for the object form. */
 export function producedItems(produces) {
   if (produces == null) return [];
   return Array.isArray(produces) ? produces : [produces];
 }
 
+/** Whether `item` is a list item (it has a `type`), not the object form. */
+export function isListItem(item) {
+  return item != null && typeof item.type === 'string';
+}
+
+/** The legal character of `item`, or `null` when it is no decision. */
+export function legalCharacterOf(item) {
+  if (item == null) return null;
+  if (isListItem(item)) return SUBMISSION_KINDS.includes(item.type) ? null : item.type;
+  return item.legal_character ?? null;
+}
+
+/** The kind of submission `item` establishes, or `null`. */
+export function submissionKindOf(item) {
+  if (item == null) return null;
+  if (isListItem(item)) return SUBMISSION_KINDS.includes(item.type) ? item.type : null;
+  return item.submission?.kind ?? null;
+}
+
 /**
- * The decision the article produces: in a list the item with a
- * `legal_character`; the object form is the decision itself. `null` when
- * there is none.
+ * The decision the article produces, as written: in a list the item with a
+ * decision `type`; the object form is the decision itself. `null` when there
+ * is none. Read its legal character with `legalCharacterOf`.
  */
 export function producedDecision(produces) {
   if (produces == null) return null;
   if (!Array.isArray(produces)) return produces;
-  return produces.find((p) => p?.legal_character) ?? null;
+  return produces.find((p) => legalCharacterOf(p) != null) ?? null;
 }
 
-/** The item that establishes a submission (`submission`), or `null`. */
+/** The item that establishes a submission, or `null`. */
 export function producedSubmission(produces) {
-  return producedItems(produces).find((p) => p?.submission) ?? null;
+  return producedItems(produces).find((p) => submissionKindOf(p) != null) ?? null;
+}
+
+/**
+ * The decision in the object form's terms, whatever form it was written in:
+ * `{ legal_character, decision_type, procedure_id }`, or `null` when the
+ * article takes no decision. For readers that show or test the decision.
+ */
+export function decisionOf(produces) {
+  const decision = producedDecision(produces);
+  const legalCharacter = legalCharacterOf(decision);
+  if (legalCharacter == null) return null;
+  return {
+    legal_character: legalCharacter,
+    decision_type: decision.decision_type,
+    procedure_id: decision.procedure_id,
+  };
 }

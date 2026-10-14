@@ -50,9 +50,9 @@ describe('producesBeschikking', () => {
 
   it('herkent de beschikking in een lijst van wat een artikel voortbrengt', () => {
     // Leerplichtwet art. 13a: de aanvraag en het besluit erop (schema v0.8.1).
-    const produces = [{ submission: { kind: 'AANVRAAG' } }, { legal_character: 'BESCHIKKING' }];
+    const produces = [{ type: 'AANVRAAG', requests: 'leerplichtwet_1969#13a' }, { type: 'BESCHIKKING' }];
     expect(producesBeschikking(law(produces))).toBe(true);
-    expect(producesBeschikking(law([{ submission: { kind: 'AANVRAAG' } }]))).toBe(false);
+    expect(producesBeschikking(law([{ type: 'AANVRAAG' }]))).toBe(false);
   });
 
   it('kijkt naar alle artikelen, niet alleen het eerste', () => {

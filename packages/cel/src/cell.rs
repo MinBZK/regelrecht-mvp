@@ -289,12 +289,13 @@ impl Cell {
                 self.recording_actor
             ))
         })?;
-        if gram.kind != shape.submission_kind || gram.grondslag != shape.grondslag() {
+        if gram.kind != shape.submission_kind || gram.grondslag != shape.application {
             return Err(refused(format!(
-                "chronolexogram '{id}' is a {} under {}, not an {} under {} that it decides on",
+                "chronolexogram '{id}' is a {} under {}, not an {} under {} that {} decides on",
                 gram.kind,
                 gram.grondslag,
                 shape.submission_kind,
+                shape.application,
                 shape.grondslag()
             )));
         }

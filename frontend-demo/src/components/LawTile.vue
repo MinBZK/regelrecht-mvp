@@ -12,7 +12,7 @@ import { dateInputFor, phraseOutcome, phrasingFor } from '../data/outcomePhrasin
 import { driftSentence } from '../data/caseDrift.js';
 import { useDemo } from '../store/demoStore.js';
 import { canBeApplied, objectionOpen, statusOf } from '../data/lifecycle.js';
-import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
 import { useLocalePath } from '../i18n/useLocalePath.js';
 import { activeLocale, useI18n } from '../i18n/index.js';
 
@@ -196,7 +196,7 @@ function correctOutcome(name, value) {
 const produces = computed(() => {
   for (const a of doc.value.articles ?? []) {
     const p = a.machine_readable?.execution?.produces;
-    if (p) return producedDecision(p);
+    if (p) return decisionOf(p);
   }
   return null;
 });

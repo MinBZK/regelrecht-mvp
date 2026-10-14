@@ -22,7 +22,7 @@
  */
 import { ref, watch } from 'vue';
 import * as yaml from 'js-yaml';
-import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
 import { MarkerType, Position } from '@vue-flow/core';
 import { extractRegulationRefs } from './useDependencies.js';
 import { useLatest } from '../lib/useLatest.js';
@@ -90,7 +90,7 @@ function parseLawFromParsed(data) {
       overrides: (mr.overrides || []).map((o) => ({ law: o.law, article: o.article, output: o.output })),
       hooks: (mr.hooks || []).map((h) => h.applies_to?.legal_character || ''),
       open_terms: (mr.open_terms || []).map((ot) => ot.id),
-      produces_legal_character: producedDecision(ex.produces)?.legal_character,
+      produces_legal_character: decisionOf(ex.produces)?.legal_character,
       text: art.text || '',
     });
   }

@@ -2,8 +2,11 @@
 //!
 //! The engine names the articles that take part in a submission
 //! ([`LawExecutionService::submission`]): the article that establishes it and
-//! the hooks on it. Their parameters are what the application holds, but
-//! one: a `produces.moment` on one of them names the moment that counts,
+//! the hooks on it. What they ask is what the application holds: the
+//! parameters the submission item lists when `produces` is a list (RFC-047),
+//! every parameter of the establishing article in the object form, and every
+//! parameter of each hook. But one: a `produces.moment` on one of them names
+//! the moment that counts,
 //! such as the receipt (Awb 4:13 lid 1). That parameter is the moment, not
 //! part of the application (RFC-045); the cell fills it, not the applicant.
 
@@ -62,12 +65,17 @@ pub struct Shape {
     /// The stage of the article's procedure at which the hooks on the
     /// application fire, such as AANVRAAG; `None` outside a procedure.
     pub stage: Option<String>,
-    /// What the application holds: every parameter of the articles that
-    /// take part, the establishing article first, then the hooks in the
-    /// order they fire. A name two articles declare is one field. The
+    /// What the application holds: the parameters of the submission (the
+    /// item's `parameters` in the list form, every parameter of the
+    /// establishing article in the object form), then those of the hooks in
+    /// the order they fire. A name two articles declare is one field. The
     /// moment's parameter is not among them.
     pub fields: Vec<Field>,
     pub moment: Option<Moment>,
+    /// The article whose decision the application asks for,
+    /// `<regulation>#<article>` (`requests`, RFC-047); `None` when the law
+    /// names none.
+    pub requests: Option<String>,
 }
 
 impl Shape {
@@ -113,6 +121,7 @@ pub fn derive(
         stage: submission.stage,
         fields: Vec::new(),
         moment: None,
+        requests: service.requested_decision(law_id, article, &day.to_string())?,
     };
     for part in &submission.articles {
         let declared_by = format!("{}#{}", part.law_id, part.article_number);
@@ -121,15 +130,26 @@ pub fn derive(
         let Some(execution) = found.get_execution_spec() else {
             continue;
         };
-        if part.hook_point.is_none() && shape.stage.is_none() {
-            shape.outputs = execution
-                .output
-                .iter()
-                .flatten()
-                .map(|o| o.name.clone())
+        // The establishing article contributes what its submission
+        // contains: in the list form of `produces` the item's own
+        // `parameters`, in the object form every parameter (RFC-047). A
+        // hook contributes every parameter it declares.
+        let item = found.get_submission().filter(|_| part.hook_point.is_none());
+        if let Some(item) = item.filter(|_| shape.stage.is_none()) {
+            shape.outputs = found
+                .outputs_of(item)
+                .into_iter()
+                .map(str::to_string)
                 .collect();
         }
+        let asked: Option<Vec<&str>> = item.map(|i| found.parameters_of(i));
         for p in execution.parameters.iter().flatten() {
+            if asked
+                .as_ref()
+                .is_some_and(|names| !names.contains(&p.name.as_str()))
+            {
+                continue;
+            }
             let field = Field {
                 name: p.name.clone(),
                 type_: p.param_type,
@@ -138,7 +158,7 @@ pub fn derive(
             };
             add_field(&mut shape.fields, field, &reference)?;
         }
-        if let Some(m) = found.get_produced().iter().find_map(|p| p.moment.as_ref()) {
+        if let Some(m) = found.get_produced().into_iter().find_map(|p| p.moment()) {
             if let Some(other) = &shape.moment {
                 return Err(setup(format!(
                     "{reference}: two articles name the moment that counts ({} and {declared_by})",

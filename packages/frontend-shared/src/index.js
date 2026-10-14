@@ -19,4 +19,13 @@ export { useColorScheme } from './useColorScheme.js';
 // for the editor, the demo and the Gherkin runner.
 export { isUnknown, missingFacts } from './values.js';
 // What an article produces, in the object form or as a list (schema v0.8.1).
-export { producedItems, producedDecision, producedSubmission } from './produces.js';
+export {
+  SUBMISSION_KINDS,
+  decisionOf,
+  isListItem,
+  legalCharacterOf,
+  producedDecision,
+  producedItems,
+  producedSubmission,
+  submissionKindOf,
+} from './produces.js';

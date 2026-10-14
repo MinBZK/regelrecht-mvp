@@ -145,13 +145,13 @@ struct ResolutionContext<'a> {
 /// names the stage, and at every other stage those of the decision. `None`,
 /// every output, for an article that produces one thing.
 fn outputs_at_stage<'a>(article: &'a Article, stage: &str) -> Option<Vec<&'a str>> {
-    if !article.produces_several() {
+    if !article.produces_list() {
         return None;
     }
     let item = article
         .get_produced()
-        .iter()
-        .find(|p| p.submission.as_ref().is_some_and(|s| s.kind == stage))
+        .into_iter()
+        .find(|p| p.submission_kind() == Some(stage))
         .or_else(|| article.get_decision())?;
     Some(article.outputs_of(item))
 }
@@ -1761,6 +1761,95 @@ impl LawExecutionService {
         )
     }
 
+    /// The decision the submission of article `article_number` of `law_id`
+    /// asks for (Awb 1:3 lid 3), as `<regulation>#<article>`, in the version
+    /// in force on `calculation_date`: the article its list item names with
+    /// `requests` (RFC-047), or the article itself in the object form when
+    /// that also carries a `legal_character`. `None` when the article
+    /// establishes no submission or its submission names no decision. An
+    /// error when the requested article is not loaded, has no version in
+    /// force on that date, or takes no decision: the loader can check a
+    /// target in another law only once that law is there, so this is where
+    /// a missing one shows.
+    pub fn requested_decision(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        calculation_date: &str,
+    ) -> Result<Option<String>> {
+        let (_, article) = self.article_in_force(law_id, article_number, calculation_date)?;
+        let Some(submission) = article.get_submission() else {
+            return Ok(None);
+        };
+        let target = match submission.requests() {
+            Some(target) => target.to_string(),
+            None if !article.produces_list() && article.get_decision().is_some() => {
+                return Ok(Some(format!("{law_id}#{article_number}")));
+            }
+            None => return Ok(None),
+        };
+        let (regulation, number) = target.split_once('#').ok_or_else(|| {
+            EngineError::InvalidOperation(format!(
+                "{law_id}#{article_number} requests '{target}', which is no article reference"
+            ))
+        })?;
+        let (_, requested) = self
+            .article_in_force(regulation, number, calculation_date)
+            .map_err(|e| {
+                EngineError::ResolutionError(format!(
+                    "{law_id}#{article_number} requests the decision of {target}: {e}"
+                ))
+            })?;
+        if requested.get_decision().is_none() {
+            return Err(EngineError::ResolutionError(format!(
+                "{law_id}#{article_number} requests the decision of {target}, which takes no \
+                 decision (no legal_character)"
+            )));
+        }
+        Ok(Some(target))
+    }
+
+    /// The articles whose submission asks for the decision of article
+    /// `article_number` of `law_id` ([`Self::requested_decision`]), as
+    /// `<regulation>#<article>`, among the laws in force on
+    /// `calculation_date`: those of the deciding law first, then the others
+    /// in the order of their law ids.
+    pub fn applications_for(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        calculation_date: &str,
+    ) -> Result<Vec<String>> {
+        let ref_date = Some(parse_calculation_date(calculation_date)?);
+        let target = format!("{law_id}#{article_number}");
+        let mut laws: Vec<&str> = self.resolver.list_laws();
+        laws.sort_unstable_by_key(|id| (*id != law_id, *id));
+        let mut found = Vec::new();
+        for id in laws {
+            let Some(law) = self.resolver.get_law_for_date(id, ref_date) else {
+                continue;
+            };
+            for article in &law.articles {
+                let Some(submission) = article.get_submission() else {
+                    continue;
+                };
+                let asks = match submission.requests() {
+                    Some(requests) => requests == target,
+                    None => {
+                        id == law_id
+                            && article.number == article_number
+                            && !article.produces_list()
+                            && article.get_decision().is_some()
+                    }
+                };
+                if asks {
+                    found.push(format!("{id}#{}", article.number));
+                }
+            }
+        }
+        Ok(found)
+    }
+
     /// What executing article `article_number` of `law_id` involves when it
     /// establishes a submission (RFC-045), in the version in force on
     /// `calculation_date`: the article and the hooks on the submission, by the
@@ -1780,8 +1869,8 @@ impl LawExecutionService {
         let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
         let Some(kind) = article
             .get_submission()
-            .and_then(|p| p.submission.as_ref())
-            .map(|s| s.kind.clone())
+            .and_then(|p| p.submission_kind())
+            .map(str::to_string)
         else {
             return Ok(None);
         };
@@ -1982,8 +2071,8 @@ impl LawExecutionService {
         article: &Article,
     ) -> Result<Option<&ProcedureDefinition>> {
         let produces = article.get_decision();
-        let procedure_id = produces.and_then(|p| p.procedure_id.as_deref());
-        let Some(lc) = produces.and_then(|p| p.legal_character.as_deref()) else {
+        let procedure_id = produces.and_then(|p| p.procedure_id());
+        let Some(lc) = produces.and_then(|p| p.legal_character()) else {
             return Ok(None);
         };
         match self.resolver.find_procedure_reported(lc, procedure_id) {
@@ -2513,26 +2602,24 @@ impl LawExecutionService {
         staged: bool,
     ) -> Vec<&HookEntry> {
         let decision = article.get_decision();
-        let mut hooks = match decision.and_then(|d| d.legal_character.as_deref()) {
+        let mut hooks = match decision.and_then(|d| d.legal_character()) {
             Some(lc) => self.resolver.find_hooks(
                 hook_point,
                 lc,
-                decision.and_then(|d| d.decision_type.as_deref()),
+                decision.and_then(|d| d.decision_type()),
                 stage,
             ),
             None => Vec::new(),
         };
-        if let Some(submission) = article
+        if let Some(kind) = article
             .get_submission()
-            .and_then(|p| p.submission.as_ref())
-            .filter(|s| !staged || s.kind == stage)
+            .and_then(|p| p.submission_kind())
+            .filter(|k| !staged || *k == stage)
         {
-            for h in self.resolver.find_submission_hooks(
-                hook_point,
-                &submission.kind,
-                &law.id,
-                &article.number,
-            ) {
+            for h in self
+                .resolver
+                .find_submission_hooks(hook_point, kind, &law.id, &article.number)
+            {
                 // An article that hooks onto both the decision and the
                 // submission of this article fires once.
                 if !hooks
@@ -2565,12 +2652,9 @@ impl LawExecutionService {
         Vec<std::result::Result<FireableHook<'s>, DeclarationNotInForce>>,
     )> {
         let decision = article.get_decision();
-        let legal_character = decision.and_then(|p| p.legal_character.as_deref());
-        let decision_type = decision.and_then(|p| p.decision_type.as_deref());
-        let kind = article
-            .get_submission()
-            .and_then(|p| p.submission.as_ref())
-            .map(|s| s.kind.as_str());
+        let legal_character = decision.and_then(|p| p.legal_character());
+        let decision_type = decision.and_then(|p| p.decision_type());
+        let kind = article.get_submission().and_then(|p| p.submission_kind());
         // What the hooks fire on, as the trace names it ("BESCHIKKING stage
         // BESLUIT") and as the record of a hook not in force names it
         // ("... at stage BESLUIT").

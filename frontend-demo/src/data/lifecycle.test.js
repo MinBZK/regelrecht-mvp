@@ -19,9 +19,10 @@ describe('canBeApplied', () => {
   });
 
   it('reads the decision in a produces list (schema v0.8.1)', () => {
-    const produces = [{ submission: { kind: 'AANVRAAG' } }, { legal_character: 'BESCHIKKING' }];
+    const produces = [{ type: 'AANVRAAG', requests: 'leerplichtwet_1969#13a' }, { type: 'BESCHIKKING' }];
     expect(canBeApplied(produces)).toBe(true);
-    expect(canBeApplied([{ submission: { kind: 'AANVRAAG' } }])).toBe(false);
+    expect(canBeApplied([{ type: 'AANVRAAG' }])).toBe(false);
+    expect(canBeApplied([{ type: 'BESCHIKKING', decision_type: 'AANSLAG' }])).toBe(false);
   });
 });
 

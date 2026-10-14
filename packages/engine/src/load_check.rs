@@ -9,11 +9,11 @@
 //! outcome, so the loader walks every literal in the definitions and the
 //! actions and refuses the document.
 //!
-//! An article that produces several things (schema v0.8.1) divides its
-//! outputs over them. The loader refuses a list that names an output the
-//! article lacks, gives one output to two items, or has two decisions or two
-//! submissions, since the engine would then not know which one a stage is
-//! about (RFC-047).
+//! An article that produces several things (schema v0.8.1) lists them, one
+//! item per type, each with its own parameters and outputs. The loader
+//! refuses a list with two items of one type, an output given to two items,
+//! a parameter or output the article lacks, or a submission that requests a
+//! decision this law does not take (RFC-047).
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
@@ -56,10 +56,17 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
     Ok(())
 }
 
-/// Refuse an article whose `produces` list does not divide its outputs over
-/// one decision and one submission at most (schema v0.8.1, RFC-047).
+/// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
+/// items of one type, does not divide its outputs over its items, names a
+/// parameter or output the article lacks, or has a submission that requests
+/// a decision this law does not take. One item per type makes article and
+/// type name an item, so nothing in the list needs a name of its own; a
+/// staged execution also picks the item by kind (the stage named after the
+/// submission, every other stage the decision). A submission that requests a
+/// decision of another law is checked when it is used, since that law may be
+/// loaded later.
 pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
-    for article in &law.articles {
+    for article in law.articles.iter().filter(|a| a.produces_list()) {
         let produced = article.get_produced();
         let refuse = |why: String| {
             Err(EngineError::LoadError(format!(
@@ -67,25 +74,59 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 law.id, article.number
             )))
         };
-        for (what, count) in [
-            (
-                "decisions (legal_character)",
-                produced
-                    .iter()
-                    .filter(|p| p.legal_character.is_some())
-                    .count(),
-            ),
-            (
-                "submissions",
-                produced.iter().filter(|p| p.submission.is_some()).count(),
-            ),
-        ] {
-            if count > 1 {
-                return refuse(format!("produces {count} {what}; it may produce one"));
+        let decisions = produced
+            .iter()
+            .filter(|p| p.legal_character().is_some())
+            .count();
+        if decisions > 1 {
+            return refuse(format!(
+                "produces {decisions} decisions; it may produce one"
+            ));
+        }
+        let mut types: Vec<&str> = Vec::new();
+        for item in &produced {
+            let ty = item
+                .legal_character()
+                .or(item.submission_kind())
+                .unwrap_or("");
+            if types.contains(&ty) {
+                return refuse(format!(
+                    "produces two items of type {ty}; it may produce one"
+                ));
+            }
+            types.push(ty);
+        }
+        for item in &produced {
+            let Some(target) = item.requests() else {
+                continue;
+            };
+            if item.submission_kind().is_none() {
+                return refuse(format!(
+                    "requests '{target}' on a decision; only a submission requests a decision"
+                ));
+            }
+            let Some((regulation, number)) = target.split_once('#') else {
+                continue;
+            };
+            if regulation != law.id {
+                continue;
+            }
+            match law.find_article_by_number(number) {
+                None => {
+                    return refuse(format!(
+                        "requests the decision of '{target}', but this law has no article {number}"
+                    ))
+                }
+                Some(a) if a.get_decision().is_none() => {
+                    return refuse(format!(
+                        "requests the decision of '{target}', which takes no decision"
+                    ))
+                }
+                Some(_) => {}
             }
         }
         let mut listed: Vec<&str> = Vec::new();
-        for name in produced.iter().filter_map(|p| p.outputs.as_ref()).flatten() {
+        for name in produced.iter().filter_map(|p| p.listed_outputs()).flatten() {
             if !article.has_output(name) {
                 return refuse(format!(
                     "lists output '{name}' under produces, but declares no such output"
@@ -95,6 +136,15 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 return refuse(format!("gives output '{name}' to two things it produces"));
             }
             listed.push(name);
+        }
+        for &item in &produced {
+            for name in article.parameters_of(item) {
+                if !article.get_parameters().iter().any(|p| p.name == name) {
+                    return refuse(format!(
+                        "lists parameter '{name}' under produces, but declares no such parameter"
+                    ));
+                }
+            }
         }
     }
     Ok(())
@@ -293,6 +343,9 @@ articles:
       execution:
         produces:
 {items}
+        parameters:
+          - name: p
+            type: string
         output:
           - name: x
             type: boolean
@@ -306,7 +359,7 @@ articles:
     #[test]
     fn a_produces_list_that_divides_the_outputs_loads() {
         let yaml = law_producing(
-            "          - submission: {kind: AANVRAAG}\n          - legal_character: BESCHIKKING\n            outputs: [x]",
+            "          - type: AANVRAAG\n            requests: lijst#1\n            parameters: [p]\n          - type: BESCHIKKING\n            outputs: [x]",
         );
         let mut service = LawExecutionService::new();
         service.load_law(&yaml).expect("a well-divided list loads");
@@ -316,16 +369,36 @@ articles:
     fn a_produces_list_must_divide_the_outputs_unambiguously() {
         for (items, why) in [
             (
-                "          - legal_character: BESCHIKKING\n            outputs: [y]",
+                "          - type: BESCHIKKING\n            outputs: [y]",
                 "lists output 'y' under produces",
             ),
             (
-                "          - submission: {kind: AANVRAAG}\n            outputs: [x]\n          - legal_character: BESCHIKKING\n            outputs: [x]",
+                "          - type: AANVRAAG\n            outputs: [x]\n          - type: BESCHIKKING\n            outputs: [x]",
                 "gives output 'x' to two things",
             ),
             (
-                "          - legal_character: BESCHIKKING\n          - legal_character: TOETS",
+                "          - type: BESCHIKKING\n          - type: TOETS",
                 "produces 2 decisions",
+            ),
+            (
+                "          - type: AANVRAAG\n            parameters: [q]\n          - type: BESCHIKKING",
+                "lists parameter 'q' under produces",
+            ),
+            (
+                "          - type: AANVRAAG\n          - type: AANVRAAG",
+                "two items of type AANVRAAG",
+            ),
+            (
+                "          - type: BESCHIKKING\n            requests: lijst#1",
+                "only a submission requests a decision",
+            ),
+            (
+                "          - type: AANVRAAG\n            requests: lijst#2\n          - type: BESCHIKKING",
+                "this law has no article 2",
+            ),
+            (
+                "          - type: AANVRAAG\n            requests: lijst#1",
+                "which takes no decision",
             ),
         ] {
             let mut service = LawExecutionService::new();

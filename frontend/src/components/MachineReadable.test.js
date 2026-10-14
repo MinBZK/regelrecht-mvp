@@ -125,8 +125,8 @@ describe('MachineReadable', () => {
     it('shows the decision of a produces list (schema v0.8.1)', () => {
       const article = createArticle();
       article.machine_readable.execution.produces = [
-        { submission: { kind: 'AANVRAAG' } },
-        { legal_character: 'BESCHIKKING', decision_type: 'AFWIJZING', outputs: ['heeft_recht'] },
+        { type: 'AANVRAAG', requests: 'test#1', parameters: ['bsn'] },
+        { type: 'BESCHIKKING', decision_type: 'AFWIJZING', outputs: ['heeft_recht'] },
       ];
       const wrapper = mount(MachineReadable, { props: { article, editable: true } });
       expect(wrapper.find('select[aria-label="Juridische basis"]').element.value).toBe('BESCHIKKING');

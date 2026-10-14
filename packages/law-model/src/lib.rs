@@ -25,8 +25,8 @@ pub use model::{
     Declaration, DeclaredProperty, Definition, Execution, HookDeclaration, HookFilter, HookPoint,
     ImplementsDeclaration, Input, LegalBasis, MachineReadable, Marking, MarkingResolution, Moment,
     OpenTerm, OpenTermDefault, Output, OverrideDeclaration, Parameter, Placement,
-    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produces, ProducesList,
-    ProvisionReference, ResolveSpec, Source, Stage, StageRequirement, Submission, Temporal,
-    TypeSpec, UntranslatableEntry,
+    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produced, ProducedItem,
+    Produces, ProducesList, ProvisionReference, ResolveSpec, Source, Stage, StageRequirement,
+    Submission, Temporal, TypeSpec, UntranslatableEntry, SUBMISSION_KINDS,
 };
 pub use value::{MissingFact, MissingKind, Operation, ParameterType, RegulatoryLayer, Value};

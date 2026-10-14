@@ -1,5 +1,5 @@
 ---
-# A produced thing that names its outputs names at least one (schema v0.8.1).
+# A produced item that names its outputs names at least one (schema v0.8.1).
 $schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
 $id: test_conformance_produces_list_empty_outputs
 regulatory_layer: WET
@@ -14,10 +14,13 @@ articles:
     machine_readable:
       execution:
         produces:
-          - submission:
-              kind: AANVRAAG
-          - legal_character: BESCHIKKING
+          - type: AANVRAAG
+            requests: test_conformance_produces_list_empty_outputs#1
+          - type: BESCHIKKING
             outputs: []
+        parameters:
+          - name: dagen
+            type: number
         output:
           - name: verlof_verleend
             type: boolean

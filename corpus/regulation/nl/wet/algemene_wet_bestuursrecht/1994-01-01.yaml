@@ -102,6 +102,7 @@ articles:
             nullable: true
             required: false
             description: De dagtekening van de aanvraag (lid 1, onder b).
+          # Kan later volgen uit `requests` van het aanvraag-item (RFC-047).
           - name: gevraagde_beschikking
             type: string
             nullable: true

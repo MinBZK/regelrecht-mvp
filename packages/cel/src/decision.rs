@@ -72,8 +72,12 @@ pub struct DecisionShape {
     pub kind: String,
     pub law_id: String,
     pub article: String,
-    /// The kind of application it decides on (`produces.submission.kind`).
+    /// The kind of application it decides on, such as `AANVRAAG`.
     pub submission_kind: String,
+    /// The article that establishes that application, `<regulation>#<article>`:
+    /// the one whose submission asks for this decision (`requests`), or this
+    /// article in the object form.
+    pub application: String,
     /// The stages of [`STAGES`], as the engine names them.
     pub stages: Vec<ProcedureStage>,
     /// Everything the stages ask, the deciding article first.
@@ -104,19 +108,33 @@ pub fn derive(
         .ok_or_else(|| refused(format!("{reference} has no version in force on {day}")))?;
     let decision = deciding.get_decision();
     let kind = decision
-        .and_then(|p| p.legal_character.clone())
+        .and_then(|p| p.legal_character())
+        .map(str::to_string)
         .ok_or_else(|| refused(format!("{reference} takes no decision (legal_character)")))?;
-    let submission_kind = deciding
-        .get_submission()
-        .and_then(|p| p.submission.as_ref())
-        .map(|s| s.kind.clone())
-        .ok_or_else(|| {
-            refused(format!(
-                "{reference} establishes no application to decide on (produces.submission)"
-            ))
-        })?;
-    let application = shape::derive(service, law_id, article, day)?;
+    // The application it decides on: the submission that asks for this
+    // decision with `requests` (RFC-047), in this article or another.
     let date = day.to_string();
+    let applications = service.applications_for(law_id, article, &date)?;
+    let application_reference = match applications.as_slice() {
+        [one] => one.clone(),
+        [] => {
+            return Err(refused(format!(
+                "{reference}: no application asks for this decision (produces requests)"
+            )))
+        }
+        several => {
+            return Err(refused(format!(
+                "{reference}: several applications ask for this decision ({}); the cell \
+                 decides on one kind of application per decision",
+                several.join(", ")
+            )))
+        }
+    };
+    let (application_law, application_article) = application_reference
+        .split_once('#')
+        .ok_or_else(|| setup(format!("'{application_reference}' is no article reference")))?;
+    let application = shape::derive(service, application_law, application_article, day)?;
+    let submission_kind = application.kind.clone();
     let stages = STAGES
         .iter()
         .map(|stage| service.procedure_stage(law_id, article, stage, &date))
@@ -226,6 +244,7 @@ pub fn derive(
         law_id: law_id.to_string(),
         article: article.to_string(),
         submission_kind,
+        application: application_reference,
         stages,
         inputs,
     })

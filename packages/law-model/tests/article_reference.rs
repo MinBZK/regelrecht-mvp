@@ -86,7 +86,7 @@ fn the_moment_cites_its_provision_as_a_legal_basis_object() {
     let moment = law.articles[0]
         .get_produced()
         .first()
-        .and_then(|p| p.moment.as_ref())
+        .and_then(|p| p.moment())
         .expect("moment");
     assert_eq!(moment.legal_basis.article.as_deref(), Some("4:13"));
     assert_eq!(moment.legal_basis.paragraph.as_deref(), Some("1"));

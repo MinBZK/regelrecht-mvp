@@ -248,24 +248,25 @@ impl Output {
 /// (schema v0.8.1, RFC-047). Serializes back in the form it was written in.
 ///
 /// Read it through [`Article::get_produced`], [`Article::get_decision`],
-/// [`Article::get_submission`] and [`Article::outputs_of`], so a reader
+/// [`Article::get_submission`], [`Article::outputs_of`] and
+/// [`Article::parameters_of`], so a reader
 /// handles both forms alike.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ProducesList {
-    /// A list of produced things. Tried first: a list never reads as the
-    /// object form.
-    Many(Vec<Produces>),
+    /// A list of produced things, each with its own `type`. Tried
+    /// first: a list never reads as the object form.
+    Many(Vec<ProducedItem>),
     /// One produced thing, the object form.
     One(Box<Produces>),
 }
 
 impl ProducesList {
     /// Every produced thing, in the order written; one for the object form.
-    pub fn items(&self) -> &[Produces] {
+    pub fn items(&self) -> Vec<Produced<'_>> {
         match self {
-            Self::Many(items) => items,
-            Self::One(item) => std::slice::from_ref(item.as_ref()),
+            Self::Many(items) => items.iter().map(Produced::Item).collect(),
+            Self::One(item) => vec![Produced::Object(item.as_ref())],
         }
     }
 }
@@ -276,8 +277,138 @@ impl From<Produces> for ProducesList {
     }
 }
 
-/// One thing an article produces: the legal character of what it yields, or
-/// a submission it establishes.
+/// The kinds of submission a produced item's `type` can name (RFC-045). Any
+/// other `type` is a legal character.
+pub const SUBMISSION_KINDS: &[&str] = &["AANVRAAG"];
+
+/// One item of `produces` in the list form (schema v0.8.1, RFC-047): a
+/// submission, such as an application, or a decision, each with what it
+/// contains or yields.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProducedItem {
+    /// A submission kind (`AANVRAAG`) or a legal character (`BESCHIKKING`).
+    #[serde(rename = "type")]
+    pub item_type: String,
+    /// The article's parameters this item contains, such as the fields of
+    /// an application.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<Vec<String>>,
+    /// The article's outputs this item yields. Without it, the item yields
+    /// every output no other item lists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<Vec<String>>,
+    /// For a submission: the article whose decision it asks for,
+    /// `<regulation>#<article>`, also when that is this article (Awb 1:3
+    /// lid 3, 4:2 lid 1 onder c). The target is the decision item of that
+    /// article, or the article itself in the object form.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_article_reference"
+    )]
+    pub requests: Option<String>,
+    /// For a decision: the kind of decision.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decision_type: Option<String>,
+    /// For a decision: the Awb procedure variant (RFC-008).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub procedure_id: Option<String>,
+    /// The moment that counts in law for this item (RFC-045).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub moment: Option<Moment>,
+}
+
+impl ProducedItem {
+    /// Whether `type` names a submission kind rather than a legal character.
+    pub fn is_submission(&self) -> bool {
+        SUBMISSION_KINDS.contains(&self.item_type.as_str())
+    }
+}
+
+/// One thing an article produces, in either form of `produces`: the object
+/// form, which may carry a legal character and a submission at once, or an
+/// item of the list form.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Produced<'a> {
+    /// The object form of `produces`.
+    Object(&'a Produces),
+    /// An item of the list form.
+    Item(&'a ProducedItem),
+}
+
+impl<'a> Produced<'a> {
+    /// The legal character, such as `BESCHIKKING`, when this is a decision.
+    pub fn legal_character(self) -> Option<&'a str> {
+        match self {
+            Self::Object(p) => p.legal_character.as_deref(),
+            Self::Item(i) => (!i.is_submission()).then_some(i.item_type.as_str()),
+        }
+    }
+
+    /// The kind of submission, such as `AANVRAAG`, when this establishes one.
+    pub fn submission_kind(self) -> Option<&'a str> {
+        match self {
+            Self::Object(p) => p.submission.as_ref().map(|s| s.kind.as_str()),
+            Self::Item(i) => i.is_submission().then_some(i.item_type.as_str()),
+        }
+    }
+
+    /// The kind of decision, within its legal character.
+    pub fn decision_type(self) -> Option<&'a str> {
+        match self {
+            Self::Object(p) => p.decision_type.as_deref(),
+            Self::Item(i) => i.decision_type.as_deref(),
+        }
+    }
+
+    /// The Awb procedure variant asked for.
+    pub fn procedure_id(self) -> Option<&'a str> {
+        match self {
+            Self::Object(p) => p.procedure_id.as_deref(),
+            Self::Item(i) => i.procedure_id.as_deref(),
+        }
+    }
+
+    /// The moment that counts in law (RFC-045).
+    pub fn moment(self) -> Option<&'a Moment> {
+        match self {
+            Self::Object(p) => p.moment.as_ref(),
+            Self::Item(i) => i.moment.as_ref(),
+        }
+    }
+
+    /// The outputs the item lists; `None` when it lists none, and always for
+    /// the object form. Read [`Article::outputs_of`] for what it yields.
+    pub fn listed_outputs(self) -> Option<&'a [String]> {
+        match self {
+            Self::Object(_) => None,
+            Self::Item(i) => i.outputs.as_deref(),
+        }
+    }
+
+    /// For a submission in the list form: the article whose decision it
+    /// asks for, `<regulation>#<article>`.
+    pub fn requests(self) -> Option<&'a str> {
+        match self {
+            Self::Object(_) => None,
+            Self::Item(i) => i.requests.as_deref(),
+        }
+    }
+
+    /// Whether this is the same produced thing as `other`.
+    pub fn same_as(self, other: Produced<'_>) -> bool {
+        match (self, other) {
+            (Self::Object(a), Produced::Object(b)) => std::ptr::eq(a, b),
+            (Self::Item(a), Produced::Item(b)) => std::ptr::eq(a, b),
+            _ => false,
+        }
+    }
+}
+
+/// The object form of what an article produces: the legal character of what
+/// it yields, the kind of decision, the procedure, and a submission it
+/// establishes.
 /// May be extended with additional metadata (appeal_period, notification_requirement) as schema evolves.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Produces {
@@ -293,8 +424,8 @@ pub struct Produces {
     pub procedure_id: Option<String>,
     /// The article establishes something a belanghebbende submits, such as
     /// an application (Awb 1:3 lid 3), that the general law hooks onto with
-    /// `applies_to.submission` (RFC-045). In the object form next to the
-    /// legal character of the article's outputs; in a list its own item.
+    /// `applies_to.submission` (RFC-045). Next to the legal character of the
+    /// article's own outputs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub submission: Option<Submission>,
     /// The moment that counts in law for what this article produces, such as
@@ -302,12 +433,6 @@ pub struct Produces {
     /// runtime; the engine does not read it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub moment: Option<Moment>,
-    /// The article's outputs that belong to this produced thing, when the
-    /// article produces more than one (schema v0.8.1). Without it, the item
-    /// yields every output no other item lists; read it through
-    /// [`Article::outputs_of`].
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub outputs: Option<Vec<String>>,
 }
 
 /// What an article establishes that a belanghebbende submits (RFC-045).
@@ -1477,39 +1602,44 @@ impl Article {
 
     /// Everything this article produces, in the order written: one item for
     /// the object form of `produces`, none when it declares nothing.
-    pub fn get_produced(&self) -> &[Produces] {
+    pub fn get_produced(&self) -> Vec<Produced<'_>> {
         self.get_execution_spec()
             .and_then(|exec| exec.produces.as_ref())
             .map(ProducesList::items)
-            .unwrap_or(&[])
+            .unwrap_or_default()
+    }
+
+    /// Whether `produces` is written as a list (schema v0.8.1), so its
+    /// outputs and parameters are divided over the items.
+    pub fn produces_list(&self) -> bool {
+        matches!(
+            self.get_execution_spec().and_then(|e| e.produces.as_ref()),
+            Some(ProducesList::Many(_))
+        )
     }
 
     /// What this article produces with a legal character, such as the
     /// decision on an application: the first such item.
-    pub fn get_decision(&self) -> Option<&Produces> {
+    pub fn get_decision(&self) -> Option<Produced<'_>> {
         self.get_produced()
-            .iter()
-            .find(|p| p.legal_character.is_some())
+            .into_iter()
+            .find(|p| p.legal_character().is_some())
     }
 
     /// The submission this article establishes (RFC-045), as the item that
     /// carries it.
-    pub fn get_submission(&self) -> Option<&Produces> {
-        self.get_produced().iter().find(|p| p.submission.is_some())
-    }
-
-    /// Whether this article produces more than one thing, so its outputs are
-    /// divided over the items (schema v0.8.1).
-    pub fn produces_several(&self) -> bool {
-        self.get_produced().len() > 1
+    pub fn get_submission(&self) -> Option<Produced<'_>> {
+        self.get_produced()
+            .into_iter()
+            .find(|p| p.submission_kind().is_some())
     }
 
     /// The names of the outputs that belong to `item`, one of
     /// [`Self::get_produced`]: those it lists under `outputs`, or else every
     /// output of the article that no other item lists. For the object form
     /// that is every output.
-    pub fn outputs_of<'a>(&'a self, item: &'a Produces) -> Vec<&'a str> {
-        if let Some(listed) = &item.outputs {
+    pub fn outputs_of<'a>(&'a self, item: Produced<'a>) -> Vec<&'a str> {
+        if let Some(listed) = item.listed_outputs() {
             return listed.iter().map(String::as_str).collect();
         }
         let produced = self.get_produced();
@@ -1518,14 +1648,27 @@ impl Article {
             .map(|o| o.name.as_str())
             .filter(|name| {
                 !produced.iter().any(|other| {
-                    !std::ptr::eq(other, item)
+                    !other.same_as(item)
                         && other
-                            .outputs
-                            .as_ref()
+                            .listed_outputs()
                             .is_some_and(|l| l.iter().any(|n| n == name))
                 })
             })
             .collect()
+    }
+
+    /// The names of the parameters that belong to `item`: in the list form
+    /// those it lists under `parameters` (none when it lists none); for the
+    /// object form every parameter of the article.
+    pub fn parameters_of<'a>(&'a self, item: Produced<'a>) -> Vec<&'a str> {
+        match item {
+            Produced::Item(i) => i.parameters.iter().flatten().map(String::as_str).collect(),
+            Produced::Object(_) => self
+                .get_parameters()
+                .iter()
+                .map(|p| p.name.as_str())
+                .collect(),
+        }
     }
 }
 

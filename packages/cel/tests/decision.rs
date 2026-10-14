@@ -59,8 +59,10 @@ articles:
           decided_per_case_by: het hoofd
       execution:
         produces:
-          - submission: {kind: AANVRAAG}
-          - legal_character: BESCHIKKING
+          - type: AANVRAAG
+            requests: wet_verlof_fictief#1
+            parameters: [dagen]
+          - type: BESCHIKKING
             outputs: [verlof_verleend]
         parameters:
           - {name: dagen, type: number}
@@ -184,4 +186,103 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
         "{e}"
     );
     assert!(cell.grams().is_empty());
+}
+
+/// The application holds the parameters its item lists, and the hooks on
+/// it; a parameter of the article it does not list is no field of it, and
+/// the decision asks it of the deciding authority (RFC-047).
+#[test]
+fn the_application_holds_what_its_item_lists() {
+    let special = SPECIAL_LAW.replace(
+        "          - {name: dagen, type: number}\n        output:",
+        "          - {name: dagen, type: number}\n          - {name: reden, type: string}\n        output:",
+    );
+    assert_ne!(special, SPECIAL_LAW);
+    let service = service(&[GENERAL_LAW, &special]);
+    let application = regelrecht_cel::shape::derive(&service, LAW, "1", day()).unwrap();
+    let names: Vec<&str> = application.fields.iter().map(|f| f.name.as_str()).collect();
+    assert_eq!(names, ["dagen"]);
+    assert_eq!(
+        application.requests.as_deref(),
+        Some("wet_verlof_fictief#1")
+    );
+    let shape = decision::derive(&service, LAW, "1", day()).unwrap();
+    assert_eq!(shape.input("dagen").unwrap().source, Source::Application);
+    assert_eq!(shape.input("reden").unwrap().source, Source::Caller);
+}
+
+/// Article 1 decides; article 2 establishes the application and asks for
+/// the decision of article 1 with `requests`.
+const SPLIT_LAW: &str = r#"
+$id: wet_verlof_fictief
+regulatory_layer: WET
+publication_date: '2026-01-01'
+valid_from: '2026-01-01'
+articles:
+  - number: '1'
+    text: Het hoofd verleent verlof.
+    machine_readable:
+      execution:
+        produces:
+          - type: BESCHIKKING
+            outputs: [verlof_verleend]
+        parameters:
+          - {name: dagen, type: number}
+        output:
+          - {name: verlof_verleend, type: boolean}
+        actions:
+          - output: verlof_verleend
+            value: {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 3}
+  - number: '2'
+    text: Verlof wordt aangevraagd bij het hoofd.
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+            requests: wet_verlof_fictief#1
+            parameters: [dagen]
+        parameters:
+          - {name: dagen, type: number}
+        output:
+          - {name: aangevraagd, type: boolean}
+        actions:
+          - {output: aangevraagd, value: true}
+"#;
+
+#[test]
+fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article() {
+    let service = service(&[GENERAL_LAW, SPLIT_LAW]);
+    let shape = decision::derive(&service, LAW, "1", day()).unwrap();
+    assert_eq!(shape.application, "wet_verlof_fictief#2");
+    let mut cell = Cell::in_memory("fictieve_school");
+    let app = cell
+        .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
+        .unwrap();
+    let gram = cell
+        .decide(&service, LAW, "1", &app.id, &Map::new(), day())
+        .unwrap();
+    assert_eq!(gram.refers_to.as_deref(), Some(app.id.as_str()));
+    assert_eq!(gram.grondslag, "wet_verlof_fictief#1");
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_recorded() {
+    let split = SPLIT_LAW.replace(
+        "requests: wet_verlof_fictief#1",
+        "requests: wet_elders_fictief#4",
+    );
+    let service = service(&[GENERAL_LAW, &split]);
+    let mut cell = Cell::in_memory("fictieve_school");
+    let e = cell
+        .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
+        .unwrap_err();
+    assert!(
+        e.to_string()
+            .contains("requests the decision of wet_elders_fictief#4"),
+        "{e}"
+    );
+    // And no application asks for the decision of article 1.
+    let e = decision::derive(&service, LAW, "1", day()).unwrap_err();
+    assert!(e.to_string().contains("no application asks"), "{e}");
 }

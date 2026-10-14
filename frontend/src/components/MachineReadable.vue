@@ -1,7 +1,7 @@
 <script setup>
 import { computed, inject, ref, toRef, watch, nextTick } from 'vue';
 import { humanize } from '../utils/outputFormat.js';
-import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
 import { useCorpusLaws } from '../composables/useCorpusLaws.js';
 import BreakableName from './BreakableName.vue';
 import RowActionsMenu from './RowActionsMenu.vue';
@@ -104,13 +104,13 @@ const definitions = computed(() => {
   });
 });
 
-// The decision the article produces: the object form itself, or in a list
-// (schema v0.8.1) the item with a legal character. The fields below show and
-// edit that item; EditorView patches the same one.
+// The decision the article produces, in the object form's terms: the object
+// itself, or in a list (schema v0.8.1) the item with a decision `type`. The
+// fields below show and edit it; EditorView patches the same item.
 const produces = computed(() => {
   const raw = execution.value?.produces;
   if (raw == null) return null;
-  return producedDecision(raw) ?? {};
+  return decisionOf(raw) ?? {};
 });
 
 // Enum values copied from the law schema. Keep in sync with

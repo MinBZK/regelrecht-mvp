@@ -26,7 +26,7 @@
  * het moment door de fase beschreven.
  */
 
-import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
 
 /**
  * Of een burger of bedrijf deze regeling kan aanvragen. Een beschikking wel,
@@ -37,7 +37,7 @@ import { producedDecision } from '@regelrecht/frontend-shared/produces.js';
  * @param {object|object[]|null} produces `execution.produces`, in either form
  */
 export function canBeApplied(produces) {
-  const decision = producedDecision(produces);
+  const decision = decisionOf(produces);
   return decision?.legal_character === 'BESCHIKKING' && decision?.decision_type !== 'AANSLAG';
 }
 
