@@ -19,16 +19,17 @@
 //! regulation: a cell's reading of its own chronicle (RFC-048). Only a
 //! reduction reads the decisions taken under an article
 //! (`source.decisions`), and a reduction does not act on law: it fills no
-//! open term (`implements`), hooks onto nothing (`hooks`) and replaces no
-//! output (`overrides`). The loader refuses either the other way round, and a
-//! `decisions` beside another way to the value.
+//! open term (`implements`), hooks onto nothing (`hooks`), replaces no
+//! output (`overrides`), takes no decision (`execution.produces`) and
+//! delegates nothing (`open_terms`). The loader refuses either the other way
+//! round, and a `decisions` beside another way to the value.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
 use regelrecht_law_model::{ActionOperation, ActionValue, MachineReadable, RegulatoryLayer};
 
-/// Refuse `source.decisions` outside a `REDUCTIE`, and `implements`, `hooks`
-/// or `overrides` in a `REDUCTIE` (RFC-048).
+/// Refuse `source.decisions` outside a `REDUCTIE`, and `implements`, `hooks`,
+/// `overrides`, `execution.produces` or `open_terms` in a `REDUCTIE` (RFC-048).
 pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
     let reduction = law.regulatory_layer == RegulatoryLayer::Reductie;
     let sections = law
@@ -50,6 +51,14 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
                 ("implements", section.implements.is_some()),
                 ("hooks", section.hooks.is_some()),
                 ("overrides", section.overrides.is_some()),
+                (
+                    "produces",
+                    section
+                        .execution
+                        .as_ref()
+                        .is_some_and(|e| e.produces.is_some()),
+                ),
+                ("open_terms", section.open_terms.is_some()),
             ];
             if let Some((key, _)) = acts_on_law.iter().find(|(_, present)| *present) {
                 return Err(EngineError::LoadError(format!(

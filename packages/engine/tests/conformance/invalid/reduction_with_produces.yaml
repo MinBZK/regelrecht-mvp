@@ -1,0 +1,28 @@
+---
+# A REDUCTIE is no regulation and takes no decision (`execution.produces`) (schema v0.8.2, RFC-048).
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+$id: test_conformance_reduction_with_produces
+regulatory_layer: REDUCTIE
+publication_date: '2026-10-14'
+valid_from: '2026-10-14'
+url: https://example.invalid/reduction
+articles:
+  - number: '1'
+    text: De verleende verloven zijn de besluiten waarin verlof is verleend.
+    url: https://example.invalid/reduction/1
+    machine_readable:
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+          decision_type: TOEKENNING
+        input:
+          - name: besluiten
+            type: array
+            source:
+              decisions: wet_fictief#1
+        output:
+          - name: verleende_verloven
+            type: array
+        actions:
+          - output: verleende_verloven
+            value: $besluiten

@@ -41,6 +41,8 @@ export interface SchemaNode {
   items?: SchemaNode;
   oneOf?: SchemaNode[];
   allOf?: SchemaNode[];
+  anyOf?: SchemaNode[];
+  not?: SchemaNode;
   /** Conditional pair, used only by the top-level identifier rules. */
   if?: SchemaNode;
   then?: SchemaNode;
@@ -105,6 +107,8 @@ export interface Operation {
 export interface LayerRule {
   layers: string[];
   requires: string[];
+  /** Keys an article may not carry under this layer (only `REDUCTIE`). */
+  forbids: string[];
 }
 
 /** A documented enum, rendered as its own table. */
@@ -782,24 +786,45 @@ export function actionFields(): Field[] {
 }
 
 /**
- * The conditional identifier rules, read out of the top-level `allOf`.
+ * The conditional layer rules, read out of the top-level `allOf`.
  *
- * In the schema these are six if/then blocks keyed on `regulatory_layer`.
- * Rendering them as JSON Schema would be unreadable; the content is a plain
- * table of "this kind of instrument needs this identifier", so that is what
- * this returns.
+ * In the schema these are seven if/then blocks keyed on `regulatory_layer`.
+ * Six require an identifier. The seventh, for `REDUCTIE`, is structural: it
+ * requires no identifier but forbids keys on every article's
+ * `machine_readable` (a `not`/`anyOf` of `required`), and its `else` keeps
+ * `source.decisions` to that layer. Rendering them as JSON Schema would be
+ * unreadable; the content is a plain table of "this kind of instrument needs
+ * this identifier" or "may not carry these keys", so that is what this
+ * returns.
  */
 export function layerRules(): LayerRule[] {
   return (schema.allOf ?? [])
     .map((clause) => {
       const cond = clause.if?.properties?.regulatory_layer as SchemaNode | undefined;
-      const requires = clause.then?.required;
-      if (!cond || !requires) return null;
+      if (!cond) return null;
       const layers = cond.enum ?? (cond.const ? [cond.const] : []);
       if (!layers.length) return null;
-      return { layers, requires };
+      const requires = clause.then?.required ?? [];
+      const forbids = forbiddenKeys(clause.then);
+      if (!requires.length && !forbids.length) return null;
+      return { layers, requires, forbids };
     })
     .filter((r): r is LayerRule => r !== null);
+}
+
+/**
+ * The keys a `then` forbids on an article's `machine_readable`, from its
+ * `not: { anyOf: [{ required: [...] }] }`. A branch that requires a key of a
+ * nested object (`execution` with `produces`) reads as the dotted path.
+ */
+function forbiddenKeys(then: SchemaNode | undefined): string[] {
+  const mr = then?.properties?.articles?.items?.properties?.machine_readable;
+  return (mr?.not?.anyOf ?? []).flatMap((branch) =>
+    (branch.required ?? []).flatMap((key) => {
+      const nested = branch.properties?.[key]?.required;
+      return nested?.length ? nested.map((n) => `${key}.${n}`) : [key];
+    }),
+  );
 }
 
 /** The `machine_readable` block: its own fields, and `execution`'s. */

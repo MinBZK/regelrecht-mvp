@@ -54,7 +54,7 @@
         "WATERSCHAPS_VERORDENING",
         "REDUCTIE"
       ],
-      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: Geen regelgeving: een reductie van een cel over haar eigen kroniek (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read decisions (`source.decisions`); it does not act on law (no `implements`, `hooks` or `overrides`).",
+      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read decisions (`source.decisions`); it does not act on law (no `implements`, `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
       "examples": [
         "WET",
         "GEMEENTELIJKE_VERORDENING"
@@ -574,6 +574,23 @@
                         "required": [
                           "overrides"
                         ]
+                      },
+                      {
+                        "required": [
+                          "open_terms"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "execution"
+                        ],
+                        "properties": {
+                          "execution": {
+                            "required": [
+                              "produces"
+                            ]
+                          }
+                        }
                       }
                     ]
                   }
@@ -600,6 +617,23 @@
                       "required": [
                         "overrides"
                       ]
+                    },
+                    {
+                      "required": [
+                        "open_terms"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "execution"
+                      ],
+                      "properties": {
+                        "execution": {
+                          "required": [
+                            "produces"
+                          ]
+                        }
+                      }
                     }
                   ]
                 }

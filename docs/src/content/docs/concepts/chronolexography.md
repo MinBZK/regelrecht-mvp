@@ -149,7 +149,7 @@ output:
 - Each decision is a row with its fields and outputs: `bsn_jongere` and `eerste_verlofdag` from the application, `verlof_verleend` from the item's `outputs`. The reduction leaves out a refusal.
 - The cell connects the two by name: a reduction output `verleende_verloven` answers the policy's input of that name, for that policy and for one decision.
 - The policy counts granted leave of the same child with its first leave day in the same school year (1 August to 31 July).
-- Only a reduction reads `decisions`, only a data source answers it, and a reduction does not act on law (no `implements`, `hooks` or `overrides`). It lives outside `corpus/regulation`, so the corpus loaders do not load it; `just validate` does check it.
+- Only a reduction reads `decisions`, only a data source answers it, and a reduction does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`). It lives outside `corpus/regulation`, so the corpus loaders do not load it; `just validate` does check it.
 - The decision records the value in `fields`, like the first lesdag.
 
 **Try it:** `just bdd`, which runs `verleend_verlof.feature` next to the policy with the list supplied by the scenario, or `cargo test --manifest-path packages/cel/Cargo.toml`

@@ -210,4 +210,22 @@ fn a_reduction_does_not_act_on_law() {
         ),
         "does not act on law (hooks)",
     );
+    refused(
+        &variant(
+            "      execution:\n        input:",
+            "      execution:\n        produces:\n          legal_character: BESCHIKKING\n          \
+             decision_type: TOEKENNING\n        input:",
+        ),
+        "does not act on law (produces)",
+    );
+    refused(
+        &variant(
+            "    machine_readable:\n      execution:",
+            "    machine_readable:\n      open_terms:\n        - id: verlof_grens\n          \
+             description: De grens.\n          type: number\n          \
+             delegated_to: het hoofd\n          delegation_type: UITVOERINGSBELEID\n      \
+             execution:",
+        ),
+        "does not act on law (open_terms)",
+    );
 }
