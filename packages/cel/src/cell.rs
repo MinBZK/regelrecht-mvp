@@ -13,14 +13,16 @@ use serde_json::Map;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
+use crate::reading::{self, Reduction};
 use crate::shape::{self, Shape};
 
-/// A cell. It holds who it is and its chronicle, not the law: every call
-/// that needs the law gets the service that executes it.
+/// A cell. It holds who it is, its chronicle and its reductions, not the
+/// law: every call that needs the law gets the service that executes it.
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
     chronicle: Chronicle,
+    reductions: Vec<Reduction>,
 }
 
 impl Cell {
@@ -43,6 +45,7 @@ impl Cell {
         Ok(Self {
             recording_actor,
             chronicle,
+            reductions: Vec::new(),
         })
     }
 
@@ -51,7 +54,50 @@ impl Cell {
         Self {
             recording_actor: recording_actor.into(),
             chronicle: Chronicle::in_memory(),
+            reductions: Vec::new(),
         }
+    }
+
+    /// The cell with the reductions in its directory `dir`, one version per
+    /// file at `<dir>/reducties/<id>/<valid_from>.yaml` (RFC-048). A file
+    /// that is no `REDUCTIE`, or whose `$id` is not its directory's name, is
+    /// an error. Without a `reducties` directory the cell has none.
+    pub fn with_reductions(mut self, dir: impl AsRef<Path>) -> Result<Self> {
+        let root = dir.as_ref().join("reducties");
+        if !root.is_dir() {
+            return Ok(self);
+        }
+        let mut paths = Vec::new();
+        for entry in std::fs::read_dir(&root)? {
+            let id_dir = entry?.path();
+            if !id_dir.is_dir() {
+                continue;
+            }
+            for version in std::fs::read_dir(&id_dir)? {
+                let path = version?.path();
+                if path.extension().is_some_and(|x| x == "yaml") {
+                    paths.push(path);
+                }
+            }
+        }
+        paths.sort();
+        for path in paths {
+            let reduction = Reduction::parse(std::fs::read_to_string(&path)?)
+                .map_err(|e| setup(format!("{}: {e}", path.display())))?;
+            let named = path
+                .parent()
+                .and_then(Path::file_name)
+                .is_some_and(|name| name == reduction.id());
+            if !named {
+                return Err(setup(format!(
+                    "{}: the reduction '{}' is not in a directory of that name",
+                    path.display(),
+                    reduction.id()
+                )));
+            }
+            self.reductions.push(reduction);
+        }
+        Ok(self)
     }
 
     pub fn recording_actor(&self) -> &str {
@@ -164,8 +210,12 @@ impl Cell {
     /// recorded as chronolexogram `application`, on `on` (RFC-047).
     ///
     /// What the decision asks comes from the application, the holder's
-    /// policy and the cell ([`decision::derive`]); `supplied` holds what the
-    /// deciding authority supplies itself, such as a judgement the law
+    /// policy and the cell ([`decision::derive`]). An input that one of the
+    /// cell's reductions yields, and nothing else supplies, is what that
+    /// reduction makes of the chronicle, run with the decision's inputs by
+    /// name ([`reading`], RFC-048); the service holds the reductions during
+    /// the decision only. `supplied` holds what the deciding authority
+    /// supplies itself, such as a judgement the law
     /// leaves to it per case. The cell refuses an application that is not
     /// in its chronicle or not one of this article, one already decided on,
     /// a value it takes from elsewhere, and a value of the wrong type. It
@@ -174,7 +224,7 @@ impl Cell {
     /// decision on or after the application.
     pub fn decide(
         &mut self,
-        service: &LawExecutionService,
+        service: &mut LawExecutionService,
         law_id: &str,
         article: &str,
         application: &str,
@@ -184,6 +234,15 @@ impl Cell {
         let shape = decision::derive(service, law_id, article, on)?;
         let applied = self.application(&shape, application)?;
         check_decision_supplied(&shape, supplied)?;
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            &shape,
+            supplied,
+            self.grams(),
+            &self.reductions,
+            on,
+        )?;
 
         // What the decision asks, from where the law says it comes. An
         // application that lacks what the decision needs (Awb 4:5) is not
@@ -204,6 +263,8 @@ impl Cell {
                     }
                     None => None,
                 },
+                // One of the cell's reductions yields it, below.
+                Source::Caller if bound.answers(name) => None,
                 Source::Caller => match supplied.get(name) {
                     Some(value) => Some(value.clone()),
                     // A regulation fills it first; where it is silent for
@@ -227,44 +288,15 @@ impl Cell {
             }
         }
 
+        let answered = bound.answer(&fields, on)?;
+        fields.extend(answered);
+
         let parameters: BTreeMap<String, Value> = fields
             .iter()
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
-        let date = on.to_string();
-        let mut output_values = BTreeMap::new();
-        for stage in &shape.stages {
-            // Every stage computes the decision's outputs, so a hook at a
-            // later stage can read them; they are the same at each.
-            let result = service.execute_stage_at(
-                law_id,
-                article,
-                &stage.stage,
-                None,
-                parameters.clone(),
-                &date,
-            )?;
-            collect_outputs(&result, &mut output_values)?;
-            for input in &shape.inputs {
-                let name = &input.field.name;
-                let Some(value) = result.resolved_inputs.get(name) else {
-                    continue;
-                };
-                let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
-                match &input.source {
-                    Source::Policy => {
-                        fields.insert(name.clone(), value);
-                    }
-                    // A judgement on a term a regulation also fills: the
-                    // gram takes what the engine used, which is the
-                    // regulation's value where it fills the term (RFC-047).
-                    Source::Caller if input.policy_first => {
-                        fields.insert(name.clone(), value);
-                    }
-                    _ => {}
-                }
-            }
-        }
+        let output_values = run_stages(&bound, &shape, parameters, on, &mut fields)?;
+        drop(bound);
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
@@ -311,6 +343,52 @@ impl Cell {
         }
         Ok(gram)
     }
+}
+
+/// Run the stages of a decision on `on`: add what a policy filled to
+/// `fields`, and return the outputs.
+fn run_stages(
+    service: &LawExecutionService,
+    shape: &DecisionShape,
+    parameters: BTreeMap<String, Value>,
+    on: NaiveDate,
+    fields: &mut BTreeMap<String, serde_json::Value>,
+) -> Result<BTreeMap<String, serde_json::Value>> {
+    let date = on.to_string();
+    let mut outputs = BTreeMap::new();
+    for stage in &shape.stages {
+        // Every stage computes the decision's outputs, so a hook at a later
+        // stage can read them; they are the same at each.
+        let result = service.execute_stage_at(
+            &shape.law_id,
+            &shape.article,
+            &stage.stage,
+            None,
+            parameters.clone(),
+            &date,
+        )?;
+        collect_outputs(&result, &mut outputs)?;
+        for input in &shape.inputs {
+            let name = &input.field.name;
+            let Some(value) = result.resolved_inputs.get(name) else {
+                continue;
+            };
+            let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
+            match &input.source {
+                Source::Policy => {
+                    fields.insert(name.clone(), value);
+                }
+                // A judgement on a term a regulation also fills: the gram
+                // takes what the engine used, which is the regulation's
+                // value where it fills the term (RFC-047).
+                Source::Caller if input.policy_first => {
+                    fields.insert(name.clone(), value);
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(outputs)
 }
 
 fn json_date(on: NaiveDate) -> Value {

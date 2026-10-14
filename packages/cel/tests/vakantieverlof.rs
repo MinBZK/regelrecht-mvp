@@ -23,7 +23,15 @@ const RECORDING_ACTOR: &str = "obs_de_klimop";
 /// starts.
 const POLICY: &str = "fictief_beleid_schooljaar_obs_de_klimop";
 
-/// The Leerplichtwet, the Awb and the school's policy from the corpus.
+/// The fictitious policy of the school that says in which school year a
+/// day falls; the school's reduction calls it (RFC-048).
+const SCHOOL_YEAR: &str = "fictief_beleid_schooljaargrenzen_obs_de_klimop";
+
+/// The school's reduction, and the input of the decision it yields.
+const REDUCTION: &str = "reductie_verlof_al_verleend_in_schooljaar";
+const ONCE: &str = "verlof_al_verleend_in_schooljaar";
+
+/// The Leerplichtwet, the Awb and the school's policies from the corpus.
 fn service() -> LawExecutionService {
     let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
@@ -31,6 +39,7 @@ fn service() -> LawExecutionService {
         format!("wet/{LAW}"),
         format!("wet/{AWB}"),
         format!("uitvoeringsbeleid/{POLICY}"),
+        format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -42,6 +51,18 @@ fn service() -> LawExecutionService {
         }
     }
     service
+}
+
+/// The school's cell directory, with its reductions (RFC-048).
+fn cell_dir() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{RECORDING_ACTOR}"))
+}
+
+/// The school's cell, with an empty chronicle and its reductions.
+fn cell() -> Cell {
+    Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(cell_dir())
+        .unwrap()
 }
 
 fn day(s: &str) -> NaiveDate {
@@ -108,7 +129,7 @@ fn the_shape_of_the_application_comes_from_the_law() {
 
 #[test]
 fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let gram = record(&mut cell, &application(), "2026-10-13").unwrap();
 
     assert_eq!(gram.kind, "AANVRAAG");
@@ -154,7 +175,7 @@ fn an_application_is_recorded_with_its_basis_and_the_awb_deadline() {
 
 #[test]
 fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut empty = application();
     empty.insert("adres_aanvrager".into(), Value::Null);
     let mut left_out = application();
@@ -177,7 +198,7 @@ fn an_application_without_an_address_is_recorded_and_4_2_says_it_lacks() {
 
 #[test]
 fn a_field_the_law_does_not_ask_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut supplied = application();
     supplied.insert("bestemming".into(), json!("Lissabon"));
     let e = record(&mut cell, &supplied, "2026-10-13").unwrap_err();
@@ -190,7 +211,7 @@ fn a_field_the_law_does_not_ask_is_refused() {
 
 #[test]
 fn the_moment_that_counts_is_not_the_applicants_to_supply() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut supplied = application();
     // The receipt is the moment that counts; the cell records it.
     supplied.insert("datum_ontvangst".into(), json!("2026-10-01"));
@@ -204,7 +225,7 @@ fn the_moment_that_counts_is_not_the_applicants_to_supply() {
 
 #[test]
 fn a_value_of_the_wrong_type_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut supplied = application();
     supplied.insert("eerste_verlofdag".into(), json!("volgende week"));
     let e = record(&mut cell, &supplied, "2026-10-13").unwrap_err();
@@ -216,7 +237,7 @@ fn a_value_of_the_wrong_type_is_refused() {
 
 #[test]
 fn null_is_refused_for_a_field_that_cannot_be_absent() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut supplied = application();
     supplied.insert("bsn_jongere".into(), Value::Null);
     let e = record(&mut cell, &supplied, "2026-10-13").unwrap_err();
@@ -229,7 +250,7 @@ fn null_is_refused_for_a_field_that_cannot_be_absent() {
 
 #[test]
 fn an_article_that_establishes_no_submission_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let e = cell
         .record_submission(&service(), LAW, "2", &Map::new(), day("2026-10-13"))
         .unwrap_err();
@@ -241,7 +262,7 @@ fn an_article_that_establishes_no_submission_is_refused() {
 
 #[test]
 fn a_gram_dated_before_the_last_one_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     record(&mut cell, &application(), "2026-10-13").unwrap();
     // The same day is fine.
     record(&mut cell, &application(), "2026-10-13").unwrap();
@@ -284,7 +305,7 @@ fn uuid_version(id: &str) -> usize {
 fn a_left_out_field_that_cannot_be_absent_is_named_as_missing() {
     // Awb 4:5: an incomplete application is still an application. The
     // chronolexogram records it, and says what it lacks.
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut supplied = application();
     supplied.remove("eerste_verlofdag");
     let gram = record(&mut cell, &supplied, "2026-10-13").unwrap();
@@ -326,7 +347,7 @@ fn decide(
     supplied: &Map<String, Value>,
     on: &str,
 ) -> Result<Gram, Error> {
-    cell.decide(&service(), LAW, ARTICLE, application, supplied, day(on))
+    cell.decide(&mut service(), LAW, ARTICLE, application, supplied, day(on))
 }
 
 #[test]
@@ -346,6 +367,8 @@ fn the_decision_asks_from_the_application_the_policy_the_head_and_the_cell() {
             ("bsn_jongere", &Source::Application),
             ("eerste_verlofdag", &Source::Application),
             ("laatste_verlofdag", &Source::Application),
+            // Not an application field: the cell's reduction yields it.
+            (ONCE, &Source::Caller),
             ("besluit_datum", &Source::Cell),
             ("bekendmaking_datum", &Source::Cell),
             ("eerste_lesdag_schooljaar", &policy),
@@ -357,7 +380,7 @@ fn the_decision_asks_from_the_application_the_policy_the_head_and_the_cell() {
 
 #[test]
 fn five_school_days_outside_the_first_two_weeks_on_the_ground_of_11f_are_granted() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
 
@@ -395,7 +418,7 @@ fn five_school_days_outside_the_first_two_weeks_on_the_ground_of_11f_are_granted
 
 #[test]
 fn the_awb_hooks_on_the_decision_land_in_its_gram_and_not_in_the_application() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
 
@@ -433,7 +456,7 @@ fn the_awb_hooks_on_the_decision_land_in_its_gram_and_not_in_the_application() {
 
 #[test]
 fn eleven_school_days_are_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     // Monday 1 up to and including Monday 15 February.
     let app = applied(&mut cell, "2027-02-01", "2027-02-15", "2026-10-13");
     let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
@@ -446,7 +469,7 @@ fn eleven_school_days_are_refused() {
 
 #[test]
 fn two_weeks_with_the_weekend_between_are_ten_school_days() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-12", "2026-10-13");
     let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
     assert_eq!(gram.outputs["verlofdagen"], json!(10));
@@ -455,7 +478,7 @@ fn two_weeks_with_the_weekend_between_are_ten_school_days() {
 
 #[test]
 fn leave_in_the_first_two_weeks_of_the_school_year_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     // The school year starts on Monday 31 August; the second week ends on
     // Sunday 13 September.
     let app = applied(&mut cell, "2026-09-10", "2026-09-11", "2026-08-20");
@@ -479,7 +502,7 @@ fn leave_in_the_first_two_weeks_of_the_school_year_is_refused() {
 
 #[test]
 fn without_a_profession_of_a_specific_nature_leave_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let gram = decide(&mut cell, &app.id, &judgement(false, true), "2026-10-20").unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
@@ -488,7 +511,7 @@ fn without_a_profession_of_a_specific_nature_leave_is_refused() {
 
 #[test]
 fn leave_within_the_school_holidays_is_refused() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let gram = decide(&mut cell, &app.id, &judgement(true, false), "2026-10-20").unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
@@ -497,7 +520,7 @@ fn leave_within_the_school_holidays_is_refused() {
 
 #[test]
 fn a_decision_needs_both_judgements_of_the_head() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     for (judged, other) in [
         (PROFESSION, OUTSIDE_HOLIDAYS),
@@ -524,7 +547,7 @@ fn a_decision_needs_both_judgements_of_the_head() {
 
 #[test]
 fn the_head_does_not_supply_what_comes_from_elsewhere() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     for (name, value, from) in [
         ("eerste_verlofdag", json!("2027-02-02"), "the application"),
@@ -555,7 +578,7 @@ fn the_head_does_not_supply_what_comes_from_elsewhere() {
 
 #[test]
 fn a_decision_refers_to_an_application_of_this_cell_that_is_not_decided_yet() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let e = decide(
         &mut cell,
         "019a0000-0000-7000-8000-000000000000",
@@ -586,7 +609,7 @@ fn a_decision_refers_to_an_application_of_this_cell_that_is_not_decided_yet() {
 
 #[test]
 fn a_decision_is_not_dated_before_its_application() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-12").unwrap_err();
     assert!(
@@ -602,7 +625,10 @@ fn a_decision_reads_back_from_the_file() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
     let recorded = {
-        let mut cell = Cell::open(RECORDING_ACTOR, &path).unwrap();
+        let mut cell = Cell::open(RECORDING_ACTOR, &path)
+            .unwrap()
+            .with_reductions(cell_dir())
+            .unwrap();
         let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
         let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
         vec![app, gram]
@@ -613,7 +639,7 @@ fn a_decision_reads_back_from_the_file() {
 
 #[test]
 fn leave_that_ends_on_the_first_lesdag_touches_the_first_two_weeks() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     // Ending on Monday 31 August, the first lesdag: refused.
     let app = applied(&mut cell, "2026-08-24", "2026-08-31", "2026-08-03");
     let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-08-03").unwrap();
@@ -634,7 +660,7 @@ fn leave_that_ends_on_the_first_lesdag_touches_the_first_two_weeks() {
 
 #[test]
 fn an_application_that_lacks_what_the_decision_needs_is_not_decided_on() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = cell();
     let mut supplied = application();
     supplied.remove("laatste_verlofdag");
     let app = record(&mut cell, &supplied, "2026-10-13").unwrap();
@@ -645,4 +671,237 @@ fn an_application_that_lacks_what_the_decision_needs_is_not_decided_on() {
         "{e}"
     );
     assert_eq!(cell.grams().len(), 1);
+}
+
+// ---------------------------------------------------------------------------
+// Once per school year: the school's reduction reads the chronicle back,
+// calls the school's policy for the school year, and the decision takes its
+// answer by name (RFC-048)
+// ---------------------------------------------------------------------------
+
+/// Apply for leave from `first` to `last` on `on`, and decide on it the
+/// same day with the ground of art. 11 onder f.
+fn apply_and_decide(cell: &mut Cell, first: &str, last: &str, on: &str) -> Gram {
+    let app = applied(cell, first, last, on);
+    decide(cell, &app.id, &judgement(true, true), on).unwrap()
+}
+
+#[test]
+fn a_first_application_in_the_school_year_is_granted() {
+    let mut cell = cell();
+    let gram = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+    // The reduction's answer, kept with the decision like an application
+    // field.
+    assert_eq!(gram.fields[ONCE], json!(false));
+}
+
+#[test]
+fn a_second_application_in_the_same_school_year_is_refused() {
+    let mut cell = cell();
+    apply_and_decide(&mut cell, "2026-10-05", "2026-10-09", "2026-09-21");
+    // Five days in May: on their own they would be granted.
+    let gram = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    assert_eq!(gram.fields[ONCE], json!(true));
+    assert_eq!(gram.outputs["verlofdagen"], json!(5));
+    assert_eq!(
+        gram.outputs["verlof_raakt_eerste_twee_lesweken"],
+        json!(false)
+    );
+    assert_eq!(gram.outputs["verlof_verleend"], json!(false));
+}
+
+#[test]
+fn an_application_in_the_next_school_year_is_granted() {
+    let mut cell = cell();
+    apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    // Leave in October 2027 is in the school year 2027-2028, whose first
+    // lesdag comes from next year's policy.
+    let gram = apply_and_decide(&mut cell, "2027-10-04", "2027-10-08", "2027-09-20");
+    assert_eq!(gram.fields["eerste_lesdag_schooljaar"], json!("2027-08-30"));
+    assert_eq!(gram.fields[ONCE], json!(false));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn the_school_year_runs_from_august_to_july() {
+    let mut cell = cell();
+    // Granted leave at the end of the school year 2026-2027.
+    apply_and_decide(&mut cell, "2027-07-26", "2027-07-30", "2027-06-01");
+    // Leave starting in July is in the same school year.
+    let july = apply_and_decide(&mut cell, "2027-07-19", "2027-07-23", "2027-06-02");
+    assert_eq!(july.fields[ONCE], json!(true));
+    assert_eq!(july.outputs["verlof_verleend"], json!(false));
+    // Leave starting on 2 August is in the next one. Decided in that school
+    // year, the first lesdag comes from next year's policy too.
+    let august = apply_and_decide(&mut cell, "2027-08-02", "2027-08-06", "2027-08-02");
+    assert_eq!(
+        august.fields["eerste_lesdag_schooljaar"],
+        json!("2027-08-30")
+    );
+    assert_eq!(august.fields[ONCE], json!(false));
+    assert_eq!(august.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn a_refusal_does_not_count() {
+    let mut cell = cell();
+    // Eleven school days: refused. The reduction leaves it out of the
+    // granted leave.
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-15", "2026-10-20");
+    assert_eq!(refused.outputs["verlof_verleend"], json!(false));
+    let gram = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-27");
+    assert_eq!(gram.fields[ONCE], json!(false));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn leave_for_another_child_does_not_count() {
+    let mut cell = cell();
+    apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    let mut supplied = application();
+    supplied.insert("bsn_jongere".into(), json!("999990020"));
+    let app = record(&mut cell, &supplied, "2026-10-21").unwrap();
+    let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-21").unwrap();
+    assert_eq!(gram.fields[ONCE], json!(false));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn the_school_year_ends_on_31_july_and_the_next_begins_on_1_august() {
+    let mut cell = cell();
+    // Granted leave whose first day is Saturday 31 July 2027.
+    let last = apply_and_decide(&mut cell, "2027-07-31", "2027-08-06", "2027-06-01");
+    assert_eq!(last.outputs["verlof_verleend"], json!(true));
+    // So the school year 2026-2027 has its leave.
+    let july = apply_and_decide(&mut cell, "2027-07-12", "2027-07-16", "2027-06-02");
+    assert_eq!(july.fields[ONCE], json!(true));
+    assert_eq!(july.outputs["verlof_verleend"], json!(false));
+    // Leave whose first day is Sunday 1 August 2027 is in the next one.
+    let first = apply_and_decide(&mut cell, "2027-08-01", "2027-08-06", "2027-06-03");
+    assert_eq!(first.fields[ONCE], json!(false));
+    assert_eq!(first.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn the_head_does_not_supply_what_the_reduction_yields() {
+    let mut cell = cell();
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let mut supplied = judgement(true, true);
+    supplied.insert(ONCE.into(), json!(false));
+    let e = decide(&mut cell, &app.id, &supplied, "2026-10-20").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains(REDUCTION) && m.contains("deciding authority")),
+        "{e}"
+    );
+    assert_eq!(cell.grams().len(), 1);
+}
+
+#[test]
+fn the_reduction_and_the_decisions_it_reads_are_bound_for_the_decision_only() {
+    let mut service = service();
+    let mut cell = cell();
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    cell.decide(
+        &mut service,
+        LAW,
+        ARTICLE,
+        &app.id,
+        &judgement(true, true),
+        day("2026-10-20"),
+    )
+    .unwrap();
+    assert!(service.data_registry().list_sources().is_empty());
+    assert!(!service.has_law(REDUCTION));
+}
+
+#[test]
+fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
+    let mut service = service();
+    service.add_dict_source(
+        "elders",
+        10,
+        [(
+            "999990019".to_string(),
+            [("besluiten".to_string(), regelrecht_engine::Value::Null)].into(),
+        )]
+        .into(),
+    );
+    let mut cell = cell();
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let e = cell
+        .decide(
+            &mut service,
+            LAW,
+            ARTICLE,
+            &app.id,
+            &judgement(true, true),
+            day("2026-10-20"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("another data source answers 'besluiten'")),
+        "{e}"
+    );
+    assert_eq!(service.data_registry().list_sources(), ["elders"]);
+    assert_eq!(cell.grams().len(), 1);
+}
+
+#[test]
+fn without_the_reduction_the_head_supplies_it_as_any_input() {
+    // A cell without the reduction: the law asks the value by name and
+    // names no supplier, so the deciding authority gives it.
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    let mut supplied = judgement(true, true);
+    supplied.insert(ONCE.into(), json!(true));
+    let gram = decide(&mut cell, &app.id, &supplied, "2027-03-01").unwrap();
+    assert_eq!(gram.fields[ONCE], json!(true));
+    assert_eq!(gram.outputs["verlof_verleend"], json!(false));
+}
+
+#[test]
+fn without_the_reduction_or_the_head_it_is_not_known() {
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains(&format!("asks '{ONCE}'"))),
+        "{e}"
+    );
+}
+
+#[test]
+fn the_cell_keeps_only_reductions() {
+    let dir = tempfile::tempdir().unwrap();
+    let policy = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+        "../../corpus/regulation/nl/uitvoeringsbeleid/{SCHOOL_YEAR}/2026-08-01.yaml"
+    ));
+    let here = dir.path().join("reducties").join(SCHOOL_YEAR);
+    std::fs::create_dir_all(&here).unwrap();
+    std::fs::copy(policy, here.join("2026-08-01.yaml")).unwrap();
+    let e = Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(dir.path())
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("not a REDUCTIE")),
+        "{e}"
+    );
+
+    // A reduction lives in a directory named after it.
+    let dir = tempfile::tempdir().unwrap();
+    let elsewhere = dir.path().join("reducties").join("anders");
+    std::fs::create_dir_all(&elsewhere).unwrap();
+    std::fs::copy(
+        cell_dir().join(format!("reducties/{REDUCTION}/2026-08-01.yaml")),
+        elsewhere.join("2026-08-01.yaml"),
+    )
+    .unwrap();
+    let e = Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(dir.path())
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("directory of that name")),
+        "{e}"
+    );
 }

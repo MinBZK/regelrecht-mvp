@@ -11,17 +11,21 @@
 //!
 //! The decision on an application is a second chronolexogram ([`decision`],
 //! RFC-047). It refers to the application; where each value comes from
-//! follows from the law and that reference. Reading the chronicle back through policy
-//! and objections are later slices.
+//! follows from the law and that reference. The cell reads its chronicle
+//! back through its reductions ([`reading`], RFC-048): rulework of the kind
+//! `REDUCTIE` that it keeps itself, whose outputs answer the decision's
+//! inputs by name. Objections are a later slice.
 
 pub mod cell;
 pub mod chronicle;
 pub mod decision;
 pub mod error;
+pub mod reading;
 pub mod shape;
 
 pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
 pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
+pub use reading::Reduction;
 pub use shape::{Field, Moment, Shape};

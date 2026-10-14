@@ -362,6 +362,24 @@ impl DataSourceRegistry {
         self.sources.iter().any(|s| s.has_field(field))
     }
 
+    /// Whether a source that takes part for `law_id` (as in
+    /// [`Self::resolve_for_law`]) can provide a value for `field`.
+    pub fn has_field_for_law(&self, field: &str, law_id: Option<&str>) -> bool {
+        self.eligible(law_id).any(|s| s.has_field(field))
+    }
+
+    /// The sources that take part for `law_id`, in priority order: the
+    /// unscoped ones and the ones bound to that law.
+    fn eligible<'a>(
+        &'a self,
+        law_id: Option<&'a str>,
+    ) -> impl Iterator<Item = &'a dyn DataSource> + 'a {
+        self.sources
+            .iter()
+            .map(|s| s.as_ref())
+            .filter(move |s| s.law_scope().is_none_or(|scope| law_id == Some(scope)))
+    }
+
     /// Resolve a value from the data sources.
     ///
     /// Sources are queried in priority order. The first source that
@@ -396,13 +414,7 @@ impl DataSourceRegistry {
         criteria: &BTreeMap<String, Value>,
         law_id: Option<&str>,
     ) -> Option<DataSourceMatch> {
-        for source in &self.sources {
-            if let Some(scope) = source.law_scope() {
-                if law_id != Some(scope) {
-                    continue;
-                }
-            }
-
+        for source in self.eligible(law_id) {
             if !source.has_field(field) {
                 continue;
             }
@@ -443,12 +455,7 @@ impl DataSourceRegistry {
     ) -> Option<Value> {
         let mut unknown_keys: Vec<&Value> = Vec::new();
         let mut null_key = false;
-        for source in &self.sources {
-            if let Some(scope) = source.law_scope() {
-                if law_id != Some(scope) {
-                    continue;
-                }
-            }
+        for source in self.eligible(law_id) {
             if !source.has_field(field) {
                 continue;
             }
@@ -1228,5 +1235,28 @@ mod tests {
         // For wet_a the scoped source still wins on priority (10 > 5).
         let hit = registry.resolve_for_law("inkomen", &criteria, Some("wet_a"));
         assert_eq!(hit.map(|m| m.source_name), Some("register".to_string()));
+    }
+
+    #[test]
+    fn test_has_field_for_law_counts_only_the_sources_that_take_part() {
+        let mut registry = DataSourceRegistry::new();
+        let mut record = BTreeMap::new();
+        record.insert("bsn".to_string(), Value::String("123".to_string()));
+        record.insert("inkomen".to_string(), Value::Int(1000));
+        registry.add_source(Box::new(
+            DictDataSource::from_records("register", 10, "bsn", vec![record.clone()])
+                .unwrap()
+                .with_law_scope("wet_a"),
+        ));
+        assert!(registry.has_field_for_law("inkomen", Some("wet_a")));
+        assert!(!registry.has_field_for_law("inkomen", Some("wet_b")));
+        assert!(!registry.has_field_for_law("inkomen", None));
+        assert!(!registry.has_field_for_law("bsn_partner", Some("wet_a")));
+
+        registry.add_source(Box::new(
+            DictDataSource::from_records("open", 5, "bsn", vec![record]).unwrap(),
+        ));
+        assert!(registry.has_field_for_law("inkomen", Some("wet_b")));
+        assert!(registry.has_field_for_law("inkomen", None));
     }
 }

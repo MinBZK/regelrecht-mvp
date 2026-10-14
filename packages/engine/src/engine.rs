@@ -365,6 +365,17 @@ impl<'a> ArticleEngine<'a> {
                     });
                 }
             }
+            // The decisions taken under an article come from a data source
+            // only (RFC-048); this engine has none, so they must be passed.
+            if let Some(decisions) = &source.decisions {
+                if !parameters.contains_key(&input.name) {
+                    return Err(EngineError::DataSourceError(format!(
+                        "input '{}' reads the decisions taken under {decisions}, and no data \
+                         source supplies them",
+                        input.name
+                    )));
+                }
+            }
             // Internal (`source.output`) and empty (`source: {}`) inputs need no
             // action here: resolved by the service when present in parameters,
             // otherwise intentionally left unresolved.
@@ -1357,6 +1368,47 @@ articles:
             assert_eq!(regulation, "other_law");
             assert_eq!(output, "some_output");
         }
+    }
+
+    #[test]
+    fn test_decisions_come_from_parameters_only() {
+        // This engine has no data source: decisions passed in are read,
+        // decisions not passed are an error (RFC-048).
+        let yaml = r#"
+$id: reductie_test
+regulatory_layer: REDUCTIE
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Reduction over the decisions under an article
+    machine_readable:
+      execution:
+        input:
+          - name: besluiten
+            type: array
+            source:
+              decisions: andere_wet#1
+        output:
+          - name: besluiten_terug
+            type: array
+        actions:
+          - output: besluiten_terug
+            value: $besluiten
+"#;
+        let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+        let article = law.find_article_by_number("1").unwrap();
+        let engine = ArticleEngine::new(article, &law);
+
+        let missing = engine.evaluate(BTreeMap::new(), "2025-01-01");
+        assert!(
+            matches!(&missing, Err(EngineError::DataSourceError(m)) if m.contains("andere_wet#1")),
+            "{missing:?}"
+        );
+
+        let rows = Value::Array(vec![Value::Int(1)]);
+        let params = BTreeMap::from([("besluiten".to_string(), rows.clone())]);
+        let result = engine.evaluate(params, "2025-01-01").unwrap();
+        assert_eq!(result.outputs.get("besluiten_terug"), Some(&rows));
     }
 
     fn get_regulation_path() -> std::path::PathBuf {

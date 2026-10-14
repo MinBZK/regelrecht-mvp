@@ -14,10 +14,97 @@
 //! refuses a list with two items of one type, an output given to two items
 //! or to none, a parameter or output the article lacks, or a submission that
 //! requests a decision this law does not take (RFC-047).
+//!
+//! A reduction (`regulatory_layer: REDUCTIE`, schema v0.8.2) is no
+//! regulation: a cell's reading of its own chronicle (RFC-048). Only a
+//! reduction reads the decisions taken under an article
+//! (`source.decisions`), and a reduction does not act on law: it fills no
+//! open term (`implements`), hooks onto nothing (`hooks`), replaces no
+//! output (`overrides`), takes no decision (`execution.produces`) and
+//! delegates nothing (`open_terms`). The loader refuses either the other way
+//! round, and a `decisions` beside another way to the value.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
-use regelrecht_law_model::{ActionOperation, ActionValue};
+use regelrecht_law_model::{ActionOperation, ActionValue, MachineReadable, RegulatoryLayer};
+
+/// Refuse `source.decisions` outside a `REDUCTIE`, and `implements`, `hooks`,
+/// `overrides`, `execution.produces` or `open_terms` in a `REDUCTIE` (RFC-048).
+pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
+    let reduction = law.regulatory_layer == RegulatoryLayer::Reductie;
+    let sections = law
+        .preamble
+        .iter()
+        .filter_map(|p| {
+            p.machine_readable
+                .as_ref()
+                .map(|m| ("the preamble".to_string(), m))
+        })
+        .chain(law.articles.iter().filter_map(|a| {
+            a.machine_readable
+                .as_ref()
+                .map(|m| (format!("article {}", a.number), m))
+        }));
+    for (where_, section) in sections {
+        if reduction {
+            let acts_on_law = [
+                ("implements", section.implements.is_some()),
+                ("hooks", section.hooks.is_some()),
+                ("overrides", section.overrides.is_some()),
+                (
+                    "produces",
+                    section
+                        .execution
+                        .as_ref()
+                        .is_some_and(|e| e.produces.is_some()),
+                ),
+                ("open_terms", section.open_terms.is_some()),
+            ];
+            if let Some((key, _)) = acts_on_law.iter().find(|(_, present)| *present) {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: a REDUCTIE is no regulation and does not act on law \
+                     ({key})",
+                    law.id
+                )));
+            }
+        }
+        for input in inputs(section) {
+            let Some(source) = input.source.as_ref() else {
+                continue;
+            };
+            let Some(decisions) = &source.decisions else {
+                continue;
+            };
+            if source.regulation.is_some()
+                || source.output.is_some()
+                || source.parameters.is_some()
+                || source.endpoint.is_some()
+            {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: input '{}' reads the decisions taken under {decisions}, \
+                     which no regulation, output, parameters or endpoint can narrow",
+                    law.id, input.name
+                )));
+            }
+            if !reduction {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: input '{}' reads the decisions taken under {decisions}; \
+                     only a REDUCTIE reads decisions (RFC-048)",
+                    law.id, input.name
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn inputs(section: &MachineReadable) -> &[regelrecht_law_model::Input] {
+    section
+        .execution
+        .as_ref()
+        .and_then(|e| e.input.as_deref())
+        .unwrap_or(&[])
+}
 
 /// Refuse a law that writes an Unknown value as a literal anywhere in its
 /// definitions or actions (RFC-036).

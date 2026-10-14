@@ -7,6 +7,33 @@ Chronolexography records each legal fact (an application, a decision, an objecti
 
 The running example is vakantieverlof: a parent asks the head of a school for leave outside the school holidays (Leerplichtwet 1969, art. 13a).
 
+## How the parts fit together
+
+| Part | What it is | Where |
+|---|---|---|
+| Law | Art. 13a (the application, the decision and its test); Awb 4:2, 4:13, 3:46, 6:7 and 6:8 as hooks | `corpus/regulation/` |
+| Policy | Fictitious school policy: the first school day (`implements`) and the bounds of a school year | `corpus/regulation/nl/uitvoeringsbeleid/` |
+| Reduction | "Did the head already grant leave this school year?", over the school's own decisions | `corpus/cells/obs_de_klimop/reducties/` |
+| Engine | Executes articles: hooks per stage, cross-law sources, open terms, data sources. Stores nothing | `packages/engine` |
+| Cell | The school: keeps the chronicle, derives what it records, executes through the engine | `packages/cel` |
+
+**Recording the application** (`Cell::record_submission`):
+
+1. The parent supplies the fields: the child, the leave days, name and address.
+2. The cell takes the fields from the law: the parameters of the `AANVRAAG` item and of the Awb hooks on it.
+3. The engine runs art. 13a at stage AANVRAAG. Awb 4:2 says whether the application is complete, Awb 4:13 gives the decision period.
+4. The cell appends one chronolexogram of kind `AANVRAAG`.
+
+**Taking the decision** (`Cell::decide`):
+
+1. The cell finds the application through `requests: leerplichtwet_1969#13a`.
+2. It gathers each input of the decision by name: from the application, from policy (`implements`), from a reduction of its own, or from the head (the two judgements under art. 11 onder f).
+3. For the reduction, the cell binds its own decisions to `source: {decisions: leerplichtwet_1969#13a}`. The engine runs the reduction, which asks the school policy for the bounds of the school year and returns one answer.
+4. The engine runs art. 13a at stages BESLUIT and BEKENDMAKING: the test, and Awb 3:46, 6:7 and 6:8.
+5. The cell appends a chronolexogram of kind `BESCHIKKING` that refers to the application.
+
+Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. The cell connects the parts by name and keeps the record. The engine only executes.
+
 ## What works
 
 | Feature | Rulework | RFC |
@@ -14,6 +41,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | [The application, with the Awb on it](#the-application-with-the-awb-on-it) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-045](/rfcs/rfc-045) |
 | [The application in the chronicle](#the-application-in-the-chronicle) | Leerplichtwet 1969 art. 13a, Awb 4:2 and 4:13 | [RFC-046](/rfcs/rfc-046): chronolexography as a layer |
 | [The decision on the application](#the-decision-on-the-application) | Leerplichtwet 1969 art. 13a, Awb 3:46, 6:7 and 6:8, fictitious school policy | [RFC-047](/rfcs/rfc-047) |
+| [Once per school year](#once-per-school-year) | Leerplichtwet 1969 art. 13a lid 2, fictitious school policy, the school's reduction | [RFC-048](/rfcs/rfc-048) |
 
 ## The application, with the Awb on it
 
@@ -113,6 +141,40 @@ The cell records the decision as a second chronolexogram that refers to the appl
 - What the decision needs comes from the application first, then from the school's policy (`implements`), then from the head when deciding (`decided_per_case_by`). The chronolexogram repeats neither the basis nor the source of a field or output: both follow from the law on `recorded_on` and from `refers_to`.
 - The test: at most ten school days (Monday to Friday), not in the first two lesweken, and the two facts of art. 11 onder f: a parent's profession of a specific nature, and leave outside the school holidays. The head judges both. A refusal is `verlof_verleend: false`.
 - The cell refuses a second decision on one application, and a decision dated before it. It makes the decision known on the day it takes it, so Awb 6:8 counts the objection period from there; that is the cell's assumption.
-- Not modeled yet: "eenmaal per schooljaar", and the proportional share for a young person who is kwalificatieplichtig (lid 2, second sentence).
+- Not modeled yet: the proportional share for a young person who is kwalificatieplichtig (lid 2, second sentence).
 
 **Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature`, or `cargo test --manifest-path packages/cel/Cargo.toml`
+
+## Once per school year
+
+The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for the answer as a parameter, `verlof_al_verleend_in_schooljaar`, that is no field of the application. Who supplies it, the law does not say.
+
+In a cell, a reduction gives the answer: rulework of the kind `REDUCTIE`, kept with the cell at `corpus/cells/obs_de_klimop/reducties/`. It finds the decisions taken under art. 13a and asks the school's fictitious policy in which school year the asked leave falls.
+
+```yaml
+# reductie_verlof_al_verleend_in_schooljaar, article 1
+parameters:
+  - {name: bsn_jongere, type: string}
+  - {name: eerste_verlofdag, type: date}
+input:
+  - name: besluiten
+    type: array
+    source:
+      decisions: leerplichtwet_1969#13a
+  - name: begin_schooljaar
+    type: date
+    source:
+      regulation: fictief_beleid_schooljaargrenzen_obs_de_klimop
+      parameters: {datum: $eerste_verlofdag}
+output:
+  - name: verlof_al_verleend_in_schooljaar
+    type: boolean
+```
+
+- Each decision is a row with its fields and outputs, such as `bsn_jongere`, `eerste_verlofdag` and `verlof_verleend`. A refusal does not count.
+- The policy says only that a school year runs from 1 August to 31 July. It reads no decisions.
+- The cell connects reduction and decision by name. It passes the decision's inputs as the reduction's parameters and the answer to the decision, and refuses a name that something else also supplies.
+- Only a reduction reads `decisions`, and a reduction does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`). The corpus loaders leave it out; `just validate` checks it.
+- The decision records the answer in `fields`, like a field of the application.
+
+**Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature` with the answer as a parameter and `schooljaargrenzen.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`

@@ -119,6 +119,7 @@ impl LawLoad for ArticleBasedLaw {
         // Validate array sizes after parsing
         validate_array_sizes(&law)?;
         reject_literal_operations(&law)?;
+        crate::load_check::reject_misplaced_reduction(&law)?;
 
         // Validate schema version is supported (RFC-013)
         if let Some(version) = law.schema_version() {

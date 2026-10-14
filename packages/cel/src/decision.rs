@@ -18,6 +18,10 @@
 //!    decides which applies: the regulation where it fills the term, the
 //!    judgement where it is silent;
 //! 4. the cell: a date the stage requires, which is the day of the decision.
+//!
+//! An input the deciding authority would supply may instead come from one of
+//! the cell's reductions, where one yields it by name. That follows from the
+//! cell, not from the law ([`crate::reading`], RFC-048).
 
 use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, ParameterType, ProcedureStage};

@@ -123,7 +123,7 @@ fn object(value: Value) -> Map<String, Value> {
 
 /// Record an application for `dagen` days and decide on it with `supplied`.
 fn decide(
-    service: &LawExecutionService,
+    service: &mut LawExecutionService,
     dagen: i64,
     supplied: Value,
 ) -> Result<regelrecht_cel::Gram, Error> {
@@ -145,13 +145,13 @@ fn a_judgement_on_a_term_a_regulation_also_fills_may_be_supplied() {
 
 #[test]
 fn where_the_regulation_is_silent_the_judgement_decides() {
-    let service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
-    let gram = decide(&service, 5, json!({"grond_aanwezig": false})).unwrap();
+    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let gram = decide(&mut service, 5, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     assert_eq!(gram.fields["grond_aanwezig"], json!(false));
 
     // Without the judgement, nothing decides the norm for this case.
-    let e = decide(&service, 5, json!({})).unwrap_err();
+    let e = decide(&mut service, 5, json!({})).unwrap_err();
     assert!(
         matches!(&e, Error::Engine(m) if m.to_string().contains("decided per case by het hoofd")),
         "{e}"
@@ -160,13 +160,13 @@ fn where_the_regulation_is_silent_the_judgement_decides() {
 
 #[test]
 fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
-    let service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
-    let gram = decide(&service, 2, json!({"grond_aanwezig": false})).unwrap();
+    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let gram = decide(&mut service, 2, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
 
     // The judgement may be left out.
-    let gram = decide(&service, 2, json!({})).unwrap();
+    let gram = decide(&mut service, 2, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
 }
 
@@ -252,7 +252,7 @@ articles:
 
 #[test]
 fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article() {
-    let service = service(&[GENERAL_LAW, SPLIT_LAW]);
+    let mut service = service(&[GENERAL_LAW, SPLIT_LAW]);
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     assert_eq!(shape.application, "wet_verlof_fictief#2");
     let mut cell = Cell::in_memory("fictieve_school");
@@ -260,7 +260,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
         .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
         .unwrap();
     let gram = cell
-        .decide(&service, LAW, "1", &app.id, &Map::new(), day())
+        .decide(&mut service, LAW, "1", &app.id, &Map::new(), day())
         .unwrap();
     assert_eq!(gram.refers_to.as_deref(), Some(app.id.as_str()));
     assert_eq!(gram.grondslag, "wet_verlof_fictief#1");

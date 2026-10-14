@@ -222,6 +222,8 @@ fn is_national_layer(layer: RegulatoryLayer) -> bool {
         | RegulatoryLayer::GemeentelijkeVerordening
         | RegulatoryLayer::ProvincialeVerordening
         | RegulatoryLayer::WaterschapsVerordening => false,
+        // No regulation: a reduction of one cell over its own chronicle.
+        RegulatoryLayer::Reductie => false,
     }
 }
 
