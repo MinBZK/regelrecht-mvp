@@ -1752,7 +1752,7 @@ async fn build_traject_corpus(
     let rows = sqlx::query_as::<_, TrajectSourceRow>(
         "SELECT source_id, name, source_type::text AS source_type,
                 gh_owner, gh_repo, gh_branch, gh_base_branch, gh_path, gh_ref,
-                local_path, priority, auth_ref, scopes, is_writable_own
+                local_path, local_repo_root, priority, auth_ref, scopes, is_writable_own
          FROM traject_corpus_sources
          WHERE traject_id = $1
          ORDER BY priority",
@@ -2301,6 +2301,7 @@ struct TrajectSourceRow {
     gh_path: Option<String>,
     gh_ref: Option<String>,
     local_path: Option<String>,
+    local_repo_root: Option<String>,
     priority: i32,
     auth_ref: Option<String>,
     scopes: serde_json::Value,
@@ -2322,6 +2323,7 @@ impl TrajectSourceRow {
             _ => SourceType::Local {
                 local: LocalSource {
                     path: PathBuf::from(self.local_path.clone().unwrap_or_default()),
+                    repo_root: self.local_repo_root.as_ref().map(PathBuf::from),
                 },
             },
         };
@@ -2947,6 +2949,7 @@ mod tests {
             source_type: SourceType::Local {
                 local: LocalSource {
                     path: dir.to_path_buf(),
+                    repo_root: None,
                 },
             },
             scopes: vec![],

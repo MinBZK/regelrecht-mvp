@@ -43,6 +43,7 @@ const repoLabel = computed(() => {
   return `${s.gh_owner}/${s.gh_repo}`;
 });
 const repoUrl = computed(() => branchTreeUrl(source.value));
+const isLocal = computed(() => source.value?.source_type === 'local');
 const subpath = computed(() => {
   if (!source.value) return 'onbekend';
   const p = source.value.gh_path;
@@ -278,6 +279,17 @@ async function confirmLeave() {
         <nldd-spacer-cell size="8"></nldd-spacer-cell>
         <nldd-text-cell :text="detail.role"></nldd-text-cell>
       </nldd-list-item>
+      <!-- Een traject dat naar een lokale map schrijft heeft geen repo, branch
+           of subpath: alleen de map. -->
+      <nldd-list-item v-if="isLocal" size="md">
+        <nldd-text-cell text="Lokale map" max-width="180px"></nldd-text-cell>
+        <nldd-spacer-cell size="8"></nldd-spacer-cell>
+        <nldd-text-cell
+          :text="source.local_path || 'onbekend'"
+          supporting-text="Bewerkingen staan hier ongecommit; je beheert ze met git."
+        ></nldd-text-cell>
+      </nldd-list-item>
+      <template v-else>
       <nldd-list-item size="md">
         <nldd-text-cell text="Repo" max-width="180px" vertical-alignment="top"></nldd-text-cell>
         <nldd-spacer-cell size="8"></nldd-spacer-cell>
@@ -388,6 +400,7 @@ async function confirmLeave() {
           ></nldd-button>
         </nldd-cell>
       </nldd-list-item>
+      </template>
     </nldd-list>
 
     <!-- Eigen vlak, net als het verwijder-vlak eronder: een kop, een zin en een

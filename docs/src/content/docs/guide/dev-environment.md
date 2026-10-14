@@ -97,6 +97,71 @@ Notes:
 - Prometheus and Grafana are not part of `just dev`. See
   [Grafana](/components/grafana/#running-locally) to run them.
 
+## Editing Without GitHub
+
+By default a traject writes to a branch on GitHub. For local development a
+traject can write to a directory in your checkout instead, such as the
+monorepo's own `corpus/regulation/nl`. Edits land there as uncommitted changes:
+`git status` shows them, you commit the ones you want to keep, and nothing is
+pushed.
+
+Add the directory as a local source in `corpus-registry.local.yaml` at the
+project root (gitignored):
+
+```yaml
+schema_version: "1.0"
+sources:
+  - id: lokaal
+    name: "Monorepo corpus"
+    type: local
+    local:
+      path: ../corpus/regulation/nl
+      repo_root: ../corpus
+    scopes: []
+    priority: 1
+```
+
+`repo_root` tells the editor where notes live: next to the regulation tree, in
+`corpus/annotations/`, as in a corpus repository on GitHub. Without it a traject
+would look for them under `corpus/regulation/nl/annotations/`.
+
+`just dev` runs editor-api from `packages/`, and both the registry paths and
+the source paths above resolve against that directory. Point editor-api at the
+registry in `.env.sso-local` (`.env.sso-local.example` has these lines commented
+out):
+
+```bash
+CORPUS_REGISTRY_PATH=../corpus-registry.yaml
+CORPUS_REGISTRY_LOCAL_PATH=../corpus-registry.local.yaml
+```
+
+The create-traject form then offers "Lokale map: Monorepo corpus" next to
+GitHub, selected by default. In such a traject:
+
+- The "Bewerkt" list in the library is what `git status` reports under the
+  directory. Outside a git repository the list stays empty.
+- Every traject that writes to the same directory shares its files. Use a
+  GitHub traject when work has to stay apart.
+
+Undoing an edit is plain git. To put one rulework back to the last commit,
+including its scenarios, and remove its files that were never committed:
+
+```bash
+git restore --source=HEAD --staged --worktree -- corpus/regulation/nl/wet/wet_op_de_zorgtoeslag
+git clean -fd -- corpus/regulation/nl/wet/wet_op_de_zorgtoeslag
+```
+
+For a rulework that was new in the traject, `git restore` reports that the path
+matches nothing git knows; `git clean` alone removes it. Notes are kept apart
+from the regulation, under `corpus/annotations/<law_id>/`; restore that
+directory too when the notes should go. The editor compares its cached copies with the disk once a
+minute, so the reverted content shows up within that time. A rulework that only
+existed in the traject and is now gone needs an editor-api restart before it
+disappears from the library.
+
+The option does not exist on a deployment: editor-api offers no local
+directories when its hostname names a regelrecht or preview pod.
+
 ## Stopping
 
 ```bash

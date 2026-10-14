@@ -372,6 +372,7 @@ mod tests {
             source_type: crate::models::SourceType::Local {
                 local: crate::models::LocalSource {
                     path: dir.path().to_path_buf(),
+                    repo_root: None,
                 },
             },
             scopes: vec![],

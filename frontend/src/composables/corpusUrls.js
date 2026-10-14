@@ -146,6 +146,10 @@ export function lawPromoteUrl(trajectRef, lawId) {
   return `${lawUrl(trajectRef, lawId)}/promote`;
 }
 
+// De lokale mappen waar een nieuw traject naartoe kan schrijven (leeg op een
+// uitrol). Hoort bij het aanmaken, niet bij één traject.
+export const LOCAL_TARGETS_URL = '/api/trajects/local-targets';
+
 // Traject-scoped harvest via het taken-mechanisme: POST { bwb_id } start een
 // async BWB-download + geketende enrich; het resultaat komt terug als
 // `law_create`-review-taak in het takenpaneel.

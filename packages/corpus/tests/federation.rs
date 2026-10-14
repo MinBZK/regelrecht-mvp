@@ -27,7 +27,10 @@ fn make_local_source(id: &str, name: &str, path: PathBuf, priority: u32) -> Sour
         id: id.to_string(),
         name: name.to_string(),
         source_type: SourceType::Local {
-            local: LocalSource { path },
+            local: LocalSource {
+                path,
+                repo_root: None,
+            },
         },
         scopes: vec![],
         priority,

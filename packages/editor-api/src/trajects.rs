@@ -120,6 +120,68 @@ pub struct CreateTrajectRequest {
     /// (which is the MinBZK default).
     #[serde(default)]
     pub repo_path: Option<String>,
+    /// Id of a local source in the editor's own registry to write to
+    /// instead of a GitHub repo (see [`local_write_targets`]). Edits then
+    /// land in that directory, uncommitted, and git is the way back. Can't
+    /// be combined with the repo fields.
+    #[serde(default)]
+    pub local_source_id: Option<String>,
+}
+
+/// A local directory a traject can write to, offered to the create form
+/// by `GET /api/trajects/local-targets`.
+#[derive(Debug, Clone, Serialize)]
+pub struct LocalWriteTarget {
+    pub id: String,
+    pub name: String,
+    #[serde(skip)]
+    pub source: regelrecht_corpus::models::Source,
+}
+
+/// The local sources of the editor's registry that a traject may write to.
+///
+/// Empty on a ZAD deployment: a local source there is a corpus baked into
+/// the image, and writes would land on the pod's disk (or its scratch copy)
+/// and vanish with the next deploy. The pod hostname is the same "which
+/// deployment am I?" signal the proxy targets use.
+pub async fn local_write_targets(state: &AppState) -> Vec<LocalWriteTarget> {
+    let hostname = std::env::var("HOSTNAME").ok();
+    let corpus = state.corpus.read().await;
+    local_targets_in(&corpus.registry, hostname.as_deref())
+}
+
+/// The pure half of [`local_write_targets`].
+fn local_targets_in(
+    registry: &regelrecht_corpus::CorpusRegistry,
+    hostname: Option<&str>,
+) -> Vec<LocalWriteTarget> {
+    if hostname
+        .and_then(regelrecht_corpus::deployment_from_hostname)
+        .is_some()
+    {
+        return Vec::new();
+    }
+    registry
+        .sources()
+        .iter()
+        .filter(|s| {
+            matches!(
+                s.source_type,
+                regelrecht_corpus::models::SourceType::Local { .. }
+            )
+        })
+        .map(|s| LocalWriteTarget {
+            id: s.id.clone(),
+            name: s.name.clone(),
+            source: s.clone(),
+        })
+        .collect()
+}
+
+/// GET /api/trajects/local-targets — the local directories a new traject
+/// can write to; empty when there are none, or on a deployment.
+pub async fn list_local_targets(State(state): State<AppState>) -> Json<Vec<LocalWriteTarget>> {
+    Json(local_write_targets(&state).await)
 }
 
 /// GitHub `owner` / `repo` segments end up in a URL path
@@ -931,6 +993,62 @@ async fn resolve_writable_target(
     }
 }
 
+/// Where a new traject writes: a branch on GitHub or a local directory.
+enum CreateTarget {
+    GitHub(WritableTarget),
+    Local(LocalWriteTarget),
+}
+
+/// Look up the local write target a create request names. Refuses a
+/// request that also names a GitHub repo (which of the two is meant is
+/// not ours to guess) and an id that is not on [`local_write_targets`].
+async fn resolve_local_target(
+    state: &AppState,
+    req: &CreateTrajectRequest,
+    id: &str,
+) -> Result<LocalWriteTarget, (StatusCode, String)> {
+    let names_repo = [
+        &req.repo_owner,
+        &req.repo_name,
+        &req.base_branch,
+        &req.repo_path,
+    ]
+    .iter()
+    .any(|f| f.as_deref().is_some_and(|v| !v.trim().is_empty()));
+    if names_repo {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "kies een lokale map of een GitHub-repo, niet allebei".to_string(),
+        ));
+    }
+    let target = local_write_targets(state)
+        .await
+        .into_iter()
+        .find(|t| t.id == id)
+        .ok_or((
+            StatusCode::BAD_REQUEST,
+            format!("'{id}' is geen lokale map waar deze editor naar kan schrijven"),
+        ))?;
+    // A directory that is missing or read-only would make the backend fall
+    // back to a scratch copy under $TMPDIR: outside git, gone on restart.
+    // Refuse up-front instead of letting edits land there.
+    if let regelrecht_corpus::models::SourceType::Local { local } = &target.source.source_type {
+        let probe = local.path.join(".regelrecht-write-probe");
+        let writable = tokio::fs::write(&probe, b"").await.is_ok();
+        let _ = tokio::fs::remove_file(&probe).await;
+        if !writable {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "de lokale map '{}' bestaat niet of is niet schrijfbaar",
+                    local.path.display()
+                ),
+            ));
+        }
+    }
+    Ok(target)
+}
+
 /// Validate user-supplied GitHub `owner` / `repo` coordinates and derive
 /// the `auth_ref` that names their token (`CORPUS_AUTH_{AUTH_REF}_TOKEN`).
 /// Shared by `create` and `move_repo` so both refuse the same input with
@@ -1198,13 +1316,25 @@ pub async fn create(
     let traject_id = Uuid::new_v4();
     let writable_branch = derive_branch_name(name, traject_id);
 
-    // Resolve the writable-own GitHub target up-front. Validation may need
-    // to talk to GitHub (which can fail with a helpful 4xx) and — for a
-    // user-supplied repo — mints the traject branch there; we do that
+    // A local target writes to a directory on this machine: no repo, no
+    // branch, nothing to check on GitHub.
+    //
+    // Otherwise resolve the writable-own GitHub target up-front. Validation
+    // may need to talk to GitHub (which can fail with a helpful 4xx) and — for
+    // a user-supplied repo — mints the traject branch there; we do that
     // *before* opening the DB transaction so a network blip or a failed
     // branch-create leaves no half-rolled row behind.
-    let target =
-        resolve_writable_target(&state, &req, account.id, &headers, &writable_branch).await?;
+    let target = match req
+        .local_source_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        Some(id) => CreateTarget::Local(resolve_local_target(&state, &req, id).await?),
+        None => CreateTarget::GitHub(
+            resolve_writable_target(&state, &req, account.id, &headers, &writable_branch).await?,
+        ),
+    };
 
     // Everything below is database work, and GitHub is not part of that
     // transaction. If any of it fails after the branch was minted, the ref
@@ -1255,14 +1385,19 @@ pub async fn create(
         };
 
         for seed in seeded {
+            // The local target is the writable-own below; seeding it as
+            // well would index every law in it twice.
+            if matches!(&target, CreateTarget::Local(t) if t.id == seed.source_id) {
+                continue;
+            }
             sqlx::query(
                 "INSERT INTO traject_corpus_sources
                  (traject_id, source_id, name, source_type,
                   gh_owner, gh_repo, gh_branch, gh_path, gh_ref,
-                  local_path, priority, auth_ref, scopes, is_writable_own)
+                  local_path, local_repo_root, priority, auth_ref, scopes, is_writable_own)
                  VALUES ($1, $2, $3, $4::corpus_source_type,
                          $5, $6, $7, $8, $9,
-                         $10, $11, $12, $13, FALSE)",
+                         $10, $11, $12, $13, $14, FALSE)",
             )
             .bind(traject_id)
             .bind(&seed.source_id)
@@ -1274,6 +1409,7 @@ pub async fn create(
             .bind(seed.gh_path)
             .bind(seed.gh_ref)
             .bind(seed.local_path)
+            .bind(seed.local_repo_root)
             .bind(seed.priority as i32)
             .bind(seed.auth_ref)
             .bind(seed.scopes)
@@ -1289,27 +1425,49 @@ pub async fn create(
         // flows through `CORPUS_AUTH_{AUTH_REF_UPPER}_TOKEN` via the `auth_ref`
         // stored on this row.
         let writable_source_id = format!("traject-own-{}", traject_id.simple());
-        sqlx::query(
-            "INSERT INTO traject_corpus_sources
-             (traject_id, source_id, name, source_type,
-              gh_owner, gh_repo, gh_branch, gh_base_branch, gh_path,
-              priority, auth_ref, is_writable_own)
-             VALUES ($1, $2, $3, 'github',
-                     $4, $5, $6, $7, $8,
-                     0, $9, TRUE)",
-        )
-        .bind(traject_id)
-        .bind(&writable_source_id)
-        .bind(&target.display_name)
-        .bind(&target.owner)
-        .bind(&target.repo)
-        .bind(&writable_branch)
-        .bind(&target.base_branch)
-        .bind(&target.path)
-        .bind(&target.auth_ref)
-        .execute(&mut *tx)
-        .await
-        .map_err(db_err_msg("insert writable source"))?;
+        match &target {
+            CreateTarget::GitHub(target) => {
+                sqlx::query(
+                    "INSERT INTO traject_corpus_sources
+                     (traject_id, source_id, name, source_type,
+                      gh_owner, gh_repo, gh_branch, gh_base_branch, gh_path,
+                      priority, auth_ref, is_writable_own)
+                     VALUES ($1, $2, $3, 'github',
+                             $4, $5, $6, $7, $8,
+                             0, $9, TRUE)",
+                )
+                .bind(traject_id)
+                .bind(&writable_source_id)
+                .bind(&target.display_name)
+                .bind(&target.owner)
+                .bind(&target.repo)
+                .bind(&writable_branch)
+                .bind(&target.base_branch)
+                .bind(&target.path)
+                .bind(&target.auth_ref)
+                .execute(&mut *tx)
+                .await
+                .map_err(db_err_msg("insert writable source"))?;
+            }
+            CreateTarget::Local(local) => {
+                let seed = SeedSource::from_source(&local.source);
+                sqlx::query(
+                    "INSERT INTO traject_corpus_sources
+                     (traject_id, source_id, name, source_type,
+                      local_path, local_repo_root, priority, scopes, is_writable_own)
+                     VALUES ($1, $2, $3, 'local', $4, $5, 0, $6, TRUE)",
+                )
+                .bind(traject_id)
+                .bind(&writable_source_id)
+                .bind(&seed.name)
+                .bind(&seed.local_path)
+                .bind(&seed.local_repo_root)
+                .bind(&seed.scopes)
+                .execute(&mut *tx)
+                .await
+                .map_err(db_err_msg("insert writable source"))?;
+            }
+        }
 
         tx.commit()
             .await
@@ -1318,7 +1476,13 @@ pub async fn create(
     }
     .await;
     if let Err(e) = persisted {
-        if target.minted_branch {
+        if let CreateTarget::GitHub(
+            target @ WritableTarget {
+                minted_branch: true,
+                ..
+            },
+        ) = &target
+        {
             tracing::error!(
                 traject_id = %traject_id,
                 owner = %target.owner,
@@ -2034,6 +2198,7 @@ struct SeedSource {
     gh_path: Option<String>,
     gh_ref: Option<String>,
     local_path: Option<String>,
+    local_repo_root: Option<String>,
     priority: u32,
     auth_ref: Option<String>,
     scopes: serde_json::Value,
@@ -2041,27 +2206,40 @@ struct SeedSource {
 
 impl SeedSource {
     fn from_source(s: &regelrecht_corpus::models::Source) -> Self {
-        let (source_type, gh_owner, gh_repo, gh_branch, gh_path, gh_ref, local_path) =
-            match &s.source_type {
-                regelrecht_corpus::models::SourceType::GitHub { github } => (
-                    "github".to_string(),
-                    Some(github.owner.clone()),
-                    Some(github.repo.clone()),
-                    Some(github.branch.clone()),
-                    github.path.clone(),
-                    github.git_ref.clone(),
-                    None,
-                ),
-                regelrecht_corpus::models::SourceType::Local { local } => (
-                    "local".to_string(),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    Some(local.path.to_string_lossy().to_string()),
-                ),
-            };
+        let (
+            source_type,
+            gh_owner,
+            gh_repo,
+            gh_branch,
+            gh_path,
+            gh_ref,
+            local_path,
+            local_repo_root,
+        ) = match &s.source_type {
+            regelrecht_corpus::models::SourceType::GitHub { github } => (
+                "github".to_string(),
+                Some(github.owner.clone()),
+                Some(github.repo.clone()),
+                Some(github.branch.clone()),
+                github.path.clone(),
+                github.git_ref.clone(),
+                None,
+                None,
+            ),
+            regelrecht_corpus::models::SourceType::Local { local } => (
+                "local".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(local.path.to_string_lossy().to_string()),
+                local
+                    .repo_root
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().to_string()),
+            ),
+        };
         let scopes = serde_json::to_value(&s.scopes).unwrap_or(serde_json::json!([]));
         SeedSource {
             source_id: s.id.clone(),
@@ -2073,6 +2251,7 @@ impl SeedSource {
             gh_path,
             gh_ref,
             local_path,
+            local_repo_root,
             priority: s.priority,
             auth_ref: s.auth_ref.clone(),
             scopes,
@@ -2083,6 +2262,51 @@ impl SeedSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn registry_with_local_and_github() -> regelrecht_corpus::CorpusRegistry {
+        regelrecht_corpus::CorpusRegistry::from_yaml(
+            "schema_version: '1.0'
+sources:
+  - id: lokaal
+    name: Lokale checkout
+    type: local
+    local:
+      path: ../corpus/regulation/nl
+    priority: 1
+  - id: centraal
+    name: Centraal
+    type: github
+    github:
+      owner: example-org
+      repo: regelrecht-corpus-example
+      branch: main
+    priority: 2
+",
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn local_targets_are_the_local_sources_of_the_registry() {
+        let registry = registry_with_local_and_github();
+        let ids: Vec<String> = local_targets_in(&registry, Some("mijn-laptop"))
+            .into_iter()
+            .map(|t| t.id)
+            .collect();
+        assert_eq!(ids, vec!["lokaal"]);
+        assert_eq!(local_targets_in(&registry, None).len(), 1);
+    }
+
+    #[test]
+    fn no_local_targets_on_a_deployment() {
+        let registry = registry_with_local_and_github();
+        for pod in [
+            "regelrecht-editor-5d8f9c7b6d-x2k4p",
+            "pr1234-editor-5d8f9c7b6d-x2k4p",
+        ] {
+            assert!(local_targets_in(&registry, Some(pod)).is_empty(), "{pod}");
+        }
+    }
 
     #[test]
     fn slugify_strips_specials() {

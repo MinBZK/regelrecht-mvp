@@ -88,6 +88,7 @@ fn create_req(name: &str) -> CreateTrajectRequest {
         repo_name: None,
         base_branch: None,
         repo_path: None,
+        local_source_id: None,
     }
 }
 
@@ -229,6 +230,7 @@ fn custom_repo_req(name: &str) -> CreateTrajectRequest {
         repo_name: Some("regelrecht-corpus-example".to_string()),
         base_branch: Some("main".to_string()),
         repo_path: None,
+        local_source_id: None,
     }
 }
 

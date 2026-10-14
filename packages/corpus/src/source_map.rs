@@ -992,6 +992,7 @@ mod tests {
             source_type: SourceType::Local {
                 local: LocalSource {
                     path: path.to_path_buf(),
+                    repo_root: None,
                 },
             },
             scopes: vec![],

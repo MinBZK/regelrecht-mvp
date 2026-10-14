@@ -392,6 +392,11 @@ async fn main() {
     // at all" gate. Writes live in `traject_writer_routes` below.
     let traject_reader_routes = Router::new()
         .route("/api/trajects", get(trajects::list))
+        // Static segment wins over `{id}` in the router.
+        .route(
+            "/api/trajects/local-targets",
+            get(trajects::list_local_targets),
+        )
         .route("/api/trajects/{id}", get(trajects::get))
         .route(
             "/api/trajects/{traject_ref}/sources",

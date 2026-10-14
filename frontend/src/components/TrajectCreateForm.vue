@@ -1,6 +1,8 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { deriveAuthRef, tokenEnvName as tokenEnvNameFor } from '../lib/corpusAuth.js';
+import { apiFetchJson } from '../lib/apiFetch.js';
+import { LOCAL_TARGETS_URL } from '../composables/corpusUrls.js';
 
 // Gedeeld aanmaakformulier voor een traject - gebruikt door de
 // TrajectMenu-sheet en de /editor/nieuw-traject-pagina. Gebouwd op de
@@ -21,10 +23,24 @@ defineProps({
 
 const emit = defineEmits(['submit']);
 
+// Lokale mappen waar een traject naartoe kan schrijven: de lokale bronnen uit
+// de registry van deze editor. Alleen bij lokaal ontwikkelen; op een uitrol is
+// de lijst leeg en ziet het formulier eruit zoals altijd.
+const localTargets = ref([]);
+const GITHUB_TARGET = 'github';
+
+// Lokaal is de standaard zodra er een lokale map is: wie lokaal ontwikkelt wil
+// zijn bewerkingen naast zijn code, niet op een remote.
+function defaultTarget() {
+  return localTargets.value.length ? `local:${localTargets.value[0].id}` : GITHUB_TARGET;
+}
+
 function emptyForm() {
   return {
     name: '',
     description: '',
+    // `github` of `local:<source-id>`.
+    target: defaultTarget(),
     // When `useCustomRepo` is false the create call omits the repo
     // fields and the backend falls back to the default MinBZK repo -
     // existing trajects keep their behaviour unchanged.
@@ -42,6 +58,30 @@ function emptyForm() {
 
 const form = ref(emptyForm());
 const nameFieldEl = ref(null);
+
+const localTarget = computed(() => {
+  const target = form.value.target;
+  if (!target.startsWith('local:')) return null;
+  const id = target.slice('local:'.length);
+  return localTargets.value.find((t) => t.id === id) ?? null;
+});
+
+onMounted(async () => {
+  try {
+    localTargets.value = await apiFetchJson(LOCAL_TARGETS_URL);
+  } catch {
+    // Geen lijst: dan is GitHub de enige keuze, zoals op een uitrol.
+    localTargets.value = [];
+  }
+  // Alleen als de gebruiker nog niets koos: de lijst kan binnenkomen nadat er
+  // al is geklikt.
+  if (form.value.target === GITHUB_TARGET) form.value.target = defaultTarget();
+});
+
+function onTargetChange(event) {
+  const value = event.detail?.value ?? event.target?.value;
+  if (value) form.value.target = value;
+}
 
 // Showing the exact env-var name saves the operator from deriving it by hand.
 // The derivation itself lives in lib/corpusAuth.js, next to the test that pins
@@ -88,6 +128,10 @@ function buildPayload() {
     name: form.value.name.trim(),
     description: form.value.description,
   };
+  if (localTarget.value) {
+    payload.local_source_id = localTarget.value.id;
+    return { payload };
+  }
   if (form.value.useCustomRepo) {
     const owner = form.value.repo_owner.trim();
     const repo = form.value.repo_name.trim();
@@ -150,7 +194,28 @@ function bind(field) {
         <nldd-form-field-help-text>Bijvoorbeeld de reden van dit traject of welke wetten of onderwerpen onder dit traject vallen.</nldd-form-field-help-text>
       </nldd-form-field>
 
-      <nldd-form-field>
+      <nldd-form-field v-if="localTargets.length" label="Bewerkingen opslaan in">
+        <nldd-radio-button-group name="traject-target" @change="onTargetChange">
+          <nldd-radio-button-field
+            v-for="t in localTargets"
+            :key="t.id"
+            :value="`local:${t.id}`"
+            :label="`Lokale map: ${t.name}`"
+            :checked="form.target === `local:${t.id}` || undefined"
+          ></nldd-radio-button-field>
+          <nldd-radio-button-field
+            value="github"
+            label="GitHub"
+            :checked="form.target === 'github' || undefined"
+          ></nldd-radio-button-field>
+        </nldd-radio-button-group>
+        <nldd-form-field-help-text>
+          Een lokale map is een checkout op deze machine. Bewerkingen komen daar
+          ongecommit te staan, en je beheert ze met git.
+        </nldd-form-field-help-text>
+      </nldd-form-field>
+
+      <nldd-form-field v-if="!localTarget">
         <nldd-switch-field
           label="Eigen GitHub-repo (i.p.v. standaard MinBZK-repo)"
           :checked="form.useCustomRepo ? true : undefined"
@@ -163,7 +228,7 @@ function bind(field) {
         </nldd-form-field-help-text>
       </nldd-form-field>
 
-      <template v-if="form.useCustomRepo">
+      <template v-if="!localTarget && form.useCustomRepo">
         <nldd-form-field label="Repo owner">
           <nldd-text-field
             size="md"
@@ -203,9 +268,16 @@ function bind(field) {
 
       <!-- Bij een eigen repo pas tonen zodra eigenaar en repository een naam
            opleveren: een zin met lege plekken erin leest als een fout. -->
-      <nldd-form-field v-if="!form.useCustomRepo || repoIsCompleet">
+      <nldd-form-field v-if="localTarget || !form.useCustomRepo || repoIsCompleet">
         <nldd-rich-text>
-          <p v-if="form.useCustomRepo">
+          <p v-if="localTarget">
+            Bewerkingen in dit traject komen direct in de lokale map
+            <code>{{ localTarget.name }}</code> te staan, zonder commit en
+            zonder push. Bewaren doe je met een commit, terugdraaien met
+            <code>git restore</code>. Andere trajecten die naar deze map
+            schrijven delen dezelfde bestanden.
+          </p>
+          <p v-else-if="form.useCustomRepo">
             Bewerkingen worden gepusht naar
             <code>{{ form.repo_owner.trim() }}/{{ form.repo_name.trim() }}</code>
             (basis: <code>{{ form.base_branch.trim() || 'main' }}</code>).
@@ -233,7 +305,7 @@ function bind(field) {
       <nldd-activity-indicator
         v-if="busy"
         show-text
-        text="Traject wordt aangemaakt en branch wordt op de remote gezet - dit kan even duren."
+        :text="localTarget ? 'Traject wordt aangemaakt.' : 'Traject wordt aangemaakt en branch wordt op de remote gezet - dit kan even duren.'"
       ></nldd-activity-indicator>
 
       <nldd-form-actions>

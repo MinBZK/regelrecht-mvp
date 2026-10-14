@@ -518,6 +518,7 @@ sources:
             source_type: crate::models::SourceType::Local {
                 local: crate::models::LocalSource {
                     path: std::path::PathBuf::from("unused"),
+                    repo_root: None,
                 },
             },
             scopes: vec![],

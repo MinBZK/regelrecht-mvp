@@ -142,6 +142,7 @@ mod tests {
             source_type: SourceType::Local {
                 local: LocalSource {
                     path: std::path::PathBuf::from("unused"),
+                    repo_root: None,
                 },
             },
             scopes: vec![],

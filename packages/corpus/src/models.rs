@@ -50,6 +50,13 @@ pub enum SourceType {
 pub struct LocalSource {
     /// Path to the regulation directory (relative to project root or absolute).
     pub path: PathBuf,
+    /// The repository root this directory sits in, for the files a corpus
+    /// repository keeps next to its regulation tree rather than inside it
+    /// (RFC-018's `annotations/` sidecars). For the monorepo's
+    /// `corpus/regulation/nl` that is `corpus`. Omitted, the regulation
+    /// directory is its own root, as before. Must contain `path`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repo_root: Option<PathBuf>,
 }
 
 /// Configuration for a GitHub repository source.
@@ -217,6 +224,7 @@ sources:
                 source_type: SourceType::Local {
                     local: LocalSource {
                         path: PathBuf::from("test/path"),
+                        repo_root: None,
                     },
                 },
                 scopes: vec![],

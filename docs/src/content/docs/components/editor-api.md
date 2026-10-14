@@ -3,7 +3,7 @@ title: "Editor API"
 description: "The Rust backend behind the law editor: corpus reads, traject-scoped writes, tasks, and proxies to the pipeline and harvester-admin services."
 ---
 
-The editor API is the HTTP server behind the law editor. It serves the compiled frontend, exposes the corpus over REST, and runs every write the editor makes. Writes always go to a traject: an editing session with its own members and its own corpus repository branch.
+The editor API is the HTTP server behind the law editor. It serves the compiled frontend, exposes the corpus over REST, and runs every write the editor makes. Writes always go to a traject: an editing session with its own members and its own place to write, a branch on a corpus repository or, during local development, a directory in a git checkout (see [Editing without GitHub](/guide/dev-environment/#editing-without-github)).
 
 ## Overview
 
@@ -69,7 +69,8 @@ Reader + account for reads, Writer + account for changes. Membership is checked 
 | Method | Path | Notes |
 |--------|------|-------|
 | GET | `/api/trajects` | Trajects you are a member of |
-| POST | `/api/trajects` | Creator becomes owner |
+| POST | `/api/trajects` | Creator becomes owner. `local_source_id` instead of the repo fields makes it write to a local directory |
+| GET | `/api/trajects/local-targets` | Local sources a new traject can write to; empty on a deployment |
 | GET | `/api/trajects/{id}` | |
 | PATCH, DELETE | `/api/trajects/{id}` | Owner only |
 | POST | `/api/trajects/{id}/leave` | |

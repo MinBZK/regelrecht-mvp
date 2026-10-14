@@ -422,6 +422,13 @@ pub struct LocalBackend {
     source_id: String,
     root: PathBuf,
     writable: bool,
+    /// The repository root `root` sits in (see [`LocalSource::repo_root`]),
+    /// or `None` when the source root is its own repository root.
+    ///
+    /// [`LocalSource::repo_root`]: crate::models::LocalSource::repo_root
+    repo_root: Option<PathBuf>,
+    /// Where `root` sits inside `repo_root`, worked out by `ensure_ready`.
+    subpath: Option<String>,
 }
 
 impl LocalBackend {
@@ -430,12 +437,103 @@ impl LocalBackend {
             source_id,
             root,
             writable,
+            repo_root: None,
+            subpath: None,
         }
+    }
+
+    /// Resolve repository-root paths (the notes sidecars) against
+    /// `repo_root` instead of the source root.
+    pub fn with_repo_root(mut self, repo_root: Option<PathBuf>) -> Self {
+        self.repo_root = repo_root;
+        self
     }
 
     fn resolve(&self, relative: &Path) -> Result<PathBuf> {
         validate_relative_path(relative)?;
         Ok(self.root.join(relative))
+    }
+
+    fn resolve_repo(&self, repo_path: &Path) -> Result<PathBuf> {
+        validate_relative_path(repo_path)?;
+        Ok(self
+            .repo_root
+            .as_ref()
+            .unwrap_or(&self.root)
+            .join(repo_path))
+    }
+
+    /// Work out where the source root sits inside the repository root.
+    /// Both must exist; comparing their canonical forms makes `../corpus`
+    /// and `../corpus/regulation/nl` line up however they were written.
+    fn derive_subpath(&mut self) -> Result<()> {
+        let Some(repo_root) = &self.repo_root else {
+            return Ok(());
+        };
+        let root = std::fs::canonicalize(&self.root)?;
+        let repo = std::fs::canonicalize(repo_root).map_err(|e| {
+            CorpusError::Config(format!(
+                "local source repo_root {} is not readable: {e}",
+                repo_root.display()
+            ))
+        })?;
+        let rel = root.strip_prefix(&repo).map_err(|_| {
+            CorpusError::Config(format!(
+                "local source {} is not inside its repo_root {}",
+                self.root.display(),
+                repo_root.display()
+            ))
+        })?;
+        let sub = rel
+            .components()
+            .filter_map(|c| match c {
+                std::path::Component::Normal(s) => s.to_str().map(str::to_string),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("/");
+        self.subpath = (!sub.is_empty()).then_some(sub);
+        Ok(())
+    }
+
+    /// Run git in the source root and return its stdout. Pathspecs are
+    /// literal (a law directory is a path, not a glob) and hooks are off,
+    /// matching how [`CorpusClient`] runs git.
+    async fn git(&self, args: &[&str]) -> Result<Vec<u8>> {
+        let output = tokio::process::Command::new("git")
+            .arg("-C")
+            .arg(&self.root)
+            .args(["--literal-pathspecs", "-c", "core.hooksPath="])
+            .args(args)
+            .kill_on_drop(true)
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CorpusError::Git(format!(
+                "git {} failed in {}: {}",
+                args.first().unwrap_or(&""),
+                self.root.display(),
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
+        Ok(output.stdout)
+    }
+
+    /// Whether the source root sits inside a git working tree.
+    async fn in_git_work_tree(&self) -> bool {
+        self.git(&["rev-parse", "--is-inside-work-tree"])
+            .await
+            .is_ok_and(|out| out.starts_with(b"true"))
+    }
+
+    /// Run a NUL-separated git listing and collect its paths.
+    async fn git_paths(&self, args: &[&str]) -> Result<Vec<String>> {
+        let out = self.git(args).await?;
+        Ok(out
+            .split(|b| *b == 0)
+            .filter(|p| !p.is_empty())
+            .map(|p| String::from_utf8_lossy(p).into_owned())
+            .collect())
     }
 }
 
@@ -616,6 +714,27 @@ impl RepoBackend for LocalBackend {
         write_creating_parents(&self.resolve(relative_path)?, content).await
     }
 
+    fn repo_subpath(&self) -> Option<&str> {
+        self.subpath.as_deref()
+    }
+
+    async fn read_repo_file_with_token(
+        &self,
+        repo_path: &Path,
+        _token_override: Option<&str>,
+    ) -> Result<Option<String>> {
+        read_optional(&self.resolve_repo(repo_path)?).await
+    }
+
+    async fn write_repo_file(&self, repo_path: &Path, content: &str) -> Result<()> {
+        if !self.writable {
+            return Err(CorpusError::ReadOnly(
+                "local source is read-only".to_string(),
+            ));
+        }
+        write_creating_parents(&self.resolve_repo(repo_path)?, content).await
+    }
+
     async fn delete_file(&self, relative_path: &Path) -> Result<()> {
         if !self.writable {
             return Err(CorpusError::ReadOnly(
@@ -683,6 +802,7 @@ impl RepoBackend for LocalBackend {
                 self.root.display()
             )));
         }
+        self.derive_subpath()?;
 
         // Probe write access at the configured root. If it succeeds, we
         // operate in place. If it fails (typical for a corpus baked into a
@@ -752,6 +872,10 @@ impl RepoBackend for LocalBackend {
             // Re-probe at the scratch location to confirm it's writable.
             if probe_writable(&scratch).await {
                 self.root = scratch;
+                // The copy holds the regulation tree only; its notes live
+                // next to it like a plain directory's.
+                self.repo_root = None;
+                self.subpath = None;
             } else {
                 tracing::warn!(
                     path = %scratch.display(),
@@ -766,6 +890,46 @@ impl RepoBackend for LocalBackend {
 
     fn is_writable(&self) -> bool {
         self.writable
+    }
+
+    /// Uncommitted changes under the source root, as git sees them: tracked
+    /// files that differ from `HEAD` (staged or not) plus untracked files
+    /// that are not ignored. A root outside a git working tree has nothing
+    /// to compare against and reports no changes.
+    async fn changed_files(&self) -> Result<Vec<String>> {
+        if !self.in_git_work_tree().await {
+            tracing::warn!(
+                path = %self.root.display(),
+                "local source is not inside a git working tree; reporting no changed files"
+            );
+            return Ok(Vec::new());
+        }
+        // Without a first commit there is no HEAD to diff against: then
+        // everything git already tracks is new.
+        let has_head = self
+            .git(&["rev-parse", "--verify", "--quiet", "HEAD"])
+            .await
+            .is_ok();
+        let mut paths = if has_head {
+            self.git_paths(&["diff", "--name-only", "-z", "--relative", "HEAD", "--", "."])
+                .await?
+        } else {
+            self.git_paths(&["ls-files", "-z", "--", "."]).await?
+        };
+        paths.extend(
+            self.git_paths(&[
+                "ls-files",
+                "-z",
+                "--others",
+                "--exclude-standard",
+                "--",
+                ".",
+            ])
+            .await?,
+        );
+        paths.sort();
+        paths.dedup();
+        Ok(paths)
     }
 }
 
@@ -1481,11 +1645,10 @@ impl RepoBackend for SessionGitBackend {
 /// concurrent `clone`/`pull --rebase`/`push`.
 pub fn create_backend(source: &Source, auth_token: Option<&str>) -> Result<Box<dyn RepoBackend>> {
     match &source.source_type {
-        SourceType::Local { local } => Ok(Box::new(LocalBackend::new(
-            source.id.clone(),
-            local.path.clone(),
-            true,
-        ))),
+        SourceType::Local { local } => Ok(Box::new(
+            LocalBackend::new(source.id.clone(), local.path.clone(), true)
+                .with_repo_root(local.repo_root.clone()),
+        )),
         #[cfg(feature = "github")]
         SourceType::GitHub { github } => {
             Ok(Box::new(crate::github_api_backend::GitHubApiBackend::new(
@@ -1702,6 +1865,158 @@ mod tests {
             LocalBackend::new("test".to_string(), PathBuf::from("/nonexistent/path"), true);
         let result = backend.ensure_ready().await;
         assert!(result.is_err());
+    }
+
+    /// A ready `LocalBackend` on the `regulation/nl` subtree of a fresh
+    /// checkout from [`setup_corpus_checkout`].
+    async fn local_backend_in_checkout(dir: &Path) -> LocalBackend {
+        setup_corpus_checkout(dir).await;
+        let mut backend = LocalBackend::new("local".to_string(), dir.join("regulation/nl"), true);
+        backend.ensure_ready().await.unwrap();
+        backend
+    }
+
+    #[tokio::test]
+    async fn local_changed_files_reports_git_changes_under_the_source() {
+        let dir = TempDir::new().unwrap();
+        let backend = local_backend_in_checkout(dir.path()).await;
+        assert!(backend.changed_files().await.unwrap().is_empty());
+
+        backend
+            .write_file(
+                Path::new("wet/wet_a/2025-01-01.yaml"),
+                "$id: wet_a\nchanged: true\n",
+            )
+            .await
+            .unwrap();
+        backend
+            .write_file(
+                Path::new("wet/wet_nieuw/2025-01-01.yaml"),
+                "$id: wet_nieuw\n",
+            )
+            .await
+            .unwrap();
+        // Staged and outside the source root: the first counts, the second
+        // belongs to another subtree and does not.
+        backend
+            .write_file(Path::new("regeling/reg_b/2025-01-01.yaml"), "$id: reg_b\n")
+            .await
+            .unwrap();
+        tokio::process::Command::new("git")
+            .args(["add", "regulation/nl/regeling/reg_b/2025-01-01.yaml"])
+            .current_dir(dir.path())
+            .output()
+            .await
+            .unwrap();
+        std::fs::write(
+            dir.path().join("regulation/be/wet/wet_be/2025-01-01.yaml"),
+            "x",
+        )
+        .unwrap();
+
+        assert_eq!(
+            backend.changed_files().await.unwrap(),
+            vec![
+                "regeling/reg_b/2025-01-01.yaml",
+                "wet/wet_a/2025-01-01.yaml",
+                "wet/wet_nieuw/2025-01-01.yaml",
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn local_changed_files_before_the_first_commit_lists_everything() {
+        let dir = TempDir::new().unwrap();
+        let out = tokio::process::Command::new("git")
+            .args(["init", "--quiet"])
+            .current_dir(dir.path())
+            .output()
+            .await
+            .unwrap();
+        assert!(out.status.success());
+        let backend = LocalBackend::new("local".to_string(), dir.path().to_path_buf(), true);
+        backend
+            .write_file(Path::new("wet/a/2025-01-01.yaml"), "a")
+            .await
+            .unwrap();
+        backend
+            .write_file(Path::new("wet/b/2025-01-01.yaml"), "b")
+            .await
+            .unwrap();
+        tokio::process::Command::new("git")
+            .args(["add", "wet/a"])
+            .current_dir(dir.path())
+            .output()
+            .await
+            .unwrap();
+        assert_eq!(
+            backend.changed_files().await.unwrap(),
+            vec!["wet/a/2025-01-01.yaml", "wet/b/2025-01-01.yaml"]
+        );
+    }
+
+    #[tokio::test]
+    async fn local_sidecars_live_at_the_repo_root_when_one_is_set() {
+        use crate::annotation_sidecar::{read_sidecar, write_sidecar, LegacyFallback};
+        let dir = TempDir::new().unwrap();
+        let corpus = dir.path().join("corpus");
+        std::fs::create_dir_all(corpus.join("regulation/nl")).unwrap();
+        std::fs::create_dir_all(corpus.join("annotations/wet_a")).unwrap();
+        std::fs::write(
+            corpus.join("annotations/wet_a/annotations.yaml"),
+            "bestaand\n",
+        )
+        .unwrap();
+
+        let mut backend =
+            LocalBackend::new("local".to_string(), corpus.join("regulation/nl"), true)
+                .with_repo_root(Some(corpus.clone()));
+        backend.ensure_ready().await.unwrap();
+        assert_eq!(backend.repo_subpath(), Some("regulation/nl"));
+
+        let read = read_sidecar(&backend, "wet_a", None, LegacyFallback::Read)
+            .await
+            .unwrap();
+        assert_eq!(read.as_deref(), Some("bestaand\n"));
+
+        write_sidecar(&backend, "wet_b", "nieuw\n").await.unwrap();
+        assert!(corpus.join("annotations/wet_b/annotations.yaml").exists());
+        assert!(!corpus.join("regulation/nl/annotations").exists());
+    }
+
+    #[tokio::test]
+    async fn local_sidecars_without_a_repo_root_stay_under_the_source() {
+        use crate::annotation_sidecar::write_sidecar;
+        let dir = TempDir::new().unwrap();
+        let mut backend = LocalBackend::new("local".to_string(), dir.path().to_path_buf(), true);
+        backend.ensure_ready().await.unwrap();
+        assert_eq!(backend.repo_subpath(), None);
+        write_sidecar(&backend, "wet_a", "x\n").await.unwrap();
+        assert!(dir
+            .path()
+            .join("annotations/wet_a/annotations.yaml")
+            .exists());
+    }
+
+    #[tokio::test]
+    async fn local_repo_root_must_contain_the_source() {
+        let dir = TempDir::new().unwrap();
+        let elsewhere = TempDir::new().unwrap();
+        let mut backend = LocalBackend::new("local".to_string(), dir.path().to_path_buf(), true)
+            .with_repo_root(Some(elsewhere.path().to_path_buf()));
+        let err = backend.ensure_ready().await.unwrap_err();
+        assert!(matches!(err, CorpusError::Config(_)), "{err:?}");
+    }
+
+    #[tokio::test]
+    async fn local_changed_files_outside_git_is_empty() {
+        let dir = TempDir::new().unwrap();
+        let backend = LocalBackend::new("local".to_string(), dir.path().to_path_buf(), true);
+        backend
+            .write_file(Path::new("wet/x/2025-01-01.yaml"), "x")
+            .await
+            .unwrap();
+        assert!(backend.changed_files().await.unwrap().is_empty());
     }
 
     /// Init a standalone git repo at `path` with a committed corpus tree:

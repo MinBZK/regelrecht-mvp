@@ -301,3 +301,26 @@ describe('TrajectDetailsPane repo', () => {
     expect(repoField(w).attributes('unmet')).toBe('repo-error');
   });
 });
+
+describe('TrajectDetailsPane lokale map', () => {
+  it('toont bij een lokaal traject de map, zonder repo, branch of subpath', async () => {
+    const w = await mountPane(
+      detail({
+        source: ownSource({
+          source_type: 'local',
+          gh_owner: null,
+          gh_repo: null,
+          gh_branch: null,
+          gh_base_branch: null,
+          auth_ref: null,
+          local_path: '../corpus/regulation/nl',
+        }),
+      }),
+    );
+    const texts = cellTexts(w);
+    expect(texts).toContain('Lokale map');
+    expect(texts).toContain('../corpus/regulation/nl');
+    expect(texts).not.toContain('Branch');
+    expect(subpathField(w).exists()).toBe(false);
+  });
+});

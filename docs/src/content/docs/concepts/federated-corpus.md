@@ -73,6 +73,8 @@ sources:
 
 Paths in `local.path` resolve relative to the project root; absolute paths also work.
 
+When the directory is the regulation tree of a larger corpus checkout, add `local.repo_root` with the checkout's root (for `../regelrecht-private/corpus/regulation/nl` that is `../regelrecht-private/corpus`). The editor reads and writes a rulework's notes sidecar at `annotations/<law_id>/annotations.yaml` under that root, the place [RFC-018](/rfcs/rfc-018) gives it. Without `repo_root` the directory counts as its own root.
+
 After adding sources or changing files in an external source, re-run `node frontend/scripts/copy-laws.js` (or restart the frontend so the `predev` hook fires) to refresh `frontend/public/data/`.
 
 ## Authentication
