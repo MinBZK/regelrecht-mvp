@@ -25,7 +25,7 @@ import { localeRouteName, pageForConfigPath } from '../router.js';
 import { click, setChecked, setValue, key as pressKey, scrollTo } from './actions.js';
 import { installClock, uninstallClock } from './clock.js';
 import { resolve, scrollAnchor, scrollTarget } from './locator.js';
-import { graphView, showView } from './graphBridge.js';
+import { graphView, moveNode, showView } from './graphBridge.js';
 import { CAPTIONS_BASE, MEDIA_BASE, chapterAt, parseVtt, pauseDue, pickClip } from './timeline.js';
 import { resetViews } from './viewEpoch.js';
 
@@ -42,6 +42,8 @@ export const replay = reactive({
   waiting: false,
   /** The viewer clicked along; play restores the recorded state first. */
   diverged: false,
+  /** A jump is putting the demo back; the replay's fast catch-up is covered. */
+  restoring: false,
   faq: null,
   cues: [],
   cursor: { x: 0, y: 0, visible: false },
@@ -192,7 +194,7 @@ async function find(target, { timeout = 4000, fast = false, token = seekToken, e
  */
 function noteMiss(e) {
   const last = e.target?.at?.(-1) ?? {};
-  replay.misses.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? '?' });
+  replay.misses.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? e.id ?? '?' });
   if (import.meta.env.DEV) console.warn('[walkthrough] niet gevonden:', e.type, last);
 }
 
@@ -205,7 +207,7 @@ function noteMiss(e) {
  */
 function noteLoose(e) {
   const last = e.target?.at?.(-1) ?? {};
-  replay.loose.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? '?' });
+  replay.loose.push({ t: e.t, type: e.type, what: last.text ?? last['@aria-label'] ?? last.textContent ?? last.tag ?? e.id ?? '?' });
 }
 
 function pointIn(el, fx = 0.5, fy = 0.5) {
@@ -331,6 +333,17 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       // A short glide between the samples (ten a second) looks like the
       // presenter's own drag; a jump just lands.
       if (current(token)) showView(e, fast ? 0 : 140);
+      return;
+    }
+    case 'node': {
+      const deadline = performance.now() + (fast ? 800 : 1500);
+      while (!graphView.api && performance.now() < deadline) {
+        await sleep(60);
+        if (!current(token)) return;
+      }
+      if (!current(token)) return;
+      // The drag at its own pace, capped: a slow drag still lands while the voice is on it.
+      if (!moveNode(e.id, e.dx ?? 0, e.dy ?? 0, fast ? 0 : Math.min(e.ms ?? 400, 1200))) noteMiss(e);
       return;
     }
     case 'scroll': {
@@ -507,6 +520,12 @@ export async function seek(t, { play: playAfter = replay.playing, careful = fals
   replay.cursor.visible = false;
   let i = 0;
   const target = Math.max(0, Math.min(track.duration, t));
+  // A jump that takes a moment replays the chapter's clicks at speed, which
+  // looks like the demo going every which way. Cover it after a beat, so a
+  // quick jump does not flash.
+  const cover = setTimeout(() => {
+    if (seeking === token) replay.restoring = true;
+  }, 250);
   try {
     // A chapter written after recording has no snapshot of its own: start
     // from the last one that has, and replay through to the target.
@@ -545,8 +564,12 @@ export async function seek(t, { play: playAfter = replay.playing, careful = fals
       else if (gap > 1.5 && (e.type === 'click' || e.type === 'key' || e.type === 'change')) await sleep(400);
     }
   } finally {
+    clearTimeout(cover);
     if (busyOwner === token) busyOwner = null;
-    if (seeking === token) seeking = null;
+    if (seeking === token) {
+      seeking = null;
+      replay.restoring = false;
+    }
   }
   if (!still(token)) return;
   next = i;

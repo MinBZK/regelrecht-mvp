@@ -277,3 +277,10 @@ def test_add_chapters_gives_a_stretch_without_slides_its_own():
     track = build_track([{"take": "a"}], {"a": []}, {"a": 30.0})
     found = chapters(track, {"a": out})
     assert [(c["slideIndex"], c["start"]) for c in found] == [(0, 0.0), (14, 9.5)]
+
+
+def test_a_dragged_node_is_replayed_with_its_offset():
+    events = {"a": [ev(0, "slide", index=0, state={}), ev(5, "node", id="wet_x", dx=-430, dy=1100, ms=500)]}
+    track = build_track([{"take": "a"}], {"a": [(2, 3)]}, {"a": 10})
+    node = [a for a in remap_actions(track, events) if a["type"] == "node"]
+    assert node == [{"t": 4, "type": "node", "id": "wet_x", "dx": -430, "dy": 1100, "ms": 500}]

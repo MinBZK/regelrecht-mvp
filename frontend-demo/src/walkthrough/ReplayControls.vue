@@ -37,6 +37,12 @@ function nextChapter() {
   const to = nextChapterStart(track.value, replay.now);
   if (to != null) seek(to);
 }
+/** A sentence again, or past one: ten seconds back or forward. */
+const STEP = 10;
+function skip(by) {
+  const end = track.value?.duration ?? 0;
+  seek(Math.max(0, Math.min(end - 0.5, replay.now + by)));
+}
 function tryIt() {
   // The demo is live; pausing is all it takes. Play brings the recorded
   // moment back.
@@ -87,7 +93,9 @@ watch(
       <nldd-just-in-time-education :active="!!invite || undefined" :text="invite?.title" :supporting-text="invite?.body" placement="top">
         <nldd-button-bar>
           <nldd-icon-button appearance="inherit-tinted" icon="media-backward-end" :text="t('walkthrough.prev_chapter')" @click="prevChapter"></nldd-icon-button>
+          <nldd-icon-button appearance="inherit-tinted" icon="media-backward" :text="t('walkthrough.back_seconds', { n: STEP })" @click="skip(-STEP)"></nldd-icon-button>
           <nldd-icon-button ref="playButton" appearance="inherit-filled" :icon="replay.playing ? 'pause' : 'play'" :text="playText" @click="togglePlay"></nldd-icon-button>
+          <nldd-icon-button appearance="inherit-tinted" icon="media-forward" :text="t('walkthrough.forward_seconds', { n: STEP })" @click="skip(STEP)"></nldd-icon-button>
           <nldd-icon-button appearance="inherit-tinted" icon="media-forward-end" :text="t('walkthrough.next_chapter')" @click="nextChapter"></nldd-icon-button>
         </nldd-button-bar>
       </nldd-just-in-time-education>

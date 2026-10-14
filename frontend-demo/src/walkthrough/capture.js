@@ -137,6 +137,10 @@ export function captureActions(log) {
     }
   };
 
+  // A law dragged aside: logged at the moment the drag began, so the replay
+  // moves it while the voice talks about it and not after.
+  graphView.onNodeMove = ({ ms, ...move }) => log({ type: 'node', ...move, ms, ago: ms });
+
   document.addEventListener('click', onClick, true);
   document.addEventListener('input', onInput, true);
   document.addEventListener('change', onChange, true);
@@ -149,6 +153,7 @@ export function captureActions(log) {
     clearTimeout(pending);
     for (const timer of restScroll.values()) clearTimeout(timer);
     graphView.onView = null;
+    graphView.onNodeMove = null;
     document.removeEventListener('click', onClick, true);
     document.removeEventListener('input', onInput, true);
     document.removeEventListener('change', onChange, true);

@@ -110,6 +110,7 @@ The recorder is a panel in the top left corner, present only in the dev server a
 - the microphone (echo cancellation, noise suppression and automatic gain off);
 - the webcam, optionally;
 - the actions (`capture.js`): clicks, typing with its value after every keystroke, selects and checkboxes, Enter and Escape, scrolling, and the deck's slide changes and the routes;
+- in the graph, where the camera looks and every law dragged aside, the latter as an offset from where the layout put it (`graphBridge.js`), so a take still replays after the layout shifts;
 - the whole window as video, which the correction step takes its stills from.
 
 What is typed is recorded, because the replay has to type it again. It is demo input with fictitious personas, said aloud in the same take. The state of the demo is stored with every slide change, which is what a jump restores and what lets one chapter be recorded again from its own starting point.

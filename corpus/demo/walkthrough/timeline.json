@@ -6407,6 +6407,14 @@
     "zoom": 0.1
    },
    {
+    "t": 269.534,
+    "type": "node",
+    "id": "wet_inkomstenbelasting",
+    "dx": -430,
+    "dy": 1100,
+    "ms": 500
+   },
+   {
     "t": 345.712,
     "type": "viewport",
     "cx": 9988,
