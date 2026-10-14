@@ -66,8 +66,8 @@ const matrix = actors(lang);
 // The parts in order, with the sections of the paper each one explains.
 const chapters: { id: string; title: string; refs: SectionRef[] }[] = [
   { id: 'probleem', title: t.problem.title, refs: [section('sec:introduction'), section('sec:intelligibilitygap'), section('sec:broaderpattern')] },
-  { id: 'macht', title: t.power.title, refs: [section('sec:constitutional'), section('sec:executivedominance'), section('sec:intelligibilitygap'), section('sec:substitute'), section('sec:court')] },
-  { id: 'voorstel', title: t.binding.title, refs: [section('sec:priorwork'), section('sec:format'), section('sec:legalstatus'), section('sec:whochooses')] },
+  { id: 'macht', title: t.power.title, refs: [section('sec:constitutional'), section('sec:executivedominance'), section('sec:intelligibilitygap'), section('sec:substitute'), section('sec:court'), section('sec:conclusion')] },
+  { id: 'voorstel', title: t.binding.title, refs: [section('sec:priorwork'), section('sec:format'), section('sec:legalstatus'), section('sec:whochooses'), section('sec:crosscutting'), section('sec:cnl'), section('sec:linkeddata')] },
   { id: 'bonnetje', title: t.receipt.title, refs: [section('sec:attestation'), section('sec:traceaccess')] },
   { id: 'tijd', title: t.time.title, refs: [section('sec:versionedartifact'), section('sec:versioning')] },
   { id: 'afwijken', title: t.default.title, refs: [section('sec:overrides'), section('sec:autooverrides')] },
@@ -215,6 +215,33 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
     </nldd-container>
   </nldd-card>
   <nldd-spacer size="24" />
+  {/* Why the binding asks for a format of its own, with the article-by-article example right under it. */}
+  <nldd-title size="4"><h3>{t.binding.formLabel}</h3></nldd-title>
+  <nldd-spacer size="8" />
+  <nldd-rich-text>
+    <dl>
+      {t.binding.form.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}
+    </dl>
+  </nldd-rich-text>
+  <nldd-spacer size="16" />
+  <nldd-title size="5"><h4>{t.binding.exampleLabel}</h4></nldd-title>
+  <nldd-blockquote>
+    <p>{t.binding.exampleStatute}</p>
+  </nldd-blockquote>
+  <nldd-rich-text>
+    <dl>
+      {t.binding.mapRows.map(([phrase, rule, source]) => (
+        <>
+          <dt>{phrase}</dt>
+          <dd><code>{rule}</code></dd>
+          <dd>{source}</dd>
+        </>
+      ))}
+    </dl>
+    <p>{t.binding.exampleNote}</p>
+    <p>{t.binding.reuse}</p>
+  </nldd-rich-text>
+  <nldd-spacer size="24" />
   <nldd-container data-px-switch="now">
     <nldd-title size="5"><h3 id="px-flow">{t.binding.flowLabel}</h3></nldd-title>
     <nldd-spacer size="12" />
@@ -247,23 +274,7 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   </nldd-container>
   <nldd-spacer size="24" />
   <PaperMore title={t.binding.title} label={t.more} close={t.close} refsLabel={t.readInPaper} refs={ch.voorstel.refs}>
-    <nldd-rich-text><p>{t.binding.more[0]}</p></nldd-rich-text>
-    <nldd-title size="5"><h3>{t.binding.exampleLabel}</h3></nldd-title>
-    <nldd-blockquote>
-      <p>{t.binding.exampleStatute}</p>
-    </nldd-blockquote>
-    <nldd-rich-text>
-      <dl>
-        {t.binding.mapRows.map(([phrase, rule, source]) => (
-          <>
-            <dt>{phrase}</dt>
-            <dd><code>{rule}</code></dd>
-            <dd>{source}</dd>
-          </>
-        ))}
-      </dl>
-      <p>{t.binding.exampleNote}</p>
-    </nldd-rich-text>
+    <nldd-rich-text><p>{t.binding.more[0]}</p><p>{t.binding.codeLead}</p></nldd-rich-text>
     <nldd-code-viewer language="yaml" appearance="simple" wrap set:html={figureOne.codeHtml} />
     <nldd-link href={figureOne.href} size="sm" text={t.figureLink} />
     <nldd-rich-text>{t.binding.more.slice(1).map((p) => <p>{p}</p>)}</nldd-rich-text>

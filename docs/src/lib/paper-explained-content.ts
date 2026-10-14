@@ -10,8 +10,10 @@
  * The page is an argument, not a procedure, so its parts carry a title and no
  * number. It opens with the problem the paper starts from, then says why that
  * problem is a constitutional one, and only then comes to the proposal. One
- * example, two housemates applying for healthcare allowance, returns in every
- * part where it fits; the other parts have an example of their own.
+ * example, two housemates applying for healthcare allowance, opens the problem
+ * and returns in the proposal. The part on power uses the toeslagenaffaire
+ * instead, because the constitutional point needs a case where it went wrong;
+ * the other parts have an example of their own.
  *
  * Every claim here explains the paper as published on 31 August 2026 and has
  * to be traceable to it. The claim-by-claim mapping, with the sentence of the
@@ -89,7 +91,7 @@ export interface Content {
   /** The same, short enough for a two-way switch on a 320 px screen. */
   proposalShort: string;
 
-  /** The problem the paper starts from: the law is published, the rules that decide are not. */
+  /** The problem the paper starts from: the law is published, the rules the computer executes are not. */
   problem: {
     title: string;
     /** The problem in two sentences, set large, before anything else. */
@@ -123,6 +125,13 @@ export interface Content {
     title: string;
     intro: string[];
     case: CaseNote;
+    /** Why the binding asks for a format of its own. */
+    formLabel: string;
+    form: [string, string][];
+    /** Encoding a law once: how the format is used, not a reason for it, so it sits apart from `form`. */
+    reuse: string;
+    /** Lead-in for the full encoding of the example, in the sheet. */
+    codeLead: string;
     flowLabel: string;
     flowNow: FlowStep[];
     flowNowNote: string;
@@ -216,16 +225,16 @@ const nl: Content = {
   meta: {
     title: 'Rules as Executed, eenvoudig uitgelegd · RegelRecht',
     description:
-      'Het paper Rules as Executed in gewone taal: waarom het de rechtsstaat raakt dat buiten de uitvoering niemand kan zien met welke regels een computer beslist, en wat het paper voorstelt.',
+      'Het paper Rules as Executed in gewone taal: waarom het de rechtsstaat raakt dat buiten de uitvoering niemand kan zien welke regels een computer uitvoert, en wat het paper voorstelt.',
   },
   header: {
     title: 'Rules as Executed, eenvoudig uitgelegd',
     subtitle: 'Het paper in gewone taal',
     lede:
-      'Steeds vaker rekent een computer uit wat je krijgt of moet betalen, bijvoorbeeld bij de zorgtoeslag. De wet waar dat op rust, kan iedereen lezen. Maar de computer werkt niet met de wettekst. Hij werkt met regels die de uitvoerende organisatie uit de wet heeft afgeleid, en die zijn niet gepubliceerd. Alleen die organisatie kan zien welke regels echt beslissen. Het parlement, de rechter en jij kunnen dat niet. Daar begint het paper Rules as Executed. Deze pagina legt uit waarom dat de rechtsstaat raakt, en wat het paper voorstelt.',
+      'Steeds vaker rekent een computer uit wat je krijgt of moet betalen, bijvoorbeeld bij de zorgtoeslag. De wet waar dat op rust, kan iedereen lezen. Maar de computer werkt niet met de wettekst. Hij werkt met regels die de uitvoerende organisatie uit de wet heeft afgeleid, en die zijn niet gepubliceerd. Alleen die organisatie kan zien welke regels de computer uitvoert. Het parlement, de rechter en jij kunnen dat niet. Daar begint het paper Rules as Executed. Deze pagina legt uit waarom dat de rechtsstaat raakt, en wat het paper voorstelt.',
     version: (date) =>
       `Dit is een uitleg bij het paper zoals het op ${date} verscheen. Wil je het precies weten, lees dan het paper zelf.`,
-    veterans: 'Werk je al jaren met regels als code? Lees dan wat hier nieuw is. Dat is niet de taal.',
+    veterans: 'Werk je al jaren met regels als code? Lees dan wat hier nieuw is, en waarom dat een eigen vorm vraagt.',
     tocLabel: 'Op deze pagina',
     pdf: 'Pdf op Zenodo',
     paper: 'Lees het paper',
@@ -245,11 +254,11 @@ const nl: Content = {
   proposalShort: 'Met voorstel',
 
   problem: {
-    title: 'Het probleem: de regels die beslissen, zijn niet openbaar',
+    title: 'Het probleem: de regels die de computer uitvoert, zijn niet openbaar',
     core:
-      'De wet is gepubliceerd. De regels waarmee de computer beslist, zijn dat niet. Daardoor kan niemand buiten de uitvoerende organisatie controleren of een besluit klopt met de wet.',
+      'De wet is gepubliceerd. De regels die de computer uitvoert, zijn dat niet. Daardoor kan niemand buiten de uitvoerende organisatie controleren of een besluit klopt met de wet.',
     p1:
-      'Een wet zegt wie ergens recht op heeft. Een computer heeft meer nodig. Hij moet weten welke gegevens hij gebruikt, hoe hij een begrip uit de wet invult en wat hij doet als een geval net anders ligt. Die keuzes maakt de organisatie die de wet uitvoert. Een deel schrijft ze op in regels die je kunt opzoeken. Een groot deel zit alleen in werkinstructies en in de software zelf.',
+      'Een wet zegt wie ergens recht op heeft. Een computer heeft meer nodig. Hij moet weten welke gegevens hij gebruikt, hoe hij een begrip uit de wet invult en wat hij doet als een geval net anders ligt. Die keuzes maakt de organisatie die de wet uitvoert. Sommige keuzes schrijft ze op in regels die je kunt opzoeken. Veel keuzes liggen alleen vast in werkinstructies voor ambtenaren en in de software zelf.',
     caseLabel: 'Een voorbeeld: wie is je toeslagpartner?',
     caseIntro:
       'Je huurt samen met een vriend een huis. Jullie staan al twee jaar op hetzelfde adres ingeschreven, maar jullie zijn geen stel. Je vraagt zorgtoeslag aan. Telt je huisgenoot als je toeslagpartner?',
@@ -274,13 +283,14 @@ const nl: Content = {
       },
     ],
     caseNote:
-      'De wet zegt onder meer dat een huisgenoot je partner is als jullie langer dan zes maanden op hetzelfde adres staan en een gezamenlijke huishouding voeren. Het adres staat in een registratie, het huishouden niet. Hoe een systeem dat tweede deel invult, bepaalt of je toeslag krijgt, en dat lees je niet in de wet. Het paper noemt juist deze afleiding van een partner uit registraties als voorbeeld. De twee systemen hier zijn bedacht, de wettekst niet. Dit voorbeeld komt verderop op deze pagina terug.',
+      'De wet zegt onder meer dat een huisgenoot je partner is als jullie langer dan zes maanden op hetzelfde adres staan en een gezamenlijke huishouding voeren. Het adres staat in een registratie, het huishouden niet. Hoe een systeem dat tweede deel invult, bepaalt of je toeslag krijgt, en dat lees je niet in de wet. Het paper noemt juist deze afleiding van een partner uit registraties als voorbeeld. De twee systemen hierboven zijn verzonnen. Hoe het echte systeem het doet, kun je nu niet nagaan, en dat is precies het probleem. Dit voorbeeld komt verderop op deze pagina terug.',
     caseLink: { href: 'https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel3', text: 'Artikel 3 van de Algemene wet inkomensafhankelijke regelingen' },
     demandLabel: 'Wat het paper daarom vraagt',
-    demand: 'Het moet onafhankelijk te controleren zijn welke regels de computer echt gebruikt.',
+    demand:
+      'De wet zoals de computer hem uitvoert, moet net zo openbaar zijn als de wet zoals de wetgever hem vaststelde, en net zo goed te controleren. Je moet kunnen controleren dat je besluit met precies die regels is uitgerekend.',
     more: [
       'Een besluit hangt vaak niet alleen af van de wet zelf. Het hangt ook af van hoe de organisatie die wet uitlegt. Een deel van die uitleg staat in beleidsregels, en die moeten openbaar zijn. Een groot deel staat nergens dan in de organisatie zelf.',
-      'Het speelt niet bij één organisatie, en ook niet alleen in Nederland. Het paper noemt de toeslagenaffaire, Robodebt in Australië en het Horizon-schandaal bij de Britse Post Office. Telkens speelde een systeem een rol dat van buiten niet te controleren was.',
+      'Het speelt niet bij één organisatie, en ook niet alleen in Nederland. In Australië beschuldigde een systeem dat inkomens middelde honderdduizenden mensen met een uitkering ten onrechte van een schuld (Robodebt). In het Verenigd Koninkrijk leidde een gebrekkig computersysteem ertoe dat zo’n duizend postkantoorhouders ten onrechte werden vervolgd (het Horizon-schandaal). Het paper noemt ze naast de toeslagenaffaire, als voorbeelden van hetzelfde patroon: systemen met grote gevolgen voor mensen, die van buiten niet te controleren zijn.',
     ],
   },
 
@@ -291,9 +301,9 @@ const nl: Content = {
       'Sinds de uitvoering in software zit, is dat evenwicht verder scheefgegroeid. Alleen de uitvoerende macht kan nog zien hoe de wet echt wordt toegepast. Het paper noemt dat een monopolie. Het parlement stemt over de wet, maar ziet niet hoe die in de praktijk uitpakt. De rechter krijgt alleen de uitkomst te zien. Wie het besluit krijgt, kan niet nagaan of het klopt. En ook de uitvoerende organisatie overziet het niet altijd: software groeit jaren door, en soms is ze van een leverancier en mag de overheid niet in de code kijken.',
     ],
     case: {
-      label: 'Het voorbeeld van de huisgenoot',
+      label: 'Wat de toeslagenaffaire liet zien',
       text:
-        'Neem de twee huisgenoten van hierboven. De Kamer heeft over de wet gestemd, maar kan niet zien of het systeem alleen naar het adres kijkt. De rechter ziet de uitkomst, en moet de uitleg van de organisatie aannemen of het zelf uitzoeken. En jij weet alleen dat je minder krijgt.',
+        'De parlementaire enquête stelde vast dat alle drie de machten ‘blind voor mens en recht’ waren geweest. Dat de uitvoering niet te zien was, is volgens het paper een deel van wat er misging. De Tweede Kamer kon haar eigen wetten niet zien in de vorm waarin ze werden uitgevoerd. Kamerleden moesten hun recht op inlichtingen gebruiken om losse dossiers uit te zoeken, omdat de regels zelf niet in te zien waren. De rechter beoordeelde besluiten zonder de regels te kunnen inzien waarmee ze waren uitgerekend. En de uitvoering had vaak zelf geen overzicht over haar eigen systemen.',
     },
     demandsLabel: 'Wat de rechtsstaat vraagt',
     demands: [
@@ -311,11 +321,11 @@ const nl: Content = {
       ],
       [
         'En nu ook: je moet het kunnen controleren',
-        'Regels moeten te vinden, te begrijpen en te voorspellen zijn. Die drie eisen gingen ervan uit dat je kon nagaan hoe een ambtenaar redeneerde. Nu computers de wet uitvoeren, komt er volgens het paper een vierde eis bij: het moet onafhankelijk te controleren zijn welke regels echt worden uitgevoerd.',
+        'De rechtsstaat vraagt van oudsher dat je regels kunt kennen, begrijpen en voorspellen. Daarbij ging men ervan uit dat je kon nagaan hoe een ambtenaar redeneerde. Nu computers de wet uitvoeren, is dat niet meer genoeg. Daarom komt er volgens het paper een eis bij: het moet onafhankelijk te controleren zijn welke regels echt worden uitgevoerd.',
       ],
     ],
     p3:
-      'De parlementaire enquête na de toeslagenaffaire stelde vast dat alle drie de machten ‘blind voor mens en recht’ waren geweest. Dat de uitvoering niet te zien was, noemt het paper als een van de oorzaken. Het voorstel moet het evenwicht herstellen. Het geeft elke macht wat ze nodig heeft om haar eigen taak te doen. Dat werkt alleen als de andere machten ook echt met de gepubliceerde regels aan de slag kunnen.',
+      'Het voorstel moet het evenwicht herstellen. Het geeft elke macht wat ze nodig heeft om haar eigen taak te doen. Dat werkt alleen als de andere machten ook echt met de gepubliceerde regels aan de slag kunnen.',
     matrixLabel: 'Wie kan wat?',
     rowHeader: 'Wie',
     columns: ['Leest de regels', 'Rekent één besluit na', 'Rekent veel gevallen door'],
@@ -333,22 +343,41 @@ const nl: Content = {
   binding: {
     title: 'Het voorstel: publiceer de regels, en beslis ermee',
     intro: [
-      'Het paper stelt twee dingen voor, die bij elkaar horen. Het eerste: publiceer de regels waarmee de computer beslist, zodat iedereen ze kan lezen, zoals de wet. Het tweede: de organisatie moet beslissen met precies die gepubliceerde versie, en met geen andere. Het paper noemt dat gebonden. Wat gepubliceerd is, is wat beslist.',
-      'Dat tweede deel is de kern. Regels zo opschrijven dat een computer ermee kan rekenen, kan al tientallen jaren. Regels publiceren gebeurt ook al. Maar tot nu toe garandeert niets dat de gepubliceerde regel ook de regel is die het besluit neemt. Dat gat wil het paper dichten. Het beschrijft ook een vorm om de regels in op te schrijven. Die vorm is er voor deze band: hij moet zo eenvoudig zijn dat je de regels kunt lezen en narekenen.',
-      'Zo’n gepubliceerde regeling heet een regelwerk (het paper zelf spreekt nog van een executable specification). Een regelwerk is geen beschrijving die naast de software wordt bijgehouden. Het is wat de computer uitvoert.',
+      'Het paper stelt twee dingen voor, die bij elkaar horen. Het eerste: publiceer de regels die de computer uitvoert, zodat iedereen ze kan lezen, net als de wet. Het tweede: de organisatie moet beslissen met precies die gepubliceerde versie, en met geen andere. De organisatie is dan gebonden aan wat ze publiceert. De regels die je kunt lezen, zijn de regels waarmee je besluit is uitgerekend.',
+      'Dat tweede deel is de kern. Regels zo opschrijven dat een computer ermee kan rekenen, kan al tientallen jaren. Regels publiceren gebeurt ook al. Maar tot nu toe garandeert niets dat de gepubliceerde regel ook de regel is waarmee het besluit wordt uitgerekend. Dat gat wil het paper dichten.',
+      'Zo’n gepubliceerde regeling heet een regelwerk (het paper zelf spreekt nog van een executable specification). Een regelwerk is geen model dat naast de software wordt bijgehouden. Het is wat de computer uitvoert.',
+      'Dat stelt eisen aan de vorm waarin de regels zijn opgeschreven. Daarom komt het paper met een eigen vorm, en gebruikt het geen bestaande taal voor regels.',
     ],
     case: {
       label: 'Het voorbeeld van de huisgenoot',
       text:
         'In het regelwerk staat dan hoe de organisatie ‘een gezamenlijke huishouding’ invult. Kijkt het systeem alleen naar het adres, dan kan iedereen dat lezen: de Kamer, de rechter, je adviseur en jijzelf. Vind je dat dit niet klopt met de wet, dan weet je waartegen je bezwaar maakt.',
     },
+    formLabel: 'Waarom een eigen vorm',
+    form: [
+      [
+        'Het regelwerk volgt de wet, artikel voor artikel',
+        'Het beschrijft de wet in artikelen, voorwaarden en verwijzingen, zoals de wetgever hem schreef. Elk artikel krijgt zijn eigen stuk regelwerk. Het is de bedoeling dat een jurist zo per artikel kan nagaan of het klopt met de wet. Of dat zonder hulp lukt, moet volgens het paper nog blijken. Dat is ook het verschil met de broncode van een systeem publiceren. Daarin zitten de keuzes verstopt tussen techniek die met de wet niets te maken heeft, en wetgevers en rechters kunnen die code niet lezen.',
+      ],
+      [
+        'Elke berekening geeft een antwoord',
+        'De vorm kan rekenen, vergelijken en datums toetsen, en veel meer niet. Daardoor stopt elke berekening. Narekenen geeft dus altijd een uitkomst. Dat moet ook, wil narekenen een recht zijn.',
+      ],
+      [
+        'Geen vertaalstap tussen publicatie en uitvoering',
+        'Wat gepubliceerd is, is precies wat de computer uitvoert. Bij regels in een taal die op gewone taal lijkt, zoals RegelSpraak, is dat anders. Die moeten eerst door een programma worden omgezet, en in dat programma kunnen de gepubliceerde en de uitgevoerde regel weer uit elkaar lopen.',
+      ],
+    ],
+    reuse:
+      'Zo kan een wet die bijna overal geldt, zoals de Algemene wet bestuursrecht, één keer worden opgeschreven. Elke organisatie kan dan hetzelfde regelwerk gebruiken, in plaats van de regels zelf opnieuw te bouwen. Verwijst een wet naar een andere wet, dan staat die verwijzing in het regelwerk, en wordt de versie gebruikt die op de datum gold.',
+    codeLead: 'Zo staat het parkeerartikel in de vorm uit het paper:',
     flowLabel: 'Van wet naar besluit',
     flowNow: [
       { label: 'De wet', text: 'Iedereen kan hem lezen' },
       { label: 'Beleidsregels', text: 'Deels te vinden' },
       { label: 'Werkinstructies', text: 'Niet te zien' },
       { label: 'De software', text: 'Niet te zien' },
-      { label: 'Het besluit', text: 'Je ziet niet welke regels beslisten' },
+      { label: 'Het besluit', text: 'Je ziet niet met welke regels is gerekend' },
     ],
     flowNowNote:
       'Elke laag is een vertaling van de vorige, en mensen houden ze met de hand gelijk. Niets garandeert dat de laatste nog klopt met de eerste.',
@@ -359,10 +388,11 @@ const nl: Content = {
     ],
     flowProposalNote: 'De keuzes die het besluit bepalen, staan nu op één plek, en iedereen kan ze lezen.',
     more: [
-      'De vorm is met opzet eenvoudig. Er kan in gerekend en vergeleken worden, en datums kunnen worden getoetst, maar veel meer niet. Daardoor stopt elke berekening, en blijft het te lezen voor juristen. De regels volgen de artikelen van de wet, zodat je per artikel kunt nagaan of ze kloppen. Of juristen dat echt zonder hulp kunnen, moet volgens het paper nog blijken.',
+      'Wie de vorm niet zelf wil lezen, kan hetzelfde regelwerk bekijken in een scherm dat de verwijzingen aanklikbaar maakt en het met testgevallen laat rekenen.',
+      'Het paper kiest ook niet voor linked data, een bekende manier om wetten machineleesbaar te maken. Die aanpak zoekt één algemeen schema van begrippen voor alle wetten. Volgens het paper is dat voor wetten over zorg, belasting en vreemdelingen tegelijk niet haalbaar. Het houdt het bij één wet per regelwerk, met verwijzingen ertussen.',
       'Een regelwerk is een uitleg van de wet, niet de wet zelf. Als het botst met de wet, gaat de wet voor en moet het regelwerk worden aangepast.',
       'De uitleg blijft het werk van de organisatie die de wet uitvoert. Die keuzes werden al gemaakt, schrijft het paper, alleen zag niemand buiten de organisatie ze. Na publicatie zijn ze zichtbaar, en kun je iemand erop aanspreken.',
-      'Een regelwerk dat wel is gepubliceerd maar waar de computer niet mee beslist, is volgens het paper geen oplossing. Het laat een uitleg zien waarmee geen enkel besluit wordt genomen. Is er voor een wet nog geen regelwerk, dan kan de uitvoering niet wachten. De organisatie publiceert dan in beleidsregels hoe ze de wet toepast.',
+      'Een regelwerk dat wel is gepubliceerd maar niet wordt gebruikt bij het beslissen, is volgens het paper geen oplossing. Het laat een uitleg zien waarmee geen enkel besluit wordt genomen. Is er voor een wet nog geen regelwerk, dan kan de uitvoering niet wachten. De organisatie publiceert dan in beleidsregels hoe ze de wet toepast.',
     ],
     exampleLabel: 'Hoe een regelwerk eruitziet (naar een verzonnen voorbeeld uit het paper)',
     exampleStatute:
@@ -413,7 +443,7 @@ const nl: Content = {
       `Dit klopt niet. Het systeem achter dit besluit gebruikte een eigen kopie van de regels. Daarin stond één percentage nog op de waarde van vorig jaar: ${local} in plaats van ${published}. Die kopie is nooit gepubliceerd. Het scheelt ${diff}, en je ziet het op twee manieren: de vingerafdruk is anders, en narekenen geeft een ander bedrag.`,
     limitsLabel: 'Wat het bonnetje niet laat zien',
     limits: [
-      'Het bonnetje laat zien met welke gegevens is gerekend. Of die gegevens kloppen, zie je er niet aan.',
+      'Het bonnetje laat zien met welke gegevens is gerekend, maar bewijst niet dat die gegevens kloppen. Je kunt ze wel naast wat je zelf weet leggen, zoals je eigen inkomen. Daarnaast wil het paper elk gegeven, waar dat kan, koppelen aan de bron die erover gaat, zoals een basisregistratie.',
       'Of je nu al recht hebt op zo’n bonnetje, is nog onduidelijk. Het paper stelt voor dat je het altijd krijgt, samen met het besluit.',
     ],
     more: [
@@ -429,6 +459,7 @@ const nl: Content = {
     intro: [
       'Wetten veranderen. Ze worden aangepast, vervangen of ingetrokken. De vraag ‘wat zegt de wet?’ heeft daarom pas een antwoord als je er een datum bij noemt.',
       'Een besluit van jaren geleden moet je kunnen narekenen met de regels zoals ze toen waren. Daarom vraagt het paper dat elke versie van een regelwerk bewaard blijft, en dat wat op een datum gold, blijft wat het was.',
+      'Volgens het paper kun je wetten bijhouden zoals programmeurs hun software bijhouden, met versiebeheer zoals Git. Elke wijziging blijft bewaard, en je kunt twee versies precies naast elkaar leggen en zien wat er veranderde. Het wetsvoorstel, het advies van de Raad van State en de amendementen van de Kamer zijn de tussenstappen. De publicatie in het Staatsblad is de officiële nieuwe versie. Een regelwerk is gewone tekst, dus ook dat wordt zo bijgehouden. Bij een wetswijziging zie je dan precies wat er veranderde, in de wet en in de regels die de computer uitvoert.',
     ],
     caseLabel: 'Een voorbeeld: één percentage, twee jaren',
     caseIntro:
@@ -443,7 +474,6 @@ const nl: Content = {
       'Een regelwerk staat ook niet op zichzelf. De zorgtoeslag gebruikt begrippen uit andere wetten, en die veranderen op andere momenten. Bij het narekenen hoort bij elke wet de versie die op die datum gold. Daarom staat op het bonnetje de vingerafdruk van alle regelwerken die zijn gebruikt, en de datum waarvoor is gerekend.',
     more: [
       'Soms verandert een wet met terugwerkende kracht. Dan moet in het regelwerk staan dat vanaf een bepaalde datum het effect van de oude versie wordt teruggedraaid. Het paper noemt dat tijdreizen (time travel).',
-      'Het paper vergelijkt dit met hoe programmeurs versies bijhouden. Elke wijziging wordt bewaard, en je kunt precies zien wat er tussen twee versies veranderde. Het Staatsblad is dan de plek waar een nieuwe versie officieel verschijnt.',
       'Het paper haalt twee vragen uit elkaar. Wat schreef de wet voor op een datum? En met welke regel rekende het systeem op die datum? Rekent een systeem nog met de versie van 2020 terwijl de wet in 2022 veranderde, dan kun je dat zien.',
       'Niet elke wijziging komt uit het Staatsblad. Een Europese verordening of een uitspraak van de rechter kan een regel ook veranderen. Die horen dus ook in de geschiedenis van een regelwerk.',
       'Wie het register met alle versies bijhoudt, en wat voorkomt dat het achteraf wordt herschreven, is volgens het paper een open vraag.',
@@ -477,9 +507,10 @@ const nl: Content = {
           ['Volgens de regel', '6 maanden'],
           ['Wordt', '3 maanden'],
           ['Waarom', 'zes maanden zou te zwaar zijn voor de kinderen in het gezin'],
+          ['Op grond van', 'artikel 4:84 van de Algemene wet bestuursrecht'],
           ['Wie', 'de burgemeester'],
         ],
-        note: 'Iemand bekijkt het geval en wijkt af. Dat mag alleen waar de wet die ruimte geeft.',
+        note: 'Afwijken doet wie over het besluit gaat, hier de burgemeester. Dat kan alleen waar de wet die ruimte geeft. De burgemeester moet de grond noemen en uitleggen waarom het in dit geval nodig is. Doet een ambtenaar het werk, dan staat dat ook op het bonnetje.',
       },
       {
         id: 'batch',
@@ -542,14 +573,14 @@ const nl: Content = {
     p1:
       'Wetten als regels voor de computer opschrijven is niet nieuw. Denk aan RegelSpraak bij de Belastingdienst, FLINT bij de IND, OpenFisca en Catala in Frankrijk en Better Rules in Nieuw-Zeeland. Ze helpen specialisten om regels te schrijven en te laten rekenen.',
     p2:
-      'Het paper komt met een eigen vorm, maar die is niet het nieuwe. Het vraagt iets wat geen van deze systemen als doel had. De gepubliceerde regels moeten gegarandeerd de regels zijn die het besluit nemen, en wie het besluit krijgt moet dat kunnen nagaan. Het paper zegt er daarom bij dat het overzicht hieronder geen ranglijst is.',
+      'Het paper vraagt iets wat geen van deze systemen als doel had. De gepubliceerde regels moeten gegarandeerd de regels zijn waarmee het besluit wordt uitgerekend, en wie het besluit krijgt moet dat kunnen nagaan. Die eis bepaalt ook de vorm. Daarom komt het paper met een eigen vorm, en gebruikt het geen bestaande taal. Het zegt er wel bij dat het overzicht hieronder geen ranglijst is.',
     tableLabel: 'Eerdere aanpakken vergeleken',
     rowHeader: 'Aanpak',
     columns: ['Rekent', 'Openbaar', 'Gebonden'],
     columnHelp: [
       'Een computer kan met de regels rekenen (in het paper: executable).',
       'Iedereen kan de regels lezen (published).',
-      'Het is gegarandeerd dat de gepubliceerde regels ook de regels zijn die het besluit nemen (bound to execution). Dit is waar het paper om vraagt.',
+      'Het is gegarandeerd dat de gepubliceerde regels ook de regels zijn waarmee het besluit wordt uitgerekend (bound to execution). Dit is waar het paper om vraagt.',
     ],
     tableNote:
       'Dat alleen dit paper drie keer ja heeft, is geen toeval. De laatste kolom is precies waar het paper over gaat, en de reden dat het geschreven is. De andere aanpakken zijn gebouwd om regels te schrijven en uit te voeren, en zijn daar goed in. Dit voorstel gaat over wie de regels achteraf wil lezen en controleren.',
@@ -561,7 +592,7 @@ const nl: Content = {
     reasons: [
       'Meerdere programma’s moeten hetzelfde uitrekenen. Een tekst die op gewone taal lijkt, kunnen twee programma’s verschillend lezen zonder dat een van beide aantoonbaar fout zit.',
       'Bij een wetswijziging moet precies te zien zijn wat er veranderde. In gewone taal kan een andere formulering hetzelfde lijken en toch iets anders doen.',
-      'Het probleem waar het paper over gaat, zit bij het lezen, niet bij het schrijven. RegelSpraak is gemaakt voor wie de regel opstelt, dit voorstel voor wie hem achteraf wil controleren.',
+      'Het paper zoekt het probleem niet bij wie de regels opschrijft, maar bij wie ze daarna moet kunnen controleren. Dat is de Kamer die wil weten of haar wet goed is omgezet, de rechter die wil nagaan hoe een besluit tot stand kwam, en jij, als je wilt weten of op jouw besluit de gepubliceerde regel is toegepast. RegelSpraak is gemaakt voor wie de regel opstelt. Dit voorstel is gemaakt voor die lezers.',
     ],
     moreAfter: [
       'Een laag in gewone taal die naar dit formaat vertaalt, sluit het paper niet uit. Het zegt alleen dat de vorm die gepubliceerd en ondertekend wordt, de gestructureerde moet zijn. En het zegt erbij dat het deze keuze met argumenten verdedigt, niet met metingen.',
@@ -574,16 +605,16 @@ const en: Content = {
   meta: {
     title: 'Rules as Executed, explained simply · RegelRecht',
     description:
-      'The paper Rules as Executed in plain language: why it touches the rule of law that nobody outside the executing organization can see which rules a computer decides with, and what the paper proposes.',
+      'The paper Rules as Executed in plain language: why it touches the rule of law that nobody outside the executing organization can see which rules a computer executes, and what the paper proposes.',
   },
   header: {
     title: 'Rules as Executed, explained simply',
     subtitle: 'The paper in plain language',
     lede:
-      'More and more often a computer works out what you get or have to pay, for instance with the Dutch healthcare allowance. Anyone can read the law behind it. But the computer does not work with the text of the law. It works with rules the executing organization derived from the law, and those are not published. Only that organization can see which rules really decide. Parliament, the courts and you cannot. That is where the paper Rules as Executed starts. This page explains why that touches the rule of law, and what the paper proposes.',
+      'More and more often a computer works out what you get or have to pay, for instance with the Dutch healthcare allowance. Anyone can read the law behind it. But the computer does not work with the text of the law. It works with rules the executing organization derived from the law, and those are not published. Only that organization can see which rules the computer executes. Parliament, the courts and you cannot. That is where the paper Rules as Executed starts. This page explains why that touches the rule of law, and what the paper proposes.',
     version: (date) =>
       `This explains the paper as published on ${date}. For the exact argument, read the paper itself.`,
-    veterans: 'Been working on rules as code for years? Read what is new here. It is not the language.',
+    veterans: 'Been working on rules as code for years? Read what is new here, and why it needs a format of its own.',
     tocLabel: 'On this page',
     pdf: 'PDF on Zenodo',
     paper: 'Read the paper',
@@ -603,11 +634,11 @@ const en: Content = {
   proposalShort: 'With proposal',
 
   problem: {
-    title: 'The problem: the rules that decide are not public',
+    title: 'The problem: the rules the computer executes are not public',
     core:
-      'The law is published. The rules the computer decides with are not. So nobody outside the executing organization can check whether a decision follows from the law.',
+      'The law is published. The rules the computer executes are not. So nobody outside the executing organization can check whether a decision follows from the law.',
     p1:
-      'A law says who is entitled to something. A computer needs more than that. It has to know which data to use, how to fill in a term from the law and what to do when a case is slightly different. The organization that carries out the law makes those choices. Some of them it writes down in rules you can look up. Many live only in work instructions and in the software itself.',
+      'A law says who is entitled to something. A computer needs more than that. It has to know which data to use, how to fill in a term from the law and what to do when a case is slightly different. The organization that carries out the law makes those choices. Some of them it writes down in rules you can look up. Many are recorded only in work instructions for officials and in the software itself.',
     caseLabel: 'An example: who is your allowance partner?',
     caseIntro:
       'You rent a house together with a friend. You have both been registered at the same address for two years, but you are not a couple. You apply for healthcare allowance. Does your housemate count as your allowance partner?',
@@ -632,13 +663,14 @@ const en: Content = {
       },
     ],
     caseNote:
-      'Among other things, the law says a housemate is your partner if you have been at the same address for more than six months and run a joint household. The address is in a register, the household is not. How a system fills in that second part decides whether you get the allowance, and you will not read it in the law. The paper names exactly this derivation of a partner from registers as an example. The two systems here are made up, the text of the law is not. This example comes back further down the page.',
+      'Among other things, the law says a housemate is your partner if you have been at the same address for more than six months and run a joint household. The address is in a register, the household is not. How a system fills in that second part decides whether you get the allowance, and you will not read it in the law. The paper names exactly this derivation of a partner from registers as an example. The two systems above are made up. How the real system does it, you cannot check today, and that is exactly the problem. This example comes back further down the page.',
     caseLink: { href: 'https://wetten.overheid.nl/BWBR0018472/2025-01-01#Artikel3', text: 'Article 3 of the Dutch General Act on Income-Related Schemes (in Dutch)' },
     demandLabel: 'What the paper therefore asks',
-    demand: 'It must be possible to check independently which rules the computer really uses.',
+    demand:
+      'The law as the computer executes it must be as public as the law as the legislature enacted it, and just as open to scrutiny. You must be able to check that your decision was worked out with exactly those rules.',
     more: [
       'A decision often depends on more than the law itself. It also depends on how the organization reads that law. Part of that reading is in policy rules, and those have to be public. A large part exists nowhere but inside the organization.',
-      'This is not about one organization, and not only about the Netherlands. The paper names the Dutch childcare benefits scandal, Robodebt in Australia and the Horizon scandal at the British Post Office. Each time a system was involved that could not be checked from outside.',
+      'This is not about one organization, and not only about the Netherlands. In Australia, a system that averaged incomes wrongly accused hundreds of thousands of welfare recipients of debt (Robodebt). In the United Kingdom, a faulty computer system led to the wrongful prosecution of roughly 1,000 sub-postmasters (the Horizon scandal). The paper names them next to the Dutch childcare benefits scandal, as examples of the same pattern: systems with serious consequences for people, which cannot be checked from outside.',
     ],
   },
 
@@ -649,9 +681,9 @@ const en: Content = {
       'Since execution moved into software, that balance has tilted further. Only the executive can still see how the law is really applied. The paper calls that a monopoly. Parliament votes on the law but does not see how it works out in practice. A court only gets to see the outcome. Whoever receives the decision cannot check whether it is right. And even the executing organization does not always have the full picture: software grows for years, and sometimes it belongs to a supplier and the government may not look at the code.',
     ],
     case: {
-      label: 'The housemate example',
+      label: 'What the childcare benefits scandal showed',
       text:
-        'Take the two housemates from above. Parliament voted on the law, but cannot see whether the system only looks at the address. The court sees the outcome, and has to accept the organization’s explanation or work it out alone. And you only know that you get less.',
+        'The parliamentary inquiry found that all three powers had been ‘blind to people and justice’. That execution could not be seen is, according to the paper, part of what went wrong. Parliament could not see its own laws in the form in which they were carried out. Members had to use their right to information to work through individual files, because the rules themselves could not be inspected. Courts reviewed decisions without being able to inspect the rules they were worked out with. And the executive often had no overview of its own systems.',
     },
     demandsLabel: 'What the rule of law asks',
     demands: [
@@ -669,11 +701,11 @@ const en: Content = {
       ],
       [
         'And now also: you must be able to check it',
-        'Rules must be findable, understandable and predictable. Those three demands assumed you could examine how an official reasoned. Now that computers carry out the law, the paper adds a fourth: it must be possible to check independently which rules are really executed.',
+        'The rule of law has long asked that you can know, understand and predict the rules. That assumed you could examine how an official reasoned. Now that computers carry out the law, that is no longer enough. So the paper adds a demand: it must be possible to check independently which rules are really executed.',
       ],
     ],
     p3:
-      'The parliamentary inquiry after the childcare benefits scandal found that all three powers had been ‘blind to people and justice’. The paper names the invisibility of execution as one of the causes. The proposal is meant to restore the balance. It gives each power what it needs to do its own job. That only works if the other powers can really work with the published rules.',
+      'The proposal is meant to restore the balance. It gives each power what it needs to do its own job. That only works if the other powers can really work with the published rules.',
     matrixLabel: 'Who can do what?',
     rowHeader: 'Who',
     columns: ['Reads the rules', 'Checks one decision', 'Runs many cases'],
@@ -691,22 +723,41 @@ const en: Content = {
   binding: {
     title: 'The proposal: publish the rules, and decide with them',
     intro: [
-      'The paper proposes two things that belong together. The first: publish the rules the computer decides with, so that anyone can read them, as with the law. The second: the organization has to decide with exactly that published version, and with no other. The paper calls that bound. What is published is what decides.',
-      'That second part is the core. Writing rules down so that a computer can calculate with them has been possible for decades. Publishing rules happens too. But so far nothing guarantees that the published rule is also the rule that makes the decision. That is the gap the paper wants to close. It also describes a form to write the rules in. That form serves this bond: it has to be simple enough that the rules can be read and re-run.',
-      'A regulation published this way is called a rulework (the paper itself still says executable specification). A rulework is not a description kept alongside the software. It is what the computer executes.',
+      'The paper proposes two things that belong together. The first: publish the rules the computer executes, so that anyone can read them, just like the law. The second: the organization has to decide with exactly that published version, and with no other. The organization is then bound to what it publishes. The rules you can read are the rules your decision was worked out with.',
+      'That second part is the core. Writing rules down so that a computer can calculate with them has been possible for decades. Publishing rules happens too. But so far nothing guarantees that the published rule is also the rule the decision was worked out with. That is the gap the paper wants to close.',
+      'A regulation published this way is called a rulework (the paper itself still says executable specification). A rulework is not a model kept alongside the software. It is what the computer executes.',
+      'That puts demands on the form the rules are written in. So the paper comes with a form of its own, and does not use an existing rule language.',
     ],
     case: {
       label: 'The housemate example',
       text:
         'The rulework then says how the organization fills in ‘a joint household’. If the system only looks at the address, anyone can read that: Parliament, the court, your adviser and you. If you think it does not match the law, you know what you are objecting to.',
     },
+    formLabel: 'Why a format of its own',
+    form: [
+      [
+        'The rulework follows the law, article by article',
+        'It describes the law in articles, conditions and references, the way the legislature wrote it. Each article gets its own piece of rulework. The intent is that a lawyer can check article by article whether it matches the law. Whether that works without help still has to be shown, according to the paper. It is also the difference from publishing a system’s source code. There the choices are buried among technology that has nothing to do with the law, and legislators and judges cannot read that code.',
+      ],
+      [
+        'Every calculation gives an answer',
+        'The form can calculate, compare and check dates, and not much more. That way every calculation ends. So re-running always gives an outcome. It has to, if re-running is to be a right.',
+      ],
+      [
+        'No translation step between publication and execution',
+        'What is published is exactly what the computer executes. With rules in a language that resembles ordinary language, such as RegelSpraak, that is different. They first have to be converted by a program, and in that program the published rule and the executed rule can drift apart again.',
+      ],
+    ],
+    reuse:
+      'That way a law that applies almost everywhere, such as the General Administrative Law Act, can be written down once. Every organization can then use the same rulework, instead of building the rules again itself. When a law refers to another law, that reference is in the rulework, and the version in force on the date is used.',
+    codeLead: 'This is the parking article in the format from the paper:',
     flowLabel: 'From law to decision',
     flowNow: [
       { label: 'The law', text: 'Anyone can read it' },
       { label: 'Policy rules', text: 'Partly findable' },
       { label: 'Work instructions', text: 'Cannot be seen' },
       { label: 'The software', text: 'Cannot be seen' },
-      { label: 'The decision', text: 'You cannot see which rules decided' },
+      { label: 'The decision', text: 'You cannot see which rules were used' },
     ],
     flowNowNote:
       'Each layer translates the one before, and people keep them in line by hand. Nothing guarantees that the last one still matches the first.',
@@ -715,12 +766,13 @@ const en: Content = {
       { label: 'The rulework', text: 'Published, and the only version the computer uses' },
       { label: 'The decision', text: 'With a receipt attached' },
     ],
-    flowProposalNote: 'The choices that decide the outcome are now in one place, and anyone can read them.',
+    flowProposalNote: 'The choices that determine the outcome are now in one place, and anyone can read them.',
     more: [
-      'The form is simple on purpose. It can calculate, compare and check dates, and not much more. That way every calculation ends, and lawyers can still read it. The rules follow the articles of the law, so you can check article by article whether they are right. Whether lawyers can really do that without help still has to be shown, according to the paper.',
+      'Whoever does not want to read the form directly can view the same rulework in a screen that makes the references clickable and runs it against test cases.',
+      'The paper does not choose linked data either, a well-known way to make laws machine-readable. That approach looks for one general scheme of concepts for all laws. According to the paper, that is not feasible for laws on healthcare, tax and immigration at once. It keeps to one law per rulework, with references between them.',
       'A rulework is a reading of the law, not the law itself. If it clashes with the law, the law wins and the rulework has to be fixed.',
       'The reading remains the work of the organization that carries out the law. Those choices were already being made, the paper says, only nobody outside the organization could see them. Once published, they are visible, and someone can be held to them.',
-      'A rulework that is published but that the computer does not decide with is no solution, according to the paper. It shows a reading that no decision is made with. Where a law has no rulework yet, execution cannot wait. The organization then publishes in policy rules how it applies the law.',
+      'A rulework that is published but not used in deciding is no solution, according to the paper. It shows a reading that no decision is made with. Where a law has no rulework yet, execution cannot wait. The organization then publishes in policy rules how it applies the law.',
     ],
     exampleLabel: 'What a rulework looks like (after a made-up example in the paper)',
     exampleStatute:
@@ -770,7 +822,7 @@ const en: Content = {
       `This does not match. The system behind this decision used its own copy of the rules. In it, one percentage still had last year’s value: ${local} instead of ${published}. That copy was never published. The difference is ${diff}, and it shows in two ways: the fingerprint is different, and re-running gives a different amount.`,
     limitsLabel: 'What the receipt does not show',
     limits: [
-      'The receipt shows which data were used. It does not show whether those data are correct.',
+      'The receipt shows which data were used, but does not prove that those data are correct. You can put them next to what you know yourself, such as your own income. The paper also wants to tie each value, where possible, to the source responsible for it, such as a base register.',
       'Whether you already have a right to such a receipt is unclear. The paper proposes that you always get it, together with the decision.',
     ],
     more: [
@@ -786,6 +838,7 @@ const en: Content = {
     intro: [
       'Laws change. They are amended, replaced or repealed. So the question ‘what does the law say?’ only has an answer once you name a date.',
       'A decision from years ago must be something you can re-run with the rules as they were then. That is why the paper asks that every version of a rulework is kept, and that what applied on a date stays what it was.',
+      'According to the paper, laws can be kept the way programmers keep their software, with version control such as Git. Every change is kept, and you can put two versions side by side and see exactly what changed. The bill, the advice of the Council of State and the amendments of Parliament are the steps in between. Publication in the Staatsblad, the Dutch bulletin of acts, is the official new version. A rulework is plain text, so it is kept the same way. When a law changes, you then see exactly what changed, in the law and in the rules the computer executes.',
     ],
     caseLabel: 'An example: one percentage, two years',
     caseIntro:
@@ -800,7 +853,6 @@ const en: Content = {
       'A rulework does not stand alone either. The healthcare allowance uses terms from other laws, and those change at other moments. Re-running takes, for each law, the version that applied on that date. That is why the receipt carries the fingerprint of every rulework that was used, and the date the calculation was for.',
     more: [
       'Sometimes a law changes with retroactive effect. The rulework then has to say that from a certain date the effect of the old version is reversed. The paper calls that time travel.',
-      'The paper compares this with how programmers keep versions. Every change is kept, and you can see exactly what changed between two versions. The Staatsblad, the Dutch bulletin of acts, is then the place where a new version officially appears.',
       'The paper separates two questions. What did the law require on a date? And which rule did the system calculate with on that date? If a system still calculates with the 2020 version while the law changed in 2022, that can be seen.',
       'Not every change comes from the Staatsblad. A European regulation or a court ruling can change a rule too. So those belong in the history of a rulework as well.',
       'Who keeps the register with all versions, and what keeps it from being rewritten afterwards, is an open question according to the paper.',
@@ -834,9 +886,10 @@ const en: Content = {
           ['Under the rule', '6 months'],
           ['Becomes', '3 months'],
           ['Why', 'six months would be too hard on the children in the family'],
+          ['Legal ground', 'Article 4:84 of the General Administrative Law Act'],
           ['Who', 'the mayor'],
         ],
-        note: 'Someone looks at the case and departs from the rule. That is only allowed where the law gives room for it.',
+        note: 'Whoever is responsible for the decision departs from it, here the mayor. That is only possible where the law gives room for it. The mayor has to name the ground and explain why it is needed in this case. If an official does the work, that is on the receipt too.',
       },
       {
         id: 'batch',
@@ -899,14 +952,14 @@ const en: Content = {
     p1:
       'Writing laws down as rules for a computer is not new. Think of RegelSpraak at the Dutch Tax Administration, FLINT at the Dutch immigration service, OpenFisca and Catala in France and Better Rules in New Zealand. They help specialists write rules and run them.',
     p2:
-      'The paper comes with a form of its own, but that is not what is new. It asks for something none of these systems set out to do. The published rules must be guaranteed to be the rules that make the decision, and whoever gets the decision must be able to check that. That is why the paper adds that the comparison below is not a ranking.',
+      'The paper asks for something none of these systems set out to do. The published rules must be guaranteed to be the rules the decision was worked out with, and whoever gets the decision must be able to check that. That demand also shapes the form. So the paper comes with a form of its own, and does not use an existing language. It does add that the comparison below is not a ranking.',
     tableLabel: 'Earlier approaches compared',
     rowHeader: 'Approach',
     columns: ['Runs', 'Public', 'Bound'],
     columnHelp: [
       'A computer can calculate with the rules (in the paper: executable).',
       'Anyone can read the rules (published).',
-      'It is guaranteed that the published rules are the rules that make the decision (bound to execution). This is what the paper asks for.',
+      'It is guaranteed that the published rules are the rules the decision was worked out with (bound to execution). This is what the paper asks for.',
     ],
     tableNote:
       'That only this paper has three yeses is no coincidence. The last column is exactly what the paper is about, and the reason it was written. The other approaches were built to write rules and run them, and they are good at that. This proposal is about whoever wants to read and check the rules afterwards.',
@@ -916,7 +969,7 @@ const en: Content = {
     reasons: [
       'Several programs have to calculate the same thing. Two programs can read text that looks like ordinary language differently, without either being demonstrably wrong.',
       'When a law changes, it must be exactly clear what changed. In ordinary language a different wording can look the same and still do something else.',
-      'The problem the paper is about lies in reading, not writing. RegelSpraak is made for whoever writes the rule, this proposal for whoever wants to check it afterwards.',
+      'The paper does not place the problem with whoever writes the rules down, but with whoever has to be able to check them afterwards. That is Parliament, wanting to know whether its law was converted faithfully, the court, wanting to trace how a decision came about, and you, if you want to know whether the published rule was applied to your decision. RegelSpraak is made for whoever writes the rule. This proposal is made for those readers.',
     ],
     moreAfter: [
       'The paper does not rule out a layer in ordinary language that translates into this format. It only says that the form that is published and signed has to be the structured one. And it adds that it defends this choice with arguments, not with measurements.',
