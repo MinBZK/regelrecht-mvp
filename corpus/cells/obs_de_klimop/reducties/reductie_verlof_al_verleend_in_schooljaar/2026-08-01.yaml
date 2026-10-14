@@ -58,24 +58,17 @@ articles:
               parameters:
                 datum: $eerste_verlofdag
         output:
-          # Hulpuitvoer: binnen de FOREACH is elk veld van een besluit ook
-          # onder zijn eigen naam te lezen (RFC-016), zoals `$bsn_jongere`.
-          # De jongere van de aanvraag staat daarom erbuiten, en een veld van
-          # een besluit wordt steeds als `$besluit.<veld>` gelezen.
-          - name: jongere_van_de_aanvraag
-            type: string
-            description: De jongere voor wie verlof wordt gevraagd.
           - name: verlof_al_verleend_in_schooljaar
             type: boolean
             description: >-
               Of het hoofd de jongere in het schooljaar van het gevraagde verlof
               al verlof verleende.
         actions:
-          - output: jongere_van_de_aanvraag
-            value: $bsn_jongere
           # Een besluit dat dezelfde jongere verlof verleende, met een eerste
           # verlofdag in het schooljaar van het gevraagde verlof. Een
-          # weigering telt niet.
+          # weigering telt niet. Met `as` is een besluit alleen als
+          # `$besluit.<veld>` te lezen (RFC-051); `$bsn_jongere` is de
+          # parameter.
           - output: verlof_al_verleend_in_schooljaar
             value:
               operation: FOREACH
@@ -89,7 +82,7 @@ articles:
                     value: true
                   - operation: EQUALS
                     subject: $besluit.bsn_jongere
-                    value: $jongere_van_de_aanvraag
+                    value: $bsn_jongere
                   - operation: GREATER_THAN_OR_EQUAL
                     subject:
                       operation: DATE_DIFF
