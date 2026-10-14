@@ -199,7 +199,6 @@ mod tests {
             moment: None,
             fields: [("eerste_verlofdag".to_string(), json!("2027-02-01"))].into(),
             missing: Vec::new(),
-            field_source: BTreeMap::new(),
             outputs: [("verlof_verleend".to_string(), json!(true))].into(),
         }
     }

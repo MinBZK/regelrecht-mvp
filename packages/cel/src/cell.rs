@@ -236,13 +236,7 @@ impl Cell {
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
         let bound = reading::bind(service, &self.recording_actor, &shape, self.grams())?;
-        let output_values = run_stages(
-            &bound,
-            &shape,
-            parameters,
-            on,
-            &mut fields,
-        )?;
+        let output_values = run_stages(&bound, &shape, parameters, on, &mut fields)?;
         drop(bound);
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),

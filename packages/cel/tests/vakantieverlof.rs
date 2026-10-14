@@ -680,10 +680,9 @@ fn a_first_application_in_the_school_year_is_granted() {
     let mut cell = Cell::in_memory(RECORDING_ACTOR);
     let gram = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+    // The value the policy gave; which article read what follows from the
+    // law in force on `recorded_on`.
     assert_eq!(gram.fields[ONCE], json!(false));
-    // The value came from the policy; which article read what follows from
-    // the law in force on `recorded_on`.
-    assert_eq!(gram.field_source[ONCE], Source::Policy);
 }
 
 #[test]
@@ -693,7 +692,6 @@ fn a_second_application_in_the_same_school_year_is_refused() {
     // Five days in May: on their own they would be granted.
     let gram = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
     assert_eq!(gram.fields[ONCE], json!(true));
-    assert_eq!(gram.field_source[ONCE], Source::Policy);
     assert_eq!(gram.outputs["verlofdagen"], json!(5));
     assert_eq!(
         gram.outputs["verlof_raakt_eerste_twee_lesweken"],
