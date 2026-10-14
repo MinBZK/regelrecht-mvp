@@ -67,7 +67,7 @@ articles:
           # Een besluit dat dezelfde jongere verlof verleende, met een eerste
           # verlofdag in het schooljaar van het gevraagde verlof. Een
           # weigering telt niet. Met `as` is een besluit alleen als
-          # `$besluit.<veld>` te lezen (RFC-051); `$bsn_jongere` is de
+          # `$besluit.<veld>` te lezen (RFC-049); `$bsn_jongere` is de
           # parameter.
           - output: verlof_al_verleend_in_schooljaar
             value:
