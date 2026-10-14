@@ -15,7 +15,9 @@ const { t, locale } = useViewerI18n();
 const p = usePresentation();
 
 const track = computed(() => currentTrack());
-const cue = computed(() => (replay.captionsOn ? cueAt(replay.cues, replay.now) : null));
+// While a jump restores the demo, the clock runs through the chapter at speed:
+// the captions and the presenter would flicker along, so they wait under the cover.
+const cue = computed(() => (replay.captionsOn && !replay.restoring ? cueAt(replay.cues, replay.now) : null));
 const full = computed(() => p.isFull.value);
 /**
  * A full slide with the presenter on camera (the opening, or an answer with
@@ -44,7 +46,8 @@ let raf = 0;
 let lastSync = 0;
 function loop() {
   const c = cam.value;
-  if (c && replay.camOn && camVisible(track.value, replay.now) && performance.now() - lastSync > 250) {
+  if (c && replay.restoring && !c.paused) c.pause();
+  if (c && replay.camOn && !replay.restoring && camVisible(track.value, replay.now) && performance.now() - lastSync > 250) {
     lastSync = performance.now();
     const fix = followerCorrection(audioTime(), c.currentTime, replay.speed);
     if (fix.seek != null) c.currentTime = fix.seek;
@@ -158,7 +161,7 @@ onUnmounted(() => {
   <div class="wt-chrome overlay" :class="{ full, face }">
     <video
       v-if="track?.cam"
-      v-show="replay.camOn && camVisible(track, replay.now)"
+      v-show="replay.camOn && !replay.restoring && camVisible(track, replay.now)"
       ref="cam"
       class="cam"
       :style="camStyle"
@@ -175,10 +178,10 @@ onUnmounted(() => {
          Raised again whenever the cursor moves, so it stays on top of a
          dialog that opened after it. -->
     <div ref="pointerLayer" popover="manual" class="pointer-layer" aria-hidden="true">
-    <svg v-show="replay.cursor.visible && !replay.diverged" class="cursor" :style="{ transform: `translate(${replay.cursor.x}px, ${replay.cursor.y}px)` }" width="22" height="26" viewBox="0 0 22 26" aria-hidden="true">
+    <svg v-show="replay.cursor.visible && !replay.diverged && !replay.restoring" class="cursor" :style="{ transform: `translate(${replay.cursor.x}px, ${replay.cursor.y}px)` }" width="22" height="26" viewBox="0 0 22 26" aria-hidden="true">
       <path d="M2 2 L2 20 L7 15.5 L10.5 23.5 L13.5 22.2 L10 14.4 L17 14.4 Z" />
     </svg>
-    <span v-for="r in replay.ripples" :key="r.id" class="ripple" :style="{ left: `${r.x}px`, top: `${r.y}px` }" aria-hidden="true"></span>
+    <span v-for="r in replay.restoring ? [] : replay.ripples" :key="r.id" class="ripple" :style="{ left: `${r.x}px`, top: `${r.y}px` }" aria-hidden="true"></span>
 
     <p v-if="cue" class="caption" lang="nl" aria-hidden="true">{{ cue.text }}</p>
     <div v-if="replay.restoring" class="restoring">
