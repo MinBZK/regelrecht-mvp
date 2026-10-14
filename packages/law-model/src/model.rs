@@ -641,7 +641,7 @@ pub enum ActionOperation {
         /// The binding as written. `None` when the law omits `as`: the
         /// element is then bound as `item` and an object element's fields are
         /// also bound under their own names. With `as` given, only that name
-        /// is bound (RFC-051). See [`foreach_binding`].
+        /// is bound (RFC-049). See [`foreach_binding`].
         #[serde(default, rename = "as", skip_serializing_if = "Option::is_none")]
         as_name: Option<String>,
         body: ActionValue,

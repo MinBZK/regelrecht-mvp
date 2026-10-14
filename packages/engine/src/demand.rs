@@ -175,7 +175,7 @@ pub(crate) fn reference_base(reference: &str) -> Option<&str> {
 /// those are not known here and still count: that over-includes, which is
 /// safe for the closure, but a field named like an output that reads the
 /// FOREACH's own output is reported as a cycle. With `as` no field is bound
-/// by its own name (RFC-051), so every other bare name is a real reference.
+/// by its own name (RFC-049), so every other bare name is a real reference.
 pub(crate) fn referenced_names(action: &Action) -> BTreeSet<String> {
     let mut names = BTreeSet::new();
     action

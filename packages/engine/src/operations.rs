@@ -1451,7 +1451,7 @@ pub fn execute_foreach(
         // law named the element and reads it as `$<as>.<field>` only: a field
         // bound under its own name would shadow an outer variable of that
         // name, and the body could no longer compare the row with it
-        // (RFC-051).
+        // (RFC-049).
         if as_name.is_none() {
             if let Value::Object(fields) = item {
                 for (key, value) in fields {
@@ -3790,7 +3790,7 @@ mod tests {
         #[test]
         fn test_foreach_with_as_does_not_bind_fields_by_their_own_name() {
             // With `as`, the bare name is the outer variable, not the field
-            // (RFC-051): that is what lets a body compare the row with a
+            // (RFC-049): that is what lets a body compare the row with a
             // parameter of the same name.
             let context = ctx(vec![
                 (
@@ -3836,7 +3836,7 @@ mod tests {
 
         #[test]
         fn test_foreach_with_as_compares_the_row_with_a_parameter_of_its_field_name() {
-            // The case that motivated RFC-051: a reduction with a parameter
+            // The case that motivated RFC-049: a reduction with a parameter
             // `bsn_jongere` over rows that also carry `bsn_jongere`.
             let rij = |bsn: &str, uren: i64| {
                 obj(vec![

@@ -240,7 +240,7 @@ struct Binding {
     /// The element: its `as`, or `item` when it has none.
     name: String,
     /// Whether an object element's fields are also bound under their own
-    /// names, which is the case only without `as` (RFC-051). Any bare name
+    /// names, which is the case only without `as` (RFC-049). Any bare name
     /// may then be a field of the data, so the checker claims nothing.
     fields: bool,
 }
@@ -2080,7 +2080,7 @@ actions:
         // Without `as`, an object element binds its fields under their own
         // names, so `$huur` in the body may be the element's field rather
         // than the declared input, and the checker claims nothing. With
-        // `as`, only that name is bound (RFC-051), and `$huur` is the input.
+        // `as`, only that name is bound (RFC-049), and `$huur` is the input.
         let with_as = n4_law(
             r#"  - output: uitkomst
     value:

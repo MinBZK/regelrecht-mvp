@@ -1268,7 +1268,7 @@ const ENGINE_CONTEXT_NAMES: &[&str] = &["referencedate"];
 /// - A name inside the `filter` or `body` of a `FOREACH` without `as`. The
 ///   engine exposes the fields of each element as bare locals there, so
 ///   `$status` may be a field of the collection's records, and the records
-///   are data. With `as` only that name is bound (RFC-051), so every other
+///   are data. With `as` only that name is bound (RFC-049), so every other
 ///   name there is checked like any other.
 /// - A name in an entry that declares `produces`. A `pre_actions` hook from
 ///   another law (the AWB's motiveringsplicht is one) injects its outputs into
@@ -1586,16 +1586,21 @@ fn variable_name(s: &str) -> Option<&str> {
 }
 
 /// Like [`referenced_variables`], but scoped the way the engine binds a
-/// `FOREACH`. Inside the `filter` and `body` of one with `as`, that name is
-/// the element and every other name is a reference (RFC-051). One without
-/// `as` exposes each element's fields there as bare locals, so a name in
-/// that scope may be data rather than a declaration, and it is skipped.
+/// `FOREACH`. Each loop gets a fresh scope that does not chain to the loop
+/// around it: inside the `filter` and `body` of one with `as`, that name is
+/// the only binding and every other name is a reference (RFC-049), including
+/// the `as` of an outer loop. One without `as` exposes each element's fields
+/// there as bare locals, so a bare name in that scope may be data rather than
+/// a declaration, and it is skipped; a nested loop with `as` inside it is
+/// still checked. The `collection` of a loop is read in the scope around it.
 fn referenced_free_variables(v: &Value) -> BTreeSet<String> {
-    fn inner<'a>(v: &'a Value, bound: &[&'a str], out: &mut BTreeSet<String>) {
+    /// `bound` is the `as` of the innermost loop; `skip_bare` is set inside
+    /// a loop without `as`, where a bare name may be a field.
+    fn inner(v: &Value, bound: Option<&str>, skip_bare: bool, out: &mut BTreeSet<String>) {
         match v {
             Value::String(s) => {
                 if let Some(name) = variable_name(s) {
-                    if !bound.contains(&name) {
+                    if !skip_bare && bound != Some(name) {
                         out.insert(name.to_string());
                     }
                 }
@@ -1605,25 +1610,25 @@ fn referenced_free_variables(v: &Value) -> BTreeSet<String> {
                 let binding = map.get("as").and_then(Value::as_str);
                 for (k, val) in map {
                     if foreach && matches!(k.as_str(), Some("filter" | "body")) {
-                        if let Some(name) = binding {
-                            let scope: Vec<&str> = bound.iter().copied().chain([name]).collect();
-                            inner(val, &scope, out);
+                        match binding {
+                            Some(name) => inner(val, Some(name), false, out),
+                            None => inner(val, None, true, out),
                         }
                         continue;
                     }
-                    inner(val, bound, out);
+                    inner(val, bound, skip_bare, out);
                 }
             }
             Value::Sequence(seq) => {
                 for item in seq {
-                    inner(item, bound, out);
+                    inner(item, bound, skip_bare, out);
                 }
             }
             _ => {}
         }
     }
     let mut out = BTreeSet::new();
-    inner(v, &[], &mut out);
+    inner(v, None, false, &mut out);
     out
 }
 
@@ -5855,7 +5860,7 @@ articles:
         );
     }
 
-    /// With `as`, a loop binds only that name (RFC-051): a bare name in its
+    /// With `as`, a loop binds only that name (RFC-049): a bare name in its
     /// `filter` or `body` is a reference, not a field of the element, so an
     /// undeclared one is flagged. Without `as` it may be a field, and the
     /// check leaves it alone.
@@ -5905,6 +5910,84 @@ articles:
         assert_eq!(
             details,
             vec!["$leeftijd is referenced but never defined in this law".to_string()]
+        );
+    }
+
+    /// A loop's scope does not chain to the loop around it: the inner `body`
+    /// cannot read the outer `as` by its bare name, so that is flagged. The
+    /// inner `collection` is read in the outer scope and may use it.
+    #[test]
+    fn dangling_bindings_flags_an_outer_as_in_an_inner_body() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        input:
+          - name: huishoudens
+            source: {}
+        output:
+          - name: totaal
+        actions:
+          - output: totaal
+            value:
+              operation: FOREACH
+              collection: $huishoudens
+              as: huishouden
+              body:
+                operation: FOREACH
+                collection: $huishouden.leden
+                as: lid
+                body: $huishouden
+                combine: ADD
+              combine: ADD
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        let details: Vec<String> = dangling_bindings(&doc)
+            .into_iter()
+            .map(|f| f.detail)
+            .collect();
+        assert_eq!(
+            details,
+            vec!["$huishouden is referenced but never defined in this law".to_string()]
+        );
+    }
+
+    /// A loop without `as` leaves its bare names alone, but a nested loop
+    /// with `as` inside it binds only its own name and is still checked.
+    #[test]
+    fn dangling_bindings_checks_a_loop_with_as_inside_one_without() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        input:
+          - name: huishoudens
+            source: {}
+        output:
+          - name: totaal
+        actions:
+          - output: totaal
+            value:
+              operation: FOREACH
+              collection: $huishoudens
+              body:
+                operation: FOREACH
+                collection: $leden
+                as: lid
+                body: $bijdrage
+                combine: ADD
+              combine: ADD
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        let details: Vec<String> = dangling_bindings(&doc)
+            .into_iter()
+            .map(|f| f.detail)
+            .collect();
+        assert_eq!(
+            details,
+            vec!["$bijdrage is referenced but never defined in this law".to_string()]
         );
     }
 
