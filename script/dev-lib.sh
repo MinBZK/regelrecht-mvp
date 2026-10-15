@@ -125,11 +125,16 @@ dev_ensure_wasm() {
 # macOS ships no setsid(1), and without it dev_start silently started nothing:
 # the log held "setsid: command not found" and the port stayed dead. perl's
 # POSIX::setsid is the same syscall, and perl is on every mac by default.
+#
+# dev_setsid replaces the shell that calls it (`exec`), so call it only as a
+# background job. Backgrounding a function forks a subshell, and `$!` is that
+# subshell: without the exec the session leader would be its child, dev_stop
+# would kill only the wrapper, and the service would keep its port.
 dev_setsid() {
     if command -v setsid > /dev/null 2>&1; then
-        setsid "$@"
+        exec setsid "$@"
     else
-        perl -e 'use POSIX qw(setsid); setsid() or die "setsid: $!\n"; exec @ARGV or die "exec: $!\n"' "$@"
+        exec perl -e 'use POSIX qw(setsid); setsid() or die "setsid: $!\n"; exec @ARGV or die "exec: $!\n"' "$@"
     fi
 }
 
