@@ -99,7 +99,7 @@ fn record(
     supplied: &Map<String, Value>,
     on: &str,
 ) -> Result<regelrecht_cel::Gram, Error> {
-    cell.record_submission(&service(), LAW, ARTICLE, supplied, day(on))
+    cell.record_submission(&service(), LAW, ARTICLE, None, supplied, day(on))
 }
 
 #[test]
@@ -260,7 +260,7 @@ fn null_is_refused_for_a_field_that_cannot_be_absent() {
 fn an_article_that_establishes_no_submission_is_refused() {
     let mut cell = cell();
     let e = cell
-        .record_submission(&service(), LAW, "2", &Map::new(), day("2026-10-13"))
+        .record_submission(&service(), LAW, "2", None, &Map::new(), day("2026-10-13"))
         .unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("establishes no submission")),
@@ -356,6 +356,7 @@ fn decide(
     on: &str,
 ) -> Result<Gram, Error> {
     cell.decide(&mut service(), LAW, ARTICLE, application, supplied, day(on))
+        .map(|mut grams| grams.remove(0))
 }
 
 #[test]
@@ -1070,7 +1071,7 @@ fn the_objector_does_not_supply_what_the_decision_holds_or_the_law_does_not_ask(
         (
             "bezwaartermijn_einddatum",
             "2027-01-01",
-            "comes from the decision it contests",
+            "comes from the decision it refers to",
         ),
         ("bestemming", "Lissabon", "does not ask 'bestemming'"),
         (
@@ -1403,6 +1404,7 @@ fn an_objection_goes_through_record_objection_and_decide_on_objection() {
             &service(),
             AWB,
             OBJECTION,
+            None,
             &objection(&[]),
             day("2026-11-01"),
         )

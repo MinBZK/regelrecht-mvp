@@ -174,9 +174,20 @@ pub fn derive(
         .iter()
         .map(|stage| service.procedure_stage(law_id, article, stage, &date))
         .collect::<std::result::Result<Vec<_>, _>>()?;
-    // The decision's outputs: a hook may read one as a parameter, and the
-    // execution supplies it at every stage.
+    // The decision's outputs: what it decides.
     let outputs: Vec<&str> = decision.map(|d| deciding.outputs_of(d)).unwrap_or_default();
+    // What the execution supplies at every stage of the decision: those, and
+    // the data derived for it (RFC-050). A hook may read either as a
+    // parameter; it is no field of the decision.
+    let computed: Vec<&str> = outputs
+        .iter()
+        .copied()
+        .chain(
+            decision
+                .map(|_| deciding.derived_outputs())
+                .unwrap_or_default(),
+        )
+        .collect();
 
     let mut fields: Vec<Field> = Vec::new();
     let mut sources: HashMap<String, Source> = HashMap::new();
@@ -191,7 +202,7 @@ pub fn derive(
                 .into_iter()
                 .flatten()
             {
-                if part.hook_point.is_some() && outputs.contains(&p.name.as_str()) {
+                if part.hook_point.is_some() && computed.contains(&p.name.as_str()) {
                     continue;
                 }
                 let field = Field {
