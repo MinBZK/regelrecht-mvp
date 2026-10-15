@@ -23,6 +23,10 @@
 //! output (`overrides`), takes no decision (`execution.produces`) and
 //! delegates nothing (`open_terms`). The loader refuses either the other way
 //! round, and a `decisions` beside another way to the value.
+//!
+//! A call to an article (`source.article`, schema v0.8.4, RFC-050) stands
+//! apart from `regulation`, `decisions` and `endpoint`, and only such a call
+//! takes `parameters_from`.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
@@ -32,20 +36,7 @@ use regelrecht_law_model::{ActionOperation, ActionValue, MachineReadable, Regula
 /// `overrides`, `execution.produces` or `open_terms` in a `REDUCTIE` (RFC-048).
 pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
     let reduction = law.regulatory_layer == RegulatoryLayer::Reductie;
-    let sections = law
-        .preamble
-        .iter()
-        .filter_map(|p| {
-            p.machine_readable
-                .as_ref()
-                .map(|m| ("the preamble".to_string(), m))
-        })
-        .chain(law.articles.iter().filter_map(|a| {
-            a.machine_readable
-                .as_ref()
-                .map(|m| (format!("article {}", a.number), m))
-        }));
-    for (where_, section) in sections {
+    for (where_, section) in sections(law) {
         if reduction {
             let acts_on_law = [
                 ("implements", section.implements.is_some()),
@@ -98,6 +89,59 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
     Ok(())
 }
 
+/// Refuse a call to an article (`source.article`, schema v0.8.4, RFC-050)
+/// beside another way to the value (`regulation`, `decisions`, `endpoint`),
+/// and `parameters_from` without `article`, which nothing would receive.
+pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()> {
+    for (where_, section) in sections(law) {
+        for input in inputs(section) {
+            let Some(source) = input.source.as_ref() else {
+                continue;
+            };
+            let Some(target) = &source.article else {
+                if source.parameters_from.is_some() {
+                    return Err(EngineError::LoadError(format!(
+                        "law '{}' {where_}: input '{}' has parameters_from without an article \
+                         to pass them to",
+                        law.id, input.name
+                    )));
+                }
+                continue;
+            };
+            let beside = [
+                ("regulation", source.regulation.is_some()),
+                ("decisions", source.decisions.is_some()),
+                ("endpoint", source.endpoint.is_some()),
+            ];
+            if let Some((key, _)) = beside.iter().find(|(_, present)| *present) {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: input '{}' calls the article {target}, which no {key} \
+                     can stand beside",
+                    law.id, input.name
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Every machine-readable section of `law`, the preamble's first, with how
+/// a message names it.
+fn sections(law: &ArticleBasedLaw) -> impl Iterator<Item = (String, &MachineReadable)> {
+    law.preamble
+        .iter()
+        .filter_map(|p| {
+            p.machine_readable
+                .as_ref()
+                .map(|m| ("the preamble".to_string(), m))
+        })
+        .chain(law.articles.iter().filter_map(|a| {
+            a.machine_readable
+                .as_ref()
+                .map(|m| (format!("article {}", a.number), m))
+        }))
+}
+
 fn inputs(section: &MachineReadable) -> &[regelrecht_law_model::Input] {
     section
         .execution
@@ -144,7 +188,9 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
-/// items of one type, does not give each output to exactly one item, names a
+/// items of one type, gives an output to two items, or to none while it
+/// takes no decision (with a decision, such an output is derived data,
+/// RFC-050), names a
 /// parameter or output the article lacks, or has a submission that requests
 /// a decision this law does not take. One item per type makes article and
 /// type name an item, so nothing in the list needs a name of its own; a
@@ -224,20 +270,16 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
             }
             listed.push(name);
         }
-        if let Some(name) = article
-            .get_outputs()
-            .iter()
-            .map(|o| o.name.as_str())
-            .find(|name| {
-                !produced
-                    .iter()
-                    .any(|&p| article.outputs_of(p).contains(name))
-            })
-        {
-            return refuse(format!(
-                "declares output '{name}', but nothing it produces yields it; \
-                 a submission yields only the outputs it lists"
-            ));
+        // An output no item yields is derived data of the decision (RFC-050):
+        // computed at its stages and recorded with it, but not one of its
+        // outputs. Without a decision there is nothing to derive it for.
+        if article.get_decision().is_none() {
+            if let Some(name) = article.derived_outputs().first() {
+                return refuse(format!(
+                    "declares output '{name}', but nothing it produces yields it; \
+                     a submission yields only the outputs it lists"
+                ));
+            }
         }
         for &item in &produced {
             for name in article.parameters_of(item) {
@@ -484,6 +526,32 @@ articles:
         let decision = article.get_decision().expect("a decision");
         assert!(article.outputs_of(submission).is_empty());
         assert_eq!(article.outputs_of(decision), ["x"]);
+    }
+
+    /// An output that no item yields is derived data of the decision
+    /// (RFC-050): the article loads, the output is computed at the decision's
+    /// stages, and it is no output of the decision.
+    #[test]
+    fn an_output_no_item_yields_is_derived_data_of_the_decision() {
+        let yaml = law_producing(
+            "          - type: AANVRAAG\n            parameters: [p]\n          - type: BESCHIKKING\n            outputs: []",
+        )
+        .replace("            outputs: []", "            outputs: [x]")
+        .replace(
+            "        output:\n          - name: x\n            type: boolean\n",
+            "        output:\n          - name: x\n            type: boolean\n          - name: afgeleid\n            type: boolean\n",
+        )
+        .replace(
+            "          - output: x\n            value: true\n",
+            "          - output: x\n            value: true\n          - output: afgeleid\n            value: false\n",
+        );
+        let mut service = LawExecutionService::new();
+        service.load_law(&yaml).expect("derived data loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let article = &law.articles[0];
+        let decision = article.get_decision().expect("a decision");
+        assert_eq!(article.outputs_of(decision), ["x"]);
+        assert_eq!(article.derived_outputs(), ["afgeleid"]);
     }
 
     #[test]

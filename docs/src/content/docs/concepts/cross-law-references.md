@@ -87,9 +87,43 @@ input:
       output: standaardpremie
 ```
 
+## Calling the decision of an article
+
+A `regulation` reference finds the article through the output it asks for. Sometimes the article itself is what matters: the article a decision was taken under, to take that decision again. Since schema v0.8.4 a `source` can name the article with `article` ([RFC-050](/rfcs/rfc-050)).
+
+```yaml
+parameters:
+  - name: besluit
+    type: decision
+input:
+  - name: heroverweging
+    type: decision
+    source:
+      article: $besluit.grondslag
+      parameters_from:
+        - $besluit.fields
+        - $nieuwe_oordelen
+```
+
+`article` is an article reference (`wet_fictief#3`) or a `$`-reference to a value that holds one. The engine runs the decision item of that article at stage BESLUIT. Without `output` it returns a decision value, the type `decision`:
+
+| Field | Holds |
+|---|---|
+| `grondslag` | The article, as `<regulation>#<article>` |
+| `fields` | The parameters it was given that it declares |
+| `outputs` | The outputs of its decision item, and no others |
+
+With `output` the input is that one output of the decision.
+
+The parameters come from `parameters_from`, a list of objects merged in order: a later one wins over an earlier one, and `parameters` goes on top of them all. A null object adds nothing. A name the article does not declare is dropped, and the trace says which.
+
+A fixed reference is checked when the laws load: the article takes a decision, and an `output` is one of the decision's outputs. A reference taken from a value is known only when the article runs. The type check then knows the input is a decision value and makes no claim about `$heroverweging.outputs.x`, as for rows. At run time the engine refuses an article not in force on the date, an article without a decision, an `output` that is not one of the decision's, and a merged value that is no object. Like any input, the call is made only when an action reads it, so an `AND` whose first condition is false does not run it.
+
+Two decision values are compared with `EQUALS`. On lists and records it compares the numbers inside as written: `12` against `12.0` is an error, not an answer. `IN` is not strict in this way. A decision value holds its numbers as a stored one reads back from JSON, so a whole number the arithmetic left as `5.0` is `5`.
+
 ## Circular reference detection
 
-The engine detects circular references (law A needs law B which needs law A) and raises an error. A `MAX_CROSS_LAW_DEPTH` limit of 20 prevents runaway chains.
+The engine detects circular references (law A needs law B which needs law A) and raises an error. A call to an article counts under the same keys, one per output it computes, so a cycle through `article` and `regulation` together is caught as well. The article runs once for every output of its decision, so while it runs each of those outputs counts as being resolved. A `MAX_CROSS_LAW_DEPTH` limit of 20 prevents runaway chains.
 
 One loop is not an error: a rule that reads the value it departs from. An override reading the output it replaces, or an implementation reading the law whose open term it fills, gets that value without itself. See [Reading the value an override departs from](./hooks-and-reactive-execution#reading-the-value-an-override-departs-from).
 

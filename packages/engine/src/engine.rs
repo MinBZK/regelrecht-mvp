@@ -340,7 +340,7 @@ impl<'a> ArticleEngine<'a> {
     /// Reference resolution is owned by [`crate::LawExecutionService`], which
     /// resolves inputs (data sources, cross-law and cross-article references)
     /// and passes the values in via `parameters`. This single-article engine
-    /// only checks that a `source.regulation` input it cannot resolve itself is
+    /// only checks that a `source.regulation` or `source.article` input it cannot resolve itself is
     /// already present; internal (`source.output`) and empty (`source: {}`)
     /// inputs are left untouched — they are either already in `parameters` or
     /// stay unresolved (a consuming action then surfaces a `VariableNotFound`).
@@ -361,6 +361,17 @@ impl<'a> ArticleEngine<'a> {
                     return Err(EngineError::ExternalReferenceNotResolved {
                         input_name: input.name.clone(),
                         regulation: regulation.clone(),
+                        output: source.output.clone().unwrap_or_default(),
+                    });
+                }
+            }
+            // A call to an article (RFC-050) runs another article, which
+            // only the service can do.
+            if let Some(target) = &source.article {
+                if !parameters.contains_key(&input.name) {
+                    return Err(EngineError::ExternalReferenceNotResolved {
+                        input_name: input.name.clone(),
+                        regulation: target.clone(),
                         output: source.output.clone().unwrap_or_default(),
                     });
                 }
