@@ -432,17 +432,17 @@ impl Cell {
             .clone()
             .into_iter()
             .partition(|(name, _)| shape.input(name).is_some());
-        let mut supplied = supplied.clone();
-        supplied.extend(own.clone());
-        let supplied = &supplied;
-        check_decision_supplied(&shape, supplied)?;
         if let Some(name) = own.keys().find(|name| !is_finding(&shape, name)) {
             return Err(refused(format!(
-                "'{name}' of the decision of {} is no finding; the deciding authority supplies \
-                 it",
+                "'{name}' of the decision of {} is no finding; it is supplied, or comes from \
+                 elsewhere",
                 shape.grondslag()
             )));
         }
+        let mut supplied = supplied.clone();
+        supplied.extend(own);
+        let supplied = &supplied;
+        check_decision_supplied(&shape, supplied)?;
         let replaces = decision_outputs(service, &shape, on);
         let except = applied
             .refers_to

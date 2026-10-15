@@ -844,17 +844,38 @@ fn the_decision_value_holds_the_findings_apart() {
         .unwrap_err();
     assert!(e.to_string().contains("'reden_gewichtg'"), "{e}");
     assert_eq!(cell.grams().len(), before);
-    // A finding of the deciding article is no parameter.
-    let e = cell
-        .decide(
-            &mut service,
-            BEZWAAR_LAW,
-            "1",
-            &bezwaar.id,
-            &object(json!({"tijdig": true})),
-            &object(json!({"tijdig": true})),
-            day("2026-03-15"),
-        )
-        .unwrap_err();
-    assert!(e.to_string().contains("'tijdig'"), "{e}");
+    // A finding is given among the findings, not supplied; and what the
+    // deciding authority supplies is no finding.
+    let applied = apply(&mut cell, &service, 3, "2026-03-16");
+    for (supplied, findings, says) in [
+        (
+            json!({"al_verleend": false, "reden_gewichtig": true}),
+            json!({}),
+            "'reden_gewichtig' of the decision of wet_verlof_fictief#1 is a finding of the \
+             deciding authority; it is given among the findings",
+        ),
+        (
+            json!({}),
+            json!({"al_verleend": false, "reden_gewichtig": true}),
+            "'al_verleend' of the decision of wet_verlof_fictief#1 is no finding",
+        ),
+        (
+            json!({}),
+            json!({"dagen": 4, "reden_gewichtig": true}),
+            "'dagen' of the decision of wet_verlof_fictief#1 is no finding",
+        ),
+    ] {
+        let e = cell
+            .decide(
+                &mut service,
+                VERLOF_LAW,
+                "1",
+                &applied.id,
+                &object(supplied),
+                &object(findings),
+                day("2026-03-16"),
+            )
+            .unwrap_err();
+        assert!(e.to_string().contains(says), "{says}: {e}");
+    }
 }
