@@ -165,6 +165,7 @@ fn where_the_regulation_is_silent_the_judgement_decides() {
     let gram = decide(&mut service, 5, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     assert_eq!(gram.fields["grond_aanwezig"], json!(false));
+    assert_eq!(gram.findings, ["grond_aanwezig"]);
 
     // Without the judgement, nothing decides the norm for this case.
     let e = decide(&mut service, 5, json!({})).unwrap_err();
@@ -180,10 +181,13 @@ fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
     let gram = decide(&mut service, 2, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
+    // The regulation decided it, not the head.
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 
     // The judgement may be left out.
     let gram = decide(&mut service, 2, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 }
 
 #[test]
@@ -413,4 +417,24 @@ fn a_hook_that_reads_derived_data_asks_nothing_for_it() {
     let gram = decide(&mut service, 2, json!({})).unwrap();
     assert_eq!(gram.outputs["dagen_vermeld"], json!(2));
     assert!(!gram.fields.contains_key("dagen_gevraagd"));
+}
+
+/// A judgement that may be absent and that the head leaves out is null in
+/// the chronolexogram, but no finding: the head found nothing.
+#[test]
+fn a_judgement_left_out_is_no_finding() {
+    let special = SPECIAL_LAW
+        .replace(
+            "          decided_per_case_by: het hoofd\n",
+            "          required: false\n          decided_per_case_by: het hoofd\n",
+        )
+        .replace(
+            "          - {name: verlof_verleend, type: boolean}",
+            "          - {name: verlof_verleend, type: boolean, nullable: true}",
+        );
+    assert_ne!(special, SPECIAL_LAW);
+    let mut service = service(&[GENERAL_LAW, &special]);
+    let gram = decide(&mut service, 5, json!({})).unwrap();
+    assert_eq!(gram.fields["grond_aanwezig"], Value::Null);
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 }

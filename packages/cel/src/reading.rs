@@ -505,6 +505,7 @@ mod tests {
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
             moment: None,
             fields: [("eerste_verlofdag".to_string(), json!("2027-02-01"))].into(),
+            findings: Vec::new(),
             missing: Vec::new(),
             outputs: [("verlof_verleend".to_string(), json!(true))].into(),
         }

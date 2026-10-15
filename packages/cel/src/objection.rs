@@ -163,14 +163,14 @@ impl Cell {
         // Admissibility first (Awb 7:11 lid 1): where the decision does not
         // revoke even if the heroverweging gives cause, the objection is not
         // reconsidered on the merits, and the decision records no answer.
-        let (fields, outputs) = take(service, Some(true))?;
+        let taken = take(service, Some(true))?;
         let mut anew = None;
-        let (fields, outputs) = if revokes(&outputs) {
+        let taken = if revokes(&taken.outputs) {
             // The heroverweging: the contested decision's article anew.
             let anew_shape = decision_shape_of(service, &contested, on)?;
             check_objection_supplied(&shape, Some(&anew_shape), &judgement, supplied)?;
             let application = self.application_of(&contested)?.clone();
-            let (anew_fields, anew_outputs) = self.take(
+            let anew_taken = self.take(
                 service,
                 &anew_shape,
                 supplied,
@@ -179,10 +179,10 @@ impl Cell {
                 on,
                 |bound| heroverweging(&anew_shape, &application, &contested, supplied, bound, on),
             )?;
-            let differs = differs(&anew_shape.outputs, &anew_outputs, &contested)?;
-            anew = Some((anew_shape, anew_fields, anew_outputs));
+            let differs = differs(&anew_shape.outputs, &anew_taken.outputs, &contested)?;
+            anew = Some((anew_shape, anew_taken));
             if differs {
-                (fields, outputs)
+                taken
             } else {
                 take(service, Some(false))?
             }
@@ -190,7 +190,7 @@ impl Cell {
             check_objection_supplied(&shape, None, &judgement, supplied)?;
             take(service, None)?
         };
-        let revokes = revokes(&outputs);
+        let revokes = revokes(&taken.outputs);
         let mut grams = vec![Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
@@ -199,13 +199,14 @@ impl Cell {
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
             moment: None,
-            fields,
+            fields: taken.fields,
+            findings: taken.findings,
             missing: Vec::new(),
-            outputs,
+            outputs: taken.outputs,
         }];
         // Awb 7:11 lid 2: revoked, and in its place the decision the
         // heroverweging gave. Both or neither land in the chronicle.
-        if let (true, Some((anew_shape, anew, anew_outputs))) = (revokes, anew) {
+        if let (true, Some((anew_shape, anew))) = (revokes, anew) {
             grams.push(Gram {
                 id: uuid::Uuid::now_v7().to_string(),
                 kind: anew_shape.kind.clone(),
@@ -214,9 +215,10 @@ impl Cell {
                 recording_actor: self.recording_actor.clone(),
                 recorded_on: on,
                 moment: None,
-                fields: anew,
+                fields: anew.fields,
+                findings: anew.findings,
                 missing: Vec::new(),
-                outputs: anew_outputs,
+                outputs: anew.outputs,
             });
         }
         let mut appended = self.chronicle.append_all(grams)?.iter().cloned();
