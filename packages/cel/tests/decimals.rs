@@ -10,7 +10,7 @@
 use std::collections::BTreeMap;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{encoding, Cell};
+use regelrecht_cel::{encoding, Cell, Chronicle, Gram};
 use regelrecht_engine::{LawExecutionService, Value};
 use serde_json::{json, Map};
 
@@ -324,11 +324,19 @@ fn a_stored_decision_called_anew_gives_no_false_difference() {
         let plain = serde_json::Value::from(&besluit["outputs"]);
         besluit.insert("outputs".into(), Value::from(plain));
         let parameters = [("besluit".to_string(), Value::Object(besluit))].into();
-        let result = service.evaluate_law(ID, &["anders"], parameters, ON);
-        assert!(
-            !matches!(result, Ok(ref r) if r.outputs["anders"] == Value::Bool(false)),
-            "{teller}/{noemer}: {result:?}"
-        );
+        match service.evaluate_law(ID, &["anders"], parameters, ON) {
+            // 1/3: a float with fewer digits, so another value.
+            Ok(result) => assert_eq!(
+                result.outputs["anders"],
+                Value::Bool(true),
+                "{teller}/{noemer}"
+            ),
+            // 10/2: the integer 5 against the decimal 5.0.
+            Err(e) => assert!(
+                (teller, noemer) == (10, 2) && e.to_string().contains("numbers written alike"),
+                "{teller}/{noemer}: {e}"
+            ),
+        }
     }
 }
 
@@ -385,5 +393,37 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, text.replace("0.3333", "0,3333")).unwrap();
     let err = Cell::open(ACTOR, &path).unwrap_err();
-    assert!(err.to_string().contains("line 2"), "{err}");
+    assert!(
+        err.to_string().contains("line 2")
+            && err.to_string().contains("no decimal the chronicle wrote"),
+        "{err}"
+    );
+}
+
+#[test]
+fn a_gram_that_would_not_open_again_is_not_appended() {
+    // Writing and opening share one rule: what `open` refuses, `append`
+    // does not write.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("kroniek.jsonl");
+    let mut chronicle = Chronicle::open(&path).unwrap();
+    let gram = Gram {
+        id: "g".into(),
+        kind: "AANVRAAG".into(),
+        grondslag: format!("{ID}#1"),
+        refers_to: None,
+        recording_actor: ACTOR.into(),
+        recorded_on: day(),
+        moment: None,
+        fields: [("teller".to_string(), json!({"__decimal": "0,5"}))].into(),
+        missing: Vec::new(),
+        outputs: BTreeMap::new(),
+    };
+    let err = chronicle.append(gram).unwrap_err();
+    assert!(
+        err.to_string().contains("no decimal the chronicle wrote"),
+        "{err}"
+    );
+    assert!(chronicle.grams().is_empty());
+    assert!(!path.exists() || std::fs::read_to_string(&path).unwrap().is_empty());
 }

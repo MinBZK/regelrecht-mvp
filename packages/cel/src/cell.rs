@@ -219,7 +219,7 @@ impl Cell {
             }
         };
         let mut output_values = BTreeMap::new();
-        collect_outputs(&result, &mut output_values);
+        collect_outputs(&result, &mut output_values)?;
 
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
@@ -455,13 +455,13 @@ fn run_stages(
             parameters.clone(),
             &date,
         )?;
-        collect_outputs(&result, &mut outputs);
+        collect_outputs(&result, &mut outputs)?;
         for input in &shape.inputs {
             let name = &input.field.name;
             let Some(value) = result.resolved_inputs.get(name) else {
                 continue;
             };
-            let value = encoding::to_json(value);
+            let value = encoding::to_json(value)?;
             match &input.source {
                 Source::Policy => {
                     fields.insert(name.clone(), value);
@@ -485,7 +485,10 @@ fn json_date(on: NaiveDate) -> Value {
 
 /// Add what an execution gave to `values`. An output an override voids is
 /// not in `outputs`.
-fn collect_outputs(result: &ArticleResult, values: &mut BTreeMap<String, serde_json::Value>) {
+fn collect_outputs(
+    result: &ArticleResult,
+    values: &mut BTreeMap<String, serde_json::Value>,
+) -> Result<()> {
     for (name, value) in &result.outputs {
         if matches!(
             result.output_provenance.get(name),
@@ -493,8 +496,9 @@ fn collect_outputs(result: &ArticleResult, values: &mut BTreeMap<String, serde_j
         ) {
             continue;
         }
-        values.insert(name.clone(), encoding::to_json(value));
+        values.insert(name.clone(), encoding::to_json(value)?);
     }
+    Ok(())
 }
 
 /// Refuse what the deciding authority does not supply: a value the

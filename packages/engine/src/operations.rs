@@ -628,7 +628,7 @@ fn compound_equal(a: &Value, b: &Value, op_name: &str, path: &str) -> Result<boo
 /// cell comparing a stored value with one computed anew, so that it holds
 /// to the same rule as the engine.
 pub fn equal_as_written(a: &Value, b: &Value) -> Result<bool> {
-    compound_equal(a, b, "EQUALS", "")
+    compound_equal(a, b, "EQUALS", "$")
 }
 
 /// Whether the pair is the mixed date form: one string against one

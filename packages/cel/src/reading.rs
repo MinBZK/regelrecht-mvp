@@ -89,7 +89,14 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
         let mut row: Map<String, serde_json::Value> = gram.fields.clone().into_iter().collect();
         for (name, value) in &gram.outputs {
             match row.get(name) {
-                Some(field) if !encoding::same(field, value)? => {
+                Some(field)
+                    if !encoding::same(field, value).map_err(|e| {
+                        setup(format!(
+                            "chronolexogram '{}' holds '{name}' as a field and as an output: {e}",
+                            gram.id
+                        ))
+                    })? =>
+                {
                     return Err(setup(format!(
                         "chronolexogram '{}' holds '{name}' as a field ({field}) and as an output \
                          ({value})",
@@ -394,7 +401,7 @@ impl Bound<'_> {
                     .outputs
                     .get(name)
                     .ok_or_else(|| setup(format!("reduction {id} yielded no '{name}'")))?;
-                answered.insert(name.to_string(), encoding::to_json(value));
+                answered.insert(name.to_string(), encoding::to_json(value)?);
             }
         }
         Ok(answered)
@@ -535,7 +542,11 @@ mod tests {
             .outputs
             .insert("aandeel".into(), json!({"__decimal": "5.0"}));
         let err = rows(&[decision], GRONDSLAG, "BESCHIKKING").unwrap_err();
-        assert!(matches!(err, crate::error::Error::Engine(_)), "{err}");
+        assert!(
+            matches!(&err, crate::error::Error::Setup(m)
+                if m.contains("'aandeel'") && m.contains("numbers written alike")),
+            "{err}"
+        );
     }
 
     /// A deciding law whose article 1 is a BESCHIKKING, and a reduction

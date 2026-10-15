@@ -92,6 +92,16 @@ pub struct Chronicle {
     grams: Vec<Gram>,
 }
 
+/// Whether the values `gram` holds read back as engine values
+/// ([`encoding::from_json`]): a damaged decimal is an error.
+fn readable(gram: &Gram) -> Result<()> {
+    for value in gram.fields.values().chain(gram.outputs.values()) {
+        encoding::from_json(value)
+            .map_err(|e| setup(format!("chronolexogram '{}': {e}", gram.id)))?;
+    }
+    Ok(())
+}
+
 impl Chronicle {
     /// An empty chronicle in memory.
     pub fn in_memory() -> Self {
@@ -116,10 +126,8 @@ impl Chronicle {
             }
             let gram: Gram = serde_json::from_str(line)
                 .map_err(|e| setup(format!("{} line {}: {e}", path.display(), i + 1)))?;
-            for value in gram.fields.values().chain(gram.outputs.values()) {
-                encoding::from_json(value)
-                    .map_err(|e| setup(format!("{} line {}: {e}", path.display(), i + 1)))?;
-            }
+            readable(&gram)
+                .map_err(|e| setup(format!("{} line {}: {e}", path.display(), i + 1)))?;
             chronicle.check(&gram)?;
             chronicle.grams.push(gram);
         }
@@ -148,8 +156,10 @@ impl Chronicle {
     pub fn append_all(&mut self, grams: Vec<Gram>) -> Result<&[Gram]> {
         let before = self.grams.len();
         for gram in &grams {
-            // Checked against the chronicle and the ones before it.
-            if let Err(e) = self.check(gram) {
+            // Checked against the chronicle and the ones before it, and
+            // read back as `open` reads it, so no file is written that does
+            // not open again.
+            if let Err(e) = readable(gram).and_then(|()| self.check(gram)) {
                 self.grams.truncate(before);
                 return Err(e);
             }

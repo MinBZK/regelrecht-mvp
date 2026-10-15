@@ -20,18 +20,29 @@ use crate::error::{setup, Result};
 /// The key of the object a decimal is written as.
 pub const DECIMAL_KEY: &str = "__decimal";
 
-/// `value` as the chronicle holds it.
-pub fn to_json(value: &Value) -> J {
-    match value {
+/// `value` as the chronicle holds it. A record that holds [`DECIMAL_KEY`]
+/// itself, such as one a data source gave, is an error: read back, it
+/// would be a decimal it never was.
+pub fn to_json(value: &Value) -> Result<J> {
+    Ok(match value {
         Value::Decimal(d) => {
             let mut marker = serde_json::Map::new();
             marker.insert(DECIMAL_KEY.to_string(), J::String(d.to_string()));
             J::Object(marker)
         }
-        Value::Array(items) => J::Array(items.iter().map(to_json).collect()),
-        Value::Object(map) => J::Object(map.iter().map(|(k, v)| (k.clone(), to_json(v))).collect()),
+        Value::Object(map) if map.contains_key(DECIMAL_KEY) => {
+            return Err(setup(format!(
+                "{value} holds the key '{DECIMAL_KEY}', which the chronicle keeps for a decimal"
+            )))
+        }
+        Value::Array(items) => J::Array(items.iter().map(to_json).collect::<Result<_>>()?),
+        Value::Object(map) => J::Object(
+            map.iter()
+                .map(|(k, v)| Ok((k.clone(), to_json(v)?)))
+                .collect::<Result<_>>()?,
+        ),
         other => J::from(other),
-    }
+    })
 }
 
 /// The engine value the chronicle holds as `json`: the inverse of
@@ -80,8 +91,10 @@ fn decimal(map: &BTreeMap<String, Value>) -> Result<Decimal> {
         .get(DECIMAL_KEY)
         .and_then(Value::as_str)
         .filter(|_| map.len() == 1);
+    // Only the digits `to_json` writes: what parses but reads otherwise,
+    // such as `1_0` or `+1`, is no decimal the chronicle wrote.
     digits
-        .and_then(|d| d.parse().ok())
+        .and_then(|d| d.parse::<Decimal>().ok().filter(|p| p.to_string() == d))
         .ok_or_else(|| setup(format!("{map:?} is no decimal the chronicle wrote")))
 }
 
@@ -107,7 +120,7 @@ mod tests {
     }
 
     fn round_trip(value: &Value) -> Value {
-        let text = serde_json::to_string(&to_json(value)).unwrap();
+        let text = serde_json::to_string(&to_json(value).unwrap()).unwrap();
         from_json(&serde_json::from_str(&text).unwrap()).unwrap()
     }
 
@@ -136,7 +149,7 @@ mod tests {
             .into(),
         )]);
         assert_eq!(
-            to_json(&value),
+            to_json(&value).unwrap(),
             json!([{"aandeel": {"__decimal": "0.5"}, "n": 2}])
         );
         let Value::Array(items) = round_trip(&value) else {
@@ -156,6 +169,8 @@ mod tests {
             json!({"__decimal": "geen getal"}),
             json!({"__decimal": "1.5", "ander": 1}),
             json!([{"__decimal": 1.5}]),
+            json!({"__decimal": "1_0"}),
+            json!({"__decimal": "+1"}),
         ] {
             assert!(from_json(&json).is_err(), "{json}");
         }
@@ -163,11 +178,11 @@ mod tests {
 
     #[test]
     fn a_decimal_is_the_same_whatever_its_scale() {
-        let a = to_json(&dec("5.0"));
-        assert!(same(&a, &to_json(&dec("5.00"))).unwrap());
-        assert!(!same(&a, &to_json(&dec("5.01"))).unwrap());
+        let a = to_json(&dec("5.0")).unwrap();
+        assert!(same(&a, &to_json(&dec("5.00")).unwrap()).unwrap());
+        assert!(!same(&a, &to_json(&dec("5.01")).unwrap()).unwrap());
         assert!(!same(&a, &json!(6)).unwrap());
-        assert!(same_held(Some(&a), Some(&to_json(&dec("5.00")))).unwrap());
+        assert!(same_held(Some(&a), Some(&to_json(&dec("5.00")).unwrap())).unwrap());
         assert!(same_held(None, None).unwrap());
         assert!(!same_held(Some(&a), None).unwrap());
         assert!(!same_held(None, Some(&a)).unwrap());
@@ -178,7 +193,7 @@ mod tests {
         // Not a difference and not a match: whether 5 and 5.0 are alike is
         // a question the engine refuses to answer silently, and so does the
         // cell, bare or inside a record or a list.
-        let five = to_json(&dec("5.0"));
+        let five = to_json(&dec("5.0")).unwrap();
         for (a, b) in [
             (five.clone(), json!(5)),
             (json!({"n": five.clone()}), json!({"n": 5})),
@@ -206,9 +221,16 @@ mod tests {
             unknown,
             untranslatable,
         ] {
-            assert_eq!(to_json(&value), J::from(&value));
+            assert_eq!(to_json(&value).unwrap(), J::from(&value));
             assert_eq!(round_trip(&value), value);
         }
+    }
+
+    #[test]
+    fn a_record_that_holds_the_decimal_key_is_not_written() {
+        let record = Value::from(&json!({"x": {"__decimal": "1.5"}}));
+        assert!(to_json(&record).is_err());
+        assert!(to_json(&Value::Array(vec![record])).is_err());
     }
 
     #[test]
