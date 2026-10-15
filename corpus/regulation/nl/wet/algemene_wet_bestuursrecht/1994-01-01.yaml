@@ -503,34 +503,17 @@ articles:
           - name: bezwaarschrift_tijdig_ingediend
             type: boolean
             description: Of het bezwaarschrift tijdig is ingediend (artikel 6:9).
-          # Lid 1: wat het bestuursorgaan bij de heroverweging opnieuw
-          # oordeelt. Eigen keuze: een parameter en geen open begrip met
-          # decided_per_case_by, omdat een open begrip geen object kan zijn.
-          # Het hoort niet bij het bezwaar (produces hierboven), dus het
-          # bestuursorgaan levert het bij de beslissing.
-          - name: heroverweging_oordelen
-            type: object
-            nullable: true
-            required: false
-            description: >-
-              Wat het bestuursorgaan bij de heroverweging opnieuw oordeelt,
-              onder de naam die het artikel van het bestreden besluit ervoor
-              gebruikt. Een oordeel dat het niet opnieuw geeft, blijft dat van
-              het bestreden besluit.
         input:
-          # Lid 1: de heroverweging. Het artikel van het bestreden besluit,
-          # opnieuw toegepast op de dag van de beslissing op het bezwaar (ex
-          # nunc), met de gegevens van dat besluit en daarboven wat het
-          # bestuursorgaan opnieuw oordeelt. Alleen gelezen als het bezwaar
-          # ontvankelijk is.
+          # Lid 1: de heroverweging. Het bestreden besluit opnieuw genomen,
+          # op de dag van de beslissing op het bezwaar (ex nunc), met zijn
+          # eigen gegevens en bevindingen; wat het bestuursorgaan opnieuw
+          # vaststelt, geeft de uitvoering mee (RFC-050). Alleen gelezen als
+          # het bezwaar ontvankelijk is.
           - name: heroverweging
             type: decision
             nullable: true
             source:
-              article: $bestreden_besluit.grondslag
-              parameters_from:
-                - $bestreden_besluit.fields
-                - $heroverweging_oordelen
+              article: $bestreden_besluit
         output:
           - name: bezwaar_ontvankelijk
             type: boolean

@@ -203,15 +203,15 @@ produces:
               bestreden_besluit_herroepen, nieuw_besluit]
 parameters:
   - {name: bestreden_besluit, type: decision}
-  - {name: heroverweging_oordelen, type: object, nullable: true}
 input:
   - name: heroverweging
     type: decision
     nullable: true
     source:
-      article: $bestreden_besluit.grondslag
-      parameters_from: [$bestreden_besluit.fields, $heroverweging_oordelen]
+      article: $bestreden_besluit
 ```
+
+Within a procedure, the earlier steps are part of the context of the engine and the chronicle. The objection and the decision it refers to, with their fields and findings, are context for the article that decides. Calling that decision anew (`article: $bestreden_besluit`) uses its own fields and findings; new findings come in from the top, and an article in the call must ask them.
 
 The cell records the objection with `record_submission`, referring to the contested decision. It fills `bestreden_besluit` from that reference and keeps it by its id:
 
@@ -232,7 +232,7 @@ The cell records the objection with `record_submission`, referring to the contes
 
 - The fields are the contested decision and those of Awb 6:5, plus the end of the objection period, which the cell takes from the contested decision. An objection does not change the application: Awb 7:11 lid 1 reconsiders the decision "op grondslag van het bezwaar", and 6:5 asks only for the grounds. A smaller request is a new application.
 - Awb 6:9 makes the receipt the moment that counts and says whether it came in on time. A late objection is recorded. 7:11 then declares it not admissible, and does not read the heroverweging (lid 1). Nor is an objection against a decision taken on objection admissible (Awb 7:1 lid 1 onder a): the decision on the objection, or the new decision it took. The decision value says on which article's submission a decision was taken (`taken_on`), and for both that is 7:11.
-- The head decides with `decide`. The engine gets the contested decision as a decision value. For an admissible objection 7:11 calls art. 13a with that decision's fields and, on top, what the head judges anew (`heroverweging_oordelen`), under the law and policy of that day. The cell answers the reduction again for that day, without the contested decision. When an outcome of the decision item of art. 13a comes out different, the heroverweging gives cause, and 7:11 revokes the decision.
+- The head decides with `decide`. The engine gets the contested decision as a decision value. For an admissible objection 7:11 calls the decision anew: art. 13a with that decision's fields and findings, under the law and policy of that day. What the head finds anew, `decide` gives the engine apart from the parameters, and it wins over the decision's own finding. A finding that no article asks, such as one on a late objection, is an error. The cell answers the reduction again for that day, without the contested decision. When an outcome of the decision item of art. 13a comes out different, the heroverweging gives cause, and 7:11 revokes the decision.
 - On revocation `nieuw_besluit` is the decision that art. 13a gave. The cell records it as a chronolexogram of its own under art. 13a, with its own period (Awb 6:7, 6:8; for a decision on objection that is the period for appeal), and the decision on the objection holds it by id. A second objection against the revoked decision is reconsidered, but the cell refuses to replace a decision twice. The revoked decision stays in the chronicle. The school's reduction reads the decisions under 7:11 as a second input and leaves out a grant that one of them revoked.
 
 The cell knows no Awb article: it records a submission, fills a `decision` field from the reference, and records an output of type `decision`. [RFC-050](/rfcs/rfc-050) describes the design and what is still open.

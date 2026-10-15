@@ -1222,7 +1222,7 @@ fn collect_outputs(
 /// `shape`: an open term the deciding article leaves to it per case
 /// (`decided_per_case_by`), also one a regulation may fill.
 fn is_finding(shape: &DecisionShape, name: &str) -> bool {
-    shape.findings.iter().any(|j| j == name)
+    shape.judgements.iter().any(|j| j == name)
         || shape.input(name).is_some_and(|input| input.policy_first)
 }
 
