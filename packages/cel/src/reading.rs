@@ -17,6 +17,12 @@
 //! names no reduction and no cell, so a scenario or another system can
 //! supply the same value.
 //!
+//! A decision revoked on objection stays in the chronicle, and so in the
+//! rows: each row says with [`REVOKES`] whether a decision on an objection
+//! against it revoked it (Awb 7:11 lid 2, RFC-050). Whether a revoked
+//! decision counts is the reduction's to say; the new decision that took
+//! its place is a row of its own.
+//!
 //! The reductions and the decisions they read are bound for the length of
 //! one decision ([`bind`]): the reductions are loaded into the service, and
 //! the decisions are data sources. They go when the [`Bound`] guard drops,
@@ -31,7 +37,7 @@ use regelrecht_engine::{
 use serde_json::Map;
 
 use crate::chronicle::Gram;
-use crate::decision::{DecisionShape, Source};
+use crate::decision::{DecisionShape, Source, REVOKES};
 use crate::error::{refused, setup, Result};
 use crate::shape::article_on;
 
@@ -66,9 +72,13 @@ impl Reduction {
 }
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
-/// whose legal character is `kind`, as rows: the fields, then the outputs. A
-/// name that is both a field and an output with another value is refused:
-/// the row would hide one.
+/// whose legal character is `kind`, as rows: the fields, then the outputs,
+/// then [`REVOKES`]: whether a decision on an objection revoked it. A
+/// decision on an objection holds [`REVOKES`] itself and keeps it: it can
+/// never be revoked, as no objection lies against it (Awb 7:1 lid 1 onder
+/// a). A name that is both a field and an output with another value is
+/// refused: the row would hide one. So is another decision that holds
+/// [`REVOKES`] itself.
 pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     let mut rows = Vec::new();
     for gram in grams
@@ -90,9 +100,45 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
                 }
             }
         }
+        if gram.outputs.contains_key(REVOKES) && refers_to_objection(grams, gram) {
+            rows.push(serde_json::Value::Object(row));
+            continue;
+        }
+        if row.contains_key(REVOKES) {
+            return Err(setup(format!(
+                "chronolexogram '{}' holds '{REVOKES}' itself; its row says with that name whether \
+                 it was revoked",
+                gram.id
+            )));
+        }
+        let revoked = revoked_by(grams, gram).is_some();
+        row.insert(REVOKES.to_string(), serde_json::Value::Bool(revoked));
         rows.push(serde_json::Value::Object(row));
     }
     Ok(Value::from(serde_json::Value::Array(rows)))
+}
+
+/// Whether `gram` refers to an objection: a chronolexogram that itself
+/// refers to a decision.
+fn refers_to_objection(grams: &[Gram], gram: &Gram) -> bool {
+    grams
+        .iter()
+        .find(|g| gram.refers_to.as_deref() == Some(g.id.as_str()))
+        .is_some_and(|objection| objection.refers_to.is_some())
+}
+
+/// The decision on an objection against `decision` that revoked it: a
+/// chronolexogram that refers to an objection that refers to `decision`,
+/// with [`REVOKES`] true (Awb 7:11 lid 2).
+pub fn revoked_by<'g>(grams: &'g [Gram], decision: &Gram) -> Option<&'g Gram> {
+    grams.iter().find(|g| {
+        g.outputs.get(REVOKES) == Some(&serde_json::Value::Bool(true))
+            && g.refers_to.as_deref().is_some_and(|objection| {
+                grams
+                    .iter()
+                    .any(|o| o.id == objection && o.refers_to.as_deref() == Some(&decision.id))
+            })
+    })
 }
 
 /// An input of the decision that a reduction of the cell yields.
@@ -104,7 +150,8 @@ struct Answer {
 
 /// Bind the reductions of the cell for a decision of `shape` on `day`,
 /// until the returned guard drops: each reduction that yields an input of
-/// the decision reads the decisions in `grams`. [`Bound::answer`] runs them.
+/// the decision reads the decisions in `grams` (see [`rows`]).
+/// [`Bound::answer`] runs them.
 ///
 /// Refused, before a reduction runs: two reductions that yield one input,
 /// an output of another type than the input, an input that the
@@ -448,7 +495,11 @@ mod tests {
         let rows = serde_json::to_value(rows(&grams, GRONDSLAG, "BESCHIKKING").unwrap()).unwrap();
         assert_eq!(
             rows,
-            json!([{ "eerste_verlofdag": "2027-02-01", "verlof_verleend": true }])
+            json!([{
+                "eerste_verlofdag": "2027-02-01",
+                "verlof_verleend": true,
+                "bestreden_besluit_herroepen": false,
+            }])
         );
     }
 
@@ -551,6 +602,8 @@ articles:
             application: "wet_fictief#1".into(),
             stages: Vec::new(),
             inputs: all,
+            outputs: Vec::new(),
+            judgements: Vec::new(),
         }
     }
 
@@ -622,7 +675,11 @@ articles:
         let answered = bound.answer(&fields(), day()).unwrap();
         assert_eq!(
             serde_json::to_value(answered).unwrap(),
-            json!({ "verleend_lijst": [{ "eerste_verlofdag": "2027-02-01", "verleend": true }] })
+            json!({ "verleend_lijst": [{
+                "eerste_verlofdag": "2027-02-01",
+                "verleend": true,
+                "bestreden_besluit_herroepen": false,
+            }] })
         );
         // A parameter of the reduction the decision does not hold.
         let e = bound.answer(&BTreeMap::new(), day()).unwrap_err();

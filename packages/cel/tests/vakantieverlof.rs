@@ -33,6 +33,11 @@ const ONCE: &str = "verlof_al_verleend_in_schooljaar";
 
 /// The Leerplichtwet, the Awb and the school's policies from the corpus.
 fn service() -> LawExecutionService {
+    service_without(&[])
+}
+
+/// As [`service`], without the regelwerken under `without`.
+fn service_without(without: &[&str]) -> LawExecutionService {
     let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
     for law in [
@@ -40,7 +45,10 @@ fn service() -> LawExecutionService {
         format!("wet/{AWB}"),
         format!("uitvoeringsbeleid/{POLICY}"),
         format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
-    ] {
+    ]
+    .into_iter()
+    .filter(|law| !without.iter().any(|w| law.ends_with(w)))
+    {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
             if path.extension().is_some_and(|x| x == "yaml") {
@@ -904,4 +912,627 @@ fn the_cell_keeps_only_reductions() {
         matches!(&e, Error::Setup(m) if m.contains("directory of that name")),
         "{e}"
     );
+}
+
+// ---------------------------------------------------------------------------
+// The objection and the decision on it (RFC-050)
+// ---------------------------------------------------------------------------
+
+/// Awb 7:11 decides on the objection and establishes it.
+const OBJECTION: &str = "7:11";
+const TIMELY: &str = "bezwaarschrift_tijdig_ingediend";
+const CAUSE: &str = "heroverweging_geeft_aanleiding_tot_herroeping";
+
+/// A complete objection, with fictional data, and `with`.
+fn objection(with: &[(&str, &str)]) -> Map<String, Value> {
+    let mut supplied = json!({
+        "bezwaarschrift_ondertekend": true,
+        "naam_indiener": "J. Jansen",
+        "adres_indiener": "Voorbeeldstraat 1",
+        "dagtekening_bezwaarschrift": "2026-11-01",
+        "omschrijving_bestreden_besluit": "weigering vakantieverlof",
+        "gronden_bezwaar": "verklaring van de werkgever: geen verlof in de schoolvakanties",
+    })
+    .as_object()
+    .unwrap()
+    .clone();
+    for (name, value) in with {
+        supplied.insert((*name).into(), json!(value));
+    }
+    supplied
+}
+
+fn object(
+    cell: &mut Cell,
+    contested: &str,
+    supplied: &Map<String, Value>,
+    on: &str,
+) -> Result<Gram, Error> {
+    cell.record_objection(&service(), AWB, OBJECTION, contested, supplied, day(on))
+}
+
+fn decide_objection(
+    cell: &mut Cell,
+    objection: &str,
+    on: &str,
+) -> Result<regelrecht_cel::ObjectionDecision, Error> {
+    reconsider(cell, objection, &Map::new(), on)
+}
+
+/// Decide on the objection with what the head supplies at the
+/// reconsideration.
+fn reconsider(
+    cell: &mut Cell,
+    objection: &str,
+    supplied: &Map<String, Value>,
+    on: &str,
+) -> Result<regelrecht_cel::ObjectionDecision, Error> {
+    cell.decide_on_objection(&mut service(), AWB, OBJECTION, objection, supplied, day(on))
+}
+
+/// Five school days, refused on 20 October: the head judged that the
+/// profession of a parent is not of the kind art. 11 onder f asks.
+fn refused_on_profession(cell: &mut Cell) -> Gram {
+    let app = applied(cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    let refused = decide(cell, &app.id, &judgement(false, true), "2026-10-20").unwrap();
+    assert_eq!(refused.outputs["verlof_verleend"], json!(false));
+    refused
+}
+
+/// The head's judgement on the profession of a parent, given anew.
+fn profession(judged: bool) -> Map<String, Value> {
+    json!({ PROFESSION: judged }).as_object().unwrap().clone()
+}
+
+#[test]
+fn the_shape_of_the_objection_comes_from_the_awb() {
+    let shape = shape::derive(&service(), AWB, OBJECTION, day("2026-11-01")).unwrap();
+    assert_eq!(shape.kind, "BEZWAAR");
+    assert_eq!(shape.stage.as_deref(), Some("BEZWAAR"));
+    let fields: Vec<(&str, &str)> = shape
+        .fields
+        .iter()
+        .map(|f| (f.name.as_str(), f.first_declared_by()))
+        .collect();
+    assert_eq!(
+        fields,
+        vec![
+            (
+                "bezwaarschrift_ondertekend",
+                "algemene_wet_bestuursrecht#6:5"
+            ),
+            ("naam_indiener", "algemene_wet_bestuursrecht#6:5"),
+            ("adres_indiener", "algemene_wet_bestuursrecht#6:5"),
+            (
+                "dagtekening_bezwaarschrift",
+                "algemene_wet_bestuursrecht#6:5"
+            ),
+            (
+                "omschrijving_bestreden_besluit",
+                "algemene_wet_bestuursrecht#6:5"
+            ),
+            ("gronden_bezwaar", "algemene_wet_bestuursrecht#6:5"),
+            ("bezwaartermijn_einddatum", "algemene_wet_bestuursrecht#6:9"),
+        ]
+    );
+    // What 6:9 gives is no field, though 7:11 asks it.
+    assert!(shape.given.iter().any(|g| g == TIMELY));
+    // The objection asks for the decision of 7:11 (`requests`).
+    assert_eq!(
+        shape.requests.as_deref(),
+        Some("algemene_wet_bestuursrecht#7:11")
+    );
+    let moment = shape.moment.unwrap();
+    assert_eq!(
+        moment.parameter.as_deref(),
+        Some("datum_ontvangst_bezwaarschrift")
+    );
+    assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#6:9");
+}
+
+#[test]
+fn an_objection_refers_to_the_decision_and_takes_its_period_from_it() {
+    let mut cell = cell();
+    // Twelve school days, refused on 20 October; the period ends 1 December.
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    assert_eq!(refused.outputs["verlofdagen"], json!(12));
+    let gram = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+
+    assert_eq!(gram.kind, "BEZWAAR");
+    assert_eq!(gram.grondslag, "algemene_wet_bestuursrecht#7:11");
+    assert_eq!(gram.refers_to.as_deref(), Some(refused.id.as_str()));
+    // The period comes from the contested decision.
+    assert_eq!(gram.fields["bezwaartermijn_einddatum"], json!("2026-12-01"));
+    assert_eq!(
+        gram.fields["bezwaartermijn_einddatum"],
+        refused.outputs["bezwaartermijn_einddatum"]
+    );
+    assert_eq!(gram.moment.as_ref().unwrap().on, day("2026-11-01"));
+    assert_eq!(gram.outputs[TIMELY], json!(true));
+    assert_eq!(
+        gram.outputs["bezwaarschrift_bevat_wat_artikel_6_5_eist"],
+        json!(true)
+    );
+    // Awb 7:10: six weeks from the day after the period ends.
+    assert_eq!(
+        gram.outputs["beslistermijn_bezwaar_einddatum"],
+        json!("2027-01-12")
+    );
+    // The hooks on the decision do not fire on the objection.
+    assert!(!gram.outputs.contains_key("motivering_vereist"));
+}
+
+#[test]
+fn the_objector_does_not_supply_what_the_decision_holds_or_the_law_does_not_ask() {
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    for (name, value, says) in [
+        (
+            "bezwaartermijn_einddatum",
+            "2027-01-01",
+            "comes from the decision it contests",
+        ),
+        ("bestemming", "Lissabon", "does not ask 'bestemming'"),
+        (
+            "datum_ontvangst_bezwaarschrift",
+            "2026-10-25",
+            "moment that counts",
+        ),
+        // An objection does not change the application (Awb 6:5, 7:11
+        // lid 1), nor what a hook on it gave.
+        ("laatste_verlofdag", "2027-02-12", "does not ask"),
+        (
+            "aanvraag_bevat_wat_artikel_4_2_eist",
+            "true",
+            "does not ask",
+        ),
+        ("bezwaarschrift_ondertekend", "ja", "does not fit"),
+    ] {
+        let e = object(
+            &mut cell,
+            &refused.id,
+            &objection(&[(name, value)]),
+            "2026-11-01",
+        )
+        .unwrap_err();
+        assert!(matches!(&e, Error::Refused(m) if m.contains(says)), "{e}");
+    }
+    assert_eq!(cell.grams().len(), 2);
+}
+
+#[test]
+fn an_objection_against_what_is_no_decision_is_refused() {
+    let mut cell = cell();
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let e = object(&mut cell, &app.id, &objection(&[]), "2026-11-01").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("not a decision")),
+        "{e}"
+    );
+}
+
+#[test]
+fn a_second_application_upheld_on_objection_stands() {
+    // Ongegrond: nothing changed, so 13a refuses again and the decision stands.
+    let mut cell = cell();
+    apply_and_decide(&mut cell, "2026-10-05", "2026-10-09", "2026-09-21");
+    let second = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    assert_eq!(second.outputs["verlof_verleend"], json!(false));
+    let bezwaar = object(&mut cell, &second.id, &objection(&[]), "2027-03-10").unwrap();
+    let decided = decide_objection(&mut cell, &bezwaar.id, "2027-04-01").unwrap();
+
+    let decision = &decided.decision;
+    assert_eq!(decision.kind, "BESCHIKKING");
+    assert_eq!(decision.grondslag, "algemene_wet_bestuursrecht#7:11");
+    assert_eq!(decision.refers_to.as_deref(), Some(bezwaar.id.as_str()));
+    // The heroverweging gives no cause; whether the objection came in on
+    // time comes from the objection (Awb 6:9).
+    assert_eq!(decision.fields[CAUSE], json!(false));
+    assert_eq!(decision.fields[TIMELY], json!(true));
+    assert_eq!(decision.fields[TIMELY], bezwaar.outputs[TIMELY]);
+    assert_eq!(decision.outputs["bezwaar_ontvankelijk"], json!(true));
+    assert_eq!(
+        decision.outputs["bestreden_besluit_herroepen"],
+        json!(false)
+    );
+    // The decision on the objection is a beschikking: motivated (3:46), and
+    // open to appeal within six weeks (6:7, 6:8).
+    assert_eq!(decision.outputs["motivering_vereist"], json!(true));
+    assert_eq!(
+        decision.outputs["bezwaartermijn_einddatum"],
+        json!("2027-05-13")
+    );
+    assert!(decided.new_decision.is_none());
+    assert_eq!(cell.grams().len(), 6);
+
+    // Decided once.
+    let e = decide_objection(&mut cell, &bezwaar.id, "2027-04-02").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("already decided on")),
+        "{e}"
+    );
+}
+
+#[test]
+fn grounds_on_objection_lead_the_head_to_judge_anew_and_revoke_the_refusal() {
+    // Gegrond: refused because the head judged the profession of a parent
+    // not of the kind art. 11 onder f asks. In the objection the parent
+    // gives grounds, a statement of the employer; at the reconsideration the
+    // head judges it anew, and art. 13a grants.
+    let mut cell = cell();
+    let refused = refused_on_profession(&mut cell);
+    let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+    let decided = reconsider(&mut cell, &bezwaar.id, &profession(true), "2026-11-15").unwrap();
+
+    assert_eq!(decided.decision.fields[CAUSE], json!(true));
+    assert_eq!(
+        decided.decision.outputs["bestreden_besluit_herroepen"],
+        json!(true)
+    );
+    let new = decided.new_decision.unwrap();
+    assert_eq!(new.kind, "BESCHIKKING");
+    assert_eq!(new.grondslag, "leerplichtwet_1969#13a");
+    assert_eq!(new.refers_to.as_deref(), Some(bezwaar.id.as_str()));
+    assert_eq!(new.recorded_on, day("2026-11-15"));
+    // The application's own fields.
+    assert_eq!(new.fields["eerste_verlofdag"], json!("2027-02-01"));
+    assert_eq!(new.fields["laatste_verlofdag"], json!("2027-02-05"));
+    // The judgement given anew replaces that one; the other stands from
+    // the contested decision.
+    assert_eq!(new.fields[PROFESSION], json!(true));
+    assert_eq!(new.fields[OUTSIDE_HOLIDAYS], json!(true));
+    assert_eq!(new.outputs["verlofdagen"], json!(5));
+    assert_eq!(new.outputs["verlof_verleend"], json!(true));
+    // The new decision has its own period, from its own announcement (Awb
+    // 6:7, 6:8), not that of the revoked one.
+    assert_eq!(new.outputs["bezwaartermijn_einddatum"], json!("2026-12-27"));
+    assert_ne!(
+        new.outputs["bezwaartermijn_einddatum"],
+        refused.outputs["bezwaartermijn_einddatum"]
+    );
+    assert_eq!(cell.grams().len(), 5);
+
+    // The new decision counts: a later application this school year is refused.
+    let later = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    assert_eq!(later.fields[ONCE], json!(true));
+    assert_eq!(later.outputs["verlof_verleend"], json!(false));
+
+    // The revoked decision is no longer there to object to, and against the
+    // decision taken on objection beroep is open, not bezwaar (Awb 7:1).
+    let e = object(&mut cell, &refused.id, &objection(&[]), "2027-03-02").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("revoked")),
+        "{e}"
+    );
+    let e = object(&mut cell, &new.id, &objection(&[]), "2027-03-02").unwrap_err();
+    assert!(matches!(&e, Error::Refused(m) if m.contains("7:1")), "{e}");
+}
+
+#[test]
+fn a_refusal_on_another_ground_on_objection_stands() {
+    // The head now judges the profession of the kind 11 onder f asks, but
+    // the leave within the school holidays: still refused, on another
+    // ground. No output of art. 13a differs, so the heroverweging gives no
+    // cause and the refusal stands.
+    let mut cell = cell();
+    let refused = refused_on_profession(&mut cell);
+    let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+    let decided = reconsider(
+        &mut cell,
+        &bezwaar.id,
+        &judgement(true, false),
+        "2026-11-15",
+    )
+    .unwrap();
+    assert_eq!(decided.decision.fields[CAUSE], json!(false));
+    assert_eq!(
+        decided.decision.outputs["bestreden_besluit_herroepen"],
+        json!(false)
+    );
+    assert!(decided.new_decision.is_none());
+}
+
+#[test]
+fn a_smaller_request_after_a_refusal_is_a_new_application() {
+    // Twelve school days are refused. Ten is a new application, not an
+    // objection (Awb 6:5, 7:11 lid 1); the refusal does not count as leave
+    // granted, so it is granted.
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    assert_eq!(refused.outputs["verlof_verleend"], json!(false));
+    let smaller = apply_and_decide(&mut cell, "2027-02-01", "2027-02-12", "2026-10-27");
+    assert_eq!(smaller.outputs["verlofdagen"], json!(10));
+    assert_eq!(smaller.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn a_revoked_grant_does_not_count_as_leave_granted() {
+    let mut cell = cell();
+    let granted = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    assert_eq!(granted.outputs["verlof_verleend"], json!(true));
+    // Constructed: at the reconsideration the head judges the profession
+    // anew, not of the kind art. 11 onder f asks, so 13a refuses anew, the
+    // grant is revoked and a refusal takes its place.
+    let bezwaar = object(&mut cell, &granted.id, &objection(&[]), "2026-11-01").unwrap();
+    let decided = reconsider(&mut cell, &bezwaar.id, &profession(false), "2026-11-15").unwrap();
+    assert_eq!(
+        decided.decision.outputs["bestreden_besluit_herroepen"],
+        json!(true)
+    );
+    let new = decided.new_decision.unwrap();
+    assert_eq!(new.outputs["verlof_verleend"], json!(false));
+
+    // The revoked grant stays in the chronicle. Its row says it was
+    // revoked, and the reduction leaves it out (RFC-050).
+    let rows = serde_json::to_value(
+        regelrecht_cel::reading::rows(cell.grams(), "leerplichtwet_1969#13a", "BESCHIKKING")
+            .unwrap(),
+    )
+    .unwrap();
+    let revoked: Vec<(bool, bool)> = rows
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| {
+            (
+                row["verlof_verleend"].as_bool().unwrap(),
+                row["bestreden_besluit_herroepen"].as_bool().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(revoked, [(true, true), (false, false)]);
+
+    // Neither the revoked grant nor the refusal in its place counts.
+    let later = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    assert_eq!(later.fields[ONCE], json!(false));
+    assert_eq!(later.outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn a_late_objection_is_recorded_and_not_admissible() {
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    // On the last day of the period it is on time.
+    let on_time = object(&mut cell, &refused.id, &objection(&[]), "2026-12-01").unwrap();
+    assert_eq!(on_time.outputs[TIMELY], json!(true));
+    // The day after it is late, and still recorded.
+    let late = object(&mut cell, &refused.id, &objection(&[]), "2026-12-02").unwrap();
+    assert_eq!(late.outputs[TIMELY], json!(false));
+
+    // A late objection is not admissible (Awb 7:11 lid 1): it is not
+    // reconsidered, the judgement is not given, and the decision stands.
+    let decided = decide_objection(&mut cell, &late.id, "2026-12-10").unwrap();
+    assert_eq!(decided.decision.fields[CAUSE], json!(null));
+    assert_eq!(
+        decided.decision.outputs["bezwaar_ontvankelijk"],
+        json!(false)
+    );
+    assert_eq!(
+        decided.decision.outputs["bestreden_besluit_herroepen"],
+        json!(false)
+    );
+    assert!(decided.new_decision.is_none());
+}
+
+#[test]
+fn an_objection_is_decided_with_decide_on_objection_and_reads_back_from_the_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
+    let recorded = {
+        let mut cell = Cell::open(RECORDING_ACTOR, &path)
+            .unwrap()
+            .with_reductions(cell_dir())
+            .unwrap();
+        let refused = refused_on_profession(&mut cell);
+        let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+        let e = cell
+            .decide(
+                &mut service(),
+                AWB,
+                OBJECTION,
+                &bezwaar.id,
+                &Map::new(),
+                day("2026-11-15"),
+            )
+            .unwrap_err();
+        assert!(
+            matches!(&e, Error::Refused(m) if m.contains("decide_on_objection")),
+            "{e}"
+        );
+        reconsider(&mut cell, &bezwaar.id, &profession(true), "2026-11-15").unwrap();
+        cell.grams().to_vec()
+    };
+    assert_eq!(recorded.len(), 5);
+    let cell = Cell::open(RECORDING_ACTOR, &path).unwrap();
+    assert_eq!(cell.grams(), recorded);
+}
+
+#[test]
+fn an_objection_is_no_decision_to_object_to() {
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+    let e = object(&mut cell, &bezwaar.id, &objection(&[]), "2026-11-02").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("BEZWAAR against a decision")),
+        "{e}"
+    );
+}
+
+#[test]
+fn a_chronicle_appends_a_batch_whole_or_not_at_all() {
+    let mut cell = cell();
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
+    let mut chronicle = regelrecht_cel::Chronicle::in_memory();
+    let mut later = app.clone();
+    later.id = "later".into();
+    let mut earlier = app.clone();
+    earlier.id = "earlier".into();
+    earlier.recorded_on = day("2026-10-01");
+    let e = chronicle.append_all(vec![later, earlier]).unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("does not go back")),
+        "{e}"
+    );
+    assert!(chronicle.grams().is_empty());
+}
+
+#[test]
+fn the_heroverweging_does_not_count_the_contested_grant() {
+    // Read with the contested grant, art. 13a would refuse once per school
+    // year and revoke the grant. Without it, it grants anew, and the grant
+    // stands.
+    let mut cell = cell();
+    let granted = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    let bezwaar = object(&mut cell, &granted.id, &objection(&[]), "2026-11-01").unwrap();
+    let decided = decide_objection(&mut cell, &bezwaar.id, "2026-11-15").unwrap();
+    assert_eq!(decided.decision.fields[CAUSE], json!(false));
+    assert_eq!(
+        decided.decision.outputs["bestreden_besluit_herroepen"],
+        json!(false)
+    );
+    assert!(decided.new_decision.is_none());
+}
+
+#[test]
+fn an_objection_goes_through_record_objection_and_decide_on_objection() {
+    let mut cell = cell();
+    // An objection refers to the decision it contests.
+    let e = cell
+        .record_submission(
+            &service(),
+            AWB,
+            OBJECTION,
+            &objection(&[]),
+            day("2026-11-01"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("record_objection")),
+        "{e}"
+    );
+    // Art. 13a decides on no objection.
+    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-11-01");
+    let e = cell
+        .decide_on_objection(
+            &mut service(),
+            LAW,
+            ARTICLE,
+            &app.id,
+            &Map::new(),
+            day("2026-11-02"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("decides on no objection")),
+        "{e}"
+    );
+}
+
+#[test]
+fn a_late_objection_is_not_admissible_where_the_heroverweging_would_fail() {
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    let late = object(&mut cell, &refused.id, &objection(&[]), "2026-12-02").unwrap();
+    assert_eq!(late.outputs[TIMELY], json!(false));
+    // Without the school's policy on the day of the decision, art. 13a anew
+    // cannot be applied; the objection is not reconsidered, so that does not
+    // stand in the way (Awb 7:11 lid 1).
+    let mut without_policy = service_without(&[POLICY]);
+    let decided = cell
+        .decide_on_objection(
+            &mut without_policy,
+            AWB,
+            OBJECTION,
+            &late.id,
+            &Map::new(),
+            day("2026-12-10"),
+        )
+        .unwrap();
+    assert_eq!(
+        decided.decision.outputs["bezwaar_ontvankelijk"],
+        json!(false)
+    );
+    assert_eq!(decided.decision.fields[CAUSE], json!(null));
+    assert!(decided.new_decision.is_none());
+    // An objection on time is reconsidered, and there it fails.
+    let mut timely = self::cell();
+    let refused = apply_and_decide(&mut timely, "2027-02-01", "2027-02-16", "2026-10-20");
+    let on_time = object(&mut timely, &refused.id, &objection(&[]), "2026-12-01").unwrap();
+    assert!(timely
+        .decide_on_objection(
+            &mut service_without(&[POLICY]),
+            AWB,
+            OBJECTION,
+            &on_time.id,
+            &Map::new(),
+            day("2026-12-10"),
+        )
+        .is_err());
+}
+
+#[test]
+fn a_judgement_for_the_heroverweging_is_refused_when_there_is_none() {
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    let late = object(&mut cell, &refused.id, &objection(&[]), "2026-12-02").unwrap();
+    let e = cell
+        .decide_on_objection(
+            &mut service(),
+            AWB,
+            OBJECTION,
+            &late.id,
+            &judgement(true, true),
+            day("2026-12-10"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("not reconsidered")),
+        "{e}"
+    );
+}
+
+#[test]
+fn an_objection_asks_for_a_decision_on_a_contested_decision() {
+    let mut cell = cell();
+    let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
+    // Art. 13a establishes an application, which asks for no decision on a
+    // contested decision.
+    let e = cell
+        .record_objection(
+            &service(),
+            LAW,
+            ARTICLE,
+            &refused.id,
+            &application(),
+            day("2026-11-01"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("record_submission")),
+        "{e}"
+    );
+    assert_eq!(cell.grams().len(), 2);
+}
+
+#[test]
+fn a_reduction_reads_the_decisions_on_objection_with_their_own_outcome() {
+    let mut cell = cell();
+    let refused = refused_on_profession(&mut cell);
+    let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+    reconsider(&mut cell, &bezwaar.id, &profession(true), "2026-11-15").unwrap();
+    let rows = serde_json::to_value(
+        regelrecht_cel::reading::rows(
+            cell.grams(),
+            "algemene_wet_bestuursrecht#7:11",
+            "BESCHIKKING",
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let rows = rows.as_array().unwrap();
+    assert_eq!(rows.len(), 1);
+    // Its own outcome: it revoked the refusal.
+    assert_eq!(rows[0]["bestreden_besluit_herroepen"], json!(true));
+    assert_eq!(rows[0]["bezwaar_ontvankelijk"], json!(true));
 }

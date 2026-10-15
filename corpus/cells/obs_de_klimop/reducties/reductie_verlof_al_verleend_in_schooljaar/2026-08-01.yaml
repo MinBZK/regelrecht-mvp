@@ -36,7 +36,9 @@ articles:
         input:
           # De besluiten onder artikel 13a, één rij per besluit, met de
           # gegevens en de uitvoer van dat besluit onder hun eigen naam: onder
-          # meer bsn_jongere, eerste_verlofdag en verlof_verleend.
+          # meer bsn_jongere, eerste_verlofdag en verlof_verleend. De cel zet
+          # er bij elke rij bestreden_besluit_herroepen bij: of een beslissing
+          # op bezwaar het besluit herriep (Awb 7:11, tweede lid).
           - name: besluiten
             type: array
             source:
@@ -66,9 +68,11 @@ articles:
         actions:
           # Een besluit dat dezelfde jongere verlof verleende, met een eerste
           # verlofdag in het schooljaar van het gevraagde verlof. Een
-          # weigering telt niet. Met `as` is een besluit alleen als
-          # `$besluit.<veld>` te lezen (RFC-049); `$bsn_jongere` is de
-          # parameter.
+          # weigering telt niet, en een besluit dat op bezwaar is herroepen
+          # ook niet: het is er niet meer (Awb 7:11, tweede lid). Het besluit
+          # dat in zijn plaats kwam, telt als elk ander (RFC-050). Met `as` is
+          # een besluit alleen als `$besluit.<veld>` te lezen (RFC-049);
+          # `$bsn_jongere` is de parameter.
           - output: verlof_al_verleend_in_schooljaar
             value:
               operation: FOREACH
@@ -80,6 +84,9 @@ articles:
                   - operation: EQUALS
                     subject: $besluit.verlof_verleend
                     value: true
+                  - operation: EQUALS
+                    subject: $besluit.bestreden_besluit_herroepen
+                    value: false
                   - operation: EQUALS
                     subject: $besluit.bsn_jongere
                     value: $bsn_jongere

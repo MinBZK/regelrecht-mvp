@@ -1,5 +1,6 @@
 //! A cell: it keeps a chronicle and records applications and the decisions
-//! on them in it.
+//! on them in it. Objections and the decisions on them are in
+//! [`crate::objection`].
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -13,15 +14,15 @@ use serde_json::Map;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
-use crate::reading::{self, Reduction};
+use crate::reading::{self, Bound, Reduction};
 use crate::shape::{self, Shape};
 
 /// A cell. It holds who it is, its chronicle and its reductions, not the
 /// law: every call that needs the law gets the service that executes it.
 #[derive(Debug)]
 pub struct Cell {
-    recording_actor: String,
-    chronicle: Chronicle,
+    pub(crate) recording_actor: String,
+    pub(crate) chronicle: Chronicle,
     reductions: Vec<Reduction>,
 }
 
@@ -126,8 +127,36 @@ impl Cell {
         on: NaiveDate,
     ) -> Result<Gram> {
         let shape = shape::derive(service, law_id, article, on)?;
-        check_supplied(&shape, supplied)?;
+        // Read from the law, not derived: an application whose decision
+        // cannot be derived on this day is still an application.
+        if shape
+            .requests
+            .as_deref()
+            .is_some_and(|r| decision::decides_on_objection(service, r, on))
+        {
+            return Err(refused(format!(
+                "the {} of {} asks for a decision on a contested decision; it is recorded \
+                 with `record_objection`",
+                shape.kind,
+                shape.grondslag()
+            )));
+        }
+        check_supplied(&shape, supplied, &[])?;
+        self.record(service, &shape, supplied, Filled::default(), on)
+    }
 
+    /// Record a submission of `shape` on `on`: `supplied` from the
+    /// submitter, already checked, and `filled` from the cell.
+    pub(crate) fn record(
+        &mut self,
+        service: &LawExecutionService,
+        shape: &Shape,
+        supplied: &Map<String, serde_json::Value>,
+        filled: Filled,
+        on: NaiveDate,
+    ) -> Result<Gram> {
+        let law_id = shape.law_id.as_str();
+        let article = shape.article.as_str();
         // A field the application leaves out and that can be absent is absent:
         // the application is what the applicant sent (RFC-036), and the
         // chronolexogram says so with `null`. One that cannot be absent stays
@@ -136,7 +165,7 @@ impl Cell {
         let mut fields = BTreeMap::new();
         let mut missing = Vec::new();
         for field in &shape.fields {
-            let value = match supplied.get(&field.name) {
+            let value = match filled.fields.get(&field.name).or(supplied.get(&field.name)) {
                 Some(value) => value.clone(),
                 None if field.nullable => serde_json::Value::Null,
                 None => {
@@ -195,7 +224,7 @@ impl Cell {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
-            refers_to: None,
+            refers_to: filled.refers_to,
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
             moment,
@@ -233,70 +262,22 @@ impl Cell {
     ) -> Result<Gram> {
         let shape = decision::derive(service, law_id, article, on)?;
         let applied = self.application(&shape, application)?;
-        check_decision_supplied(&shape, supplied)?;
-        let bound = reading::bind(
-            service,
-            &self.recording_actor,
-            &shape,
-            supplied,
-            self.grams(),
-            &self.reductions,
-            on,
-        )?;
-
-        // What the decision asks, from where the law says it comes. An
-        // application that lacks what the decision needs (Awb 4:5) is not
-        // decided on here: the cell does not guess the value.
-        let mut fields = BTreeMap::new();
-        for input in &shape.inputs {
-            let name = &input.field.name;
-            let value = match &input.source {
-                Source::Application => match applied.fields.get(name) {
-                    Some(value) => Some(value.clone()),
-                    None if applied.missing.contains(name) => {
-                        return Err(refused(format!(
-                            "the application '{}' lacks '{name}', which the decision of {} needs \
-                             (Awb 4:5)",
-                            applied.id,
-                            shape.grondslag()
-                        )))
-                    }
-                    None => None,
-                },
-                // One of the cell's reductions yields it, below.
-                Source::Caller if bound.answers(name) => None,
-                Source::Caller => match supplied.get(name) {
-                    Some(value) => Some(value.clone()),
-                    // A regulation fills it first; where it is silent for
-                    // this case, the engine says the judgement is missing.
-                    None if input.policy_first => None,
-                    None if input.field.nullable => Some(serde_json::Value::Null),
-                    None => {
-                        return Err(refused(format!(
-                            "the decision of {} asks '{name}' of the deciding authority ({})",
-                            shape.grondslag(),
-                            input.field.first_declared_by()
-                        )))
-                    }
-                },
-                Source::Cell => Some(serde_json::Value::String(on.to_string())),
-                // The engine resolves it; the gram takes what it used.
-                Source::Policy => None,
-            };
-            if let Some(value) = value {
-                fields.insert(name.clone(), value);
-            }
+        if shape.outputs.iter().any(|o| o == decision::REVOKES) {
+            return Err(refused(format!(
+                "{} decides on an objection; it is taken with `decide_on_objection`",
+                shape.grondslag()
+            )));
         }
-
-        let answered = bound.answer(&fields, on)?;
-        fields.extend(answered);
-
-        let parameters: BTreeMap<String, Value> = fields
-            .iter()
-            .map(|(k, v)| (k.clone(), Value::from(v.clone())))
-            .collect();
-        let output_values = run_stages(&bound, &shape, parameters, on, &mut fields)?;
-        drop(bound);
+        if let Some(contested) = &applied.refers_to {
+            return Err(refused(format!(
+                "chronolexogram '{application}' refers to '{contested}': the decision on an \
+                 objection is taken with `decide_on_objection`"
+            )));
+        }
+        check_decision_supplied(&shape, supplied)?;
+        let (fields, outputs) = self.take(service, &shape, supplied, None, on, |bound| {
+            asked(&shape, applied, supplied, bound, on)
+        })?;
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
@@ -307,14 +288,56 @@ impl Cell {
             moment: None,
             fields,
             missing: Vec::new(),
-            outputs: output_values,
+            outputs,
         };
         Ok(self.chronicle.append(gram)?.clone())
     }
 
+    /// Take the decision of `shape` on `on`, with the cell's reductions bound
+    /// for it ([`reading::bind`]): they read the decisions in the chronicle,
+    /// but `except`. `inputs` gives what the decision asks from elsewhere;
+    /// `supplied` is what the deciding authority supplied. Returns the
+    /// fields, with what a reduction or a policy filled, and the outputs.
+    pub(crate) fn take(
+        &self,
+        service: &mut LawExecutionService,
+        shape: &DecisionShape,
+        supplied: &Map<String, serde_json::Value>,
+        except: Option<&str>,
+        on: NaiveDate,
+        inputs: impl FnOnce(&Bound<'_>) -> Result<Values>,
+    ) -> Result<(Values, Values)> {
+        // Leaving out one decision changes no other row: whether a decision
+        // was revoked follows from the objections against it.
+        let grams: Vec<Gram> = self
+            .grams()
+            .iter()
+            .filter(|g| except != Some(g.id.as_str()))
+            .cloned()
+            .collect();
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            shape,
+            supplied,
+            &grams,
+            &self.reductions,
+            on,
+        )?;
+        let mut fields = inputs(&bound)?;
+        let answered = bound.answer(&fields, on)?;
+        fields.extend(answered);
+        let parameters: BTreeMap<String, Value> = fields
+            .iter()
+            .map(|(k, v)| (k.clone(), Value::from(v.clone())))
+            .collect();
+        let outputs = run_stages(&bound, shape, parameters, on, &mut fields)?;
+        Ok((fields, outputs))
+    }
+
     /// The application chronolexogram `id` that the decision of `shape` is taken on:
     /// one in this chronicle, of this article and kind, not decided on yet.
-    fn application(&self, shape: &DecisionShape, id: &str) -> Result<&Gram> {
+    pub(crate) fn application(&self, shape: &DecisionShape, id: &str) -> Result<&Gram> {
         let gram = self.grams().iter().find(|g| g.id == id).ok_or_else(|| {
             refused(format!(
                 "there is no chronolexogram '{id}' in the chronicle of '{}'",
@@ -343,6 +366,70 @@ impl Cell {
         }
         Ok(gram)
     }
+}
+
+/// Values by name: the fields or the outputs of a chronolexogram.
+pub(crate) type Values = BTreeMap<String, serde_json::Value>;
+
+/// What the cell fills in a submission itself, and what it refers to.
+#[derive(Debug, Default)]
+pub(crate) struct Filled {
+    pub fields: Values,
+    pub refers_to: Option<String>,
+}
+
+/// What the decision of `shape` on the application `applied` asks, from
+/// where the law says it comes, but what one of the cell's reductions in
+/// `bound` yields. An application that lacks what the decision needs (Awb
+/// 4:5) is not decided on here: the cell does not guess the value.
+fn asked(
+    shape: &DecisionShape,
+    applied: &Gram,
+    supplied: &Map<String, serde_json::Value>,
+    bound: &Bound<'_>,
+    on: NaiveDate,
+) -> Result<Values> {
+    let mut fields = BTreeMap::new();
+    for input in &shape.inputs {
+        let name = &input.field.name;
+        let value = match &input.source {
+            Source::Application => match applied.held(name) {
+                Some(value) => Some(value.clone()),
+                None if applied.missing.contains(name) => {
+                    return Err(refused(format!(
+                        "the application '{}' lacks '{name}', which the decision of {} needs \
+                         (Awb 4:5)",
+                        applied.id,
+                        shape.grondslag()
+                    )))
+                }
+                None => None,
+            },
+            // One of the cell's reductions yields it.
+            Source::Caller if bound.answers(name) => None,
+            Source::Caller => match supplied.get(name) {
+                Some(value) => Some(value.clone()),
+                // A regulation fills it first; where it is silent for this
+                // case, the engine says the judgement is missing.
+                None if input.policy_first => None,
+                None if input.field.nullable => Some(serde_json::Value::Null),
+                None => {
+                    return Err(refused(format!(
+                        "the decision of {} asks '{name}' of the deciding authority ({})",
+                        shape.grondslag(),
+                        input.field.first_declared_by()
+                    )))
+                }
+            },
+            Source::Cell => Some(serde_json::Value::String(on.to_string())),
+            // The engine resolves it; the gram takes what it used.
+            Source::Policy => None,
+        };
+        if let Some(value) = value {
+            fields.insert(name.clone(), value);
+        }
+    }
+    Ok(fields)
 }
 
 /// Run the stages of a decision on `on`: add what a policy filled to
@@ -448,10 +535,21 @@ fn check_decision_supplied(
     Ok(())
 }
 
-/// Refuse what the law does not ask of the applicant.
-fn check_supplied(shape: &Shape, supplied: &Map<String, serde_json::Value>) -> Result<()> {
+/// Refuse what the law does not ask of the submitter, and what comes from
+/// the decision an objection contests (`from_contested`).
+pub(crate) fn check_supplied(
+    shape: &Shape,
+    supplied: &Map<String, serde_json::Value>,
+    from_contested: &[String],
+) -> Result<()> {
     let submission = shape.grondslag();
     for (name, value) in supplied {
+        if from_contested.contains(name) {
+            return Err(refused(format!(
+                "'{name}' of the {} of {submission} comes from the decision it contests",
+                shape.kind
+            )));
+        }
         if let Some(moment) = shape.moment.as_ref().filter(|_| shape.is_moment(name)) {
             return Err(refused(format!(
                 "'{name}' is the moment that counts ({}); the cell records it",

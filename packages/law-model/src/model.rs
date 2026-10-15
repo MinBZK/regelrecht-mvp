@@ -328,7 +328,7 @@ impl From<Produces> for ProducesList {
 
 /// The kinds of submission a produced item's `type` can name (RFC-045). Any
 /// other `type` is a legal character.
-pub const SUBMISSION_KINDS: &[&str] = &["AANVRAAG"];
+pub const SUBMISSION_KINDS: &[&str] = &["AANVRAAG", "BEZWAAR"];
 
 /// One item of `produces` in the list form (schema v0.8.1, RFC-047): a
 /// submission, such as an application, or a decision, each with what it
@@ -488,8 +488,9 @@ pub struct Produces {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Submission {
-    /// The kind of submission, as the law names it: `AANVRAAG` (Awb 1:3 lid
-    /// 3).
+    /// The kind of submission, as the law names it: one of
+    /// [`SUBMISSION_KINDS`], `AANVRAAG` (Awb 1:3 lid 3) or `BEZWAAR` (Awb 1:5
+    /// lid 1).
     pub kind: String,
 }
 
