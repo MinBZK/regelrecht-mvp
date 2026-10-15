@@ -1318,6 +1318,76 @@ fn an_objection_against_a_decision_on_objection_is_not_admissible() {
 }
 
 #[test]
+fn an_objection_against_the_decision_taken_on_objection_is_not_admissible() {
+    // The new decision rests on art. 13a, but it was taken on the objection,
+    // in the place of the revoked refusal: against it too beroep is open,
+    // not bezwaar (Awb 7:1 lid 1 onder a). Its decision value says so in
+    // `taken_on`, which the cell derives from the submission it refers to.
+    let mut cell = cell();
+    let refused = refused_on_profession(&mut cell);
+    let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
+    let decided = reconsider(&mut cell, &bezwaar.id, &profession(true), "2026-11-15").unwrap();
+    let new = &decided[1];
+    assert_eq!(new.grondslag, "leerplichtwet_1969#13a");
+    assert_eq!(new.outputs["verlof_verleend"], json!(true));
+
+    let again = object(&mut cell, &new.id, &objection(&[]), "2026-11-20").unwrap();
+    assert_eq!(again.outputs[TIMELY], json!(true));
+    // Judged anew, art. 13a would refuse; the objection is not reconsidered.
+    let decided = reconsider(&mut cell, &again.id, &profession(false), "2026-11-25").unwrap();
+    assert_eq!(decided.len(), 1);
+    assert_eq!(decided[0].outputs[ADMISSIBLE], json!(false));
+    assert_eq!(decided[0].outputs[CAUSE], Value::Null);
+    assert_eq!(decided[0].outputs[REVOKED], json!(false));
+    assert_eq!(decided[0].outputs[NEW], Value::Null);
+}
+
+#[test]
+fn a_decision_already_replaced_on_objection_is_not_replaced_again() {
+    // Two objections against one grant, both on time. On the first, the
+    // head judges the profession anew and a refusal takes the grant's place.
+    // The second, decided after it, would revoke the grant again and take a
+    // second refusal in its place: the cell refuses that decision, and
+    // appends nothing.
+    let mut cell = cell();
+    let granted = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
+    assert_eq!(granted.outputs["verlof_verleend"], json!(true));
+    let first = object(&mut cell, &granted.id, &objection(&[]), "2026-11-01").unwrap();
+    let second = object(&mut cell, &granted.id, &objection(&[]), "2026-11-02").unwrap();
+    let decided = reconsider(&mut cell, &first.id, &profession(false), "2026-11-15").unwrap();
+    assert_eq!(decided[0].outputs[REVOKED], json!(true));
+    let replacement = &decided[1].id;
+    let recorded = cell.grams().len();
+
+    let e = reconsider(&mut cell, &second.id, &profession(false), "2026-11-16").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("already replaces") && m.contains(replacement.as_str()) && m.contains(&granted.id)),
+        "{e}"
+    );
+    assert_eq!(cell.grams().len(), recorded);
+    // Without cause, the second is decided on: the grant is not revoked again.
+    let decided = decide_objection(&mut cell, &second.id, "2026-11-16").unwrap();
+    assert_eq!(decided.len(), 1);
+    assert_eq!(decided[0].outputs[CAUSE], json!(false));
+}
+
+#[test]
+fn a_judgement_anew_on_an_objection_not_admissible_is_kept_and_not_read() {
+    // The head supplies a judgement anew on a late objection. The decision
+    // keeps what the head supplied, but there is no heroverweging (Awb 7:11
+    // lid 1), so nothing reads it (RFC-050, Open).
+    let mut cell = cell();
+    let refused = refused_on_profession(&mut cell);
+    let late = object(&mut cell, &refused.id, &objection(&[]), "2026-12-02").unwrap();
+    let decided = reconsider(&mut cell, &late.id, &profession(true), "2026-12-10").unwrap();
+    assert_eq!(decided.len(), 1);
+    assert_eq!(decided[0].fields[JUDGED_ANEW], json!({ PROFESSION: true }));
+    assert_eq!(decided[0].outputs[ADMISSIBLE], json!(false));
+    assert_eq!(decided[0].outputs[CAUSE], Value::Null);
+    assert_eq!(decided[0].outputs[NEW], Value::Null);
+}
+
+#[test]
 fn a_refusal_on_another_ground_on_objection_stands() {
     // The head now judges the profession of the kind 11 onder f asks, but
     // the leave within the school holidays: still refused, on another
@@ -1519,6 +1589,7 @@ fn the_heroverweging_runs_only_for_an_admissible_objection() {
     let refused = refused_on_profession(&mut cell);
     let contested = json!({
         "grondslag": refused.grondslag,
+        "taken_on": "leerplichtwet_1969#13a",
         "fields": refused.fields,
         "outputs": {
             "verlofdagen": refused.outputs["verlofdagen"],

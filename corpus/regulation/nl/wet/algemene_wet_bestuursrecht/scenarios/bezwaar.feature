@@ -12,7 +12,8 @@ Feature: Het bezwaar en de beslissing erop
 
   Het bestreden besluit is hier een weigering van vakantieverlof (artikel 13a
   van de Leerplichtwet 1969), als besluitwaarde: het artikel waarop het
-  berust, de gegevens waarop het is genomen en zijn uitkomst. Het hoofd
+  berust, het artikel van de indiening waarop het is genomen (taken_on), de
+  gegevens waarop het is genomen en zijn uitkomst. Het hoofd
   oordeelde dat het beroep van de ouder niet van de aard is die artikel 11,
   onder f, vraagt. Buiten een procedure geeft de uitvoering artikel 7:11 de
   tijdigheid als parameter mee. De keten van bezwaarschrift naar beslissing,
@@ -36,7 +37,7 @@ Feature: Het bezwaar en de beslissing erop
       | datum_ontvangst_bezwaarschrift | 2026-11-01               |
       | bezwaartermijn_einddatum       | 2026-12-01               |
       | bezwaarschrift_tijdig_ingediend | true                    |
-      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
+      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
       | heroverweging_oordelen | {"specifieke_aard_beroep_ouder": true} |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
@@ -52,7 +53,7 @@ Feature: Het bezwaar en de beslissing erop
       | datum_ontvangst_bezwaarschrift | 2026-11-01 |
       | bezwaartermijn_einddatum       | 2026-12-01 |
       | bezwaarschrift_tijdig_ingediend | true      |
-      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
+      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
       | heroverweging_oordelen | null |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
@@ -69,7 +70,7 @@ Feature: Het bezwaar en de beslissing erop
       | datum_ontvangst_bezwaarschrift | 2026-12-02 |
       | bezwaartermijn_einddatum       | 2026-12-01 |
       | bezwaarschrift_tijdig_ingediend | false     |
-      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
+      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
       | heroverweging_oordelen | {"specifieke_aard_beroep_ouder": true} |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
@@ -83,10 +84,25 @@ Feature: Het bezwaar en de beslissing erop
     # Daartegen staat beroep open (artikel 7:1, eerste lid, onder a).
     Given the following parameters:
       | bezwaarschrift_tijdig_ingediend | true |
-      | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaarschrift_tijdig_ingediend": true}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
+      | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaarschrift_tijdig_ingediend": true}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
       | heroverweging_oordelen | null |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "bezwaar_ontvankelijk" is false
     Then output "heroverweging_geeft_aanleiding" is absent
     Then output "bestreden_besluit_herroepen" is false
+
+  Scenario: Tegen het nieuwe besluit dat op bezwaar is genomen staat geen bezwaar open
+    # Het besluit berust op artikel 13a, maar is genomen op het bezwaar: in
+    # de plaats van een herroepen weigering. Ook daartegen staat beroep open
+    # (artikel 7:1, eerste lid, onder a).
+    Given the following parameters:
+      | bezwaarschrift_tijdig_ingediend | true |
+      | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "specifieke_aard_beroep_ouder": true, "verlof_valt_buiten_schoolvakanties": true, "verlof_al_verleend_in_schooljaar": false}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": true}} |
+      | heroverweging_oordelen | {"specifieke_aard_beroep_ouder": false} |
+    When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
+    Then the execution succeeds
+    Then output "bezwaar_ontvankelijk" is false
+    Then output "heroverweging_geeft_aanleiding" is absent
+    Then output "bestreden_besluit_herroepen" is false
+    Then output "nieuw_besluit" is absent
