@@ -1177,16 +1177,20 @@ fn decision_parts(
 }
 
 /// Whether `value` fits the type of the open term `term`, as a finding for
-/// it (RFC-050): a boolean, a number for a number or an amount, a string for
-/// a string or a date, a list, or an object for an object or a decision.
+/// it (RFC-050): a boolean, a number for a number, a whole number for an
+/// amount (in eurocent), a string for a string, a `YYYY-MM-DD` date for a
+/// date, a list, or an object for an object or a decision.
 /// `null` fits only a term that is not required.
 fn finding_fits(term: &crate::article::OpenTerm, value: &Value) -> bool {
     use crate::types::ParameterType as T;
     match (term.term_type, value) {
         (_, Value::Null) => !term.required,
+        (T::Date, Value::String(day)) => NaiveDate::parse_from_str(day, "%Y-%m-%d")
+            .is_ok_and(|d| d.format("%Y-%m-%d").to_string() == *day),
         (T::Boolean, Value::Bool(_))
-        | (T::Number | T::Amount, Value::Int(_) | Value::Decimal(_))
-        | (T::String | T::Date, Value::String(_))
+        | (T::Number, Value::Int(_) | Value::Decimal(_))
+        | (T::Amount, Value::Int(_))
+        | (T::String, Value::String(_))
         | (T::Array, Value::Array(_))
         | (T::Object | T::Decision, Value::Object(_)) => true,
         _ => false,

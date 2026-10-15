@@ -1874,9 +1874,9 @@ fn a_finding_of_another_type_is_an_error_that_names_it() {
 fn a_finding_fits_the_type_of_its_term() {
     for (ty, required, fits, misfits) in [
         ("number", true, json!(1.5), json!("1")),
-        ("amount", true, json!(100), json!(true)),
+        ("amount", true, json!(100), json!(1.5)),
         ("string", true, json!("x"), json!(1)),
-        ("date", true, json!("2025-01-01"), json!(1)),
+        ("date", true, json!("2025-01-01"), json!("1 januari 2025")),
         ("array", true, json!([1]), json!({})),
         ("object", true, json!({}), json!([])),
         ("boolean", false, json!(null), json!(0)),
@@ -2009,4 +2009,54 @@ fn a_decision_called_anew_needs_a_nullable_input() {
         message.contains("or called anew from a decision value"),
         "{message}"
     );
+}
+
+/// A finding of the caller reaches every article in the execution that
+/// leaves its term to an authority per case, also one a `regulation`
+/// reference calls.
+#[test]
+fn a_finding_reaches_an_article_a_regulation_reference_calls() {
+    let caller = r#"
+$id: wet_vraagt
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Of het hoofd verlof zou verlenen.
+    machine_readable:
+      execution:
+        parameters:
+          - name: dagen
+            type: number
+        input:
+          - name: verleend
+            type: boolean
+            source:
+              regulation: wet_hoofd
+              output: verleend
+              parameters:
+                dagen: $dagen
+        output:
+          - name: zou_verlenen
+            type: boolean
+        actions:
+          - output: zou_verlenen
+            value: $verleend
+"#;
+    let mut service = LawExecutionService::new();
+    service.load_law(HOOFD).unwrap();
+    service.load_law(caller).unwrap();
+    for grond in [true, false] {
+        let result = service
+            .evaluate_law_with_findings(
+                "wet_vraagt",
+                &["zou_verlenen"],
+                params(json!({"dagen": 5})),
+                params(json!({ "grond_aanwezig": grond })),
+                DATE,
+            )
+            .unwrap();
+        assert_eq!(result.outputs["zou_verlenen"], Value::Bool(grond));
+    }
 }
