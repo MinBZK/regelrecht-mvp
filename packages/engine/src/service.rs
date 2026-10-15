@@ -938,6 +938,9 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                         "parameter from caller".to_string(),
                     ));
                 }
+                if let Some(value) = self.parameters.get(&input.name) {
+                    self.check_keys_of(input, value)?;
+                }
                 Ok(None)
             }
             LazyName::Input(input) => {
@@ -980,6 +983,9 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                         res_ctx,
                     )
                 })?;
+                if let Some(value) = &value {
+                    self.check_keys_of(input, value)?;
+                }
                 Ok(value.map(|value| (value, ResolveType::ResolvedInput)))
             }
             LazyName::OpenTerm(term) => {
@@ -988,6 +994,43 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                 Ok(Some((value, ResolveType::OpenTerm)))
             }
         }
+    }
+
+    /// `keys_of` on `input`, if it declares one, for its `value`
+    /// ([`check_keys_of`]).
+    fn check_keys_of(&self, input: &Input, value: &Value) -> Result<()> {
+        match &input.keys_of {
+            Some(reference) => check_keys_of(
+                self.law,
+                &input.name,
+                reference,
+                input.is_nullable(),
+                value,
+                &self.article_context(),
+            ),
+            None => Ok(()),
+        }
+    }
+
+    /// `keys_of` on the parameters of the article that were passed
+    /// ([`check_keys_of`]), checked before anything runs.
+    fn check_parameter_keys(&self) -> Result<()> {
+        let context = self.article_context();
+        for parameter in self.article.get_parameters() {
+            if let (Some(reference), Some(value)) =
+                (&parameter.keys_of, self.parameters.get(&parameter.name))
+            {
+                check_keys_of(
+                    self.law,
+                    &parameter.name,
+                    reference,
+                    parameter.is_nullable(),
+                    value,
+                    &context,
+                )?;
+            }
+        }
+        Ok(())
     }
 
     /// Resolve an open term with the context in hand. Its default reads the
@@ -1063,6 +1106,82 @@ fn as_recorded(value: Value) -> Value {
         ),
         other => other,
     }
+}
+
+/// What kind of value `value` is, for `keys_of` (RFC-050): `None` for null,
+/// unknown and untranslatable, which have no kind. A date is a string here, as it arrives
+/// from data.
+fn kind_of(value: &Value) -> Option<&'static str> {
+    match value {
+        Value::Bool(_) => Some("boolean"),
+        Value::Int(_) | Value::Decimal(_) => Some("number"),
+        Value::String(_) => Some("string"),
+        Value::Array(_) => Some("array"),
+        Value::Object(_) => Some("object"),
+        Value::Null | Value::Unknown(_) | Value::Untranslatable { .. } => None,
+    }
+}
+
+/// `keys_of` (schema v0.8.4, RFC-050): `value` of the object field `field`
+/// of `law` has only keys of the object `reference` names, read in
+/// `context`, each with a value of the kind there. A key the value leaves
+/// out is fine. A key's value may be null only if the field is `nullable`;
+/// against a null or unknown there, or as an unknown, any value passes. A
+/// `value` that is null, unknown or untranslatable is not checked here: its
+/// absence is the field's `nullable`. Anything else is an error that names the key.
+fn check_keys_of(
+    law: &ArticleBasedLaw,
+    field: &str,
+    reference: &str,
+    nullable: bool,
+    value: &Value,
+    context: &RuleContext<'_>,
+) -> Result<()> {
+    let keys = match value {
+        Value::Null | Value::Unknown(_) | Value::Untranslatable { .. } => return Ok(()),
+        Value::Object(keys) => keys,
+        other => {
+            return Err(EngineError::TypeMismatch {
+                expected: format!(
+                    "an object for '{field}' of {}, with keys of {reference}",
+                    law.id
+                ),
+                actual: other.to_string(),
+            })
+        }
+    };
+    let allowed = match context.resolve(reference.trim_start_matches('$'))? {
+        Value::Object(allowed) => allowed,
+        other => {
+            return Err(EngineError::TypeMismatch {
+                expected: format!(
+                    "an object in {reference}, whose keys '{field}' of {} may have",
+                    law.id
+                ),
+                actual: other.to_string(),
+            })
+        }
+    };
+    for (key, given) in keys {
+        let mismatch = |expected: String| EngineError::TypeMismatch {
+            expected: format!("{expected} for key '{key}' of '{field}' of {}", law.id),
+            actual: given.to_string(),
+        };
+        let Some(there) = allowed.get(key) else {
+            return Err(mismatch(format!("a key of {reference}")));
+        };
+        if given.is_null() && !nullable {
+            return Err(mismatch(format!(
+                "a value ('{field}' is not nullable, so a key is never null)"
+            )));
+        }
+        if let (Some(given_kind), Some(kind)) = (kind_of(given), kind_of(there)) {
+            if given_kind != kind {
+                return Err(mismatch(format!("a {kind}, as in {reference}")));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// `value` as the value of `input` of `law`, unless it is a `null` the input
@@ -3553,6 +3672,7 @@ impl LawExecutionService {
         let calculation_date = res_ctx.calculation_date;
         let trace = res_ctx.trace.as_ref().map(Rc::clone);
         let lazy = LazyArticleInputs::new(self, article, law, &parameters, res_ctx)?;
+        lazy.check_parameter_keys()?;
 
         lazy.resolve_names(&demand.read_before_actions)?;
         let mut hook_params = parameters.clone();
@@ -4794,11 +4914,12 @@ impl LawExecutionService {
     /// dropped, and the trace names it, unless it is the id of an open term
     /// the article leaves to an authority per case (`decided_per_case_by`):
     /// that is the judgement for this case, passed as a caller at the top
-    /// passes it, and kept in `fields`. The article runs in the version in
-    /// force on the calculation date, at stage BESLUIT, as a cross-law call
-    /// does, and computes the outputs of its decision item. Without `output`
-    /// the input is the decision value `{grondslag, fields, outputs}`; with
-    /// it, that one output.
+    /// passes it, and kept in `judgements`, apart from the parameters in
+    /// `fields`. The article runs in the version in force on the calculation
+    /// date, at stage BESLUIT, as a cross-law call does, and computes the
+    /// outputs of its decision item. Without `output` the input is the
+    /// decision value `{grondslag, fields, judgements, outputs}`; with it,
+    /// that one output.
     ///
     /// Refused at run time: a target that is no article reference, an
     /// article not in force on the date, an article that takes no decision,
@@ -4987,8 +5108,9 @@ impl LawExecutionService {
                 format!("skipped call to {target}"),
             );
         }
-        let mut fields = declared;
-        fields.extend(judgements);
+        // The article runs with both; the decision value keeps them apart.
+        let mut passed_on = declared.clone();
+        passed_on.extend(judgements.clone());
 
         // The keys of a cross-law call, one per output computed, and one for
         // the article itself, which also counts the depth.
@@ -5032,7 +5154,7 @@ impl LawExecutionService {
             self.evaluate_article_with_service(
                 article,
                 target_law,
-                fields.clone(),
+                passed_on,
                 Some(&computed),
                 "BESLUIT",
                 res_ctx,
@@ -5070,7 +5192,8 @@ impl LawExecutionService {
                     .collect::<Result<BTreeMap<_, _>>>()?;
                 let value = Value::Object(BTreeMap::from([
                     ("grondslag".to_string(), Value::String(target.clone())),
-                    ("fields".to_string(), Value::Object(fields)),
+                    ("fields".to_string(), Value::Object(declared)),
+                    ("judgements".to_string(), Value::Object(judgements)),
                     ("outputs".to_string(), Value::Object(outputs)),
                 ]));
                 as_recorded(value)

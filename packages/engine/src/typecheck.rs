@@ -65,6 +65,10 @@
 //!   target of this law also exists. A target taken from a value is known
 //!   only at run time: the checker then knows the input is a decision value
 //!   and claims nothing about its fields (`$x.outputs.y`), as for rows.
+//! - **T6** `keys_of` (RFC-050) types a field of type `object` only, and
+//!   names an object: a field of type `object`, or the `judgements` or
+//!   `fields` of a decision value. Whether the keys fit is known only at
+//!   run time, where the engine checks them.
 
 use crate::article::{
     foreach_binding, Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, CombineOp,
@@ -88,6 +92,7 @@ pub enum Rule {
     T3,
     T4,
     T5,
+    T6,
 }
 
 impl Rule {
@@ -104,6 +109,7 @@ impl Rule {
             Rule::T3 => "T3",
             Rule::T4 => "T4",
             Rule::T5 => "T5",
+            Rule::T6 => "T6",
         }
     }
 }
@@ -168,7 +174,7 @@ enum Ty {
     Date,
     Array,
     Object,
-    /// A decision value `{grondslag, fields, outputs}` (RFC-050): an object
+    /// A decision value `{grondslag, fields, judgements, outputs}` (RFC-050): an object
     /// whose fields the checker does not type, like any object.
     Decision,
 }
@@ -472,6 +478,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
 
     fn check_article(&mut self) {
         self.check_definitions();
+        self.check_keys_of();
         self.check_input_sources();
         self.check_implements();
         let Some(actions) = self
@@ -606,6 +613,58 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                 );
             }
             self.check_skip_on_null_parameter(source, target_article, &input.name, &target_law.id);
+        }
+    }
+
+    /// T6: what `keys_of` stands on and what it names (RFC-050).
+    fn check_keys_of(&mut self) {
+        let fields = self
+            .article
+            .get_parameters()
+            .iter()
+            .map(|p| (&p.name, p.param_type, p.keys_of.as_deref()))
+            .chain(
+                self.article
+                    .get_inputs()
+                    .iter()
+                    .map(|i| (&i.name, i.input_type, i.keys_of.as_deref())),
+            );
+        let mut findings = Vec::new();
+        for (name, declared, reference) in fields {
+            let Some(reference) = reference else {
+                continue;
+            };
+            if declared != ParameterType::Object {
+                findings.push((
+                    name,
+                    format!(
+                        "'{name}' declares keys_of, but is declared {}; keys_of types an object",
+                        Ty::of(declared).name()
+                    ),
+                ));
+            }
+            let (path, root) = reference_path(reference);
+            let names_an_object = match self.symbols.get(root).map(|s| s.ty) {
+                None => false,
+                Some(None | Some(Ty::Object)) => true,
+                Some(Some(Ty::Decision)) => {
+                    matches!(path.strip_prefix(root), Some(".judgements" | ".fields"))
+                }
+                Some(Some(_)) => false,
+            };
+            if !names_an_object {
+                findings.push((
+                    name,
+                    format!(
+                        "'{name}' takes its keys from {reference}, which is no object; name an \
+                         object field, or the judgements or fields of a decision value"
+                    ),
+                ));
+            }
+        }
+        for (name, message) in findings {
+            self.location = format!("field '{name}'");
+            self.report(Rule::T6, message);
         }
     }
 

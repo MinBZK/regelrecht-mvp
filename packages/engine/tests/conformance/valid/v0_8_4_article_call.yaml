@@ -2,7 +2,9 @@
 # Tier C: a call to an article (schema v0.8.4, RFC-050). Article 1 decides
 # on an application and lists data derived for its decision under `derived`.
 # Article 2 calls the article a decision value names, with that decision's
-# fields merged under what is judged anew, and gets a decision value back;
+# fields and judgements merged under what is judged anew, which may only be
+# judgements the decision had (`keys_of`, also on an input that reads them),
+# and gets a decision value back;
 # article 3 calls a fixed article for one output of its decision.
 $schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
 $id: test_conformance_article_call
@@ -54,6 +56,7 @@ articles:
           - name: nieuwe_oordelen
             type: object
             nullable: true
+            keys_of: $besluit.judgements
         input:
           - name: heroverweging
             type: decision
@@ -62,7 +65,14 @@ articles:
               article: $besluit.grondslag
               parameters_from:
                 - $besluit.fields
+                - $besluit.judgements
                 - $nieuwe_oordelen
+          - name: oordelen_van_elders
+            type: object
+            nullable: true
+            keys_of: $besluit.judgements
+            source:
+              description: Oordelen uit een register.
         output:
           - name: heroverwogen
             type: decision

@@ -95,6 +95,10 @@ A `regulation` reference finds the article through the output it asks for. Somet
 parameters:
   - name: besluit
     type: decision
+  - name: nieuwe_oordelen
+    type: object
+    nullable: true
+    keys_of: $besluit.judgements
 input:
   - name: heroverweging
     type: decision
@@ -102,6 +106,7 @@ input:
       article: $besluit.grondslag
       parameters_from:
         - $besluit.fields
+        - $besluit.judgements
         - $nieuwe_oordelen
 ```
 
@@ -110,12 +115,17 @@ input:
 | Field | Holds |
 |---|---|
 | `grondslag` | The article, as `<regulation>#<article>` |
-| `fields` | The parameters it was given that it declares, and the judgements per case it was given |
+| `fields` | The parameters it was given that it declares |
+| `judgements` | The judgements per case it was given: for each open term it leaves to an authority per case (`decided_per_case_by`), the judgement under the term's id |
 | `outputs` | The outputs of its decision item, and no others |
 
 The data the decision item lists under `derived` is computed with the decision but is not in `outputs`.
 
 With `output` the input is that one output of the decision.
+
+A value built from a recorded decision may also hold `taken_on`: the article that established the submission the decision was taken on.
+
+`keys_of` types an object by the keys of another one. In the example, `nieuwe_oordelen` may only hold judgements the decision had. At run time every key of the value must be a key of `$besluit.judgements`, and its value of the same type as the value there. A key may be null only if the field is `nullable`. A key the value leaves out is fine: that judgement is not given anew. Anything else is an error that names the key, so a misspelt judgement fails instead of being dropped. `keys_of` stands only on a parameter or input of type `object`, and names an object field or the `judgements` or `fields` of a decision value (type rule T6).
 
 The parameters come from `parameters_from`, a list of objects merged in order: a later one wins over an earlier one, and `parameters` goes on top of them all. A null object adds nothing. A name the article does not declare is dropped, and the trace says which. The exception is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that name carries the authority's judgement for this case, and it is passed as a caller at the top passes it, so an implementation of the term still wins over it. Which parameters the article requires is known only when it runs, and a required parameter that is null skips the call and leaves the input null. So an input whose `parameters` hold a reference that may be null, or that uses `parameters_from`, is declared `nullable` (type rule N5).
 

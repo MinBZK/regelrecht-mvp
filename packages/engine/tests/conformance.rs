@@ -77,6 +77,7 @@ const KNOWN_GAPS: &[&str] = &[
     "produces_list_empty_outputs.yaml", // schema v0.8.1 wants at least one name under `outputs`; the model reads an empty list as an item that yields no output, which is what the schema means to rule out but harmless at run time
     "produces_list_unknown_type.yaml", // schema v0.8.1 pins `type` to a submission kind or a legal character; the model reads any string, and an unknown one as a legal character, as for `produces_unknown_legal_character`
     "produces_list_requests_on_decision.yaml", // schema v0.8.1 allows `requests` only on a submission (`if`/`then`); the model has it on every item, and the loader refuses it (`reject_ambiguous_produces`)
+    "keys_of_not_on_object.yaml", // schema v0.8.4 allows `keys_of` only on a field of type `object`; the model reads it on every parameter and input, and the type check refuses it (T6)
     "produces_list_derived_on_submission.yaml", // schema v0.8.4 allows `derived` only on a decision (`if`/`then`); the model has it on every item, and the loader refuses it (`reject_ambiguous_produces`)
     "produces_list_decision_type_on_submission.yaml", // schema v0.8.1 allows `decision_type` and `procedure_id` only on a decision; the model has them on every item, and a submission's are never read
     "temporal_unknown_type.yaml", // schema pins period|point_in_time; model reads any string
