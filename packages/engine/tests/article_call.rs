@@ -530,6 +530,7 @@ fn a_call_that_may_be_skipped_needs_a_nullable_input() {
     ] {
         let message = load_error(&[VERLOF, &with_nullable(input)]);
         assert!(message.contains("[N5]") && message.contains(why), "{why}: {message}");
+        assert!(!message.contains("and so is"), "{why}: {message}");
         // Declared nullable, the same call loads.
         let nullable = with_nullable(&input.replacen(
             "            type: decision\n",
@@ -542,6 +543,21 @@ fn a_call_that_may_be_skipped_needs_a_nullable_input() {
             .load_law(&nullable)
             .unwrap_or_else(|e| panic!("{why}: a nullable input loads: {e}"));
     }
+    // A path under a nullable root is null with it, and the finding says so.
+    let law = caller(
+        "          - name: x\n            type: decision\n            source:\n              article: wet_verlof#1\n              parameters:\n                dagen: $misschien.dagen\n",
+    )
+    .replace(
+        "          - name: tekst\n            type: string\n",
+        "          - name: tekst\n            type: string\n          - name: misschien\n            type: object\n            nullable: true\n",
+    );
+    let message = load_error(&[VERLOF, &law]);
+    assert!(
+        message.contains("[N5]")
+            && message
+                .contains("'x' is null when 'misschien' is null (and so is 'misschien.dagen')"),
+        "{message}"
+    );
 }
 
 #[test]
@@ -838,6 +854,17 @@ fn a_target_that_is_no_article_reference_is_refused() {
         json!({"besluit": besluit, "nieuwe_oordelen": null}),
     );
     assert!(message.contains("an article reference"), "{message}");
+    // A string is refused the same way when it names no article.
+    besluit["grondslag"] = json!("wet_verlof");
+    let message = error(
+        &service(),
+        "heroverwogen",
+        json!({"besluit": besluit, "nieuwe_oordelen": null}),
+    );
+    assert!(
+        message.contains("an article reference in $besluit.grondslag"),
+        "{message}"
+    );
 }
 
 #[test]
@@ -1159,6 +1186,57 @@ fn parameters_from_takes_objects_and_the_target_value_is_a_string() {
         message.contains("named by $getal, which is declared number"),
         "{message}"
     );
+    assert!(
+        !message.contains("the parameters of a decision"),
+        "{message}"
+    );
+
+    // A decision is no object to merge: its parameters are under `fields`.
+    let law = caller(
+        "          - name: heroverweging\n            type: decision\n            source:\n              article: $besluit.grondslag\n              parameters_from: [$besluit]\n",
+    );
+    let message = load_error(&[&law]);
+    assert!(
+        message.contains("(the parameters of a decision are $besluit.fields)"),
+        "{message}"
+    );
+}
+
+#[test]
+fn an_output_that_may_be_null_needs_a_nullable_input() {
+    let target = r#"
+$id: wet_misschien
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Een besluit met een uitkomst die er niet altijd is.
+    machine_readable:
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+        output:
+          - name: bedrag
+            type: number
+            nullable: true
+        actions:
+          - output: bedrag
+            value: null
+"#;
+    let input = "          - name: x\n            type: number\n            source:\n              article: wet_misschien#1\n              output: bedrag\n";
+    let message = load_error(&[target, &caller(input)]);
+    assert!(
+        message.contains("[N5]") && message.contains("which may be null"),
+        "{message}"
+    );
+    let mut service = LawExecutionService::new();
+    service.load_law(target).unwrap();
+    service
+        .load_law(&caller(&input.replace(
+            "            type: number\n",
+            "            type: number\n            nullable: true\n",
+        )))
+        .expect("a nullable input loads");
 }
 
 #[test]
@@ -1442,6 +1520,13 @@ fn a_judgement_per_case_reaches_the_article_and_the_rest_is_dropped() {
             "{trace}"
         );
         assert!(
+            trace.contains(
+                "wet_hoofd#1 leaves grond_aanwezig to an authority per case, so passed as its \
+                 judgement"
+            ),
+            "{trace}"
+        );
+        assert!(
             trace.contains("does not declare onbekend, so not passed"),
             "{trace}"
         );
@@ -1479,4 +1564,89 @@ fn without_a_judgement_the_required_term_is_refused() {
             .contains("no judgement was given for this case"),
         "{error}"
     );
+}
+
+#[test]
+fn a_term_not_decided_per_case_is_no_judgement_and_is_dropped() {
+    // `max_dagen` is an open term the article fills by default, not one an
+    // authority judges per case: a value for it passed to the call is no
+    // judgement, and the default stands.
+    let law = HOOFD.replace(
+        "          decided_per_case_by: het hoofd\n",
+        "          decided_per_case_by: het hoofd\n        - id: max_dagen\n          type: number\n          required: false\n          default:\n            actions:\n              - output: max_dagen\n                value: 10\n",
+    )
+    .replace(
+        "                  subject: $dagen\n                  value: 10\n",
+        "                  subject: $dagen\n                  value: $max_dagen\n",
+    );
+    let (value, trace) = hoofd(&[&law], json!({"grond_aanwezig": true, "max_dagen": 3}));
+    assert_eq!(
+        value,
+        Value::from(json!({
+            "grondslag": "wet_hoofd#1",
+            "fields": {"dagen": 5, "grond_aanwezig": true},
+            "outputs": {"verleend": true},
+        })),
+        "{trace}"
+    );
+    assert!(
+        trace.contains("does not declare max_dagen, so not passed"),
+        "{trace}"
+    );
+}
+
+/// A chain of `n` articles, each calling the next one's decision.
+fn chain(n: usize) -> Vec<String> {
+    (0..n)
+        .map(|i| {
+            let input = if i + 1 < n {
+                format!(
+                    "        input:\n          - name: verder\n            type: boolean\n            source:\n              article: wet_schakel_{}#1\n              output: besloten\n",
+                    i + 1
+                )
+            } else {
+                String::new()
+            };
+            let value = if i + 1 < n { "$verder" } else { "true" };
+            format!(
+                r#"
+$id: wet_schakel_{i}
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Schakel {i}.
+    machine_readable:
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+{input}        output:
+          - name: besloten
+            type: boolean
+        actions:
+          - output: besloten
+            value: {value}
+"#
+            )
+        })
+        .collect()
+}
+
+fn run_chain(n: usize) -> regelrecht_engine::Result<Value> {
+    let mut service = LawExecutionService::new();
+    for law in chain(n).iter().rev() {
+        service.load_law(law).unwrap();
+    }
+    service
+        .evaluate_law_output("wet_schakel_0", "besloten", BTreeMap::new(), DATE)
+        .map(|result| result.outputs["besloten"].clone())
+}
+
+#[test]
+fn a_chain_of_calls_may_reach_the_depth_limit_but_not_pass_it() {
+    // Each call enters one level; the top article is level zero.
+    let deepest = regelrecht_engine::MAX_CROSS_LAW_DEPTH + 1;
+    assert_eq!(run_chain(deepest).unwrap(), Value::Bool(true));
+    let message = run_chain(deepest + 1).unwrap_err().to_string();
+    assert!(message.contains("depth exceeded"), "{message}");
 }

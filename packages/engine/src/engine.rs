@@ -1382,6 +1382,54 @@ articles:
     }
 
     #[test]
+    fn test_article_call_needs_the_service_unless_passed() {
+        // A call to an article (RFC-050) runs another article: this engine
+        // cannot, so the input must be passed.
+        let yaml = r#"
+$id: article_call_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Article calling another article
+    machine_readable:
+      execution:
+        input:
+          - name: verleend
+            type: boolean
+            source:
+              article: other_law#1
+              output: toegekend
+        output:
+          - name: result
+            type: boolean
+        actions:
+          - output: result
+            value: $verleend
+"#;
+        let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+        let article = law.find_article_by_number("1").unwrap();
+        let engine = ArticleEngine::new(article, &law);
+
+        match engine.evaluate(BTreeMap::new(), "2025-01-01") {
+            Err(EngineError::ExternalReferenceNotResolved {
+                input_name,
+                regulation,
+                output,
+            }) => {
+                assert_eq!(input_name, "verleend");
+                assert_eq!(regulation, "other_law#1");
+                assert_eq!(output, "toegekend");
+            }
+            other => panic!("Expected ExternalReferenceNotResolved, got: {other:?}"),
+        }
+
+        let passed = BTreeMap::from([("verleend".to_string(), Value::Bool(true))]);
+        let result = engine.evaluate(passed, "2025-01-01").unwrap();
+        assert_eq!(result.outputs.get("result"), Some(&Value::Bool(true)));
+    }
+
+    #[test]
     fn test_decisions_come_from_parameters_only() {
         // This engine has no data source: decisions passed in are read,
         // decisions not passed are an error (RFC-048).

@@ -555,10 +555,11 @@ fn execute_equality<R: ValueResolver>(
         return Ok(unknown);
     }
 
-    let mut equal = if is_compound(&subject_val) && is_compound(&value_val) {
-        compound_equal(&subject_val, &value_val, op_name, "")?
-    } else {
-        values_equal(&subject_val, &value_val)
+    let mut equal = match (&subject_val, &value_val) {
+        (Value::Object(_), Value::Object(_)) | (Value::Array(_), Value::Array(_)) => {
+            compound_equal(&subject_val, &value_val, op_name, "")?
+        }
+        _ => values_equal(&subject_val, &value_val),
     };
 
     // Date-aware fallback, scoped to the mixed form (a string against an `{iso}`
@@ -577,11 +578,6 @@ fn execute_equality<R: ValueResolver>(
     }
 
     Ok(Value::Bool(if negate { !equal } else { equal }))
-}
-
-/// A list or a record.
-fn is_compound(value: &Value) -> bool {
-    matches!(value, Value::Array(_) | Value::Object(_))
 }
 
 /// `EQUALS` on two lists or two records: structural, with the numbers inside
