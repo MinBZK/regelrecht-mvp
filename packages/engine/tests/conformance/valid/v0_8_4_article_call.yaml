@@ -1,10 +1,9 @@
 ---
 # Tier C: a call to an article (schema v0.8.4, RFC-050). Article 1 decides
 # on an application and lists data derived for its decision under `derived`.
-# Article 2 calls the article a decision value names, with that decision's
-# fields and findings merged under what is judged anew, which may only be
-# findings the decision had (`keys_of`, also on an input that reads them),
-# and gets a decision value back;
+# Article 2 calls a decision value anew, with its own fields and findings,
+# and calls the article a decision value names, with that decision's fields
+# merged under what is given anew; both get a decision value back;
 # article 3 calls a fixed article for one output of its decision.
 $schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
 $id: test_conformance_article_call
@@ -53,33 +52,35 @@ articles:
         parameters:
           - name: besluit
             type: decision
-          - name: nieuwe_oordelen
+          - name: nieuwe_gegevens
             type: object
             nullable: true
-            keys_of: $besluit.findings
         input:
           - name: heroverweging
+            type: decision
+            nullable: true
+            source:
+              article: $besluit
+          - name: met_nieuwe_gegevens
             type: decision
             nullable: true
             source:
               article: $besluit.grondslag
               parameters_from:
                 - $besluit.fields
-                - $besluit.findings
-                - $nieuwe_oordelen
-          - name: oordelen_van_elders
-            type: object
-            nullable: true
-            keys_of: $besluit.findings
-            source:
-              description: Oordelen uit een register.
+                - $nieuwe_gegevens
         output:
           - name: heroverwogen
+            type: decision
+            nullable: true
+          - name: opnieuw_met_nieuwe_gegevens
             type: decision
             nullable: true
         actions:
           - output: heroverwogen
             value: $heroverweging
+          - output: opnieuw_met_nieuwe_gegevens
+            value: $met_nieuwe_gegevens
   - number: '3'
     url: https://example.invalid/article-call/3
     text: Of het verlof zou worden verleend.

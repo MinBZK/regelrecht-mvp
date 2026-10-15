@@ -377,6 +377,9 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
     case 'assert_provenance':
       throw tierUnsupported('provenance');
 
+    case 'set_findings_table':
+      throw tierUnsupported('findings');
+
     case 'set_untranslatable_mode':
     case 'assert_tainted':
       throw tierUnsupported('untranslatable');

@@ -60,15 +60,12 @@
 //! - **T5** A call to an article (`source.article`, RFC-050) without
 //!   `output` yields a decision value, so the input is of type `decision`.
 //!   What it merges (`parameters_from`) is an object, and a `$`-reference
-//!   that names the article is a string. A fixed target the checker can
+//!   that names the article is a string, or a decision value that is
+//!   called anew (RFC-050). A fixed target the checker can
 //!   consult takes a decision, and an `output` is one of that decision; a
 //!   target of this law also exists. A target taken from a value is known
 //!   only at run time: the checker then knows the input is a decision value
 //!   and claims nothing about its fields (`$x.outputs.y`), as for rows.
-//! - **T6** `keys_of` (RFC-050) types a field of type `object` only, and
-//!   names an object: a field of type `object`, or the `findings` or
-//!   `fields` of a decision value. Whether the keys fit is known only at
-//!   run time, where the engine checks them.
 
 use crate::article::{
     foreach_binding, Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, CombineOp,
@@ -92,7 +89,6 @@ pub enum Rule {
     T3,
     T4,
     T5,
-    T6,
 }
 
 impl Rule {
@@ -109,7 +105,6 @@ impl Rule {
             Rule::T3 => "T3",
             Rule::T4 => "T4",
             Rule::T5 => "T5",
-            Rule::T6 => "T6",
         }
     }
 }
@@ -478,7 +473,6 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
 
     fn check_article(&mut self) {
         self.check_definitions();
-        self.check_keys_of();
         self.check_input_sources();
         self.check_implements();
         let Some(actions) = self
@@ -616,58 +610,6 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
         }
     }
 
-    /// T6: what `keys_of` stands on and what it names (RFC-050).
-    fn check_keys_of(&mut self) {
-        let fields = self
-            .article
-            .get_parameters()
-            .iter()
-            .map(|p| (&p.name, p.param_type, p.keys_of.as_deref()))
-            .chain(
-                self.article
-                    .get_inputs()
-                    .iter()
-                    .map(|i| (&i.name, i.input_type, i.keys_of.as_deref())),
-            );
-        let mut findings = Vec::new();
-        for (name, declared, reference) in fields {
-            let Some(reference) = reference else {
-                continue;
-            };
-            if declared != ParameterType::Object {
-                findings.push((
-                    name,
-                    format!(
-                        "'{name}' declares keys_of, but is declared {}; keys_of types an object",
-                        Ty::of(declared).name()
-                    ),
-                ));
-            }
-            let (path, root) = reference_path(reference);
-            let names_an_object = match self.symbols.get(root).map(|s| s.ty) {
-                None => false,
-                Some(None | Some(Ty::Object)) => true,
-                Some(Some(Ty::Decision)) => {
-                    matches!(path.strip_prefix(root), Some(".findings" | ".fields"))
-                }
-                Some(Some(_)) => false,
-            };
-            if !names_an_object {
-                findings.push((
-                    name,
-                    format!(
-                        "'{name}' takes its keys from {reference}, which is no object; name an \
-                         object field, or the findings or fields of a decision value"
-                    ),
-                ));
-            }
-        }
-        for (name, message) in findings {
-            self.location = format!("field '{name}'");
-            self.report(Rule::T6, message);
-        }
-    }
-
     /// T5 and N5: an input that calls the decision of an
     /// article (RFC-050).
     fn check_article_call(&mut self, input: &crate::article::Input, source: &Source, target: &str) {
@@ -722,17 +664,28 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                     ),
                 );
             }
-            if let Some(ty) = declared_root(self, target) {
-                if ty != Ty::String {
-                    self.report(
-                        Rule::T5,
-                        format!(
-                            "'{name}' calls the article named by {target}, which is declared {}; \
-                             an article is named by a string `<regulation>#<article>`",
-                            ty.name()
-                        ),
-                    );
-                }
+            match declared_root(self, target) {
+                // A decision value is called anew with its own fields and
+                // findings (RFC-050); a required field it holds as null
+                // skips the call, as `parameters_from` may.
+                Some(Ty::Decision) if !input.is_nullable() => self.report(
+                    Rule::N5,
+                    format!(
+                        "'{name}' calls the decision {target} anew, whose fields may leave a \
+                         required parameter null, and the article is then not called; declare \
+                         '{name}' nullable"
+                    ),
+                ),
+                Some(Ty::String | Ty::Decision) | None => {}
+                Some(ty) => self.report(
+                    Rule::T5,
+                    format!(
+                        "'{name}' calls the article named by {target}, which is declared {}; \
+                         an article is named by a string `<regulation>#<article>`, or called \
+                         anew from a decision value",
+                        ty.name()
+                    ),
+                ),
             }
             return;
         }

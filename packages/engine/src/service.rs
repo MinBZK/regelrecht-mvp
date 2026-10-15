@@ -137,6 +137,13 @@ struct ResolutionContext<'a> {
     /// the hooks on its submission wait for their own stage (RFC-047); an
     /// article run outside a procedure fires them on every run (RFC-045).
     staged_article: Option<(String, String)>,
+    /// The findings the caller gave for this execution, keyed by the id of
+    /// an open term an article leaves to an authority per case
+    /// (`decided_per_case_by`, RFC-050). Each applies to every
+    /// article in the execution that has such a term.
+    findings: BTreeMap<String, Value>,
+    /// The ids of [`Self::findings`] that an article in the execution asked.
+    findings_asked: BTreeSet<String>,
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
@@ -249,7 +256,76 @@ impl<'a> ResolutionContext<'a> {
             declarations_not_in_force: Vec::new(),
             held_back: HashSet::new(),
             staged_article: None,
+            findings: BTreeMap::new(),
+            findings_asked: BTreeSet::new(),
         })
+    }
+
+    /// The caller's findings (RFC-050) that apply to `article` of `law`: one
+    /// for each open term it leaves to an authority per case
+    /// (`decided_per_case_by`). Each is marked asked. A finding that does
+    /// not fit the type of its term is an error naming it; `null` fits only
+    /// a term that is not required.
+    fn findings_for(
+        &mut self,
+        law: &ArticleBasedLaw,
+        article: &Article,
+    ) -> Result<BTreeMap<String, Value>> {
+        let mut applied = BTreeMap::new();
+        if self.findings.is_empty() {
+            return Ok(applied);
+        }
+        for term in article.get_open_terms().into_iter().flatten() {
+            if term.decided_per_case_by.is_none() {
+                continue;
+            }
+            let Some(value) = self.findings.get(&term.id) else {
+                continue;
+            };
+            if !finding_fits(term, value) {
+                return Err(EngineError::TypeMismatch {
+                    expected: format!(
+                        "a {} for the finding '{}' on {}#{}{}",
+                        format!("{:?}", term.term_type).to_lowercase(),
+                        term.id,
+                        law.id,
+                        article.number,
+                        if term.required {
+                            ", which is required"
+                        } else {
+                            ""
+                        }
+                    ),
+                    actual: value.to_string(),
+                });
+            }
+            self.findings_asked.insert(term.id.clone());
+            applied.insert(term.id.clone(), value.clone());
+        }
+        Ok(applied)
+    }
+
+    /// Every finding the caller gave was asked by an article in the
+    /// execution (RFC-050); otherwise an error naming those that were not.
+    fn check_findings_asked(&self) -> Result<()> {
+        let unasked: Vec<&str> = self
+            .findings
+            .keys()
+            .filter(|id| !self.findings_asked.contains(*id))
+            .map(String::as_str)
+            .collect();
+        if unasked.is_empty() {
+            return Ok(());
+        }
+        Err(EngineError::InvalidOperation(format!(
+            "no article in this execution leaves {} to an authority per case \
+             (decided_per_case_by), so the finding is asked by none",
+            unasked
+                .iter()
+                .map(|id| format!("'{id}'"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )))
     }
 
     /// Create a new resolution context with trace builder.
@@ -938,9 +1014,6 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                         "parameter from caller".to_string(),
                     ));
                 }
-                if let Some(value) = self.parameters.get(&input.name) {
-                    self.check_keys_of(input, value)?;
-                }
                 Ok(None)
             }
             LazyName::Input(input) => {
@@ -983,9 +1056,6 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                         res_ctx,
                     )
                 })?;
-                if let Some(value) = &value {
-                    self.check_keys_of(input, value)?;
-                }
                 Ok(value.map(|value| (value, ResolveType::ResolvedInput)))
             }
             LazyName::OpenTerm(term) => {
@@ -994,43 +1064,6 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                 Ok(Some((value, ResolveType::OpenTerm)))
             }
         }
-    }
-
-    /// `keys_of` on `input`, if it declares one, for its `value`
-    /// ([`check_keys_of`]).
-    fn check_keys_of(&self, input: &Input, value: &Value) -> Result<()> {
-        match &input.keys_of {
-            Some(reference) => check_keys_of(
-                self.law,
-                &input.name,
-                reference,
-                input.is_nullable(),
-                value,
-                &self.article_context(),
-            ),
-            None => Ok(()),
-        }
-    }
-
-    /// `keys_of` on the parameters of the article that were passed
-    /// ([`check_keys_of`]), checked before anything runs.
-    fn check_parameter_keys(&self) -> Result<()> {
-        let context = self.article_context();
-        for parameter in self.article.get_parameters() {
-            if let (Some(reference), Some(value)) =
-                (&parameter.keys_of, self.parameters.get(&parameter.name))
-            {
-                check_keys_of(
-                    self.law,
-                    &parameter.name,
-                    reference,
-                    parameter.is_nullable(),
-                    value,
-                    &context,
-                )?;
-            }
-        }
-        Ok(())
     }
 
     /// Resolve an open term with the context in hand. Its default reads the
@@ -1108,80 +1141,56 @@ fn as_recorded(value: Value) -> Value {
     }
 }
 
-/// What kind of value `value` is, for `keys_of` (RFC-050): `None` for null,
-/// unknown and untranslatable, which have no kind. A date is a string here, as it arrives
-/// from data.
-fn kind_of(value: &Value) -> Option<&'static str> {
-    match value {
-        Value::Bool(_) => Some("boolean"),
-        Value::Int(_) | Value::Decimal(_) => Some("number"),
-        Value::String(_) => Some("string"),
-        Value::Array(_) => Some("array"),
-        Value::Object(_) => Some("object"),
-        Value::Null | Value::Unknown(_) | Value::Untranslatable { .. } => None,
+/// Named values, such as parameters or findings.
+type Values = BTreeMap<String, Value>;
+
+/// The parts of the decision value `value` that `named_by` holds, for
+/// `caller` to call anew (RFC-050): its `grondslag`, an article reference,
+/// and its `fields` and `findings`, two objects. Anything else is an error.
+fn decision_parts(
+    mut value: BTreeMap<String, Value>,
+    named_by: &str,
+    caller: &str,
+) -> Result<(String, Values, Values)> {
+    let shown = Value::Object(value.clone()).to_string();
+    let parts = (
+        value.remove("grondslag"),
+        value.remove("fields"),
+        value.remove("findings"),
+    );
+    match parts {
+        (
+            Some(Value::String(grondslag)),
+            Some(Value::Object(fields)),
+            Some(Value::Object(findings)),
+        ) if regelrecht_law_model::is_article_reference(&grondslag) => {
+            Ok((grondslag, fields, findings))
+        }
+        _ => Err(EngineError::TypeMismatch {
+            expected: format!(
+                "a decision value {{grondslag, fields, findings, outputs}} in {named_by} for \
+                 {caller}"
+            ),
+            actual: shown,
+        }),
     }
 }
 
-/// `keys_of` (schema v0.8.4, RFC-050): `value` of the object field `field`
-/// of `law` has only keys of the object `reference` names, read in
-/// `context`, each with a value of the kind there. A key the value leaves
-/// out is fine. A key's value may be null only if the field is `nullable`;
-/// against a null or unknown there, or as an unknown, any value passes. A
-/// `value` that is null, unknown or untranslatable is not checked here: its
-/// absence is the field's `nullable`. Anything else is an error that names the key.
-fn check_keys_of(
-    law: &ArticleBasedLaw,
-    field: &str,
-    reference: &str,
-    nullable: bool,
-    value: &Value,
-    context: &RuleContext<'_>,
-) -> Result<()> {
-    let keys = match value {
-        Value::Null | Value::Unknown(_) | Value::Untranslatable { .. } => return Ok(()),
-        Value::Object(keys) => keys,
-        other => {
-            return Err(EngineError::TypeMismatch {
-                expected: format!(
-                    "an object for '{field}' of {}, with keys of {reference}",
-                    law.id
-                ),
-                actual: other.to_string(),
-            })
-        }
-    };
-    let allowed = match context.resolve(reference.trim_start_matches('$'))? {
-        Value::Object(allowed) => allowed,
-        other => {
-            return Err(EngineError::TypeMismatch {
-                expected: format!(
-                    "an object in {reference}, whose keys '{field}' of {} may have",
-                    law.id
-                ),
-                actual: other.to_string(),
-            })
-        }
-    };
-    for (key, given) in keys {
-        let mismatch = |expected: String| EngineError::TypeMismatch {
-            expected: format!("{expected} for key '{key}' of '{field}' of {}", law.id),
-            actual: given.to_string(),
-        };
-        let Some(there) = allowed.get(key) else {
-            return Err(mismatch(format!("a key of {reference}")));
-        };
-        if given.is_null() && !nullable {
-            return Err(mismatch(format!(
-                "a value ('{field}' is not nullable, so a key is never null)"
-            )));
-        }
-        if let (Some(given_kind), Some(kind)) = (kind_of(given), kind_of(there)) {
-            if given_kind != kind {
-                return Err(mismatch(format!("a {kind}, as in {reference}")));
-            }
-        }
+/// Whether `value` fits the type of the open term `term`, as a finding for
+/// it (RFC-050): a boolean, a number for a number or an amount, a string for
+/// a string or a date, a list, or an object for an object or a decision.
+/// `null` fits only a term that is not required.
+fn finding_fits(term: &crate::article::OpenTerm, value: &Value) -> bool {
+    use crate::types::ParameterType as T;
+    match (term.term_type, value) {
+        (_, Value::Null) => !term.required,
+        (T::Boolean, Value::Bool(_))
+        | (T::Number | T::Amount, Value::Int(_) | Value::Decimal(_))
+        | (T::String | T::Date, Value::String(_))
+        | (T::Array, Value::Array(_))
+        | (T::Object | T::Decision, Value::Object(_)) => true,
+        _ => false,
     }
-    Ok(())
 }
 
 /// `value` as the value of `input` of `law`, unless it is a `null` the input
@@ -1675,6 +1684,32 @@ impl LawExecutionService {
         parameters: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.evaluate_law_with_findings(
+            law_id,
+            output_names,
+            parameters,
+            BTreeMap::new(),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::evaluate_law`] with `findings`: what an authority found for
+    /// this case, keyed by the id of an open term it decides per case
+    /// (`decided_per_case_by`), apart from the parameters (RFC-050). A
+    /// finding applies to every article in the execution that leaves that
+    /// term to an authority per case, also one called anew through
+    /// `source.article`, where it wins over the decision value's own; an
+    /// implementation of the term still wins over it. A finding that no
+    /// article in the execution asks, or that does not fit the type of its
+    /// term, is an error that names it.
+    pub fn evaluate_law_with_findings(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
         if output_names.is_empty() {
             return Err(EngineError::InvalidOperation(
                 "output_names must not be empty".to_string(),
@@ -1682,8 +1717,10 @@ impl LawExecutionService {
         }
         let mut res_ctx = ResolutionContext::new(calculation_date)?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
+        res_ctx.findings = findings;
         let result =
             self.evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx)?;
+        res_ctx.check_findings_asked()?;
         // An output the law says does not arise is an answer, and the caller
         // asked for exactly this one. Returning `Ok` with it quietly missing
         // leaves a consumer to discover an absence it has no ground for; the
@@ -1724,6 +1761,44 @@ impl LawExecutionService {
         calculation_date: &str,
         trace_builder: TraceBuilder,
     ) -> Result<ArticleResult> {
+        self.evaluate_law_traced(
+            law_id,
+            output_names,
+            parameters,
+            BTreeMap::new(),
+            calculation_date,
+            trace_builder,
+        )
+    }
+
+    /// [`Self::evaluate_law_with_findings`] with tracing enabled.
+    pub fn evaluate_law_with_trace_and_findings(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
+        self.evaluate_law_traced(
+            law_id,
+            output_names,
+            parameters,
+            findings,
+            calculation_date,
+            TraceBuilder::new(),
+        )
+    }
+
+    fn evaluate_law_traced(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+        trace_builder: TraceBuilder,
+    ) -> Result<ArticleResult> {
         if output_names.is_empty() {
             return Err(EngineError::InvalidOperation(
                 "output_names must not be empty".to_string(),
@@ -1756,10 +1831,12 @@ impl LawExecutionService {
 
         let mut res_ctx = ResolutionContext::with_trace(calculation_date, Rc::clone(&trace))?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
+        res_ctx.findings = findings;
 
         // Execute: group outputs by article, evaluate each once, merge + filter
-        let result =
-            self.evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx);
+        let result = self
+            .evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx)
+            .and_then(|result| res_ctx.check_findings_asked().map(|()| result));
 
         // Drop res_ctx so it releases its Rc clone
         drop(res_ctx);
@@ -2125,6 +2202,30 @@ impl LawExecutionService {
         parameters: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.execute_stage_at_with_findings(
+            law_id,
+            article_number,
+            stage_name,
+            outputs,
+            parameters,
+            BTreeMap::new(),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::execute_stage_at`] with `findings`, as for
+    /// [`Self::evaluate_law_with_findings`] (RFC-050).
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_stage_at_with_findings(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        stage_name: &str,
+        outputs: Option<&[&str]>,
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
         let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
         let (procedure, stage) = self.stage_of(law_id, article, stage_name)?;
         let missing: Vec<&str> = stage
@@ -2144,6 +2245,7 @@ impl LawExecutionService {
         let mut res_ctx = ResolutionContext::new(calculation_date)?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
         res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
+        res_ctx.findings = findings;
         self.note_declaration_versions(&mut res_ctx);
         let outputs = outputs
             .map(<[&str]>::to_vec)
@@ -2156,6 +2258,7 @@ impl LawExecutionService {
             &stage.name,
             &mut res_ctx,
         )?;
+        res_ctx.check_findings_asked()?;
         result
             .delegation_refusals
             .clone_from(&res_ctx.delegation_refusals);
@@ -3647,6 +3750,21 @@ impl LawExecutionService {
             None => Vec::new(),
         };
 
+        // The caller's findings on the terms this article leaves to an
+        // authority per case (RFC-050). Across laws one wins over what the
+        // call passes for the term, such as the decision value's own
+        // finding; at the top it may not also be a parameter.
+        let mut parameters = parameters;
+        for (id, finding) in res_ctx.findings_for(law, article)? {
+            if res_ctx.depth == 0 && parameters.contains_key(&id) {
+                return Err(EngineError::InvalidOperation(format!(
+                    "'{id}' of {}#{} is given both as a parameter and as a finding",
+                    law.id, article.number
+                )));
+            }
+            parameters.insert(id, finding);
+        }
+
         // A required parameter the caller passed as null or unknown names
         // nobody. At the top level (depth 0) that is the caller's error, not a
         // missing fact and not an absence to decide on (RFC-036); a cross-law
@@ -3672,7 +3790,6 @@ impl LawExecutionService {
         let calculation_date = res_ctx.calculation_date;
         let trace = res_ctx.trace.as_ref().map(Rc::clone);
         let lazy = LazyArticleInputs::new(self, article, law, &parameters, res_ctx)?;
-        lazy.check_parameter_keys()?;
 
         lazy.resolve_names(&demand.read_before_actions)?;
         let mut hook_params = parameters.clone();
@@ -4907,15 +5024,19 @@ impl LawExecutionService {
 
     /// Resolve an input that calls the decision of an article (RFC-050).
     /// `target` is an article reference, or a `$`-reference to a value that
-    /// holds one.
+    /// holds one or that is a decision value. A decision value is called
+    /// anew (RFC-050): its `grondslag` with its own `fields` and `findings`.
     ///
-    /// The parameters are the objects of `parameters_from`, merged in order,
-    /// with `parameters` on top; a name the article does not declare is
-    /// dropped, and the trace names it, unless it is the id of an open term
-    /// the article leaves to an authority per case (`decided_per_case_by`):
-    /// that is the judgement for this case, passed as a caller at the top
-    /// passes it, and kept in `findings`, apart from the parameters in
-    /// `fields`. The article runs in the version in force on the calculation
+    /// The parameters are those `fields`, then the objects of
+    /// `parameters_from`, merged in order, with `parameters` on top; a name
+    /// the article does not declare is dropped, and the trace names it,
+    /// unless it is the id of an open term the article leaves to an
+    /// authority per case (`decided_per_case_by`): that is the finding for
+    /// this case, passed as a caller at the top passes it, and kept in
+    /// `findings`, apart from the parameters in `fields`. A finding in the
+    /// decision value comes first, a name merged on top of it next, and a
+    /// finding the caller of the engine gave for this execution wins over
+    /// both (RFC-050). The article runs in the version in force on the calculation
     /// date, at stage BESLUIT, as a cross-law call does, and computes the
     /// outputs of its decision item. Without `output` the input is the
     /// decision value `{grondslag, fields, findings, outputs}`; with it,
@@ -4949,12 +5070,21 @@ impl LawExecutionService {
         let output = source.output.as_deref();
         let caller = format!("input '{}' of {}", input.name, law.id);
 
-        // Which article: written in the law, or read from a value.
+        // Which article: written in the law, or read from a value. A
+        // decision value is called anew with its own fields and findings.
         let named_by = target;
+        let mut passed = BTreeMap::new();
+        let mut given_findings = BTreeMap::new();
         let target = match named_by.strip_prefix('$') {
             None => named_by.to_string(),
             Some(path) => match context.resolve(path)? {
                 Value::String(s) if regelrecht_law_model::is_article_reference(&s) => s,
+                Value::Object(value) => {
+                    let (grondslag, fields, findings) = decision_parts(value, named_by, &caller)?;
+                    passed = fields;
+                    given_findings = findings;
+                    grondslag
+                }
                 value @ (Value::Null | Value::Unknown(_)) => {
                     let _guard = res_ctx.trace_guard(named_by, PathNodeType::CrossLawReference);
                     res_ctx.trace_set_message(format!(
@@ -4967,7 +5097,9 @@ impl LawExecutionService {
                 }
                 other => {
                     return Err(EngineError::TypeMismatch {
-                        expected: format!("an article reference in {named_by} for {caller}"),
+                        expected: format!(
+                            "an article reference or a decision value in {named_by} for {caller}"
+                        ),
                         actual: other.to_string(),
                     })
                 }
@@ -4987,8 +5119,8 @@ impl LawExecutionService {
             Err(EngineError::ResolutionError(message))
         };
 
-        // What is passed: the objects merged in order, `parameters` on top.
-        let mut passed = BTreeMap::new();
+        // What is passed: the objects merged in order on the fields of a
+        // decision value, `parameters` on top.
         for reference in source.parameters_from.iter().flatten() {
             let path = reference.strip_prefix('$').ok_or_else(|| {
                 EngineError::InvalidOperation(format!(
@@ -5059,23 +5191,47 @@ impl LawExecutionService {
         // An implementation of that term still wins over the judgement, as
         // at the top (`resolve_open_term`).
         let declared = Self::filter_parameters_for_article(article, &passed);
-        let findings: BTreeMap<String, Value> = article
+        let mut findings: BTreeMap<String, Value> = article
             .get_open_terms()
             .into_iter()
             .flatten()
             .filter(|term| term.decided_per_case_by.is_some() && !declared.contains_key(&term.id))
-            .filter_map(|term| passed.get(&term.id).map(|v| (term.id.clone(), v.clone())))
+            .filter_map(|term| {
+                passed
+                    .get(&term.id)
+                    .or_else(|| given_findings.get(&term.id))
+                    .map(|v| (term.id.clone(), v.clone()))
+            })
             .collect();
+        let from_caller = res_ctx.findings_for(target_law, article)?;
+        findings.extend(from_caller.clone());
         let dropped: Vec<&str> = passed
             .keys()
+            .chain(given_findings.keys())
             .filter(|name| !declared.contains_key(*name) && !findings.contains_key(*name))
             .map(String::as_str)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
             .collect();
+        if !from_caller.is_empty() {
+            let _found = res_ctx.trace_guard(
+                format!("{target} (found for this case)"),
+                PathNodeType::Resolve,
+            );
+            res_ctx.trace_set_message(format!(
+                "{target}: the finding given for this execution on {} wins",
+                from_caller
+                    .keys()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
         if !findings.is_empty() {
             let _judged =
                 res_ctx.trace_guard(format!("{target} (judged per case)"), PathNodeType::Resolve);
             res_ctx.trace_set_message(format!(
-                "{target} leaves {} to an authority per case, so passed as its judgement",
+                "{target} leaves {} to an authority per case, so passed as its finding",
                 findings
                     .keys()
                     .map(String::as_str)

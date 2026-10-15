@@ -2,7 +2,8 @@
 //! article comes from the law or from a value, its parameters from
 //! `parameters_from` with `parameters` on top, and without `output` the
 //! input is a decision value `{grondslag, fields, findings, outputs}`.
-//! `keys_of` types an object by another one's keys. Also the strict
+//! A decision value as the target is called anew with its own fields and
+//! findings, and the caller's findings win over those. Also the strict
 //! `EQUALS` on lists and records that compares two such values.
 //!
 //! The laws here are toys, written for the engine: no corpus, no Awb.
@@ -866,7 +867,7 @@ fn a_target_that_is_no_article_reference_is_refused() {
         json!({"besluit": besluit, "nieuwe_oordelen": null}),
     );
     assert!(
-        message.contains("an article reference in $besluit.grondslag"),
+        message.contains("an article reference or a decision value in $besluit.grondslag"),
         "{message}"
     );
 }
@@ -1527,7 +1528,7 @@ fn a_judgement_per_case_reaches_the_article_and_the_rest_is_dropped() {
         assert!(
             trace.contains(
                 "wet_hoofd#1 leaves grond_aanwezig to an authority per case, so passed as its \
-                 judgement"
+                 finding"
             ),
             "{trace}"
         );
@@ -1657,90 +1658,55 @@ fn a_chain_of_calls_may_reach_the_depth_limit_but_not_pass_it() {
     assert!(message.contains("depth exceeded"), "{message}");
 }
 
-// --- keys_of: an object typed by another one's keys -----------------------
+// --- A decision called anew, and the caller's findings ---------------------
 
-/// [`HOOFD`] with an article 3 that reconsiders a decision value under
-/// article 1: the decision's fields and findings, and the findings
-/// given anew on top, which may only be findings the decision had
-/// (`keys_of`). Article 4 reads the same object from another law, so the
-/// check also runs on an input.
-fn hoofd_keys_of() -> String {
+/// [`HOOFD`] with an article 3 that calls a decision value anew: no
+/// `parameters_from`, the value's own fields and findings go along.
+fn hoofd_anew() -> String {
     format!(
         "{HOOFD}{}",
         r#"  - number: '3'
-    text: Het besluit opnieuw, met wat opnieuw is geoordeeld.
+    text: Het besluit opnieuw.
     machine_readable:
       execution:
         parameters:
           - name: besluit
             type: decision
-          - name: oordelen
-            type: object
-            nullable: true
-            keys_of: $besluit.findings
         input:
           - name: opnieuw
             type: decision
             nullable: true
             source:
-              article: $besluit.grondslag
-              parameters_from: [$besluit.fields, $besluit.findings, $oordelen]
+              article: $besluit
         output:
           - name: heroverwogen
             type: decision
             nullable: true
+          - name: aanleiding
+            type: boolean
         actions:
           - output: heroverwogen
             value: $opnieuw
+          - output: aanleiding
+            value:
+              operation: NOT
+              value:
+                operation: EQUALS
+                subject: $opnieuw.outputs
+                value: $besluit.outputs
   - number: '4'
-    text: Wat opnieuw is geoordeeld, uit een andere wet.
+    text: Iets anders.
     machine_readable:
       execution:
-        parameters:
-          - name: besluit
-            type: decision
-          - name: ruw
-            type: object
-        input:
-          - name: gelezen
-            type: object
-            keys_of: $besluit.findings
-            source:
-              regulation: wet_doorgeef
-              output: uit
-              parameters:
-                ruw: $ruw
         output:
-          - name: gelezen_oordelen
-            type: object
+          - name: iets_anders
+            type: boolean
         actions:
-          - output: gelezen_oordelen
-            value: $gelezen
+          - output: iets_anders
+            value: true
 "#
     )
 }
-
-/// Passes an object through, for an input of article 4 of [`hoofd_keys_of`].
-const DOORGEEF: &str = r#"
-$id: wet_doorgeef
-regulatory_layer: WET
-publication_date: '2025-01-01'
-valid_from: '2025-01-01'
-articles:
-  - number: '1'
-    text: Wat binnenkomt, gaat door.
-    machine_readable:
-      execution:
-        parameters:
-          - name: ruw
-            type: object
-        output:
-          - name: uit
-            type: object
-        actions:
-          - output: uit
-            value: $ruw
-"#;
 
 fn hoofd_besluit(grond: bool) -> serde_json::Value {
     json!({
@@ -1751,185 +1717,296 @@ fn hoofd_besluit(grond: bool) -> serde_json::Value {
     })
 }
 
-fn keys_of_service(law: &str) -> LawExecutionService {
+fn anew_service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
-    service.load_law(law).unwrap();
-    service.load_law(DOORGEEF).unwrap();
+    service.load_law(&hoofd_anew()).unwrap();
     service
 }
 
-fn heroverwogen(law: &str, oordelen: serde_json::Value) -> regelrecht_engine::Result<Value> {
-    let parameters = params(json!({"besluit": hoofd_besluit(false), "oordelen": oordelen}));
-    keys_of_service(law)
-        .evaluate_law_output("wet_hoofd", "heroverwogen", parameters, DATE)
-        .map(|result| result.outputs["heroverwogen"].clone())
+/// Article 3 of [`hoofd_anew`] on `besluit`, with `findings` from the
+/// caller, for `output`.
+fn anew(
+    service: &LawExecutionService,
+    besluit: serde_json::Value,
+    findings: serde_json::Value,
+    output: &str,
+) -> regelrecht_engine::Result<Value> {
+    service
+        .evaluate_law_with_findings(
+            "wet_hoofd",
+            &[output],
+            params(json!({ "besluit": besluit })),
+            params(findings),
+            DATE,
+        )
+        .map(|result| result.outputs[output].clone())
 }
 
 #[test]
-fn a_judgement_anew_under_keys_of_reaches_the_article() {
-    let value = heroverwogen(&hoofd_keys_of(), json!({"grond_aanwezig": true})).unwrap();
-    assert_eq!(value, Value::from(hoofd_besluit(true)));
-}
-
-#[test]
-fn a_judgement_not_given_anew_stays_that_of_the_decision() {
-    for oordelen in [json!(null), json!({})] {
-        let value = heroverwogen(&hoofd_keys_of(), oordelen.clone()).unwrap();
-        assert_eq!(value, Value::from(hoofd_besluit(false)), "{oordelen}");
+fn a_decision_value_is_called_anew_with_its_own_fields_and_findings() {
+    let service = anew_service();
+    for grond in [true, false] {
+        let value = anew(&service, hoofd_besluit(grond), json!({}), "heroverwogen").unwrap();
+        assert_eq!(value, Value::from(hoofd_besluit(grond)), "{grond}");
+        let cause = anew(&service, hoofd_besluit(grond), json!({}), "aanleiding").unwrap();
+        assert_eq!(cause, Value::Bool(false), "{grond}");
     }
 }
 
 #[test]
-fn a_key_the_decision_did_not_judge_is_refused() {
-    let message = heroverwogen(&hoofd_keys_of(), json!({"grond_aanwezg": true}))
-        .unwrap_err()
-        .to_string();
+fn a_finding_of_the_caller_wins_over_that_of_the_decision_value() {
+    let service = anew_service();
+    let value = anew(
+        &service,
+        hoofd_besluit(false),
+        json!({"grond_aanwezig": true}),
+        "heroverwogen",
+    )
+    .unwrap();
+    assert_eq!(value, Value::from(hoofd_besluit(true)));
+    let cause = anew(
+        &service,
+        hoofd_besluit(false),
+        json!({"grond_aanwezig": true}),
+        "aanleiding",
+    );
+    assert_eq!(cause.unwrap(), Value::Bool(true));
+    let trace = service
+        .evaluate_law_with_trace_and_findings(
+            "wet_hoofd",
+            &["heroverwogen"],
+            params(json!({"besluit": hoofd_besluit(false)})),
+            params(json!({"grond_aanwezig": true})),
+            DATE,
+        )
+        .unwrap()
+        .trace
+        .unwrap()
+        .render_box_drawing();
     assert!(
-        message.contains("a key of $besluit.findings for key 'grond_aanwezg' of 'oordelen'"),
-        "{message}"
+        trace.contains("the finding given for this execution on grond_aanwezig wins"),
+        "{trace}"
     );
 }
 
 #[test]
-fn a_judgement_of_another_type_is_refused() {
-    let message = heroverwogen(&hoofd_keys_of(), json!({"grond_aanwezig": "ja"}))
-        .unwrap_err()
-        .to_string();
-    assert!(
-        message.contains("a boolean, as in $besluit.findings for key 'grond_aanwezig'"),
-        "{message}"
+fn an_implementation_still_wins_over_a_finding_of_the_caller() {
+    let mut service = anew_service();
+    service.load_law(HOOFD_BELEID).unwrap();
+    let value = anew(
+        &service,
+        hoofd_besluit(true),
+        json!({"grond_aanwezig": true}),
+        "heroverwogen",
+    )
+    .unwrap();
+    assert_eq!(
+        value.as_object().unwrap()["outputs"],
+        Value::from(json!({"verleend": false}))
     );
 }
 
 #[test]
-fn an_integer_and_a_decimal_are_both_numbers_under_keys_of() {
-    let law = hoofd_keys_of();
-    let service = keys_of_service(&law);
-    let mut besluit = hoofd_besluit(false);
-    besluit["findings"] = json!({"grond_aanwezig": 2});
-    for given in [json!(1), json!(1.5)] {
-        let parameters = params(json!({"besluit": besluit, "ruw": {"grond_aanwezig": given}}));
-        let result = service
-            .evaluate_law_output("wet_hoofd", "gelezen_oordelen", parameters, DATE)
-            .unwrap();
-        assert_eq!(
-            result.outputs["gelezen_oordelen"],
-            Value::from(json!({"grond_aanwezig": given}))
+fn a_finding_no_article_asks_is_an_error_that_names_it() {
+    let service = anew_service();
+    let message = anew(
+        &service,
+        hoofd_besluit(false),
+        json!({"grond_aanwezg": true}),
+        "heroverwogen",
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(
+        message.contains("leaves 'grond_aanwezg' to an authority per case"),
+        "{message}"
+    );
+    // The trace path fails the same way.
+    let message = service
+        .evaluate_law_with_trace_and_findings(
+            "wet_hoofd",
+            &["heroverwogen"],
+            params(json!({"besluit": hoofd_besluit(false)})),
+            params(json!({"grond_aanwezg": true})),
+            DATE,
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(message.contains("'grond_aanwezg'"), "{message}");
+    // A finding for an article the execution does not reach is asked by
+    // none either.
+    let message = service
+        .evaluate_law_with_findings(
+            "wet_hoofd",
+            &["iets_anders"],
+            BTreeMap::new(),
+            params(json!({"grond_aanwezig": true})),
+            DATE,
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(message.contains("'grond_aanwezig'"), "{message}");
+}
+
+#[test]
+fn a_finding_of_another_type_is_an_error_that_names_it() {
+    let service = anew_service();
+    for finding in [json!("ja"), json!(1), json!(null)] {
+        let message = anew(
+            &service,
+            hoofd_besluit(false),
+            json!({ "grond_aanwezig": finding }),
+            "heroverwogen",
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(
+            message.contains("a boolean for the finding 'grond_aanwezig' on wet_hoofd#1"),
+            "{finding}: {message}"
+        );
+    }
+}
+
+/// A finding fits its term by kind: a number for a number or an amount, a
+/// string for a string or a date, a list, an object for an object or a
+/// decision, and null only for a term that is not required.
+#[test]
+fn a_finding_fits_the_type_of_its_term() {
+    for (ty, required, fits, misfits) in [
+        ("number", true, json!(1.5), json!("1")),
+        ("amount", true, json!(100), json!(true)),
+        ("string", true, json!("x"), json!(1)),
+        ("date", true, json!("2025-01-01"), json!(1)),
+        ("array", true, json!([1]), json!({})),
+        ("object", true, json!({}), json!([])),
+        ("boolean", false, json!(null), json!(0)),
+    ] {
+        let law = format!(
+            r#"
+$id: wet_soort
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Het hoofd stelt iets vast.
+    machine_readable:
+      open_terms:
+        - id: vastgesteld
+          type: {ty}
+          required: {required}
+          decided_per_case_by: het hoofd
+      execution:
+        output:
+          - name: gezien
+            type: boolean
+        actions:
+          - output: gezien
+            value: true
+"#
+        );
+        let mut service = LawExecutionService::new();
+        service.load_law(&law).unwrap();
+        let run = |finding: &serde_json::Value| {
+            service.evaluate_law_with_findings(
+                "wet_soort",
+                &["gezien"],
+                BTreeMap::new(),
+                params(json!({ "vastgesteld": finding })),
+                DATE,
+            )
+        };
+        run(&fits).unwrap_or_else(|e| panic!("{ty} {fits}: {e}"));
+        let message = run(&misfits).unwrap_err().to_string();
+        assert!(
+            message.contains(&format!("a {ty} for the finding")),
+            "{ty}: {message}"
         );
     }
 }
 
 #[test]
-fn a_null_judgement_needs_a_nullable_field() {
-    // `oordelen` is nullable: a key may be null.
-    let value = heroverwogen(&hoofd_keys_of(), json!({"grond_aanwezig": null}));
-    assert!(
-        !value
-            .as_ref()
-            .err()
-            .is_some_and(|e| e.to_string().contains("never null")),
-        "{value:?}"
-    );
-    // Without `nullable`, it may not.
-    let law = hoofd_keys_of().replace(
-        "            type: object\n            nullable: true\n            keys_of",
-        "            type: object\n            keys_of",
-    );
-    let message = heroverwogen(&law, json!({"grond_aanwezig": null}))
-        .unwrap_err()
-        .to_string();
-    assert!(
-        message.contains("'oordelen' is not nullable, so a key is never null"),
-        "{message}"
-    );
-}
-
-#[test]
-fn keys_of_needs_an_object_on_both_sides() {
-    let message = heroverwogen(&hoofd_keys_of(), json!(["grond_aanwezig"]))
-        .unwrap_err()
-        .to_string();
-    assert!(
-        message.contains("an object for 'oordelen' of wet_hoofd, with keys of"),
-        "{message}"
-    );
-    let mut besluit = hoofd_besluit(false);
-    besluit["findings"] = json!(null);
-    let parameters = params(json!({"besluit": besluit, "oordelen": {"grond_aanwezig": true}}));
-    let message = keys_of_service(&hoofd_keys_of())
-        .evaluate_law_output("wet_hoofd", "heroverwogen", parameters, DATE)
-        .unwrap_err()
-        .to_string();
-    assert!(
-        message.contains("an object in $besluit.findings, whose keys 'oordelen'"),
-        "{message}"
-    );
-}
-
-#[test]
-fn keys_of_is_checked_on_an_input_resolved_and_passed() {
-    let law = hoofd_keys_of();
-    let service = keys_of_service(&law);
-    let run = |extra: serde_json::Value| {
-        let mut parameters = json!({"besluit": hoofd_besluit(false), "ruw": {}});
-        for (key, value) in extra.as_object().unwrap() {
-            parameters[key] = value.clone();
-        }
-        service
-            .evaluate_law_output("wet_hoofd", "gelezen_oordelen", params(parameters), DATE)
-            .map(|result| result.outputs["gelezen_oordelen"].clone())
-    };
-    assert_eq!(
-        run(json!({"ruw": {"grond_aanwezig": true}})).unwrap(),
-        Value::from(json!({"grond_aanwezig": true}))
-    );
-    let message = run(json!({"ruw": {"anders": true}}))
-        .unwrap_err()
-        .to_string();
-    assert!(message.contains("key 'anders' of 'gelezen'"), "{message}");
-    // A value passed under the input's name is checked as well.
-    let message = run(json!({"gelezen": {"anders": true}}))
-        .unwrap_err()
-        .to_string();
-    assert!(message.contains("key 'anders' of 'gelezen'"), "{message}");
-}
-
-#[test]
-fn keys_of_types_an_object_by_an_object_at_load() {
-    let with = |field: &str| {
-        caller("          - name: x\n            type: object\n            source: {}\n").replace(
-            "          - name: tekst\n            type: string\n",
-            &format!("          - name: tekst\n            type: string\n{field}"),
+fn a_finding_at_the_top_is_not_also_a_parameter() {
+    let mut service = LawExecutionService::new();
+    service.load_law(HOOFD).unwrap();
+    let run = |parameters: serde_json::Value| {
+        service.evaluate_law_with_findings(
+            "wet_hoofd",
+            &["verleend"],
+            params(parameters),
+            params(json!({"grond_aanwezig": true})),
+            DATE,
         )
     };
-    for (field, why) in [
-        (
-            "          - name: o\n            type: number\n            keys_of: $besluit.findings\n",
-            "'o' declares keys_of, but is declared number",
+    // At the top a finding reaches the article's own term.
+    let result = run(json!({"dagen": 5})).unwrap();
+    assert_eq!(result.outputs["verleend"], Value::Bool(true));
+    let message = run(json!({"dagen": 5, "grond_aanwezig": false}))
+        .unwrap_err()
+        .to_string();
+    assert!(
+        message.contains(
+            "'grond_aanwezig' of wet_hoofd#1 is given both as a parameter and as a finding"
         ),
-        (
-            "          - name: o\n            type: object\n            keys_of: $getal\n",
-            "'o' takes its keys from $getal, which is no object",
-        ),
-        (
-            "          - name: o\n            type: object\n            keys_of: $besluit.outputs\n",
-            "'o' takes its keys from $besluit.outputs, which is no object",
-        ),
-        (
-            "          - name: o\n            type: object\n            keys_of: $niets\n",
-            "'o' takes its keys from $niets, which is no object",
-        ),
+        "{message}"
+    );
+}
+
+/// A finding in the decision value the article no longer leaves to an
+/// authority is no finding: it is dropped, and the trace names it. A value
+/// that is no decision value is refused.
+#[test]
+fn what_the_value_holds_that_the_article_does_not_ask_is_dropped() {
+    let service = anew_service();
+    let mut besluit = hoofd_besluit(true);
+    besluit["findings"]["vervallen"] = json!(true);
+    let trace = service
+        .evaluate_law_with_trace(
+            "wet_hoofd",
+            &["heroverwogen"],
+            params(json!({ "besluit": besluit })),
+            DATE,
+        )
+        .unwrap()
+        .trace
+        .unwrap()
+        .render_box_drawing();
+    assert!(
+        trace.contains("wet_hoofd#1 does not declare vervallen, so not passed"),
+        "{trace}"
+    );
+    for odd in [
+        json!({"grondslag": "wet_hoofd", "fields": {}, "findings": {}, "outputs": {}}),
+        json!({"grondslag": "wet_hoofd#1", "fields": [], "findings": {}, "outputs": {}}),
+        json!({"grondslag": "wet_hoofd#1", "fields": {}, "outputs": {}}),
     ] {
-        let message = load_error(&[&with(field)]);
-        assert!(message.contains("[T6]") && message.contains(why), "{why}: {message}");
+        let message = anew(&service, odd.clone(), json!({}), "heroverwogen")
+            .unwrap_err()
+            .to_string();
+        assert!(
+            message.contains("a decision value {grondslag, fields, findings, outputs} in $besluit"),
+            "{odd}: {message}"
+        );
     }
-    for field in [
-        "          - name: o\n            type: object\n            keys_of: $besluit.findings\n",
-        "          - name: o\n            type: object\n            keys_of: $besluit.fields\n",
-        "          - name: o\n            type: object\n            keys_of: $x\n",
-    ] {
-        LawExecutionService::new()
-            .load_law(&with(field))
-            .unwrap_or_else(|e| panic!("{field}: {e}"));
-    }
+}
+
+#[test]
+fn a_decision_called_anew_needs_a_nullable_input() {
+    let law = caller(
+        "          - name: x\n            type: decision\n            source:\n              article: $besluit\n",
+    );
+    let message = load_error(&[&law]);
+    assert!(
+        message.contains("[N5]") && message.contains("calls the decision $besluit anew"),
+        "{message}"
+    );
+    // A decision value is a target the type check takes, a number is not.
+    let law = caller(
+        "          - name: x\n            type: decision\n            source:\n              article: $getal\n",
+    );
+    let message = load_error(&[&law]);
+    assert!(
+        message.contains("or called anew from a decision value"),
+        "{message}"
+    );
 }

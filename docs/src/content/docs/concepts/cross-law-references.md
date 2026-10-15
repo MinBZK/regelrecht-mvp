@@ -95,22 +95,15 @@ A `regulation` reference finds the article through the output it asks for. Somet
 parameters:
   - name: besluit
     type: decision
-  - name: nieuwe_oordelen
-    type: object
-    nullable: true
-    keys_of: $besluit.findings
 input:
   - name: heroverweging
     type: decision
+    nullable: true
     source:
-      article: $besluit.grondslag
-      parameters_from:
-        - $besluit.fields
-        - $besluit.findings
-        - $nieuwe_oordelen
+      article: $besluit
 ```
 
-`article` is an article reference (`wet_fictief#3`) or a `$`-reference to a value that holds one. The engine runs the decision item of that article at stage BESLUIT. Without `output` it returns a decision value, the type `decision`:
+`article` is an article reference (`wet_fictief#3`), a `$`-reference to a value that holds one, or a `$`-reference to a decision value. The engine runs the decision item of that article at stage BESLUIT. Without `output` it returns a decision value, the type `decision`:
 
 | Field | Holds |
 |---|---|
@@ -125,11 +118,13 @@ With `output` the input is that one output of the decision.
 
 A value built from a recorded decision may also hold `taken_on`: the article that established the submission the decision was taken on.
 
-`keys_of` types an object by the keys of another one. In the example, `nieuwe_oordelen` may only hold findings the decision had. At run time every key of the value must be a key of `$besluit.findings`, and its value of the same type as the value there. A key may be null only if the field is `nullable`. A key the value leaves out is fine: that finding is not established anew. Anything else is an error that names the key, so a misspelt finding fails instead of being dropped. `keys_of` stands only on a parameter or input of type `object`, and names an object field or the `findings` or `fields` of a decision value (type rule T6).
+A decision value as the target is called anew: the engine runs its `grondslag` with its own `fields` as parameters and its own `findings`. The law does not spell this out, as in the example; it is a convention of the engine.
 
-The parameters come from `parameters_from`, a list of objects merged in order: a later one wins over an earlier one, and `parameters` goes on top of them all. A null object adds nothing. A name the article does not declare is dropped, and the trace says which. The exception is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that name carries the authority's judgement for this case, and it is passed as a caller at the top passes it, so an implementation of the term still wins over it. Which parameters the article requires is known only when it runs, and a required parameter that is null skips the call and leaves the input null. So an input whose `parameters` hold a reference that may be null, or that uses `parameters_from`, is declared `nullable` (type rule N5).
+New findings come from the caller of the engine, apart from the parameters, keyed by the id of the open term (`evaluate_law_with_findings`, and the scenario step `the following findings:`). A finding applies to every article in the execution that leaves that term to an authority per case, and wins over the decision value's own finding there. An implementation of the term still wins over both. A finding that no article in the execution asks, or that does not fit the type of its term, is an error that names it. So a misspelt finding fails instead of being dropped, and a finding for a call that does not happen fails too.
 
-A fixed reference is checked when the laws load: the article takes a decision, and an `output` is one of the decision's outputs. A reference taken from a value is known only when the article runs. The type check then knows the input is a decision value and makes no claim about `$heroverweging.outputs.x`, as for rows. At run time the engine refuses an article not in force on the date, an article without a decision, an `output` that is not one of the decision's, and a merged value that is no object. Like any input, the call is made only when an action reads it, so an `AND` whose first condition is false does not run it.
+The parameters can also come from `parameters_from`, a list of objects merged in order on the fields of a decision value: a later one wins over an earlier one, and `parameters` goes on top of them all. A null object adds nothing. A name the article does not declare is dropped, and the trace says which. The exception is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that name carries the authority's finding for this case, and it is passed as a caller at the top passes it, so an implementation of the term still wins over it. Which parameters the article requires is known only when it runs, and a required parameter that is null skips the call and leaves the input null. So an input whose `parameters` hold a reference that may be null, that uses `parameters_from`, or that calls a decision value anew, is declared `nullable` (type rule N5).
+
+A fixed reference is checked when the laws load: the article takes a decision, and an `output` is one of the decision's outputs. A reference taken from a value is known only when the article runs. The type check then knows the input is a decision value and makes no claim about `$heroverweging.outputs.x`, as for rows. At run time the engine refuses an article not in force on the date, an article without a decision, an `output` that is not one of the decision's, a value that is neither an article reference nor a decision value, and a merged value that is no object. Like any input, the call is made only when an action reads it, so an `AND` whose first condition is false does not run it.
 
 Two decision values are compared with `EQUALS`. On lists and records it compares the numbers inside as written: `12` against `12.0` is an error, not an answer. `IN` is not strict in this way. A decision value holds its numbers as a stored one reads back from JSON, so a whole number the arithmetic left as `5.0` is `5`.
 

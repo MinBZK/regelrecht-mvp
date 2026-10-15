@@ -80,6 +80,11 @@ impl RegelrechtWorld {
                     self.parameters.insert(k, v);
                 }
             }
+            "set_findings_table" => {
+                for (k, v) in rows_to_params(&table.expect("findings table"), table_cell_value) {
+                    self.findings.insert(k, v);
+                }
+            }
             "set_data_source" => {
                 let source = args[0].as_str().to_string();
                 let key = args[1].as_str().to_string();

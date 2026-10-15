@@ -509,3 +509,26 @@ fn walking_the_procedure_asks_the_judgement_only_at_the_decision() {
         Value::String("J. Jansen".into())
     );
 }
+
+/// A stage takes the head's finding apart from the parameters (RFC-050),
+/// and refuses one no article of the stage asks.
+#[test]
+fn a_stage_takes_a_finding_apart_from_the_parameters() {
+    let service = service(&[GENERAL_LAW, SPECIAL_LAW]);
+    let run = |ids: &[&str]| {
+        let findings: Vec<(&str, Value)> = ids.iter().map(|id| (*id, Value::Bool(true))).collect();
+        service.execute_stage_at_with_findings(
+            "wet_verlof",
+            "1",
+            "BESLUIT",
+            None,
+            params(&[("dagen", Value::Int(5)), ("besluit_datum", date(DAY))]),
+            params(&findings),
+            DAY,
+        )
+    };
+    let result = run(&["grond_aanwezig"]).unwrap();
+    assert_eq!(result.outputs["verlof_verleend"], Value::Bool(true));
+    let e = run(&["grond_aanwezig", "grond_aanwezg"]).unwrap_err();
+    assert!(e.to_string().contains("'grond_aanwezg'"), "{e}");
+}

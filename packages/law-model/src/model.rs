@@ -209,15 +209,6 @@ pub struct Parameter {
     pub temporal: Option<Temporal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub legal_basis: Option<ProvisionReference>,
-    /// For an `object`: a `$`-reference to an object whose keys are the only
-    /// keys this value may have, each with the type of the value there
-    /// (schema v0.8.4, RFC-050), such as `$besluit.findings`.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_variable_reference"
-    )]
-    pub keys_of: Option<String>,
 }
 
 impl Parameter {
@@ -250,15 +241,6 @@ pub struct Input {
     pub temporal: Option<Temporal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub legal_basis: Option<ProvisionReference>,
-    /// For an `object`: a `$`-reference to an object whose keys are the only
-    /// keys this value may have, each with the type of the value there
-    /// (schema v0.8.4, RFC-050), such as `$besluit.findings`.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_variable_reference"
-    )]
-    pub keys_of: Option<String>,
 }
 
 impl Input {
@@ -1248,22 +1230,6 @@ where
                     "'{s}' is neither <regulation>#<article> without a paragraph nor a \
                      $-reference"
                 )))
-            }
-        })
-        .transpose()
-}
-
-/// Deserialize an optional [`is_variable_reference`], such as `keys_of`.
-fn optional_variable_reference<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    Option::<String>::deserialize(deserializer)?
-        .map(|s| {
-            if is_variable_reference(&s) {
-                Ok(s)
-            } else {
-                Err(serde::de::Error::custom(format!("'{s}' is no $-reference")))
             }
         })
         .transpose()

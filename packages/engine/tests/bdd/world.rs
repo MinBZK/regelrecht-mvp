@@ -28,6 +28,9 @@ pub struct RegelrechtWorld {
     pub calculation_date: String,
     /// Parameters for law execution
     pub parameters: BTreeMap<String, Value>,
+    /// What an authority found for this case, apart from the parameters
+    /// (RFC-050)
+    pub findings: BTreeMap<String, Value>,
     /// Last execution result (if successful)
     pub result: Option<ArticleResult>,
     /// Last error (if execution failed)
@@ -82,6 +85,7 @@ impl RegelrechtWorld {
             service,
             calculation_date: "2024-01-01".to_string(),
             parameters: BTreeMap::new(),
+            findings: BTreeMap::new(),
             result: None,
             error: None,
             note_articles: Vec::new(),
@@ -103,17 +107,19 @@ impl RegelrechtWorld {
         let trace = Self::trace_enabled();
 
         let outcome = if trace {
-            self.service.evaluate_law_with_trace(
+            self.service.evaluate_law_with_trace_and_findings(
                 law_id,
                 output_names,
                 self.parameters.clone(),
+                self.findings.clone(),
                 &self.calculation_date,
             )
         } else {
-            self.service.evaluate_law(
+            self.service.evaluate_law_with_findings(
                 law_id,
                 output_names,
                 self.parameters.clone(),
+                self.findings.clone(),
                 &self.calculation_date,
             )
         };

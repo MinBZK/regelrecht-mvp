@@ -64,6 +64,18 @@ steps:
     text: 'the following parameters:'
     datatable: true
 
+  # What an authority found for this case (`decided_per_case_by`), apart
+  # from the parameters, keyed by the id of the open term (RFC-050). The
+  # engine applies each to every article in the execution that leaves that
+  # term to an authority per case; one that none asks is an error. Rows
+  # read as a parameter table does.
+  - id: set_findings_table
+    action: set_findings_table
+    keyword: given
+    tier: findings
+    text: 'the following findings:'
+    datatable: true
+
   - id: set_data_source
     action: set_data_source
     keyword: given
