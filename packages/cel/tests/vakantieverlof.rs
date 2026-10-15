@@ -1645,10 +1645,10 @@ fn the_head_gives_at_the_decision_on_objection_only_findings_an_article_asks() {
     let refused = refused_on_profession(&mut cell);
     let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-01").unwrap();
     for (given, says) in [
-        // The contested decision comes from the objection.
+        // The contested decision comes from the objection: it is no finding.
         (
             json!({"bestreden_besluit": refused.id}),
-            "comes from the application",
+            "'bestreden_besluit' of the decision of algemene_wet_bestuursrecht#7:11 is no finding",
         ),
         // What no article in the decision asks, misspelt or not, is an
         // error that names it: it is not quietly dropped.
