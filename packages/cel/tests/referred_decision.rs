@@ -137,6 +137,7 @@ articles:
         input:
           - name: heroverweging
             type: decision
+            nullable: true
             source:
               article: $bestreden_besluit.grondslag
               parameters_from:

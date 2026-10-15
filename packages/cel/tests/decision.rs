@@ -353,12 +353,17 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
     assert_eq!(cell.grams().len(), 1);
 }
 
-/// Data derived for the decision (an output no item lists, RFC-050) is
-/// computed at every stage of the decision, so a hook that reads it as a
-/// parameter gets it from the execution: it is no input of the decision.
+/// Data derived for the decision (an output the decision item lists under
+/// `derived`, RFC-050) is computed at every stage of the decision, so a hook
+/// that reads it as a parameter gets it from the execution: it is no input of
+/// the decision.
 #[test]
 fn a_hook_that_reads_derived_data_asks_nothing_for_it() {
     let special = SPECIAL_LAW
+        .replace(
+            "            outputs: [verlof_verleend]\n",
+            "            outputs: [verlof_verleend]\n            derived: [dagen_gevraagd]\n",
+        )
         .replace(
             "          - {name: verlof_verleend, type: boolean}\n        actions:",
             "          - {name: verlof_verleend, type: boolean}\n          - {name: dagen_gevraagd, type: number}\n        actions:\n          - {output: dagen_gevraagd, value: $dagen}",
