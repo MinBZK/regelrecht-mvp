@@ -620,6 +620,7 @@ fn check_law_references(scan: &CorpusScan, known_ids: &HashSet<&str>, out: &mut 
             }
             let via = match kind {
                 LawReferenceKind::SourceRegulation => "verwijst via 'source.regulation' naar",
+                LawReferenceKind::SourceArticle => "verwijst via 'source.article' naar",
                 LawReferenceKind::Implements => "declareert 'implements' op",
             };
             out.push(Finding {

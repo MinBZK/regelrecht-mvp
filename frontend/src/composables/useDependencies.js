@@ -16,8 +16,11 @@ import { implementorsUrl } from './corpusUrls.js';
 import { apiFetchJson } from '../lib/apiFetch.js';
 
 /**
- * Extract all unique `source.regulation` references from a parsed law object.
- * Skips self-references (where regulation === the law's own $id).
+ * Extract all unique `source.regulation` references from a parsed law object,
+ * and the regulation of a fixed `source.article` target (`<regulation>#<article>`,
+ * schema v0.8.4). A `$`-target names its article only at run time, so it has
+ * no regulation to preload. Skips self-references (where regulation === the
+ * law's own $id).
  *
  * @param {object} law - Parsed law YAML object
  * @returns {string[]} Array of unique law IDs referenced
@@ -29,7 +32,10 @@ export function extractRegulationRefs(law) {
   for (const article of law.articles || []) {
     const inputs = article.machine_readable?.execution?.input || [];
     for (const input of inputs) {
-      const reg = input.source?.regulation;
+      const target = input.source?.article;
+      const reg =
+        input.source?.regulation ??
+        (typeof target === 'string' && !target.startsWith('$') ? target.split('#')[0] : null);
       if (reg && reg !== selfId) {
         refs.add(reg);
       }

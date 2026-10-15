@@ -718,7 +718,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares, and the outputs of its decision item (RFC-050).",
+          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares (with its judgements per case), and the outputs of its decision item (RFC-050).",
           "enum": [
             "string",
             "number",
@@ -895,7 +895,7 @@
                       "$ref": "#/definitions/variableReference"
                     }
                   ],
-                  "description": "The article whose decision this input takes: `<regulation>#<article>`, or a `$`-reference to a value that holds one, such as the `grondslag` of a `decision` value. Without `output` the engine runs the decision item of that article at stage BESLUIT, and the input is a `decision` value `{grondslag, fields, outputs}`. With `output`, the input is that one output of the decision item. The article is the one in force on the calculation date; one that is not in force, or that takes no decision, is an error at run time. The parameters are those of `parameters_from`, with `parameters` on top; a name the article does not declare is dropped, and the trace names it. It stands apart from `regulation`, `decisions` and `endpoint`."
+                  "description": "The article whose decision this input takes: `<regulation>#<article>`, or a `$`-reference to a value that holds one, such as the `grondslag` of a `decision` value. Without `output` the engine runs the decision item of that article at stage BESLUIT, and the input is a `decision` value `{grondslag, fields, outputs}`. With `output`, the input is that one output of the decision item. The article is the one in force on the calculation date; one that is not in force, or that takes no decision, is an error at run time. The parameters are those of `parameters_from`, with `parameters` on top; a name the article does not declare is dropped, and the trace names it, unless it is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that is the judgement for this case, passed as a caller at the top passes it, and an implementation of the term still wins over it (RFC-047). It stands apart from `regulation`, `decisions` and `endpoint`."
                 },
                 "parameters_from": {
                   "type": "array",
@@ -2632,7 +2632,16 @@
           },
           "minItems": 1,
           "uniqueItems": true,
-          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. A submission without it yields none; the decision without it yields every output that no other item lists. Every name must be an output of the article, and no output belongs to two items; the loader checks both. An output no item yields is data derived for the decision: computed at the decision's stages and recorded with it, but not one of its outputs, so a call to the article (`source.article`) leaves it out of the decision value. An article that takes no decision gives each output to an item (RFC-047, RFC-050). In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision with the data derived for it."
+          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. A submission without it yields none; the decision without it yields every output that no other item lists and that it does not list under `derived`. Every name must be an output of the article; the loader checks it. Every output belongs to exactly one item, under `outputs` or, for data derived for the decision, under `derived` (RFC-047, RFC-050). In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision with the data derived for it."
+        },
+        "derived": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Only on a decision: the names of this article's outputs that are data derived for the decision (RFC-050), such as an intermediate result the decision is recorded with. They are computed at the decision's stages and recorded with it, but are none of its outputs, so a call to the article (`source.article`) leaves them out of the decision value. Derived data is listed, never inferred: an output that no item lists under `outputs` or `derived` is refused, so a forgotten or misspelt output fails instead of turning into derived data. Every name must be an output of the article and belongs to no other item; the loader checks both."
         },
         "decision_type": {
           "type": "string",
@@ -2707,6 +2716,11 @@
                 {
                   "required": [
                     "procedure_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "derived"
                   ]
                 }
               ]

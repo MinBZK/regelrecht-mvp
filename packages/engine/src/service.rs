@@ -143,7 +143,7 @@ struct ResolutionContext<'a> {
 /// (RFC-047). For an article that produces several things, such as an
 /// application and the decision on it: those of the submission whose kind
 /// names the stage, and at every other stage those of the decision with
-/// the data derived for it, the outputs no item yields (RFC-050). `None`,
+/// the data derived for it, the outputs it lists under `derived` (RFC-050). `None`,
 /// every output, for an article that produces one thing.
 fn outputs_at_stage<'a>(article: &'a Article, stage: &str) -> Option<Vec<&'a str>> {
     if !article.produces_list() {
@@ -4791,7 +4791,10 @@ impl LawExecutionService {
     ///
     /// The parameters are the objects of `parameters_from`, merged in order,
     /// with `parameters` on top; a name the article does not declare is
-    /// dropped, and the trace names it. The article runs in the version in
+    /// dropped, and the trace names it, unless it is the id of an open term
+    /// the article leaves to an authority per case (`decided_per_case_by`):
+    /// that is the judgement for this case, passed as a caller at the top
+    /// passes it, and kept in `fields`. The article runs in the version in
     /// force on the calculation date, at stage BESLUIT, as a cross-law call
     /// does, and computes the outputs of its decision item. Without `output`
     /// the input is the decision value `{grondslag, fields, outputs}`; with
@@ -4807,10 +4810,12 @@ impl LawExecutionService {
     /// per output computed: the article runs once for all outputs of its
     /// decision, so while it runs each of them counts as being resolved.
     ///
-    /// The value holds its numbers as JSON gives them back, as a cell
-    /// stores them ([`as_recorded`]), so a
+    /// The decision value holds its numbers as JSON gives them back, as a
+    /// cell stores them ([`as_recorded`]), so a
     /// stored decision and a fresh one compare under the strict `EQUALS`
-    /// on how they are recorded and not on how arithmetic left them.
+    /// on how they are recorded and not on how arithmetic left them. One
+    /// `output` keeps the precision the article computed, as a
+    /// `source.regulation` call does.
     fn resolve_article_call(
         &self,
         law: &ArticleBasedLaw,
@@ -4899,7 +4904,12 @@ impl LawExecutionService {
         let (target_law, article) =
             match self.article_in_force(regulation, number, res_ctx.calculation_date) {
                 Ok(found) => found,
-                Err(e) => return refuse(res_ctx, format!("{caller} calls {target}: {e}")),
+                // The typed error stays, so a caller can tell a law that is
+                // not loaded from one not in force; the trace says who called.
+                Err(e) => {
+                    res_ctx.trace_set_message(format!("{caller} calls {target}: {e}"));
+                    return Err(e);
+                }
             };
         let Some(decision) = article.get_decision() else {
             return refuse(
@@ -4921,13 +4931,37 @@ impl LawExecutionService {
             }
         };
 
-        // Only what the article asks; the trace names what it does not.
-        let fields = Self::filter_parameters_for_article(article, &passed);
+        // Only what the article asks; the trace names what it does not. It
+        // asks its parameters, and the judgement for this case on an open
+        // term it leaves to an authority per case (`decided_per_case_by`),
+        // under the term's id, as a caller at the top gives one (RFC-047).
+        // An implementation of that term still wins over the judgement, as
+        // at the top (`resolve_open_term`).
+        let declared = Self::filter_parameters_for_article(article, &passed);
+        let judgements: BTreeMap<String, Value> = article
+            .get_open_terms()
+            .into_iter()
+            .flatten()
+            .filter(|term| term.decided_per_case_by.is_some() && !declared.contains_key(&term.id))
+            .filter_map(|term| passed.get(&term.id).map(|v| (term.id.clone(), v.clone())))
+            .collect();
         let dropped: Vec<&str> = passed
             .keys()
-            .filter(|name| !fields.contains_key(*name))
+            .filter(|name| !declared.contains_key(*name) && !judgements.contains_key(*name))
             .map(String::as_str)
             .collect();
+        if !judgements.is_empty() {
+            let _judged =
+                res_ctx.trace_guard(format!("{target} (judged per case)"), PathNodeType::Resolve);
+            res_ctx.trace_set_message(format!(
+                "{target} leaves {} to an authority per case, so passed as its judgement",
+                judgements
+                    .keys()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
         if !dropped.is_empty() {
             let _dropped =
                 res_ctx.trace_guard(format!("{target} (not asked)"), PathNodeType::Resolve);
@@ -4936,10 +4970,12 @@ impl LawExecutionService {
                 dropped.join(", ")
             ));
         }
+        // The skip rule reads the declared parameters: a judgement that is
+        // null is a judgement, not a missing party, as at the top.
         if let Some(skipped) = Self::skip_call(
             true,
             article.get_parameters(),
-            &fields,
+            &declared,
             &target,
             &law.id,
             res_ctx,
@@ -4951,6 +4987,8 @@ impl LawExecutionService {
                 format!("skipped call to {target}"),
             );
         }
+        let mut fields = declared;
+        fields.extend(judgements);
 
         // The keys of a cross-law call, one per output computed, and one for
         // the article itself, which also counts the depth.
@@ -5021,7 +5059,10 @@ impl LawExecutionService {
             })
         };
         let value = match output {
-            Some(output) => as_recorded(pick(output)?),
+            // One output keeps its full precision, as from `source.regulation`;
+            // only the decision value is held as recorded, to compare with a
+            // stored one.
+            Some(output) => pick(output)?,
             None => {
                 let outputs = computed
                     .iter()
@@ -5456,8 +5497,8 @@ mod tests {
     use super::*;
 
     /// The decision's stages compute the data derived for it too, the
-    /// outputs no item yields (RFC-050); the stage of the submission only
-    /// what the submission lists.
+    /// outputs it lists under `derived` (RFC-050); the stage of the
+    /// submission only what the submission lists.
     #[test]
     fn the_decision_stages_compute_the_derived_outputs() {
         let law = ArticleBasedLaw::from_yaml_str(
@@ -5475,6 +5516,7 @@ articles:
             outputs: [compleet]
           - type: BESCHIKKING
             outputs: [verleend]
+            derived: [afgeleid]
         output:
           - name: compleet
             type: boolean

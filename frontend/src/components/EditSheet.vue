@@ -34,7 +34,7 @@ const isDirty = computed(() => {
   }
 });
 
-const typeOptions = ['string', 'number', 'boolean', 'amount'];
+const typeOptions = ['string', 'number', 'boolean', 'amount', 'decision'];
 
 // Available variables from the article's machine_readable for parameter
 // value dropdowns, grouped by category with alphabetical sorting within
@@ -334,15 +334,19 @@ function save() {
         paramObj[k] = row.value ?? '';
       }
     }
-    // Emit `source` only when at least regulation OR output is set.
-    // Parameters alone don't make a valid source block (the schema
-    // requires regulation when source is present), so if the user has
-    // cleared both regulation and output we drop the entire source -
-    // including any overflow params. This matches the user's intent
-    // ("disable the source binding") and avoids producing a malformed
-    // source: { parameters: {...} } that would fail schema validation.
-    if (sourceRegulation || sourceOutput) {
-      data.source = {};
+    // The keys of `source` this form does not edit (`article`,
+    // `parameters_from`, `decisions`, ...) are kept as they were.
+    const { regulation: _r, output: _o, parameters: _p, ...kept } = item.data?.source || {};
+    const keptTarget = ['article', 'decisions', 'endpoint'].some((k) => k in kept);
+    // Emit `source` only when at least regulation OR output is set, or a
+    // kept key names what it calls. Parameters alone don't make a valid
+    // source block, so if the user has cleared both regulation and output
+    // of a regulation reference we drop the entire source - including any
+    // overflow params. This matches the user's intent ("disable the source
+    // binding") and avoids producing a malformed source: { parameters:
+    // {...} } that would fail schema validation.
+    if (sourceRegulation || sourceOutput || keptTarget) {
+      data.source = { ...kept };
       if (sourceRegulation) data.source.regulation = sourceRegulation;
       if (sourceOutput) data.source.output = sourceOutput;
       if (Object.keys(paramObj).length > 0) data.source.parameters = paramObj;

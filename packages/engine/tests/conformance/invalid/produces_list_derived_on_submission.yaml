@@ -1,0 +1,37 @@
+---
+# Only a decision has data derived for it (schema v0.8.4, RFC-050).
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$id: test_conformance_produces_list_derived_on_submission
+regulatory_layer: WET
+bwb_id: BWBR9999905
+publication_date: '2026-10-15'
+valid_from: '2026-10-15'
+url: https://example.invalid/law
+articles:
+  - number: '1'
+    text: Het hoofd verleent op aanvraag verlof.
+    url: https://example.invalid/law/artikel/1
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+            requests: test_conformance_produces_list_derived_on_submission#1
+            parameters: [dagen]
+            derived: [dagen_over]
+          - type: BESCHIKKING
+            outputs: [verlof_verleend]
+        parameters:
+          - name: dagen
+            type: number
+        output:
+          - name: verlof_verleend
+            type: boolean
+          - name: dagen_over
+            type: number
+        actions:
+          - output: dagen_over
+            value:
+              operation: SUBTRACT
+              values: [10, $dagen]
+          - output: verlof_verleend
+            value: true

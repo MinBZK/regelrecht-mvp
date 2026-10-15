@@ -110,12 +110,14 @@ input:
 | Field | Holds |
 |---|---|
 | `grondslag` | The article, as `<regulation>#<article>` |
-| `fields` | The parameters it was given that it declares |
+| `fields` | The parameters it was given that it declares, and the judgements per case it was given |
 | `outputs` | The outputs of its decision item, and no others |
+
+The data the decision item lists under `derived` is computed with the decision but is not in `outputs`.
 
 With `output` the input is that one output of the decision.
 
-The parameters come from `parameters_from`, a list of objects merged in order: a later one wins over an earlier one, and `parameters` goes on top of them all. A null object adds nothing. A name the article does not declare is dropped, and the trace says which.
+The parameters come from `parameters_from`, a list of objects merged in order: a later one wins over an earlier one, and `parameters` goes on top of them all. A null object adds nothing. A name the article does not declare is dropped, and the trace says which. The exception is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that name carries the authority's judgement for this case, and it is passed as a caller at the top passes it, so an implementation of the term still wins over it. Which parameters the article requires is known only when it runs, and a required parameter that is null skips the call and leaves the input null. So an input whose `parameters` hold a reference that may be null, or that uses `parameters_from`, is declared `nullable` (type rule N5).
 
 A fixed reference is checked when the laws load: the article takes a decision, and an `output` is one of the decision's outputs. A reference taken from a value is known only when the article runs. The type check then knows the input is a decision value and makes no claim about `$heroverweging.outputs.x`, as for rows. At run time the engine refuses an article not in force on the date, an article without a decision, an `output` that is not one of the decision's, and a merged value that is no object. Like any input, the call is made only when an action reads it, so an `AND` whose first condition is false does not run it.
 

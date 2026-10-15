@@ -44,7 +44,10 @@
 //! - **N5** An input that takes another output must be nullable when that
 //!   output is, and when the call that fetches it is skipped for a required
 //!   parameter that may be null and that the target does not declare
-//!   nullable. An article that implements a required open term without a
+//!   nullable. For a call to an article (RFC-050), whose required
+//!   parameters are known only at run time, any reference under
+//!   `parameters` that may be null, and any `parameters_from`, counts so.
+//!   An article that implements a required open term without a
 //!   default may not declare its output for the term nullable, unless the
 //!   law leaves the term to an authority per case (`decided_per_case_by`).
 //! - **T1** Arithmetic and ordering operands are numbers (or amounts); `ADD`
@@ -606,7 +609,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
         }
     }
 
-    /// T5, and N5 for a fixed target: an input that calls the decision of an
+    /// T5 and N5: an input that calls the decision of an
     /// article (RFC-050).
     fn check_article_call(&mut self, input: &crate::article::Input, source: &Source, target: &str) {
         let name = &input.name;
@@ -643,6 +646,9 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                     );
                 }
             }
+        }
+        if !input.is_nullable() {
+            self.check_skip_on_null_article_parameters(source, name, target);
         }
         if is_reference(target) {
             // A null target is no call, and the input is null (RFC-036); a
@@ -722,8 +728,50 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                 );
             }
         }
-        if !input.is_nullable() {
-            self.check_skip_on_null_parameter(source, target_article, name, regulation);
+    }
+
+    /// N5 for the skip rule (RFC-036) on a call to an article: a required
+    /// parameter that is null skips the call, and the input is null. Which
+    /// parameters the article requires is known only at run time (the target
+    /// may be named by a value, and is the version in force on the date), so
+    /// any nullable reference under `parameters` may skip it, and so may
+    /// `parameters_from`, whose objects may lack or null any field.
+    fn check_skip_on_null_article_parameters(&mut self, source: &Source, name: &str, target: &str) {
+        for (parameter, argument) in source.parameters.iter().flatten() {
+            if !is_reference(argument) {
+                continue;
+            }
+            let (path, root) = reference_path(argument);
+            if !self.symbols.get(root).is_some_and(|s| s.nullable) {
+                continue;
+            }
+            let argument = if path == root {
+                String::new()
+            } else {
+                format!(" (and so is '{path}')")
+            };
+            self.report(
+                Rule::N5,
+                format!(
+                    "'{name}' is null when '{root}' is null{argument}, because {target} is then \
+                     not called if its parameter '{parameter}' is required; declare '{name}' \
+                     nullable or make '{root}' non-nullable"
+                ),
+            );
+        }
+        if source
+            .parameters_from
+            .as_ref()
+            .is_some_and(|f| !f.is_empty())
+        {
+            self.report(
+                Rule::N5,
+                format!(
+                    "'{name}' takes its parameters for {target} from parameters_from, which may \
+                     leave a required parameter null, and {target} is then not called; declare \
+                     '{name}' nullable"
+                ),
+            );
         }
     }
 
@@ -746,7 +794,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
         let Some(parameters) = &source.parameters else {
             return;
         };
-        if source.regulation.is_none() && source.article.is_none() {
+        if source.regulation.is_none() {
             return;
         }
         let mut nullable_keys: Vec<(&String, &str, &str)> = Vec::new();

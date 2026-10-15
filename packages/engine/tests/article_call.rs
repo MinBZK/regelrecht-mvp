@@ -10,7 +10,7 @@
 
 use std::collections::BTreeMap;
 
-use regelrecht_engine::{LawExecutionService, Value};
+use regelrecht_engine::{EngineError, LawExecutionService, Value};
 use rust_decimal::Decimal;
 use serde_json::json;
 
@@ -18,7 +18,7 @@ const DATE: &str = "2025-06-01";
 
 /// The deciding law. Article 1 establishes an application and decides on
 /// it; its decision yields two of its four outputs, and `dagen_over`, which
-/// no item lists, is data derived for the decision (RFC-050). Article 3
+/// it lists under `derived`, is data derived for the decision (RFC-050). Article 3
 /// decides nothing.
 const VERLOF: &str = r#"
 $id: wet_verlof
@@ -37,6 +37,7 @@ articles:
             outputs: [aanvraag_compleet]
           - type: BESCHIKKING
             outputs: [verlof_verleend, aantal_dagen]
+            derived: [dagen_over]
         parameters:
           - name: dagen
             type: number
@@ -130,6 +131,7 @@ articles:
         input:
           - name: heroverweging
             type: decision
+            nullable: true
             source:
               article: $besluit.grondslag
               parameters_from:
@@ -138,6 +140,7 @@ articles:
         output:
           - name: heroverwogen
             type: decision
+            nullable: true
           - name: aanleiding
             type: boolean
         actions:
@@ -188,6 +191,7 @@ articles:
         input:
           - name: samengevoegd
             type: decision
+            nullable: true
             source:
               article: wet_verlof#1
               parameters_from: [$eerst, $dan]
@@ -196,6 +200,7 @@ articles:
         output:
           - name: samengevoegd_besluit
             type: decision
+            nullable: true
         actions:
           - output: samengevoegd_besluit
             value: $samengevoegd
@@ -211,6 +216,7 @@ articles:
         input:
           - name: opnieuw
             type: decision
+            nullable: true
             source:
               article: $besluit.grondslag
               parameters_from: [$besluit.fields]
@@ -282,6 +288,7 @@ articles:
         input:
           - name: verleend_opnieuw
             type: boolean
+            nullable: true
             source:
               article: $besluit.grondslag
               output: verlof_verleend
@@ -289,6 +296,7 @@ articles:
         output:
           - name: opnieuw_verleend
             type: boolean
+            nullable: true
         actions:
           - output: opnieuw_verleend
             value: $verleend_opnieuw
@@ -481,18 +489,59 @@ fn a_null_target_for_an_input_that_is_never_absent_is_found_at_load() {
 fn a_required_field_that_is_null_skips_the_call() {
     // `dagen` is required and not nullable in wet_verlof#1: with null for
     // it the article is not run, as for a cross-law call (RFC-036), and the
-    // input, never absent, refuses the null.
+    // input, nullable because N5 demands it, is null.
     let mut besluit = decision(5, true, true);
     besluit["fields"]["dagen"] = json!(null);
-    let message = error(
-        &service(),
-        "heroverwogen",
-        json!({"besluit": besluit, "nieuwe_oordelen": null}),
-    );
+    let parameters = json!({"besluit": besluit, "nieuwe_oordelen": null});
+    let value = evaluate(&service(), "heroverwogen", parameters.clone());
+    assert_eq!(value.unwrap(), Value::Null);
+    let trace = traced(&service(), "heroverwogen", parameters);
     assert!(
-        message.contains("skipped call to wet_verlof#1"),
-        "{message}"
+        trace.contains("wet_verlof#1 is not executed; input resolves to null"),
+        "{trace}"
     );
+}
+
+/// N5 for the skip rule on a call to an article (RFC-036): which parameters
+/// the article requires is known only at run time, so a nullable reference
+/// under `parameters`, to any target, or any `parameters_from` makes the
+/// input nullable.
+#[test]
+fn a_call_that_may_be_skipped_needs_a_nullable_input() {
+    let with_nullable = |input: &str| {
+        caller(input).replace(
+            "          - name: tekst\n            type: string\n",
+            "          - name: tekst\n            type: string\n          - name: misschien\n            type: number\n            nullable: true\n",
+        )
+    };
+    for (input, why) in [
+        (
+            "          - name: x\n            type: decision\n            source:\n              article: wet_verlof#1\n              parameters:\n                dagen: $misschien\n",
+            "'x' is null when 'misschien' is null",
+        ),
+        (
+            "          - name: x\n            type: decision\n            source:\n              article: $besluit.grondslag\n              parameters:\n                dagen: $misschien\n",
+            "'x' is null when 'misschien' is null",
+        ),
+        (
+            "          - name: x\n            type: decision\n            source:\n              article: $besluit.grondslag\n              parameters_from: [$besluit.fields]\n",
+            "from parameters_from",
+        ),
+    ] {
+        let message = load_error(&[VERLOF, &with_nullable(input)]);
+        assert!(message.contains("[N5]") && message.contains(why), "{why}: {message}");
+        // Declared nullable, the same call loads.
+        let nullable = with_nullable(&input.replacen(
+            "            type: decision\n",
+            "            type: decision\n            nullable: true\n",
+            1,
+        ));
+        let mut service = LawExecutionService::new();
+        service.load_law(VERLOF).unwrap();
+        service
+            .load_law(&nullable)
+            .unwrap_or_else(|e| panic!("{why}: a nullable input loads: {e}"));
+    }
 }
 
 #[test]
@@ -534,6 +583,66 @@ articles:
     assert_eq!(
         evaluate(&service, "aanleiding", parameters).unwrap(),
         Value::Bool(false)
+    );
+}
+
+/// One output keeps the precision the article computed, as from
+/// `source.regulation`; only the decision value is held as recorded.
+#[test]
+fn one_output_keeps_its_full_precision() {
+    let derde = r#"
+$id: wet_derde
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Een derde van de dagen.
+    machine_readable:
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+        parameters:
+          - name: dagen
+            type: number
+        output:
+          - name: derde
+            type: number
+        actions:
+          - output: derde
+            value:
+              operation: DIVIDE
+              values: [$dagen, 3]
+  - number: '2'
+    text: Een derde, opgevraagd.
+    machine_readable:
+      execution:
+        parameters:
+          - name: dagen
+            type: number
+        input:
+          - name: een_derde
+            type: number
+            source:
+              article: wet_derde#1
+              output: derde
+              parameters:
+                dagen: $dagen
+        output:
+          - name: opgevraagd
+            type: number
+        actions:
+          - output: opgevraagd
+            value: $een_derde
+"#;
+    let mut service = LawExecutionService::new();
+    service.load_law(derde).unwrap();
+    let result = service
+        .evaluate_law_output("wet_derde", "opgevraagd", params(json!({"dagen": 1})), DATE)
+        .unwrap();
+    assert_eq!(
+        result.outputs["opgevraagd"],
+        Value::Decimal(Decimal::ONE / Decimal::from(3)),
+        "not rounded to the digits of an f64"
     );
 }
 
@@ -677,15 +786,31 @@ fn a_name_the_target_does_not_ask_is_dropped_and_traced() {
 fn a_target_not_in_force_is_refused() {
     let mut besluit = decision(5, true, true);
     besluit["grondslag"] = json!("wet_later#1");
-    let message = error(
+    let error = evaluate(
         &service(),
         "heroverwogen",
         json!({"besluit": besluit, "nieuwe_oordelen": null}),
-    );
+    )
+    .expect_err("a target not in force is refused");
+    // The typed error survives, so a caller tells it from a law not loaded.
     assert!(
-        message.contains("calls wet_later#1")
-            && message.contains("No version of law 'wet_later' in force on 2025-06-01"),
-        "{message}"
+        matches!(
+            &error,
+            EngineError::LawNotYetInForce { law_id, reference_date }
+                if law_id == "wet_later" && reference_date == DATE
+        ),
+        "{error:?}"
+    );
+    besluit["grondslag"] = json!("wet_onbekend#1");
+    let error = evaluate(
+        &service(),
+        "heroverwogen",
+        json!({"besluit": besluit, "nieuwe_oordelen": null}),
+    )
+    .expect_err("a target not loaded is refused");
+    assert!(
+        matches!(&error, EngineError::LawNotFound(law_id) if law_id == "wet_onbekend"),
+        "{error:?}"
     );
 }
 
@@ -1197,4 +1322,161 @@ articles:
         .evaluate_law_output("wet_getallen", "gelijk", parameters, DATE)
         .unwrap();
     assert_eq!(result.outputs["gelijk"], Value::Bool(true));
+}
+
+// --- A judgement per case passed to the article --------------------------
+
+/// The head judges per case whether the ground is present (an open term with
+/// `decided_per_case_by`, RFC-047), as for Leerplichtwet 13a. The caller
+/// merges the judgement into the parameters of the call.
+const HOOFD: &str = r#"
+$id: wet_hoofd
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Het hoofd verleent verlof als de grond naar zijn oordeel aanwezig is.
+    machine_readable:
+      open_terms:
+        - id: grond_aanwezig
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+        parameters:
+          - name: dagen
+            type: number
+        output:
+          - name: verleend
+            type: boolean
+        actions:
+          - output: verleend
+            value:
+              operation: AND
+              conditions:
+                - $grond_aanwezig
+                - operation: LESS_THAN_OR_EQUAL
+                  subject: $dagen
+                  value: 10
+  - number: '2'
+    text: Het besluit opnieuw, met de oordelen van nu.
+    machine_readable:
+      execution:
+        parameters:
+          - name: dagen
+            type: number
+          - name: oordelen
+            type: object
+        input:
+          - name: opnieuw
+            type: decision
+            nullable: true
+            source:
+              article: wet_hoofd#1
+              parameters_from: [$oordelen]
+              parameters:
+                dagen: $dagen
+        output:
+          - name: opnieuw_besloten
+            type: decision
+            nullable: true
+        actions:
+          - output: opnieuw_besloten
+            value: $opnieuw
+"#;
+
+/// Policy that fills the head's term for every case.
+const HOOFD_BELEID: &str = r#"
+$id: beleid_hoofd
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+url: https://example.invalid/beleid-hoofd
+articles:
+  - number: '1'
+    text: De grond is nooit aanwezig.
+    machine_readable:
+      implements:
+        - {law: wet_hoofd, article: '1', open_term: grond_aanwezig}
+      execution:
+        output:
+          - {name: grond_aanwezig, type: boolean}
+        actions:
+          - {output: grond_aanwezig, value: false}
+"#;
+
+fn hoofd(laws: &[&str], oordelen: serde_json::Value) -> (Value, String) {
+    let mut service = LawExecutionService::new();
+    for law in laws {
+        service.load_law(law).unwrap();
+    }
+    let parameters = params(json!({"dagen": 5, "oordelen": oordelen}));
+    let result = service
+        .evaluate_law_output_with_trace("wet_hoofd", "opnieuw_besloten", parameters, DATE)
+        .unwrap();
+    let trace = result.trace.as_ref().unwrap().render_box_drawing();
+    (result.outputs["opnieuw_besloten"].clone(), trace)
+}
+
+#[test]
+fn a_judgement_per_case_reaches_the_article_and_the_rest_is_dropped() {
+    for judgement in [true, false] {
+        let (value, trace) = hoofd(
+            &[HOOFD],
+            json!({"grond_aanwezig": judgement, "onbekend": 1}),
+        );
+        assert_eq!(
+            value,
+            Value::from(json!({
+                "grondslag": "wet_hoofd#1",
+                "fields": {"dagen": 5, "grond_aanwezig": judgement},
+                "outputs": {"verleend": judgement},
+            })),
+            "{trace}"
+        );
+        assert!(
+            trace.contains("decided in this case by het hoofd"),
+            "{trace}"
+        );
+        assert!(
+            trace.contains("does not declare onbekend, so not passed"),
+            "{trace}"
+        );
+    }
+}
+
+#[test]
+fn an_implementation_of_the_term_wins_over_the_judgement_passed() {
+    let (value, trace) = hoofd(&[HOOFD, HOOFD_BELEID], json!({"grond_aanwezig": true}));
+    assert_eq!(
+        value.as_object().unwrap()["outputs"],
+        Value::from(json!({"verleend": false}))
+    );
+    assert!(
+        trace.contains("the judgement of het hoofd for this case is set aside by beleid_hoofd"),
+        "{trace}"
+    );
+}
+
+#[test]
+fn without_a_judgement_the_required_term_is_refused() {
+    let mut service = LawExecutionService::new();
+    service.load_law(HOOFD).unwrap();
+    let error = service
+        .evaluate_law_output(
+            "wet_hoofd",
+            "opnieuw_besloten",
+            params(json!({"dagen": 5, "oordelen": {}})),
+            DATE,
+        )
+        .expect_err("no judgement, no decision");
+    assert!(
+        error
+            .to_string()
+            .contains("no judgement was given for this case"),
+        "{error}"
+    );
 }

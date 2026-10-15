@@ -1,8 +1,9 @@
 ---
-# Tier C: a call to an article (schema v0.8.4, RFC-050). Article 2 calls the
-# article a decision value names, with that decision's fields merged under
-# what is judged anew, and gets a decision value back; article 3 calls a
-# fixed article for one output of its decision.
+# Tier C: a call to an article (schema v0.8.4, RFC-050). Article 1 decides
+# on an application and lists data derived for its decision under `derived`.
+# Article 2 calls the article a decision value names, with that decision's
+# fields merged under what is judged anew, and gets a decision value back;
+# article 3 calls a fixed article for one output of its decision.
 $schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
 $id: test_conformance_article_call
 regulatory_layer: WET
@@ -18,14 +19,25 @@ articles:
     machine_readable:
       execution:
         produces:
-          legal_character: BESCHIKKING
+          - type: AANVRAAG
+            requests: test_conformance_article_call#1
+            parameters: [dagen]
+          - type: BESCHIKKING
+            outputs: [verleend]
+            derived: [dagen_over]
         parameters:
           - name: dagen
             type: number
         output:
           - name: verleend
             type: boolean
+          - name: dagen_over
+            type: number
         actions:
+          - output: dagen_over
+            value:
+              operation: SUBTRACT
+              values: [10, $dagen]
           - output: verleend
             value:
               operation: LESS_THAN_OR_EQUAL
@@ -45,6 +57,7 @@ articles:
         input:
           - name: heroverweging
             type: decision
+            nullable: true
             source:
               article: $besluit.grondslag
               parameters_from:
@@ -53,6 +66,7 @@ articles:
         output:
           - name: heroverwogen
             type: decision
+            nullable: true
         actions:
           - output: heroverwogen
             value: $heroverweging
