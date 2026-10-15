@@ -46,15 +46,25 @@ fn service() -> LawExecutionService {
 }
 
 /// A decision under art. 13a, as the cell gives it: the fields and the
-/// outputs of the decision under their own names, and whether a decision
-/// on an objection revoked it (RFC-050).
+/// outputs of the decision under their own names, and its id.
 fn decision(bsn: &str, first: &str, granted: bool) -> serde_json::Value {
     json!({
+        "id": format!("{bsn}-{first}-{granted}"),
         "bsn_jongere": bsn,
         "eerste_verlofdag": first,
         "laatste_verlofdag": first,
         "verlof_verleend": granted,
-        "bestreden_besluit_herroepen": false,
+    })
+}
+
+/// A decision on an objection under Awb 7:11 against the decision
+/// `contested` (its id), that revoked it or not (RFC-050).
+fn on_objection(contested: &serde_json::Value, revoked: bool) -> serde_json::Value {
+    json!({
+        "id": format!("bezwaar-{}", contested["id"].as_str().unwrap()),
+        "bestreden_besluit": contested["id"],
+        "bezwaar_ontvankelijk": true,
+        "bestreden_besluit_herroepen": revoked,
     })
 }
 
@@ -77,11 +87,12 @@ fn already(service: &LawExecutionService, bsn: &str, first: &str) -> bool {
     result.outputs[ONCE] == Value::Bool(true)
 }
 
-/// The decisions as one list, whatever the criteria, for `law` only: what
-/// a cell registers for its reduction.
+/// The decisions under art. 13a and those under Awb 7:11, each as one list,
+/// whatever the criteria, for `law` only: what a cell registers for its
+/// reduction.
 struct Decisions {
     law: String,
-    rows: Value,
+    rows: BTreeMap<&'static str, Value>,
 }
 
 impl DataSource for Decisions {
@@ -95,13 +106,13 @@ impl DataSource for Decisions {
         "chronicle"
     }
     fn has_field(&self, field: &str) -> bool {
-        field == "besluiten"
+        self.rows.contains_key(field)
     }
     fn get(&self, field: &str, _criteria: &BTreeMap<String, Value>) -> Option<Value> {
-        self.has_field(field).then(|| self.rows.clone())
+        self.rows.get(field).cloned()
     }
     fn fields(&self) -> Vec<&str> {
-        vec!["besluiten"]
+        self.rows.keys().copied().collect()
     }
     fn law_scope(&self) -> Option<&str> {
         Some(&self.law)
@@ -111,16 +122,26 @@ impl DataSource for Decisions {
     }
 }
 
-/// Answer `besluiten` with `decisions` for `law` only.
-fn supply_for(service: &mut LawExecutionService, law: &str, decisions: serde_json::Value) {
+/// Answer `besluiten` with `decisions` and `beslissingen_op_bezwaar` with
+/// `on_objection`, for `law` only.
+fn supply_for(
+    service: &mut LawExecutionService,
+    law: &str,
+    decisions: serde_json::Value,
+    on_objection: serde_json::Value,
+) {
     service.add_data_source(Box::new(Decisions {
         law: law.to_string(),
-        rows: Value::from(decisions),
+        rows: BTreeMap::from([
+            ("besluiten", Value::from(decisions)),
+            ("beslissingen_op_bezwaar", Value::from(on_objection)),
+        ]),
     }));
 }
 
+/// Answer the decisions under art. 13a, with no decision on an objection.
 fn supply(service: &mut LawExecutionService, decisions: serde_json::Value) {
-    supply_for(service, REDUCTION, decisions);
+    supply_for(service, REDUCTION, decisions, json!([]));
 }
 
 #[test]
@@ -151,10 +172,28 @@ fn a_refusal_another_child_or_another_school_year_does_not_count() {
 #[test]
 fn a_grant_revoked_on_objection_does_not_count() {
     let mut service = service();
-    let mut revoked = decision("999990019", "2026-10-05", true);
-    revoked["bestreden_besluit_herroepen"] = json!(true);
-    supply(&mut service, json!([revoked]));
+    let revoked = decision("999990019", "2026-10-05", true);
+    supply_for(
+        &mut service,
+        REDUCTION,
+        json!([revoked]),
+        json!([on_objection(&revoked, true)]),
+    );
     assert!(!already(&service, "999990019", "2027-05-10"));
+}
+
+#[test]
+fn a_grant_upheld_on_objection_counts() {
+    let mut service = service();
+    let upheld = decision("999990019", "2026-10-05", true);
+    let other = decision("999990019", "2026-07-27", true);
+    supply_for(
+        &mut service,
+        REDUCTION,
+        json!([upheld, other]),
+        json!([on_objection(&upheld, false), on_objection(&other, true)]),
+    );
+    assert!(already(&service, "999990019", "2027-05-10"));
 }
 
 #[test]
@@ -198,7 +237,8 @@ fn decisions_nobody_supplies_are_an_error_not_an_empty_list() {
     let message = e.to_string();
     assert!(matches!(e, EngineError::DataSourceError(_)), "{message}");
     assert!(
-        message.contains("decisions taken under leerplichtwet_1969#13a"),
+        message.contains("reads the decisions taken under")
+            && message.contains("no data source supplies them"),
         "{message}"
     );
 }
@@ -206,7 +246,7 @@ fn decisions_nobody_supplies_are_an_error_not_an_empty_list() {
 #[test]
 fn a_source_for_another_law_does_not_answer_the_decisions() {
     let mut service = service();
-    supply_for(&mut service, "een_andere_wet", json!([]));
+    supply_for(&mut service, "een_andere_wet", json!([]), json!([]));
     assert!(evaluate(&service, "999990019", "2027-05-10").is_err());
 }
 

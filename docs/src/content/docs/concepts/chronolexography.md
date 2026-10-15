@@ -36,7 +36,7 @@ A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). Th
 
 `decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
-**Objecting** (`Cell::record_objection`, `Cell::decide_on_objection`): the same two steps under Awb 7:11. The objection refers to the contested decision. The decision on it runs art. 13a anew, and on revocation the cell records the new decision in its place.
+**Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew, and on revocation it gives the new decision, which the cell records in the same append.
 
 Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. The cell connects the parts by name and keeps the record. The engine only executes.
 
@@ -180,7 +180,7 @@ output:
     type: boolean
 ```
 
-- Each decision is a row with its fields and outputs, such as `bsn_jongere`, `eerste_verlofdag` and `verlof_verleend`. A refusal does not count, nor a decision revoked on objection (see [the objection](#the-objection)).
+- Each decision is a row with its fields and outputs, such as `bsn_jongere`, `eerste_verlofdag` and `verlof_verleend`, and its `id`. A refusal does not count, nor a decision revoked on objection (see [the objection](#the-objection)).
 - The policy says only that a school year runs from 1 August to 31 July. It reads no decisions.
 - The cell connects reduction and decision by name. It passes the decision's inputs as the reduction's parameters and the answer to the decision, and refuses a name that something else also supplies.
 - Only a reduction reads `decisions`, and a reduction does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`). The corpus loaders leave it out; `just validate` checks it.
@@ -190,18 +190,30 @@ output:
 
 ## The objection
 
-The parent objects to the decision. Awb 7:11 establishes the objection and decides on it, as art. 13a does for the application:
+The parent objects to the decision. Awb 7:11 establishes the objection and decides on it, as art. 13a does for the application. The objection names the contested decision, and the decision on it reconsiders that decision by calling its article again:
 
 ```yaml
 # Awb 7:11
 produces:
   - type: BEZWAAR
     requests: algemene_wet_bestuursrecht#7:11
+    parameters: [bestreden_besluit]
   - type: BESCHIKKING
-    outputs: [bezwaar_ontvankelijk, bestreden_besluit_herroepen]
+    outputs: [bezwaar_ontvankelijk, heroverweging_geeft_aanleiding,
+              bestreden_besluit_herroepen, nieuw_besluit]
+parameters:
+  - {name: bestreden_besluit, type: decision}
+  - {name: heroverweging_oordelen, type: object, nullable: true}
+input:
+  - name: heroverweging
+    type: decision
+    nullable: true
+    source:
+      article: $bestreden_besluit.grondslag
+      parameters_from: [$bestreden_besluit.fields, $heroverweging_oordelen]
 ```
 
-The cell records the objection as a chronolexogram that refers to the contested decision:
+The cell records the objection with `record_submission`, referring to the contested decision. It fills `bestreden_besluit` from that reference and keeps it by its id:
 
 ```json
 {
@@ -210,6 +222,7 @@ The cell records the objection as a chronolexogram that refers to the contested 
   "refers_to": "019a1b2d-…",
   "recorded_on": "2026-11-01",
   "fields": {
+    "bestreden_besluit": "019a1b2d-…",
     "gronden_bezwaar": "verklaring van de werkgever: geen verlof in de schoolvakanties",
     "bezwaartermijn_einddatum": "2026-12-01"
   },
@@ -217,11 +230,11 @@ The cell records the objection as a chronolexogram that refers to the contested 
 }
 ```
 
-- The fields are those of Awb 6:5, plus the end of the objection period, which the cell takes from the contested decision. An objection does not change the application: Awb 7:11 lid 1 reconsiders the decision "op grondslag van het bezwaar", and 6:5 asks only for the grounds. A smaller request is a new application.
-- Awb 6:9 makes the receipt the moment that counts and says whether it came in on time. A late objection is recorded; 7:11 then declares it not admissible, without a heroverweging (lid 1).
-- The decision on an admissible objection, a `BESCHIKKING` under 7:11, runs art. 13a anew on the facts of that day: the application, the head's judgements (given anew or else from the contested decision), and the policy and reduction of that day. When an output comes out different, the heroverweging gives cause, and an admissible objection revokes the decision.
-- On revocation the cell records the new decision under art. 13a, with its own objection period. The revoked decision stays in the chronicle. Its row carries `bestreden_besluit_herroepen: true`, and the reduction leaves it out.
+- The fields are the contested decision and those of Awb 6:5, plus the end of the objection period, which the cell takes from the contested decision. An objection does not change the application: Awb 7:11 lid 1 reconsiders the decision "op grondslag van het bezwaar", and 6:5 asks only for the grounds. A smaller request is a new application.
+- Awb 6:9 makes the receipt the moment that counts and says whether it came in on time. A late objection is recorded. 7:11 then declares it not admissible, and does not read the heroverweging (lid 1). Nor is an objection against a decision on objection admissible: the grondslag of the contested decision is 7:11 itself (Awb 7:1 lid 1 onder a).
+- The head decides with `decide`. The engine gets the contested decision as a decision value. For an admissible objection 7:11 calls art. 13a with that decision's fields and, on top, what the head judges anew (`heroverweging_oordelen`), under the law and policy of that day. The cell answers the reduction again for that day, without the contested decision. When an outcome of the decision item of art. 13a comes out different, the heroverweging gives cause, and 7:11 revokes the decision.
+- On revocation `nieuw_besluit` is the decision that art. 13a gave. The cell records it as a chronolexogram of its own under art. 13a, with its own objection period, and the decision on the objection holds it by id. The revoked decision stays in the chronicle. The school's reduction reads the decisions under 7:11 as a second input and leaves out a grant that one of them revoked.
 
-This procedure lives in the cell for now. The engine can already call the article a decision was taken under, with that decision's fields, and give the result back as a decision value ([cross-law references](./cross-law-references#calling-the-decision-of-an-article)). Awb 7:11 does not use that yet; [RFC-050](/rfcs/rfc-050) describes where it should end up.
+The cell knows no Awb article: it records a submission, fills a `decision` field from the reference, and records an output of type `decision`. [RFC-050](/rfcs/rfc-050) describes the design and what is still open.
 
 **Try it:** `just bdd`, which runs `corpus/regulation/nl/wet/algemene_wet_bestuursrecht/scenarios/bezwaar.feature`, or `cargo test --manifest-path packages/cel/Cargo.toml`

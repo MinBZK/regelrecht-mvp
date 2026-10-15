@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.3/schema/v0.8.3/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
 $id: algemene_wet_bestuursrecht
 regulatory_layer: WET
 publication_date: '2026-01-01'
@@ -463,70 +463,153 @@ articles:
       plaats daarvan een nieuw besluit.
     url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel7:11
     machine_readable:
-      # Of de heroverweging aanleiding geeft, oordeelt het bestuursorgaan per
-      # bezwaar (lid 2). Alleen bij een ontvankelijk bezwaar: anders vindt
-      # geen heroverweging plaats (lid 1) en blijft het oordeel leeg.
-      open_terms:
-        - id: heroverweging_geeft_aanleiding_tot_herroeping
-          type: boolean
-          required: false
-          decided_per_case_by: het bestuursorgaan (artikel 7:11, tweede lid)
-          description: >-
-            Of de heroverweging van het bestreden besluit aanleiding geeft het te
-            herroepen (tweede lid).
+      # Lid 1: de heroverweging van het bestreden besluit is dat besluit
+      # opnieuw nemen, onder het artikel waarop het berust, met zijn gegevens
+      # en wat het bestuursorgaan bij de heroverweging opnieuw oordeelt. Lid 2:
+      # geeft dat een andere uitkomst, dan herroept het bestuursorgaan het
+      # besluit en neemt het in zijn plaats het besluit dat de heroverweging
+      # gaf (RFC-050).
       execution:
         # Lid 1: de heroverweging vindt plaats "op grondslag van" het bezwaar.
         # Dit artikel brengt twee dingen voort, zoals artikel 13a van de
         # Leerplichtwet 1969 de aanvraag en het besluit erop (RFC-047,
-        # RFC-050). Het bezwaar, waar de Awb op haakt (6:5, 6:9, 7:10), en de
-        # beslissing waar het om vraagt. Het bevat geen parameter van dit
-        # artikel: wat het bevat, vragen de haken. En de beslissing op het
-        # bezwaar, een besluit dat de procedure van de Awb volgt, met de
-        # uitvoer die daarbij hoort. Eigen keuze: de beslissing op bezwaar
-        # tegen een beschikking is zelf een beschikking. Bezwaar tegen een
-        # ander besluit is niet gemodelleerd.
+        # RFC-050). Het bezwaar, waar de Awb op haakt (6:5, 6:9, 7:10), met
+        # het bestreden besluit. En de beslissing op het bezwaar, een besluit
+        # dat de procedure van de Awb volgt, met de uitvoer die daarbij hoort.
+        # Eigen keuze: de beslissing op bezwaar tegen een beschikking is zelf
+        # een beschikking. Bezwaar tegen een ander besluit is niet
+        # gemodelleerd.
         produces:
           - type: BEZWAAR
             requests: algemene_wet_bestuursrecht#7:11
+            parameters:
+              - bestreden_besluit
           - type: BESCHIKKING
             outputs:
               - bezwaar_ontvankelijk
+              - heroverweging_geeft_aanleiding
               - bestreden_besluit_herroepen
+              - nieuw_besluit
         parameters:
+          # Lid 1 en 2: "het bestreden besluit"; het bezwaarschrift omschrijft
+          # het (artikel 6:5, eerste lid, onder c). De indiener levert het
+          # niet als gegeven aan: het is een besluit dat het bestuursorgaan
+          # nam.
+          - name: bestreden_besluit
+            type: decision
+            description: Het besluit waartegen het bezwaar is gericht.
           # Wat artikel 6:9 bij het bezwaarschrift geeft; de indiener levert
           # het niet aan.
           - name: bezwaarschrift_tijdig_ingediend
             type: boolean
             description: Of het bezwaarschrift tijdig is ingediend (artikel 6:9).
+          # Lid 1: wat het bestuursorgaan bij de heroverweging opnieuw
+          # oordeelt. Eigen keuze: een parameter en geen open begrip met
+          # decided_per_case_by, omdat een open begrip geen object kan zijn.
+          # Het hoort niet bij het bezwaar (produces hierboven), dus het
+          # bestuursorgaan levert het bij de beslissing.
+          - name: heroverweging_oordelen
+            type: object
+            nullable: true
+            required: false
+            description: >-
+              Wat het bestuursorgaan bij de heroverweging opnieuw oordeelt,
+              onder de naam die het artikel van het bestreden besluit ervoor
+              gebruikt. Een oordeel dat het niet opnieuw geeft, blijft dat van
+              het bestreden besluit.
+        input:
+          # Lid 1: de heroverweging. Het artikel van het bestreden besluit,
+          # opnieuw toegepast op de dag van de beslissing op het bezwaar (ex
+          # nunc), met de gegevens van dat besluit en daarboven wat het
+          # bestuursorgaan opnieuw oordeelt. Alleen gelezen als het bezwaar
+          # ontvankelijk is.
+          - name: heroverweging
+            type: decision
+            nullable: true
+            source:
+              article: $bestreden_besluit.grondslag
+              parameters_from:
+                - $bestreden_besluit.fields
+                - $heroverweging_oordelen
         output:
           - name: bezwaar_ontvankelijk
             type: boolean
             description: >-
-              Of het bezwaar ontvankelijk is (lid 1). Alleen de termijn is
-              getoetst (artikel 6:9); de overige vereisten en artikel 6:11 nog
-              niet.
+              Of het bezwaar ontvankelijk is (lid 1). Getoetst zijn de termijn
+              (artikel 6:9) en dat het bestreden besluit niet zelf een
+              beslissing op bezwaar onder dit artikel is (artikel 7:1, eerste
+              lid, onder a); een nieuw besluit dat op bezwaar in de plaats van
+              een herroepen besluit kwam, nog niet. De overige vereisten en
+              artikel 6:11 ook nog niet.
+          - name: heroverweging_geeft_aanleiding
+            type: boolean
+            nullable: true
+            description: >-
+              Of de heroverweging aanleiding geeft het bestreden besluit te
+              herroepen (lid 2). Leeg bij een niet-ontvankelijk bezwaar: dan
+              vindt geen heroverweging plaats (lid 1).
           - name: bestreden_besluit_herroepen
             type: boolean
             description: Of het bestuursorgaan het bestreden besluit herroept (lid 2).
+          - name: nieuw_besluit
+            type: decision
+            nullable: true
+            description: >-
+              Het besluit dat het bestuursorgaan in de plaats van het
+              herroepen besluit neemt (lid 2).
         actions:
           # Eigen keuze: lid 1 zegt niet wanneer een bezwaar ontvankelijk is.
-          # Hier alleen de termijn (artikel 6:9); de overige vereisten
-          # (artikelen 1:2, 6:5 met 6:6) en artikel 6:11 nog niet.
+          # Hier de termijn (artikel 6:9), en dat er geen bezwaar openstaat
+          # tegen een beslissing op bezwaar: daartegen staat beroep open
+          # (artikel 7:1, eerste lid, onder a, dat niet is opgenomen). Een
+          # nieuw besluit dat in de plaats van een herroepen besluit kwam,
+          # berust op het artikel van dat besluit; dat het op bezwaar is
+          # genomen, ziet deze toets niet. De overige vereisten (artikelen
+          # 1:2, 6:5 met 6:6) en artikel 6:11 nog niet.
           - output: bezwaar_ontvankelijk
-            value: $bezwaarschrift_tijdig_ingediend
-          # Lid 2. Het nieuwe besluit "voor zover nodig" is het besluit dat de
-          # heroverweging geeft; dit artikel berekent het niet zelf. Bij een
-          # niet-ontvankelijk bezwaar is er geen oordeel over de heroverweging
-          # (lid 1). Eigen keuze: zonder oordeel herroept het bestuursorgaan
-          # niet.
-          - output: bestreden_besluit_herroepen
             value:
               operation: AND
               conditions:
-                - $bezwaar_ontvankelijk
+                - $bezwaarschrift_tijdig_ingediend
                 - operation: NOT
-                  value: {operation: EQUALS, subject: $heroverweging_geeft_aanleiding_tot_herroeping, value: null}
-                - $heroverweging_geeft_aanleiding_tot_herroeping
+                  value:
+                    operation: EQUALS
+                    subject: $bestreden_besluit.grondslag
+                    value: algemene_wet_bestuursrecht#7:11
+          # Lid 2: "voor zover de heroverweging daartoe aanleiding geeft".
+          # Eigen keuze: aanleiding is er als de heroverweging een andere
+          # uitkomst geeft dan het bestreden besluit. Alleen wat het
+          # besluit-item van dat artikel als uitkomst noemt telt; gegevens die
+          # voor het besluit worden afgeleid niet (RFC-050). Bij een
+          # niet-ontvankelijk bezwaar wordt de heroverweging niet gelezen.
+          - output: heroverweging_geeft_aanleiding
+            value:
+              operation: IF
+              cases:
+                - when: $bezwaar_ontvankelijk
+                  then:
+                    operation: NOT
+                    value:
+                      operation: EQUALS
+                      subject: $heroverweging.outputs
+                      value: $bestreden_besluit.outputs
+              default: null
+          - output: bestreden_besluit_herroepen
+            value:
+              operation: EQUALS
+              subject: $heroverweging_geeft_aanleiding
+              value: true
+          # Lid 2: "neemt het voor zover nodig in de plaats daarvan een nieuw
+          # besluit". Eigen keuze: dat is nodig zodra het besluit is
+          # herroepen, want de heroverweging gaf een andere uitkomst; het
+          # nieuwe besluit is wat de heroverweging gaf.
+          - output: nieuw_besluit
+            value:
+              operation: IF
+              cases:
+                - when: $bestreden_besluit_herroepen
+                  then: $heroverweging
+              default: null
 
   - number: '7:12'
     text: |-

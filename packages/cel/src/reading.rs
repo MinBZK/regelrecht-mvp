@@ -20,13 +20,9 @@
 //! Each row carries the decision's `id`, and a field of type `decision`
 //! holds the id of the decision it names, as the chronolexogram keeps it.
 //! So a reduction can link a decision to another that refers to it, such as
-//! a decision on an objection to the decision it contests (RFC-050).
-//!
-//! A decision revoked on objection stays in the chronicle, and so in the
-//! rows: each row says with [`REVOKES`] whether a decision on an objection
-//! against it revoked it (Awb 7:11 lid 2, RFC-050). Whether a revoked
-//! decision counts is the reduction's to say; the new decision that took
-//! its place is a row of its own.
+//! a decision on an objection to the decision it contests (RFC-050). A row
+//! holds only what its own chronolexogram holds: whether another decision
+//! revoked it, a reduction reads from the rows of that other decision.
 //!
 //! The reductions and the decisions they read are bound for the length of
 //! one decision ([`bind`]): the reductions are loaded into the service, and
@@ -42,7 +38,7 @@ use regelrecht_engine::{
 use serde_json::Map;
 
 use crate::chronicle::Gram;
-use crate::decision::{DecisionShape, Source, REVOKES};
+use crate::decision::{DecisionShape, Source};
 use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::shape::article_on;
@@ -79,13 +75,9 @@ impl Reduction {
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
 /// whose legal character is `kind`, as rows: the fields, then the outputs,
-/// the chronolexogram's `id`, then [`REVOKES`]: whether a decision on an
-/// objection revoked it. A field or output named `id` is refused. A
-/// decision on an objection holds [`REVOKES`] itself and keeps it: it can
-/// never be revoked, as no objection lies against it (Awb 7:1 lid 1 onder
-/// a). A name that is both a field and an output with another value is
-/// refused: the row would hide one. So is another decision that holds
-/// [`REVOKES`] itself.
+/// then the chronolexogram's `id`. A field or output named `id` is refused.
+/// A name that is both a field and an output with another value is
+/// refused: the row would hide one.
 pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     let mut rows = Vec::new();
     for gram in grams
@@ -124,19 +116,6 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
             ROW_ID.to_string(),
             serde_json::Value::String(gram.id.clone()),
         );
-        if gram.outputs.contains_key(REVOKES) && refers_to_objection(grams, gram) {
-            rows.push(serde_json::Value::Object(row));
-            continue;
-        }
-        if row.contains_key(REVOKES) {
-            return Err(setup(format!(
-                "chronolexogram '{}' holds '{REVOKES}' itself; its row says with that name whether \
-                 it was revoked",
-                gram.id
-            )));
-        }
-        let revoked = revoked_by(grams, gram).is_some();
-        row.insert(REVOKES.to_string(), serde_json::Value::Bool(revoked));
         rows.push(serde_json::Value::Object(row));
     }
     encoding::from_json(&serde_json::Value::Array(rows))
@@ -144,29 +123,6 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
 
 /// The name under which a row gives the id of its chronolexogram.
 pub const ROW_ID: &str = "id";
-
-/// Whether `gram` refers to an objection: a chronolexogram that itself
-/// refers to a decision.
-fn refers_to_objection(grams: &[Gram], gram: &Gram) -> bool {
-    grams
-        .iter()
-        .find(|g| gram.refers_to.as_deref() == Some(g.id.as_str()))
-        .is_some_and(|objection| objection.refers_to.is_some())
-}
-
-/// The decision on an objection against `decision` that revoked it: a
-/// chronolexogram that refers to an objection that refers to `decision`,
-/// with [`REVOKES`] true (Awb 7:11 lid 2).
-pub fn revoked_by<'g>(grams: &'g [Gram], decision: &Gram) -> Option<&'g Gram> {
-    grams.iter().find(|g| {
-        g.outputs.get(REVOKES) == Some(&serde_json::Value::Bool(true))
-            && g.refers_to.as_deref().is_some_and(|objection| {
-                grams
-                    .iter()
-                    .any(|o| o.id == objection && o.refers_to.as_deref() == Some(&decision.id))
-            })
-    })
-}
 
 /// An input of the decision that a reduction of the cell yields.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -526,7 +482,6 @@ mod tests {
                 "id": "BESCHIKKING-leerplichtwet_1969#13a",
                 "eerste_verlofdag": "2027-02-01",
                 "verlof_verleend": true,
-                "bestreden_besluit_herroepen": false,
             }])
         );
     }
@@ -745,7 +700,6 @@ articles:
                 "id": "BESCHIKKING-wet_fictief#1",
                 "eerste_verlofdag": "2027-02-01",
                 "verleend": true,
-                "bestreden_besluit_herroepen": false,
             }] })
         );
         // A parameter of the reduction the decision does not hold.

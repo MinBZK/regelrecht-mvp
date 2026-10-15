@@ -8,9 +8,6 @@
 //! `{grondslag, fields, findings, outputs}`. A decision output of the deciding article
 //! is a decision the cell records as well, in the same append. The cell
 //! knows no article that does this; the law names it with the type.
-//!
-//! The procedure of Awb 7:11 as the cell still runs it, with
-//! `record_objection` and `decide_on_objection`, is in [`crate::objection`].
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -32,8 +29,8 @@ use crate::shape::{self, Shape};
 /// law: every call that needs the law gets the service that executes it.
 #[derive(Debug)]
 pub struct Cell {
-    pub(crate) recording_actor: String,
-    pub(crate) chronicle: Chronicle,
+    recording_actor: String,
+    chronicle: Chronicle,
     reductions: Vec<Reduction>,
 }
 
@@ -147,20 +144,6 @@ impl Cell {
         on: NaiveDate,
     ) -> Result<Gram> {
         let shape = shape::derive(service, law_id, article, on)?;
-        // Read from the law, not derived: an application whose decision
-        // cannot be derived on this day is still an application.
-        if shape
-            .requests
-            .as_deref()
-            .is_some_and(|r| decision::decides_on_objection(service, r, on))
-        {
-            return Err(refused(format!(
-                "the {} of {} asks for a decision on a contested decision; it is recorded \
-                 with `record_objection`",
-                shape.kind,
-                shape.grondslag()
-            )));
-        }
         let (filled, from_referred) = self.referred(service, &shape, refers_to)?;
         check_supplied(&shape, supplied, &from_referred)?;
         self.record(service, &shape, supplied, filled, on)
@@ -173,7 +156,7 @@ impl Cell {
     /// decision computes). Returns what the cell fills, and the names the
     /// submitter may not supply: these, and the `decision` field also without
     /// `refers_to`.
-    pub(crate) fn referred(
+    fn referred(
         &self,
         service: &LawExecutionService,
         shape: &Shape,
@@ -242,7 +225,7 @@ impl Cell {
     /// The decision `id` in this chronicle: a chronolexogram on a submission
     /// whose article, in the law in force on the day it was recorded, takes
     /// a decision of its kind.
-    pub(crate) fn decision_gram(&self, service: &LawExecutionService, id: &str) -> Result<&Gram> {
+    fn decision_gram(&self, service: &LawExecutionService, id: &str) -> Result<&Gram> {
         let gram = self.grams().iter().find(|g| g.id == id).ok_or_else(|| {
             refused(format!(
                 "there is no chronolexogram '{id}' in the chronicle of '{}'",
@@ -276,7 +259,7 @@ impl Cell {
 
     /// Record a submission of `shape` on `on`: `supplied` from the
     /// submitter, already checked, and `filled` from the cell.
-    pub(crate) fn record(
+    fn record(
         &mut self,
         service: &LawExecutionService,
         shape: &Shape,
@@ -439,12 +422,6 @@ impl Cell {
     ) -> Result<Vec<Gram>> {
         let shape = decision::derive(service, law_id, article, on)?;
         let applied = self.application(&shape, application)?.clone();
-        if shape.outputs.iter().any(|o| o == decision::REVOKES) {
-            return Err(refused(format!(
-                "{} decides on an objection; it is taken with `decide_on_objection`",
-                shape.grondslag()
-            )));
-        }
         if let Some(name) = supplied.keys().find(|name| is_finding(&shape, name)) {
             return Err(refused(format!(
                 "'{name}' of the decision of {} is a finding of the deciding authority; it \
@@ -766,7 +743,7 @@ impl Cell {
     /// to every article in the decision that leaves the term to the
     /// authority.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn take(
+    fn take(
         &self,
         service: &mut LawExecutionService,
         shape: &DecisionShape,
@@ -776,8 +753,8 @@ impl Cell {
         on: NaiveDate,
         inputs: impl FnOnce(&Bound<'_>) -> Result<Values>,
     ) -> Result<Taken> {
-        // Leaving out one decision changes no other row: whether a decision
-        // was revoked follows from the objections against it.
+        // Leaving out one decision changes no other row: a row holds what
+        // its own chronolexogram holds.
         let grams: Vec<Gram> = self
             .grams()
             .iter()
@@ -835,7 +812,7 @@ impl Cell {
 
     /// The application chronolexogram `id` that the decision of `shape` is taken on:
     /// one in this chronicle, of this article and kind, not decided on yet.
-    pub(crate) fn application(&self, shape: &DecisionShape, id: &str) -> Result<&Gram> {
+    fn application(&self, shape: &DecisionShape, id: &str) -> Result<&Gram> {
         let gram = self.grams().iter().find(|g| g.id == id).ok_or_else(|| {
             refused(format!(
                 "there is no chronolexogram '{id}' in the chronicle of '{}'",
@@ -867,16 +844,16 @@ impl Cell {
 }
 
 /// Values by name: the fields or the outputs of a chronolexogram.
-pub(crate) type Values = BTreeMap<String, serde_json::Value>;
+type Values = BTreeMap<String, serde_json::Value>;
 
 /// A decision as [`Cell::take`] took it: its fields, with what a reduction
 /// or a policy filled, its outputs, and which fields hold a finding of the
 /// deciding authority ([`Gram::findings`]).
 #[derive(Debug)]
-pub(crate) struct Taken {
-    pub fields: Values,
-    pub outputs: Values,
-    pub findings: Vec<String>,
+struct Taken {
+    fields: Values,
+    outputs: Values,
+    findings: Vec<String>,
 }
 
 /// The names in `given` whose value the decision used as given: a value
@@ -907,9 +884,9 @@ fn engine_values<'v>(
 
 /// What the cell fills in a submission itself, and what it refers to.
 #[derive(Debug, Default)]
-pub(crate) struct Filled {
-    pub fields: Values,
-    pub refers_to: Option<String>,
+struct Filled {
+    fields: Values,
+    refers_to: Option<String>,
 }
 
 /// What the decision of `shape` on the application `applied` asks, from
@@ -1036,10 +1013,7 @@ fn run_stages(
 ///
 /// Data derived for the decision is no part of it. A decision the fields
 /// or outputs hold stays its id.
-pub(crate) fn decision_value(
-    service: &LawExecutionService,
-    gram: &Gram,
-) -> Result<serde_json::Value> {
+fn decision_value(service: &LawExecutionService, gram: &Gram) -> Result<serde_json::Value> {
     let found = gram
         .grondslag
         .split_once('#')
@@ -1108,7 +1082,7 @@ fn decision_outputs(
 
 /// What the decision of the article of `decision` asks, in the law in
 /// force on `on`.
-pub(crate) fn decision_shape_of(
+fn decision_shape_of(
     service: &LawExecutionService,
     decision: &Gram,
     on: NaiveDate,
@@ -1125,11 +1099,7 @@ pub(crate) fn decision_shape_of(
 /// The outputs of the articles that take part in the decision of `shape`:
 /// what such a decision gives, whether a chronolexogram of it holds them or
 /// not.
-pub(crate) fn gives(
-    service: &LawExecutionService,
-    shape: &DecisionShape,
-    on: NaiveDate,
-) -> Vec<String> {
+fn gives(service: &LawExecutionService, shape: &DecisionShape, on: NaiveDate) -> Vec<String> {
     shape
         .stages
         .iter()
@@ -1216,7 +1186,7 @@ fn check_decision_supplied(
 
 /// Refuse what the law does not ask of the submitter, and what comes from
 /// the decision the submission refers to (`from_referred`).
-pub(crate) fn check_supplied(
+fn check_supplied(
     shape: &Shape,
     supplied: &Map<String, serde_json::Value>,
     from_referred: &[String],
