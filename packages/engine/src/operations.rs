@@ -621,6 +621,16 @@ fn compound_equal(a: &Value, b: &Value, op_name: &str, path: &str) -> Result<boo
     }
 }
 
+/// Whether `a` and `b` are equal as `EQUALS` compares two lists or two
+/// records ([`compound_equal`]), at any depth, a bare number included: an
+/// integer against a decimal of the same value is an error, two decimals
+/// are equal whatever their scale. For a caller outside a law, such as a
+/// cell comparing a stored value with one computed anew, so that it holds
+/// to the same rule as the engine.
+pub fn equal_as_written(a: &Value, b: &Value) -> Result<bool> {
+    compound_equal(a, b, "EQUALS", "$")
+}
+
 /// Whether the pair is the mixed date form: one string against one
 /// reference-date `{iso}` object, in either order.
 ///
@@ -7081,5 +7091,19 @@ mod tests {
 
         assert!(values_equal(&Value::Int(42), &Value::Decimal(dec!(42))));
         assert!(values_equal(&Value::Decimal(dec!(42)), &Value::Int(42)));
+    }
+
+    #[test]
+    fn test_equal_as_written_is_strict_at_any_depth() {
+        // Outside a law the rule of EQUALS on records holds for a bare
+        // number too: 5 against 5.0 is an error, 5.0 against 5.00 equal.
+        assert!(equal_as_written(&Value::Decimal(dec!(5.0)), &Value::Decimal(dec!(5.00))).unwrap());
+        assert!(!equal_as_written(&Value::Decimal(dec!(5.0)), &Value::Int(6)).unwrap());
+        assert!(equal_as_written(&Value::Int(5), &Value::Decimal(dec!(5.0))).is_err());
+        let record = |v: Value| Value::Object(BTreeMap::from([("n".to_string(), v)]));
+        assert!(
+            equal_as_written(&record(Value::Int(5)), &record(Value::Decimal(dec!(5)))).is_err()
+        );
+        assert!(equal_as_written(&record(Value::Int(5)), &record(Value::Int(5))).unwrap());
     }
 }

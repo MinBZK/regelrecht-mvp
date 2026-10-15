@@ -29,9 +29,10 @@ use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, ParameterType};
 use serde_json::{Map, Value as J};
 
-use crate::cell::{check_supplied, Cell, Filled, Values};
+use crate::cell::{check_supplied, refuse_decimal_key, Cell, Filled, Values};
 use crate::chronicle::Gram;
 use crate::decision::{self, DecisionShape, Source};
+use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Bound};
 use crate::shape;
@@ -194,10 +195,7 @@ impl Cell {
                 on,
                 |bound| heroverweging(&anew_shape, &application, &contested, supplied, bound, on),
             )?;
-            let differs = anew_shape
-                .outputs
-                .iter()
-                .any(|o| anew_outputs.get(o) != contested.outputs.get(o));
+            let differs = differs(&anew_shape.outputs, &anew_outputs, &contested)?;
             anew = Some((anew_shape, anew_fields, anew_outputs));
             if differs {
                 (fields, outputs)
@@ -455,6 +453,7 @@ fn check_objection_supplied(
                      decision on it asks no '{name}' of the deciding authority"
                 )),
             })?;
+        refuse_decimal_key(name, value)?;
         if !shape::fits(&input.field, value) {
             return Err(refused(format!(
                 "'{name}' is {value}, which does not fit a {:?} ({})",
@@ -464,4 +463,84 @@ fn check_objection_supplied(
         }
     }
     Ok(())
+}
+
+/// Whether the heroverweging, with `anew` as the outputs of the decision
+/// anew, differs from `contested` in one of `outputs`, the outputs of the
+/// decision item. A decimal is compared by its value, whatever its scale;
+/// an integer against a decimal of the same value is an error, as the
+/// engine's `EQUALS` on records has it ([`encoding::same`]).
+fn differs(outputs: &[String], anew: &BTreeMap<String, J>, contested: &Gram) -> Result<bool> {
+    for name in outputs {
+        let same =
+            encoding::same_held(anew.get(name), contested.outputs.get(name)).map_err(|e| {
+                setup(format!(
+                    "the heroverweging of '{}' cannot compare '{name}': {e}",
+                    contested.id
+                ))
+            })?;
+        if !same {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn contested(outputs: J) -> Gram {
+        Gram {
+            id: "besluit".into(),
+            kind: "BESCHIKKING".into(),
+            grondslag: "wet#1".into(),
+            refers_to: Some("aanvraag".into()),
+            recording_actor: "cel".into(),
+            recorded_on: chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
+            moment: None,
+            fields: BTreeMap::new(),
+            missing: Vec::new(),
+            outputs: serde_json::from_value(outputs).unwrap(),
+        }
+    }
+
+    fn anew(outputs: J) -> BTreeMap<String, J> {
+        serde_json::from_value(outputs).unwrap()
+    }
+
+    #[test]
+    fn the_heroverweging_compares_decimals_by_their_value() {
+        let names = ["aandeel".to_string(), "aantal".to_string()];
+        let third = "0.3333333333333333333333333333";
+        let old = contested(json!({"aandeel": {"__decimal": third}, "aantal": 4}));
+        let same = anew(json!({"aandeel": {"__decimal": third}, "aantal": 4}));
+        assert!(!differs(&names, &same, &old).unwrap());
+        // Another scale of the same decimal is no difference.
+        let old = contested(json!({"aandeel": {"__decimal": "5.00"}, "aantal": 4}));
+        let scaled = anew(json!({"aandeel": {"__decimal": "5.0"}, "aantal": 4}));
+        assert!(!differs(&names, &scaled, &old).unwrap());
+        // Another value, or an output left out, is.
+        let other = anew(json!({"aandeel": {"__decimal": "5.01"}, "aantal": 4}));
+        assert!(differs(&names, &other, &old).unwrap());
+        let fewer = anew(json!({"aandeel": {"__decimal": "5.0"}}));
+        assert!(differs(&names, &fewer, &old).unwrap());
+        // An output outside the decision item does not count.
+        let extra = anew(json!({"aandeel": {"__decimal": "5.0"}, "aantal": 4, "x": 1}));
+        assert!(!differs(&names, &extra, &old).unwrap());
+    }
+
+    #[test]
+    fn the_heroverweging_refuses_an_integer_against_the_same_decimal() {
+        let names = ["aandeel".to_string()];
+        let old = contested(json!({"aandeel": {"__decimal": "5.0"}}));
+        let err = differs(&names, &anew(json!({"aandeel": 5})), &old).unwrap_err();
+        assert!(
+            matches!(&err, crate::error::Error::Setup(m)
+                if m.contains("'besluit'") && m.contains("'aandeel'")),
+            "{err}"
+        );
+    }
 }

@@ -38,6 +38,7 @@ use serde_json::Map;
 
 use crate::chronicle::Gram;
 use crate::decision::{DecisionShape, Source, REVOKES};
+use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::shape::article_on;
 
@@ -88,7 +89,14 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
         let mut row: Map<String, serde_json::Value> = gram.fields.clone().into_iter().collect();
         for (name, value) in &gram.outputs {
             match row.get(name) {
-                Some(field) if field != value => {
+                Some(field)
+                    if !encoding::same(field, value).map_err(|e| {
+                        setup(format!(
+                            "chronolexogram '{}' holds '{name}' as a field and as an output: {e}",
+                            gram.id
+                        ))
+                    })? =>
+                {
                     return Err(setup(format!(
                         "chronolexogram '{}' holds '{name}' as a field ({field}) and as an output \
                          ({value})",
@@ -115,7 +123,7 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
         row.insert(REVOKES.to_string(), serde_json::Value::Bool(revoked));
         rows.push(serde_json::Value::Object(row));
     }
-    Ok(Value::from(serde_json::Value::Array(rows)))
+    encoding::from_json(&serde_json::Value::Array(rows))
 }
 
 /// Whether `gram` refers to an objection: a chronolexogram that itself
@@ -377,7 +385,7 @@ impl Bound<'_> {
                         "reduction {id} asks '{name}', which the decision does not hold"
                     ))
                 })?;
-                parameters.insert(name.clone(), Value::from(value.clone()));
+                parameters.insert(name.clone(), encoding::from_json(value)?);
             }
             let outputs: Vec<&str> = self
                 .answers
@@ -393,8 +401,7 @@ impl Bound<'_> {
                     .outputs
                     .get(name)
                     .ok_or_else(|| setup(format!("reduction {id} yielded no '{name}'")))?;
-                let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
-                answered.insert(name.to_string(), value);
+                answered.insert(name.to_string(), encoding::to_json(value)?);
             }
         }
         Ok(answered)
@@ -510,6 +517,36 @@ mod tests {
             .outputs
             .insert("eerste_verlofdag".into(), json!("2027-03-01"));
         assert!(rows(&[decision], GRONDSLAG, "BESCHIKKING").is_err());
+    }
+
+    #[test]
+    fn a_name_that_is_a_field_and_the_same_output_is_one_value() {
+        // The same decimal in another scale is the same value.
+        let mut decision = gram("BESCHIKKING", GRONDSLAG, Some("a"));
+        decision
+            .fields
+            .insert("aandeel".into(), json!({"__decimal": "5.0"}));
+        decision
+            .outputs
+            .insert("aandeel".into(), json!({"__decimal": "5.00"}));
+        assert!(rows(&[decision], GRONDSLAG, "BESCHIKKING").is_ok());
+    }
+
+    #[test]
+    fn a_name_that_is_an_integer_field_and_the_same_decimal_output_is_an_error() {
+        // 5 and 5.0: the cell does not decide on its own that they are one
+        // value, nor that they differ; it follows the engine's EQUALS.
+        let mut decision = gram("BESCHIKKING", GRONDSLAG, Some("a"));
+        decision.fields.insert("aandeel".into(), json!(5));
+        decision
+            .outputs
+            .insert("aandeel".into(), json!({"__decimal": "5.0"}));
+        let err = rows(&[decision], GRONDSLAG, "BESCHIKKING").unwrap_err();
+        assert!(
+            matches!(&err, crate::error::Error::Setup(m)
+                if m.contains("'aandeel'") && m.contains("numbers written alike")),
+            "{err}"
+        );
     }
 
     /// A deciding law whose article 1 is a BESCHIKKING, and a reduction

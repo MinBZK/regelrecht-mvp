@@ -13,6 +13,7 @@ use serde_json::Map;
 
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
+use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Bound, Reduction};
 use crate::shape::{self, Shape};
@@ -185,8 +186,8 @@ impl Cell {
         let day = json_date(on);
         let mut parameters: BTreeMap<String, Value> = fields
             .iter()
-            .map(|(k, v)| (k.clone(), Value::from(v.clone())))
-            .collect();
+            .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
+            .collect::<Result<_>>()?;
         if let Some(name) = moment.as_ref().and_then(|m| m.parameter.as_ref()) {
             parameters.insert(name.clone(), day.clone());
         }
@@ -329,8 +330,8 @@ impl Cell {
         fields.extend(answered);
         let parameters: BTreeMap<String, Value> = fields
             .iter()
-            .map(|(k, v)| (k.clone(), Value::from(v.clone())))
-            .collect();
+            .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
+            .collect::<Result<_>>()?;
         let outputs = run_stages(&bound, shape, parameters, on, &mut fields)?;
         Ok((fields, outputs))
     }
@@ -460,7 +461,7 @@ fn run_stages(
             let Some(value) = result.resolved_inputs.get(name) else {
                 continue;
             };
-            let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
+            let value = encoding::to_json(value)?;
             match &input.source {
                 Source::Policy => {
                     fields.insert(name.clone(), value);
@@ -495,8 +496,7 @@ fn collect_outputs(
         ) {
             continue;
         }
-        let value = serde_json::to_value(value).map_err(|e| setup(e.to_string()))?;
-        values.insert(name.clone(), value);
+        values.insert(name.clone(), encoding::to_json(value)?);
     }
     Ok(())
 }
@@ -524,6 +524,7 @@ fn check_decision_supplied(
                 "'{name}' of the decision of {decision} comes from {from}"
             )));
         }
+        refuse_decimal_key(name, value)?;
         if !shape::fits(&input.field, value) {
             return Err(refused(format!(
                 "'{name}' is {value}, which does not fit a {:?} ({})",
@@ -562,6 +563,7 @@ pub(crate) fn check_supplied(
                 shape.kind
             ))
         })?;
+        refuse_decimal_key(name, value)?;
         if !shape::fits(field, value) {
             return Err(refused(format!(
                 "'{name}' is {value}, which does not fit a {}{:?} ({})",
@@ -570,6 +572,19 @@ pub(crate) fn check_supplied(
                 field.first_declared_by()
             )));
         }
+    }
+    Ok(())
+}
+
+/// Refuse a supplied value that holds the key the chronicle writes a
+/// decimal under ([`encoding::DECIMAL_KEY`]): read back, it would be a
+/// decimal the submitter never sent.
+pub(crate) fn refuse_decimal_key(name: &str, value: &serde_json::Value) -> Result<()> {
+    if encoding::holds_decimal_key(value) {
+        return Err(refused(format!(
+            "'{name}' holds the key '{}', which the chronicle keeps for a decimal",
+            encoding::DECIMAL_KEY
+        )));
     }
     Ok(())
 }
