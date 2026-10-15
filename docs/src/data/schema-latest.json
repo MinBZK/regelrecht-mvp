@@ -718,7 +718,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares (with its judgements per case), and the outputs of its decision item (RFC-050).",
+          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares (with its judgements per case), and the outputs of its decision item (RFC-050). A value built from a recorded decision may also carry `taken_on`: the article that established the submission the decision was taken on.",
           "enum": [
             "string",
             "number",
