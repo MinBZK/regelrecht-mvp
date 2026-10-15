@@ -350,6 +350,32 @@ describe('EditSheet', () => {
       });
     });
 
+    it('keeps the input keys it does not edit (nullable, description)', async () => {
+      const wrapper = mountSheet();
+      await setItem(wrapper, {
+        section: 'input',
+        index: 0,
+        data: {
+          name: 'heroverweging',
+          type: 'decision',
+          nullable: true,
+          description: 'het bestreden artikel opnieuw',
+          source: { article: '$besluit.grondslag', parameters_from: ['$besluit.fields'] },
+        },
+      });
+
+      wrapper.vm.save();
+      await nextTick();
+      const events = wrapper.emitted('save');
+      expect(events[0][0].data).toEqual({
+        name: 'heroverweging',
+        type: 'decision',
+        nullable: true,
+        description: 'het bestreden artikel opnieuw',
+        source: { article: '$besluit.grondslag', parameters_from: ['$besluit.fields'] },
+      });
+    });
+
     it('keeps decisions beside an edited output', async () => {
       const wrapper = mountSheet();
       await setItem(wrapper, {

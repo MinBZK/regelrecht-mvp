@@ -308,7 +308,11 @@ function save() {
   } else if (s === 'input' || s === 'add-input') {
     const { name, type, sourceRegulation, sourceOutput, sourceParameters, sourceParametersOverflow } = values.value;
     if (!name.trim()) return;
-    const data = { name: name.trim(), type };
+    // Keys of the input this form does not edit (`nullable`, `description`,
+    // ...) are kept as they were; `source` and `type_spec` are rebuilt below.
+    const { name: _n, type: _t, source: _s, type_spec: _ts, ...keptInput } =
+      s === 'input' ? item.data || {} : {};
+    const data = { ...keptInput, name: name.trim(), type };
     // Reduce the form's parameter rows back into a plain object. Skip
     // rows with an empty key - they're either still being typed or were
     // added and abandoned. Duplicate keys: last write wins (matches what
