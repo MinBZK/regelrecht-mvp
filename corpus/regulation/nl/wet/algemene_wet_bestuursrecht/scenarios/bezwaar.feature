@@ -22,7 +22,7 @@ Feature: Het bezwaar en de beslissing erop
       | adres_indiener                 | Voorbeeldstraat 1        |
       | dagtekening_bezwaarschrift     | 2026-11-01               |
       | omschrijving_bestreden_besluit | weigering vakantieverlof |
-      | gronden_bezwaar                | korter verlof gevraagd   |
+      | gronden_bezwaar                | verklaring werkgever     |
       | datum_ontvangst_bezwaarschrift | 2026-11-01               |
       | bezwaartermijn_einddatum       | 2026-12-01               |
       | bezwaarschrift_tijdig_ingediend | true                    |

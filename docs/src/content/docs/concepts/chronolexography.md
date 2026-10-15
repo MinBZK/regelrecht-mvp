@@ -204,17 +204,16 @@ The cell records the objection as a chronolexogram that refers to the contested 
   "refers_to": "019a1b2d-…",
   "recorded_on": "2026-11-01",
   "fields": {
-    "gronden_bezwaar": "het verlof is korter dan gevraagd",
-    "laatste_verlofdag": "2027-02-12",
+    "gronden_bezwaar": "verklaring van de werkgever: geen verlof in de schoolvakanties",
     "bezwaartermijn_einddatum": "2026-12-01"
   },
   "outputs": { "bezwaarschrift_tijdig_ingediend": true, "beslistermijn_bezwaar_einddatum": "2027-01-12" }
 }
 ```
 
-- The fields are those of Awb 6:5, plus the end of the objection period, which the cell takes from the contested decision. The parent may change a field of the application, here the last leave day. That an objection may do so is our interpretation choice.
+- The fields are those of Awb 6:5, plus the end of the objection period, which the cell takes from the contested decision. An objection does not change the application: Awb 7:11 lid 1 reconsiders the decision "op grondslag van het bezwaar", and 6:5 asks only for the grounds. A smaller request is a new application.
 - Awb 6:9 makes the receipt the moment that counts and says whether it came in on time. A late objection is recorded; 7:11 then declares it not admissible, without a heroverweging (lid 1).
-- The decision on an admissible objection, a `BESCHIKKING` under 7:11, runs art. 13a anew on the facts of that day. When an output comes out different, the heroverweging gives cause, and an admissible objection revokes the decision.
+- The decision on an admissible objection, a `BESCHIKKING` under 7:11, runs art. 13a anew on the facts of that day: the application, the head's judgements (given anew or else from the contested decision), and the policy and reduction of that day. When an output comes out different, the heroverweging gives cause, and an admissible objection revokes the decision.
 - On revocation the cell records the new decision under art. 13a, with its own objection period. The revoked decision stays in the chronicle. Its row carries `bestreden_besluit_herroepen: true`, and the reduction leaves it out.
 
 **Try it:** `just bdd`, which runs `corpus/regulation/nl/wet/algemene_wet_bestuursrecht/scenarios/bezwaar.feature`, or `cargo test --manifest-path packages/cel/Cargo.toml`

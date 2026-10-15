@@ -15,7 +15,7 @@ use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Bound, Reduction};
-use crate::shape::{self, Field, Shape};
+use crate::shape::{self, Shape};
 
 /// A cell. It holds who it is, its chronicle and its reductions, not the
 /// law: every call that needs the law gets the service that executes it.
@@ -141,14 +141,12 @@ impl Cell {
                 shape.grondslag()
             )));
         }
-        check_supplied(&shape, supplied, &[], &[])?;
+        check_supplied(&shape, supplied, &[])?;
         self.record(service, &shape, supplied, Filled::default(), on)
     }
 
     /// Record a submission of `shape` on `on`: `supplied` from the
-    /// submitter, already checked, and `filled` from the cell. A supplied
-    /// name that is no field of `shape` (an amendment on objection) lands in
-    /// the chronolexogram, not in the engine.
+    /// submitter, already checked, and `filled` from the cell.
     pub(crate) fn record(
         &mut self,
         service: &LawExecutionService,
@@ -221,9 +219,6 @@ impl Cell {
         };
         let mut output_values = BTreeMap::new();
         collect_outputs(&result, &mut output_values)?;
-        for (name, value) in supplied {
-            fields.entry(name.clone()).or_insert_with(|| value.clone());
-        }
 
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
@@ -541,13 +536,10 @@ fn check_decision_supplied(
 }
 
 /// Refuse what the law does not ask of the submitter, and what comes from
-/// the decision an objection contests (`from_contested`). `amendable` are
-/// fields of an earlier submission that this one may change: an objection
-/// may change the application it contests (RFC-050).
+/// the decision an objection contests (`from_contested`).
 pub(crate) fn check_supplied(
     shape: &Shape,
     supplied: &Map<String, serde_json::Value>,
-    amendable: &[Field],
     from_contested: &[String],
 ) -> Result<()> {
     let submission = shape.grondslag();
@@ -564,15 +556,12 @@ pub(crate) fn check_supplied(
                 moment.declared_by
             )));
         }
-        let field = shape
-            .field(name)
-            .or_else(|| amendable.iter().find(|f| &f.name == name))
-            .ok_or_else(|| {
-                refused(format!(
-                    "the law does not ask '{name}' in the {} of {submission}",
-                    shape.kind
-                ))
-            })?;
+        let field = shape.field(name).ok_or_else(|| {
+            refused(format!(
+                "the law does not ask '{name}' in the {} of {submission}",
+                shape.kind
+            ))
+        })?;
         if !shape::fits(field, value) {
             return Err(refused(format!(
                 "'{name}' is {value}, which does not fit a {}{:?} ({})",

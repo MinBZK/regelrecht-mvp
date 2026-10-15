@@ -7,13 +7,15 @@
 //! cell records it with [`Cell::record_objection`], referring to the
 //! contested decision. A field of the objection that the contested decision
 //! holds by name, such as the last day of the objection period (Awb 6:8),
-//! the cell takes from that decision. A field of the application the
-//! contested decision took, the objection may change.
+//! the cell takes from that decision. An objection does not change the
+//! application: 7:11 lid 1 reconsiders the decision "op grondslag van het
+//! bezwaar", and 6:5 asks only for the grounds. A smaller request is a new
+//! application.
 //!
 //! For an admissible objection, [`Cell::decide_on_objection`] applies the
 //! contested decision's article anew on the facts of that day (Awb 7:11 lid
-//! 1, ex nunc): the application as the objection changes it, the policy in force, the
-//! chronicle without the contested decision. The heroverweging gives cause
+//! 1, ex nunc): the application, the policy in force, the chronicle without
+//! the contested decision. The heroverweging gives cause
 //! when that decision differs from the contested one in an output of the
 //! article; that is the judgement the deciding article asks. When the
 //! decision on the objection revokes the contested decision
@@ -32,7 +34,7 @@ use crate::chronicle::Gram;
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Bound};
-use crate::shape::{self, Field};
+use crate::shape;
 
 /// The decision on an objection, and the new decision that took the place
 /// of the contested one when it was revoked.
@@ -48,9 +50,8 @@ impl Cell {
     /// received on `on`, with what the objector supplied.
     ///
     /// As [`Cell::record_submission`], and: the cell fills a field the
-    /// contested decision holds by name and refuses it from the objector;
-    /// the objector may change a field of the application the contested
-    /// decision took. An objection out of time is recorded: whether it is,
+    /// contested decision holds by name and refuses it from the objector.
+    /// An objection out of time is recorded: whether it is,
     /// is what the law computes (Awb 6:9). The cell refuses an objection
     /// against what is no decision, against a decision taken on objection
     /// (Awb 7:1 lid 1 onder a: beroep is open, not bezwaar) and against a
@@ -83,16 +84,7 @@ impl Cell {
         // taken under.
         let taken_on = contested.recorded_on;
         let contested_shape = self.decision_shape_of(service, &contested, taken_on)?;
-        let amendable = amendable(service, &contested_shape, taken_on)?;
         let gives = gives(service, &contested_shape, taken_on);
-        if let Some(both) = amendable.iter().find(|f| shape.field(&f.name).is_some()) {
-            return Err(setup(format!(
-                "'{}' is a field of the {} of {} and of the application it may change",
-                both.name,
-                shape.kind,
-                shape.grondslag()
-            )));
-        }
         let mut filled = Filled {
             refers_to: Some(contested.id.clone()),
             ..Filled::default()
@@ -109,7 +101,7 @@ impl Cell {
             }
             from_contested.push(field.name.clone());
         }
-        check_supplied(&shape, supplied, &amendable, &from_contested)?;
+        check_supplied(&shape, supplied, &from_contested)?;
         self.record(service, &shape, supplied, filled, on)
     }
 
@@ -200,17 +192,7 @@ impl Cell {
                 supplied,
                 Some(&contested.id),
                 on,
-                |bound| {
-                    heroverweging(
-                        &anew_shape,
-                        &objected,
-                        &application,
-                        &contested,
-                        supplied,
-                        bound,
-                        on,
-                    )
-                },
+                |bound| heroverweging(&anew_shape, &application, &contested, supplied, bound, on),
             )?;
             let differs = anew_shape
                 .outputs
@@ -336,13 +318,10 @@ impl Cell {
 
 /// What the heroverweging of `contested` asks (the decision of `shape`
 /// anew), but what one of the cell's reductions in `bound` yields: the
-/// application as the objection `objected` changes it, and the deciding
-/// authority's judgements given anew in `supplied`, or else those of the
-/// contested decision. The objection holds only what it changes of the
-/// application: `record_objection` refuses a field of both.
+/// application, and the deciding authority's judgements given anew in
+/// `supplied`, or else those of the contested decision.
 fn heroverweging(
     shape: &DecisionShape,
-    objected: &Gram,
     application: &Gram,
     contested: &Gram,
     supplied: &Map<String, J>,
@@ -353,11 +332,7 @@ fn heroverweging(
     for input in &shape.inputs {
         let name = &input.field.name;
         let value = match &input.source {
-            Source::Application => objected
-                .fields
-                .get(name)
-                .or_else(|| application.held(name))
-                .cloned(),
+            Source::Application => application.held(name).cloned(),
             Source::Caller if bound.answers(name) => continue,
             // A regulation fills it first: the contested decision holds the
             // value the regulation gave then, so only a judgement given anew
@@ -431,29 +406,6 @@ fn on_objection(
 /// contested decision.
 fn revokes(outputs: &Values) -> bool {
     outputs.get(decision::REVOKES) == Some(&J::Bool(true))
-}
-
-/// The fields of the application that the decision of `shape` takes from
-/// it, in the law in force on `day`: the fields an objection may change.
-/// What a hook on the application gave is no field, so the objector does
-/// not overwrite it. Leaving one out changes nothing, so each can be left
-/// out.
-fn amendable(
-    service: &LawExecutionService,
-    shape: &DecisionShape,
-    day: NaiveDate,
-) -> Result<Vec<Field>> {
-    let (law_id, article) = shape
-        .application
-        .split_once('#')
-        .ok_or_else(|| setup(format!("'{}' is no article reference", shape.application)))?;
-    let application = shape::derive(service, law_id, article, day)?;
-    Ok(shape
-        .inputs
-        .iter()
-        .filter(|i| i.source == Source::Application && application.field(&i.field.name).is_some())
-        .map(|i| i.field.clone())
-        .collect())
 }
 
 /// The outputs of the articles that take part in the decision of `shape`:
