@@ -14,6 +14,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::encoding;
 use crate::error::{refused, setup, Result};
 
 /// A chronolexogram (`Gram` for short): one recorded application or
@@ -115,6 +116,10 @@ impl Chronicle {
             }
             let gram: Gram = serde_json::from_str(line)
                 .map_err(|e| setup(format!("{} line {}: {e}", path.display(), i + 1)))?;
+            for value in gram.fields.values().chain(gram.outputs.values()) {
+                encoding::from_json(value)
+                    .map_err(|e| setup(format!("{} line {}: {e}", path.display(), i + 1)))?;
+            }
             chronicle.check(&gram)?;
             chronicle.grams.push(gram);
         }

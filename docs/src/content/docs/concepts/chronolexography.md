@@ -102,6 +102,7 @@ A cell, here a school, records the application as one chronolexogram in its chro
 - `moment` holds the day of receipt. The cell fills it with the day of recording; that the two are the same day is the cell's assumption.
 - Recording runs the stage AANVRAAG of art. 13a: the Awb hooks on the application run, and their outputs go in `outputs`. The outputs of art. 13a belong to the decision.
 - The chronolexogram does not repeat the law. Which article asks a field follows from the law version in force on `recorded_on`.
+- A number the engine computes is stored without loss: an integer as a JSON integer, a decimal as `{"__decimal": "0.3333333333333333333333333333"}` with every digit, so it reads back as the same decimal and not as a float or an integer. A supplied value may not hold that key; a supplied number is kept as the JSON it came in. Where the cell compares two stored values, as in the heroverweging, it follows the engine's `EQUALS` on records: `5.0` and `5.00` are one value, an integer against a decimal of the same value is an error.
 
 The chronicle refuses a chronolexogram dated before the last one.
 

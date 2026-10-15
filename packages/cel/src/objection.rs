@@ -29,9 +29,10 @@ use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, ParameterType};
 use serde_json::{Map, Value as J};
 
-use crate::cell::{check_supplied, Cell, Filled, Values};
+use crate::cell::{check_supplied, refuse_decimal_key, Cell, Filled, Values};
 use crate::chronicle::Gram;
 use crate::decision::{self, DecisionShape, Source};
+use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Bound};
 use crate::shape;
@@ -197,7 +198,9 @@ impl Cell {
             let differs = anew_shape
                 .outputs
                 .iter()
-                .any(|o| anew_outputs.get(o) != contested.outputs.get(o));
+                .map(|o| encoding::same_held(anew_outputs.get(o), contested.outputs.get(o)))
+                .collect::<Result<Vec<bool>>>()?
+                .contains(&false);
             anew = Some((anew_shape, anew_fields, anew_outputs));
             if differs {
                 (fields, outputs)
@@ -455,6 +458,7 @@ fn check_objection_supplied(
                      decision on it asks no '{name}' of the deciding authority"
                 )),
             })?;
+        refuse_decimal_key(name, value)?;
         if !shape::fits(&input.field, value) {
             return Err(refused(format!(
                 "'{name}' is {value}, which does not fit a {:?} ({})",
