@@ -1118,29 +1118,6 @@ impl LazyInputs for LazyArticleInputs<'_, '_, '_> {
     }
 }
 
-/// `value` with every decimal as a value stored as JSON reads it back: as
-/// an `f64` ([`regelrecht_law_model::decimal_to_f64`]) read back by its
-/// shortest digits ([`regelrecht_law_model::f64_to_value`]), which a second
-/// trip leaves as it is. `5.0` from
-/// `MULTIPLY(10, 0.5)` is `5` once a cell has recorded it, and `1/3` keeps
-/// the digits an `f64` holds. A decision value is built in this form, so it
-/// compares with a recorded one under the strict `EQUALS` on what was
-/// decided, not on how the arithmetic left it (RFC-050).
-fn as_recorded(value: Value) -> Value {
-    match value {
-        Value::Decimal(d) => regelrecht_law_model::decimal_to_f64(d)
-            .map_or(Value::Decimal(d), regelrecht_law_model::f64_to_value),
-        Value::Array(items) => Value::Array(items.into_iter().map(as_recorded).collect()),
-        Value::Object(fields) => Value::Object(
-            fields
-                .into_iter()
-                .map(|(key, value)| (key, as_recorded(value)))
-                .collect(),
-        ),
-        other => other,
-    }
-}
-
 /// Named values, such as parameters or findings.
 type Values = BTreeMap<String, Value>;
 
@@ -5056,12 +5033,8 @@ impl LawExecutionService {
     /// per output computed: the article runs once for all outputs of its
     /// decision, so while it runs each of them counts as being resolved.
     ///
-    /// The decision value holds its numbers as JSON gives them back, as a
-    /// cell stores them ([`as_recorded`]), so a
-    /// stored decision and a fresh one compare under the strict `EQUALS`
-    /// on how they are recorded and not on how arithmetic left them. One
-    /// `output` keeps the precision the article computed, as a
-    /// `source.regulation` call does.
+    /// The decision value holds the numbers as the article computed them,
+    /// as a `source.regulation` call does: nothing normalizes them.
     fn resolve_article_call(
         &self,
         law: &ArticleBasedLaw,
@@ -5341,22 +5314,18 @@ impl LawExecutionService {
             })
         };
         let value = match output {
-            // One output keeps its full precision, as from `source.regulation`;
-            // only the decision value is held as recorded, to compare with a
-            // stored one.
             Some(output) => pick(output)?,
             None => {
                 let outputs = computed
                     .iter()
                     .map(|name| Ok((name.to_string(), pick(name)?)))
                     .collect::<Result<BTreeMap<_, _>>>()?;
-                let value = Value::Object(BTreeMap::from([
+                Value::Object(BTreeMap::from([
                     ("grondslag".to_string(), Value::String(target.clone())),
                     ("fields".to_string(), Value::Object(declared)),
                     ("findings".to_string(), Value::Object(findings)),
                     ("outputs".to_string(), Value::Object(outputs)),
-                ]));
-                as_recorded(value)
+                ]))
             }
         };
         res_ctx.trace_set_result(value.clone());

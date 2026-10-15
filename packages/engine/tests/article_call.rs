@@ -565,9 +565,10 @@ fn a_call_that_may_be_skipped_needs_a_nullable_input() {
 }
 
 #[test]
-fn a_decision_value_compares_with_a_stored_one() {
-    // MULTIPLY(10, 0.5) leaves 5.0; stored as JSON it reads back as 5. The
-    // decision value holds the 5, so the strict EQUALS sees no difference.
+fn a_whole_number_against_a_fresh_decimal_in_a_decision_is_an_error() {
+    // MULTIPLY(10, 0.5) leaves 5.0, and the decision value holds it as
+    // computed. Against a stored 5 the strict EQUALS fails rather than
+    // answers: nothing normalizes the numbers.
     let helft = r#"
 $id: wet_helft
 regulatory_layer: WET
@@ -594,124 +595,25 @@ articles:
     let mut service = service();
     service.load_law(helft).unwrap();
     let stored = json!({"grondslag": "wet_helft#1", "fields": {"dagen": 10}, "findings": {}, "outputs": {"helft": 5}});
-    let parameters = json!({"besluit": stored.clone(), "nieuwe_oordelen": null});
-    assert_eq!(
-        evaluate(&service, "heroverwogen", parameters.clone()).unwrap(),
-        Value::from(stored)
-    );
-    assert_eq!(
-        evaluate(&service, "aanleiding", parameters).unwrap(),
-        Value::Bool(false)
-    );
-}
-
-/// One output keeps the precision the article computed, as from
-/// `source.regulation`; only the decision value is held as recorded.
-#[test]
-fn one_output_keeps_its_full_precision() {
-    let derde = r#"
-$id: wet_derde
-regulatory_layer: WET
-publication_date: '2025-01-01'
-articles:
-  - number: '1'
-    text: Een derde van de dagen.
-    machine_readable:
-      execution:
-        produces:
-          legal_character: BESCHIKKING
-        parameters:
-          - name: dagen
-            type: number
-        output:
-          - name: derde
-            type: number
-        actions:
-          - output: derde
-            value:
-              operation: DIVIDE
-              values: [$dagen, 3]
-  - number: '2'
-    text: Een derde, opgevraagd.
-    machine_readable:
-      execution:
-        parameters:
-          - name: dagen
-            type: number
-        input:
-          - name: een_derde
-            type: number
-            source:
-              article: wet_derde#1
-              output: derde
-              parameters:
-                dagen: $dagen
-        output:
-          - name: opgevraagd
-            type: number
-        actions:
-          - output: opgevraagd
-            value: $een_derde
-"#;
-    let mut service = LawExecutionService::new();
-    service.load_law(derde).unwrap();
-    let result = service
-        .evaluate_law_output("wet_derde", "opgevraagd", params(json!({"dagen": 1})), DATE)
-        .unwrap();
-    assert_eq!(
-        result.outputs["opgevraagd"],
-        Value::Decimal(Decimal::ONE / Decimal::from(3)),
-        "not rounded to the digits of an f64"
-    );
-}
-
-#[test]
-fn a_decision_value_with_a_fraction_compares_with_a_stored_one() {
-    // 1/3 has more digits than JSON keeps; the decision value holds what a
-    // stored one reads back.
-    let derde = r#"
-$id: wet_derde
-regulatory_layer: WET
-publication_date: '2025-01-01'
-articles:
-  - number: '1'
-    text: Een derde van de dagen.
-    machine_readable:
-      execution:
-        produces:
-          legal_character: BESCHIKKING
-        parameters:
-          - name: dagen
-            type: number
-        output:
-          - name: derde
-            type: number
-        actions:
-          - output: derde
-            value:
-              operation: DIVIDE
-              values: [$dagen, 3]
-"#;
-    let mut service = service();
-    service.load_law(derde).unwrap();
-    let fresh =
-        json!({"grondslag": "wet_derde#1", "fields": {"dagen": 1}, "findings": {}, "outputs": {}});
-    let parameters = json!({"besluit": fresh, "nieuwe_oordelen": null});
-    let heroverwogen = evaluate(&service, "heroverwogen", parameters).unwrap();
-    // Through JSON and back, as a cell stores it.
-    let stored = Value::from(serde_json::Value::from(&heroverwogen));
-    let Value::Object(mut besluit) = stored else {
+    let parameters = json!({"besluit": stored, "nieuwe_oordelen": null});
+    let Value::Object(heroverwogen) =
+        evaluate(&service, "heroverwogen", parameters.clone()).unwrap()
+    else {
         panic!("no decision value")
     };
-    besluit.insert("grondslag".into(), Value::from("wet_derde#1"));
-    let parameters = BTreeMap::from([
-        ("besluit".to_string(), Value::Object(besluit)),
-        ("nieuwe_oordelen".to_string(), Value::Null),
-    ]);
-    let result = service
-        .evaluate_law_output("wet_heroverweging", "aanleiding", parameters, DATE)
-        .unwrap();
-    assert_eq!(result.outputs["aanleiding"], Value::Bool(false));
+    assert_eq!(
+        heroverwogen["outputs"],
+        Value::Object(BTreeMap::from([(
+            "helft".to_string(),
+            Value::Decimal(Decimal::new(50, 1))
+        )])),
+        "the decimal as the article computed it"
+    );
+    let message = error(&service, "aanleiding", parameters);
+    assert!(
+        message.contains("numbers written alike") && message.contains("5.0 against 5 at .helft"),
+        "{message}"
+    );
 }
 
 #[test]

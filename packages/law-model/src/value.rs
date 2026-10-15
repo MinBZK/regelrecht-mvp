@@ -110,7 +110,7 @@ impl Serialize for Value {
             Value::Decimal(d) => {
                 // Infallible within Decimal's value range (max ~7.9e28 << f64::MAX);
                 // surface the impossible case as an error rather than a wrong 0.0.
-                let f = decimal_to_f64(*d).ok_or_else(|| {
+                let f = d.to_f64().ok_or_else(|| {
                     serde::ser::Error::custom(format!("Decimal {d} is not representable as f64"))
                 })?;
                 serializer.serialize_f64(f)
@@ -397,7 +397,7 @@ impl Value {
     /// Try to get value as f64
     pub fn as_float(&self) -> Option<f64> {
         match self {
-            Value::Decimal(d) => decimal_to_f64(*d),
+            Value::Decimal(d) => d.to_f64(),
             Value::Int(i) => Some(*i as f64),
             _ => None,
         }
@@ -556,15 +556,7 @@ pub fn f64_to_value(v: f64) -> Value {
     if v.fract() == 0.0 && v >= i64::MIN as f64 && v < I64_MAX_F64 {
         Value::Int(v as i64)
     } else {
-        // By its shortest digits, which read back as the same `f64`;
-        // `Decimal::from_f64` keeps digits that do not. Beyond the 28
-        // digits a Decimal holds, the nearest one.
-        match v
-            .to_string()
-            .parse::<Decimal>()
-            .ok()
-            .or_else(|| Decimal::from_f64(v))
-        {
+        match Decimal::from_f64(v) {
             Some(d) => Value::Decimal(d),
             None => Value::Null,
         }
@@ -582,18 +574,10 @@ fn json_number_to_value(n: &serde_json::Number) -> Value {
     }
 }
 
-/// The `f64` nearest to `d`, correctly rounded through its decimal digits
-/// (`Decimal::to_f64` is not always). With [`f64_to_value`], which reads an
-/// `f64` back by its shortest digits, a value written as JSON and read back
-/// reads back the same the second time: storing it is idempotent.
-pub fn decimal_to_f64(d: Decimal) -> Option<f64> {
-    d.to_string().parse::<f64>().ok().or_else(|| d.to_f64())
-}
-
 /// Convert an exact [`Decimal`] to a JSON number, falling back to `null` only if
 /// the value somehow has no `f64` representation.
 fn decimal_to_json(d: Decimal) -> serde_json::Value {
-    decimal_to_f64(d)
+    d.to_f64()
         .and_then(serde_json::Number::from_f64)
         .map(serde_json::Value::Number)
         .unwrap_or(serde_json::Value::Null)
@@ -1062,41 +1046,6 @@ mod tests {
         .to_bool());
     }
 
-    /// Storing a value as JSON and reading it back is idempotent: a second
-    /// trip reads back what the first did, also for fractions an `f64`
-    /// cannot hold and for large amounts (RFC-050).
-    #[test]
-    fn test_a_json_round_trip_of_a_decimal_is_idempotent() {
-        use std::str::FromStr;
-        // Through JSON text, as a chronicle or a database stores it.
-        let trip = |v: &Value| -> Value {
-            let text = serde_json::to_string(&serde_json::Value::from(v)).unwrap();
-            Value::from(serde_json::from_str::<serde_json::Value>(&text).unwrap())
-        };
-        for s in [
-            "0.3333333333333333333333333333",
-            "0.6666666666666666666666666667",
-            "0.1428571428571428571428571429",
-            "4.2727272727272727272727272727",
-            "4331633910.6029411764705882353",
-            "4400030901903.9805194805194805",
-            "1088244455154.3704528768499556",
-            "-112884476202.62323",
-            "0.1",
-            "12.5",
-        ] {
-            let once = trip(&Value::Decimal(Decimal::from_str(s).unwrap()));
-            assert_eq!(trip(&once), once, "{s}");
-        }
-        assert_eq!(
-            trip(&Value::Decimal(
-                Decimal::from_str("0.3333333333333333333333333333").unwrap()
-            )),
-            Value::Decimal(Decimal::from_str("0.3333333333333333").unwrap())
-        );
-        assert_eq!(trip(&Value::Decimal(dec!(5.0))), Value::Int(5));
-    }
-
     #[test]
     fn test_value_from_primitives() {
         assert_eq!(Value::from(true), Value::Bool(true));
@@ -1118,6 +1067,16 @@ mod tests {
         let int_val = Value::Int(42);
         assert_eq!(int_val.as_int(), Some(42));
         assert_eq!(int_val.as_float(), Some(42.0));
+        assert_eq!(Value::Decimal(dec!(12.5)).as_float(), Some(12.5));
+        // A decimal goes to JSON as the number it is, by reference and by value.
+        assert_eq!(
+            serde_json::Value::from(&Value::Decimal(dec!(12.5))),
+            serde_json::json!(12.5)
+        );
+        assert_eq!(
+            serde_json::Value::from(Value::Decimal(dec!(12.5))),
+            serde_json::json!(12.5)
+        );
 
         let str_val = Value::String("hello".to_string());
         assert_eq!(str_val.as_str(), Some("hello"));

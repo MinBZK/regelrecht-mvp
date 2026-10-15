@@ -30,7 +30,4 @@ pub use model::{
     ResolveSpec, Source, Stage, StageRequirement, Submission, Temporal, TypeSpec,
     UntranslatableEntry, DEFAULT_FOREACH_AS, SUBMISSION_KINDS,
 };
-pub use value::{
-    decimal_to_f64, f64_to_value, MissingFact, MissingKind, Operation, ParameterType,
-    RegulatoryLayer, Value,
-};
+pub use value::{MissingFact, MissingKind, Operation, ParameterType, RegulatoryLayer, Value};
