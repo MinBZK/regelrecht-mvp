@@ -456,6 +456,7 @@ mod tests {
             recorded_on: chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
             moment: None,
             fields: BTreeMap::new(),
+            findings: Vec::new(),
             missing: Vec::new(),
             outputs: serde_json::from_value(outputs).unwrap(),
         }

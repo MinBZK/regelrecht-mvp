@@ -268,6 +268,13 @@ pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
         (_, J::Null) => field.nullable,
         (ParameterType::String, J::String(_)) => true,
         (ParameterType::Number, J::Number(_)) => true,
+        // A decimal as the chronicle holds it ([`crate::encoding`]): only a
+        // stored value, as one a decision holds; a supplied value that holds
+        // the key is refused first.
+        (ParameterType::Number, J::Object(_)) => matches!(
+            crate::encoding::from_json(value),
+            Ok(regelrecht_engine::Value::Decimal(_))
+        ),
         (ParameterType::Amount, J::Number(n)) => n.is_i64() || n.is_u64(),
         (ParameterType::Boolean, J::Bool(_)) => true,
         (ParameterType::Date, J::String(s)) => NaiveDate::parse_from_str(s, "%Y-%m-%d")

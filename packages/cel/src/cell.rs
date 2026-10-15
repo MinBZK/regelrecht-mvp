@@ -328,7 +328,7 @@ impl Cell {
         {
             if let Some(serde_json::Value::String(id)) = fields.get(&field.name) {
                 let value = decision_value(service, self.decision_gram(service, id)?)?;
-                parameters.insert(field.name.clone(), Value::from(value));
+                parameters.insert(field.name.clone(), encoding::from_json(&value)?);
             }
         }
         let date = on.to_string();
@@ -455,6 +455,9 @@ impl Cell {
         // A finding the decision asks is one of its inputs, which the cell
         // checks as it checks what is supplied; any other is for an article
         // the decision calls. All of them reach the engine as findings.
+        for (name, value) in findings {
+            refuse_decimal_key(name, value)?;
+        }
         let own: Map<_, _> = findings
             .iter()
             .filter(|(name, _)| shape.input(name).is_some())
@@ -692,7 +695,7 @@ impl Cell {
             fields
                 .iter()
                 .filter(|(name, _)| !given_findings.contains_key(*name)),
-        );
+        )?;
         for (name, finding) in given_findings {
             fields
                 .entry(name.clone())
@@ -702,11 +705,11 @@ impl Cell {
             service,
             &shape,
             parameters,
-            engine_values(given_findings),
+            engine_values(given_findings)?,
             on,
             &mut fields,
         )?;
-        let found = used(given_findings, &fields);
+        let found = used(given_findings, &fields)?;
         // A decision it takes in turn would be a value in its outputs, not
         // an id: the cell records one level.
         if let Some(nested) = decision_outputs(service, &shape, on)
@@ -719,14 +722,12 @@ impl Cell {
                 deciding.grondslag()
             )));
         }
-        // As a chronicle stores them: read back from JSON, as the engine
-        // builds a decision value.
-        let stored = |v: Option<&serde_json::Value>| v.cloned().map(Value::from);
-        let same = expected.keys().all(|k| shape.outputs.contains(k))
-            && shape
-                .outputs
-                .iter()
-                .all(|o| stored(outputs.get(o)) == stored(expected.get(o)));
+        // As a chronicle stores them, compared as the engine's `EQUALS`
+        // compares records ([`encoding::same_held`]).
+        let mut same = expected.keys().all(|k| shape.outputs.contains(k));
+        for o in &shape.outputs {
+            same = same && encoding::same_held(outputs.get(o), expected.get(o))?;
+        }
         if !same {
             return Err(setup(format!(
                 "'{output}' of the decision of {} is a decision under {grondslag} with outputs \
@@ -799,7 +800,7 @@ impl Cell {
             fields
                 .iter()
                 .filter(|(name, _)| !findings.contains_key(*name)),
-        );
+        )?;
         for (name, finding) in findings {
             fields
                 .entry(name.clone())
@@ -821,12 +822,12 @@ impl Cell {
             &bound,
             shape,
             parameters,
-            engine_values(findings),
+            engine_values(findings)?,
             on,
             &mut fields,
         )?;
         Ok(Taken {
-            findings: used(&given, &fields),
+            findings: used(&given, &fields)?,
             fields,
             outputs,
         })
@@ -882,22 +883,25 @@ pub(crate) struct Taken {
 /// the engine set aside, as a regulation that fills a term sets aside the
 /// authority's finding on it, is not among them. The engine names no
 /// winner, so where the regulation gives what the authority found, the
-/// finding counts as used.
-fn used(given: &Map<String, serde_json::Value>, fields: &Values) -> Vec<String> {
-    given
-        .iter()
-        .filter(|(name, value)| fields.get(*name) == Some(*value))
-        .map(|(name, _)| name.clone())
-        .collect()
+/// finding counts as used. Compared as the engine's `EQUALS` compares
+/// records ([`encoding::same_held`]).
+fn used(given: &Map<String, serde_json::Value>, fields: &Values) -> Result<Vec<String>> {
+    let mut used = Vec::new();
+    for (name, value) in given {
+        if encoding::same_held(fields.get(name), Some(value))? {
+            used.push(name.clone());
+        }
+    }
+    Ok(used)
 }
 
-/// Values as the engine takes them.
+/// Values as the engine takes them ([`encoding::from_json`]).
 fn engine_values<'v>(
     values: impl IntoIterator<Item = (&'v String, &'v serde_json::Value)>,
-) -> BTreeMap<String, Value> {
+) -> Result<BTreeMap<String, Value>> {
     values
         .into_iter()
-        .map(|(k, v)| (k.clone(), Value::from(v.clone())))
+        .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
         .collect()
 }
 

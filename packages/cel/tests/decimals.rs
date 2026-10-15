@@ -110,6 +110,33 @@ articles:
               operation: NOT_EQUALS
               subject: $opnieuw.outputs
               value: $besluit.outputs
+  - number: '5'
+    text: Op verzoek wordt een besluit opnieuw genomen en vergeleken met het oude.
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+            requests: wet_aandeel_fictief#5
+            parameters: [besluit]
+          - type: BESCHIKKING
+            outputs: [anders]
+        parameters:
+          - {name: besluit, type: decision}
+        input:
+          - name: opnieuw
+            type: decision
+            nullable: true
+            source:
+              article: $besluit.grondslag
+              parameters_from: [$besluit.fields]
+        output:
+          - {name: anders, type: boolean}
+        actions:
+          - output: anders
+            value:
+              operation: NOT_EQUALS
+              subject: $opnieuw.outputs
+              value: $besluit.outputs
 "#;
 
 const ID: &str = "wet_aandeel_fictief";
@@ -142,9 +169,9 @@ fn stored_decision(service: &mut LawExecutionService, teller: i64, noemer: i64) 
     let path = dir.path().join("kroniek.jsonl");
     let mut cell = Cell::open(ACTOR, &path).unwrap();
     let app = cell
-        .record_submission(service, ID, "1", &numbers(teller, noemer), day())
+        .record_submission(service, ID, "1", None, &numbers(teller, noemer), day())
         .unwrap();
-    cell.decide(service, ID, "1", &app.id, &Map::new(), day())
+    cell.decide(service, ID, "1", &app.id, &Map::new(), &Map::new(), day())
         .unwrap();
 
     let reopened = Cell::open(ACTOR, &path).unwrap();
@@ -341,16 +368,73 @@ fn a_stored_decision_called_anew_gives_no_false_difference() {
 }
 
 #[test]
+fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
+    // The path of a submission that refers to a decision (RFC-050): the
+    // cell reopens the file, builds the decision value of the stored
+    // decision itself and passes it to article 5, which calls article 1
+    // anew (`source.article`) and compares the outputs as records.
+    for (teller, noemer) in [(10, 2), (1, 3)] {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("kroniek.jsonl");
+        let mut service = service();
+        let mut cell = Cell::open(ACTOR, &path).unwrap();
+        let app = cell
+            .record_submission(&service, ID, "1", None, &numbers(teller, noemer), day())
+            .unwrap();
+        let decided = cell
+            .decide(
+                &mut service,
+                ID,
+                "1",
+                &app.id,
+                &Map::new(),
+                &Map::new(),
+                day(),
+            )
+            .unwrap()
+            .remove(0);
+
+        let mut cell = Cell::open(ACTOR, &path).unwrap();
+        let verzoek = cell
+            .record_submission(&service, ID, "5", Some(&decided.id), &Map::new(), day())
+            .unwrap();
+        let [anew] = &cell
+            .decide(
+                &mut service,
+                ID,
+                "5",
+                &verzoek.id,
+                &Map::new(),
+                &Map::new(),
+                day(),
+            )
+            .unwrap()[..]
+        else {
+            panic!("not one decision")
+        };
+        assert_eq!(anew.outputs["anders"], json!(false), "{teller}/{noemer}");
+    }
+}
+
+#[test]
 fn the_file_holds_the_digits() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
     let mut service = service();
     let mut cell = Cell::open(ACTOR, &path).unwrap();
     let app = cell
-        .record_submission(&service, ID, "1", &numbers(1, 3), day())
+        .record_submission(&service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
-    cell.decide(&mut service, ID, "1", &app.id, &Map::new(), day())
-        .unwrap();
+    cell.decide(
+        &mut service,
+        ID,
+        "1",
+        &app.id,
+        &Map::new(),
+        &Map::new(),
+        day(),
+    )
+    .unwrap();
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(
         text.contains(r#""aandeel":{"__decimal":"0.3333333333333333333333333333"}"#),
@@ -366,11 +450,18 @@ fn a_supplied_value_may_not_hold_the_decimal_key() {
     let service = service();
     let mut cell = Cell::in_memory(ACTOR);
     let ok = json!({"bijlage": {"x": 1}});
-    cell.record_submission(&service, ID, "3", ok.as_object().unwrap(), day())
+    cell.record_submission(&service, ID, "3", None, ok.as_object().unwrap(), day())
         .unwrap();
     let supplied = json!({"bijlage": {"x": {"__decimal": "1.5"}}});
     let err = cell
-        .record_submission(&service, ID, "3", supplied.as_object().unwrap(), day())
+        .record_submission(
+            &service,
+            ID,
+            "3",
+            None,
+            supplied.as_object().unwrap(),
+            day(),
+        )
         .unwrap_err();
     assert!(
         err.to_string()
@@ -386,10 +477,18 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     let mut service = service();
     let mut cell = Cell::open(ACTOR, &path).unwrap();
     let app = cell
-        .record_submission(&service, ID, "1", &numbers(1, 3), day())
+        .record_submission(&service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
-    cell.decide(&mut service, ID, "1", &app.id, &Map::new(), day())
-        .unwrap();
+    cell.decide(
+        &mut service,
+        ID,
+        "1",
+        &app.id,
+        &Map::new(),
+        &Map::new(),
+        day(),
+    )
+    .unwrap();
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, text.replace("0.3333", "0,3333")).unwrap();
     let err = Cell::open(ACTOR, &path).unwrap_err();
@@ -416,6 +515,7 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         recorded_on: day(),
         moment: None,
         fields: [("teller".to_string(), json!({"__decimal": "0,5"}))].into(),
+        findings: Vec::new(),
         missing: Vec::new(),
         outputs: BTreeMap::new(),
     };
