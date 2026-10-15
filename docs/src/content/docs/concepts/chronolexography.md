@@ -216,4 +216,6 @@ The cell records the objection as a chronolexogram that refers to the contested 
 - The decision on an admissible objection, a `BESCHIKKING` under 7:11, runs art. 13a anew on the facts of that day: the application, the head's judgements (given anew or else from the contested decision), and the policy and reduction of that day. When an output comes out different, the heroverweging gives cause, and an admissible objection revokes the decision.
 - On revocation the cell records the new decision under art. 13a, with its own objection period. The revoked decision stays in the chronicle. Its row carries `bestreden_besluit_herroepen: true`, and the reduction leaves it out.
 
+This procedure lives in the cell for now. The engine can already call the article a decision was taken under, with that decision's fields, and give the result back as a decision value ([cross-law references](./cross-law-references#calling-the-decision-of-an-article)). Awb 7:11 does not use that yet; [RFC-050](/rfcs/rfc-050) describes where it should end up.
+
 **Try it:** `just bdd`, which runs `corpus/regulation/nl/wet/algemene_wet_bestuursrecht/scenarios/bezwaar.feature`, or `cargo test --manifest-path packages/cel/Cargo.toml`

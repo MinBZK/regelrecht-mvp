@@ -493,17 +493,21 @@ fn list_findings(findings: &[crate::typecheck::Finding]) -> String {
         .join("\n")
 }
 
-/// Whether `law` reads `law_id`: an input that takes one of its outputs, or
-/// an article that implements one of its open terms. These are the places
-/// where the type check consults another law (RFC-037, N5).
+/// Whether `law` reads `law_id`: an input that takes one of its outputs or
+/// calls one of its articles by a fixed reference (RFC-050), or an article
+/// that implements one of its open terms. These are the places where the
+/// type check consults another law (RFC-037, N5, T5).
 fn references_law(law: &ArticleBasedLaw, law_id: &str) -> bool {
     law.articles.iter().any(|article| {
         article.get_inputs().iter().any(|input| {
-            input
-                .source
-                .as_ref()
-                .and_then(|source| source.regulation.as_deref())
-                == Some(law_id)
+            input.source.as_ref().is_some_and(|source| {
+                source.regulation.as_deref() == Some(law_id)
+                    || source
+                        .article
+                        .as_deref()
+                        .and_then(|target| target.split_once('#'))
+                        .is_some_and(|(regulation, _)| regulation == law_id)
+            })
         }) || article
             .get_implements()
             .is_some_and(|implements| implements.iter().any(|i| i.law == law_id))

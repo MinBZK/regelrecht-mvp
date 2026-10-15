@@ -319,6 +319,79 @@ describe('EditSheet', () => {
       expect(events[0][0].data.source.parameters).toEqual({ complex: 'replaced' });
     });
 
+    it('keeps the source keys it does not edit (article, parameters_from, decisions)', async () => {
+      const wrapper = mountSheet();
+      await setItem(wrapper, {
+        section: 'input',
+        index: 0,
+        data: {
+          name: 'heroverweging',
+          type: 'decision',
+          source: {
+            article: '$besluit.grondslag',
+            parameters_from: ['$besluit.fields'],
+            parameters: { dagen: '$dagen' },
+          },
+        },
+      });
+      expect(wrapper.vm.values.type).toBe('decision');
+
+      wrapper.vm.save();
+      await nextTick();
+      const events = wrapper.emitted('save');
+      expect(events[0][0].data).toEqual({
+        name: 'heroverweging',
+        type: 'decision',
+        source: {
+          article: '$besluit.grondslag',
+          parameters_from: ['$besluit.fields'],
+          parameters: { dagen: '$dagen' },
+        },
+      });
+    });
+
+    it('keeps the input keys it does not edit (nullable, description)', async () => {
+      const wrapper = mountSheet();
+      await setItem(wrapper, {
+        section: 'input',
+        index: 0,
+        data: {
+          name: 'heroverweging',
+          type: 'decision',
+          nullable: true,
+          description: 'het bestreden artikel opnieuw',
+          source: { article: '$besluit.grondslag', parameters_from: ['$besluit.fields'] },
+        },
+      });
+
+      wrapper.vm.save();
+      await nextTick();
+      const events = wrapper.emitted('save');
+      expect(events[0][0].data).toEqual({
+        name: 'heroverweging',
+        type: 'decision',
+        nullable: true,
+        description: 'het bestreden artikel opnieuw',
+        source: { article: '$besluit.grondslag', parameters_from: ['$besluit.fields'] },
+      });
+    });
+
+    it('keeps decisions beside an edited output', async () => {
+      const wrapper = mountSheet();
+      await setItem(wrapper, {
+        section: 'input',
+        index: 0,
+        data: { name: 'besluiten', source: { decisions: 'wet_a#1' } },
+      });
+      wrapper.vm.values.sourceOutput = 'verleend';
+      wrapper.vm.save();
+      await nextTick();
+      expect(wrapper.emitted('save')[0][0].data.source).toEqual({
+        decisions: 'wet_a#1',
+        output: 'verleend',
+      });
+    });
+
     it('skips source.parameters rows with empty key on save', async () => {
       const wrapper = mountSheet();
       await setItem(wrapper, {

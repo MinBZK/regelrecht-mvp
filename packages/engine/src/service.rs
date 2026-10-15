@@ -137,23 +137,33 @@ struct ResolutionContext<'a> {
     /// the hooks on its submission wait for their own stage (RFC-047); an
     /// article run outside a procedure fires them on every run (RFC-045).
     staged_article: Option<(String, String)>,
+    /// The findings the caller gave for this execution, keyed by the id of
+    /// an open term an article leaves to an authority per case
+    /// (`decided_per_case_by`, RFC-050). Each applies to every
+    /// article in the execution that has such a term.
+    findings: BTreeMap<String, Value>,
+    /// The ids of [`Self::findings`] that an article in the execution asked.
+    findings_asked: BTreeSet<String>,
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
 /// (RFC-047). For an article that produces several things, such as an
 /// application and the decision on it: those of the submission whose kind
-/// names the stage, and at every other stage those of the decision. `None`,
+/// names the stage, and at every other stage those of the decision with
+/// the data derived for it, the outputs it lists under `derived` (RFC-050). `None`,
 /// every output, for an article that produces one thing.
 fn outputs_at_stage<'a>(article: &'a Article, stage: &str) -> Option<Vec<&'a str>> {
     if !article.produces_list() {
         return None;
     }
-    let item = article
-        .get_produced()
-        .into_iter()
-        .find(|p| p.submission_kind() == Some(stage))
-        .or_else(|| article.get_decision())?;
-    Some(article.outputs_of(item))
+    let produced = article.get_produced();
+    if let Some(submission) = produced.iter().find(|p| p.submission_kind() == Some(stage)) {
+        return Some(article.outputs_of(*submission));
+    }
+    let decision = article.get_decision()?;
+    let mut outputs = article.outputs_of(decision);
+    outputs.extend(article.derived_outputs());
+    Some(outputs)
 }
 
 /// Parse the calculation date, rejecting malformed input: an unparseable date
@@ -246,7 +256,76 @@ impl<'a> ResolutionContext<'a> {
             declarations_not_in_force: Vec::new(),
             held_back: HashSet::new(),
             staged_article: None,
+            findings: BTreeMap::new(),
+            findings_asked: BTreeSet::new(),
         })
+    }
+
+    /// The caller's findings (RFC-050) that apply to `article` of `law`: one
+    /// for each open term it leaves to an authority per case
+    /// (`decided_per_case_by`). Each is marked asked. A finding that does
+    /// not fit the type of its term is an error naming it; `null` fits only
+    /// a term that is not required.
+    fn findings_for(
+        &mut self,
+        law: &ArticleBasedLaw,
+        article: &Article,
+    ) -> Result<BTreeMap<String, Value>> {
+        let mut applied = BTreeMap::new();
+        if self.findings.is_empty() {
+            return Ok(applied);
+        }
+        for term in article.get_open_terms().into_iter().flatten() {
+            if term.decided_per_case_by.is_none() {
+                continue;
+            }
+            let Some(value) = self.findings.get(&term.id) else {
+                continue;
+            };
+            if !finding_fits(term, value) {
+                return Err(EngineError::TypeMismatch {
+                    expected: format!(
+                        "a {} for the finding '{}' on {}#{}{}",
+                        format!("{:?}", term.term_type).to_lowercase(),
+                        term.id,
+                        law.id,
+                        article.number,
+                        if term.required {
+                            ", which is required"
+                        } else {
+                            ""
+                        }
+                    ),
+                    actual: value.to_string(),
+                });
+            }
+            self.findings_asked.insert(term.id.clone());
+            applied.insert(term.id.clone(), value.clone());
+        }
+        Ok(applied)
+    }
+
+    /// Every finding the caller gave was asked by an article in the
+    /// execution (RFC-050); otherwise an error naming those that were not.
+    fn check_findings_asked(&self) -> Result<()> {
+        let unasked: Vec<&str> = self
+            .findings
+            .keys()
+            .filter(|id| !self.findings_asked.contains(*id))
+            .map(String::as_str)
+            .collect();
+        if unasked.is_empty() {
+            return Ok(());
+        }
+        Err(EngineError::InvalidOperation(format!(
+            "no article in this execution leaves {} to an authority per case \
+             (decided_per_case_by), so the finding is asked by none",
+            unasked
+                .iter()
+                .map(|id| format!("'{id}'"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )))
     }
 
     /// Create a new resolution context with trace builder.
@@ -947,10 +1026,19 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                     .service
                     .calls_other_law(self.law, input, self.parameters)
                 {
+                    // A call to an article also reads the value that names
+                    // it and the objects it merges (RFC-050).
                     let keys = input
                         .source
                         .iter()
-                        .flat_map(|source| source.parameters.iter().flat_map(|p| p.values()))
+                        .flat_map(|source| {
+                            source
+                                .parameters
+                                .iter()
+                                .flat_map(|p| p.values())
+                                .chain(source.article.iter())
+                                .chain(source.parameters_from.iter().flatten())
+                        })
                         .filter_map(|reference| crate::demand::reference_base(reference));
                     for key in keys {
                         if self.owner(key).is_some() {
@@ -1028,6 +1116,76 @@ impl LazyInputs for LazyArticleInputs<'_, '_, '_> {
             None => Ok(None),
         })
     }
+}
+
+/// Named values, such as parameters or findings.
+type Values = BTreeMap<String, Value>;
+
+/// The parts of the decision value `value` that `named_by` holds, for
+/// `caller` to call anew (RFC-050): its `grondslag`, an article reference,
+/// and its `fields` and `findings`, two objects. Anything else is an error.
+fn decision_parts(
+    mut value: BTreeMap<String, Value>,
+    named_by: &str,
+    caller: &str,
+) -> Result<(String, Values, Values)> {
+    let shown = Value::Object(value.clone()).to_string();
+    let parts = (
+        value.remove("grondslag"),
+        value.remove("fields"),
+        value.remove("findings"),
+    );
+    match parts {
+        (
+            Some(Value::String(grondslag)),
+            Some(Value::Object(fields)),
+            Some(Value::Object(findings)),
+        ) if regelrecht_law_model::is_article_reference(&grondslag) => {
+            Ok((grondslag, fields, findings))
+        }
+        _ => Err(EngineError::TypeMismatch {
+            expected: format!(
+                "a decision value {{grondslag, fields, findings, outputs}} in {named_by} for \
+                 {caller}"
+            ),
+            actual: shown,
+        }),
+    }
+}
+
+/// Whether `value` fits the type of the open term `term`, as a finding for
+/// it (RFC-050): a boolean, a number for a number, a whole number for an
+/// amount (in eurocent), a string for a string, a `YYYY-MM-DD` date for a
+/// date, a list, or an object for an object or a decision.
+/// `null` fits only a term that is not required.
+fn finding_fits(term: &crate::article::OpenTerm, value: &Value) -> bool {
+    use crate::types::ParameterType as T;
+    match (term.term_type, value) {
+        (_, Value::Null) => !term.required,
+        (T::Date, Value::String(day)) => NaiveDate::parse_from_str(day, "%Y-%m-%d")
+            .is_ok_and(|d| d.format("%Y-%m-%d").to_string() == *day),
+        (T::Boolean, Value::Bool(_))
+        | (T::Number, Value::Int(_) | Value::Decimal(_))
+        | (T::Amount, Value::Int(_))
+        | (T::String, Value::String(_))
+        | (T::Array, Value::Array(_))
+        | (T::Object | T::Decision, Value::Object(_)) => true,
+        _ => false,
+    }
+}
+
+/// `value` as the value of `input` of `law`, unless it is a `null` the input
+/// is not declared to take (RFC-036); `origin` names where it came from.
+fn checked_call_value(
+    law: &ArticleBasedLaw,
+    input: &Input,
+    value: Value,
+    origin: String,
+) -> Result<Option<Value>> {
+    if value.is_null() && !input.is_nullable() {
+        return Err(null_for_non_nullable(law, input, origin));
+    }
+    Ok(Some(value))
 }
 
 /// The error for a `null` that reached `input` of `law` although the input is
@@ -1507,6 +1665,32 @@ impl LawExecutionService {
         parameters: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.evaluate_law_with_findings(
+            law_id,
+            output_names,
+            parameters,
+            BTreeMap::new(),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::evaluate_law`] with `findings`: what an authority found for
+    /// this case, keyed by the id of an open term it decides per case
+    /// (`decided_per_case_by`), apart from the parameters (RFC-050). A
+    /// finding applies to every article in the execution that leaves that
+    /// term to an authority per case, also one called anew through
+    /// `source.article`, where it wins over the decision value's own; an
+    /// implementation of the term still wins over it. A finding that no
+    /// article in the execution asks, or that does not fit the type of its
+    /// term, is an error that names it.
+    pub fn evaluate_law_with_findings(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
         if output_names.is_empty() {
             return Err(EngineError::InvalidOperation(
                 "output_names must not be empty".to_string(),
@@ -1514,8 +1698,10 @@ impl LawExecutionService {
         }
         let mut res_ctx = ResolutionContext::new(calculation_date)?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
+        res_ctx.findings = findings;
         let result =
             self.evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx)?;
+        res_ctx.check_findings_asked()?;
         // An output the law says does not arise is an answer, and the caller
         // asked for exactly this one. Returning `Ok` with it quietly missing
         // leaves a consumer to discover an absence it has no ground for; the
@@ -1556,6 +1742,44 @@ impl LawExecutionService {
         calculation_date: &str,
         trace_builder: TraceBuilder,
     ) -> Result<ArticleResult> {
+        self.evaluate_law_traced(
+            law_id,
+            output_names,
+            parameters,
+            BTreeMap::new(),
+            calculation_date,
+            trace_builder,
+        )
+    }
+
+    /// [`Self::evaluate_law_with_findings`] with tracing enabled.
+    pub fn evaluate_law_with_trace_and_findings(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
+        self.evaluate_law_traced(
+            law_id,
+            output_names,
+            parameters,
+            findings,
+            calculation_date,
+            TraceBuilder::new(),
+        )
+    }
+
+    fn evaluate_law_traced(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+        trace_builder: TraceBuilder,
+    ) -> Result<ArticleResult> {
         if output_names.is_empty() {
             return Err(EngineError::InvalidOperation(
                 "output_names must not be empty".to_string(),
@@ -1588,10 +1812,12 @@ impl LawExecutionService {
 
         let mut res_ctx = ResolutionContext::with_trace(calculation_date, Rc::clone(&trace))?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
+        res_ctx.findings = findings;
 
         // Execute: group outputs by article, evaluate each once, merge + filter
-        let result =
-            self.evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx);
+        let result = self
+            .evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx)
+            .and_then(|result| res_ctx.check_findings_asked().map(|()| result));
 
         // Drop res_ctx so it releases its Rc clone
         drop(res_ctx);
@@ -1957,6 +2183,30 @@ impl LawExecutionService {
         parameters: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.execute_stage_at_with_findings(
+            law_id,
+            article_number,
+            stage_name,
+            outputs,
+            parameters,
+            BTreeMap::new(),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::execute_stage_at`] with `findings`, as for
+    /// [`Self::evaluate_law_with_findings`] (RFC-050).
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_stage_at_with_findings(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        stage_name: &str,
+        outputs: Option<&[&str]>,
+        parameters: BTreeMap<String, Value>,
+        findings: BTreeMap<String, Value>,
+        calculation_date: &str,
+    ) -> Result<ArticleResult> {
         let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
         let (procedure, stage) = self.stage_of(law_id, article, stage_name)?;
         let missing: Vec<&str> = stage
@@ -1976,6 +2226,7 @@ impl LawExecutionService {
         let mut res_ctx = ResolutionContext::new(calculation_date)?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
         res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
+        res_ctx.findings = findings;
         self.note_declaration_versions(&mut res_ctx);
         let outputs = outputs
             .map(<[&str]>::to_vec)
@@ -1988,6 +2239,7 @@ impl LawExecutionService {
             &stage.name,
             &mut res_ctx,
         )?;
+        res_ctx.check_findings_asked()?;
         result
             .delegation_refusals
             .clone_from(&res_ctx.delegation_refusals);
@@ -3479,6 +3731,21 @@ impl LawExecutionService {
             None => Vec::new(),
         };
 
+        // The caller's findings on the terms this article leaves to an
+        // authority per case (RFC-050). Across laws one wins over what the
+        // call passes for the term, such as the decision value's own
+        // finding; at the top it may not also be a parameter.
+        let mut parameters = parameters;
+        for (id, finding) in res_ctx.findings_for(law, article)? {
+            if res_ctx.depth == 0 && parameters.contains_key(&id) {
+                return Err(EngineError::InvalidOperation(format!(
+                    "'{id}' of {}#{} is given both as a parameter and as a finding",
+                    law.id, article.number
+                )));
+            }
+            parameters.insert(id, finding);
+        }
+
         // A required parameter the caller passed as null or unknown names
         // nobody. At the top level (depth 0) that is the caller's error, not a
         // missing fact and not an absence to decide on (RFC-036); a cross-law
@@ -4178,9 +4445,9 @@ impl LawExecutionService {
         }
     }
 
-    /// Whether resolving `input` calls another law: it names a regulation and
-    /// no data source answers for it first, the order [`Self::resolve_input`]
-    /// follows.
+    /// Whether resolving `input` calls another law: it names a regulation or
+    /// an article (RFC-050) and no data source answers for it first, the
+    /// order [`Self::resolve_input`] follows.
     fn calls_other_law(
         &self,
         law: &ArticleBasedLaw,
@@ -4190,7 +4457,7 @@ impl LawExecutionService {
         input
             .source
             .as_ref()
-            .is_some_and(|source| source.regulation.is_some())
+            .is_some_and(|source| source.regulation.is_some() || source.article.is_some())
             && self
                 .data_registry
                 .resolve_for_law(&input.name, parameters, Some(&law.id))
@@ -4287,6 +4554,11 @@ impl LawExecutionService {
             return Err(EngineError::DataSourceError(message));
         }
 
+        // A call to an article, named in the law or in data (RFC-050).
+        if let Some(target) = &source.article {
+            return self.resolve_article_call(law, input, source, target, context, res_ctx);
+        }
+
         // For cross-law resolution, output defaults to input name
         let output_name = source.output.as_deref().unwrap_or(&input.name);
 
@@ -4306,16 +4578,12 @@ impl LawExecutionService {
             // not run because a required parameter named nobody. Either
             // way the value is an absence, and this input has to be
             // declared able to take one (RFC-036).
-            if resolution.value.is_null() && !input.is_nullable() {
-                let origin = if resolution.skipped {
-                    format!("skipped call to {regulation}")
-                } else {
-                    format!("{regulation}.{output_name}")
-                };
-                return Err(null_for_non_nullable(law, input, origin));
-            }
-
-            Ok(Some(resolution.value))
+            let origin = if resolution.skipped {
+                format!("skipped call to {regulation}")
+            } else {
+                format!("{regulation}.{output_name}")
+            };
+            checked_call_value(law, input, resolution.value, origin)
         } else if source.output.is_some() {
             // Internal reference (same-law) with output specified.
             // Resolve through the service layer so cross-law inputs of the
@@ -4678,6 +4946,411 @@ impl LawExecutionService {
         let declared: &[crate::article::Parameter] = target_article
             .map(|article| article.get_parameters())
             .unwrap_or(&[]);
+        if let Some(skipped) = Self::skip_call(
+            law_known,
+            declared,
+            &target_params,
+            regulation,
+            context.law_id(),
+            res_ctx,
+        )? {
+            return Ok(skipped);
+        }
+
+        // Enter cross-law resolution scope
+        res_ctx.enter(key.clone());
+        if !base_of.is_empty() {
+            res_ctx.trace_set_message(format!(
+                "Base value of {regulation}.{output}: the reading article's own override or \
+                 implementation is held back"
+            ));
+        }
+        let newly_held: Vec<&String> = base_of
+            .iter()
+            .filter(|held| res_ctx.held_back.insert((*held).clone()))
+            .collect();
+
+        // Execute the target article
+        let result = self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
+
+        // Leave scope (even on error, for correct cycle tracking)
+        for held in newly_held {
+            res_ctx.held_back.remove(held);
+        }
+        res_ctx.leave(&key);
+
+        let value = match result {
+            Ok(r) => match r.outputs.get(output).cloned() {
+                Some(v) => v,
+                None => {
+                    let error = missing_output_error(regulation, output, &r.output_provenance);
+                    res_ctx.trace_set_message(error.to_string());
+                    return Err(error);
+                }
+            },
+            Err(e) => {
+                res_ctx.trace_set_message(format!("Execution failed: {}", e));
+                return Err(e);
+            }
+        };
+
+        // Complete trace node
+        res_ctx.trace_set_result(value.clone());
+
+        Ok(ExternalResolution {
+            value,
+            skipped: false,
+        })
+    }
+
+    /// Resolve an input that calls the decision of an article (RFC-050).
+    /// `target` is an article reference, or a `$`-reference to a value that
+    /// holds one or that is a decision value. A decision value is called
+    /// anew (RFC-050): its `grondslag` with its own `fields` and `findings`.
+    ///
+    /// The parameters are those `fields`, then the objects of
+    /// `parameters_from`, merged in order, with `parameters` on top; a name
+    /// the article does not declare is dropped, and the trace names it,
+    /// unless it is the id of an open term the article leaves to an
+    /// authority per case (`decided_per_case_by`): that is the finding for
+    /// this case, passed as a caller at the top passes it, and kept in
+    /// `findings`, apart from the parameters in `fields`. A finding in the
+    /// decision value comes first, a name merged on top of it next, and a
+    /// finding the caller of the engine gave for this execution wins over
+    /// both (RFC-050). The article runs in the version in force on the calculation
+    /// date, at stage BESLUIT, as a cross-law call does, and computes the
+    /// outputs of its decision item. Without `output` the input is the
+    /// decision value `{grondslag, fields, findings, outputs}`; with it,
+    /// that one output.
+    ///
+    /// Refused at run time: a target that is no article reference, an
+    /// article not in force on the date, an article that takes no decision,
+    /// an `output` that is not one of that decision, and a merged value that
+    /// is no object. A null merged value adds nothing. A target that is null
+    /// or unknown, or a merged value that is unknown, is no call: the input
+    /// is that null or unknown, as for a call skipped for a parameter
+    /// (RFC-036). Cycles are caught on the keys a cross-law call uses, one
+    /// per output computed: the article runs once for all outputs of its
+    /// decision, so while it runs each of them counts as being resolved.
+    ///
+    /// The decision value holds the numbers as the article computed them,
+    /// as a `source.regulation` call does: nothing normalizes them.
+    fn resolve_article_call(
+        &self,
+        law: &ArticleBasedLaw,
+        input: &Input,
+        source: &crate::article::Source,
+        target: &str,
+        context: &RuleContext,
+        res_ctx: &mut ResolutionContext<'_>,
+    ) -> Result<Option<Value>> {
+        let output = source.output.as_deref();
+        let caller = format!("input '{}' of {}", input.name, law.id);
+
+        // Which article: written in the law, or read from a value. A
+        // decision value is called anew with its own fields and findings.
+        let named_by = target;
+        let mut passed = BTreeMap::new();
+        let mut given_findings = BTreeMap::new();
+        let target = match named_by.strip_prefix('$') {
+            None => named_by.to_string(),
+            Some(path) => match context.resolve(path)? {
+                Value::String(s) if regelrecht_law_model::is_article_reference(&s) => s,
+                Value::Object(value) => {
+                    let (grondslag, fields, findings) = decision_parts(value, named_by, &caller)?;
+                    passed = fields;
+                    given_findings = findings;
+                    grondslag
+                }
+                value @ (Value::Null | Value::Unknown(_)) => {
+                    let _guard = res_ctx.trace_guard(named_by, PathNodeType::CrossLawReference);
+                    res_ctx.trace_set_message(format!(
+                        "{named_by} is {}, so no article is called; input resolves to it",
+                        if value.is_null() { "null" } else { "unknown" }
+                    ));
+                    res_ctx.trace_set_result(value.clone());
+                    let origin = format!("skipped call to {named_by}");
+                    return checked_call_value(law, input, value, origin);
+                }
+                other => {
+                    return Err(EngineError::TypeMismatch {
+                        expected: format!(
+                            "an article reference or a decision value in {named_by} for {caller}"
+                        ),
+                        actual: other.to_string(),
+                    })
+                }
+            },
+        };
+        let (regulation, number) = target.split_once('#').ok_or_else(|| {
+            EngineError::ResolutionError(format!("{caller} calls '{target}', no article"))
+        })?;
+
+        let node = match output {
+            Some(output) => format!("{target}.{output}"),
+            None => target.clone(),
+        };
+        let _guard = res_ctx.trace_guard(node, PathNodeType::CrossLawReference);
+        let refuse = |res_ctx: &ResolutionContext<'_>, message: String| {
+            res_ctx.trace_set_message(message.clone());
+            Err(EngineError::ResolutionError(message))
+        };
+
+        // What is passed: the objects merged in order on the fields of a
+        // decision value, `parameters` on top.
+        for reference in source.parameters_from.iter().flatten() {
+            let path = reference.strip_prefix('$').ok_or_else(|| {
+                EngineError::InvalidOperation(format!(
+                    "{caller}: '{reference}' in parameters_from is no $-reference"
+                ))
+            })?;
+            match context.resolve(path)? {
+                Value::Object(fields) => passed.extend(fields),
+                Value::Null => {}
+                unknown @ Value::Unknown(_) => {
+                    res_ctx.trace_set_message(format!(
+                        "{reference} is unknown, so {target} is not executed; input is unknown \
+                         for the same reason"
+                    ));
+                    res_ctx.trace_set_result(unknown.clone());
+                    return Ok(Some(unknown));
+                }
+                other => {
+                    let error = EngineError::TypeMismatch {
+                        expected: format!(
+                            "an object in {reference}, merged into the parameters of {target} \
+                             for {caller}"
+                        ),
+                        actual: other.to_string(),
+                    };
+                    res_ctx.trace_set_message(error.to_string());
+                    return Err(error);
+                }
+            }
+        }
+        passed.extend(self.build_target_parameters(source.parameters.as_ref(), context)?);
+
+        // The article in force on the date, and its decision.
+        let (target_law, article) =
+            match self.article_in_force(regulation, number, res_ctx.calculation_date) {
+                Ok(found) => found,
+                // The typed error stays, so a caller can tell a law that is
+                // not loaded from one not in force; the trace says who called.
+                Err(e) => {
+                    res_ctx.trace_set_message(format!("{caller} calls {target}: {e}"));
+                    return Err(e);
+                }
+            };
+        let Some(decision) = article.get_decision() else {
+            return refuse(
+                res_ctx,
+                format!("{caller} calls the decision of {target}, which takes no decision"),
+            );
+        };
+        let decided = article.outputs_of(decision);
+        let computed: Vec<&str> = match output {
+            None => decided.clone(),
+            Some(output) if decided.contains(&output) => vec![output],
+            Some(output) => {
+                return refuse(
+                    res_ctx,
+                    format!(
+                    "{caller} takes '{output}' from {target}, which is no output of its decision"
+                ),
+                )
+            }
+        };
+
+        // Only what the article asks; the trace names what it does not. It
+        // asks its parameters, and the judgement for this case on an open
+        // term it leaves to an authority per case (`decided_per_case_by`),
+        // under the term's id, as a caller at the top gives one (RFC-047).
+        // An implementation of that term still wins over the judgement, as
+        // at the top (`resolve_open_term`).
+        let declared = Self::filter_parameters_for_article(article, &passed);
+        let mut findings: BTreeMap<String, Value> = article
+            .get_open_terms()
+            .into_iter()
+            .flatten()
+            .filter(|term| term.decided_per_case_by.is_some() && !declared.contains_key(&term.id))
+            .filter_map(|term| {
+                passed
+                    .get(&term.id)
+                    .or_else(|| given_findings.get(&term.id))
+                    .map(|v| (term.id.clone(), v.clone()))
+            })
+            .collect();
+        let from_caller = res_ctx.findings_for(target_law, article)?;
+        findings.extend(from_caller.clone());
+        let dropped: Vec<&str> = passed
+            .keys()
+            .chain(given_findings.keys())
+            .filter(|name| !declared.contains_key(*name) && !findings.contains_key(*name))
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        if !from_caller.is_empty() {
+            let _found = res_ctx.trace_guard(
+                format!("{target} (found for this case)"),
+                PathNodeType::Resolve,
+            );
+            res_ctx.trace_set_message(format!(
+                "{target}: the finding given for this execution on {} wins",
+                from_caller
+                    .keys()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        if !findings.is_empty() {
+            let _judged =
+                res_ctx.trace_guard(format!("{target} (judged per case)"), PathNodeType::Resolve);
+            res_ctx.trace_set_message(format!(
+                "{target} leaves {} to an authority per case, so passed as its finding",
+                findings
+                    .keys()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        if !dropped.is_empty() {
+            let _dropped =
+                res_ctx.trace_guard(format!("{target} (not asked)"), PathNodeType::Resolve);
+            res_ctx.trace_set_message(format!(
+                "{target} does not declare {}, so not passed",
+                dropped.join(", ")
+            ));
+        }
+        // The skip rule reads the declared parameters: a judgement that is
+        // null is a judgement, not a missing party, as at the top.
+        if let Some(skipped) = Self::skip_call(
+            true,
+            article.get_parameters(),
+            &declared,
+            &target,
+            &law.id,
+            res_ctx,
+        )? {
+            return checked_call_value(
+                law,
+                input,
+                skipped.value,
+                format!("skipped call to {target}"),
+            );
+        }
+        // The article runs with both; the decision value keeps them apart.
+        let mut passed_on = declared.clone();
+        passed_on.extend(findings.clone());
+
+        // The keys of a cross-law call, one per output computed, and one for
+        // the article itself, which also counts the depth.
+        let suffix = res_ctx.held_back_suffix();
+        let article_key = format!("article:{target}{suffix}");
+        let output_keys: Vec<String> = computed
+            .iter()
+            .map(|name| format!("{regulation}#{name}{suffix}"))
+            .collect();
+        if let Some(cycle) = std::iter::once(&article_key)
+            .chain(&output_keys)
+            .find(|key| res_ctx.is_visited(key))
+        {
+            let what = cycle.split('\0').next().unwrap_or(cycle);
+            let what = match what.strip_prefix("article:") {
+                Some(article) => format!("article {article}"),
+                None => what.to_string(),
+            };
+            let message =
+                format!("Circular cross-law reference detected: {what} is already being resolved");
+            res_ctx.trace_set_message(message.clone());
+            return Err(EngineError::CircularReference(message));
+        }
+        res_ctx.enter(article_key.clone());
+        for key in &output_keys {
+            res_ctx.visited.insert(key.clone());
+        }
+        // The article runs at one stage of its procedure, as when a cell
+        // takes the decision (`execute_stage_at`): the hooks on its
+        // submission wait for the stage named after it (RFC-047).
+        let outer_staged = res_ctx
+            .staged_article
+            .replace((target_law.id.clone(), article.number.clone()));
+        let result = if res_ctx.depth > config::MAX_CROSS_LAW_DEPTH {
+            Err(EngineError::CircularReference(format!(
+                "Cross-law resolution depth exceeded {} levels. Possible circular reference \
+                 involving {target}",
+                config::MAX_CROSS_LAW_DEPTH
+            )))
+        } else {
+            self.evaluate_article_with_service(
+                article,
+                target_law,
+                passed_on,
+                Some(&computed),
+                "BESLUIT",
+                res_ctx,
+            )
+        };
+        res_ctx.staged_article = outer_staged;
+        for key in &output_keys {
+            res_ctx.visited.remove(key);
+        }
+        res_ctx.leave(&article_key);
+        let result = match result {
+            Ok(result) => result,
+            Err(e) => {
+                res_ctx.trace_set_message(format!("Execution failed: {e}"));
+                return Err(e);
+            }
+        };
+
+        let pick = |name: &str| {
+            result.outputs.get(name).cloned().ok_or_else(|| {
+                let error = missing_output_error(regulation, name, &result.output_provenance);
+                res_ctx.trace_set_message(error.to_string());
+                error
+            })
+        };
+        let value = match output {
+            Some(output) => pick(output)?,
+            None => {
+                let outputs = computed
+                    .iter()
+                    .map(|name| Ok((name.to_string(), pick(name)?)))
+                    .collect::<Result<BTreeMap<_, _>>>()?;
+                Value::Object(BTreeMap::from([
+                    ("grondslag".to_string(), Value::String(target.clone())),
+                    ("fields".to_string(), Value::Object(declared)),
+                    ("findings".to_string(), Value::Object(findings)),
+                    ("outputs".to_string(), Value::Object(outputs)),
+                ]))
+            }
+        };
+        res_ctx.trace_set_result(value.clone());
+        checked_call_value(
+            law,
+            input,
+            value,
+            format!("{regulation}.{}", output.unwrap_or(number)),
+        )
+    }
+
+    /// The skip rule of a call to another law (RFC-036), on the parameters
+    /// `target_params` it would pass to a target that declares `declared`:
+    /// `Some` with the value the input takes when the call is not made, an
+    /// error for a null its declaration rules out, `None` to make the call.
+    /// `law_known` says whether the target's law is loaded; a call to a law
+    /// that is not keeps its own error. `caller` names the calling law.
+    fn skip_call(
+        law_known: bool,
+        declared: &[crate::article::Parameter],
+        target_params: &BTreeMap<String, Value>,
+        regulation: &str,
+        caller: &str,
+        res_ctx: &ResolutionContext<'_>,
+    ) -> Result<Option<ExternalResolution>> {
         let declared_parameter = |name: &str| declared.iter().find(|p| p.name == name);
         let is_required =
             |name: &str| declared_parameter(name).is_none_or(|p| p.required != Some(false));
@@ -4730,19 +5403,19 @@ impl LawExecutionService {
                     "{noun} {names} {verb} unknown, so {regulation} is not executed; input is unknown for the same reason",
                 ));
                 res_ctx.trace_set_result(unknown.clone());
-                return Ok(ExternalResolution {
+                return Ok(Some(ExternalResolution {
                     value: unknown,
                     skipped: true,
-                });
+                }));
             }
             res_ctx.trace_set_message(format!(
                 "{noun} {names} {verb} null, so {regulation} is not executed; input resolves to null",
             ));
             res_ctx.trace_set_result(Value::Null);
-            return Ok(ExternalResolution {
+            return Ok(Some(ExternalResolution {
                 value: Value::Null,
                 skipped: true,
-            });
+            }));
         }
 
         // An optional parameter passed as null is passed through (the target
@@ -4758,56 +5431,13 @@ impl LawExecutionService {
             let error = EngineError::NullForNonNullable {
                 law_id: regulation.to_string(),
                 field: parameter.name.clone(),
-                origin: format!("parameter from {}", context.law_id()),
+                origin: format!("parameter from {caller}"),
             };
             res_ctx.trace_set_message(format!("Failed to build parameters: {error}"));
             return Err(error);
         }
 
-        // Enter cross-law resolution scope
-        res_ctx.enter(key.clone());
-        if !base_of.is_empty() {
-            res_ctx.trace_set_message(format!(
-                "Base value of {regulation}.{output}: the reading article's own override or \
-                 implementation is held back"
-            ));
-        }
-        let newly_held: Vec<&String> = base_of
-            .iter()
-            .filter(|held| res_ctx.held_back.insert((*held).clone()))
-            .collect();
-
-        // Execute the target article
-        let result = self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
-
-        // Leave scope (even on error, for correct cycle tracking)
-        for held in newly_held {
-            res_ctx.held_back.remove(held);
-        }
-        res_ctx.leave(&key);
-
-        let value = match result {
-            Ok(r) => match r.outputs.get(output).cloned() {
-                Some(v) => v,
-                None => {
-                    let error = missing_output_error(regulation, output, &r.output_provenance);
-                    res_ctx.trace_set_message(error.to_string());
-                    return Err(error);
-                }
-            },
-            Err(e) => {
-                res_ctx.trace_set_message(format!("Execution failed: {}", e));
-                return Err(e);
-            }
-        };
-
-        // Complete trace node
-        res_ctx.trace_set_result(value.clone());
-
-        Ok(ExternalResolution {
-            value,
-            skipped: false,
-        })
+        Ok(None)
     }
 
     /// Filter execution parameters to only those declared by the target article.
@@ -5117,6 +5747,55 @@ impl ServiceProvider for LawExecutionService {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The decision's stages compute the data derived for it too, the
+    /// outputs it lists under `derived` (RFC-050); the stage of the
+    /// submission only what the submission lists.
+    #[test]
+    fn the_decision_stages_compute_the_derived_outputs() {
+        let law = ArticleBasedLaw::from_yaml_str(
+            r#"
+$id: afgeleid
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: t
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+            outputs: [compleet]
+          - type: BESCHIKKING
+            outputs: [verleend]
+            derived: [afgeleid]
+        output:
+          - name: compleet
+            type: boolean
+          - name: verleend
+            type: boolean
+          - name: afgeleid
+            type: boolean
+        actions:
+          - output: compleet
+            value: true
+          - output: verleend
+            value: true
+          - output: afgeleid
+            value: false
+"#,
+        )
+        .unwrap();
+        let article = &law.articles[0];
+        assert_eq!(
+            outputs_at_stage(article, "AANVRAAG"),
+            Some(vec!["compleet"])
+        );
+        assert_eq!(
+            outputs_at_stage(article, "BESLUIT"),
+            Some(vec!["verleend", "afgeleid"])
+        );
+    }
     use crate::article::LawLoad;
     use crate::types::MissingFact;
 

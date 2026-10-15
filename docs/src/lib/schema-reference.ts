@@ -1033,12 +1033,12 @@ export function legalBasisFields(): Field[] {
 }
 
 /**
- * A string definition (`articleReference`): no field table, only the
- * description and the pattern. It has its own section because a field links
- * to it (`established_by`).
+ * A string definition (`articleReference`, `variableReference`): no field
+ * table, only the description and the pattern. Each has its own section
+ * because a field links to it (`established_by`, `parameters_from`).
  */
 export function stringDefinition(
-  name: 'articleReference',
+  name: 'articleReference' | 'variableReference',
 ): { description: string; pattern: string } {
   const node = defs[name] ?? {};
   return {
@@ -1116,6 +1116,7 @@ export function referenceHeadings(): { depth: number; slug: string; text: string
   }
   h(3, 'legal-basis', 'Legal basis');
   h(3, 'article-reference', 'Article reference');
+  h(3, 'variable-reference', 'Variable reference');
 
   // Everything otherSubStructures() renders, at the depth the component uses.
   // Listed from the same function rather than by hand: the earlier version

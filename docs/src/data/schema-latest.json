@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.3/schema/v0.8.3/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.8.3",
+  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.4",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -718,7 +718,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023).",
+          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, findings, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares, its findings per case (the open terms it leaves to an authority per case, `decided_per_case_by`, under their ids), and the outputs of its decision item (RFC-050). A value built from a recorded decision may also carry `taken_on`: the article that established the submission the decision was taken on.",
           "enum": [
             "string",
             "number",
@@ -726,7 +726,8 @@
             "amount",
             "object",
             "array",
-            "date"
+            "date",
+            "decision"
           ]
         },
         "nullable": {
@@ -884,6 +885,25 @@
                 "decisions": {
                   "$ref": "#/definitions/articleReference",
                   "description": "The decisions taken under this article, `<regulation>#<article>`: a list with one row per decision, holding the inputs and outputs of the decision item of that article. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the decisions in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters` or `endpoint`. Without a source that answers it the input is an error, never an empty list."
+                },
+                "article": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/definitions/articleReference"
+                    },
+                    {
+                      "$ref": "#/definitions/variableReference"
+                    }
+                  ],
+                  "description": "The article whose decision this input takes: `<regulation>#<article>`, or a `$`-reference to a value that holds one, such as the `grondslag` of a `decision` value, or that is a `decision` value itself. A `decision` value is called anew: the engine runs its `grondslag` with its own `fields` as parameters and its own `findings`. Without `output` the engine runs the decision item of that article at stage BESLUIT, and the input is a `decision` value `{grondslag, fields, findings, outputs}`. With `output`, the input is that one output of the decision item. The article is the one in force on the calculation date; one that is not in force, or that takes no decision, is an error at run time. The parameters are the `fields` of a `decision` value, then those of `parameters_from`, with `parameters` on top; a name the article does not declare is dropped, and the trace names it, unless it is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that is the finding for this case, kept under `findings`, not `fields`. A finding the caller of the engine gives for the execution, apart from the parameters, wins over one the call passes, and an implementation of the term still wins over both (RFC-047). It stands apart from `regulation`, `decisions` and `endpoint`."
+                },
+                "parameters_from": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/definitions/variableReference"
+                  },
+                  "description": "Values whose fields are passed to the `article` as parameters, merged in order: a later one wins over an earlier one, and `parameters` wins over all of them. Each is an object, such as the `fields` or `findings` of a `decision` value, or null, which adds nothing; any other value is an error at run time. Only with `article`."
                 }
               },
               "additionalProperties": false,
@@ -913,6 +933,32 @@
                       }
                     ]
                   }
+                },
+                "article": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "regulation"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "decisions"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "endpoint"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "parameters_from": {
+                  "required": [
+                    "article"
+                  ]
                 }
               },
               "examples": [
@@ -925,6 +971,23 @@
                 },
                 {
                   "decisions": "leerplichtwet_1969#13a"
+                },
+                {
+                  "article": "$besluit"
+                },
+                {
+                  "article": "$besluit.grondslag",
+                  "parameters_from": [
+                    "$besluit.fields",
+                    "$besluit.findings"
+                  ]
+                },
+                {
+                  "article": "wet_fictief#3",
+                  "output": "verlof_verleend",
+                  "parameters": {
+                    "bsn": "$bsn"
+                  }
                 }
               ]
             }
@@ -2572,7 +2635,16 @@
           },
           "minItems": 1,
           "uniqueItems": true,
-          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. A submission without it yields none; the decision without it yields every output that no other item lists. Every name must be an output of the article, and every output belongs to exactly one item; the loader checks both. In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision (RFC-047)."
+          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. A submission without it yields none; the decision without it yields every output that no other item lists and that it does not list under `derived`. Every name must be an output of the article; the loader checks it. Every output belongs to exactly one item, under `outputs` or, for data derived for the decision, under `derived` (RFC-047, RFC-050). In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision with the data derived for it."
+        },
+        "derived": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Only on a decision: the names of this article's outputs that are data derived for the decision (RFC-050), such as an intermediate result the decision is recorded with. They are computed at the decision's stages and recorded with it, but are none of its outputs, so a call to the article (`source.article`) leaves them out of the decision value. Derived data is listed, never inferred: an output that no item lists under `outputs` or `derived` is refused, so a forgotten or misspelt output fails instead of turning into derived data. Every name must be an output of the article and belongs to no other item; the loader checks both."
         },
         "decision_type": {
           "type": "string",
@@ -2647,6 +2719,11 @@
                 {
                   "required": [
                     "procedure_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "derived"
                   ]
                 }
               ]

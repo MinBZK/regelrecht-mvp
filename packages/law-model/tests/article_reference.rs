@@ -3,7 +3,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use regelrecht_law_model::{is_article_reference, ArticleBasedLaw};
+use regelrecht_law_model::{is_article_reference, is_variable_reference, ArticleBasedLaw};
 
 fn law_established_by(reference: &str) -> Result<ArticleBasedLaw, serde_yaml_ng::Error> {
     serde_yaml_ng::from_str(&format!(
@@ -91,4 +91,18 @@ fn the_moment_cites_its_provision_as_a_legal_basis_object() {
     assert_eq!(moment.legal_basis.article.as_deref(), Some("4:13"));
     assert_eq!(moment.legal_basis.paragraph.as_deref(), Some("1"));
     assert!(law_with_moment("'algemene_wet_bestuursrecht#4:13 lid 1'").is_err());
+}
+
+/// `source.article` takes an article reference or a variable reference
+/// (`variableReference`, schema v0.8.4), `parameters_from` only the latter.
+#[test]
+fn a_variable_reference_is_a_dollar_and_a_dotted_name() {
+    for ok in ["$besluit", "$besluit.grondslag", "$_x.y_2", "$a.b.c"] {
+        assert!(is_variable_reference(ok), "{ok}");
+    }
+    for bad in [
+        "$", "besluit", "$1x", "$a..b", "$a.", "$a b", "$a.1", "$a-b",
+    ] {
+        assert!(!is_variable_reference(bad), "{bad}");
+    }
 }

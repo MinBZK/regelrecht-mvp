@@ -44,7 +44,10 @@
 //! - **N5** An input that takes another output must be nullable when that
 //!   output is, and when the call that fetches it is skipped for a required
 //!   parameter that may be null and that the target does not declare
-//!   nullable. An article that implements a required open term without a
+//!   nullable. For a call to an article (RFC-050), whose required
+//!   parameters are known only at run time, any reference under
+//!   `parameters` that may be null, and any `parameters_from`, counts so.
+//!   An article that implements a required open term without a
 //!   default may not declare its output for the term nullable, unless the
 //!   law leaves the term to an authority per case (`decided_per_case_by`).
 //! - **T1** Arithmetic and ordering operands are numbers (or amounts); `ADD`
@@ -54,6 +57,15 @@
 //!   one type here, and so are `date` and `string`, since dates arrive as ISO
 //!   strings.
 //! - **T4** A literal assigned to an output has the output's type.
+//! - **T5** A call to an article (`source.article`, RFC-050) without
+//!   `output` yields a decision value, so the input is of type `decision`.
+//!   What it merges (`parameters_from`) is an object, and a `$`-reference
+//!   that names the article is a string, or a decision value that is
+//!   called anew (RFC-050). A fixed target the checker can
+//!   consult takes a decision, and an `output` is one of that decision; a
+//!   target of this law also exists. A target taken from a value is known
+//!   only at run time: the checker then knows the input is a decision value
+//!   and claims nothing about its fields (`$x.outputs.y`), as for rows.
 
 use crate::article::{
     foreach_binding, Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, CombineOp,
@@ -76,6 +88,7 @@ pub enum Rule {
     T2,
     T3,
     T4,
+    T5,
 }
 
 impl Rule {
@@ -91,6 +104,7 @@ impl Rule {
             Rule::T2 => "T2",
             Rule::T3 => "T3",
             Rule::T4 => "T4",
+            Rule::T5 => "T5",
         }
     }
 }
@@ -155,6 +169,9 @@ enum Ty {
     Date,
     Array,
     Object,
+    /// A decision value `{grondslag, fields, findings, outputs}` (RFC-050): an object
+    /// whose fields the checker does not type, like any object.
+    Decision,
 }
 
 impl Ty {
@@ -167,6 +184,7 @@ impl Ty {
             ParameterType::Date => Ty::Date,
             ParameterType::Array => Ty::Array,
             ParameterType::Object => Ty::Object,
+            ParameterType::Decision => Ty::Decision,
         }
     }
 
@@ -189,14 +207,18 @@ impl Ty {
     }
 
     /// Whether two known types may meet in a comparison or an assignment:
-    /// `number` and `amount` are both numbers, and a `date` arrives as an ISO
-    /// string from data and from `$referencedate.iso`.
+    /// `number` and `amount` are both numbers, a `date` arrives as an ISO
+    /// string from data and from `$referencedate.iso`, and a `decision` is an
+    /// object at run time.
     fn compatible(self, other: Ty) -> bool {
         self == other
             || (self.is_numeric() && other.is_numeric())
             || matches!(
                 (self, other),
-                (Ty::Date, Ty::String) | (Ty::String, Ty::Date)
+                (Ty::Date, Ty::String)
+                    | (Ty::String, Ty::Date)
+                    | (Ty::Decision, Ty::Object)
+                    | (Ty::Object, Ty::Decision)
             )
     }
 
@@ -209,6 +231,7 @@ impl Ty {
             Ty::Date => "date",
             Ty::Array => "array",
             Ty::Object => "object",
+            Ty::Decision => "decision",
         }
     }
 }
@@ -541,12 +564,18 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
         }
     }
 
-    /// N5: an input that takes another article's output.
+    /// N5: an input that takes another article's output. T5 for an input
+    /// that calls an article.
     fn check_input_sources(&mut self) {
         for input in self.article.get_inputs() {
             let Some(source) = &input.source else {
                 continue;
             };
+            if let Some(target) = &source.article {
+                self.location = format!("input '{}'", input.name);
+                self.check_article_call(input, source, target);
+                continue;
+            }
             if input.is_nullable() {
                 continue;
             }
@@ -578,6 +607,183 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                 );
             }
             self.check_skip_on_null_parameter(source, target_article, &input.name, &target_law.id);
+        }
+    }
+
+    /// T5 and N5: an input that calls the decision of an
+    /// article (RFC-050).
+    fn check_article_call(&mut self, input: &crate::article::Input, source: &Source, target: &str) {
+        let name = &input.name;
+        if source.output.is_none() && input.input_type != ParameterType::Decision {
+            self.report(
+                Rule::T5,
+                format!(
+                    "'{name}' takes the decision of {target}, a decision value; declare it type \
+                     decision, or name one output of the decision with `output`"
+                ),
+            );
+        }
+        let declared_root = |checker: &Self, reference: &str| -> Option<Ty> {
+            let (path, root) = reference_path(reference);
+            (path == root)
+                .then(|| checker.symbols.get(root).and_then(|s| s.ty))
+                .flatten()
+        };
+        for reference in source.parameters_from.iter().flatten() {
+            if let Some(ty) = declared_root(self, reference) {
+                if ty != Ty::Object {
+                    let hint = if ty == Ty::Decision {
+                        format!(" (the parameters of a decision are {reference}.fields)")
+                    } else {
+                        String::new()
+                    };
+                    self.report(
+                        Rule::T5,
+                        format!(
+                            "'{name}' merges {reference} into the parameters of {target}, but \
+                             it is declared {}; parameters_from takes objects{hint}",
+                            ty.name()
+                        ),
+                    );
+                }
+            }
+        }
+        if !input.is_nullable() {
+            self.check_skip_on_null_article_parameters(source, name, target);
+        }
+        if is_reference(target) {
+            // A null target is no call, and the input is null (RFC-036); a
+            // path is null when its record is.
+            let (_, root) = reference_path(target);
+            if !input.is_nullable() && self.symbols.get(root).is_some_and(|s| s.nullable) {
+                self.report(
+                    Rule::N5,
+                    format!(
+                        "'{name}' is null when '{root}' is null, because no article is then \
+                         called; declare '{name}' nullable or make '{root}' non-nullable"
+                    ),
+                );
+            }
+            match declared_root(self, target) {
+                // A decision value is called anew with its own fields and
+                // findings (RFC-050); a required field it holds as null
+                // skips the call, as `parameters_from` may.
+                Some(Ty::Decision) if !input.is_nullable() => self.report(
+                    Rule::N5,
+                    format!(
+                        "'{name}' calls the decision {target} anew, whose fields may leave a \
+                         required parameter null, and the article is then not called; declare \
+                         '{name}' nullable"
+                    ),
+                ),
+                Some(Ty::String | Ty::Decision) | None => {}
+                Some(ty) => self.report(
+                    Rule::T5,
+                    format!(
+                        "'{name}' calls the article named by {target}, which is declared {}; \
+                         an article is named by a string `<regulation>#<article>`, or called \
+                         anew from a decision value",
+                        ty.name()
+                    ),
+                ),
+            }
+            return;
+        }
+        let Some((regulation, number)) = target.split_once('#') else {
+            return;
+        };
+        let Some(target_law) = self.law_named(regulation) else {
+            return;
+        };
+        let Some(target_article) = target_law.find_article_by_number(number) else {
+            // Another law may number this article in another version than
+            // the one at hand; only this law's own numbering is certain.
+            if regulation == self.law.id {
+                self.report(
+                    Rule::T5,
+                    format!("'{name}' calls {target}, and this law has no article {number}"),
+                );
+            }
+            return;
+        };
+        // The decision is checked in the version at hand, as N5 checks the
+        // output of a `regulation` reference.
+        let Some(decision) = target_article.get_decision() else {
+            self.report(
+                Rule::T5,
+                format!("'{name}' calls the decision of {target}, which takes no decision"),
+            );
+            return;
+        };
+        if let Some(output) = &source.output {
+            if !target_article
+                .outputs_of(decision)
+                .contains(&output.as_str())
+            {
+                self.report(
+                    Rule::T5,
+                    format!("'{name}' takes '{output}' from {target}, which is no output of its decision"),
+                );
+                return;
+            }
+            if !input.is_nullable()
+                && target_article
+                    .find_output(output)
+                    .is_some_and(|o| o.is_nullable())
+            {
+                self.report(
+                    Rule::N5,
+                    format!(
+                        "'{name}' takes '{output}' from {target}, which may be null; declare it \
+                         nullable or guard in the source"
+                    ),
+                );
+            }
+        }
+    }
+
+    /// N5 for the skip rule (RFC-036) on a call to an article: a required
+    /// parameter that is null skips the call, and the input is null. Which
+    /// parameters the article requires is known only at run time (the target
+    /// may be named by a value, and is the version in force on the date), so
+    /// any nullable reference under `parameters` may skip it, and so may
+    /// `parameters_from`, whose objects may lack or null any field.
+    fn check_skip_on_null_article_parameters(&mut self, source: &Source, name: &str, target: &str) {
+        for (parameter, argument) in source.parameters.iter().flatten() {
+            if !is_reference(argument) {
+                continue;
+            }
+            let (path, root) = reference_path(argument);
+            if !self.symbols.get(root).is_some_and(|s| s.nullable) {
+                continue;
+            }
+            let argument = if path == root {
+                String::new()
+            } else {
+                format!(" (and so is '{path}')")
+            };
+            self.report(
+                Rule::N5,
+                format!(
+                    "'{name}' is null when '{root}' is null{argument}, because {target} is then \
+                     not called if its parameter '{parameter}' is required; declare '{name}' \
+                     nullable or make '{root}' non-nullable"
+                ),
+            );
+        }
+        if source
+            .parameters_from
+            .as_ref()
+            .is_some_and(|f| !f.is_empty())
+        {
+            self.report(
+                Rule::N5,
+                format!(
+                    "'{name}' takes its parameters for {target} from parameters_from, which may \
+                     leave a required parameter null, and {target} is then not called; declare \
+                     '{name}' nullable"
+                ),
+            );
         }
     }
 

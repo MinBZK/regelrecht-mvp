@@ -526,6 +526,9 @@ pub(crate) fn values_equal(a: &Value, b: &Value) -> bool {
 ///   This keeps EQUALS consistent with the ordering operators, which also accept
 ///   both date forms via `parse_date`. Two strings or two objects keep structural
 ///   equality, so objects that merely share an `iso` field are not equal.
+/// - Two lists or two records compare structurally without numeric coercion
+///   inside: an integer against a decimal of the same value is an error
+///   ([`compound_equal`]).
 /// - Other non-numeric types use structural equality
 /// - When `negate` is true, the result is inverted (NOT_EQUALS).
 fn execute_equality<R: ValueResolver>(
@@ -552,7 +555,12 @@ fn execute_equality<R: ValueResolver>(
         return Ok(unknown);
     }
 
-    let mut equal = values_equal(&subject_val, &value_val);
+    let mut equal = match (&subject_val, &value_val) {
+        (Value::Object(_), Value::Object(_)) | (Value::Array(_), Value::Array(_)) => {
+            compound_equal(&subject_val, &value_val, op_name, "")?
+        }
+        _ => values_equal(&subject_val, &value_val),
+    };
 
     // Date-aware fallback, scoped to the mixed form (a string against an `{iso}`
     // object): the one date pairing structural equality can never match. Two
@@ -570,6 +578,47 @@ fn execute_equality<R: ValueResolver>(
     }
 
     Ok(Value::Bool(if negate { !equal } else { equal }))
+}
+
+/// `EQUALS` on two lists or two records: structural, with the numbers inside
+/// compared as written. A number that is an integer on one side and a decimal
+/// of the same value on the other (`12` against `12.0`) is an error, not an
+/// answer: whether the two are alike is a question about where the values
+/// came from, and answering it silently either way would hide that. The
+/// whole structure is walked, so the error does not depend on what differs
+/// first. A bare number keeps its coercion ([`values_equal`]). `path` names
+/// the place inside the operands, for the message.
+fn compound_equal(a: &Value, b: &Value, op_name: &str, path: &str) -> Result<bool> {
+    match (a, b) {
+        (Value::Object(left), Value::Object(right)) => {
+            let mut equal = left.len() == right.len();
+            for (key, l) in left {
+                match right.get(key) {
+                    Some(r) => equal &= compound_equal(l, r, op_name, &format!("{path}.{key}"))?,
+                    None => equal = false,
+                }
+            }
+            Ok(equal)
+        }
+        (Value::Array(left), Value::Array(right)) => {
+            let mut equal = left.len() == right.len();
+            for (index, (l, r)) in left.iter().zip(right).enumerate() {
+                equal &= compound_equal(l, r, op_name, &format!("{path}[{index}]"))?;
+            }
+            Ok(equal)
+        }
+        (Value::Int(i), Value::Decimal(d)) | (Value::Decimal(d), Value::Int(i))
+            if Decimal::from(*i) == *d =>
+        {
+            Err(EngineError::TypeMismatch {
+                expected: format!(
+                    "numbers written alike inside the lists or records {op_name} compares"
+                ),
+                actual: format!("{a} against {b} at {path}"),
+            })
+        }
+        _ => Ok(a == b),
+    }
 }
 
 /// Whether the pair is the mixed date form: one string against one

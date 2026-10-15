@@ -132,6 +132,9 @@ pub struct TypeSpec {
 /// - Same-law reference: `output: "field_name"` (resolved within the same law)
 /// - The decisions taken under an article: `decisions: "<regulation>#<article>"`
 ///   (schema v0.8.2, RFC-048), only in a `REDUCTIE`
+/// - The decision of an article: `article: "<regulation>#<article>"` or a
+///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
+///   RFC-050)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
     /// Simple cross-law reference (law ID)
@@ -162,6 +165,27 @@ pub struct Source {
         deserialize_with = "optional_article_reference"
     )]
     pub decisions: Option<String>,
+    /// The article whose decision this input takes (schema v0.8.4, RFC-050):
+    /// an article reference `<regulation>#<article>`, or a `$`-reference to
+    /// a value that holds one, such as the `grondslag` of a `decision`
+    /// value. Without `output` the input is the decision value of that
+    /// article; with `output`, that one output of its decision item. Stands
+    /// apart from `regulation`, `decisions` and `endpoint`.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_article_target"
+    )]
+    pub article: Option<String>,
+    /// `$`-references to objects whose fields are passed to `article` as
+    /// parameters, merged in order; `parameters` goes on top (schema v0.8.4,
+    /// RFC-050). Only with `article`.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_variable_references"
+    )]
+    pub parameters_from: Option<Vec<String>>,
 }
 
 /// Parameter definition in execution spec
@@ -344,9 +368,16 @@ pub struct ProducedItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parameters: Option<Vec<String>>,
     /// The article's outputs this item yields. Without it, a submission
-    /// yields none and the decision every output no other item lists.
+    /// yields none and the decision every output no other item lists or
+    /// derives.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Vec<String>>,
+    /// For a decision: the article's outputs that are data derived for it
+    /// (schema v0.8.4, RFC-050), computed at the decision's stages and
+    /// recorded with it, but not among its outputs, so a call to the
+    /// article leaves them out of the decision value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub derived: Option<Vec<String>>,
     /// For a submission: the article whose decision it asks for,
     /// `<regulation>#<article>`, also when that is this article (Awb 1:3
     /// lid 3, 4:2 lid 1 onder c). The target is the decision item of that
@@ -433,6 +464,15 @@ impl<'a> Produced<'a> {
         match self {
             Self::Object(_) => None,
             Self::Item(i) => i.outputs.as_deref(),
+        }
+    }
+
+    /// The outputs the item lists as data derived for it (schema v0.8.4,
+    /// RFC-050); `None` when it lists none, and always for the object form.
+    pub fn listed_derived(self) -> Option<&'a [String]> {
+        match self {
+            Self::Object(_) => None,
+            Self::Item(i) => i.derived.as_deref(),
         }
     }
 
@@ -1162,6 +1202,60 @@ where
         .transpose()
 }
 
+/// Whether `s` is a variable reference of the schema (`variableReference`):
+/// `$` and a name, optionally followed by `.field` steps (schema pattern
+/// `^\$[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$`).
+pub fn is_variable_reference(s: &str) -> bool {
+    let Some(path) = s.strip_prefix('$') else {
+        return false;
+    };
+    path.split('.').all(|step| {
+        step.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+            && step.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    })
+}
+
+/// Deserialize an optional `source.article`: an [`is_article_reference`] or
+/// an [`is_variable_reference`].
+fn optional_article_target<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| {
+            if is_article_reference(&s) || is_variable_reference(&s) {
+                Ok(s)
+            } else {
+                Err(serde::de::Error::custom(format!(
+                    "'{s}' is neither <regulation>#<article> without a paragraph nor a \
+                     $-reference"
+                )))
+            }
+        })
+        .transpose()
+}
+
+/// Deserialize an optional, non-empty list of [`is_variable_reference`]s.
+fn optional_variable_references<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let Some(references) = Option::<Vec<String>>::deserialize(deserializer)? else {
+        return Ok(None);
+    };
+    if references.is_empty() {
+        return Err(serde::de::Error::custom(
+            "parameters_from lists at least one $-reference",
+        ));
+    }
+    if let Some(bad) = references.iter().find(|r| !is_variable_reference(r)) {
+        return Err(serde::de::Error::custom(format!(
+            "'{bad}' in parameters_from is no $-reference"
+        )));
+    }
+    Ok(Some(references))
+}
+
 /// Declaration that an article fires as a hook on matching lifecycle events (RFC-007)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HookDeclaration {
@@ -1695,8 +1789,9 @@ impl Article {
     /// The names of the outputs that belong to `item`, one of
     /// [`Self::get_produced`]: those it lists under `outputs`. An item that
     /// lists none yields nothing if it is a submission, and if it is the
-    /// decision every output of the article that no other item lists. For
-    /// the object form that is every output.
+    /// decision every output of the article that no other item lists and
+    /// that it does not list as derived. For the object form that is every
+    /// output.
     pub fn outputs_of<'a>(&'a self, item: Produced<'a>) -> Vec<&'a str> {
         if let Some(listed) = item.listed_outputs() {
             return listed.iter().map(String::as_str).collect();
@@ -1709,13 +1804,24 @@ impl Article {
             .iter()
             .map(|o| o.name.as_str())
             .filter(|name| {
-                !produced.iter().any(|other| {
-                    !other.same_as(item)
-                        && other
-                            .listed_outputs()
-                            .is_some_and(|l| l.iter().any(|n| n == name))
-                })
+                let in_list = |l: &[String]| l.iter().any(|n| n == name);
+                !item.listed_derived().is_some_and(in_list)
+                    && !produced.iter().any(|other| {
+                        !other.same_as(item) && other.listed_outputs().is_some_and(in_list)
+                    })
             })
+            .collect()
+    }
+
+    /// The outputs the decision lists as data derived for it, `derived`
+    /// (schema v0.8.4, RFC-050): computed at the decision's stages and
+    /// recorded with it, but not among its outputs.
+    pub fn derived_outputs(&self) -> Vec<&str> {
+        self.get_decision()
+            .and_then(Produced::listed_derived)
+            .into_iter()
+            .flatten()
+            .map(String::as_str)
             .collect()
     }
 
