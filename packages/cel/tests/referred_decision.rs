@@ -488,6 +488,52 @@ fn without_cause_one_decision_and_the_contested_one_does_not_count_itself() {
     assert_eq!(cell.grams().len(), 4);
 }
 
+/// Without an output of type `decision` the deciding article replaces no
+/// decision, so the decision it refers to counts in the reductions as any
+/// other: the grant counts against the person, and taken again it refuses.
+#[test]
+fn a_decision_that_replaces_nothing_reads_the_decision_it_refers_to() {
+    let only_cause = HEROVERWEGING
+        .replace(
+            "outputs: [aanleiding, nieuw_besluit]",
+            "outputs: [aanleiding]",
+        )
+        .replace(
+            "          - {name: nieuw_besluit, type: decision, nullable: true}\n",
+            "",
+        );
+    let only_cause = only_cause
+        .split_once("          - output: nieuw_besluit")
+        .unwrap()
+        .0
+        .to_string();
+    assert!(!only_cause.contains("nieuw_besluit"));
+    let mut service = service_with(&only_cause);
+    let (mut cell, _dir) = cell();
+    let application = apply(&mut cell, &service, 2, "2026-03-02");
+    let granted = decide(
+        &mut cell,
+        &mut service,
+        VERLOF_LAW,
+        &application.id,
+        "2026-03-03",
+    )
+    .unwrap()
+    .remove(0);
+    assert_eq!(granted.outputs["verleend"], json!(true));
+    let bezwaar = object_to(&mut cell, &service, &granted.id, json!({}), "2026-03-10").unwrap();
+    let decided = decide(
+        &mut cell,
+        &mut service,
+        BEZWAAR_LAW,
+        &bezwaar.id,
+        "2026-03-11",
+    )
+    .unwrap();
+    assert_eq!(decided.len(), 1);
+    assert_eq!(decided[0].outputs["aanleiding"], json!(true));
+}
+
 /// Revoke and replace: the objector's new data give another outcome, the
 /// decision on the objection gives it as a decision, and the cell records
 /// that decision too: under its own article, referring to the objection,

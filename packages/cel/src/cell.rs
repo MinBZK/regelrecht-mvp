@@ -170,8 +170,9 @@ impl Cell {
     /// its field of type `decision`, which holds that decision's id, and
     /// every other field that decision holds by name or, where an override
     /// voided it, gives (such as the end of a period that a hook on the
-    /// decision computes). Returns what the cell fills, and the names the submitter may not
-    /// supply: these, and the `decision` field also without `refers_to`.
+    /// decision computes). Returns what the cell fills, and the names the
+    /// submitter may not supply: these, and the `decision` field also without
+    /// `refers_to`.
     pub(crate) fn referred(
         &self,
         service: &LawExecutionService,
@@ -378,8 +379,10 @@ impl Cell {
     /// decision on or after the application.
     ///
     /// A submission that refers to a decision D (`refers_to`):
-    /// - the reductions read the chronicle without D, so D does not count
-    ///   against itself;
+    /// - when the deciding article has an output of type `decision`, so may
+    ///   take a decision that replaces D, the reductions read the chronicle
+    ///   without D, so D does not count against itself; otherwise they read
+    ///   D as any other decision;
     /// - a field of type `decision` reaches the engine as D's decision value
     ///   ([`decision_value`]); the chronolexogram keeps D's id;
     /// - the fields of that value that the cell's reductions answer for D's
@@ -409,7 +412,11 @@ impl Cell {
             )));
         }
         check_decision_supplied(&shape, supplied)?;
-        let except = applied.refers_to.as_deref();
+        let replaces = decision_outputs(service, &shape, on);
+        let except = applied
+            .refers_to
+            .as_deref()
+            .filter(|_| !replaces.is_empty());
         let decisions = self.decision_values(service, &shape, &applied, except, on)?;
         let (mut fields, mut outputs) =
             self.take(service, &shape, supplied, except, on, |bound| {
@@ -421,7 +428,7 @@ impl Cell {
         // Its id first, so the ids follow the order in the chronicle.
         let id = uuid::Uuid::now_v7().to_string();
         let mut taken = Vec::new();
-        for name in decision_outputs(service, &shape, on) {
+        for name in replaces {
             let Some(value) = outputs.get(&name).filter(|v| !v.is_null()) else {
                 continue;
             };
@@ -538,6 +545,10 @@ impl Cell {
     /// chronolexogram that refers to the submission `submission`. Not yet
     /// appended.
     ///
+    /// Its `refers_to` is the submission it was taken on, not a submission of
+    /// its own article: a new decision on an objection refers to the
+    /// objection, as the decision on that objection does.
+    ///
     /// The cell runs the stages of that article again with the value's
     /// `fields`, and fills a date a stage requires with `on`, so a hook at
     /// a later stage gives the new decision its own outcome (such as its own
@@ -581,8 +592,11 @@ impl Cell {
         let mut fields = Values::new();
         for input in &shape.inputs {
             let name = &input.field.name;
+            // A policy value of the day of the old decision is no input:
+            // the stages read the policy in force on `on`, as for `decide`.
             let value = match input.source {
                 Source::Cell => Some(serde_json::Value::String(on.to_string())),
+                Source::Policy => None,
                 _ => given.get(name).cloned(),
             };
             if let Some(value) = value {
@@ -594,6 +608,18 @@ impl Cell {
             .map(|(k, v)| (k.clone(), Value::from(v.clone())))
             .collect();
         let outputs = run_stages(service, &shape, parameters, on, &mut fields)?;
+        // A decision it takes in turn would be a value in its outputs, not
+        // an id: the cell records one level.
+        if let Some(nested) = decision_outputs(service, &shape, on)
+            .into_iter()
+            .find(|name| outputs.get(name).is_some_and(|v| !v.is_null()))
+        {
+            return Err(setup(format!(
+                "'{output}' of the decision of {} is a decision under {grondslag} that takes \
+                 a decision in turn ('{nested}'); the cell records one level",
+                deciding.grondslag()
+            )));
+        }
         // As a chronicle stores them: read back from JSON, as the engine
         // builds a decision value.
         let stored = |v: Option<&serde_json::Value>| v.cloned().map(Value::from);
