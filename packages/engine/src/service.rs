@@ -4914,11 +4914,11 @@ impl LawExecutionService {
     /// dropped, and the trace names it, unless it is the id of an open term
     /// the article leaves to an authority per case (`decided_per_case_by`):
     /// that is the judgement for this case, passed as a caller at the top
-    /// passes it, and kept in `judgements`, apart from the parameters in
+    /// passes it, and kept in `findings`, apart from the parameters in
     /// `fields`. The article runs in the version in force on the calculation
     /// date, at stage BESLUIT, as a cross-law call does, and computes the
     /// outputs of its decision item. Without `output` the input is the
-    /// decision value `{grondslag, fields, judgements, outputs}`; with it,
+    /// decision value `{grondslag, fields, findings, outputs}`; with it,
     /// that one output.
     ///
     /// Refused at run time: a target that is no article reference, an
@@ -5059,7 +5059,7 @@ impl LawExecutionService {
         // An implementation of that term still wins over the judgement, as
         // at the top (`resolve_open_term`).
         let declared = Self::filter_parameters_for_article(article, &passed);
-        let judgements: BTreeMap<String, Value> = article
+        let findings: BTreeMap<String, Value> = article
             .get_open_terms()
             .into_iter()
             .flatten()
@@ -5068,15 +5068,15 @@ impl LawExecutionService {
             .collect();
         let dropped: Vec<&str> = passed
             .keys()
-            .filter(|name| !declared.contains_key(*name) && !judgements.contains_key(*name))
+            .filter(|name| !declared.contains_key(*name) && !findings.contains_key(*name))
             .map(String::as_str)
             .collect();
-        if !judgements.is_empty() {
+        if !findings.is_empty() {
             let _judged =
                 res_ctx.trace_guard(format!("{target} (judged per case)"), PathNodeType::Resolve);
             res_ctx.trace_set_message(format!(
                 "{target} leaves {} to an authority per case, so passed as its judgement",
-                judgements
+                findings
                     .keys()
                     .map(String::as_str)
                     .collect::<Vec<_>>()
@@ -5110,7 +5110,7 @@ impl LawExecutionService {
         }
         // The article runs with both; the decision value keeps them apart.
         let mut passed_on = declared.clone();
-        passed_on.extend(judgements.clone());
+        passed_on.extend(findings.clone());
 
         // The keys of a cross-law call, one per output computed, and one for
         // the article itself, which also counts the depth.
@@ -5193,7 +5193,7 @@ impl LawExecutionService {
                 let value = Value::Object(BTreeMap::from([
                     ("grondslag".to_string(), Value::String(target.clone())),
                     ("fields".to_string(), Value::Object(declared)),
-                    ("judgements".to_string(), Value::Object(judgements)),
+                    ("findings".to_string(), Value::Object(findings)),
                     ("outputs".to_string(), Value::Object(outputs)),
                 ]));
                 as_recorded(value)

@@ -66,7 +66,7 @@
 //!   only at run time: the checker then knows the input is a decision value
 //!   and claims nothing about its fields (`$x.outputs.y`), as for rows.
 //! - **T6** `keys_of` (RFC-050) types a field of type `object` only, and
-//!   names an object: a field of type `object`, or the `judgements` or
+//!   names an object: a field of type `object`, or the `findings` or
 //!   `fields` of a decision value. Whether the keys fit is known only at
 //!   run time, where the engine checks them.
 
@@ -174,7 +174,7 @@ enum Ty {
     Date,
     Array,
     Object,
-    /// A decision value `{grondslag, fields, judgements, outputs}` (RFC-050): an object
+    /// A decision value `{grondslag, fields, findings, outputs}` (RFC-050): an object
     /// whose fields the checker does not type, like any object.
     Decision,
 }
@@ -648,7 +648,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                 None => false,
                 Some(None | Some(Ty::Object)) => true,
                 Some(Some(Ty::Decision)) => {
-                    matches!(path.strip_prefix(root), Some(".judgements" | ".fields"))
+                    matches!(path.strip_prefix(root), Some(".findings" | ".fields"))
                 }
                 Some(Some(_)) => false,
             };
@@ -657,7 +657,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                     name,
                     format!(
                         "'{name}' takes its keys from {reference}, which is no object; name an \
-                         object field, or the judgements or fields of a decision value"
+                         object field, or the findings or fields of a decision value"
                     ),
                 ));
             }

@@ -718,7 +718,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, judgements, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares, its judgements per case (the open terms it leaves to an authority per case, `decided_per_case_by`, under their ids), and the outputs of its decision item (RFC-050). A value built from a recorded decision may also carry `taken_on`: the article that established the submission the decision was taken on.",
+          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, findings, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares, its findings per case (the open terms it leaves to an authority per case, `decided_per_case_by`, under their ids), and the outputs of its decision item (RFC-050). A value built from a recorded decision may also carry `taken_on`: the article that established the submission the decision was taken on.",
           "enum": [
             "string",
             "number",
@@ -846,7 +846,7 @@
             },
             "keys_of": {
               "$ref": "#/definitions/variableReference",
-              "description": "Only on a field of type `object`: a `$`-reference to an object, such as the `judgements` or `fields` of a `decision` value, whose keys are the only keys this value may have (RFC-050). At run time every key of the value must be a key there, and its value of the same type as the value there (string, number, boolean); a key may be null only if this field is `nullable`. A key left out is fine. Anything else is an error that names the key. The type check refuses `keys_of` on another type, and a reference that names no object."
+              "description": "Only on a field of type `object`: a `$`-reference to an object, such as the `findings` or `fields` of a `decision` value, whose keys are the only keys this value may have (RFC-050). At run time every key of the value must be a key there, and its value of the same type as the value there (string, number, boolean); a key may be null only if this field is `nullable`. A key left out is fine. Anything else is an error that names the key. The type check refuses `keys_of` on another type, and a reference that names no object."
             }
           },
           "dependencies": {
@@ -908,7 +908,7 @@
                       "$ref": "#/definitions/variableReference"
                     }
                   ],
-                  "description": "The article whose decision this input takes: `<regulation>#<article>`, or a `$`-reference to a value that holds one, such as the `grondslag` of a `decision` value. Without `output` the engine runs the decision item of that article at stage BESLUIT, and the input is a `decision` value `{grondslag, fields, judgements, outputs}`. With `output`, the input is that one output of the decision item. The article is the one in force on the calculation date; one that is not in force, or that takes no decision, is an error at run time. The parameters are those of `parameters_from`, with `parameters` on top; a name the article does not declare is dropped, and the trace names it, unless it is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that is the judgement for this case, passed as a caller at the top passes it and kept under `judgements`, not `fields`, and an implementation of the term still wins over it (RFC-047). It stands apart from `regulation`, `decisions` and `endpoint`."
+                  "description": "The article whose decision this input takes: `<regulation>#<article>`, or a `$`-reference to a value that holds one, such as the `grondslag` of a `decision` value. Without `output` the engine runs the decision item of that article at stage BESLUIT, and the input is a `decision` value `{grondslag, fields, findings, outputs}`. With `output`, the input is that one output of the decision item. The article is the one in force on the calculation date; one that is not in force, or that takes no decision, is an error at run time. The parameters are those of `parameters_from`, with `parameters` on top; a name the article does not declare is dropped, and the trace names it, unless it is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that is the judgement for this case, passed as a caller at the top passes it and kept under `findings`, not `fields`, and an implementation of the term still wins over it (RFC-047). It stands apart from `regulation`, `decisions` and `endpoint`."
                 },
                 "parameters_from": {
                   "type": "array",
@@ -916,7 +916,7 @@
                   "items": {
                     "$ref": "#/definitions/variableReference"
                   },
-                  "description": "Values whose fields are passed to the `article` as parameters, merged in order: a later one wins over an earlier one, and `parameters` wins over all of them. Each is an object, such as the `fields` or `judgements` of a `decision` value, or null, which adds nothing; any other value is an error at run time. Only with `article`."
+                  "description": "Values whose fields are passed to the `article` as parameters, merged in order: a later one wins over an earlier one, and `parameters` wins over all of them. Each is an object, such as the `fields` or `findings` of a `decision` value, or null, which adds nothing; any other value is an error at run time. Only with `article`."
                 }
               },
               "additionalProperties": false,
@@ -1003,7 +1003,7 @@
             },
             "keys_of": {
               "$ref": "#/definitions/variableReference",
-              "description": "Only on a field of type `object`: a `$`-reference to an object, such as the `judgements` or `fields` of a `decision` value, whose keys are the only keys this value may have (RFC-050). At run time every key of the value must be a key there, and its value of the same type as the value there (string, number, boolean); a key may be null only if this field is `nullable`. A key left out is fine. Anything else is an error that names the key. The type check refuses `keys_of` on another type, and a reference that names no object."
+              "description": "Only on a field of type `object`: a `$`-reference to an object, such as the `findings` or `fields` of a `decision` value, whose keys are the only keys this value may have (RFC-050). At run time every key of the value must be a key there, and its value of the same type as the value there (string, number, boolean); a key may be null only if this field is `nullable`. A key left out is fine. Anything else is an error that names the key. The type check refuses `keys_of` on another type, and a reference that names no object."
             }
           },
           "required": [

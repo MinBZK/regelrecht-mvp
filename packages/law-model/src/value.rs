@@ -1030,9 +1030,9 @@ pub enum ParameterType {
     Date,
     Array,
     Object,
-    /// A decision value `{grondslag, fields, judgements, outputs}`: the
+    /// A decision value `{grondslag, fields, findings, outputs}`: the
     /// article that decided, the parameters it was given and declares, its
-    /// judgements per case, and the outputs of its decision item (schema
+    /// findings per case, and the outputs of its decision item (schema
     /// v0.8.4, RFC-050). A value built from a recorded decision may also
     /// hold `taken_on`. At run time an object.
     Decision,

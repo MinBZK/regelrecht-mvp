@@ -18,7 +18,7 @@ articles:
             type: decision
           - name: oordelen
             type: object
-            keys_of: besluit.judgements
+            keys_of: besluit.findings
         input:
           - name: heroverweging
             type: decision

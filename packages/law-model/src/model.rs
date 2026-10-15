@@ -211,7 +211,7 @@ pub struct Parameter {
     pub legal_basis: Option<ProvisionReference>,
     /// For an `object`: a `$`-reference to an object whose keys are the only
     /// keys this value may have, each with the type of the value there
-    /// (schema v0.8.4, RFC-050), such as `$besluit.judgements`.
+    /// (schema v0.8.4, RFC-050), such as `$besluit.findings`.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -252,7 +252,7 @@ pub struct Input {
     pub legal_basis: Option<ProvisionReference>,
     /// For an `object`: a `$`-reference to an object whose keys are the only
     /// keys this value may have, each with the type of the value there
-    /// (schema v0.8.4, RFC-050), such as `$besluit.judgements`.
+    /// (schema v0.8.4, RFC-050), such as `$besluit.findings`.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
