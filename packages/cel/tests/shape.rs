@@ -180,14 +180,21 @@ fn a_decision_fits_only_as_a_decision_value() {
         nullable: false,
         declared_by: vec!["wet_heroverweging#1".into()],
     };
-    let value = json!({"grondslag": "wet_verlof#1", "fields": {}, "outputs": {"verleend": true}});
+    let value = json!({
+        "grondslag": "wet_verlof#1",
+        "fields": {},
+        "judgements": {"reden": true},
+        "outputs": {"verleend": true},
+    });
     assert!(shape::fits(&field, &value));
     for odd in [
         json!("019a-besluit"),
-        json!({"grondslag": "wet_verlof", "fields": {}, "outputs": {}}),
-        json!({"grondslag": "wet_verlof#1", "fields": [], "outputs": {}}),
-        json!({"grondslag": "wet_verlof#1", "fields": {}}),
-        json!({"grondslag": "wet_verlof#1", "fields": {}, "outputs": {}, "extra": 1}),
+        json!({"grondslag": "wet_verlof", "fields": {}, "judgements": {}, "outputs": {}}),
+        json!({"grondslag": "wet_verlof#1", "fields": [], "judgements": {}, "outputs": {}}),
+        json!({"grondslag": "wet_verlof#1", "fields": {}, "judgements": [], "outputs": {}}),
+        json!({"grondslag": "wet_verlof#1", "fields": {}, "judgements": {}}),
+        json!({"grondslag": "wet_verlof#1", "fields": {}, "outputs": {}}),
+        json!({"grondslag": "wet_verlof#1", "fields": {}, "judgements": {}, "outputs": {}, "extra": 1}),
         json!(null),
     ] {
         assert!(!shape::fits(&field, &odd), "{odd}");

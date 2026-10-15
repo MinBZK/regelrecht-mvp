@@ -706,3 +706,119 @@ fn a_decision_value_its_article_does_not_give_is_refused_and_nothing_is_appended
     .unwrap();
     assert_eq!(decided[1].outputs["verleend"], json!(false));
 }
+
+/// [`VERLOF`] with a judgement per case: the head judges whether the
+/// reason is weighty (`decided_per_case_by`).
+fn verlof_with_judgement() -> String {
+    VERLOF
+        .replace(
+            "    machine_readable:\n      execution:\n        produces:",
+            "    machine_readable:\n      open_terms:\n        - id: reden_gewichtig\n          type: boolean\n          required: true\n          decided_per_case_by: het hoofd\n      execution:\n        produces:",
+        )
+        .replace(
+            "                - {operation: NOT, value: $al_verleend}\n",
+            "                - {operation: NOT, value: $al_verleend}\n                - $reden_gewichtig\n",
+        )
+}
+
+/// [`HEROVERWEGING`] that also passes the judgements of the contested
+/// decision, and gives the parts of the decision value it got.
+fn heroverweging_with_judgements() -> String {
+    HEROVERWEGING
+        .replace(
+            "                - $bestreden_besluit.fields\n",
+            "                - $bestreden_besluit.fields\n                - $bestreden_besluit.judgements\n",
+        )
+        .replace(
+            "            outputs: [aanleiding, nieuw_besluit]",
+            "            outputs: [aanleiding, nieuw_besluit, gegevens, oordelen]",
+        )
+        .replace(
+            "          - {name: nieuw_besluit, type: decision, nullable: true}\n",
+            "          - {name: nieuw_besluit, type: decision, nullable: true}\n          - {name: gegevens, type: object}\n          - {name: oordelen, type: object}\n",
+        )
+        .replace(
+            "        actions:\n          - output: aanleiding",
+            "        actions:\n          - {output: gegevens, value: $bestreden_besluit.fields}\n          - {output: oordelen, value: $bestreden_besluit.judgements}\n          - output: aanleiding",
+        )
+}
+
+/// The decision value keeps the judgements apart from the fields (RFC-050):
+/// which of the gram's fields are judgements follows from the open terms of
+/// the deciding article. A judgement not given anew stays that of the
+/// decision, and one given anew reaches the heroverweging.
+#[test]
+fn the_decision_value_holds_the_judgements_apart() {
+    let mut service = LawExecutionService::new();
+    for law in [
+        PROCEDURE,
+        &verlof_with_judgement(),
+        &heroverweging_with_judgements(),
+    ] {
+        service.load_law(law).unwrap();
+    }
+    let mut cell = Cell::in_memory(ACTOR);
+    let applied = apply(&mut cell, &service, 2, "2026-03-02");
+    let refused = cell
+        .decide(
+            &mut service,
+            VERLOF_LAW,
+            "1",
+            &applied.id,
+            &object(json!({"al_verleend": false, "reden_gewichtig": false})),
+            day("2026-03-03"),
+        )
+        .unwrap()
+        .remove(0);
+    assert_eq!(refused.fields["reden_gewichtig"], json!(false));
+    assert_eq!(refused.outputs["verleend"], json!(false));
+
+    for (anew, cause, objected, decided_on) in [
+        (json!(null), false, "2026-03-10", "2026-03-11"),
+        (
+            json!({"reden_gewichtig": true}),
+            true,
+            "2026-03-12",
+            "2026-03-13",
+        ),
+    ] {
+        let bezwaar = object_to(
+            &mut cell,
+            &service,
+            &refused.id,
+            json!({"nieuwe_gegevens": anew}),
+            objected,
+        )
+        .unwrap();
+        let decided = cell
+            .decide(
+                &mut service,
+                BEZWAAR_LAW,
+                "1",
+                &bezwaar.id,
+                &Map::new(),
+                day(decided_on),
+            )
+            .unwrap();
+        let decision = &decided[0];
+        assert_eq!(
+            decision.outputs["oordelen"],
+            json!({"reden_gewichtig": false}),
+            "{anew}"
+        );
+        assert!(
+            decision.outputs["gegevens"]
+                .get("reden_gewichtig")
+                .is_none(),
+            "{}",
+            decision.outputs["gegevens"]
+        );
+        assert_eq!(decision.outputs["aanleiding"], json!(cause), "{anew}");
+        if cause {
+            // The new decision is taken with the judgement given anew.
+            assert_eq!(decided[1].fields["reden_gewichtig"], json!(true));
+            assert_eq!(decided[1].outputs["verleend"], json!(true));
+            break;
+        }
+    }
+}

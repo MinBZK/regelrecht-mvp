@@ -5,7 +5,7 @@
 //! field of type `decision` then holds that decision, and a field that the
 //! decision holds by name comes from it too (RFC-050). The chronolexogram
 //! keeps a decision by its id; the engine gets its decision value
-//! `{grondslag, fields, outputs}`. A decision output of the deciding article
+//! `{grondslag, fields, judgements, outputs}`. A decision output of the deciding article
 //! is a decision the cell records as well, in the same append. The cell
 //! knows no article that does this; the law names it with the type.
 //!
@@ -480,7 +480,7 @@ impl Cell {
         Ok(values)
     }
 
-    /// Answer again, on `on`, the fields of the decision value `value` of
+    /// Answer again, on `on`, the fields and judgements of the decision value `value` of
     /// `gram` that the cell's reductions answer for the decision of its
     /// article, reading the chronicle but `except` (decision 7 of slice 4b,
     /// option a). A deciding article that calls that article with the
@@ -516,15 +516,15 @@ impl Cell {
             .filter(|g| except != Some(g.id.as_str()))
             .cloned()
             .collect();
-        let Some(fields) = value
-            .get_mut("fields")
-            .and_then(serde_json::Value::as_object_mut)
-        else {
-            return Err(setup(format!(
-                "the decision value of '{}' has no fields",
-                gram.id
-            )));
+        let part = |value: &serde_json::Value, key: &str| {
+            value
+                .get(key)
+                .and_then(serde_json::Value::as_object)
+                .cloned()
+                .ok_or_else(|| setup(format!("the decision value of '{}' has no {key}", gram.id)))
         };
+        let mut fields = part(value, "fields")?;
+        let mut judgements = part(value, "judgements")?;
         let bound = reading::bind(
             service,
             &self.recording_actor,
@@ -534,9 +534,23 @@ impl Cell {
             &self.reductions,
             on,
         )?;
-        let given: Values = fields.clone().into_iter().collect();
-        let answered = bound.answer(&given, on)?;
-        fields.extend(answered);
+        let given: Values = fields
+            .clone()
+            .into_iter()
+            .chain(judgements.clone())
+            .collect();
+        // An answer stays where the value has it: a reduction may answer a
+        // judgement the authority would otherwise give.
+        for (name, answer) in bound.answer(&given, on)? {
+            match judgements.get_mut(&name) {
+                Some(judged) => *judged = answer,
+                None => {
+                    fields.insert(name, answer);
+                }
+            }
+        }
+        value["fields"] = serde_json::Value::Object(fields);
+        value["judgements"] = serde_json::Value::Object(judgements);
         Ok(())
     }
 
@@ -550,7 +564,7 @@ impl Cell {
     /// objection, as the decision on that objection does.
     ///
     /// The cell runs the stages of that article again with the value's
-    /// `fields`, and fills a date a stage requires with `on`, so a hook at
+    /// `fields` and `judgements`, and fills a date a stage requires with `on`, so a hook at
     /// a later stage gives the new decision its own outcome (such as its own
     /// period from its own announcement). The outputs of its decision item must be
     /// those of the value, as a chronicle stores them; otherwise the value
@@ -567,7 +581,7 @@ impl Cell {
         let not_a_decision = || {
             setup(format!(
                 "'{output}' of the decision of {} is {value}, no decision value \
-                 {{grondslag, fields, outputs}}",
+                 {{grondslag, fields, judgements, outputs}}",
                 deciding.grondslag()
             ))
         };
@@ -579,10 +593,15 @@ impl Cell {
             .get("grondslag")
             .and_then(serde_json::Value::as_str)
             .ok_or_else(not_a_decision)?;
-        let given = object
-            .get("fields")
-            .and_then(serde_json::Value::as_object)
-            .ok_or_else(not_a_decision)?;
+        // The article runs with both; which are judgements follows from it.
+        let mut given = Map::new();
+        for key in ["fields", "judgements"] {
+            let part = object
+                .get(key)
+                .and_then(serde_json::Value::as_object)
+                .ok_or_else(not_a_decision)?;
+            given.extend(part.clone());
+        }
         let expected = object
             .get("outputs")
             .and_then(serde_json::Value::as_object)
@@ -844,11 +863,13 @@ fn run_stages(
     Ok(outputs)
 }
 
-/// The decision value `{grondslag, fields, outputs}` of the decision `gram`,
-/// as the engine builds one (RFC-050): its fields, and of its outputs those
-/// its decision item names, in the law in force on the day it was recorded.
-/// Data derived for the decision is no part of it. A decision the fields or
-/// outputs hold stays its id.
+/// The decision value `{grondslag, fields, judgements, outputs}` of the
+/// decision `gram`, as the engine builds one (RFC-050), in the law in force
+/// on the day it was recorded: under `judgements` the fields that are the
+/// judgement on an open term the deciding article leaves to an authority
+/// per case (`decided_per_case_by`), under `fields` the others, and of its
+/// outputs those its decision item names. Data derived for the decision is
+/// no part of it. A decision the fields or outputs hold stays its id.
 pub(crate) fn decision_value(
     service: &LawExecutionService,
     gram: &Gram,
@@ -867,6 +888,21 @@ pub(crate) fn decision_value(
         .get_decision()
         .map(|decision| found.outputs_of(decision))
         .unwrap_or_default();
+    let judged: Vec<&str> = found
+        .get_open_terms()
+        .into_iter()
+        .flatten()
+        .filter(|term| term.decided_per_case_by.is_some())
+        .map(|term| term.id.as_str())
+        .collect();
+    let (judgements, fields): (
+        Map<String, serde_json::Value>,
+        Map<String, serde_json::Value>,
+    ) = gram
+        .fields
+        .iter()
+        .map(|(name, value)| (name.clone(), value.clone()))
+        .partition(|(name, _)| judged.contains(&name.as_str()));
     let outputs: Map<String, serde_json::Value> = gram
         .outputs
         .iter()
@@ -875,7 +911,8 @@ pub(crate) fn decision_value(
         .collect();
     Ok(serde_json::json!({
         "grondslag": gram.grondslag,
-        "fields": gram.fields,
+        "fields": fields,
+        "judgements": judgements,
         "outputs": outputs,
     }))
 }
