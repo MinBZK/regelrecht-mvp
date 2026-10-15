@@ -349,14 +349,28 @@ fn judgement(profession: bool, outside_holidays: bool) -> Map<String, Value> {
         .clone()
 }
 
+/// Decide with what the head gives: its findings under art. 11 onder f
+/// apart, the rest as what it supplies.
 fn decide(
     cell: &mut Cell,
     application: &str,
-    supplied: &Map<String, Value>,
+    given: &Map<String, Value>,
     on: &str,
 ) -> Result<Gram, Error> {
-    cell.decide(&mut service(), LAW, ARTICLE, application, supplied, day(on))
-        .map(|mut grams| grams.remove(0))
+    let (findings, supplied): (Map<String, Value>, Map<String, Value>) = given
+        .clone()
+        .into_iter()
+        .partition(|(name, _)| [PROFESSION, OUTSIDE_HOLIDAYS].contains(&name.as_str()));
+    cell.decide(
+        &mut service(),
+        LAW,
+        ARTICLE,
+        application,
+        &supplied,
+        &findings,
+        day(on),
+    )
+    .map(|mut grams| grams.remove(0))
 }
 
 #[test]
@@ -816,6 +830,7 @@ fn the_reduction_and_the_decisions_it_reads_are_bound_for_the_decision_only() {
         LAW,
         ARTICLE,
         &app.id,
+        &Map::new(),
         &judgement(true, true),
         day("2026-10-20"),
     )
@@ -844,6 +859,7 @@ fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
             LAW,
             ARTICLE,
             &app.id,
+            &Map::new(),
             &judgement(true, true),
             day("2026-10-20"),
         )
@@ -1332,6 +1348,7 @@ fn an_objection_is_decided_with_decide_on_objection_and_reads_back_from_the_file
                 AWB,
                 OBJECTION,
                 &bezwaar.id,
+                &Map::new(),
                 &Map::new(),
                 day("2026-11-15"),
             )

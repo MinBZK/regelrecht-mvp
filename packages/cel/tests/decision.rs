@@ -138,8 +138,16 @@ fn decide(
             day(),
         )
         .unwrap();
-    cell.decide(service, LAW, "1", &app.id, &object(supplied), day())
-        .map(|mut grams| grams.remove(0))
+    cell.decide(
+        service,
+        LAW,
+        "1",
+        &app.id,
+        &Map::new(),
+        &object(supplied),
+        day(),
+    )
+    .map(|mut grams| grams.remove(0))
 }
 
 #[test]
@@ -282,7 +290,15 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
         )
         .unwrap();
     let gram = cell
-        .decide(&mut service, LAW, "1", &app.id, &Map::new(), day())
+        .decide(
+            &mut service,
+            LAW,
+            "1",
+            &app.id,
+            &Map::new(),
+            &Map::new(),
+            day(),
+        )
         .unwrap()
         .remove(0);
     assert_eq!(gram.refers_to.as_deref(), Some(app.id.as_str()));

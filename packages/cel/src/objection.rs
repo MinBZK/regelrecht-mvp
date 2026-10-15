@@ -156,7 +156,7 @@ impl Cell {
         // The decision on the objection, with the heroverweging's answer to
         // `judgement`, or without it (`None`).
         let take = |service: &mut LawExecutionService, cause: Option<bool>| {
-            self.take(service, &shape, supplied, None, on, |bound| {
+            self.take(service, &shape, supplied, &Map::new(), None, on, |bound| {
                 on_objection(&shape, &objected, &judgement, cause, supplied, bound, on)
             })
         };
@@ -174,6 +174,7 @@ impl Cell {
                 service,
                 &anew_shape,
                 supplied,
+                &Map::new(),
                 Some(&contested.id),
                 on,
                 |bound| heroverweging(&anew_shape, &application, &contested, supplied, bound, on),

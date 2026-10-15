@@ -275,7 +275,15 @@ fn decide(
     submission: &str,
     on: &str,
 ) -> Result<Vec<Gram>, Error> {
-    cell.decide(service, law, "1", submission, &Map::new(), day(on))
+    cell.decide(
+        service,
+        law,
+        "1",
+        submission,
+        &Map::new(),
+        &Map::new(),
+        day(on),
+    )
 }
 
 fn object_to(
@@ -707,9 +715,9 @@ fn a_decision_value_its_article_does_not_give_is_refused_and_nothing_is_appended
     assert_eq!(decided[1].outputs["verleend"], json!(false));
 }
 
-/// [`VERLOF`] with a judgement per case: the head judges whether the
+/// [`VERLOF`] with a finding per case: the head judges whether the
 /// reason is weighty (`decided_per_case_by`).
-fn verlof_with_judgement() -> String {
+fn verlof_with_finding() -> String {
     VERLOF
         .replace(
             "    machine_readable:\n      execution:\n        produces:",
@@ -721,13 +729,13 @@ fn verlof_with_judgement() -> String {
         )
 }
 
-/// [`HEROVERWEGING`] that also passes the judgements of the contested
-/// decision, and gives the parts of the decision value it got.
-fn heroverweging_with_judgements() -> String {
+/// [`HEROVERWEGING`] that calls the contested decision anew, with its own
+/// fields and findings, and gives the parts of the decision value it got.
+fn heroverweging_with_findings() -> String {
     HEROVERWEGING
         .replace(
-            "                - $bestreden_besluit.fields\n",
-            "                - $bestreden_besluit.fields\n                - $bestreden_besluit.judgements\n",
+            "              article: $bestreden_besluit.grondslag\n              parameters_from:\n                - $bestreden_besluit.fields\n                - $nieuwe_gegevens\n",
+            "              article: $bestreden_besluit\n",
         )
         .replace(
             "            outputs: [aanleiding, nieuw_besluit]",
@@ -739,21 +747,23 @@ fn heroverweging_with_judgements() -> String {
         )
         .replace(
             "        actions:\n          - output: aanleiding",
-            "        actions:\n          - {output: gegevens, value: $bestreden_besluit.fields}\n          - {output: oordelen, value: $bestreden_besluit.judgements}\n          - output: aanleiding",
+            "        actions:\n          - {output: gegevens, value: $bestreden_besluit.fields}\n          - {output: oordelen, value: $bestreden_besluit.findings}\n          - output: aanleiding",
         )
 }
 
-/// The decision value keeps the judgements apart from the fields (RFC-050):
-/// which of the gram's fields are judgements follows from the open terms of
-/// the deciding article. A judgement not given anew stays that of the
-/// decision, and one given anew reaches the heroverweging.
+/// The decision value keeps the findings apart from the fields (RFC-050):
+/// which of the gram's fields are findings follows from the open terms of
+/// the deciding article. A finding not given anew stays that of the
+/// decision, and one given anew, apart from the parameters, reaches the
+/// decision called anew and is recorded with the decision on the
+/// objection. One that no article asks is refused.
 #[test]
-fn the_decision_value_holds_the_judgements_apart() {
+fn the_decision_value_holds_the_findings_apart() {
     let mut service = LawExecutionService::new();
     for law in [
         PROCEDURE,
-        &verlof_with_judgement(),
-        &heroverweging_with_judgements(),
+        &verlof_with_finding(),
+        &heroverweging_with_findings(),
     ] {
         service.load_law(law).unwrap();
     }
@@ -765,7 +775,8 @@ fn the_decision_value_holds_the_judgements_apart() {
             VERLOF_LAW,
             "1",
             &applied.id,
-            &object(json!({"al_verleend": false, "reden_gewichtig": false})),
+            &object(json!({"al_verleend": false})),
+            &object(json!({"reden_gewichtig": false})),
             day("2026-03-03"),
         )
         .unwrap()
@@ -774,7 +785,7 @@ fn the_decision_value_holds_the_judgements_apart() {
     assert_eq!(refused.outputs["verleend"], json!(false));
 
     for (anew, cause, objected, decided_on) in [
-        (json!(null), false, "2026-03-10", "2026-03-11"),
+        (json!({}), false, "2026-03-10", "2026-03-11"),
         (
             json!({"reden_gewichtig": true}),
             true,
@@ -782,14 +793,7 @@ fn the_decision_value_holds_the_judgements_apart() {
             "2026-03-13",
         ),
     ] {
-        let bezwaar = object_to(
-            &mut cell,
-            &service,
-            &refused.id,
-            json!({"nieuwe_gegevens": anew}),
-            objected,
-        )
-        .unwrap();
+        let bezwaar = object_to(&mut cell, &service, &refused.id, json!({}), objected).unwrap();
         let decided = cell
             .decide(
                 &mut service,
@@ -797,6 +801,7 @@ fn the_decision_value_holds_the_judgements_apart() {
                 "1",
                 &bezwaar.id,
                 &Map::new(),
+                &object(anew.clone()),
                 day(decided_on),
             )
             .unwrap();
@@ -815,10 +820,41 @@ fn the_decision_value_holds_the_judgements_apart() {
         );
         assert_eq!(decision.outputs["aanleiding"], json!(cause), "{anew}");
         if cause {
-            // The new decision is taken with the judgement given anew.
+            assert_eq!(decision.fields["reden_gewichtig"], json!(true));
+            // The new decision is taken with the finding given anew.
             assert_eq!(decided[1].fields["reden_gewichtig"], json!(true));
             assert_eq!(decided[1].outputs["verleend"], json!(true));
             break;
         }
     }
+
+    // A finding no article asks is refused, and nothing is appended.
+    let bezwaar = object_to(&mut cell, &service, &refused.id, json!({}), "2026-03-14").unwrap();
+    let before = cell.grams().len();
+    let e = cell
+        .decide(
+            &mut service,
+            BEZWAAR_LAW,
+            "1",
+            &bezwaar.id,
+            &Map::new(),
+            &object(json!({"reden_gewichtg": true})),
+            day("2026-03-15"),
+        )
+        .unwrap_err();
+    assert!(e.to_string().contains("'reden_gewichtg'"), "{e}");
+    assert_eq!(cell.grams().len(), before);
+    // A finding of the deciding article is no parameter.
+    let e = cell
+        .decide(
+            &mut service,
+            BEZWAAR_LAW,
+            "1",
+            &bezwaar.id,
+            &object(json!({"tijdig": true})),
+            &object(json!({"tijdig": true})),
+            day("2026-03-15"),
+        )
+        .unwrap_err();
+    assert!(e.to_string().contains("'tijdig'"), "{e}");
 }

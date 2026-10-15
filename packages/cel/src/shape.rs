@@ -260,7 +260,7 @@ pub(crate) fn article_on<'s>(
 /// be absent (RFC-036): an application may leave it empty (Awb 4:5 asks to
 /// complete it; it is still an application). An amount is in whole
 /// eurocents. A date is written `YYYY-MM-DD`, and only so. A decision is a
-/// decision value `{grondslag, fields, judgements, outputs}` (schema
+/// decision value `{grondslag, fields, findings, outputs}` (schema
 /// v0.8.4): an article reference and three objects, and nothing else.
 pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
     use serde_json::Value as J;
@@ -279,7 +279,7 @@ pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
     }
 }
 
-/// Whether `value` is a decision value `{grondslag, fields, judgements,
+/// Whether `value` is a decision value `{grondslag, fields, findings,
 /// outputs}`: the article that decided (`<regulation>#<article>`), and
 /// three objects.
 pub(crate) fn is_decision_value(value: &serde_json::Map<String, serde_json::Value>) -> bool {
@@ -290,7 +290,7 @@ pub(crate) fn is_decision_value(value: &serde_json::Map<String, serde_json::Valu
         .is_some_and(|(law, article)| !law.is_empty() && !article.is_empty());
     value.len() == 4
         && grondslag
-        && ["fields", "judgements", "outputs"]
+        && ["fields", "findings", "outputs"]
             .iter()
             .all(|key| value.get(*key).is_some_and(serde_json::Value::is_object))
 }
