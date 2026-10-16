@@ -224,12 +224,12 @@ export interface Content {
 
 const nl: Content = {
   meta: {
-    title: 'Rules as Executed, eenvoudig uitgelegd · RegelRecht',
+    title: 'Rules as Executed, uitgelegd · RegelRecht',
     description:
       'Het paper Rules as Executed in gewone taal: waarom het de rechtsstaat raakt dat buiten de uitvoering niemand kan zien welke regels een computer uitvoert, en wat het paper voorstelt.',
   },
   header: {
-    title: 'Rules as Executed, eenvoudig uitgelegd',
+    title: 'Rules as Executed, uitgelegd',
     subtitle: 'Het paper in gewone taal',
     lede:
       'Steeds vaker rekent een computer uit wat je krijgt of moet betalen, bijvoorbeeld bij de zorgtoeslag. De wet waar dat op rust, kan iedereen lezen. Maar de computer werkt niet met de wettekst. Hij werkt met regels die de uitvoerende organisatie uit de wet heeft afgeleid, en die zijn niet gepubliceerd. Alleen die organisatie kan zien welke regels de computer uitvoert. Het parlement, de rechter en jij kunnen dat niet. Daar begint het paper Rules as Executed. Deze pagina legt uit waarom dat de rechtsstaat raakt, en wat het paper voorstelt.',
@@ -605,12 +605,12 @@ const nl: Content = {
 
 const en: Content = {
   meta: {
-    title: 'Rules as Executed, explained simply · RegelRecht',
+    title: 'Rules as Executed, explained · RegelRecht',
     description:
       'The paper Rules as Executed in plain language: why it touches the rule of law that nobody outside the executing organization can see which rules a computer executes, and what the paper proposes.',
   },
   header: {
-    title: 'Rules as Executed, explained simply',
+    title: 'Rules as Executed, explained',
     subtitle: 'The paper in plain language',
     lede:
       'More and more often a computer works out what you get or have to pay, for instance with the Dutch healthcare allowance. Anyone can read the law behind it. But the computer does not work with the text of the law. It works with rules the executing organization derived from the law, and those are not published. Only that organization can see which rules the computer executes. Parliament, the courts and you cannot. That is where the paper Rules as Executed starts. This page explains why that touches the rule of law, and what the paper proposes.',
