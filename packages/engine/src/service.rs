@@ -571,6 +571,113 @@ fn required_parameter_for_nobody(
         })
 }
 
+/// The keys of a decision value (schema v0.8.4, RFC-050).
+const DECISION_KEYS: [&str; 5] = ["grondslag", "taken_on", "fields", "findings", "outputs"];
+
+/// Every parameter of `article` of type `decision` that `parameters` carries
+/// is an object that holds the keys of a decision value `{grondslag,
+/// taken_on, fields, findings, outputs}`, and no other (RFC-050), and its
+/// `grondslag` and `taken_on` are article references (`<law>#<article>`).
+/// Otherwise an error naming the parameter and the key, or the type the
+/// value has instead. Null and unknown are left to
+/// `required_parameter_for_nobody`, and an untranslatable value propagates
+/// (RFC-012). What `fields`, `findings` and `outputs` hold is checked where
+/// the value is read, as for a decision value an input holds.
+///
+/// A decision given into an article was taken on a submission, and names
+/// its article in `taken_on`. Missing or no article reference, a read of it
+/// would fail without naming the parameter or, compared with an article
+/// reference, silently differ from it; a value that is never read would
+/// pass unnoticed. Only a value the engine builds through `source.article`
+/// lacks `taken_on`; that is an input.
+///
+/// All of this holds at the top (`at_top`, depth 0). In a nested call,
+/// across laws or within one, a parameter is what the calling article passes
+/// on, which may be such a value without `taken_on`, so there only a
+/// `taken_on` the value holds must be an article reference. `grondslag` is
+/// checked where the call reads it.
+fn check_decision_parameters(
+    law: &ArticleBasedLaw,
+    article: &Article,
+    parameters: &BTreeMap<String, Value>,
+    at_top: bool,
+) -> Result<()> {
+    let reference = |value: &BTreeMap<String, Value>, key: &str| {
+        matches!(
+            value.get(key),
+            Some(Value::String(s)) if regelrecht_law_model::is_article_reference(s)
+        )
+    };
+    for declared in article.get_parameters() {
+        if declared.param_type != crate::types::ParameterType::Decision {
+            continue;
+        }
+        let value = match parameters.get(&declared.name) {
+            Some(Value::Object(value)) => value,
+            // Not passed, an absence or an unknown: `required_parameter_for_nobody`
+            // already decided whether the article may do without it. An
+            // untranslatable value is a taint that propagates (RFC-012).
+            None | Some(Value::Null | Value::Unknown(_) | Value::Untranslatable { .. }) => {
+                continue;
+            }
+            // In a nested call the value is read where the call needs it.
+            Some(_) if !at_top => continue,
+            Some(other) => {
+                return Err(decision_parameter_error(
+                    law,
+                    article,
+                    &declared.name,
+                    &format!("is of type {}", other.type_name()),
+                ))
+            }
+        };
+        let flaw = if at_top {
+            DECISION_KEYS
+                .iter()
+                .find(|key| !value.contains_key(**key))
+                .map(|key| format!("lacks '{key}'"))
+                .or_else(|| {
+                    value
+                        .keys()
+                        .find(|key| !DECISION_KEYS.contains(&key.as_str()))
+                        .map(|key| format!("holds the unknown key '{key}'"))
+                })
+                .or_else(|| {
+                    ["grondslag", "taken_on"]
+                        .into_iter()
+                        .find(|key| !reference(value, key))
+                        .map(|key| format!("holds no article reference in '{key}'"))
+                })
+        } else {
+            (value.contains_key("taken_on") && !reference(value, "taken_on"))
+                .then(|| "holds no article reference in 'taken_on'".to_string())
+        };
+        if let Some(flaw) = flaw {
+            return Err(decision_parameter_error(
+                law,
+                article,
+                &declared.name,
+                &flaw,
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The error for a parameter of type `decision` that holds no decision value.
+fn decision_parameter_error(
+    law: &ArticleBasedLaw,
+    article: &Article,
+    name: &str,
+    flaw: &str,
+) -> EngineError {
+    EngineError::InvalidOperation(format!(
+        "parameter '{name}' of {}#{} is no decision value {{grondslag, taken_on, fields, \
+         findings, outputs}}: it {flaw}",
+        law.id, article.number
+    ))
+}
+
 /// The error for an output an executed article did not produce.
 ///
 /// A void is an answer, not a defect: when the provenance records one, the
@@ -3761,6 +3868,7 @@ impl LawExecutionService {
                 });
             }
         }
+        check_decision_parameters(law, article, &parameters, res_ctx.depth == 0)?;
 
         // What this execution needs, settled before any action runs (RFC-043).
         let demand = self.plan_demand(article, law, requested_outputs, stage, res_ctx);

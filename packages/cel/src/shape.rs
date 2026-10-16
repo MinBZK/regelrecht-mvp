@@ -261,7 +261,8 @@ pub(crate) fn article_on<'s>(
 /// complete it; it is still an application). An amount is in whole
 /// eurocents. A date is written `YYYY-MM-DD`, and only so. A decision is a
 /// decision value `{grondslag, fields, findings, outputs}` (schema
-/// v0.8.4): an article reference and three objects, and nothing else.
+/// v0.8.4): an article reference and three objects, with `taken_on` where
+/// the cell gave it ([`is_decision_value`]), and nothing else.
 pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
     use serde_json::Value as J;
     match (field.type_, value) {
@@ -288,15 +289,22 @@ pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
 
 /// Whether `value` is a decision value `{grondslag, fields, findings,
 /// outputs}`: the article that decided (`<regulation>#<article>`), and
-/// three objects.
+/// three objects. A decision the cell gives from its chronicle also holds
+/// `taken_on`: the article of the submission it was taken on, also
+/// `<regulation>#<article>` (RFC-050). A value an article gives
+/// (`source.article`) holds no `taken_on`. Nothing else.
 pub(crate) fn is_decision_value(value: &serde_json::Map<String, serde_json::Value>) -> bool {
-    let grondslag = value
-        .get("grondslag")
-        .and_then(serde_json::Value::as_str)
-        .and_then(|g| g.split_once('#'))
-        .is_some_and(|(law, article)| !law.is_empty() && !article.is_empty());
-    value.len() == 4
-        && grondslag
+    let reference = |key: &str| {
+        value
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .and_then(|g| g.split_once('#'))
+            .is_some_and(|(law, article)| !law.is_empty() && !article.is_empty())
+    };
+    let taken_on = !value.contains_key("taken_on") || reference("taken_on");
+    value.len() == 4 + usize::from(value.contains_key("taken_on"))
+        && reference("grondslag")
+        && taken_on
         && ["fields", "findings", "outputs"]
             .iter()
             .all(|key| value.get(*key).is_some_and(serde_json::Value::is_object))

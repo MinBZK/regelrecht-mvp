@@ -36,13 +36,21 @@ articles:
         input:
           # De besluiten onder artikel 13a, één rij per besluit, met de
           # gegevens en de uitvoer van dat besluit onder hun eigen naam: onder
-          # meer bsn_jongere, eerste_verlofdag en verlof_verleend. De cel zet
-          # er bij elke rij bestreden_besluit_herroepen bij: of een beslissing
-          # op bezwaar het besluit herriep (Awb 7:11, tweede lid).
+          # meer bsn_jongere, eerste_verlofdag en verlof_verleend, en het id
+          # van het besluit.
           - name: besluiten
             type: array
             source:
               decisions: leerplichtwet_1969#13a
+          # De beslissingen op bezwaar (Awb 7:11), ook één rij per besluit.
+          # Een rij noemt het bestreden besluit bij zijn id
+          # (bestreden_besluit), en of zij het herriep
+          # (bestreden_besluit_herroepen). De cel moet daarvoor de Awb
+          # geladen hebben.
+          - name: beslissingen_op_bezwaar
+            type: array
+            source:
+              decisions: algemene_wet_bestuursrecht#7:11
           # Het schooljaar van het gevraagde verlof is dat van de eerste
           # verlofdag (eigen keuze, zie artikel 13a).
           - name: begin_schooljaar
@@ -60,16 +68,34 @@ articles:
               parameters:
                 datum: $eerste_verlofdag
         output:
+          - name: herroepen_besluiten
+            type: array
+            description: >-
+              De ids van de besluiten die een beslissing op bezwaar herriep
+              (Awb 7:11, tweede lid).
           - name: verlof_al_verleend_in_schooljaar
             type: boolean
             description: >-
               Of het hoofd de jongere in het schooljaar van het gevraagde verlof
               al verlof verleende.
         actions:
+          # Een besluit dat een beslissing op bezwaar herriep, is er niet meer
+          # (Awb 7:11, tweede lid). De koppeling loopt via een lijst ids:
+          # binnen een FOREACH is de binding van een buitenste FOREACH niet te
+          # lezen.
+          - output: herroepen_besluiten
+            value:
+              operation: FOREACH
+              collection: $beslissingen_op_bezwaar
+              as: beslissing
+              filter:
+                operation: EQUALS
+                subject: $beslissing.bestreden_besluit_herroepen
+                value: true
+              body: $beslissing.bestreden_besluit
           # Een besluit dat dezelfde jongere verlof verleende, met een eerste
           # verlofdag in het schooljaar van het gevraagde verlof. Een
-          # weigering telt niet, en een besluit dat op bezwaar is herroepen
-          # ook niet: het is er niet meer (Awb 7:11, tweede lid). Het besluit
+          # weigering telt niet, en een herroepen besluit ook niet. Het besluit
           # dat in zijn plaats kwam, telt als elk ander (RFC-050). Met `as` is
           # een besluit alleen als `$besluit.<veld>` te lezen (RFC-049);
           # `$bsn_jongere` is de parameter.
@@ -84,9 +110,11 @@ articles:
                   - operation: EQUALS
                     subject: $besluit.verlof_verleend
                     value: true
-                  - operation: EQUALS
-                    subject: $besluit.bestreden_besluit_herroepen
-                    value: false
+                  - operation: NOT
+                    value:
+                      operation: IN
+                      subject: $besluit.id
+                      value: $herroepen_besluiten
                   - operation: EQUALS
                     subject: $besluit.bsn_jongere
                     value: $bsn_jongere

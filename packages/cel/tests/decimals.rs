@@ -180,6 +180,7 @@ fn stored_decision(service: &mut LawExecutionService, teller: i64, noemer: i64) 
     };
     let value = json!({
         "grondslag": decision.grondslag,
+        "taken_on": application.grondslag,
         "fields": application.fields,
         "findings": {},
         "outputs": decision.outputs,

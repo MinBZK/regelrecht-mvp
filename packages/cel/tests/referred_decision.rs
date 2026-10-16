@@ -1409,3 +1409,51 @@ fn a_refused_decision_writes_nothing_to_the_file() {
     assert_eq!(std::fs::read_to_string(&path).unwrap(), written);
     assert_eq!(Cell::open(ACTOR, &path).unwrap().grams(), cell.grams());
 }
+
+/// Without a field of type `decision`, a submission that refers to a
+/// decision still takes from it what it holds by name, and keeps the
+/// reference.
+#[test]
+fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
+    let mut service = service();
+    let (mut cell, _dir) = cell();
+    let application = apply(&mut cell, &service, 2, "2026-03-02");
+    let granted = decide(
+        &mut cell,
+        &mut service,
+        VERLOF_LAW,
+        &application.id,
+        "2026-03-03",
+    )
+    .unwrap()
+    .remove(0);
+    let again = cell
+        .record_submission(
+            &service,
+            VERLOF_LAW,
+            "1",
+            Some(&granted.id),
+            &Map::new(),
+            day("2026-03-10"),
+        )
+        .unwrap();
+    assert_eq!(again.refers_to.as_deref(), Some(granted.id.as_str()));
+    assert_eq!(again.fields["bsn"], json!(BSN));
+    assert_eq!(again.fields["dagen"], json!(2));
+    assert!(again.missing.is_empty());
+    // What it takes from the decision, the submitter does not supply.
+    let e = cell
+        .record_submission(
+            &service,
+            VERLOF_LAW,
+            "1",
+            Some(&granted.id),
+            &object(json!({"dagen": 3})),
+            day("2026-03-10"),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("comes from the decision it refers to")),
+        "{e}"
+    );
+}

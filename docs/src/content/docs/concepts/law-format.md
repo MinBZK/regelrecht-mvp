@@ -212,6 +212,27 @@ The set is short on purpose. An operation earns its place when a real law needs 
 
 An article that yields more than one thing writes `produces` as a list, one item per thing (schema v0.8.1). Each item says what it is with `type`, a kind of submission or a legal character. Leerplichtwet 1969 art. 13a establishes the application for leave and decides on it. The application lists the parameters it contains under `parameters` and names the decision it asks for with `requests`; the decision lists its outputs under `outputs`. The [decision on the application](/concepts/chronolexography#the-decision-on-the-application) shows it, and [RFC-047](/rfcs/rfc-047) gives the rules.
 
+#### Derived data
+
+Not every output of a deciding article is part of what it decides. The decision lists those under `derived` (schema v0.8.4). For example, a parking card for the disabled:
+
+```yaml
+produces:
+  - type: BESCHIKKING
+    outputs: [gehandicaptenparkeerkaart_verstrekt]   # what the college decides
+    derived: [kaart_geldig_tot]                      # what follows from it (BABW art. 51 lid 1)
+```
+
+| | `outputs` | `derived` |
+|---|---|---|
+| Computed when the decision is taken | yes | yes |
+| Recorded with the decision | yes | yes |
+| Part of the decision value (`$x.outputs`) | yes | no |
+
+The difference matters when a decision is compared with another, as on objection (Awb 7:11). The validity of the card runs from the day of issue. If the college takes the decision anew on another day, the end date differs, although the college decides the same thing. Only the outputs count.
+
+Every output of an article belongs to exactly one item, under `outputs` or `derived`. The loader refuses an output no item lists, a name under `derived` that is no output of the article, and `derived` on a submission. So a forgotten or misspelled output fails instead of quietly becoming derived data ([RFC-050](/rfcs/rfc-050)).
+
 ## Type Specifications
 
 A field's `type` says what kind of value it is; `type_spec.unit` says what an amount is counted in. Units exist because a law mixes euros, eurocent, fractions, percentages and durations, and adding a number of days to an amount of money is a mistake a type system can catch ([RFC-023](/rfcs/rfc-023)).

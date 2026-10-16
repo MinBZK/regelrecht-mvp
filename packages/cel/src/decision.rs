@@ -37,32 +37,6 @@ use crate::shape::{self, add_field, article_on, Field};
 /// decision on the day it takes it: that is its assumption, not the law's.
 pub const STAGES: [&str; 2] = ["BESLUIT", "BEKENDMAKING"];
 
-/// The output of the article deciding on an objection that says whether it
-/// revokes the contested decision (Awb 7:11 lid 2). The one Awb name the cell
-/// knows, as it knows the [`STAGES`]: it takes a new decision when it is
-/// true, and a decision it revoked counts no more (RFC-050).
-pub const REVOKES: &str = "bestreden_besluit_herroepen";
-
-/// Whether the decision of article `reference` (`<regulation>#<article>`) in
-/// force on `day` says whether it revokes a contested decision
-/// ([`REVOKES`] among the outputs of its item in `produces`): whether it
-/// decides on an objection. Read from the law alone, so an article that
-/// takes no decision, or is no article reference, answers `false`.
-pub fn decides_on_objection(
-    service: &LawExecutionService,
-    reference: &str,
-    day: NaiveDate,
-) -> bool {
-    reference
-        .split_once('#')
-        .and_then(|(law_id, article)| article_on(service, law_id, article, day))
-        .is_some_and(|article| {
-            article
-                .get_decision()
-                .is_some_and(|decision| article.outputs_of(decision).contains(&REVOKES))
-        })
-}
-
 /// Where the value of a field of a decision comes from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "from", rename_all = "snake_case")]

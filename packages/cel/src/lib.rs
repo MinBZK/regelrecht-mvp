@@ -19,19 +19,16 @@
 //! A submission may refer to a decision (RFC-050): a field of type
 //! `decision` holds it, and the deciding article gets its decision value.
 //! A decision output of the deciding article is a decision taken in turn,
-//! which the cell records too ([`cell`]).
-//!
-//! An objection as the cell still decides it (Awb 7:11 in Rust, until the
-//! rulework holds it) is in [`objection`]. The decision on it applies the
-//! contested decision's article anew; when that revokes the contested
-//! decision, the cell takes the new decision in its place.
+//! which the cell records too ([`cell`]). A submission that refers to a
+//! decision, such as an objection, is decided like any other: the law says
+//! what it holds and how it is decided, and the cell knows no article that
+//! does this.
 
 pub mod cell;
 pub mod chronicle;
 pub mod decision;
 pub mod encoding;
 pub mod error;
-pub mod objection;
 pub mod reading;
 pub mod shape;
 
@@ -39,6 +36,5 @@ pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
 pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
-pub use objection::ObjectionDecision;
 pub use reading::Reduction;
 pub use shape::{Field, Moment, Shape};

@@ -187,6 +187,16 @@ fn a_decision_fits_only_as_a_decision_value() {
         "outputs": {"verleend": true},
     });
     assert!(shape::fits(&field, &value));
+    // As the cell gives one from its chronicle: with the article of the
+    // submission it was taken on.
+    let taken = json!({
+        "grondslag": "wet_verlof#1",
+        "taken_on": "wet_verlof#2",
+        "fields": {},
+        "findings": {},
+        "outputs": {},
+    });
+    assert!(shape::fits(&field, &taken));
     for odd in [
         json!("019a-besluit"),
         json!({"grondslag": "wet_verlof", "fields": {}, "findings": {}, "outputs": {}}),
@@ -195,6 +205,9 @@ fn a_decision_fits_only_as_a_decision_value() {
         json!({"grondslag": "wet_verlof#1", "fields": {}, "findings": {}}),
         json!({"grondslag": "wet_verlof#1", "fields": {}, "outputs": {}}),
         json!({"grondslag": "wet_verlof#1", "fields": {}, "findings": {}, "outputs": {}, "extra": 1}),
+        json!({"grondslag": "wet_verlof#1", "taken_on": "wet_verlof", "fields": {}, "findings": {}, "outputs": {}}),
+        json!({"grondslag": "wet_verlof#1", "taken_on": null, "fields": {}, "findings": {}, "outputs": {}}),
+        json!({"grondslag": "wet_verlof#1", "taken_on": "wet_verlof#2", "fields": {}, "findings": {}, "outputs": {}, "extra": 1}),
         json!(null),
     ] {
         assert!(!shape::fits(&field, &odd), "{odd}");
