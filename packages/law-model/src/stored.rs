@@ -207,7 +207,7 @@ fn decimal(map: &BTreeMap<String, Value>) -> Result<Decimal, StoredError> {
     // such as `1_0` or `+1`, is no decimal it wrote.
     digits
         .and_then(|d| d.parse::<Decimal>().ok().filter(|p| p.to_string() == d))
-        .ok_or_else(|| StoredError::NotADecimal(format!("{map:?}")))
+        .ok_or_else(|| StoredError::NotADecimal(J::from(&Value::Object(map.clone())).to_string()))
 }
 
 #[cfg(test)]
