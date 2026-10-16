@@ -118,6 +118,14 @@
      column; rich-text's own safety net covers paragraphs, not these divs. */
   overflow-wrap: anywhere;
 }
+/* The site's own pointer under a cited paper it also renders: a line of its
+   own, smaller than the reference, so it does not read as part of it. */
+[data-discuss-paper] .csl-bib-body .rr-site-copy {
+  display: block;
+  width: fit-content;
+  margin-top: var(--primitives-space-4);
+  font-size: 0.875rem;
+}
 /* A numbered style (Vancouver) puts the number and the entry in two divs;
    set them side by side, the number in its own column, instead of the
    author-date hanging indent above. */
