@@ -97,7 +97,7 @@ impl SelectionReason {
 /// each law, while execution selects the version in force on the reference
 /// date. What the index offers can therefore be a law that has no version to
 /// select for this date.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeclarationKind {
     /// A hook article that would have fired at a hook point.
@@ -143,7 +143,7 @@ impl DeclarationKind {
 /// corpus, where someone wrote a regulation that arrogates what the law does
 /// not delegate. This one is usually no defect at all but the calendar doing
 /// its work, so it must not read as an accusation.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct DeclarationNotInForce {
     /// What the declaration would have done.
     pub kind: DeclarationKind,
@@ -230,7 +230,7 @@ pub(crate) fn missing_article_reason(
 /// wrote a regulation that arrogates what the law does not delegate to it. It
 /// is therefore recorded rather than dropped, so a citizen contesting the
 /// decision can read that a filling was offered and why it did not count.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct DelegationRefusal {
     /// The law whose article declares the open term.
     pub declaring_law: String,
@@ -301,7 +301,7 @@ pub enum ProcedureMiss {
 /// Not a finding about the law, but about the answer: for this execution,
 /// "no hook, no override, no procedure" came from the wrong version and cannot
 /// be relied on.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct DeclarationsFromOtherVersion {
     /// The law whose declarations were consulted.
     pub law_id: String,

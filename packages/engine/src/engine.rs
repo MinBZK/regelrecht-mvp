@@ -62,8 +62,10 @@ pub enum OutputProvenance {
 /// that decides it per case, or a regulation that implements it (RFC-050).
 /// A consumer reads here which of the two the outcome rests on, instead of
 /// guessing from the value: a regulation can give what the authority found.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
-#[serde(tag = "filled_by", rename_all = "snake_case")]
+/// Serialized as `"finding"` or as `{"regulation": {"law_id", "article"}}`,
+/// so the regulation's article does not collide with the declaring one.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum FilledBy {
     /// A finding for this case (`decided_per_case_by`), given by the caller
     /// or with a decision value called anew.
@@ -74,7 +76,7 @@ pub enum FilledBy {
 
 /// One open term of one article that was filled in an execution, and by
 /// whom. A term filled by its default, or left null, is not listed.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct OpenTermFilled {
     /// The law and article that declare the term, so a term of an article
     /// called by the executed one is told apart from one of its own.
@@ -82,7 +84,6 @@ pub struct OpenTermFilled {
     pub article: String,
     /// The id of the open term.
     pub term: String,
-    #[serde(flatten)]
     pub filled_by: FilledBy,
 }
 

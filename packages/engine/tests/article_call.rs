@@ -2210,8 +2210,9 @@ fn the_execution_reports_a_term_a_finding_filled() {
 #[test]
 fn the_execution_reports_a_term_a_regulation_filled() {
     let gelijk = HOOFD_BELEID.replace("value: false", "value: true");
-    for (beleid, finding) in [(HOOFD_BELEID, true), (gelijk.as_str(), true)] {
-        let found = filled(&[beleid], json!({ "grond_aanwezig": finding }));
+    assert_ne!(gelijk, HOOFD_BELEID);
+    for beleid in [HOOFD_BELEID, gelijk.as_str()] {
+        let found = filled(&[beleid], json!({ "grond_aanwezig": true }));
         assert_eq!(
             found,
             vec![grond_aanwezig(FilledBy::Regulation {
@@ -2220,6 +2221,37 @@ fn the_execution_reports_a_term_a_regulation_filled() {
             })]
         );
     }
+}
+
+/// The report keeps the declaring article and the implementing one apart,
+/// on the result and on the receipt.
+#[test]
+fn a_term_a_regulation_filled_serializes_both_articles() {
+    let mut service = LawExecutionService::new();
+    service.load_law(HOOFD).unwrap();
+    service.load_law(HOOFD_BELEID).unwrap();
+    let parameters = params(json!({"dagen": 5}));
+    let result = service
+        .evaluate_law_with_findings(
+            "wet_hoofd",
+            &["verleend"],
+            parameters.clone(),
+            params(json!({"grond_aanwezig": true})),
+            DATE,
+        )
+        .unwrap();
+    let expected = json!([{
+        "law_id": "wet_hoofd",
+        "article": "1",
+        "term": "grond_aanwezig",
+        "filled_by": {"regulation": {"law_id": "beleid_hoofd", "article": "1"}},
+    }]);
+    assert_eq!(serde_json::to_value(&result.open_terms).unwrap(), expected);
+    let receipt = service.build_receipt_with_outputs(&result, &parameters, DATE, &[]);
+    assert_eq!(
+        serde_json::to_value(&receipt).unwrap()["results"]["open_terms"],
+        expected
+    );
 }
 
 #[test]

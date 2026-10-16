@@ -1015,6 +1015,8 @@ struct Taken {
 /// the authority found. A finding the decision did not read is not set
 /// aside, so it stays a finding. A finding applies by the term's id to
 /// every article in the decision (RFC-050), so the report is read by id.
+/// A term listed as filled by both counts as used: the regulation that
+/// fills it read the finding in its place, so the finding was used.
 fn used(given: &Map<String, serde_json::Value>, filled: &[OpenTermFilled]) -> Vec<String> {
     let by = |name: &str, finding: bool| {
         filled
@@ -1326,4 +1328,45 @@ pub(crate) fn refuse_decimal_key(name: &str, value: &serde_json::Value) -> Resul
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn filling(term: &str, filled_by: FilledBy) -> OpenTermFilled {
+        OpenTermFilled {
+            law_id: "wet".to_string(),
+            article: "1".to_string(),
+            term: term.to_string(),
+            filled_by,
+        }
+    }
+
+    fn regulation() -> FilledBy {
+        FilledBy::Regulation {
+            law_id: "beleid".to_string(),
+            article: "1".to_string(),
+        }
+    }
+
+    #[test]
+    fn used_keeps_a_finding_a_regulation_did_not_set_aside() {
+        let given: Map<String, serde_json::Value> = serde_json::from_value(serde_json::json!({
+            "door_vaststelling": true,
+            "door_regeling": true,
+            "door_beide": true,
+            "niet_gelezen": true,
+        }))
+        .unwrap();
+        let filled = [
+            filling("door_vaststelling", FilledBy::Finding),
+            filling("door_regeling", regulation()),
+            filling("door_beide", regulation()),
+            filling("door_beide", FilledBy::Finding),
+        ];
+        let mut found = used(&given, &filled);
+        found.sort();
+        assert_eq!(found, ["door_beide", "door_vaststelling", "niet_gelezen"]);
+    }
 }
