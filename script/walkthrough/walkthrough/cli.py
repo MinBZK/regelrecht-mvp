@@ -16,6 +16,7 @@
     walkthrough anchors          scroll anchors for takes recorded without them (dev server on)
     walkthrough states           the demo's state at chapters added in walkthrough.yaml (dev server on)
     walkthrough subtitles        shorter subtitles for what was said, in subtitles.yaml (then build)
+    walkthrough translate <code> captions, slides and questions in another language (then build)
     (verify: `just walkthrough verify` runs frontend-demo/scripts/verify-walkthrough.mjs)
     walkthrough publish <tag>    the media into a GitHub release (asks first)
 
@@ -38,7 +39,7 @@ from pathlib import Path
 
 import yaml
 
-from . import media
+from . import localize, media
 from .media import FPS, ffmpeg
 from .timeline import (
     CutError,
@@ -896,6 +897,7 @@ def build(release: str | None = None) -> None:
         "faq": faqs,
         "bumpers": bumpers,
     }
+    report_translations(localize.apply(timeline, CORPUS), timeline)
     (CORPUS / "timeline.json").write_text(json.dumps(timeline, ensure_ascii=False, indent=1) + "\n")
     total = sum(sum((t.get(k) or {}).get("bytes") or 0 for k in ("audio", "video", "cam")) for t in [main, *faqs])
     say(f"klaar: {main['duration']:.0f}s rondleiding, {len(faqs)} vragen, {total / 1e6:.0f} MB media in {PUBLIC.relative_to(ROOT)}")
@@ -1135,6 +1137,173 @@ def anchors(url: str) -> None:
         say(f"{take}: {n} scrolls met een anker; draai `just walkthrough build` opnieuw")
 
 
+# ---- other languages ------------------------------------------------------------------
+
+
+def report_translations(report: dict, timeline: dict) -> None:
+    for code, miss in report.items():
+        gaps = ", ".join(f"{len(v)} {k}" for k, v in miss.items() if v)
+        say(f"{code}: " + (f"nog niet vertaald: {gaps}; draai `walkthrough translate {code}`" if gaps else "alles vertaald"))
+
+
+class IndentedDumper(yaml.SafeDumper):
+    """Lists under a key indented, the way yamllint wants them in the corpus."""
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+
+LANGUAGE_NAMES = {"en": "Engels (Brits gespeld, zoals de Engelse demo: organisation, behaviour)", "fy": "Fries"}
+
+TRANSLATE_PROMPT = """Je vertaalt de tekst bij een gesproken rondleiding door de demo van
+RegelRecht (wetten als machine-uitvoerbare regels) naar het {language}. De
+presentator spreekt Nederlands; de kijker leest jouw vertaling {what}.
+
+Regels:
+- Vertaal wat er staat, niet meer en niet minder. Houd getallen, bedragen,
+  namen en wetsnamen zoals ze zijn.
+- Kort en helder; ondertitels hooguit twee regels van 42 tekens.
+- Vaste vertalingen, altijd zo:
+{terms}
+- Staat iets op het scherm onder een andere naam in de demo, gebruik dan die
+  naam, ook voor een toeslag of wet ("Zorgtoeslag" is in de demo
+  "Healthcare allowance"). Deze labels gebruikt de demo in het {language}:
+{labels}
+- Een regel hoort bij zijn eigen moment: schuif geen tekst naar een andere.
+  Een zin die over twee regels loopt, mag in de vertaling ook over twee
+  regels lopen.
+{extra}
+De invoer is een JSON-object van nummer naar Nederlandse tekst, in volgorde.
+Antwoord met alleen een JSON-object met precies dezelfde nummers, elk met zijn
+vertaling.
+
+{items}
+"""
+
+TRANSLATE_WHAT = {
+    "captions": "als ondertitel, terwijl hij het Nederlands hoort",
+    "slides": "op de dia's naast de demo; **vet** blijft **vet**",
+    "questions": "als vraag in de lijst met veelgestelde vragen",
+    "typed": "als tekst die de presentator in een formulier van de demo typt",
+}
+
+
+def ui_labels(code: str, texts: list[str]) -> dict[str, str]:
+    """What the demo calls things in `code`: the interface's short labels
+    (frontend-demo/src/i18n) whose Dutch occurs in `texts`. When the
+    presenter says "klik op Regelwerken", the English caption says
+    "Ruleworks", which is what the viewer sees."""
+    script = (
+        "const [nl, local] = await Promise.all([import('./src/i18n/nl.js'), import(`./src/i18n/${process.argv[1]}.js`)]);"
+        "const out = {};"
+        "for (const [k, v] of Object.entries(nl.default)) {"
+        "  const l = local.default[k];"
+        "  if (typeof v === 'string' && typeof l === 'string' && v !== l && v.length <= 40 && !v.includes('{')) out[v] = l;"
+        "}"
+        "console.log(JSON.stringify(out));"
+    )
+    r = subprocess.run(["node", "--input-type=module", "-e", script, code], cwd=ROOT / "frontend-demo", capture_output=True, text=True)
+    pairs = {**{a: b for a, b in localize.deck_pairs(code, prefix=None).items() if len(a) <= 40}, **json.loads(r.stdout or "{}")}
+    said = " ".join(texts).lower()
+    return {a: b for a, b in pairs.items() if len(a) > 3 and f" {a.lower()}" in f" {said}"}
+
+
+# Smaller than for shortening: a translation answer is longer, and a batch
+# of fifty came back cut off now and then.
+TRANSLATE_BATCH = 25
+
+
+def ask_translations(kind: str, items: list[str], code: str, labels: dict[str, str], terms: dict[str, str]) -> dict[str, str]:
+    """Translations for `items` from a language model, in batches."""
+    language = LANGUAGE_NAMES.get(code, code)
+    names = load_config(required=False).get("glossary") or []
+    extra = ("- Namen die blijven zoals ze zijn: " + ", ".join(n for n in names if n.lower() not in {t.lower() for t in terms}) + ".\n") if names else ""
+    label_lines = "\n".join(f"  {a} = {b}" for a, b in sorted(labels.items())) or "  (geen)"
+    term_lines = "\n".join(f"  {a} = {b}" for a, b in terms.items()) or "  (geen)"
+    out: dict[str, str] = {}
+    for i in range(0, len(items), TRANSLATE_BATCH):
+        batch = items[i : i + TRANSLATE_BATCH]
+        got = None
+        for _ in range(2):
+            r = subprocess.run(
+                ["claude", "-p", "--model", "sonnet", "--tools", ""],
+                input=TRANSLATE_PROMPT.format(language=language, what=TRANSLATE_WHAT[kind], terms=term_lines, labels=label_lines, extra=extra, items=json.dumps({str(n + 1): c for n, c in enumerate(batch)}, ensure_ascii=False, indent=0)),
+                capture_output=True,
+                text=True,
+            )
+            text = r.stdout.strip()
+            try:
+                answer = json.loads(text[text.find("{") : text.rfind("}") + 1])
+            except json.JSONDecodeError:
+                continue
+            answer = [answer.get(str(n + 1)) for n in range(len(batch))] if isinstance(answer, dict) else []
+            # A caption may come back empty: a fragment ("gaan.") that the
+            # line before already says in the other language's word order.
+            if answer and all(isinstance(x, str) and (x.strip() or kind == "captions") for x in answer):
+                got = answer
+                break
+        if got is None:
+            say(f"  {kind} {i + 1}-{i + len(batch)}: het antwoord paste niet op de vraag; overgeslagen")
+            continue
+        out.update({a: " ".join(b.split()) for a, b in zip(batch, got)})
+        say(f"  {kind}: {min(i + len(batch), len(items))} van {len(items)}")
+    return out
+
+
+def translate(code: str) -> None:
+    """Captions, slides, questions and typed sentences in `code`, for what is
+    not translated yet.
+
+    Asks a language model (headless Claude Code) for each missing line and
+    appends it to corpus/demo/i18n/walkthrough.<code>.yaml, keyed by the
+    Dutch, for anyone to correct by hand. Then applies the file to the
+    timeline, which a build would also do.
+    """
+    import copy
+
+    if code == localize.SOURCE:
+        raise SystemExit("het Nederlands is de bron; kies een andere taal")
+    timeline = read_json(CORPUS / "timeline.json")
+    if not timeline:
+        raise SystemExit("nog geen timeline.json; draai eerst `walkthrough build`")
+    if not shutil.which("claude"):
+        raise SystemExit(f"geen `claude` op het pad; vul {localize.path_for(code).relative_to(ROOT)} met de hand")
+    path = localize.path_for(code)
+    if not path.exists():
+        path.write_text("---\n")
+    miss = localize.apply(copy.deepcopy(timeline), CORPUS, write=False).get(code) or {}
+    labels = ui_labels(code, [t for v in miss.values() for t in v])
+    data = yaml.safe_load(path.read_text()) or {}
+    header = (
+        "---\n"
+        f"# De rondleiding in het {LANGUAGE_NAMES.get(code, code).split(' (')[0]}: wat de kijker leest terwijl de\n"
+        "# presentator Nederlands spreekt. Gesleuteld op het Nederlands, zodat een\n"
+        "# nieuwe knip of build elke regel houdt die nog voorkomt.\n"
+        f"# `just walkthrough translate {code}` vult aan wat ontbreekt; corrigeer gerust\n"
+        "# met de hand. Een build (`just walkthrough build`) zet het in beeld.\n"
+    )
+
+    def save():
+        path.write_text(header + yaml.dump(data, Dumper=IndentedDumper, allow_unicode=True, sort_keys=False, width=1000))
+
+    questions = {f["question"]: f["id"] for f in timeline.get("faq") or []}
+    for kind in ("questions", "slides", "typed", "captions"):
+        todo = list(dict.fromkeys(miss.get(kind) or []))
+        if not todo:
+            continue
+        say(f"{len(todo)} {kind} vertalen naar {code}")
+        got = ask_translations(kind, todo, code, labels, localize.load(code)["terms"])
+        if kind == "questions":
+            data.setdefault("questions", {}).update({questions[q]: v for q, v in got.items()})
+        else:
+            data.setdefault(kind, [])
+            data[kind] += [{"nl": a, code: b} for a, b in got.items()]
+        save()
+    report = localize.apply(timeline, CORPUS)
+    (CORPUS / "timeline.json").write_text(json.dumps(timeline, ensure_ascii=False, indent=1) + "\n")
+    report_translations(report, timeline)
+
+
 def takes_in_use(cfg: dict) -> set[str]:
     """Every take the walkthrough draws on: directly, or through a script."""
     segments = list((cfg.get("main") or {}).get("segments") or [])
@@ -1275,6 +1444,8 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("check", help="hoe een opname klinkt, in getallen")
     p.add_argument("take", nargs="?", help="map in .walkthrough/takes (standaard: de laatste)")
     sub.add_parser("subtitles", help="kortere ondertitels laten maken, in subtitles.yaml")
+    p = sub.add_parser("translate", help="ondertitels, dia's en vragen in een andere taal")
+    p.add_argument("code", help="de taal, bijvoorbeeld en")
     p = sub.add_parser("anchors", help="scrollankers meten voor oudere opnames")
     p.add_argument("--url", default="http://127.0.0.1:7400", help="de dev-server")
     p = sub.add_parser("states", help="de demostand vastleggen bij achteraf toegevoegde hoofdstukken")
@@ -1303,6 +1474,8 @@ def main(argv: list[str] | None = None) -> None:
         build(args.release)
     elif args.cmd == "subtitles":
         subtitles()
+    elif args.cmd == "translate":
+        translate(args.code)
     elif args.cmd == "anchors":
         anchors(args.url)
     elif args.cmd == "states":

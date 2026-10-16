@@ -12583,7 +12583,10 @@
       "nth": 0
      }
     ],
-    "value": "I"
+    "value": "I",
+    "values": {
+     "en": "I"
+    }
    },
    {
     "t": 912.428,
@@ -12604,7 +12607,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik"
+    "value": "Ik",
+    "values": {
+     "en": "I "
+    }
    },
    {
     "t": 912.572,
@@ -12625,7 +12631,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik "
+    "value": "Ik ",
+    "values": {
+     "en": "I "
+    }
    },
    {
     "t": 912.708,
@@ -12646,7 +12655,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik h"
+    "value": "Ik h",
+    "values": {
+     "en": "I n"
+    }
    },
    {
     "t": 912.843,
@@ -12667,7 +12679,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik he"
+    "value": "Ik he",
+    "values": {
+     "en": "I no"
+    }
    },
    {
     "t": 912.895,
@@ -12688,7 +12703,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb"
+    "value": "Ik heb",
+    "values": {
+     "en": "I no "
+    }
    },
    {
     "t": 913.071,
@@ -12709,7 +12727,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb "
+    "value": "Ik heb ",
+    "values": {
+     "en": "I no l"
+    }
    },
    {
     "t": 913.244,
@@ -12730,7 +12751,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb m"
+    "value": "Ik heb m",
+    "values": {
+     "en": "I no lo"
+    }
    },
    {
     "t": 913.344,
@@ -12751,7 +12775,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mi"
+    "value": "Ik heb mi",
+    "values": {
+     "en": "I no lo"
+    }
    },
    {
     "t": 913.492,
@@ -12772,7 +12799,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mij"
+    "value": "Ik heb mij",
+    "values": {
+     "en": "I no lon"
+    }
    },
    {
     "t": 913.707,
@@ -12793,7 +12823,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn"
+    "value": "Ik heb mijn",
+    "values": {
+     "en": "I no long"
+    }
    },
    {
     "t": 913.885,
@@ -12814,7 +12847,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn "
+    "value": "Ik heb mijn ",
+    "values": {
+     "en": "I no longe"
+    }
    },
    {
     "t": 914.026,
@@ -12835,7 +12871,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn o"
+    "value": "Ik heb mijn o",
+    "values": {
+     "en": "I no longer"
+    }
    },
    {
     "t": 914.174,
@@ -12856,7 +12895,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn on"
+    "value": "Ik heb mijn on",
+    "values": {
+     "en": "I no longer"
+    }
    },
    {
     "t": 914.224,
@@ -12877,7 +12919,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn ond"
+    "value": "Ik heb mijn ond",
+    "values": {
+     "en": "I no longer "
+    }
    },
    {
     "t": 914.342,
@@ -12898,7 +12943,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onde"
+    "value": "Ik heb mijn onde",
+    "values": {
+     "en": "I no longer r"
+    }
    },
    {
     "t": 914.418,
@@ -12919,7 +12967,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onder"
+    "value": "Ik heb mijn onder",
+    "values": {
+     "en": "I no longer ru"
+    }
    },
    {
     "t": 914.517,
@@ -12940,7 +12991,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn ondern"
+    "value": "Ik heb mijn ondern",
+    "values": {
+     "en": "I no longer run"
+    }
    },
    {
     "t": 914.615,
@@ -12961,7 +13015,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderne"
+    "value": "Ik heb mijn onderne",
+    "values": {
+     "en": "I no longer run "
+    }
    },
    {
     "t": 914.749,
@@ -12982,7 +13039,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn ondernem"
+    "value": "Ik heb mijn ondernem",
+    "values": {
+     "en": "I no longer run "
+    }
    },
    {
     "t": 914.951,
@@ -13003,7 +13063,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn ondernemi"
+    "value": "Ik heb mijn ondernemi",
+    "values": {
+     "en": "I no longer run m"
+    }
    },
    {
     "t": 915.078,
@@ -13024,7 +13087,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn ondernemin"
+    "value": "Ik heb mijn ondernemin",
+    "values": {
+     "en": "I no longer run my"
+    }
    },
    {
     "t": 915.19,
@@ -13045,7 +13111,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming"
+    "value": "Ik heb mijn onderneming",
+    "values": {
+     "en": "I no longer run my "
+    }
    },
    {
     "t": 915.274,
@@ -13066,7 +13135,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming "
+    "value": "Ik heb mijn onderneming ",
+    "values": {
+     "en": "I no longer run my b"
+    }
    },
    {
     "t": 915.419,
@@ -13087,7 +13159,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming n"
+    "value": "Ik heb mijn onderneming n",
+    "values": {
+     "en": "I no longer run my b"
+    }
    },
    {
     "t": 915.451,
@@ -13108,7 +13183,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming ni"
+    "value": "Ik heb mijn onderneming ni",
+    "values": {
+     "en": "I no longer run my bu"
+    }
    },
    {
     "t": 915.502,
@@ -13129,7 +13207,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming nie"
+    "value": "Ik heb mijn onderneming nie",
+    "values": {
+     "en": "I no longer run my bus"
+    }
    },
    {
     "t": 915.546,
@@ -13150,7 +13231,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming niet"
+    "value": "Ik heb mijn onderneming niet",
+    "values": {
+     "en": "I no longer run my busi"
+    }
    },
    {
     "t": 915.651,
@@ -13171,7 +13255,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming niet "
+    "value": "Ik heb mijn onderneming niet ",
+    "values": {
+     "en": "I no longer run my busin"
+    }
    },
    {
     "t": 915.815,
@@ -13192,7 +13279,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming niet m"
+    "value": "Ik heb mijn onderneming niet m",
+    "values": {
+     "en": "I no longer run my busine"
+    }
    },
    {
     "t": 915.924,
@@ -13213,7 +13303,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming niet me"
+    "value": "Ik heb mijn onderneming niet me",
+    "values": {
+     "en": "I no longer run my busine"
+    }
    },
    {
     "t": 916.091,
@@ -13234,7 +13327,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming niet mee"
+    "value": "Ik heb mijn onderneming niet mee",
+    "values": {
+     "en": "I no longer run my busines"
+    }
    },
    {
     "t": 916.14,
@@ -13255,7 +13351,10 @@
       "nth": 0
      }
     ],
-    "value": "Ik heb mijn onderneming niet meer"
+    "value": "Ik heb mijn onderneming niet meer",
+    "values": {
+     "en": "I no longer run my business"
+    }
    },
    {
     "t": 919.387,
@@ -13952,7 +14051,10 @@
       "nth": 0
      }
     ],
-    "value": "D"
+    "value": "D",
+    "values": {
+     "en": "T"
+    }
    },
    {
     "t": 1093.365,
@@ -13973,7 +14075,10 @@
       "nth": 0
      }
     ],
-    "value": "Di"
+    "value": "Di",
+    "values": {
+     "en": "Thi"
+    }
    },
    {
     "t": 1093.519,
@@ -13994,7 +14099,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit"
+    "value": "Dit",
+    "values": {
+     "en": "This"
+    }
    },
    {
     "t": 1093.686,
@@ -14015,7 +14123,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit "
+    "value": "Dit ",
+    "values": {
+     "en": "This "
+    }
    },
    {
     "t": 1096.983,
@@ -14036,7 +14147,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit k"
+    "value": "Dit k",
+    "values": {
+     "en": "This is"
+    }
    },
    {
     "t": 1097.175,
@@ -14057,7 +14171,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit kl"
+    "value": "Dit kl",
+    "values": {
+     "en": "This is "
+    }
    },
    {
     "t": 1097.407,
@@ -14078,7 +14195,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klo"
+    "value": "Dit klo",
+    "values": {
+     "en": "This is no"
+    }
    },
    {
     "t": 1097.47,
@@ -14099,7 +14219,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klop"
+    "value": "Dit klop",
+    "values": {
+     "en": "This is not"
+    }
    },
    {
     "t": 1097.569,
@@ -14120,7 +14243,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klopt"
+    "value": "Dit klopt",
+    "values": {
+     "en": "This is not "
+    }
    },
    {
     "t": 1097.944,
@@ -14141,7 +14267,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klopt "
+    "value": "Dit klopt ",
+    "values": {
+     "en": "This is not co"
+    }
    },
    {
     "t": 1100.271,
@@ -14162,7 +14291,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klopt n"
+    "value": "Dit klopt n",
+    "values": {
+     "en": "This is not cor"
+    }
    },
    {
     "t": 1100.346,
@@ -14183,7 +14315,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klopt ni"
+    "value": "Dit klopt ni",
+    "values": {
+     "en": "This is not corr"
+    }
    },
    {
     "t": 1100.386,
@@ -14204,7 +14339,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klopt nie"
+    "value": "Dit klopt nie",
+    "values": {
+     "en": "This is not correc"
+    }
    },
    {
     "t": 1100.469,
@@ -14225,7 +14363,10 @@
       "nth": 0
      }
     ],
-    "value": "Dit klopt niet"
+    "value": "Dit klopt niet",
+    "values": {
+     "en": "This is not correct"
+    }
    },
    {
     "t": 1101.378,
@@ -16220,7 +16361,8 @@
    }
   ],
   "captions": {
-   "nl": "main-439993bb3640.nl.vtt"
+   "nl": "main-439993bb3640.nl.vtt",
+   "en": "main-0001f51386f0.en.vtt"
   },
   "pieces": [
    {
@@ -16445,7 +16587,260 @@
     "to": 1290.2,
     "at": 1219.766
    }
-  ]
+  ],
+  "i18n": {
+   "en": {
+    "slides": [
+     {
+      "kind": "title",
+      "title": "RegelRecht",
+      "subtitle": "from law to digital effect",
+      "footer": "Netherlands Digital Service"
+     },
+     {
+      "kind": "statement",
+      "overline": "Today",
+      "lines": [
+       "Every implementing organisation",
+       "has its **own reading** of the law",
+       "that has spent decades landing in **its own software**"
+      ]
+     },
+     {
+      "kind": "statement",
+      "overline": "The result",
+      "lines": [
+       "No overview",
+       "Unpredictable",
+       "Unmanageable"
+      ]
+     },
+     {
+      "kind": "statement",
+      "overline": "What if",
+      "lines": [
+       "We **start with the law**",
+       "Make it **machine-executable**",
+       "Publish it **openly**"
+      ]
+     },
+     {
+      "kind": "section",
+      "title": "RegelRecht demo",
+      "lines": [
+       "A complete story, not a finished product",
+       "We make policy by doing"
+      ]
+     },
+     {
+      "kind": "demo",
+      "overline": "The rulework",
+      "title": "The law as a rulework",
+      "lead": "Per article the statutory text, and below it how it works.",
+      "bullets": [
+       "**Parameter**: for whom, a BSN.",
+       "**Actions**: the conditions and the calculation.",
+       "**Input** from other laws: insured (Zvw), detained (Pbw)."
+      ],
+      "route": "/regelwerken",
+      "highlight": ".yaml-tree"
+     },
+     {
+      "kind": "demo",
+      "overline": "Coherence",
+      "title": "Laws hang together",
+      "lead": "Healthcare allowance depends on being insured, and that on detention.",
+      "bullets": [
+       "Follow the line from law to law.",
+       "Same name, different definition: the machine points to the right one.",
+       "Overview of what changes along with an amendment."
+      ],
+      "route": "/graaf",
+      "decks": [
+       "merijn"
+      ]
+     },
+     {
+      "kind": "demo",
+      "overline": "Testing",
+      "title": "The law tested, in plain language",
+      "lead": "Examples from the explanatory memorandum, run.",
+      "bullets": [
+       "**Run** gives a trace: which law, which data.",
+       "Under 18 it stops early: data minimisation.",
+       "A language model makes the first version; a lawyer reviews."
+      ],
+      "route": "/scenarios",
+      "decks": [
+       "merijn"
+      ]
+     },
+     {
+      "kind": "demo",
+      "overline": "Policy",
+      "title": "What does an amendment do to everyone?",
+      "lead": "All laws at once on a population.",
+      "bullets": [
+       "Disposable income, with all the interplay between laws.",
+       "Computing an amendment: the default premium goes up.",
+       "Compare before and after, before anyone votes."
+      ],
+      "route": "/simulatie"
+     },
+     {
+      "kind": "demo",
+      "overline": "The citizen",
+      "title": "One citizen, Merijn",
+      "lead": "Self-employed in home care, a single parent with two young children.",
+      "bullets": [
+       "Everything he is entitled to, computed live by the law itself.",
+       "Every fact traces back to the register that supplied it.",
+       "A fact wrong? He corrects it, a case officer assesses it."
+      ],
+      "route": "/portaal",
+      "profile": "merijn",
+      "highlight": "nldd-card",
+      "decks": [
+       "merijn"
+      ]
+     },
+     {
+      "kind": "demo",
+      "overline": "Applying",
+      "title": "Asking only what government does not know",
+      "lead": "The law computes with what is already there, and asks only when it gets stuck.",
+      "bullets": [
+       "Housing benefit does not know the rent. That is the only question, at that moment.",
+       "After every answer the law computes again.",
+       "Check, declare, submit. Without a ten-page form."
+      ],
+      "route": "/portaal",
+      "highlight": "[data-highlight=\"complete-data\"]",
+      "decks": [
+       "merijn"
+      ]
+     },
+     {
+      "kind": "demo",
+      "overline": "The case officer",
+      "title": "The same right, the other side of the desk",
+      "lead": "The application arrives with the calculation the citizen saw.",
+      "bullets": [
+       "The engine recomputes it against the registered data.",
+       "The citizen's corrections are waiting to be assessed.",
+       "Grant or refuse, with reasons; an objection comes back through the portal."
+      ],
+      "route": "/zaaksysteem",
+      "decks": [
+       "merijn"
+      ]
+     },
+     {
+      "kind": "demo",
+      "overline": "The entrepreneur",
+      "title": "An entrepreneur, Claudia",
+      "lead": "Director of Café Noon in Rotterdam West, a café with its own small brewery and a terrace.",
+      "bullets": [
+       "The same engine, other laws: local by-laws, alcohol, food safety, excise duty, precario tax.",
+       "The terrace permit asks for location and area; once it is granted, the precario tax computes with it.",
+       "The municipality, the food authority and the enterprise agency in one overview, without having to ask each other anything."
+      ],
+      "route": "/portaal",
+      "profile": "claudia"
+     },
+     {
+      "kind": "closing",
+      "overline": "RegelRecht demo",
+      "title": "From law to digital effect",
+      "lines": [
+       "A complete story, **not a finished product**",
+       "We make policy **by doing**"
+      ],
+      "link": {
+       "href": "https://regelrecht.rijks.app",
+       "label": "regelrecht.rijks.app"
+      }
+     },
+     {
+      "kind": "demo",
+      "overline": "The citizen",
+      "title": "One citizen, Merijn",
+      "lead": "Everything Merijn is entitled to, computed by the law itself.",
+      "bullets": [
+       "The same data as in the trace just now.",
+       "Apply for healthcare allowance: granted straight away.",
+       "Not a calculator, but the rule the Dienst Toeslagen also computes with."
+      ],
+      "route": "/portaal",
+      "profile": "merijn"
+     },
+     {
+      "kind": "demo",
+      "overline": "Applying",
+      "title": "Asking only what government does not know",
+      "lead": "Housing benefit asks only for the rent and the service costs.",
+      "bullets": [
+       "Is a data item wrong? Merijn corrects it.",
+       "The amount is computed straight away.",
+       "A caseworker assesses the amendment."
+      ],
+      "route": "/portaal",
+      "profile": "merijn"
+     },
+     {
+      "kind": "demo",
+      "overline": "Frequently asked question",
+      "title": "Can't this be done proactively?",
+      "lead": "Technically, maybe, but the government doesn't know everything.",
+      "bullets": [
+       "An inheritance is in no register.",
+       "Granting wrongly means repaying later.",
+       "That calls for political choices."
+      ],
+      "route": "/portaal",
+      "profile": "merijn"
+     },
+     {
+      "kind": "demo",
+      "overline": "The case officer",
+      "title": "The same right, the other side of the desk",
+      "lead": "The application arrives with the calculation Merijn saw.",
+      "bullets": [
+       "Approve or reject the amendment.",
+       "Grant or reject, with reasons."
+      ],
+      "route": "/zaaksysteem",
+      "profile": "merijn"
+     },
+     {
+      "kind": "demo",
+      "overline": "Object",
+      "title": "The Awb is a rulework too",
+      "lead": "Whether an objection is possible is in the rulework, not in the screen.",
+      "bullets": [
+       "Interpreted once, usable everywhere.",
+       "Also for other procedural laws: Archiefwet, AVG, Woo."
+      ],
+      "route": "/portaal",
+      "profile": "merijn"
+     },
+     {
+      "kind": "closing",
+      "overline": "RegelRecht demo",
+      "title": "From law to digital effect",
+      "lines": [
+       "A complete story, **not a finished product**",
+       "We make policy **by doing**"
+      ],
+      "link": {
+       "href": "https://regelrecht.rijks.app",
+       "label": "regelrecht.rijks.app"
+      },
+      "profile": "merijn"
+     }
+    ]
+   }
+  }
  },
  "faq": [
   {
@@ -17188,7 +17583,8 @@
    ],
    "pauses": [],
    "captions": {
-    "nl": "faq-open-normen-5192975f8e4a.nl.vtt"
+    "nl": "faq-open-normen-5192975f8e4a.nl.vtt",
+    "en": "faq-open-normen-f90ab9a2ff01.en.vtt"
    },
    "pieces": [
     {
@@ -17221,7 +17617,184 @@
      "to": 145.8667,
      "at": 92.5
     }
-   ]
+   ],
+   "i18n": {
+    "en": {
+     "slides": [
+      {
+       "kind": "title",
+       "title": "RegelRecht",
+       "subtitle": "from law to digital effect",
+       "footer": "Netherlands Digital Service"
+      },
+      {
+       "kind": "statement",
+       "overline": "Today",
+       "lines": [
+        "Every organisation",
+        "has its **own reading** of the law",
+        "which lands in **its own software**"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "The result",
+       "lines": [
+        "No overview",
+        "Unpredictable",
+        "Unmanageable"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "What if",
+       "lines": [
+        "We **start with the law**",
+        "Make it **machine-executable**",
+        "Publish it **openly**"
+       ]
+      },
+      {
+       "kind": "section",
+       "title": "RegelRecht demo",
+       "lines": [
+        "A complete story, not a finished product",
+        "We make policy by doing"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The rulework",
+       "title": "The law as a rulework",
+       "lead": "The legal text and the executable rule sit side by side, article by article.",
+       "bullets": [
+        "Every article has a **machine_readable** part: what goes in, what comes out, and how.",
+        "A reference to another law is explicit, not a copied amount.",
+        "The same rulework runs in the editor, in this portal and in the simulation."
+       ],
+       "route": "/regelwerken",
+       "highlight": ".yaml-tree"
+      },
+      {
+       "kind": "demo",
+       "overline": "Coherence",
+       "title": "Laws hang together",
+       "lead": "Whether you are insured depends on detention; whether you get healthcare allowance depends on being insured.",
+       "bullets": [
+        "Per law: which data come from registers, which from other laws, and what comes out.",
+        "Every line is a real reference from the law, with this person's value on it.",
+        "Change a law and you see at once who it touches."
+       ],
+       "route": "/graaf",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Testing",
+       "title": "The law tested, in plain language",
+       "lead": "A scenario describes a person and what the law should produce for them.",
+       "bullets": [
+        "Given a 17-year-old, no healthcare allowance. Given a single person on a low income, yes.",
+        "The same scenarios run here in the browser and in the build pipeline.",
+        "Change the law and you see which scenario falls over."
+       ],
+       "route": "/scenarios",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Policy",
+       "title": "What does it do to two thousand people?",
+       "lead": "A generated population through every scheme, with the real laws.",
+       "bullets": [
+        "Who meets the conditions, for how much, broken down by age, income and household.",
+        "Turn a threshold in the law and see the difference, before it takes effect.",
+        "For businesses too: permits, reporting duties, precario tax."
+       ],
+       "route": "/simulatie"
+      },
+      {
+       "kind": "demo",
+       "overline": "The citizen",
+       "title": "One citizen, Merijn",
+       "lead": "Self-employed in home care, a single parent with two young children.",
+       "bullets": [
+        "Everything he is entitled to, computed live by the law itself.",
+        "Every fact traces back to the register that supplied it.",
+        "A fact wrong? He corrects it, a case officer assesses it."
+       ],
+       "route": "/portaal",
+       "profile": "merijn",
+       "highlight": "nldd-card",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Applying",
+       "title": "Asking only what government does not know",
+       "lead": "The law computes with what is already there, and asks only when it gets stuck.",
+       "bullets": [
+        "Housing benefit does not know the rent. That is the only question, at that moment.",
+        "After every answer the law computes again.",
+        "Check, declare, submit. Without a ten-page form."
+       ],
+       "route": "/portaal",
+       "highlight": "[data-highlight=\"complete-data\"]",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The case officer",
+       "title": "The same right, the other side of the desk",
+       "lead": "The application arrives with the calculation the citizen saw.",
+       "bullets": [
+        "The engine recomputes it against the registered data.",
+        "The citizen's corrections are waiting to be assessed.",
+        "Grant or refuse, with reasons; an objection comes back through the portal."
+       ],
+       "route": "/zaaksysteem",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The entrepreneur",
+       "title": "An entrepreneur, Claudia",
+       "lead": "Director of Café Noon in Rotterdam West, a café with its own small brewery and a terrace.",
+       "bullets": [
+        "The same engine, other laws: local by-laws, alcohol, food safety, excise duty, precario tax.",
+        "The terrace permit asks for location and area; once it is granted, the precario tax computes with it.",
+        "The municipality, the food authority and the enterprise agency in one overview, without having to ask each other anything."
+       ],
+       "route": "/portaal",
+       "profile": "claudia"
+      },
+      {
+       "kind": "closing",
+       "overline": "RegelRecht demo",
+       "title": "From law to digital effect",
+       "lines": [
+        "A complete story, **not a finished product**",
+        "We make policy **by doing**"
+       ],
+       "link": {
+        "href": "https://regelrecht.rijks.app",
+        "label": "regelrecht.rijks.app"
+       }
+      }
+     ],
+     "question": "What happens to open norms?"
+    }
+   }
   },
   {
    "id": "juridisch-bindend",
@@ -17977,7 +18550,8 @@
    ],
    "pauses": [],
    "captions": {
-    "nl": "faq-juridisch-bindend-aab335f0f7b1.nl.vtt"
+    "nl": "faq-juridisch-bindend-aab335f0f7b1.nl.vtt",
+    "en": "faq-juridisch-bindend-7eb0e898826b.en.vtt"
    },
    "pieces": [
     {
@@ -17998,7 +18572,184 @@
      "to": 208.5,
      "at": 54.567
     }
-   ]
+   ],
+   "i18n": {
+    "en": {
+     "slides": [
+      {
+       "kind": "title",
+       "title": "RegelRecht",
+       "subtitle": "from law to digital effect",
+       "footer": "Netherlands Digital Service"
+      },
+      {
+       "kind": "statement",
+       "overline": "Today",
+       "lines": [
+        "Every organisation",
+        "has its **own reading** of the law",
+        "which lands in **its own software**"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "The result",
+       "lines": [
+        "No overview",
+        "Unpredictable",
+        "Unmanageable"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "What if",
+       "lines": [
+        "We **start with the law**",
+        "Make it **machine-executable**",
+        "Publish it **openly**"
+       ]
+      },
+      {
+       "kind": "section",
+       "title": "RegelRecht demo",
+       "lines": [
+        "A complete story, not a finished product",
+        "We make policy by doing"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The rulework",
+       "title": "The law as a rulework",
+       "lead": "The legal text and the executable rule sit side by side, article by article.",
+       "bullets": [
+        "Every article has a **machine_readable** part: what goes in, what comes out, and how.",
+        "A reference to another law is explicit, not a copied amount.",
+        "The same rulework runs in the editor, in this portal and in the simulation."
+       ],
+       "route": "/regelwerken",
+       "highlight": ".yaml-tree"
+      },
+      {
+       "kind": "demo",
+       "overline": "Coherence",
+       "title": "Laws hang together",
+       "lead": "Whether you are insured depends on detention; whether you get healthcare allowance depends on being insured.",
+       "bullets": [
+        "Per law: which data come from registers, which from other laws, and what comes out.",
+        "Every line is a real reference from the law, with this person's value on it.",
+        "Change a law and you see at once who it touches."
+       ],
+       "route": "/graaf",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Testing",
+       "title": "The law tested, in plain language",
+       "lead": "A scenario describes a person and what the law should produce for them.",
+       "bullets": [
+        "Given a 17-year-old, no healthcare allowance. Given a single person on a low income, yes.",
+        "The same scenarios run here in the browser and in the build pipeline.",
+        "Change the law and you see which scenario falls over."
+       ],
+       "route": "/scenarios",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Policy",
+       "title": "What does it do to two thousand people?",
+       "lead": "A generated population through every scheme, with the real laws.",
+       "bullets": [
+        "Who meets the conditions, for how much, broken down by age, income and household.",
+        "Turn a threshold in the law and see the difference, before it takes effect.",
+        "For businesses too: permits, reporting duties, precario tax."
+       ],
+       "route": "/simulatie"
+      },
+      {
+       "kind": "demo",
+       "overline": "The citizen",
+       "title": "One citizen, Merijn",
+       "lead": "Self-employed in home care, a single parent with two young children.",
+       "bullets": [
+        "Everything he is entitled to, computed live by the law itself.",
+        "Every fact traces back to the register that supplied it.",
+        "A fact wrong? He corrects it, a case officer assesses it."
+       ],
+       "route": "/portaal",
+       "profile": "merijn",
+       "highlight": "nldd-card",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Applying",
+       "title": "Asking only what government does not know",
+       "lead": "The law computes with what is already there, and asks only when it gets stuck.",
+       "bullets": [
+        "Housing benefit does not know the rent. That is the only question, at that moment.",
+        "After every answer the law computes again.",
+        "Check, declare, submit. Without a ten-page form."
+       ],
+       "route": "/portaal",
+       "highlight": "[data-highlight=\"complete-data\"]",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The case officer",
+       "title": "The same right, the other side of the desk",
+       "lead": "The application arrives with the calculation the citizen saw.",
+       "bullets": [
+        "The engine recomputes it against the registered data.",
+        "The citizen's corrections are waiting to be assessed.",
+        "Grant or refuse, with reasons; an objection comes back through the portal."
+       ],
+       "route": "/zaaksysteem",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The entrepreneur",
+       "title": "An entrepreneur, Claudia",
+       "lead": "Director of Café Noon in Rotterdam West, a café with its own small brewery and a terrace.",
+       "bullets": [
+        "The same engine, other laws: local by-laws, alcohol, food safety, excise duty, precario tax.",
+        "The terrace permit asks for location and area; once it is granted, the precario tax computes with it.",
+        "The municipality, the food authority and the enterprise agency in one overview, without having to ask each other anything."
+       ],
+       "route": "/portaal",
+       "profile": "claudia"
+      },
+      {
+       "kind": "closing",
+       "overline": "RegelRecht demo",
+       "title": "From law to digital effect",
+       "lines": [
+        "A complete story, **not a finished product**",
+        "We make policy **by doing**"
+       ],
+       "link": {
+        "href": "https://regelrecht.rijks.app",
+        "label": "regelrecht.rijks.app"
+       }
+      }
+     ],
+     "question": "Is this legally binding?"
+    }
+   }
   },
   {
    "id": "volgorde-artikelen",
@@ -19234,7 +19985,8 @@
    ],
    "pauses": [],
    "captions": {
-    "nl": "faq-volgorde-artikelen-e51e6b89224a.nl.vtt"
+    "nl": "faq-volgorde-artikelen-e51e6b89224a.nl.vtt",
+    "en": "faq-volgorde-artikelen-70740fcc095c.en.vtt"
    },
    "pieces": [
     {
@@ -19255,7 +20007,184 @@
      "to": 109.1333,
      "at": 94.367
     }
-   ]
+   ],
+   "i18n": {
+    "en": {
+     "slides": [
+      {
+       "kind": "title",
+       "title": "RegelRecht",
+       "subtitle": "from law to digital effect",
+       "footer": "Netherlands Digital Service"
+      },
+      {
+       "kind": "statement",
+       "overline": "Today",
+       "lines": [
+        "Every organisation",
+        "has its **own reading** of the law",
+        "which lands in **its own software**"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "The result",
+       "lines": [
+        "No overview",
+        "Unpredictable",
+        "Unmanageable"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "What if",
+       "lines": [
+        "We **start with the law**",
+        "Make it **machine-executable**",
+        "Publish it **openly**"
+       ]
+      },
+      {
+       "kind": "section",
+       "title": "RegelRecht demo",
+       "lines": [
+        "A complete story, not a finished product",
+        "We make policy by doing"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The rulework",
+       "title": "The law as a rulework",
+       "lead": "The legal text and the executable rule sit side by side, article by article.",
+       "bullets": [
+        "Every article has a **machine_readable** part: what goes in, what comes out, and how.",
+        "A reference to another law is explicit, not a copied amount.",
+        "The same rulework runs in the editor, in this portal and in the simulation."
+       ],
+       "route": "/regelwerken",
+       "highlight": ".yaml-tree"
+      },
+      {
+       "kind": "demo",
+       "overline": "Coherence",
+       "title": "Laws hang together",
+       "lead": "Whether you are insured depends on detention; whether you get healthcare allowance depends on being insured.",
+       "bullets": [
+        "Per law: which data come from registers, which from other laws, and what comes out.",
+        "Every line is a real reference from the law, with this person's value on it.",
+        "Change a law and you see at once who it touches."
+       ],
+       "route": "/graaf",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Testing",
+       "title": "The law tested, in plain language",
+       "lead": "A scenario describes a person and what the law should produce for them.",
+       "bullets": [
+        "Given a 17-year-old, no healthcare allowance. Given a single person on a low income, yes.",
+        "The same scenarios run here in the browser and in the build pipeline.",
+        "Change the law and you see which scenario falls over."
+       ],
+       "route": "/scenarios",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Policy",
+       "title": "What does it do to two thousand people?",
+       "lead": "A generated population through every scheme, with the real laws.",
+       "bullets": [
+        "Who meets the conditions, for how much, broken down by age, income and household.",
+        "Turn a threshold in the law and see the difference, before it takes effect.",
+        "For businesses too: permits, reporting duties, precario tax."
+       ],
+       "route": "/simulatie"
+      },
+      {
+       "kind": "demo",
+       "overline": "The citizen",
+       "title": "One citizen, Merijn",
+       "lead": "Self-employed in home care, a single parent with two young children.",
+       "bullets": [
+        "Everything he is entitled to, computed live by the law itself.",
+        "Every fact traces back to the register that supplied it.",
+        "A fact wrong? He corrects it, a case officer assesses it."
+       ],
+       "route": "/portaal",
+       "profile": "merijn",
+       "highlight": "nldd-card",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Applying",
+       "title": "Asking only what government does not know",
+       "lead": "The law computes with what is already there, and asks only when it gets stuck.",
+       "bullets": [
+        "Housing benefit does not know the rent. That is the only question, at that moment.",
+        "After every answer the law computes again.",
+        "Check, declare, submit. Without a ten-page form."
+       ],
+       "route": "/portaal",
+       "highlight": "[data-highlight=\"complete-data\"]",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The case officer",
+       "title": "The same right, the other side of the desk",
+       "lead": "The application arrives with the calculation the citizen saw.",
+       "bullets": [
+        "The engine recomputes it against the registered data.",
+        "The citizen's corrections are waiting to be assessed.",
+        "Grant or refuse, with reasons; an objection comes back through the portal."
+       ],
+       "route": "/zaaksysteem",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The entrepreneur",
+       "title": "An entrepreneur, Claudia",
+       "lead": "Director of Café Noon in Rotterdam West, a café with its own small brewery and a terrace.",
+       "bullets": [
+        "The same engine, other laws: local by-laws, alcohol, food safety, excise duty, precario tax.",
+        "The terrace permit asks for location and area; once it is granted, the precario tax computes with it.",
+        "The municipality, the food authority and the enterprise agency in one overview, without having to ask each other anything."
+       ],
+       "route": "/portaal",
+       "profile": "claudia"
+      },
+      {
+       "kind": "closing",
+       "overline": "RegelRecht demo",
+       "title": "From law to digital effect",
+       "lines": [
+        "A complete story, **not a finished product**",
+        "We make policy **by doing**"
+       ],
+       "link": {
+        "href": "https://regelrecht.rijks.app",
+        "label": "regelrecht.rijks.app"
+       }
+      }
+     ],
+     "question": "Does the order of articles matter?"
+    }
+   }
   },
   {
    "id": "vertaling-klopt",
@@ -21425,7 +22354,8 @@
    ],
    "pauses": [],
    "captions": {
-    "nl": "faq-vertaling-klopt-1c5dc4f89c7c.nl.vtt"
+    "nl": "faq-vertaling-klopt-1c5dc4f89c7c.nl.vtt",
+    "en": "faq-vertaling-klopt-a42bf2b0069e.en.vtt"
    },
    "pieces": [
     {
@@ -21482,7 +22412,184 @@
      "to": 369.1,
      "at": 118.033
     }
-   ]
+   ],
+   "i18n": {
+    "en": {
+     "slides": [
+      {
+       "kind": "title",
+       "title": "RegelRecht",
+       "subtitle": "from law to digital effect",
+       "footer": "Netherlands Digital Service"
+      },
+      {
+       "kind": "statement",
+       "overline": "Today",
+       "lines": [
+        "Every organisation",
+        "has its **own reading** of the law",
+        "which lands in **its own software**"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "The result",
+       "lines": [
+        "No overview",
+        "Unpredictable",
+        "Unmanageable"
+       ]
+      },
+      {
+       "kind": "statement",
+       "overline": "What if",
+       "lines": [
+        "We **start with the law**",
+        "Make it **machine-executable**",
+        "Publish it **openly**"
+       ]
+      },
+      {
+       "kind": "section",
+       "title": "RegelRecht demo",
+       "lines": [
+        "A complete story, not a finished product",
+        "We make policy by doing"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The rulework",
+       "title": "The law as a rulework",
+       "lead": "The legal text and the executable rule sit side by side, article by article.",
+       "bullets": [
+        "Every article has a **machine_readable** part: what goes in, what comes out, and how.",
+        "A reference to another law is explicit, not a copied amount.",
+        "The same rulework runs in the editor, in this portal and in the simulation."
+       ],
+       "route": "/regelwerken",
+       "highlight": ".yaml-tree"
+      },
+      {
+       "kind": "demo",
+       "overline": "Coherence",
+       "title": "Laws hang together",
+       "lead": "Whether you are insured depends on detention; whether you get healthcare allowance depends on being insured.",
+       "bullets": [
+        "Per law: which data come from registers, which from other laws, and what comes out.",
+        "Every line is a real reference from the law, with this person's value on it.",
+        "Change a law and you see at once who it touches."
+       ],
+       "route": "/graaf",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Testing",
+       "title": "The law tested, in plain language",
+       "lead": "A scenario describes a person and what the law should produce for them.",
+       "bullets": [
+        "Given a 17-year-old, no healthcare allowance. Given a single person on a low income, yes.",
+        "The same scenarios run here in the browser and in the build pipeline.",
+        "Change the law and you see which scenario falls over."
+       ],
+       "route": "/scenarios",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Policy",
+       "title": "What does it do to two thousand people?",
+       "lead": "A generated population through every scheme, with the real laws.",
+       "bullets": [
+        "Who meets the conditions, for how much, broken down by age, income and household.",
+        "Turn a threshold in the law and see the difference, before it takes effect.",
+        "For businesses too: permits, reporting duties, precario tax."
+       ],
+       "route": "/simulatie"
+      },
+      {
+       "kind": "demo",
+       "overline": "The citizen",
+       "title": "One citizen, Merijn",
+       "lead": "Self-employed in home care, a single parent with two young children.",
+       "bullets": [
+        "Everything he is entitled to, computed live by the law itself.",
+        "Every fact traces back to the register that supplied it.",
+        "A fact wrong? He corrects it, a case officer assesses it."
+       ],
+       "route": "/portaal",
+       "profile": "merijn",
+       "highlight": "nldd-card",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "Applying",
+       "title": "Asking only what government does not know",
+       "lead": "The law computes with what is already there, and asks only when it gets stuck.",
+       "bullets": [
+        "Housing benefit does not know the rent. That is the only question, at that moment.",
+        "After every answer the law computes again.",
+        "Check, declare, submit. Without a ten-page form."
+       ],
+       "route": "/portaal",
+       "highlight": "[data-highlight=\"complete-data\"]",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The case officer",
+       "title": "The same right, the other side of the desk",
+       "lead": "The application arrives with the calculation the citizen saw.",
+       "bullets": [
+        "The engine recomputes it against the registered data.",
+        "The citizen's corrections are waiting to be assessed.",
+        "Grant or refuse, with reasons; an objection comes back through the portal."
+       ],
+       "route": "/zaaksysteem",
+       "decks": [
+        "merijn"
+       ]
+      },
+      {
+       "kind": "demo",
+       "overline": "The entrepreneur",
+       "title": "An entrepreneur, Claudia",
+       "lead": "Director of Café Noon in Rotterdam West, a café with its own small brewery and a terrace.",
+       "bullets": [
+        "The same engine, other laws: local by-laws, alcohol, food safety, excise duty, precario tax.",
+        "The terrace permit asks for location and area; once it is granted, the precario tax computes with it.",
+        "The municipality, the food authority and the enterprise agency in one overview, without having to ask each other anything."
+       ],
+       "route": "/portaal",
+       "profile": "claudia"
+      },
+      {
+       "kind": "closing",
+       "overline": "RegelRecht demo",
+       "title": "From law to digital effect",
+       "lines": [
+        "A complete story, **not a finished product**",
+        "We make policy **by doing**"
+       ],
+       "link": {
+        "href": "https://regelrecht.rijks.app",
+        "label": "regelrecht.rijks.app"
+       }
+      }
+     ],
+     "question": "How do we know the translation is correct?"
+    }
+   }
   }
  ],
  "bumpers": {
@@ -21502,5 +22609,9 @@
     "duration": 3.0
    }
   ]
- }
+ },
+ "locales": [
+  "nl",
+  "en"
+ ]
 }

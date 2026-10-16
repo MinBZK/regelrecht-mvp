@@ -656,6 +656,7 @@ export default {
   "walkthrough.chapters": "f432",
   "walkthrough.continue": "0739",
   "walkthrough.dutch_only": "ef93",
+  "walkthrough.dutch_voice": "93b6",
   "walkthrough.faq.back": "9686",
   "walkthrough.faq.label": "003c",
   "walkthrough.faq.overline": "c372",

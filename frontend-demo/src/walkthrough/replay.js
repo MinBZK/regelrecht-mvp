@@ -19,12 +19,18 @@
  * to storage; leaving restores it.
  */
 import { nextTick, reactive, watch } from 'vue';
-import { adoptLocale, currentLocale, setViewerLocale, t } from '../i18n/index.js';
+import { adoptLocale, currentLocale, localeDef, setViewerLocale, t } from '../i18n/index.js';
+import scenarioTitles from '../i18n/scenarioTitles.generated.js';
+import { humanize } from '../data/format.js';
+import { loadCorpus } from '../data/loadCorpus.js';
+import { stepTemplatePairs } from '../data/gherkinNl.js';
+import { emphasiseArguments } from '../data/scenarioSteps.js';
 import { setPersistence } from '../store/demoStore.js';
-import { localeRouteName, pageForConfigPath } from '../router.js';
+import { localeRouteName, pageForConfigPath, splitConfigPath } from '../router.js';
 import { click, setChecked, setValue, key as pressKey, scrollTo } from './actions.js';
 import { installClock, uninstallClock } from './clock.js';
 import { resolve, scrollAnchor, scrollTarget } from './locator.js';
+import { makeTranslator, parallelPairs } from './translateText.js';
 import { graphView, moveNode, showView } from './graphBridge.js';
 import { CAPTIONS_BASE, MEDIA_BASE, chapterAt, parseVtt, pauseDue, pickClip } from './timeline.js';
 import { resetViews } from './viewEpoch.js';
@@ -46,6 +52,10 @@ export const replay = reactive({
   restoring: false,
   faq: null,
   cues: [],
+  /** The language of the captions on screen: the viewer's, or Dutch when there are none in it. */
+  captionsLang: SOURCE_LOCALE,
+  /** The language the demo runs in during the replay. */
+  demoLocale: SOURCE_LOCALE,
   cursor: { x: 0, y: 0, visible: false },
   ripples: [],
   /** Actions whose element was not found: what a recording needs redone. */
@@ -76,6 +86,14 @@ let raf = 0;
 let mainPosition = 0;
 let backup = null;
 let previousLocale = null;
+/**
+ * The language the demo runs in during the replay: the viewer's, when the
+ * walkthrough is translated into it (`timeline.locales`), else Dutch, as
+ * recorded.
+ */
+let playLocale = SOURCE_LOCALE;
+/** Recorded texts in `playLocale` (translateText.js); null while that is Dutch. */
+let translate = null;
 let unwatchMode = null;
 let seekToken = 0;
 
@@ -85,6 +103,63 @@ export function currentTrack() {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clone = (v) => JSON.parse(JSON.stringify(v));
+
+// ---- the demo's language --------------------------------------------------------------
+
+/** What the presenter typed, in the language the demo runs in (walkthrough.<code>.yaml). */
+const valueOf = (e) => e.values?.[playLocale] ?? e.value;
+
+/**
+ * The translator for the language the demo runs in, from every source the
+ * demo takes its texts from: the interface dictionaries, the corpus with its
+ * overlays, the scenario titles and steps, and the field names.
+ */
+async function translatorFor(code) {
+  if (code === SOURCE_LOCALE) return null;
+  const corpus = await loadCorpus();
+  const tr = makeTranslator({
+    dicts: { source: localeDef(SOURCE_LOCALE).dict, local: localeDef(code).dict },
+    pairs: [
+      ...parallelPairs(corpus?.configByLocale?.[SOURCE_LOCALE], corpus?.configByLocale?.[code]),
+      ...parallelPairs(corpus?.profilesByLocale?.[SOURCE_LOCALE], corpus?.profilesByLocale?.[code]),
+      ...Object.entries(scenarioTitles[code] ?? {}),
+    ],
+    // A scenario's steps, as its text cells show them.
+    templates: stepTemplatePairs(SOURCE_LOCALE, code).map((pair) => pair.map(emphasiseArguments)),
+    humanize: (name) => humanize(name, { locale: code, report: false }),
+  });
+  tr.path = localPath;
+  return tr;
+}
+
+/** A recorded (Dutch) path in the language the demo runs in. */
+function localPath(path) {
+  if (playLocale === SOURCE_LOCALE) return path;
+  const parts = splitConfigPath(path);
+  if (!parts) return path;
+  const base = ctx.router.resolve({ name: localeRouteName(parts.page, playLocale) }).path;
+  return parts.rest ? `${base.replace(/\/$/, '')}${parts.rest}` : base;
+}
+
+/** The viewer's language, which the slides, captions and questions follow. */
+function viewerLocale() {
+  return previousLocale ?? currentLocale();
+}
+
+/** A question in the viewer's language, when it has a translation. */
+export function questionOf(faq) {
+  return faq?.i18n?.[viewerLocale()]?.question ?? faq?.question ?? '';
+}
+
+/** The language `questionOf` gives the question in. */
+export function questionLang(faq) {
+  return faq?.i18n?.[viewerLocale()]?.question ? viewerLocale() : SOURCE_LOCALE;
+}
+
+/** The slide a chapter opens with, in the viewer's language when there is a translation. */
+export function chapterSlide(track, chapter) {
+  return track?.i18n?.[viewerLocale()]?.slides?.[chapter?.slideIndex] ?? chapter?.slide ?? null;
+}
 
 function recordedAt(track) {
   const t = Date.parse(track?.recordedAt ?? '');
@@ -104,7 +179,8 @@ function applyState(state) {
 
 /** The deck's slides as recorded, with corrections applied by the pipeline. */
 function slidesOf(track) {
-  return track?.slides?.length ? track.slides : ctx?.demo?.corpus?.value?.config?.slides ?? [];
+  const slides = track?.i18n?.[viewerLocale()]?.slides ?? track?.slides;
+  return slides?.length ? slides : ctx?.demo?.corpus?.value?.config?.slides ?? [];
 }
 
 /**
@@ -120,7 +196,7 @@ function slidesFor(track) {
     ...s,
     kind: s.route ? s.kind : 'section',
     overline: t('walkthrough.faq.overline'),
-    title: replay.faq.question,
+    title: questionOf(replay.faq),
     lead: undefined,
     lines: undefined,
     bullets: undefined,
@@ -162,8 +238,8 @@ async function find(target, { timeout = 4000, fast = false, token = seekToken, e
       return null;
     }
     const waited = performance.now() - started;
-    const exact = resolve(target);
-    const el = exact ?? (waited > limit / 2 ? resolve(target, { loose: true }) : null);
+    const exact = resolve(target, { translate });
+    const el = exact ?? (waited > limit / 2 ? resolve(target, { loose: true, translate }) : null);
     if (el) {
       if (!exact && event) noteLoose(event);
       if (paused) {
@@ -263,7 +339,7 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
         await sleep(60);
         if (!current(token)) return;
       }
-      if (!samePage(e.path) && current(token)) await router.push(e.path).catch(() => {});
+      if (!samePage(e.path) && current(token)) await router.push(localPath(e.path)).catch(() => {});
       return;
     }
     case 'click': {
@@ -272,10 +348,10 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       // with the deck off and clicked it. Go where the link goes.
       const href = (e.target ?? []).map((step) => step.href).find((h) => typeof h === 'string' && h.startsWith('/'));
       if (href) {
-        const link = resolve(e.target);
+        const link = resolve(e.target, { translate });
         const box = link?.getBoundingClientRect?.();
         if (!box || !box.width || !box.height) {
-          if (!samePage(href)) await router.push(href).catch(() => {});
+          if (!samePage(href)) await router.push(localPath(href)).catch(() => {});
           return;
         }
       }
@@ -305,7 +381,7 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       if (!el && current(token)) noteMiss(e);
       if (!el || !current(token)) return;
       if (!fast) showCursorAt(pointIn(el, 0.15, 0.5));
-      setValue(el, e.value ?? '');
+      setValue(el, valueOf(e) ?? '');
       return;
     }
     case 'change': {
@@ -313,7 +389,7 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
       if (!el && current(token)) noteMiss(e);
       if (!el || !current(token)) return;
       if (typeof e.checked === 'boolean') setChecked(el, e.checked);
-      else setValue(el, e.value ?? '', { change: true });
+      else setValue(el, valueOf(e) ?? '', { change: true });
       return;
     }
     case 'key': {
@@ -349,7 +425,7 @@ async function apply(e, { fast = false, token = seekToken } = {}) {
     case 'scroll': {
       const el = e.target ? await find(e.target, { ...opts, timeout: 1000, event: e }) : document.scrollingElement;
       if (!el || !current(token)) return;
-      scrollTo(el, scrollTarget(el, e), e.left ?? 0);
+      scrollTo(el, scrollTarget(el, e, translate), e.left ?? 0);
       // For `walkthrough anchors`: what an older take lacks, measured in the
       // layout it was recorded in. Dev only.
       if (import.meta.env.DEV) window.__rrReplay?.afterScroll?.(e, el);
@@ -370,7 +446,7 @@ function lead(events, now) {
   const e = events[next];
   if (!e || e.type !== 'click' || leadFor === next || e.t - now > 0.45) return;
   leadFor = next;
-  const el = resolve(e.target);
+  const el = resolve(e.target, { translate });
   if (el) showCursorAt(pointIn(el, e.fx, e.fy));
 }
 
@@ -429,7 +505,8 @@ function makeAudio() {
 
 async function loadCaptions(track) {
   replay.cues = [];
-  const file = track?.captions?.nl;
+  const file = track?.captions?.[viewerLocale()] ?? track?.captions?.[SOURCE_LOCALE];
+  replay.captionsLang = track?.captions?.[viewerLocale()] ? viewerLocale() : SOURCE_LOCALE;
   if (!file) return;
   try {
     const res = await fetch(`${CAPTIONS_BASE}${file}`);
@@ -822,13 +899,18 @@ async function begin(data, context, { at, faqId }) {
     },
     { flush: 'sync' },
   );
-  // The recording is Dutch; its slides and the controls it clicks are found
-  // by their Dutch text, and the voice names them. The demo runs in Dutch for
-  // the length of the replay; the player's own controls stay in the viewer's
-  // language.
+  // The recording is Dutch: the controls it clicks are described by their
+  // Dutch text. Where the walkthrough is translated into the viewer's
+  // language, the demo stays in it and the replay finds each control through
+  // its translation; otherwise the demo runs in Dutch for the length of the
+  // replay. The player's own controls, the slides and the captions follow the
+  // viewer either way.
   previousLocale = currentLocale();
   setViewerLocale(previousLocale);
-  adoptLocale(SOURCE_LOCALE);
+  playLocale = timeline.locales?.includes(previousLocale) ? previousLocale : SOURCE_LOCALE;
+  translate = await translatorFor(playLocale);
+  replay.demoLocale = playLocale;
+  adoptLocale(playLocale);
   await nextTick();
   replay.active = true;
   window.addEventListener('resize', fitDemo);
@@ -894,6 +976,11 @@ export function stopReplay() {
   }
   resetViews();
   setViewerLocale(null);
+  previousLocale = null;
+  playLocale = SOURCE_LOCALE;
+  translate = null;
+  replay.demoLocale = SOURCE_LOCALE;
+  replay.captionsLang = SOURCE_LOCALE;
   backup = null;
 }
 
@@ -905,5 +992,6 @@ export function audioTime() {
 // A handle for scripted checks against the dev server (the Playwright runs
 // that verify a recording); not in the production bundle.
 if (import.meta.env.DEV && typeof window !== 'undefined') {
-  window.__rrReplay = { replay, play, pause, seek, openFaq, backToMain, scrollAnchor, deckIndex: () => ctx?.presentation?.index?.value, state: () => clone(ctx?.demo?.state), track: currentTrack };
+  const pathFor = (code, faqId) => ctx.router.resolve({ name: localeRouteName('rondleiding', code), params: faqId ? { faqId } : {} }).path;
+  window.__rrReplay = { replay, play, pause, seek, openFaq, backToMain, scrollAnchor, pathFor, deckIndex: () => ctx?.presentation?.index?.value, state: () => clone(ctx?.demo?.state), track: currentTrack };
 }

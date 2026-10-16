@@ -18,7 +18,7 @@
  * staat, het is waar, en het is beter dan een half vertaalde zin. Het Engels
  * heeft om diezelfde reden geen ingang.
  */
-import { matchStep } from '@regelrecht/frontend-shared/gherkin';
+import { GRAMMAR, matchStep } from '@regelrecht/frontend-shared/gherkin';
 import { DEFAULT_LOCALE, currentLocale } from '../i18n/index.js';
 import titles from '../i18n/scenarioTitles.generated.js';
 
@@ -111,6 +111,20 @@ export function renderStep(step) {
 
 /** Kept for callers that still import the old name. */
 export const renderStepNl = renderStep;
+
+/**
+ * Every step as a pair of templates: how `from` shows it and how `to` does,
+ * with `{0}`, `{1}` where the arguments go. A language without templates shows
+ * the canonical step. The recorded walkthrough uses these to find a step it
+ * clicked in one language on a screen in another (walkthrough/translateText.js).
+ */
+export function stepTemplatePairs(from, to) {
+  const render = (code, entry, args) => (TEMPLATES[code]?.[entry.id] ?? entry.template)(args);
+  return GRAMMAR.map((entry) => {
+    const args = entry.argTypes.map((_, i) => `{${i}}`);
+    return [render(from, entry, args), render(to, entry, args)];
+  }).filter(([a, b]) => a !== b);
+}
 
 const FEATURE_KEYWORDS = {
   nl: { Feature: 'Functionaliteit', Background: 'Achtergrond', Scenario: 'Scenario' },

@@ -189,3 +189,20 @@ describe('data attributes that do not last', () => {
     expect(resolve(recorded)).toBe(button);
   });
 });
+
+describe('a recording made in another language', () => {
+  it('finds a button by its translation, and a field while its translation is typed into it', async () => {
+    const { makeTranslator } = await import('./translateText.js');
+    const translate = makeTranslator({ dicts: { source: { run: 'Uitvoeren', why: 'Motivering' }, local: { run: 'Run', why: 'Reasons' } } });
+    const button = document.createElement('button');
+    button.textContent = 'Run';
+    const field = document.createElement('textarea');
+    field.setAttribute('aria-label', 'Reasons');
+    field.value = 'Th';
+    document.body.append(button, field);
+    expect(resolve([{ tag: 'button', textContent: 'Uitvoeren', nth: 0 }], { translate })).toBe(button);
+    // Recorded with the Dutch typed so far on it; the field holds the English.
+    expect(resolve([{ tag: 'textarea', '@aria-label': 'Motivering', value: 'Di', nth: 0 }], { translate })).toBe(field);
+    expect(resolve([{ tag: 'button', textContent: 'Uitvoeren', nth: 0 }])).toBe(null);
+  });
+});
