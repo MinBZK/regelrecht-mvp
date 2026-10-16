@@ -404,8 +404,9 @@ bewuste afweging, geen omissie.
 
 ## Published papers are frozen
 
-`docs/src/research/` holds published work: `rules-as-executed.html` and its
-generated companions. **Never edit these to match the current state of the
+`docs/src/research/` holds published work: one generated `.html` per paper
+with its companions, each produced by a converter next to the paper's LaTeX
+source (the page under `docs/src/pages/research/` names which). **Never edit these to match the current state of the
 code.** A paper is a claim someone made at a moment in time, and the record of
 what was true then is the whole point of citing it. A paper that silently tracks
 the codebase cannot be cited at all.
