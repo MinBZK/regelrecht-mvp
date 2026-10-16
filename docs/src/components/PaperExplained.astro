@@ -223,24 +223,33 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
       {t.binding.form.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}
     </dl>
   </nldd-rich-text>
-  <nldd-spacer size="16" />
-  <nldd-title size="5"><h4>{t.binding.exampleLabel}</h4></nldd-title>
-  <nldd-blockquote>
-    <p>{t.binding.exampleStatute}</p>
-  </nldd-blockquote>
-  <nldd-rich-text>
-    <dl>
-      {t.binding.mapRows.map(([phrase, rule, source]) => (
-        <>
-          <dt>{phrase}</dt>
-          <dd><code>{rule}</code></dd>
-          <dd>{source}</dd>
-        </>
-      ))}
-    </dl>
-    <p>{t.binding.exampleNote}</p>
-    <p>{t.binding.reuse}</p>
-  </nldd-rich-text>
+  <nldd-spacer size="24" />
+  {/* The example in a card like every other example on the page. One dd per
+      term: the dl grid puts a second dd on a row of its own, below the dt. */}
+  <nldd-card background="base">
+    <nldd-container padding="20" sm-padding="16" gap="16">
+      <nldd-container gap="4">
+        <nldd-title size="5"><h4>{t.binding.exampleLabel}</h4></nldd-title>
+        <nldd-text size="sm" color="secondary">{t.binding.exampleIntro}</nldd-text>
+      </nldd-container>
+      <nldd-blockquote>
+        <p>{t.binding.exampleStatute}</p>
+      </nldd-blockquote>
+      <nldd-rich-text>
+        <dl>
+          {t.binding.mapRows.map(([phrase, rule, source]) => (
+            <>
+              <dt>{phrase}</dt>
+              <dd><code>{rule}</code><br />{source}</dd>
+            </>
+          ))}
+        </dl>
+      </nldd-rich-text>
+      <nldd-text size="sm" color="secondary">{t.binding.exampleNote}</nldd-text>
+    </nldd-container>
+  </nldd-card>
+  <nldd-spacer size="24" />
+  <nldd-rich-text><p>{t.binding.reuse}</p></nldd-rich-text>
   <nldd-spacer size="24" />
   <nldd-container data-px-switch="now">
     <nldd-title size="5"><h3 id="px-flow">{t.binding.flowLabel}</h3></nldd-title>
@@ -287,66 +296,75 @@ const padding = { 'sm-padding-block': '32', 'md-padding-block': '48', 'lg-paddin
   <nldd-spacer size="16" />
   <nldd-rich-text><p>{t.receipt.p1}</p><p>{t.receipt.p2}</p></nldd-rich-text>
   <nldd-spacer size="24" />
-  <nldd-container
-    data-px-receipts
-    data-lang={lang}
-    data-t={JSON.stringify({
-      ok: t.receipt.ok,
-      mismatch: t.receipt.mismatch,
-      checking: t.receipt.checking,
-      check: t.receipt.check,
-      failed: t.receipt.failed,
-      revealA: t.receipt.revealA,
-      inForce: t.receipt.inForce,
-      inputs: t.receipt.inputsSummary,
-      yes: t.yes,
-      no: t.no,
-    })}
-    data-reveal-b={t.receipt.revealB('{published}', '{local}', '{diff}')}
-    gap="16"
-  >
-    <nldd-rich-text><p>{t.receipt.demoIntro}</p></nldd-rich-text>
-    <nldd-text data-status aria-live="polite" hidden>{t.receipt.loading}</nldd-text>
-    <noscript><nldd-text>{t.receipt.noScript}</nldd-text></noscript>
-    <nldd-container data-receipts gap="16" hidden>
-      {/* What both decisions share is said once, above them. */}
-      <nldd-rich-text data-shared>
-        <dl>
-          <dt>{t.receipt.fields.law}</dt>
-          <dd>Wet op de zorgtoeslag, <span data-f="version"></span></dd>
-          <dt>{t.receipt.fields.date}</dt>
-          <dd data-f="date"></dd>
-          <dt>{t.receipt.fields.inputs}</dt>
-          <dd data-f="inputs"></dd>
-        </dl>
-      </nldd-rich-text>
-      <nldd-collection layout="grid" item-width="260px">
-        {(['a', 'b'] as const).map((id) => (
-          <nldd-card background="tinted" data-receipt={id}>
-            <nldd-container padding="20" gap="8">
-              <nldd-title size="4"><h3>{t.receipt.decision} {id.toUpperCase()}</h3></nldd-title>
-              <nldd-text size="sm" color="secondary">{t.receipt.fields.amount}</nldd-text>
-              <nldd-text size="lg" weight="bold" data-f="amount"></nldd-text>
-              <nldd-text size="sm" color="secondary">{t.receipt.fields.digest}</nldd-text>
-              <nldd-text size="sm" data-f="digest"></nldd-text>
-              <nldd-container aria-live="polite" gap="8">
-                <nldd-container data-checks gap="8" padding-top="8" hidden>
-                  {([['digest', t.receipt.checkDigest], ['amount', t.receipt.checkAmount]] as const).map(([name, text]) => (
-                    <nldd-container layout="row" gap="12" vertical-alignment="top">
-                      <nldd-tag size="sm" data-check={name} />
-                      <nldd-text size="sm">{text}</nldd-text>
-                    </nldd-container>
-                  ))}
+  <nldd-card background="tinted">
+    <nldd-container
+      padding="20"
+      sm-padding="16"
+      data-px-receipts
+      data-lang={lang}
+      data-t={JSON.stringify({
+        ok: t.receipt.ok,
+        mismatch: t.receipt.mismatch,
+        checking: t.receipt.checking,
+        check: t.receipt.check,
+        failed: t.receipt.failed,
+        revealA: t.receipt.revealA,
+        inForce: t.receipt.inForce,
+        inputs: t.receipt.inputsSummary,
+        yes: t.yes,
+        no: t.no,
+      })}
+      data-reveal-b={t.receipt.revealB('{published}', '{local}', '{diff}')}
+      gap="16"
+    >
+      <nldd-rich-text><p>{t.receipt.demoIntro}</p></nldd-rich-text>
+      <nldd-text data-status aria-live="polite" hidden>{t.receipt.loading}</nldd-text>
+      <noscript><nldd-text>{t.receipt.noScript}</nldd-text></noscript>
+      <nldd-container data-receipts gap="16" hidden>
+        {/* What both decisions share is said once, above them. */}
+        <nldd-rich-text data-shared>
+          <dl>
+            <dt>{t.receipt.fields.law}</dt>
+            <dd>Wet op de zorgtoeslag, <span data-f="version"></span></dd>
+            <dt>{t.receipt.fields.date}</dt>
+            <dd data-f="date"></dd>
+            <dt>{t.receipt.fields.inputs}</dt>
+            <dd data-f="inputs"></dd>
+          </dl>
+        </nldd-rich-text>
+        {/* Two columns that share the width; one column when the card is narrow. */}
+        <nldd-container layout="grid" column-count="2" sm-column-count="1" gap="16">
+          {(['a', 'b'] as const).map((id) => (
+            <nldd-card background="base" data-receipt={id}>
+              <nldd-container padding="20" sm-padding="16" gap="12">
+                <nldd-title size="4"><h3>{t.receipt.decision} {id.toUpperCase()}</h3></nldd-title>
+                <nldd-container gap="2">
+                  <nldd-text size="sm" color="secondary">{t.receipt.fields.amount}</nldd-text>
+                  <nldd-text size="lg" weight="bold" data-f="amount"></nldd-text>
                 </nldd-container>
-                <nldd-text size="sm" data-reveal tabindex="-1" hidden></nldd-text>
+                <nldd-container gap="2">
+                  <nldd-text size="sm" color="secondary">{t.receipt.fields.digest}</nldd-text>
+                  <nldd-text size="sm" data-f="digest"></nldd-text>
+                </nldd-container>
+                <nldd-container aria-live="polite" gap="12">
+                  <nldd-container data-checks gap="8" hidden>
+                    {([['digest', t.receipt.checkDigest], ['amount', t.receipt.checkAmount]] as const).map(([name, text]) => (
+                      <nldd-container layout="row" gap="12" vertical-alignment="top">
+                        <nldd-tag size="sm" data-check={name} />
+                        <nldd-text size="sm">{text}</nldd-text>
+                      </nldd-container>
+                    ))}
+                  </nldd-container>
+                  <nldd-text size="sm" data-reveal tabindex="-1" hidden></nldd-text>
+                </nldd-container>
+                <nldd-button appearance="primary" size="sm" text={t.receipt.check} data-check-button />
               </nldd-container>
-              <nldd-button appearance="primary" size="sm" text={t.receipt.check} data-check-button />
-            </nldd-container>
-          </nldd-card>
-        ))}
-      </nldd-collection>
+            </nldd-card>
+          ))}
+        </nldd-container>
+      </nldd-container>
     </nldd-container>
-  </nldd-container>
+  </nldd-card>
   <nldd-spacer size="24" />
   <nldd-title size="4"><h3>{t.receipt.limitsLabel}</h3></nldd-title>
   <nldd-spacer size="8" />

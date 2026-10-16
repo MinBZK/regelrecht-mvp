@@ -139,6 +139,7 @@ export interface Content {
     flowProposalNote: string;
     more: string[];
     exampleLabel: string;
+    exampleIntro: string;
     exampleStatute: string;
     mapRows: [string, string, string][];
     exampleNote: string;
@@ -394,7 +395,8 @@ const nl: Content = {
       'De uitleg blijft het werk van de organisatie die de wet uitvoert. Die keuzes werden al gemaakt, schrijft het paper, alleen zag niemand buiten de organisatie ze. Na publicatie zijn ze zichtbaar, en kun je iemand erop aanspreken.',
       'Een regelwerk dat wel is gepubliceerd maar niet wordt gebruikt bij het beslissen, is volgens het paper geen oplossing. Het laat een uitleg zien waarmee geen enkel besluit wordt genomen. Is er voor een wet nog geen regelwerk, dan kan de uitvoering niet wachten. De organisatie publiceert dan in beleidsregels hoe ze de wet toepast.',
     ],
-    exampleLabel: 'Hoe een regelwerk eruitziet (naar een verzonnen voorbeeld uit het paper)',
+    exampleLabel: 'Hoe een regelwerk eruitziet',
+    exampleIntro: 'Naar een verzonnen voorbeeld uit het paper: een artikel uit een gemeentelijke parkeerregeling.',
     exampleStatute:
       'Een bewoner komt in aanmerking voor een parkeervergunning als zijn voertuig weinig uitstoot. Voor een emissievrij voertuig geldt een lager tarief.',
     mapRows: [
@@ -774,7 +776,8 @@ const en: Content = {
       'The reading remains the work of the organization that carries out the law. Those choices were already being made, the paper says, only nobody outside the organization could see them. Once published, they are visible, and someone can be held to them.',
       'A rulework that is published but not used in deciding is no solution, according to the paper. It shows a reading that no decision is made with. Where a law has no rulework yet, execution cannot wait. The organization then publishes in policy rules how it applies the law.',
     ],
-    exampleLabel: 'What a rulework looks like (after a made-up example in the paper)',
+    exampleLabel: 'What a rulework looks like',
+    exampleIntro: 'After a made-up example in the paper: an article from a city parking permit act.',
     exampleStatute:
       'A resident is eligible for a parking permit if their vehicle has low emissions. The fee is reduced for zero-emission vehicles.',
     mapRows: [
