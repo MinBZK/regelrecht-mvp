@@ -5,13 +5,13 @@ edition = "2021"
 authors = ["MinBZK <noreply@minbzk.nl>"]
 description = "RegelRecht law execution engine - Machine-readable Dutch law execution"
 license = "EUPL-1.2"
-repository = "https://github.com/MinBZK/regelrecht"
-homepage = "https://github.com/MinBZK/regelrecht"
+repository = "https://github.com/NederlandseDigitaleDienst/regelrecht"
+homepage = "https://github.com/NederlandseDigitaleDienst/regelrecht"
 keywords = ["law", "legal", "wasm", "dutch", "regelrecht"]
 categories = ["wasm", "parsing"]
 
 [package.metadata.regelrecht]
-supported-schemas = ["v0.2.0", "v0.3.0", "v0.3.1", "v0.3.2", "v0.4.0", "v0.5.0", "v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.6.0", "v0.7.0", "v0.7.1"]
+supported-schemas = ["v0.2.0", "v0.3.0", "v0.3.1", "v0.3.2", "v0.4.0", "v0.5.0", "v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.6.0", "v0.7.0", "v0.7.1", "v0.8.0", "v0.8.1", "v0.8.2", "v0.8.3", "v0.8.4"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -68,6 +68,14 @@ harness = false
 # target expliciet — `just bdd` lokaal, `BDD_BUCKET=conformance cargo test
 # --test bdd` in CI (zie docs/operations/ci-cd.md).
 test = false
+
+# The schema<->model suite needs `validate` (jsonschema). Without the feature
+# `cargo test --test conformance` refuses and names it, where it would
+# otherwise build an empty target and report 0 tests. `just conformance`
+# turns it on.
+[[test]]
+name = "conformance"
+required-features = ["validate"]
 
 [features]
 wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:js-sys"]

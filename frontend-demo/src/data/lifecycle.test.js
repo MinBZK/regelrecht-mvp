@@ -17,6 +17,13 @@ describe('canBeApplied', () => {
     expect(canBeApplied({ legal_character: 'BESLUIT_VAN_ALGEMENE_STREKKING' })).toBe(false);
     expect(canBeApplied(null)).toBe(false);
   });
+
+  it('reads the decision in a produces list (schema v0.8.1)', () => {
+    const produces = [{ type: 'AANVRAAG', requests: 'leerplichtwet_1969#13a' }, { type: 'BESCHIKKING' }];
+    expect(canBeApplied(produces)).toBe(true);
+    expect(canBeApplied([{ type: 'AANVRAAG' }])).toBe(false);
+    expect(canBeApplied([{ type: 'BESCHIKKING', decision_type: 'AANSLAG' }])).toBe(false);
+  });
 });
 
 describe('reviewedByCaseworker', () => {

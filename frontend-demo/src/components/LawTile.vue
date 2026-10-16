@@ -12,6 +12,7 @@ import { dateInputFor, phraseOutcome, phrasingFor } from '../data/outcomePhrasin
 import { driftSentence } from '../data/caseDrift.js';
 import { useDemo } from '../store/demoStore.js';
 import { canBeApplied, objectionOpen, statusOf } from '../data/lifecycle.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
 import { useLocalePath } from '../i18n/useLocalePath.js';
 import { activeLocale, useI18n } from '../i18n/index.js';
 
@@ -190,10 +191,12 @@ function correctOutcome(name, value) {
     node: { kind: 'law', law: props.law.id, name, value, service: props.law.service, ...claimKeyFor(props.law, params) },
   });
 }
+// De beslissing van het eerste artikel dat iets voortbrengt, in beide vormen
+// van `produces` (schema v0.8.1).
 const produces = computed(() => {
   for (const a of doc.value.articles ?? []) {
     const p = a.machine_readable?.execution?.produces;
-    if (p) return p;
+    if (p) return decisionOf(p);
   }
   return null;
 });

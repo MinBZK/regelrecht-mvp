@@ -56,6 +56,26 @@ describe('extractRegulationRefs', () => {
   it('collects source.regulation refs and skips self-references', () => {
     expect(extractRegulationRefs(yamlMain())).toEqual(['zorgverzekeringswet']);
   });
+  it('collects the regulation of a fixed source.article target, not of a $-target', () => {
+    const law = {
+      $id: 'wet_heroverweging',
+      articles: [
+        {
+          number: '1',
+          machine_readable: {
+            execution: {
+              input: [
+                { name: 'a', source: { article: 'wet_verlof#1', output: 'verleend' } },
+                { name: 'b', source: { article: '$besluit.grondslag' } },
+                { name: 'c', source: { article: 'wet_heroverweging#2' } },
+              ],
+            },
+          },
+        },
+      ],
+    };
+    expect(extractRegulationRefs(law)).toEqual(['wet_verlof']);
+  });
   it('returns [] for a law with no machine_readable inputs', () => {
     expect(extractRegulationRefs({ $id: 'x', articles: [{ number: '1' }] })).toEqual([]);
   });

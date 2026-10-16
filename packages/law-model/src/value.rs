@@ -1014,6 +1014,12 @@ pub enum ParameterType {
     Date,
     Array,
     Object,
+    /// A decision value `{grondslag, fields, findings, outputs}`: the
+    /// article that decided, the parameters it was given and declares, its
+    /// findings per case, and the outputs of its decision item (schema
+    /// v0.8.4, RFC-050). A value built from a recorded decision may also
+    /// hold `taken_on`. At run time an object.
+    Decision,
 }
 
 #[cfg(test)]
@@ -1061,6 +1067,16 @@ mod tests {
         let int_val = Value::Int(42);
         assert_eq!(int_val.as_int(), Some(42));
         assert_eq!(int_val.as_float(), Some(42.0));
+        assert_eq!(Value::Decimal(dec!(12.5)).as_float(), Some(12.5));
+        // A decimal goes to JSON as the number it is, by reference and by value.
+        assert_eq!(
+            serde_json::Value::from(&Value::Decimal(dec!(12.5))),
+            serde_json::json!(12.5)
+        );
+        assert_eq!(
+            serde_json::Value::from(Value::Decimal(dec!(12.5))),
+            serde_json::json!(12.5)
+        );
 
         let str_val = Value::String("hello".to_string());
         assert_eq!(str_val.as_str(), Some("hello"));

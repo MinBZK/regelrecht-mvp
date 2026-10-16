@@ -55,9 +55,14 @@ const date = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'nl-NL', {
   year: 'numeric',
 }).format(new Date(meta.date));
 const doiUrl = `https://doi.org/${meta.doi}`;
+// The same list the paper's own "Discussion on GitHub" button opens
+// (ResearchPaper), including the exclusion for the paper whose title contains
+// this one.
 const discussionUrl =
-  'https://github.com/MinBZK/regelrecht/issues?q=' +
-  encodeURIComponent(`is:issue label:contribution:paper "${meta.title}" sort:updated-desc`);
+  'https://github.com/NederlandseDigitaleDienst/regelrecht/issues?q=' +
+  encodeURIComponent(
+    `is:issue label:contribution:paper "${meta.title}" -"Citizen Explanation" sort:updated-desc`
+  );
 
 const figureOne = codeFigure('fig:narra-example');
 const table = landscape();

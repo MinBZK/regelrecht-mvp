@@ -404,8 +404,9 @@ bewuste afweging, geen omissie.
 
 ## Published papers are frozen
 
-`docs/src/research/` holds published work: `rules-as-executed.html` and its
-generated companions. **Never edit these to match the current state of the
+`docs/src/research/` holds published work: one generated `.html` per paper
+with its companions, each produced by a converter next to the paper's LaTeX
+source (the page under `docs/src/pages/research/` names which). **Never edit these to match the current state of the
 code.** A paper is a claim someone made at a moment in time, and the record of
 what was true then is the whole point of citing it. A paper that silently tracks
 the codebase cannot be cited at all.
@@ -553,7 +554,7 @@ against, is in `docs/src/content/docs/operations/ci-cd.md#the-claude-review-gate
 - Every comment the review writes ends with `<!-- claude-review -->`; snapshot
   and cleanup select on that line, not on the author.
 - A red outcome must state what was established and name no cause it has not
-  tested ([issue #1178](https://github.com/MinBZK/regelrecht/issues/1178)).
+  tested ([issue #1178](https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1178)).
 - The logic lives in `script/await-claude-review.sh` and
   `script/claude-review-comments.sh`; change a path that decides green or red
   only together with its test suite next to it.
@@ -577,7 +578,7 @@ The Mattermost notification in that workflow reads its webhook from the
 `main` merges through a merge queue. Put a PR in it with:
 
 ```bash
-gh pr merge <nr> -R MinBZK/regelrecht --squash
+gh pr merge <nr> -R NederlandseDigitaleDienst/regelrecht --squash
 ```
 
 "The merge strategy for main is set by the merge queue" is a notice, not an

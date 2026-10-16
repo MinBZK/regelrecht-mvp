@@ -26,7 +26,7 @@ const { filePath, lines, text = 'Edit page on GitHub' } = Astro.props;
 
 const fragment = lines ? `#L${lines[0]}-L${lines[1]}` : '';
 const editUrl = filePath
-  ? `https://github.com/MinBZK/regelrecht/edit/main/docs/${filePath}${fragment}`
+  ? `https://github.com/NederlandseDigitaleDienst/regelrecht/edit/main/docs/${filePath}${fragment}`
   : undefined;
 ---
 {

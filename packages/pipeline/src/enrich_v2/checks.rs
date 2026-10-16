@@ -1265,9 +1265,11 @@ const ENGINE_CONTEXT_NAMES: &[&str] = &["referencedate"];
 ///   sparse paths; it stays with the soft gate.
 /// - `$referencedate`, which the engine supplies itself. The soft check keeps
 ///   asking for a declaration, because the `law-generate` skill wants one.
-/// - A name inside the `filter` or `body` of a `FOREACH`. The engine exposes
-///   the fields of each element as bare locals there, so `$status` may be a
-///   field of the collection's records, and the records are data.
+/// - A name inside the `filter` or `body` of a `FOREACH` without `as`. The
+///   engine exposes the fields of each element as bare locals there, so
+///   `$status` may be a field of the collection's records, and the records
+///   are data. With `as` only that name is bound (RFC-049), so every other
+///   name there is checked like any other.
 /// - A name in an entry that declares `produces`. A `pre_actions` hook from
 ///   another law (the AWB's motiveringsplicht is one) injects its outputs into
 ///   such an entry before the actions run, under names this file never
@@ -1286,7 +1288,7 @@ pub fn dangling_bindings(doc: &Value) -> Vec<Finding> {
             continue;
         };
         if !receives_hook_outputs(mr) {
-            for name in referenced_variables_outside_foreach(mr) {
+            for name in referenced_free_variables(mr) {
                 if !defined.contains(&name) && !ENGINE_CONTEXT_NAMES.contains(&name.as_str()) {
                     findings.push(Finding::new(
                         "binding",
@@ -1309,13 +1311,18 @@ pub fn dangling_bindings(doc: &Value) -> Vec<Finding> {
     findings
 }
 
-/// Whether the engine may fire hooks on this entry: `fire_hooks` returns
-/// early unless `execution.produces` carries a `legal_character`.
+/// Whether the engine may fire hooks on this entry: only when
+/// `execution.produces` carries a `legal_character` (a hook on a decision)
+/// or a `submission` (a hook on an application, RFC-045), or, when it is a
+/// list (schema v0.8.1), has an item, whose `type` is one of the two.
 fn receives_hook_outputs(mr: &Value) -> bool {
-    mr.get("execution")
-        .and_then(|e| e.get("produces"))
-        .and_then(|p| p.get("legal_character"))
-        .is_some()
+    match mr.get("execution").and_then(|e| e.get("produces")) {
+        // Every item has a `type`, a decision or a submission; either
+        // receives hooks.
+        Some(Value::Sequence(items)) => items.iter().any(|p| p.get("type").is_some()),
+        Some(p) => p.get("legal_character").is_some() || p.get("submission").is_some(),
+        None => false,
+    }
 }
 
 // --- traversal helpers -------------------------------------------------
@@ -1578,36 +1585,50 @@ fn variable_name(s: &str) -> Option<&str> {
     (!name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_')).then_some(name)
 }
 
-/// Like [`referenced_variables`], but without the `filter` and `body` of a
-/// `FOREACH`: the engine exposes each element's fields there as bare locals,
-/// so a name in that scope may be data rather than a declaration.
-fn referenced_variables_outside_foreach(v: &Value) -> BTreeSet<String> {
-    fn inner(v: &Value, out: &mut BTreeSet<String>) {
+/// Like [`referenced_variables`], but scoped the way the engine binds a
+/// `FOREACH`. Each loop gets a fresh scope that does not chain to the loop
+/// around it: inside the `filter` and `body` of one with `as`, that name is
+/// the only binding and every other name is a reference (RFC-049), including
+/// the `as` of an outer loop. One without `as` exposes each element's fields
+/// there as bare locals, so a bare name in that scope may be data rather than
+/// a declaration, and it is skipped; a nested loop with `as` inside it is
+/// still checked. The `collection` of a loop is read in the scope around it.
+fn referenced_free_variables(v: &Value) -> BTreeSet<String> {
+    /// `bound` is the `as` of the innermost loop; `skip_bare` is set inside
+    /// a loop without `as`, where a bare name may be a field.
+    fn inner(v: &Value, bound: Option<&str>, skip_bare: bool, out: &mut BTreeSet<String>) {
         match v {
             Value::String(s) => {
                 if let Some(name) = variable_name(s) {
-                    out.insert(name.to_string());
+                    if !skip_bare && bound != Some(name) {
+                        out.insert(name.to_string());
+                    }
                 }
             }
             Value::Mapping(map) => {
                 let foreach = map.get("operation").and_then(Value::as_str) == Some("FOREACH");
+                let binding = map.get("as").and_then(Value::as_str);
                 for (k, val) in map {
                     if foreach && matches!(k.as_str(), Some("filter" | "body")) {
+                        match binding {
+                            Some(name) => inner(val, Some(name), false, out),
+                            None => inner(val, None, true, out),
+                        }
                         continue;
                     }
-                    inner(val, out);
+                    inner(val, bound, skip_bare, out);
                 }
             }
             Value::Sequence(seq) => {
                 for item in seq {
-                    inner(item, out);
+                    inner(item, bound, skip_bare, out);
                 }
             }
             _ => {}
         }
     }
     let mut out = BTreeSet::new();
-    inner(v, &mut out);
+    inner(v, None, false, &mut out);
     out
 }
 
@@ -5714,6 +5735,52 @@ articles:
         );
     }
 
+    /// A hook on an application (RFC-045) delivers its outputs to the article
+    /// that establishes the application, so reading one there is no dangling
+    /// binding, as for a hook on a decision.
+    #[test]
+    fn dangling_bindings_accepts_a_hook_output_on_an_application() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        produces:
+          submission:
+            kind: AANVRAAG
+        output:
+          - name: volledig
+        actions:
+          - output: volledig
+            value: $aanvraag_bevat_wat_artikel_4_2_eist
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        assert_eq!(dangling_bindings(&doc), Vec::<Finding>::new());
+    }
+
+    /// The same when `produces` is a list (schema v0.8.1): an item that
+    /// establishes the application is enough.
+    #[test]
+    fn dangling_bindings_accepts_a_hook_output_when_produces_is_a_list() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+          - type: BESCHIKKING
+            outputs: [volledig]
+        output:
+          - name: volledig
+        actions:
+          - output: volledig
+            value: $aanvraag_bevat_wat_artikel_4_2_eist
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        assert_eq!(dangling_bindings(&doc), Vec::<Finding>::new());
+    }
+
     /// A loop variable exists inside its own loop and nowhere else, and a
     /// `FOREACH` without `as` excuses no `$item` outside it.
     #[test]
@@ -5790,6 +5857,137 @@ articles:
         assert_eq!(
             details,
             vec!["$geen_lijst is referenced but never defined in this law".to_string()]
+        );
+    }
+
+    /// With `as`, a loop binds only that name (RFC-049): a bare name in its
+    /// `filter` or `body` is a reference, not a field of the element, so an
+    /// undeclared one is flagged. Without `as` it may be a field, and the
+    /// check leaves it alone.
+    #[test]
+    fn dangling_bindings_checks_the_body_of_a_loop_with_as() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        input:
+          - name: kinderen
+            source: {}
+          - name: drempel
+            source: {}
+        output:
+          - name: met_as
+          - name: zonder_as
+        actions:
+          - output: met_as
+            value:
+              operation: FOREACH
+              collection: $kinderen
+              as: kind
+              filter:
+                operation: GREATER_THAN
+                subject: $leeftijd
+                value: $drempel
+              body: $kind
+              combine: ADD
+          - output: zonder_as
+            value:
+              operation: FOREACH
+              collection: $kinderen
+              filter:
+                operation: GREATER_THAN
+                subject: $status
+                value: $drempel
+              body: 1
+              combine: ADD
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        let details: Vec<String> = dangling_bindings(&doc)
+            .into_iter()
+            .map(|f| f.detail)
+            .collect();
+        assert_eq!(
+            details,
+            vec!["$leeftijd is referenced but never defined in this law".to_string()]
+        );
+    }
+
+    /// A loop's scope does not chain to the loop around it: the inner `body`
+    /// cannot read the outer `as` by its bare name, so that is flagged. The
+    /// inner `collection` is read in the outer scope and may use it.
+    #[test]
+    fn dangling_bindings_flags_an_outer_as_in_an_inner_body() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        input:
+          - name: huishoudens
+            source: {}
+        output:
+          - name: totaal
+        actions:
+          - output: totaal
+            value:
+              operation: FOREACH
+              collection: $huishoudens
+              as: huishouden
+              body:
+                operation: FOREACH
+                collection: $huishouden.leden
+                as: lid
+                body: $huishouden
+                combine: ADD
+              combine: ADD
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        let details: Vec<String> = dangling_bindings(&doc)
+            .into_iter()
+            .map(|f| f.detail)
+            .collect();
+        assert_eq!(
+            details,
+            vec!["$huishouden is referenced but never defined in this law".to_string()]
+        );
+    }
+
+    /// A loop without `as` leaves its bare names alone, but a nested loop
+    /// with `as` inside it binds only its own name and is still checked.
+    #[test]
+    fn dangling_bindings_checks_a_loop_with_as_inside_one_without() {
+        let yaml = r#"
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        input:
+          - name: huishoudens
+            source: {}
+        output:
+          - name: totaal
+        actions:
+          - output: totaal
+            value:
+              operation: FOREACH
+              collection: $huishoudens
+              body:
+                operation: FOREACH
+                collection: $leden
+                as: lid
+                body: $bijdrage
+                combine: ADD
+              combine: ADD
+"#;
+        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
+        let details: Vec<String> = dangling_bindings(&doc)
+            .into_iter()
+            .map(|f| f.detail)
+            .collect();
+        assert_eq!(
+            details,
+            vec!["$bijdrage is referenced but never defined in this law".to_string()]
         );
     }
 

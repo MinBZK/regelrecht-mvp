@@ -52,6 +52,12 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-040 | The schema documents itself | [Schema](./schema) |
 | RFC-041 | A void is not scoped like a replacement | [Voiding an output](../concepts/hooks-and-reactive-execution#voiding-an-output) |
 | RFC-044 | Rulework (regelwerk) as the name for a regulation in YAML (partially applied) | [Glossary](./glossary#regelrecht-specific-terms) |
+| RFC-045 | The application as something the Awb hooks onto (`submission`, `moment`) | [Chronolexography](../concepts/chronolexography#the-application-with-the-awb-on-it), [Schema](./schema) |
+| RFC-046 | Chronolexography is an optional layer on RegelRecht (`packages/cel`) | [Chronolexography](../concepts/chronolexography#the-application-in-the-chronicle), [Architecture](../guide/architecture) |
+| RFC-047 | The decision on the application (stages, `decided_per_case_by`, `Cell::decide`) | [Chronolexography](../concepts/chronolexography#the-decision-on-the-application), [Schema](./schema) |
+| RFC-048 | A cell reads its chronicle back through a reduction (`REDUCTIE`, `source: {decisions}`, `reading`) | [Chronolexography](../concepts/chronolexography#once-per-school-year) |
+| RFC-049 | FOREACH with `as` binds only its name | [Collections](../concepts/collections#the-element-binding) |
+| RFC-050 | The objection is a second submission (`BEZWAAR`, Awb 7:11 reconsiders the contested decision by calling its article); calling the decision of an article (`source.article`, `parameters_from`, type `decision`, findings, `derived`) | [Chronolexography](../concepts/chronolexography#the-objection), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article), [Schema](./schema) |
 
 ## Backlog
 

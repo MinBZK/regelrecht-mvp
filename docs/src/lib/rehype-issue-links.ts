@@ -9,7 +9,7 @@ import type { Root, Element, ElementContent, Text } from 'hast'
  * appeared in both forms in the same corpus. Hand-linking does not survive
  * contact with people writing prose, so the build does it.
  *
- *   - "issue #1036"        → https://github.com/MinBZK/regelrecht/issues/1036
+ *   - "issue #1036"        → https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1036
  *   - "PR #748"            → …/issues/748
  *   - "pull request #30"   → …/issues/30
  *
@@ -45,7 +45,7 @@ import type { Root, Element, ElementContent, Text } from 'hast'
  * as useful in a guide or a roadmap toelichting as in an RFC.
  */
 
-const REPO_URL = 'https://github.com/MinBZK/regelrecht'
+const REPO_URL = 'https://github.com/NederlandseDigitaleDienst/regelrecht'
 
 /*
  * "issue #1036", "Issue #1036", "PR #748", "pull request #30".

@@ -33,7 +33,7 @@
 //! an unknown (Kleene): `AND` with a `false` is `false` whatever the unknown
 //! turns out to be, `OR` with a `true` is `true`.
 
-use crate::article::{ActionOperation, ActionValue, Case, CombineOp};
+use crate::article::{foreach_binding, ActionOperation, ActionValue, Case, CombineOp};
 use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
 use crate::types::{PathNodeType, Value};
@@ -198,7 +198,7 @@ pub trait ValueResolver {
     fn execute_foreach_op(
         &self,
         _collection: &ActionValue,
-        _as_name: &str,
+        _as_name: Option<&str>,
         _body: &ActionValue,
         _filter: Option<&ActionValue>,
         _combine: Option<&CombineOp>,
@@ -446,7 +446,7 @@ fn execute_operation_internal<R: ValueResolver>(
         } => resolver
             .execute_foreach_op(
                 collection,
-                as_name,
+                as_name.as_deref(),
                 body,
                 filter.as_ref(),
                 combine.as_ref(),
@@ -526,6 +526,9 @@ pub(crate) fn values_equal(a: &Value, b: &Value) -> bool {
 ///   This keeps EQUALS consistent with the ordering operators, which also accept
 ///   both date forms via `parse_date`. Two strings or two objects keep structural
 ///   equality, so objects that merely share an `iso` field are not equal.
+/// - Two lists or two records compare structurally without numeric coercion
+///   inside: an integer against a decimal of the same value is an error
+///   ([`compound_equal`]).
 /// - Other non-numeric types use structural equality
 /// - When `negate` is true, the result is inverted (NOT_EQUALS).
 fn execute_equality<R: ValueResolver>(
@@ -552,7 +555,12 @@ fn execute_equality<R: ValueResolver>(
         return Ok(unknown);
     }
 
-    let mut equal = values_equal(&subject_val, &value_val);
+    let mut equal = match (&subject_val, &value_val) {
+        (Value::Object(_), Value::Object(_)) | (Value::Array(_), Value::Array(_)) => {
+            compound_equal(&subject_val, &value_val, op_name, "")?
+        }
+        _ => values_equal(&subject_val, &value_val),
+    };
 
     // Date-aware fallback, scoped to the mixed form (a string against an `{iso}`
     // object): the one date pairing structural equality can never match. Two
@@ -570,6 +578,57 @@ fn execute_equality<R: ValueResolver>(
     }
 
     Ok(Value::Bool(if negate { !equal } else { equal }))
+}
+
+/// `EQUALS` on two lists or two records: structural, with the numbers inside
+/// compared as written. A number that is an integer on one side and a decimal
+/// of the same value on the other (`12` against `12.0`) is an error, not an
+/// answer: whether the two are alike is a question about where the values
+/// came from, and answering it silently either way would hide that. The
+/// whole structure is walked, so the error does not depend on what differs
+/// first. A bare number keeps its coercion ([`values_equal`]). `path` names
+/// the place inside the operands, for the message.
+fn compound_equal(a: &Value, b: &Value, op_name: &str, path: &str) -> Result<bool> {
+    match (a, b) {
+        (Value::Object(left), Value::Object(right)) => {
+            let mut equal = left.len() == right.len();
+            for (key, l) in left {
+                match right.get(key) {
+                    Some(r) => equal &= compound_equal(l, r, op_name, &format!("{path}.{key}"))?,
+                    None => equal = false,
+                }
+            }
+            Ok(equal)
+        }
+        (Value::Array(left), Value::Array(right)) => {
+            let mut equal = left.len() == right.len();
+            for (index, (l, r)) in left.iter().zip(right).enumerate() {
+                equal &= compound_equal(l, r, op_name, &format!("{path}[{index}]"))?;
+            }
+            Ok(equal)
+        }
+        (Value::Int(i), Value::Decimal(d)) | (Value::Decimal(d), Value::Int(i))
+            if Decimal::from(*i) == *d =>
+        {
+            Err(EngineError::TypeMismatch {
+                expected: format!(
+                    "numbers written alike inside the lists or records {op_name} compares"
+                ),
+                actual: format!("{a} against {b} at {path}"),
+            })
+        }
+        _ => Ok(a == b),
+    }
+}
+
+/// Whether `a` and `b` are equal as `EQUALS` compares two lists or two
+/// records ([`compound_equal`]), at any depth, a bare number included: an
+/// integer against a decimal of the same value is an error, two decimals
+/// are equal whatever their scale. For a caller outside a law, such as a
+/// cell comparing a stored value with one computed anew, so that it holds
+/// to the same rule as the engine.
+pub fn equal_as_written(a: &Value, b: &Value) -> Result<bool> {
+    compound_equal(a, b, "EQUALS", "$")
 }
 
 /// Whether the pair is the mixed date form: one string against one
@@ -1394,7 +1453,7 @@ fn execute_list<R: ValueResolver>(
 /// See RFC-016 for the scope, combine and taint rules this implements.
 pub fn execute_foreach(
     collection: &ActionValue,
-    as_name: &str,
+    as_name: Option<&str>,
     body: &ActionValue,
     filter: Option<&ActionValue>,
     combine: Option<&CombineOp>,
@@ -1404,9 +1463,10 @@ pub fn execute_foreach(
     // The schema constrains `as` with a pattern, but a law can reach the engine
     // without passing schema validation, and a bad binding name would otherwise
     // surface much later as a puzzling resolution failure.
-    if !is_valid_binding_name(as_name) {
+    let binding = foreach_binding(as_name);
+    if !is_valid_binding_name(binding) {
         return Err(EngineError::InvalidOperation(format!(
-            "FOREACH 'as' must be a non-empty lowercase identifier (got '{as_name}')"
+            "FOREACH 'as' must be a non-empty lowercase identifier (got '{binding}')"
         )));
     }
 
@@ -1445,25 +1505,28 @@ pub fn execute_foreach(
     for (index, item) in items.iter().enumerate() {
         let mut child = context.create_child();
 
-        // Objects also expose their fields as bare locals, so `$status` works
-        // where `$item.status` does. Existing laws are written that way. Dot
-        // notation is clearer and does not risk shadowing an outer variable,
-        // which is why RFC-016 recommends it for new laws.
-        if let Value::Object(fields) = item {
-            for (key, value) in fields {
-                child.set_local(key.clone(), value.clone());
+        // Without `as`, an object element also exposes its fields as bare
+        // locals, so `$status` works where `$item.status` does. With `as`, the
+        // law named the element and reads it as `$<as>.<field>` only: a field
+        // bound under its own name would shadow an outer variable of that
+        // name, and the body could no longer compare the row with it
+        // (RFC-049).
+        if as_name.is_none() {
+            if let Value::Object(fields) = item {
+                for (key, value) in fields {
+                    child.set_local(key.clone(), value.clone());
+                }
             }
         }
 
-        // Bound last, so a field named like the binding cannot displace it:
-        // `as: kind` over `{kind: 7, bedrag: 5}` must leave `$kind` the element,
-        // or `$kind.bedrag` becomes a type error on an integer.
+        // Bound last, so a field named `item` cannot displace the element in
+        // the form without `as`.
         //
-        // A field named `referencedate` is a different matter and stays
-        // unreachable by design: that name resolves ahead of local scope (see
+        // A field named `referencedate` stays unreachable by bare name by
+        // design: that name resolves ahead of local scope (see
         // `RuleContext::resolve_variable_internal`), so the flattened form reads
         // the calculation date. Dot notation gets at the field.
-        child.set_local(as_name.to_string(), item.clone());
+        child.set_local(binding.to_string(), item.clone());
 
         if tracing {
             context.trace_push(&format!("ITEM_{index}"), PathNodeType::Operation);
@@ -3636,7 +3699,7 @@ mod tests {
             let context = ctx(vec![("items", Value::Array(items))]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine,
@@ -3673,7 +3736,7 @@ mod tests {
             )]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: ActionValue::Operation(Box::new(ActionOperation::Multiply {
                     values: vec![var("x"), lit(2i64)],
                 })),
@@ -3698,7 +3761,7 @@ mod tests {
             )]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: lit(1i64),
                 filter: Some(ActionValue::Operation(Box::new(
                     ActionOperation::GreaterThan {
@@ -3716,7 +3779,7 @@ mod tests {
             let context = ctx(vec![("items", Value::Array(vec![Value::Int(1)]))]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: Some(lit(false)),
                 combine: Some(CombineOp::Add),
@@ -3735,7 +3798,7 @@ mod tests {
             )]);
             let op = ActionOperation::Foreach {
                 collection: var("kinderen"),
-                as_name: "kind".to_string(),
+                as_name: Some("kind".to_string()),
                 body: var("kind.bedrag"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -3746,22 +3809,127 @@ mod tests {
             );
         }
 
+        /// `FOREACH $kinderen` with the given `as` and body, summed.
+        fn sum_over_kinderen(
+            context: &RuleContext,
+            as_name: Option<&str>,
+            body: &str,
+        ) -> Result<Value> {
+            let op = ActionOperation::Foreach {
+                collection: var("kinderen"),
+                as_name: as_name.map(str::to_string),
+                body: var(body),
+                filter: None,
+                combine: Some(CombineOp::Add),
+            };
+            execute_operation(&op, context, 0)
+        }
+
         #[test]
-        fn test_foreach_flattens_object_fields_into_scope() {
-            // `$bedrag` resolves without the `$kind.` prefix, which is how
-            // existing law YAML refers to element properties.
+        fn test_foreach_without_as_flattens_object_fields_into_scope() {
+            // Without `as`, `$bedrag` resolves without a prefix, and shadows
+            // the outer `$bedrag` (RFC-016). `$item.bedrag` reads the same.
+            let context = ctx(vec![
+                (
+                    "kinderen",
+                    Value::Array(vec![obj(vec![("bedrag", Value::Int(42))])]),
+                ),
+                ("bedrag", Value::Int(1000)),
+            ]);
+            assert_eq!(
+                sum_over_kinderen(&context, None, "bedrag").unwrap(),
+                Value::Int(42)
+            );
+            assert_eq!(
+                sum_over_kinderen(&context, None, "item.bedrag").unwrap(),
+                Value::Int(42)
+            );
+        }
+
+        #[test]
+        fn test_foreach_with_as_does_not_bind_fields_by_their_own_name() {
+            // With `as`, the bare name is the outer variable, not the field
+            // (RFC-049): that is what lets a body compare the row with a
+            // parameter of the same name.
+            let context = ctx(vec![
+                (
+                    "kinderen",
+                    Value::Array(vec![
+                        obj(vec![("bedrag", Value::Int(42))]),
+                        obj(vec![("bedrag", Value::Int(8))]),
+                    ]),
+                ),
+                ("bedrag", Value::Int(1000)),
+            ]);
+            assert_eq!(
+                sum_over_kinderen(&context, Some("kind"), "bedrag").unwrap(),
+                Value::Int(2000)
+            );
+            // The field is reachable through the binding.
+            assert_eq!(
+                sum_over_kinderen(&context, Some("kind"), "kind.bedrag").unwrap(),
+                Value::Int(50)
+            );
+            // `item` is not bound either: the law named the element.
+            assert!(sum_over_kinderen(&context, Some("kind"), "item.bedrag").is_err());
+        }
+
+        #[test]
+        fn test_foreach_with_as_leaves_a_bare_field_name_undefined() {
+            // Without an outer variable of that name, a bare field name does
+            // not resolve at all, where it used to read the field.
             let context = ctx(vec![(
                 "kinderen",
                 Value::Array(vec![obj(vec![("bedrag", Value::Int(42))])]),
             )]);
-            let op = ActionOperation::Foreach {
+            let err = sum_over_kinderen(&context, Some("kind"), "bedrag").unwrap_err();
+            assert!(
+                matches!(&err, EngineError::VariableNotFound(name) if name == "bedrag"),
+                "got {err:?}"
+            );
+            assert_eq!(
+                sum_over_kinderen(&context, None, "bedrag").unwrap(),
+                Value::Int(42)
+            );
+        }
+
+        #[test]
+        fn test_foreach_with_as_compares_the_row_with_a_parameter_of_its_field_name() {
+            // The case that motivated RFC-049: a reduction with a parameter
+            // `bsn_jongere` over rows that also carry `bsn_jongere`.
+            let rij = |bsn: &str, uren: i64| {
+                obj(vec![
+                    ("bsn_jongere", Value::String(bsn.to_string())),
+                    ("uren", Value::Int(uren)),
+                ])
+            };
+            let context = ctx(vec![
+                (
+                    "kinderen",
+                    Value::Array(vec![rij("111", 3), rij("222", 5), rij("111", 4)]),
+                ),
+                ("bsn_jongere", Value::String("111".to_string())),
+            ]);
+            let op = |as_name: Option<&str>, row: &str| ActionOperation::Foreach {
                 collection: var("kinderen"),
-                as_name: "kind".to_string(),
-                body: var("bedrag"),
-                filter: None,
+                as_name: as_name.map(str::to_string),
+                filter: Some(ActionValue::Operation(Box::new(ActionOperation::Equals {
+                    subject: var(row),
+                    value: var("bsn_jongere"),
+                }))),
+                body: var(if as_name.is_some() { "r.uren" } else { "uren" }),
                 combine: Some(CombineOp::Add),
             };
-            assert_eq!(execute_operation(&op, &context, 0).unwrap(), Value::Int(42));
+            assert_eq!(
+                execute_operation(&op(Some("r"), "r.bsn_jongere"), &context, 0).unwrap(),
+                Value::Int(7)
+            );
+            // Without `as` the field shadows the parameter: every row equals
+            // itself and the filter keeps all of them.
+            assert_eq!(
+                execute_operation(&op(None, "item.bsn_jongere"), &context, 0).unwrap(),
+                Value::Int(12)
+            );
         }
 
         #[test]
@@ -3780,14 +3948,14 @@ mod tests {
             )]);
             let inner = ActionOperation::Foreach {
                 collection: var("huishouden.leden"),
-                as_name: "lid".to_string(),
+                as_name: Some("lid".to_string()),
                 body: var("lid"),
                 filter: None,
                 combine: Some(CombineOp::Add),
             };
             let outer = ActionOperation::Foreach {
                 collection: var("huishoudens"),
-                as_name: "huishouden".to_string(),
+                as_name: Some("huishouden".to_string()),
                 body: ActionValue::Operation(Box::new(inner)),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -3811,14 +3979,14 @@ mod tests {
             )]);
             let inner = ActionOperation::Foreach {
                 collection: var("huishouden.leden"),
-                as_name: "lid".to_string(),
+                as_name: Some("lid".to_string()),
                 body: var("huishouden"),
                 filter: None,
                 combine: None,
             };
             let outer = ActionOperation::Foreach {
                 collection: var("huishoudens"),
-                as_name: "huishouden".to_string(),
+                as_name: Some("huishouden".to_string()),
                 body: ActionValue::Operation(Box::new(inner)),
                 filter: None,
                 combine: None,
@@ -3856,7 +4024,7 @@ mod tests {
             let context = ctx(vec![("items", Value::Null)]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -3869,7 +4037,7 @@ mod tests {
             let context = ctx(vec![("item", Value::Int(7))]);
             let op = ActionOperation::Foreach {
                 collection: var("item"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4017,7 +4185,7 @@ mod tests {
             let context = ctx(vec![("items", huishoudens.clone())]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4035,7 +4203,7 @@ mod tests {
             let context = ctx(vec![("items", taint.clone())]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4055,7 +4223,7 @@ mod tests {
             ]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("onbekend"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4075,7 +4243,7 @@ mod tests {
             ]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: Some(var("onbekend")),
                 combine: Some(CombineOp::Add),
@@ -4095,7 +4263,7 @@ mod tests {
             ]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: Some(var("onbekend")),
                 combine: Some(CombineOp::Add),
@@ -4120,7 +4288,7 @@ mod tests {
             )]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x.ja"),
                 filter: Some(var("x.keur")),
                 combine: Some(CombineOp::Or),
@@ -4141,7 +4309,7 @@ mod tests {
             ]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: Some(var("geen")),
                 combine: Some(CombineOp::Add),
@@ -4159,7 +4327,7 @@ mod tests {
             let context = ctx(vec![("items", Value::Array(vec![Value::Int(1)]))]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("bestaat_niet"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4178,7 +4346,7 @@ mod tests {
             ]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4192,7 +4360,7 @@ mod tests {
                 let context = ctx(vec![("items", Value::Array(vec![Value::Int(1)]))]);
                 let op = ActionOperation::Foreach {
                     collection: var("items"),
-                    as_name: bad.to_string(),
+                    as_name: Some(bad.to_string()),
                     body: lit(1i64),
                     filter: None,
                     combine: None,
@@ -4213,7 +4381,7 @@ mod tests {
                 let context = ctx(vec![("items", Value::Array(vec![Value::Int(1)]))]);
                 let op = ActionOperation::Foreach {
                     collection: var("items"),
-                    as_name: good.to_string(),
+                    as_name: Some(good.to_string()),
                     body: lit(1i64),
                     filter: None,
                     combine: Some(CombineOp::Add),
@@ -4280,14 +4448,14 @@ mod tests {
             )]);
             let inner = ActionOperation::Foreach {
                 collection: var("huishouden.leden"),
-                as_name: "lid".to_string(),
+                as_name: Some("lid".to_string()),
                 body: var("lid"),
                 filter: None,
                 combine: Some(CombineOp::Max),
             };
             let outer = ActionOperation::Foreach {
                 collection: var("huishoudens"),
-                as_name: "huishouden".to_string(),
+                as_name: Some("huishouden".to_string()),
                 body: ActionValue::Operation(Box::new(inner)),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4301,19 +4469,20 @@ mod tests {
 
         #[test]
         fn test_foreach_element_field_cannot_overwrite_the_binding() {
-            // `as: kind` over `{kind: 7, bedrag: 5}`: the binding must stay the
-            // element, or `$kind.bedrag` becomes a type error on an integer.
+            // Without `as`, over `{item: 7, bedrag: 5}`: the binding must stay
+            // the element, or `$item.bedrag` becomes a type error on an
+            // integer.
             let context = ctx(vec![(
                 "kinderen",
                 Value::Array(vec![obj(vec![
-                    ("kind", Value::Int(7)),
+                    ("item", Value::Int(7)),
                     ("bedrag", Value::Int(5)),
                 ])]),
             )]);
             let op = ActionOperation::Foreach {
                 collection: var("kinderen"),
-                as_name: "kind".to_string(),
-                body: var("kind.bedrag"),
+                as_name: None,
+                body: var("item.bedrag"),
                 filter: None,
                 combine: Some(CombineOp::Add),
             };
@@ -4336,7 +4505,7 @@ mod tests {
             )]);
             let bare = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: None,
                 body: var("referencedate.iso"),
                 filter: None,
                 combine: None,
@@ -4349,7 +4518,7 @@ mod tests {
 
             let dotted = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x.referencedate"),
                 filter: None,
                 combine: None,
@@ -4376,7 +4545,7 @@ mod tests {
             ]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("onbekend"),
                 filter: None,
                 combine: None,
@@ -4411,7 +4580,7 @@ mod tests {
             )]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: Some(ActionValue::Operation(Box::new(
                     ActionOperation::GreaterThan {
@@ -4453,7 +4622,7 @@ mod tests {
             let context = ctx(vec![("items", Value::Array(vec![Value::Int(1)]))]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4513,7 +4682,7 @@ mod tests {
             let context = ctx(vec![("items", Value::Array(vec![Value::Int(1)]))]);
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -4530,7 +4699,7 @@ mod tests {
             // limit, so only the filter's own increment can trip this.
             let with_filter = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: lit(1i64),
                 filter: Some(ActionValue::Operation(Box::new(ActionOperation::Not {
                     value: lit(false),
@@ -4560,7 +4729,7 @@ mod tests {
             let resolver = TestResolver::new().with_var("items", Value::Array(vec![Value::Int(1)]));
             let op = ActionOperation::Foreach {
                 collection: var("items"),
-                as_name: "x".to_string(),
+                as_name: Some("x".to_string()),
                 body: var("x"),
                 filter: None,
                 combine: Some(CombineOp::Add),
@@ -6702,7 +6871,7 @@ mod tests {
             let each = |body: ActionValue| {
                 ActionValue::Operation(Box::new(ActionOperation::Foreach {
                     collection: var("items"),
-                    as_name: "x".to_string(),
+                    as_name: Some("x".to_string()),
                     body,
                     filter: None,
                     combine: None,
@@ -6922,5 +7091,19 @@ mod tests {
 
         assert!(values_equal(&Value::Int(42), &Value::Decimal(dec!(42))));
         assert!(values_equal(&Value::Decimal(dec!(42)), &Value::Int(42)));
+    }
+
+    #[test]
+    fn test_equal_as_written_is_strict_at_any_depth() {
+        // Outside a law the rule of EQUALS on records holds for a bare
+        // number too: 5 against 5.0 is an error, 5.0 against 5.00 equal.
+        assert!(equal_as_written(&Value::Decimal(dec!(5.0)), &Value::Decimal(dec!(5.00))).unwrap());
+        assert!(!equal_as_written(&Value::Decimal(dec!(5.0)), &Value::Int(6)).unwrap());
+        assert!(equal_as_written(&Value::Int(5), &Value::Decimal(dec!(5.0))).is_err());
+        let record = |v: Value| Value::Object(BTreeMap::from([("n".to_string(), v)]));
+        assert!(
+            equal_as_written(&record(Value::Int(5)), &record(Value::Decimal(dec!(5)))).is_err()
+        );
+        assert!(equal_as_written(&record(Value::Int(5)), &record(Value::Int(5))).unwrap());
     }
 }

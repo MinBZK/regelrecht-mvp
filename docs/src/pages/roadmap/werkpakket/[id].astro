@@ -115,7 +115,7 @@ const vraagRegels = sourcePath
 // Base.astro's select-to-edit button builds its URL from this attribute plus
 // the data-line values above; the same wiring the docs and RFC pages use.
 const editBase = entry.filePath
-  ? `https://github.com/MinBZK/regelrecht/edit/main/docs/${entry.filePath}`
+  ? `https://github.com/NederlandseDigitaleDienst/regelrecht/edit/main/docs/${entry.filePath}`
   : undefined;
 
 const pathname = `/roadmap/werkpakket/${wp.id}`;
@@ -141,7 +141,7 @@ const pathname = `/roadmap/werkpakket/${wp.id}`;
  * This query tracks linkify's output format: change the shape the bot writes and
  * this has to change with it.
  */
-const prZoekUrl = `https://github.com/MinBZK/regelrecht/pulls?q=${encodeURIComponent(
+const prZoekUrl = `https://github.com/NederlandseDigitaleDienst/regelrecht/pulls?q=${encodeURIComponent(
   `is:pr "werkpakket/${wp.id})" OR "Werkpakket: ${wp.id}"`,
 )}`;
 

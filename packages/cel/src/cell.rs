@@ -1,0 +1,1372 @@
+//! A cell: it keeps a chronicle and records submissions and the decisions
+//! on them in it.
+//!
+//! A submission may refer to a decision in the chronicle (`refers_to`). A
+//! field of type `decision` then holds that decision, and a field that the
+//! decision holds by name comes from it too (RFC-050). The chronolexogram
+//! keeps a decision by its id; the engine gets its decision value
+//! `{grondslag, taken_on, fields, findings, outputs}`, where `taken_on`
+//! is the article of the submission it was taken on. A decision output of
+//! the deciding article is a decision the cell records as well, in the same
+//! append. The cell knows no article that does this; the law names it with
+//! the type.
+
+use std::collections::BTreeMap;
+use std::path::Path;
+
+use chrono::NaiveDate;
+use regelrecht_engine::{
+    ArticleResult, FilledBy, LawExecutionService, OpenTermFilled, OutputProvenance, ParameterType,
+    Value,
+};
+use serde_json::Map;
+
+use crate::chronicle::{Chronicle, Gram, GramMoment};
+use crate::decision::{self, DecisionShape, Source};
+use crate::encoding;
+use crate::error::{refused, setup, Result};
+use crate::reading::{self, Bound, Reduction};
+use crate::shape::{self, Shape};
+
+/// A cell. It holds who it is, its chronicle and its reductions, not the
+/// law: every call that needs the law gets the service that executes it.
+#[derive(Debug)]
+pub struct Cell {
+    recording_actor: String,
+    chronicle: Chronicle,
+    reductions: Vec<Reduction>,
+}
+
+impl Cell {
+    /// The cell of `recording_actor`, with its chronicle in the JSON Lines file
+    /// at `path`. A chronolexogram in the file recorded by another actor is an
+    /// error.
+    pub fn open(recording_actor: impl Into<String>, path: impl AsRef<Path>) -> Result<Self> {
+        let recording_actor = recording_actor.into();
+        let chronicle = Chronicle::open(path)?;
+        if let Some(g) = chronicle
+            .grams()
+            .iter()
+            .find(|g| g.recording_actor != recording_actor)
+        {
+            return Err(setup(format!(
+                "chronolexogram '{}' in the chronicle of '{recording_actor}' was recorded by '{}'",
+                g.id, g.recording_actor
+            )));
+        }
+        Ok(Self {
+            recording_actor,
+            chronicle,
+            reductions: Vec::new(),
+        })
+    }
+
+    /// The cell of `recording_actor`, with an empty chronicle in memory.
+    pub fn in_memory(recording_actor: impl Into<String>) -> Self {
+        Self {
+            recording_actor: recording_actor.into(),
+            chronicle: Chronicle::in_memory(),
+            reductions: Vec::new(),
+        }
+    }
+
+    /// The cell with the reductions in its directory `dir`, one version per
+    /// file at `<dir>/reducties/<id>/<valid_from>.yaml` (RFC-048). A file
+    /// that is no `REDUCTIE`, or whose `$id` is not its directory's name, is
+    /// an error. Without a `reducties` directory the cell has none.
+    pub fn with_reductions(mut self, dir: impl AsRef<Path>) -> Result<Self> {
+        let root = dir.as_ref().join("reducties");
+        if !root.is_dir() {
+            return Ok(self);
+        }
+        let mut paths = Vec::new();
+        for entry in std::fs::read_dir(&root)? {
+            let id_dir = entry?.path();
+            if !id_dir.is_dir() {
+                continue;
+            }
+            for version in std::fs::read_dir(&id_dir)? {
+                let path = version?.path();
+                if path.extension().is_some_and(|x| x == "yaml") {
+                    paths.push(path);
+                }
+            }
+        }
+        paths.sort();
+        for path in paths {
+            let reduction = Reduction::parse(std::fs::read_to_string(&path)?)
+                .map_err(|e| setup(format!("{}: {e}", path.display())))?;
+            let named = path
+                .parent()
+                .and_then(Path::file_name)
+                .is_some_and(|name| name == reduction.id());
+            if !named {
+                return Err(setup(format!(
+                    "{}: the reduction '{}' is not in a directory of that name",
+                    path.display(),
+                    reduction.id()
+                )));
+            }
+            self.reductions.push(reduction);
+        }
+        Ok(self)
+    }
+
+    pub fn recording_actor(&self) -> &str {
+        &self.recording_actor
+    }
+
+    pub fn grams(&self) -> &[Gram] {
+        self.chronicle.grams()
+    }
+
+    /// Record the submission that article `article` of `law_id` establishes,
+    /// received on `on`, with the values the applicant and the intake channel
+    /// supplied in `supplied`, referring to the decision `refers_to` in this
+    /// chronicle if it is given.
+    ///
+    /// The cell refuses a field the law does not ask, the moment that counts
+    /// (the cell fills it), and a value of the wrong type. A field may be
+    /// left out. It takes `on` as the moment, passes it to the engine,
+    /// executes the article (so the hooks on the submission run) and
+    /// appends one chronolexogram.
+    ///
+    /// What the cell takes from the decision it refers to ([`Cell::referred`]):
+    /// the field of type `decision`, of which a submission has at most one,
+    /// and every other field that decision holds by name. The submitter
+    /// supplies neither. Without `refers_to`, a `decision` field is left
+    /// out. The cell refuses a reference to what is no decision in its
+    /// chronicle.
+    pub fn record_submission(
+        &mut self,
+        service: &LawExecutionService,
+        law_id: &str,
+        article: &str,
+        refers_to: Option<&str>,
+        supplied: &Map<String, serde_json::Value>,
+        on: NaiveDate,
+    ) -> Result<Gram> {
+        let shape = shape::derive(service, law_id, article, on)?;
+        let (filled, from_referred) = self.referred(service, &shape, refers_to)?;
+        check_supplied(&shape, supplied, &from_referred)?;
+        self.record(service, &shape, supplied, filled, on)
+    }
+
+    /// What a submission of `shape` takes from the decision `refers_to`:
+    /// its field of type `decision`, which holds that decision's id, and
+    /// every other field that decision holds by name or, where an override
+    /// voided it, gives (such as the end of a period that a hook on the
+    /// decision computes). Returns what the cell fills, and the names the
+    /// submitter may not supply: these, and the `decision` field also without
+    /// `refers_to`.
+    fn referred(
+        &self,
+        service: &LawExecutionService,
+        shape: &Shape,
+        refers_to: Option<&str>,
+    ) -> Result<(Filled, Vec<String>)> {
+        let decisions: Vec<String> = shape
+            .fields
+            .iter()
+            .filter(|f| f.type_ == ParameterType::Decision)
+            .map(|f| f.name.clone())
+            .collect();
+        if decisions.len() > 1 {
+            return Err(setup(format!(
+                "the {} of {} holds {} decisions ({}); the cell fills one, from the \
+                 chronolexogram it refers to",
+                shape.kind,
+                shape.grondslag(),
+                decisions.len(),
+                decisions.join(", ")
+            )));
+        }
+        let Some(id) = refers_to else {
+            return Ok((Filled::default(), decisions));
+        };
+        let referred = self.decision_gram(service, id)?;
+        let mut filled = Filled {
+            refers_to: Some(id.to_string()),
+            ..Filled::default()
+        };
+        if let Some(name) = decisions.first() {
+            filled
+                .fields
+                .insert(name.clone(), serde_json::Value::String(id.to_string()));
+        }
+        // What the decision took and gave, in the law it was taken under.
+        let taken_on = referred.recorded_on;
+        let referred_shape = decision_shape_of(service, referred, taken_on)?;
+        let gives = gives(service, &referred_shape, taken_on);
+        let mut from_referred = decisions.clone();
+        for field in shape.fields.iter().filter(|f| !decisions.contains(&f.name)) {
+            if let Some(value) = referred.held(&field.name) {
+                // Coupled by name, so checked as a supplied value is: the
+                // two articles may mean another thing by it.
+                if !shape::fits(field, value) {
+                    return Err(setup(format!(
+                        "'{}' of the {} of {} comes from decision '{id}' under {}, which holds \
+                         {value}; that does not fit a {}{:?} ({})",
+                        field.name,
+                        shape.kind,
+                        shape.grondslag(),
+                        referred.grondslag,
+                        if field.nullable { "" } else { "non-nullable " },
+                        field.type_,
+                        field.first_declared_by()
+                    )));
+                }
+                filled.fields.insert(field.name.clone(), value.clone());
+            } else if !gives.contains(&field.name) {
+                continue;
+            }
+            from_referred.push(field.name.clone());
+        }
+        Ok((filled, from_referred))
+    }
+
+    /// The decision `id` in this chronicle: a chronolexogram on a submission
+    /// whose article, in the law in force on the day it was recorded, takes
+    /// a decision of its kind.
+    fn decision_gram(&self, service: &LawExecutionService, id: &str) -> Result<&Gram> {
+        let gram = self.grams().iter().find(|g| g.id == id).ok_or_else(|| {
+            refused(format!(
+                "there is no chronolexogram '{id}' in the chronicle of '{}'",
+                self.recording_actor
+            ))
+        })?;
+        let found = gram
+            .grondslag
+            .split_once('#')
+            .and_then(|(law_id, article)| {
+                shape::article_on(service, law_id, article, gram.recorded_on)
+            })
+            .ok_or_else(|| {
+                setup(format!(
+                    "chronolexogram '{id}' is under {}, which has no version in force on {}",
+                    gram.grondslag, gram.recorded_on
+                ))
+            })?;
+        let takes = found
+            .get_decision()
+            .and_then(|decision| decision.legal_character())
+            .is_some_and(|kind| kind == gram.kind);
+        if !takes || gram.refers_to.is_none() {
+            return Err(refused(format!(
+                "chronolexogram '{id}' is a {} under {}, not a decision",
+                gram.kind, gram.grondslag
+            )));
+        }
+        Ok(gram)
+    }
+
+    /// Record a submission of `shape` on `on`: `supplied` from the
+    /// submitter, already checked, and `filled` from the cell.
+    fn record(
+        &mut self,
+        service: &LawExecutionService,
+        shape: &Shape,
+        supplied: &Map<String, serde_json::Value>,
+        filled: Filled,
+        on: NaiveDate,
+    ) -> Result<Gram> {
+        let law_id = shape.law_id.as_str();
+        let article = shape.article.as_str();
+        // A field the application leaves out and that can be absent is absent:
+        // the application is what the applicant sent (RFC-036), and the
+        // chronolexogram says so with `null`. One that cannot be absent stays
+        // unknown to the engine, and the chronolexogram names it as missing: an
+        // incomplete application is still an application (Awb 4:5).
+        let mut fields = BTreeMap::new();
+        let mut missing = Vec::new();
+        for field in &shape.fields {
+            let value = match filled.fields.get(&field.name).or(supplied.get(&field.name)) {
+                Some(value) => value.clone(),
+                None if field.nullable => serde_json::Value::Null,
+                None => {
+                    missing.push(field.name.clone());
+                    continue;
+                }
+            };
+            fields.insert(field.name.clone(), value);
+        }
+        let moment = shape.moment.as_ref().map(|m| GramMoment {
+            parameter: m.parameter.clone(),
+            on,
+            declared_by: m.declared_by.clone(),
+        });
+
+        // The engine gets the fields and the moment.
+        let day = json_date(on);
+        let mut parameters: BTreeMap<String, Value> = fields
+            .iter()
+            .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
+            .collect::<Result<_>>()?;
+        if let Some(name) = moment.as_ref().and_then(|m| m.parameter.as_ref()) {
+            parameters.insert(name.clone(), day.clone());
+        }
+        // A decision the submission holds by its id reaches the engine as
+        // its decision value.
+        for field in shape
+            .fields
+            .iter()
+            .filter(|f| f.type_ == ParameterType::Decision)
+        {
+            if let Some(serde_json::Value::String(id)) = fields.get(&field.name) {
+                let value = self.decision_value(service, self.decision_gram(service, id)?)?;
+                parameters.insert(field.name.clone(), encoding::from_json(&value)?);
+            }
+        }
+        let date = on.to_string();
+        let result = match &shape.stage {
+            // In a procedure, the application is recorded at its own stage,
+            // with the outputs that belong to it and the hooks on it; the
+            // decision's outputs wait for the stages of the decision
+            // (RFC-047). A date the stage requires is the day of recording.
+            Some(stage) => {
+                let requires = service
+                    .procedure_stage(law_id, article, stage, &date)?
+                    .requires;
+                for req in requires {
+                    if req.req_type != ParameterType::Date {
+                        return Err(setup(format!(
+                            "stage {stage} of {law_id}#{article} requires '{}', a {:?}; the cell \
+                             fills only a date (the day of recording)",
+                            req.name, req.req_type
+                        )));
+                    }
+                    parameters.entry(req.name).or_insert_with(|| day.clone());
+                }
+                service.execute_stage_at(law_id, article, stage, None, parameters, &date)?
+            }
+            None => {
+                let outputs: Vec<&str> = shape.outputs.iter().map(String::as_str).collect();
+                service.evaluate_law(law_id, &outputs, parameters, &date)?
+            }
+        };
+        let mut output_values = BTreeMap::new();
+        collect_outputs(&result, &mut output_values)?;
+
+        let gram = Gram {
+            id: uuid::Uuid::now_v7().to_string(),
+            kind: shape.kind.clone(),
+            grondslag: shape.grondslag(),
+            refers_to: filled.refers_to,
+            recording_actor: self.recording_actor.clone(),
+            recorded_on: on,
+            moment,
+            fields,
+            findings: Vec::new(),
+            missing,
+            outputs: output_values,
+        };
+        Ok(self.chronicle.append(gram)?.clone())
+    }
+
+    /// Take the decision of article `article` of `law_id` on the application
+    /// recorded as chronolexogram `application`, on `on` (RFC-047).
+    ///
+    /// What the decision asks comes from the application, the holder's
+    /// policy and the cell ([`decision::derive`]). An input that one of the
+    /// cell's reductions yields, and nothing else supplies, is what that
+    /// reduction makes of the chronicle, run with the decision's inputs by
+    /// name ([`reading`], RFC-048); the service holds the reductions during
+    /// the decision only. `supplied` holds what the deciding authority
+    /// supplies itself, such as a parameter of a hook, and `findings` what it
+    /// found for this case, by the id of the open term the law leaves to it
+    /// per case (`decided_per_case_by`, RFC-050). All findings reach the
+    /// engine apart from the parameters, so each applies to every article in
+    /// the decision that leaves the term to the authority: the deciding
+    /// article, and an article it calls, such as a decision called anew. The
+    /// cell checks a finding on a term of the deciding article as one of its
+    /// inputs; the engine refuses one that no article in the decision asks,
+    /// or of the wrong type. A finding for a call anew is so given only once
+    /// that call happens: given while the decision does not call anew (the
+    /// objection is not admissible, say), no article asks it and the
+    /// decision is refused. The chronolexogram records every finding the
+    /// decision used ([`Gram::findings`]), and not one a regulation set
+    /// aside: where a regulation fills a term, it decided it.
+    ///
+    /// The cell refuses an application that is not in its chronicle or not
+    /// one of this article, one already decided on, a value it takes from
+    /// elsewhere, and a value of the wrong type. It runs the stages of
+    /// [`decision::STAGES`] on the day `on` and appends one chronolexogram
+    /// that refers to the application. The chronicle's clock keeps the
+    /// decision on or after the application.
+    ///
+    /// A submission that refers to a decision D (`refers_to`):
+    /// - when the deciding article has an output of type `decision`, so may
+    ///   take a decision that replaces D, the reductions read the chronicle
+    ///   without D, so D does not count against itself; otherwise they read
+    ///   D as any other decision;
+    /// - a field of type `decision` reaches the engine as D's decision value
+    ///   ([`Cell::decision_value`]); the chronolexogram keeps D's id;
+    /// - that value is answered again, on `on` ([`Cell::refresh`]): the
+    ///   dates the stages of D's article require of the cell, and the fields
+    ///   the cell's reductions answer for that article, which read the
+    ///   chronicle without D.
+    ///
+    /// Every output of type `decision` that is not null is a decision the
+    /// deciding article takes in turn: the cell records it as a
+    /// chronolexogram of its own ([`Cell::decided`]), referring to the same
+    /// submission, and keeps its id as that output. All of them land in the
+    /// chronicle together, or none. Returns them, the decision on the
+    /// submission first.
+    #[allow(clippy::too_many_arguments)]
+    pub fn decide(
+        &mut self,
+        service: &mut LawExecutionService,
+        law_id: &str,
+        article: &str,
+        application: &str,
+        supplied: &Map<String, serde_json::Value>,
+        findings: &Map<String, serde_json::Value>,
+        on: NaiveDate,
+    ) -> Result<Vec<Gram>> {
+        let shape = decision::derive(service, law_id, article, on)?;
+        let applied = self.application(&shape, application)?.clone();
+        if let Some(name) = supplied.keys().find(|name| is_finding(&shape, name)) {
+            return Err(refused(format!(
+                "'{name}' of the decision of {} is a finding of the deciding authority; it \
+                 is given among the findings",
+                shape.grondslag()
+            )));
+        }
+        // A finding the decision asks is one of its inputs, which the cell
+        // checks as it checks what is supplied; any other is for an article
+        // the decision calls. All of them reach the engine as findings.
+        for (name, value) in findings {
+            refuse_decimal_key(name, value)?;
+        }
+        let own: Map<_, _> = findings
+            .iter()
+            .filter(|(name, _)| shape.input(name).is_some())
+            .map(|(name, value)| (name.clone(), value.clone()))
+            .collect();
+        if let Some(name) = own.keys().find(|name| !is_finding(&shape, name)) {
+            return Err(refused(format!(
+                "'{name}' of the decision of {} is no finding; it is supplied, or comes from \
+                 elsewhere",
+                shape.grondslag()
+            )));
+        }
+        let mut given = supplied.clone();
+        given.extend(own);
+        let given = &given;
+        check_decision_supplied(&shape, given)?;
+        let replaces = decision_outputs(service, &shape, on);
+        let except = applied
+            .refers_to
+            .as_deref()
+            .filter(|_| !replaces.is_empty());
+        let decisions = self.decision_values(service, &shape, &applied, on)?;
+        let Taken {
+            mut fields,
+            mut outputs,
+            findings: found,
+        } = self.take(service, &shape, given, findings, except, on, |bound| {
+            asked(&shape, &applied, &decisions, given, bound, on)
+        })?;
+        for (name, (id, _)) in decisions {
+            fields.insert(name, serde_json::Value::String(id));
+        }
+        // Its id first, so the ids follow the order in the chronicle.
+        let id = uuid::Uuid::now_v7().to_string();
+        let mut taken = Vec::new();
+        for name in replaces {
+            let Some(value) = outputs.get(&name).filter(|v| !v.is_null()) else {
+                continue;
+            };
+            let gram = self.decided(service, &shape, &name, value, &applied, on)?;
+            outputs.insert(name, serde_json::Value::String(gram.id.clone()));
+            taken.push(gram);
+        }
+        // A decision is replaced once: the cell does not record a second
+        // decision in the place of the same one.
+        if let Some(contested) = except.filter(|_| !taken.is_empty()) {
+            if let Some((earlier, replacement)) = self.replacement_of(contested) {
+                return Err(refused(format!(
+                    "the decision of {} would take a decision in the place of '{contested}', \
+                     which chronolexogram '{replacement}' already replaces (taken by '{earlier}')",
+                    shape.grondslag()
+                )));
+            }
+        }
+        let mut grams = vec![Gram {
+            id,
+            kind: shape.kind.clone(),
+            grondslag: shape.grondslag(),
+            refers_to: Some(applied.id.clone()),
+            recording_actor: self.recording_actor.clone(),
+            recorded_on: on,
+            moment: None,
+            fields,
+            findings: found,
+            missing: Vec::new(),
+            outputs,
+        }];
+        grams.extend(taken);
+        Ok(self.chronicle.append_all(grams)?.to_vec())
+    }
+
+    /// For each field of type `decision` that the decision of `shape` takes
+    /// from the submission `applied`, the id it holds and the decision value
+    /// the engine gets, refreshed on `on` ([`Cell::refresh`]).
+    fn decision_values(
+        &self,
+        service: &mut LawExecutionService,
+        shape: &DecisionShape,
+        applied: &Gram,
+        on: NaiveDate,
+    ) -> Result<BTreeMap<String, (String, serde_json::Value)>> {
+        let mut values = BTreeMap::new();
+        for input in shape
+            .inputs
+            .iter()
+            .filter(|i| i.field.type_ == ParameterType::Decision && i.source == Source::Application)
+        {
+            let Some(serde_json::Value::String(id)) = applied.held(&input.field.name) else {
+                continue;
+            };
+            let gram = self.decision_gram(service, id)?.clone();
+            let mut value = self.decision_value(service, &gram)?;
+            self.refresh(service, &gram, &mut value, on)?;
+            values.insert(input.field.name.clone(), (id.clone(), value));
+        }
+        Ok(values)
+    }
+
+    /// Answer the decision value `value` of `gram` again, on `on`, as its
+    /// article would take it that day: a date a stage of its decision
+    /// requires of the cell is `on`, as when the cell takes a decision
+    /// ([`Cell::decided`]), and the fields and findings that the cell's
+    /// reductions answer for the decision of its article are what they
+    /// answer on `on` (decision 7 of slice 4b, option a). A deciding article
+    /// that calls that article with the value's `fields` (`source.article`,
+    /// `parameters_from`) so passes it the stage dates and the answers of
+    /// the day of the decision, not of the day of `gram`.
+    ///
+    /// The reductions read the chronicle without `gram`: it is the decision
+    /// being answered again, and does not count against itself.
+    ///
+    /// This couples by name and reaches one level: only the value the cell
+    /// itself gives the deciding article, and only the inputs of the
+    /// article of `gram`. A reduction that answers an input of an article
+    /// called with a fixed `source.article`, or deeper down, is not run for
+    /// it: the engine looks up no reduction during a call.
+    ///
+    /// The chronolexogram of the decision keeps the contested decision by
+    /// its id, not the answers given again: what the reduction said on `on`
+    /// follows from the chronicle up to that day, not from the
+    /// chronolexogram itself.
+    fn refresh(
+        &self,
+        service: &mut LawExecutionService,
+        gram: &Gram,
+        value: &mut serde_json::Value,
+        on: NaiveDate,
+    ) -> Result<()> {
+        let shape = decision_shape_of(service, gram, on)?;
+        let part = |value: &serde_json::Value, key: &str| {
+            value
+                .get(key)
+                .and_then(serde_json::Value::as_object)
+                .cloned()
+                .ok_or_else(|| setup(format!("the decision value of '{}' has no {key}", gram.id)))
+        };
+        let mut fields = part(value, "fields")?;
+        let mut findings = part(value, "findings")?;
+        for input in shape.inputs.iter().filter(|i| i.source == Source::Cell) {
+            fields.insert(
+                input.field.name.clone(),
+                serde_json::Value::String(on.to_string()),
+            );
+        }
+        if !self.reductions.is_empty() {
+            let grams: Vec<Gram> = self
+                .grams()
+                .iter()
+                .filter(|g| g.id != gram.id)
+                .cloned()
+                .collect();
+            let bound = reading::bind(
+                service,
+                &self.recording_actor,
+                &shape,
+                &Map::new(),
+                &grams,
+                &self.reductions,
+                on,
+            )?;
+            let given: Values = fields.clone().into_iter().chain(findings.clone()).collect();
+            // An answer stays where the value has it: a reduction may answer
+            // a finding the authority would otherwise give.
+            for (name, answer) in bound.answer(&given, on)? {
+                match findings.get_mut(&name) {
+                    Some(judged) => *judged = answer,
+                    None => {
+                        fields.insert(name, answer);
+                    }
+                }
+            }
+        }
+        value["fields"] = serde_json::Value::Object(fields);
+        value["findings"] = serde_json::Value::Object(findings);
+        Ok(())
+    }
+
+    /// The decision that replaces the decision `id`, if the chronicle holds
+    /// one: a decision recorded in turn on a submission that refers to `id`,
+    /// which the decision on that submission holds by its id as an output.
+    /// Returns the id of the decision on that submission and of the
+    /// replacing decision.
+    fn replacement_of(&self, id: &str) -> Option<(&str, &str)> {
+        let grams = self.grams();
+        grams
+            .iter()
+            .filter(|s| s.refers_to.as_deref() == Some(id))
+            .find_map(|submission| {
+                let on_it = || {
+                    grams
+                        .iter()
+                        .filter(|g| g.refers_to.as_deref() == Some(submission.id.as_str()))
+                };
+                on_it().find_map(|decision| {
+                    on_it()
+                        .filter(|r| r.id != decision.id)
+                        .find(|r| {
+                            decision
+                                .outputs
+                                .values()
+                                .any(|v| v.as_str() == Some(r.id.as_str()))
+                        })
+                        .map(|r| (decision.id.as_str(), r.id.as_str()))
+                })
+            })
+    }
+
+    /// The decision value `{grondslag, taken_on, fields, findings,
+    /// outputs}` of the decision `gram`, as the engine builds one (RFC-050),
+    /// in the law in force on the day it was recorded: of its outputs those
+    /// its decision item names, and of its fields:
+    ///
+    /// - under `findings`, the deciding authority's findings for this case
+    ///   ([`Gram::findings`]) on the open terms the deciding article leaves
+    ///   to it per case (`decided_per_case_by`): only the deciding article's
+    ///   own;
+    /// - no value for such a term that a regulation filled in the
+    ///   authority's place: the regulation decided it, and a call anew reads
+    ///   the regulation in force on its own day;
+    /// - no finding given for an article the decision called: that is
+    ///   recorded with the decision that article produced, the new decision;
+    /// - under `fields`, the others.
+    ///
+    /// Data derived for the decision is no part of it. A decision the fields
+    /// or outputs hold stays its id.
+    ///
+    /// `taken_on` is the article of the submission the decision refers to:
+    /// the one it was taken on. It is not stored; the chronicle gives it.
+    /// The engine gives no `taken_on` in a value of `source.article`.
+    fn decision_value(
+        &self,
+        service: &LawExecutionService,
+        gram: &Gram,
+    ) -> Result<serde_json::Value> {
+        let found = gram
+            .grondslag
+            .split_once('#')
+            .and_then(|(law_id, article)| {
+                shape::article_on(service, law_id, article, gram.recorded_on)
+            })
+            .ok_or_else(|| {
+                setup(format!(
+                    "the decision '{}' is under {}, which has no version in force on {}",
+                    gram.id, gram.grondslag, gram.recorded_on
+                ))
+            })?;
+        let decided = found
+            .get_decision()
+            .map(|decision| found.outputs_of(decision))
+            .unwrap_or_default();
+        let judged: Vec<&str> = found
+            .get_open_terms()
+            .into_iter()
+            .flatten()
+            .filter(|term| term.decided_per_case_by.is_some())
+            .map(|term| term.id.as_str())
+            .collect();
+        let mut fields = Map::new();
+        let mut findings = Map::new();
+        for (name, value) in &gram.fields {
+            let by_authority = gram.findings.contains(name);
+            match (judged.contains(&name.as_str()), by_authority) {
+                (true, true) => {
+                    findings.insert(name.clone(), value.clone());
+                }
+                (true, false) | (false, true) => {}
+                (false, false) => {
+                    fields.insert(name.clone(), value.clone());
+                }
+            }
+        }
+        let outputs: Map<String, serde_json::Value> = gram
+            .outputs
+            .iter()
+            .filter(|(name, _)| decided.contains(&name.as_str()))
+            .map(|(name, value)| (name.clone(), value.clone()))
+            .collect();
+        Ok(serde_json::json!({
+            "grondslag": gram.grondslag,
+            "taken_on": self.taken_on(gram)?,
+            "fields": fields,
+            "findings": findings,
+            "outputs": outputs,
+        }))
+    }
+
+    /// The article of the submission the decision `gram` refers to, in this
+    /// chronicle.
+    fn taken_on(&self, gram: &Gram) -> Result<&str> {
+        gram.refers_to
+            .as_deref()
+            .and_then(|id| self.grams().iter().find(|g| g.id == id))
+            .map(|submission| submission.grondslag.as_str())
+            .ok_or_else(|| {
+                setup(format!(
+                    "the decision '{}' refers to {:?}, no submission in the chronicle of '{}'",
+                    gram.id, gram.refers_to, self.recording_actor
+                ))
+            })
+    }
+
+    /// The decision `value` that output `output` of the decision of
+    /// `deciding` gave, taken by its own article on `on` and recorded as a
+    /// chronolexogram that refers to the submission `submission`. Not yet
+    /// appended.
+    ///
+    /// Its `refers_to` is the submission it was taken on, not a submission of
+    /// its own article: a new decision on an objection refers to the
+    /// objection, as the decision on that objection does.
+    ///
+    /// The cell runs the stages of that article again with the value's
+    /// `fields` and `findings`, and fills a date a stage requires with `on`, so a hook at
+    /// a later stage gives the new decision its own outcome (such as its own
+    /// period from its own announcement). The outputs of its decision item must be
+    /// those of the value, as a chronicle stores them; otherwise the value
+    /// is not this article's decision on these fields. A value that holds
+    /// `taken_on` must name the article of `submission`: the new decision
+    /// is taken on it.
+    fn decided(
+        &self,
+        service: &LawExecutionService,
+        deciding: &DecisionShape,
+        output: &str,
+        value: &serde_json::Value,
+        submission: &Gram,
+        on: NaiveDate,
+    ) -> Result<Gram> {
+        let not_a_decision = || {
+            setup(format!(
+                "'{output}' of the decision of {} is {value}, no decision value \
+                 {{grondslag, fields, findings, outputs}}",
+                deciding.grondslag()
+            ))
+        };
+        let object = value
+            .as_object()
+            .filter(|o| shape::is_decision_value(o))
+            .ok_or_else(not_a_decision)?;
+        let grondslag = object
+            .get("grondslag")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(not_a_decision)?;
+        let part = |key: &str| {
+            object
+                .get(key)
+                .and_then(serde_json::Value::as_object)
+                .ok_or_else(not_a_decision)
+        };
+        let (given_fields, given_findings) = (part("fields")?, part("findings")?);
+        let expected = part("outputs")?;
+        let (law_id, article) = grondslag.split_once('#').ok_or_else(not_a_decision)?;
+        let shape = decision::derive(service, law_id, article, on)?;
+        let mut fields = Values::new();
+        for input in &shape.inputs {
+            let name = &input.field.name;
+            // A policy value of the day of the old decision is no input:
+            // the stages read the policy in force on `on`, as for `decide`.
+            let value = match input.source {
+                Source::Cell => Some(serde_json::Value::String(on.to_string())),
+                Source::Policy => None,
+                _ => given_fields
+                    .get(name)
+                    .or_else(|| given_findings.get(name))
+                    .cloned(),
+            };
+            if let Some(value) = value {
+                fields.insert(name.clone(), value);
+            }
+        }
+        // The value's findings reach the engine as findings, as in `decide`.
+        let parameters = engine_values(
+            fields
+                .iter()
+                .filter(|(name, _)| !given_findings.contains_key(*name)),
+        )?;
+        for (name, finding) in given_findings {
+            fields
+                .entry(name.clone())
+                .or_insert_with(|| finding.clone());
+        }
+        let (outputs, filled) = run_stages(
+            service,
+            &shape,
+            parameters,
+            engine_values(given_findings)?,
+            on,
+            &mut fields,
+        )?;
+        let found = used(given_findings, &filled);
+        // A decision it takes in turn would be a value in its outputs, not
+        // an id: the cell records one level.
+        if let Some(nested) = decision_outputs(service, &shape, on)
+            .into_iter()
+            .find(|name| outputs.get(name).is_some_and(|v| !v.is_null()))
+        {
+            return Err(setup(format!(
+                "'{output}' of the decision of {} is a decision under {grondslag} that takes \
+                 a decision in turn ('{nested}'); the cell records one level",
+                deciding.grondslag()
+            )));
+        }
+        // As a chronicle stores them, compared as the engine's `EQUALS`
+        // compares records ([`encoding::same_held`]).
+        let mut same = expected.keys().all(|k| shape.outputs.contains(k));
+        for o in &shape.outputs {
+            same = same && encoding::same_held(outputs.get(o), expected.get(o))?;
+        }
+        if !same {
+            return Err(setup(format!(
+                "'{output}' of the decision of {} is a decision under {grondslag} with outputs \
+                 {}, but taken again on these fields that article decides {}",
+                deciding.grondslag(),
+                serde_json::Value::Object(expected.clone()),
+                serde_json::json!(shape
+                    .outputs
+                    .iter()
+                    .filter_map(|o| Some((o.clone(), outputs.get(o)?.clone())))
+                    .collect::<Map<_, _>>())
+            )));
+        }
+        if let Some(taken_on) = object
+            .get("taken_on")
+            .and_then(serde_json::Value::as_str)
+            .filter(|t| *t != submission.grondslag)
+        {
+            return Err(setup(format!(
+                "'{output}' of the decision of {} is a decision taken on {taken_on}, but the \
+                 cell takes it on '{}', under {}",
+                deciding.grondslag(),
+                submission.id,
+                submission.grondslag
+            )));
+        }
+        Ok(Gram {
+            id: uuid::Uuid::now_v7().to_string(),
+            kind: shape.kind.clone(),
+            grondslag: shape.grondslag(),
+            refers_to: Some(submission.id.clone()),
+            recording_actor: self.recording_actor.clone(),
+            recorded_on: on,
+            moment: None,
+            fields,
+            findings: found,
+            missing: Vec::new(),
+            outputs,
+        })
+    }
+
+    /// Take the decision of `shape` on `on`, with the cell's reductions bound
+    /// for it ([`reading::bind`]): they read the decisions in the chronicle,
+    /// but `except`. `inputs` gives what the decision asks from elsewhere;
+    /// `supplied` is what the deciding authority gives for the decision's
+    /// own inputs, its findings on them included, and `findings` every
+    /// finding it gave, also for an article the decision calls. The engine
+    /// gets the findings apart from the parameters (RFC-050), so one applies
+    /// to every article in the decision that leaves the term to the
+    /// authority.
+    #[allow(clippy::too_many_arguments)]
+    fn take(
+        &self,
+        service: &mut LawExecutionService,
+        shape: &DecisionShape,
+        supplied: &Map<String, serde_json::Value>,
+        findings: &Map<String, serde_json::Value>,
+        except: Option<&str>,
+        on: NaiveDate,
+        inputs: impl FnOnce(&Bound<'_>) -> Result<Values>,
+    ) -> Result<Taken> {
+        // Leaving out one decision changes no other row: a row holds what
+        // its own chronolexogram holds.
+        let grams: Vec<Gram> = self
+            .grams()
+            .iter()
+            .filter(|g| except != Some(g.id.as_str()))
+            .cloned()
+            .collect();
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            shape,
+            supplied,
+            &grams,
+            &self.reductions,
+            on,
+        )?;
+        let mut fields = inputs(&bound)?;
+        let answered = bound.answer(&fields, on)?;
+        fields.extend(answered);
+        let parameters = engine_values(
+            fields
+                .iter()
+                .filter(|(name, _)| !findings.contains_key(*name)),
+        )?;
+        for (name, finding) in findings {
+            fields
+                .entry(name.clone())
+                .or_insert_with(|| finding.clone());
+        }
+        // What was given for a term the law leaves to the authority per
+        // case: the authority's finding, or a reduction's answer for it. A
+        // null the cell put in for a judgement left out is none.
+        let given: Map<String, serde_json::Value> = fields
+            .iter()
+            .filter(|(name, _)| {
+                findings.contains_key(*name)
+                    || (is_finding(shape, name)
+                        && (supplied.contains_key(*name) || bound.answers(name)))
+            })
+            .map(|(name, value)| (name.clone(), value.clone()))
+            .collect();
+        let (outputs, filled) = run_stages(
+            &bound,
+            shape,
+            parameters,
+            engine_values(findings)?,
+            on,
+            &mut fields,
+        )?;
+        Ok(Taken {
+            findings: used(&given, &filled),
+            fields,
+            outputs,
+        })
+    }
+
+    /// The application chronolexogram `id` that the decision of `shape` is taken on:
+    /// one in this chronicle, of this article and kind, not decided on yet.
+    fn application(&self, shape: &DecisionShape, id: &str) -> Result<&Gram> {
+        let gram = self.grams().iter().find(|g| g.id == id).ok_or_else(|| {
+            refused(format!(
+                "there is no chronolexogram '{id}' in the chronicle of '{}'",
+                self.recording_actor
+            ))
+        })?;
+        if gram.kind != shape.submission_kind || gram.grondslag != shape.application {
+            return Err(refused(format!(
+                "chronolexogram '{id}' is a {} under {}, not an {} under {} that {} decides on",
+                gram.kind,
+                gram.grondslag,
+                shape.submission_kind,
+                shape.application,
+                shape.grondslag()
+            )));
+        }
+        if let Some(decided) = self
+            .grams()
+            .iter()
+            .find(|g| g.refers_to.as_deref() == Some(id))
+        {
+            return Err(refused(format!(
+                "the application '{id}' is already decided on, by chronolexogram '{}'",
+                decided.id
+            )));
+        }
+        Ok(gram)
+    }
+}
+
+/// Values by name: the fields or the outputs of a chronolexogram.
+type Values = BTreeMap<String, serde_json::Value>;
+
+/// A decision as [`Cell::take`] took it: its fields, with what a reduction
+/// or a policy filled, its outputs, and which fields hold a finding of the
+/// deciding authority ([`Gram::findings`]).
+#[derive(Debug)]
+struct Taken {
+    fields: Values,
+    outputs: Values,
+    findings: Vec<String>,
+}
+
+/// The names in `given` whose finding the decision used: all but those
+/// the engine reports a regulation filled in the authority's place
+/// ([`ArticleResult::open_terms`]), also where the regulation gives what
+/// the authority found. A finding the decision did not read is not set
+/// aside, so it stays a finding. A finding applies by the term's id to
+/// every article in the decision (RFC-050), so the report is read by id.
+/// A term listed as filled by both counts as used: the regulation that
+/// fills it read the finding in its place, so the finding was used.
+fn used(given: &Map<String, serde_json::Value>, filled: &[OpenTermFilled]) -> Vec<String> {
+    let by = |name: &str, finding: bool| {
+        filled
+            .iter()
+            .any(|f| f.term == name && matches!(f.filled_by, FilledBy::Finding) == finding)
+    };
+    given
+        .keys()
+        .filter(|name| by(name, true) || !by(name, false))
+        .cloned()
+        .collect()
+}
+
+/// Values as the engine takes them ([`encoding::from_json`]).
+fn engine_values<'v>(
+    values: impl IntoIterator<Item = (&'v String, &'v serde_json::Value)>,
+) -> Result<BTreeMap<String, Value>> {
+    values
+        .into_iter()
+        .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
+        .collect()
+}
+
+/// What the cell fills in a submission itself, and what it refers to.
+#[derive(Debug, Default)]
+struct Filled {
+    fields: Values,
+    refers_to: Option<String>,
+}
+
+/// What the decision of `shape` on the application `applied` asks, from
+/// where the law says it comes, but what one of the cell's reductions in
+/// `bound` yields. An application that lacks what the decision needs (Awb
+/// 4:5) is not decided on here: the cell does not guess the value.
+fn asked(
+    shape: &DecisionShape,
+    applied: &Gram,
+    decisions: &BTreeMap<String, (String, serde_json::Value)>,
+    supplied: &Map<String, serde_json::Value>,
+    bound: &Bound<'_>,
+    on: NaiveDate,
+) -> Result<Values> {
+    let mut fields = BTreeMap::new();
+    for input in &shape.inputs {
+        let name = &input.field.name;
+        let value = match &input.source {
+            Source::Application if decisions.contains_key(name) => {
+                decisions.get(name).map(|(_, value)| value.clone())
+            }
+            Source::Application => match applied.held(name) {
+                Some(value) => Some(value.clone()),
+                None if applied.missing.contains(name) => {
+                    return Err(refused(format!(
+                        "the application '{}' lacks '{name}', which the decision of {} needs \
+                         (Awb 4:5)",
+                        applied.id,
+                        shape.grondslag()
+                    )))
+                }
+                None => None,
+            },
+            // One of the cell's reductions yields it.
+            Source::Caller if bound.answers(name) => None,
+            Source::Caller => match supplied.get(name) {
+                Some(value) => Some(value.clone()),
+                // A regulation fills it first; where it is silent for this
+                // case, the engine says the judgement is missing.
+                None if input.policy_first => None,
+                None if input.field.nullable => Some(serde_json::Value::Null),
+                None => {
+                    return Err(refused(format!(
+                        "the decision of {} asks '{name}' of the deciding authority ({})",
+                        shape.grondslag(),
+                        input.field.first_declared_by()
+                    )))
+                }
+            },
+            Source::Cell => Some(serde_json::Value::String(on.to_string())),
+            // The engine resolves it; the gram takes what it used.
+            Source::Policy => None,
+        };
+        if let Some(value) = value {
+            fields.insert(name.clone(), value);
+        }
+    }
+    Ok(fields)
+}
+
+/// Run the stages of a decision on `on`, with the authority's `findings`
+/// for the articles it calls: add what a policy filled to `fields`, and
+/// return the outputs and who filled the open terms, over all stages.
+fn run_stages(
+    service: &LawExecutionService,
+    shape: &DecisionShape,
+    parameters: BTreeMap<String, Value>,
+    findings: BTreeMap<String, Value>,
+    on: NaiveDate,
+    fields: &mut BTreeMap<String, serde_json::Value>,
+) -> Result<(BTreeMap<String, serde_json::Value>, Vec<OpenTermFilled>)> {
+    let date = on.to_string();
+    let mut outputs = BTreeMap::new();
+    let mut filled = Vec::new();
+    for stage in &shape.stages {
+        // Every stage computes the decision's outputs, so a hook at a later
+        // stage can read them; they are the same at each.
+        let result = service.execute_stage_at_with_findings(
+            &shape.law_id,
+            &shape.article,
+            &stage.stage,
+            None,
+            parameters.clone(),
+            findings.clone(),
+            &date,
+        )?;
+        collect_outputs(&result, &mut outputs)?;
+        filled.extend(result.open_terms.iter().cloned());
+        for input in &shape.inputs {
+            let name = &input.field.name;
+            let Some(value) = result.resolved_inputs.get(name) else {
+                continue;
+            };
+            let value = encoding::to_json(value)?;
+            match &input.source {
+                Source::Policy => {
+                    fields.insert(name.clone(), value);
+                }
+                // A judgement on a term a regulation also fills: the gram
+                // takes what the engine used, which is the regulation's
+                // value where it fills the term (RFC-047).
+                Source::Caller if input.policy_first => {
+                    fields.insert(name.clone(), value);
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok((outputs, filled))
+}
+
+/// The outputs of type `decision` of the deciding article of `shape`, in
+/// the law in force on `on`.
+fn decision_outputs(
+    service: &LawExecutionService,
+    shape: &DecisionShape,
+    on: NaiveDate,
+) -> Vec<String> {
+    shape::article_on(service, &shape.law_id, &shape.article, on)
+        .and_then(|article| article.get_execution_spec())
+        .and_then(|execution| execution.output.as_ref())
+        .into_iter()
+        .flatten()
+        .filter(|output| output.output_type == ParameterType::Decision)
+        .map(|output| output.name.clone())
+        .collect()
+}
+
+/// What the decision of the article of `decision` asks, in the law in
+/// force on `on`.
+fn decision_shape_of(
+    service: &LawExecutionService,
+    decision: &Gram,
+    on: NaiveDate,
+) -> Result<DecisionShape> {
+    let (law_id, article) = decision.grondslag.split_once('#').ok_or_else(|| {
+        setup(format!(
+            "chronolexogram '{}' has grondslag '{}', not <regulation>#<article>",
+            decision.id, decision.grondslag
+        ))
+    })?;
+    decision::derive(service, law_id, article, on)
+}
+
+/// The outputs of the articles that take part in the decision of `shape`:
+/// what such a decision gives, whether a chronolexogram of it holds them or
+/// not.
+fn gives(service: &LawExecutionService, shape: &DecisionShape, on: NaiveDate) -> Vec<String> {
+    shape
+        .stages
+        .iter()
+        .flat_map(|stage| &stage.articles)
+        .filter_map(|part| shape::article_on(service, &part.law_id, &part.article_number, on))
+        .filter_map(|article| article.get_execution_spec())
+        .flat_map(|execution| execution.output.iter().flatten())
+        .map(|output| output.name.clone())
+        .collect()
+}
+
+fn json_date(on: NaiveDate) -> Value {
+    Value::from(serde_json::Value::String(on.to_string()))
+}
+
+/// Add what an execution gave to `values`. An output an override voids is
+/// not in `outputs`.
+fn collect_outputs(
+    result: &ArticleResult,
+    values: &mut BTreeMap<String, serde_json::Value>,
+) -> Result<()> {
+    for (name, value) in &result.outputs {
+        if matches!(
+            result.output_provenance.get(name),
+            Some(OutputProvenance::Voided { .. })
+        ) {
+            continue;
+        }
+        values.insert(name.clone(), encoding::to_json(value)?);
+    }
+    Ok(())
+}
+
+/// Whether `name` is a finding of the deciding authority on the decision of
+/// `shape`: an open term the deciding article leaves to it per case
+/// (`decided_per_case_by`), also one a regulation may fill.
+fn is_finding(shape: &DecisionShape, name: &str) -> bool {
+    shape.judgements.iter().any(|j| j == name)
+        || shape.input(name).is_some_and(|input| input.policy_first)
+}
+
+/// Refuse what the deciding authority does not supply: a value the
+/// decision takes from the application, the policy or the cell, a name the
+/// decision does not ask, a value of the wrong type.
+fn check_decision_supplied(
+    shape: &DecisionShape,
+    supplied: &Map<String, serde_json::Value>,
+) -> Result<()> {
+    let decision = shape.grondslag();
+    for (name, value) in supplied {
+        let input = shape
+            .input(name)
+            .ok_or_else(|| refused(format!("the decision of {decision} does not ask '{name}'")))?;
+        let from = match &input.source {
+            Source::Caller => None,
+            Source::Application => Some("the application".to_string()),
+            Source::Policy => Some("the policy".to_string()),
+            Source::Cell => Some("the cell: it is the day of the decision".to_string()),
+        };
+        if let Some(from) = from {
+            return Err(refused(format!(
+                "'{name}' of the decision of {decision} comes from {from}"
+            )));
+        }
+        // A decision is one in the chronicle, which the cell fills from the
+        // submission's `refers_to`; nobody supplies one as a value.
+        if input.field.type_ == ParameterType::Decision {
+            return Err(refused(format!(
+                "'{name}' of the decision of {decision} is a decision; the cell fills it from \
+                 the chronolexogram a submission refers to"
+            )));
+        }
+        refuse_decimal_key(name, value)?;
+        if !shape::fits(&input.field, value) {
+            return Err(refused(format!(
+                "'{name}' is {value}, which does not fit a {:?} ({})",
+                input.field.type_,
+                input.field.first_declared_by()
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Refuse what the law does not ask of the submitter, and what comes from
+/// the decision the submission refers to (`from_referred`).
+fn check_supplied(
+    shape: &Shape,
+    supplied: &Map<String, serde_json::Value>,
+    from_referred: &[String],
+) -> Result<()> {
+    let submission = shape.grondslag();
+    for (name, value) in supplied {
+        if from_referred.contains(name) {
+            return Err(refused(format!(
+                "'{name}' of the {} of {submission} comes from the decision it refers to",
+                shape.kind
+            )));
+        }
+        if let Some(moment) = shape.moment.as_ref().filter(|_| shape.is_moment(name)) {
+            return Err(refused(format!(
+                "'{name}' is the moment that counts ({}); the cell records it",
+                moment.declared_by
+            )));
+        }
+        let field = shape.field(name).ok_or_else(|| {
+            refused(format!(
+                "the law does not ask '{name}' in the {} of {submission}",
+                shape.kind
+            ))
+        })?;
+        refuse_decimal_key(name, value)?;
+        if !shape::fits(field, value) {
+            return Err(refused(format!(
+                "'{name}' is {value}, which does not fit a {}{:?} ({})",
+                if field.nullable { "" } else { "non-nullable " },
+                field.type_,
+                field.first_declared_by()
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Refuse a supplied value that holds the key the chronicle writes a
+/// decimal under ([`encoding::DECIMAL_KEY`]): read back, it would be a
+/// decimal the submitter never sent.
+pub(crate) fn refuse_decimal_key(name: &str, value: &serde_json::Value) -> Result<()> {
+    if encoding::holds_decimal_key(value) {
+        return Err(refused(format!(
+            "'{name}' holds the key '{}', which the chronicle keeps for a decimal",
+            encoding::DECIMAL_KEY
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn filling(term: &str, filled_by: FilledBy) -> OpenTermFilled {
+        OpenTermFilled {
+            law_id: "wet".to_string(),
+            article: "1".to_string(),
+            term: term.to_string(),
+            filled_by,
+        }
+    }
+
+    fn regulation() -> FilledBy {
+        FilledBy::Regulation {
+            law_id: "beleid".to_string(),
+            article: "1".to_string(),
+        }
+    }
+
+    #[test]
+    fn used_keeps_a_finding_a_regulation_did_not_set_aside() {
+        let given: Map<String, serde_json::Value> = serde_json::from_value(serde_json::json!({
+            "door_vaststelling": true,
+            "door_regeling": true,
+            "door_beide": true,
+            "niet_gelezen": true,
+        }))
+        .unwrap();
+        let filled = [
+            filling("door_vaststelling", FilledBy::Finding),
+            filling("door_regeling", regulation()),
+            filling("door_beide", regulation()),
+            filling("door_beide", FilledBy::Finding),
+        ];
+        let mut found = used(&given, &filled);
+        found.sort();
+        assert_eq!(found, ["door_beide", "door_vaststelling", "niet_gelezen"]);
+    }
+}

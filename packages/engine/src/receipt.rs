@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-use crate::engine::OutputProvenance;
+use crate::engine::{OpenTermFilled, OutputProvenance};
 use crate::resolver::{DeclarationNotInForce, DeclarationsFromOtherVersion, DelegationRefusal};
 use crate::trace::PathNode;
 use crate::types::{Connectivity, LegalStatus, UntranslatableMode, Value};
@@ -135,6 +135,10 @@ pub struct ReceiptResults {
     /// read as though nothing was ever declared.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub declarations_not_in_force: Vec<DeclarationNotInForce>,
+    /// The open terms a finding or a regulation filled, and which of the
+    /// two filled each, so the receipt shows what the outcome rests on.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub open_terms: Vec<OpenTermFilled>,
 }
 
 /// A value accepted from another organisation's engine (RFC-009).

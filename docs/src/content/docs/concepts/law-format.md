@@ -44,7 +44,7 @@ The walkthrough follows article 3 of the Wet op de zorgtoeslag, from `corpus/reg
 A file opens with the metadata that identifies the regulation:
 
 ```yaml
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json
 $id: wet_op_de_zorgtoeslag
 regulatory_layer: WET
 publication_date: '2024-12-20'
@@ -190,7 +190,7 @@ The `execution` block separates three kinds of value by where they come from.
 
 A **parameter** is what the caller supplies: here the `bsn` of the person the question is about. An **input** is a value the article needs but does not decide. Article 3 needs the person's assets, which the Wet inkomstenbelasting 2001 defines as the rendementsgrondslag, so the input names that law and output under `source` and passes the `bsn` along. The engine runs the other law and uses its answer; [Cross-Law References](/concepts/cross-law-references) covers how. An input with `source: {}` comes from outside the corpus altogether, from a register or the person themselves.
 
-The partner takes three more inputs. Who the partner is follows from article 3 of the Awir, which yields the partner's `bsn` or `null` when there is none. The partner's rendementsgrondslag comes from the same provision of the Wet inkomstenbelasting 2001 as the applicant's, called with that `bsn`. Without a partner the `bsn` is `null`, the engine does not run the other law, and `vermogen_toeslagpartner` is `null` as well. Both inputs say so with `nullable: true`, and the action tests for the absence before it adds anything ([RFC-036](/rfcs/rfc-036)). That test has a cost. A partner who is registered as a partner but without a `bsn` passes it as if there were no partner, and the applicant is then tested on their own assets alone; the type checker requires the test, and a law has no way to fail on data it knows to be wrong ([issue #1563](https://github.com/MinBZK/regelrecht/issues/1563)). The third input, whether the applicant had the same partner for the whole berekeningsjaar, is a fact about the year that no law in the corpus establishes, so it has `source: {}`.
+The partner takes three more inputs. Who the partner is follows from article 3 of the Awir, which yields the partner's `bsn` or `null` when there is none. The partner's rendementsgrondslag comes from the same provision of the Wet inkomstenbelasting 2001 as the applicant's, called with that `bsn`. Without a partner the `bsn` is `null`, the engine does not run the other law, and `vermogen_toeslagpartner` is `null` as well. Both inputs say so with `nullable: true`, and the action tests for the absence before it adds anything ([RFC-036](/rfcs/rfc-036)). That test has a cost. A partner who is registered as a partner but without a `bsn` passes it as if there were no partner, and the applicant is then tested on their own assets alone; the type checker requires the test, and a law has no way to fail on data it knows to be wrong ([issue #1563](https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1563)). The third input, whether the applicant had the same partner for the whole berekeningsjaar, is a fact about the year that no law in the corpus establishes, so it has `source: {}`.
 
 An **output** is what the article decides and offers to others. Its `name` is public: another law that needs this answer asks for `vermogen_onder_grens` by name, which makes renaming an output a change other laws can see. The reference lists the fields each kind carries under [Fields](/reference/schema#fields).
 
@@ -209,6 +209,29 @@ The set is short on purpose. An operation earns its place when a real law needs 
 ### What the article produces
 
 `produces` states what executing the article yields in legal terms. Article 3 is a `TOETS`: it tests a condition, and its outcome feeds the decision article 2 takes. Article 2 declares a `BESCHIKKING`, and that difference matters to the engine. The legal character selects which procedural hooks fire, such as the objection period the Awb attaches to a beschikking, so an article's outcome and the procedure around it both depend on this declaration. [Hooks and Reactive Execution](/concepts/hooks-and-reactive-execution#the-produces-annotation) explains the mechanism, and the [glossary](/reference/glossary#legal-character) defines each value.
+
+An article that yields more than one thing writes `produces` as a list, one item per thing (schema v0.8.1). Each item says what it is with `type`, a kind of submission or a legal character. Leerplichtwet 1969 art. 13a establishes the application for leave and decides on it. The application lists the parameters it contains under `parameters` and names the decision it asks for with `requests`; the decision lists its outputs under `outputs`. The [decision on the application](/concepts/chronolexography#the-decision-on-the-application) shows it, and [RFC-047](/rfcs/rfc-047) gives the rules.
+
+#### Derived data
+
+Not every output of a deciding article is part of what it decides. The decision lists those under `derived` (schema v0.8.4). For example, a parking card for the disabled:
+
+```yaml
+produces:
+  - type: BESCHIKKING
+    outputs: [gehandicaptenparkeerkaart_verstrekt]   # what the college decides
+    derived: [kaart_geldig_tot]                      # what follows from it (BABW art. 51 lid 1)
+```
+
+| | `outputs` | `derived` |
+|---|---|---|
+| Computed when the decision is taken | yes | yes |
+| Recorded with the decision | yes | yes |
+| Part of the decision value (`$x.outputs`) | yes | no |
+
+The difference matters when a decision is compared with another, as on objection (Awb 7:11). The validity of the card runs from the day of issue. If the college takes the decision anew on another day, the end date differs, although the college decides the same thing. Only the outputs count.
+
+Every output of an article belongs to exactly one item, under `outputs` or `derived`. The loader refuses an output no item lists, a name under `derived` that is no output of the article, and `derived` on a submission. So a forgotten or misspelled output fails instead of quietly becoming derived data ([RFC-050](/rfcs/rfc-050)).
 
 ## Type Specifications
 
@@ -283,7 +306,7 @@ The examples on this page are written to schema v0.5.x, because the corpus is. S
 
 The corpus spans three regulatory layers: national law (`WET`) makes up most of it, with a few ministerial regulations and municipal by-laws that fill in national law at the local layer. Next to the real laws, `corpus/regulation/nl/wet/` holds synthetic laws in the `test_*` directories. They are not Dutch law: each one isolates a corner of the language (null semantics, scoped sources, collections, date operations) for the engine-conformance BDD bucket, which needs a law that tests one feature rather than a statute that mixes many.
 
-This page gives no counts, because they change with every harvest. The authoritative set is [`corpus/regulation/`](https://github.com/MinBZK/regelrecht/tree/main/corpus/regulation) itself. To count files per layer, run `grep -rh '^regulatory_layer:' corpus/regulation/ | sort | uniq -c` from the repository root. That counts versions, not laws: each version of a law is its own file, named after its `valid_from` date, in the law's directory.
+This page gives no counts, because they change with every harvest. The authoritative set is [`corpus/regulation/`](https://github.com/NederlandseDigitaleDienst/regelrecht/tree/main/corpus/regulation) itself. To count files per layer, run `grep -rh '^regulatory_layer:' corpus/regulation/ | sort | uniq -c` from the repository root. That counts versions, not laws: each version of a law is its own file, named after its `valid_from` date, in the law's directory.
 
 ## Next steps
 

@@ -52,6 +52,25 @@ what the live laws currently produce, so a failure there means a law changed or 
 scenario went stale; a human decides what that is worth. Run it locally with
 `BDD_BUCKET=corpus`.
 
+### Walkthrough replay (on demo changes)
+
+The **Rondleiding speelt terug** job checks that the recorded walkthrough
+(`/rondleiding`, see [the demo page](/components/demo)) still replays in the demo
+as it is now. The walkthrough is the presenter's voice plus a log of what the
+presenter clicked, typed and scrolled; a change to the demo can leave one of those actions
+with nothing to act on (a renamed button, a moved panel, a law that is gone), and
+the walkthrough would then show something other than what the voice says.
+
+The job builds the engine for the browser, starts the demo's dev server, fetches
+only the voice from the walkthrough's release, and replays every chapter in a
+headless Chromium in two window sizes. An action whose element is not found
+fails the job, with an annotation naming the chapter; an action that only finds
+its element with the numbers in its description masked is reported as a
+warning, since it may now point at something else. It runs when `frontend-demo/`,
+`corpus/demo/`, the engine or the schema changes, hangs on the `Test` gate, and
+is the same command as locally: `just walkthrough verify`. A failure is fixed in
+the demo, or by recording that chapter again.
+
 ### WASM build (on engine changes)
 
 Builds the engine for the WebAssembly target to catch compilation issues early.
@@ -69,11 +88,11 @@ Neither scans for known vulnerabilities. That is `just audit-advisories` (RustSe
 
 ### Schema protection (on PRs)
 
-Released schema versions in `schema/v*.*.*` are immutable. CI fails if a PR tries to modify or delete a released schema. `schema/latest` is a symlink to the highest released version (currently `v0.7.1`), not a directory to edit; a schema change goes into a new version directory.
+Released schema versions in `schema/v*.*.*` are immutable. CI fails if a PR tries to modify or delete a released schema. `schema/latest` is a symlink to the highest released version (currently `v0.8.4`), not a directory to edit; a schema change goes into a new version directory.
 
 ### Provenance checks (on corpus/engine changes)
 
-Among other checks, the `provenance-checks` job verifies that every `$schema` URL in `corpus/regulation` names a schema version that exists under `schema/`, that every version directory under `schema/` is registered in `packages/engine/src/schema.rs`, and that `schema/latest` points at the highest version (currently `v0.7.1`). It does not check the form of the URL: a tag-based `refs/tags/schema-vX.Y.Z` reference is the convention, but a branch-based URL that names a known version passes. On a pull request that changes engine source it also compares the version in `packages/engine/Cargo.toml` with `main`; an unchanged version only prints a warning. See [RFC-013](/rfcs/rfc-013) for context.
+Among other checks, the `provenance-checks` job verifies that every `$schema` URL in `corpus/regulation` and `corpus/cells` names a schema version that exists under `schema/`, that every version directory under `schema/` is registered in `packages/engine/src/schema.rs`, and that `schema/latest` points at the highest version (currently `v0.8.4`). It does not check the form of the URL: a tag-based `refs/tags/schema-vX.Y.Z` reference is the convention, but a branch-based URL that names a known version passes. On a pull request that changes engine source it also compares the version in `packages/engine/Cargo.toml` with `main`; an unchanged version only prints a warning. See [RFC-013](/rfcs/rfc-013) for context.
 
 ### Other jobs behind the `Test` check
 
@@ -94,7 +113,7 @@ CI uses path filters to determine which checks to run:
 
 | Change group | Triggers on changes to |
 |---|---|
-| `ci` | `packages/`, `frontend/`, `corpus/regulation/`, `corpus/demo/`, `bdd/`, `schema/`, `script/`, the PoC trees, and the root build files (`Justfile`, `package.json`, `rust-toolchain.toml`) |
+| `ci` | `packages/`, `frontend/`, `corpus/regulation/`, `corpus/cells/`, `corpus/demo/`, `bdd/`, `schema/`, `script/`, the PoC trees, and the root build files (`Justfile`, `package.json`, `rust-toolchain.toml`) |
 | `docs` | `docs/`, plus the corpus and shared frontend code the landing page reads at build time |
 | `docs-source` | `docs/`, `packages/`, `bdd/`, `schema/`, `corpus/regulation/`, `justfile`, `.claude/skills/docs-writing/`, `.github/workflows/ci.yml` |
 | `rust-image` | `packages/`, `schema/`, `rust-toolchain.toml`, `.github/workflows/ci.yml` |
@@ -136,7 +155,7 @@ First, it compares `.github/workflows/claude-code-review.yml` as this run has it
 
 The comparison uses `refs/pull/N/merge`, not the head commit. A `pull_request` run executes the workflow file as it stands in the test merge of PR and base, so a branch that has fallen behind still runs the base's copy. Comparing against the head commit would put exactly those branches on red while their review ran fine.
 
-Second, it reads the proof out of the review job. The step **Record that the review ran** carries `if: steps.claude-review.outputs.execution_file != ''`, and that output is only set once the Claude CLI has actually run. On a self-skip the step is `skipped`. The gate reads that step's conclusion from the `steps[]` array of the job it already looked up, so the proof is bound to this run and this attempt, and it exists just as well when the review had no findings. The gate insists on exactly one step by that name, because two would let an added decoy outvote the real one. Renaming the step means changing `PROOF_STEP` in the gate as well; the test suite asserts that the workflow still carries the step under that name with that `if:`, and the pre-commit hook runs on the workflow file for that reason.
+Second, it reads the proof out of the review job. The step **Record that the review ran** carries `if: steps.claude-review.outputs.execution_file != ''`, and that output is only set once the Claude CLI has actually run. On a self-skip the step is `skipped`. The gate reads that step's conclusion from the `steps[]` array of the job it already looked up, so the proof is bound to this run and this attempt, and it exists just as well when the review had no findings. Right after a job completes, the jobs API can still return it without steps; the gate then keeps polling until the steps are there, rather than concluding that the proof step is missing. The gate insists on exactly one step by that name, because two would let an added decoy outvote the real one. Renaming the step means changing `PROOF_STEP` in the gate as well; the test suite asserts that the workflow still carries the step under that name with that `if:`, and the pre-commit hook runs on the workflow file for that reason.
 
 #### What the gate trusts
 
@@ -146,7 +165,7 @@ The gate runs the copy of its own script from the base branch, not the one in th
 
 What none of this reaches is the `review-gate` job itself, which lives in the workflow file the PR brings along. A PR that keeps the job name **Claude review completed** and replaces its steps with `run: true` reports green without running the script, and nothing inside the script can prevent that. Closing that hole takes a rule outside the pull request: a ruleset or CODEOWNERS entry over `.github/workflows/**`, or a gate triggered by `workflow_run` that judges the review run from the outside. Until then the gate protects against mistakes, not against someone determined to route around it.
 
-Every red outcome states what was established and names no cause it has not tested. An earlier version told every clean PR that the review action had skipped itself over a workflow change, on PRs that changed no workflow at all ([issue #1178](https://github.com/MinBZK/regelrecht/issues/1178)).
+Every red outcome states what was established and names no cause it has not tested. An earlier version told every clean PR that the review action had skipped itself over a workflow change, on PRs that changed no workflow at all ([issue #1178](https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1178)).
 
 #### Critical findings block
 
@@ -197,7 +216,7 @@ The logic lives in `script/require-security-approval.sh`, with `script/require-s
 ### Putting a pull request in the queue
 
 ```bash
-gh pr merge <nr> -R MinBZK/regelrecht --squash
+gh pr merge <nr> -R NederlandseDigitaleDienst/regelrecht --squash
 ```
 
 gh replies "The merge strategy for main is set by the merge queue". That is a notice, not an error. gh refuses `--delete-branch` while the queue is on, and it is not needed: the repository deletes the head branch itself after the merge.
@@ -205,14 +224,14 @@ gh replies "The merge strategy for main is set by the merge queue". That is a no
 A command that succeeded does not mean the pull request is in the queue. Ask:
 
 ```bash
-gh api graphql -f query='{repository(owner:"MinBZK",name:"regelrecht"){
+gh api graphql -f query='{repository(owner:"NederlandseDigitaleDienst",name:"regelrecht"){
   pullRequest(number:<nr>){state mergeQueueEntry{state position}}}}'
 ```
 
 A pull request that drops out of the queue stays `OPEN`, so waiting for the state to become something other than `OPEN` waits forever after a drop. Follow `mergeQueueEntry` instead: `MERGED` means done, and `OPEN` with `mergeQueueEntry: null` means it dropped out. The reason is in the timeline:
 
 ```bash
-gh api graphql -f query='{repository(owner:"MinBZK",name:"regelrecht"){
+gh api graphql -f query='{repository(owner:"NederlandseDigitaleDienst",name:"regelrecht"){
   pullRequest(number:<nr>){timelineItems(last:5,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){
   nodes{... on RemovedFromMergeQueueEvent{createdAt reason}}}}}}'
 ```
@@ -222,7 +241,7 @@ gh api graphql -f query='{repository(owner:"MinBZK",name:"regelrecht"){
 A failure in the queue does not show on the pull request. Its checks stay green; the red run belongs to the queue branch. This finds it:
 
 ```bash
-gh run list -R MinBZK/regelrecht --event merge_group --limit 20 \
+gh run list -R NederlandseDigitaleDienst/regelrecht --event merge_group --limit 20 \
   --json databaseId,headBranch,workflowName,conclusion \
   --jq '.[] | select(.headBranch | test("pr-<nr>-"))'
 ```

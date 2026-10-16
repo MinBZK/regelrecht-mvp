@@ -18,6 +18,8 @@
  * een BSN. Ook dat staat al in de wet en hoeft niet apart verklaard te worden.
  */
 
+import { legalCharacterOf, producedItems } from '@regelrecht/frontend-shared/produces.js';
+
 /**
  * De uitkomsten die een burger aangaan.
  *
@@ -48,7 +50,7 @@ function executions(lawDoc) {
  * consumeren.
  */
 export function producesBeschikking(lawDoc) {
-  return executions(lawDoc).some((ex) => PORTAL_CHARACTERS.has(ex.produces?.legal_character));
+  return executions(lawDoc).some((ex) => producedItems(ex.produces).some((p) => PORTAL_CHARACTERS.has(legalCharacterOf(p))));
 }
 
 /**

@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["MinBZK <noreply@minbzk.nl>"]
 description = "Portal serving the regelrecht proof-of-concepts behind one hostname, each with its own password"
 license = "EUPL-1.2"
-repository = "https://github.com/MinBZK/regelrecht"
+repository = "https://github.com/NederlandseDigitaleDienst/regelrecht"
 
 [lib]
 name = "regelrecht_poc_portal"

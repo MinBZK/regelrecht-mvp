@@ -24,6 +24,7 @@ import {
   enumBlocks,
   schemaStats,
   legalBasisFields,
+  stringDefinition,
   operandForms,
   articleFields,
   machineReadableSubStructures,
@@ -99,7 +100,7 @@ const others = otherSubStructures();
     rules.map((rule) => (
       <nldd-table-row
         class="rr-schema-row"
-        data-zoek={[...rule.layers, ...rule.requires].join(' ').toLowerCase()}
+        data-zoek={[...rule.layers, ...rule.requires, ...rule.forbids].join(' ').toLowerCase()}
       >
         <nldd-cell width="full" vertical-alignment="top">
           <nldd-container layout="wrap" gap="4">
@@ -113,12 +114,23 @@ const others = otherSubStructures();
             {rule.requires.map((r) => (
               <nldd-tag size="sm" color="accent" text={r} />
             ))}
+            {rule.forbids.length > 0 && <nldd-text size="sm">No identifier; may not carry</nldd-text>}
+            {rule.forbids.map((f) => (
+              <nldd-tag size="sm" color="neutral" text={f} />
+            ))}
           </nldd-container>
         </nldd-cell>
       </nldd-table-row>
     ))
   }
 </nldd-table>
+
+<p>
+  A <code>REDUCTIE</code> is no regulation but a cell's reduction over its own
+  chronicle (RFC-048). It needs no identifier, and its articles take no
+  decision, delegate nothing and do not act on law. It is the only layer that
+  may read the decisions taken under an article (<code>source.decisions</code>).
+</p>
 
 <div class="rr-schema-nested rr-schema-row" data-zoek="legal_basis law_id article grondslag">
   <h4 id="top-legal-basis">legal_basis</h4>
@@ -310,6 +322,18 @@ const others = otherSubStructures();
 </p>
 
 <SchemaFieldTable fields={legalBasisFields()} label="Fields of a legal basis citation" />
+
+<h3 id="article-reference">Article reference</h3>
+
+<p set:html={stringDefinition('articleReference').description} />
+
+<nldd-text size="sm" color="secondary"><code>{stringDefinition('articleReference').pattern}</code></nldd-text>
+
+<h3 id="variable-reference">Variable reference</h3>
+
+<p set:html={stringDefinition('variableReference').description} />
+
+<nldd-text size="sm" color="secondary"><code>{stringDefinition('variableReference').pattern}</code></nldd-text>
 
 <h2 id="operations">Operations</h2>
 

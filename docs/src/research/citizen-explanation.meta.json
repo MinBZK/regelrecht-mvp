@@ -1,0 +1,46 @@
+{
+  "kind": "Conference paper",
+  "venue": "JURIX 2026",
+  "status": "Camera-ready version, to appear in the proceedings of JURIX 2026",
+  "date": "2026-10-16",
+  "title": "From Rules as Executed to Citizen Explanation",
+  "subtitle": "Evaluating LLM-Generated Explanations in Rule-Based Government Systems",
+  "authors": [
+    {
+      "name": "Flora Magdalena Johanna Bos",
+      "affiliations": [
+        "Dutch Digital Service, Ministry of Economic Affairs and Climate",
+        "Vrije Universiteit Amsterdam"
+      ],
+      "note": "Work done while being an intern at the Ministry of the Interior and Kingdom Relations."
+    },
+    {
+      "name": "Anne Schuth",
+      "affiliations": [
+        "Dutch Digital Service, Ministry of Economic Affairs and Climate"
+      ],
+      "note": "Work done while at the Ministry of the Interior and Kingdom Relations."
+    },
+    {
+      "name": "Jieying Chen",
+      "affiliations": [
+        "Vrije Universiteit Amsterdam"
+      ],
+      "note": null
+    }
+  ],
+  "affiliations": [
+    "Dutch Digital Service, Ministry of Economic Affairs and Climate",
+    "Vrije Universiteit Amsterdam"
+  ],
+  "keywords": [
+    "Rules as Code",
+    "Large Language Models",
+    "Explainable AI"
+  ],
+  "date_display": "16 October 2026",
+  "abstract": [
+    "Governments increasingly use automated decision-making systems to apply legislation in domains such as social benefits, taxation, and licensing. While Rules as Code (RaC) approaches enable legally consistent and transparent decision-making through executable legislation, they do not automatically generate explanations that are understandable for citizens. Large language models (LLMs) can support natural-language explanation generation, but may hallucinate facts or exclude legally relevant information. This paper investigates how Graph-based LLM architectures can generate citizen-focused explanations from deterministic rule-engine traces. A rule engine evaluates synthetic citizen profiles against formalised Dutch legislation and produces execution traces, which are transformed into structured decision representations for explanation generation. The approach is evaluated using automated metrics and human annotation. Results show that explicitly exposing decisive legal conditions improves faithfulness, and that the full Graph configuration, which combines a structured decision graph with a constrained prompt, further improves alignment with the rule-execution trace. Human evaluation shows that explanations perceived as understandable by citizens are not always considered legally correct by experts. The findings suggest that structured representations of deterministic legal reasoning can support legally faithful and citizen-focused explanations of automated government decisions. The source code is published."
+  ],
+  "abstract_lead": "Governments increasingly use automated decision-making systems to apply legislation in domains such as social benefits, taxation, and licensing. While Rules as Code (RaC) approaches enable legally consistent and transparent decision-making through executable legislation, they do not automatically generate explanations that are understandable for citizens."
+}

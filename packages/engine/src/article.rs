@@ -20,14 +20,14 @@ use std::path::Path;
 
 /// Re-export the canonical document model at the historical `article` path.
 pub use regelrecht_law_model::{
-    Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, ArticleReference,
-    ArticleRequirement, AuthorityType, Case, CombineOp, CompetentAuthority, Declaration,
-    DeclaredProperty, Definition, Execution, HookDeclaration, HookFilter, HookPoint,
+    foreach_binding, Action, ActionOperation, ActionValue, Article, ArticleBasedLaw,
+    ArticleReference, ArticleRequirement, AuthorityType, Case, CombineOp, CompetentAuthority,
+    Declaration, DeclaredProperty, Definition, Execution, HookDeclaration, HookFilter, HookPoint,
     ImplementsDeclaration, Input, LegalBasis, MachineReadable, Marking, MarkingResolution,
     OpenTerm, OpenTermDefault, Output, OverrideDeclaration, Parameter, Placement,
-    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produces,
-    ProvisionReference, ResolveSpec, Source, Stage, StageRequirement, Temporal, TypeSpec,
-    UntranslatableEntry,
+    PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produced, ProducedItem,
+    Produces, ProducesList, ProvisionReference, ResolveSpec, Source, Stage, StageRequirement,
+    Temporal, TypeSpec, UntranslatableEntry, DEFAULT_FOREACH_AS,
 };
 
 /// Engine-side loading of an [`ArticleBasedLaw`] from YAML, with the security
@@ -119,6 +119,8 @@ impl LawLoad for ArticleBasedLaw {
         // Validate array sizes after parsing
         validate_array_sizes(&law)?;
         reject_literal_operations(&law)?;
+        crate::load_check::reject_misplaced_reduction(&law)?;
+        crate::load_check::reject_misplaced_article_call(&law)?;
 
         // Validate schema version is supported (RFC-013)
         if let Some(version) = law.schema_version() {

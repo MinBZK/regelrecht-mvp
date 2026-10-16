@@ -8,6 +8,8 @@
 import Base from '~/layouts/Base.astro';
 import LinkCard from '~/components/LinkCard.astro';
 import paper from '~/research/rules-as-executed.meta.json';
+import jurixPaper from '~/research/citizen-explanation.meta.json';
+import { joinAuthors } from '~/lib/authors';
 
 const pathname = '/research/';
 
@@ -31,6 +33,14 @@ const items: ResearchItem[] = [
     // The explainer is the same paper in plain language, so it rides on the
     // paper's card instead of taking a card of its own.
     also: { href: '/research/rules-as-executed/explained', linkLabel: 'plain-language explainer' },
+  },
+  {
+    title: `${jurixPaper.title}: ${jurixPaper.subtitle}`,
+    meta: `${jurixPaper.venue} paper • ${joinAuthors(jurixPaper.authors.map((a) => a.name))} • ${jurixPaper.date_display}`,
+    // Opening of the abstract, verbatim (generated with the paper HTML).
+    text: jurixPaper.abstract_lead,
+    href: '/research/citizen-explanation',
+    linkLabel: 'paper',
   },
   {
     title: 'Rules as Executed: When machine-executable laws are published',

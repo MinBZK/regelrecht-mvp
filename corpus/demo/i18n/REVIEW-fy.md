@@ -113,6 +113,15 @@ is: in tekst dêr't men rjochten oan ûntliene kin`.
   "Geslaagd" zijn afgeleid van woorden die elders in de vertaling staan
   (`opjûn`, `mislearre`), niet opgezocht.
 
+- **De opgenomen rondleiding** (`walkthrough.*`, `recorder.*`). `rûnlieding`
+  voor "rondleiding" is gekozen, niet opgezocht. Het pad is `/fy/runlieding`
+  zonder kapje, omdat een `û` in een adres als `%C3%BB` op het scherm komt;
+  past `rûnlieding` niet, dan moet het pad mee. Verder afgeleid en niet
+  opgezocht: `Skoftsje` voor "Pauzeren" (een pauze nemen, niet een video
+  stilzetten; `Stilsette` kan ook), `Ûndertitels`, `Útskreaune tekst` voor
+  "uitgeschreven tekst" en `fersprekking` voor "verspreking". De
+  opnameknoppen (`recorder.*`) ziet alleen wie de rondleiding opneemt.
+
 ## 5. Beelden die in het Fries misschien niet werken
 
 - **`baalje`** (balie), in "de andere kant van de balie". Het woord bestaat,
@@ -159,6 +168,13 @@ anders in de vertaling voor, dus er is ook geen eerdere keuze om op te leunen.
   `ferliene` ("it ferliene terras"). Controleer of beide vormen kloppen.
 - **`profiles.claudia.portal_tab_label`** staat nu op `Myn oerheid`, gelijk
   aan dat van Merijn.
+
+## 8. De opgenomen rondleiding
+
+- **`walkthrough.restoring`** staat op `De demo wurdt weromset` ("De demo
+  wordt teruggezet", terwijl de speler na het rondklikken de stand
+  terugzet). Of `weromsette` hier het gangbare werkwoord is, is niet
+  nagekeken.
 
 ## Hoe je een correctie doorvoert
 

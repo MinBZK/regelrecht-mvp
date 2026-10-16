@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.7.1/schema/v0.7.1/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.7.1",
+  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.4",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -51,9 +51,10 @@
         "UITVOERINGSBELEID",
         "GEMEENTELIJKE_VERORDENING",
         "PROVINCIALE_VERORDENING",
-        "WATERSCHAPS_VERORDENING"
+        "WATERSCHAPS_VERORDENING",
+        "REDUCTIE"
       ],
-      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone.",
+      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read decisions (`source.decisions`); it does not act on law (no `implements`, `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
       "examples": [
         "WET",
         "GEMEENTELIJKE_VERORDENING"
@@ -542,6 +543,161 @@
           "officiele_titel"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "regulatory_layer": {
+            "const": "REDUCTIE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "articles": {
+            "items": {
+              "properties": {
+                "machine_readable": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "implements"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "hooks"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "overrides"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "open_terms"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "execution"
+                        ],
+                        "properties": {
+                          "execution": {
+                            "required": [
+                              "produces"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "preamble": {
+            "properties": {
+              "machine_readable": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "implements"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "hooks"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "overrides"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "open_terms"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "execution"
+                      ],
+                      "properties": {
+                        "execution": {
+                          "required": [
+                            "produces"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "articles": {
+            "items": {
+              "properties": {
+                "machine_readable": {
+                  "properties": {
+                    "execution": {
+                      "properties": {
+                        "input": {
+                          "items": {
+                            "properties": {
+                              "source": {
+                                "not": {
+                                  "required": [
+                                    "decisions"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "preamble": {
+            "properties": {
+              "machine_readable": {
+                "properties": {
+                  "execution": {
+                    "properties": {
+                      "input": {
+                        "items": {
+                          "properties": {
+                            "source": {
+                              "not": {
+                                "required": [
+                                  "decisions"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "definitions": {
@@ -562,7 +718,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023).",
+          "description": "Value type. What an `amount` is counted in is declared separately, in `type_spec.unit`; units are opt-in per law, and an un-annotated value has unit `unknown` and is never checked (RFC-023). A `decision` is a decision value `{grondslag, fields, findings, outputs}`: the article that decided (`<regulation>#<article>`), the parameters that article was given and declares, its findings per case (the open terms it leaves to an authority per case, `decided_per_case_by`, under their ids), and the outputs of its decision item (RFC-050). A value built from a recorded decision may also carry `taken_on`: the article that established the submission the decision was taken on.",
           "enum": [
             "string",
             "number",
@@ -570,7 +726,8 @@
             "amount",
             "object",
             "array",
-            "date"
+            "date",
+            "decision"
           ]
         },
         "nullable": {
@@ -724,13 +881,110 @@
                 "endpoint": {
                   "type": "string",
                   "description": "Endpoint to call on the delegated regulation."
+                },
+                "decisions": {
+                  "$ref": "#/definitions/articleReference",
+                  "description": "The decisions taken under this article, `<regulation>#<article>`: a list with one row per decision, holding the inputs and outputs of the decision item of that article. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the decisions in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters` or `endpoint`. Without a source that answers it the input is an error, never an empty list."
+                },
+                "article": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/definitions/articleReference"
+                    },
+                    {
+                      "$ref": "#/definitions/variableReference"
+                    }
+                  ],
+                  "description": "The article whose decision this input takes: `<regulation>#<article>`, or a `$`-reference to a value that holds one, such as the `grondslag` of a `decision` value, or that is a `decision` value itself. A `decision` value is called anew: the engine runs its `grondslag` with its own `fields` as parameters and its own `findings`. Without `output` the engine runs the decision item of that article at stage BESLUIT, and the input is a `decision` value `{grondslag, fields, findings, outputs}`. With `output`, the input is that one output of the decision item. The article is the one in force on the calculation date; one that is not in force, or that takes no decision, is an error at run time. The parameters are the `fields` of a `decision` value, then those of `parameters_from`, with `parameters` on top; a name the article does not declare is dropped, and the trace names it, unless it is the id of an open term the article leaves to an authority per case (`decided_per_case_by`): that is the finding for this case, kept under `findings`, not `fields`. A finding the caller of the engine gives for the execution, apart from the parameters, wins over one the call passes, and an implementation of the term still wins over both (RFC-047). It stands apart from `regulation`, `decisions` and `endpoint`."
+                },
+                "parameters_from": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/definitions/variableReference"
+                  },
+                  "description": "Values whose fields are passed to the `article` as parameters, merged in order: a later one wins over an earlier one, and `parameters` wins over all of them. Each is an object, such as the `fields` or `findings` of a `decision` value, or null, which adds nothing; any other value is an error at run time. Only with `article`."
                 }
               },
               "additionalProperties": false,
+              "dependencies": {
+                "decisions": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "regulation"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "output"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "parameters"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "endpoint"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "article": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "regulation"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "decisions"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "endpoint"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "parameters_from": {
+                  "required": [
+                    "article"
+                  ]
+                }
+              },
               "examples": [
                 {
                   "regulation": "wet_op_de_zorgtoeslag",
                   "output": "standaardpremie",
+                  "parameters": {
+                    "bsn": "$bsn"
+                  }
+                },
+                {
+                  "decisions": "leerplichtwet_1969#13a"
+                },
+                {
+                  "article": "$besluit"
+                },
+                {
+                  "article": "$besluit.grondslag",
+                  "parameters_from": [
+                    "$besluit.fields",
+                    "$besluit.findings"
+                  ]
+                },
+                {
+                  "article": "wet_fictief#3",
+                  "output": "verlof_verleend",
                   "parameters": {
                     "bsn": "$bsn"
                   }
@@ -1786,7 +2040,7 @@
               },
               "decided_per_case_by": {
                 "type": "string",
-                "description": "The authority that fills this norm in the individual case while no general specification exists, with the article that makes it competent. Which authority may decide is a property of the law, so it belongs here. Its answer needs a motivation (Awb 3:46) and is part of the besluit rather than a ground for it, which is what separates a discretionary power from a value that is merely missing."
+                "description": "The authority that fills this norm in the individual case while no general specification exists, with the article that makes it competent. Which authority may decide is a property of the law, so it belongs here. Its answer needs a motivation (Awb 3:46) and is part of the besluit rather than a ground for it, which is what separates a discretionary power from a value that is merely missing. When no implementation fills the term, the judgement for the case is supplied with the execution, under the term's id (RFC-047)."
               }
             },
             "additionalProperties": false
@@ -1852,41 +2106,128 @@
           "description": "The executable logic of this article: what it needs, what it computes and what it yields.",
           "properties": {
             "produces": {
-              "type": "object",
-              "properties": {
-                "legal_character": {
-                  "type": "string",
-                  "enum": [
-                    "BESCHIKKING",
-                    "TOETS",
-                    "WAARDEBEPALING",
-                    "BESLUIT_VAN_ALGEMENE_STREKKING",
-                    "INFORMATIEF",
-                    "RECHTSPOSITIE"
-                  ],
-                  "description": "Legal character of the output. BESCHIKKING: a besluit not of general scope (Awb art. 1:3 lid 2). RECHTSPOSITIE: a legal position of a person that arises by operation of law, without a besluit and without an aanvraag (voting rights, majority, nationality)."
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "legal_character": {
+                      "type": "string",
+                      "enum": [
+                        "BESCHIKKING",
+                        "TOETS",
+                        "WAARDEBEPALING",
+                        "BESLUIT_VAN_ALGEMENE_STREKKING",
+                        "INFORMATIEF",
+                        "RECHTSPOSITIE"
+                      ],
+                      "description": "Legal character of the output. BESCHIKKING: a besluit not of general scope (Awb art. 1:3 lid 2). RECHTSPOSITIE: a legal position of a person that arises by operation of law, without a besluit and without an aanvraag (voting rights, majority, nationality)."
+                    },
+                    "decision_type": {
+                      "type": "string",
+                      "enum": [
+                        "TOEKENNING",
+                        "AFWIJZING",
+                        "GOEDKEURING",
+                        "GEEN_BESLUIT",
+                        "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
+                        "BELEIDSREGEL",
+                        "VOORBEREIDINGSBESLUIT",
+                        "ANDERE_HANDELING",
+                        "AANSLAG"
+                      ],
+                      "description": "The kind of decision this output is, within its legal character. `GEEN_BESLUIT` is the value for an article that establishes a fact rather than deciding anything."
+                    },
+                    "procedure_id": {
+                      "type": "string",
+                      "description": "Selects a specific AWB procedure variant. When absent, the default procedure for the legal_character is used."
+                    },
+                    "submission": {
+                      "type": "object",
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "AANVRAAG",
+                            "BEZWAAR"
+                          ],
+                          "description": "What the belanghebbende submits. AANVRAAG: a request to take a decision (Awb 1:3 lid 3). BEZWAAR: an objection against a decision, to the authority that took it (Awb 1:5, 6:4 lid 1) (RFC-050)."
+                        }
+                      },
+                      "description": "The article establishes a submission of a belanghebbende, such as an application (RFC-045). Hooks with applies_to.submission fire when the article runs. Independent of the legal character of the article's own outputs. An article that establishes the application and also decides on it may instead write produces as a list, with the application and the decision as separate items (RFC-047).",
+                      "examples": [
+                        {
+                          "kind": "AANVRAAG"
+                        }
+                      ]
+                    },
+                    "moment": {
+                      "type": "object",
+                      "required": [
+                        "legal_basis"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "parameter": {
+                          "type": "string",
+                          "description": "The parameter of this article whose value is the moment, such as the date of receipt. Absent when the moment is the one at which a runtime records the fact."
+                        },
+                        "legal_basis": {
+                          "$ref": "#/definitions/legalBasis",
+                          "description": "The provision that says why this moment counts."
+                        }
+                      },
+                      "description": "The moment that counts in law for what this article produces (RFC-045), such as the receipt of an application (Awb 4:13 lid 1). Metadata for a process runtime; the engine does not read it.",
+                      "examples": [
+                        {
+                          "parameter": "datum_ontvangst",
+                          "legal_basis": {
+                            "law": "Algemene wet bestuursrecht",
+                            "bwb_id": "BWBR0005537",
+                            "article": "4:13",
+                            "paragraph": "1",
+                            "url": "https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel4:13"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "description": "What executing this article yields in legal terms: its legal character, the kind of decision it is, and the procedure that governs it. Not merely annotation: `legal_character` and `decision_type` select which hooks fire, and `legal_character` with `procedure_id` selects the Awb procedure, so an article's outputs and how it runs both depend on what is declared here."
                 },
-                "decision_type": {
-                  "type": "string",
-                  "enum": [
-                    "TOEKENNING",
-                    "AFWIJZING",
-                    "GOEDKEURING",
-                    "GEEN_BESLUIT",
-                    "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
-                    "BELEIDSREGEL",
-                    "VOORBEREIDINGSBESLUIT",
-                    "ANDERE_HANDELING",
-                    "AANSLAG"
-                  ],
-                  "description": "The kind of decision this output is, within its legal character. `GEEN_BESLUIT` is the value for an article that establishes a fact rather than deciding anything."
-                },
-                "procedure_id": {
-                  "type": "string",
-                  "description": "Selects a specific AWB procedure variant. When absent, the default procedure for the legal_character is used."
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/producedItem"
+                  },
+                  "minItems": 1,
+                  "description": "Several things the article yields, each its own item with a `type`, such as an application (AANVRAAG) and the decision on it (BESCHIKKING), with the parameters and outputs that belong to each (RFC-047)."
                 }
-              },
-              "description": "What executing this article yields in legal terms: its legal character, the kind of decision it is, and the procedure that governs it. Not merely annotation: `legal_character` and `decision_type` select which hooks fire, and `legal_character` with `procedure_id` selects the Awb procedure, so an article's outputs and how it runs both depend on what is declared here."
+              ],
+              "description": "What executing this article yields in legal terms. One object for an article that yields one thing, the form most laws use. A list when the article yields more than one thing, such as an application and the decision on it, each item with its own type, parameters and outputs (RFC-047).",
+              "examples": [
+                {
+                  "legal_character": "BESCHIKKING",
+                  "decision_type": "TOEKENNING"
+                },
+                [
+                  {
+                    "type": "AANVRAAG",
+                    "requests": "leerplichtwet_1969#13a",
+                    "parameters": [
+                      "bsn_jongere"
+                    ]
+                  },
+                  {
+                    "type": "BESCHIKKING",
+                    "outputs": [
+                      "verlof_verleend"
+                    ]
+                  }
+                ]
+              ]
             },
             "parameters": {
               "type": "array",
@@ -1950,7 +2291,7 @@
                       "INFORMATIEF",
                       "RECHTSPOSITIE"
                     ],
-                    "description": "Match articles that produce this legal character."
+                    "description": "Match articles that produce this legal character: produces.legal_character in the object form, or an item with this `type` in the list form (RFC-047)."
                   },
                   "decision_type": {
                     "type": "string",
@@ -1959,13 +2300,67 @@
                   "stage": {
                     "type": "string",
                     "description": "Lifecycle stage at which this hook fires (e.g., BESLUIT, BEKENDMAKING). Defaults to BESLUIT."
+                  },
+                  "submission": {
+                    "type": "string",
+                    "enum": [
+                      "AANVRAAG",
+                      "BEZWAAR"
+                    ],
+                    "description": "Match articles that establish a submission of this kind: produces.submission.kind in the object form, or an item with this `type` in the list form (RFC-047). A hook names either legal_character or submission (RFC-045). For an article that follows a procedure, a staged execution fires the hook at the stage named after the kind (RFC-047)."
+                  },
+                  "established_by": {
+                    "$ref": "#/definitions/articleReference",
+                    "description": "With submission: only the submission that this article (`<regulation>#<article>`) establishes. Without it the hook applies to every submission of the kind."
                   }
                 },
-                "required": [
-                  "legal_character"
-                ],
                 "additionalProperties": false,
-                "description": "Which decisions of other articles this hook fires on. `legal_character` is required; adding `decision_type` or `stage` narrows it further."
+                "description": "Which decisions (legal_character, optionally decision_type and stage) or which submissions (submission, optionally established_by, RFC-045) of other articles this hook fires on. A hook names one of the two.",
+                "oneOf": [
+                  {
+                    "required": [
+                      "legal_character"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "submission"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "established_by"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "submission"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "legal_character"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "stage"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "decision_type"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false
@@ -2186,6 +2581,182 @@
         }
       },
       "additionalProperties": false
+    },
+    "articleReference": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?$",
+      "not": {
+        "pattern": " lid [0-9]"
+      },
+      "description": "An article of a regulation, `<regulation>#<article>`, without ` lid <n>`. The article holds letters, digits, `:`, `.`, `_`, `-` and spaces (Kieswet `G 1`, Awb `4:13`), and starts and ends with a letter or digit.",
+      "examples": [
+        "leerplichtwet_1969#13a",
+        "kieswet#G 1"
+      ]
+    },
+    "producedItem": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "AANVRAAG",
+            "BEZWAAR",
+            "BESCHIKKING",
+            "TOETS",
+            "WAARDEBEPALING",
+            "BESLUIT_VAN_ALGEMENE_STREKKING",
+            "INFORMATIEF",
+            "RECHTSPOSITIE"
+          ],
+          "description": "What this item is: a submission of a belanghebbende (AANVRAAG: a request to take a decision, Awb 1:3 lid 3; BEZWAAR: an objection against a decision, Awb 1:5, RFC-050) or a decision with its legal character (BESCHIKKING, TOETS, ...). An article lists at most one item of each type, so the article and the type together name the item (RFC-047). Hooks with applies_to.submission match a submission type, hooks with applies_to.legal_character a decision type."
+        },
+        "requests": {
+          "$ref": "#/definitions/articleReference",
+          "description": "Only on a submission: the article whose decision it asks for, as `<regulation>#<article>`, also when that is this article (Awb 1:3 lid 3, Awb 4:2 lid 1 onder c). The target is that article's decision: the item with a decision type in the list form, or the article itself in the object form with a legal_character. The loader checks a target in the same law; a target in another law is checked when it is used (RFC-047)."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "The names of this article's parameters that this item contains, such as the fields of an application. A submission without it contains none of the article's parameters: the fields of an application are the parameters it lists and those of the hooks on it (RFC-046, RFC-047). Every name must be a parameter of the article; the loader checks it."
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "The names of this article's outputs that this item yields, such as the outputs of the decision. A submission without it yields none; the decision without it yields every output that no other item lists and that it does not list under `derived`. Every name must be an output of the article; the loader checks it. Every output belongs to exactly one item, under `outputs` or, for data derived for the decision, under `derived` (RFC-047, RFC-050). In a staged execution, the stage named after a submission's type computes that submission's outputs, and every other stage those of the decision with the data derived for it."
+        },
+        "derived": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Only on a decision: the names of this article's outputs that are data derived for the decision (RFC-050), such as an intermediate result the decision is recorded with. They are computed at the decision's stages and recorded with it, but are none of its outputs, so a call to the article (`source.article`) leaves them out of the decision value. Derived data is listed, never inferred: an output that no item lists under `outputs` or `derived` is refused, so a forgotten or misspelt output fails instead of turning into derived data. Every name must be an output of the article and belongs to no other item; the loader checks both."
+        },
+        "decision_type": {
+          "type": "string",
+          "enum": [
+            "TOEKENNING",
+            "AFWIJZING",
+            "GOEDKEURING",
+            "GEEN_BESLUIT",
+            "ALGEMEEN_VERBINDEND_VOORSCHRIFT",
+            "BELEIDSREGEL",
+            "VOORBEREIDINGSBESLUIT",
+            "ANDERE_HANDELING",
+            "AANSLAG"
+          ],
+          "description": "Only on a decision: the kind of decision, within its legal character."
+        },
+        "procedure_id": {
+          "type": "string",
+          "description": "Only on a decision: selects a specific AWB procedure variant. When absent, the default procedure for the type is used."
+        },
+        "moment": {
+          "type": "object",
+          "required": [
+            "legal_basis"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "parameter": {
+              "type": "string",
+              "description": "The parameter of this article whose value is the moment, such as the date of receipt. Absent when the moment is the one at which a runtime records the fact."
+            },
+            "legal_basis": {
+              "$ref": "#/definitions/legalBasis",
+              "description": "The provision that says why this moment counts."
+            }
+          },
+          "description": "The moment that counts in law for what this article produces (RFC-045), such as the receipt of an application (Awb 4:13 lid 1). Metadata for a process runtime; the engine does not read it.",
+          "examples": [
+            {
+              "parameter": "datum_ontvangst",
+              "legal_basis": {
+                "law": "Algemene wet bestuursrecht",
+                "bwb_id": "BWBR0005537",
+                "article": "4:13",
+                "paragraph": "1",
+                "url": "https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel4:13"
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "AANVRAAG",
+                  "BEZWAAR"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "decision_type"
+                  ]
+                },
+                {
+                  "required": [
+                    "procedure_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "derived"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "requests"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "One thing that executing this article yields, when produces is a list (RFC-047): a submission, such as an application with what it contains and the decision it asks for, or a decision with the outputs that belong to it. `type` selects which hooks fire and, for a decision, with `procedure_id` the Awb procedure.",
+      "examples": [
+        {
+          "type": "AANVRAAG",
+          "requests": "leerplichtwet_1969#13a",
+          "parameters": [
+            "bsn_jongere",
+            "eerste_verlofdag",
+            "laatste_verlofdag"
+          ]
+        },
+        {
+          "type": "BESCHIKKING",
+          "decision_type": "TOEKENNING",
+          "outputs": [
+            "verlof_verleend"
+          ]
+        }
+      ]
     }
   }
 }

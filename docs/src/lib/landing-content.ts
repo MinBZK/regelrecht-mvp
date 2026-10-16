@@ -7,18 +7,22 @@
  */
 
 import paper from '~/research/rules-as-executed.meta.json';
+import jurixPaper from '~/research/citizen-explanation.meta.json';
+import { joinAuthors } from '~/lib/authors';
 
-// The position paper's title, authors and date come from the generated
-// meta JSON next to its HTML, so a regenerated paper cannot drift from
-// the tile that announces it.
+// The papers' titles, authors and dates come from the generated meta JSON
+// next to their HTML, so a regenerated paper cannot drift from the tile that
+// announces it.
 const paperTitle = `${paper.title}: ${paper.subtitle}`;
 const paperAuthors = paper.authors.join(' & ');
-function paperDate(locale: string): string {
+const jurixTitle = `${jurixPaper.title}: ${jurixPaper.subtitle}`;
+const jurixAuthors = joinAuthors(jurixPaper.authors.map((a) => a.name), '&');
+function paperDate(locale: string, date = paper.date): string {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(`${paper.date}T00:00:00`));
+  }).format(new Date(`${date}T00:00:00`));
 }
 
 export interface NavLink {
@@ -171,7 +175,7 @@ export interface LandingContent {
 const SIGNUP_NL_PATH = '/aanmelden'
 const SIGNUP_EN_PATH = '/en/signup'
 const GUIDE_PATH = '/guide/what-is-regelrecht'
-const GITHUB = 'https://github.com/MinBZK/regelrecht'
+const GITHUB = 'https://github.com/NederlandseDigitaleDienst/regelrecht'
 
 export const content: Record<'nl' | 'en', LandingContent> = {
   nl: {
@@ -416,6 +420,13 @@ export const content: Record<'nl' | 'en', LandingContent> = {
           href: '/research/rules-as-executed',
           linkLabel: 'position paper (Engels)',
           also: { href: '/research/rules-as-executed/uitgelegd', linkLabel: 'uitleg in gewone taal' },
+        },
+        {
+          title: jurixTitle,
+          meta: `Paper op ${jurixPaper.venue} • ${jurixAuthors} • ${paperDate('nl-NL', jurixPaper.date)}`,
+          text: 'Een taalmodel kan een besluit van de engine aan een burger uitleggen, maar verzint er ook redenen bij. Het paper vergelijkt drie manieren om het model het spoor van de engine te geven, over vijf taalmodellen en drie wetten. Hoe strakker de structuur, hoe trouwer de uitleg aan het spoor; alleen geven burgers niet altijd de voorkeur aan de trouwste uitleg.',
+          href: '/research/citizen-explanation',
+          linkLabel: 'paper (Engels)',
         },
         {
           title: 'Rules as Executed: When machine-executable laws are published',
@@ -916,6 +927,13 @@ export const content: Record<'nl' | 'en', LandingContent> = {
           href: '/research/rules-as-executed',
           linkLabel: 'position paper',
           also: { href: '/research/rules-as-executed/explained', linkLabel: 'plain-language explainer' },
+        },
+        {
+          title: jurixTitle,
+          meta: `${jurixPaper.venue} paper • ${jurixAuthors} • ${paperDate('en-GB', jurixPaper.date)}`,
+          text: "A language model can explain the engine's decision to a citizen, but it also invents reasons. The paper compares three ways of handing the model the engine's trace, across five language models and three Dutch laws. The more structured the input, the more faithful the explanation, yet citizens do not always prefer the most faithful explanation.",
+          href: '/research/citizen-explanation',
+          linkLabel: 'paper',
         },
         {
           title: 'Rules as Executed: When machine-executable laws are published',

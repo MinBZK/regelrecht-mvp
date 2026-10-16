@@ -1,0 +1,30 @@
+---
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.0/schema/v0.8.0/schema.json
+$id: test_conformance_moment_legal_basis_string
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2026-10-13'
+valid_from: '2026-10-13'
+url: https://example.invalid/law
+articles:
+  - number: '1'
+    text: >-
+      `produces.moment.legal_basis` cites its provision as a legalBasis
+      object, like every other `legal_basis`. A `<regulation>#<article>`
+      string is not a second way to cite one: the schema refuses it and the
+      model refuses it while reading.
+    url: https://example.invalid/law/artikel/1
+    machine_readable:
+      execution:
+        produces:
+          moment:
+            parameter: datum_ontvangst
+            legal_basis: wet_bijdrage#1 lid 1
+        parameters:
+          - name: datum_ontvangst
+            type: date
+        output:
+          - name: ontvangen
+            type: boolean
+        actions:
+          - output: ontvangen
+            value: true

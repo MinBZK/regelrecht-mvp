@@ -885,6 +885,10 @@ pub enum LawReferenceKind {
     /// An input field resolved from another law's output
     /// (`source: {regulation: …, output: …}`).
     SourceRegulation,
+    /// An input field that calls the decision of an article of another law
+    /// (`source: {article: "<regulation>#<article>"}`, schema v0.8.4). Only a
+    /// fixed target: a `$`-target names its article at run time.
+    SourceArticle,
     /// The IoC link from a lower regulation to the higher law whose
     /// `open_term` it fills (`machine_readable.implements[].law`).
     Implements,
@@ -898,7 +902,8 @@ pub struct LawReference {
 }
 
 /// Collect every other law `$id` this body points at: the `source.regulation`
-/// targets of its input fields plus its `implements` declarations. Each
+/// targets of its input fields, the regulation of a fixed `source.article`
+/// target, plus its `implements` declarations. Each
 /// `(kind, id)` pair appears at most once; order of first occurrence is kept.
 ///
 /// Deliberately a **structural walk** over the parsed document rather than a
@@ -947,6 +952,16 @@ fn walk_law_references(
                     Some("source") => {
                         if let Some(id) = child.get("regulation").and_then(|v| v.as_str()) {
                             push_law_reference(LawReferenceKind::SourceRegulation, id, seen, out);
+                        }
+                        // `source: {article: "other_law#3"}`; a `$`-target is
+                        // known only at run time.
+                        if let Some((id, _)) = child
+                            .get("article")
+                            .and_then(|v| v.as_str())
+                            .filter(|target| !target.starts_with('$'))
+                            .and_then(|target| target.split_once('#'))
+                        {
+                            push_law_reference(LawReferenceKind::SourceArticle, id, seen, out);
                         }
                     }
                     // `implements: [{law: "higher_law", …}]`
@@ -1728,6 +1743,33 @@ articles:
                     kind: LawReferenceKind::SourceRegulation,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn test_collect_law_references_picks_up_a_fixed_article_target() {
+        let yaml = "\
+$id: wet_a
+articles:
+  - number: '1'
+    machine_readable:
+      execution:
+        input:
+          - name: vast
+            type: decision
+            source:
+              article: wet_b#3
+          - name: uit_data
+            type: decision
+            source:
+              article: $besluit.grondslag
+";
+        assert_eq!(
+            collect_law_references(yaml),
+            vec![LawReference {
+                law_id: "wet_b".to_string(),
+                kind: LawReferenceKind::SourceArticle,
+            }]
         );
     }
 

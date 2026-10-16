@@ -18,6 +18,9 @@ corpus/
 │       │       └── scenarios/            # BDD scenarios validating this law
 │       ├── ministeriele_regeling/        # Ministerial regulations
 │       └── gemeentelijke_verordening/    # Municipal ordinances
+├── cells/
+│   └── <cell>/reducties/<id>/            # A cell's reductions (REDUCTIE, RFC-048):
+│       └── <valid_from>.yaml             # no regulation, loaded only by the cell
 ├── annotations/
 │   ├── <law_id>/annotations.yaml         # Note sidecars (RFC-018)
 │   └── _vocabulary/                      # Shared ambiguity tag vocabulary

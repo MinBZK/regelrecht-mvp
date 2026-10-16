@@ -1,0 +1,170 @@
+---
+/*
+ * The page shell every research paper shares: title header, a sidebar with
+ * where to get the paper, where to discuss it and the outline, and the
+ * generated paper body. The page around it supplies the byline (default slot),
+ * which differs per paper, and optionally a "since" note (slot "note") that
+ * records where the site has moved past a frozen paper.
+ *
+ * The paper body is generated from the paper's LaTeX source by a converter
+ * that lives next to that source; see the page for which one. Papers are
+ * frozen (AGENTS.md, "Published papers are frozen"), so nothing here edits
+ * the body.
+ */
+import DocsOutline from '~/components/DocsOutline.astro';
+import '~/styles/research.css';
+
+interface Props {
+  title: string;
+  subtitle: string;
+  /**
+   * Where the typeset paper is, and what the button says about it. Left out
+   * while there is no published PDF to point at.
+   */
+  pdfHref?: string;
+  pdfLabel?: string;
+  /** True when pdfHref leaves the site. */
+  pdfExternal?: boolean;
+  headings: { depth: number; slug: string; text: string }[];
+  html: string;
+  /**
+   * Phrases that keep another paper's issues out of this paper's discussion
+   * list, for a title that occurs inside another paper's title.
+   */
+  discussionExclude?: string[];
+  /**
+   * Pages of the site that belong with the paper, such as a plain-language
+   * explanation. They are the site's text, not the authors', and sit between
+   * the PDF and the discussion button.
+   */
+  companions?: { href: string; text: string; icon?: string; lang?: string }[];
+}
+
+const {
+  title,
+  subtitle,
+  pdfHref,
+  pdfLabel,
+  pdfExternal = false,
+  headings,
+  html,
+  discussionExclude = [],
+  companions = [],
+} = Astro.props;
+
+// Every issue the "Discuss this passage" button (Base.astro) opens carries the
+// contribution:paper label from the issue form, and names the paper in its
+// Paper field. The label alone would list feedback on every paper; the quoted
+// title narrows it to this one, and also catches issues filed by hand from the
+// issue chooser as long as the paper is named. Open and closed both show:
+// a closed thread is still part of the discussion of a frozen paper. A title
+// can occur inside another paper's title ("Rules as Executed" does), and
+// discussionExclude keeps that paper's issues out.
+const excluded = discussionExclude.map((phrase) => ` -"${phrase}"`).join('');
+const discussionUrl =
+  'https://github.com/NederlandseDigitaleDienst/regelrecht/issues?q=' +
+  encodeURIComponent(
+    `is:issue label:contribution:paper "${title}"${excluded} sort:updated-desc`
+  );
+---
+
+<nldd-sidebar-section
+  no-collapse
+  sidebar-label="On this page"
+  sm-padding-bottom="32"
+  md-padding-bottom="64"
+  lg-padding-bottom="96"
+>
+  <nldd-title slot="header" size="1">
+    <h1>{title}</h1>
+    <p slot="supporting-text">{subtitle}</p>
+  </nldd-title>
+  {/*
+    The sidebar carries what belongs to the paper as a whole: where to get it,
+    where to discuss it, and where you are in it.
+  */}
+  <nldd-container slot="sidebar" padding="16">
+    <nldd-button-group orientation="vertical">
+      {
+        !pdfHref ? null : pdfExternal ? (
+          <nldd-button
+            href={pdfHref}
+            text={pdfLabel}
+            end-icon="external-link"
+            target="_blank"
+            rel="noopener"
+            appearance="secondary"
+          />
+        ) : (
+          <nldd-button
+            href={pdfHref}
+            text={pdfLabel}
+            start-icon="download"
+            appearance="secondary"
+          />
+        )
+      }
+      {
+        companions.map((c) => (
+          <nldd-button
+            href={c.href}
+            text={c.text}
+            start-icon={c.icon}
+            lang={c.lang}
+            appearance="secondary"
+          />
+        ))
+      }
+    </nldd-button-group>
+    {/*
+     * A group of its own: nldd-button-group shows at most three buttons and
+     * hides the rest. Last, so the hint below about selecting a passage sits
+     * under it; the spacer matches the gap inside a group.
+     */}
+    <nldd-spacer size="8" />
+    <nldd-button-group orientation="vertical">
+      <nldd-button
+        href={discussionUrl}
+        text="Discussion on GitHub"
+        start-icon="comment"
+        target="_blank"
+        rel="noopener"
+        appearance="secondary"
+      ></nldd-button>
+    </nldd-button-group>
+    <nldd-spacer size="8" />
+    {/*
+     * The selection affordance (Base.astro) is invisible until text is
+     * selected, so nothing on the page says it exists; this line does.
+     */}
+    <nldd-text size="sm" color="secondary">
+      Select a passage in the paper to start a discussion about it.
+    </nldd-text>
+    <nldd-spacer size="12" />
+    <DocsOutline headings={headings} />
+  </nldd-container>
+  <nldd-rich-text centered>
+    <slot />
+  </nldd-rich-text>
+  <nldd-spacer size="24" />
+  {
+    Astro.slots.has('note') && (
+      <Fragment>
+        <slot name="note" />
+        <nldd-spacer size="24" />
+      </Fragment>
+    )
+  }
+  {/*
+   * The paper body is a rich-text of its own, so it carries the whole of the
+   * paper and nothing else: data-discuss-paper turns on the selection
+   * affordance in Base.astro, where selecting text offers "Discuss this
+   * passage" and the value names the paper in the issue title. A selection in
+   * the byline above (authors, affiliations, DOI) does not offer it. Its
+   * headings, paragraphs and figures are children of that grid, so the rhythm
+   * and the column each one belongs in come from the design system.
+   */}
+  <nldd-rich-text centered data-discuss-paper={title}>
+    <Fragment set:html={html} />
+  </nldd-rich-text>
+</nldd-sidebar-section>

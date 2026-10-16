@@ -58,6 +58,35 @@ pub enum OutputProvenance {
     },
 }
 
+/// Who filled an open term in an execution: a finding of the authority
+/// that decides it per case, or a regulation that implements it (RFC-050).
+/// A consumer reads here which of the two the outcome rests on, instead of
+/// guessing from the value: a regulation can give what the authority found.
+/// Serialized as `"finding"` or as `{"regulation": {"law_id", "article"}}`,
+/// so the regulation's article does not collide with the declaring one.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FilledBy {
+    /// A finding for this case (`decided_per_case_by`), given by the caller
+    /// or with a decision value called anew.
+    Finding,
+    /// An article of a regulation that implements the term (`implements`).
+    Regulation { law_id: String, article: String },
+}
+
+/// One open term of one article that was filled in an execution, and by
+/// whom. A term filled by its default, or left null, is not listed.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct OpenTermFilled {
+    /// The law and article that declare the term, so a term of an article
+    /// called by the executed one is told apart from one of its own.
+    pub law_id: String,
+    pub article: String,
+    /// The id of the open term.
+    pub term: String,
+    pub filled_by: FilledBy,
+}
+
 /// Result of article execution
 #[derive(Debug, Clone)]
 pub struct ArticleResult {
@@ -97,6 +126,12 @@ pub struct ArticleResult {
     /// by the service layer, independently of tracing, so the skip reaches the
     /// receipt.
     pub declarations_not_in_force: Vec<DeclarationNotInForce>,
+    /// The open terms a finding or a regulation filled during this
+    /// execution, in the order they were resolved, nested calls included.
+    /// Populated by the service layer, independently of tracing. A term can
+    /// be listed twice, once per filler: an implementing article that reads
+    /// the output it fills in reads it with the finding in its place.
+    pub open_terms: Vec<OpenTermFilled>,
 }
 
 /// Executes a single article's machine_readable.execution section.
@@ -323,6 +358,7 @@ impl<'a> ArticleEngine<'a> {
             delegation_refusals: Vec::new(),
             declaration_version_notes: Vec::new(),
             declarations_not_in_force: Vec::new(),
+            open_terms: Vec::new(),
         };
 
         tracing::debug!(
@@ -340,7 +376,7 @@ impl<'a> ArticleEngine<'a> {
     /// Reference resolution is owned by [`crate::LawExecutionService`], which
     /// resolves inputs (data sources, cross-law and cross-article references)
     /// and passes the values in via `parameters`. This single-article engine
-    /// only checks that a `source.regulation` input it cannot resolve itself is
+    /// only checks that a `source.regulation` or `source.article` input it cannot resolve itself is
     /// already present; internal (`source.output`) and empty (`source: {}`)
     /// inputs are left untouched — they are either already in `parameters` or
     /// stay unresolved (a consuming action then surfaces a `VariableNotFound`).
@@ -363,6 +399,28 @@ impl<'a> ArticleEngine<'a> {
                         regulation: regulation.clone(),
                         output: source.output.clone().unwrap_or_default(),
                     });
+                }
+            }
+            // A call to an article (RFC-050) runs another article, which
+            // only the service can do.
+            if let Some(target) = &source.article {
+                if !parameters.contains_key(&input.name) {
+                    return Err(EngineError::ExternalReferenceNotResolved {
+                        input_name: input.name.clone(),
+                        regulation: target.clone(),
+                        output: source.output.clone().unwrap_or_default(),
+                    });
+                }
+            }
+            // The decisions taken under an article come from a data source
+            // only (RFC-048); this engine has none, so they must be passed.
+            if let Some(decisions) = &source.decisions {
+                if !parameters.contains_key(&input.name) {
+                    return Err(EngineError::DataSourceError(format!(
+                        "input '{}' reads the decisions taken under {decisions}, and no data \
+                         source supplies them",
+                        input.name
+                    )));
                 }
             }
             // Internal (`source.output`) and empty (`source: {}`) inputs need no
@@ -1357,6 +1415,95 @@ articles:
             assert_eq!(regulation, "other_law");
             assert_eq!(output, "some_output");
         }
+    }
+
+    #[test]
+    fn test_article_call_needs_the_service_unless_passed() {
+        // A call to an article (RFC-050) runs another article: this engine
+        // cannot, so the input must be passed.
+        let yaml = r#"
+$id: article_call_law
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Article calling another article
+    machine_readable:
+      execution:
+        input:
+          - name: verleend
+            type: boolean
+            source:
+              article: other_law#1
+              output: toegekend
+        output:
+          - name: result
+            type: boolean
+        actions:
+          - output: result
+            value: $verleend
+"#;
+        let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+        let article = law.find_article_by_number("1").unwrap();
+        let engine = ArticleEngine::new(article, &law);
+
+        match engine.evaluate(BTreeMap::new(), "2025-01-01") {
+            Err(EngineError::ExternalReferenceNotResolved {
+                input_name,
+                regulation,
+                output,
+            }) => {
+                assert_eq!(input_name, "verleend");
+                assert_eq!(regulation, "other_law#1");
+                assert_eq!(output, "toegekend");
+            }
+            other => panic!("Expected ExternalReferenceNotResolved, got: {other:?}"),
+        }
+
+        let passed = BTreeMap::from([("verleend".to_string(), Value::Bool(true))]);
+        let result = engine.evaluate(passed, "2025-01-01").unwrap();
+        assert_eq!(result.outputs.get("result"), Some(&Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_decisions_come_from_parameters_only() {
+        // This engine has no data source: decisions passed in are read,
+        // decisions not passed are an error (RFC-048).
+        let yaml = r#"
+$id: reductie_test
+regulatory_layer: REDUCTIE
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Reduction over the decisions under an article
+    machine_readable:
+      execution:
+        input:
+          - name: besluiten
+            type: array
+            source:
+              decisions: andere_wet#1
+        output:
+          - name: besluiten_terug
+            type: array
+        actions:
+          - output: besluiten_terug
+            value: $besluiten
+"#;
+        let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
+        let article = law.find_article_by_number("1").unwrap();
+        let engine = ArticleEngine::new(article, &law);
+
+        let missing = engine.evaluate(BTreeMap::new(), "2025-01-01");
+        assert!(
+            matches!(&missing, Err(EngineError::DataSourceError(m)) if m.contains("andere_wet#1")),
+            "{missing:?}"
+        );
+
+        let rows = Value::Array(vec![Value::Int(1)]);
+        let params = BTreeMap::from([("besluiten".to_string(), rows.clone())]);
+        let result = engine.evaluate(params, "2025-01-01").unwrap();
+        assert_eq!(result.outputs.get("besluiten_terug"), Some(&rows));
     }
 
     fn get_regulation_path() -> std::path::PathBuf {

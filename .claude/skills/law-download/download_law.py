@@ -42,7 +42,7 @@ def schema_url():
         if link.is_symlink():
             version = Path(link.readlink()).name
             return (
-                "https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/"
+                "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/"
                 f"schema-{version}/schema/{version}/schema.json"
             )
     raise FileNotFoundError(

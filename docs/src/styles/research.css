@@ -1,9 +1,9 @@
 /*
  * Research paper pages (/research/…): styles for the pandoc-converted paper
  * body that nldd-rich-text does not cover — figure/table captions, the
- * hand-built comparison table (its two-row grouped header cannot be expressed
- * in markdown), the paper figure, footnotes and the citeproc bibliography.
- * Imported by the paper page only, not globally.
+ * hand-built tables (a grouped header or a row-group label cannot be expressed
+ * in markdown), the paper figures, footnotes and the citeproc bibliography.
+ * Imported by ResearchPaper.astro only, not globally.
  */
 
 /* The paper and every block in it must be allowed to shrink below its content
@@ -18,6 +18,10 @@
    the link lands on the content, not on the caption below it. */
 [data-discuss-paper] figure {
   margin: 0 0 var(--primitives-space-16);
+  /* rich-text centers a figure in its column and sizes it to its content, so
+     a wide table made the figure, and with it the page, as wide as the table;
+     capped, the table scrolls inside its own box. */
+  max-width: 100%;
 }
 [data-discuss-paper] figure img {
   display: block;
@@ -54,9 +58,47 @@
   border-top: 1px solid currentColor;
 }
 
+/* Results tables built by the converter from the paper's tabular: booktabs
+   rules as in print, a light rule between row groups, and the numbers
+   centered under their column heads. A row-group label sits at the top of its
+   group, where print puts it. */
+[data-discuss-paper] table.rr-booktabs {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+[data-discuss-paper] table.rr-booktabs th,
+[data-discuss-paper] table.rr-booktabs td {
+  padding: var(--primitives-space-4) var(--primitives-space-8);
+  text-align: left;
+  vertical-align: top;
+}
+[data-discuss-paper] table.rr-booktabs thead th:nth-child(n + 3),
+[data-discuss-paper] table.rr-booktabs tbody td {
+  text-align: center;
+  white-space: nowrap;
+}
+/* A table without column heads has prose in its cells (Table 3). */
+[data-discuss-paper] table.rr-booktabs:not(:has(thead)) td {
+  text-align: left;
+  white-space: normal;
+}
+[data-discuss-paper] table.rr-booktabs thead,
+[data-discuss-paper] table.rr-booktabs tbody + tbody {
+  border-top: 1px solid currentColor;
+}
+[data-discuss-paper] table.rr-booktabs thead {
+  border-bottom: 1px solid currentColor;
+}
+[data-discuss-paper] .rr-table-note {
+  font-size: 0.875rem;
+}
+
 /* The dependency-graph figure is drawn for a white page; give it a white
    plate so it stays readable in dark mode. */
 [data-discuss-paper] img {
+  box-sizing: border-box;
   max-width: 100%;
   height: auto;
   background: #fff;
@@ -75,4 +117,21 @@
   /* A bare URL in a reference has nothing to break on and runs out of the
      column; rich-text's own safety net covers paragraphs, not these divs. */
   overflow-wrap: anywhere;
+}
+/* The site's own pointer under a cited paper it also renders: a line of its
+   own, smaller than the reference, so it does not read as part of it. */
+[data-discuss-paper] .csl-bib-body .rr-site-copy {
+  display: block;
+  width: fit-content;
+  margin-top: var(--primitives-space-4);
+  font-size: 0.875rem;
+}
+/* A numbered style (Vancouver) puts the number and the entry in two divs;
+   set them side by side, the number in its own column, instead of the
+   author-date hanging indent above. */
+[data-discuss-paper] .csl-bib-body .csl-entry:has(> .csl-left-margin) {
+  display: grid;
+  grid-template-columns: 3em 1fr;
+  padding-left: 0;
+  text-indent: 0;
 }

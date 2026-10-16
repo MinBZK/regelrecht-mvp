@@ -298,7 +298,7 @@ Counting, which is what article 22a Participatiewet does:
 ```yaml
 operation: FOREACH
 collection: $medebewoners          # expression evaluating to an array
-as: medebewoner                    # names the element; defaults to "item"
+as: medebewoner                    # names the element; without `as` the element is `item` and its fields are also bound under their own names
 body: 1                            # evaluated once per element
 combine: ADD                       # optional: ADD | OR | AND | MIN | MAX
 ```
@@ -315,7 +315,10 @@ echtgenoot. A filter must also carry every condition the law states, not the one
 that is easiest to express, and any per-element arithmetic the law applies
 belongs in `body`.
 
-`as` is bound only inside `filter` and `body`. In a nested FOREACH the inner
+`as` is bound only inside `filter` and `body`. With `as`, read a field as
+`$medebewoner.leeftijd`: a bare `$leeftijd` is the variable outside the loop,
+not the field (RFC-049). An explicit `as: item` counts as `as`: read its fields
+as `$item.<field>`. In a nested FOREACH the inner
 `collection` can read the outer binding; the inner `body` cannot. Empty
 collections give `0` for ADD, `false` for OR, `true` for AND, and `null` for
 MIN/MAX. See [Collections](../../../docs/src/content/docs/concepts/collections.md).

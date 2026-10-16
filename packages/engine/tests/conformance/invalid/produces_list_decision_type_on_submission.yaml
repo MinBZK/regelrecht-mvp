@@ -1,0 +1,28 @@
+---
+# A submission is no decision and has no decision_type (schema v0.8.1).
+$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
+$id: test_conformance_produces_list_decision_type_on_submission
+regulatory_layer: WET
+bwb_id: BWBR9999905
+publication_date: '2026-10-14'
+valid_from: '2026-10-14'
+url: https://example.invalid/law
+articles:
+  - number: '1'
+    text: Het hoofd verleent op aanvraag verlof.
+    url: https://example.invalid/law/artikel/1
+    machine_readable:
+      execution:
+        produces:
+          - type: AANVRAAG
+            decision_type: TOEKENNING
+          - type: BESCHIKKING
+        parameters:
+          - name: dagen
+            type: number
+        output:
+          - name: verlof_verleend
+            type: boolean
+        actions:
+          - output: verlof_verleend
+            value: true

@@ -1,0 +1,31 @@
+---
+# parameters_from lists $-references (schema v0.8.4, RFC-050).
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$id: test_conformance_parameters_from_not_a_reference
+regulatory_layer: WET
+publication_date: '2026-10-15'
+valid_from: '2026-10-15'
+bwb_id: BWBR0099994
+url: https://example.invalid/article-call
+articles:
+  - number: '1'
+    text: Een aanroep van een artikel.
+    url: https://example.invalid/article-call/1
+    machine_readable:
+      execution:
+        parameters:
+          - name: besluit
+            type: decision
+        input:
+          - name: heroverweging
+            type: decision
+            source:
+              article: $besluit.grondslag
+              parameters_from:
+                - besluit.fields
+        output:
+          - name: klaar
+            type: boolean
+        actions:
+          - output: klaar
+            value: true

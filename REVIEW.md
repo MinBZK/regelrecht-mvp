@@ -40,7 +40,7 @@ When `machine_readable` sections are added or changed:
   `publication_date`, `url`, `articles`)? `$schema` is not required by the schema
   itself, but a corpus file without it is rejected downstream
   (`packages/pipeline/src/law_convert.rs`), and RFC-013 requires an immutable tag URL:
-  `https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json`.
+  `https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-vX.Y.Z/schema/vX.Y.Z/schema.json`.
 - Are operation names valid? The schema is the list and `just validate` decides.
   Rounding deserves its own look: the schema requires it to be explicit
   (`ROUND`/`CEIL`/`FLOOR` with a `precision`), so an implicitly rounded amount is a finding.
