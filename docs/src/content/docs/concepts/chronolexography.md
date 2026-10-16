@@ -36,7 +36,7 @@ A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). Th
 
 `decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
-**Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew. On revocation it gives the new decision, and the cell records that in the same append.
+**Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew. On revocation 7:11 gives the new decision, and the cell records that in the same append.
 
 Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. The cell connects the parts by name and keeps the record. The engine only executes.
 
