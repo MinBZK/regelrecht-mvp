@@ -1,4 +1,4 @@
-<!-- Generated from rule-execution-citizen-explanation.tex (jurix2026-rules-as-executed-citizen-explanation @ a68145d) by convert-html.py with pandoc 3.7.0.2. Do not edit; run `just html` in the paper repository. -->
+<!-- Generated from rule-execution-citizen-explanation.tex (jurix2026-rules-as-executed-citizen-explanation @ b5d4fed) by convert-html.py with pandoc 3.7.0.2. Do not edit; run `just html` in the paper repository. -->
 <h2 class="unnumbered" id="abstract">Abstract</h2>
 <p>Governments increasingly use automated decision-making systems to apply legislation in domains such as social benefits, taxation, and licensing. While Rules as Code (RaC) approaches enable legally consistent and transparent decision-making through executable legislation, they do not automatically generate explanations that are understandable for citizens. Large language models (LLMs) can support natural-language explanation generation, but may hallucinate facts or exclude legally relevant information. This paper investigates how Graph-based LLM architectures can generate citizen-focused explanations from deterministic rule-engine traces. A rule engine evaluates synthetic citizen profiles against formalised Dutch legislation and produces execution traces, which are transformed into structured decision representations for explanation generation. The approach is evaluated using automated metrics and human annotation. Results show that explicitly exposing decisive legal conditions improves faithfulness, and that the full Graph configuration, which combines a structured decision graph with a constrained prompt, further improves alignment with the rule-execution trace. Human evaluation shows that explanations perceived as understandable by citizens are not always considered legally correct by experts. The findings suggest that structured representations of deterministic legal reasoning can support legally faithful and citizen-focused explanations of automated government decisions. The source code is published.</p>
 <h2 id="introduction">1 Introduction</h2>
@@ -46,30 +46,30 @@
 <figure id="tab:results-model">
 <figcaption class="rr-caption" id="tab:results-model-caption"><strong>Table 1:</strong> Faithfulness, readability (FRE), and contestability by prompting approach and model (mean ± SD across three laws). Highest mean per approach/metric in bold.</figcaption>
 <div class="rr-table-scroll"><table class="rr-booktabs" aria-labelledby="tab:results-model-caption">
-<thead><tr><th scope="col">Approach</th><th scope="col">Model</th><th scope="col">Faithfulness</th><th scope="col">FRE</th><th scope="col">Contestability</th></tr></thead>
+<thead><tr><th id="t1-c0" scope="col">Approach</th><th id="t1-c1" scope="col">Model</th><th id="t1-c2" scope="col">Faithfulness</th><th id="t1-c3" scope="col">FRE</th><th id="t1-c4" scope="col">Contestability</th></tr></thead>
 <tbody>
-<tr><th scope="rowgroup" rowspan="6">Open</th><th scope="row">DeepSeek-R1:8b</th><td><strong>0.66±0.18</strong></td><td>52.2±3.0</td><td><strong>0.42±0.01</strong></td></tr>
-<tr><th scope="row">Claude Haiku</th><td>0.59±0.26</td><td>61.1±1.1</td><td>0.33±0.01</td></tr>
-<tr><th scope="row">GPT-4o</th><td>0.59±0.29</td><td>61.5±0.9</td><td>0.32±0.02</td></tr>
-<tr><th scope="row">Llama3.1:8b</th><td>0.52±0.38</td><td>65.4±2.1</td><td>0.33±0.00</td></tr>
-<tr><th scope="row">Mistral:7b</th><td>0.50±0.40</td><td>49.2±5.5</td><td>0.34±0.00</td></tr>
-<tr><th scope="row">Llama3.1:70b</th><td>0.60±0.33</td><td><strong>70.0±6.0</strong></td><td>0.36±0.17</td></tr>
+<tr><th id="t1-g0" scope="rowgroup" rowspan="6" headers="t1-c0">Open</th><th id="t1-g0-r0" scope="row" headers="t1-c1 t1-g0">DeepSeek-R1:8b</th><td headers="t1-c2 t1-g0 t1-g0-r0"><strong>0.66±0.18</strong></td><td headers="t1-c3 t1-g0 t1-g0-r0">52.2±3.0</td><td headers="t1-c4 t1-g0 t1-g0-r0"><strong>0.42±0.01</strong></td></tr>
+<tr><th id="t1-g0-r1" scope="row" headers="t1-c1 t1-g0">Claude Haiku</th><td headers="t1-c2 t1-g0 t1-g0-r1">0.59±0.26</td><td headers="t1-c3 t1-g0 t1-g0-r1">61.1±1.1</td><td headers="t1-c4 t1-g0 t1-g0-r1">0.33±0.01</td></tr>
+<tr><th id="t1-g0-r2" scope="row" headers="t1-c1 t1-g0">GPT-4o</th><td headers="t1-c2 t1-g0 t1-g0-r2">0.59±0.29</td><td headers="t1-c3 t1-g0 t1-g0-r2">61.5±0.9</td><td headers="t1-c4 t1-g0 t1-g0-r2">0.32±0.02</td></tr>
+<tr><th id="t1-g0-r3" scope="row" headers="t1-c1 t1-g0">Llama3.1:8b</th><td headers="t1-c2 t1-g0 t1-g0-r3">0.52±0.38</td><td headers="t1-c3 t1-g0 t1-g0-r3">65.4±2.1</td><td headers="t1-c4 t1-g0 t1-g0-r3">0.33±0.00</td></tr>
+<tr><th id="t1-g0-r4" scope="row" headers="t1-c1 t1-g0">Mistral:7b</th><td headers="t1-c2 t1-g0 t1-g0-r4">0.50±0.40</td><td headers="t1-c3 t1-g0 t1-g0-r4">49.2±5.5</td><td headers="t1-c4 t1-g0 t1-g0-r4">0.34±0.00</td></tr>
+<tr><th id="t1-g0-r5" scope="row" headers="t1-c1 t1-g0">Llama3.1:70b</th><td headers="t1-c2 t1-g0 t1-g0-r5">0.60±0.33</td><td headers="t1-c3 t1-g0 t1-g0-r5"><strong>70.0±6.0</strong></td><td headers="t1-c4 t1-g0 t1-g0-r5">0.36±0.17</td></tr>
 </tbody>
 <tbody>
-<tr><th scope="rowgroup" rowspan="6">Flat</th><th scope="row">DeepSeek-R1:8b</th><td>0.74±0.17</td><td>54.6±4.4</td><td>0.34±0.03</td></tr>
-<tr><th scope="row">Claude Haiku</th><td><strong>0.91±0.06</strong></td><td>58.9±4.9</td><td>0.26±0.01</td></tr>
-<tr><th scope="row">GPT-4o</th><td>0.85±0.21</td><td>60.4±3.3</td><td>0.33±0.01</td></tr>
-<tr><th scope="row">Llama3.1:8b</th><td>0.73±0.30</td><td>62.3±4.1</td><td>0.34±0.01</td></tr>
-<tr><th scope="row">Mistral:7b</th><td>0.78±0.30</td><td>42.1±9.0</td><td>0.34±0.00</td></tr>
-<tr><th scope="row">Llama3.1:70b</th><td>0.82±0.28</td><td><strong>65.8±6.8</strong></td><td><strong>0.36±0.12</strong></td></tr>
+<tr><th id="t1-g1" scope="rowgroup" rowspan="6" headers="t1-c0">Flat</th><th id="t1-g1-r0" scope="row" headers="t1-c1 t1-g1">DeepSeek-R1:8b</th><td headers="t1-c2 t1-g1 t1-g1-r0">0.74±0.17</td><td headers="t1-c3 t1-g1 t1-g1-r0">54.6±4.4</td><td headers="t1-c4 t1-g1 t1-g1-r0">0.34±0.03</td></tr>
+<tr><th id="t1-g1-r1" scope="row" headers="t1-c1 t1-g1">Claude Haiku</th><td headers="t1-c2 t1-g1 t1-g1-r1"><strong>0.91±0.06</strong></td><td headers="t1-c3 t1-g1 t1-g1-r1">58.9±4.9</td><td headers="t1-c4 t1-g1 t1-g1-r1">0.26±0.01</td></tr>
+<tr><th id="t1-g1-r2" scope="row" headers="t1-c1 t1-g1">GPT-4o</th><td headers="t1-c2 t1-g1 t1-g1-r2">0.85±0.21</td><td headers="t1-c3 t1-g1 t1-g1-r2">60.4±3.3</td><td headers="t1-c4 t1-g1 t1-g1-r2">0.33±0.01</td></tr>
+<tr><th id="t1-g1-r3" scope="row" headers="t1-c1 t1-g1">Llama3.1:8b</th><td headers="t1-c2 t1-g1 t1-g1-r3">0.73±0.30</td><td headers="t1-c3 t1-g1 t1-g1-r3">62.3±4.1</td><td headers="t1-c4 t1-g1 t1-g1-r3">0.34±0.01</td></tr>
+<tr><th id="t1-g1-r4" scope="row" headers="t1-c1 t1-g1">Mistral:7b</th><td headers="t1-c2 t1-g1 t1-g1-r4">0.78±0.30</td><td headers="t1-c3 t1-g1 t1-g1-r4">42.1±9.0</td><td headers="t1-c4 t1-g1 t1-g1-r4">0.34±0.00</td></tr>
+<tr><th id="t1-g1-r5" scope="row" headers="t1-c1 t1-g1">Llama3.1:70b</th><td headers="t1-c2 t1-g1 t1-g1-r5">0.82±0.28</td><td headers="t1-c3 t1-g1 t1-g1-r5"><strong>65.8±6.8</strong></td><td headers="t1-c4 t1-g1 t1-g1-r5"><strong>0.36±0.12</strong></td></tr>
 </tbody>
 <tbody>
-<tr><th scope="rowgroup" rowspan="6">Graph</th><th scope="row">DeepSeek-R1:8b</th><td>0.78±0.15</td><td>53.6±10.5</td><td>0.19±0.08</td></tr>
-<tr><th scope="row">Claude Haiku</th><td><strong>0.96±0.06</strong></td><td>49.1±8.5</td><td>0.28±0.06</td></tr>
-<tr><th scope="row">GPT-4o</th><td><strong>0.96±0.05</strong></td><td>53.4±11.5</td><td>0.20±0.14</td></tr>
-<tr><th scope="row">Llama3.1:8b</th><td>0.95±0.03</td><td><strong>54.5±13.7</strong></td><td>0.16±0.14</td></tr>
-<tr><th scope="row">Mistral:7b</th><td><strong>0.96±0.05</strong></td><td>44.6±10.1</td><td><strong>0.36±0.02</strong></td></tr>
-<tr><th scope="row">Llama3.1:70b</th><td>0.87±0.22</td><td>50.2±14.3</td><td>0.17±0.17</td></tr>
+<tr><th id="t1-g2" scope="rowgroup" rowspan="6" headers="t1-c0">Graph</th><th id="t1-g2-r0" scope="row" headers="t1-c1 t1-g2">DeepSeek-R1:8b</th><td headers="t1-c2 t1-g2 t1-g2-r0">0.78±0.15</td><td headers="t1-c3 t1-g2 t1-g2-r0">53.6±10.5</td><td headers="t1-c4 t1-g2 t1-g2-r0">0.19±0.08</td></tr>
+<tr><th id="t1-g2-r1" scope="row" headers="t1-c1 t1-g2">Claude Haiku</th><td headers="t1-c2 t1-g2 t1-g2-r1"><strong>0.96±0.06</strong></td><td headers="t1-c3 t1-g2 t1-g2-r1">49.1±8.5</td><td headers="t1-c4 t1-g2 t1-g2-r1">0.28±0.06</td></tr>
+<tr><th id="t1-g2-r2" scope="row" headers="t1-c1 t1-g2">GPT-4o</th><td headers="t1-c2 t1-g2 t1-g2-r2"><strong>0.96±0.05</strong></td><td headers="t1-c3 t1-g2 t1-g2-r2">53.4±11.5</td><td headers="t1-c4 t1-g2 t1-g2-r2">0.20±0.14</td></tr>
+<tr><th id="t1-g2-r3" scope="row" headers="t1-c1 t1-g2">Llama3.1:8b</th><td headers="t1-c2 t1-g2 t1-g2-r3">0.95±0.03</td><td headers="t1-c3 t1-g2 t1-g2-r3"><strong>54.5±13.7</strong></td><td headers="t1-c4 t1-g2 t1-g2-r3">0.16±0.14</td></tr>
+<tr><th id="t1-g2-r4" scope="row" headers="t1-c1 t1-g2">Mistral:7b</th><td headers="t1-c2 t1-g2 t1-g2-r4"><strong>0.96±0.05</strong></td><td headers="t1-c3 t1-g2 t1-g2-r4">44.6±10.1</td><td headers="t1-c4 t1-g2 t1-g2-r4"><strong>0.36±0.02</strong></td></tr>
+<tr><th id="t1-g2-r5" scope="row" headers="t1-c1 t1-g2">Llama3.1:70b</th><td headers="t1-c2 t1-g2 t1-g2-r5">0.87±0.22</td><td headers="t1-c3 t1-g2 t1-g2-r5">50.2±14.3</td><td headers="t1-c4 t1-g2 t1-g2-r5">0.17±0.17</td></tr>
 </tbody>
 </table></div>
 </figure>
@@ -77,24 +77,24 @@
 <figure id="tab:results-law">
 <figcaption class="rr-caption" id="tab:results-law-caption"><strong>Table 2:</strong> Faithfulness, ROC AUC, readability, and contestability per law and approach (mean ± SD across GPT-4o, Claude Haiku, Llama3.1:8b, and Mistral:7b). Highest mean per law/metric in bold.</figcaption>
 <div class="rr-table-scroll"><table class="rr-booktabs" aria-labelledby="tab:results-law-caption">
-<thead><tr><th scope="col">Law</th><th scope="col">Approach</th><th scope="col">Faithfulness</th><th scope="col">ROC AUC</th><th scope="col">FRE</th><th scope="col">Contestability</th></tr></thead>
+<thead><tr><th id="t2-c0" scope="col">Law</th><th id="t2-c1" scope="col">Approach</th><th id="t2-c2" scope="col">Faithfulness</th><th id="t2-c3" scope="col">ROC AUC</th><th id="t2-c4" scope="col">FRE</th><th id="t2-c5" scope="col">Contestability</th></tr></thead>
 <tbody>
-<tr><th scope="rowgroup" rowspan="3">Alcohol</th><th scope="row">Open</th><td>0.97±0.02</td><td>0.15±0.21</td><td>56.8±7.9</td><td><strong>0.33±0.00</strong></td></tr>
-<tr><th scope="row">Flat</th><td><strong>1.00±0.00</strong></td><td><strong>0.22±0.09</strong></td><td><strong>58.2±7.2</strong></td><td>0.32±0.03</td></tr>
-<tr><th scope="row">Graph</th><td><strong>1.00±0.00</strong></td><td>–<sup>a</sup></td><td>36.9±2.0</td><td>0.21±0.10</td></tr>
+<tr><th id="t2-g0" scope="rowgroup" rowspan="3" headers="t2-c0">Alcohol</th><th id="t2-g0-r0" scope="row" headers="t2-c1 t2-g0">Open</th><td headers="t2-c2 t2-g0 t2-g0-r0">0.97±0.02</td><td headers="t2-c3 t2-g0 t2-g0-r0">0.15±0.21</td><td headers="t2-c4 t2-g0 t2-g0-r0">56.8±7.9</td><td headers="t2-c5 t2-g0 t2-g0-r0"><strong>0.33±0.00</strong></td></tr>
+<tr><th id="t2-g0-r1" scope="row" headers="t2-c1 t2-g0">Flat</th><td headers="t2-c2 t2-g0 t2-g0-r1"><strong>1.00±0.00</strong></td><td headers="t2-c3 t2-g0 t2-g0-r1"><strong>0.22±0.09</strong></td><td headers="t2-c4 t2-g0 t2-g0-r1"><strong>58.2±7.2</strong></td><td headers="t2-c5 t2-g0 t2-g0-r1">0.32±0.03</td></tr>
+<tr><th id="t2-g0-r2" scope="row" headers="t2-c1 t2-g0">Graph</th><td headers="t2-c2 t2-g0 t2-g0-r2"><strong>1.00±0.00</strong></td><td headers="t2-c3 t2-g0 t2-g0-r2">–<sup>a</sup></td><td headers="t2-c4 t2-g0 t2-g0-r2">36.9±2.0</td><td headers="t2-c5 t2-g0 t2-g0-r2">0.21±0.10</td></tr>
 </tbody>
 <tbody>
-<tr><th scope="rowgroup" rowspan="3">Social Assistance</th><th scope="row">Open</th><td>0.50±0.01</td><td>0.07±0.03</td><td><strong>59.1±6.7</strong></td><td><strong>0.33±0.01</strong></td></tr>
-<tr><th scope="row">Flat</th><td>0.94±0.05</td><td>0.42±0.17</td><td>48.6±11.1</td><td>0.32±0.04</td></tr>
-<tr><th scope="row">Graph</th><td><strong>0.97±0.03</strong></td><td><strong>0.69±0.08</strong></td><td>52.1±8.6</td><td>0.18±0.15</td></tr>
+<tr><th id="t2-g1" scope="rowgroup" rowspan="3" headers="t2-c0">Social Assistance</th><th id="t2-g1-r0" scope="row" headers="t2-c1 t2-g1">Open</th><td headers="t2-c2 t2-g1 t2-g1-r0">0.50±0.01</td><td headers="t2-c3 t2-g1 t2-g1-r0">0.07±0.03</td><td headers="t2-c4 t2-g1 t2-g1-r0"><strong>59.1±6.7</strong></td><td headers="t2-c5 t2-g1 t2-g1-r0"><strong>0.33±0.01</strong></td></tr>
+<tr><th id="t2-g1-r1" scope="row" headers="t2-c1 t2-g1">Flat</th><td headers="t2-c2 t2-g1 t2-g1-r1">0.94±0.05</td><td headers="t2-c3 t2-g1 t2-g1-r1">0.42±0.17</td><td headers="t2-c4 t2-g1 t2-g1-r1">48.6±11.1</td><td headers="t2-c5 t2-g1 t2-g1-r1">0.32±0.04</td></tr>
+<tr><th id="t2-g1-r2" scope="row" headers="t2-c1 t2-g1">Graph</th><td headers="t2-c2 t2-g1 t2-g1-r2"><strong>0.97±0.03</strong></td><td headers="t2-c3 t2-g1 t2-g1-r2"><strong>0.69±0.08</strong></td><td headers="t2-c4 t2-g1 t2-g1-r2">52.1±8.6</td><td headers="t2-c5 t2-g1 t2-g1-r2">0.18±0.15</td></tr>
 </tbody>
 <tbody>
-<tr><th scope="rowgroup" rowspan="3">Health Care</th><th scope="row">Open</th><td>0.17±0.14</td><td>0.69±0.13</td><td>62.1±4.0</td><td>0.32±0.02</td></tr>
-<tr><th scope="row">Flat</th><td>0.52±0.22</td><td><strong>0.89±0.05</strong></td><td>61.0±6.0</td><td>0.31±0.04</td></tr>
-<tr><th scope="row">Graph</th><td><strong>0.89±0.02</strong></td><td>0.80±0.07</td><td><strong>62.1±3.8</strong></td><td><strong>0.35±0.02</strong></td></tr>
+<tr><th id="t2-g2" scope="rowgroup" rowspan="3" headers="t2-c0">Health Care</th><th id="t2-g2-r0" scope="row" headers="t2-c1 t2-g2">Open</th><td headers="t2-c2 t2-g2 t2-g2-r0">0.17±0.14</td><td headers="t2-c3 t2-g2 t2-g2-r0">0.69±0.13</td><td headers="t2-c4 t2-g2 t2-g2-r0">62.1±4.0</td><td headers="t2-c5 t2-g2 t2-g2-r0">0.32±0.02</td></tr>
+<tr><th id="t2-g2-r1" scope="row" headers="t2-c1 t2-g2">Flat</th><td headers="t2-c2 t2-g2 t2-g2-r1">0.52±0.22</td><td headers="t2-c3 t2-g2 t2-g2-r1"><strong>0.89±0.05</strong></td><td headers="t2-c4 t2-g2 t2-g2-r1">61.0±6.0</td><td headers="t2-c5 t2-g2 t2-g2-r1">0.31±0.04</td></tr>
+<tr><th id="t2-g2-r2" scope="row" headers="t2-c1 t2-g2">Graph</th><td headers="t2-c2 t2-g2 t2-g2-r2"><strong>0.89±0.02</strong></td><td headers="t2-c3 t2-g2 t2-g2-r2">0.80±0.07</td><td headers="t2-c4 t2-g2 t2-g2-r2"><strong>62.1±3.8</strong></td><td headers="t2-c5 t2-g2 t2-g2-r2"><strong>0.35±0.02</strong></td></tr>
 </tbody>
-<tfoot><tr><td colspan="6"><sup>a</sup>Undefined: all string-matching labels are positive, so only one class is present.</td></tr></tfoot>
 </table></div>
+<p class="rr-table-note"><sup>a</sup>Undefined: all string-matching labels are positive, so only one class is present.</p>
 </figure>
 <p>The effect of prompting differs by legal domain (Table <a href="#tab:results-law">2</a>). For the Alcohol Law, all conditions score high faithfulness, likely reflecting a relatively simple decision structure and a dataset skew toward straightforward rejections (many synthetic profiles lack a Chamber-of-Commerce registration, since profiles are drawn from general rather than horeca-specific CBS statistics). For the Health Care Benefit Law, the most complex regulation, involving multiple thresholds and a numerical calculation, faithfulness rises from 0.17 (Open) to 0.52 (Flat) to 0.89 (Graph), the largest gain observed, indicating that structured representations become more valuable as legal complexity increases. For the Social Assistance Law, most of the improvement already occurs at the Flat layer. ROC AUC values below 0.5 (Social Assistance, Open: 0.07) indicate disagreement between string matching and NLI entailment, not a separate faithfulness failure.</p>
 <h3 id="example">6.2 Example</h3>
@@ -103,9 +103,9 @@
 <figcaption class="rr-caption" id="tab:example-caption"><strong>Table 3:</strong> Explanations for one synthetic Health Care Benefit case (Claude Haiku, translated from Dutch, abridged). Trace: entitled, €1,630.66/year; assessed income €25,386.88 ≤ €39,719; assets €15,479.70 ≤ €141,896; age 68 ≥ 18; insured.</figcaption>
 <div class="rr-table-scroll"><table class="rr-booktabs" aria-labelledby="tab:example-caption">
 <tbody>
-<tr><th scope="row">Open</th><td>“Good news! You meet <em>all conditions</em>. You are retired, so you have a fixed income. You are single. <em>Your income is probably not too high.</em> You receive €1,630.66 per year.”</td></tr>
-<tr><th scope="row">Flat</th><td>“Your income of €25,386.88 is below the maximum of €39,719. <em>You are 65+, so you receive extra support.</em> You receive €1,630.66 per year.”</td></tr>
-<tr><th scope="row">Graph</th><td>“You are entitled to health care benefit. The calculated amount is 1,630.66 euros per year. Your assessed income of 25,386.88 euros is below the maximum of 39,719.00 euros. Your assets of 15,479.70 euros are below the maximum of 141,896.00 euros. You are 68, so you meet the minimum age of 18. You are insured under the Health Insurance Act.”</td></tr>
+<tr><th id="t3-g0-r0" scope="row">Open</th><td headers="t3-g0-r0">“Good news! You meet <em>all conditions</em>. You are retired, so you have a fixed income. You are single. <em>Your income is probably not too high.</em> You receive €1,630.66 per year.”</td></tr>
+<tr><th id="t3-g0-r1" scope="row">Flat</th><td headers="t3-g0-r1">“Your income of €25,386.88 is below the maximum of €39,719. <em>You are 65+, so you receive extra support.</em> You receive €1,630.66 per year.”</td></tr>
+<tr><th id="t3-g0-r2" scope="row">Graph</th><td headers="t3-g0-r2">“You are entitled to health care benefit. The calculated amount is 1,630.66 euros per year. Your assessed income of 25,386.88 euros is below the maximum of 39,719.00 euros. Your assets of 15,479.70 euros are below the maximum of 141,896.00 euros. You are 68, so you meet the minimum age of 18. You are insured under the Health Insurance Act.”</td></tr>
 </tbody>
 </table></div>
 </figure>

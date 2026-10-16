@@ -87,9 +87,8 @@
 [data-discuss-paper] table.rr-booktabs thead {
   border-bottom: 1px solid currentColor;
 }
-[data-discuss-paper] table.rr-booktabs tfoot td {
+[data-discuss-paper] .rr-table-note {
   font-size: 0.875rem;
-  border-top: 1px solid currentColor;
 }
 
 /* The dependency-graph figure is drawn for a white page; give it a white

@@ -91,9 +91,10 @@ SPDX-FileCopyrightText = "De auteurs van het paper, zie docs/src/research/rules-
 SPDX-License-Identifier = "CC-BY-4.0"
 
 # Het JURIX 2026-paper "From Rules as Executed to Citizen Explanation" en de
-# bestanden die eruit gegenereerd zijn. De proceedings verschijnen gold open
-# access bij IOS Press (Frontiers in Artificial Intelligence and Applications),
-# onder de licentie van die reeks, CC BY-NC 4.0.
+# bestanden die eruit gegenereerd zijn. De proceedings verschijnen bij IOS
+# Press (Frontiers in Artificial Intelligence and Applications) open access
+# onder CC BY-NC 4.0; zo staat het in de camera-ready-instructies van JURIX
+# 2026.
 [[annotations]]
 path = [
   "docs/src/research/citizen-explanation.*",
