@@ -336,6 +336,26 @@ fn a_reduction_does_not_act_on_law() {
     );
 }
 
+#[test]
+fn a_reduction_fills_an_open_term_only_from_schema_v0_8_5() {
+    ArticleBasedLaw::from_yaml_str(&reduction_yaml()).unwrap();
+    for older in ["v0.8.2", "v0.8.4"] {
+        refused(
+            &reduction_yaml().replace("v0.8.5", older),
+            &format!("implements) only from schema v0.8.5; this one names {older}"),
+        );
+    }
+    // Without `$schema` there is no version to hold it to.
+    let yaml = reduction_yaml();
+    let unnamed: String = yaml
+        .lines()
+        .filter(|line| !line.starts_with("$schema:"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_ne!(unnamed, yaml);
+    ArticleBasedLaw::from_yaml_str(&unnamed).unwrap();
+}
+
 // ---------------------------------------------------------------------------
 // The reduction fills the open term of art. 13a (implements, schema v0.8.5)
 // ---------------------------------------------------------------------------

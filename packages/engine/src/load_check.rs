@@ -18,9 +18,11 @@
 //! A reduction (`regulatory_layer: REDUCTIE`, schema v0.8.2) is no
 //! regulation: a cell's reading of its own chronicle (RFC-048). Only a
 //! reduction reads the decisions taken under an article
-//! (`source.decisions`). A reduction may fill an open term (`implements`,
-//! schema v0.8.5), so the engine runs it for that term like any
-//! implementation, but it does not act on law otherwise: it hooks onto
+//! (`source.decisions`). A reduction may fill an open term (`implements`)
+//! from schema v0.8.5, so the engine runs it for that term like any
+//! implementation; a file that names an older version is held to the
+//! schema of that version, which forbids it. Otherwise a reduction does not
+//! act on law: it hooks onto
 //! nothing (`hooks`), replaces no output (`overrides`), takes no decision
 //! (`execution.produces`) and delegates nothing (`open_terms`). The loader
 //! refuses either the other way round, and a `decisions` beside another way
@@ -32,15 +34,32 @@
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
-use regelrecht_law_model::{ActionOperation, ActionValue, MachineReadable, RegulatoryLayer};
+use regelrecht_law_model::{
+    parse_schema_version, ActionOperation, ActionValue, MachineReadable, RegulatoryLayer,
+};
+
+/// The first schema version in which a `REDUCTIE` may have `implements`.
+const REDUCTION_IMPLEMENTS: (u32, u32, u32) = (0, 8, 5);
 
 /// Refuse `source.decisions` outside a `REDUCTIE`, and `hooks`, `overrides`,
 /// `execution.produces` or `open_terms` in a `REDUCTIE` (RFC-048). A
-/// `REDUCTIE` may have `implements` (schema v0.8.5).
+/// `REDUCTIE` may have `implements` from schema v0.8.5; one whose `$schema`
+/// names an older version may not.
 pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
     let reduction = law.regulatory_layer == RegulatoryLayer::Reductie;
+    let older = law
+        .schema_version()
+        .and_then(parse_schema_version)
+        .filter(|version| *version < REDUCTION_IMPLEMENTS);
     for (where_, section) in sections(law) {
         if reduction {
+            if let Some((major, minor, patch)) = older.filter(|_| section.implements.is_some()) {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: a REDUCTIE fills an open term (implements) only from \
+                     schema v0.8.5; this one names v{major}.{minor}.{patch}",
+                    law.id
+                )));
+            }
             let acts_on_law = [
                 ("hooks", section.hooks.is_some()),
                 ("overrides", section.overrides.is_some()),

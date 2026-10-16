@@ -885,11 +885,19 @@ fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
     assert_eq!(cell.grams().len(), 1);
 }
 
+/// A cell whose directory holds no reductions, as a school without one.
+fn without_reductions() -> Cell {
+    let dir = tempfile::tempdir().unwrap();
+    Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(dir.path())
+        .unwrap()
+}
+
 #[test]
 fn without_the_reduction_the_head_finds_it() {
-    // A cell without the reduction: nothing fills the open term, so the
-    // head finds it per case (decided_per_case_by).
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    // A cell whose directory holds no reduction: nothing fills the open
+    // term, so the head finds it per case (decided_per_case_by).
+    let mut cell = without_reductions();
     let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
     let mut supplied = judgement(true, true);
     supplied.insert(ONCE.into(), json!(true));
@@ -900,11 +908,116 @@ fn without_the_reduction_the_head_finds_it() {
 
 #[test]
 fn without_the_reduction_or_the_head_it_is_not_known() {
-    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let mut cell = without_reductions();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains(&format!("asks '{ONCE}'"))),
+        "{e}"
+    );
+}
+
+#[test]
+fn a_cell_that_has_not_loaded_its_reductions_does_not_decide() {
+    // Not even with the head's finding on the term: the cell cannot tell
+    // whether a reduction of its own should fill it.
+    let mut cell = Cell::in_memory(RECORDING_ACTOR);
+    let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    let mut supplied = judgement(true, true);
+    supplied.insert(ONCE.into(), json!(true));
+    let e = decide(&mut cell, &app.id, &supplied, "2027-03-01").unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("has not loaded its reductions")),
+        "{e}"
+    );
+    assert_eq!(cell.grams().len(), 1);
+
+    // A directory that is not there is not a cell without reductions.
+    let e = Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(cell_dir().join("elders"))
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("no directory of the cell")),
+        "{e}"
+    );
+}
+
+/// A cell directory with the school's reduction, as `versions` gives it:
+/// per version its `valid_from` and the open term it fills.
+fn reductions_dir(versions: &[(&str, &str)]) -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    let here = dir.path().join("reducties").join(REDUCTION);
+    std::fs::create_dir_all(&here).unwrap();
+    let yaml =
+        std::fs::read_to_string(cell_dir().join(format!("reducties/{REDUCTION}/2026-08-01.yaml")))
+            .unwrap();
+    for (from, term) in versions {
+        let version = yaml
+            .replace("valid_from: '2026-08-01'", &format!("valid_from: '{from}'"))
+            .replace(&format!("open_term: {ONCE}"), &format!("open_term: {term}"));
+        assert!(version.contains(&format!("valid_from: '{from}'")));
+        std::fs::write(here.join(format!("{from}.yaml")), version).unwrap();
+    }
+    dir
+}
+
+#[test]
+fn a_term_no_reduction_in_force_fills_is_refused() {
+    // From 2027-01-01 the reduction fills another term, so on 2027-03-01
+    // none fills the one it filled before.
+    let dir = reductions_dir(&[("2026-08-01", ONCE), ("2027-01-01", "iets_anders")]);
+    let mut cell = Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(dir.path())
+        .unwrap();
+    let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+    let mut supplied = judgement(true, true);
+    supplied.insert(ONCE.into(), json!(false));
+    let e = decide(&mut cell, &app.id, &supplied, "2027-03-01").unwrap_err();
+    let reducties = dir.path().join("reducties").display().to_string();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains(&format!("open term '{ONCE}' of {LAW}#{ARTICLE}"))
+            && m.contains(&reducties)
+            && m.contains("none is in force on 2027-03-01")),
+        "{e}"
+    );
+    assert_eq!(cell.grams().len(), 1);
+}
+
+#[test]
+fn a_decision_from_before_the_reduction_is_the_heads_and_replays() {
+    // Decided by the head, before the school had its reduction.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("kroniek.jsonl");
+    let gram = {
+        let mut cell = Cell::open(RECORDING_ACTOR, &path)
+            .unwrap()
+            .with_reductions(dir.path())
+            .unwrap();
+        let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
+        let mut supplied = judgement(true, true);
+        supplied.insert(ONCE.into(), json!(false));
+        decide(&mut cell, &app.id, &supplied, "2027-03-01").unwrap()
+    };
+    // The reduction comes into force later; the decision stays the head's.
+    let later = reductions_dir(&[("2027-08-01", ONCE)]);
+    let cell = Cell::open(RECORDING_ACTOR, &path)
+        .unwrap()
+        .with_reductions(later.path())
+        .unwrap();
+    cell.explain(&mut service(), &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &gram.id).unwrap();
+    assert!(found.contains(&ONCE.to_string()), "{found:?}");
+}
+
+#[test]
+fn reducties_that_is_no_directory_is_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("reducties"), "").unwrap();
+    let e = Cell::in_memory(RECORDING_ACTOR)
+        .with_reductions(dir.path())
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("reducties: no directory")),
         "{e}"
     );
 }
@@ -1826,9 +1939,8 @@ fn the_trace_of_a_refusal_shows_the_grant_the_reduction_counted() {
 
 /// A replay runs as the decision ran, or fails: read back with an outcome
 /// the chronicle did not get from the law, the replay is not that decision.
-/// It is as faithful as its context: a cell opened without its reductions
-/// replays the recorded answer as the head's finding, with the same outcome
-/// but another provenance.
+/// A cell opened without its reductions does not replay: it would take the
+/// reduction's answer for the head's finding.
 #[test]
 fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
     let dir = tempfile::tempdir().unwrap();
@@ -1843,9 +1955,15 @@ fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
     };
     assert_eq!(b.outputs["verlof_verleend"], json!(false));
     let without = Cell::open(RECORDING_ACTOR, &path).unwrap();
-    without.explain(&mut service(), &b.id).unwrap();
-    let found = without.findings(&mut service(), &b.id).unwrap();
-    assert!(found.contains(&ONCE.to_string()), "{found:?}");
+    for e in [
+        without.explain(&mut service(), &b.id).unwrap_err(),
+        without.findings(&mut service(), &b.id).unwrap_err(),
+    ] {
+        assert!(
+            matches!(&e, Error::Setup(m) if m.contains("has not loaded its reductions")),
+            "{e}"
+        );
+    }
     let with = Cell::open(RECORDING_ACTOR, &path)
         .unwrap()
         .with_reductions(cell_dir())

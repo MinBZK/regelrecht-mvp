@@ -168,7 +168,10 @@ fn numbers(teller: i64, noemer: i64) -> Map<String, serde_json::Value> {
 fn stored_decision(service: &mut LawExecutionService, teller: i64, noemer: i64) -> Value {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
-    let mut cell = Cell::open(ACTOR, &path).unwrap();
+    let mut cell = Cell::open(ACTOR, &path)
+        .unwrap()
+        .with_reductions(dir.path())
+        .unwrap();
     let app = cell
         .record_submission(service, ID, "1", None, &numbers(teller, noemer), day())
         .unwrap();
@@ -379,7 +382,10 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("kroniek.jsonl");
         let mut service = service();
-        let mut cell = Cell::open(ACTOR, &path).unwrap();
+        let mut cell = Cell::open(ACTOR, &path)
+            .unwrap()
+            .with_reductions(dir.path())
+            .unwrap();
         let app = cell
             .record_submission(&mut service, ID, "1", None, &numbers(teller, noemer), day())
             .unwrap();
@@ -396,7 +402,10 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
             .unwrap()
             .remove(0);
 
-        let mut cell = Cell::open(ACTOR, &path).unwrap();
+        let mut cell = Cell::open(ACTOR, &path)
+            .unwrap()
+            .with_reductions(dir.path())
+            .unwrap();
         let verzoek = cell
             .record_submission(&mut service, ID, "5", Some(&decided.id), &Map::new(), day())
             .unwrap();
@@ -423,7 +432,10 @@ fn the_file_holds_the_digits() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
     let mut service = service();
-    let mut cell = Cell::open(ACTOR, &path).unwrap();
+    let mut cell = Cell::open(ACTOR, &path)
+        .unwrap()
+        .with_reductions(dir.path())
+        .unwrap();
     let app = cell
         .record_submission(&mut service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
@@ -477,7 +489,10 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
     let mut service = service();
-    let mut cell = Cell::open(ACTOR, &path).unwrap();
+    let mut cell = Cell::open(ACTOR, &path)
+        .unwrap()
+        .with_reductions(dir.path())
+        .unwrap();
     let app = cell
         .record_submission(&mut service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();

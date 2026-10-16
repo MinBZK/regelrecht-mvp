@@ -113,6 +113,13 @@ fn service(laws: &[&str]) -> LawExecutionService {
     service
 }
 
+/// A cell whose directory holds no reductions: a term no regulation fills
+/// is then the deciding authority's finding.
+fn bare(actor: &str) -> Cell {
+    let dir = tempfile::tempdir().unwrap();
+    Cell::in_memory(actor).with_reductions(dir.path()).unwrap()
+}
+
 fn day() -> NaiveDate {
     NaiveDate::parse_from_str(ON, "%Y-%m-%d").unwrap()
 }
@@ -128,7 +135,7 @@ fn decide(
     dagen: i64,
     supplied: Value,
 ) -> Result<(regelrecht_cel::Gram, Vec<String>), Error> {
-    let mut cell = Cell::in_memory("fictieve_school");
+    let mut cell = bare("fictieve_school");
     let app = cell
         .record_submission(
             service,
@@ -213,7 +220,7 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
         "requires: [{name: kanaal, type: string}]",
     );
     let mut service = service(&[&general, SPECIAL_LAW]);
-    let mut cell = Cell::in_memory("fictieve_school");
+    let mut cell = bare("fictieve_school");
     let e = cell
         .record_submission(
             &mut service,
@@ -298,7 +305,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
     let mut service = service(&[GENERAL_LAW, SPLIT_LAW]);
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     assert_eq!(shape.application, "wet_verlof_fictief#2");
-    let mut cell = Cell::in_memory("fictieve_school");
+    let mut cell = bare("fictieve_school");
     let app = cell
         .record_submission(
             &mut service,
@@ -333,7 +340,7 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
         "requests: wet_elders_fictief#4",
     );
     let mut service = service(&[GENERAL_LAW, &split]);
-    let mut cell = Cell::in_memory("fictieve_school");
+    let mut cell = bare("fictieve_school");
     let e = cell
         .record_submission(
             &mut service,
@@ -374,7 +381,7 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
     let mut service = service(&[GENERAL_LAW, &split]);
     let e = decision::derive(&service, LAW, "1", day()).unwrap_err();
     assert!(e.to_string().contains("several applications"), "{e}");
-    let mut cell = Cell::in_memory("fictieve_school");
+    let mut cell = bare("fictieve_school");
     let app = cell
         .record_submission(
             &mut service,

@@ -1,6 +1,6 @@
 ---
-# Schema v0.8.2 to v0.8.4 forbid `implements` on a REDUCTIE (RFC-048); v0.8.5 allows it,
-# and the loader accepts it for every version (KNOWN_GAPS).
+# Schema v0.8.2 to v0.8.4 forbid `implements` on a REDUCTIE (RFC-048), and so does the
+# loader for a file that names one of them; v0.8.5 allows it.
 $schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
 $id: test_conformance_reduction_with_implements
 regulatory_layer: REDUCTIE

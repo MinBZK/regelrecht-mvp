@@ -49,6 +49,36 @@ use regelrecht_law_model::stored;
 pub struct Reduction {
     id: String,
     yaml: String,
+    terms: Vec<Term>,
+    valid_from: Option<NaiveDate>,
+}
+
+/// An open term a reduction fills: its id and the article that declares it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Term {
+    pub law: String,
+    pub article: String,
+    pub open_term: String,
+}
+
+impl std::fmt::Display for Term {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}' of {}#{}", self.open_term, self.law, self.article)
+    }
+}
+
+/// The open terms the articles of `law` fill (`implements`).
+fn terms_of(law: &ArticleBasedLaw) -> Vec<Term> {
+    law.articles
+        .iter()
+        .filter_map(|article| article.get_implements())
+        .flatten()
+        .map(|i| Term {
+            law: i.law.clone(),
+            article: i.article.clone(),
+            open_term: i.open_term.clone(),
+        })
+        .collect()
 }
 
 impl Reduction {
@@ -66,17 +96,23 @@ impl Reduction {
                 law.regulatory_layer.as_str()
             )));
         }
-        if !law
-            .articles
-            .iter()
-            .any(|article| article.get_implements().is_some_and(|i| !i.is_empty()))
-        {
+        let terms = terms_of(&law);
+        if terms.is_empty() {
             return Err(setup(format!(
                 "reduction '{}' fills no open term (implements), so nothing asks its answer",
                 law.id
             )));
         }
-        Ok(Self { id: law.id, yaml })
+        let valid_from = law
+            .valid_from
+            .as_deref()
+            .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+        Ok(Self {
+            id: law.id,
+            yaml,
+            terms,
+            valid_from,
+        })
     }
 
     /// The reduction, by `$id`.
@@ -190,6 +226,39 @@ pub fn bind<'a>(
         }
     }
     Ok(bound)
+}
+
+/// The first open term that a version of one of `reductions` fills but no
+/// reduction in force on `day` fills (RFC-048), from the first day a version
+/// fills it: before that day the term was the deciding authority's, so a
+/// decision taken then still replays. The cell refuses to decide then:
+/// without the reduction the term would be the deciding authority's
+/// finding, or its default, where the cell's own reading of its chronicle
+/// is expected.
+pub fn unfilled<'r>(
+    bound: &Bound<'_>,
+    reductions: &'r [Reduction],
+    day: NaiveDate,
+) -> Option<&'r Term> {
+    let filled: Vec<Term> = bound
+        .laws
+        .iter()
+        .filter_map(|id| in_force(bound, id, day))
+        .flat_map(terms_of)
+        .collect();
+    let since = |term: &Term| {
+        reductions
+            .iter()
+            .filter(|r| r.terms.contains(term))
+            .map(|r| r.valid_from)
+            .min()
+            .flatten()
+    };
+    reductions
+        .iter()
+        .flat_map(|r| &r.terms)
+        .filter(|term| since(term).is_none_or(|first| first <= day))
+        .find(|term| !filled.contains(term))
 }
 
 fn in_force<'b>(bound: &'b Bound<'_>, id: &str, day: NaiveDate) -> Option<&'b ArticleBasedLaw> {

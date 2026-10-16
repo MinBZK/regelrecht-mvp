@@ -12,7 +12,7 @@
 //! the type.
 
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
@@ -24,17 +24,30 @@ use serde_json::Map;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
-use crate::reading::{self, Reduction};
+use crate::reading::{self, Bound, Reduction};
 use crate::shape::{self, Shape};
 use regelrecht_law_model::stored;
 
 /// A cell. It holds who it is, its chronicle and its reductions, not the
 /// law: every call that needs the law gets the service that executes it.
+///
+/// A cell takes and replays a decision only once it has loaded its
+/// reductions ([`Cell::with_reductions`]), also when its directory holds
+/// none: without them it cannot tell a term its reductions fill from one the
+/// deciding authority finds, and a replay would pass a reduction's answer
+/// off as the authority's finding (RFC-048).
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
     chronicle: Chronicle,
-    reductions: Vec<Reduction>,
+    reductions: Option<Reductions>,
+}
+
+/// The reductions of a cell and the directory they came from.
+#[derive(Debug)]
+struct Reductions {
+    dir: PathBuf,
+    versions: Vec<Reduction>,
 }
 
 impl Cell {
@@ -57,7 +70,7 @@ impl Cell {
         Ok(Self {
             recording_actor,
             chronicle,
-            reductions: Vec::new(),
+            reductions: None,
         })
     }
 
@@ -66,17 +79,35 @@ impl Cell {
         Self {
             recording_actor: recording_actor.into(),
             chronicle: Chronicle::in_memory(),
-            reductions: Vec::new(),
+            reductions: None,
         }
     }
 
     /// The cell with the reductions in its directory `dir`, one version per
     /// file at `<dir>/reducties/<id>/<valid_from>.yaml` (RFC-048). A file
     /// that is no `REDUCTIE`, or whose `$id` is not its directory's name, is
-    /// an error. Without a `reducties` directory the cell has none.
+    /// an error, and so is a `dir` that is no directory. Without a
+    /// `reducties` directory the cell has none. A cell takes and replays a
+    /// decision only with its reductions loaded.
     pub fn with_reductions(mut self, dir: impl AsRef<Path>) -> Result<Self> {
-        let root = dir.as_ref().join("reducties");
+        let dir = dir.as_ref();
+        if !dir.is_dir() {
+            return Err(setup(format!(
+                "{}: no directory of the cell of '{}'",
+                dir.display(),
+                self.recording_actor
+            )));
+        }
+        let mut versions = Vec::new();
+        let root = dir.join("reducties");
+        if root.exists() && !root.is_dir() {
+            return Err(setup(format!("{}: no directory", root.display())));
+        }
         if !root.is_dir() {
+            self.reductions = Some(Reductions {
+                dir: root,
+                versions,
+            });
             return Ok(self);
         }
         let mut paths = Vec::new();
@@ -107,9 +138,49 @@ impl Cell {
                     reduction.id()
                 )));
             }
-            self.reductions.push(reduction);
+            versions.push(reduction);
         }
+        self.reductions = Some(Reductions {
+            dir: root,
+            versions,
+        });
         Ok(self)
+    }
+
+    /// Bind the cell's reductions for a decision on `on` that reads `grams`
+    /// ([`reading::bind`]). Refused when the cell has not loaded them, and
+    /// when a term one of them fills has no reduction in force on `on`: the
+    /// term would then be the deciding authority's finding, or its default,
+    /// where the cell's own reading is expected. A replay so fails too.
+    fn bind<'s>(
+        &self,
+        service: &'s mut LawExecutionService,
+        grams: &[Gram],
+        on: NaiveDate,
+    ) -> Result<Bound<'s>> {
+        let reductions = self.reductions.as_ref().ok_or_else(|| {
+            setup(format!(
+                "the cell of '{}' has not loaded its reductions (Cell::with_reductions); \
+                 without them it neither takes nor replays a decision, as it cannot tell what \
+                 they fill from a finding of the deciding authority",
+                self.recording_actor
+            ))
+        })?;
+        let bound = reading::bind(
+            service,
+            &self.recording_actor,
+            grams,
+            &reductions.versions,
+            on,
+        )?;
+        if let Some(term) = reading::unfilled(&bound, &reductions.versions, on) {
+            return Err(setup(format!(
+                "open term {term} is filled by a reduction in {}, but none is in force on {on}; \
+                 the cell does not take it as a finding of the deciding authority",
+                reductions.dir.display()
+            )));
+        }
+        Ok(bound)
     }
 
     pub fn recording_actor(&self) -> &str {
@@ -438,7 +509,7 @@ impl Cell {
         let applied = self.application(&unbound, application)?.clone();
         let decisions = self.decision_values(service, &unbound, &applied, on)?;
         let grams = self.grams_but(except.as_deref());
-        let bound = reading::bind(service, &self.recording_actor, &grams, &self.reductions, on)?;
+        let bound = self.bind(service, &grams, on)?;
         // With the reductions loaded, a term one of them fills is the
         // policy's first.
         let shape = decision::derive(&bound, law_id, article, on)?;
@@ -615,13 +686,7 @@ impl Cell {
             .filter(|g| except != Some(g.id.as_str()))
             .cloned()
             .collect();
-        let bound = reading::bind(
-            service,
-            &self.recording_actor,
-            &before,
-            &self.reductions,
-            on,
-        )?;
+        let bound = self.bind(service, &before, on)?;
         // As `decide` derived it: with the reductions loaded, a term only a
         // reduction fills is the policy's.
         let shape = decision::derive(&bound, law_id, article, on)?;

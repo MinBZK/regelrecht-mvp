@@ -254,6 +254,13 @@ fn cell() -> (Cell, tempfile::TempDir) {
     (cell, dir)
 }
 
+/// A cell whose directory holds no reductions: a term no regulation fills
+/// is then the deciding authority's finding.
+fn bare(actor: &str) -> Cell {
+    let dir = tempfile::tempdir().unwrap();
+    Cell::in_memory(actor).with_reductions(dir.path()).unwrap()
+}
+
 fn day(on: &str) -> NaiveDate {
     NaiveDate::parse_from_str(on, "%Y-%m-%d").unwrap()
 }
@@ -831,7 +838,7 @@ fn the_decision_value_holds_the_findings_apart() {
     ] {
         service.load_law(law).unwrap();
     }
-    let mut cell = Cell::in_memory(ACTOR);
+    let mut cell = bare(ACTOR);
     let applied = apply(&mut cell, &mut service, 2, "2026-03-02");
     let refused = cell
         .decide(
@@ -1041,7 +1048,7 @@ fn a_term_a_regulation_filled_is_no_finding_of_the_decision() {
         &reden_policy("2026-01-01", "true"),
         &reden_policy("2026-03-05", "null"),
     ]);
-    let mut cell = Cell::in_memory(ACTOR);
+    let mut cell = bare(ACTOR);
     let granted = decided_with(&mut cell, &mut service, json!({}));
     assert_eq!(granted.fields["reden_gewichtig"], json!(true));
     // Only the head's finding that no leave was granted before.
@@ -1103,7 +1110,7 @@ fn a_regulation_in_force_at_the_call_anew_sets_the_old_finding_aside() {
         &heroverweging_with_findings(),
         &reden_policy("2026-03-05", "true"),
     ]);
-    let mut cell = Cell::in_memory(ACTOR);
+    let mut cell = bare(ACTOR);
     let refused = decided_with(&mut cell, &mut service, json!({"reden_gewichtig": false}));
     assert_eq!(refused.outputs["verleend"], json!(false));
     assert_eq!(
@@ -1153,7 +1160,7 @@ fn a_finding_on_a_term_both_articles_name_reaches_the_call_anew() {
     );
     assert_ne!(heroverweging, heroverweging_with_findings());
     let mut service = service_of(&[PROCEDURE, &verlof_with_finding(), &heroverweging]);
-    let mut cell = Cell::in_memory(ACTOR);
+    let mut cell = bare(ACTOR);
     let refused = decided_with(&mut cell, &mut service, json!({"reden_gewichtig": false}));
     let bezwaar = object_to(
         &mut cell,
@@ -1242,7 +1249,7 @@ fn a_finding_for_a_call_anew_that_does_not_happen_is_refused() {
         &verlof_with_finding(),
         &heroverweging_with_findings(),
     ]);
-    let mut cell = Cell::in_memory(ACTOR);
+    let mut cell = bare(ACTOR);
     let refused = decided_with(&mut cell, &mut service, json!({"reden_gewichtig": false}));
     // Six weeks after its announcement on 2026-03-03 the period is over.
     let late = object_to(
