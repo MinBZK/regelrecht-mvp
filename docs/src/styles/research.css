@@ -18,6 +18,10 @@
    the link lands on the content, not on the caption below it. */
 [data-discuss-paper] figure {
   margin: 0 0 var(--primitives-space-16);
+  /* rich-text centers a figure in its column and sizes it to its content, so
+     a wide table made the figure, and with it the page, as wide as the table;
+     capped, the table scrolls inside its own box. */
+  max-width: 100%;
 }
 [data-discuss-paper] figure img {
   display: block;
@@ -94,6 +98,7 @@
 /* The dependency-graph figure is drawn for a white page; give it a white
    plate so it stays readable in dark mode. */
 [data-discuss-paper] img {
+  box-sizing: border-box;
   max-width: 100%;
   height: auto;
   background: #fff;
