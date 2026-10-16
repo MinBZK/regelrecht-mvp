@@ -1,9 +1,12 @@
 /**
  * Een weigering van de cel in het Nederlands. De cel meldt in het Engels wat
  * ze weigert en waarom; de banner toont deze korte zin en houdt de melding
- * zelf achter "Details". Alleen de weigeringen die je in de vijf scenario's
- * kunt tegenkomen staan hier; de rest krijgt de algemene zin.
+ * zelf achter "Details". Hier staan de weigeringen die een bezoeker met de
+ * formulieren kan veroorzaken; de rest krijgt de algemene zin. De gevallen in
+ * tests/melding.test.js zijn kopieën van de meldingen in packages/cel
+ * (cell.rs, chronicle.rs): wie daar een melding herschrijft, past ze mee aan.
  */
+import { GEEN_ANTWOORD } from './api.js';
 import { kort, leesbaar } from './spel.js';
 
 const vertalingen = [
@@ -12,15 +15,15 @@ const vertalingen = [
   [
     /in the place of '([^']+)', which chronolexogram '([^']+)' already replaces/,
     (besluit, vervanger) =>
-      `Besluit ${kort(besluit)} is al vervangen door besluit ${kort(vervanger)}, na een eerder bezwaar. Een besluit wordt maar één keer vervangen; er is niets vastgelegd.`,
+      `Besluit ${kort(besluit)} is na een eerder bezwaar al vervangen door besluit ${kort(vervanger)}. Een besluit kan maar één keer worden vervangen. Er is niets vastgelegd.`,
   ],
-  // De kroniek loopt alleen vooruit.
+  // De kroniek loopt alleen vooruit; dezelfde dag mag.
   [
     /before the last chronolexogram of the chronicle \('[^']+', (\d{4}-\d{2}-\d{2})\)/,
     (laatste) =>
-      `De speeldatum ligt vóór de laatste stap in de kroniek (${laatste}). De kroniek loopt alleen vooruit: kies een latere speeldatum.`,
+      `De speeldatum ligt vóór de laatste stap in de kroniek (${laatste}). De kroniek loopt alleen vooruit: kies die dag of een latere.`,
   ],
-  [/the application '[^']+' is already decided on/, () => 'Op deze aanvraag is al besloten.'],
+  [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
   [
     /lacks '([^']+)', which the decision of \S+ needs \(Awb 4:5\)/,
     (veld) =>
@@ -28,15 +31,17 @@ const vertalingen = [
   ],
   [
     /asks '([^']+)' of the deciding authority/,
-    (veld) => `Het besluit vraagt een bevinding van het hoofd: "${leesbaar(veld)}".`,
+    (veld) =>
+      `Het hoofd heeft "${leesbaar(veld)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
   ],
   [
     /'([^']+)' is .*, which does not fit a/,
     (veld) => `De waarde van "${leesbaar(veld)}" past niet bij wat de wet vraagt.`,
   ],
   [
-    /the law does not ask '([^']+)'/,
-    (veld) => `De wet vraagt "${leesbaar(veld)}" niet in deze indiening.`,
+    /the law does not ask '([^']+)' in the (\S+) of/,
+    (veld, soort) =>
+      `De wet vraagt niet om "${leesbaar(veld)}" bij ${soort === 'BEZWAAR' ? 'het bezwaar' : 'de aanvraag'}.`,
   ],
 ];
 
@@ -46,5 +51,14 @@ export function melding(fout) {
     const gevonden = String(fout).match(patroon);
     if (gevonden) return zin(...gevonden.slice(1));
   }
-  return 'Deze stap is niet gelukt. Wat er misging, staat onder Details (in het Engels).';
+  return isEngels(fout)
+    ? 'Wat er misging, staat onder Details, in het Engels.'
+    : 'Wat er misging, staat onder Details.';
 }
+
+/**
+ * Of de melding Engels is: alles behalve de Nederlandse zin die api.js zelf
+ * geeft als de server geen antwoord gaf. De cel, de engine, axum en de
+ * browser melden in het Engels.
+ */
+export const isEngels = (fout) => String(fout) !== GEEN_ANTWOORD;

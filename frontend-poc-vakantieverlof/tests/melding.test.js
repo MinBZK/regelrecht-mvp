@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { melding } from '../src/melding.js';
+import { isEngels, melding } from '../src/melding.js';
 
-// De meldingen zoals de cel ze geeft (packages/cel), met verzonnen ids.
+// De meldingen zoals de cel ze geeft (packages/cel: cell.rs, chronicle.rs),
+// met verzonnen ids. Elk patroon in melding.js heeft hier een geval.
 const ids = {
   besluit: '019a0000-0000-7000-8000-00000000aaaa',
   vervanger: '019a0000-0000-7000-8000-00000000bbbb',
   beslissing: '019a0000-0000-7000-8000-00000000cccc',
 };
+
+const algemeen = 'Wat er misging, staat onder Details, in het Engels.';
 
 describe('melding', () => {
   it('zegt dat een besluit maar één keer wordt vervangen, en door welk', () => {
@@ -14,7 +17,7 @@ describe('melding', () => {
       `refused: the decision of algemene_wet_bestuursrecht#7:11 would take a decision in the place of '${ids.besluit}', ` +
       `which chronolexogram '${ids.vervanger}' already replaces (taken by '${ids.beslissing}')`;
     expect(melding(fout)).toBe(
-      'Besluit 0000aaaa is al vervangen door besluit 0000bbbb, na een eerder bezwaar. Een besluit wordt maar één keer vervangen; er is niets vastgelegd.',
+      'Besluit 0000aaaa is na een eerder bezwaar al vervangen door besluit 0000bbbb. Een besluit kan maar één keer worden vervangen. Er is niets vastgelegd.',
     );
   });
 
@@ -25,12 +28,46 @@ describe('melding', () => {
     expect(melding(fout)).toContain('vóór de laatste stap in de kroniek (2026-11-01)');
   });
 
+  it('zegt dat er al besloten is', () => {
+    const fout = `refused: the application '${ids.besluit}' is already decided on, by chronolexogram '${ids.vervanger}'`;
+    expect(melding(fout)).toBe('Hierop is al besloten.');
+  });
+
   it('noemt het veld dat de aanvraag mist', () => {
     const fout = `refused: the application '${ids.besluit}' lacks 'laatste_verlofdag', which the decision of leerplichtwet_1969#13a needs (Awb 4:5)`;
     expect(melding(fout)).toContain('"laatste verlofdag"');
   });
 
+  it('noemt de bevinding die het hoofd nog moet geven', () => {
+    const fout =
+      "refused: the decision of leerplichtwet_1969#13a asks 'specifieke_aard_beroep_ouder' of the deciding authority (leerplichtwet_1969#11)";
+    expect(melding(fout)).toContain('"specifieke aard beroep ouder" nog niet beoordeeld');
+  });
+
+  it('noemt een waarde die niet past, met en zonder non-nullable', () => {
+    for (const soort of ['non-nullable Date', 'Boolean']) {
+      const fout = `refused: 'eerste_verlofdag' is "morgen", which does not fit a ${soort} (leerplichtwet_1969#13a)`;
+      expect(melding(fout)).toContain('"eerste verlofdag" past niet');
+    }
+  });
+
+  it('noemt een veld dat de wet niet vraagt', () => {
+    const fout = "refused: the law does not ask 'bestemming' in the AANVRAAG of leerplichtwet_1969#13a";
+    expect(melding(fout)).toBe('De wet vraagt niet om "bestemming" bij de aanvraag.');
+    expect(melding(fout.replace('AANVRAAG', 'BEZWAAR'))).toContain('bij het bezwaar');
+  });
+
   it('valt terug op een algemene zin', () => {
-    expect(melding('engine: something else')).toMatch(/^Deze stap is niet gelukt/);
+    expect(melding('engine: something else')).toBe(algemeen);
+    expect(melding('De server gaf geen antwoord.')).toBe('Wat er misging, staat onder Details.');
+  });
+});
+
+describe('isEngels', () => {
+  it('herkent een melding van de cel of de engine', () => {
+    expect(isEngels('refused: x')).toBe(true);
+    expect(isEngels('engine: x')).toBe(true);
+    expect(isEngels('Failed to fetch')).toBe(true);
+    expect(isEngels('De server gaf geen antwoord.')).toBe(false);
   });
 });

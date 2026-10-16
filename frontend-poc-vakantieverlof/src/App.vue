@@ -5,7 +5,7 @@
 // een banner, in het Nederlands; de melding van de cel zelf onder Details.
 import { onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
-import { melding } from './melding.js';
+import { isEngels, melding } from './melding.js';
 import { spel, stap, verversen } from './spel.js';
 import KroniekTab from './components/KroniekTab.vue';
 import OuderTab from './components/OuderTab.vue';
@@ -74,12 +74,14 @@ async function opnieuw() {
           dismissible
           @dismiss="spel.fout = ''"
         >
-          <nldd-text v-if="details" size="sm" color="secondary" lang="en">{{ spel.fout }}</nldd-text>
+          <nldd-text v-if="details" size="sm" color="secondary" :lang="isEngels(spel.fout) ? 'en' : null">{{ spel.fout }}</nldd-text>
           <nldd-button
             slot="actions"
             appearance="neutral-tinted"
             size="sm"
-            :text="details ? 'Details verbergen' : 'Details'"
+            expandable
+            :expanded="details"
+            text="Details"
             @click="details = !details"
           ></nldd-button>
         </nldd-banner>

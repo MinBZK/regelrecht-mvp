@@ -8,11 +8,13 @@ import { apiFetchJson } from '@regelrecht/frontend-shared/apiFetch.js';
 
 const b = (pad) => import.meta.env.BASE_URL + String(pad).replace(/^\//, '');
 
+export const GEEN_ANTWOORD = 'De server gaf geen antwoord.';
+
 function fout(_status, body) {
   try {
     return JSON.parse(body).fout ?? body;
   } catch {
-    return body || 'De server gaf geen antwoord.';
+    return body || GEEN_ANTWOORD;
   }
 }
 
