@@ -17,6 +17,11 @@
 //! names no reduction and no cell, so a scenario or another system can
 //! supply the same value.
 //!
+//! Each row carries the decision's `id`, and a field of type `decision`
+//! holds the id of the decision it names, as the chronolexogram keeps it.
+//! So a reduction can link a decision to another that refers to it, such as
+//! a decision on an objection to the decision it contests (RFC-050).
+//!
 //! A decision revoked on objection stays in the chronicle, and so in the
 //! rows: each row says with [`REVOKES`] whether a decision on an objection
 //! against it revoked it (Awb 7:11 lid 2, RFC-050). Whether a revoked
@@ -74,7 +79,8 @@ impl Reduction {
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
 /// whose legal character is `kind`, as rows: the fields, then the outputs,
-/// then [`REVOKES`]: whether a decision on an objection revoked it. A
+/// the chronolexogram's `id`, then [`REVOKES`]: whether a decision on an
+/// objection revoked it. A field or output named `id` is refused. A
 /// decision on an objection holds [`REVOKES`] itself and keeps it: it can
 /// never be revoked, as no objection lies against it (Awb 7:1 lid 1 onder
 /// a). A name that is both a field and an output with another value is
@@ -108,6 +114,16 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
                 }
             }
         }
+        if row.contains_key(ROW_ID) {
+            return Err(setup(format!(
+                "chronolexogram '{}' holds '{ROW_ID}' itself; its row gives its id under that name",
+                gram.id
+            )));
+        }
+        row.insert(
+            ROW_ID.to_string(),
+            serde_json::Value::String(gram.id.clone()),
+        );
         if gram.outputs.contains_key(REVOKES) && refers_to_objection(grams, gram) {
             rows.push(serde_json::Value::Object(row));
             continue;
@@ -125,6 +141,9 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     }
     encoding::from_json(&serde_json::Value::Array(rows))
 }
+
+/// The name under which a row gives the id of its chronolexogram.
+pub const ROW_ID: &str = "id";
 
 /// Whether `gram` refers to an objection: a chronolexogram that itself
 /// refers to a decision.
@@ -486,6 +505,7 @@ mod tests {
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
             moment: None,
             fields: [("eerste_verlofdag".to_string(), json!("2027-02-01"))].into(),
+            findings: Vec::new(),
             missing: Vec::new(),
             outputs: [("verlof_verleend".to_string(), json!(true))].into(),
         }
@@ -503,11 +523,20 @@ mod tests {
         assert_eq!(
             rows,
             json!([{
+                "id": "BESCHIKKING-leerplichtwet_1969#13a",
                 "eerste_verlofdag": "2027-02-01",
                 "verlof_verleend": true,
                 "bestreden_besluit_herroepen": false,
             }])
         );
+    }
+
+    #[test]
+    fn a_name_id_on_the_decision_is_refused() {
+        let mut decision = gram("BESCHIKKING", GRONDSLAG, Some("a"));
+        decision.fields.insert("id".into(), json!("x"));
+        let e = rows(&[decision], GRONDSLAG, "BESCHIKKING").unwrap_err();
+        assert!(e.to_string().contains("holds 'id' itself"), "{e}");
     }
 
     #[test]
@@ -713,6 +742,7 @@ articles:
         assert_eq!(
             serde_json::to_value(answered).unwrap(),
             json!({ "verleend_lijst": [{
+                "id": "BESCHIKKING-wet_fictief#1",
                 "eerste_verlofdag": "2027-02-01",
                 "verleend": true,
                 "bestreden_besluit_herroepen": false,

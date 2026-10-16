@@ -16,10 +16,15 @@
 //! `REDUCTIE` that it keeps itself, whose outputs answer the decision's
 //! inputs by name.
 //!
-//! An objection is a second submission against a decision ([`objection`],
-//! RFC-050). The decision on it applies the contested decision's article
-//! anew; when that revokes the contested decision, the cell takes the new
-//! decision in its place.
+//! A submission may refer to a decision (RFC-050): a field of type
+//! `decision` holds it, and the deciding article gets its decision value.
+//! A decision output of the deciding article is a decision taken in turn,
+//! which the cell records too ([`cell`]).
+//!
+//! An objection as the cell still decides it (Awb 7:11 in Rust, until the
+//! rulework holds it) is in [`objection`]. The decision on it applies the
+//! contested decision's article anew; when that revokes the contested
+//! decision, the cell takes the new decision in its place.
 
 pub mod cell;
 pub mod chronicle;

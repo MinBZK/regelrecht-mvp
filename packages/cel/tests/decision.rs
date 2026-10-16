@@ -129,9 +129,25 @@ fn decide(
 ) -> Result<regelrecht_cel::Gram, Error> {
     let mut cell = Cell::in_memory("fictieve_school");
     let app = cell
-        .record_submission(service, LAW, "1", &object(json!({"dagen": dagen})), day())
+        .record_submission(
+            service,
+            LAW,
+            "1",
+            None,
+            &object(json!({"dagen": dagen})),
+            day(),
+        )
         .unwrap();
-    cell.decide(service, LAW, "1", &app.id, &object(supplied), day())
+    cell.decide(
+        service,
+        LAW,
+        "1",
+        &app.id,
+        &Map::new(),
+        &object(supplied),
+        day(),
+    )
+    .map(|mut grams| grams.remove(0))
 }
 
 #[test]
@@ -149,6 +165,7 @@ fn where_the_regulation_is_silent_the_judgement_decides() {
     let gram = decide(&mut service, 5, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     assert_eq!(gram.fields["grond_aanwezig"], json!(false));
+    assert_eq!(gram.findings, ["grond_aanwezig"]);
 
     // Without the judgement, nothing decides the norm for this case.
     let e = decide(&mut service, 5, json!({})).unwrap_err();
@@ -164,10 +181,13 @@ fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
     let gram = decide(&mut service, 2, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
+    // The regulation decided it, not the head.
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 
     // The judgement may be left out.
     let gram = decide(&mut service, 2, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 }
 
 #[test]
@@ -179,7 +199,14 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
     let service = service(&[&general, SPECIAL_LAW]);
     let mut cell = Cell::in_memory("fictieve_school");
     let e = cell
-        .record_submission(&service, LAW, "1", &object(json!({"dagen": 2})), day())
+        .record_submission(
+            &service,
+            LAW,
+            "1",
+            None,
+            &object(json!({"dagen": 2})),
+            day(),
+        )
         .unwrap_err();
     assert!(
         matches!(&e, Error::Setup(m) if m.contains("requires 'kanaal'") && m.contains("only a date")),
@@ -257,11 +284,27 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
     assert_eq!(shape.application, "wet_verlof_fictief#2");
     let mut cell = Cell::in_memory("fictieve_school");
     let app = cell
-        .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
+        .record_submission(
+            &service,
+            LAW,
+            "2",
+            None,
+            &object(json!({"dagen": 2})),
+            day(),
+        )
         .unwrap();
     let gram = cell
-        .decide(&mut service, LAW, "1", &app.id, &Map::new(), day())
-        .unwrap();
+        .decide(
+            &mut service,
+            LAW,
+            "1",
+            &app.id,
+            &Map::new(),
+            &Map::new(),
+            day(),
+        )
+        .unwrap()
+        .remove(0);
     assert_eq!(gram.refers_to.as_deref(), Some(app.id.as_str()));
     assert_eq!(gram.grondslag, "wet_verlof_fictief#1");
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
@@ -276,7 +319,14 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
     let service = service(&[GENERAL_LAW, &split]);
     let mut cell = Cell::in_memory("fictieve_school");
     let e = cell
-        .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
+        .record_submission(
+            &service,
+            LAW,
+            "2",
+            None,
+            &object(json!({"dagen": 2})),
+            day(),
+        )
         .unwrap_err();
     assert!(
         e.to_string()
@@ -310,8 +360,81 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
     assert!(e.to_string().contains("several applications"), "{e}");
     let mut cell = Cell::in_memory("fictieve_school");
     let app = cell
-        .record_submission(&service, LAW, "2", &object(json!({"dagen": 2})), day())
+        .record_submission(
+            &service,
+            LAW,
+            "2",
+            None,
+            &object(json!({"dagen": 2})),
+            day(),
+        )
         .unwrap();
     assert_eq!(app.kind, "AANVRAAG");
     assert_eq!(cell.grams().len(), 1);
+}
+
+/// Data derived for the decision (an output the decision item lists under
+/// `derived`, RFC-050) is computed at every stage of the decision, so a hook
+/// that reads it as a parameter gets it from the execution: it is no input of
+/// the decision.
+#[test]
+fn a_hook_that_reads_derived_data_asks_nothing_for_it() {
+    let special = SPECIAL_LAW
+        .replace(
+            "            outputs: [verlof_verleend]\n",
+            "            outputs: [verlof_verleend]\n            derived: [dagen_gevraagd]\n",
+        )
+        .replace(
+            "          - {name: verlof_verleend, type: boolean}\n        actions:",
+            "          - {name: verlof_verleend, type: boolean}\n          - {name: dagen_gevraagd, type: number}\n        actions:\n          - {output: dagen_gevraagd, value: $dagen}",
+        );
+    assert_ne!(special, SPECIAL_LAW);
+    let general = format!(
+        "{GENERAL_LAW}{}",
+        r#"  - number: '2'
+    text: Bij het besluit wordt het aantal dagen vermeld.
+    machine_readable:
+      hooks:
+        - hook_point: post_actions
+          applies_to: {legal_character: BESCHIKKING, stage: BEKENDMAKING}
+      execution:
+        parameters:
+          - {name: dagen_gevraagd, type: number}
+        output:
+          - {name: dagen_vermeld, type: number}
+        actions:
+          - {output: dagen_vermeld, value: $dagen_gevraagd}
+"#
+    );
+    let mut service = service(&[&general, &special, POLICY]);
+    let shape = decision::derive(&service, LAW, "1", day()).unwrap();
+    assert!(
+        shape.input("dagen_gevraagd").is_none(),
+        "{:?}",
+        shape.inputs
+    );
+    assert_eq!(shape.outputs, ["verlof_verleend"]);
+    let gram = decide(&mut service, 2, json!({})).unwrap();
+    assert_eq!(gram.outputs["dagen_vermeld"], json!(2));
+    assert!(!gram.fields.contains_key("dagen_gevraagd"));
+}
+
+/// A judgement that may be absent and that the head leaves out is null in
+/// the chronolexogram, but no finding: the head found nothing.
+#[test]
+fn a_judgement_left_out_is_no_finding() {
+    let special = SPECIAL_LAW
+        .replace(
+            "          decided_per_case_by: het hoofd\n",
+            "          required: false\n          decided_per_case_by: het hoofd\n",
+        )
+        .replace(
+            "          - {name: verlof_verleend, type: boolean}",
+            "          - {name: verlof_verleend, type: boolean, nullable: true}",
+        );
+    assert_ne!(special, SPECIAL_LAW);
+    let mut service = service(&[GENERAL_LAW, &special]);
+    let gram = decide(&mut service, 5, json!({})).unwrap();
+    assert_eq!(gram.fields["grond_aanwezig"], Value::Null);
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 }

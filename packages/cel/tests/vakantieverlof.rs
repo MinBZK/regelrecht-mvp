@@ -99,7 +99,7 @@ fn record(
     supplied: &Map<String, Value>,
     on: &str,
 ) -> Result<regelrecht_cel::Gram, Error> {
-    cell.record_submission(&service(), LAW, ARTICLE, supplied, day(on))
+    cell.record_submission(&service(), LAW, ARTICLE, None, supplied, day(on))
 }
 
 #[test]
@@ -260,7 +260,7 @@ fn null_is_refused_for_a_field_that_cannot_be_absent() {
 fn an_article_that_establishes_no_submission_is_refused() {
     let mut cell = cell();
     let e = cell
-        .record_submission(&service(), LAW, "2", &Map::new(), day("2026-10-13"))
+        .record_submission(&service(), LAW, "2", None, &Map::new(), day("2026-10-13"))
         .unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("establishes no submission")),
@@ -349,13 +349,28 @@ fn judgement(profession: bool, outside_holidays: bool) -> Map<String, Value> {
         .clone()
 }
 
+/// Decide with what the head gives: its findings under art. 11 onder f
+/// apart, the rest as what it supplies.
 fn decide(
     cell: &mut Cell,
     application: &str,
-    supplied: &Map<String, Value>,
+    given: &Map<String, Value>,
     on: &str,
 ) -> Result<Gram, Error> {
-    cell.decide(&mut service(), LAW, ARTICLE, application, supplied, day(on))
+    let (findings, supplied): (Map<String, Value>, Map<String, Value>) = given
+        .clone()
+        .into_iter()
+        .partition(|(name, _)| [PROFESSION, OUTSIDE_HOLIDAYS].contains(&name.as_str()));
+    cell.decide(
+        &mut service(),
+        LAW,
+        ARTICLE,
+        application,
+        &supplied,
+        &findings,
+        day(on),
+    )
+    .map(|mut grams| grams.remove(0))
 }
 
 #[test]
@@ -815,6 +830,7 @@ fn the_reduction_and_the_decisions_it_reads_are_bound_for_the_decision_only() {
         LAW,
         ARTICLE,
         &app.id,
+        &Map::new(),
         &judgement(true, true),
         day("2026-10-20"),
     )
@@ -843,6 +859,7 @@ fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
             LAW,
             ARTICLE,
             &app.id,
+            &Map::new(),
             &judgement(true, true),
             day("2026-10-20"),
         )
@@ -1070,7 +1087,7 @@ fn the_objector_does_not_supply_what_the_decision_holds_or_the_law_does_not_ask(
         (
             "bezwaartermijn_einddatum",
             "2027-01-01",
-            "comes from the decision it contests",
+            "comes from the decision it refers to",
         ),
         ("bestemming", "Lissabon", "does not ask 'bestemming'"),
         (
@@ -1332,6 +1349,7 @@ fn an_objection_is_decided_with_decide_on_objection_and_reads_back_from_the_file
                 OBJECTION,
                 &bezwaar.id,
                 &Map::new(),
+                &Map::new(),
                 day("2026-11-15"),
             )
             .unwrap_err();
@@ -1403,6 +1421,7 @@ fn an_objection_goes_through_record_objection_and_decide_on_objection() {
             &service(),
             AWB,
             OBJECTION,
+            None,
             &objection(&[]),
             day("2026-11-01"),
         )

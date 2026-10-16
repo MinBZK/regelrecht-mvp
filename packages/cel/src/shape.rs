@@ -259,19 +259,45 @@ pub(crate) fn article_on<'s>(
 /// Whether a supplied value fits the field. `null` fits a field that can
 /// be absent (RFC-036): an application may leave it empty (Awb 4:5 asks to
 /// complete it; it is still an application). An amount is in whole
-/// eurocents. A date is written `YYYY-MM-DD`, and only so.
+/// eurocents. A date is written `YYYY-MM-DD`, and only so. A decision is a
+/// decision value `{grondslag, fields, findings, outputs}` (schema
+/// v0.8.4): an article reference and three objects, and nothing else.
 pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
     use serde_json::Value as J;
     match (field.type_, value) {
         (_, J::Null) => field.nullable,
         (ParameterType::String, J::String(_)) => true,
         (ParameterType::Number, J::Number(_)) => true,
+        // A decimal as the chronicle holds it ([`crate::encoding`]): only a
+        // stored value, as one a decision holds; a supplied value that holds
+        // the key is refused first.
+        (ParameterType::Number, J::Object(_)) => matches!(
+            crate::encoding::from_json(value),
+            Ok(regelrecht_engine::Value::Decimal(_))
+        ),
         (ParameterType::Amount, J::Number(n)) => n.is_i64() || n.is_u64(),
         (ParameterType::Boolean, J::Bool(_)) => true,
         (ParameterType::Date, J::String(s)) => NaiveDate::parse_from_str(s, "%Y-%m-%d")
             .is_ok_and(|d| d.format("%Y-%m-%d").to_string() == *s),
         (ParameterType::Array, J::Array(_)) => true,
         (ParameterType::Object, J::Object(_)) => true,
+        (ParameterType::Decision, J::Object(o)) => is_decision_value(o),
         _ => false,
     }
+}
+
+/// Whether `value` is a decision value `{grondslag, fields, findings,
+/// outputs}`: the article that decided (`<regulation>#<article>`), and
+/// three objects.
+pub(crate) fn is_decision_value(value: &serde_json::Map<String, serde_json::Value>) -> bool {
+    let grondslag = value
+        .get("grondslag")
+        .and_then(serde_json::Value::as_str)
+        .and_then(|g| g.split_once('#'))
+        .is_some_and(|(law, article)| !law.is_empty() && !article.is_empty());
+    value.len() == 4
+        && grondslag
+        && ["fields", "findings", "outputs"]
+            .iter()
+            .all(|key| value.get(*key).is_some_and(serde_json::Value::is_object))
 }

@@ -29,7 +29,7 @@ use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, ParameterType};
 use serde_json::{Map, Value as J};
 
-use crate::cell::{check_supplied, refuse_decimal_key, Cell, Filled, Values};
+use crate::cell::{check_supplied, decision_shape_of, refuse_decimal_key, Cell, Values};
 use crate::chronicle::Gram;
 use crate::decision::{self, DecisionShape, Source};
 use crate::encoding;
@@ -81,27 +81,10 @@ impl Cell {
                 decision::REVOKES
             )));
         }
-        // What the contested decision took and gave, in the law it was
-        // taken under.
-        let taken_on = contested.recorded_on;
-        let contested_shape = self.decision_shape_of(service, &contested, taken_on)?;
-        let gives = gives(service, &contested_shape, taken_on);
-        let mut filled = Filled {
-            refers_to: Some(contested.id.clone()),
-            ..Filled::default()
-        };
         // What the contested decision gives comes from it. Where it does
         // not hold it (an override voided it), the field stays missing: the
         // objector does not supply the end of the period.
-        let mut from_contested = Vec::new();
-        for field in &shape.fields {
-            if let Some(value) = contested.held(&field.name) {
-                filled.fields.insert(field.name.clone(), value.clone());
-            } else if !gives.contains(&field.name) {
-                continue;
-            }
-            from_contested.push(field.name.clone());
-        }
+        let (filled, from_contested) = self.referred(service, &shape, Some(&contested.id))?;
         check_supplied(&shape, supplied, &from_contested)?;
         self.record(service, &shape, supplied, filled, on)
     }
@@ -173,32 +156,33 @@ impl Cell {
         // The decision on the objection, with the heroverweging's answer to
         // `judgement`, or without it (`None`).
         let take = |service: &mut LawExecutionService, cause: Option<bool>| {
-            self.take(service, &shape, supplied, None, on, |bound| {
+            self.take(service, &shape, supplied, &Map::new(), None, on, |bound| {
                 on_objection(&shape, &objected, &judgement, cause, supplied, bound, on)
             })
         };
         // Admissibility first (Awb 7:11 lid 1): where the decision does not
         // revoke even if the heroverweging gives cause, the objection is not
         // reconsidered on the merits, and the decision records no answer.
-        let (fields, outputs) = take(service, Some(true))?;
+        let taken = take(service, Some(true))?;
         let mut anew = None;
-        let (fields, outputs) = if revokes(&outputs) {
+        let taken = if revokes(&taken.outputs) {
             // The heroverweging: the contested decision's article anew.
-            let anew_shape = self.decision_shape_of(service, &contested, on)?;
+            let anew_shape = decision_shape_of(service, &contested, on)?;
             check_objection_supplied(&shape, Some(&anew_shape), &judgement, supplied)?;
             let application = self.application_of(&contested)?.clone();
-            let (anew_fields, anew_outputs) = self.take(
+            let anew_taken = self.take(
                 service,
                 &anew_shape,
                 supplied,
+                &Map::new(),
                 Some(&contested.id),
                 on,
                 |bound| heroverweging(&anew_shape, &application, &contested, supplied, bound, on),
             )?;
-            let differs = differs(&anew_shape.outputs, &anew_outputs, &contested)?;
-            anew = Some((anew_shape, anew_fields, anew_outputs));
+            let differs = differs(&anew_shape.outputs, &anew_taken.outputs, &contested)?;
+            anew = Some((anew_shape, anew_taken));
             if differs {
-                (fields, outputs)
+                taken
             } else {
                 take(service, Some(false))?
             }
@@ -206,7 +190,7 @@ impl Cell {
             check_objection_supplied(&shape, None, &judgement, supplied)?;
             take(service, None)?
         };
-        let revokes = revokes(&outputs);
+        let revokes = revokes(&taken.outputs);
         let mut grams = vec![Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
@@ -215,13 +199,14 @@ impl Cell {
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
             moment: None,
-            fields,
+            fields: taken.fields,
+            findings: taken.findings,
             missing: Vec::new(),
-            outputs,
+            outputs: taken.outputs,
         }];
         // Awb 7:11 lid 2: revoked, and in its place the decision the
         // heroverweging gave. Both or neither land in the chronicle.
-        if let (true, Some((anew_shape, anew, anew_outputs))) = (revokes, anew) {
+        if let (true, Some((anew_shape, anew))) = (revokes, anew) {
             grams.push(Gram {
                 id: uuid::Uuid::now_v7().to_string(),
                 kind: anew_shape.kind.clone(),
@@ -230,9 +215,10 @@ impl Cell {
                 recording_actor: self.recording_actor.clone(),
                 recorded_on: on,
                 moment: None,
-                fields: anew,
+                fields: anew.fields,
+                findings: anew.findings,
                 missing: Vec::new(),
-                outputs: anew_outputs,
+                outputs: anew.outputs,
             });
         }
         let mut appended = self.chronicle.append_all(grams)?.iter().cloned();
@@ -294,23 +280,6 @@ impl Cell {
                     decision.refers_to.as_deref().unwrap_or_default()
                 ))
             })
-    }
-
-    /// What the decision of the article of `decision` asks, in the law in
-    /// force on `on`.
-    fn decision_shape_of(
-        &self,
-        service: &LawExecutionService,
-        decision: &Gram,
-        on: NaiveDate,
-    ) -> Result<DecisionShape> {
-        let (law_id, article) = decision.grondslag.split_once('#').ok_or_else(|| {
-            setup(format!(
-                "chronolexogram '{}' has grondslag '{}', not <regulation>#<article>",
-                decision.id, decision.grondslag
-            ))
-        })?;
-        decision::derive(service, law_id, article, on)
     }
 }
 
@@ -406,21 +375,6 @@ fn revokes(outputs: &Values) -> bool {
     outputs.get(decision::REVOKES) == Some(&J::Bool(true))
 }
 
-/// The outputs of the articles that take part in the decision of `shape`:
-/// what such a decision gives, whether a chronolexogram of it holds them or
-/// not.
-fn gives(service: &LawExecutionService, shape: &DecisionShape, on: NaiveDate) -> Vec<String> {
-    shape
-        .stages
-        .iter()
-        .flat_map(|stage| &stage.articles)
-        .filter_map(|part| shape::article_on(service, &part.law_id, &part.article_number, on))
-        .filter_map(|article| article.get_execution_spec())
-        .flat_map(|execution| execution.output.iter().flatten())
-        .map(|output| output.name.clone())
-        .collect()
-}
-
 /// Refuse what the deciding authority does not supply on an objection: a
 /// name neither decision asks of it, the judgement the heroverweging
 /// answers, a value of the wrong type. Without a heroverweging (`anew` is
@@ -502,6 +456,7 @@ mod tests {
             recorded_on: chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
             moment: None,
             fields: BTreeMap::new(),
+            findings: Vec::new(),
             missing: Vec::new(),
             outputs: serde_json::from_value(outputs).unwrap(),
         }
