@@ -121,12 +121,13 @@ fn object(value: Value) -> Map<String, Value> {
     value.as_object().unwrap().clone()
 }
 
-/// Record an application for `dagen` days and decide on it with `supplied`.
+/// Record an application for `dagen` days and decide on it with `supplied`:
+/// the decision, and the findings it used ([`Cell::findings`]).
 fn decide(
     service: &mut LawExecutionService,
     dagen: i64,
     supplied: Value,
-) -> Result<regelrecht_cel::Gram, Error> {
+) -> Result<(regelrecht_cel::Gram, Vec<String>), Error> {
     let mut cell = Cell::in_memory("fictieve_school");
     let app = cell
         .record_submission(
@@ -148,6 +149,10 @@ fn decide(
         day(),
     )
     .map(|mut grams| grams.remove(0))
+    .map(|gram| {
+        let findings = cell.findings(service, &gram.id).unwrap();
+        (gram, findings)
+    })
 }
 
 #[test]
@@ -162,10 +167,10 @@ fn a_judgement_on_a_term_a_regulation_also_fills_may_be_supplied() {
 #[test]
 fn where_the_regulation_is_silent_the_judgement_decides() {
     let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
-    let gram = decide(&mut service, 5, json!({"grond_aanwezig": false})).unwrap();
+    let (gram, findings) = decide(&mut service, 5, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     assert_eq!(gram.fields["grond_aanwezig"], json!(false));
-    assert_eq!(gram.findings, ["grond_aanwezig"]);
+    assert_eq!(findings, ["grond_aanwezig"]);
 
     // Without the judgement, nothing decides the norm for this case.
     let e = decide(&mut service, 5, json!({})).unwrap_err();
@@ -178,16 +183,16 @@ fn where_the_regulation_is_silent_the_judgement_decides() {
 #[test]
 fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
     let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
-    let gram = decide(&mut service, 2, json!({"grond_aanwezig": false})).unwrap();
+    let (gram, findings) = decide(&mut service, 2, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
     // The regulation decided it, not the head.
-    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
+    assert!(findings.is_empty(), "{:?}", findings);
 
     // The judgement may be left out.
-    let gram = decide(&mut service, 2, json!({})).unwrap();
+    let (gram, findings) = decide(&mut service, 2, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
-    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
+    assert!(findings.is_empty(), "{:?}", findings);
 }
 
 /// Where the regulation gives what the head found, the regulation still
@@ -196,9 +201,9 @@ fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
 #[test]
 fn a_regulation_that_gives_the_judgement_s_value_still_sets_it_aside() {
     let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
-    let gram = decide(&mut service, 2, json!({"grond_aanwezig": true})).unwrap();
+    let (gram, findings) = decide(&mut service, 2, json!({"grond_aanwezig": true})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
-    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
+    assert!(findings.is_empty(), "{:?}", findings);
 }
 
 #[test]
@@ -207,11 +212,11 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
         "requires: [{name: aanvraag_datum, type: date}]",
         "requires: [{name: kanaal, type: string}]",
     );
-    let service = service(&[&general, SPECIAL_LAW]);
+    let mut service = service(&[&general, SPECIAL_LAW]);
     let mut cell = Cell::in_memory("fictieve_school");
     let e = cell
         .record_submission(
-            &service,
+            &mut service,
             LAW,
             "1",
             None,
@@ -296,7 +301,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
     let mut cell = Cell::in_memory("fictieve_school");
     let app = cell
         .record_submission(
-            &service,
+            &mut service,
             LAW,
             "2",
             None,
@@ -327,11 +332,11 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
         "requests: wet_verlof_fictief#1",
         "requests: wet_elders_fictief#4",
     );
-    let service = service(&[GENERAL_LAW, &split]);
+    let mut service = service(&[GENERAL_LAW, &split]);
     let mut cell = Cell::in_memory("fictieve_school");
     let e = cell
         .record_submission(
-            &service,
+            &mut service,
             LAW,
             "2",
             None,
@@ -366,13 +371,13 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
           - {name: dagen, type: number}
 "#;
     let split = format!("{SPLIT_LAW}{}", second.trim_start_matches('\n'));
-    let service = service(&[GENERAL_LAW, &split]);
+    let mut service = service(&[GENERAL_LAW, &split]);
     let e = decision::derive(&service, LAW, "1", day()).unwrap_err();
     assert!(e.to_string().contains("several applications"), "{e}");
     let mut cell = Cell::in_memory("fictieve_school");
     let app = cell
         .record_submission(
-            &service,
+            &mut service,
             LAW,
             "2",
             None,
@@ -425,7 +430,7 @@ fn a_hook_that_reads_derived_data_asks_nothing_for_it() {
         shape.inputs
     );
     assert_eq!(shape.outputs, ["verlof_verleend"]);
-    let gram = decide(&mut service, 2, json!({})).unwrap();
+    let (gram, _) = decide(&mut service, 2, json!({})).unwrap();
     assert_eq!(gram.outputs["dagen_vermeld"], json!(2));
     assert!(!gram.fields.contains_key("dagen_gevraagd"));
 }
@@ -445,7 +450,7 @@ fn a_judgement_left_out_is_no_finding() {
         );
     assert_ne!(special, SPECIAL_LAW);
     let mut service = service(&[GENERAL_LAW, &special]);
-    let gram = decide(&mut service, 5, json!({})).unwrap();
+    let (gram, findings) = decide(&mut service, 5, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], Value::Null);
-    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
+    assert!(findings.is_empty(), "{:?}", findings);
 }

@@ -18,11 +18,13 @@
 //! A reduction (`regulatory_layer: REDUCTIE`, schema v0.8.2) is no
 //! regulation: a cell's reading of its own chronicle (RFC-048). Only a
 //! reduction reads the decisions taken under an article
-//! (`source.decisions`), and a reduction does not act on law: it fills no
-//! open term (`implements`), hooks onto nothing (`hooks`), replaces no
-//! output (`overrides`), takes no decision (`execution.produces`) and
-//! delegates nothing (`open_terms`). The loader refuses either the other way
-//! round, and a `decisions` beside another way to the value.
+//! (`source.decisions`). A reduction may fill an open term (`implements`,
+//! schema v0.8.5), so the engine runs it for that term like any
+//! implementation, but it does not act on law otherwise: it hooks onto
+//! nothing (`hooks`), replaces no output (`overrides`), takes no decision
+//! (`execution.produces`) and delegates nothing (`open_terms`). The loader
+//! refuses either the other way round, and a `decisions` beside another way
+//! to the value.
 //!
 //! A call to an article (`source.article`, schema v0.8.4, RFC-050) stands
 //! apart from `regulation`, `decisions` and `endpoint`, and only such a call
@@ -32,14 +34,14 @@ use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
 use regelrecht_law_model::{ActionOperation, ActionValue, MachineReadable, RegulatoryLayer};
 
-/// Refuse `source.decisions` outside a `REDUCTIE`, and `implements`, `hooks`,
-/// `overrides`, `execution.produces` or `open_terms` in a `REDUCTIE` (RFC-048).
+/// Refuse `source.decisions` outside a `REDUCTIE`, and `hooks`, `overrides`,
+/// `execution.produces` or `open_terms` in a `REDUCTIE` (RFC-048). A
+/// `REDUCTIE` may have `implements` (schema v0.8.5).
 pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
     let reduction = law.regulatory_layer == RegulatoryLayer::Reductie;
     for (where_, section) in sections(law) {
         if reduction {
             let acts_on_law = [
-                ("implements", section.implements.is_some()),
                 ("hooks", section.hooks.is_some()),
                 ("overrides", section.overrides.is_some()),
                 (

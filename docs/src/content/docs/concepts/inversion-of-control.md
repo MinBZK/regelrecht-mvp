@@ -113,6 +113,24 @@ When executing for a person in Diemen (parameters include `gemeente_code: GM0384
 
 An implementation can state its value in terms of the law it fills in. A ministerial regulation indexing an amount is the common case: *"het in artikel 4 genoemde bedrag wordt met ingang van 1 januari verhoogd met 3,2 procent"*, where the law leaves the amount open with a `default`. The implementing article then reads an output of that law, which depends on the very term it fills. That read is the law without this filling: the next implementation, or the `default` when there is none. The filling then applies once, whether the law or the implementing regulation is asked.
 
+## A reduction that fills an open term
+
+A cell's reduction ([RFC-048](/rfcs/rfc-048)) may implement an open term too (schema v0.8.5). It is no regulation: it reads the cell's own decisions back, and only the cell loads it. Art. 13a of the Leerplichtwet 1969 leaves `verlof_al_verleend_in_schooljaar` to the head per case (`decided_per_case_by`), and the school's reduction fills it:
+
+```yaml
+# reductie_verlof_al_verleend_in_schooljaar, article 1
+# regulatory_layer: REDUCTIE
+machine_readable:
+  implements:
+    - law: leerplichtwet_1969
+      article: 13a
+      open_term: verlof_al_verleend_in_schooljaar
+```
+
+The engine treats it like any implementation. It passes the reduction the parameters it declares from the article that asks the term, and runs it also where that article is called anew, as Awb 7:11 does on an objection. The reduction's reasoning therefore shows in the trace of the decision.
+
+The order of precedence is the one for every open term: an implementation, then the finding of the authority for the case, then the `default`. A term without a default and without either is an error. Outside a cell no reduction is loaded, so a scenario gives the head's finding.
+
 ## Conflict resolution
 
 When multiple regulations implement the same open term, the engine resolves conflicts using two rules from legal theory:

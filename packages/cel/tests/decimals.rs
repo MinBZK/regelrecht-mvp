@@ -381,7 +381,7 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
         let mut service = service();
         let mut cell = Cell::open(ACTOR, &path).unwrap();
         let app = cell
-            .record_submission(&service, ID, "1", None, &numbers(teller, noemer), day())
+            .record_submission(&mut service, ID, "1", None, &numbers(teller, noemer), day())
             .unwrap();
         let decided = cell
             .decide(
@@ -398,7 +398,7 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
 
         let mut cell = Cell::open(ACTOR, &path).unwrap();
         let verzoek = cell
-            .record_submission(&service, ID, "5", Some(&decided.id), &Map::new(), day())
+            .record_submission(&mut service, ID, "5", Some(&decided.id), &Map::new(), day())
             .unwrap();
         let [anew] = &cell
             .decide(
@@ -425,7 +425,7 @@ fn the_file_holds_the_digits() {
     let mut service = service();
     let mut cell = Cell::open(ACTOR, &path).unwrap();
     let app = cell
-        .record_submission(&service, ID, "1", None, &numbers(1, 3), day())
+        .record_submission(&mut service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
     cell.decide(
         &mut service,
@@ -449,15 +449,15 @@ fn the_file_holds_the_digits() {
 fn a_supplied_value_may_not_hold_the_decimal_key() {
     // An object field takes any object, so only the cell's own refusal
     // stands between this value and a decimal nobody supplied.
-    let service = service();
+    let mut service = service();
     let mut cell = Cell::in_memory(ACTOR);
     let ok = json!({"bijlage": {"x": 1}});
-    cell.record_submission(&service, ID, "3", None, ok.as_object().unwrap(), day())
+    cell.record_submission(&mut service, ID, "3", None, ok.as_object().unwrap(), day())
         .unwrap();
     let supplied = json!({"bijlage": {"x": {"__decimal": "1.5"}}});
     let err = cell
         .record_submission(
-            &service,
+            &mut service,
             ID,
             "3",
             None,
@@ -479,7 +479,7 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     let mut service = service();
     let mut cell = Cell::open(ACTOR, &path).unwrap();
     let app = cell
-        .record_submission(&service, ID, "1", None, &numbers(1, 3), day())
+        .record_submission(&mut service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
     cell.decide(
         &mut service,
@@ -516,7 +516,6 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         recorded_on: day(),
         moment: None,
         fields: [("teller".to_string(), json!({"__decimal": "0,5"}))].into(),
-        findings: Vec::new(),
         missing: Vec::new(),
         outputs: BTreeMap::new(),
     };

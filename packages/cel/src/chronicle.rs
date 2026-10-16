@@ -52,16 +52,8 @@ pub struct Gram {
     /// What the application holds: the values supplied, and `null` for a
     /// field left out that can be absent, as the engine received them.
     pub fields: BTreeMap<String, Value>,
-    /// For a decision: the names of the fields that hold a finding of the
-    /// deciding authority for this case (RFC-050). A term the engine reports
-    /// only a regulation filled is not named here: the regulation decided
-    /// it, also where it gives what the authority found
-    /// (`ArticleResult::open_terms`). A term a finding also filled stays
-    /// named, as where the regulation read the finding, and so does a
-    /// finding the decision did not read. The report is read by the term's
-    /// id, across every article the decision runs.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub findings: Vec<String>,
+    // Which fields hold a finding of the deciding authority is not stored:
+    // a replay of the decision says so ([`crate::Cell::findings`]).
     /// Fields that cannot be absent and that the application left out. An
     /// incomplete application is still recorded (Awb 4:5).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

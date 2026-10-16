@@ -19,9 +19,10 @@
 //!    judgement where it is silent;
 //! 4. the cell: a date the stage requires, which is the day of the decision.
 //!
-//! An input the deciding authority would supply may instead come from one of
-//! the cell's reductions, where one yields it by name. That follows from the
-//! cell, not from the law ([`crate::reading`], RFC-048).
+//! A reduction of the cell fills an open term like a regulation
+//! (`implements`, [`crate::reading`], RFC-048). The cell derives the shape
+//! with its reductions bound, so a term one fills counts as filled; derived
+//! without them, the term is what the law leaves it to.
 
 use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, ParameterType, ProcedureStage};
