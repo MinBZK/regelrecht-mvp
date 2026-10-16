@@ -122,7 +122,7 @@ The image sets the port to `8000`, the base path to `/vakantieverlof/` and the c
 |----------|---------|---------|
 | `VERLOF_PORT` | `8410` | Listening port |
 | `VERLOF_BASE_PATH` | `/` | Path prefix; must match the portal path |
-| `VERLOF_STATIC_DIR` | `frontend-poc-vakantieverlof/dist` in the repository | Built frontend |
+| `VERLOF_STATIC_DIR` | `dist` under `frontend-poc-vakantieverlof/` in the repository | Built frontend, made by `npm run build` |
 | `VERLOF_CORPUS_DIR` | `corpus/` in the repository | The regelwerken under `regulation/nl` and the cell under `cells/obs_de_klimop` |
 
 ## Further reading
