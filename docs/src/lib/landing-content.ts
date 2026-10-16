@@ -8,6 +8,7 @@
 
 import paper from '~/research/rules-as-executed.meta.json';
 import jurixPaper from '~/research/citizen-explanation.meta.json';
+import { joinAuthors } from '~/lib/authors';
 
 // The papers' titles, authors and dates come from the generated meta JSON
 // next to their HTML, so a regenerated paper cannot drift from the tile that
@@ -15,8 +16,7 @@ import jurixPaper from '~/research/citizen-explanation.meta.json';
 const paperTitle = `${paper.title}: ${paper.subtitle}`;
 const paperAuthors = paper.authors.join(' & ');
 const jurixTitle = `${jurixPaper.title}: ${jurixPaper.subtitle}`;
-const jurixNames = jurixPaper.authors.map((a) => a.name);
-const jurixAuthors = `${jurixNames.slice(0, -1).join(', ')} & ${jurixNames.at(-1)}`;
+const jurixAuthors = joinAuthors(jurixPaper.authors.map((a) => a.name), '&');
 function paperDate(locale: string, date = paper.date): string {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',

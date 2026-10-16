@@ -113,3 +113,12 @@
      column; rich-text's own safety net covers paragraphs, not these divs. */
   overflow-wrap: anywhere;
 }
+/* A numbered style (Vancouver) puts the number and the entry in two divs;
+   set them side by side, the number in its own column, instead of the
+   author-date hanging indent above. */
+[data-discuss-paper] .csl-bib-body .csl-entry:has(> .csl-left-margin) {
+  display: grid;
+  grid-template-columns: 3em 1fr;
+  padding-left: 0;
+  text-indent: 0;
+}

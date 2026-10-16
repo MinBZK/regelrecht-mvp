@@ -13,14 +13,14 @@
  */
 import Base from '~/layouts/Base.astro';
 import ResearchPaper from '~/components/ResearchPaper.astro';
+import { joinAuthors } from '~/lib/authors';
 import paperHtml from '~/research/citizen-explanation.html?raw';
 import headings from '~/research/citizen-explanation.headings.json';
 import meta from '~/research/citizen-explanation.meta.json';
 
 const pathname = '/research/citizen-explanation';
 const title = `${meta.title} · RegelRecht`;
-const names = meta.authors.map((a) => a.name);
-const authors = `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+const authors = joinAuthors(meta.authors.map((a) => a.name));
 const description =
   `${meta.venue} paper by ${authors}: LLM explanations for citizens, ` +
   'generated from the trace of a rule engine and checked against it.';
