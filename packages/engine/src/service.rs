@@ -32,7 +32,7 @@ use crate::article::{
 use crate::config;
 use crate::context::{LazyInputs, RuleContext};
 use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
-use crate::engine::{ArticleEngine, ArticleResult, OutputProvenance};
+use crate::engine::{ArticleEngine, ArticleResult, FilledBy, OpenTermFilled, OutputProvenance};
 use crate::error::{EngineError, Result};
 use crate::operations::ValueResolver;
 use crate::priority;
@@ -144,6 +144,9 @@ struct ResolutionContext<'a> {
     findings: BTreeMap<String, Value>,
     /// The ids of [`Self::findings`] that an article in the execution asked.
     findings_asked: BTreeSet<String>,
+    /// The open terms a finding or a regulation filled in this execution
+    /// ([`ArticleResult::open_terms`]).
+    open_terms: Vec<OpenTermFilled>,
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
@@ -258,6 +261,7 @@ impl<'a> ResolutionContext<'a> {
             staged_article: None,
             findings: BTreeMap::new(),
             findings_asked: BTreeSet::new(),
+            open_terms: Vec::new(),
         })
     }
 
@@ -326,6 +330,36 @@ impl<'a> ResolutionContext<'a> {
                 .collect::<Vec<_>>()
                 .join(", ")
         )))
+    }
+
+    /// Record that `filled_by` filled the open term `term` of `article` of
+    /// `law`, once: a term resolved again in the same way is one filling.
+    fn note_open_term(&mut self, law: &str, article: &str, term: &str, filled_by: FilledBy) {
+        let filled = OpenTermFilled {
+            law_id: law.to_string(),
+            article: article.to_string(),
+            term: term.to_string(),
+            filled_by,
+        };
+        if !self.open_terms.contains(&filled) {
+            self.open_terms.push(filled);
+        }
+    }
+
+    /// Put on `result` what this context collected for the whole execution,
+    /// not only for the article that happened to be merged first, and
+    /// independently of tracing.
+    fn report_into(&self, result: &mut ArticleResult) {
+        result
+            .delegation_refusals
+            .clone_from(&self.delegation_refusals);
+        result
+            .declaration_version_notes
+            .clone_from(&self.declaration_version_notes);
+        result
+            .declarations_not_in_force
+            .clone_from(&self.declarations_not_in_force);
+        result.open_terms.clone_from(&self.open_terms);
     }
 
     /// Create a new resolution context with trace builder.
@@ -2049,15 +2083,7 @@ impl LawExecutionService {
         res_ctx.contextual_law_id = Some(law_id.to_string());
         let mut result =
             self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)?;
-        result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut result);
         Ok(result)
     }
 
@@ -2347,15 +2373,7 @@ impl LawExecutionService {
             &mut res_ctx,
         )?;
         res_ctx.check_findings_asked()?;
-        result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut result);
         Ok(result)
     }
 
@@ -2650,15 +2668,7 @@ impl LawExecutionService {
         // All stages complete
         let mut final_result = result;
         final_result.outputs = stage_state.accumulated_outputs;
-        final_result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        final_result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        final_result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut final_result);
         Ok(ExecutionOutcome::Complete(Box::new(final_result)))
     }
 
@@ -2768,15 +2778,7 @@ impl LawExecutionService {
 
         // Every refusal seen anywhere in this execution chain, not just in the
         // article that happened to be merged first.
-        result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut result);
 
         Ok(result)
     }
@@ -2851,6 +2853,7 @@ impl LawExecutionService {
                     delegation_refusals: Vec::new(),
                     declaration_version_notes: Vec::new(),
                     declarations_not_in_force: Vec::new(),
+                    open_terms: Vec::new(),
                 });
             }
         }
@@ -4247,7 +4250,7 @@ impl LawExecutionService {
         // fills the term decides, and a silent one is passed over for
         // the next, so a filling implementation wins over a silent one
         // whatever their order.
-        let mut filled: Option<Value> = None;
+        let mut filled: Option<(Value, FilledBy)> = None;
         let mut silent: Vec<String> = Vec::new();
         for (impl_law, impl_article) in &lookup.implementations {
             // The implementing article is reading the output it fills in:
@@ -4323,7 +4326,13 @@ impl LawExecutionService {
                         "Open term '{}' implemented by {} article {}{set_aside}",
                         term.id, impl_law.id, impl_article.number
                     ));
-                    filled = Some(value.clone());
+                    filled = Some((
+                        value.clone(),
+                        FilledBy::Regulation {
+                            law_id: impl_law.id.clone(),
+                            article: impl_article.number.clone(),
+                        },
+                    ));
                     break;
                 }
             } else {
@@ -4352,7 +4361,8 @@ impl LawExecutionService {
                 )));
             }
         }
-        if let Some(value) = filled {
+        if let Some((value, by)) = filled {
+            res_ctx.note_open_term(&law.id, &article.number, &term.id, by);
             res_ctx.leave(&ot_key);
             return Ok(value);
         }
@@ -4377,6 +4387,7 @@ impl LawExecutionService {
                     "Open term '{}' decided in this case by {by}{silent_note}",
                     term.id
                 ));
+                res_ctx.note_open_term(&law.id, &article.number, &term.id, FilledBy::Finding);
                 res_ctx.leave(&ot_key);
                 return Ok(value.clone());
             }

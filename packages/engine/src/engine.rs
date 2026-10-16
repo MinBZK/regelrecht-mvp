@@ -58,6 +58,34 @@ pub enum OutputProvenance {
     },
 }
 
+/// Who filled an open term in an execution: a finding of the authority
+/// that decides it per case, or a regulation that implements it (RFC-050).
+/// A consumer reads here which of the two the outcome rests on, instead of
+/// guessing from the value: a regulation can give what the authority found.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "filled_by", rename_all = "snake_case")]
+pub enum FilledBy {
+    /// A finding for this case (`decided_per_case_by`), given by the caller
+    /// or with a decision value called anew.
+    Finding,
+    /// An article of a regulation that implements the term (`implements`).
+    Regulation { law_id: String, article: String },
+}
+
+/// One open term of one article that was filled in an execution, and by
+/// whom. A term filled by its default, or left null, is not listed.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct OpenTermFilled {
+    /// The law and article that declare the term, so a term of an article
+    /// called by the executed one is told apart from one of its own.
+    pub law_id: String,
+    pub article: String,
+    /// The id of the open term.
+    pub term: String,
+    #[serde(flatten)]
+    pub filled_by: FilledBy,
+}
+
 /// Result of article execution
 #[derive(Debug, Clone)]
 pub struct ArticleResult {
@@ -97,6 +125,12 @@ pub struct ArticleResult {
     /// by the service layer, independently of tracing, so the skip reaches the
     /// receipt.
     pub declarations_not_in_force: Vec<DeclarationNotInForce>,
+    /// The open terms a finding or a regulation filled during this
+    /// execution, in the order they were resolved, nested calls included.
+    /// Populated by the service layer, independently of tracing. A term can
+    /// be listed twice, once per filler: an implementing article that reads
+    /// the output it fills in reads it with the finding in its place.
+    pub open_terms: Vec<OpenTermFilled>,
 }
 
 /// Executes a single article's machine_readable.execution section.
@@ -323,6 +357,7 @@ impl<'a> ArticleEngine<'a> {
             delegation_refusals: Vec::new(),
             declaration_version_notes: Vec::new(),
             declarations_not_in_force: Vec::new(),
+            open_terms: Vec::new(),
         };
 
         tracing::debug!(

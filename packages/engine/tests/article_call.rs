@@ -12,7 +12,7 @@
 
 use std::collections::BTreeMap;
 
-use regelrecht_engine::{EngineError, LawExecutionService, Value};
+use regelrecht_engine::{EngineError, FilledBy, LawExecutionService, OpenTermFilled, Value};
 use rust_decimal::Decimal;
 use serde_json::json;
 
@@ -2166,4 +2166,92 @@ articles:
             .unwrap();
         assert_eq!(result.outputs["zou_verlenen"], Value::Bool(grond));
     }
+}
+
+// --- Who filled an open term -------------------------------------------------
+
+/// What article 1 of [`HOOFD`] decides with `dagen` 5 and `findings`, with
+/// `laws` loaded beside it: the open terms the execution reports filled.
+fn filled(laws: &[&str], findings: serde_json::Value) -> Vec<OpenTermFilled> {
+    let mut service = LawExecutionService::new();
+    service.load_law(HOOFD).unwrap();
+    for law in laws {
+        service.load_law(law).unwrap();
+    }
+    service
+        .evaluate_law_with_findings(
+            "wet_hoofd",
+            &["verleend"],
+            params(json!({"dagen": 5})),
+            params(findings),
+            DATE,
+        )
+        .unwrap()
+        .open_terms
+}
+
+fn grond_aanwezig(filled_by: FilledBy) -> OpenTermFilled {
+    OpenTermFilled {
+        law_id: "wet_hoofd".to_string(),
+        article: "1".to_string(),
+        term: "grond_aanwezig".to_string(),
+        filled_by,
+    }
+}
+
+#[test]
+fn the_execution_reports_a_term_a_finding_filled() {
+    let found = filled(&[], json!({"grond_aanwezig": true}));
+    assert_eq!(found, vec![grond_aanwezig(FilledBy::Finding)]);
+}
+
+/// A regulation that fills the term sets the finding aside, also where it
+/// gives the same value: the report names the regulation, not the finding.
+#[test]
+fn the_execution_reports_a_term_a_regulation_filled() {
+    let gelijk = HOOFD_BELEID.replace("value: false", "value: true");
+    for (beleid, finding) in [(HOOFD_BELEID, true), (gelijk.as_str(), true)] {
+        let found = filled(&[beleid], json!({ "grond_aanwezig": finding }));
+        assert_eq!(
+            found,
+            vec![grond_aanwezig(FilledBy::Regulation {
+                law_id: "beleid_hoofd".to_string(),
+                article: "1".to_string(),
+            })]
+        );
+    }
+}
+
+#[test]
+fn a_regulation_not_in_force_leaves_the_finding_to_fill_the_term() {
+    let later = HOOFD_BELEID.replace("valid_from: '2025-01-01'", "valid_from: '2026-01-01'");
+    let found = filled(&[&later], json!({"grond_aanwezig": true}));
+    assert_eq!(found, vec![grond_aanwezig(FilledBy::Finding)]);
+}
+
+/// A term of an article the executed one calls is reported with the
+/// article that declares it: here the decision called anew, whose finding
+/// comes with the decision value.
+#[test]
+fn the_execution_reports_a_term_of_an_article_it_calls() {
+    let service = anew_service();
+    let result = service
+        .evaluate_law_with_findings(
+            "wet_hoofd",
+            &["heroverwogen"],
+            params(json!({"besluit": hoofd_besluit(true)})),
+            BTreeMap::new(),
+            DATE,
+        )
+        .unwrap();
+    assert_eq!(result.open_terms, vec![grond_aanwezig(FilledBy::Finding)]);
+    assert_eq!(
+        serde_json::to_value(&result.open_terms[0]).unwrap(),
+        json!({
+            "law_id": "wet_hoofd",
+            "article": "1",
+            "term": "grond_aanwezig",
+            "filled_by": "finding",
+        })
+    );
 }

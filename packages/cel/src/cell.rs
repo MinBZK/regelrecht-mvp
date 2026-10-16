@@ -16,7 +16,8 @@ use std::path::Path;
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
-    ArticleResult, LawExecutionService, OutputProvenance, ParameterType, Value,
+    ArticleResult, FilledBy, LawExecutionService, OpenTermFilled, OutputProvenance, ParameterType,
+    Value,
 };
 use serde_json::Map;
 
@@ -817,7 +818,7 @@ impl Cell {
                 .entry(name.clone())
                 .or_insert_with(|| finding.clone());
         }
-        let outputs = run_stages(
+        let (outputs, filled) = run_stages(
             service,
             &shape,
             parameters,
@@ -825,7 +826,7 @@ impl Cell {
             on,
             &mut fields,
         )?;
-        let found = used(given_findings, &fields)?;
+        let found = used(given_findings, &filled);
         // A decision it takes in turn would be a value in its outputs, not
         // an id: the cell records one level.
         if let Some(nested) = decision_outputs(service, &shape, on)
@@ -947,7 +948,7 @@ impl Cell {
             })
             .map(|(name, value)| (name.clone(), value.clone()))
             .collect();
-        let outputs = run_stages(
+        let (outputs, filled) = run_stages(
             &bound,
             shape,
             parameters,
@@ -956,7 +957,7 @@ impl Cell {
             &mut fields,
         )?;
         Ok(Taken {
-            findings: used(&given, &fields)?,
+            findings: used(&given, &filled),
             fields,
             outputs,
         })
@@ -1008,20 +1009,23 @@ struct Taken {
     findings: Vec<String>,
 }
 
-/// The names in `given` whose value the decision used as given: a value
-/// the engine set aside, as a regulation that fills a term sets aside the
-/// authority's finding on it, is not among them. The engine names no
-/// winner, so where the regulation gives what the authority found, the
-/// finding counts as used. Compared as the engine's `EQUALS` compares
-/// records ([`encoding::same_held`]).
-fn used(given: &Map<String, serde_json::Value>, fields: &Values) -> Result<Vec<String>> {
-    let mut used = Vec::new();
-    for (name, value) in given {
-        if encoding::same_held(fields.get(name), Some(value))? {
-            used.push(name.clone());
-        }
-    }
-    Ok(used)
+/// The names in `given` whose finding the decision used: all but those
+/// the engine reports a regulation filled in the authority's place
+/// ([`ArticleResult::open_terms`]), also where the regulation gives what
+/// the authority found. A finding the decision did not read is not set
+/// aside, so it stays a finding. A finding applies by the term's id to
+/// every article in the decision (RFC-050), so the report is read by id.
+fn used(given: &Map<String, serde_json::Value>, filled: &[OpenTermFilled]) -> Vec<String> {
+    let by = |name: &str, finding: bool| {
+        filled
+            .iter()
+            .any(|f| f.term == name && matches!(f.filled_by, FilledBy::Finding) == finding)
+    };
+    given
+        .keys()
+        .filter(|name| by(name, true) || !by(name, false))
+        .cloned()
+        .collect()
 }
 
 /// Values as the engine takes them ([`encoding::from_json`]).
@@ -1101,7 +1105,7 @@ fn asked(
 
 /// Run the stages of a decision on `on`, with the authority's `findings`
 /// for the articles it calls: add what a policy filled to `fields`, and
-/// return the outputs.
+/// return the outputs and who filled the open terms, over all stages.
 fn run_stages(
     service: &LawExecutionService,
     shape: &DecisionShape,
@@ -1109,9 +1113,10 @@ fn run_stages(
     findings: BTreeMap<String, Value>,
     on: NaiveDate,
     fields: &mut BTreeMap<String, serde_json::Value>,
-) -> Result<BTreeMap<String, serde_json::Value>> {
+) -> Result<(BTreeMap<String, serde_json::Value>, Vec<OpenTermFilled>)> {
     let date = on.to_string();
     let mut outputs = BTreeMap::new();
+    let mut filled = Vec::new();
     for stage in &shape.stages {
         // Every stage computes the decision's outputs, so a hook at a later
         // stage can read them; they are the same at each.
@@ -1125,6 +1130,7 @@ fn run_stages(
             &date,
         )?;
         collect_outputs(&result, &mut outputs)?;
+        filled.extend(result.open_terms.iter().cloned());
         for input in &shape.inputs {
             let name = &input.field.name;
             let Some(value) = result.resolved_inputs.get(name) else {
@@ -1145,7 +1151,7 @@ fn run_stages(
             }
         }
     }
-    Ok(outputs)
+    Ok((outputs, filled))
 }
 
 /// The outputs of type `decision` of the deciding article of `shape`, in

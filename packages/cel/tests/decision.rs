@@ -190,6 +190,17 @@ fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
     assert!(gram.findings.is_empty(), "{:?}", gram.findings);
 }
 
+/// Where the regulation gives what the head found, the regulation still
+/// decided it: the engine says who filled the term, the cell does not
+/// read it from the value.
+#[test]
+fn a_regulation_that_gives_the_judgement_s_value_still_sets_it_aside() {
+    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let gram = decide(&mut service, 2, json!({"grond_aanwezig": true})).unwrap();
+    assert_eq!(gram.fields["grond_aanwezig"], json!(true));
+    assert!(gram.findings.is_empty(), "{:?}", gram.findings);
+}
+
 #[test]
 fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() {
     let general = GENERAL_LAW.replace(
