@@ -67,7 +67,7 @@ pub use config::{
 };
 pub use context::RuleContext;
 pub use data_source::{DataSource, DataSourceMatch, DataSourceRegistry, DictDataSource};
-pub use engine::{ArticleEngine, ArticleResult, OutputProvenance};
+pub use engine::{ArticleEngine, ArticleResult, FilledBy, OpenTermFilled, OutputProvenance};
 pub use error::{EngineError, ExternalError, Result};
 pub use operations::{equal_as_written, evaluate_value, execute_operation, ValueResolver};
 pub use receipt::ExecutionReceipt;
@@ -76,8 +76,8 @@ pub use resolver::{
     HookEntry, ImplementationLookup, ProcedureMiss, RuleResolver,
 };
 pub use service::{
-    ExecutionOutcome, LawExecutionService, LawInfo, ProcedureStage, ServiceProvider, StageState,
-    Submission, SubmissionArticle,
+    ExecutionOutcome, LawExecutionService, LawInfo, ProcedureStage, ServiceProvider, StageReport,
+    StageState, Submission, SubmissionArticle,
 };
 pub use trace::{PathNode, TraceBuilder};
 pub use types::{

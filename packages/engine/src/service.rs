@@ -32,7 +32,7 @@ use crate::article::{
 use crate::config;
 use crate::context::{LazyInputs, RuleContext};
 use crate::data_source::{DataSource, DataSourceRegistry, DictDataSource};
-use crate::engine::{ArticleEngine, ArticleResult, OutputProvenance};
+use crate::engine::{ArticleEngine, ArticleResult, FilledBy, OpenTermFilled, OutputProvenance};
 use crate::error::{EngineError, Result};
 use crate::operations::ValueResolver;
 use crate::priority;
@@ -144,6 +144,9 @@ struct ResolutionContext<'a> {
     findings: BTreeMap<String, Value>,
     /// The ids of [`Self::findings`] that an article in the execution asked.
     findings_asked: BTreeSet<String>,
+    /// The open terms a finding or a regulation filled in this execution
+    /// ([`ArticleResult::open_terms`]).
+    open_terms: Vec<OpenTermFilled>,
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
@@ -258,6 +261,7 @@ impl<'a> ResolutionContext<'a> {
             staged_article: None,
             findings: BTreeMap::new(),
             findings_asked: BTreeSet::new(),
+            open_terms: Vec::new(),
         })
     }
 
@@ -326,6 +330,29 @@ impl<'a> ResolutionContext<'a> {
                 .collect::<Vec<_>>()
                 .join(", ")
         )))
+    }
+
+    /// Record that `filled_by` filled the open term `term` of `article` of
+    /// `law`, once: a term resolved again in the same way is one filling.
+    fn note_open_term(&mut self, law: &str, article: &str, term: &str, filled_by: FilledBy) {
+        let filled = OpenTermFilled {
+            law_id: law.to_string(),
+            article: article.to_string(),
+            term: term.to_string(),
+            filled_by,
+        };
+        if !self.open_terms.contains(&filled) {
+            self.open_terms.push(filled);
+        }
+    }
+
+    /// Put on `result` what this context collected for the whole execution,
+    /// not only for the article that happened to be merged first, and
+    /// independently of tracing.
+    fn report_into(&self, result: &mut ArticleResult) {
+        let mut report = StageReport::default();
+        report.add_stage(self);
+        report.report_into(result);
     }
 
     /// Create a new resolution context with trace builder.
@@ -1515,6 +1542,62 @@ pub struct StageState {
     pub accumulated_outputs: BTreeMap<String, Value>,
     /// Original parameters from the initial execution
     pub parameters: BTreeMap<String, Value>,
+    /// What the completed stages reported beside their outputs, so the
+    /// final result reports every stage, also across a yield. Boxed, so a
+    /// yield stays small beside a completed result.
+    #[serde(default)]
+    pub report: Box<StageReport>,
+}
+
+/// The lists an [`ArticleResult`] reports beside its outputs, gathered
+/// over the stages of a procedure ([`StageState::report`]). Each holds an
+/// entry once, in the order the stages first reported it.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StageReport {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub delegation_refusals: Vec<DelegationRefusal>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub declaration_version_notes: Vec<DeclarationsFromOtherVersion>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub declarations_not_in_force: Vec<DeclarationNotInForce>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub open_terms: Vec<OpenTermFilled>,
+}
+
+impl StageReport {
+    /// Add what `res_ctx` collected for one stage that is not yet here.
+    fn add_stage(&mut self, res_ctx: &ResolutionContext<'_>) {
+        fn add<T: Clone + PartialEq>(to: &mut Vec<T>, from: &[T]) {
+            for item in from {
+                if !to.contains(item) {
+                    to.push(item.clone());
+                }
+            }
+        }
+        add(&mut self.delegation_refusals, &res_ctx.delegation_refusals);
+        add(
+            &mut self.declaration_version_notes,
+            &res_ctx.declaration_version_notes,
+        );
+        add(
+            &mut self.declarations_not_in_force,
+            &res_ctx.declarations_not_in_force,
+        );
+        add(&mut self.open_terms, &res_ctx.open_terms);
+    }
+
+    fn report_into(&self, result: &mut ArticleResult) {
+        result
+            .delegation_refusals
+            .clone_from(&self.delegation_refusals);
+        result
+            .declaration_version_notes
+            .clone_from(&self.declaration_version_notes);
+        result
+            .declarations_not_in_force
+            .clone_from(&self.declarations_not_in_force);
+        result.open_terms.clone_from(&self.open_terms);
+    }
 }
 
 /// Outcome of a stage-aware execution step.
@@ -1740,6 +1823,7 @@ impl LawExecutionService {
                 delegation_refusals: result.delegation_refusals.clone(),
                 declaration_version_notes: result.declaration_version_notes.clone(),
                 declarations_not_in_force: result.declarations_not_in_force.clone(),
+                open_terms: result.open_terms.clone(),
             },
             accepted_values: Vec::new(),
             timestamp: chrono::Utc::now().to_rfc3339(),
@@ -2049,15 +2133,7 @@ impl LawExecutionService {
         res_ctx.contextual_law_id = Some(law_id.to_string());
         let mut result =
             self.evaluate_law_output_internal(law_id, output_name, parameters, &mut res_ctx)?;
-        result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut result);
         Ok(result)
     }
 
@@ -2347,15 +2423,7 @@ impl LawExecutionService {
             &mut res_ctx,
         )?;
         res_ctx.check_findings_asked()?;
-        result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut result);
         Ok(result)
     }
 
@@ -2533,6 +2601,7 @@ impl LawExecutionService {
                     current_stage: first_stage.name.clone(),
                     accumulated_outputs: BTreeMap::new(),
                     parameters: parameters.clone(),
+                    report: Box::default(),
                 }
             }
         };
@@ -2609,6 +2678,7 @@ impl LawExecutionService {
         for (k, v) in &result.outputs {
             stage_state.accumulated_outputs.insert(k.clone(), v.clone());
         }
+        stage_state.report.add_stage(&res_ctx);
 
         // Advance to next stage
         if stage_idx + 1 < procedure.stages.len() {
@@ -2650,15 +2720,7 @@ impl LawExecutionService {
         // All stages complete
         let mut final_result = result;
         final_result.outputs = stage_state.accumulated_outputs;
-        final_result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        final_result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        final_result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        stage_state.report.report_into(&mut final_result);
         Ok(ExecutionOutcome::Complete(Box::new(final_result)))
     }
 
@@ -2768,15 +2830,7 @@ impl LawExecutionService {
 
         // Every refusal seen anywhere in this execution chain, not just in the
         // article that happened to be merged first.
-        result
-            .delegation_refusals
-            .clone_from(&res_ctx.delegation_refusals);
-        result
-            .declaration_version_notes
-            .clone_from(&res_ctx.declaration_version_notes);
-        result
-            .declarations_not_in_force
-            .clone_from(&res_ctx.declarations_not_in_force);
+        res_ctx.report_into(&mut result);
 
         Ok(result)
     }
@@ -2851,6 +2905,7 @@ impl LawExecutionService {
                     delegation_refusals: Vec::new(),
                     declaration_version_notes: Vec::new(),
                     declarations_not_in_force: Vec::new(),
+                    open_terms: Vec::new(),
                 });
             }
         }
@@ -4247,7 +4302,7 @@ impl LawExecutionService {
         // fills the term decides, and a silent one is passed over for
         // the next, so a filling implementation wins over a silent one
         // whatever their order.
-        let mut filled: Option<Value> = None;
+        let mut filled: Option<(Value, FilledBy)> = None;
         let mut silent: Vec<String> = Vec::new();
         for (impl_law, impl_article) in &lookup.implementations {
             // The implementing article is reading the output it fills in:
@@ -4323,7 +4378,13 @@ impl LawExecutionService {
                         "Open term '{}' implemented by {} article {}{set_aside}",
                         term.id, impl_law.id, impl_article.number
                     ));
-                    filled = Some(value.clone());
+                    filled = Some((
+                        value.clone(),
+                        FilledBy::Regulation {
+                            law_id: impl_law.id.clone(),
+                            article: impl_article.number.clone(),
+                        },
+                    ));
                     break;
                 }
             } else {
@@ -4352,7 +4413,8 @@ impl LawExecutionService {
                 )));
             }
         }
-        if let Some(value) = filled {
+        if let Some((value, by)) = filled {
+            res_ctx.note_open_term(&law.id, &article.number, &term.id, by);
             res_ctx.leave(&ot_key);
             return Ok(value);
         }
@@ -4377,6 +4439,7 @@ impl LawExecutionService {
                     "Open term '{}' decided in this case by {by}{silent_note}",
                     term.id
                 ));
+                res_ctx.note_open_term(&law.id, &article.number, &term.id, FilledBy::Finding);
                 res_ctx.leave(&ot_key);
                 return Ok(value.clone());
             }
@@ -12416,6 +12479,7 @@ articles:
             current_stage: stage.to_string(),
             accumulated_outputs: BTreeMap::new(),
             parameters: BTreeMap::new(),
+            report: Box::default(),
         };
 
         let outcome = service
@@ -12587,6 +12651,7 @@ articles:
             current_stage: "BESLUIT".to_string(),
             accumulated_outputs: BTreeMap::new(),
             parameters: BTreeMap::new(),
+            report: Box::default(),
         };
 
         let outcome = service
@@ -12946,6 +13011,121 @@ articles:
             Some(&Value::String("gemotiveerd".to_string()))
         );
         assert!(after.declarations_not_in_force.is_empty());
+    }
+
+    /// A procedure reports what each of its stages reported, not only the
+    /// last: a hook not in force at the first stage stays on the result of
+    /// the last, whether the stages run in one call or across a yield.
+    #[test]
+    fn test_a_procedure_reports_what_an_earlier_stage_reported() {
+        let besluit = r#"
+$id: wet_beschikking
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+procedure:
+  - id: beschikking_procedure
+    default: true
+    applies_to:
+      legal_character: TEST_BESCHIKKING
+    stages:
+      - name: AANVRAAG
+      - name: BESLUIT
+        requires:
+          - name: ontvangen
+            type: boolean
+articles:
+  - number: '1'
+    text: Het bestuursorgaan stelt het bedrag vast
+    machine_readable:
+      execution:
+        produces:
+          legal_character: TEST_BESCHIKKING
+        output:
+          - name: bedrag
+            type: number
+        actions:
+          - output: bedrag
+            value: 100
+"#;
+        let ontvangst = r#"
+$id: wet_ontvangst
+regulatory_layer: WET
+publication_date: '2025-06-01'
+valid_from: '2026-01-01'
+articles:
+  - number: '2'
+    text: Van een aanvraag wordt de ontvangst bevestigd
+    machine_readable:
+      hooks:
+        - hook_point: post_actions
+          applies_to:
+            legal_character: TEST_BESCHIKKING
+            stage: AANVRAAG
+      execution:
+        output:
+          - name: ontvangst_bevestigd
+            type: boolean
+        actions:
+          - output: ontvangst_bevestigd
+            value: true
+"#;
+        let mut service = LawExecutionService::new();
+        service.load_law(besluit).unwrap();
+        service.load_law(ontvangst).unwrap();
+        let date = "2025-06-01";
+        let ontvangen = || BTreeMap::from([("ontvangen".to_string(), Value::Bool(true))]);
+        let hook_note = |result: &ArticleResult| {
+            result
+                .declarations_not_in_force
+                .iter()
+                .filter(|n| n.kind == DeclarationKind::Hook && n.law_id == "wet_ontvangst")
+                .count()
+        };
+
+        // The stage BESLUIT alone does not meet the hook.
+        let besluit_only = service
+            .execute_stage_at("wet_beschikking", "1", "BESLUIT", None, ontvangen(), date)
+            .unwrap();
+        assert_eq!(hook_note(&besluit_only), 0);
+
+        // Both stages in one call.
+        match service
+            .execute_stage("wet_beschikking", "bedrag", None, ontvangen(), date)
+            .unwrap()
+        {
+            ExecutionOutcome::Complete(result) => assert_eq!(hook_note(&result), 1),
+            other => panic!("expected a completed execution, got: {other:?}"),
+        }
+
+        // Across a yield, with the state persisted as JSON in between.
+        let state = match service
+            .execute_stage("wet_beschikking", "bedrag", None, BTreeMap::new(), date)
+            .unwrap()
+        {
+            ExecutionOutcome::Yielded { state, .. } => state,
+            other => panic!("expected a yield for 'ontvangen', got: {other:?}"),
+        };
+        let state: StageState =
+            serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+        match service
+            .execute_stage("wet_beschikking", "bedrag", Some(state), ontvangen(), date)
+            .unwrap()
+        {
+            ExecutionOutcome::Complete(result) => assert_eq!(hook_note(&result), 1),
+            other => panic!("expected a completed execution, got: {other:?}"),
+        }
+
+        // A state persisted before the report existed still resumes.
+        let state: StageState = serde_json::from_value(serde_json::json!({
+            "procedure_id": "beschikking_procedure",
+            "contextual_law": "wet_beschikking",
+            "current_stage": "BESLUIT",
+            "accumulated_outputs": {},
+            "parameters": {},
+        }))
+        .unwrap();
+        assert_eq!(*state.report, StageReport::default());
     }
 
     /// A ministeriële regeling fills the open term from 2026. A calculation over
