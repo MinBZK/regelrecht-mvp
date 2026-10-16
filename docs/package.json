@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@types/hast": "^3.0.4",
-    "pa11y-ci": "^4.1.1",
+    "pa11y-ci": "^5.0.0",
     "playwright": "^1.64",
     "start-server-and-test": "^3",
     "typescript": "^7.0",
