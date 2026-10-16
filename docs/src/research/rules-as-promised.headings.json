@@ -1,0 +1,72 @@
+[
+  {
+    "depth": 2,
+    "slug": "abstract",
+    "text": "Abstract"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:intro",
+    "text": "1 Introduction"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:oracle",
+    "text": "2 The Oracle in the Parliamentary Record"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:record",
+    "text": "3 A Census of Worked Examples"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:mining",
+    "text": "4 Mining Examples into Scenarios"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:drafting",
+    "text": "5 Drafting Under the Oracle"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:suite",
+    "text": "6 One Dossier, Audited"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:experiment",
+    "text": "7 Measuring a Suite by Seeding Faults"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:cannot",
+    "text": "8 Three Limits of the Oracle"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:dossier",
+    "text": "9 Where a Maintained Suite Belongs"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:related",
+    "text": "10 Related Work"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:conclusion",
+    "text": "11 Conclusion"
+  },
+  {
+    "depth": 2,
+    "slug": "acknowledgements",
+    "text": "Acknowledgements"
+  },
+  {
+    "depth": 2,
+    "slug": "references",
+    "text": "References"
+  }
+]
