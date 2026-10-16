@@ -229,7 +229,7 @@ produces:
 | Recorded with the decision | yes | yes |
 | Part of the decision value (`$x.outputs`) | yes | no |
 
-The difference matters when a decision is compared with another, as on objection (Awb 7:11). The validity of the card runs from the day of issue, so taken anew on another day it always differs, although the college decides the same thing. Only the outputs count.
+The difference matters when a decision is compared with another, as on objection (Awb 7:11). The validity of the card runs from the day of issue. If the college takes the decision anew on another day, the end date differs, although the college decides the same thing. Only the outputs count.
 
 Every output of an article belongs to exactly one item, under `outputs` or `derived`. The loader refuses an output no item lists, a name under `derived` that is no output of the article, and `derived` on a submission. So a forgotten or misspelled output fails instead of quietly becoming derived data ([RFC-050](/rfcs/rfc-050)).
 

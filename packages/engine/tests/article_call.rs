@@ -752,12 +752,30 @@ fn a_target_without_a_decision_is_refused() {
     );
 }
 
+/// [`service`] with `besluit` of article 1 an `object`: a parameter of type
+/// `decision` is refused before the article runs, so only a value of
+/// another type reaches the checks where the value is read.
+fn service_with_besluit_as_object() -> LawExecutionService {
+    let mut service = LawExecutionService::new();
+    service.load_law(VERLOF).unwrap();
+    service.load_law(LATER).unwrap();
+    service
+        .load_law(&HEROVERWEGING.replacen(
+            "          - name: besluit\n            type: decision\n",
+            "          - name: besluit\n            type: object\n",
+            1,
+        ))
+        .unwrap();
+    service
+}
+
 #[test]
 fn a_target_that_is_no_article_reference_is_refused() {
+    let service = service_with_besluit_as_object();
     let mut besluit = decision(5, true, true);
     besluit["grondslag"] = json!(13);
     let message = error(
-        &service(),
+        &service,
         "heroverwogen",
         json!({"besluit": besluit, "nieuwe_oordelen": null}),
     );
@@ -765,7 +783,7 @@ fn a_target_that_is_no_article_reference_is_refused() {
     // A string is refused the same way when it names no article.
     besluit["grondslag"] = json!("wet_verlof");
     let message = error(
-        &service(),
+        &service,
         "heroverwogen",
         json!({"besluit": besluit, "nieuwe_oordelen": null}),
     );
@@ -870,6 +888,43 @@ fn a_decision_parameter_without_a_key_or_with_another_is_refused() {
         message.contains("it holds the unknown key 'genomen_op'"),
         "{message}"
     );
+    // `grondslag` and `taken_on` are article references: a `taken_on` of
+    // null, a bare article number or a number would compare unequal to the
+    // article that decides on objection, and so pass where it should not.
+    for (key, value) in [
+        ("taken_on", json!(null)),
+        ("taken_on", json!("7:11")),
+        ("taken_on", json!(5)),
+        ("grondslag", json!("wet_verlof")),
+    ] {
+        let mut besluit = decision(5, false, false);
+        besluit[key] = value;
+        let message = error(&service, "heroverwogen", json!({"besluit": besluit}));
+        assert!(
+            message.contains(&format!(
+                "parameter 'besluit' of wet_heroverweging#1 is no decision value {{grondslag, \
+                 taken_on, fields, findings, outputs}}: it holds no article reference in '{key}'"
+            )),
+            "{message}"
+        );
+    }
+    // A value that is no object at all, such as the id of the article that
+    // took the decision, is refused the same way.
+    for (value, kind) in [
+        (json!("wet_verlof#1"), "string"),
+        (json!(5), "integer"),
+        (json!(true), "boolean"),
+        (json!([]), "array"),
+    ] {
+        let message = error(&service, "heroverwogen", json!({"besluit": value}));
+        assert!(
+            message.contains(&format!(
+                "parameter 'besluit' of wet_heroverweging#1 is no decision value {{grondslag, \
+                 taken_on, fields, findings, outputs}}: it is of type {kind}"
+            )),
+            "{message}"
+        );
+    }
 }
 
 #[test]
@@ -1925,18 +1980,107 @@ fn what_the_value_holds_that_the_article_does_not_ask_is_dropped() {
         trace.contains("wet_hoofd#1 does not declare vervallen, so not passed"),
         "{trace}"
     );
-    for odd in [
-        json!({"grondslag": "wet_hoofd", "taken_on": "wet_hoofd", "fields": {}, "findings": {}, "outputs": {}}),
-        json!({"grondslag": "wet_hoofd#1", "taken_on": "wet_hoofd#1", "fields": [], "findings": {}, "outputs": {}}),
+    // A value with no article reference is refused before the article
+    // runs; one whose parts are no objects where the value is read.
+    for (odd, flaw) in [
+        (
+            json!({"grondslag": "wet_hoofd", "taken_on": "wet_hoofd", "fields": {}, "findings": {}, "outputs": {}}),
+            "it holds no article reference in 'grondslag'",
+        ),
+        (
+            json!({"grondslag": "wet_hoofd#1", "taken_on": "wet_hoofd#1", "fields": [], "findings": {}, "outputs": {}}),
+            "a decision value {grondslag, fields, findings, outputs} in $besluit",
+        ),
     ] {
         let message = anew(&service, odd.clone(), json!({}), "heroverwogen")
             .unwrap_err()
             .to_string();
-        assert!(
-            message.contains("a decision value {grondslag, fields, findings, outputs} in $besluit"),
-            "{odd}: {message}"
-        );
+        assert!(message.contains(flaw), "{odd}: {message}");
     }
+}
+
+/// A law that passes its `object` parameter `waarde` on as `besluit` of
+/// article 3 of [`hoofd_anew`]. Across laws a parameter is what the calling
+/// article passes on, so only the call anew checks the value.
+const DOORGEEF: &str = r#"
+$id: wet_doorgeef
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Het besluit wordt doorgegeven.
+    machine_readable:
+      execution:
+        parameters:
+          - name: waarde
+            type: object
+        input:
+          - name: heroverwogen
+            type: decision
+            nullable: true
+            source:
+              regulation: wet_hoofd
+              output: heroverwogen
+              parameters:
+                besluit: $waarde
+        output:
+          - name: doorgegeven
+            type: decision
+            nullable: true
+        actions:
+          - output: doorgegeven
+            value: $heroverwogen
+"#;
+
+#[test]
+fn a_decision_value_passed_on_without_an_article_reference_is_refused_at_the_call() {
+    let mut service = anew_service();
+    service.load_law(DOORGEEF).unwrap();
+    let odd = json!({"grondslag": "wet_hoofd", "taken_on": "wet_hoofd#1", "fields": {}, "findings": {}, "outputs": {}});
+    let message = service
+        .evaluate_law_output(
+            "wet_doorgeef",
+            "doorgegeven",
+            params(json!({ "waarde": odd })),
+            DATE,
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(
+        message.contains("a decision value {grondslag, fields, findings, outputs} in $besluit"),
+        "{message}"
+    );
+}
+
+/// A decision value passed on across laws may lack `taken_on`, as one built
+/// through `source.article` does. One it holds is an article reference:
+/// `null` would compare unequal to every article, and so pass for a
+/// decision not taken on objection.
+#[test]
+fn a_decision_value_passed_on_with_a_taken_on_that_is_no_article_reference_is_refused() {
+    let mut service = anew_service();
+    service.load_law(DOORGEEF).unwrap();
+    let doorgegeven = |besluit: serde_json::Value| {
+        service.evaluate_law_output(
+            "wet_doorgeef",
+            "doorgegeven",
+            params(json!({ "waarde": besluit })),
+            DATE,
+        )
+    };
+    let mut besluit = hoofd_besluit(true);
+    besluit["taken_on"] = json!(null);
+    let message = doorgegeven(besluit).unwrap_err().to_string();
+    assert!(
+        message.contains(
+            "parameter 'besluit' of wet_hoofd#3 is no decision value {grondslag, taken_on, \
+             fields, findings, outputs}: it holds no article reference in 'taken_on'"
+        ),
+        "{message}"
+    );
+    // Without `taken_on` it is called anew.
+    assert!(doorgegeven(hoofd_anew_besluit(true)).is_ok());
 }
 
 #[test]

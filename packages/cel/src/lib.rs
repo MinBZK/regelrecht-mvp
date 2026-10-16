@@ -19,10 +19,10 @@
 //! A submission may refer to a decision (RFC-050): a field of type
 //! `decision` holds it, and the deciding article gets its decision value.
 //! A decision output of the deciding article is a decision taken in turn,
-//! which the cell records too ([`cell`]). That is how an objection is
-//! decided: the law says what the objection holds, when it is admissible and
-//! how the contested decision is reconsidered (the Awb); the cell knows no
-//! article that does this.
+//! which the cell records too ([`cell`]). A submission that refers to a
+//! decision, such as an objection, is decided like any other: the law says
+//! what it holds and how it is decided, and the cell knows no article that
+//! does this.
 
 pub mod cell;
 pub mod chronicle;

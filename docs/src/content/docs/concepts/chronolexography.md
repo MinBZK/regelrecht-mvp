@@ -211,7 +211,7 @@ input:
       article: $bestreden_besluit
 ```
 
-In a procedure, the earlier steps are context for the engine and the chronicle. The objection and the decision it refers to are context for the article that decides, with their fields and findings. When 7:11 calls that decision anew (`article: $bestreden_besluit`), the call uses the decision's own fields and findings. New findings come in from the top, and an article in the call must ask for them.
+In a procedure, the article that decides gets the earlier steps as context: the objection and the decision it refers to, with their fields and findings. When 7:11 calls that decision anew (`article: $bestreden_besluit`), the call uses the decision's own fields and findings. New findings come in from the top, and an article in the call must ask for them.
 
 The cell records the objection with `record_submission`, referring to the contested decision. It fills `bestreden_besluit` from that reference and keeps it by its id:
 

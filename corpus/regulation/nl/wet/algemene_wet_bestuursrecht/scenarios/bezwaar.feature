@@ -3,26 +3,26 @@ Feature: Het bezwaar en de beslissing erop
   het besluit nam (artikel 6:4). Het bezwaarschrift bevat ten minste wat
   artikel 6:5 noemt en is tijdig als het voor het einde van de termijn is
   ontvangen (artikel 6:9). Op een ontvankelijk bezwaar volgt een
-  heroverweging: het artikel van het bestreden besluit wordt opnieuw
-  toegepast, met de gegevens en bevindingen van dat besluit en wat het
-  bestuursorgaan opnieuw vaststelt. Geeft dat een andere uitkomst, dan herroept het
-  bestuursorgaan het bestreden besluit en neemt het in zijn plaats het besluit
-  dat de heroverweging gaf (artikel 7:11). Het beslist binnen zes weken na het
-  einde van de bezwaartermijn (artikel 7:10).
+  heroverweging: het bestuursorgaan past het artikel van het bestreden
+  besluit opnieuw toe, met de gegevens en bevindingen van dat besluit en wat
+  het opnieuw vaststelt. Geeft dat een andere uitkomst, dan herroept het
+  bestuursorgaan het bestreden besluit en neemt het in zijn plaats het
+  besluit dat de heroverweging gaf (artikel 7:11). Het beslist binnen zes
+  weken na het einde van de bezwaartermijn (artikel 7:10).
 
-  Het bestreden besluit is hier een weigering van vakantieverlof (artikel 13a
-  van de Leerplichtwet 1969), als besluitwaarde: het artikel waarop het
-  berust, het artikel van de indiening waarop het is genomen (taken_on), de
-  gegevens waarop het is genomen, wat het hoofd per geval vaststelde
-  (findings) en zijn uitkomst. Wat het hoofd bij de heroverweging opnieuw
-  vaststelt, geeft de uitvoering apart van de parameters mee (findings); een
-  bevinding die geen artikel in de uitvoering vraagt, is een fout. Het hoofd
-  oordeelde dat het beroep van de ouder niet van de aard is die artikel 11,
-  onder f, vraagt. De eerste twee scenario's rekenen artikel 6:9 zelf uit.
-  Daarna geeft het scenario artikel 7:11 buiten een procedure de uitkomst van
-  artikel 6:9 mee, niet de gegevens daarvan. De keten van
-  bezwaarschrift naar beslissing, met het nieuwe besluit in de kroniek, staat
-  in de tests van de cel (packages/cel).
+  Het bestreden besluit is hier een weigering van vakantieverlof (artikel
+  13a van de Leerplichtwet 1969), als besluitwaarde. Die bevat het artikel
+  waarop het besluit berust, het artikel van de indiening waarop het is
+  genomen (taken_on), de gegevens waarop het is genomen, wat het hoofd per
+  geval vaststelde (findings) en de uitkomst. Wat het hoofd bij de
+  heroverweging opnieuw vaststelt, geeft de uitvoering apart van de
+  parameters mee (findings); een bevinding die geen artikel in de uitvoering
+  vraagt, is een fout. Het hoofd oordeelde dat het beroep van de ouder niet
+  van de aard is die artikel 11, onder f, vraagt. De eerste twee scenario's
+  rekenen artikel 6:9 zelf uit. De scenario's daarna geven artikel 7:11
+  buiten een procedure de uitkomst van artikel 6:9 mee, niet de gegevens
+  daarvan. De keten van bezwaarschrift naar beslissing, met het nieuwe
+  besluit in de kroniek, staat in de tests van de cel (packages/cel).
 
   Background:
     Given the calculation date is "2026-11-15"
@@ -105,6 +105,7 @@ Feature: Het bezwaar en de beslissing erop
     Then output "bezwaar_ontvankelijk" is false
     Then output "heroverweging_geeft_aanleiding" is absent
     Then output "bestreden_besluit_herroepen" is false
+    Then output "nieuw_besluit" is absent
 
   Scenario: Tegen het nieuwe besluit dat op bezwaar is genomen staat geen bezwaar open
     # Het besluit berust op artikel 13a, maar is genomen op het bezwaar: in
@@ -159,3 +160,12 @@ Feature: Het bezwaar en de beslissing erop
       | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaarschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution fails with "parameter 'bestreden_besluit' of algemene_wet_bestuursrecht#7:11 is no decision value {grondslag, taken_on, fields, findings, outputs}: it lacks 'taken_on'"
+
+  Scenario: Een bestreden besluit met taken_on null is een fout
+    # Null is geen artikel van een indiening. Telde het als een besluit dat
+    # niet op bezwaar is genomen, dan was een bezwaar tegen een beslissing op
+    # bezwaar stil ontvankelijk.
+    Given the following parameters:
+      | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": null, "fields": {"bezwaarschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
+    When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
+    Then the execution fails with "parameter 'bestreden_besluit' of algemene_wet_bestuursrecht#7:11 is no decision value {grondslag, taken_on, fields, findings, outputs}: it holds no article reference in 'taken_on'"
