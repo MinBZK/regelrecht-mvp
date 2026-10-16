@@ -27,7 +27,6 @@
 pub mod cell;
 pub mod chronicle;
 pub mod decision;
-pub mod encoding;
 pub mod error;
 pub mod reading;
 pub mod shape;

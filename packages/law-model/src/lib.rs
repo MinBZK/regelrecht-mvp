@@ -6,16 +6,19 @@
 //! law format can depend on, so the model is defined **once** instead of being
 //! re-derived per crate.
 //!
-//! Scope: document structs/enums plus allocation-free accessors. It deliberately
-//! contains no YAML loading, security limits or evaluation logic — the engine
-//! owns those (`regelrecht_engine::article::LawLoad` for loading, the resolver
-//! for execution) and re-exports these types so existing paths keep working.
+//! Scope: document structs/enums plus allocation-free accessors, and
+//! [`stored`]: the lossless JSON form of a `Value` and the rule two stored
+//! values are compared by. It deliberately contains no YAML loading, security
+//! limits or evaluation logic — the engine owns those
+//! (`regelrecht_engine::article::LawLoad` for loading, the resolver for
+//! execution) and re-exports these types so existing paths keep working.
 //!
 //! The JSON schema under `schema/` remains the authoritative specification
 //! (RFC-013); this crate is one conforming representation of it.
 
 mod header;
 mod model;
+pub mod stored;
 mod value;
 
 pub use header::{parse_law_header, LawHeader};

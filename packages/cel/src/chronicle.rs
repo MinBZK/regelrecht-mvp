@@ -14,8 +14,8 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::encoding;
 use crate::error::{refused, setup, Result};
+use regelrecht_law_model::stored;
 
 /// A chronolexogram (`Gram` for short): one recorded application or
 /// objection, or the decision on one, as the law describes it.
@@ -103,10 +103,10 @@ pub struct Chronicle {
 }
 
 /// Whether the values `gram` holds read back as engine values
-/// ([`encoding::from_json`]): a damaged decimal is an error.
+/// ([`stored::from_stored`]): a damaged decimal is an error.
 fn readable(gram: &Gram) -> Result<()> {
     for value in gram.fields.values().chain(gram.outputs.values()) {
-        encoding::from_json(value)
+        stored::from_stored(value)
             .map_err(|e| setup(format!("chronolexogram '{}': {e}", gram.id)))?;
     }
     Ok(())

@@ -39,9 +39,9 @@ use serde_json::Map;
 
 use crate::chronicle::Gram;
 use crate::decision::{DecisionShape, Source};
-use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::shape::article_on;
+use regelrecht_law_model::stored;
 
 /// One version of a reduction of the cell, as written.
 #[derive(Debug, Clone)]
@@ -88,7 +88,7 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
         for (name, value) in &gram.outputs {
             match row.get(name) {
                 Some(field)
-                    if !encoding::same(field, value).map_err(|e| {
+                    if !stored::same(field, value).map_err(|e| {
                         setup(format!(
                             "chronolexogram '{}' holds '{name}' as a field and as an output: {e}",
                             gram.id
@@ -118,7 +118,7 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
         );
         rows.push(serde_json::Value::Object(row));
     }
-    encoding::from_json(&serde_json::Value::Array(rows))
+    Ok(stored::from_stored(&serde_json::Value::Array(rows))?)
 }
 
 /// The name under which a row gives the id of its chronolexogram.
@@ -360,7 +360,7 @@ impl Bound<'_> {
                         "reduction {id} asks '{name}', which the decision does not hold"
                     ))
                 })?;
-                parameters.insert(name.clone(), encoding::from_json(value)?);
+                parameters.insert(name.clone(), stored::from_stored(value)?);
             }
             let outputs: Vec<&str> = self
                 .answers
@@ -376,7 +376,7 @@ impl Bound<'_> {
                     .outputs
                     .get(name)
                     .ok_or_else(|| setup(format!("reduction {id} yielded no '{name}'")))?;
-                answered.insert(name.to_string(), encoding::to_json(value)?);
+                answered.insert(name.to_string(), stored::to_stored(value)?);
             }
         }
         Ok(answered)

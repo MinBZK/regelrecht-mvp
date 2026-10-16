@@ -15,6 +15,7 @@
 
 use chrono::NaiveDate;
 use regelrecht_engine::{Article, LawExecutionService, ParameterType};
+use regelrecht_law_model::stored;
 use serde::Serialize;
 
 use crate::error::{refused, setup, Result};
@@ -269,11 +270,11 @@ pub fn fits(field: &Field, value: &serde_json::Value) -> bool {
         (_, J::Null) => field.nullable,
         (ParameterType::String, J::String(_)) => true,
         (ParameterType::Number, J::Number(_)) => true,
-        // A decimal as the chronicle holds it ([`crate::encoding`]): only a
+        // A decimal as the chronicle holds it ([`stored`]): only a
         // stored value, as one a decision holds; a supplied value that holds
         // the key is refused first.
         (ParameterType::Number, J::Object(_)) => matches!(
-            crate::encoding::from_json(value),
+            stored::from_stored(value),
             Ok(regelrecht_engine::Value::Decimal(_))
         ),
         (ParameterType::Amount, J::Number(n)) => n.is_i64() || n.is_u64(),
