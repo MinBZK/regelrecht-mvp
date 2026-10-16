@@ -781,9 +781,14 @@ jobs:
       # De rekenkunde van de opgenomen rondleiding (knippen, hoofdstukken,
       # ondertitels): pure Python zonder ffmpeg, dus hier in een paar seconden.
       - name: Run walkthrough pipeline tests
-        # pipx, niet pip: de systeem-Python van de runner weigert een globale
-        # pip install (PEP 668).
-        run: pipx run pytest -q script/walkthrough/tests
+        # In een eigen venv: de systeem-Python van de runner weigert een
+        # globale pip install (PEP 668). Het project zelf erin, zodat zijn
+        # dependencies (pyproject.toml) meekomen, zoals `just walkthrough test`
+        # ze lokaal via uv krijgt.
+        run: |
+          python3 -m venv "$RUNNER_TEMP/walkthrough"
+          "$RUNNER_TEMP/walkthrough/bin/pip" install -q ./script/walkthrough pytest
+          "$RUNNER_TEMP/walkthrough/bin/python" -m pytest -q script/walkthrough/tests
 
       # packages/arch-extract/ui is geen workspace-member (eigen package.json en
       # lockfile), dus `npm test -w` bereikt het niet en de test die er ligt

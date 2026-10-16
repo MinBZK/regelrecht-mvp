@@ -6,7 +6,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useViewerI18n } from '../i18n/index.js';
 import { useWalkthrough } from './useWalkthrough.js';
-import { currentTrack, openFaq, replay } from './replay.js';
+import { currentTrack, openFaq, questionLang, questionOf, replay } from './replay.js';
 import { camVisible, offeredFaq } from './timeline.js';
 import { camSlot } from './chrome.js';
 
@@ -24,7 +24,7 @@ const offered = computed(() => (replay.faq ? [] : offeredFaq(timeline.value, rep
 <template>
   <div v-if="showCam || offered.length" class="aside wt-chrome" :lang="locale">
     <div v-if="showCam" ref="slot" class="cam-slot" aria-hidden="true"></div>
-    <div v-if="offered.length" class="faq" lang="nl" role="region" :aria-label="t('walkthrough.faq.label')">
+    <div v-if="offered.length" class="faq" role="region" :aria-label="t('walkthrough.faq.label')">
       <span class="faq-title" :lang="locale">{{ t('walkthrough.faq.title') }}</span>
       <TransitionGroup name="faq" tag="div" class="faq-items">
         <nldd-button
@@ -35,7 +35,8 @@ const offered = computed(() => (replay.faq ? [] : offeredFaq(timeline.value, rep
           start-icon="question"
           horizontal-alignment="left"
           width="full"
-          :text="f.question"
+          :text="questionOf(f)"
+          :lang="questionLang(f)"
           @click="openFaq(f)"
         ></nldd-button>
       </TransitionGroup>

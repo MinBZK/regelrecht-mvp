@@ -12,7 +12,7 @@ import { useRouter } from 'vue-router';
 import { DEFAULT_LOCALE, useViewerI18n } from '../i18n/index.js';
 import { intlLocale } from '../data/format.js';
 import { localeRouteName } from '../router.js';
-import { backToMain, currentTrack, replay, seek, setSpeed, stopReplay, takeOver, togglePlay } from './replay.js';
+import { backToMain, chapterSlide, currentTrack, replay, seek, setSpeed, stopReplay, takeOver, togglePlay } from './replay.js';
 import { chapterAt, formatTime, nextChapterStart, previousChapterStart } from './timeline.js';
 import { openTranscript } from './chrome.js';
 
@@ -78,9 +78,12 @@ watch(
 
 <template>
   <div class="controls wt-chrome" :lang="locale">
-    <!-- The recording, its slides and the demo under it are Dutch in every
-         interface language; the controls are the viewer's. -->
-    <nldd-text v-if="locale !== DEFAULT_LOCALE" size="sm" color="inherit">{{ t('walkthrough.dutch_only') }}</nldd-text>
+    <!-- The voice is Dutch in every interface language. The captions, the
+         slides and the demo follow the viewer where the pipeline translated
+         them (timeline.json); otherwise they are Dutch, and this says so. -->
+    <nldd-text v-if="locale !== DEFAULT_LOCALE" size="sm" color="inherit">{{
+      replay.captionsLang === locale && replay.demoLocale === locale ? t('walkthrough.dutch_voice') : t('walkthrough.dutch_only')
+    }}</nldd-text>
     <!-- Generated speech that passes for a person is labelled as such (AI
          Act, art. 50). Always in view, not only on the first slide: a viewer
          can start at any chapter. -->
@@ -107,7 +110,7 @@ watch(
               v-for="(c, i) in chapters"
               :key="i"
               type="radio"
-              :text="c.slide?.title ?? c.slide?.lines?.[0]?.replaceAll('**', '') ?? t('walkthrough.chapter', { n: i + 1 })"
+              :text="chapterSlide(track, c)?.title ?? chapterSlide(track, c)?.lines?.[0]?.replaceAll('**', '') ?? t('walkthrough.chapter', { n: i + 1 })"
               :details="formatTime(c.start)"
               :selected="i === chapterIndex || undefined"
               @select="seek(c.start)"

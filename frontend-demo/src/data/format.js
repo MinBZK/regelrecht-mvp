@@ -201,16 +201,16 @@ function capitalise(words) {
  */
 export const untranslated = new Set();
 
-export function humanize(name, { lawId = null } = {}) {
+export function humanize(name, { lawId = null, locale = currentLocale(), report = true } = {}) {
   if (!name) return '';
   const words = String(name).replaceAll('_', ' ').trim().split(/\s+/);
   const dutch = capitalise(words.map((w) => ABBREVIATIONS.get(w.toLowerCase()) ?? w));
-  if (currentLocale() === DEFAULT_LOCALE) return dutch;
+  if (locale === DEFAULT_LOCALE) return dutch;
 
   // Vertaald: eerst de hele naam, dan woord voor woord. Een naam die in geen
   // van beide staat valt terug op het Nederlands, wat een schoonheidsfout is
   // en geen onwaarheid.
-  const g = activeGlossary();
+  const g = activeGlossary(locale);
   const exact = g.laws?.[lawId]?.[name] ?? g.names?.[name];
   if (exact) return capitalise(String(exact).split(/\s+/));
 
@@ -219,7 +219,7 @@ export function humanize(name, { lawId = null } = {}) {
   const parts = words.map((w) => g.words?.[w] ?? ABBREVIATIONS.get(w.toLowerCase()) ?? null);
   if (parts.every(Boolean)) return capitalise(parts.join(' ').split(/\s+/));
 
-  if (import.meta.env?.DEV) untranslated.add(name);
+  if (import.meta.env?.DEV && report) untranslated.add(name);
   return dutch;
 }
 
@@ -239,9 +239,9 @@ const EMPTY_GLOSSARY = { laws: {}, names: {}, words: {} };
  */
 let override = null;
 
-function activeGlossary() {
+function activeGlossary(locale = currentLocale()) {
   if (override) return override;
-  return generatedGlossary[currentLocale()] ?? EMPTY_GLOSSARY;
+  return generatedGlossary[locale] ?? EMPTY_GLOSSARY;
 }
 
 export function setGlossary(next) {

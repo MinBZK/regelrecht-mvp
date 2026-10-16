@@ -13,7 +13,13 @@
  * Properties, not attributes: Vue sets `:text`, `:href` and the like on a
  * custom element as a property when the element defines one, so the
  * attribute is often absent (measured on nldd-search-field's placeholder).
+ *
+ * A recording is made in one language and may play in another. The texts it
+ * stores are then compared through a translator (translateText.js), which
+ * takes each one back to the translation key it came from: the element is
+ * identified by what it says, in whatever language it says it.
  */
+import { matchesTranslated, textMatchesTranslated } from './translateText.js';
 
 /** What counts as the thing that was clicked, walking up from the target. */
 const ACTIONABLE = [
@@ -140,15 +146,50 @@ export function signature(el) {
   return sig;
 }
 
-function matches(el, sig) {
+/** What a person reads on an element, as opposed to what identifies it in code. */
+const WORDS = new Set(['text', 'accessibleLabel', 'label', 'placeholder', '@aria-label', '@title', 'textContent']);
+
+/** The text nodes under `el`, in order: what its text content is made of. */
+function textPieces(el) {
+  const out = [];
+  const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) out.push(n.data);
+  return out;
+}
+
+/**
+ * Whether `have` on `el` is the recorded `v`, in the language the demo runs
+ * in now. Without a translator, the same text; with one, the same text in
+ * the other language (a link: the same page in the other language).
+ */
+function sameValue(el, k, have, v, masked, translate) {
+  const shown = masked && have != null ? MASK(have) : have;
+  if (shown === v) return true;
+  if (!translate || have == null) return false;
+  if (k === 'href') return translate.path?.(v) === have;
+  if (!WORDS.has(k)) return false;
+  if (masked) return translate(v).some((c) => MASK(c) === shown);
+  if (k === 'textContent') return textMatchesTranslated(textPieces(el), v, translate);
+  return matchesTranslated(have, v, translate);
+}
+
+/**
+ * A field the recording names by its label or placeholder. Its `value` is
+ * what was typed into it so far (a design-system field carries it on its
+ * host), and in another language that is the translation being typed.
+ */
+const LABELLED = ['accessibleLabel', 'label', 'placeholder', '@aria-label'];
+
+function matches(el, sig, translate = null) {
   if (el.tagName.toLowerCase() !== sig.tag) return false;
+  const typedInto = !!translate && LABELLED.some((k) => k in sig);
   for (const [k, v] of Object.entries(sig)) {
     if (k === 'tag' || k === '__masked') continue;
+    if (k === 'value' && typedInto) continue;
     // Takes recorded before generated ids were left out still carry them.
     if (MADE_UP.has(k) && generatedId(v)) continue;
     if (k.startsWith('@data-') && passingData(k.slice(1), v)) continue;
-    const have = read(el, k);
-    if ((sig.__masked && have != null ? MASK(have) : have) !== v) return false;
+    if (!sameValue(el, k, read(el, k), v, sig.__masked, translate)) return false;
   }
   return true;
 }
@@ -190,8 +231,8 @@ export function loosen(sig) {
 }
 
 /** Elements in `scope` that fit `sig`, the visible ones first. */
-function candidates(scope, sig) {
-  const all = [...scope.querySelectorAll(sig.tag)].filter((el) => matches(el, sig));
+function candidates(scope, sig, translate = null) {
+  const all = [...scope.querySelectorAll(sig.tag)].filter((el) => matches(el, sig, translate));
   return [...all.filter(visible), ...all.filter((el) => !visible(el))];
 }
 
@@ -227,17 +268,19 @@ export function describe(el) {
  * The element a description points to now, or null. With `loose`, a step
  * that finds nothing exactly may match with its numbers masked; its place
  * (`nth`) then counts only when the looser match finds as many elements.
+ * With `translate`, the description's texts are compared in the language
+ * the demo runs in (see translateText.js).
  */
-export function resolve(steps, { loose = false } = {}) {
+export function resolve(steps, { loose = false, translate = null } = {}) {
   let scope = document;
   let el = null;
   for (const step of steps ?? []) {
     const { nth = 0, ...sig } = step;
-    let list = candidates(scope, sig);
+    let list = candidates(scope, sig, translate);
     let index = nth;
     if (!list.length && loose) {
       const looser = loosen(sig);
-      list = looser ? candidates(scope, looser) : [];
+      list = looser ? candidates(scope, looser, translate) : [];
       if (list.length <= nth) index = 0;
     }
     const found = list[index] ?? null;
@@ -334,7 +377,8 @@ export function viewBox(container) {
   return container.getBoundingClientRect();
 }
 
-const anchorMatches = (el, a) => el.tagName.toLowerCase() === a.tag && textOf(el) === a.text;
+const anchorMatches = (el, a, translate = null) =>
+  el.tagName.toLowerCase() === a.tag && (textOf(el) === a.text || (!!translate && textMatchesTranslated(textPieces(el), a.text, translate)));
 
 /**
  * What is in the middle of a scroller: an element with text, which one of
@@ -363,11 +407,11 @@ export function scrollAnchor(container) {
 }
 
 /** The element an anchor names under `container` now, or null. */
-export function findAnchor(container, anchor) {
+export function findAnchor(container, anchor, translate = null) {
   if (!anchor) return null;
   let n = 0;
   for (const c of deepElements(container)) {
-    if (!anchorMatches(c, anchor)) continue;
+    if (!anchorMatches(c, anchor, translate)) continue;
     if (n === anchor.index) return c;
     n += 1;
   }
@@ -379,7 +423,7 @@ export function findAnchor(container, anchor) {
  * where it was in the box; without one (older takes), the recorded position
  * scaled to how far this layout can scroll; without that, the pixels.
  */
-export function scrollTarget(container, e) {
+export function scrollTarget(container, e, translate = null) {
   const max = container.scrollHeight - container.clientHeight;
   // Scrolled all the way: what the presenter wanted on screen is the end (or
   // the start), wherever the anchor lands. The anchor of such a scroll is
@@ -387,7 +431,7 @@ export function scrollTarget(container, e) {
   // is at the bottom once the text wraps differently.
   if (e.max > 0 && (e.top ?? 0) >= e.max - 2) return Math.max(0, max);
   if (e.max > 0 && (e.top ?? 0) <= 1) return 0;
-  const a = findAnchor(container, e.anchor);
+  const a = findAnchor(container, e.anchor, translate);
   if (a) {
     const box = viewBox(container);
     return Math.max(0, Math.round(container.scrollTop + (a.getBoundingClientRect().top - box.top) - e.anchor.at * box.height));

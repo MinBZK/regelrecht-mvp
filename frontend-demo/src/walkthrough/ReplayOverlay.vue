@@ -7,7 +7,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useViewerI18n } from '../i18n/index.js';
 import { usePresentation } from '../presentation/usePresentation.js';
-import { PLAYER_KEYS, audioTime, backToMain, currentTrack, replay, seek, togglePlay } from './replay.js';
+import { PLAYER_KEYS, audioTime, backToMain, chapterSlide, currentTrack, questionOf, replay, seek, togglePlay } from './replay.js';
 import { MEDIA_BASE, camVisible, cueAt, followerCorrection, formatTime, nextChapterStart, previousChapterStart } from './timeline.js';
 import { camSlot, transcript } from './chrome.js';
 
@@ -111,7 +111,7 @@ const chapters = computed(() =>
     const end = all[i + 1]?.start ?? Infinity;
     return {
       start: c.start,
-      title: c.slide?.title ?? c.slide?.lines?.[0]?.replaceAll('**', '') ?? t('walkthrough.chapter', { n: i + 1 }),
+      title: chapterSlide(track.value, c)?.title ?? chapterSlide(track.value, c)?.lines?.[0]?.replaceAll('**', '') ?? t('walkthrough.chapter', { n: i + 1 }),
       text: replay.cues
         .filter((q) => q.start >= c.start && q.start < end)
         .map((q) => q.text.replace(/\n/g, ' '))
@@ -207,7 +207,7 @@ onUnmounted(() => {
     </svg>
     <span v-for="r in replay.restoring ? [] : replay.ripples" :key="r.id" class="ripple" :style="{ left: `${r.x}px`, top: `${r.y}px` }" aria-hidden="true"></span>
 
-    <p v-if="cue" class="caption" lang="nl" aria-hidden="true">{{ cue.text }}</p>
+    <p v-if="cue" class="caption" :lang="replay.captionsLang" aria-hidden="true">{{ cue.text }}</p>
     </div>
     <div v-if="replay.restoring" ref="restoreLayer" popover="manual" class="restoring">
       <nldd-activity-indicator show-text :text="t('walkthrough.restoring')" timing="instant" size="48"></nldd-activity-indicator>
@@ -216,9 +216,9 @@ onUnmounted(() => {
     <nldd-sheet ref="sheet" placement="right" width="560px" :accessible-label="t('walkthrough.transcript.title')" @close="transcript.open = false">
       <nldd-page>
         <nldd-container slot="header" padding="12">
-          <nldd-top-title-bar :text="t('walkthrough.transcript.title')" :supporting-text="replay.faq?.question" :dismiss-text="t('walkthrough.transcript.close')" @dismiss="transcript.open = false"></nldd-top-title-bar>
+          <nldd-top-title-bar :text="t('walkthrough.transcript.title')" :supporting-text="replay.faq ? questionOf(replay.faq) : undefined" :dismiss-text="t('walkthrough.transcript.close')" @dismiss="transcript.open = false"></nldd-top-title-bar>
         </nldd-container>
-        <nldd-container padding="16" gap="24" lang="nl">
+        <nldd-container padding="16" gap="24" :lang="replay.captionsLang">
           <nldd-container v-for="(c, i) in chapters" :key="i" padding="0" gap="8">
             <nldd-title size="5">
               <h2>{{ c.title }}</h2>
