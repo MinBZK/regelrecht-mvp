@@ -571,6 +571,54 @@ fn required_parameter_for_nobody(
         })
 }
 
+/// The keys of a decision value (schema v0.8.4, RFC-050).
+const DECISION_KEYS: [&str; 5] = ["grondslag", "taken_on", "fields", "findings", "outputs"];
+
+/// Every parameter of `article` of type `decision` that `parameters` carries
+/// as an object holds the keys of a decision value `{grondslag, taken_on,
+/// fields, findings, outputs}`, and no other (RFC-050). Otherwise an error
+/// naming the parameter and the key. What the keys hold is checked where
+/// the value is read, as for a decision value an input holds.
+///
+/// A decision given into an article was taken on a submission, and names
+/// its article in `taken_on`. Missing, a read of it would fail without
+/// naming the parameter, and a value that is never read would pass
+/// unnoticed. Only a value the engine builds through `source.article`
+/// lacks `taken_on`; that is an input. Checked at depth 0: across laws a
+/// parameter is what the calling article passes on.
+fn check_decision_parameters(
+    law: &ArticleBasedLaw,
+    article: &Article,
+    parameters: &BTreeMap<String, Value>,
+) -> Result<()> {
+    for declared in article.get_parameters() {
+        if declared.param_type != crate::types::ParameterType::Decision {
+            continue;
+        }
+        let Some(Value::Object(value)) = parameters.get(&declared.name) else {
+            continue;
+        };
+        let flaw = DECISION_KEYS
+            .iter()
+            .find(|key| !value.contains_key(**key))
+            .map(|key| format!("lacks '{key}'"))
+            .or_else(|| {
+                value
+                    .keys()
+                    .find(|key| !DECISION_KEYS.contains(&key.as_str()))
+                    .map(|key| format!("holds the unknown key '{key}'"))
+            });
+        if let Some(flaw) = flaw {
+            return Err(EngineError::InvalidOperation(format!(
+                "parameter '{}' of {}#{} is no decision value {{grondslag, taken_on, fields, \
+                 findings, outputs}}: it {flaw}",
+                declared.name, law.id, article.number
+            )));
+        }
+    }
+    Ok(())
+}
+
 /// The error for an output an executed article did not produce.
 ///
 /// A void is an answer, not a defect: when the provenance records one, the
@@ -3760,6 +3808,7 @@ impl LawExecutionService {
                     value: value.to_string(),
                 });
             }
+            check_decision_parameters(law, article, &parameters)?;
         }
 
         // What this execution needs, settled before any action runs (RFC-043).

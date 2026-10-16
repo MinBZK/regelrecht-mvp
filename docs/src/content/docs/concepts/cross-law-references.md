@@ -116,7 +116,7 @@ The data the decision item lists under `derived` is computed with the decision b
 
 With `output` the input is that one output of the decision.
 
-A value built from a recorded decision may also hold `taken_on`: the article that established the submission the decision was taken on.
+A value built from a recorded decision may also hold `taken_on`: the article that established the submission the decision was taken on. A decision given as a parameter at the top of an execution must hold it: there the engine requires `{grondslag, taken_on, fields, findings, outputs}`, all five and nothing else, and refuses a value that lacks a key or holds another with an error that names the parameter and the key (RFC-050). What the keys hold is checked where the value is read. A parameter that one article passes to another is not checked again, so a value built by `source.article` can still be passed on.
 
 A decision value as the target is called anew: the engine runs its `grondslag` with its own `fields` as parameters and its own `findings`. The law does not spell this out, as in the example; it is a convention of the engine.
 

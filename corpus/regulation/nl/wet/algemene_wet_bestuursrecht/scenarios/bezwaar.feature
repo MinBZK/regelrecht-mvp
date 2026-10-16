@@ -138,3 +138,13 @@ Feature: Het bezwaar en de beslissing erop
       | specifieke_aard_beroep_ouder | ja |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution fails with "a boolean for the finding 'specifieke_aard_beroep_ouder'"
+
+  Scenario: Een bestreden besluit zonder taken_on is een fout
+    # Het artikel van de indiening waarop het besluit is genomen ontbreekt.
+    # Telde het als een besluit dat niet op bezwaar is genomen, dan was een
+    # bezwaar tegen een beslissing op bezwaar stil ontvankelijk.
+    Given the following parameters:
+      | bezwaarschrift_tijdig_ingediend | true |
+      | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaarschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
+    When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
+    Then the execution fails with "parameter 'bestreden_besluit' of algemene_wet_bestuursrecht#7:11 is no decision value {grondslag, taken_on, fields, findings, outputs}: it lacks 'taken_on'"
