@@ -187,8 +187,9 @@ output:
 - Each decision is a row with its fields and outputs, such as `bsn_jongere`, `eerste_verlofdag` and `verlof_verleend`, and its `id`. A refusal does not count, nor a decision revoked on objection (see [the objection](#the-objection)).
 - The policy says only that a school year runs from 1 August to 31 July. It reads no decisions.
 - The engine runs the reduction like any implementation, and passes it the parameters it declares from art. 13a by name. It wins over a finding of the head. Outside a cell nothing fills the term, so a scenario gives the head's finding; without one the execution fails.
+- A cell opens with its directory (`Cell::open`, `Cell::in_memory`) and loads its reductions from `reducties/` there, so it cannot be without them. A term that a reduction in that directory implements is the cell's. On a day on which no reduction in force fills it, the cell refuses the decision. A school without reductions opens with a directory that has none.
 - Only a reduction reads `decisions`. Since schema v0.8.5 it may fill an open term (`implements`); it still has no `hooks`, `overrides`, `execution.produces` or `open_terms`. The corpus loaders leave it out; `just validate` checks it.
-- The decision records the answer in `fields`. It is no finding of the head, so a decision value leaves it out.
+- The decision records the answer in `fields`. It is not a finding of the head, so a decision value leaves it out.
 
 **Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature` with the head's finding and `schooljaargrenzen.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`
 

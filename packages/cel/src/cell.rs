@@ -31,16 +31,17 @@ use regelrecht_law_model::stored;
 /// A cell. It holds who it is, its chronicle and its reductions, not the
 /// law: every call that needs the law gets the service that executes it.
 ///
-/// A cell takes and replays a decision only once it has loaded its
-/// reductions ([`Cell::with_reductions`]), also when its directory holds
-/// none: without them it cannot tell a term its reductions fill from one the
-/// deciding authority finds, and a replay would pass a reduction's answer
-/// off as the authority's finding (RFC-048).
+/// A cell is opened with its directory, and its reductions come from there
+/// ([`Cell::open`], [`Cell::in_memory`]), so a cell cannot be without them.
+/// Without its reductions a cell could not tell a term they fill from one the
+/// deciding authority finds, and a replay would pass a reduction's answer off
+/// as the authority's finding (RFC-048). A cell without reductions is opened
+/// with a directory that holds none.
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
     chronicle: Chronicle,
-    reductions: Option<Reductions>,
+    reductions: Reductions,
 }
 
 /// The reductions of a cell and the directory they came from.
@@ -50,52 +51,17 @@ struct Reductions {
     versions: Vec<Reduction>,
 }
 
-impl Cell {
-    /// The cell of `recording_actor`, with its chronicle in the JSON Lines file
-    /// at `path`. A chronolexogram in the file recorded by another actor is an
-    /// error.
-    pub fn open(recording_actor: impl Into<String>, path: impl AsRef<Path>) -> Result<Self> {
-        let recording_actor = recording_actor.into();
-        let chronicle = Chronicle::open(path)?;
-        if let Some(g) = chronicle
-            .grams()
-            .iter()
-            .find(|g| g.recording_actor != recording_actor)
-        {
-            return Err(setup(format!(
-                "chronolexogram '{}' in the chronicle of '{recording_actor}' was recorded by '{}'",
-                g.id, g.recording_actor
-            )));
-        }
-        Ok(Self {
-            recording_actor,
-            chronicle,
-            reductions: None,
-        })
-    }
-
-    /// The cell of `recording_actor`, with an empty chronicle in memory.
-    pub fn in_memory(recording_actor: impl Into<String>) -> Self {
-        Self {
-            recording_actor: recording_actor.into(),
-            chronicle: Chronicle::in_memory(),
-            reductions: None,
-        }
-    }
-
-    /// The cell with the reductions in its directory `dir`, one version per
-    /// file at `<dir>/reducties/<id>/<valid_from>.yaml` (RFC-048). A file
-    /// that is no `REDUCTIE`, or whose `$id` is not its directory's name, is
-    /// an error, and so is a `dir` that is no directory. Without a
-    /// `reducties` directory the cell has none. A cell takes and replays a
-    /// decision only with its reductions loaded.
-    pub fn with_reductions(mut self, dir: impl AsRef<Path>) -> Result<Self> {
-        let dir = dir.as_ref();
+impl Reductions {
+    /// The reductions in the cell directory `dir` of `recording_actor`, one
+    /// version per file at `<dir>/reducties/<id>/<valid_from>.yaml`
+    /// (RFC-048). A file that is no `REDUCTIE`, or whose `$id` is not its
+    /// directory's name, is an error, and so is a `dir` that is no directory.
+    /// Without a `reducties` directory the cell has none.
+    fn load(recording_actor: &str, dir: &Path) -> Result<Self> {
         if !dir.is_dir() {
             return Err(setup(format!(
-                "{}: no directory of the cell of '{}'",
-                dir.display(),
-                self.recording_actor
+                "{}: no directory of the cell of '{recording_actor}'",
+                dir.display()
             )));
         }
         let mut versions = Vec::new();
@@ -104,11 +70,10 @@ impl Cell {
             return Err(setup(format!("{}: no directory", root.display())));
         }
         if !root.is_dir() {
-            self.reductions = Some(Reductions {
+            return Ok(Self {
                 dir: root,
                 versions,
             });
-            return Ok(self);
         }
         let mut paths = Vec::new();
         for entry in std::fs::read_dir(&root)? {
@@ -140,32 +105,75 @@ impl Cell {
             }
             versions.push(reduction);
         }
-        self.reductions = Some(Reductions {
+        Ok(Self {
             dir: root,
             versions,
-        });
-        Ok(self)
+        })
+    }
+}
+
+impl Cell {
+    /// The cell of `recording_actor`, with its chronicle in the JSON Lines file
+    /// at `path` and its reductions in its directory `cell_dir`, one version
+    /// per file at `<cell_dir>/reducties/<id>/<valid_from>.yaml` (RFC-048).
+    /// A `cell_dir` that is no directory is an error; one without
+    /// `reducties` gives a cell without reductions. A reduction file that is
+    /// no `REDUCTIE`, or whose `$id` is not its directory's name, is an
+    /// error, and so is a chronolexogram in the file recorded by another
+    /// actor.
+    pub fn open(
+        recording_actor: impl Into<String>,
+        path: impl AsRef<Path>,
+        cell_dir: impl AsRef<Path>,
+    ) -> Result<Self> {
+        let recording_actor = recording_actor.into();
+        let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
+        let chronicle = Chronicle::open(path)?;
+        if let Some(g) = chronicle
+            .grams()
+            .iter()
+            .find(|g| g.recording_actor != recording_actor)
+        {
+            return Err(setup(format!(
+                "chronolexogram '{}' in the chronicle of '{recording_actor}' was recorded by '{}'",
+                g.id, g.recording_actor
+            )));
+        }
+        Ok(Self {
+            recording_actor,
+            chronicle,
+            reductions,
+        })
+    }
+
+    /// The cell of `recording_actor`, with an empty chronicle in memory and
+    /// its reductions in its directory `cell_dir`, loaded as [`Cell::open`]
+    /// loads them.
+    pub fn in_memory(
+        recording_actor: impl Into<String>,
+        cell_dir: impl AsRef<Path>,
+    ) -> Result<Self> {
+        let recording_actor = recording_actor.into();
+        let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
+        Ok(Self {
+            recording_actor,
+            chronicle: Chronicle::in_memory(),
+            reductions,
+        })
     }
 
     /// Bind the cell's reductions for a decision on `on` that reads `grams`
-    /// ([`reading::bind`]). Refused when the cell has not loaded them, and
-    /// when a term one of them fills has no reduction in force on `on`: the
-    /// term would then be the deciding authority's finding, or its default,
-    /// where the cell's own reading is expected. A replay so fails too.
+    /// ([`reading::bind`]). Refused when a term one of them fills has no
+    /// reduction in force on `on`: the term would then be the deciding
+    /// authority's finding, or its default, where the cell's own reading is
+    /// expected. A replay so fails too.
     fn bind<'s>(
         &self,
         service: &'s mut LawExecutionService,
         grams: &[Gram],
         on: NaiveDate,
     ) -> Result<Bound<'s>> {
-        let reductions = self.reductions.as_ref().ok_or_else(|| {
-            setup(format!(
-                "the cell of '{}' has not loaded its reductions (Cell::with_reductions); \
-                 without them it neither takes nor replays a decision, as it cannot tell what \
-                 they fill from a finding of the deciding authority",
-                self.recording_actor
-            ))
-        })?;
+        let reductions = &self.reductions;
         let bound = reading::bind(
             service,
             &self.recording_actor,
@@ -510,7 +518,7 @@ impl Cell {
         let decisions = self.decision_values(service, &unbound, &applied, on)?;
         let grams = self.grams_but(except.as_deref());
         let bound = self.bind(service, &grams, on)?;
-        // With the reductions loaded, a term one of them fills is the
+        // With the reductions bound, a term one of them fills is the
         // policy's first.
         let shape = decision::derive(&bound, law_id, article, on)?;
         if let Some(name) = supplied.keys().find(|name| is_finding(&shape, name)) {
@@ -687,7 +695,7 @@ impl Cell {
             .cloned()
             .collect();
         let bound = self.bind(service, &before, on)?;
-        // As `decide` derived it: with the reductions loaded, a term only a
+        // As `decide` derived it: with the reductions bound, a term only a
         // reduction fills is the policy's.
         let shape = decision::derive(&bound, law_id, article, on)?;
         let given = candidates(&shape, &decision);

@@ -117,7 +117,7 @@ fn service(laws: &[&str]) -> LawExecutionService {
 /// is then the deciding authority's finding.
 fn bare(actor: &str) -> Cell {
     let dir = tempfile::tempdir().unwrap();
-    Cell::in_memory(actor).with_reductions(dir.path()).unwrap()
+    Cell::in_memory(actor, dir.path()).unwrap()
 }
 
 fn day() -> NaiveDate {

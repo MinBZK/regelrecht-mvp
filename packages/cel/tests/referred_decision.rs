@@ -241,7 +241,7 @@ fn service() -> LawExecutionService {
     service_with(HEROVERWEGING)
 }
 
-/// A cell with the reduction, kept in a directory as `with_reductions`
+/// A cell with the reduction, kept in its directory as `Cell::in_memory`
 /// reads it.
 fn cell() -> (Cell, tempfile::TempDir) {
     let dir = tempfile::tempdir().unwrap();
@@ -250,7 +250,7 @@ fn cell() -> (Cell, tempfile::TempDir) {
         .join("reducties/reductie_al_verleend_fictief/2026-01-01.yaml");
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, REDUCTION).unwrap();
-    let cell = Cell::in_memory(ACTOR).with_reductions(dir.path()).unwrap();
+    let cell = Cell::in_memory(ACTOR, dir.path()).unwrap();
     (cell, dir)
 }
 
@@ -258,7 +258,7 @@ fn cell() -> (Cell, tempfile::TempDir) {
 /// is then the deciding authority's finding.
 fn bare(actor: &str) -> Cell {
     let dir = tempfile::tempdir().unwrap();
-    Cell::in_memory(actor).with_reductions(dir.path()).unwrap()
+    Cell::in_memory(actor, dir.path()).unwrap()
 }
 
 fn day(on: &str) -> NaiveDate {
@@ -1504,10 +1504,7 @@ fn a_refused_decision_writes_nothing_to_the_file() {
     service.load_law(&stricter).unwrap();
     let (_, dir) = cell();
     let path = dir.path().join("kroniek.jsonl");
-    let mut cell = Cell::open(ACTOR, &path)
-        .unwrap()
-        .with_reductions(dir.path())
-        .unwrap();
+    let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let application = apply(&mut cell, &mut service, 2, "2026-03-02");
     let granted = decide(
         &mut cell,
@@ -1541,7 +1538,10 @@ fn a_refused_decision_writes_nothing_to_the_file() {
         "{e}"
     );
     assert_eq!(std::fs::read_to_string(&path).unwrap(), written);
-    assert_eq!(Cell::open(ACTOR, &path).unwrap().grams(), cell.grams());
+    assert_eq!(
+        Cell::open(ACTOR, &path, dir.path()).unwrap().grams(),
+        cell.grams()
+    );
 }
 
 /// Without a field of type `decision`, a submission that refers to a
