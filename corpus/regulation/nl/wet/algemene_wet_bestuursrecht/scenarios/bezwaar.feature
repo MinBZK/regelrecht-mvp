@@ -18,10 +18,10 @@ Feature: Het bezwaar en de beslissing erop
   vaststelt, geeft de uitvoering apart van de parameters mee (findings); een
   bevinding die geen artikel in de uitvoering vraagt, is een fout. Het hoofd
   oordeelde dat het beroep van de ouder niet van de aard is die artikel 11,
-  onder f, vraagt. Buiten een procedure geeft de uitvoering artikel 7:11 de
-  tijdigheid als parameter mee. De keten van bezwaarschrift naar beslissing,
-  met het nieuwe besluit in de kroniek, staat in de tests van de cel
-  (packages/cel).
+  onder f, vraagt. Buiten een procedure geeft het scenario artikel 7:11 de
+  uitkomst van artikel 6:9 mee, niet de gegevens daarvan. De keten van
+  bezwaarschrift naar beslissing, met het nieuwe besluit in de kroniek, staat
+  in de tests van de cel (packages/cel).
 
   Background:
     Given the calculation date is "2026-11-15"
@@ -37,7 +37,6 @@ Feature: Het bezwaar en de beslissing erop
       | dagtekening_bezwaarschrift     | 2026-11-01               |
       | omschrijving_bestreden_besluit | weigering vakantieverlof |
       | gronden_bezwaar                | verklaring werkgever     |
-      | datum_ontvangst_bezwaarschrift | 2026-11-01               |
       | bezwaartermijn_einddatum       | 2026-12-01               |
       | bezwaarschrift_tijdig_ingediend | true                    |
       | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "verlof_al_verleend_in_schooljaar": false}, "findings": {"specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
@@ -54,9 +53,7 @@ Feature: Het bezwaar en de beslissing erop
   Scenario: Geeft de heroverweging geen aanleiding, dan blijft het besluit in stand
     # Het hoofd oordeelt niets opnieuw: artikel 13a weigert opnieuw.
     Given the following parameters:
-      | datum_ontvangst_bezwaarschrift | 2026-11-01 |
-      | bezwaartermijn_einddatum       | 2026-12-01 |
-      | bezwaarschrift_tijdig_ingediend | true      |
+      | bezwaarschrift_tijdig_ingediend | true |
       | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "verlof_al_verleend_in_schooljaar": false}, "findings": {"specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
@@ -66,18 +63,14 @@ Feature: Het bezwaar en de beslissing erop
     Then output "nieuw_besluit" is absent
 
   Scenario: Een bezwaarschrift na het einde van de termijn is niet ontvankelijk
-    # Ontvangen op de dag na de laatste dag van de termijn. Artikel 6:11
-    # (verschoonbare termijnoverschrijding) is niet gemodelleerd. Er vindt
-    # geen heroverweging plaats (lid 1), dus het hoofd stelt niets opnieuw
-    # vast.
+    # Artikel 6:9 gaf: niet tijdig ingediend. Artikel 6:11 (verschoonbare
+    # termijnoverschrijding) is niet gemodelleerd. Er vindt geen
+    # heroverweging plaats (lid 1), dus het hoofd stelt niets opnieuw vast.
     Given the following parameters:
-      | datum_ontvangst_bezwaarschrift | 2026-12-02 |
-      | bezwaartermijn_einddatum       | 2026-12-01 |
-      | bezwaarschrift_tijdig_ingediend | false     |
+      | bezwaarschrift_tijdig_ingediend | false |
       | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05", "verlof_al_verleend_in_schooljaar": false}, "findings": {"specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
-    Then output "bezwaarschrift_tijdig_ingediend" is false
     Then output "bezwaar_ontvankelijk" is false
     Then output "heroverweging_geeft_aanleiding" is absent
     Then output "bestreden_besluit_herroepen" is false
@@ -144,7 +137,6 @@ Feature: Het bezwaar en de beslissing erop
     # Telde het als een besluit dat niet op bezwaar is genomen, dan was een
     # bezwaar tegen een beslissing op bezwaar stil ontvankelijk.
     Given the following parameters:
-      | bezwaarschrift_tijdig_ingediend | true |
       | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaarschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
     When I evaluate outputs "bestreden_besluit_herroepen, nieuw_besluit" of "algemene_wet_bestuursrecht"
     Then the execution fails with "parameter 'bestreden_besluit' of algemene_wet_bestuursrecht#7:11 is no decision value {grondslag, taken_on, fields, findings, outputs}: it lacks 'taken_on'"
