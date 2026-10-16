@@ -56,7 +56,7 @@ const scenarios = [
       'School, speeldatum 15 november 2026: toets het eerste bezwaar. Kies bij "specifieke aard beroep ouder" Nee en beslis. Gegrond: een weigering komt in de plaats van het besluit.',
       'Speeldatum 16 november 2026: toets het tweede bezwaar. Kies weer Nee en beslis.',
     ],
-    eind: 'De cel weigert deze stap: een besluit wordt maar één keer vervangen. De melding noemt het besluit dat het al vervangt. Er komt niets bij in de kroniek.',
+    eind: 'De cel weigert deze stap: een besluit wordt maar één keer vervangen. De melding noemt het besluit dat het al vervangt; onder Details staat wat de cel zelf meldt. Er komt niets bij in de kroniek.',
   },
 ];
 

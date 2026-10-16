@@ -149,9 +149,9 @@ pocs:
     samenvatting_intern: >-
       Het proces van vakantieverlof (Leerplichtwet 1969 artikel 13a) bij een
       fictieve school, uitgevoerd door de cel uit packages/cel: aanvraag met
-      de Awb-haken, besluit van het hoofd, bezwaar en heroverweging, een
-      proefbesluit onder een tijdelijke versie van artikel 13a, de kroniek en
-      de reductie die de school erover draait (RFC-045 tot en met RFC-050).
+      de Awb-haken, besluit van het hoofd met het waarom, bezwaar en
+      heroverweging, de kroniek en de reductie die de school erover draait
+      (RFC-045 tot en met RFC-050).
     soort: proxy
     upstream: vakantieverlof
     corpus: []

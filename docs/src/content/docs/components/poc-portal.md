@@ -49,7 +49,7 @@ The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` 
 
 The first proxied PoC is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
 
-The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays through an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, using the cell from `packages/cel`: the application, the head's decision, the objection and the decision on it, a trial decision under a temporarily edited article 13a, the chronicle and the school's reduction. Its chronicle lives in memory, shared by every visitor, and is empty after a restart. Its regelwerken come from `corpus/regulation/`, not from `corpus-poc/`.
+The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays through an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, using the cell from `packages/cel`: the application, the head's decision, the objection and the decision on it, the chronicle and the school's reduction. Each decision shows why it came out as it did: the engine's trace under the law in force. Its chronicle lives in memory, shared by every visitor, and is empty after a restart. Its regelwerken come from `corpus/regulation/`, not from `corpus-poc/`.
 
 ### The gate
 

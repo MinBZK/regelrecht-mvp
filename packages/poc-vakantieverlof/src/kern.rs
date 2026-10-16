@@ -1,10 +1,10 @@
-//! What the app does with the cell: the process steps, the temporary law and
-//! the reduction, apart from HTTP.
+//! What the app does with the cell: the process steps and the reduction,
+//! apart from HTTP.
 //!
 //! Every step builds a fresh engine service from the regelwerken in the
 //! corpus. That costs a few milliseconds and keeps the steps independent: a
-//! decision binds the cell's reductions into the service it gets, and the
-//! temporary law of a trial decision must not leak into the next step.
+//! decision binds the cell's reductions into the service it gets, and that
+//! binding must not leak into the next step.
 
 use std::path::{Path, PathBuf};
 
@@ -37,17 +37,11 @@ const REGELWERKEN: [&str; 4] = [
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// One version of a regelwerk, as read from the corpus.
-#[derive(Debug, Clone)]
-struct Versie {
-    law_id: String,
-    yaml: String,
-}
-
-/// The regelwerken and the cell's directory, read once at startup.
+/// The regelwerken (each version as its YAML) and the cell's directory,
+/// read once at startup.
 #[derive(Debug, Clone)]
 pub struct Corpus {
-    versies: Vec<Versie>,
+    versies: Vec<String>,
     cell_dir: PathBuf,
 }
 
@@ -65,10 +59,10 @@ impl Corpus {
             paths.sort();
             for path in paths {
                 let yaml = std::fs::read_to_string(&path)?;
-                let law_id = ArticleBasedLaw::from_yaml_str(&yaml)
-                    .map_err(|e| Error::Setup(format!("{}: {e}", path.display())))?
-                    .id;
-                versies.push(Versie { law_id, yaml });
+                // Parsed here, so a broken version names its file at startup.
+                ArticleBasedLaw::from_yaml_str(&yaml)
+                    .map_err(|e| Error::Setup(format!("{}: {e}", path.display())))?;
+                versies.push(yaml);
             }
         }
         Ok(Self {
@@ -82,68 +76,14 @@ impl Corpus {
         Cell::in_memory(SCHOOL).with_reductions(&self.cell_dir)
     }
 
-    /// A service with every regelwerk, the Leerplichtwet with article 13a
-    /// replaced by `artikel_13a` when given.
-    pub fn service(&self, artikel_13a: Option<&str>) -> Result<LawExecutionService> {
+    /// A service with every regelwerk.
+    pub fn service(&self) -> Result<LawExecutionService> {
         let mut service = LawExecutionService::new();
-        let bewerkt = self.leerplichtwet_index()?;
-        for (i, versie) in self.versies.iter().enumerate() {
-            let yaml = match artikel_13a {
-                Some(article) if i == bewerkt => splice_13a(&versie.yaml, article)?,
-                _ => versie.yaml.clone(),
-            };
-            service.load_law(&yaml)?;
+        for yaml in &self.versies {
+            service.load_law(yaml)?;
         }
         Ok(service)
     }
-
-    /// Article 13a of the Leerplichtwet as written in its YAML, from its
-    /// `- number:` line up to the next article.
-    pub fn artikel_13a(&self) -> Result<String> {
-        let law = self.leerplichtwet()?;
-        let (start, end) = article_span(law)?;
-        Ok(law[start..end].to_string())
-    }
-
-    /// The version of the Leerplichtwet that [`Corpus::artikel_13a`] shows
-    /// and a trial decision edits: the latest. With one version in the
-    /// corpus (2026-08-01) that is the one in force; once there are more,
-    /// a trial on a day before the latest runs the unedited older one.
-    fn leerplichtwet_index(&self) -> Result<usize> {
-        self.versies
-            .iter()
-            .rposition(|v| v.law_id == LAW)
-            .ok_or_else(|| Error::Setup(format!("{LAW} is not in the corpus")))
-    }
-
-    fn leerplichtwet(&self) -> Result<&str> {
-        Ok(&self.versies[self.leerplichtwet_index()?].yaml)
-    }
-}
-
-/// The byte range of article 13a in the YAML of the Leerplichtwet.
-fn article_span(law: &str) -> Result<(usize, usize)> {
-    let marker = format!("\n  - number: {ARTICLE}\n");
-    let start = law
-        .find(&marker)
-        .map(|i| i + 1)
-        .ok_or_else(|| Error::Setup(format!("article {ARTICLE} not found in {LAW}")))?;
-    let end = law[start + 1..]
-        .find("\n  - number: ")
-        .map(|i| start + 1 + i + 1)
-        .unwrap_or(law.len());
-    Ok((start, end))
-}
-
-/// `law` with article 13a replaced by `article`.
-fn splice_13a(law: &str, article: &str) -> Result<String> {
-    let (start, end) = article_span(law)?;
-    let mut out = String::with_capacity(law.len() + article.len());
-    out.push_str(&law[..start]);
-    out.push_str(article.trim_end_matches('\n'));
-    out.push('\n');
-    out.push_str(&law[end..]);
-    Ok(out)
 }
 
 /// A field as the forms show it.
@@ -173,7 +113,7 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
 /// request is a new application. What the head finds anew on an objection
 /// follows from the contested decision ([`heroverweging`]).
 pub fn vormen(corpus: &Corpus, on: NaiveDate) -> Result<Value> {
-    let service = corpus.service(None)?;
+    let service = corpus.service()?;
     let aanvraag = shape::derive(&service, LAW, ARTICLE, on)?;
     let besluit = decision::derive(&service, LAW, ARTICLE, on)?;
     let bezwaar = shape::derive(&service, AWB, OBJECTION, on)?;
@@ -239,7 +179,7 @@ pub fn aanvragen(
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Gram> {
-    cell.record_submission(&corpus.service(None)?, LAW, ARTICLE, None, velden, on)
+    cell.record_submission(&corpus.service()?, LAW, ARTICLE, None, velden, on)
 }
 
 /// A decision under art. 13a, and why: the engine's trace of it.
@@ -272,39 +212,10 @@ pub fn besluiten(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Besluit> {
-    let mut service = corpus.service(None)?;
+    let mut service = corpus.service()?;
     let besluit = beslissen(&mut service, cell, LAW, ARTICLE, aanvraag, bevindingen, on)?.remove(0);
     let uitleg = uitleg(&service, &besluit)?;
     Ok(Besluit { besluit, uitleg })
-}
-
-/// A trial decision: the same decision on a copy of the cell, once under
-/// the law in force and once with article 13a as `artikel_13a`. Nothing is
-/// kept.
-pub fn proefbesluit(
-    corpus: &Corpus,
-    cell: &Cell,
-    aanvraag: &str,
-    bevindingen: &Map<String, Value>,
-    artikel_13a: &str,
-    on: NaiveDate,
-) -> Result<Value> {
-    let run = |article: Option<&str>| -> Result<Besluit> {
-        let mut service = corpus.service(article)?;
-        let besluit = beslissen(
-            &mut service,
-            &mut cell.sandbox(),
-            LAW,
-            ARTICLE,
-            aanvraag,
-            bevindingen,
-            on,
-        )?
-        .remove(0);
-        let uitleg = uitleg(&service, &besluit)?;
-        Ok(Besluit { besluit, uitleg })
-    };
-    Ok(json!({ "geldend": run(None)?, "proef": run(Some(artikel_13a))? }))
 }
 
 /// Why the decision `besluit` under art. 13a came out as it did: the trace
@@ -352,7 +263,7 @@ pub fn uitleg_van(corpus: &Corpus, cell: &Cell, id: &str) -> Result<String> {
                 "'{id}' is no decision under {LAW}#{ARTICLE} in the chronicle"
             ))
         })?;
-    uitleg(&corpus.service(None)?, besluit)
+    uitleg(&corpus.service()?, besluit)
 }
 
 /// The parent objects to the decision `besluit`: a submission under Awb
@@ -365,7 +276,7 @@ pub fn bezwaren(
     on: NaiveDate,
 ) -> Result<Gram> {
     cell.record_submission(
-        &corpus.service(None)?,
+        &corpus.service()?,
         AWB,
         OBJECTION,
         Some(besluit),
@@ -383,8 +294,8 @@ pub fn bezwaren(
 /// The admissibility is that of the decision without new findings, taken
 /// on a copy of the cell: the law decides it, not the app. Nothing is kept.
 pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate) -> Result<Value> {
-    let mut service = corpus.service(None)?;
-    let proef = beslissen(
+    let mut service = corpus.service()?;
+    let toets = beslissen(
         &mut service,
         &mut cell.sandbox(),
         AWB,
@@ -394,7 +305,7 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
         on,
     )?
     .remove(0);
-    let ontvankelijk = proef.outputs.get("bezwaar_ontvankelijk") == Some(&json!(true));
+    let ontvankelijk = toets.outputs.get("bezwaar_ontvankelijk") == Some(&json!(true));
     let ingediend = cell
         .grams()
         .iter()
@@ -426,7 +337,7 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
         "bestreden_besluit": bestreden.id,
         "ontvankelijk": ontvankelijk,
         "tijdig": ingediend.outputs.get("bezwaarschrift_tijdig_ingediend"),
-        "uitvoer": proef.outputs,
+        "uitvoer": toets.outputs,
         "bevindingen": bevindingen,
     }))
 }
@@ -442,7 +353,7 @@ pub fn beslissen_op_bezwaar(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Value> {
-    let mut service = corpus.service(None)?;
+    let mut service = corpus.service()?;
     let mut genomen = beslissen(&mut service, cell, AWB, OBJECTION, bezwaar, bevindingen, on)?;
     let nieuw = (genomen.len() > 1).then(|| genomen.remove(1));
     let uitleg = nieuw.as_ref().map(|g| uitleg(&service, g)).transpose()?;
@@ -456,7 +367,7 @@ pub fn beslissen_op_bezwaar(
 /// The cell's reductions as written, and per reduction the decisions it
 /// reads from the chronicle (`source.decisions`), as rows.
 pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
-    let service = corpus.service(None)?;
+    let service = corpus.service()?;
     let mut uit = Vec::new();
     for reduction in cell.reductions() {
         let law = ArticleBasedLaw::from_yaml_str(reduction.yaml())?;
@@ -490,7 +401,7 @@ pub fn reductie_uitvoeren(
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Value> {
-    let mut service = corpus.service(None)?;
+    let mut service = corpus.service()?;
     let shape = decision::derive(&service, LAW, ARTICLE, on)?;
     let bound = reading::bind(
         &mut service,
@@ -908,68 +819,5 @@ mod tests {
         assert_eq!(uit["heroverweging_geeft_aanleiding"], json!(false));
         assert_eq!(uit["bestreden_besluit_herroepen"], json!(false));
         assert!(beslist["nieuw_besluit"].is_null());
-    }
-
-    #[test]
-    fn a_trial_decision_runs_a_temporary_law_and_keeps_nothing() {
-        let corpus = corpus();
-        let mut cell = corpus.cell().unwrap();
-        let app = aanvragen(
-            &corpus,
-            &mut cell,
-            &aanvraag("2027-02-16"),
-            day("2026-10-13"),
-        )
-        .unwrap();
-        // Up to fifteen days instead of ten.
-        let artikel = corpus.artikel_13a().unwrap();
-        assert!(artikel.starts_with("  - number: 13a\n"));
-        let ruimer = artikel.replacen(
-            "subject: $verlofdagen\n                  value: 10",
-            "subject: $verlofdagen\n                  value: 15",
-            1,
-        );
-        assert_ne!(ruimer, artikel);
-        let proef = proefbesluit(
-            &corpus,
-            &cell,
-            &app.id,
-            &bevindingen(),
-            &ruimer,
-            day("2026-10-20"),
-        )
-        .unwrap();
-        assert_eq!(
-            proef["geldend"]["besluit"]["outputs"]["verlof_verleend"],
-            json!(false)
-        );
-        assert_eq!(
-            proef["proef"]["besluit"]["outputs"]["verlof_verleend"],
-            json!(true)
-        );
-        assert_eq!(cell.grams().len(), 1);
-    }
-
-    #[test]
-    fn a_broken_temporary_law_is_an_error() {
-        let corpus = corpus();
-        let mut cell = corpus.cell().unwrap();
-        let app = aanvragen(
-            &corpus,
-            &mut cell,
-            &aanvraag("2027-02-05"),
-            day("2026-10-13"),
-        )
-        .unwrap();
-        let e = proefbesluit(
-            &corpus,
-            &cell,
-            &app.id,
-            &bevindingen(),
-            "  - number: 13a\n    nonsense",
-            day("2026-10-20"),
-        )
-        .unwrap_err();
-        assert!(matches!(e, Error::Engine(_)), "{e}");
     }
 }

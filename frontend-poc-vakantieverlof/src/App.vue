@@ -1,9 +1,11 @@
 <script setup>
 // Eén pagina, vijf tabbladen: de scenario's, de ouder, de school, de
 // kroniek en de reductie. Bovenaan de speeldatum, die voor elke stap geldt,
-// en een knop die de kroniek leegmaakt.
+// en een knop die de kroniek leegmaakt. Een weigering van de cel staat in
+// een banner, in het Nederlands; de melding van de cel zelf onder Details.
 import { onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
+import { melding } from './melding.js';
 import { spel, stap, verversen } from './spel.js';
 import KroniekTab from './components/KroniekTab.vue';
 import OuderTab from './components/OuderTab.vue';
@@ -19,6 +21,8 @@ const tabs = [
   { id: 'reductie', tekst: 'Reductie' },
 ];
 const tab = ref('scenarios');
+const details = ref(false);
+watch(() => spel.fout, () => (details.value = false));
 
 onMounted(verversen);
 watch(() => spel.datum, verversen);
@@ -63,7 +67,22 @@ async function opnieuw() {
       </nldd-container>
 
       <nldd-simple-section v-if="spel.fout" padding-block="16">
-        <nldd-banner variant="critical" text="Deze stap lukt niet" :supporting-text="spel.fout" dismissible @dismiss="spel.fout = ''"></nldd-banner>
+        <nldd-banner
+          variant="critical"
+          text="Deze stap lukt niet"
+          :supporting-text="melding(spel.fout)"
+          dismissible
+          @dismiss="spel.fout = ''"
+        >
+          <nldd-text v-if="details" size="sm" color="secondary" lang="en">{{ spel.fout }}</nldd-text>
+          <nldd-button
+            slot="actions"
+            appearance="neutral-tinted"
+            size="sm"
+            :text="details ? 'Details verbergen' : 'Details'"
+            @click="details = !details"
+          ></nldd-button>
+        </nldd-banner>
       </nldd-simple-section>
 
       <ScenarioTab v-if="tab === 'scenarios'" @start="tab = 'ouder'" />

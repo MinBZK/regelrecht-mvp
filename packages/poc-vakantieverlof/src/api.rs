@@ -51,8 +51,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/bezwaren", post(bezwaren))
         .route("/api/bezwaren/{id}/heroverweging", get(heroverweging))
         .route("/api/beslissingen-op-bezwaar", post(beslissen_op_bezwaar))
-        .route("/api/wet/13a", get(artikel_13a))
-        .route("/api/proefbesluit", post(proefbesluit))
         .route("/api/reducties", get(reducties))
         .route("/api/reducties/uitvoeren", post(reductie_uitvoeren))
         .route("/api/reset", post(reset))
@@ -173,30 +171,6 @@ async fn beslissen_op_bezwaar(State(s): State<AppState>, Json(b): Json<Beslissin
         &mut s.cell(),
         &b.op,
         &b.bevindingen,
-        b.datum,
-    )?)
-}
-
-async fn artikel_13a(State(s): State<AppState>) -> Antwoord {
-    ok(json!({ "yaml": s.corpus.artikel_13a()? }))
-}
-
-#[derive(Deserialize)]
-struct Proef {
-    op: String,
-    #[serde(default)]
-    bevindingen: Map<String, Value>,
-    datum: NaiveDate,
-    yaml: String,
-}
-
-async fn proefbesluit(State(s): State<AppState>, Json(b): Json<Proef>) -> Antwoord {
-    ok(kern::proefbesluit(
-        &s.corpus,
-        &s.cell(),
-        &b.op,
-        &b.bevindingen,
-        &b.yaml,
         b.datum,
     )?)
 }

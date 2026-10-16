@@ -36,9 +36,6 @@ export const api = {
     get(`/api/bezwaren/${encodeURIComponent(bezwaar)}/heroverweging?datum=${datum}`),
   beslissenOpBezwaar: (op, bevindingen, datum) =>
     post('/api/beslissingen-op-bezwaar', { op, bevindingen, datum }),
-  artikel13a: () => get('/api/wet/13a'),
-  proefbesluit: (op, bevindingen, yaml, datum) =>
-    post('/api/proefbesluit', { op, bevindingen, yaml, datum }),
   reducties: (datum) => get(`/api/reducties?datum=${datum}`),
   reductieUitvoeren: (velden, datum) => post('/api/reducties/uitvoeren', { velden, datum }),
   reset: () => post('/api/reset'),

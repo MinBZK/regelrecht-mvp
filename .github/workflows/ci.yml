@@ -779,6 +779,9 @@ jobs:
       - name: Run demo tests
         run: npm test -w frontend-demo
 
+      - name: Run vakantieverlof poc tests
+        run: npm test -w frontend-poc-vakantieverlof
+
       # De rekenkunde van de opgenomen rondleiding (knippen, hoofdstukken,
       # ondertitels): pure Python zonder ffmpeg, dus hier in een paar seconden.
       - name: Run walkthrough pipeline tests

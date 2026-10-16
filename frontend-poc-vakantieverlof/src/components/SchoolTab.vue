@@ -1,10 +1,10 @@
 <script setup>
-// De school: het hoofd beslist op aanvragen en bezwaren, en kan een besluit
-// eerst proberen onder een tijdelijke versie van artikel 13a. De bevindingen
+// De school: het hoofd beslist op aanvragen en bezwaren, en ziet bij elk
+// besluit waarom het zo uitviel (het spoor onder de geldende wet). De bevindingen
 // die het hoofd per aanvraag geeft (artikel 11, onder f) komen uit de wet:
 // `decided_per_case_by` op de open begrippen van 13a (RFC-050). Bij een
 // bezwaar komen ze uit het bestreden besluit: wat het hoofd toen vond.
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, reactive } from 'vue';
 import { api } from '../api.js';
 import {
   BESLUIT_13A,
@@ -86,36 +86,6 @@ const uitkomstOpBezwaar = (uit) =>
     : uit.bestreden_besluit_herroepen
       ? 'Gegrond: het besluit is herroepen, er is een nieuw besluit'
       : 'Ongegrond: het besluit blijft';
-
-// Het proefbesluit.
-const geldendeTekst = ref('');
-const proefTekst = ref('');
-const proefOp = ref('');
-const proefOordeel = reactive({});
-const proef = ref(null);
-
-onMounted(async () => {
-  // Ophalen, geen stap: een fout van de vorige stap blijft staan.
-  try {
-    const { yaml } = await api.artikel13a();
-    geldendeTekst.value = yaml;
-    proefTekst.value = yaml;
-  } catch (e) {
-    spel.fout = e.message;
-  }
-});
-
-// Een aanvraag waarop intussen besloten is, kan geen proef meer krijgen.
-watch(open, (nu) => {
-  if (!nu.some((a) => a.id === proefOp.value)) proefOp.value = nu[0]?.id ?? '';
-});
-
-async function proefDraaien() {
-  proef.value = null;
-  const op = proefOp.value || open.value[0]?.id;
-  const gegeven = { ...standaard(), ...proefOordeel };
-  proef.value = await stap(() => api.proefbesluit(op, gegeven, proefTekst.value, spel.datum));
-}
 </script>
 
 <template>
@@ -254,53 +224,6 @@ async function proefDraaien() {
           <Uitkomst :titel="`Besluit ${kort(b.id)} (${b.recorded_on})`" :besluit="b" />
           <nldd-button appearance="secondary" size="sm" text="Waarom?" @click="waarom(b)"></nldd-button>
         </template>
-      </nldd-container>
-    </nldd-container>
-  </nldd-simple-section>
-
-  <nldd-simple-section>
-    <nldd-title slot="header" size="3" text="Proefbesluit met een tijdelijke wet">
-      <nldd-text slot="supporting-text">
-        Wijzig artikel 13a hieronder en draai het besluit op een open aanvraag, naast de
-        geldende tekst. Het proefbesluit wordt nergens bewaard: niet in de kroniek en niet in
-        de wet.
-      </nldd-text>
-    </nldd-title>
-    <nldd-container gap="16">
-      <nldd-form-field label="Aanvraag">
-        <nldd-dropdown>
-          <select @change="proefOp = $event.target.value">
-            <option v-for="a in open" :key="a.id" :value="a.id" :selected="a.id === proefOp">
-              Aanvraag {{ kort(a.id) }} ({{ a.fields.eerste_verlofdag }} t/m {{ a.fields.laatste_verlofdag }})
-            </option>
-          </select>
-        </nldd-dropdown>
-      </nldd-form-field>
-      <VeldInvoer
-        v-for="o in oordelen()"
-        :key="o.naam"
-        :model-value="proefOordeel[o.naam] ?? true"
-        :veld="o"
-        @update:model-value="proefOordeel[o.naam] = $event"
-      />
-      <nldd-form-field label="Artikel 13a (YAML)" supporting-label="leerplichtwet_1969, versie 2026-08-01">
-        <nldd-code-editor
-          appearance="input-field"
-          language="yaml"
-          line-numbers
-          resize="none"
-          rows="20"
-          :value="proefTekst"
-          @input="proefTekst = $event.detail.value"
-        ></nldd-code-editor>
-      </nldd-form-field>
-      <nldd-button-group>
-        <nldd-button appearance="primary" text="Proefbesluit draaien" :disabled="open.length === 0" @click="proefDraaien"></nldd-button>
-        <nldd-button appearance="neutral-transparent" text="Terug naar de geldende tekst" @click="proefTekst = geldendeTekst"></nldd-button>
-      </nldd-button-group>
-      <nldd-container v-if="proef" gap="24">
-        <Uitkomst titel="Onder de geldende wet" :besluit="proef.geldend.besluit" :uitleg="proef.geldend.uitleg" />
-        <Uitkomst titel="Onder de tijdelijke wet" :besluit="proef.proef.besluit" :uitleg="proef.proef.uitleg" />
       </nldd-container>
     </nldd-container>
   </nldd-simple-section>
