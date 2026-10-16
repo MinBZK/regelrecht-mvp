@@ -18,14 +18,33 @@ Feature: Het bezwaar en de beslissing erop
   vaststelt, geeft de uitvoering apart van de parameters mee (findings); een
   bevinding die geen artikel in de uitvoering vraagt, is een fout. Het hoofd
   oordeelde dat het beroep van de ouder niet van de aard is die artikel 11,
-  onder f, vraagt. Buiten een procedure geeft het scenario artikel 7:11 de
-  uitkomst van artikel 6:9 mee, niet de gegevens daarvan. De keten van
+  onder f, vraagt. De eerste twee scenario's rekenen artikel 6:9 zelf uit.
+  Daarna geeft het scenario artikel 7:11 buiten een procedure de uitkomst van
+  artikel 6:9 mee, niet de gegevens daarvan. De keten van
   bezwaarschrift naar beslissing, met het nieuwe besluit in de kroniek, staat
   in de tests van de cel (packages/cel).
 
   Background:
     Given the calculation date is "2026-11-15"
     Given law "leerplichtwet_1969" is loaded
+
+  Scenario: Een bezwaarschrift ontvangen op de laatste dag van de termijn is tijdig
+    # Artikel 6:9, eerste lid: "voor het einde van de termijn" is uiterlijk op
+    # de laatste dag.
+    Given the following parameters:
+      | datum_ontvangst_bezwaarschrift | 2026-12-01 |
+      | bezwaartermijn_einddatum       | 2026-12-01 |
+    When I evaluate outputs "bezwaarschrift_tijdig_ingediend" of "algemene_wet_bestuursrecht"
+    Then the execution succeeds
+    Then output "bezwaarschrift_tijdig_ingediend" is true
+
+  Scenario: Een bezwaarschrift ontvangen op de dag na de termijn is niet tijdig
+    Given the following parameters:
+      | datum_ontvangst_bezwaarschrift | 2026-12-02 |
+      | bezwaartermijn_einddatum       | 2026-12-01 |
+    When I evaluate outputs "bezwaarschrift_tijdig_ingediend" of "algemene_wet_bestuursrecht"
+    Then the execution succeeds
+    Then output "bezwaarschrift_tijdig_ingediend" is false
 
   Scenario: Een tijdig bezwaar waarop de heroverweging aanleiding geeft, herroept het besluit
     # Bij de heroverweging oordeelt het hoofd opnieuw over het beroep van de
