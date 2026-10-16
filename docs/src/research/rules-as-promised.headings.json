@@ -35,6 +35,26 @@
     "text": "6 One Dossier, Audited"
   },
   {
+    "depth": 3,
+    "slug": "the-household-promised-zero",
+    "text": "The household promised zero"
+  },
+  {
+    "depth": 3,
+    "slug": "an-expectation-pinned-to-the-encoding",
+    "text": "An expectation pinned to the encoding"
+  },
+  {
+    "depth": 3,
+    "slug": "a-reverse-pass-that-misfired",
+    "text": "A reverse pass that misfired"
+  },
+  {
+    "depth": 3,
+    "slug": "rounding-enacted-in-the-neighboring-statute",
+    "text": "Rounding enacted in the neighboring statute"
+  },
+  {
     "depth": 2,
     "slug": "sec:experiment",
     "text": "7 Measuring a Suite by Seeding Faults"
@@ -43,6 +63,21 @@
     "depth": 2,
     "slug": "sec:cannot",
     "text": "8 Three Limits of the Oracle"
+  },
+  {
+    "depth": 3,
+    "slug": "they-are-shallow",
+    "text": "They are shallow"
+  },
+  {
+    "depth": 3,
+    "slug": "they-go-stale",
+    "text": "They go stale"
+  },
+  {
+    "depth": 3,
+    "slug": "they-stop-at-the-open-norms",
+    "text": "They stop at the open norms"
   },
   {
     "depth": 2,
