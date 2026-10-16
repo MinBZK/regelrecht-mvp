@@ -1,0 +1,122 @@
+[
+  {
+    "depth": 2,
+    "slug": "abstract",
+    "text": "Abstract"
+  },
+  {
+    "depth": 2,
+    "slug": "introduction",
+    "text": "1 Introduction"
+  },
+  {
+    "depth": 2,
+    "slug": "related-work",
+    "text": "2 Related Work"
+  },
+  {
+    "depth": 3,
+    "slug": "rules-as-code-and-executable-legislation",
+    "text": "2.1 Rules as Code and executable legislation"
+  },
+  {
+    "depth": 3,
+    "slug": "from-rule-execution-to-explanation-generation",
+    "text": "2.2 From rule execution to explanation generation"
+  },
+  {
+    "depth": 3,
+    "slug": "llm-generated-legal-explanations-and-faithfulness-evaluation",
+    "text": "2.3 LLM-generated legal explanations and faithfulness evaluation"
+  },
+  {
+    "depth": 3,
+    "slug": "knowledge-representation-and-public-sector-deployment",
+    "text": "2.4 Knowledge representation and public-sector deployment"
+  },
+  {
+    "depth": 2,
+    "slug": "dataset",
+    "text": "3 Dataset"
+  },
+  {
+    "depth": 2,
+    "slug": "methodology",
+    "text": "4 Methodology"
+  },
+  {
+    "depth": 3,
+    "slug": "system-overview",
+    "text": "4.1 System overview"
+  },
+  {
+    "depth": 3,
+    "slug": "rule-based-decision-engine-and-graph-construction",
+    "text": "4.2 Rule-based decision engine and graph construction"
+  },
+  {
+    "depth": 2,
+    "slug": "evaluation",
+    "text": "5 Evaluation"
+  },
+  {
+    "depth": 3,
+    "slug": "evaluation-setup",
+    "text": "5.1 Evaluation setup"
+  },
+  {
+    "depth": 3,
+    "slug": "counterfactual-robustness",
+    "text": "5.2 Counterfactual robustness"
+  },
+  {
+    "depth": 3,
+    "slug": "human-annotation",
+    "text": "5.3 Human annotation"
+  },
+  {
+    "depth": 3,
+    "slug": "metrics",
+    "text": "5.4 Metrics"
+  },
+  {
+    "depth": 2,
+    "slug": "results",
+    "text": "6 Results"
+  },
+  {
+    "depth": 3,
+    "slug": "performance-across-models-and-laws",
+    "text": "6.1 Performance across models and laws"
+  },
+  {
+    "depth": 3,
+    "slug": "example",
+    "text": "6.2 Example"
+  },
+  {
+    "depth": 3,
+    "slug": "counterfactual-robustness-1",
+    "text": "6.3 Counterfactual robustness"
+  },
+  {
+    "depth": 3,
+    "slug": "human-annotation-1",
+    "text": "6.4 Human annotation"
+  },
+  {
+    "depth": 2,
+    "slug": "sec:discussion",
+    "text": "7 Discussion"
+  },
+  {
+    "depth": 2,
+    "slug": "conclusion",
+    "text": "8 Conclusion"
+  },
+  {
+    "depth": 2,
+    "slug": "references",
+    "text": "References"
+  }
+]

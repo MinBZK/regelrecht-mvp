@@ -1,9 +1,9 @@
 /*
  * Research paper pages (/research/…): styles for the pandoc-converted paper
  * body that nldd-rich-text does not cover — figure/table captions, the
- * hand-built comparison table (its two-row grouped header cannot be expressed
- * in markdown), the paper figure, footnotes and the citeproc bibliography.
- * Imported by the paper page only, not globally.
+ * hand-built tables (a grouped header or a row-group label cannot be expressed
+ * in markdown), the paper figures, footnotes and the citeproc bibliography.
+ * Imported by ResearchPaper.astro only, not globally.
  */
 
 /* The paper and every block in it must be allowed to shrink below its content
@@ -51,6 +51,44 @@
   vertical-align: bottom;
 }
 [data-discuss-paper] table.rr-landscape tr.rr-rule td {
+  border-top: 1px solid currentColor;
+}
+
+/* Results tables built by the converter from the paper's tabular: booktabs
+   rules as in print, a light rule between row groups, and the numbers
+   centered under their column heads. A row-group label sits at the top of its
+   group, where print puts it. */
+[data-discuss-paper] table.rr-booktabs {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+[data-discuss-paper] table.rr-booktabs th,
+[data-discuss-paper] table.rr-booktabs td {
+  padding: var(--primitives-space-4) var(--primitives-space-8);
+  text-align: left;
+  vertical-align: top;
+}
+[data-discuss-paper] table.rr-booktabs thead th:nth-child(n + 3),
+[data-discuss-paper] table.rr-booktabs tbody td {
+  text-align: center;
+  white-space: nowrap;
+}
+/* A table without column heads has prose in its cells (Table 3). */
+[data-discuss-paper] table.rr-booktabs:not(:has(thead)) td {
+  text-align: left;
+  white-space: normal;
+}
+[data-discuss-paper] table.rr-booktabs thead,
+[data-discuss-paper] table.rr-booktabs tbody + tbody {
+  border-top: 1px solid currentColor;
+}
+[data-discuss-paper] table.rr-booktabs thead {
+  border-bottom: 1px solid currentColor;
+}
+[data-discuss-paper] table.rr-booktabs tfoot td {
+  font-size: 0.875rem;
   border-top: 1px solid currentColor;
 }
 

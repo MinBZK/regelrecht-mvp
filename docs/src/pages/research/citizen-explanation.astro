@@ -1,0 +1,66 @@
+---
+/*
+ * "From Rules as Executed to Citizen Explanation", the JURIX 2026 paper,
+ * rendered in full. Everything under src/research/citizen-explanation.* and
+ * the figure under public/research/ are generated from the paper's
+ * LaTeX source by convert-html.py, which lives next to that source in the
+ * paper's own repository: the body HTML, the outline headings, and the meta
+ * JSON with title, authors and abstract that this page, the research index and
+ * the landing tile read. This page only supplies the byline; ResearchPaper is
+ * the shell. The text is the camera-ready version. There is no PDF button yet:
+ * the typeset paper appears in the proceedings, and pdfHref can link there
+ * once they are out.
+ */
+import Base from '~/layouts/Base.astro';
+import ResearchPaper from '~/components/ResearchPaper.astro';
+import paperHtml from '~/research/citizen-explanation.html?raw';
+import headings from '~/research/citizen-explanation.headings.json';
+import meta from '~/research/citizen-explanation.meta.json';
+
+const pathname = '/research/citizen-explanation';
+const title = `${meta.title} · RegelRecht`;
+const names = meta.authors.map((a) => a.name);
+const authors = `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+const description =
+  `${meta.venue} paper by ${authors}: LLM explanations for citizens, ` +
+  'generated from the trace of a rule engine and checked against it.';
+---
+
+<Base
+  lang="en"
+  kind="docs"
+  pathname={pathname}
+  title={title}
+  description={description}
+>
+  <ResearchPaper
+    title={meta.title}
+    subtitle={meta.subtitle}
+    headings={headings}
+    html={paperHtml}
+  >
+    <p>
+      {
+        meta.authors.map((author) => (
+          <Fragment>
+            <strong>{author.name}</strong>,{' '}
+            <em>{author.affiliations.join('; ')}</em>
+            <br />
+          </Fragment>
+        ))
+      }
+      {meta.kind}, {meta.venue}, {meta.date_display}<br />
+      {meta.status}
+    </p>
+    <p>
+      <small>
+        {
+          meta.authors
+            .filter((author) => author.note)
+            .map((author) => `${author.name}: ${author.note}`)
+            .join(' ')
+        }
+      </small>
+    </p>
+  </ResearchPaper>
+</Base>

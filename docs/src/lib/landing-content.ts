@@ -7,18 +7,22 @@
  */
 
 import paper from '~/research/rules-as-executed.meta.json';
+import jurixPaper from '~/research/citizen-explanation.meta.json';
 
-// The position paper's title, authors and date come from the generated
-// meta JSON next to its HTML, so a regenerated paper cannot drift from
-// the tile that announces it.
+// The papers' titles, authors and dates come from the generated meta JSON
+// next to their HTML, so a regenerated paper cannot drift from the tile that
+// announces it.
 const paperTitle = `${paper.title}: ${paper.subtitle}`;
 const paperAuthors = paper.authors.join(' & ');
-function paperDate(locale: string): string {
+const jurixTitle = `${jurixPaper.title}: ${jurixPaper.subtitle}`;
+const jurixNames = jurixPaper.authors.map((a) => a.name);
+const jurixAuthors = `${jurixNames.slice(0, -1).join(', ')} & ${jurixNames.at(-1)}`;
+function paperDate(locale: string, date = paper.date): string {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(`${paper.date}T00:00:00`));
+  }).format(new Date(`${date}T00:00:00`));
 }
 
 export interface NavLink {
@@ -413,6 +417,13 @@ export const content: Record<'nl' | 'en', LandingContent> = {
           text: 'Het paper betoogt dat de overheid haar wetsuitvoering moet publiceren als machine-uitvoerbare specificatie, waarbij elk besluit vastlegt met welke versie het is genomen. Wie een besluit ontvangt, kan het narekenen, en het parlement kan de regel zelf analyseren.',
           href: '/research/rules-as-executed',
           linkLabel: 'position paper (Engels)',
+        },
+        {
+          title: jurixTitle,
+          meta: `Paper op ${jurixPaper.venue} • ${jurixAuthors} • ${paperDate('nl-NL', jurixPaper.date)}`,
+          text: 'Een taalmodel kan een besluit van de engine aan een burger uitleggen, maar verzint er ook redenen bij. Het paper vergelijkt drie manieren om het model het spoor van de engine te geven, over vijf taalmodellen en drie wetten. Hoe strakker de structuur, hoe trouwer de uitleg aan het spoor; alleen geven burgers niet altijd de voorkeur aan de trouwste uitleg.',
+          href: '/research/citizen-explanation',
+          linkLabel: 'paper (Engels)',
         },
         {
           title: 'Rules as Executed: When machine-executable laws are published',
@@ -912,6 +923,13 @@ export const content: Record<'nl' | 'en', LandingContent> = {
           text: 'The paper argues that government should publish its law execution as machine-executable specifications, with every decision recording the version that produced it. The recipient of a decision can then recompute it, and Parliament can analyze the rule itself.',
           href: '/research/rules-as-executed',
           linkLabel: 'position paper',
+        },
+        {
+          title: jurixTitle,
+          meta: `${jurixPaper.venue} paper • ${jurixAuthors} • ${paperDate('en-GB', jurixPaper.date)}`,
+          text: "A language model can explain the engine's decision to a citizen, but it also invents reasons. The paper compares three ways of handing the model the engine's trace, across five language models and three Dutch laws. The more structured the input, the more faithful the explanation, yet citizens do not always prefer the most faithful explanation.",
+          href: '/research/citizen-explanation',
+          linkLabel: 'paper',
         },
         {
           title: 'Rules as Executed: When machine-executable laws are published',

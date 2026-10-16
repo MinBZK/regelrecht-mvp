@@ -8,8 +8,10 @@
 import Base from '~/layouts/Base.astro';
 import LinkCard from '~/components/LinkCard.astro';
 import paper from '~/research/rules-as-executed.meta.json';
+import jurixPaper from '~/research/citizen-explanation.meta.json';
 
 const pathname = '/research/';
+const jurixNames = jurixPaper.authors.map((a) => a.name);
 
 interface ResearchItem {
   title: string;
@@ -27,6 +29,14 @@ const items: ResearchItem[] = [
     text: paper.abstract_lead,
     href: '/research/rules-as-executed',
     linkLabel: 'position paper',
+  },
+  {
+    title: `${jurixPaper.title}: ${jurixPaper.subtitle}`,
+    meta: `${jurixPaper.venue} paper • ${jurixNames.slice(0, -1).join(', ')} and ${jurixNames.at(-1)} • ${jurixPaper.date_display}`,
+    // Opening of the abstract, verbatim (generated with the paper HTML).
+    text: jurixPaper.abstract_lead,
+    href: '/research/citizen-explanation',
+    linkLabel: 'paper',
   },
   {
     title: 'Rules as Executed: When machine-executable laws are published',
