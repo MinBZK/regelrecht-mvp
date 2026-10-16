@@ -2051,6 +2051,20 @@ fn a_decision_value_passed_on_without_an_article_reference_is_refused_at_the_cal
         message.contains("a decision value {grondslag, fields, findings, outputs} in $besluit"),
         "{message}"
     );
+    // A value that is no object is refused at the call too, not before.
+    let message = service
+        .evaluate_law_output(
+            "wet_doorgeef",
+            "doorgegeven",
+            params(json!({ "waarde": 5 })),
+            DATE,
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(
+        message.contains("expected an article reference or a decision value in $besluit"),
+        "{message}"
+    );
 }
 
 /// A decision value passed on across laws may lack `taken_on`, as one built
