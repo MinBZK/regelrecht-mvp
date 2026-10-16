@@ -50,7 +50,7 @@ pub struct Reduction {
     id: String,
     yaml: String,
     terms: Vec<Term>,
-    valid_from: Option<NaiveDate>,
+    valid_from: NaiveDate,
 }
 
 /// An open term a reduction fills: its id and the article that declares it.
@@ -85,7 +85,9 @@ impl Reduction {
     /// Read a version of a reduction. Rulework of another kind than
     /// `REDUCTIE` is refused: a regulation belongs in the corpus, not with
     /// the cell. So is a reduction that fills no open term (`implements`):
-    /// nothing would ask its answer.
+    /// nothing would ask its answer. So is one without a `valid_from` the
+    /// cell can read as a day: it decides from which day the reduction
+    /// fills its terms.
     pub fn parse(yaml: impl Into<String>) -> Result<Self> {
         let yaml = yaml.into();
         let law = ArticleBasedLaw::from_yaml_str(&yaml)?;
@@ -106,7 +108,13 @@ impl Reduction {
         let valid_from = law
             .valid_from
             .as_deref()
-            .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+            .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+            .ok_or_else(|| {
+                setup(format!(
+                    "reduction '{}' has valid_from {:?}, not a day written YYYY-MM-DD",
+                    law.id, law.valid_from
+                ))
+            })?;
         Ok(Self {
             id: law.id,
             yaml,
@@ -183,7 +191,10 @@ pub const ROW_ID: &str = "id";
 /// a law already loaded under a reduction's `$id`, another data source that
 /// already answers the decisions for a reduction (the cell would shadow it
 /// without a word), and an article it reads that takes no decision on the
-/// day. A source scoped to another law does not answer for them.
+/// day. A source scoped to another law does not answer for them. So is a
+/// reduction in force on the day that fills a term the article it names
+/// does not declare on that day (`open_terms`): the engine would never ask
+/// it, and the term would be left to what fills it without one.
 pub fn bind<'a>(
     service: &'a mut LawExecutionService,
     recording_actor: &str,
@@ -210,6 +221,7 @@ pub fn bind<'a>(
         bound.service.load_law(&reduction.yaml)?;
     }
     for id in bound.laws.clone() {
+        refuse_undeclared_terms(&bound, &id, day)?;
         for (input, decisions) in decision_inputs(&bound, &id, day) {
             refuse_shadowing(&bound, &input, &id, recording_actor)?;
             let kind = decision_kind(&bound, &decisions, day)?;
@@ -252,7 +264,6 @@ pub fn unfilled<'r>(
             .filter(|r| r.terms.contains(term))
             .map(|r| r.valid_from)
             .min()
-            .flatten()
     };
     reductions
         .iter()
@@ -288,6 +299,23 @@ fn decision_kind(bound: &Bound<'_>, reference: &str, day: NaiveDate) -> Result<S
         .and_then(|decision| decision.legal_character())
         .map(str::to_string)
         .ok_or_else(|| setup(format!("{reference} takes no decision in force on {day}")))
+}
+
+/// Each term reduction `id` in force on `day` fills must be an open term
+/// its article declares on that day.
+fn refuse_undeclared_terms(bound: &Bound<'_>, id: &str, day: NaiveDate) -> Result<()> {
+    for term in in_force(bound, id, day).map(terms_of).unwrap_or_default() {
+        let declared = article_on(bound.service, &term.law, &term.article, day)
+            .and_then(|article| article.get_open_terms())
+            .is_some_and(|terms| terms.iter().any(|t| t.id == term.open_term));
+        if !declared {
+            return Err(setup(format!(
+                "reduction '{id}' fills open term {term}, which that article does not declare \
+                 on {day}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn refuse_shadowing(
@@ -676,6 +704,38 @@ articles:
             .unwrap();
         assert!(e.to_string().contains("already loaded"), "{e}");
         assert!(service.has_law("wet_fictief"));
+    }
+
+    #[test]
+    fn a_reduction_that_fills_a_term_its_article_does_not_declare_is_refused() {
+        let mut service = service();
+        let typo = Reduction::parse(
+            reduction("reductie_a")
+                .yaml
+                .replace("open_term: al_verleend", "open_term: al_verleent"),
+        )
+        .unwrap();
+        let e = bind(&mut service, ACTOR, &decisions(), &[typo], day())
+            .err()
+            .unwrap();
+        assert!(
+            e.to_string().contains("'al_verleent' of wet_fictief#1")
+                && e.to_string().contains("does not declare"),
+            "{e}"
+        );
+        assert!(sources(&service).is_empty());
+        assert!(!service.has_law("reductie_a"));
+    }
+
+    #[test]
+    fn a_reduction_without_a_readable_valid_from_is_refused() {
+        for from in ["valid_from: '2026-13-01'\n", ""] {
+            let yaml = reduction("reductie_a")
+                .yaml
+                .replace("valid_from: '2026-01-01'\n", from);
+            let e = Reduction::parse(yaml).unwrap_err();
+            assert!(e.to_string().contains("valid_from"), "{e}");
+        }
     }
 
     #[test]

@@ -942,9 +942,9 @@ fn reductions_dir(versions: &[(&str, &str)]) -> tempfile::TempDir {
 
 #[test]
 fn a_term_no_reduction_in_force_fills_is_refused() {
-    // From 2027-01-01 the reduction fills another term, so on 2027-03-01
-    // none fills the one it filled before.
-    let dir = reductions_dir(&[("2026-08-01", ONCE), ("2027-01-01", "iets_anders")]);
+    // From 2027-01-01 the reduction fills another term of the article, so
+    // on 2027-03-01 none fills the one it filled before.
+    let dir = reductions_dir(&[("2026-08-01", ONCE), ("2027-01-01", PROFESSION)]);
     let mut cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
     let app = applied(&mut cell, "2027-05-10", "2027-05-14", "2027-03-01");
     let mut supplied = judgement(true, true);

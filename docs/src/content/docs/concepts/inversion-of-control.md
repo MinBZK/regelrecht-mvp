@@ -115,7 +115,7 @@ An implementation can state its value in terms of the law it fills in. A ministe
 
 ## A reduction that fills an open term
 
-A cell's reduction ([RFC-048](/rfcs/rfc-048)) may implement an open term too (schema v0.8.5). It is no regulation: it reads the cell's own decisions back, and only the cell loads it. Art. 13a of the Leerplichtwet 1969 leaves `verlof_al_verleend_in_schooljaar` to the head per case (`decided_per_case_by`), and the school's reduction fills it:
+A cell's reduction ([RFC-048](/rfcs/rfc-048)) may implement an open term too (schema v0.8.5). It is not a regulation: it reads the cell's own decisions back, and only the cell loads it. Art. 13a of the Leerplichtwet 1969 leaves `verlof_al_verleend_in_schooljaar` to the head per case (`decided_per_case_by`), and the school's reduction fills it:
 
 ```yaml
 # reductie_verlof_al_verleend_in_schooljaar, article 1
@@ -127,9 +127,9 @@ machine_readable:
       open_term: verlof_al_verleend_in_schooljaar
 ```
 
-The engine treats it like any implementation. It passes the reduction the parameters it declares from the article that asks the term, and runs it also where that article is called anew, as Awb 7:11 does on an objection. The reduction's reasoning therefore shows in the trace of the decision.
+The engine treats it like any implementation. The engine passes the reduction each parameter the reduction declares, taken by name from the article that declares the term. It also runs the reduction when another article calls that article anew, as Awb 7:11 does on an objection. The reduction's reasoning therefore shows in the trace of the decision.
 
-The order of precedence is the one for every open term: an implementation, then the finding of the authority for the case, then the `default`. A term without a default and without either is an error. Outside a cell no reduction is loaded, so a scenario gives the head's finding.
+The order of precedence is the one for every open term: an implementation, then the finding of the authority for the case, then the `default`. A required term that has no default, and that neither an implementation nor a finding fills, is an error; a term that is not required then resolves to null. Outside a cell no reduction is loaded, so a scenario gives the head's finding.
 
 ## Conflict resolution
 

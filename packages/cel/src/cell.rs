@@ -480,13 +480,13 @@ impl Cell {
     ///   engine runs them in D's article called anew; otherwise they read D
     ///   as any other decision;
     /// - a field of type `decision` reaches the engine as D's decision value
-    ///   ([`Cell::decision_value`]); the chronolexogram keeps D's id;
+    ///   (`Cell::decision_value`); the chronolexogram keeps D's id;
     /// - in that value, the dates the stages of D's article require of the
-    ///   cell are `on` ([`refresh`]).
+    ///   cell are `on` (`refresh`).
     ///
     /// Every output of type `decision` that is not null is a decision the
     /// deciding article takes in turn: the cell records it as a
-    /// chronolexogram of its own ([`Cell::decided`]), referring to the same
+    /// chronolexogram of its own (`Cell::decided`), referring to the same
     /// submission, and keeps its id as that output. All of them land in the
     /// chronicle together, or none. Returns them, the decision on the
     /// submission first.
@@ -595,7 +595,7 @@ impl Cell {
     }
 
     /// Why the decision `id` came out as it did: the decision taken again
-    /// with tracing ([`Cell::replay`]), so the trace shows every article and
+    /// with tracing (`Cell::replay`), so the trace shows every article and
     /// reduction it ran and what each read. For a decision taken in turn (a
     /// new decision in the place of a revoked one), that is the decision on
     /// the submission that took it: its trace holds the call that gave the
@@ -655,12 +655,21 @@ impl Cell {
     fn replay(&self, service: &mut LawExecutionService, id: &str) -> Result<Replayed> {
         let gram = self.decision_gram(service, id)?;
         let target = gram.clone();
-        let submission_id = gram.refers_to.clone().unwrap_or_default();
+        let submission_id = gram.refers_to.clone().ok_or_else(|| {
+            setup(format!(
+                "chronolexogram '{id}' refers to no submission, so it is no decision to replay"
+            ))
+        })?;
         let grams = self.grams();
         let position = grams
             .iter()
             .position(|g| g.refers_to.as_deref() == Some(submission_id.as_str()))
-            .unwrap_or_default();
+            .ok_or_else(|| {
+                setup(format!(
+                    "no decision in the chronicle of '{}' refers to '{submission_id}'",
+                    self.recording_actor
+                ))
+            })?;
         let decision = grams[position].clone();
         let submission = grams[..position]
             .iter()
