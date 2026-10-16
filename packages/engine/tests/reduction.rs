@@ -185,8 +185,10 @@ fn a_grant_revoked_on_objection_does_not_count() {
 #[test]
 fn a_grant_upheld_on_objection_counts() {
     let mut service = service();
+    // Both in the school year 2026-2027 of the query, so only the
+    // objection tells them apart.
     let upheld = decision("999990019", "2026-10-05", true);
-    let other = decision("999990019", "2026-07-27", true);
+    let other = decision("999990019", "2027-02-01", true);
     supply_for(
         &mut service,
         REDUCTION,
