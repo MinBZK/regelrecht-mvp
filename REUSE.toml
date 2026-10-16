@@ -90,7 +90,8 @@ precedence = "override"
 SPDX-FileCopyrightText = "De auteurs van het paper, zie docs/src/research/rules-as-executed.meta.json"
 SPDX-License-Identifier = "CC-BY-4.0"
 
-# Het JURIX 2026-paper "From Rules as Executed to Citizen Explanation" en de
+# De JURIX 2026-papers "From Rules as Executed to Citizen Explanation" en
+# "Testing the Rules as Executed against the Rules as Promised", en de
 # bestanden die eruit gegenereerd zijn. De proceedings verschijnen bij IOS
 # Press (Frontiers in Artificial Intelligence and Applications) open access
 # onder CC BY-NC 4.0; zo staat het in de camera-ready-instructies van JURIX
@@ -99,9 +100,10 @@ SPDX-License-Identifier = "CC-BY-4.0"
 path = [
   "docs/src/research/citizen-explanation.*",
   "docs/public/research/citizen-explanation-approaches.svg",
+  "docs/src/research/rules-as-promised.*",
 ]
 precedence = "override"
-SPDX-FileCopyrightText = "De auteurs van het paper, zie docs/src/research/citizen-explanation.meta.json"
+SPDX-FileCopyrightText = "De auteurs van elk paper, zie de bijbehorende .meta.json in docs/src/research/"
 SPDX-License-Identifier = "CC-BY-NC-4.0"
 
 # Rijkslogo, rijkswapen en de lettertypes RijksoverheidSans en -Serif.
