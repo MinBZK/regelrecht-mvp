@@ -1,4 +1,4 @@
-<!-- Generated from rule-execution-citizen-explanation.tex (jurix2026-rules-as-executed-citizen-explanation @ 52cb772) by convert-html.py with pandoc 3.7.0.2. Do not edit; run `just html` in the paper repository. -->
+<!-- Generated from rule-execution-citizen-explanation.tex (jurix2026-rules-as-executed-citizen-explanation @ 906d626) by convert-html.py with pandoc 3.7.0.2. Do not edit; run `just html` in the paper repository. -->
 <h2 class="unnumbered" id="abstract">Abstract</h2>
 <p>Governments increasingly use automated decision-making systems to apply legislation in domains such as social benefits, taxation, and licensing. While Rules as Code (RaC) approaches enable legally consistent and transparent decision-making through executable legislation, they do not automatically generate explanations that are understandable for citizens. Large language models (LLMs) can support natural-language explanation generation, but may hallucinate facts or exclude legally relevant information. This paper investigates how Graph-based LLM architectures can generate citizen-focused explanations from deterministic rule-engine traces. A rule engine evaluates synthetic citizen profiles against formalised Dutch legislation and produces execution traces, which are transformed into structured decision representations for explanation generation. The approach is evaluated using automated metrics and human annotation. Results show that explicitly exposing decisive legal conditions improves faithfulness, and that the full Graph configuration, which combines a structured decision graph with a constrained prompt, further improves alignment with the rule-execution trace. Human evaluation shows that explanations perceived as understandable by citizens are not always considered legally correct by experts. The findings suggest that structured representations of deterministic legal reasoning can support legally faithful and citizen-focused explanations of automated government decisions. The source code is published.</p>
 <h2 id="introduction">1 Introduction</h2>
@@ -119,12 +119,6 @@
 <h2 id="conclusion">8 Conclusion</h2>
 <p>Structuring deterministic rule-engine traces improves faithfulness relative to less constrained generation, and explicitly exposing decisive legal conditions accounts for much of this improvement, with the Graph configuration providing a further gain across five LLMs and three Dutch regulations. At the same time, explanations most closely aligned with the execution trace were not always the most readable or citizen-preferred, and explanations rated as understandable by citizens were not always judged legally correct by experts. Explanation quality in this domain therefore cannot be reduced to faithfulness or readability alone, but requires balancing legal precision, transparency, and citizen understanding.</p>
 <h2 class="unnumbered" id="references">References</h2>
-<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
-<hr />
-<ol>
-<li id="fn1"><p>Available at <a href="https://github.com/Bosfloortje/Thesis-Rule-to-Citizen-Explanation" class="uri">https://github.com/Bosfloortje/Thesis-Rule-to-Citizen-Explanation</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-</ol>
-</section>
 <div id="refs" class="references csl-bib-body" role="list">
 <div id="ref-fraser2024governing" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[1] </div><div class="csl-right-inline">Fraser H, Barraclough T. Governing Digital Legal Systems: Insights on Artificial Intelligence and Rules as Code. MIT Computational Law Report. 2024. Available from: <a href="https://law.mit.edu/pub/governingdigitallegalsystems" class="uri">https://law.mit.edu/pub/governingdigitallegalsystems</a>.</div>
@@ -310,3 +304,9 @@
 <div class="csl-left-margin">[61] </div><div class="csl-right-inline">Guti<span>é</span>rrez BJ, Shu Y, Gu Y, Yasunaga M, Su Y. HippoRAG: Neurobiologically inspired long-term memory for large language models. Advances in Neural Information Processing Systems. 2024;37:59532-69.</div>
 </div>
 </div>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Available at <a href="https://github.com/Bosfloortje/Thesis-Rule-to-Citizen-Explanation" class="uri">https://github.com/Bosfloortje/Thesis-Rule-to-Citizen-Explanation</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
