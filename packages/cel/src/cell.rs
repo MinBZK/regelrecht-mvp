@@ -23,10 +23,10 @@ use serde_json::Map;
 
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
-use crate::encoding;
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Bound, Reduction};
 use crate::shape::{self, Shape};
+use regelrecht_law_model::stored;
 
 /// A cell. It holds who it is, its chronicle and its reductions, not the
 /// law: every call that needs the law gets the service that executes it.
@@ -300,7 +300,7 @@ impl Cell {
         let day = json_date(on);
         let mut parameters: BTreeMap<String, Value> = fields
             .iter()
-            .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
+            .map(|(k, v)| Ok((k.clone(), stored::from_stored(v)?)))
             .collect::<Result<_>>()?;
         if let Some(name) = moment.as_ref().and_then(|m| m.parameter.as_ref()) {
             parameters.insert(name.clone(), day.clone());
@@ -314,7 +314,7 @@ impl Cell {
         {
             if let Some(serde_json::Value::String(id)) = fields.get(&field.name) {
                 let value = self.decision_value(service, self.decision_gram(service, id)?)?;
-                parameters.insert(field.name.clone(), encoding::from_json(&value)?);
+                parameters.insert(field.name.clone(), stored::from_stored(&value)?);
             }
         }
         let date = on.to_string();
@@ -840,10 +840,10 @@ impl Cell {
             )));
         }
         // As a chronicle stores them, compared as the engine's `EQUALS`
-        // compares records ([`encoding::same_held`]).
+        // compares records ([`stored::same_held`]).
         let mut same = expected.keys().all(|k| shape.outputs.contains(k));
         for o in &shape.outputs {
-            same = same && encoding::same_held(outputs.get(o), expected.get(o))?;
+            same = same && stored::same_held(outputs.get(o), expected.get(o))?;
         }
         if !same {
             return Err(setup(format!(
@@ -1030,13 +1030,13 @@ fn used(given: &Map<String, serde_json::Value>, filled: &[OpenTermFilled]) -> Ve
         .collect()
 }
 
-/// Values as the engine takes them ([`encoding::from_json`]).
+/// Values as the engine takes them ([`stored::from_stored`]).
 fn engine_values<'v>(
     values: impl IntoIterator<Item = (&'v String, &'v serde_json::Value)>,
 ) -> Result<BTreeMap<String, Value>> {
     values
         .into_iter()
-        .map(|(k, v)| Ok((k.clone(), encoding::from_json(v)?)))
+        .map(|(k, v)| Ok((k.clone(), stored::from_stored(v)?)))
         .collect()
 }
 
@@ -1138,7 +1138,7 @@ fn run_stages(
             let Some(value) = result.resolved_inputs.get(name) else {
                 continue;
             };
-            let value = encoding::to_json(value)?;
+            let value = stored::to_stored(value)?;
             match &input.source {
                 Source::Policy => {
                     fields.insert(name.clone(), value);
@@ -1221,7 +1221,7 @@ fn collect_outputs(
         ) {
             continue;
         }
-        values.insert(name.clone(), encoding::to_json(value)?);
+        values.insert(name.clone(), stored::to_stored(value)?);
     }
     Ok(())
 }
@@ -1318,13 +1318,13 @@ fn check_supplied(
 }
 
 /// Refuse a supplied value that holds the key the chronicle writes a
-/// decimal under ([`encoding::DECIMAL_KEY`]): read back, it would be a
+/// decimal under ([`stored::DECIMAL_KEY`]): read back, it would be a
 /// decimal the submitter never sent.
 pub(crate) fn refuse_decimal_key(name: &str, value: &serde_json::Value) -> Result<()> {
-    if encoding::holds_decimal_key(value) {
+    if stored::holds_reserved_key(value) {
         return Err(refused(format!(
             "'{name}' holds the key '{}', which the chronicle keeps for a decimal",
-            encoding::DECIMAL_KEY
+            stored::DECIMAL_KEY
         )));
     }
     Ok(())

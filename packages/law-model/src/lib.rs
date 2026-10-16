@@ -16,6 +16,7 @@
 
 mod header;
 mod model;
+pub mod stored;
 mod value;
 
 pub use header::{parse_law_header, LawHeader};

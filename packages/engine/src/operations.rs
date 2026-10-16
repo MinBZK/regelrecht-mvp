@@ -38,6 +38,7 @@ use crate::context::RuleContext;
 use crate::error::{EngineError, Result};
 use crate::types::{PathNodeType, Value};
 use chrono::{Datelike, NaiveDate};
+use regelrecht_law_model::stored;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::{Decimal, MathematicalOps, RoundingStrategy};
 use std::cmp::Ordering;
@@ -557,7 +558,7 @@ fn execute_equality<R: ValueResolver>(
 
     let mut equal = match (&subject_val, &value_val) {
         (Value::Object(_), Value::Object(_)) | (Value::Array(_), Value::Array(_)) => {
-            compound_equal(&subject_val, &value_val, op_name, "")?
+            compound_equal(&subject_val, &value_val, op_name)?
         }
         _ => values_equal(&subject_val, &value_val),
     };
@@ -581,54 +582,20 @@ fn execute_equality<R: ValueResolver>(
 }
 
 /// `EQUALS` on two lists or two records: structural, with the numbers inside
-/// compared as written. A number that is an integer on one side and a decimal
-/// of the same value on the other (`12` against `12.0`) is an error, not an
-/// answer: whether the two are alike is a question about where the values
-/// came from, and answering it silently either way would hide that. The
-/// whole structure is walked, so the error does not depend on what differs
-/// first. A bare number keeps its coercion ([`values_equal`]). `path` names
-/// the place inside the operands, for the message.
-fn compound_equal(a: &Value, b: &Value, op_name: &str, path: &str) -> Result<bool> {
-    match (a, b) {
-        (Value::Object(left), Value::Object(right)) => {
-            let mut equal = left.len() == right.len();
-            for (key, l) in left {
-                match right.get(key) {
-                    Some(r) => equal &= compound_equal(l, r, op_name, &format!("{path}.{key}"))?,
-                    None => equal = false,
-                }
-            }
-            Ok(equal)
-        }
-        (Value::Array(left), Value::Array(right)) => {
-            let mut equal = left.len() == right.len();
-            for (index, (l, r)) in left.iter().zip(right).enumerate() {
-                equal &= compound_equal(l, r, op_name, &format!("{path}[{index}]"))?;
-            }
-            Ok(equal)
-        }
-        (Value::Int(i), Value::Decimal(d)) | (Value::Decimal(d), Value::Int(i))
-            if Decimal::from(*i) == *d =>
-        {
-            Err(EngineError::TypeMismatch {
-                expected: format!(
-                    "numbers written alike inside the lists or records {op_name} compares"
-                ),
-                actual: format!("{a} against {b} at {path}"),
-            })
-        }
-        _ => Ok(a == b),
-    }
-}
-
-/// Whether `a` and `b` are equal as `EQUALS` compares two lists or two
-/// records ([`compound_equal`]), at any depth, a bare number included: an
-/// integer against a decimal of the same value is an error, two decimals
-/// are equal whatever their scale. For a caller outside a law, such as a
-/// cell comparing a stored value with one computed anew, so that it holds
-/// to the same rule as the engine.
-pub fn equal_as_written(a: &Value, b: &Value) -> Result<bool> {
-    compound_equal(a, b, "EQUALS", "$")
+/// compared as written ([`stored::equal_as_written`], the rule a stored
+/// value is compared by as well). A number that is an integer on one side
+/// and a decimal of the same value on the other (`12` against `12.0`) is an
+/// error, not an answer: whether the two are alike is a question about where
+/// the values came from, and answering it silently either way would hide
+/// that. A bare number keeps its coercion ([`values_equal`]).
+fn compound_equal(a: &Value, b: &Value, op_name: &str) -> Result<bool> {
+    stored::equal_as_written(a, b).map_err(|unlike| EngineError::TypeMismatch {
+        expected: format!("numbers written alike inside the lists or records {op_name} compares"),
+        actual: format!(
+            "{} against {} at {}",
+            unlike.left, unlike.right, unlike.path
+        ),
+    })
 }
 
 /// Whether the pair is the mixed date form: one string against one
@@ -7094,16 +7061,26 @@ mod tests {
     }
 
     #[test]
-    fn test_equal_as_written_is_strict_at_any_depth() {
-        // Outside a law the rule of EQUALS on records holds for a bare
-        // number too: 5 against 5.0 is an error, 5.0 against 5.00 equal.
-        assert!(equal_as_written(&Value::Decimal(dec!(5.0)), &Value::Decimal(dec!(5.00))).unwrap());
-        assert!(!equal_as_written(&Value::Decimal(dec!(5.0)), &Value::Int(6)).unwrap());
-        assert!(equal_as_written(&Value::Int(5), &Value::Decimal(dec!(5.0))).is_err());
+    fn test_compound_equal_reports_the_stored_rule_with_its_operation() {
+        // EQUALS on records and the comparison of stored values are one
+        // rule (`stored::equal_as_written`); the engine adds the operation
+        // and the place to the message.
         let record = |v: Value| Value::Object(BTreeMap::from([("n".to_string(), v)]));
-        assert!(
-            equal_as_written(&record(Value::Int(5)), &record(Value::Decimal(dec!(5)))).is_err()
-        );
-        assert!(equal_as_written(&record(Value::Int(5)), &record(Value::Int(5))).unwrap());
+        let err = compound_equal(
+            &record(Value::Int(5)),
+            &record(Value::Decimal(dec!(5.0))),
+            "NOT_EQUALS",
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("records NOT_EQUALS compares"), "{err}");
+        assert!(err.contains("5 against 5.0 at .n"), "{err}");
+        assert!(compound_equal(
+            &record(Value::Decimal(dec!(5.0))),
+            &record(Value::Decimal(dec!(5.00))),
+            "EQUALS"
+        )
+        .unwrap());
+        assert!(!compound_equal(&record(Value::Int(5)), &record(Value::Int(6)), "EQUALS").unwrap());
     }
 }

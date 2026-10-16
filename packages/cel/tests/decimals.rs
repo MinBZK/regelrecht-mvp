@@ -10,8 +10,9 @@
 use std::collections::BTreeMap;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{encoding, Cell, Chronicle, Gram};
+use regelrecht_cel::{Cell, Chronicle, Gram};
 use regelrecht_engine::{LawExecutionService, Value};
+use regelrecht_law_model::stored;
 use serde_json::{json, Map};
 
 /// A procedure for a beschikking.
@@ -185,7 +186,7 @@ fn stored_decision(service: &mut LawExecutionService, teller: i64, noemer: i64) 
         "findings": {},
         "outputs": decision.outputs,
     });
-    encoding::from_json(&value).unwrap()
+    stored::from_stored(&value).unwrap()
 }
 
 /// The outputs of the decision on `teller / noemer`, stored in a chronicle
@@ -494,8 +495,7 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     std::fs::write(&path, text.replace("0.3333", "0,3333")).unwrap();
     let err = Cell::open(ACTOR, &path).unwrap_err();
     assert!(
-        err.to_string().contains("line 2")
-            && err.to_string().contains("no decimal the chronicle wrote"),
+        err.to_string().contains("line 2") && err.to_string().contains("no stored decimal"),
         "{err}"
     );
 }
@@ -521,10 +521,7 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         outputs: BTreeMap::new(),
     };
     let err = chronicle.append(gram).unwrap_err();
-    assert!(
-        err.to_string().contains("no decimal the chronicle wrote"),
-        "{err}"
-    );
+    assert!(err.to_string().contains("no stored decimal"), "{err}");
     assert!(chronicle.grams().is_empty());
     assert!(!path.exists() || std::fs::read_to_string(&path).unwrap().is_empty());
 }

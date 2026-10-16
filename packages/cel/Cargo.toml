@@ -10,6 +10,7 @@ publish = false
 
 [dependencies]
 regelrecht-engine = { path = "../engine" }
+regelrecht-law-model = { path = "../law-model" }
 chrono.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
