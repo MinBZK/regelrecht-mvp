@@ -24,17 +24,17 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 3. The engine runs art. 13a at stage AANVRAAG. Awb 4:2 says whether the application is complete, Awb 4:13 gives the decision period.
 4. The cell appends one chronolexogram of kind `AANVRAAG`.
 
-A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). A field of type `decision` then holds that decision by its id, and every other field that decision holds by name comes from it too. The submitter supplies neither, and a value taken by name must fit the field.
+A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). The cell then fills fields from that decision. A field of type `decision` gets the decision's id. Every other field that the decision holds under the same name gets its value, which must fit the field. The submitter supplies neither.
 
 **Taking the decision** (`Cell::decide`):
 
 1. The cell finds the application through `requests: leerplichtwet_1969#13a`.
-2. It gathers each input of the decision by name: from the application, from policy (`implements`), from a reduction of its own, or from the head. The head supplies what a hook asks, and gives its findings apart (`findings`): the two judgements under art. 11 onder f, by the id of the open term the law leaves to it (`decided_per_case_by`). The engine gets the findings apart from the parameters, so a finding applies to every article in the decision that leaves the term to the head.
+2. It gathers each input of the decision by name: from the application, from policy (`implements`), from a reduction of its own, or from the head. The head supplies what a hook asks for. Its findings come separately (`findings`), keyed by the id of the open term the law leaves to it (`decided_per_case_by`). Here these are the two judgements under art. 11 onder f. The engine also gets the findings separately from the parameters, so a finding applies to every article in the decision that leaves the term to the head.
 3. For the reduction, the cell binds its own decisions to `source: {decisions: leerplichtwet_1969#13a}`. The engine runs the reduction, which asks the school policy for the bounds of the school year and returns one answer.
 4. The engine runs art. 13a at stages BESLUIT and BEKENDMAKING: the test, and Awb 3:46, 6:7 and 6:8.
-5. The cell appends a chronolexogram of kind `BESCHIKKING` that refers to the application. It names the findings the decision used; a judgement that a policy set aside is not among them.
+5. The cell appends a chronolexogram of kind `BESCHIKKING` that refers to the application. It lists the findings the decision used. A judgement that a policy set aside is not on that list.
 
-`decide` returns a list of chronolexograms (`Vec<Gram>`): the decision first, then each decision the deciding article takes in turn, an output of type `decision` that is not null. They land in the chronicle together, or none.
+`decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
 **Objecting** (`Cell::record_objection`, `Cell::decide_on_objection`): the same two steps under Awb 7:11. The objection refers to the contested decision. The decision on it runs art. 13a anew, and on revocation the cell records the new decision in its place.
 
@@ -147,7 +147,7 @@ The cell records the decision as a second chronolexogram that refers to the appl
 ```
 
 - Each produced thing has its own stage: the application with Awb 4:2 and 4:13 at AANVRAAG, the decision with Awb 3:46 and 6:7 at BESLUIT, Awb 6:8 at BEKENDMAKING.
-- What the decision needs comes from the application first, then from the school's policy (`implements`), then from the head when deciding (`decided_per_case_by`). `findings` names the fields that hold a finding of the head. The chronolexogram repeats neither the basis nor the source of a field or output: both follow from the law on `recorded_on` and from `refers_to`.
+- What the decision needs comes from the application first, then from the school's policy (`implements`), then from the head when deciding (`decided_per_case_by`). `findings` lists the fields that hold a finding of the head. The chronolexogram repeats neither the basis nor the source of a field or output: both follow from the law on `recorded_on` and from `refers_to`.
 - The test: at most ten school days (Monday to Friday), not in the first two lesweken, and the two facts of art. 11 onder f: a parent's profession of a specific nature, and leave outside the school holidays. The head judges both. A refusal is `verlof_verleend: false`.
 - The cell refuses a second decision on one application, and a decision dated before it. It makes the decision known on the day it takes it, so Awb 6:8 counts the objection period from there; that is the cell's assumption.
 - Not modeled yet: the proportional share for a young person who is kwalificatieplichtig (lid 2, second sentence).
