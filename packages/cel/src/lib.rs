@@ -35,5 +35,5 @@ pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
 pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
-pub use reading::Reduction;
+pub use reading::{Answer, Reduction, Term};
 pub use shape::{Field, Moment, Shape};

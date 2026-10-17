@@ -24,7 +24,7 @@ use serde_json::Map;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
-use crate::reading::{self, Bound, Reduction};
+use crate::reading::{self, Answer, Bound, Reduction};
 use crate::shape::{self, Shape};
 use regelrecht_law_model::stored;
 
@@ -189,6 +189,19 @@ impl Cell {
             )));
         }
         Ok(bound)
+    }
+
+    /// The lexostatussen the cell can answer: per version of each reduction
+    /// in its directory, the open term it fills (`implements`), with the
+    /// reduction's `$id` and the version's `valid_from`. Ordered by
+    /// reduction, then by `valid_from`. The list comes from the reductions
+    /// the cell loaded when it was opened.
+    pub fn answers(&self) -> Vec<Answer> {
+        self.reductions
+            .versions
+            .iter()
+            .flat_map(Reduction::answers)
+            .collect()
     }
 
     pub fn recording_actor(&self) -> &str {

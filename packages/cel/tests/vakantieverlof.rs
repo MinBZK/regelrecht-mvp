@@ -941,6 +941,40 @@ fn reductions_dir(versions: &[(&str, &str)]) -> tempfile::TempDir {
 }
 
 #[test]
+fn a_cell_lists_the_lexostatussen_it_answers() {
+    // The school's own cell: one reduction, one version, one term.
+    let answers = cell().answers();
+    assert_eq!(answers.len(), 1);
+    let answer = &answers[0];
+    assert_eq!(
+        (answer.term.law.as_str(), answer.term.article.as_str()),
+        (LAW, ARTICLE)
+    );
+    assert_eq!(answer.term.open_term, ONCE);
+    assert_eq!(answer.reduction, REDUCTION);
+    assert_eq!(answer.valid_from, day("2026-08-01"));
+
+    // Per version, in the order of `valid_from`.
+    let dir = reductions_dir(&[("2027-01-01", PROFESSION), ("2026-08-01", ONCE)]);
+    let cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
+    let listed: Vec<_> = cell
+        .answers()
+        .into_iter()
+        .map(|a| (a.valid_from, a.term.open_term))
+        .collect();
+    assert_eq!(
+        listed,
+        [
+            (day("2026-08-01"), ONCE.to_string()),
+            (day("2027-01-01"), PROFESSION.to_string())
+        ]
+    );
+
+    // A cell without reductions answers none.
+    assert!(without_reductions().answers().is_empty());
+}
+
+#[test]
 fn a_term_no_reduction_in_force_fills_is_refused() {
     // From 2027-01-01 the reduction fills another term of the article, so
     // on 2027-03-01 none fills the one it filled before.

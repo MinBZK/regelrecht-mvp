@@ -37,6 +37,7 @@ use chrono::NaiveDate;
 use regelrecht_engine::{
     ArticleBasedLaw, DataSource, LawExecutionService, LawLoad, RegulatoryLayer, Value,
 };
+use serde::Serialize;
 use serde_json::Map;
 
 use crate::chronicle::Gram;
@@ -54,11 +55,23 @@ pub struct Reduction {
 }
 
 /// An open term a reduction fills: its id and the article that declares it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Term {
     pub law: String,
     pub article: String,
     pub open_term: String,
+}
+
+/// A lexostatus the cell can answer: the open term that a version of one
+/// of its reductions fills, from the day that version is valid.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Answer {
+    /// The open term, as the reduction's `implements` names it.
+    pub term: Term,
+    /// The reduction, by `$id`.
+    pub reduction: String,
+    /// The `valid_from` of the version.
+    pub valid_from: NaiveDate,
 }
 
 impl std::fmt::Display for Term {
@@ -126,6 +139,15 @@ impl Reduction {
     /// The reduction, by `$id`.
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    /// The open terms this version fills, each as an [`Answer`].
+    pub fn answers(&self) -> impl Iterator<Item = Answer> + '_ {
+        self.terms.iter().map(|term| Answer {
+            term: term.clone(),
+            reduction: self.id.clone(),
+            valid_from: self.valid_from,
+        })
     }
 }
 
