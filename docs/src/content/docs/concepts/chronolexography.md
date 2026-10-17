@@ -29,16 +29,18 @@ A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). Th
 **Taking the decision** (`Cell::decide`):
 
 1. The cell finds the application through `requests: leerplichtwet_1969#13a`.
-2. It gathers each input of the decision by name: from the application, from policy (`implements`), from a reduction of its own, or from the head. The head supplies what a hook asks for. Its findings come separately (`findings`), keyed by the id of the open term the law leaves to it (`decided_per_case_by`). Here these are the two judgements under art. 11 onder f. The engine also gets the findings separately from the parameters, so a finding applies to every article in the decision that leaves the term to the head.
-3. For the reduction, the cell binds its own decisions to `source: {decisions: leerplichtwet_1969#13a}`. The engine runs the reduction, which asks the school policy for the bounds of the school year and returns one answer.
+2. It answers the engine for the whole decision. When an article reads an open term that one of its reductions fills, the engine asks the cell. The cell runs that reduction on its own chronicle, with its own decisions as the rows of each `source: {decisions: ...}` input, and returns the value with its provenance.
+3. It gathers each input of the decision by name: from the application, or from the head. The engine resolves what policy fills (`implements`), and asks the cell for what its reduction fills. The head supplies what a hook asks for. Its findings come separately (`findings`), keyed by the id of the open term the law leaves to it (`decided_per_case_by`). Here these are the two judgements under art. 11 onder f and whether leave was already granted this school year. In the cell, the reduction fills that last one. The engine also gets the findings separately from the parameters, so a finding applies to every article in the decision that leaves the term to the head.
 4. The engine runs art. 13a at stages BESLUIT and BEKENDMAKING: the test, and Awb 3:46, 6:7 and 6:8.
-5. The cell appends a chronolexogram of kind `BESCHIKKING` that refers to the application. It lists the findings the decision used. A judgement that a policy set aside is not on that list.
+5. The cell appends a chronolexogram of kind `BESCHIKKING` that refers to the application. The head's findings are among its fields. The chronolexogram does not store which findings the decision used. `Cell::findings` replays the decision and reads that from the engine's report; a finding that a policy or the cell's answer set aside is not among them.
+
+`Cell::explain` takes a recorded decision again with tracing, on its day and with the chronicle as it stood before it, and fails when the outcome differs. In its trace the cell's answer within art. 13a is one node: the value, the reduction and its version, and how far the cell read its chronicle. `Cell::explain_answer` gives the cell's own account of that answer: the reduction run again with tracing, with the decisions it counted and those its filter skipped. That trace is not stored.
 
 `decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
 **Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew. On revocation 7:11 gives the new decision, and the cell records that in the same append.
 
-Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. The cell connects the parts by name and keeps the record. The engine only executes.
+Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. Reduction takes place in the cell, as the [position paper](https://chronolexografie.nl/position-paper/) has it ("Reductie vindt altijd plaats ín de cel waar de betreffende chronolexogrammen zijn vastgelegd"). How the cell and the engine divide that work is in [RFC-048](/rfcs/rfc-048) §3.
 
 ## What works
 
@@ -156,12 +158,14 @@ The cell records the decision as a second chronolexogram that refers to the appl
 
 ## Once per school year
 
-The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a asks for the answer as a parameter, `verlof_al_verleend_in_schooljaar`, that is no field of the application. Who supplies it, the law does not say.
+The head grants leave "slechts eenmaal ... per schooljaar" (art. 13a lid 2). Art. 13a declares the open term `verlof_al_verleend_in_schooljaar`, which is no field of the application. The head decides it per case (`decided_per_case_by`), and it has no default. How the head reads its own decisions back, the law does not say.
 
-In a cell, a reduction gives the answer: rulework of the kind `REDUCTIE`, kept with the cell at `corpus/cells/obs_de_klimop/reducties/`. It finds the decisions taken under art. 13a and asks the school's fictitious policy in which school year the asked leave falls.
+In a cell, a reduction fills the term with `implements`: rulework of the kind `REDUCTIE`, kept with the cell at `corpus/cells/obs_de_klimop/reducties/`. It finds the decisions taken under art. 13a and asks the school's fictitious policy in which school year the asked leave falls.
 
 ```yaml
 # reductie_verlof_al_verleend_in_schooljaar, article 1
+implements:
+  - {law: leerplichtwet_1969, article: 13a, open_term: verlof_al_verleend_in_schooljaar}
 parameters:
   - {name: bsn_jongere, type: string}
   - {name: eerste_verlofdag, type: date}
@@ -182,11 +186,13 @@ output:
 
 - Each decision is a row with its fields and outputs, such as `bsn_jongere`, `eerste_verlofdag` and `verlof_verleend`, and its `id`. A refusal does not count, nor a decision revoked on objection (see [the objection](#the-objection)).
 - The policy says only that a school year runs from 1 August to 31 July. It reads no decisions.
-- The cell connects reduction and decision by name. It passes the decision's inputs as the reduction's parameters and the answer to the decision, and refuses a name that something else also supplies.
-- Only a reduction reads `decisions`, and a reduction does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`). The corpus loaders leave it out; `just validate` checks it.
-- The decision records the answer in `fields`, like a field of the application.
+- The engine asks the cell for the term, and the cell runs its reduction with the parameters it declares, taken from art. 13a by name. The answer wins over a finding of the head, as an implementation would. The engine never runs a reduction by itself. Outside a cell nothing fills the term, so a scenario gives the head's finding; without one the execution fails.
+- A cell opens with its directory (`Cell::open`, `Cell::in_memory`) and loads its reductions from `reducties/` there, so it cannot be without them. A term that a reduction in that directory implements is the cell's. On a day on which no reduction in force fills it, the cell refuses the decision. A school without reductions opens with a directory that has none.
+- `Cell::answers` lists what the cell can answer: per version of each reduction, the open term it fills, the reduction's `$id` and its `valid_from`. This list is a RegelRecht addition. In the [Chronolexografie position paper](https://chronolexografie.nl/position-paper/) a cell reduces its chronicle on request into a lexostatus, the answer that the cell's facts give. The paper does not have a cell declare which lexostatussen it can answer; that idea comes from [RFC-022](/rfcs/rfc-022) §4.1.
+- Only a reduction reads `decisions`. Since schema v0.8.5 it may fill an open term (`implements`); it still has no `hooks`, `overrides`, `execution.produces` or `open_terms`. The corpus loaders leave it out; `just validate` checks it.
+- The decision records the answer in `fields`. It is not a finding of the head, so a decision value leaves it out.
 
-**Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature` with the answer as a parameter and `schooljaargrenzen.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`
+**Try it:** `just bdd`, which runs `vakantieverlof_besluit.feature` with the head's finding and `schooljaargrenzen.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml`
 
 ## The objection
 
@@ -232,7 +238,7 @@ The cell records the objection with `record_submission`, referring to the contes
 
 - The fields are the contested decision and those of Awb 6:5, plus the end of the objection period, which the cell takes from the contested decision. An objection does not change the application: Awb 7:11 lid 1 reconsiders the decision "op grondslag van het bezwaar", and 6:5 asks only for the grounds. A smaller request is a new application.
 - Awb 6:9 makes the receipt the moment that counts and says whether it came in on time. A late objection is recorded. 7:11 then declares it not admissible, and does not read the heroverweging (lid 1). An objection against a decision taken on objection is not admissible either (Awb 7:1 lid 1 onder a). That covers the decision on the objection and the new decision it took. The decision value names the article of the submission a decision was taken on (`taken_on`). For both, that is 7:11.
-- The head decides with `decide`. The engine gets the contested decision as a decision value. For an admissible objection, 7:11 calls the decision anew: art. 13a runs with that decision's fields and findings, under the law and policy of that day. `decide` passes what the head finds anew to the engine, separately from the parameters. A new finding wins over the decision's own. A finding that no article asks for, such as one on a late objection, is an error. The cell answers the reduction again for that day, without the contested decision. When an outcome of the decision item of art. 13a comes out different, the heroverweging gives cause, and 7:11 revokes the decision.
+- The head decides with `decide`. The engine gets the contested decision as a decision value. For an admissible objection, 7:11 calls the decision anew: art. 13a runs with that decision's fields and findings, under the law and policy of that day. `decide` passes what the head finds anew to the engine, separately from the parameters. A new finding wins over the decision's own. A finding that no article asks for, such as one on a late objection, is an error. The engine asks the cell in that call, and the cell answers from the chronicle of that day without the contested decision. When an outcome of the decision item of art. 13a comes out different, the heroverweging gives cause, and 7:11 revokes the decision.
 - On revocation, `nieuw_besluit` holds the decision that art. 13a gave. The cell records it as a chronolexogram of its own under art. 13a, with its own period (Awb 6:7 and 6:8; for a decision on objection that is the period for appeal). The decision on the objection holds it by id. A second objection against the revoked decision is reconsidered, but the cell refuses to replace a decision twice. The revoked decision stays in the chronicle. The school's reduction reads the decisions under 7:11 as a second input, and leaves out a grant that one of them revoked.
 
 The cell contains no Awb article. [RFC-050](/rfcs/rfc-050) describes the design and what is still open.

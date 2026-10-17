@@ -19,9 +19,11 @@
 //!    judgement where it is silent;
 //! 4. the cell: a date the stage requires, which is the day of the decision.
 //!
-//! An input the deciding authority would supply may instead come from one of
-//! the cell's reductions, where one yields it by name. That follows from the
-//! cell, not from the law ([`crate::reading`], RFC-048).
+//! The cell answers an open term one of its reductions fills like a
+//! regulation fills it (`implements`, [`crate::reading`], RFC-048). The
+//! cell derives the shape with the terms it answers ([`derive_with`]), so
+//! such a term counts as filled; derived without them ([`derive`]), the
+//! term is what the law leaves it to.
 
 use chrono::NaiveDate;
 use regelrecht_engine::{LawExecutionService, ParameterType, ProcedureStage};
@@ -29,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::error::{refused, setup, Result};
+use crate::reading::Term;
 use crate::shape::{self, add_field, article_on, Field};
 
 /// The stages a decision runs, in order: the decision itself (Awb 1:3), and
@@ -111,6 +114,18 @@ pub fn derive(
     law_id: &str,
     article: &str,
     day: NaiveDate,
+) -> Result<DecisionShape> {
+    derive_with(service, law_id, article, day, &[])
+}
+
+/// [`derive`] for a cell that answers the open terms `answered`: such a
+/// term of the deciding article is filled as a regulation fills it.
+pub fn derive_with(
+    service: &LawExecutionService,
+    law_id: &str,
+    article: &str,
+    day: NaiveDate,
+    answered: &[Term],
 ) -> Result<DecisionShape> {
     let reference = format!("{law_id}#{article}");
     let deciding = article_on(service, law_id, article, day)
@@ -226,11 +241,14 @@ pub fn derive(
     let mut policy_first: Vec<String> = Vec::new();
     let mut judgements: Vec<String> = Vec::new();
     for term in deciding.get_open_terms().into_iter().flatten() {
-        let filled = !service
-            .resolver()
-            .find_implementations(law_id, article, term, Some(day), &HashMap::new())?
-            .implementations
-            .is_empty();
+        let filled = answered
+            .iter()
+            .any(|t| t.law == law_id && t.article == article && t.open_term == term.id)
+            || !service
+                .resolver()
+                .find_implementations(law_id, article, term, Some(day), &HashMap::new())?
+                .implementations
+                .is_empty();
         let source = match (filled, &term.decided_per_case_by) {
             (true, Some(_)) => {
                 policy_first.push(term.id.clone());

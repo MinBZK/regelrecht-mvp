@@ -19,6 +19,7 @@
 //! println!("Output: {:?}", result.outputs);
 //! ```
 
+use crate::answer::AnswerProvenance;
 use crate::article::{Action, ActionOperation, Article, ArticleBasedLaw};
 use crate::context::{LazyInputs, RuleContext};
 use crate::error::{EngineError, Result};
@@ -59,11 +60,13 @@ pub enum OutputProvenance {
 }
 
 /// Who filled an open term in an execution: a finding of the authority
-/// that decides it per case, or a regulation that implements it (RFC-050).
-/// A consumer reads here which of the two the outcome rests on, instead of
-/// guessing from the value: a regulation can give what the authority found.
-/// Serialized as `"finding"` or as `{"regulation": {"law_id", "article"}}`,
-/// so the regulation's article does not collide with the declaring one.
+/// that decides it per case, a regulation that implements it (RFC-050), or
+/// the caller's answerer (RFC-048). A consumer reads here which the outcome
+/// rests on, instead of guessing from the value: a regulation can give what
+/// the authority found. Serialized as `"finding"`, as `{"regulation":
+/// {"law_id", "article"}}`, so the regulation's article does not collide
+/// with the declaring one, or as `{"answer": {...}}` with the
+/// [`AnswerProvenance`].
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FilledBy {
@@ -72,6 +75,9 @@ pub enum FilledBy {
     Finding,
     /// An article of a regulation that implements the term (`implements`).
     Regulation { law_id: String, article: String },
+    /// The caller's answerer ([`crate::answer::OpenTermAnswerer`]), with what
+    /// it says it answered from.
+    Answer(AnswerProvenance),
 }
 
 /// One open term of one article that was filled in an execution, and by

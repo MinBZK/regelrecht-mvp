@@ -168,14 +168,14 @@ fn numbers(teller: i64, noemer: i64) -> Map<String, serde_json::Value> {
 fn stored_decision(service: &mut LawExecutionService, teller: i64, noemer: i64) -> Value {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
-    let mut cell = Cell::open(ACTOR, &path).unwrap();
+    let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let app = cell
         .record_submission(service, ID, "1", None, &numbers(teller, noemer), day())
         .unwrap();
     cell.decide(service, ID, "1", &app.id, &Map::new(), &Map::new(), day())
         .unwrap();
 
-    let reopened = Cell::open(ACTOR, &path).unwrap();
+    let reopened = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let [application, decision] = reopened.grams() else {
         panic!("not an application and a decision")
     };
@@ -379,9 +379,9 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("kroniek.jsonl");
         let mut service = service();
-        let mut cell = Cell::open(ACTOR, &path).unwrap();
+        let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
         let app = cell
-            .record_submission(&service, ID, "1", None, &numbers(teller, noemer), day())
+            .record_submission(&mut service, ID, "1", None, &numbers(teller, noemer), day())
             .unwrap();
         let decided = cell
             .decide(
@@ -396,9 +396,9 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
             .unwrap()
             .remove(0);
 
-        let mut cell = Cell::open(ACTOR, &path).unwrap();
+        let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
         let verzoek = cell
-            .record_submission(&service, ID, "5", Some(&decided.id), &Map::new(), day())
+            .record_submission(&mut service, ID, "5", Some(&decided.id), &Map::new(), day())
             .unwrap();
         let [anew] = &cell
             .decide(
@@ -423,9 +423,9 @@ fn the_file_holds_the_digits() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
     let mut service = service();
-    let mut cell = Cell::open(ACTOR, &path).unwrap();
+    let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let app = cell
-        .record_submission(&service, ID, "1", None, &numbers(1, 3), day())
+        .record_submission(&mut service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
     cell.decide(
         &mut service,
@@ -449,15 +449,16 @@ fn the_file_holds_the_digits() {
 fn a_supplied_value_may_not_hold_the_decimal_key() {
     // An object field takes any object, so only the cell's own refusal
     // stands between this value and a decimal nobody supplied.
-    let service = service();
-    let mut cell = Cell::in_memory(ACTOR);
+    let mut service = service();
+    let dir = tempfile::tempdir().unwrap();
+    let mut cell = Cell::in_memory(ACTOR, dir.path()).unwrap();
     let ok = json!({"bijlage": {"x": 1}});
-    cell.record_submission(&service, ID, "3", None, ok.as_object().unwrap(), day())
+    cell.record_submission(&mut service, ID, "3", None, ok.as_object().unwrap(), day())
         .unwrap();
     let supplied = json!({"bijlage": {"x": {"__decimal": "1.5"}}});
     let err = cell
         .record_submission(
-            &service,
+            &mut service,
             ID,
             "3",
             None,
@@ -477,9 +478,9 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kroniek.jsonl");
     let mut service = service();
-    let mut cell = Cell::open(ACTOR, &path).unwrap();
+    let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let app = cell
-        .record_submission(&service, ID, "1", None, &numbers(1, 3), day())
+        .record_submission(&mut service, ID, "1", None, &numbers(1, 3), day())
         .unwrap();
     cell.decide(
         &mut service,
@@ -493,7 +494,7 @@ fn a_damaged_decimal_in_the_file_is_refused() {
     .unwrap();
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, text.replace("0.3333", "0,3333")).unwrap();
-    let err = Cell::open(ACTOR, &path).unwrap_err();
+    let err = Cell::open(ACTOR, &path, dir.path()).unwrap_err();
     assert!(
         err.to_string().contains("line 2") && err.to_string().contains("no stored decimal"),
         "{err}"
@@ -516,7 +517,6 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         recorded_on: day(),
         moment: None,
         fields: [("teller".to_string(), json!({"__decimal": "0,5"}))].into(),
-        findings: Vec::new(),
         missing: Vec::new(),
         outputs: BTreeMap::new(),
     };

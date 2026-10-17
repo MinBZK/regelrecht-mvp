@@ -33,4 +33,7 @@ pub use model::{
     ResolveSpec, Source, Stage, StageRequirement, Submission, Temporal, TypeSpec,
     UntranslatableEntry, DEFAULT_FOREACH_AS, SUBMISSION_KINDS,
 };
+/// The engine reads a version through the model, not from `regelrecht-shared`
+/// itself: it sits on the model alone.
+pub use regelrecht_shared::parse_schema_version;
 pub use value::{MissingFact, MissingKind, Operation, ParameterType, RegulatoryLayer, Value};

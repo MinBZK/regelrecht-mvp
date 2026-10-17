@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.5/schema/v0.8.5/schema.json
 $id: reductie_verlof_al_verleend_in_schooljaar
 regulatory_layer: REDUCTIE
 publication_date: '2026-07-01'
@@ -8,8 +8,10 @@ valid_from: '2026-08-01'
 # kroniek (RFC-022 §4.1, RFC-048). Ze staat bij de cel en niet in
 # corpus/regulation; alleen de cel laadt haar. Ze zoekt de besluiten die
 # ertoe doen en vraagt het beleid van de school in welk schooljaar een dag
-# valt. Haar antwoord neemt het besluit onder artikel 13a als parameter op
-# naam. Er is geen bekendmaking; de url wijst naar dat artikel.
+# valt. Haar antwoord vult het open begrip van artikel 13a (implements,
+# schema v0.8.5): waar de engine dat begrip leest, ook als Awb 7:11 het
+# artikel opnieuw aanroept, vraagt hij het de cel, en de cel draait haar.
+# Er is geen bekendmaking; de url wijst naar dat artikel.
 url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
 name: Al verleend vakantieverlof in het schooljaar bij OBS De Klimop (reductie)
 competent_authority:
@@ -24,8 +26,13 @@ articles:
       een eerste verlofdag in dat schooljaar.
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
     machine_readable:
+      # Het open begrip van lid 2, dat het hoofd anders per geval vaststelt.
+      implements:
+        - law: leerplichtwet_1969
+          article: 13a
+          open_term: verlof_al_verleend_in_schooljaar
       execution:
-        # Wat het besluit zelf ook vraagt; de cel geeft het op naam door.
+        # Parameters van artikel 13a; de cel geeft ze op naam door.
         parameters:
           - name: bsn_jongere
             type: string

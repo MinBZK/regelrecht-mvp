@@ -5,8 +5,9 @@ Feature: Het besluit op de aanvraag om vakantieverlof
   schooljaar (tweede lid). De eerste lesdag komt uit het (fictieve) beleid van
   de school; de twee gegevens van artikel 11, onder f (het beroep van een ouder
   en verlof buiten de schoolvakanties), oordeelt het hoofd. Of het hoofd de
-  jongere dit schooljaar al verlof verleende, is een parameter: de cel van de
-  school leidt het af uit haar besluiten (RFC-048). Het besluit is een
+  jongere dit schooljaar al verlof verleende, stelt het hoofd ook vast; in de
+  cel van de school vult haar reductie dat open begrip uit haar besluiten
+  (implements, RFC-048). Het besluit is een
   beschikking: de Awb vraagt een motivering (3:46) en opent een bezwaartermijn
   van zes weken (6:7).
 
@@ -121,9 +122,9 @@ Feature: Het besluit op de aanvraag om vakantieverlof
     Then output "verlof_verleend" is false
 
   Scenario: Een tweede verlof in hetzelfde schooljaar wordt geweigerd
-    # Het hoofd verleende deze jongere dit schooljaar al verlof. Of dat zo
-    # is, leidt de cel van de school af uit haar besluiten (RFC-048); hier
-    # geeft het scenario het als parameter.
+    # Het hoofd verleende deze jongere dit schooljaar al verlof. In de cel
+    # van de school vult de reductie dat in (RFC-048); hier geeft het
+    # scenario de vaststelling van het hoofd, op de id van het begrip.
     Given the following parameters:
       | bsn_jongere       | 999990020  |
       | eerste_verlofdag  | 2027-02-01 |

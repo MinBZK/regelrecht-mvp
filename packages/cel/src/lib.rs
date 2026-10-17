@@ -13,8 +13,8 @@
 //! RFC-047). It refers to the application; where each value comes from
 //! follows from the law and that reference. The cell reads its chronicle
 //! back through its reductions ([`reading`], RFC-048): rulework of the kind
-//! `REDUCTIE` that it keeps itself, whose outputs answer the decision's
-//! inputs by name.
+//! `REDUCTIE` that it keeps itself, each filling an open term of the law
+//! (`implements`).
 //!
 //! A submission may refer to a decision (RFC-050): a field of type
 //! `decision` holds it, and the deciding article gets its decision value.
@@ -35,5 +35,5 @@ pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
 pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
-pub use reading::Reduction;
+pub use reading::{Answer, Reduction, Term};
 pub use shape::{Field, Moment, Shape};

@@ -29,6 +29,7 @@
 //! let trace = builder.build();
 //! ```
 
+use crate::answer::AnswerProvenance;
 use crate::types::{PathNodeType, ResolveType, TypeSpec, Value};
 use regelrecht_law_model::{Article, ArticleBasedLaw, ProvisionReference};
 use serde::{Deserialize, Serialize};
@@ -166,6 +167,12 @@ pub struct PathNode {
     /// show an amount as euros instead of a bare count of cents.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub type_spec: Option<ValueTypeSpec>,
+
+    /// On an open term the caller's answerer filled: who answered and from
+    /// what (RFC-048). How the answer came about is not in this trace; the
+    /// answerer explains it on request.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub answer: Option<AnswerProvenance>,
 }
 
 /// Unit and precision of a value that has been computed (RFC-039).
@@ -354,6 +361,7 @@ impl PathNode {
             uri: None,
             source: None,
             type_spec: None,
+            answer: None,
         }
     }
 
@@ -1199,6 +1207,18 @@ impl TraceBuilder {
 
         if let Some(current) = self.stack.last_mut() {
             current.node.uri = Some(uri.into());
+        }
+    }
+
+    /// Set who answered the open term of the current node, and from what
+    /// (RFC-048).
+    pub fn set_answer(&mut self, answer: AnswerProvenance) {
+        if !self.enabled {
+            return;
+        }
+
+        if let Some(current) = self.stack.last_mut() {
+            current.node.answer = Some(answer);
         }
     }
 
