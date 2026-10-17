@@ -2,17 +2,16 @@
 //! apart from HTTP.
 //!
 //! Every step builds a fresh engine service from the regelwerken in the
-//! corpus. That costs a few milliseconds and keeps the steps independent: a
-//! decision binds the cell's reductions into the service it gets, and that
-//! binding must not leak into the next step.
+//! corpus. That costs a few milliseconds and keeps the steps independent:
+//! the cell loads its reductions into the service it gets for a decision,
+//! and nothing of that may reach the next step.
 
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 use regelrecht_cel::{decision, reading, shape, Cell, Error, Gram, Source};
-use regelrecht_engine::{
-    ArticleBasedLaw, LawExecutionService, LawLoad, ParameterType, Value as EngineValue,
-};
+use regelrecht_engine::{ArticleBasedLaw, LawExecutionService, LawLoad, ParameterType, PathNode};
+use regelrecht_law_model::stored;
 use serde_json::{json, Map, Value};
 
 /// The law and article of the leave, and its decision.
@@ -71,9 +70,10 @@ impl Corpus {
         })
     }
 
-    /// The school's cell, with an empty chronicle and its reductions.
+    /// The school's cell, with an empty chronicle and the reductions in its
+    /// directory.
     pub fn cell(&self) -> Result<Cell> {
-        Cell::in_memory(SCHOOL).with_reductions(&self.cell_dir)
+        Cell::in_memory(SCHOOL, &self.cell_dir)
     }
 
     /// A service with every regelwerk.
@@ -109,13 +109,16 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
 
 /// What the law asks on `on`: the fields of the application, the head's
 /// findings on it and the fields of the objection. All of it is derived
-/// from the law. An objection does not change the application; a smaller
-/// request is a new application. What the head finds anew on an objection
-/// follows from the contested decision ([`heroverweging`]).
-pub fn vormen(corpus: &Corpus, on: NaiveDate) -> Result<Value> {
+/// from the law, for this cell: a term the cell answers from its chronicle
+/// is no finding of the head, so the form does not ask it. An objection
+/// does not change the application; a smaller request is a new
+/// application. What the head finds anew on an objection follows from the
+/// contested decision ([`heroverweging`]).
+pub fn vormen(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
+    let beantwoord = reading::terms_on(cell.reductions(), on);
     let aanvraag = shape::derive(&service, LAW, ARTICLE, on)?;
-    let besluit = decision::derive(&service, LAW, ARTICLE, on)?;
+    let besluit = decision::derive_with(&service, LAW, ARTICLE, on, &beantwoord)?;
     let bezwaar = shape::derive(&service, AWB, OBJECTION, on)?;
     let op_bezwaar = decision::derive(&service, AWB, OBJECTION, on)?;
     let moment = |s: &shape::Shape| {
@@ -133,11 +136,13 @@ pub fn vormen(corpus: &Corpus, on: NaiveDate) -> Result<Value> {
         .inputs
         .iter()
         .map(|i| {
+            let door_cel = beantwoord.iter().any(|t| t.open_term == i.field.name);
             json!({
                 "naam": i.field.name,
                 "bron": match i.source {
+                    _ if door_cel => "kroniek van de school",
                     Source::Application => "aanvraag",
-                    Source::Caller => "hoofd of reductie",
+                    Source::Caller => "hoofd",
                     Source::Cell => "cel",
                     Source::Policy => "beleid",
                 },
@@ -179,21 +184,143 @@ pub fn aanvragen(
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Gram> {
-    cell.record_submission(&corpus.service()?, LAW, ARTICLE, None, velden, on)
+    cell.record_submission(&mut corpus.service()?, LAW, ARTICLE, None, velden, on)
 }
 
-/// A decision under art. 13a, and why: the engine's trace of it.
+/// Why a decision came out as it did, as the cell explains it
+/// ([`Cell::explain`]): the engine's trace, every open term with who filled
+/// it, the terms the cell answered from its chronicle (one trace node
+/// each) and the findings of the head the decision used
+/// ([`Cell::findings`]).
+#[derive(Debug, serde::Serialize)]
+pub struct Waarom {
+    pub spoor: String,
+    /// The engine's report per open term (`ArticleResult::open_terms`):
+    /// a finding, a regulation, or the cell's answer.
+    pub ingevuld: Vec<regelrecht_engine::OpenTermFilled>,
+    pub antwoorden: Vec<Value>,
+    pub bevindingen: Vec<String>,
+}
+
+/// The nodes of `node` and below where the cell answered an open term.
+fn beantwoord(node: &PathNode) -> Vec<&PathNode> {
+    let mut gevonden: Vec<_> = node.children.iter().flat_map(beantwoord).collect();
+    if node.answer.is_some() {
+        gevonden.insert(0, node);
+    }
+    gevonden
+}
+
+/// Why the decision `id` came out as it did ([`Waarom`]).
+pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
+    let mut service = corpus.service()?;
+    let result = cell.explain(&mut service, id)?;
+    let mut antwoorden = Vec::new();
+    if let Some(root) = &result.trace {
+        for node in beantwoord(root) {
+            let Some(answer) = &node.answer else {
+                continue;
+            };
+            let waarde = node.result.as_ref().map(stored::to_stored).transpose()?;
+            antwoorden.push(json!({
+                "begrip": node.name,
+                "waarde": waarde,
+                "door": answer.answerer,
+                "reductie": answer.law_id,
+                "geldig_vanaf": answer.valid_from,
+                "gelezen": answer.records_read,
+                "tot_en_met": answer.last_record,
+            }));
+        }
+    }
+    Ok(Waarom {
+        spoor: result
+            .trace
+            .as_ref()
+            .map(PathNode::render_box_drawing)
+            .unwrap_or_default(),
+        ingevuld: result.open_terms,
+        antwoorden,
+        bevindingen: cell.findings(&mut service, id)?,
+    })
+}
+
+/// The output names of the reduction `id` of the cell, as written.
+fn uitvoer_van(cell: &Cell, id: &str) -> Result<Vec<String>> {
+    let mut namen = Vec::new();
+    for reduction in cell.reductions().iter().filter(|r| r.id() == id) {
+        let law = ArticleBasedLaw::from_yaml_str(reduction.yaml())?;
+        for article in &law.articles {
+            let outputs = article
+                .get_execution_spec()
+                .and_then(|e| e.output.as_ref())
+                .into_iter()
+                .flatten();
+            for output in outputs {
+                if !namen.contains(&output.name) {
+                    namen.push(output.name.clone());
+                }
+            }
+        }
+    }
+    Ok(namen)
+}
+
+/// The first value the trace under `node` gives each of `namen`.
+fn eerste_waarden(node: &PathNode, namen: &[String], uit: &mut Map<String, Value>) -> Result<()> {
+    if let Some(waarde) = &node.result {
+        if namen.contains(&node.name) && !uit.contains_key(&node.name) {
+            uit.insert(node.name.clone(), stored::to_stored(waarde)?);
+        }
+    }
+    for child in &node.children {
+        eerste_waarden(child, namen, uit)?;
+    }
+    Ok(())
+}
+
+/// How the cell came to its answer on the open term `begrip` in the
+/// decision `id` ([`Cell::explain_answer`]): per time the decision asked
+/// it, the reduction and its version, what its outputs came to (the
+/// answer, and an output it computes on the way, such as the revoked
+/// decisions), and its own trace.
+pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cell, id: &str, begrip: &str) -> Result<Value> {
+    let mut service = corpus.service()?;
+    let mut uit = Vec::new();
+    for result in cell.explain_answer(&mut service, id, begrip)? {
+        let mut uitvoer = Map::new();
+        if let Some(root) = &result.trace {
+            eerste_waarden(root, &uitvoer_van(cell, &result.law_id)?, &mut uitvoer)?;
+        }
+        for (naam, waarde) in &result.outputs {
+            uitvoer.insert(naam.clone(), stored::to_stored(waarde)?);
+        }
+        uit.push(json!({
+            "reductie": result.law_id,
+            "geldig_vanaf": result.regulation_valid_from,
+            "uitvoer": uitvoer,
+            "spoor": result
+                .trace
+                .as_ref()
+                .map(PathNode::render_box_drawing)
+                .unwrap_or_default(),
+        }));
+    }
+    Ok(json!({ "besluit": id, "begrip": begrip, "antwoorden": uit }))
+}
+
+/// A decision under art. 13a, and why it came out so.
 #[derive(Debug, serde::Serialize)]
 pub struct Besluit {
     pub besluit: Gram,
-    pub uitleg: String,
+    pub waarom: Waarom,
 }
 
 /// Decide on the submission `op` under `law_id#article` with the head's
-/// `bevindingen` (RFC-050) in `service`: the decision on it first, then a
-/// decision it takes in turn.
+/// `bevindingen` (RFC-050): the decision on it first, then a decision it
+/// takes in turn.
 fn beslissen(
-    service: &mut LawExecutionService,
+    corpus: &Corpus,
     cell: &mut Cell,
     law_id: &str,
     article: &str,
@@ -201,7 +328,16 @@ fn beslissen(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Vec<Gram>> {
-    cell.decide(service, law_id, article, op, &Map::new(), bevindingen, on)
+    let mut service = corpus.service()?;
+    cell.decide(
+        &mut service,
+        law_id,
+        article,
+        op,
+        &Map::new(),
+        bevindingen,
+        on,
+    )
 }
 
 /// The head decides on the application `aanvraag` with its findings.
@@ -212,58 +348,9 @@ pub fn besluiten(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Besluit> {
-    let mut service = corpus.service()?;
-    let besluit = beslissen(&mut service, cell, LAW, ARTICLE, aanvraag, bevindingen, on)?.remove(0);
-    let uitleg = uitleg(&service, &besluit)?;
-    Ok(Besluit { besluit, uitleg })
-}
-
-/// Why the decision `besluit` under art. 13a came out as it did: the trace
-/// of its outputs under the law in `service`, with the values it used. The
-/// head's findings ([`Gram::findings`]) go to the engine as findings, apart
-/// from the parameters. What the policy gave is left to the engine, so the
-/// trace shows where it came from.
-pub fn uitleg(service: &LawExecutionService, besluit: &Gram) -> Result<String> {
-    let shape = decision::derive(service, LAW, ARTICLE, besluit.recorded_on)?;
-    let mut parameters = std::collections::BTreeMap::new();
-    let mut bevindingen = std::collections::BTreeMap::new();
-    for input in shape.inputs.iter().filter(|i| i.source != Source::Policy) {
-        let Some(value) = besluit.fields.get(&input.field.name) else {
-            continue;
-        };
-        let value = regelrecht_cel::encoding::from_json(value)?;
-        if besluit.findings.contains(&input.field.name) {
-            bevindingen.insert(input.field.name.clone(), value);
-        } else {
-            parameters.insert(input.field.name.clone(), value);
-        }
-    }
-    let outputs: Vec<&str> = shape.outputs.iter().map(String::as_str).collect();
-    let result = service.evaluate_law_with_trace_and_findings(
-        LAW,
-        &outputs,
-        parameters,
-        bevindingen,
-        &besluit.recorded_on.to_string(),
-    )?;
-    Ok(result
-        .trace
-        .map(|t| t.render_box_drawing())
-        .unwrap_or_default())
-}
-
-/// The trace of the decision recorded as `id`, a decision under art. 13a.
-pub fn uitleg_van(corpus: &Corpus, cell: &Cell, id: &str) -> Result<String> {
-    let besluit = cell
-        .grams()
-        .iter()
-        .find(|g| g.id == id && g.grondslag == format!("{LAW}#{ARTICLE}") && g.refers_to.is_some())
-        .ok_or_else(|| {
-            Error::Refused(format!(
-                "'{id}' is no decision under {LAW}#{ARTICLE} in the chronicle"
-            ))
-        })?;
-    uitleg(&corpus.service()?, besluit)
+    let besluit = beslissen(corpus, cell, LAW, ARTICLE, aanvraag, bevindingen, on)?.remove(0);
+    let waarom = waarom(corpus, cell, &besluit.id)?;
+    Ok(Besluit { besluit, waarom })
 }
 
 /// The parent objects to the decision `besluit`: a submission under Awb
@@ -276,7 +363,7 @@ pub fn bezwaren(
     on: NaiveDate,
 ) -> Result<Gram> {
     cell.record_submission(
-        &corpus.service()?,
+        &mut corpus.service()?,
         AWB,
         OBJECTION,
         Some(besluit),
@@ -288,15 +375,15 @@ pub fn bezwaren(
 /// Before the head decides on the objection `bezwaar` on `on`: whether it
 /// is admissible, as Awb 7:11 decides it (on time per 6:9, and not against
 /// a decision taken on objection), and, if so, what the head can find anew
-/// at the heroverweging. Those are the findings the head gave in the
-/// contested decision ([`Gram::findings`]), with what it found then.
+/// at the heroverweging. Those are the findings the contested decision
+/// used ([`Cell::findings`]), with what the head found then. A term the
+/// cell answered is none of them.
 ///
 /// The admissibility is that of the decision without new findings, taken
 /// on a copy of the cell: the law decides it, not the app. Nothing is kept.
 pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate) -> Result<Value> {
-    let mut service = corpus.service()?;
     let toets = beslissen(
-        &mut service,
+        corpus,
         &mut cell.sandbox(),
         AWB,
         OBJECTION,
@@ -322,13 +409,14 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
             .grondslag
             .split_once('#')
             .ok_or_else(|| Error::Setup(format!("'{}' has no grondslag", bestreden.id)))?;
+        let mut service = corpus.service()?;
         let shape = decision::derive(&service, law_id, article, bestreden.recorded_on)?;
-        for naam in &bestreden.findings {
-            let Some(input) = shape.input(naam) else {
+        for naam in cell.findings(&mut service, &bestreden.id)? {
+            let Some(input) = shape.input(&naam) else {
                 continue;
             };
             let mut v = veld(&input.field);
-            v["eerder"] = bestreden.fields.get(naam).cloned().unwrap_or(Value::Null);
+            v["eerder"] = bestreden.fields.get(&naam).cloned().unwrap_or(Value::Null);
             bevindingen.push(v);
         }
     }
@@ -344,8 +432,9 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
 
 /// The school decides on the objection `bezwaar` under Awb 7:11, as any
 /// decision; `bevindingen` are what the head finds anew at the
-/// heroverweging. A new decision in place of the revoked one comes with its
-/// trace.
+/// heroverweging. The decision comes with why ([`waarom`]): art. 13a
+/// called anew is in its trace, a new decision in place of the revoked one
+/// is its outcome.
 pub fn beslissen_op_bezwaar(
     corpus: &Corpus,
     cell: &mut Cell,
@@ -353,19 +442,20 @@ pub fn beslissen_op_bezwaar(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Value> {
-    let mut service = corpus.service()?;
-    let mut genomen = beslissen(&mut service, cell, AWB, OBJECTION, bezwaar, bevindingen, on)?;
+    let mut genomen = beslissen(corpus, cell, AWB, OBJECTION, bezwaar, bevindingen, on)?;
     let nieuw = (genomen.len() > 1).then(|| genomen.remove(1));
-    let uitleg = nieuw.as_ref().map(|g| uitleg(&service, g)).transpose()?;
+    let beslissing = genomen.remove(0);
+    let waarom = waarom(corpus, cell, &beslissing.id)?;
     Ok(json!({
-        "beslissing": genomen.remove(0),
+        "beslissing": beslissing,
         "nieuw_besluit": nieuw,
-        "uitleg": uitleg,
+        "waarom": waarom,
     }))
 }
 
-/// The cell's reductions as written, and per reduction the decisions it
-/// reads from the chronicle (`source.decisions`), as rows.
+/// The open terms the cell answers from its chronicle ([`Cell::answers`]),
+/// its reductions as written, and per reduction the decisions it reads
+/// from the chronicle (`source.decisions`), as rows.
 pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let mut uit = Vec::new();
@@ -387,64 +477,16 @@ pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
                 "rijen": serde_json::to_value(&rijen).map_err(|e| Error::Setup(e.to_string()))?,
             }));
         }
-        uit.push(json!({ "id": reduction.id(), "yaml": reduction.yaml(), "invoer": invoer }));
+        uit.push(json!({
+            "id": reduction.id(),
+            "geldig_vanaf": reduction.valid_from(),
+            "yaml": reduction.yaml(),
+            "invoer": invoer,
+        }));
     }
-    Ok(json!({ "reducties": uit }))
-}
-
-/// Run the cell's reductions on its chronicle as a decision under art. 13a
-/// on `on` would, with `velden` as the decision's inputs by name: their
-/// answer, and the trace of each.
-pub fn reductie_uitvoeren(
-    corpus: &Corpus,
-    cell: &Cell,
-    velden: &Map<String, Value>,
-    on: NaiveDate,
-) -> Result<Value> {
-    let mut service = corpus.service()?;
-    let shape = decision::derive(&service, LAW, ARTICLE, on)?;
-    let bound = reading::bind(
-        &mut service,
-        cell.recording_actor(),
-        &shape,
-        &Map::new(),
-        cell.grams(),
-        cell.reductions(),
-        on,
-    )?;
-    let fields = velden.clone().into_iter().collect();
-    let antwoord = bound.answer(&fields, on)?;
-    let mut sporen = Map::new();
-    for reduction in cell.reductions() {
-        let law = ArticleBasedLaw::from_yaml_str(reduction.yaml())?;
-        let outputs: Vec<&str> = law
-            .articles
-            .iter()
-            .filter_map(|a| a.get_execution_spec()?.output.as_ref())
-            .flatten()
-            .map(|o| o.name.as_str())
-            .filter(|o| antwoord.contains_key(*o))
-            .collect();
-        if outputs.is_empty() {
-            continue;
-        }
-        let parameters = velden
-            .iter()
-            .map(|(k, v)| (k.clone(), EngineValue::from(v.clone())))
-            .collect();
-        let result =
-            bound.evaluate_law_with_trace(reduction.id(), &outputs, parameters, &on.to_string())?;
-        sporen.insert(
-            reduction.id().to_string(),
-            Value::String(
-                result
-                    .trace
-                    .map(|t| t.render_box_drawing())
-                    .unwrap_or_default(),
-            ),
-        );
-    }
-    Ok(json!({ "antwoord": antwoord, "uitleg": sporen }))
+    let antwoorden =
+        serde_json::to_value(cell.answers()).map_err(|e| Error::Setup(e.to_string()))?;
+    Ok(json!({ "antwoorden": antwoorden, "reducties": uit }))
 }
 
 #[cfg(test)]
@@ -513,7 +555,8 @@ mod tests {
 
     #[test]
     fn the_forms_come_from_the_law() {
-        let vormen = vormen(&corpus(), day("2026-10-14")).unwrap();
+        let corpus = corpus();
+        let vormen = vormen(&corpus, &corpus.cell().unwrap(), day("2026-10-14")).unwrap();
         let namen = |pad: &str| -> Vec<String> {
             vormen
                 .pointer(pad)
@@ -525,6 +568,8 @@ mod tests {
                 .collect()
         };
         assert!(namen("/aanvraag/velden").contains(&"laatste_verlofdag".to_string()));
+        // The cell answers verlof_al_verleend_in_schooljaar from its
+        // chronicle, so the head is not asked it.
         assert_eq!(
             namen("/besluit/bevindingen"),
             [
@@ -532,6 +577,10 @@ mod tests {
                 "verlof_valt_buiten_schoolvakanties"
             ]
         );
+        let invoer = vormen["besluit"]["invoer"].as_array().unwrap();
+        assert!(invoer.contains(
+            &json!({ "naam": "verlof_al_verleend_in_schooljaar", "bron": "kroniek van de school" })
+        ));
         let bezwaar = namen("/bezwaar/velden");
         assert!(bezwaar.contains(&"gronden_bezwaar".to_string()));
         // The contested decision the cell fills from `refers_to`.
@@ -548,10 +597,18 @@ mod tests {
         let mut cell = corpus.cell().unwrap();
         let besluit = geweigerd(&corpus, &mut cell);
         assert_eq!(besluit.besluit.outputs["verlof_verleend"], json!(false));
-        assert!(
-            besluit.uitleg.contains("verlof_verleend"),
-            "{}",
-            besluit.uitleg
+        let uitleg = &besluit.waarom;
+        assert!(uitleg.spoor.contains("verlof_verleend"), "{}", uitleg.spoor);
+        // The profession already refuses the leave, so art. 13a never
+        // reads the term the cell answers; the head's findings are what the
+        // decision used.
+        assert!(uitleg.antwoorden.is_empty(), "{:?}", uitleg.antwoorden);
+        assert_eq!(
+            uitleg.bevindingen,
+            [
+                "specifieke_aard_beroep_ouder",
+                "verlof_valt_buiten_schoolvakanties"
+            ]
         );
 
         // An objection does not change the application.
@@ -617,26 +674,28 @@ mod tests {
             beslist["beslissing"]["outputs"]["nieuw_besluit"],
             nieuw["id"]
         );
-        assert!(nieuw["findings"]
-            .as_array()
-            .unwrap()
-            .contains(&json!("specifieke_aard_beroep_ouder")));
-        assert!(beslist["uitleg"].as_str().unwrap().contains("verlofdagen"));
+        let gebruikt = waarom(&corpus, &cell, nieuw["id"].as_str().unwrap()).unwrap();
+        assert!(gebruikt
+            .bevindingen
+            .contains(&"specifieke_aard_beroep_ouder".to_string()));
+        let spoor = beslist["waarom"]["spoor"].as_str().unwrap();
+        assert!(spoor.contains("verlofdagen"), "{spoor}");
 
-        // The reduction now finds the leave granted this school year.
-        let reductie = reductie_uitvoeren(
-            &corpus,
-            &cell,
-            &map(json!({ "bsn_jongere": "999990019", "eerste_verlofdag": "2027-05-10" })),
-            day("2027-03-01"),
-        )
-        .unwrap();
-        assert_eq!(
-            reductie["antwoord"]["verlof_al_verleend_in_schooljaar"],
-            json!(true)
-        );
-        // It reads two inputs: the decisions under 13a and those under 7:11.
+        // The cell answers one term from its chronicle.
         let stand = reducties(&corpus, &cell, day("2027-03-01")).unwrap();
+        assert_eq!(
+            stand["antwoorden"],
+            json!([{
+                "term": {
+                    "law": "leerplichtwet_1969",
+                    "article": "13a",
+                    "open_term": "verlof_al_verleend_in_schooljaar",
+                },
+                "reduction": "reductie_verlof_al_verleend_in_schooljaar",
+                "valid_from": "2026-08-01",
+            }])
+        );
+        // The reduction reads two inputs: the decisions under 13a and those under 7:11.
         let invoer = stand["reducties"][0]["invoer"].as_array().unwrap();
         let rijen = |onder: &str| {
             invoer
@@ -819,5 +878,162 @@ mod tests {
         assert_eq!(uit["heroverweging_geeft_aanleiding"], json!(false));
         assert_eq!(uit["bestreden_besluit_herroepen"], json!(false));
         assert!(beslist["nieuw_besluit"].is_null());
+    }
+
+    #[test]
+    fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_refusal() {
+        // Scenario 6, the owner's case: leave A is granted, leave B in the
+        // same school year is refused because A counts. On an objection
+        // against A the head judges the profession anew, so A is revoked.
+        // On the objection against B art. 13a is applied anew; A no longer
+        // counts, and B is granted. The cell answered the term itself.
+        let corpus = corpus();
+        let mut cell = corpus.cell().unwrap();
+        let eerste = aanvragen(
+            &corpus,
+            &mut cell,
+            &aanvraag("2027-02-05"),
+            day("2026-10-14"),
+        )
+        .unwrap();
+        let a = besluiten(
+            &corpus,
+            &mut cell,
+            &eerste.id,
+            &bevindingen(),
+            day("2026-10-14"),
+        )
+        .unwrap()
+        .besluit;
+        assert_eq!(a.outputs["verlof_verleend"], json!(true));
+        let mut later = aanvraag("2027-05-14");
+        later.insert("eerste_verlofdag".into(), json!("2027-05-10"));
+        let tweede = aanvragen(&corpus, &mut cell, &later, day("2026-10-14")).unwrap();
+        let b = besluiten(
+            &corpus,
+            &mut cell,
+            &tweede.id,
+            &bevindingen(),
+            day("2026-10-14"),
+        )
+        .unwrap();
+        assert_eq!(b.besluit.outputs["verlof_verleend"], json!(false));
+        assert_eq!(b.waarom.antwoorden[0]["waarde"], json!(true));
+
+        // Against A: the head finds the profession anew, A is revoked.
+        let tegen_a = bezwaren(
+            &corpus,
+            &mut cell,
+            &a.id,
+            &bezwaar_velden("2026-11-01"),
+            day("2026-11-01"),
+        )
+        .unwrap();
+        let op_a = beslissen_op_bezwaar(
+            &corpus,
+            &mut cell,
+            &tegen_a.id,
+            &beroep(false),
+            day("2026-11-15"),
+        )
+        .unwrap();
+        assert_eq!(
+            op_a["beslissing"]["outputs"]["bestreden_besluit_herroepen"],
+            json!(true)
+        );
+        assert_eq!(
+            op_a["nieuw_besluit"]["outputs"]["verlof_verleend"],
+            json!(false)
+        );
+
+        // Against B: admissible, and the head is not asked the term the cell
+        // answers.
+        let tegen_b = bezwaren(
+            &corpus,
+            &mut cell,
+            &b.besluit.id,
+            &bezwaar_velden("2026-11-20"),
+            day("2026-11-20"),
+        )
+        .unwrap();
+        let toets = heroverweging(&corpus, &cell, &tegen_b.id, day("2026-12-01")).unwrap();
+        assert_eq!(toets["ontvankelijk"], json!(true));
+        let gevraagd: Vec<&str> = toets["bevindingen"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|b| b["naam"].as_str().unwrap())
+            .collect();
+        assert!(!gevraagd.contains(&"verlof_al_verleend_in_schooljaar"));
+        let op_b = beslissen_op_bezwaar(
+            &corpus,
+            &mut cell,
+            &tegen_b.id,
+            &Map::new(),
+            day("2026-12-01"),
+        )
+        .unwrap();
+        assert_eq!(
+            op_b["beslissing"]["outputs"]["bestreden_besluit_herroepen"],
+            json!(true)
+        );
+        assert_eq!(
+            op_b["nieuw_besluit"]["outputs"]["verlof_verleend"],
+            json!(true)
+        );
+
+        // Why: one node for the term, the cell's answer "nee", read up to
+        // the objection against B.
+        let beslissing = op_b["beslissing"]["id"].as_str().unwrap();
+        let antwoorden = op_b["waarom"]["antwoorden"].as_array().unwrap();
+        assert_eq!(antwoorden.len(), 1, "{antwoorden:?}");
+        let antwoord = &antwoorden[0];
+        assert_eq!(
+            antwoord["begrip"],
+            json!("verlof_al_verleend_in_schooljaar")
+        );
+        assert_eq!(antwoord["waarde"], json!(false));
+        assert_eq!(antwoord["door"], json!(SCHOOL));
+        assert_eq!(
+            antwoord["reductie"],
+            json!("reductie_verlof_al_verleend_in_schooljaar")
+        );
+        assert_eq!(antwoord["geldig_vanaf"], json!("2026-08-01"));
+        assert_eq!(antwoord["tot_en_met"], json!(tegen_b.id));
+        let spoor = op_b["waarom"]["spoor"].as_str().unwrap();
+        assert!(!spoor.contains("FOREACH"), "{spoor}");
+        assert!(op_b["waarom"]["ingevuld"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|f| f["term"] == json!("verlof_al_verleend_in_schooljaar")
+                && f["filled_by"]["answer"]["law_id"]
+                    == json!("reductie_verlof_al_verleend_in_schooljaar")));
+
+        // How the school answered: A is among the revoked decisions, and
+        // both rows under 13a that are not B (A, and the refusal in its
+        // place) are skipped.
+        let hoe = hoe_beantwoord(
+            &corpus,
+            &cell,
+            beslissing,
+            "verlof_al_verleend_in_schooljaar",
+        )
+        .unwrap();
+        let eerst = &hoe["antwoorden"][0];
+        assert_eq!(
+            eerst["uitvoer"]["verlof_al_verleend_in_schooljaar"],
+            json!(false)
+        );
+        assert_eq!(eerst["uitvoer"]["herroepen_besluiten"], json!([a.id]));
+        let spoor = eerst["spoor"].as_str().unwrap();
+        assert!(
+            spoor.contains(&format!("herroepen_besluiten = ['{}']", a.id)),
+            "{spoor}"
+        );
+        assert!(
+            spoor.contains("FOREACH over 0 element(s), 2 skipped by filter = False"),
+            "{spoor}"
+        );
     }
 }

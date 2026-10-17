@@ -4222,6 +4222,7 @@ dependencies = [
  "http-body-util",
  "regelrecht-cel",
  "regelrecht-engine",
+ "regelrecht-law-model",
  "serde",
  "serde_json",
  "tokio",

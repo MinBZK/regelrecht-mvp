@@ -1,22 +1,15 @@
 <script setup>
 // De reductie van de cel (RFC-048): hoe de school haar kroniek terugleest om
-// te weten of de jongere dit schooljaar al verlof kreeg. Te zien als
-// geschreven, met per invoer de rijen die zij uit de kroniek krijgt: de
-// besluiten onder artikel 13a en de beslissingen op bezwaar (Awb 7:11). En
-// uit te voeren.
-import { onMounted, reactive, ref, watch } from 'vue';
+// te weten of de jongere dit schooljaar al verlof kreeg. Bovenaan wat de
+// school zo beantwoordt (Cell::answers); dan de reductie als geschreven,
+// met per invoer de rijen die zij uit de kroniek krijgt: de besluiten onder
+// artikel 13a en de beslissingen op bezwaar (Awb 7:11). Wat zij bij een
+// besluit antwoordde en waarom, staat bij dat besluit (tabblad School).
+import { onMounted, ref, watch } from 'vue';
 import { api } from '../api.js';
-import { alsJson, spel, stap } from '../spel.js';
-import VeldInvoer from './VeldInvoer.vue';
+import { alsJson, leesbaar, spel } from '../spel.js';
 
 const stand = ref(null);
-const velden = reactive({ bsn_jongere: '999990019', eerste_verlofdag: '2027-05-10' });
-const uitkomst = ref(null);
-
-const invoer = [
-  { naam: 'bsn_jongere', type: 'string', mag_leeg: false, grondslag: 'parameter van de reductie' },
-  { naam: 'eerste_verlofdag', type: 'date', mag_leeg: false, grondslag: 'parameter van de reductie' },
-];
 
 // Alleen ophalen, geen stap: een fout van de vorige stap blijft dan staan.
 async function laden() {
@@ -27,23 +20,36 @@ async function laden() {
   }
 }
 
-async function uitvoeren() {
-  uitkomst.value = await stap(() => api.reductieUitvoeren({ ...velden }, spel.datum));
-}
-
 onMounted(laden);
-watch(() => spel.grammen.length, laden);
+watch(() => [spel.grammen.length, spel.datum], laden);
 </script>
 
 <template>
   <template v-if="stand">
+    <nldd-simple-section>
+      <nldd-title slot="header" size="3" text="Deze school beantwoordt uit haar kroniek">
+        <nldd-text slot="supporting-text">
+          Een open begrip dat een reductie van de school vult, vraagt de engine aan de cel. Het
+          hoofd krijgt die vraag niet; bij elk besluit staat wat de school antwoordde.
+        </nldd-text>
+      </nldd-title>
+      <nldd-list appearance="box-base" accessible-label="Wat de school beantwoordt">
+        <nldd-list-item v-for="a in stand.antwoorden" :key="`${a.reduction}@${a.valid_from}`" size="sm">
+          <nldd-text-cell
+            :text="leesbaar(a.term.open_term)"
+            :supporting-text="`${a.term.law} artikel ${a.term.article} · reductie ${a.reduction}, geldig vanaf ${a.valid_from}`"
+          ></nldd-text-cell>
+        </nldd-list-item>
+      </nldd-list>
+    </nldd-simple-section>
     <template v-for="r in stand.reducties" :key="r.id">
       <nldd-simple-section>
         <nldd-title slot="header" size="3" :text="r.id">
           <nldd-text slot="supporting-text">
             Geen regelgeving: een regelwerk van de soort REDUCTIE dat bij de cel hoort
-            (corpus/cells/obs_de_klimop). Het besluit onder artikel 13a neemt haar antwoord op
-            naam over als de parameter verlof_al_verleend_in_schooljaar.
+            (corpus/cells/obs_de_klimop/reducties/{{ r.id }}/{{ r.geldig_vanaf }}.yaml). Waar
+            de engine het begrip leest, ook als Awb 7:11 artikel 13a opnieuw toepast, draait de
+            cel haar op de kroniek.
           </nldd-text>
         </nldd-title>
         <nldd-code-viewer language="yaml" appearance="box-tinted">{{ r.yaml }}</nldd-code-viewer>
@@ -59,28 +65,4 @@ watch(() => spel.grammen.length, laden);
       </nldd-simple-section>
     </template>
   </template>
-  <nldd-simple-section>
-    <nldd-title slot="header" size="4" text="Uitvoeren op de kroniek">
-      <nldd-text slot="supporting-text">
-        Zoals een besluit op de speeldatum haar zou draaien, voor deze jongere en deze eerste
-        verlofdag. Een besluit dat een beslissing op bezwaar herriep, telt niet mee.
-      </nldd-text>
-    </nldd-title>
-    <nldd-container gap="16" max-width="560px">
-      <VeldInvoer v-for="v in invoer" :key="v.naam" v-model="velden[v.naam]" :veld="v" />
-      <nldd-button appearance="primary" text="Reductie uitvoeren" @click="uitvoeren"></nldd-button>
-    </nldd-container>
-    <nldd-container v-if="uitkomst" gap="12">
-      <nldd-spacer size="16"></nldd-spacer>
-      <nldd-title
-        v-for="(waarde, naam) in uitkomst.antwoord"
-        :key="naam"
-        size="5"
-        :text="naam"
-      >
-        <nldd-tag slot="end" :color="waarde ? 'warning' : 'success'" :text="JSON.stringify(waarde)"></nldd-tag>
-      </nldd-title>
-      <nldd-code-viewer v-for="(spoor, id) in uitkomst.uitleg" :key="id" appearance="box-tinted">{{ spoor }}</nldd-code-viewer>
-    </nldd-container>
-  </nldd-simple-section>
 </template>

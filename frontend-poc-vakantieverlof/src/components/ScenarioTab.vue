@@ -58,6 +58,18 @@ const scenarios = [
     ],
     eind: 'De cel weigert deze stap: een besluit wordt maar één keer vervangen. De melding noemt het besluit dat het al vervangt; onder Details staat wat de cel zelf meldt. Er komt niets bij in de kroniek.',
   },
+  {
+    naam: 'Een herroepen verlof telt niet meer mee',
+    stappen: [
+      'Ouder, 14 oktober 2026: klik op Aanvraag indienen (verlof A, 1 tot en met 5 februari 2027). School: klik op Besluit nemen. A wordt verleend.',
+      'Ouder: vul als eerste verlofdag 10 mei 2027 en als laatste verlofdag 14 mei 2027 in en klik op Aanvraag indienen (verlof B). School: klik op Besluit nemen. B wordt geweigerd: de school antwoordt uit haar kroniek dat de jongere dit schooljaar al verlof kreeg, namelijk A.',
+      'Ouder, speeldatum 1 november 2026: maak bezwaar tegen A.',
+      'School, speeldatum 15 november 2026: toets dat bezwaar. Kies bij "specifieke aard beroep ouder" Nee en beslis. Gegrond: A is herroepen, een weigering komt in de plaats.',
+      'Ouder, speeldatum 20 november 2026: maak bezwaar tegen B.',
+      'School, speeldatum 1 december 2026: toets dat bezwaar, laat de bevindingen staan en beslis.',
+    ],
+    eind: 'Gegrond: B is herroepen, en het nieuwe besluit verleent het verlof. Bij het waarom staat "verlof al verleend in schooljaar: nee", ingevuld door de school. Onder "Hoe de school dit beantwoordde" staat A bij de herroepen besluiten, en het spoor laat zien dat het filter de twee besluiten onder artikel 13a oversloeg (A en de weigering in zijn plaats).',
+  },
 ];
 
 async function begin() {

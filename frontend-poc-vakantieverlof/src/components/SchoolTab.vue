@@ -1,9 +1,11 @@
 <script setup>
 // De school: het hoofd beslist op aanvragen en bezwaren, en ziet bij elk
-// besluit waarom het zo uitviel (het spoor onder de geldende wet). De bevindingen
-// die het hoofd per aanvraag geeft (artikel 11, onder f) komen uit de wet:
-// `decided_per_case_by` op de open begrippen van 13a (RFC-050). Bij een
-// bezwaar komen ze uit het bestreden besluit: wat het hoofd toen vond.
+// besluit waarom het zo uitviel (Waarom.vue). De bevindingen die het hoofd
+// per aanvraag geeft (artikel 11, onder f) komen uit de wet:
+// `decided_per_case_by` op de open begrippen van 13a (RFC-050), behalve wat
+// de school zelf uit haar kroniek beantwoordt (of de jongere dit schooljaar
+// al verlof kreeg). Bij een bezwaar komen ze uit het bestreden besluit: de
+// bevindingen die het gebruikte, met wat het hoofd toen vond.
 import { computed, reactive } from 'vue';
 import { api } from '../api.js';
 import {
@@ -18,6 +20,7 @@ import {
   stap,
 } from '../spel.js';
 import Uitkomst from './Uitkomst.vue';
+import Waarom from './Waarom.vue';
 import VeldInvoer from './VeldInvoer.vue';
 
 const oordelen = () => spel.vormen?.besluit.bevindingen ?? [];
@@ -43,8 +46,8 @@ async function besluit(a) {
 }
 
 async function waarom(b) {
-  const antwoord = await stap(() => api.uitleg(b.id));
-  if (antwoord) uitkomsten[b.id] = { besluit: b, uitleg: antwoord.uitleg };
+  const antwoord = await stap(() => api.waarom(b.id));
+  if (antwoord) uitkomsten[b.id] = { besluit: b, waarom: antwoord };
 }
 
 // Bij een bezwaar eerst de ontvankelijkheid, zoals Awb 7:11 die beslist
@@ -92,9 +95,9 @@ const uitkomstOpBezwaar = (uit) =>
   <nldd-simple-section>
     <nldd-title slot="header" size="3" text="Open aanvragen">
       <nldd-text slot="supporting-text">
-        Het hoofd beslist. De aanvraag, het beleid van de school (de eerste lesdag) en de
-        reductie over de kroniek (al verlof dit schooljaar?) leveren de rest. De bevindingen
-        hieronder geeft alleen het hoofd.
+        Het hoofd beslist. De aanvraag en het beleid van de school (de eerste lesdag) leveren
+        de rest, en of de jongere dit schooljaar al verlof kreeg, beantwoordt de school zelf
+        uit haar kroniek. De bevindingen hieronder geeft alleen het hoofd.
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog
@@ -203,7 +206,14 @@ const uitkomstOpBezwaar = (uit) =>
           :supporting-text="uitkomstOpBezwaar(b.beslissing.outputs)"
         ></nldd-title>
         <nldd-code-viewer language="json" appearance="box-tinted">{{ alsJson(b.beslissing.outputs) }}</nldd-code-viewer>
-        <Uitkomst v-if="b.nieuw_besluit" titel="Nieuw besluit" :besluit="b.nieuw_besluit" :uitleg="b.uitleg ?? ''" />
+        <Uitkomst
+          v-if="b.nieuw_besluit"
+          titel="Nieuw besluit"
+          :besluit="b.nieuw_besluit"
+          :waarom="b.waarom"
+          :waarom-van="b.beslissing.id"
+        />
+        <Waarom v-else :besluit="b.beslissing.id" :waarom="b.waarom" />
       </nldd-container>
     </nldd-container>
   </nldd-simple-section>
@@ -218,7 +228,7 @@ const uitkomstOpBezwaar = (uit) =>
           v-if="uitkomsten[b.id]"
           :titel="`Besluit ${kort(b.id)} (${b.recorded_on})`"
           :besluit="uitkomsten[b.id].besluit"
-          :uitleg="uitkomsten[b.id].uitleg"
+          :waarom="uitkomsten[b.id].waarom"
         />
         <template v-else>
           <Uitkomst :titel="`Besluit ${kort(b.id)} (${b.recorded_on})`" :besluit="b" />

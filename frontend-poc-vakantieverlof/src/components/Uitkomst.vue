@@ -1,12 +1,15 @@
 <script setup>
 // Een besluit onder artikel 13a: verleend of geweigerd, de uitvoer, en
-// desgewenst het spoor van de engine dat laat zien waaróm.
+// desgewenst waaróm (Waarom.vue). `waaromVan` is het besluit waarvan die
+// uitleg is: het besluit zelf, of de beslissing op bezwaar die het nam.
 import { computed } from 'vue';
 import { leesbaar, waarde } from '../spel.js';
+import Waarom from './Waarom.vue';
 
 const props = defineProps({
   besluit: { type: Object, required: true },
-  uitleg: { type: String, default: '' },
+  waarom: { type: Object, default: null },
+  waaromVan: { type: String, default: '' },
   titel: { type: String, default: 'Besluit' },
 });
 
@@ -31,11 +34,6 @@ const uitvoer = computed(() =>
         <nldd-text-cell width="fit-content" :text="waarde(u.waarde)"></nldd-text-cell>
       </nldd-list-item>
     </nldd-list>
-    <template v-if="uitleg">
-      <nldd-text size="sm" color="secondary">
-        Waarom: het spoor van de engine door artikel 13a, met de waarden die het besluit gebruikte.
-      </nldd-text>
-      <nldd-code-viewer appearance="box-tinted">{{ uitleg }}</nldd-code-viewer>
-    </template>
+    <Waarom v-if="waarom" :besluit="waaromVan || besluit.id" :waarom="waarom" />
   </nldd-container>
 </template>

@@ -32,13 +32,14 @@ export const api = {
   kroniek: () => get('/api/kroniek'),
   aanvragen: (velden, datum) => post('/api/aanvragen', { velden, datum }),
   besluiten: (op, bevindingen, datum) => post('/api/besluiten', { op, bevindingen, datum }),
-  uitleg: (id) => get(`/api/besluiten/${encodeURIComponent(id)}/uitleg`),
+  waarom: (id) => get(`/api/besluiten/${encodeURIComponent(id)}/waarom`),
+  hoeBeantwoord: (id, begrip) =>
+    get(`/api/besluiten/${encodeURIComponent(id)}/antwoord/${encodeURIComponent(begrip)}`),
   bezwaren: (besluit, velden, datum) => post('/api/bezwaren', { besluit, velden, datum }),
   heroverweging: (bezwaar, datum) =>
     get(`/api/bezwaren/${encodeURIComponent(bezwaar)}/heroverweging?datum=${datum}`),
   beslissenOpBezwaar: (op, bevindingen, datum) =>
     post('/api/beslissingen-op-bezwaar', { op, bevindingen, datum }),
   reducties: (datum) => get(`/api/reducties?datum=${datum}`),
-  reductieUitvoeren: (velden, datum) => post('/api/reducties/uitvoeren', { velden, datum }),
   reset: () => post('/api/reset'),
 };

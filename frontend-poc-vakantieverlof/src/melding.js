@@ -23,6 +23,19 @@ const vertalingen = [
     (laatste) =>
       `De speeldatum ligt vóór de laatste stap in de kroniek (${laatste}). De kroniek loopt alleen vooruit: kies die dag of een latere.`,
   ],
+  // De school beantwoordt een open begrip uit haar kroniek, maar op een
+  // speeldatum vóór de dag dat haar reductie geldt, heeft ze er geen.
+  [
+    /open term '([^']+)' of \S+ is filled by a reduction in \S+, but none is in force on (\d{4}-\d{2}-\d{2})/,
+    (begrip, dag) =>
+      `De school beantwoordt "${leesbaar(begrip)}" uit haar kroniek, maar op ${dag} geldt haar reductie nog niet. Kies een latere speeldatum.`,
+  ],
+  // Uitleg gevraagd over een begrip dat het besluit de school niet vroeg.
+  [
+    /the decision '([^']+)' did not ask the cell of '[^']+' for '([^']+)'/,
+    (besluit, begrip) =>
+      `Besluit ${kort(besluit)} vroeg de school niet om "${leesbaar(begrip)}", dus er is geen antwoord om uit te leggen.`,
+  ],
   [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
   [
     /lacks '([^']+)', which the decision of \S+ needs \(Awb 4:5\)/,

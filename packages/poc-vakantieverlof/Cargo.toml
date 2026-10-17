@@ -19,6 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 regelrecht-cel = { path = "../cel" }
 regelrecht-engine = { path = "../engine" }
+regelrecht-law-model = { path = "../law-model" }
 axum.workspace = true
 chrono.workspace = true
 serde.workspace = true

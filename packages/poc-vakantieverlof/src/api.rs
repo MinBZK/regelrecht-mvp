@@ -47,12 +47,12 @@ pub fn routes() -> Router<AppState> {
         .route("/api/kroniek", get(kroniek))
         .route("/api/aanvragen", post(aanvragen))
         .route("/api/besluiten", post(besluiten))
-        .route("/api/besluiten/{id}/uitleg", get(uitleg))
+        .route("/api/besluiten/{id}/waarom", get(waarom))
+        .route("/api/besluiten/{id}/antwoord/{begrip}", get(hoe_beantwoord))
         .route("/api/bezwaren", post(bezwaren))
         .route("/api/bezwaren/{id}/heroverweging", get(heroverweging))
         .route("/api/beslissingen-op-bezwaar", post(beslissen_op_bezwaar))
         .route("/api/reducties", get(reducties))
-        .route("/api/reducties/uitvoeren", post(reductie_uitvoeren))
         .route("/api/reset", post(reset))
 }
 
@@ -91,7 +91,7 @@ struct Dag {
 }
 
 async fn vormen(State(s): State<AppState>, Query(q): Query<Dag>) -> Antwoord {
-    ok(kern::vormen(&s.corpus, q.datum)?)
+    ok(kern::vormen(&s.corpus, &s.cell(), q.datum)?)
 }
 
 async fn kroniek(State(s): State<AppState>) -> Antwoord {
@@ -135,8 +135,15 @@ async fn besluiten(State(s): State<AppState>, Json(b): Json<Beslissing>) -> Antw
     )?)
 }
 
-async fn uitleg(State(s): State<AppState>, Path(id): Path<String>) -> Antwoord {
-    ok(json!({ "uitleg": kern::uitleg_van(&s.corpus, &s.cell(), &id)? }))
+async fn waarom(State(s): State<AppState>, Path(id): Path<String>) -> Antwoord {
+    ok(kern::waarom(&s.corpus, &s.cell(), &id)?)
+}
+
+async fn hoe_beantwoord(
+    State(s): State<AppState>,
+    Path((id, begrip)): Path<(String, String)>,
+) -> Antwoord {
+    ok(kern::hoe_beantwoord(&s.corpus, &s.cell(), &id, &begrip)?)
 }
 
 #[derive(Deserialize)]
@@ -177,15 +184,6 @@ async fn beslissen_op_bezwaar(State(s): State<AppState>, Json(b): Json<Beslissin
 
 async fn reducties(State(s): State<AppState>, Query(q): Query<Dag>) -> Antwoord {
     ok(kern::reducties(&s.corpus, &s.cell(), q.datum)?)
-}
-
-async fn reductie_uitvoeren(State(s): State<AppState>, Json(b): Json<Indiening>) -> Antwoord {
-    ok(kern::reductie_uitvoeren(
-        &s.corpus,
-        &s.cell(),
-        &b.velden,
-        b.datum,
-    )?)
 }
 
 async fn reset(State(s): State<AppState>) -> Antwoord {

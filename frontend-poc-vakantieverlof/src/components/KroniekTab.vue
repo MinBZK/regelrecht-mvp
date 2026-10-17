@@ -2,11 +2,26 @@
 // De kroniek van de cel: elk chronolexogram, in de volgorde waarin het werd
 // vastgelegd, en wat erin staat (RFC-046). Bij een gekozen chronolexogram:
 // waarnaar het verwijst (`refers_to`), welke bevindingen van het hoofd een
-// besluit gebruikte (`findings`) en de rest als JSON, met decimalen als getal.
-import { computed, ref } from 'vue';
-import { alsJson, kort, leesbaar, spel, waarde } from '../spel.js';
+// besluit gebruikte en de rest als JSON, met decimalen als getal. Welke
+// bevindingen een besluit gebruikte, staat niet in de kroniek: de cel leidt
+// het af uit het besluit opnieuw genomen (Cell::findings, RFC-050).
+import { computed, ref, watch } from 'vue';
+import { api } from '../api.js';
+import { alsJson, isBesluit, kort, leesbaar, spel, waarde } from '../spel.js';
 
 const gekozen = ref(null);
+const bevindingen = ref([]);
+watch(gekozen, async (id) => {
+  bevindingen.value = [];
+  const g = spel.grammen.find((x) => x.id === id);
+  if (!g || !isBesluit(g)) return;
+  try {
+    const antwoord = await api.waarom(id);
+    if (gekozen.value === id) bevindingen.value = antwoord.bevindingen;
+  } catch (e) {
+    spel.fout = e.message;
+  }
+});
 const gram = computed(() => spel.grammen.find((g) => g.id === gekozen.value) ?? null);
 const verwijzing = (g) => (g.refers_to ? ` · verwijst naar ${kort(g.refers_to)}` : '');
 const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers_to) ?? null);
@@ -56,10 +71,10 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
         <nldd-list-item size="sm">
           <nldd-text-cell
             text="Bevindingen van het hoofd"
-            :supporting-text="gram.findings?.length ? 'die dit besluit gebruikte (RFC-050)' : 'geen'"
+            :supporting-text="bevindingen.length ? 'die dit besluit gebruikte (RFC-050)' : 'geen'"
           ></nldd-text-cell>
         </nldd-list-item>
-        <nldd-list-item v-for="f in gram.findings ?? []" :key="f" size="sm">
+        <nldd-list-item v-for="f in bevindingen" :key="f" size="sm">
           <nldd-text-cell :text="leesbaar(f)"></nldd-text-cell>
           <nldd-text-cell width="fit-content" :text="waarde(gram.fields[f])"></nldd-text-cell>
         </nldd-list-item>
