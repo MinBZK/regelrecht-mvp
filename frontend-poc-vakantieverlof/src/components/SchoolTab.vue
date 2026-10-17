@@ -96,8 +96,8 @@ const uitkomstOpBezwaar = (uit) =>
     <nldd-title slot="header" size="3" text="Open aanvragen">
       <nldd-text slot="supporting-text">
         Het hoofd beslist. De aanvraag en het beleid van de school (de eerste lesdag) leveren
-        de rest, en of de jongere dit schooljaar al verlof kreeg, beantwoordt de school zelf
-        uit haar kroniek. De bevindingen hieronder geeft alleen het hoofd.
+        de rest. Of de jongere dit schooljaar al verlof kreeg, beantwoordt de school zelf uit
+        haar kroniek. De bevindingen hieronder geeft alleen het hoofd.
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog

@@ -255,8 +255,8 @@ impl Cell {
         self.chronicle.grams()
     }
 
-    /// The cell's reductions (RFC-048), as [`Cell::open`] read them from its
-    /// directory.
+    /// The cell's reductions (RFC-048), as [`Cell::open`] or
+    /// [`Cell::in_memory`] read them from its directory.
     pub fn reductions(&self) -> &[Reduction] {
         &self.reductions.versions
     }

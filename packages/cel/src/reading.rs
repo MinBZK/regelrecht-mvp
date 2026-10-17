@@ -171,6 +171,11 @@ impl Reduction {
     pub fn yaml(&self) -> &str {
         &self.yaml
     }
+
+    /// The reduction as parsed.
+    pub fn law(&self) -> &ArticleBasedLaw {
+        &self.law
+    }
 }
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),

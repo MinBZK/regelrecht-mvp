@@ -245,12 +245,17 @@ pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
     })
 }
 
-/// The output names of the reduction `id` of the cell, as written.
-fn uitvoer_van(cell: &Cell, id: &str) -> Result<Vec<String>> {
+/// The output names of the version of the reduction `id` of the cell that
+/// is valid from `valid_from`, as written.
+fn uitvoer_van(cell: &Cell, id: &str, valid_from: Option<&str>) -> Vec<String> {
     let mut namen = Vec::new();
-    for reduction in cell.reductions().iter().filter(|r| r.id() == id) {
-        let law = ArticleBasedLaw::from_yaml_str(reduction.yaml())?;
-        for article in &law.articles {
+    let versie = cell
+        .reductions()
+        .iter()
+        .filter(|r| r.id() == id)
+        .filter(|r| valid_from.is_none_or(|v| r.valid_from().to_string() == v));
+    for reduction in versie {
+        for article in &reduction.law().articles {
             let outputs = article
                 .get_execution_spec()
                 .and_then(|e| e.output.as_ref())
@@ -263,7 +268,7 @@ fn uitvoer_van(cell: &Cell, id: &str) -> Result<Vec<String>> {
             }
         }
     }
-    Ok(namen)
+    namen
 }
 
 /// The first value the trace under `node` gives each of `namen`.
@@ -290,7 +295,12 @@ pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cell, id: &str, begrip: &str) -> R
     for result in cell.explain_answer(&mut service, id, begrip)? {
         let mut uitvoer = Map::new();
         if let Some(root) = &result.trace {
-            eerste_waarden(root, &uitvoer_van(cell, &result.law_id)?, &mut uitvoer)?;
+            let namen = uitvoer_van(
+                cell,
+                &result.law_id,
+                result.regulation_valid_from.as_deref(),
+            );
+            eerste_waarden(root, &namen, &mut uitvoer)?;
         }
         for (naam, waarde) in &result.outputs {
             uitvoer.insert(naam.clone(), stored::to_stored(waarde)?);
@@ -460,9 +470,8 @@ pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let mut uit = Vec::new();
     for reduction in cell.reductions() {
-        let law = ArticleBasedLaw::from_yaml_str(reduction.yaml())?;
         let mut invoer = Vec::new();
-        for input in law.articles.iter().flat_map(|a| a.get_inputs()) {
+        for input in reduction.law().articles.iter().flat_map(|a| a.get_inputs()) {
             let Some(grondslag) = input.source.as_ref().and_then(|s| s.decisions.clone()) else {
                 continue;
             };

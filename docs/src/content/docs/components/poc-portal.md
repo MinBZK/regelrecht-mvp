@@ -49,7 +49,11 @@ The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` 
 
 The first proxied PoC is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
 
-The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays through an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, using the cell from `packages/cel`: the application, the head's decision, the objection and the decision on it, the chronicle and the school's reduction. Each decision shows why it came out as it did, as the cell explains it (`Cell::explain`): who filled each open term, and the engine's trace under the law in force. The head is never asked whether the pupil already had leave in the school year. The cell answers that from its chronicle through its reduction, and in the trace the answer is one step, with the reduction, its version and how far the cell read the chronicle. Asked how it got there, the cell runs the reduction again and shows its own trace (`Cell::explain_answer`), which lists a decision revoked on objection and the decisions the filter skipped. Its chronicle lives in memory, shared by every visitor, and is empty after a restart. Its regelwerken come from `corpus/regulation/`, not from `corpus-poc/`.
+The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays through an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, using the cell from `packages/cel`: the application, the school head's decision, the objection and the decision on it, the chronicle and the school's reduction.
+
+Each decision shows why it came out as it did, as the cell explains it (`Cell::explain`): who filled each open term, and the engine's trace under the law in force. The head is never asked whether the pupil already had leave in the school year. The cell answers that from its chronicle through its reduction. In the trace that answer is a single step, which names the reduction version and the last chronolexogram the cell read. Asked how it got there, the cell runs the reduction again and shows its own trace (`Cell::explain_answer`). That trace shows the decisions revoked on objection and how many decisions the filter skipped.
+
+Its chronicle lives in memory, shared by every visitor, and is empty after a restart. Its regelwerken come from `corpus/regulation/`, not from `corpus-poc/`.
 
 ### The gate
 
@@ -116,7 +120,7 @@ napp runs as its own component and reads its own variables. The defaults below a
 
 ### vakantieverlof
 
-The image sets the port to `8000`, the base path to `/vakantieverlof/` and the corpus to `/app/corpus`. `just poc-vakantieverlof` runs it locally.
+The image sets the port to `8000`, the base path to `/vakantieverlof/`, the corpus to `/app/corpus` and the built frontend to `/app/static`. `just poc-vakantieverlof` runs it locally.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|

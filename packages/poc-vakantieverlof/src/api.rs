@@ -58,22 +58,26 @@ pub fn routes() -> Router<AppState> {
 
 /// An error as the frontend reads it: `{ "fout": ... }`. What the cell or
 /// the engine refuses is the visitor's to correct (422); a chronicle that
-/// cannot be written is ours (500).
-struct Fout(Error);
+/// cannot be written, or an answer that cannot be serialized, is ours (500).
+enum Fout {
+    Cel(Error),
+    Intern(String),
+}
 
 impl From<Error> for Fout {
     fn from(e: Error) -> Self {
-        Self(e)
+        Self::Cel(e)
     }
 }
 
 impl IntoResponse for Fout {
     fn into_response(self) -> Response {
-        let status = match self.0 {
-            Error::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            _ => StatusCode::UNPROCESSABLE_ENTITY,
+        let (status, fout) = match self {
+            Self::Cel(e @ Error::Io(_)) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            Self::Cel(e) => (StatusCode::UNPROCESSABLE_ENTITY, e.to_string()),
+            Self::Intern(e) => (StatusCode::INTERNAL_SERVER_ERROR, e),
         };
-        (status, Json(json!({ "fout": self.0.to_string() }))).into_response()
+        (status, Json(json!({ "fout": fout }))).into_response()
     }
 }
 
@@ -82,7 +86,7 @@ type Antwoord = std::result::Result<Json<Value>, Fout>;
 fn ok(value: impl serde::Serialize) -> Antwoord {
     serde_json::to_value(value)
         .map(Json)
-        .map_err(|e| Fout(Error::Setup(e.to_string())))
+        .map_err(|e| Fout::Intern(e.to_string()))
 }
 
 #[derive(Deserialize)]

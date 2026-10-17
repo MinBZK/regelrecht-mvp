@@ -17,7 +17,9 @@ const props = defineProps({
   waarom: { type: Object, required: true },
 });
 
-const jaNee = (v) => (v === true ? 'ja' : v === false ? 'nee' : waarde(v));
+// Een stil antwoord (null) laat de engine over aan de bevinding van het hoofd.
+const jaNee = (v) =>
+  v === true ? 'ja' : v === false ? 'nee' : v == null ? 'geen antwoord (het hoofd beslist)' : waarde(v);
 
 /** Wie het open begrip invulde, in een zin. */
 function door(f) {
@@ -30,29 +32,42 @@ function door(f) {
 
 /** De herkomst van het antwoord van de school, leesbaar. */
 const herkomst = (a) =>
-  `ingevuld door de school (reductie ${a.reductie}, geldig vanaf ${a.geldig_vanaf}, kroniek tot en met ` +
-  `${a.tot_en_met ? `${soortVan(a.tot_en_met)} ${kort(a.tot_en_met)}` : 'het begin: niets gelezen'}, ` +
-  `${a.gelezen} chronolexogram(men) gelezen)`;
+  `Ingevuld door de school met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). ` +
+  (a.tot_en_met
+    ? `Gelezen: ${a.gelezen} chronolexogram(men), tot en met ${soortVan(a.tot_en_met)} ${kort(a.tot_en_met)}.`
+    : 'Nog niets uit de kroniek gelezen.');
 
 const soortVan = (id) => {
   const g = spel.grammen.find((x) => x.id === id);
   return g ? g.kind.toLowerCase() : 'chronolexogram';
 };
 
-// Per begrip de uitleg van de school, als die gevraagd is.
+// Per begrip de uitleg van de school, als die gevraagd is. Vroeg het besluit
+// een begrip vaker, dan geeft de cel per keer een uitleg, in de volgorde van
+// het spoor; het i-de antwoord hoort bij de i-de keer (`keer`).
 const hoe = reactive({});
 const open = reactive({});
 
-async function toon(begrip) {
-  open[begrip] = !open[begrip];
-  if (!open[begrip] || hoe[begrip]) return;
+const keer = (i) =>
+  props.waarom.antwoorden.slice(0, i).filter((a) => a.begrip === props.waarom.antwoorden[i].begrip)
+    .length;
+
+async function toon(i) {
+  const begrip = props.waarom.antwoorden[i].begrip;
+  open[i] = !open[i];
+  if (!open[i] || hoe[begrip]) return;
   try {
     hoe[begrip] = await api.hoeBeantwoord(props.besluit, begrip);
   } catch (e) {
     spel.fout = e.message;
-    open[begrip] = false;
+    open[i] = false;
   }
 }
+
+const uitlegBij = (i) => {
+  const h = hoe[props.waarom.antwoorden[i].begrip];
+  return h ? h.antwoorden.slice(keer(i), keer(i) + 1) : [];
+};
 
 /** Een uitvoer van de reductie: een lijst ids als besluiten, de rest als ja/nee of waarde. */
 const toonWaarde = (v) =>
@@ -71,7 +86,7 @@ const toonWaarde = (v) =>
       </nldd-list-item>
     </nldd-list>
 
-    <nldd-container v-for="a in waarom.antwoorden" :key="a.begrip" gap="8">
+    <nldd-container v-for="(a, i) in waarom.antwoorden" :key="i" gap="8">
       <nldd-inline-dialog
         icon="info"
         :text="`${leesbaar(a.begrip)}: ${jaNee(a.waarde)}`"
@@ -81,12 +96,12 @@ const toonWaarde = (v) =>
         appearance="secondary"
         size="sm"
         expandable
-        :expanded="!!open[a.begrip]"
+        :expanded="!!open[i]"
         text="Hoe de school dit beantwoordde"
-        @click="toon(a.begrip)"
+        @click="toon(i)"
       ></nldd-button>
-      <nldd-container v-if="open[a.begrip] && hoe[a.begrip]" gap="8">
-        <nldd-container v-for="(h, i) in hoe[a.begrip].antwoorden" :key="i" gap="8">
+      <nldd-container v-if="open[i]" gap="8">
+        <nldd-container v-for="h in uitlegBij(i)" :key="h.spoor" gap="8">
           <nldd-text size="sm" color="secondary">
             De reductie {{ h.reductie }} (geldig vanaf {{ h.geldig_vanaf }}) opnieuw gedraaid, op de
             kroniek zoals het besluit haar las.

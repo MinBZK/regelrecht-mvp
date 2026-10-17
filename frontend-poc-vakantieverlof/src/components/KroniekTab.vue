@@ -32,7 +32,7 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
     <nldd-title slot="header" size="3" text="Kroniek van OBS De Klimop">
       <nldd-text slot="supporting-text">
         Eén kroniek, van de cel van de school. Elke stap in het proces legt er één
-        chronolexogram in vast (een beslissing op bezwaar die herroept er twee); er wordt
+        chronolexogram in vast (een beslissing op bezwaar die herroept, legt er twee vast); er wordt
         nooit iets in gewijzigd of uit verwijderd.
       </nldd-text>
     </nldd-title>

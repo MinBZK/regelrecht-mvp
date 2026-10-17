@@ -24,7 +24,7 @@ const scenarios = [
       'School: zet "specifieke aard beroep ouder" uit. Het hoofd vindt het beroep niet bijzonder genoeg. Klik op Besluit nemen. Het verlof wordt geweigerd.',
       'Ouder, speeldatum 1 november 2026: klik bij het besluit op Bezwaar maken. De gronden noemen een verklaring van de werkgever. Klik op Bezwaar indienen.',
       'School, speeldatum 15 november 2026: klik op Ontvankelijkheid toetsen. Het bezwaar is ontvankelijk.',
-      'Kies bij "specifieke aard beroep ouder" Ja: het hoofd vindt het nu opnieuw. Klik op Beslissen op bezwaar.',
+      'Kies bij "specifieke aard beroep ouder" Ja: het hoofd beoordeelt het beroep nu anders. Klik op Beslissen op bezwaar.',
     ],
     eind: 'Gegrond: het besluit is herroepen. Er is een nieuw besluit, en dat verleent het verlof. In de Kroniek staan vijf chronolexogrammen.',
   },
@@ -68,7 +68,7 @@ const scenarios = [
       'Ouder, speeldatum 20 november 2026: maak bezwaar tegen B.',
       'School, speeldatum 1 december 2026: toets dat bezwaar, laat de bevindingen staan en beslis.',
     ],
-    eind: 'Gegrond: B is herroepen, en het nieuwe besluit verleent het verlof. Bij het waarom staat "verlof al verleend in schooljaar: nee", ingevuld door de school. Onder "Hoe de school dit beantwoordde" staat A bij de herroepen besluiten, en het spoor laat zien dat het filter de twee besluiten onder artikel 13a oversloeg (A en de weigering in zijn plaats).',
+    eind: 'Gegrond: B is herroepen, en het nieuwe besluit verleent het verlof. Bij het waarom staat "verlof al verleend in schooljaar: nee", ingevuld door de school. Onder "Hoe de school dit beantwoordde" staat A bij de herroepen besluiten, en het spoor laat zien dat het filter twee besluiten onder artikel 13a oversloeg. Dat zijn A en de weigering die ervoor in de plaats kwam.',
   },
 ];
 
