@@ -141,6 +141,11 @@ impl Reduction {
         &self.id
     }
 
+    /// The day this version is valid from.
+    pub fn valid_from(&self) -> NaiveDate {
+        self.valid_from
+    }
+
     /// The open terms this version fills, each as an [`Answer`].
     pub fn answers(&self) -> impl Iterator<Item = Answer> + '_ {
         self.terms.iter().map(|term| Answer {

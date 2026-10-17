@@ -54,9 +54,11 @@ struct Reductions {
 impl Reductions {
     /// The reductions in the cell directory `dir` of `recording_actor`, one
     /// version per file at `<dir>/reducties/<id>/<valid_from>.yaml`
-    /// (RFC-048). A file that is no `REDUCTIE`, or whose `$id` is not its
-    /// directory's name, is an error, and so is a `dir` that is no directory.
-    /// Without a `reducties` directory the cell has none.
+    /// (RFC-048). A version that is no `REDUCTIE`, whose `$id` is not its
+    /// directory's name, or whose file is not named after its `valid_from`
+    /// is an error. So is any other entry under `reducties` that is not
+    /// hidden (a name starting with `.`), and a `dir` that is no directory. Without a `reducties` directory the cell has
+    /// none.
     fn load(recording_actor: &str, dir: &Path) -> Result<Self> {
         if !dir.is_dir() {
             return Err(setup(format!(
@@ -76,16 +78,36 @@ impl Reductions {
             });
         }
         let mut paths = Vec::new();
+        // A hidden entry (`.gitkeep`, `.DS_Store`) is no misplaced version.
+        let hidden = |path: &Path| {
+            path.file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with('.'))
+        };
         for entry in std::fs::read_dir(&root)? {
             let id_dir = entry?.path();
-            if !id_dir.is_dir() {
+            if hidden(&id_dir) {
                 continue;
+            }
+            if !id_dir.is_dir() {
+                return Err(setup(format!(
+                    "{}: not a directory of a reduction; a version belongs at \
+                     reducties/<id>/<valid_from>.yaml",
+                    id_dir.display()
+                )));
             }
             for version in std::fs::read_dir(&id_dir)? {
                 let path = version?.path();
-                if path.extension().is_some_and(|x| x == "yaml") {
-                    paths.push(path);
+                if hidden(&path) {
+                    continue;
                 }
+                if !path.is_file() || path.extension().is_none_or(|x| x != "yaml") {
+                    return Err(setup(format!(
+                        "{}: not a version of a reduction; a version is a file \
+                         <valid_from>.yaml",
+                        path.display()
+                    )));
+                }
+                paths.push(path);
             }
         }
         paths.sort();
@@ -103,6 +125,13 @@ impl Reductions {
                     reduction.id()
                 )));
             }
+            let valid_from = reduction.valid_from().format("%Y-%m-%d").to_string();
+            if path.file_stem().is_none_or(|stem| *stem != *valid_from) {
+                return Err(setup(format!(
+                    "{}: the version is valid from {valid_from}, so its file is {valid_from}.yaml",
+                    path.display()
+                )));
+            }
             versions.push(reduction);
         }
         Ok(Self {
@@ -117,10 +146,11 @@ impl Cell {
     /// at `path` and its reductions in its directory `cell_dir`, one version
     /// per file at `<cell_dir>/reducties/<id>/<valid_from>.yaml` (RFC-048).
     /// A `cell_dir` that is no directory is an error; one without
-    /// `reducties` gives a cell without reductions. A reduction file that is
-    /// no `REDUCTIE`, or whose `$id` is not its directory's name, is an
-    /// error, and so is a chronolexogram in the file recorded by another
-    /// actor.
+    /// `reducties` gives a cell without reductions. A version that is no
+    /// `REDUCTIE`, whose `$id` is not its directory's name, or whose file is
+    /// not named after its `valid_from` is an error. So is any other entry
+    /// under `reducties`. A chronolexogram in the chronicle recorded by
+    /// another actor is an error too.
     pub fn open(
         recording_actor: impl Into<String>,
         path: impl AsRef<Path>,
@@ -876,9 +906,9 @@ impl Cell {
     /// its decision item names, and of its fields:
     ///
     /// - under `findings`, the deciding authority's findings for this case
-    ///   that the decision used ([`Cell::findings`], from a replay) on the open terms the deciding article leaves
-    ///   to it per case (`decided_per_case_by`): only the deciding article's
-    ///   own;
+    ///   that the decision used ([`Cell::findings`], from a replay) on the
+    ///   open terms the deciding article leaves to it per case
+    ///   (`decided_per_case_by`): only the deciding article's own;
     /// - no value for such a term that a regulation filled in the
     ///   authority's place: the regulation decided it, and a call anew reads
     ///   the regulation in force on its own day;

@@ -921,6 +921,60 @@ fn a_cell_directory_that_is_not_there_is_refused() {
     );
 }
 
+#[test]
+fn a_misplaced_reduction_file_is_refused() {
+    // A file the cell would otherwise skip makes a term the head's without a
+    // word; the cell refuses to open instead.
+    let open = |dir: &tempfile::TempDir| Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap_err();
+
+    // A hidden file is no version, and the cell opens.
+    let dir = reductions_dir(&[("2026-08-01", ONCE)]);
+    let here = dir.path().join("reducties").join(REDUCTION);
+    std::fs::write(dir.path().join("reducties/.gitkeep"), "").unwrap();
+    std::fs::write(here.join(".2026-08-01.yaml.swp"), "").unwrap();
+    assert_eq!(
+        Cell::in_memory(RECORDING_ACTOR, dir.path())
+            .unwrap()
+            .answers()
+            .len(),
+        1
+    );
+
+    // Named after another day than its valid_from.
+    std::fs::rename(here.join("2026-08-01.yaml"), here.join("2026-09-01.yaml")).unwrap();
+    let e = open(&dir);
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("so its file is 2026-08-01.yaml")),
+        "{e}"
+    );
+
+    // With another extension.
+    std::fs::rename(here.join("2026-09-01.yaml"), here.join("2026-08-01.yml")).unwrap();
+    let e = open(&dir);
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("not a version of a reduction")),
+        "{e}"
+    );
+
+    // A directory where a version belongs.
+    std::fs::remove_file(here.join("2026-08-01.yml")).unwrap();
+    std::fs::create_dir(here.join("2026-08-01.yaml")).unwrap();
+    let e = open(&dir);
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("not a version of a reduction")),
+        "{e}"
+    );
+
+    // One level too high.
+    std::fs::remove_dir_all(&here).unwrap();
+    std::fs::write(dir.path().join("reducties").join("2026-08-01.yaml"), "").unwrap();
+    let e = open(&dir);
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("not a directory of a reduction")),
+        "{e}"
+    );
+}
+
 /// A cell directory with the school's reduction, as `versions` gives it:
 /// per version its `valid_from` and the open term it fills.
 fn reductions_dir(versions: &[(&str, &str)]) -> tempfile::TempDir {

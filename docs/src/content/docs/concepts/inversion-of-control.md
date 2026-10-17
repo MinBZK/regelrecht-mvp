@@ -127,7 +127,7 @@ machine_readable:
       open_term: verlof_al_verleend_in_schooljaar
 ```
 
-The engine treats it like any implementation. The engine passes the reduction each parameter the reduction declares, taken by name from the article that declares the term. It also runs the reduction when another article calls that article anew, as Awb 7:11 does on an objection. The reduction's reasoning therefore shows in the trace of the decision.
+The engine treats it like any implementation and passes it each parameter the reduction declares, taken by name from the article that declares the term. It also runs the reduction when another article calls that article anew, as Awb 7:11 does on an objection. The reduction's reasoning therefore shows in the trace of the decision.
 
 The order of precedence is the one for every open term: an implementation, then the finding of the authority for the case, then the `default`. A required term that has no default, and that neither an implementation nor a finding fills, is an error; a term that is not required then resolves to null. Outside a cell no reduction is loaded, so a scenario gives the head's finding.
 
