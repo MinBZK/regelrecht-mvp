@@ -675,8 +675,10 @@ impl Cell {
     /// decision read it, with the parameters the engine gave it then. One
     /// result per time the decision asked the term, in that order, each
     /// with the reduction's own trace; it is no part of the decision's trace,
-    /// and nothing of it is stored. Refused when the decision did not ask
-    /// the cell for `term`.
+    /// and nothing of it is stored. A silent answer (null), which the engine
+    /// set aside for the finding, is explained too. The term is matched by
+    /// its id, as findings are, so two laws with a term of that id give
+    /// both. Refused when the decision did not ask the cell for `term`.
     pub fn explain_answer(
         &self,
         service: &mut LawExecutionService,

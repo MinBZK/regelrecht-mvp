@@ -4313,63 +4313,6 @@ impl LawExecutionService {
         let _guard = res_ctx.trace_guard(&term.id, PathNodeType::OpenTermResolution);
         res_ctx.trace_set_resolve_type(ResolveType::OpenTerm);
 
-        // Implementations that are silent for this case (null), the
-        // answerer's first.
-        let mut silent: Vec<String> = Vec::new();
-
-        // The caller's answerer goes first (RFC-048): it fills the term like
-        // a regulation, so its answer wins over a finding for the case. The
-        // engine records who answered; how is the answerer's own business,
-        // so the answer is this one node of the trace.
-        if let Some(answerer) = res_ctx.answerer {
-            let question = Question {
-                law_id: &law.id,
-                article: &article.number,
-                term: &term.id,
-                calculation_date: res_ctx.calculation_date,
-                parameters,
-            };
-            match answerer.answer(self, &question) {
-                Err(e) => {
-                    res_ctx.trace_set_message(format!(
-                        "Open term '{}': the answerer failed: {e}",
-                        term.id
-                    ));
-                    res_ctx.leave(&ot_key);
-                    return Err(e);
-                }
-                Ok(Some(answer))
-                    if answer.value.is_null()
-                        && (term.default.is_some() || term.decided_per_case_by.is_some()) =>
-                {
-                    silent.push(answer.provenance.to_string());
-                }
-                Ok(Some(answer)) => {
-                    res_ctx.trace_set_result(answer.value.clone());
-                    let set_aside = match &term.decided_per_case_by {
-                        Some(by) if parameters.contains_key(&term.id) => {
-                            format!("; the judgement of {by} for this case is set aside")
-                        }
-                        _ => String::new(),
-                    };
-                    res_ctx.trace_set_message(format!(
-                        "Open term '{}' answered by {}{set_aside}",
-                        term.id, answer.provenance
-                    ));
-                    res_ctx.trace_set_answer(answer.provenance.clone());
-                    res_ctx.note_open_term(
-                        &law.id,
-                        &article.number,
-                        &term.id,
-                        FilledBy::Answer(answer.provenance),
-                    );
-                    res_ctx.leave(&ot_key);
-                    return Ok(answer.value);
-                }
-                Ok(None) => {}
-            }
-        }
-
         // Look up implementations (filtered by execution scope)
         // Convert BTreeMap to HashMap at the resolver boundary
         let scope: HashMap<String, Value> = parameters
@@ -4428,6 +4371,65 @@ impl LawExecutionService {
         // null" — the same sentences they print when nobody ever wrote one.
         for note in lookup.not_in_force {
             res_ctx.note_not_in_force(note);
+        }
+
+        // Implementations that are silent for this case (null), the
+        // answerer's first.
+        let mut silent: Vec<String> = Vec::new();
+
+        // The caller's answerer goes first (RFC-048), after the refusals and
+        // skips of the lookup are recorded; a lookup that fails fails before
+        // the answerer is asked. The answerer fills the term like a
+        // regulation, so its answer wins over a finding for the case. The
+        // engine records who answered; how is the answerer's own business,
+        // so the answer is this one node of the trace.
+        if let Some(answerer) = res_ctx.answerer {
+            let question = Question {
+                law_id: &law.id,
+                article: &article.number,
+                term: &term.id,
+                calculation_date: res_ctx.calculation_date,
+                parameters,
+            };
+            match answerer.answer(self, &question) {
+                Err(e) => {
+                    res_ctx.trace_set_message(format!(
+                        "Open term '{}': the answerer failed: {e}",
+                        term.id
+                    ));
+                    res_ctx.leave(&ot_key);
+                    return Err(e);
+                }
+                Ok(Some(answer))
+                    if answer.value.is_null()
+                        && (term.default.is_some() || term.decided_per_case_by.is_some()) =>
+                {
+                    silent.push(answer.provenance.to_string());
+                }
+                Ok(Some(answer)) => {
+                    res_ctx.trace_set_result(answer.value.clone());
+                    let set_aside = match &term.decided_per_case_by {
+                        Some(by) if parameters.contains_key(&term.id) => {
+                            format!("; the judgement of {by} for this case is set aside")
+                        }
+                        _ => String::new(),
+                    };
+                    res_ctx.trace_set_message(format!(
+                        "Open term '{}' answered by {}{set_aside}",
+                        term.id, answer.provenance
+                    ));
+                    res_ctx.trace_set_answer(answer.provenance.clone());
+                    res_ctx.note_open_term(
+                        &law.id,
+                        &article.number,
+                        &term.id,
+                        FilledBy::Answer(answer.provenance),
+                    );
+                    res_ctx.leave(&ot_key);
+                    return Ok(answer.value);
+                }
+                Ok(None) => {}
+            }
         }
 
         // Every candidate that survives `find_implementations` is competent:
@@ -4847,7 +4849,8 @@ impl LawExecutionService {
         }
 
         // The decisions taken under an article (RFC-048): only a data source
-        // answers them, such as the cell that holds them in its chronicle.
+        // answers them, or a value passed under the input's name, as the
+        // cell passes its own decisions to its reduction.
         // No regulation is executed for them, and no source is no empty
         // list: a reduction over decisions nobody supplied would say that
         // none were taken.
