@@ -25,6 +25,7 @@
 //! )?;
 //! ```
 
+use crate::answer::{AnswerProvenance, Call, OpenTermAnswerer, Question};
 use crate::article::{
     Article, ArticleBasedLaw, Execution, HookPoint, Input, MachineReadable, ProcedureDefinition,
     Stage, StageRequirement,
@@ -144,9 +145,12 @@ struct ResolutionContext<'a> {
     findings: BTreeMap<String, Value>,
     /// The ids of [`Self::findings`] that an article in the execution asked.
     findings_asked: BTreeSet<String>,
-    /// The open terms a finding or a regulation filled in this execution
-    /// ([`ArticleResult::open_terms`]).
+    /// The open terms a finding, a regulation or the answerer filled in this
+    /// execution ([`ArticleResult::open_terms`]).
     open_terms: Vec<OpenTermFilled>,
+    /// What the caller supplies to answer open terms (RFC-048), asked before
+    /// a regulation or a finding at every depth of the execution.
+    answerer: Option<&'a dyn OpenTermAnswerer>,
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
@@ -262,7 +266,14 @@ impl<'a> ResolutionContext<'a> {
             findings: BTreeMap::new(),
             findings_asked: BTreeSet::new(),
             open_terms: Vec::new(),
+            answerer: None,
         })
+    }
+
+    /// Take what the caller gives apart from the parameters.
+    fn take_call(&mut self, call: Call<'a>) {
+        self.findings = call.findings;
+        self.answerer = call.answerer;
     }
 
     /// The caller's findings (RFC-050) that apply to `article` of `law`: one
@@ -443,6 +454,13 @@ impl<'a> ResolutionContext<'a> {
     fn trace_set_resolve_type(&self, rt: ResolveType) {
         if let Some(ref tb) = self.trace {
             tb.borrow_mut().set_resolve_type(rt);
+        }
+    }
+
+    /// Record who answered the current node's open term (RFC-048).
+    fn trace_set_answer(&self, answer: AnswerProvenance) {
+        if let Some(ref tb) = self.trace {
+            tb.borrow_mut().set_answer(answer);
         }
     }
 
@@ -1882,6 +1900,26 @@ impl LawExecutionService {
         findings: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.evaluate_law_in(
+            law_id,
+            output_names,
+            parameters,
+            Call::with_findings(findings),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::evaluate_law_with_findings`] with what `call` gives: the
+    /// findings, and an answerer the engine asks first for each open term
+    /// it reads (RFC-048), also in an article the execution calls.
+    pub fn evaluate_law_in<'a>(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        call: Call<'a>,
+        calculation_date: &'a str,
+    ) -> Result<ArticleResult> {
         if output_names.is_empty() {
             return Err(EngineError::InvalidOperation(
                 "output_names must not be empty".to_string(),
@@ -1889,7 +1927,7 @@ impl LawExecutionService {
         }
         let mut res_ctx = ResolutionContext::new(calculation_date)?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
-        res_ctx.findings = findings;
+        res_ctx.take_call(call);
         let result =
             self.evaluate_law_multi_internal(law_id, output_names, parameters, &mut res_ctx)?;
         res_ctx.check_findings_asked()?;
@@ -1937,7 +1975,7 @@ impl LawExecutionService {
             law_id,
             output_names,
             parameters,
-            BTreeMap::new(),
+            Call::default(),
             calculation_date,
             trace_builder,
         )
@@ -1952,23 +1990,42 @@ impl LawExecutionService {
         findings: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.evaluate_law_with_trace_in(
+            law_id,
+            output_names,
+            parameters,
+            Call::with_findings(findings),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::evaluate_law_in`] with tracing enabled. An open term the
+    /// answerer filled is one node, with who answered and from what.
+    pub fn evaluate_law_with_trace_in<'a>(
+        &self,
+        law_id: &str,
+        output_names: &[&str],
+        parameters: BTreeMap<String, Value>,
+        call: Call<'a>,
+        calculation_date: &'a str,
+    ) -> Result<ArticleResult> {
         self.evaluate_law_traced(
             law_id,
             output_names,
             parameters,
-            findings,
+            call,
             calculation_date,
             TraceBuilder::new(),
         )
     }
 
-    fn evaluate_law_traced(
+    fn evaluate_law_traced<'a>(
         &self,
         law_id: &str,
         output_names: &[&str],
         parameters: BTreeMap<String, Value>,
-        findings: BTreeMap<String, Value>,
-        calculation_date: &str,
+        call: Call<'a>,
+        calculation_date: &'a str,
         trace_builder: TraceBuilder,
     ) -> Result<ArticleResult> {
         if output_names.is_empty() {
@@ -2003,7 +2060,7 @@ impl LawExecutionService {
 
         let mut res_ctx = ResolutionContext::with_trace(calculation_date, Rc::clone(&trace))?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
-        res_ctx.findings = findings;
+        res_ctx.take_call(call);
 
         // Execute: group outputs by article, evaluate each once, merge + filter
         let result = self
@@ -2390,6 +2447,30 @@ impl LawExecutionService {
         findings: BTreeMap<String, Value>,
         calculation_date: &str,
     ) -> Result<ArticleResult> {
+        self.execute_stage_in(
+            law_id,
+            article_number,
+            stage_name,
+            outputs,
+            parameters,
+            Call::with_findings(findings),
+            calculation_date,
+        )
+    }
+
+    /// [`Self::execute_stage_at`] with what `call` gives, as for
+    /// [`Self::evaluate_law_in`].
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_stage_in<'a>(
+        &self,
+        law_id: &str,
+        article_number: &str,
+        stage_name: &str,
+        outputs: Option<&[&str]>,
+        parameters: BTreeMap<String, Value>,
+        call: Call<'a>,
+        calculation_date: &'a str,
+    ) -> Result<ArticleResult> {
         let (law, article) = self.article_in_force(law_id, article_number, calculation_date)?;
         let (procedure, stage) = self.stage_of(law_id, article, stage_name)?;
         let missing: Vec<&str> = stage
@@ -2409,7 +2490,7 @@ impl LawExecutionService {
         let mut res_ctx = ResolutionContext::new(calculation_date)?;
         res_ctx.contextual_law_id = Some(law_id.to_string());
         res_ctx.staged_article = Some((law.id.clone(), article.number.clone()));
-        res_ctx.findings = findings;
+        res_ctx.take_call(call);
         self.note_declaration_versions(&mut res_ctx);
         let outputs = outputs
             .map(<[&str]>::to_vec)
@@ -4232,6 +4313,63 @@ impl LawExecutionService {
         let _guard = res_ctx.trace_guard(&term.id, PathNodeType::OpenTermResolution);
         res_ctx.trace_set_resolve_type(ResolveType::OpenTerm);
 
+        // Implementations that are silent for this case (null), the
+        // answerer's first.
+        let mut silent: Vec<String> = Vec::new();
+
+        // The caller's answerer goes first (RFC-048): it fills the term like
+        // a regulation, so its answer wins over a finding for the case. The
+        // engine records who answered; how is the answerer's own business,
+        // so the answer is this one node of the trace.
+        if let Some(answerer) = res_ctx.answerer {
+            let question = Question {
+                law_id: &law.id,
+                article: &article.number,
+                term: &term.id,
+                calculation_date: res_ctx.calculation_date,
+                parameters,
+            };
+            match answerer.answer(self, &question) {
+                Err(e) => {
+                    res_ctx.trace_set_message(format!(
+                        "Open term '{}': the answerer failed: {e}",
+                        term.id
+                    ));
+                    res_ctx.leave(&ot_key);
+                    return Err(e);
+                }
+                Ok(Some(answer))
+                    if answer.value.is_null()
+                        && (term.default.is_some() || term.decided_per_case_by.is_some()) =>
+                {
+                    silent.push(answer.provenance.to_string());
+                }
+                Ok(Some(answer)) => {
+                    res_ctx.trace_set_result(answer.value.clone());
+                    let set_aside = match &term.decided_per_case_by {
+                        Some(by) if parameters.contains_key(&term.id) => {
+                            format!("; the judgement of {by} for this case is set aside")
+                        }
+                        _ => String::new(),
+                    };
+                    res_ctx.trace_set_message(format!(
+                        "Open term '{}' answered by {}{set_aside}",
+                        term.id, answer.provenance
+                    ));
+                    res_ctx.trace_set_answer(answer.provenance.clone());
+                    res_ctx.note_open_term(
+                        &law.id,
+                        &article.number,
+                        &term.id,
+                        FilledBy::Answer(answer.provenance),
+                    );
+                    res_ctx.leave(&ot_key);
+                    return Ok(answer.value);
+                }
+                Ok(None) => {}
+            }
+        }
+
         // Look up implementations (filtered by execution scope)
         // Convert BTreeMap to HashMap at the resolver boundary
         let scope: HashMap<String, Value> = parameters
@@ -4303,7 +4441,6 @@ impl LawExecutionService {
         // the next, so a filling implementation wins over a silent one
         // whatever their order.
         let mut filled: Option<(Value, FilledBy)> = None;
-        let mut silent: Vec<String> = Vec::new();
         for (impl_law, impl_article) in &lookup.implementations {
             // The implementing article is reading the output it fills in:
             // that read gets the law without this filling.

@@ -546,10 +546,10 @@ fn without_cause_one_decision_and_the_contested_one_does_not_count_itself() {
 
 /// Without an output of type `decision` the deciding article replaces no
 /// decision, so the decision it refers to counts in the reductions as any
-/// other, also where the engine runs one in that decision's article called
+/// other, also where the cell answers in that decision's article called
 /// anew: the grant counts against the person, and taken again the article
-/// refuses. One binding serves the whole decision (keuze 35 of slice 4b
-/// lapses with slice 4c).
+/// refuses. One reading of the chronicle serves the whole decision (keuze
+/// 35 of slice 4b lapses with slice 4c).
 #[test]
 fn a_decision_that_replaces_nothing_reads_the_decision_it_refers_to() {
     let only_cause = HEROVERWEGING.replace(
@@ -1595,7 +1595,7 @@ fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
 /// A reduction may fill a term the law leaves to nobody in particular (no
 /// `decided_per_case_by`): then the term is the policy's, as for any
 /// regulation, and no finding. The replay derives what the decision asks
-/// with the reductions bound, as the decision did, so it does not pass the
+/// with the terms the cell answers, as the decision did, so it does not pass the
 /// recorded value as a finding, and an objection against the decision is
 /// decided as any.
 #[test]
@@ -1618,8 +1618,8 @@ fn a_term_only_a_reduction_fills_is_no_finding_and_replays() {
     assert!(cell.findings(&mut service, &granted.id).unwrap().is_empty());
     let result = cell.explain(&mut service, &granted.id).unwrap();
     assert!(result.open_terms.iter().any(|f| f.term == "al_verleend"
-        && matches!(&f.filled_by, regelrecht_engine::FilledBy::Regulation { law_id, .. }
-                if law_id == "reductie_al_verleend_fictief")));
+        && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer(answer)
+                if answer.law_id == "reductie_al_verleend_fictief")));
     let bezwaar = object_to(
         &mut cell,
         &mut service,

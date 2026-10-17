@@ -1481,8 +1481,12 @@ impl RuleResolver {
                         }
                     }
 
-                    // Implements index (IoC)
-                    if let Some(impl_decls) = article.get_implements() {
+                    // Implements index (IoC). A reduction's `implements`
+                    // declares the term its keeper answers (RFC-048): the
+                    // caller's answerer runs it and gives the answer, so
+                    // the engine never runs it as an implementation.
+                    let reduction = law.regulatory_layer == RegulatoryLayer::Reductie;
+                    if let Some(impl_decls) = article.get_implements().filter(|_| !reduction) {
                         for decl in impl_decls {
                             let key = (
                                 decl.law.clone(),

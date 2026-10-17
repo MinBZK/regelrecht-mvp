@@ -9,9 +9,9 @@ valid_from: '2026-08-01'
 # corpus/regulation; alleen de cel laadt haar. Ze zoekt de besluiten die
 # ertoe doen en vraagt het beleid van de school in welk schooljaar een dag
 # valt. Haar antwoord vult het open begrip van artikel 13a (implements,
-# schema v0.8.5): de engine draait haar voor dat begrip, ook als Awb 7:11
-# het artikel opnieuw aanroept. Er is geen bekendmaking; de url wijst naar
-# dat artikel.
+# schema v0.8.5): waar de engine dat begrip leest, ook als Awb 7:11 het
+# artikel opnieuw aanroept, vraagt hij het de cel, en de cel draait haar.
+# Er is geen bekendmaking; de url wijst naar dat artikel.
 url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
 name: Al verleend vakantieverlof in het schooljaar bij OBS De Klimop (reductie)
 competent_authority:
@@ -32,7 +32,7 @@ articles:
           article: 13a
           open_term: verlof_al_verleend_in_schooljaar
       execution:
-        # Parameters van artikel 13a; de engine geeft ze op naam door.
+        # Parameters van artikel 13a; de cel geeft ze op naam door.
         parameters:
           - name: bsn_jongere
             type: string

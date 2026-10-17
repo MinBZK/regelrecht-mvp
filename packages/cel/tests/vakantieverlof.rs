@@ -847,8 +847,10 @@ fn the_reduction_and_the_decisions_it_reads_are_bound_for_the_decision_only() {
     assert!(!service.has_law(REDUCTION));
 }
 
+/// The cell gives its reduction the decisions itself, so a data source in
+/// the service that answers the same input does not reach it.
 #[test]
-fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
+fn a_source_for_the_decisions_does_not_reach_the_cells_reduction() {
     let mut service = service();
     service.add_dict_source(
         "elders",
@@ -861,7 +863,7 @@ fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
     );
     let mut cell = cell();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let e = cell
+    let decided = cell
         .decide(
             &mut service,
             LAW,
@@ -871,13 +873,10 @@ fn a_source_that_already_answers_the_decisions_is_not_shadowed() {
             &judgement(true, true),
             day("2026-10-20"),
         )
-        .unwrap_err();
-    assert!(
-        matches!(&e, Error::Setup(m) if m.contains("another data source answers 'besluiten'")),
-        "{e}"
-    );
+        .unwrap();
+    assert_eq!(decided[0].fields[ONCE], json!(false));
+    assert_eq!(decided[0].outputs["verlof_verleend"], json!(true));
     assert_eq!(service.data_registry().list_sources(), ["elders"]);
-    assert_eq!(cell.grams().len(), 1);
 }
 
 /// A cell whose directory holds no reductions, as a school without one.
@@ -1895,12 +1894,21 @@ fn a_reduction_reads_the_decisions_on_objection_with_their_own_outcome() {
     assert_eq!(rows[0][NEW], json!(decided[1].id));
 }
 
+/// The nodes of `node` and below where the cell answered an open term.
+fn answered(node: &regelrecht_engine::PathNode) -> Vec<&regelrecht_engine::PathNode> {
+    let mut found: Vec<_> = node.children.iter().flat_map(answered).collect();
+    if node.answer.is_some() {
+        found.insert(0, node);
+    }
+    found
+}
+
 /// The owner's case (slice 4c): leave A is granted, leave B in the same
 /// school year is refused because A counts, an objection against A revokes
 /// A, and on the objection against B art. 13a called anew grants B. The
-/// engine runs the reduction in that call itself, and the trace of the
-/// decision on B's objection shows why: the reduction left A out, because a
-/// decision on objection revoked it.
+/// cell answers the term there; the engine records who answered. Why the
+/// cell answered so is its own account: its reduction left A out, because
+/// a decision on objection revoked it.
 #[test]
 fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_refusal() {
     let mut cell = cell();
@@ -1924,66 +1932,116 @@ fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_re
     assert_eq!(on_b[0].outputs[REVOKED], json!(true));
     let new_b = &on_b[1];
     assert_eq!(new_b.outputs["verlof_verleend"], json!(true));
-    // The reduction filled the term, so the new decision has no finding on
-    // it; its value is the reduction's.
+    // The cell filled the term, so the new decision has no finding on it;
+    // its value is the cell's answer.
     assert_eq!(new_b.fields[ONCE], json!(false));
     let found = cell.findings(&mut service(), &new_b.id).unwrap();
     assert!(!found.contains(&ONCE.to_string()), "{found:?}");
 
-    // Why: the trace of the decision on B's objection holds the
-    // reduction's evaluation within art. 13a called anew, with A among the
-    // revoked decisions and its row skipped.
+    // Step 1: the trace of the decision on B's objection holds one node for
+    // the term, within art. 13a called anew: the cell's answer, with the
+    // reduction, its version and how far it read the chronicle. It read
+    // everything before this decision but B, the contested decision.
     let result = cell.explain(&mut service(), &on_b[0].id).unwrap();
-    let trace = result.trace.as_ref().unwrap().render_box_drawing();
-    let reduction = trace
-        .find(REDUCTION)
-        .unwrap_or_else(|| panic!("the reduction is not in the trace:\n{trace}"));
-    let within = &trace[reduction..];
-    assert!(
-        within.contains(&format!("herroepen_besluiten = ['{}']", a.id)),
-        "A is not among the revoked:\n{trace}"
+    let root = result.trace.as_ref().unwrap();
+    let nodes = answered(root);
+    assert_eq!(nodes.len(), 1, "{}", root.render_box_drawing());
+    let node = nodes[0];
+    assert_eq!(node.name, ONCE);
+    assert_eq!(
+        node.result,
+        Some(regelrecht_engine::Value::from(json!(false)))
     );
-    // Both rows under art. 13a (A, and the refusal in its place) are
-    // skipped; B itself is not read, as the contested decision.
-    assert!(
-        within.contains("FOREACH over 0 element(s), 2 skipped by filter = False"),
-        "{trace}"
-    );
+    assert!(node.children.is_empty(), "{node:?}");
+    let answer = node.answer.as_ref().unwrap();
+    assert_eq!(answer.answerer, RECORDING_ACTOR);
+    assert_eq!(answer.law_id, REDUCTION);
+    assert_eq!(answer.valid_from, "2026-08-01");
+    let before: Vec<&str> = cell
+        .grams()
+        .iter()
+        .take_while(|g| g.id != on_b[0].id)
+        .filter(|g| g.id != b.id)
+        .map(|g| g.id.as_str())
+        .collect();
+    assert_eq!(answer.records_read, before.len());
+    assert_eq!(answer.last_record.as_deref(), Some(against_b.id.as_str()));
+    // The reduction's FOREACH is not in the decision's trace.
+    let trace = root.render_box_drawing();
+    assert!(!trace.contains("FOREACH"), "{trace}");
     assert_eq!(
         result.outputs[REVOKED],
         regelrecht_engine::Value::from(json!(true))
     );
-    // The engine says who filled the term: the reduction.
+    // The report says the same: the cell answered the term.
     assert!(
         result.open_terms.iter().any(|f| f.term == ONCE
-            && matches!(&f.filled_by, regelrecht_engine::FilledBy::Regulation { law_id, .. } if law_id == REDUCTION)),
+            && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer(by) if by == answer)),
         "{:?}",
         result.open_terms
     );
+
+    // Step 2: asked why, the cell runs its reduction for that term again,
+    // with its own trace: A is among the revoked decisions, and both rows
+    // under art. 13a (A, and the refusal in its place) are skipped by the
+    // filter; B itself is not read.
+    let explained = cell
+        .explain_answer(&mut service(), &on_b[0].id, ONCE)
+        .unwrap();
+    assert_eq!(explained.len(), 1);
+    assert_eq!(
+        explained[0].outputs[ONCE],
+        regelrecht_engine::Value::from(json!(false))
+    );
+    let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
+    assert!(
+        why.contains(&format!("herroepen_besluiten = ['{}']", a.id)),
+        "A is not among the revoked:\n{why}"
+    );
+    assert!(
+        why.contains("FOREACH over 0 element(s), 2 skipped by filter = False"),
+        "{why}"
+    );
+    // A term the decision did not ask the cell is refused.
+    let e = cell
+        .explain_answer(&mut service(), &on_b[0].id, "verlofdagen")
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("did not ask")),
+        "{e}"
+    );
+
     // Explaining the new decision explains the decision that took it.
     let again = cell.explain(&mut service(), &new_b.id).unwrap();
     assert_eq!(again.outputs, result.outputs);
-    // Nothing stays bound.
+    // Nothing stays loaded.
     let mut kept = service();
     cell.explain(&mut kept, &b.id).unwrap();
-    assert!(kept.data_registry().list_sources().is_empty());
+    cell.explain_answer(&mut kept, &b.id, ONCE).unwrap();
     assert!(!kept.has_law(REDUCTION));
 }
 
-/// The decision on B itself, explained: A counted, and the trace shows the
-/// reduction found it.
+/// The decision on B itself, explained: the cell answered that leave was
+/// already granted, and its own account shows the grant A it counted.
 #[test]
-fn the_trace_of_a_refusal_shows_the_grant_the_reduction_counted() {
+fn the_cell_explains_the_grant_its_reduction_counted_for_a_refusal() {
     let mut cell = cell();
     let a = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
     let b = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2026-10-27");
     let result = cell.explain(&mut service(), &b.id).unwrap();
     let trace = result.trace.as_ref().unwrap().render_box_drawing();
     assert!(trace.contains(REDUCTION), "{trace}");
-    assert!(trace.contains(&a.id), "{trace}");
+    assert!(!trace.contains(&a.id), "{trace}");
     assert_eq!(
         result.outputs["verlof_verleend"],
         regelrecht_engine::Value::from(json!(false))
+    );
+    let explained = cell.explain_answer(&mut service(), &b.id, ONCE).unwrap();
+    let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
+    assert!(why.contains(&a.id), "{why}");
+    assert_eq!(
+        explained[0].outputs[ONCE],
+        regelrecht_engine::Value::from(json!(true))
     );
 }
 

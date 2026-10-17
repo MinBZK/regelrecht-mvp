@@ -115,7 +115,7 @@ An implementation can state its value in terms of the law it fills in. A ministe
 
 ## A reduction that fills an open term
 
-A cell's reduction ([RFC-048](/rfcs/rfc-048)) may implement an open term too (schema v0.8.5). It is not a regulation: it reads the cell's own decisions back, and only the cell loads it. Art. 13a of the Leerplichtwet 1969 leaves `verlof_al_verleend_in_schooljaar` to the head per case (`decided_per_case_by`), and the school's reduction fills it:
+A cell's reduction ([RFC-048](/rfcs/rfc-048)) may name an open term with `implements` too (schema v0.8.5). It is not a regulation: it reads the cell's own decisions back, and only the cell runs it. Art. 13a of the Leerplichtwet 1969 leaves `verlof_al_verleend_in_schooljaar` to the head per case (`decided_per_case_by`), and the school's reduction fills it:
 
 ```yaml
 # reductie_verlof_al_verleend_in_schooljaar, article 1
@@ -127,9 +127,9 @@ machine_readable:
       open_term: verlof_al_verleend_in_schooljaar
 ```
 
-The engine treats it like any implementation and passes it each parameter the reduction declares, taken by name from the article that declares the term. It also runs the reduction when another article calls that article anew, as Awb 7:11 does on an objection. The reduction's reasoning therefore shows in the trace of the decision.
+The engine does not run it. A caller can pass an answerer with the execution (`OpenTermAnswerer`, in a `Call`), and the engine asks it first for every open term an article reads, at any depth, also when another article calls that article anew, as Awb 7:11 does on an objection. During a decision the cell is that answerer: it runs its reduction with the parameters the reduction declares, taken by name from the article that declares the term, and returns the value with where it came from. The engine records that provenance under `open_terms` (`filled_by: {answer: ...}`) and as one node in the trace. Why the reduction answered as it did is the cell's to explain (`Cell::explain_answer`); it is not in the trace of the decision. A `REDUCTIE` is never in the engine's implements index, so loading one changes nothing by itself.
 
-The order of precedence is the one for every open term: an implementation, then the finding of the authority for the case, then the `default`. A required term that has no default, and that neither an implementation nor a finding fills, is an error; a term that is not required then resolves to null. Outside a cell no reduction is loaded, so a scenario gives the head's finding.
+The order of precedence is the one for every open term: the answerer, then an implementation, then the finding of the authority for the case, then the `default`. A required term that has no default, and that none of these fills, is an error; a term that is not required then resolves to null. Outside a cell there is no answerer, so a scenario gives the head's finding.
 
 ## Conflict resolution
 

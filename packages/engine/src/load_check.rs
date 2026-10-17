@@ -18,10 +18,11 @@
 //! A reduction (`regulatory_layer: REDUCTIE`, schema v0.8.2) is no
 //! regulation: a cell's reading of its own chronicle (RFC-048). Only a
 //! reduction reads the decisions taken under an article
-//! (`source.decisions`). A reduction may fill an open term (`implements`)
-//! from schema v0.8.5, so the engine runs it for that term like any
-//! implementation; a file that names an older version is held to the
-//! schema of that version, which forbids it. Otherwise a reduction does not
+//! (`source.decisions`). A reduction may name the open term it answers
+//! (`implements`) from schema v0.8.5; a file that names an older version is
+//! held to the schema of that version, which forbids it. The engine does not
+//! run a reduction for that term itself: whoever keeps it answers the term
+//! through the caller's answerer ([`crate::answer`]). Otherwise a reduction does not
 //! act on law: it hooks onto
 //! nothing (`hooks`), replaces no output (`overrides`), takes no decision
 //! (`execution.produces`) and delegates nothing (`open_terms`). The loader
