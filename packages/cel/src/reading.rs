@@ -447,10 +447,13 @@ pub struct Reader<'c> {
     grams: Vec<Gram>,
     explain: Option<&'c str>,
     asked: RefCell<Vec<Asked>>,
-    /// The terms the cell is answering now, outermost first. A reduction
-    /// whose rulework asks one of them again would answer itself without
-    /// end; the cell refuses that instead (RFC-051).
-    answering: RefCell<Vec<Term>>,
+    /// The terms the cell is answering now, outermost first, each with the
+    /// parameters of the article that asked it. A reduction whose rulework
+    /// asks one of them again would answer itself without end; the cell
+    /// refuses that instead. A reduction asked inside another one gets a
+    /// parameter it declares from the questions around it when the article
+    /// that asks it has none of that name (RFC-051).
+    answering: RefCell<Vec<(Term, BTreeMap<String, Value>)>>,
 }
 
 impl<'c> Reader<'c> {
@@ -504,8 +507,18 @@ impl<'c> Reader<'c> {
             .into_iter()
             .flatten()
         {
-            if let Some(value) = question.parameters.get(&p.name) {
-                parameters.insert(p.name.clone(), value.clone());
+            // From the article that asks, else from the nearest question
+            // around this one that has it, such as the leave days of art.
+            // 13a for a regulation the reduction for art. 13a calls.
+            let around = self.answering.borrow();
+            let value = question.parameters.get(&p.name).cloned().or_else(|| {
+                around
+                    .iter()
+                    .rev()
+                    .find_map(|(_, asked)| asked.get(&p.name).cloned())
+            });
+            if let Some(value) = value {
+                parameters.insert(p.name.clone(), value);
             }
         }
         for input in article.get_inputs() {
@@ -562,12 +575,12 @@ impl OpenTermAnswerer for Reader<'_> {
                 self.recording_actor
             )),
         };
-        if self.answering.borrow().contains(&term) {
+        if self.answering.borrow().iter().any(|(t, _)| *t == term) {
             let chain: Vec<String> = self
                 .answering
                 .borrow()
                 .iter()
-                .map(ToString::to_string)
+                .map(|(t, _)| t.to_string())
                 .collect();
             return Err(EngineError::CircularReference(format!(
                 "the cell of '{}' is asked {term} while answering it ({}): its reduction \
@@ -577,7 +590,9 @@ impl OpenTermAnswerer for Reader<'_> {
                 reduction.id
             )));
         }
-        self.answering.borrow_mut().push(term.clone());
+        self.answering
+            .borrow_mut()
+            .push((term.clone(), question.parameters.clone()));
         let ran = self.run(service, reduction, question, &term, day);
         self.answering.borrow_mut().pop();
         let result = ran.map_err(in_cell)?;

@@ -239,11 +239,13 @@ fn the_herfstvakantie_the_school_fixed_itself_counts() {
 }
 
 #[test]
-fn a_move_of_the_school_changes_its_region_from_that_day() {
+fn a_school_that_moves_before_the_leave_is_judged_on_the_leave_days() {
     // Utrecht is in regio Midden, whose summer of 2027 starts on 17 July;
-    // Maastricht is in regio Zuid, whose summer starts on 24 July.
+    // Maastricht is in regio Zuid, whose summer starts on 24 July. Recorded
+    // on 1 April: the school moves to Maastricht on 1 May. The head decides
+    // in April on leave in July: the holidays that count are those of the
+    // school on the leave days, so those of Zuid.
     let mut cell = school_in("Utrecht", "Utrecht");
-    // Recorded on 1 April: the school moves to Maastricht on 1 May.
     established(
         &mut cell,
         "Maastricht",
@@ -251,12 +253,10 @@ fn a_move_of_the_school_changes_its_region_from_that_day() {
         "2027-05-01",
         "2027-04-01",
     );
-    let before = applied(&mut cell, "2027-07-19", "2027-07-23", "2027-04-10");
-    let refused = decide(&mut cell, &before.id, "2027-04-15").unwrap();
-    assert!(!granted(&refused));
-    let after = applied(&mut cell, "2027-07-19", "2027-07-23", "2027-05-01");
-    let gram = decide(&mut cell, &after.id, "2027-05-03").unwrap();
+    let app = applied(&mut cell, "2027-07-19", "2027-07-23", "2027-04-10");
+    let gram = decide(&mut cell, &app.id, "2027-04-15").unwrap();
     assert!(granted(&gram), "{:?}", gram.outputs);
+    assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(true));
 
     // The cell explains where the school was: the reduction for its
     // vestiging, asked inside the one for the holidays, read the move.
@@ -267,15 +267,40 @@ fn a_move_of_the_school_changes_its_region_from_that_day() {
         why[0].outputs["gemeente_van_vestiging"].to_string(),
         "Maastricht"
     );
-    let before_why = cell
-        .explain_answer(&mut service(), &refused.id, "gemeente_van_vestiging")
-        .unwrap();
-    assert_eq!(
-        before_why[0].outputs["gemeente_van_vestiging"].to_string(),
-        "Utrecht"
-    );
     let rendered = why[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(rendered.contains("vestigingen"), "{rendered}");
+
+    // Leave that ends before the move is judged on Utrecht.
+    let early = applied(&mut cell, "2027-04-19", "2027-04-23", "2027-04-15");
+    let gram = decide(&mut cell, &early.id, "2027-04-15").unwrap();
+    let why = cell
+        .explain_answer(&mut service(), &gram.id, "gemeente_van_vestiging")
+        .unwrap();
+    assert_eq!(
+        why[0].outputs["gemeente_van_vestiging"].to_string(),
+        "Utrecht"
+    );
+}
+
+#[test]
+fn leave_during_which_the_school_moves_is_refused_loudly() {
+    // From 1 June 2027 the school is in Maastricht. Leave from 31 May to 4
+    // June has two vestigingen, so two regions; the regeling gives one per
+    // school, and the decision fails rather than pick one.
+    let mut cell = school_in("Utrecht", "Utrecht");
+    established(
+        &mut cell,
+        "Maastricht",
+        "Limburg",
+        "2027-06-01",
+        "2027-04-01",
+    );
+    let app = applied(&mut cell, "2027-05-31", "2027-06-04", "2027-04-10");
+    let e = decide(&mut cell, &app.id, "2027-04-15").unwrap_err();
+    assert!(
+        matches!(&e, Error::Engine(m) if m.to_string().contains("ONLY")),
+        "{e}"
+    );
 }
 
 #[test]

@@ -310,7 +310,7 @@ Art. 11, onder f, exempts a child whose parent, by the specific nature of their 
 }
 ```
 
-`reductie_plaats_van_vestiging` reads that stream (`source: {executograms: vestiging}`) and fills the open terms of art. 2 with the establishment in force on the day of the decision. It picks that one with `combine: ONLY`, which refuses two. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, reads the school's fixing (`source: {decisions: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
+`reductie_plaats_van_vestiging` reads that stream (`source: {executograms: vestiging}`) and fills the open terms of art. 2 with the establishment in force on the leave days. It picks that one with `combine: ONLY`, which refuses two, so leave during which the school moves fails the decision. Art. 2 names no day; the cell passes on the leave days of art. 13a. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, reads the school's fixing (`source: {decisions: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
 
 - Leave from 21 to 23 December 2026 is refused. The trace of the decision shows the term as one node, answered by obs_de_klimop, and `Cell::explain_answer` shows the Christmas holiday the reduction read.
 - From 12 to 16 July 2027 a school in regio Noord is on summer holiday and one in regio Zuid is not.
