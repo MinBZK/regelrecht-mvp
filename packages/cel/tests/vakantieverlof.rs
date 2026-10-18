@@ -66,9 +66,19 @@ fn cell_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{RECORDING_ACTOR}"))
 }
 
-/// The school's cell, with an empty chronicle and its reductions.
+/// A directory of the school's cell with only its reduction for lid 2
+/// (RFC-048). Its own directory also fills art. 11, onder f, from its
+/// holidays (RFC-051); the tests here leave that judgement to the head, and
+/// `tests/schoolvakanties.rs` decides in the school's own cell.
+fn lid_2_dir() -> tempfile::TempDir {
+    reductions_dir(&[("2026-08-01", ONCE)])
+}
+
+/// The school's cell with an empty chronicle and its reduction for lid 2
+/// ([`lid_2_dir`]). The cell reads its reductions when it opens, so the
+/// directory may go after.
 fn cell() -> Cell {
-    Cell::in_memory(RECORDING_ACTOR, cell_dir()).unwrap()
+    Cell::in_memory(RECORDING_ACTOR, lid_2_dir().path()).unwrap()
 }
 
 fn day(s: &str) -> NaiveDate {
@@ -290,13 +300,14 @@ fn a_gram_dated_before_the_last_one_is_refused() {
 #[test]
 fn a_chronicle_in_a_file_reads_back_what_was_recorded() {
     let dir = tempfile::tempdir().unwrap();
+    let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("aanvragen.jsonl");
     let recorded = {
-        let mut cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+        let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
         assert!(cell.grams().is_empty());
         record(&mut cell, &application(), "2026-10-13").unwrap()
     };
-    let mut cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+    let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
     assert_eq!(cell.grams(), [recorded]);
     // The clock of the file holds after reopening.
     let e = record(&mut cell, &application(), "2026-10-01").unwrap_err();
@@ -654,14 +665,15 @@ fn a_decision_is_not_dated_before_its_application() {
 #[test]
 fn a_decision_reads_back_from_the_file() {
     let dir = tempfile::tempdir().unwrap();
+    let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
     let recorded = {
-        let mut cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+        let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
         let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
         let gram = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap();
         vec![app, gram]
     };
-    let cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+    let cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
     assert_eq!(cell.grams(), recorded);
 }
 
@@ -995,7 +1007,49 @@ fn reductions_dir(versions: &[(&str, &str)]) -> tempfile::TempDir {
 
 #[test]
 fn a_cell_lists_the_lexostatussen_it_answers() {
-    // The school's own cell: one reduction, one version, one term.
+    // The school's own cell: three reductions, each with one version. The
+    // one for its vestiging fills the three terms of the regeling on the
+    // plaats van vestiging (RFC-051).
+    let own = Cell::in_memory(RECORDING_ACTOR, cell_dir()).unwrap();
+    let answers = own.answers();
+    let listed: Vec<(&str, &str, &str)> = answers
+        .iter()
+        .map(|a| {
+            (
+                a.reduction.as_str(),
+                a.term.article.as_str(),
+                a.term.open_term.as_str(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        listed,
+        [
+            (
+                "reductie_plaats_van_vestiging",
+                "2",
+                "gemeente_van_vestiging"
+            ),
+            (
+                "reductie_plaats_van_vestiging",
+                "2",
+                "provincie_van_vestiging"
+            ),
+            (
+                "reductie_plaats_van_vestiging",
+                "2",
+                "deel_van_gemeente_van_vestiging"
+            ),
+            (REDUCTION, ARTICLE, ONCE),
+            (
+                "reductie_verlof_valt_buiten_schoolvakanties",
+                ARTICLE,
+                OUTSIDE_HOLIDAYS
+            ),
+        ]
+    );
+
+    // A cell with its reduction for lid 2 only: one version, one term.
     let answers = cell().answers();
     assert_eq!(answers.len(), 1);
     let answer = &answers[0];
@@ -1674,16 +1728,17 @@ fn a_late_objection_is_recorded_and_not_admissible() {
 #[test]
 fn an_objection_is_decided_with_decide_and_reads_back_from_the_file() {
     let dir = tempfile::tempdir().unwrap();
+    let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
     let recorded = {
-        let mut cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+        let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
         let refused = refused_on_profession(&mut cell);
         let bezwaar = object(&mut cell, &refused.id, &objection(&[]), "2026-11-15").unwrap();
         reconsider(&mut cell, &bezwaar.id, &profession(true), "2026-11-15").unwrap();
         cell.grams().to_vec()
     };
     assert_eq!(recorded.len(), 5);
-    let cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+    let cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
     assert_eq!(cell.grams(), recorded);
 }
 
@@ -2050,14 +2105,15 @@ fn the_cell_explains_the_grant_its_reduction_counted_for_a_refusal() {
 #[test]
 fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
     let dir = tempfile::tempdir().unwrap();
+    let school = lid_2_dir();
     let path = dir.path().join("kroniek.jsonl");
     let b = {
-        let mut cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+        let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
         apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
         apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2026-10-27")
     };
     assert_eq!(b.outputs["verlof_verleend"], json!(false));
-    let with = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+    let with = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
     let found = with.findings(&mut service(), &b.id).unwrap();
     assert!(!found.contains(&ONCE.to_string()), "{found:?}");
 
@@ -2068,7 +2124,7 @@ fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
     let tampered = last.replace("\"verlof_verleend\":false", "\"verlof_verleend\":true");
     assert_ne!(tampered, last);
     std::fs::write(&path, format!("{rest}\n{tampered}\n")).unwrap();
-    let cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+    let cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
     let e = cell.explain(&mut service(), &b.id).unwrap_err();
     assert!(
         matches!(&e, Error::Setup(m) if m.contains("the replay is not this decision")

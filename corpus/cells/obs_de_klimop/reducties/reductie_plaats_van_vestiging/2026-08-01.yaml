@@ -1,0 +1,124 @@
+---
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$id: reductie_plaats_van_vestiging
+regulatory_layer: REDUCTIE
+publication_date: '2026-07-01'
+valid_from: '2026-08-01'
+# Geen regelgeving: een reductie van de cel van OBS De Klimop over haar eigen
+# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen van de
+# stroom vestiging (executogrammen/vestiging.yaml) en geeft de vestiging die
+# op de dag van het besluit geldt. Haar antwoord vult de open begrippen van
+# artikel 2 van de Regeling vaststelling schoolvakanties 2025–2030 ("De
+# plaats van vestiging is bepalend voor de regio"). Er is geen bekendmaking;
+# de url wijst naar dat artikel.
+# Later kan een cel van DUO, met het register van instellingen, deze vraag
+# beantwoorden in plaats van de school (RFC-051, open vragen); dat is hier
+# niet gebouwd.
+url: https://wetten.overheid.nl/BWBR0049811/2025-08-01#Artikel2
+name: Plaats van vestiging van OBS De Klimop (reductie)
+competent_authority:
+  name: Het bevoegd gezag van OBS De Klimop
+articles:
+  - number: '1'
+    text: >-
+      Geen regelgeving: een reductie van de cel over haar eigen kroniek. De
+      plaats van vestiging van de school is die van het executogram van de
+      stroom vestiging met de laatste dag "sinds" op of vóór de dag waarop
+      ernaar gevraagd wordt.
+    url: https://wetten.overheid.nl/BWBR0049811/2025-08-01#Artikel2
+    machine_readable:
+      implements:
+        - law: regeling_vaststelling_schoolvakanties_20252030
+          article: '2'
+          open_term: gemeente_van_vestiging
+        - law: regeling_vaststelling_schoolvakanties_20252030
+          article: '2'
+          open_term: provincie_van_vestiging
+        - law: regeling_vaststelling_schoolvakanties_20252030
+          article: '2'
+          open_term: deel_van_gemeente_van_vestiging
+      execution:
+        input:
+          # De vastgelegde vestigingen van de school, één rij per
+          # executogram, met gemeente, provincie, deel_van_gemeente en sinds.
+          - name: vestigingen
+            type: array
+            source:
+              executograms: vestiging
+        output:
+          - name: dagen_sinds_vestiging
+            type: number
+            nullable: true
+            description: >-
+              Hoeveel dagen de laatste vestiging tot de dag van de vraag al
+              geldt; afwezig zonder vestiging op of vóór die dag.
+          - name: vestiging
+            type: object
+            nullable: true
+            description: De vestiging die op de dag van de vraag geldt.
+          - name: gemeente_van_vestiging
+            type: string
+            nullable: true
+          - name: provincie_van_vestiging
+            type: string
+            nullable: true
+          - name: deel_van_gemeente_van_vestiging
+            type: string
+            nullable: true
+        actions:
+          # De dag van de vraag is de rekendatum: de dag van het besluit dat
+          # de regio nodig heeft. Een vestiging met een latere dag "sinds"
+          # geldt dan nog niet.
+          - output: dagen_sinds_vestiging
+            value:
+              operation: FOREACH
+              collection: $vestigingen
+              as: v
+              filter:
+                operation: GREATER_THAN_OR_EQUAL
+                subject:
+                  operation: DATE_DIFF
+                  from: $v.sinds
+                  to: $referencedate.iso
+                  in: days
+                value: 0
+              body:
+                operation: DATE_DIFF
+                from: $v.sinds
+                to: $referencedate.iso
+                in: days
+              combine: MIN
+          # De vestiging van die dag. Twee vestigingen met dezelfde dag
+          # "sinds" zijn er twee: ONLY weigert dan, en het besluit faalt.
+          # Zonder vestiging is er geen (null), en dan vindt de regeling
+          # geen regio.
+          - output: vestiging
+            value:
+              operation: FOREACH
+              collection: $vestigingen
+              as: v
+              filter:
+                operation: AND
+                conditions:
+                  - operation: GREATER_THAN_OR_EQUAL
+                    subject:
+                      operation: DATE_DIFF
+                      from: $v.sinds
+                      to: $referencedate.iso
+                      in: days
+                    value: 0
+                  - operation: EQUALS
+                    subject:
+                      operation: DATE_DIFF
+                      from: $v.sinds
+                      to: $referencedate.iso
+                      in: days
+                    value: $dagen_sinds_vestiging
+              body: $v
+              combine: ONLY
+          - output: gemeente_van_vestiging
+            value: $vestiging.gemeente
+          - output: provincie_van_vestiging
+            value: $vestiging.provincie
+          - output: deel_van_gemeente_van_vestiging
+            value: $vestiging.deel_van_gemeente

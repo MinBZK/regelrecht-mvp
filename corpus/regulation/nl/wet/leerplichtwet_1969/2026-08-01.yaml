@@ -994,8 +994,16 @@ articles:
             Of een van de in artikel 2, eerste lid, bedoelde personen een beroep
             heeft van zo specifieke aard dat de jongere niet binnen de
             schoolvakanties met hen op vakantie kan gaan (artikel 11, onder f).
-        # Voor nu een oordeel van het hoofd bij het besluit; de school kent
-        # haar vakanties. Het is geen veld van de aanvraag.
+        # Het hoofd oordeelt het per aanvraag; het is geen veld van de
+        # aanvraag. Welke de schoolvakanties zijn, zegt deze wet niet: de
+        # Regeling vaststelling schoolvakanties 2025–2030 stelt de kerst-,
+        # mei- en zomervakantie vast (artikel 15, tweede lid, van de Wet op
+        # het primair onderwijs), en de school stelt haar herfst- en
+        # voorjaarsvakantie zelf vast. In de cel van de school vult haar
+        # reductie het begrip uit die vakanties (implements, RFC-051), zodat
+        # niemand het hoeft te oordelen; kent de cel een vakantie niet, dan
+        # zwijgt zij en oordeelt het hoofd. Geen default: zonder antwoord en
+        # zonder oordeel wordt geen verlof verleend.
         - id: verlof_valt_buiten_schoolvakanties
           type: boolean
           required: true

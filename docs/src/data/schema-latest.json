@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.5/schema/v0.8.5/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.8.5",
+  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.6",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -54,7 +54,7 @@
         "WATERSCHAPS_VERORDENING",
         "REDUCTIE"
       ],
-      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read decisions (`source.decisions`); it may fill an open term of an article (`implements`, since v0.8.5), and the engine then runs it for that term like any implementation, also in a nested call; beyond that it does not act on law (no `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
+      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read its chronicle: decisions (`source.decisions`) and, since v0.8.6, executograms (`source.executograms`, RFC-051); it may fill an open term of an article (`implements`, since v0.8.5), and the engine then runs it for that term like any implementation, also in a nested call; beyond that it does not act on law (no `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
       "examples": [
         "WET",
         "GEMEENTELIJKE_VERORDENING"
@@ -646,8 +646,17 @@
                             "properties": {
                               "source": {
                                 "not": {
-                                  "required": [
-                                    "decisions"
+                                  "anyOf": [
+                                    {
+                                      "required": [
+                                        "decisions"
+                                      ]
+                                    },
+                                    {
+                                      "required": [
+                                        "executograms"
+                                      ]
+                                    }
                                   ]
                                 }
                               }
@@ -672,8 +681,17 @@
                           "properties": {
                             "source": {
                               "not": {
-                                "required": [
-                                  "decisions"
+                                "anyOf": [
+                                  {
+                                    "required": [
+                                      "decisions"
+                                    ]
+                                  },
+                                  {
+                                    "required": [
+                                      "executograms"
+                                    ]
+                                  }
                                 ]
                               }
                             }
@@ -876,6 +894,11 @@
                   "$ref": "#/definitions/articleReference",
                   "description": "The decisions taken under this article, `<regulation>#<article>`: a list with one row per decision, holding the inputs and outputs of the decision item of that article. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the decisions in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters` or `endpoint`. Without a source that answers it the input is an error, never an empty list."
                 },
+                "executograms": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$",
+                  "description": "The executograms of a stream of the cell, by the stream's `$id` (RFC-051): a list with one row per executogram, holding the fields the stream declares and the executogram's `id`. An executogram records a fact, not a decision, such as where a school is established; its stream is declared with the cell, not in a regulation. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the executograms in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
+                },
                 "article": {
                   "oneOf": [
                     {
@@ -941,6 +964,11 @@
                         "required": [
                           "endpoint"
                         ]
+                      },
+                      {
+                        "required": [
+                          "executograms"
+                        ]
                       }
                     ]
                   }
@@ -949,6 +977,37 @@
                   "required": [
                     "article"
                   ]
+                },
+                "executograms": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "regulation"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "output"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "parameters"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "endpoint"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "decisions"
+                        ]
+                      }
+                    ]
+                  }
                 }
               },
               "examples": [
@@ -961,6 +1020,9 @@
                 },
                 {
                   "decisions": "leerplichtwet_1969#13a"
+                },
+                {
+                  "executograms": "vestiging"
                 },
                 {
                   "article": "$besluit"
@@ -1407,9 +1469,10 @@
             "OR",
             "AND",
             "MIN",
-            "MAX"
+            "MAX",
+            "ONLY"
           ],
-          "description": "Aggregation over the collected results. Omitted, the results are returned as an array."
+          "description": "Aggregation over the collected results. Omitted, the results are returned as an array. `ONLY` (since v0.8.6) gives the one result the filter leaves, of any type, such as the record in force on a day: null when it leaves none, an error at run time when it leaves more than one."
         },
         "legal_basis": {
           "$ref": "#/definitions/legalBasis",

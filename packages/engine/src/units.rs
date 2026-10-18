@@ -396,7 +396,10 @@ pub fn infer_operation_unit(
             }
             let body_unit = infer_unit(body, symbols)?;
             Ok(match combine {
-                Some(CombineOp::Add) | Some(CombineOp::Min) | Some(CombineOp::Max) => body_unit,
+                Some(CombineOp::Add)
+                | Some(CombineOp::Min)
+                | Some(CombineOp::Max)
+                | Some(CombineOp::Only) => body_unit,
                 Some(CombineOp::And) | Some(CombineOp::Or) | None => Unit::Unknown,
             })
         }
@@ -702,8 +705,14 @@ mod tests {
     fn infer_foreach_add_keeps_the_body_unit() {
         // Summing eurocents over a collection yields eurocents. Losing that
         // would disable euro/eurocent checking for every aggregated total,
-        // which is the confusion RFC-023 exists to catch.
-        for combine in [CombineOp::Add, CombineOp::Min, CombineOp::Max] {
+        // which is the confusion RFC-023 exists to catch. The one element
+        // ONLY picks keeps its unit too.
+        for combine in [
+            CombineOp::Add,
+            CombineOp::Min,
+            CombineOp::Max,
+            CombineOp::Only,
+        ] {
             let op = foreach_over(var("premie"), Some(combine));
             assert_eq!(
                 infer_operation_unit(&op, &symbols()).unwrap(),

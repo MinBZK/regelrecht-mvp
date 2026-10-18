@@ -1,0 +1,33 @@
+---
+# Een stroom executogrammen van de cel van OBS De Klimop (RFC-022 §1.3,
+# RFC-051). Een executogram legt een feit vast, geen besluit: hier waar de
+# school gevestigd is, sinds welke dag. Geen regeling brengt het voort, dus
+# de cel zegt zelf wat het bevat. De grondslag is het artikel waarvoor het
+# feit ertoe doet: "De plaats van vestiging is bepalend voor de regio
+# waartoe een school behoort" (artikel 2 van de Regeling vaststelling
+# schoolvakanties 2025–2030). De reductie reductie_plaats_van_vestiging leest
+# deze executogrammen en vult daarmee de open begrippen van dat artikel.
+# Wie de school is (recording_actor) staat hier los van: een vestiging is een
+# feit op een tijdas, en een verhuizing is een nieuw executogram.
+$id: vestiging
+grondslag: regeling_vaststelling_schoolvakanties_20252030#2
+description: De vestiging van de school in een gemeente, vanaf een dag.
+fields:
+  - name: gemeente
+    type: string
+    description: >-
+      De gemeente waarin de vestiging ligt, zoals artikel 3 van de regeling
+      haar noemt, of het openbaar lichaam in Caribisch Nederland.
+  - name: provincie
+    type: string
+    nullable: true
+    description: De provincie waarin de gemeente ligt; afwezig in Caribisch Nederland.
+  - name: deel_van_gemeente
+    type: string
+    nullable: true
+    description: >-
+      De voormalige gemeente of de kern waarin de vestiging ligt, waar artikel
+      3 een gemeente zo verdeelt; anders afwezig.
+  - name: sinds
+    type: date
+    description: De dag vanaf welke de school daar gevestigd is.

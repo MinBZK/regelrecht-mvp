@@ -58,6 +58,7 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-048 | A cell reads its chronicle back through a reduction (`REDUCTIE`, `source: {decisions}`, `reading`) that fills an open term (`implements`, `Cell::explain`) | [Chronolexography](../concepts/chronolexography#once-per-school-year), [Inversion of Control](../concepts/inversion-of-control#a-reduction-that-fills-an-open-term) |
 | RFC-049 | FOREACH with `as` binds only its name | [Collections](../concepts/collections#the-element-binding) |
 | RFC-050 | The objection is a second submission (`BEZWAAR`, Awb 7:11 reconsiders the contested decision by calling its article); calling the decision of an article (`source.article`, `parameters_from`, type `decision`, findings, `derived`) | [Chronolexography](../concepts/chronolexography#the-objection), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article), [Schema](./schema) |
+| RFC-051 | What a cell records without a submission (`Cell::decide_ex_officio`, `Cell::record_executogram`, streams in `executogrammen/`, `source.executograms`, `combine: ONLY`) | [Chronolexography](../concepts/chronolexography#outside-the-school-holidays), [Schema](./schema) |
 
 ## Backlog
 

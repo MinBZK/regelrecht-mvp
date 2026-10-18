@@ -4854,11 +4854,11 @@ impl LawExecutionService {
         // No regulation is executed for them, and no source is no empty
         // list: a reduction over decisions nobody supplied would say that
         // none were taken.
-        if let Some(decisions) = &source.decisions {
+        // The executograms of a stream (RFC-051) likewise.
+        if let Some(read) = crate::load_check::chronicle_read(source) {
             let _guard = res_ctx.trace_guard(&input.name, PathNodeType::Resolve);
             let message = format!(
-                "input '{}' of {} reads the decisions taken under {decisions}, and no data \
-                 source supplies them",
+                "input '{}' of {} reads {read}, and no data source supplies them",
                 input.name, law.id
             );
             res_ctx.trace_set_message(message.clone());

@@ -420,11 +420,11 @@ impl<'a> ArticleEngine<'a> {
             }
             // The decisions taken under an article come from a data source
             // only (RFC-048); this engine has none, so they must be passed.
-            if let Some(decisions) = &source.decisions {
+            // So do the executograms of a stream (RFC-051).
+            if let Some(read) = crate::load_check::chronicle_read(source) {
                 if !parameters.contains_key(&input.name) {
                     return Err(EngineError::DataSourceError(format!(
-                        "input '{}' reads the decisions taken under {decisions}, and no data \
-                         source supplies them",
+                        "input '{}' reads {read}, and no data source supplies them",
                         input.name
                     )));
                 }

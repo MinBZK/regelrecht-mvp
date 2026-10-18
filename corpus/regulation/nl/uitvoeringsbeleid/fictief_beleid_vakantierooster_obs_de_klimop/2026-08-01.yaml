@@ -1,0 +1,131 @@
+---
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$id: fictief_beleid_vakantierooster_obs_de_klimop
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2026-07-01'
+valid_from: '2026-08-01'
+# FICTIEF. OBS De Klimop bestaat niet en dit is geen bekendgemaakt beleid,
+# maar een eigen keuze in de modellering. Er is geen bekendmaking; de url wijst
+# daarom naar het artikel dat de schoolvakanties noemt.
+url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel11
+name: Vakantierooster van OBS De Klimop (fictief beleid)
+competent_authority:
+  name: Het bevoegd gezag van OBS De Klimop
+# Geen legal_basis: geen artikel geeft het bevoegd gezag met zoveel woorden
+# de bevoegdheid de herfst- en voorjaarsvakantie vast te stellen. De
+# Regeling vaststelling schoolvakanties 2025–2030 stelt alleen de kerst-, mei-
+# en zomervakantie vast (artikelen 5 en 6), en de Wet op het primair
+# onderwijs regelt vakanties alleen via die regeling (artikel 15, tweede
+# lid). Artikel 11, eerste lid, onder l, van de Wet medezeggenschap op
+# scholen gaat ervan uit dat het bevoegd gezag de vakantie regelt: de
+# medezeggenschapsraad mag vooraf advies uitbrengen over "elk door het
+# bevoegd gezag te nemen besluit" over de "regeling van de vakantie". Dat is
+# een adviesrecht, geen instemming, en dit beleid modelleert het niet.
+# Daarom is dit het eigen beleid van de school, gemarkeerd als fictief.
+articles:
+  - number: '1'
+    text: >-
+      FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. Het
+      bevoegd gezag van OBS De Klimop stelt voor elk schooljaar een
+      herfstvakantie en een voorjaarsvakantie vast. Elk is een aaneengesloten
+      periode binnen dat schooljaar.
+    url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel11
+    machine_readable:
+      # Het vaststellen is een besluit van het bevoegd gezag dat op geen
+      # aanvraag volgt: de cel legt het ambtshalve vast in de kroniek van de
+      # school (RFC-051). Het geldt voor alle leerlingen van de school, dus
+      # voor ieder die het aangaat en niet voor één geval. Of het een besluit
+      # is in de zin van de Awb, laat dit fictieve beleid open; geen Awb-haak
+      # vuurt op dit soort besluit. ANDERE_HANDELING: het is geen algemeen
+      # verbindend voorschrift en geen beleidsregel.
+      execution:
+        produces:
+          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING
+          decision_type: ANDERE_HANDELING
+        parameters:
+          - name: eerste_jaar_schooljaar
+            type: number
+            description: >-
+              Het jaar waarin het schooljaar begint waarvoor de vakanties
+              gelden: 2026 voor het schooljaar 2026–2027.
+          - name: herfstvakantie_eerste_dag
+            type: date
+            description: De eerste dag van de herfstvakantie.
+          - name: herfstvakantie_laatste_dag
+            type: date
+            description: De laatste dag van de herfstvakantie.
+          - name: voorjaarsvakantie_eerste_dag
+            type: date
+            description: De eerste dag van de voorjaarsvakantie.
+          - name: voorjaarsvakantie_laatste_dag
+            type: date
+            description: De laatste dag van de voorjaarsvakantie.
+        input:
+          # Het schooljaar van elke dag, uit het fictieve beleid dat zegt in
+          # welk schooljaar een dag valt.
+          - name: schooljaar_herfst_begint
+            type: number
+            source:
+              regulation: fictief_beleid_schooljaargrenzen_obs_de_klimop
+              output: eerste_jaar_schooljaar
+              parameters:
+                datum: $herfstvakantie_eerste_dag
+          - name: schooljaar_herfst_eindigt
+            type: number
+            source:
+              regulation: fictief_beleid_schooljaargrenzen_obs_de_klimop
+              output: eerste_jaar_schooljaar
+              parameters:
+                datum: $herfstvakantie_laatste_dag
+          - name: schooljaar_voorjaar_begint
+            type: number
+            source:
+              regulation: fictief_beleid_schooljaargrenzen_obs_de_klimop
+              output: eerste_jaar_schooljaar
+              parameters:
+                datum: $voorjaarsvakantie_eerste_dag
+          - name: schooljaar_voorjaar_eindigt
+            type: number
+            source:
+              regulation: fictief_beleid_schooljaargrenzen_obs_de_klimop
+              output: eerste_jaar_schooljaar
+              parameters:
+                datum: $voorjaarsvakantie_laatste_dag
+        output:
+          - name: rooster_volgens_beleid
+            type: boolean
+            description: >-
+              Of beide vakanties een aaneengesloten periode binnen het
+              schooljaar zijn, zoals dit beleid vraagt. Alleen een rooster
+              volgens het beleid telt voor de school.
+        actions:
+          - output: rooster_volgens_beleid
+            value:
+              operation: AND
+              conditions:
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject:
+                    operation: DATE_DIFF
+                    from: $herfstvakantie_eerste_dag
+                    to: $herfstvakantie_laatste_dag
+                    in: days
+                  value: 0
+                - operation: GREATER_THAN_OR_EQUAL
+                  subject:
+                    operation: DATE_DIFF
+                    from: $voorjaarsvakantie_eerste_dag
+                    to: $voorjaarsvakantie_laatste_dag
+                    in: days
+                  value: 0
+                - operation: EQUALS
+                  subject: $schooljaar_herfst_begint
+                  value: $eerste_jaar_schooljaar
+                - operation: EQUALS
+                  subject: $schooljaar_herfst_eindigt
+                  value: $eerste_jaar_schooljaar
+                - operation: EQUALS
+                  subject: $schooljaar_voorjaar_begint
+                  value: $eerste_jaar_schooljaar
+                - operation: EQUALS
+                  subject: $schooljaar_voorjaar_eindigt
+                  value: $eerste_jaar_schooljaar

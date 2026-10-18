@@ -513,6 +513,7 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         kind: "AANVRAAG".into(),
         grondslag: format!("{ID}#1"),
         refers_to: None,
+        stream: None,
         recording_actor: ACTOR.into(),
         recorded_on: day(),
         moment: None,

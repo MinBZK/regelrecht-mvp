@@ -6,8 +6,13 @@
 //! (`corpus/cells/<cell>/reducties/<id>/<valid_from>.yaml`) and only the cell
 //! loads it. It asks for the decisions taken under an article with
 //! `source: {decisions: <regulation>#<article>}`; the cell answers that input
-//! with one row per decision in its chronicle ([`rows`]). For the logic it
-//! calls law or policy like any rulework (`source.regulation`).
+//! with one row per decision in its chronicle ([`rows`]), whether taken on a
+//! submission or ex officio. It asks for the executograms of a stream of
+//! the cell with `source: {executograms: <stream>}` (schema v0.8.6,
+//! RFC-051), one row per executogram ([`executogram_rows`]). For the logic
+//! it calls law or policy like any rulework (`source.regulation`); where
+//! that rulework reads an open term the cell answers, the cell answers it
+//! there too.
 //!
 //! What a reduction yields is the answer to an open term of a law, which
 //! it names with `implements` (schema v0.8.5): the lexostatus the cell
@@ -39,8 +44,8 @@ use std::collections::BTreeMap;
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
-    Answer as EngineAnswer, AnswerProvenance, Article, ArticleBasedLaw, ArticleResult, EngineError,
-    LawExecutionService, LawLoad, OpenTermAnswerer, Question, RegulatoryLayer, Value,
+    Answer as EngineAnswer, AnswerProvenance, Article, ArticleBasedLaw, ArticleResult, Call,
+    EngineError, LawExecutionService, LawLoad, OpenTermAnswerer, Question, RegulatoryLayer, Value,
 };
 use serde::Serialize;
 use serde_json::Map;
@@ -48,6 +53,7 @@ use serde_json::Map;
 use crate::chronicle::Gram;
 use crate::error::{setup, Result};
 use crate::shape::article_on;
+use crate::stream::Stream;
 use regelrecht_law_model::stored;
 
 /// One version of a reduction of the cell, as written.
@@ -179,16 +185,29 @@ impl Reduction {
 }
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
-/// whose legal character is `kind`, as rows: the fields, then the outputs,
-/// then the chronolexogram's `id`. A field or output named `id` is refused.
-/// A name that is both a field and an output with another value is
-/// refused: the row would hide one.
+/// whose legal character is `kind`, as rows ([`rows_of`]): those taken on a
+/// submission and those taken ex officio (RFC-051) alike.
 pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
+    rows_of(
+        grams
+            .iter()
+            .filter(|g| g.kind == kind && g.grondslag == grondslag),
+    )
+}
+
+/// The executograms in `grams` of the stream `stream` (RFC-051), as rows
+/// ([`rows_of`]), in the order the cell recorded them.
+pub fn executogram_rows(grams: &[Gram], stream: &str) -> Result<Value> {
+    rows_of(grams.iter().filter(|g| g.stream.as_deref() == Some(stream)))
+}
+
+/// `grams` as rows: the fields, then the outputs, then the chronolexogram's
+/// `id`. A field or output named `id` is refused. A name that is both a
+/// field and an output with another value is refused: the row would hide
+/// one.
+fn rows_of<'g>(grams: impl Iterator<Item = &'g Gram>) -> Result<Value> {
     let mut rows = Vec::new();
-    for gram in grams
-        .iter()
-        .filter(|g| g.refers_to.is_some() && g.kind == kind && g.grondslag == grondslag)
-    {
+    for gram in grams {
         let mut row: Map<String, serde_json::Value> = gram.fields.clone().into_iter().collect();
         for (name, value) in &gram.outputs {
             match row.get(name) {
@@ -304,6 +323,30 @@ pub fn refuse_undeclared_terms(
                      on {day}",
                     reduction.id
                 )));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Each stream a version of `reductions` reads (`source.executograms`,
+/// RFC-051) must be one of the cell's `streams`: otherwise the reduction
+/// would read no executograms where the cell never records any.
+pub fn refuse_unknown_streams(reductions: &[Reduction], streams: &[Stream]) -> Result<()> {
+    for reduction in reductions {
+        for article in &reduction.law.articles {
+            for input in article.get_inputs() {
+                let Some(stream) = input.source.as_ref().and_then(|s| s.executograms.as_ref())
+                else {
+                    continue;
+                };
+                if !streams.iter().any(|s| s.id() == stream) {
+                    return Err(setup(format!(
+                        "reduction '{}' reads the executograms of the stream '{stream}', which \
+                         the cell does not keep (executogrammen/{stream}.yaml)",
+                        reduction.id
+                    )));
+                }
             }
         }
     }
@@ -461,18 +504,29 @@ impl<'c> Reader<'c> {
             }
         }
         for input in article.get_inputs() {
-            let Some(decisions) = input.source.as_ref().and_then(|s| s.decisions.as_ref()) else {
+            let Some(source) = input.source.as_ref() else {
                 continue;
             };
-            let kind = decision_kind(service, decisions, day)?;
-            parameters.insert(input.name.clone(), rows(&self.grams, decisions, &kind)?);
+            if let Some(decisions) = &source.decisions {
+                let kind = decision_kind(service, decisions, day)?;
+                parameters.insert(input.name.clone(), rows(&self.grams, decisions, &kind)?);
+            } else if let Some(stream) = &source.executograms {
+                parameters.insert(input.name.clone(), executogram_rows(&self.grams, stream)?);
+            }
         }
         let outputs = [question.term];
         let date = question.calculation_date;
+        // The reduction may call rulework that reads an open term the cell
+        // answers too, such as a regulation that asks where the school is
+        // established (RFC-051): the cell answers it there as well.
+        let call = Call {
+            findings: BTreeMap::new(),
+            answerer: Some(self),
+        };
         Ok(if self.explain == Some(question.term) {
-            service.evaluate_law_with_trace(&reduction.id, &outputs, parameters, date)?
+            service.evaluate_law_with_trace_in(&reduction.id, &outputs, parameters, call, date)?
         } else {
-            service.evaluate_law(&reduction.id, &outputs, parameters, date)?
+            service.evaluate_law_in(&reduction.id, &outputs, parameters, call, date)?
         })
     }
 }
@@ -545,6 +599,7 @@ mod tests {
             kind: kind.into(),
             grondslag: grondslag.into(),
             refers_to: refers_to.map(str::to_string),
+            stream: None,
             recording_actor: ACTOR.into(),
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
             moment: None,
