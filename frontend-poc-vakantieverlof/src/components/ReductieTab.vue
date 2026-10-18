@@ -27,7 +27,7 @@ watch(() => [spel.grammen.length, spel.datum], laden);
 <template>
   <template v-if="stand">
     <nldd-simple-section>
-      <nldd-title slot="header" size="3" :text="`${spel.casus.cel_naam} beantwoordt uit haar kroniek`">
+      <nldd-title slot="header" size="3" :text="`Wat de cel van ${spel.casus.cel_naam} uit haar kroniek beantwoordt`">
         <nldd-text slot="supporting-text">
           Een open begrip dat een reductie van de cel vult, vraagt de engine aan de cel. Het
           bestuursorgaan krijgt die vraag niet; bij elk besluit staat wat de cel antwoordde.

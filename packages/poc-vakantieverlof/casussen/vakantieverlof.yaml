@@ -18,7 +18,7 @@ omschrijving: >-
   (Leerplichtwet 1969 artikel 13a). Het hoofd beslist, en de school leest
   haar eigen besluiten terug om te weten of de jongere dit schooljaar al
   verlof kreeg.
-cel_naam: OBS De Klimop (fictief)
+cel_naam: OBS De Klimop
 speeldatum: 2026-10-14
 
 # Fictieve voorbeeldgegevens, zodat je snel door het proces klikt. Een BSN
@@ -56,7 +56,7 @@ scenarios:
       Toegewezen.
   - naam: 'Afwijzing, bezwaar en heroverweging: gegrond'
     stappen:
-      - 'Aanvrager, 14 oktober 2026: klik op Aanvraag indienen.'
+      - 'Aanvrager, speeldatum 14 oktober 2026: klik op Aanvraag indienen.'
       - >-
         Bestuursorgaan: zet "specifieke aard beroep ouder" uit. Het hoofd vindt
         het beroep niet bijzonder genoeg. Klik op Besluit nemen. Het verlof
@@ -77,7 +77,7 @@ scenarios:
   - naam: 'Afwijzing, bezwaar en heroverweging: ongegrond'
     stappen:
       - >-
-        Aanvrager, 14 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan:
+        Aanvrager, speeldatum 14 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan:
         klik op Besluit nemen. Het verlof wordt verleend.
       - >-
         Aanvrager: vul als eerste verlofdag 10 mei 2027 en als laatste
@@ -97,7 +97,7 @@ scenarios:
   - naam: 'Bezwaar te laat: niet-ontvankelijk'
     stappen:
       - >-
-        Aanvrager, 14 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan:
+        Aanvrager, speeldatum 14 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan:
         zet "specifieke aard beroep ouder" uit en klik op Besluit nemen.
       - >-
         Aanvrager, speeldatum 1 december 2026: de bezwaartermijn is voorbij.
@@ -110,7 +110,7 @@ scenarios:
   - naam: Tweede bezwaar tegen een vervangen besluit
     stappen:
       - >-
-        Aanvrager, 14 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan:
+        Aanvrager, speeldatum 14 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan:
         klik op Besluit nemen. Het verlof wordt verleend.
       - >-
         Aanvrager, speeldatum 1 november 2026: maak bezwaar tegen het besluit.
@@ -129,7 +129,7 @@ scenarios:
   - naam: Een herroepen verlof telt niet meer mee
     stappen:
       - >-
-        Aanvrager, 14 oktober 2026: klik op Aanvraag indienen (verlof A, 1 tot
+        Aanvrager, speeldatum 14 oktober 2026: klik op Aanvraag indienen (verlof A, 1 tot
         en met 5 februari 2027). Bestuursorgaan: klik op Besluit nemen. A wordt
         verleend.
       - >-
@@ -149,7 +149,7 @@ scenarios:
         bevindingen staan en beslis.
     eind: >-
       Gegrond: B is herroepen, en het nieuwe besluit verleent het verlof. Bij
-      het waarom staat "verlof al verleend in schooljaar: nee", ingevuld door
+      het besluit staat "verlof al verleend in schooljaar: nee", ingevuld door
       de cel. Onder "Hoe de cel dit beantwoordde" staat A bij de herroepen
       besluiten, en het spoor laat zien dat het filter twee besluiten onder
       artikel 13a oversloeg. Dat zijn A en de weigering die ervoor in de

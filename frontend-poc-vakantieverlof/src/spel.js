@@ -11,7 +11,7 @@
  * (GET /api/casus); de backend leidt het af uit de wet.
  */
 import { reactive } from 'vue';
-import { api } from './api.js';
+import { api, speelt } from './api.js';
 
 export const spel = reactive({
   // De gekozen casus, zoals GET /api/casus haar geeft; null op het keuzescherm.
@@ -61,8 +61,14 @@ const onthouden = () => {
 export async function hervatten() {
   try {
     const { gekozen } = await api.casussen();
-    if (gekozen && gekozen === onthouden()) await openen(await api.casus());
+    if (gekozen && gekozen === onthouden()) {
+      // Met X-Casus: koos iemand intussen een andere casus, dan weigert de
+      // server dit verzoek (409) in plaats van die casus te openen.
+      speelt(gekozen);
+      await openen(await api.casus());
+    }
   } catch (e) {
+    speelt(null);
     spel.fout = e.message;
   }
 }
@@ -84,6 +90,7 @@ async function openen(casus) {
   spel.vormen = null;
   spel.grammen = [];
   spel.casus = casus;
+  speelt(casus.id);
   spel.datum = casus.speeldatum;
   await verversen();
 }
@@ -91,6 +98,7 @@ async function openen(casus) {
 /** Terug naar het keuzescherm; de server speelt de casus door tot een nieuwe keuze. */
 export function naarKeuze() {
   onthoud(null);
+  speelt(null);
   spel.casus = null;
   spel.fout = '';
 }

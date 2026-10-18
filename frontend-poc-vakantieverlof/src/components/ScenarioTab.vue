@@ -12,7 +12,14 @@ const emit = defineEmits(['start']);
 
 const scenarios = computed(() => spel.casus.scenarios);
 const eerste = computed(() =>
-  new Date(spel.casus.speeldatum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }),
+  // Een datum zonder tijd is middernacht UTC; in UTC tonen, anders wordt
+  // het ten westen van Greenwich de dag ervoor.
+  new Date(spel.casus.speeldatum).toLocaleDateString('nl-NL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }),
 );
 
 async function begin() {

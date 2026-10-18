@@ -11,7 +11,8 @@
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{FromRequestParts, Path, Query, State};
+use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -50,11 +51,44 @@ impl AppState {
         self.spel.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    /// Run `stap` on the chosen case and its cell.
-    fn met<T>(&self, stap: impl FnOnce(&Corpus, &mut Cell) -> kern::Result<T>) -> Result<T, Fout> {
+    /// Run `stap` on the chosen case and its cell. A request that names the
+    /// case it expects (`X-Casus`) is refused when another visitor has chosen
+    /// another case since: the step would land in the wrong cell.
+    fn met<T>(
+        &self,
+        verwacht: &Verwacht,
+        stap: impl FnOnce(&Corpus, &mut Cell) -> kern::Result<T>,
+    ) -> Result<T, Fout> {
         let mut spel = self.spel();
         let spel = spel.as_mut().ok_or(Fout::GeenCasus)?;
-        Ok(stap(&self.casussen[spel.casus], &mut spel.cell)?)
+        let corpus = &self.casussen[spel.casus];
+        if let Some(id) = verwacht.0.as_deref() {
+            if id != corpus.casus.id {
+                return Err(Fout::AndereCasus {
+                    verwacht: id.to_string(),
+                    gekozen: corpus.casus.id.clone(),
+                });
+            }
+        }
+        Ok(stap(corpus, &mut spel.cell)?)
+    }
+}
+
+/// The case a request expects, from its `X-Casus` header. The app sends it
+/// with every step; a request without it works on whatever case is chosen.
+pub struct Verwacht(Option<String>);
+
+impl<S: Send + Sync> FromRequestParts<S> for Verwacht {
+    type Rejection = std::convert::Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
+        Ok(Self(
+            parts
+                .headers
+                .get("x-casus")
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_string),
+        ))
     }
 }
 
@@ -79,15 +113,20 @@ pub fn routes() -> Router<AppState> {
 
 /// An error as the frontend reads it: `{ "fout": ... }`. What the cell or
 /// the engine refuses is the visitor's to correct (422), as is a step before
-/// a case is chosen (409) or a case that does not exist (404); a chronicle
-/// that cannot be written, or an answer that cannot be serialized, is ours
-/// (500).
+/// a case is chosen or after another case was chosen (409), or a case that
+/// does not exist (404). A chronicle that cannot be written, or an answer
+/// that cannot be serialized, is ours (500).
 enum Fout {
     Cel(Error),
     /// No case is chosen yet (409).
     GeenCasus,
     /// There is no case by that id (404).
     OnbekendeCasus(String),
+    /// Another case was chosen since the request's own (409).
+    AndereCasus {
+        verwacht: String,
+        gekozen: String,
+    },
     Intern(String),
 }
 
@@ -107,6 +146,10 @@ impl IntoResponse for Fout {
                 "no case is chosen: choose one with POST /api/casus".to_string(),
             ),
             Self::OnbekendeCasus(id) => (StatusCode::NOT_FOUND, format!("there is no case '{id}'")),
+            Self::AndereCasus { verwacht, gekozen } => (
+                StatusCode::CONFLICT,
+                format!("the chosen case is now '{gekozen}', not '{verwacht}'"),
+            ),
             Self::Intern(e) => (StatusCode::INTERNAL_SERVER_ERROR, e),
         };
         (status, Json(json!({ "fout": fout }))).into_response()
@@ -137,10 +180,8 @@ async fn casussen(State(s): State<AppState>) -> Antwoord {
 }
 
 /// The chosen case, as the app shows it.
-async fn casus(State(s): State<AppState>) -> Antwoord {
-    let spel = s.spel();
-    let spel = spel.as_ref().ok_or(Fout::GeenCasus)?;
-    ok(s.casussen[spel.casus].beschrijving())
+async fn casus(State(s): State<AppState>, v: Verwacht) -> Antwoord {
+    ok(s.met(&v, |c, _| Ok(c.beschrijving()))?)
 }
 
 #[derive(Deserialize)]
@@ -161,12 +202,14 @@ async fn kiezen(State(s): State<AppState>, Json(k): Json<Keuze>) -> Antwoord {
     ok(corpus.beschrijving())
 }
 
-async fn vormen(State(s): State<AppState>, Query(q): Query<Dag>) -> Antwoord {
-    ok(s.met(|c, cell| kern::vormen(c, cell, q.datum))?)
+async fn vormen(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) -> Antwoord {
+    ok(s.met(&v, |c, cell| kern::vormen(c, cell, q.datum))?)
 }
 
-async fn kroniek(State(s): State<AppState>) -> Antwoord {
-    ok(s.met(|_, cell| Ok(json!({ "cel": cell.recording_actor(), "grammen": cell.grams() })))?)
+async fn kroniek(State(s): State<AppState>, v: Verwacht) -> Antwoord {
+    ok(s.met(&v, |_, cell| {
+        Ok(json!({ "cel": cell.recording_actor(), "grammen": cell.grams() }))
+    })?)
 }
 
 #[derive(Deserialize)]
@@ -176,8 +219,8 @@ struct Indiening {
     datum: NaiveDate,
 }
 
-async fn aanvragen(State(s): State<AppState>, Json(b): Json<Indiening>) -> Antwoord {
-    ok(s.met(|c, cell| kern::aanvragen(c, cell, &b.velden, b.datum))?)
+async fn aanvragen(State(s): State<AppState>, v: Verwacht, Json(b): Json<Indiening>) -> Antwoord {
+    ok(s.met(&v, |c, cell| kern::aanvragen(c, cell, &b.velden, b.datum))?)
 }
 
 #[derive(Deserialize)]
@@ -190,19 +233,22 @@ struct Beslissing {
     datum: NaiveDate,
 }
 
-async fn besluiten(State(s): State<AppState>, Json(b): Json<Beslissing>) -> Antwoord {
-    ok(s.met(|c, cell| kern::besluiten(c, cell, &b.op, &b.bevindingen, b.datum))?)
+async fn besluiten(State(s): State<AppState>, v: Verwacht, Json(b): Json<Beslissing>) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::besluiten(c, cell, &b.op, &b.bevindingen, b.datum)
+    })?)
 }
 
-async fn waarom(State(s): State<AppState>, Path(id): Path<String>) -> Antwoord {
-    ok(s.met(|c, cell| kern::waarom(c, cell, &id))?)
+async fn waarom(State(s): State<AppState>, v: Verwacht, Path(id): Path<String>) -> Antwoord {
+    ok(s.met(&v, |c, cell| kern::waarom(c, cell, &id))?)
 }
 
 async fn hoe_beantwoord(
     State(s): State<AppState>,
+    v: Verwacht,
     Path((id, begrip)): Path<(String, String)>,
 ) -> Antwoord {
-    ok(s.met(|c, cell| kern::hoe_beantwoord(c, cell, &id, &begrip))?)
+    ok(s.met(&v, |c, cell| kern::hoe_beantwoord(c, cell, &id, &begrip))?)
 }
 
 #[derive(Deserialize)]
@@ -213,32 +259,43 @@ struct Bezwaar {
     datum: NaiveDate,
 }
 
-async fn bezwaren(State(s): State<AppState>, Json(b): Json<Bezwaar>) -> Antwoord {
-    ok(s.met(|c, cell| kern::bezwaren(c, cell, &b.besluit, &b.velden, b.datum))?)
+async fn bezwaren(State(s): State<AppState>, v: Verwacht, Json(b): Json<Bezwaar>) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::bezwaren(c, cell, &b.besluit, &b.velden, b.datum)
+    })?)
 }
 
 async fn heroverweging(
     State(s): State<AppState>,
+    v: Verwacht,
     Path(id): Path<String>,
     Query(q): Query<Dag>,
 ) -> Antwoord {
-    ok(s.met(|c, cell| kern::heroverweging(c, cell, &id, q.datum))?)
+    ok(s.met(&v, |c, cell| kern::heroverweging(c, cell, &id, q.datum))?)
 }
 
-async fn beslissen_op_bezwaar(State(s): State<AppState>, Json(b): Json<Beslissing>) -> Antwoord {
-    ok(s.met(|c, cell| kern::beslissen_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum))?)
+async fn beslissen_op_bezwaar(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::beslissen_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
+    })?)
 }
 
-async fn reducties(State(s): State<AppState>, Query(q): Query<Dag>) -> Antwoord {
-    ok(s.met(|c, cell| kern::reducties(c, cell, q.datum))?)
+async fn reducties(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) -> Antwoord {
+    ok(s.met(&v, |c, cell| kern::reducties(c, cell, q.datum))?)
 }
 
-async fn logboek(State(s): State<AppState>) -> Antwoord {
-    ok(s.met(|c, cell| Ok(json!({ "handelingen": kern::logboek(c, cell)? })))?)
+async fn logboek(State(s): State<AppState>, v: Verwacht) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        Ok(json!({ "handelingen": kern::logboek(c, cell)? }))
+    })?)
 }
 
-async fn reset(State(s): State<AppState>) -> Antwoord {
-    s.met(|c, cell| {
+async fn reset(State(s): State<AppState>, v: Verwacht) -> Antwoord {
+    s.met(&v, |c, cell| {
         *cell = c.cell()?;
         Ok(())
     })?;

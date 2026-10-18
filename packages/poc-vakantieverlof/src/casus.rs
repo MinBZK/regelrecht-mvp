@@ -28,7 +28,8 @@ use crate::kern::Result;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Casus {
-    #[serde(default)]
+    /// From the file name, never from the file.
+    #[serde(skip_deserializing)]
     pub id: String,
     /// The cell that plays the case: its directory under `corpus/cells`, and
     /// the actor it records as.
@@ -123,7 +124,11 @@ impl Regelwerk {
     }
 }
 
-/// Every regelwerk under `root/regulation/nl`, read once at startup.
+/// Every regelwerk under `root/regulation/nl`, read once at startup. The
+/// derivation looks across all of them for what acts on a case's
+/// regelwerken, so the whole corpus has to parse, and a new regelwerk that
+/// implements an open term of the Awb, or hooks on every decision, joins
+/// every case, and the tests on the derivation and on the image fail.
 #[derive(Debug, Clone)]
 pub struct Regelwerken(Vec<Regelwerk>);
 

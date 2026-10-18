@@ -19,7 +19,7 @@ omschrijving: >-
   gehandicaptenparkeerkaart (BABW artikel 49). Het college beslist na een
   geneeskundig onderzoek, en de gemeente leest haar eigen besluiten terug om
   te weten of de aanvrager al een geldige kaart heeft.
-cel_naam: Gemeente Wilgendaal (fictief)
+cel_naam: gemeente Wilgendaal
 speeldatum: 2026-10-13
 
 # Fictieve voorbeeldgegevens, zodat je snel door het proces klikt. Een BSN
@@ -62,19 +62,19 @@ scenarios:
       dag van het besluit (BABW artikel 51).
   - naam: Weigering op het medisch criterium
     stappen:
-      - 'Aanvrager, 13 oktober 2026: klik op Aanvraag indienen.'
+      - 'Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen.'
       - >-
         Bestuursorgaan, speeldatum 20 oktober 2026: zet "langdurige
         loopbeperking" uit. Uit het geneeskundig onderzoek komt dan geen enkel
         criterium. Klik op Besluit nemen.
     eind: >-
-      Afgewezen. Bij Waarom? staat geen antwoord van de cel: artikel 49 leest
+      Afgewezen. Bij het besluit staat geen antwoord van de cel: artikel 49 leest
       het beleid van de gemeente alleen voor een aanvrager die aan een
       criterium voldoet, dus de cel kreeg geen vraag.
   - naam: Een tweede kaart naast een geldige
     stappen:
       - >-
-        Aanvrager, 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
+        Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
         speeldatum 20 oktober 2026: klik op Besluit nemen. De kaart wordt
         verstrekt.
       - 'Aanvrager, speeldatum 1 maart 2027: klik nog een keer op Aanvraag indienen.'
@@ -82,7 +82,7 @@ scenarios:
         Bestuursorgaan: klik op Besluit nemen. Afgewezen: het beleid van de
         gemeente geeft geen tweede kaart naast een geldige.
     eind: >-
-      Bij het waarom staat "aanvrager heeft geldige gehandicaptenparkeerkaart:
+      Bij het besluit staat "aanvrager heeft geldige gehandicaptenparkeerkaart:
       ja", ingevuld door de cel uit haar kroniek. Onder "Hoe de cel dit
       beantwoordde" staat het spoor van haar reductie, met het eerste besluit.
       In het Logboek staat bij het tweede besluit de keten: artikel 49, het
@@ -90,7 +90,7 @@ scenarios:
   - naam: Ongegrond bezwaar tegen een verstrekking
     stappen:
       - >-
-        Aanvrager, 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
+        Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
         speeldatum 20 oktober 2026: klik op Besluit nemen. De kaart is geldig
         tot en met 19 oktober 2031.
       - >-
@@ -102,13 +102,13 @@ scenarios:
     eind: >-
       Ongegrond: de heroverweging geeft dezelfde uitkomst, en het besluit
       blijft geldig tot en met 19 oktober 2031. Opnieuw beslist zou de kaart
-      een maand later aflopen, maar die einddatum is een afgeleid gegeven en
-      geen uitkomst. De cel leest bij de heroverweging haar kroniek zonder het
-      bestreden besluit, zodat de kaart niet naast zichzelf wordt geweigerd.
+      later aflopen, maar de einddatum is afgeleid en geen uitkomst. Bij de
+      heroverweging laat de cel het bestreden besluit buiten beschouwing,
+      zodat de kaart niet wordt geweigerd vanwege zichzelf.
   - naam: Gegrond bezwaar tegen een weigering
     stappen:
       - >-
-        Aanvrager, 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
+        Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
         speeldatum 20 oktober 2026: zet "langdurige loopbeperking" uit en klik
         op Besluit nemen. De kaart wordt geweigerd.
       - >-

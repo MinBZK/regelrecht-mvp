@@ -248,7 +248,7 @@ The cell contains no Awb article. [RFC-050](/rfcs/rfc-050) describes the design 
 
 ## A second case: the parking card
 
-The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on the same cell without a change to the engine or the cell. Only rulework and tests change.
+The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`, without a change to the engine or the cell code. Only rulework and tests change.
 
 ```yaml
 # BABW, art. 49

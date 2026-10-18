@@ -1,6 +1,9 @@
 /**
  * De API van packages/poc-vakantieverlof. Eerst kies je een casus (POST
- * /api/casus); elk ander pad werkt op de gekozen casus. Elk pad gaat langs `b()`: achter
+ * /api/casus); elk ander pad werkt op de gekozen casus. Elk verzoek noemt de
+ * casus die deze app speelt (X-Casus): koos een andere bezoeker intussen een
+ * andere casus, dan weigert de server de stap in plaats van hem in de
+ * verkeerde cel te doen. Elk pad gaat langs `b()`: achter
  * het poc-portaal staat de app onder /vakantieverlof/, en dan moet /api/x ook
  * /vakantieverlof/api/x worden. Een weigering van de cel komt terug als
  * `{ fout }` en wordt de foutmelding.
@@ -19,11 +22,18 @@ function fout(_status, body) {
   }
 }
 
-const get = (pad) => apiFetchJson(b(pad), { errorMessage: fout });
+let casus = null;
+/** De casus die deze app speelt, voor de X-Casus-header; null op het keuzescherm. */
+export const speelt = (id) => {
+  casus = id;
+};
+const kop = () => (casus ? { 'X-Casus': casus } : {});
+
+const get = (pad) => apiFetchJson(b(pad), { headers: kop(), errorMessage: fout });
 const post = (pad, data) =>
   apiFetchJson(b(pad), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...kop() },
     body: JSON.stringify(data ?? {}),
     errorMessage: fout,
   });

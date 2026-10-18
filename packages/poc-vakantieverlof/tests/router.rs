@@ -187,6 +187,26 @@ async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_
     assert_eq!(casus["rol"], json!("het hoofd"));
     let (_, lijst) = send(&app, get("/vakantieverlof/api/casussen")).await;
     assert_eq!(lijst["gekozen"], json!("vakantieverlof"));
+
+    // A step that expects another case than the chosen one is refused: it
+    // would land in the wrong cell.
+    let verwacht = |casus: &str| {
+        Request::get("/vakantieverlof/api/kroniek")
+            .header("x-casus", casus)
+            .body(Body::empty())
+            .unwrap()
+    };
+    let (status, body) = send(&app, verwacht("gehandicaptenparkeerkaart")).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert!(
+        body["fout"]
+            .as_str()
+            .unwrap()
+            .contains("the chosen case is now 'vakantieverlof'"),
+        "{body}"
+    );
+    let (status, _) = send(&app, verwacht("vakantieverlof")).await;
+    assert_eq!(status, StatusCode::OK);
 }
 
 #[tokio::test]

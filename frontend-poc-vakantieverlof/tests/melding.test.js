@@ -91,3 +91,11 @@ describe('isEngels', () => {
     expect(isEngels('De server gaf geen antwoord.')).toBe(false);
   });
 });
+
+describe('een andere casus gekozen', () => {
+  it('zegt dat iemand anders intussen een andere casus koos', () => {
+    expect(melding("the chosen case is now 'vakantieverlof', not 'gehandicaptenparkeerkaart'")).toContain(
+      'Kies er opnieuw een',
+    );
+  });
+});

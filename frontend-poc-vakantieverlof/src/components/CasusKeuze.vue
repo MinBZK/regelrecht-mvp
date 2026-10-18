@@ -23,6 +23,8 @@ const artikel = (c) => {
   return artikelNaam(wet, nummer);
 };
 
+const hoofdletter = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
 async function kies(c) {
   if (await kiezen(c.id)) emit('gekozen');
 }
@@ -39,18 +41,20 @@ async function kies(c) {
     </nldd-title>
     <nldd-collection layout="grid" item-width="320px">
       <nldd-card v-for="c in casussen" :key="c.id">
-        <nldd-container padding="16" gap="12">
+        <nldd-container slot="header" padding="16">
           <nldd-title
             size="4"
             heading-level="2"
-            :overline="c.cel_naam"
+            :overline="`${hoofdletter(c.cel_naam)} (fictief)`"
             :text="c.titel"
             :supporting-text="`${artikel(c)} · beslist door ${c.rol}`"
           ></nldd-title>
+        </nldd-container>
+        <nldd-container padding="16">
           <nldd-text>{{ c.omschrijving }}</nldd-text>
         </nldd-container>
         <nldd-container slot="footer" padding="16">
-          <nldd-button appearance="primary" :text="`Speel ${c.titel.toLowerCase()}`" @click="kies(c)"></nldd-button>
+          <nldd-button appearance="primary" :text="`${c.titel} naspelen`" @click="kies(c)"></nldd-button>
         </nldd-container>
       </nldd-card>
     </nldd-collection>

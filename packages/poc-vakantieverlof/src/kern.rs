@@ -1624,8 +1624,8 @@ mod tests {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let dockerfile = std::fs::read_to_string(dir.join("Dockerfile")).unwrap();
         let filters = std::fs::read_to_string(dir.join("../../script/deploy-filters.mjs")).unwrap();
-        for id in ["vakantieverlof", "gehandicaptenparkeerkaart"] {
-            let c = casus(id);
+        let alle = Corpus::alle(&dir.join("../../corpus"), &dir.join("casussen")).unwrap();
+        for c in &alle {
             let cel = format!("corpus/cells/{}/", c.casus.cel);
             let mappen = c.mappen().map(|m| format!("corpus/regulation/nl/{m}/"));
             for pad in mappen.chain([cel]) {

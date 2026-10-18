@@ -37,6 +37,11 @@ const vertalingen = [
       `Besluit ${kort(besluit)} vroeg de cel niet om "${leesbaar(begrip)}", dus er is geen antwoord om uit te leggen.`,
   ],
   [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
+  // Een andere bezoeker koos intussen een andere casus (X-Casus).
+  [
+    /the chosen case is now '[^']+'/,
+    () => 'Iemand anders koos intussen een andere casus. Kies er opnieuw een.',
+  ],
   // Een stap voordat er een casus gekozen is, bijvoorbeeld na een herstart
   // van de server.
   [

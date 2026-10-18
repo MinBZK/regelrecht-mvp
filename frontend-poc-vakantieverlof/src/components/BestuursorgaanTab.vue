@@ -105,10 +105,9 @@ const uitkomstOpBezwaar = (uit) =>
   <nldd-simple-section>
     <nldd-title slot="header" size="3" text="Open aanvragen">
       <nldd-text slot="supporting-text">
-        Het bestuursorgaan is hier {{ spel.casus.rol }} ({{ artikel }}). Het beslist; de
-        aanvraag en het beleid leveren de rest. Een open begrip dat de cel uit haar kroniek
-        beantwoordt, staat hieronder niet: dat vraagt de engine aan de cel. De bevindingen
-        hieronder geeft alleen het bestuursorgaan.
+        Het bestuursorgaan is hier {{ spel.casus.rol }} ({{ artikel }}). Het beslist met de
+        aanvraag, het beleid en de bevindingen hieronder. Wat de cel zelf uit haar
+        kroniek beantwoordt, vraagt deze pagina niet.
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog
