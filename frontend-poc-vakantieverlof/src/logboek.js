@@ -57,7 +57,9 @@ export function ingevuldDoor(by, grammen) {
 export function stapTekst(stap, grammen) {
   switch (stap.soort) {
     case 'artikel':
-      return { tekst: `${artikelNaam(stap.wet, stap.artikel)} wordt uitgevoerd` };
+      return stap.uitvoer
+        ? { tekst: `${leesbaar(stap.uitvoer)} uit ${WETTEN[stap.wet] ?? leesbaar(stap.wet)}` }
+        : { tekst: `${artikelNaam(stap.wet, stap.artikel)} wordt uitgevoerd` };
     case 'hook':
       return { tekst: `Ook van toepassing: ${artikelNaam(stap.wet, stap.artikel)}` };
     case 'uitkomst':
@@ -72,12 +74,18 @@ export function stapTekst(stap, grammen) {
       if (cel) {
         return {
           tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: `cel ${cel.answerer} antwoordt ${toon(stap.waarde)} (reductie ${cel.law_id}, ${gelezen(cel, grammen)})`,
+          toelichting: `cel ${cel.answerer} antwoordt ${toon(stap.waarde)} (${cel.law_id}, ${gelezen(cel, grammen)})`,
         };
       }
+      // Een begrip dat zijn standaardwaarde kreeg, noemt de engine niet bij
+      // de ingevulde begrippen; het heeft dan wel een waarde.
+      const door =
+        stap.ingevuld_door == null && stap.waarde != null
+          ? 'standaardwaarde'
+          : ingevuldDoor(stap.ingevuld_door, grammen);
       return {
         tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-        toelichting: `open begrip, ${ingevuldDoor(stap.ingevuld_door, grammen)}`,
+        toelichting: `open begrip, ${door}`,
       };
     }
     default:
@@ -85,21 +93,11 @@ export function stapTekst(stap, grammen) {
   }
 }
 
-/**
- * De keten genummerd: `1`, `1.2`, `1.2.3`. Een begrip dat de cel
- * beantwoordde krijgt `keer`: de hoeveelste keer het besluit haar dat
- * begrip vroeg, want de uitleg van de cel komt per keer, in de volgorde van
- * het spoor.
- */
-export function genummerd(stappen, prefix = '', tellers = {}) {
+/** De keten genummerd: `1`, `1.2`, `1.2.3`. */
+export function genummerd(stappen, prefix = '') {
   return stappen.map((stap, i) => {
     const nummer = prefix ? `${prefix}.${i + 1}` : `${i + 1}`;
-    let keer = null;
-    if (stap.soort === 'begrip' && stap.ingevuld_door?.answer) {
-      keer = tellers[stap.naam] ?? 0;
-      tellers[stap.naam] = keer + 1;
-    }
-    return { nummer, stap, keer, kinderen: genummerd(stap.stappen ?? [], nummer, tellers) };
+    return { nummer, stap, kinderen: genummerd(stap.stappen ?? [], nummer) };
   });
 }
 

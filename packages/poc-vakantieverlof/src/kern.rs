@@ -218,19 +218,35 @@ fn beantwoord(node: &PathNode) -> Vec<&PathNode> {
     gevonden
 }
 
+/// How many times before `node` the decision asked the cell the same term,
+/// in trace order: the index of its explanation among those
+/// [`hoe_beantwoord`] gives. `None` when the cell did not answer at `node`.
+fn keer(beantwoord: &[&PathNode], node: &PathNode) -> Option<usize> {
+    let i = beantwoord.iter().position(|n| std::ptr::eq(*n, node))?;
+    Some(
+        beantwoord[..i]
+            .iter()
+            .filter(|n| n.name == node.name)
+            .count(),
+    )
+}
+
 /// Why the decision `id` came out as it did ([`Waarom`]).
 pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
     let mut service = corpus.service()?;
     let result = cell.explain(&mut service, id)?;
     let mut antwoorden = Vec::new();
     if let Some(root) = &result.trace {
-        for node in beantwoord(root) {
+        let gevraagd = beantwoord(root);
+        for node in gevraagd.iter().copied() {
             let Some(answer) = &node.answer else {
                 continue;
             };
             let waarde = node.result.as_ref().map(stored::to_stored).transpose()?;
+            let keer = keer(&gevraagd, node);
             antwoorden.push(json!({
                 "begrip": node.name,
+                "keer": keer,
                 "waarde": waarde,
                 "door": answer.answerer,
                 "reductie": answer.law_id,
@@ -259,10 +275,14 @@ pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
 #[derive(Debug, serde::Serialize)]
 #[serde(tag = "soort", rename_all = "snake_case")]
 pub enum Stap {
-    /// An article runs: the one that decides, or one it calls.
+    /// An article runs: the one that decides, or one it calls. A call
+    /// under which no article ran (a cached result) names the output it
+    /// asked for instead (`uitvoer`), and `artikel` is empty.
     Artikel {
         wet: String,
         artikel: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        uitvoer: Option<String>,
         stappen: Vec<Stap>,
     },
     /// A hook fires: an article that runs at a stage of the decision.
@@ -278,7 +298,10 @@ pub enum Stap {
         ontbreekt: Vec<String>,
         stappen: Vec<Stap>,
     },
-    /// An open term, and who filled it (`ArticleResult::open_terms`).
+    /// An open term, and who filled it (`ArticleResult::open_terms`). For
+    /// the cell's answer, `keer` is how many times the decision asked the
+    /// cell this term before, over the whole trace: the index into the
+    /// answers of [`hoe_beantwoord`].
     Begrip {
         naam: String,
         wet: String,
@@ -286,7 +309,16 @@ pub enum Stap {
         waarde: Value,
         ontbreekt: Vec<String>,
         ingevuld_door: Option<FilledBy>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        keer: Option<usize>,
     },
+}
+
+/// What condensing a trace needs besides the node: who filled each open
+/// term, and the nodes where the cell answered one, in trace order.
+struct Spoor<'a> {
+    ingevuld: &'a [OpenTermFilled],
+    beantwoord: Vec<&'a PathNode>,
 }
 
 /// The decision's trace condensed to the steps a reader follows: the
@@ -300,35 +332,58 @@ pub fn keten(result: &ArticleResult) -> Result<Vec<Stap>> {
     let Some(root) = &result.trace else {
         return Ok(Vec::new());
     };
+    let spoor = Spoor {
+        ingevuld: &result.open_terms,
+        beantwoord: beantwoord(root),
+    };
     Ok(vec![Stap::Artikel {
         wet: result.law_id.clone(),
         artikel: result.article_number.clone(),
-        stappen: stappen_onder(root, &result.open_terms)?,
+        uitvoer: None,
+        stappen: stappen_onder(root, &spoor)?,
     }])
 }
 
-fn stappen_onder(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>> {
+fn stappen_onder(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
     let mut uit = Vec::new();
     for child in &node.children {
-        uit.extend(stappen_van(child, ingevuld)?);
+        uit.extend(stappen_van(child, spoor)?);
     }
     Ok(uit)
 }
 
 /// What a trace node gives: one step, or the steps under it.
-fn stappen_van(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>> {
+fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
     let stap = match node.node_type {
-        PathNodeType::Article | PathNodeType::CrossLawReference | PathNodeType::Cached => {
-            let (wet, artikel) = waar(node);
-            Stap::Artikel {
-                wet,
-                artikel,
-                stappen: stappen_onder(node, ingevuld)?,
+        PathNodeType::Article | PathNodeType::CrossLawReference => {
+            match waar(node) {
+                Some((wet, artikel)) => Stap::Artikel {
+                    wet,
+                    artikel,
+                    uitvoer: None,
+                    stappen: stappen_onder(node, spoor)?,
+                },
+                // A call named `<law>#<output>` under which no article
+                // ran: a cached result, or one that failed. A cached
+                // result is a node of its own under the call, and leaves no
+                // step besides the call's.
+                None => match node.name.split_once('#') {
+                    Some((wet, uitvoer)) => Stap::Artikel {
+                        wet: wet.to_string(),
+                        artikel: String::new(),
+                        uitvoer: Some(uitvoer.to_string()),
+                        stappen: stappen_onder(node, spoor)?,
+                    },
+                    // An article node that names no call, such as the
+                    // marking of a construct the engine cannot translate:
+                    // no step of its own.
+                    None => return stappen_onder(node, spoor),
+                },
             }
         }
         PathNodeType::HookResolution => {
-            let (wet, artikel) = waar(node);
-            let stappen = stappen_onder(node, ingevuld)?;
+            let (wet, artikel) = waar(node).unwrap_or_else(|| (node.name.clone(), String::new()));
+            let stappen = stappen_onder(node, spoor)?;
             // A hook that fires at every stage of a submission also fires at
             // the decision, where the facts it reads (those of the
             // submission) are not passed. It determines nothing there, and
@@ -352,7 +407,7 @@ fn stappen_van(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>
                 naam: node.name.clone(),
                 waarde,
                 ontbreekt,
-                stappen: stappen_onder(node, ingevuld)?,
+                stappen: stappen_onder(node, spoor)?,
             }
         }
         PathNodeType::OpenTermResolution => {
@@ -367,11 +422,13 @@ fn stappen_van(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>
                     )
                 })
                 .unwrap_or_default();
-            let ingevuld_door = ingevuld
+            let ingevuld_door = spoor
+                .ingevuld
                 .iter()
                 .find(|f| f.term == node.name && f.law_id == wet && f.article == artikel)
                 .map(|f| f.filled_by.clone())
                 .or_else(|| node.answer.clone().map(FilledBy::Answer));
+            let keer = keer(&spoor.beantwoord, node);
             Stap::Begrip {
                 naam: node.name.clone(),
                 wet,
@@ -379,32 +436,30 @@ fn stappen_van(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>
                 waarde,
                 ontbreekt,
                 ingevuld_door,
+                keer,
             }
         }
-        _ => return stappen_onder(node, ingevuld),
+        _ => return stappen_onder(node, spoor),
     };
     Ok(vec![stap])
 }
 
 /// The law and article an article step runs: where the engine was at the
 /// first output or hook under it. Resolving the parameters of a call
-/// happens where the caller is, so those steps do not count. A step
-/// without one (a cached result) is named `<law>#<article>` or by its law
-/// alone.
-fn waar(node: &PathNode) -> (String, String) {
+/// happens where the caller is, so those steps do not count, and neither
+/// does a call nested in them. `None` when no article ran under it.
+fn waar(node: &PathNode) -> Option<(String, String)> {
     fn eerste(node: &PathNode) -> Option<(String, String)> {
         node.children.iter().find_map(|c| match c.node_type {
             PathNodeType::Action | PathNodeType::HookResolution => c
                 .anchor
                 .as_ref()
                 .and_then(|a| Some((a.law_id.clone()?, a.article.clone()?))),
+            PathNodeType::Article | PathNodeType::CrossLawReference | PathNodeType::Cached => None,
             _ => eerste(c),
         })
     }
-    eerste(node).unwrap_or_else(|| match node.name.split_once('#') {
-        Some((wet, artikel)) => (wet.to_string(), artikel.to_string()),
-        None => (node.name.clone(), String::new()),
-    })
+    eerste(node)
 }
 
 /// What a step came to, as stored, and the facts it missed when the engine
@@ -1325,6 +1380,8 @@ mod tests {
             json!("reductie_verlof_al_verleend_in_schooljaar")
         );
         assert_eq!(door["last_record"], json!(tegen_b.id));
+        // The first time the decision asked the cell this term.
+        assert_eq!(antwoord["keer"], json!(0));
         // The head's finding, and a hook with its effect.
         let beroep = vind(&art13a["stappen"], &|s| {
             s["naam"] == json!("specifieke_aard_beroep_ouder")
@@ -1345,6 +1402,62 @@ mod tests {
             !tekst.contains("DATE_DIFF") && !tekst.contains("\"resolve\""),
             "{tekst}"
         );
+    }
+
+    #[test]
+    fn the_chain_counts_each_answer_and_names_a_cached_call_by_its_output() {
+        use regelrecht_engine::{AnswerProvenance, Value as V};
+        let anker = |artikel: &str| regelrecht_engine::trace::LegalAnchor {
+            law_id: Some(LAW.into()),
+            article: Some(artikel.into()),
+            ..Default::default()
+        };
+        let antwoord = || {
+            let mut n = PathNode::new(PathNodeType::OpenTermResolution, "begrip")
+                .with_result(V::Bool(false))
+                .with_anchor(anker(ARTICLE));
+            n.answer = Some(AnswerProvenance {
+                answerer: SCHOOL.into(),
+                law_id: "reductie".into(),
+                valid_from: "2026-08-01".into(),
+                records_read: 1,
+                last_record: None,
+            });
+            n
+        };
+        let actie = |naam: &str| {
+            PathNode::new(PathNodeType::Action, naam)
+                .with_result(V::Bool(true))
+                .with_anchor(anker(ARTICLE))
+        };
+        let root = PathNode::new(PathNodeType::Article, LAW)
+            .with_child(
+                actie("a").with_child(antwoord()).with_child(
+                    // A call whose result was cached: named by its output.
+                    PathNode::new(PathNodeType::CrossLawReference, "andere_wet#uitvoer")
+                        .with_child(PathNode::new(PathNodeType::Cached, "andere_wet#uitvoer")),
+                ),
+            )
+            // A marking of a construct the engine cannot translate.
+            .with_child(
+                PathNode::new(PathNodeType::Article, "untranslatable:x").with_child(antwoord()),
+            );
+        let spoor = Spoor {
+            ingevuld: &[],
+            beantwoord: beantwoord(&root),
+        };
+        let stappen = serde_json::to_value(stappen_onder(&root, &spoor).unwrap()).unwrap();
+        // The second time the term is asked counts on from the first.
+        assert_eq!(stappen[0]["stappen"][0]["keer"], json!(0));
+        assert_eq!(stappen[1]["keer"], json!(1));
+        let aanroep = &stappen[0]["stappen"][1];
+        assert_eq!(aanroep["soort"], json!("artikel"));
+        assert_eq!(aanroep["wet"], json!("andere_wet"));
+        assert_eq!(aanroep["artikel"], json!(""));
+        assert_eq!(aanroep["uitvoer"], json!("uitvoer"));
+        assert_eq!(aanroep["stappen"], json!([]));
+        // The marking leaves no step: what is under it follows directly.
+        assert_eq!(stappen[1]["soort"], json!("begrip"));
     }
 
     /// The first step in `stappen`, or under one, for which `past` holds.

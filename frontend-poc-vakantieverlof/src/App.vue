@@ -1,8 +1,9 @@
 <script setup>
 // Eén pagina, zes tabbladen: de scenario's, de ouder, de school, de
-// kroniek, de reductie en het logboek. Bovenaan de speeldatum, die voor elke stap geldt,
-// en een knop die de kroniek leegmaakt. Een weigering van de cel staat in
-// een banner, in het Nederlands; de melding van de cel zelf onder Details.
+// kroniek, de reductie en het logboek. Bovenaan de speeldatum, die voor
+// elke stap geldt, en een knop die de kroniek leegmaakt. Een weigering van
+// de cel staat in een banner, in het Nederlands; de melding van de cel zelf
+// onder Details.
 import { onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
 import { isEngels, melding } from './melding.js';

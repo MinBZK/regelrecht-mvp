@@ -192,11 +192,7 @@ async fn reducties(State(s): State<AppState>, Query(q): Query<Dag>) -> Antwoord 
 }
 
 async fn logboek(State(s): State<AppState>) -> Antwoord {
-    let cell = s.cell();
-    ok(json!({
-        "cel": cell.recording_actor(),
-        "handelingen": kern::logboek(&s.corpus, &cell)?,
-    }))
+    ok(json!({ "handelingen": kern::logboek(&s.corpus, &s.cell())? }))
 }
 
 async fn reset(State(s): State<AppState>) -> Antwoord {

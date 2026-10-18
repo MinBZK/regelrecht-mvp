@@ -15,16 +15,29 @@ import KetenStap from './KetenStap.vue';
 const emit = defineEmits(['kroniek']);
 
 const handelingen = ref([]);
+const geladen = ref(false);
+const mislukt = ref(false);
+let verzoek = 0;
 const gekozen = ref(null);
 const spoor = ref(false);
 
 async function laden() {
+  const dit = ++verzoek;
   try {
-    handelingen.value = (await api.logboek()).handelingen;
+    const antwoord = await api.logboek();
+    // Alleen het antwoord op het laatste verzoek telt.
+    if (dit !== verzoek) return;
+    handelingen.value = antwoord.handelingen;
   } catch (e) {
+    if (dit !== verzoek) return;
+    // De banner zegt wat er misging; het logboek toont dan niets.
     spel.fout = e.message;
+    handelingen.value = [];
+    mislukt.value = true;
     return;
   }
+  geladen.value = true;
+  mislukt.value = false;
   if (!handelingen.value.some((h) => h.gram.id === gekozen.value)) {
     gekozen.value = handelingen.value[0]?.gram.id ?? null;
   }
@@ -57,7 +70,7 @@ async function uitleg(knoop) {
     const antwoord = await api.hoeBeantwoord(besluit, knoop.stap.naam);
     // Alleen als intussen niet een ander begrip of besluit gekozen is.
     if (sheet.knoop?.nummer === knoop.nummer && gekozen.value === besluit) {
-      sheet.uitleg = antwoord.antwoorden[knoop.keer] ?? null;
+      sheet.uitleg = antwoord.antwoorden[knoop.stap.keer] ?? null;
     }
   } catch (e) {
     spel.fout = e.message;
@@ -67,14 +80,17 @@ async function uitleg(knoop) {
 </script>
 
 <template>
-  <nldd-simple-section v-if="handelingen.length === 0">
+  <nldd-simple-section v-if="!geladen && !mislukt">
+    <nldd-inline-dialog variant="loading" text="Het logboek wordt geladen"></nldd-inline-dialog>
+  </nldd-simple-section>
+  <nldd-simple-section v-else-if="!mislukt && handelingen.length === 0">
     <nldd-inline-dialog
       icon="info"
       text="Het logboek is leeg"
-      supporting-text="Dien als ouder een aanvraag in; elke stap die de cel vastlegt, komt hier."
+      supporting-text="Dien als ouder een aanvraag in. Elke stap die de cel vastlegt, komt hier te staan."
     ></nldd-inline-dialog>
   </nldd-simple-section>
-  <nldd-side-by-side-split-view v-else panes="2">
+  <nldd-side-by-side-split-view v-else-if="handelingen.length" panes="2">
     <nldd-page slot="pane-1" landmarks="region" accessible-label="Handelingen">
       <nldd-simple-section>
         <nldd-title slot="header" size="3" text="Logboek">
@@ -184,7 +200,7 @@ async function uitleg(knoop) {
           <template v-if="keten.length">
             <nldd-text size="sm" color="secondary">
               De keten: het besluit opnieuw genomen, stap voor stap. Rekenwerk en het opzoeken van
-              waarden zijn weggelaten; die staan in de volledige trace.
+              waarden zijn weggelaten; die staan in het volledige spoor.
             </nldd-text>
             <nldd-list type="tree" appearance="box-base" accessible-label="Keten van het besluit">
               <KetenStap v-for="k in keten" :key="k.nummer" :knoop="k" @uitleg="uitleg" />
@@ -194,13 +210,13 @@ async function uitleg(knoop) {
               size="sm"
               expandable
               :expanded="spoor"
-              text="Volledige trace"
+              text="Volledig spoor"
               @click="spoor = !spoor"
             ></nldd-button>
             <nldd-code-viewer v-if="spoor" appearance="box-tinted">{{ handeling.waarom.spoor }}</nldd-code-viewer>
           </template>
           <nldd-text v-else size="sm" color="secondary">
-            Geen besluit: de cel legde vast wat er werd ingediend. Wat het artikel daarbij
+            Geen besluit. De cel legde vast wat de ouder indiende. Wat het artikel daarbij
             uitrekende, zoals de laatste dag van de termijn, staat in de kroniek.
           </nldd-text>
         </nldd-container>

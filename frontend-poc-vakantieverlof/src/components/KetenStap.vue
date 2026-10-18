@@ -11,7 +11,9 @@ import { stapTekst } from '../logboek.js';
 defineOptions({ name: 'KetenStap' });
 
 const props = defineProps({
-  // Een stap uit `genummerd()`: { nummer, stap, keer, kinderen }.
+  // Een stap uit `genummerd()`: { nummer, stap, kinderen }. Bij een
+  // antwoord van de cel staat in `stap.keer` de hoeveelste keer het besluit
+  // haar dit begrip vroeg.
   knoop: { type: Object, required: true },
   diepte: { type: Number, default: 0 },
 });
@@ -20,7 +22,9 @@ const emit = defineEmits(['uitleg']);
 const open = ref(true);
 const tak = computed(() => props.knoop.kinderen.length > 0);
 const tekst = computed(() => stapTekst(props.knoop.stap, spel.grammen));
-const cel = computed(() => props.knoop.stap.ingevuld_door?.answer ?? null);
+const cel = computed(() =>
+  props.knoop.stap.keer != null ? (props.knoop.stap.ingevuld_door?.answer ?? null) : null,
+);
 </script>
 
 <template>

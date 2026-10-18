@@ -12,6 +12,7 @@ const celAntwoord = {
   artikel: '13a',
   waarde: false,
   ontbreekt: [],
+  keer: 0,
   ingevuld_door: {
     answer: {
       answerer: 'obs_de_klimop',
@@ -39,7 +40,7 @@ const keten = [
             soort: 'artikel',
             wet: 'leerplichtwet_1969',
             artikel: '13a',
-            stappen: [celAntwoord, { ...celAntwoord }],
+            stappen: [celAntwoord, { ...celAntwoord, keer: 1 }],
           },
         ],
       },
@@ -49,18 +50,17 @@ const keten = [
 ];
 
 describe('genummerd', () => {
-  it('nummert de keten per niveau en telt per begrip de keren dat de cel antwoordde', () => {
+  it('nummert de keten per niveau', () => {
     const [art] = genummerd(keten);
     expect(art.nummer).toBe('1');
     const [heroverweging, hook] = art.kinderen;
     expect(hook.nummer).toBe('1.2');
     const art13a = heroverweging.kinderen[0];
     expect(art13a.nummer).toBe('1.1.1');
-    expect(art13a.kinderen.map((k) => [k.nummer, k.keer])).toEqual([
+    expect(art13a.kinderen.map((k) => [k.nummer, k.stap.keer])).toEqual([
       ['1.1.1.1', 0],
       ['1.1.1.2', 1],
     ]);
-    expect(hook.keer).toBeNull();
   });
 });
 
@@ -69,7 +69,7 @@ describe('stapTekst', () => {
     expect(stapTekst(celAntwoord, grammen)).toEqual({
       tekst: 'verlof al verleend in schooljaar: nee',
       toelichting:
-        'cel obs_de_klimop antwoordt nee (reductie reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
+        'cel obs_de_klimop antwoordt nee (reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
     });
   });
 
@@ -83,6 +83,17 @@ describe('stapTekst', () => {
     expect(stapTekst(regeling, grammen).toelichting).toBe(
       'open begrip, ingevuld door Leerplichtwet 1969 artikel 1',
     );
+  });
+
+  it('noemt een standaardwaarde, en een begrip zonder waarde niet ingevuld', () => {
+    const begrip = { ...celAntwoord, ingevuld_door: null, waarde: false };
+    expect(stapTekst(begrip, grammen).toelichting).toBe('open begrip, standaardwaarde');
+    expect(stapTekst({ ...begrip, waarde: null }, grammen).toelichting).toBe('open begrip, niet ingevuld');
+  });
+
+  it('noemt een aanroep zonder artikel bij de uitvoer die hij vroeg', () => {
+    const stap = { soort: 'artikel', wet: 'leerplichtwet_1969', artikel: '', uitvoer: 'verlofdagen', stappen: [] };
+    expect(stapTekst(stap, grammen).tekst).toBe('verlofdagen uit Leerplichtwet 1969');
   });
 
   it('zegt bij een uitkomst die niet te bepalen was wat ontbrak', () => {

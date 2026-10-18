@@ -31,13 +31,9 @@ const herkomst = (a) =>
 
 // Per begrip de uitleg van de school, als die gevraagd is. Vroeg het besluit
 // een begrip vaker, dan geeft de cel per keer een uitleg, in de volgorde van
-// het spoor; het i-de antwoord hoort bij de i-de keer (`keer`).
+// het spoor; `keer` van een antwoord zegt welke.
 const hoe = reactive({});
 const open = reactive({});
-
-const keer = (i) =>
-  props.waarom.antwoorden.slice(0, i).filter((a) => a.begrip === props.waarom.antwoorden[i].begrip)
-    .length;
 
 async function toon(i) {
   const begrip = props.waarom.antwoorden[i].begrip;
@@ -53,7 +49,8 @@ async function toon(i) {
 
 const uitlegBij = (i) => {
   const h = hoe[props.waarom.antwoorden[i].begrip];
-  return h ? h.antwoorden.slice(keer(i), keer(i) + 1) : [];
+  const k = props.waarom.antwoorden[i].keer;
+  return h ? h.antwoorden.slice(k, k + 1) : [];
 };
 </script>
 
