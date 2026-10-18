@@ -41,5 +41,6 @@ export const api = {
   beslissenOpBezwaar: (op, bevindingen, datum) =>
     post('/api/beslissingen-op-bezwaar', { op, bevindingen, datum }),
   reducties: (datum) => get(`/api/reducties?datum=${datum}`),
+  logboek: () => get('/api/logboek'),
   reset: () => post('/api/reset'),
 };

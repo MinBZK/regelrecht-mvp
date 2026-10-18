@@ -9,7 +9,8 @@ import { computed, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { alsJson, isBesluit, kort, leesbaar, spel, waarde } from '../spel.js';
 
-const gekozen = ref(null);
+const gekozen = ref(spel.inKroniek);
+spel.inKroniek = null;
 const bevindingen = ref([]);
 watch(gekozen, async (id) => {
   bevindingen.value = [];
@@ -21,7 +22,7 @@ watch(gekozen, async (id) => {
   } catch (e) {
     spel.fout = e.message;
   }
-});
+}, { immediate: true });
 const gram = computed(() => spel.grammen.find((g) => g.id === gekozen.value) ?? null);
 const verwijzing = (g) => (g.refers_to ? ` · verwijst naar ${kort(g.refers_to)}` : '');
 const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers_to) ?? null);

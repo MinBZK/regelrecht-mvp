@@ -1,6 +1,6 @@
 <script setup>
-// Eén pagina, vijf tabbladen: de scenario's, de ouder, de school, de
-// kroniek en de reductie. Bovenaan de speeldatum, die voor elke stap geldt,
+// Eén pagina, zes tabbladen: de scenario's, de ouder, de school, de
+// kroniek, de reductie en het logboek. Bovenaan de speeldatum, die voor elke stap geldt,
 // en een knop die de kroniek leegmaakt. Een weigering van de cel staat in
 // een banner, in het Nederlands; de melding van de cel zelf onder Details.
 import { onMounted, ref, watch } from 'vue';
@@ -8,6 +8,7 @@ import { api } from './api.js';
 import { isEngels, melding } from './melding.js';
 import { spel, stap, verversen } from './spel.js';
 import KroniekTab from './components/KroniekTab.vue';
+import LogboekTab from './components/LogboekTab.vue';
 import OuderTab from './components/OuderTab.vue';
 import ReductieTab from './components/ReductieTab.vue';
 import ScenarioTab from './components/ScenarioTab.vue';
@@ -19,6 +20,7 @@ const tabs = [
   { id: 'school', tekst: 'School' },
   { id: 'kroniek', tekst: 'Kroniek' },
   { id: 'reductie', tekst: 'Reductie' },
+  { id: 'logboek', tekst: 'Logboek' },
 ];
 const tab = ref('scenarios');
 const details = ref(false);
@@ -26,6 +28,12 @@ watch(() => spel.fout, () => (details.value = false));
 
 onMounted(verversen);
 watch(() => spel.datum, verversen);
+
+// Een link in het logboek naar een chronolexogram opent het in de kroniek.
+function naarKroniek(id) {
+  spel.inKroniek = id;
+  tab.value = 'kroniek';
+}
 
 async function opnieuw() {
   await stap(() => api.reset());
@@ -91,7 +99,8 @@ async function opnieuw() {
       <OuderTab v-else-if="tab === 'ouder'" />
       <SchoolTab v-else-if="tab === 'school'" />
       <KroniekTab v-else-if="tab === 'kroniek'" />
-      <ReductieTab v-else />
+      <ReductieTab v-else-if="tab === 'reductie'" />
+      <LogboekTab v-else @kroniek="naarKroniek" />
     </nldd-page>
   </nldd-app-view>
 </template>

@@ -8,7 +8,9 @@
 // meetelden en welke niet. Daaronder het spoor van de engine.
 import { reactive } from 'vue';
 import { api } from '../api.js';
-import { kort, leesbaar, spel, waarde } from '../spel.js';
+import { gelezen, ingevuldDoor } from '../logboek.js';
+import { leesbaar, spel, waarde } from '../spel.js';
+import HoeBeantwoord from './HoeBeantwoord.vue';
 
 const props = defineProps({
   // Het besluit waarvan dit de uitleg is: bij een beslissing op bezwaar de
@@ -21,26 +23,11 @@ const props = defineProps({
 const jaNee = (v) =>
   v === true ? 'ja' : v === false ? 'nee' : v == null ? 'geen antwoord (het hoofd beslist)' : waarde(v);
 
-/** Wie het open begrip invulde, in een zin. */
-function door(f) {
-  const by = f.filled_by;
-  if (by === 'finding') return 'bevinding van het hoofd';
-  if (by?.regulation) return `regeling ${by.regulation.law_id}, artikel ${by.regulation.article}`;
-  if (by?.answer) return `de school uit haar kroniek (reductie ${by.answer.law_id})`;
-  return JSON.stringify(by);
-}
-
 /** De herkomst van het antwoord van de school, leesbaar. */
 const herkomst = (a) =>
-  `Ingevuld door de school met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). ` +
-  (a.tot_en_met
-    ? `Gelezen: ${a.gelezen} chronolexogram(men), tot en met ${soortVan(a.tot_en_met)} ${kort(a.tot_en_met)}.`
-    : 'Nog niets uit de kroniek gelezen.');
-
-const soortVan = (id) => {
-  const g = spel.grammen.find((x) => x.id === id);
-  return g ? g.kind.toLowerCase() : 'chronolexogram';
-};
+  `Ingevuld door de school met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). Gelezen: ` +
+  gelezen({ records_read: a.gelezen, last_record: a.tot_en_met }, spel.grammen) +
+  '.';
 
 // Per begrip de uitleg van de school, als die gevraagd is. Vroeg het besluit
 // een begrip vaker, dan geeft de cel per keer een uitleg, in de volgorde van
@@ -68,10 +55,6 @@ const uitlegBij = (i) => {
   const h = hoe[props.waarom.antwoorden[i].begrip];
   return h ? h.antwoorden.slice(keer(i), keer(i) + 1) : [];
 };
-
-/** Een uitvoer van de reductie: een lijst ids als besluiten, de rest als ja/nee of waarde. */
-const toonWaarde = (v) =>
-  Array.isArray(v) ? (v.length ? v.map((id) => `besluit ${kort(id)}`).join(', ') : 'geen') : jaNee(v);
 </script>
 
 <template>
@@ -81,7 +64,7 @@ const toonWaarde = (v) =>
       <nldd-list-item v-for="f in waarom.ingevuld" :key="`${f.law_id}#${f.article}#${f.term}`" size="sm">
         <nldd-text-cell
           :text="leesbaar(f.term)"
-          :supporting-text="`${f.law_id} artikel ${f.article} · ${door(f)}`"
+          :supporting-text="`${f.law_id} artikel ${f.article} · ${ingevuldDoor(f.filled_by, spel.grammen)}`"
         ></nldd-text-cell>
       </nldd-list-item>
     </nldd-list>
@@ -101,23 +84,7 @@ const toonWaarde = (v) =>
         @click="toon(i)"
       ></nldd-button>
       <nldd-container v-if="open[i]" gap="8">
-        <nldd-container v-for="h in uitlegBij(i)" :key="h.spoor" gap="8">
-          <nldd-text size="sm" color="secondary">
-            De reductie {{ h.reductie }} (geldig vanaf {{ h.geldig_vanaf }}) opnieuw gedraaid, op de
-            kroniek zoals het besluit haar las.
-          </nldd-text>
-          <nldd-list appearance="box-base" accessible-label="Uitkomst van de reductie">
-            <nldd-list-item v-for="(v, naam) in h.uitvoer" :key="naam" size="sm">
-              <nldd-text-cell :text="leesbaar(naam)"></nldd-text-cell>
-              <nldd-text-cell width="fit-content" :text="toonWaarde(v)"></nldd-text-cell>
-            </nldd-list-item>
-          </nldd-list>
-          <nldd-text size="sm" color="secondary">
-            Het spoor van de reductie: bij FOREACH staat hoeveel besluiten meetelden en hoeveel
-            het filter oversloeg.
-          </nldd-text>
-          <nldd-code-viewer appearance="box-tinted">{{ h.spoor }}</nldd-code-viewer>
-        </nldd-container>
+        <HoeBeantwoord v-for="h in uitlegBij(i)" :key="h.spoor" :uitleg="h" />
       </nldd-container>
     </nldd-container>
 

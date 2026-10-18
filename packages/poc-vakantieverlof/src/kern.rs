@@ -10,7 +10,10 @@ use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 use regelrecht_cel::{decision, reading, shape, Cell, Error, Gram, Source};
-use regelrecht_engine::{ArticleBasedLaw, LawExecutionService, LawLoad, ParameterType, PathNode};
+use regelrecht_engine::{
+    ArticleBasedLaw, ArticleResult, FilledBy, LawExecutionService, LawLoad, OpenTermFilled,
+    ParameterType, PathNode, PathNodeType,
+};
 use regelrecht_law_model::stored;
 use serde_json::{json, Map, Value};
 
@@ -188,13 +191,17 @@ pub fn aanvragen(
 }
 
 /// Why a decision came out as it did, as the cell explains it
-/// ([`Cell::explain`]): the engine's trace, every open term with who filled
-/// it, the terms the cell answered from its chronicle (one trace node
-/// each) and the findings of the head the decision used
-/// ([`Cell::findings`]).
+/// ([`Cell::explain`]): the engine's trace, in full and condensed to its
+/// steps, every open term with who filled it, the terms the cell answered
+/// from its chronicle (one trace node each) and the findings of the head
+/// the decision used ([`Cell::findings`]).
 #[derive(Debug, serde::Serialize)]
 pub struct Waarom {
     pub spoor: String,
+    /// The trace condensed ([`keten`]): the article the decision ran, and
+    /// in it what came out, the open terms and who filled them, the
+    /// articles it called and the hooks that fired.
+    pub keten: Vec<Stap>,
     /// The engine's report per open term (`ArticleResult::open_terms`):
     /// a finding, a regulation, or the cell's answer.
     pub ingevuld: Vec<regelrecht_engine::OpenTermFilled>,
@@ -239,10 +246,236 @@ pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
             .as_ref()
             .map(PathNode::render_box_drawing)
             .unwrap_or_default(),
+        keten: keten(&result)?,
         ingevuld: result.open_terms,
         antwoorden,
         bevindingen: cell.findings(&mut service, id)?,
     })
+}
+
+/// One step of a decision, condensed from the engine's trace ([`keten`]).
+/// A value is in the form the chronicle stores it; a value the engine could
+/// not determine is `null`, with the facts it missed in `ontbreekt`.
+#[derive(Debug, serde::Serialize)]
+#[serde(tag = "soort", rename_all = "snake_case")]
+pub enum Stap {
+    /// An article runs: the one that decides, or one it calls.
+    Artikel {
+        wet: String,
+        artikel: String,
+        stappen: Vec<Stap>,
+    },
+    /// A hook fires: an article that runs at a stage of the decision.
+    Hook {
+        wet: String,
+        artikel: String,
+        stappen: Vec<Stap>,
+    },
+    /// An output of the article that runs, and what it needed.
+    Uitkomst {
+        naam: String,
+        waarde: Value,
+        ontbreekt: Vec<String>,
+        stappen: Vec<Stap>,
+    },
+    /// An open term, and who filled it (`ArticleResult::open_terms`).
+    Begrip {
+        naam: String,
+        wet: String,
+        artikel: String,
+        waarde: Value,
+        ontbreekt: Vec<String>,
+        ingevuld_door: Option<FilledBy>,
+    },
+}
+
+/// The decision's trace condensed to the steps a reader follows: the
+/// article that ran, per output what came out, and under it the open terms,
+/// the articles called and the hooks fired. Resolving a variable and the
+/// arithmetic leave no step; what is found under them belongs to the step
+/// above. Under an open term nothing more: how a regulation or the cell
+/// filled it is their own account. A hook that determined nothing at the
+/// decision leaves no step either; the full trace still has it.
+pub fn keten(result: &ArticleResult) -> Result<Vec<Stap>> {
+    let Some(root) = &result.trace else {
+        return Ok(Vec::new());
+    };
+    Ok(vec![Stap::Artikel {
+        wet: result.law_id.clone(),
+        artikel: result.article_number.clone(),
+        stappen: stappen_onder(root, &result.open_terms)?,
+    }])
+}
+
+fn stappen_onder(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>> {
+    let mut uit = Vec::new();
+    for child in &node.children {
+        uit.extend(stappen_van(child, ingevuld)?);
+    }
+    Ok(uit)
+}
+
+/// What a trace node gives: one step, or the steps under it.
+fn stappen_van(node: &PathNode, ingevuld: &[OpenTermFilled]) -> Result<Vec<Stap>> {
+    let stap = match node.node_type {
+        PathNodeType::Article | PathNodeType::CrossLawReference | PathNodeType::Cached => {
+            let (wet, artikel) = waar(node);
+            Stap::Artikel {
+                wet,
+                artikel,
+                stappen: stappen_onder(node, ingevuld)?,
+            }
+        }
+        PathNodeType::HookResolution => {
+            let (wet, artikel) = waar(node);
+            let stappen = stappen_onder(node, ingevuld)?;
+            // A hook that fires at every stage of a submission also fires at
+            // the decision, where the facts it reads (those of the
+            // submission) are not passed. It determines nothing there, and
+            // is left out: what it gave is in the submission's
+            // chronolexogram.
+            let niets = stappen
+                .iter()
+                .all(|s| matches!(s, Stap::Uitkomst { ontbreekt, .. } if !ontbreekt.is_empty()));
+            if niets {
+                return Ok(Vec::new());
+            }
+            Stap::Hook {
+                wet,
+                artikel,
+                stappen,
+            }
+        }
+        PathNodeType::Action => {
+            let (waarde, ontbreekt) = uitkomst(node)?;
+            Stap::Uitkomst {
+                naam: node.name.clone(),
+                waarde,
+                ontbreekt,
+                stappen: stappen_onder(node, ingevuld)?,
+            }
+        }
+        PathNodeType::OpenTermResolution => {
+            let (waarde, ontbreekt) = uitkomst(node)?;
+            let (wet, artikel) = node
+                .anchor
+                .as_ref()
+                .map(|a| {
+                    (
+                        a.law_id.clone().unwrap_or_default(),
+                        a.article.clone().unwrap_or_default(),
+                    )
+                })
+                .unwrap_or_default();
+            let ingevuld_door = ingevuld
+                .iter()
+                .find(|f| f.term == node.name && f.law_id == wet && f.article == artikel)
+                .map(|f| f.filled_by.clone())
+                .or_else(|| node.answer.clone().map(FilledBy::Answer));
+            Stap::Begrip {
+                naam: node.name.clone(),
+                wet,
+                artikel,
+                waarde,
+                ontbreekt,
+                ingevuld_door,
+            }
+        }
+        _ => return stappen_onder(node, ingevuld),
+    };
+    Ok(vec![stap])
+}
+
+/// The law and article an article step runs: where the engine was at the
+/// first output or hook under it. Resolving the parameters of a call
+/// happens where the caller is, so those steps do not count. A step
+/// without one (a cached result) is named `<law>#<article>` or by its law
+/// alone.
+fn waar(node: &PathNode) -> (String, String) {
+    fn eerste(node: &PathNode) -> Option<(String, String)> {
+        node.children.iter().find_map(|c| match c.node_type {
+            PathNodeType::Action | PathNodeType::HookResolution => c
+                .anchor
+                .as_ref()
+                .and_then(|a| Some((a.law_id.clone()?, a.article.clone()?))),
+            _ => eerste(c),
+        })
+    }
+    eerste(node).unwrap_or_else(|| match node.name.split_once('#') {
+        Some((wet, artikel)) => (wet.to_string(), artikel.to_string()),
+        None => (node.name.clone(), String::new()),
+    })
+}
+
+/// What a step came to, as stored, and the facts it missed when the engine
+/// could not determine it.
+fn uitkomst(node: &PathNode) -> Result<(Value, Vec<String>)> {
+    match &node.result {
+        Some(v) if v.is_unknown() => Ok((
+            Value::Null,
+            v.missing_facts().iter().map(|m| m.name.clone()).collect(),
+        )),
+        Some(v) => Ok((stored::to_stored(v)?, Vec::new())),
+        None => Ok((Value::Null, Vec::new())),
+    }
+}
+
+/// One action in the log: a chronolexogram as the cell recorded it. Its
+/// reason is what it refers to (`refers_to`); `leidde_tot` are the later
+/// ones that refer to it, or that it names as taken in turn (a new decision
+/// in the place of a revoked one). For a decision, why it came out so
+/// ([`waarom`]), from the decision taken again.
+#[derive(Debug, serde::Serialize)]
+pub struct Handeling {
+    pub gram: Gram,
+    pub leidde_tot: Vec<String>,
+    pub waarom: Option<Waarom>,
+}
+
+/// The log of the cell, newest first: every chronolexogram as an action
+/// ([`Handeling`]). Nothing of it is stored apart from the chronicle; a
+/// refused step recorded nothing, so it is not in the log.
+pub fn logboek(corpus: &Corpus, cell: &Cell) -> Result<Vec<Handeling>> {
+    let service = corpus.service()?;
+    let grams = cell.grams();
+    let mut uit = Vec::new();
+    for gram in grams.iter().rev() {
+        let leidde_tot = grams
+            .iter()
+            .filter(|g| {
+                g.refers_to.as_deref() == Some(gram.id.as_str())
+                    || gram
+                        .outputs
+                        .values()
+                        .any(|v| v.as_str() == Some(g.id.as_str()))
+            })
+            .map(|g| g.id.clone())
+            .collect();
+        let waarom = if is_besluit(&service, gram)? {
+            Some(waarom(corpus, cell, &gram.id)?)
+        } else {
+            None
+        };
+        uit.push(Handeling {
+            gram: gram.clone(),
+            leidde_tot,
+            waarom,
+        });
+    }
+    Ok(uit)
+}
+
+/// Whether `gram` is a decision: taken on what it refers to, of the legal
+/// character its article gives a decision.
+fn is_besluit(service: &LawExecutionService, gram: &Gram) -> Result<bool> {
+    if gram.refers_to.is_none() {
+        return Ok(false);
+    }
+    let (law_id, article) = gram
+        .grondslag
+        .split_once('#')
+        .ok_or_else(|| Error::Setup(format!("'{}' has no grondslag", gram.id)))?;
+    Ok(decision::derive(service, law_id, article, gram.recorded_on)?.kind == gram.kind)
 }
 
 /// The output names of the version of the reduction `id` of the cell that
@@ -1044,5 +1277,84 @@ mod tests {
             spoor.contains("FOREACH over 0 element(s), 2 skipped by filter = False"),
             "{spoor}"
         );
+
+        // The log: one action per chronolexogram, newest first.
+        let log = serde_json::to_value(logboek(&corpus, &cell).unwrap()).unwrap();
+        let log = log.as_array().unwrap();
+        assert_eq!(log.len(), cell.grams().len());
+        let nieuw = op_b["nieuw_besluit"]["id"].as_str().unwrap();
+        let laatste = &log[0];
+        assert_eq!(laatste["gram"]["id"], json!(nieuw));
+        // Its reason is the objection against B, which led to the decision
+        // on it and to the new decision; the decision on it names the new one.
+        assert_eq!(laatste["gram"]["refers_to"], json!(tegen_b.id));
+        let handeling = |id: &str| log.iter().find(|h| h["gram"]["id"] == json!(id)).unwrap();
+        assert_eq!(
+            handeling(&tegen_b.id)["leidde_tot"],
+            json!([beslissing, nieuw])
+        );
+        assert_eq!(handeling(beslissing)["leidde_tot"], json!([nieuw]));
+        // An application is no decision, and has no chain.
+        assert!(handeling(&eerste.id)["waarom"].is_null());
+
+        // The chain: Awb 7:11 runs, and under the heroverweging it calls
+        // art. 13a, where the cell answers "nee", read up to the objection.
+        let keten = &laatste["waarom"]["keten"];
+        assert_eq!(keten[0]["soort"], json!("artikel"));
+        assert_eq!(keten[0]["artikel"], json!("7:11"));
+        let heroverweging = vind(keten, &|s| {
+            s["naam"] == json!("heroverweging_geeft_aanleiding")
+        })
+        .unwrap();
+        assert_eq!(heroverweging["waarde"], json!(true));
+        let art13a = vind(&heroverweging["stappen"], &|s| {
+            s["soort"] == json!("artikel") && s["artikel"] == json!("13a")
+        })
+        .unwrap();
+        assert_eq!(art13a["wet"], json!(LAW));
+        let antwoord = vind(&art13a["stappen"], &|s| {
+            s["naam"] == json!("verlof_al_verleend_in_schooljaar")
+        })
+        .unwrap();
+        assert_eq!(antwoord["soort"], json!("begrip"));
+        assert_eq!(antwoord["waarde"], json!(false));
+        let door = &antwoord["ingevuld_door"]["answer"];
+        assert_eq!(door["answerer"], json!(SCHOOL));
+        assert_eq!(
+            door["law_id"],
+            json!("reductie_verlof_al_verleend_in_schooljaar")
+        );
+        assert_eq!(door["last_record"], json!(tegen_b.id));
+        // The head's finding, and a hook with its effect.
+        let beroep = vind(&art13a["stappen"], &|s| {
+            s["naam"] == json!("specifieke_aard_beroep_ouder")
+        })
+        .unwrap();
+        assert_eq!(beroep["ingevuld_door"], json!("finding"));
+        let hook = vind(keten, &|s| {
+            s["soort"] == json!("hook") && s["artikel"] == json!("6:7")
+        })
+        .unwrap();
+        assert_eq!(hook["stappen"][0]["naam"], json!("bezwaartermijn_weken"));
+        // Hook 6:9 reads the objection's own facts, which the decision is
+        // not passed: it determines nothing there and leaves no step.
+        assert!(vind(keten, &|s| s["artikel"] == json!("6:9")).is_none());
+        // Arithmetic and variable resolution leave no step.
+        let tekst = keten.to_string();
+        assert!(
+            !tekst.contains("DATE_DIFF") && !tekst.contains("\"resolve\""),
+            "{tekst}"
+        );
+    }
+
+    /// The first step in `stappen`, or under one, for which `past` holds.
+    fn vind<'a>(stappen: &'a Value, past: &dyn Fn(&Value) -> bool) -> Option<&'a Value> {
+        stappen.as_array()?.iter().find_map(|s| {
+            if past(s) {
+                Some(s)
+            } else {
+                vind(&s["stappen"], past)
+            }
+        })
     }
 }

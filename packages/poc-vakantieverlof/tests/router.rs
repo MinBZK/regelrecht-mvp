@@ -108,6 +108,19 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
             .len(),
         1
     );
+    // The log has the application as its one action; it is no decision.
+    let (status, logboek) = send(
+        &app,
+        Request::get("/vakantieverlof/api/logboek")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let handelingen = logboek["handelingen"].as_array().unwrap();
+    assert_eq!(handelingen.len(), 1);
+    assert_eq!(handelingen[0]["gram"]["kind"], json!("AANVRAAG"));
+    assert!(handelingen[0]["waarom"].is_null());
     send(&app, post("/vakantieverlof/api/reset", json!({}))).await;
     assert!(kroniek(app.clone()).await["grammen"]
         .as_array()

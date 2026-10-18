@@ -19,6 +19,8 @@ export const spel = reactive({
   grammen: [],
   vormen: null,
   fout: '',
+  // Het chronolexogram dat de kroniek bij openen kiest (een link uit het logboek).
+  inKroniek: null,
 });
 
 /** Haal de kroniek en de vormen op, voor de speeldatum. */
@@ -68,21 +70,31 @@ export const herroepen = (besluit) =>
     (bz) => beslissingOp(bz.id)?.outputs?.bestreden_besluit_herroepen === true,
   );
 
+/** Wat een chronolexogram is in het proces, zoals het dossier en het logboek het noemen. */
+export function rol(g) {
+  if (g.kind === 'AANVRAAG') return 'Aanvraag';
+  if (g.kind === 'BEZWAAR') return 'Bezwaar';
+  if (g.grondslag === BESLISSING_OP_BEZWAAR) return 'Beslissing op bezwaar';
+  const op = spel.grammen.find((x) => x.id === g.refers_to);
+  return op?.kind === 'BEZWAAR' ? 'Nieuw besluit' : 'Besluit';
+}
+
 /**
  * Het dossier van een aanvraag, in de volgorde waarin het ontstond: de
  * aanvraag, het besluit erop, en per bezwaar de beslissing en het besluit
  * dat in de plaats van het herroepene kwam.
  */
 export function dossier(aanvraag) {
-  const stappen = [{ gram: aanvraag, rol: 'Aanvraag' }];
+  const stap = (gram) => ({ gram, rol: rol(gram) });
+  const stappen = [stap(aanvraag)];
   let besluit = besluitOp(aanvraag.id);
   while (besluit) {
-    stappen.push({ gram: besluit, rol: stappen.length === 1 ? 'Besluit' : 'Nieuw besluit' });
+    stappen.push(stap(besluit));
     let volgende = null;
     for (const bezwaar of bezwarenTegen(besluit.id)) {
-      stappen.push({ gram: bezwaar, rol: 'Bezwaar' });
+      stappen.push(stap(bezwaar));
       const beslissing = beslissingOp(bezwaar.id);
-      if (beslissing) stappen.push({ gram: beslissing, rol: 'Beslissing op bezwaar' });
+      if (beslissing) stappen.push(stap(beslissing));
       volgende = besluitOp(bezwaar.id) ?? volgende;
     }
     besluit = volgende;

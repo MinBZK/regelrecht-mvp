@@ -53,6 +53,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/bezwaren/{id}/heroverweging", get(heroverweging))
         .route("/api/beslissingen-op-bezwaar", post(beslissen_op_bezwaar))
         .route("/api/reducties", get(reducties))
+        .route("/api/logboek", get(logboek))
         .route("/api/reset", post(reset))
 }
 
@@ -188,6 +189,14 @@ async fn beslissen_op_bezwaar(State(s): State<AppState>, Json(b): Json<Beslissin
 
 async fn reducties(State(s): State<AppState>, Query(q): Query<Dag>) -> Antwoord {
     ok(kern::reducties(&s.corpus, &s.cell(), q.datum)?)
+}
+
+async fn logboek(State(s): State<AppState>) -> Antwoord {
+    let cell = s.cell();
+    ok(json!({
+        "cel": cell.recording_actor(),
+        "handelingen": kern::logboek(&s.corpus, &cell)?,
+    }))
 }
 
 async fn reset(State(s): State<AppState>) -> Antwoord {
