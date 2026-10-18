@@ -14,10 +14,8 @@ competent_authority:
 # De aanhef noemt ook de Wet primair onderwijs BES, de Wet op de
 # expertisecentra en de Wet voortgezet onderwijs 2020. Die staan niet in het
 # corpus; dit regelwerk is uitvoerbaar voor een basisschool (artikel 1).
-# De Wet op het primair onderwijs staat niet in het corpus: de geharveste
-# tekst is groter dan de 500 KB die de pre-commit-check toelaat. Artikel 15,
-# tweede lid, luidt sinds 2016 ongewijzigd: "Bij ministeriële regeling kunnen
-# voorschriften worden vastgesteld omtrent vakanties."
+# Het corpus heeft de Wet op het primair onderwijs in de versie vanaf
+# 1 augustus 2026; artikel 15 luidt sinds 1 januari 2016 ongewijzigd.
 legal_basis:
   - law_id: wet_op_het_primair_onderwijs
     article: '15'
