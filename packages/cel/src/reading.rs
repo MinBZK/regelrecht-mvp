@@ -447,6 +447,10 @@ pub struct Reader<'c> {
     grams: Vec<Gram>,
     explain: Option<&'c str>,
     asked: RefCell<Vec<Asked>>,
+    /// The terms the cell is answering now, outermost first. A reduction
+    /// whose rulework asks one of them again would answer itself without
+    /// end; the cell refuses that instead (RFC-051).
+    answering: RefCell<Vec<Term>>,
 }
 
 impl<'c> Reader<'c> {
@@ -464,6 +468,7 @@ impl<'c> Reader<'c> {
             grams,
             explain,
             asked: RefCell::new(Vec::new()),
+            answering: RefCell::new(Vec::new()),
         }
     }
 
@@ -557,9 +562,25 @@ impl OpenTermAnswerer for Reader<'_> {
                 self.recording_actor
             )),
         };
-        let result = self
-            .run(service, reduction, question, &term, day)
-            .map_err(in_cell)?;
+        if self.answering.borrow().contains(&term) {
+            let chain: Vec<String> = self
+                .answering
+                .borrow()
+                .iter()
+                .map(ToString::to_string)
+                .collect();
+            return Err(EngineError::CircularReference(format!(
+                "the cell of '{}' is asked {term} while answering it ({}): its reduction \
+                 '{}' asks its own answer",
+                self.recording_actor,
+                chain.join(" -> "),
+                reduction.id
+            )));
+        }
+        self.answering.borrow_mut().push(term.clone());
+        let ran = self.run(service, reduction, question, &term, day);
+        self.answering.borrow_mut().pop();
+        let result = ran.map_err(in_cell)?;
         let value = result.outputs.get(question.term).cloned().ok_or_else(|| {
             EngineError::ResolutionError(format!(
                 "reduction '{}' of the cell of '{}' gave no '{}'",

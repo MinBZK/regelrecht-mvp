@@ -293,10 +293,10 @@ What the cell cannot do yet:
 
 ## Outside the school holidays
 
-Art. 11, onder f, lets a parent take the child on holiday "slechts buiten de schoolvakanties". Art. 13a reads that as the open term `verlof_valt_buiten_schoolvakanties`, which the head decides per case. In the school's cell no one has to: a reduction answers it from the law and from what the school recorded.
+Art. 11, onder f, exempts a child whose parent, by the specific nature of their profession, can go on holiday with the child "slechts buiten de schoolvakanties". Art. 13a reads that as the open term `verlof_valt_buiten_schoolvakanties`, which the head decides per case. In the school's cell no one has to: a reduction answers it from the law and from what the school recorded.
 
 - The Regeling vaststelling schoolvakanties 2025–2030 fixes the Christmas and May holidays of every school (art. 5) and the summer holiday per region (art. 6). The region follows from the place of establishment (art. 2), divided by province and municipality (art. 3). The regeling does not say where a school is, so art. 2 declares that as open terms.
-- The school is established in Utrecht since 1 August 2020. That is an executogram in its chronicle, of the stream `vestiging` in `corpus/cells/obs_de_klimop/executogrammen/vestiging.yaml`. A move is a new executogram, and the region changes from its day.
+- The school has been established in Utrecht since 1 August 2020. That is an executogram in its chronicle, of the stream `vestiging` in `corpus/cells/obs_de_klimop/executogrammen/vestiging.yaml`. A move is a new executogram, and the region changes from its day.
 - The bevoegd gezag fixes the autumn and spring holidays per school year, under the school's fictitious policy. The cell records that fixing as a decision taken ex officio, without `refers_to`.
 
 ```json

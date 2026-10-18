@@ -510,3 +510,89 @@ fn an_executogram_read_back_holds_what_its_stream_declares() {
     std::fs::write(&path, &line).unwrap();
     assert!(Cell::open(ACTOR, &path, dir.path()).is_ok());
 }
+
+#[test]
+fn a_reduction_that_asks_its_own_answer_is_refused() {
+    // The reduction fills `x` of article 1 by asking article 1, which reads
+    // `x` again: the cell refuses to answer itself.
+    let law = r#"
+$id: wet_kring_fictief
+regulatory_layer: WET
+publication_date: '2026-01-01'
+valid_from: '2026-01-01'
+articles:
+  - number: '1'
+    text: Het bevoegd gezag stelt vast of x geldt.
+    machine_readable:
+      open_terms:
+        - {id: x, type: boolean, decided_per_case_by: het bevoegd gezag}
+      execution:
+        produces:
+          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING
+          decision_type: ANDERE_HANDELING
+        output:
+          - {name: uit, type: boolean}
+        actions:
+          - {output: uit, value: $x}
+"#;
+    let reduction = r#"
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$id: reductie_kring_fictief
+regulatory_layer: REDUCTIE
+publication_date: '2026-01-01'
+valid_from: '2026-01-01'
+articles:
+  - number: '1'
+    text: x is wat artikel 1 zegt.
+    machine_readable:
+      implements:
+        - {law: wet_kring_fictief, article: '1', open_term: x}
+      execution:
+        input:
+          - name: weer
+            type: boolean
+            source: {regulation: wet_kring_fictief, output: uit}
+        output:
+          - {name: x, type: boolean}
+        actions:
+          - {output: x, value: $weer}
+"#;
+    let dir = tempfile::tempdir().unwrap();
+    let here = dir.path().join("reducties/reductie_kring_fictief");
+    std::fs::create_dir_all(&here).unwrap();
+    std::fs::write(here.join("2026-01-01.yaml"), reduction).unwrap();
+    let mut cell = Cell::in_memory(ACTOR, dir.path()).unwrap();
+    let mut service = LawExecutionService::new();
+    service.load_law(law).unwrap();
+    let e = cell
+        .decide_ex_officio(
+            &mut service,
+            "wet_kring_fictief",
+            "1",
+            &Map::new(),
+            day("2026-08-01"),
+        )
+        .unwrap_err();
+    assert!(e.to_string().contains("asks its own answer"), "{e}");
+    assert!(cell.grams().is_empty());
+}
+
+#[test]
+fn a_decision_whose_procedure_cannot_be_found_is_an_error() {
+    let law = SPECIAL_LAW.replace(
+        "          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING\n          decision_type: ANDERE_HANDELING\n",
+        "          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING\n          decision_type: ANDERE_HANDELING\n          procedure_id: nergens\n",
+    );
+    assert_ne!(law, SPECIAL_LAW);
+    let mut service = LawExecutionService::new();
+    service.load_law(&law).unwrap();
+    let (mut cell, _dir) = cell();
+    let e = cell
+        .decide_ex_officio(&mut service, LAW, "1", &week(), day("2026-08-01"))
+        .unwrap_err();
+    assert!(
+        matches!(&e, Error::Engine(m) if m.to_string().contains("'nergens'")),
+        "{e}"
+    );
+    assert!(cell.grams().is_empty());
+}

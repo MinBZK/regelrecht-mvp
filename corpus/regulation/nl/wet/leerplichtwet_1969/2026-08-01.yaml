@@ -1003,7 +1003,7 @@ articles:
         # reductie het begrip uit die vakanties (implements, RFC-051), zodat
         # niemand het hoeft te oordelen; kent de cel een vakantie niet, dan
         # zwijgt zij en oordeelt het hoofd. Geen default: zonder antwoord en
-        # zonder oordeel wordt geen verlof verleend.
+        # zonder oordeel faalt het besluit.
         - id: verlof_valt_buiten_schoolvakanties
           type: boolean
           required: true

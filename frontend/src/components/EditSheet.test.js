@@ -392,6 +392,20 @@ describe('EditSheet', () => {
       });
     });
 
+    it('keeps a source that reads only executograms', async () => {
+      const wrapper = mountSheet();
+      await setItem(wrapper, {
+        section: 'input',
+        index: 0,
+        data: { name: 'vestigingen', source: { executograms: 'vestiging' } },
+      });
+      wrapper.vm.save();
+      await nextTick();
+      expect(wrapper.emitted('save')[0][0].data.source).toEqual({
+        executograms: 'vestiging',
+      });
+    });
+
     it('skips source.parameters rows with empty key on save', async () => {
       const wrapper = mountSheet();
       await setItem(wrapper, {

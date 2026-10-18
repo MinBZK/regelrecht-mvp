@@ -612,7 +612,8 @@ impl Cell {
     /// decision a submission asks for (that decision is taken on the
     /// submission, with [`Cell::decide`]), one that follows a procedure (the
     /// cell runs the stages of a procedure only for a decision on a
-    /// submission), a decision with an output of type `decision`, and what
+    /// submission), one whose procedure cannot be found (an error), a
+    /// decision with an output of type `decision`, and what
     /// [`Cell::record_executogram`] refuses of its values: a name the article
     /// does not declare as a parameter, a value of the wrong type, a value
     /// of type `decision`, and a parameter that cannot be absent and is left
@@ -627,7 +628,7 @@ impl Cell {
     ) -> Result<Gram> {
         let reference = format!("{law_id}#{article}");
         let date = on.to_string();
-        let (kind, outputs, fields) = {
+        let (kind, outputs, fields, follows) = {
             let found = shape::article_on(service, law_id, article, on)
                 .ok_or_else(|| refused(format!("{reference} has no version in force on {on}")))?;
             let decision = found
@@ -655,7 +656,8 @@ impl Cell {
                     declared_by: vec![reference.clone()],
                 })
                 .collect();
-            (kind, outputs, fields)
+            let follows = service.procedure_of(law_id, found)?.is_some();
+            (kind, outputs, fields, follows)
         };
         if outputs.is_empty() {
             return Err(setup(format!(
@@ -677,10 +679,7 @@ impl Cell {
                  it is taken on that submission (decide), not ex officio"
             )));
         }
-        if service
-            .procedure_stage(law_id, article, decision::STAGES[0], &date)
-            .is_ok()
-        {
+        if follows {
             return Err(refused(format!(
                 "{reference} follows a procedure, whose stages the cell runs only for a decision \
                  on a submission; ex officio it takes no such decision"

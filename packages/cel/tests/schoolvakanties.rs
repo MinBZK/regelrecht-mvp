@@ -229,8 +229,12 @@ fn the_herfstvakantie_the_school_fixed_itself_counts() {
     let gram = decide(&mut cell, &app.id, "2026-10-01").unwrap();
     assert!(!granted(&gram));
     assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
+    // One day of it is enough: 25 October is its last day.
+    let app = applied(&mut cell, "2026-10-25", "2026-10-29", "2026-10-01");
+    let gram = decide(&mut cell, &app.id, "2026-10-05").unwrap();
+    assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
     // The week after is outside it.
-    let app = applied(&mut cell, "2026-10-26", "2026-10-30", "2026-10-01");
+    let app = applied(&mut cell, "2026-10-26", "2026-10-30", "2026-10-05");
     assert!(granted(&decide(&mut cell, &app.id, "2026-10-05").unwrap()));
 }
 
