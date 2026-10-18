@@ -392,12 +392,13 @@ Drie dingen om te weten voordat je hier iets aanraakt:
   doorgestuurde diepe link slaat het overzicht over, en een screenshot uit een
   poc reist zonder omringende tekst. Een uitgerekend bedrag ziet er even
   stellig uit, of het model nu doorgelopen is met juristen of niet.
-- **Wachtwoorden staan alleen in ZAD**, nooit in de repo: `POC_PW_<SLUG>` als
-  user env var op component `poc`, gezet in de ZAD Operations Manager (zad-cli
-  heeft geen `env`-commando). Het portaal weigert te starten als er één
-  ontbreekt; een poc in het register zonder wachtwoord zou anders voor iedereen
-  open staan. Een preview kopieert de env vars van productie bij het aanmaken,
-  dus een preview van vóór het wachtwoord faalt met `NoPassword`.
+- **Wachtwoorden staan alleen in ZAD**, nooit in de repo. Anne zet
+  `POC_PW_<SLUG>` als user env var op component `poc`, in de ZAD Operations
+  Manager; zad-cli heeft geen `env`-commando. Het portaal weigert te starten
+  als er een wachtwoord ontbreekt; een poc in het register zonder wachtwoord
+  zou anders voor iedereen open staan. Een preview kopieert de env vars van
+  productie bij het aanmaken, dus een preview van vóór het wachtwoord faalt
+  met `NoPassword`.
 
 De beleidsassistent in de OCW-pocs draait op de Claude Code CLI met Anne's
 eigen abonnementstoken (`CLAUDE_CODE_OAUTH_TOKEN`, uit `claude setup-token`).
