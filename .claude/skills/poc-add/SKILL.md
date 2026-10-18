@@ -167,14 +167,15 @@ poc verandert er buiten de repo niets.
 
 ## Wat Anne zelf draait
 
-Wachtwoorden komen nooit uit een skill en niet uit een transcript. Geef de
-regel, laat hem hem draaien:
+Wachtwoorden komen nooit uit een skill en niet uit een transcript. Anne zet
+`POC_PW_<SLUG>` zelf als user env var op het ZAD-component `poc`, in de ZAD
+Operations Manager. zad-cli heeft daar geen commando voor (`zad env` bestaat
+niet).
 
-```bash
-zad env add -c poc POC_PW_<SLUG>       # vraagt de waarde interactief
-```
-
-`<SLUG>` is de slug in hoofdletters met streepjes als liggende streepjes. Het
+`<SLUG>` is de slug in hoofdletters met streepjes als liggende streepjes. Een
+preview kopieert de env vars van productie op het moment dat hij wordt
+aangemaakt; een preview van vóór het wachtwoord faalt dus met `NoPassword` en
+moet opnieuw worden aangemaakt. Het
 portaal weigert te starten als er één ontbreekt — een poc in het register
 zonder wachtwoord zou anders voor iedereen open staan, en dat is de verkeerde
 kant om die vergissing op te laten vallen.

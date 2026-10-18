@@ -59,6 +59,8 @@ Its chronicle lives in memory, shared by every visitor, and is empty after a res
 
 One shared password per PoC, read from `POC_PW_<SLUG>` (the slug in capitals, hyphens as underscores). The portal will not start when a PoC in the register has no password, since that PoC would otherwise be open to anyone.
 
+The passwords are user env vars on the ZAD component `poc`, set in the ZAD Operations Manager; zad-cli has no command for them. A preview copies the env vars from production when it is created, so a preview made before a password existed fails to start with `NoPassword`.
+
 After a correct password the portal sets an HMAC-signed cookie that names the slug and an expiry. The signing key is `POC_COOKIE_SECRET`, separate from the passwords so that rotating one password leaves the other PoCs' cookies valid. The cookie only says "this browser knew the password"; a PoC's own login, such as napp's, sits behind it unchanged. The redirect after signing in stays under the PoC's own prefix, and the content security policy is `POC_CSP` from `packages/auth/src/security_headers.rs`. The details are in `gate.rs`.
 
 ### The policy assistant
