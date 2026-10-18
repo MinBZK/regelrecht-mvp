@@ -285,4 +285,4 @@ What the cell cannot do yet:
 - The medical judgements belong with the criteria in the Regeling (art. 1, after the examination of art. 2 and 3). The engine applies a finding to every article in the decision. The cell, however, derives the inputs of a decision only from the deciding article, and a decision value carries only that article's findings. At a heroverweging the college would have to give judgements on the Regeling anew. So they sit on art. 49 and go to the Regeling as parameters.
 - The cell does not pass its own identity to the law. Competence by place of residence cannot be checked, and a policy scoped by `gemeente_code` is not found, so the municipality's policy is unscoped.
 
-**Try it:** `just bdd`, which runs the scenarios next to the BABW and the Regeling, or `cargo test --manifest-path packages/cel/Cargo.toml --test parkeerkaart`
+**Try it:** `just bdd`, which runs the scenarios next to the BABW and the Regeling, or `cargo test --manifest-path packages/cel/Cargo.toml --test parkeerkaart`, or play it in the PoC app, where the visitor picks this case or vakantieverlof at the start ([PoC portal](/components/poc-portal))

@@ -1,5 +1,6 @@
 /**
- * De API van packages/poc-vakantieverlof. Elk pad gaat langs `b()`: achter
+ * De API van packages/poc-vakantieverlof. Eerst kies je een casus (POST
+ * /api/casus); elk ander pad werkt op de gekozen casus. Elk pad gaat langs `b()`: achter
  * het poc-portaal staat de app onder /vakantieverlof/, en dan moet /api/x ook
  * /vakantieverlof/api/x worden. Een weigering van de cel komt terug als
  * `{ fout }` en wordt de foutmelding.
@@ -28,6 +29,9 @@ const post = (pad, data) =>
   });
 
 export const api = {
+  casussen: () => get('/api/casussen'),
+  casus: () => get('/api/casus'),
+  kies: (casus) => post('/api/casus', { casus }),
   vormen: (datum) => get(`/api/vormen?datum=${datum}`),
   kroniek: () => get('/api/kroniek'),
   aanvragen: (velden, datum) => post('/api/aanvragen', { velden, datum }),

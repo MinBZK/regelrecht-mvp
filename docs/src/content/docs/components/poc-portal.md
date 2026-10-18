@@ -49,11 +49,21 @@ The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` 
 
 The first proxied PoC is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
 
-The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays through an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, using the cell from `packages/cel`: the application, the school head's decision, the objection and the decision on it, the chronicle and the school's reduction. A log tab lists every step the cell recorded, newest first. For a decision it shows why, condensed from the engine's trace: which articles the decision called, and who filled each open term, down to the answer the cell gave from its own chronicle. The log keeps nothing of its own: it reads the chronicle, and the cell takes each decision again to show why. A step the cell refused recorded nothing, so it is not in the log.
+The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. It plays an administrative process through on the cell from `packages/cel`, and the visitor first picks a case. Vakantieverlof is an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, OBS De Klimop. The gehandicaptenparkeerkaart is an application for a disabled parking card under article 49 of the BABW at a fictional municipality, Wilgendaal. The slug stays `vakantieverlof` for now, so the portal path and the ZAD component keep their names.
 
-Each decision shows why it came out as it did, as the cell explains it (`Cell::explain`): who filled each open term, and the engine's trace under the law in force. The head is never asked whether the pupil already had leave in the school year. The cell answers that from its chronicle through its reduction. In the trace that answer is a single step, which names the reduction version and the last chronolexogram the cell read. Asked how it got there, the cell runs the reduction again and shows its own trace (`Cell::explain_answer`). That trace shows the decisions revoked on objection and how many decisions the filter skipped.
+Each case is one file in `packages/poc-vakantieverlof/casussen/`. Its configuration is two names: the cell (a directory under `corpus/cells/`) and the article that establishes the application. The app derives the rest from the law when it starts (`packages/poc-vakantieverlof/src/casus.rs`):
 
-Its chronicle lives in memory, shared by every visitor, and is empty after a restart. Its regelwerken come from `corpus/regulation/`, not from `corpus-poc/`.
+- the regelwerken the cell runs: what the article's law reads (`source.regulation`, `source.article`, `source.decisions`), the regelwerken that implement one of its open terms, and the ones whose hooks or procedure apply to what it produces, which brings in the Awb. It follows the same references from every regelwerk it adds, and from the cell's reductions. An override from another law adds nothing, since it only applies inside an execution that law starts (RFC-007).
+- the article that establishes the objection: the one whose `produces` lists a `BEZWAAR`, Awb 7:11 for both cases.
+- who decides: the competent authority of the article or its law, and otherwise the law's own words in `decided_per_case_by`. That gives "het hoofd" and "het college van burgemeester en wethouders".
+
+One thing the law does not say, so the case file says it: which output of the decision grants what was asked. `decision_type: TOEKENNING` names the kind of decision, not the output, and both decisions have more than one boolean output. The rest of the file is text for the visitor: a description, example values for the forms, and the scenarios as instructions.
+
+The tabs are role-neutral. Aanvrager files the application and the objection; Bestuursorgaan decides, under the name the law gives the role. The other tabs show the chronicle, the cell's reductions and a log. The log lists every step the cell recorded, newest first. For a decision it shows why, condensed from the engine's trace: which articles the decision called, and who filled each open term, down to the answer the cell gave from its own chronicle. Where a regulation filled a term and the cell answered a term inside that regulation, as with the municipality's policy on a second card, the log follows the regulation down to that answer. The log keeps nothing of its own. It reads the chronicle, and the cell takes each decision again to show why. A step the cell refused recorded nothing, so it is not in the log.
+
+Each decision shows why it came out as it did, as the cell explains it (`Cell::explain`): who filled each open term, and the engine's trace under the law in force. The deciding authority is never asked what the cell answers from its chronicle through a reduction, such as whether the pupil already had leave this school year or whether the applicant already holds a valid card. In the trace that answer is a single step, which names the reduction version and the last chronolexogram the cell read. Asked how it got there, the cell runs the reduction again and shows its own trace (`Cell::explain_answer`). That trace shows the decisions revoked on objection and how many decisions the filter skipped.
+
+The API works on one chosen case. `GET /api/casussen` lists them, `POST /api/casus` chooses one and starts its cell with an empty chronicle, and any other call before a choice answers 409. The choice and the chronicle live in memory, shared by every visitor, and are gone after a restart. The regelwerken come from `corpus/regulation/`, not from `corpus-poc/`. A test in `packages/poc-vakantieverlof/src/kern.rs` checks that the Dockerfile copies, and `script/deploy-filters.mjs` watches, every regelwerk and cell a case derives.
 
 ### The gate
 
@@ -122,14 +132,15 @@ napp runs as its own component and reads its own variables. The defaults below a
 
 ### vakantieverlof
 
-The image sets the port to `8000`, the base path to `/vakantieverlof/`, the corpus to `/app/corpus` and the built frontend to `/app/static`. `just poc-vakantieverlof` runs it locally.
+The image sets the port to `8000`, the base path to `/vakantieverlof/`, the corpus to `/app/corpus`, the cases to `/app/casussen` and the built frontend to `/app/static`. `just poc-vakantieverlof` runs it locally.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `VERLOF_PORT` | `8410` | Listening port |
 | `VERLOF_BASE_PATH` | `/` | Path prefix; must match the portal path |
 | `VERLOF_STATIC_DIR` | `dist` under `frontend-poc-vakantieverlof/` in the repository | Built frontend, made by `npm run build` |
-| `VERLOF_CORPUS_DIR` | `corpus/` in the repository | The regelwerken under `regulation/nl` and the cell under `cells/obs_de_klimop` |
+| `VERLOF_CORPUS_DIR` | `corpus/` in the repository | The regelwerken under `regulation/nl` and the cells under `cells/` |
+| `VERLOF_CASUS_DIR` | `casussen/` under `packages/poc-vakantieverlof/` | One YAML file per case |
 
 ## Further reading
 

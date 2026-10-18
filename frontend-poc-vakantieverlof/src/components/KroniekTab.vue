@@ -1,7 +1,7 @@
 <script setup>
 // De kroniek van de cel: elk chronolexogram, in de volgorde waarin het werd
 // vastgelegd, en wat erin staat (RFC-046). Bij een gekozen chronolexogram:
-// waarnaar het verwijst (`refers_to`), welke bevindingen van het hoofd een
+// waarnaar het verwijst (`refers_to`), welke bevindingen van het bestuursorgaan een
 // besluit gebruikte en de rest als JSON, met decimalen als getal. Welke
 // bevindingen een besluit gebruikte, staat niet in de kroniek: de cel leidt
 // het af uit het besluit opnieuw genomen (Cell::findings, RFC-050).
@@ -30,9 +30,9 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
 
 <template>
   <nldd-simple-section>
-    <nldd-title slot="header" size="3" text="Kroniek van OBS De Klimop">
+    <nldd-title slot="header" size="3" :text="`Kroniek van ${spel.casus.cel_naam}`">
       <nldd-text slot="supporting-text">
-        Eén kroniek, van de cel van de school. Elke stap in het proces legt er één
+        Eén kroniek, van de cel van de uitvoerder. Elke stap in het proces legt er één
         chronolexogram in vast (een beslissing op bezwaar die herroept, legt er twee vast); er wordt
         nooit iets in gewijzigd of uit verwijderd.
       </nldd-text>
@@ -41,7 +41,7 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
       v-if="spel.grammen.length === 0"
       icon="info"
       text="De kroniek is leeg"
-      supporting-text="Dien als ouder een aanvraag in om het eerste chronolexogram te maken."
+      supporting-text="Dien als aanvrager een aanvraag in om het eerste chronolexogram te maken."
     ></nldd-inline-dialog>
     <nldd-list v-else appearance="box-base" accessible-label="Chronolexogrammen">
       <nldd-list-item
@@ -71,7 +71,7 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
         </nldd-list-item>
         <nldd-list-item size="sm">
           <nldd-text-cell
-            text="Bevindingen van het hoofd"
+            text="Bevindingen van het bestuursorgaan"
             :supporting-text="bevindingen.length ? 'die dit besluit gebruikte (RFC-050)' : 'geen'"
           ></nldd-text-cell>
         </nldd-list-item>

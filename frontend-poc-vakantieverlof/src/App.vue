@@ -1,24 +1,28 @@
 <script setup>
-// Eén pagina, zes tabbladen: de scenario's, de ouder, de school, de
-// kroniek, de reductie en het logboek. Bovenaan de speeldatum, die voor
-// elke stap geldt, en een knop die de kroniek leegmaakt. Een weigering van
-// de cel staat in een banner, in het Nederlands; de melding van de cel zelf
-// onder Details.
-import { onMounted, ref, watch } from 'vue';
+// Eerst de keuze van een casus (CasusKeuze.vue). Daarna één pagina met zes
+// tabbladen: de scenario's, de aanvrager, het bestuursorgaan, de kroniek,
+// de reductie en het logboek. Bovenaan de speeldatum, die voor elke stap
+// geldt, een knop die de kroniek leegmaakt en een knop terug naar de keuze.
+// Een weigering van de cel staat in een banner, in het Nederlands; de
+// melding van de cel zelf onder Details. Wat bij de casus hoort (de wet, de
+// cel, wie beslist), komt uit GET /api/casus.
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
+import { artikelNaam } from './logboek.js';
 import { isEngels, melding } from './melding.js';
-import { spel, stap, verversen } from './spel.js';
+import { hervatten, naarKeuze, spel, stap, verversen } from './spel.js';
+import AanvragerTab from './components/AanvragerTab.vue';
+import BestuursorgaanTab from './components/BestuursorgaanTab.vue';
+import CasusKeuze from './components/CasusKeuze.vue';
 import KroniekTab from './components/KroniekTab.vue';
 import LogboekTab from './components/LogboekTab.vue';
-import OuderTab from './components/OuderTab.vue';
 import ReductieTab from './components/ReductieTab.vue';
 import ScenarioTab from './components/ScenarioTab.vue';
-import SchoolTab from './components/SchoolTab.vue';
 
 const tabs = [
   { id: 'scenarios', tekst: "Scenario's" },
-  { id: 'ouder', tekst: 'Ouder' },
-  { id: 'school', tekst: 'School' },
+  { id: 'aanvrager', tekst: 'Aanvrager' },
+  { id: 'bestuursorgaan', tekst: 'Bestuursorgaan' },
   { id: 'kroniek', tekst: 'Kroniek' },
   { id: 'reductie', tekst: 'Reductie' },
   { id: 'logboek', tekst: 'Logboek' },
@@ -27,8 +31,13 @@ const tab = ref('scenarios');
 const details = ref(false);
 watch(() => spel.fout, () => (details.value = false));
 
-onMounted(verversen);
+onMounted(hervatten);
 watch(() => spel.datum, verversen);
+
+const artikel = computed(() => {
+  const [wet, nummer] = (spel.casus?.besluit ?? '#').split('#');
+  return artikelNaam(wet, nummer);
+});
 
 // Een link in het logboek naar een chronolexogram opent het in de kroniek.
 function naarKroniek(id) {
@@ -46,33 +55,44 @@ async function opnieuw() {
     <nldd-page sticky-header>
       <nldd-container slot="header" padding="16" gap="12">
         <nldd-top-title-bar
-          text="Vakantieverlof naspelen"
-          supporting-text="De cel van OBS De Klimop (fictief) · Leerplichtwet 1969 artikel 13a"
+          :text="spel.casus ? `${spel.casus.titel} naspelen` : 'Een uitvoeringsproces naspelen'"
+          :supporting-text="spel.casus ? `De cel van ${spel.casus.cel_naam} · ${artikel} · bestuursorgaan: ${spel.casus.rol}` : 'Kies een casus om te beginnen'"
         >
-          <nldd-button
-            slot="toolbar"
-            appearance="neutral-tinted"
-            size="sm"
-            text="Opnieuw beginnen"
-            @click="opnieuw"
-          ></nldd-button>
+          <template v-if="spel.casus">
+            <nldd-button
+              slot="toolbar"
+              appearance="neutral-tinted"
+              size="sm"
+              text="Andere casus"
+              @click="naarKeuze"
+            ></nldd-button>
+            <nldd-button
+              slot="toolbar"
+              appearance="neutral-tinted"
+              size="sm"
+              text="Opnieuw beginnen"
+              @click="opnieuw"
+            ></nldd-button>
+          </template>
         </nldd-top-title-bar>
-        <nldd-tab-bar accessible-label="Rol">
-          <nldd-tab-bar-item
-            v-for="t in tabs"
-            :key="t.id"
-            :text="t.tekst"
-            :current="tab === t.id"
-            @select="tab = t.id"
-          ></nldd-tab-bar-item>
-        </nldd-tab-bar>
-        <nldd-form-field
-          label="Speeldatum"
-          label-alignment="left"
-          supporting-label="De dag van elke stap; de kroniek loopt alleen vooruit."
-        >
-          <nldd-date-field :value="spel.datum" @change="$event.detail.value && (spel.datum = $event.detail.value)"></nldd-date-field>
-        </nldd-form-field>
+        <template v-if="spel.casus">
+          <nldd-tab-bar accessible-label="Rol">
+            <nldd-tab-bar-item
+              v-for="t in tabs"
+              :key="t.id"
+              :text="t.tekst"
+              :current="tab === t.id"
+              @select="tab = t.id"
+            ></nldd-tab-bar-item>
+          </nldd-tab-bar>
+          <nldd-form-field
+            label="Speeldatum"
+            label-alignment="left"
+            supporting-label="De dag van elke stap; de kroniek loopt alleen vooruit."
+          >
+            <nldd-date-field :value="spel.datum" @change="$event.detail.value && (spel.datum = $event.detail.value)"></nldd-date-field>
+          </nldd-form-field>
+        </template>
       </nldd-container>
 
       <nldd-simple-section v-if="spel.fout" padding-block="16">
@@ -96,12 +116,15 @@ async function opnieuw() {
         </nldd-banner>
       </nldd-simple-section>
 
-      <ScenarioTab v-if="tab === 'scenarios'" @start="tab = 'ouder'" />
-      <OuderTab v-else-if="tab === 'ouder'" />
-      <SchoolTab v-else-if="tab === 'school'" />
-      <KroniekTab v-else-if="tab === 'kroniek'" />
-      <ReductieTab v-else-if="tab === 'reductie'" />
-      <LogboekTab v-else @kroniek="naarKroniek" />
+      <CasusKeuze v-if="!spel.casus" @gekozen="tab = 'scenarios'" />
+      <template v-else-if="spel.vormen">
+        <ScenarioTab v-if="tab === 'scenarios'" @start="tab = 'aanvrager'" />
+        <AanvragerTab v-else-if="tab === 'aanvrager'" />
+        <BestuursorgaanTab v-else-if="tab === 'bestuursorgaan'" />
+        <KroniekTab v-else-if="tab === 'kroniek'" />
+        <ReductieTab v-else-if="tab === 'reductie'" />
+        <LogboekTab v-else @kroniek="naarKroniek" />
+      </template>
     </nldd-page>
   </nldd-app-view>
 </template>

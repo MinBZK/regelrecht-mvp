@@ -9,16 +9,28 @@
  * `uitkomst` (een uitvoer van het artikel) of `begrip` (een open begrip, met
  * wie het invulde).
  */
-import { BESLISSING_OP_BEZWAAR, kort, leesbaar, waarde } from './spel.js';
+import { bezwaarGrondslag, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
 
-const WETTEN = {
-  leerplichtwet_1969: 'Leerplichtwet 1969',
+// Regelwerken die overal bij hun afkorting heten.
+const AFKORTINGEN = {
   algemene_wet_bestuursrecht: 'Awb',
+  besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw: 'BABW',
 };
 
+/**
+ * De naam van een regelwerk: zijn afkorting, de naam die het zelf draagt
+ * (GET /api/casus), of zijn `$id` leesbaar met een hoofdletter.
+ */
+export function wetNaam(wet) {
+  if (AFKORTINGEN[wet]) return AFKORTINGEN[wet];
+  const naam = spel.casus?.regelwerken?.find((r) => r.id === wet)?.naam;
+  if (naam) return naam;
+  const tekst = leesbaar(wet);
+  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+}
+
 /** `leerplichtwet_1969`, `13a` → `Leerplichtwet 1969 artikel 13a`. */
-export const artikelNaam = (wet, artikel) =>
-  `${WETTEN[wet] ?? leesbaar(wet)} artikel ${artikel}`;
+export const artikelNaam = (wet, artikel) => `${wetNaam(wet)} artikel ${artikel}`;
 
 /** Een waarde uit de keten in woorden: ja, nee, een datum of een getal. */
 export function toon(v) {
@@ -45,7 +57,7 @@ export const gelezen = (p, grammen) =>
 
 /** Wie een open begrip invulde (`FilledBy`), in een zin. */
 export function ingevuldDoor(by, grammen) {
-  if (by === 'finding') return 'bevinding van het hoofd';
+  if (by === 'finding') return 'bevinding van het bestuursorgaan';
   if (by?.regulation) return `ingevuld door ${artikelNaam(by.regulation.law_id, by.regulation.article)}`;
   if (by?.answer) {
     return `de cel uit haar kroniek: reductie ${by.answer.law_id} (geldig vanaf ${by.answer.valid_from}), ${gelezen(by.answer, grammen)}`;
@@ -58,7 +70,7 @@ export function stapTekst(stap, grammen) {
   switch (stap.soort) {
     case 'artikel':
       return stap.uitvoer
-        ? { tekst: `${leesbaar(stap.uitvoer)} uit ${WETTEN[stap.wet] ?? leesbaar(stap.wet)}` }
+        ? { tekst: `${leesbaar(stap.uitvoer)} uit ${wetNaam(stap.wet)}` }
         : { tekst: `${artikelNaam(stap.wet, stap.artikel)} wordt uitgevoerd` };
     case 'hook':
       return { tekst: `Ook van toepassing: ${artikelNaam(stap.wet, stap.artikel)}` };
@@ -105,19 +117,19 @@ export function genummerd(stappen, prefix = '') {
 export function uitslag(g) {
   const o = g.outputs ?? {};
   if (g.kind === 'AANVRAAG' || g.kind === 'BEZWAAR') return { tekst: 'ontvangen', kleur: 'neutral' };
-  if (g.grondslag === BESLISSING_OP_BEZWAAR) {
+  if (g.grondslag === bezwaarGrondslag()) {
     if (o.bezwaar_ontvankelijk === false) return { tekst: 'niet-ontvankelijk', kleur: 'warning' };
     return o.bestreden_besluit_herroepen
       ? { tekst: 'gegrond', kleur: 'success' }
       : { tekst: 'ongegrond', kleur: 'neutral' };
   }
-  if (o.verlof_verleend === true) return { tekst: 'verleend', kleur: 'success' };
-  if (o.verlof_verleend === false) return { tekst: 'geweigerd', kleur: 'critical' };
+  if (toegewezen(g) === true) return { tekst: 'toegewezen', kleur: 'success' };
+  if (toegewezen(g) === false) return { tekst: 'afgewezen', kleur: 'critical' };
   return { tekst: 'besluit', kleur: 'neutral' };
 }
 
 /** De beslissing op bezwaar die `id` als nieuw besluit nam, als die er is. */
 export const genomenBij = (id, grammen) =>
   grammen.find(
-    (g) => g.grondslag === BESLISSING_OP_BEZWAAR && Object.values(g.outputs ?? {}).includes(id),
+    (g) => g.grondslag === bezwaarGrondslag() && Object.values(g.outputs ?? {}).includes(id),
   ) ?? null;

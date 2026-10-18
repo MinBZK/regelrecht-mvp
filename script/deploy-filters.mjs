@@ -99,8 +99,10 @@ export const COMPONENTS = {
     ],
   },
   // vakantieverlof draait net als napp als eigen, niet-gepubliceerd component.
-  // De crate-kant (cel, engine) volgt uit de graaf; het image neemt daarnaast
-  // de regelwerken mee die de cel draait, en de cel van de school.
+  // De crate-kant (cel, engine, de casussen naast de crate) volgt uit de
+  // graaf; het image neemt daarnaast per casus de regelwerken mee die de cel
+  // draait, en de cel zelf. Een test in packages/poc-vakantieverlof
+  // (src/kern.rs) houdt deze lijst gelijk met wat de app per casus afleidt.
   'poc-vakantieverlof': {
     crate: 'regelrecht-poc-vakantieverlof',
     paths: [
@@ -110,6 +112,10 @@ export const COMPONENTS = {
       'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/',
       'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/',
       'corpus/cells/obs_de_klimop/',
+      'corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/',
+      'corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/',
+      'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/',
+      'corpus/cells/gemeente_wilgendaal/',
       'frontend-poc-vakantieverlof/',
       'packages/frontend-shared/',
       'packages/poc-vakantieverlof/Dockerfile',

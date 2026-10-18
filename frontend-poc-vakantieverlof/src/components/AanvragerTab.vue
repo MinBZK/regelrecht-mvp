@@ -1,26 +1,32 @@
 <script setup>
-// De ouder: een aanvraag om vakantieverlof doen, zien hoe het ervoor staat,
-// en bezwaar maken tegen een besluit. Welke velden er zijn, zegt de wet
-// (artikel 13a, de Awb-haken 4:2 en, voor het bezwaar, 6:5 via 7:11). Een
+// De aanvrager: een aanvraag doen, zien hoe het ervoor staat, en bezwaar
+// maken tegen een besluit. Welke velden er zijn, zegt de wet (het artikel
+// van de casus, de Awb-haken 4:2 en, voor het bezwaar, 6:5 via 7:11). Een
 // bezwaar is een indiening onder Awb 7:11 die naar het bestreden besluit
-// verwijst; of het ontvankelijk is, beslist 7:11, niet deze pagina.
+// verwijst; of het ontvankelijk is, beslist 7:11, niet deze pagina. De
+// voorbeeldwaarden komen uit de casus.
 import { computed, reactive, ref } from 'vue';
 import { api } from '../api.js';
-import { aanvragen, dossier, geldendBesluit, isBesluit, kort, leesbaar, spel, stap } from '../spel.js';
+import { artikelNaam } from '../logboek.js';
+import {
+  aanvragen,
+  dossier,
+  geldendBesluit,
+  isBesluit,
+  kort,
+  leesbaar,
+  samenvatting,
+  spel,
+  stap,
+  toegewezen,
+} from '../spel.js';
 import VeldInvoer from './VeldInvoer.vue';
 
-// Fictieve voorbeeldgegevens, zodat je snel door het proces klikt. Een
-// BSN uit de testreeks; vijf schooldagen, dus het oordeel van het hoofd
-// over het beroep van de ouder beslist.
-const aanvraag = reactive({
-  bsn_jongere: '999990019',
-  eerste_verlofdag: '2027-02-01',
-  laatste_verlofdag: '2027-02-05',
-  aanvraag_ondertekend: true,
-  naam_aanvrager: 'J. Jansen',
-  adres_aanvrager: 'Voorbeeldstraat 1',
-  dagtekening: '2026-10-12',
-  gevraagde_beschikking: 'vakantieverlof',
+const aanvraag = reactive({ ...spel.casus.voorbeeld.aanvraag });
+
+const artikel = computed(() => {
+  const [wet, nummer] = spel.casus.besluit.split('#');
+  return artikelNaam(wet, nummer);
 });
 
 const zonderLeeg = (velden) =>
@@ -46,14 +52,17 @@ const bezwaarVelden = computed(() => {
 
 function startBezwaar(besluit) {
   bezwaarTegen.value = besluit;
-  Object.assign(bezwaar, {
-    bezwaarschrift_ondertekend: true,
-    naam_indiener: 'J. Jansen',
-    adres_indiener: 'Voorbeeldstraat 1',
+  for (const k of Object.keys(bezwaar)) delete bezwaar[k];
+  Object.assign(bezwaar, spel.casus.voorbeeld.bezwaar, {
     dagtekening_bezwaarschrift: spel.datum,
-    omschrijving_bestreden_besluit: 'weigering vakantieverlof',
-    gronden_bezwaar: 'verklaring van de werkgever: geen verlof in de schoolvakanties',
   });
+}
+
+/** De stand van een aanvraag, als tag: tekst en kleur. */
+function stand(a) {
+  const b = geldendBesluit(a);
+  if (!b) return { tekst: 'In behandeling', kleur: 'neutral' };
+  return toegewezen(b) ? { tekst: 'Toegewezen', kleur: 'success' } : { tekst: 'Afgewezen', kleur: 'critical' };
 }
 
 async function bezwaarIndienen() {
@@ -66,15 +75,15 @@ async function bezwaarIndienen() {
 
 <template>
   <nldd-simple-section>
-    <nldd-title slot="header" size="3" text="Aanvraag om vakantieverlof">
+    <nldd-title slot="header" size="3" :text="`Aanvraag: ${spel.casus.titel.toLowerCase()}`">
       <nldd-text slot="supporting-text">
-        Leerplichtwet 1969 artikel 13a. De velden komen uit de wet: wat het artikel vraagt en
-        wat de Algemene wet bestuursrecht erbij eist (artikel 4:2). Een leeg veld laat je weg;
-        de cel legt de aanvraag dan vast met dat gegeven als ontbrekend. De dag van ontvangst
-        is de speeldatum (Awb 4:13).
+        {{ artikel }}. De velden komen uit de wet: wat het artikel vraagt en wat de Algemene wet
+        bestuursrecht erbij eist (artikel 4:2). Een leeg veld laat je weg; de cel legt de
+        aanvraag dan vast met dat gegeven als ontbrekend. De dag van ontvangst is de speeldatum
+        (Awb 4:13).
       </nldd-text>
     </nldd-title>
-    <nldd-container v-if="spel.vormen" gap="16" max-width="560px">
+    <nldd-container gap="16" max-width="560px">
       <VeldInvoer
         v-for="veld in spel.vormen.aanvraag.velden"
         :key="veld.naam"
@@ -99,13 +108,9 @@ async function bezwaarIndienen() {
         <nldd-title
           size="5"
           :text="`Aanvraag ${kort(a.id)}`"
-          :supporting-text="`${a.fields.eerste_verlofdag} t/m ${a.fields.laatste_verlofdag} · ontvangen ${a.recorded_on}`"
+          :supporting-text="samenvatting(a)"
         >
-          <nldd-tag
-            slot="end"
-            :color="geldendBesluit(a) ? (geldendBesluit(a).outputs.verlof_verleend ? 'success' : 'critical') : 'neutral'"
-            :text="geldendBesluit(a) ? (geldendBesluit(a).outputs.verlof_verleend ? 'Verleend' : 'Geweigerd') : 'In behandeling'"
-          ></nldd-tag>
+          <nldd-tag slot="end" :color="stand(a).kleur" :text="stand(a).tekst"></nldd-tag>
         </nldd-title>
         <nldd-list>
           <nldd-list-item v-for="s in dossier(a)" :key="s.gram.id" size="sm">
@@ -135,9 +140,9 @@ async function bezwaarIndienen() {
     <nldd-title slot="header" size="3" :text="`Bezwaar tegen besluit ${kort(bezwaarTegen.id)}`">
       <nldd-text slot="supporting-text">
         De velden komen uit de Awb (artikel 6:5, via 7:11). Het bestreden besluit en de
-        bezwaartermijn neemt de cel uit het besluit. Het bezwaar wijzigt de aanvraag niet: het
-        hoofd heroverweegt het besluit op grond van wat je aanvoert. Wil je minder dagen
-        vragen, dan doe je een nieuwe aanvraag.
+        bezwaartermijn neemt de cel uit het besluit. Het bezwaar wijzigt de aanvraag niet:
+        {{ spel.casus.rol }} heroverweegt het besluit op grond van wat je aanvoert. Wil je iets
+        anders vragen, dan doe je een nieuwe aanvraag.
       </nldd-text>
     </nldd-title>
     <nldd-container gap="16" max-width="560px">

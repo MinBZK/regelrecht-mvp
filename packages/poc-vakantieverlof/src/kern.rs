@@ -11,81 +11,140 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use regelrecht_cel::{decision, reading, shape, Cell, Error, Gram, Source};
 use regelrecht_engine::{
-    ArticleBasedLaw, ArticleResult, FilledBy, LawExecutionService, LawLoad, OpenTermFilled,
-    ParameterType, PathNode, PathNodeType,
+    ArticleResult, FilledBy, LawExecutionService, OpenTermFilled, ParameterType, PathNode,
+    PathNodeType,
 };
 use regelrecht_law_model::stored;
 use serde_json::{json, Map, Value};
 
-/// The law and article of the leave, and its decision.
-pub const LAW: &str = "leerplichtwet_1969";
-pub const ARTICLE: &str = "13a";
-/// The Awb, whose art. 7:11 establishes the objection and decides on it.
-pub const AWB: &str = "algemene_wet_bestuursrecht";
-pub const OBJECTION: &str = "7:11";
-/// The fictional school whose cell this is.
-pub const SCHOOL: &str = "obs_de_klimop";
-
-/// The regelwerken the cell runs on, as directories under
-/// `corpus/regulation/nl`: the law, the Awb and the school's two fictitious
-/// policies (the start of its school year, and in which school year a day
-/// falls).
-const REGELWERKEN: [&str; 4] = [
-    "wet/leerplichtwet_1969",
-    "wet/algemene_wet_bestuursrecht",
-    "uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop",
-    "uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop",
-];
+use crate::casus::{afleiden, casussen, Afleiding, Casus, Regelwerken};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// The regelwerken (each version as its YAML) and the cell's directory,
-/// read once at startup.
+/// A case with what follows for it from the law ([`Afleiding`]): the
+/// versions of the regelwerken its cell runs, read once at startup, and the
+/// cell's directory.
 #[derive(Debug, Clone)]
 pub struct Corpus {
+    pub casus: Casus,
+    pub afleiding: Afleiding,
+    /// Per regelwerk the cell runs: its `$id`, its name and its directory
+    /// under `corpus/regulation/nl`.
+    regelwerken: Vec<(String, Option<String>, String)>,
     versies: Vec<String>,
     cell_dir: PathBuf,
 }
 
 impl Corpus {
-    /// Read the regelwerken under `root/regulation/nl` and find the cell
-    /// at `root/cells/<SCHOOL>`. `root` is the repository's `corpus/`.
-    pub fn load(root: &Path) -> Result<Self> {
+    /// The case `casus` on the corpus at `root` (the repository's
+    /// `corpus/`), whose regelwerken are `regelwerken`: its cell at
+    /// `root/cells/<cel>`, and what follows from the law ([`afleiden`]).
+    pub fn load(root: &Path, regelwerken: &Regelwerken, casus: Casus) -> Result<Self> {
+        let cell_dir = root.join("cells").join(&casus.cel);
+        let cell = Cell::in_memory(&casus.cel, &cell_dir)?;
+        let afleiding = afleiden(regelwerken, &casus, &cell)?;
         let mut versies = Vec::new();
-        for dir in REGELWERKEN {
-            let dir = root.join("regulation/nl").join(dir);
-            let mut paths: Vec<PathBuf> = std::fs::read_dir(&dir)?
-                .filter_map(|e| e.ok().map(|e| e.path()))
-                .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
-                .collect();
-            paths.sort();
-            for path in paths {
-                let yaml = std::fs::read_to_string(&path)?;
-                // Parsed here, so a broken version names its file at startup.
-                ArticleBasedLaw::from_yaml_str(&yaml)
-                    .map_err(|e| Error::Setup(format!("{}: {e}", path.display())))?;
-                versies.push(yaml);
-            }
+        let mut gelezen = Vec::new();
+        for id in &afleiding.regelwerken {
+            let werk = regelwerken
+                .get(id)
+                .ok_or_else(|| Error::Setup(format!("'{id}' is not in the corpus")))?;
+            versies.extend(werk.versies.iter().map(|(yaml, _)| yaml.clone()));
+            let naam = werk.versies.last().and_then(|(_, law)| law.name.clone());
+            gelezen.push((id.clone(), naam, werk.map.clone()));
         }
         Ok(Self {
+            casus,
+            afleiding,
+            regelwerken: gelezen,
             versies,
-            cell_dir: root.join("cells").join(SCHOOL),
+            cell_dir,
         })
     }
 
-    /// The school's cell, with an empty chronicle and the reductions in its
-    /// directory.
-    pub fn cell(&self) -> Result<Cell> {
-        Cell::in_memory(SCHOOL, &self.cell_dir)
+    /// Every case in `casus_dir` on the corpus at `root`.
+    pub fn alle(root: &Path, casus_dir: &Path) -> Result<Vec<Self>> {
+        let regelwerken = Regelwerken::load(root)?;
+        casussen(casus_dir)?
+            .into_iter()
+            .map(|c| Self::load(root, &regelwerken, c))
+            .collect()
     }
 
-    /// A service with every regelwerk.
+    /// The case's cell, with an empty chronicle and the reductions in its
+    /// directory.
+    pub fn cell(&self) -> Result<Cell> {
+        Cell::in_memory(&self.casus.cel, &self.cell_dir)
+    }
+
+    /// A service with every regelwerk the cell runs.
     pub fn service(&self) -> Result<LawExecutionService> {
         let mut service = LawExecutionService::new();
         for yaml in &self.versies {
             service.load_law(yaml)?;
         }
         Ok(service)
+    }
+
+    /// The directories of the regelwerken the cell runs, under
+    /// `corpus/regulation/nl`.
+    pub fn mappen(&self) -> impl Iterator<Item = &str> {
+        self.regelwerken.iter().map(|(_, _, map)| map.as_str())
+    }
+
+    fn law(&self) -> &str {
+        &self.afleiding.law
+    }
+
+    fn article(&self) -> &str {
+        &self.afleiding.article
+    }
+
+    fn awb(&self) -> &str {
+        &self.afleiding.objection_law
+    }
+
+    fn objection(&self) -> &str {
+        &self.afleiding.objection
+    }
+
+    /// The case as the app shows it: its text and scenarios, and what
+    /// follows from the law.
+    pub fn beschrijving(&self) -> Value {
+        let c = &self.casus;
+        let a = &self.afleiding;
+        json!({
+            "id": c.id,
+            "titel": c.titel,
+            "omschrijving": c.omschrijving,
+            "cel": c.cel,
+            "cel_naam": c.cel_naam,
+            "speeldatum": c.speeldatum,
+            "uitkomst": c.uitkomst,
+            "voorbeeld": c.voorbeeld,
+            "scenarios": c.scenarios,
+            "besluit": format!("{}#{}", a.law, a.article),
+            "beslissing_op_bezwaar": format!("{}#{}", a.objection_law, a.objection),
+            "rol": a.rol,
+            "regelwerken": self.regelwerken.iter().map(|(id, naam, map)| json!({
+                "id": id,
+                "naam": naam,
+                "map": map,
+            })).collect::<Vec<_>>(),
+        })
+    }
+
+    /// The case in the list a visitor chooses from.
+    pub fn kaart(&self) -> Value {
+        let c = &self.casus;
+        json!({
+            "id": c.id,
+            "titel": c.titel,
+            "omschrijving": c.omschrijving,
+            "cel_naam": c.cel_naam,
+            "besluit": format!("{}#{}", self.afleiding.law, self.afleiding.article),
+            "rol": self.afleiding.rol,
+        })
     }
 }
 
@@ -110,20 +169,20 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
         .collect()
 }
 
-/// What the law asks on `on`: the fields of the application, the head's
-/// findings on it and the fields of the objection. All of it is derived
-/// from the law, for this cell: a term the cell answers from its chronicle
-/// is no finding of the head, so the form does not ask it. An objection
-/// does not change the application; a smaller request is a new
-/// application. What the head finds anew on an objection follows from the
-/// contested decision ([`heroverweging`]).
+/// What the law asks on `on`: the fields of the application, the deciding
+/// authority's findings on it and the fields of the objection. All of it is
+/// derived from the law, for this cell: a term the cell answers from its
+/// chronicle is no finding of the authority, so the form does not ask it. An
+/// objection does not change the application; a smaller request is a new
+/// application. What the authority finds anew on an objection follows from
+/// the contested decision ([`heroverweging`]).
 pub fn vormen(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let beantwoord = reading::terms_on(cell.reductions(), on);
-    let aanvraag = shape::derive(&service, LAW, ARTICLE, on)?;
-    let besluit = decision::derive_with(&service, LAW, ARTICLE, on, &beantwoord)?;
-    let bezwaar = shape::derive(&service, AWB, OBJECTION, on)?;
-    let op_bezwaar = decision::derive(&service, AWB, OBJECTION, on)?;
+    let aanvraag = shape::derive(&service, corpus.law(), corpus.article(), on)?;
+    let besluit = decision::derive_with(&service, corpus.law(), corpus.article(), on, &beantwoord)?;
+    let bezwaar = shape::derive(&service, corpus.awb(), corpus.objection(), on)?;
+    let op_bezwaar = decision::derive(&service, corpus.awb(), corpus.objection(), on)?;
     let moment = |s: &shape::Shape| {
         s.moment
             .as_ref()
@@ -143,9 +202,9 @@ pub fn vormen(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
             json!({
                 "naam": i.field.name,
                 "bron": match i.source {
-                    _ if door_cel => "kroniek van de school",
+                    _ if door_cel => "kroniek van de cel",
                     Source::Application => "aanvraag",
-                    Source::Caller => "hoofd",
+                    Source::Caller => "bestuursorgaan",
                     Source::Cell => "cel",
                     Source::Policy => "beleid",
                 },
@@ -180,20 +239,28 @@ pub fn vormen(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     }))
 }
 
-/// The parent applies: record the application of art. 13a, received on `on`.
+/// The applicant applies: record the application under the case's article,
+/// received on `on`.
 pub fn aanvragen(
     corpus: &Corpus,
     cell: &mut Cell,
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Gram> {
-    cell.record_submission(&mut corpus.service()?, LAW, ARTICLE, None, velden, on)
+    cell.record_submission(
+        &mut corpus.service()?,
+        corpus.law(),
+        corpus.article(),
+        None,
+        velden,
+        on,
+    )
 }
 
 /// Why a decision came out as it did, as the cell explains it
 /// ([`Cell::explain`]): the engine's trace, in full and condensed to its
 /// steps, every open term with who filled it, the terms the cell answered
-/// from its chronicle (one trace node each) and the findings of the head
+/// from its chronicle (one trace node each) and the findings of the authority
 /// the decision used ([`Cell::findings`]).
 #[derive(Debug, serde::Serialize)]
 pub struct Waarom {
@@ -301,7 +368,10 @@ pub enum Stap {
     /// An open term, and who filled it (`ArticleResult::open_terms`). For
     /// the cell's answer, `keer` is how many times the decision asked the
     /// cell this term before, over the whole trace: the index into the
-    /// answers of [`hoe_beantwoord`].
+    /// answers of [`hoe_beantwoord`]. `stappen` are those of the regulation
+    /// that filled it, only when the cell answered a term in it (the
+    /// municipality's policy on the parkeerkaart asks the cell whether the
+    /// applicant holds a valid card).
     Begrip {
         naam: String,
         wet: String,
@@ -311,6 +381,8 @@ pub enum Stap {
         ingevuld_door: Option<FilledBy>,
         #[serde(skip_serializing_if = "Option::is_none")]
         keer: Option<usize>,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        stappen: Vec<Stap>,
     },
 }
 
@@ -326,7 +398,8 @@ struct Spoor<'a> {
 /// the articles called and the hooks fired. Resolving a variable and the
 /// arithmetic leave no step; what is found under them belongs to the step
 /// above. Under an open term nothing more: how a regulation or the cell
-/// filled it is their own account. A hook that determined nothing at the
+/// filled it is their own account, unless the cell answered a term in that
+/// regulation; then its steps follow, down to that answer. A hook that determined nothing at the
 /// decision leaves no step either; the full trace still has it.
 pub fn keten(result: &ArticleResult) -> Result<Vec<Stap>> {
     let Some(root) = &result.trace else {
@@ -429,6 +502,14 @@ fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
                 .map(|f| f.filled_by.clone())
                 .or_else(|| node.answer.clone().map(FilledBy::Answer));
             let keer = keer(&spoor.beantwoord, node);
+            // The cell answered a term below this one, in the regulation that
+            // filled it: the steps there lead to that answer.
+            let onder = node.children.iter().any(|c| !beantwoord(c).is_empty());
+            let stappen = if onder {
+                stappen_onder(node, spoor)?
+            } else {
+                Vec::new()
+            };
             Stap::Begrip {
                 naam: node.name.clone(),
                 wet,
@@ -437,6 +518,7 @@ fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
                 ontbreekt,
                 ingevuld_door,
                 keer,
+                stappen,
             }
         }
         _ => return stappen_onder(node, spoor),
@@ -607,16 +689,16 @@ pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cell, id: &str, begrip: &str) -> R
     Ok(json!({ "besluit": id, "begrip": begrip, "antwoorden": uit }))
 }
 
-/// A decision under art. 13a, and why it came out so.
+/// A decision on an application, and why it came out so.
 #[derive(Debug, serde::Serialize)]
 pub struct Besluit {
     pub besluit: Gram,
     pub waarom: Waarom,
 }
 
-/// Decide on the submission `op` under `law_id#article` with the head's
-/// `bevindingen` (RFC-050): the decision on it first, then a decision it
-/// takes in turn.
+/// Decide on the submission `op` under `law_id#article` with the deciding
+/// authority's `bevindingen` (RFC-050): the decision on it first, then a
+/// decision it takes in turn.
 fn beslissen(
     corpus: &Corpus,
     cell: &mut Cell,
@@ -638,7 +720,7 @@ fn beslissen(
     )
 }
 
-/// The head decides on the application `aanvraag` with its findings.
+/// The deciding authority decides on the application `aanvraag` with its findings.
 pub fn besluiten(
     corpus: &Corpus,
     cell: &mut Cell,
@@ -646,12 +728,21 @@ pub fn besluiten(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Besluit> {
-    let besluit = beslissen(corpus, cell, LAW, ARTICLE, aanvraag, bevindingen, on)?.remove(0);
+    let besluit = beslissen(
+        corpus,
+        cell,
+        corpus.law(),
+        corpus.article(),
+        aanvraag,
+        bevindingen,
+        on,
+    )?
+    .remove(0);
     let waarom = waarom(corpus, cell, &besluit.id)?;
     Ok(Besluit { besluit, waarom })
 }
 
-/// The parent objects to the decision `besluit`: a submission under Awb
+/// The applicant objects to the decision `besluit`: a submission under Awb
 /// 7:11 that refers to it (RFC-050).
 pub fn bezwaren(
     corpus: &Corpus,
@@ -662,19 +753,19 @@ pub fn bezwaren(
 ) -> Result<Gram> {
     cell.record_submission(
         &mut corpus.service()?,
-        AWB,
-        OBJECTION,
+        corpus.awb(),
+        corpus.objection(),
         Some(besluit),
         velden,
         on,
     )
 }
 
-/// Before the head decides on the objection `bezwaar` on `on`: whether it
+/// Before the authority decides on the objection `bezwaar` on `on`: whether it
 /// is admissible, as Awb 7:11 decides it (on time per 6:9, and not against
-/// a decision taken on objection), and, if so, what the head can find anew
+/// a decision taken on objection), and, if so, what the authority can find anew
 /// at the heroverweging. Those are the findings the contested decision
-/// used ([`Cell::findings`]), with what the head found then. A term the
+/// used ([`Cell::findings`]), with what the authority found then. A term the
 /// cell answered is none of them.
 ///
 /// The admissibility is that of the decision without new findings, taken
@@ -683,8 +774,8 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
     let toets = beslissen(
         corpus,
         &mut cell.sandbox(),
-        AWB,
-        OBJECTION,
+        corpus.awb(),
+        corpus.objection(),
         bezwaar,
         &Map::new(),
         on,
@@ -728,11 +819,11 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
     }))
 }
 
-/// The school decides on the objection `bezwaar` under Awb 7:11, as any
-/// decision; `bevindingen` are what the head finds anew at the
-/// heroverweging. The decision comes with why ([`waarom`]): art. 13a
-/// called anew is in its trace, a new decision in place of the revoked one
-/// is its outcome.
+/// The authority decides on the objection `bezwaar` under Awb 7:11, as any
+/// decision; `bevindingen` are what the authority finds anew at the
+/// heroverweging. The decision comes with why ([`waarom`]): the case's
+/// article called anew is in its trace, a new decision in place of the
+/// revoked one is its outcome.
 pub fn beslissen_op_bezwaar(
     corpus: &Corpus,
     cell: &mut Cell,
@@ -740,7 +831,15 @@ pub fn beslissen_op_bezwaar(
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Value> {
-    let mut genomen = beslissen(corpus, cell, AWB, OBJECTION, bezwaar, bevindingen, on)?;
+    let mut genomen = beslissen(
+        corpus,
+        cell,
+        corpus.awb(),
+        corpus.objection(),
+        bezwaar,
+        bevindingen,
+        on,
+    )?;
     let nieuw = (genomen.len() > 1).then(|| genomen.remove(1));
     let beslissing = genomen.remove(0);
     let waarom = waarom(corpus, cell, &beslissing.id)?;
@@ -791,8 +890,22 @@ pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
 mod tests {
     use super::*;
 
+    const LAW: &str = "leerplichtwet_1969";
+    const ARTICLE: &str = "13a";
+    const SCHOOL: &str = "obs_de_klimop";
+
+    /// The case `id` from `casussen/`, on the repository's corpus.
+    fn casus(id: &str) -> Corpus {
+        static ALLE: std::sync::OnceLock<Vec<Corpus>> = std::sync::OnceLock::new();
+        let alle = ALLE.get_or_init(|| {
+            let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+            Corpus::alle(&dir.join("../../corpus"), &dir.join("casussen")).unwrap()
+        });
+        alle.iter().find(|c| c.casus.id == id).unwrap().clone()
+    }
+
     fn corpus() -> Corpus {
-        Corpus::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus")).unwrap()
+        casus("vakantieverlof")
     }
 
     fn day(s: &str) -> NaiveDate {
@@ -876,7 +989,7 @@ mod tests {
         );
         let invoer = vormen["besluit"]["invoer"].as_array().unwrap();
         assert!(invoer.contains(
-            &json!({ "naam": "verlof_al_verleend_in_schooljaar", "bron": "kroniek van de school" })
+            &json!({ "naam": "verlof_al_verleend_in_schooljaar", "bron": "kroniek van de cel" })
         ));
         let bezwaar = namen("/bezwaar/velden");
         assert!(bezwaar.contains(&"gronden_bezwaar".to_string()));
@@ -1458,6 +1571,209 @@ mod tests {
         assert_eq!(aanroep["stappen"], json!([]));
         // The marking leaves no step: what is under it follows directly.
         assert_eq!(stappen[1]["soort"], json!("begrip"));
+    }
+
+    #[test]
+    fn what_a_case_needs_follows_from_the_law() {
+        // Vakantieverlof: the leave article, the policy that fills its open
+        // term, the Awb with its hooks, and the policy the reduction reads.
+        let verlof = corpus();
+        let a = &verlof.afleiding;
+        assert_eq!((a.law.as_str(), a.article.as_str()), (LAW, ARTICLE));
+        assert_eq!(
+            (a.objection_law.as_str(), a.objection.as_str()),
+            ("algemene_wet_bestuursrecht", "7:11")
+        );
+        assert_eq!(a.rol, "het hoofd");
+        let mut ids = a.regelwerken.clone();
+        assert_eq!(ids[0], LAW);
+        ids.sort();
+        assert_eq!(
+            ids,
+            [
+                "algemene_wet_bestuursrecht",
+                "fictief_beleid_schooljaar_obs_de_klimop",
+                "fictief_beleid_schooljaargrenzen_obs_de_klimop",
+                LAW,
+            ]
+        );
+
+        // The parkeerkaart: art. 49 reads the Regeling, the municipality's
+        // policy fills its open term, and the Awb.
+        let kaart = casus("gehandicaptenparkeerkaart");
+        let a = &kaart.afleiding;
+        assert_eq!(a.objection, "7:11");
+        assert_eq!(a.rol, "het college van burgemeester en wethouders");
+        let mut ids = a.regelwerken.clone();
+        ids.sort();
+        assert_eq!(
+            ids,
+            [
+                "algemene_wet_bestuursrecht",
+                "besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw",
+                "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal",
+                "regeling_gehandicaptenparkeerkaart",
+            ]
+        );
+    }
+
+    #[test]
+    fn the_image_and_its_deploy_filter_hold_what_every_case_runs() {
+        // The Dockerfile copies the regelwerken and the cell of each case,
+        // and a change to one of them rebuilds the image.
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let dockerfile = std::fs::read_to_string(dir.join("Dockerfile")).unwrap();
+        let filters = std::fs::read_to_string(dir.join("../../script/deploy-filters.mjs")).unwrap();
+        for id in ["vakantieverlof", "gehandicaptenparkeerkaart"] {
+            let c = casus(id);
+            let cel = format!("corpus/cells/{}/", c.casus.cel);
+            let mappen = c.mappen().map(|m| format!("corpus/regulation/nl/{m}/"));
+            for pad in mappen.chain([cel]) {
+                assert!(
+                    dockerfile.contains(&format!("COPY {pad} /app/{pad}")),
+                    "{pad} not in the Dockerfile"
+                );
+                assert!(
+                    filters.contains(&format!("'{pad}'")),
+                    "{pad} not in deploy-filters.mjs"
+                );
+            }
+        }
+    }
+
+    /// The case `gehandicaptenparkeerkaart`, with its example values.
+    fn kaart() -> (Corpus, Cell) {
+        let corpus = casus("gehandicaptenparkeerkaart");
+        let cell = corpus.cell().unwrap();
+        (corpus, cell)
+    }
+
+    /// Apply with the case's example values on `aangevraagd` and decide on
+    /// `besloten` with its example findings, `loopbeperking` changed.
+    fn kaart_besluit(
+        corpus: &Corpus,
+        cell: &mut Cell,
+        aangevraagd: &str,
+        besloten: &str,
+        loopbeperking: bool,
+    ) -> Besluit {
+        let voorbeeld = &corpus.casus.voorbeeld;
+        let app = aanvragen(corpus, cell, &voorbeeld.aanvraag, day(aangevraagd)).unwrap();
+        let mut bevindingen = voorbeeld.bevindingen.clone();
+        bevindingen.insert("langdurige_loopbeperking".into(), json!(loopbeperking));
+        besluiten(corpus, cell, &app.id, &bevindingen, day(besloten)).unwrap()
+    }
+
+    fn kaart_bezwaar(corpus: &Corpus, cell: &mut Cell, besluit: &str, op: &str) -> Gram {
+        let mut velden = corpus.casus.voorbeeld.bezwaar.clone();
+        velden.insert("dagtekening_bezwaarschrift".into(), json!(op));
+        bezwaren(corpus, cell, besluit, &velden, day(op)).unwrap()
+    }
+
+    #[test]
+    fn parkeerkaart_a_second_card_next_to_a_valid_one_the_cell_answers() {
+        // Scenario 3 of the case: a card is granted, and a second application
+        // while it is valid is refused, because the municipality's policy
+        // gives no second card. Whether there is a valid one, the cell
+        // answers from its chronicle.
+        let (corpus, mut cell) = kaart();
+        let eerste = kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", true).besluit;
+        assert_eq!(eerste.outputs[corpus.casus.uitkomst.as_str()], json!(true));
+        assert_eq!(eerste.outputs["kaart_geldig_tot"], json!("2031-10-19"));
+
+        // The college is asked the four findings, not the valid card.
+        let vormen = vormen(&corpus, &cell, day("2027-03-01")).unwrap();
+        let gevraagd: Vec<&str> = vormen["besluit"]["bevindingen"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|b| b["naam"].as_str().unwrap())
+            .collect();
+        assert_eq!(gevraagd.len(), 4, "{gevraagd:?}");
+
+        let tweede = kaart_besluit(&corpus, &mut cell, "2027-03-01", "2027-03-01", true);
+        assert_eq!(
+            tweede.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(false)
+        );
+        let antwoord = &tweede.waarom.antwoorden[0];
+        let begrip = "aanvrager_heeft_geldige_gehandicaptenparkeerkaart";
+        assert_eq!(antwoord["begrip"], json!(begrip));
+        assert_eq!(antwoord["waarde"], json!(true));
+        assert_eq!(antwoord["door"], json!("gemeente_wilgendaal"));
+
+        // How the cell answered: its reduction's trace counts the first card.
+        let hoe = hoe_beantwoord(&corpus, &cell, &tweede.besluit.id, begrip).unwrap();
+        let spoor = hoe["antwoorden"][0]["spoor"].as_str().unwrap();
+        assert!(spoor.contains(&eerste.id), "{spoor}");
+
+        // The log, newest first: art. 49 runs, the policy fills its term,
+        // and in it the cell answers.
+        let log = serde_json::to_value(logboek(&corpus, &cell).unwrap()).unwrap();
+        assert_eq!(log.as_array().unwrap().len(), 4);
+        assert_eq!(log[0]["gram"]["id"], json!(tweede.besluit.id));
+        let keten = &log[0]["waarom"]["keten"];
+        assert_eq!(keten[0]["artikel"], json!("49"));
+        let cel = vind(keten, &|s| s["naam"] == json!(begrip)).unwrap();
+        assert_eq!(cel["soort"], json!("begrip"));
+        assert_eq!(
+            cel["ingevuld_door"]["answer"]["law_id"],
+            json!("reductie_geldige_gehandicaptenparkeerkaart")
+        );
+    }
+
+    #[test]
+    fn parkeerkaart_objections_ongegrond_keeps_the_validity_gegrond_grants() {
+        // Scenario 4: an unfounded objection against a grant leaves it
+        // standing with its own validity.
+        let (corpus, mut cell) = kaart();
+        let verstrekt = kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", true).besluit;
+        let bezwaar = kaart_bezwaar(&corpus, &mut cell, &verstrekt.id, "2026-11-01");
+        let toets = heroverweging(&corpus, &cell, &bezwaar.id, day("2026-11-20")).unwrap();
+        assert_eq!(toets["ontvankelijk"], json!(true));
+        assert_eq!(toets["bevindingen"].as_array().unwrap().len(), 4);
+        let beslist = beslissen_op_bezwaar(
+            &corpus,
+            &mut cell,
+            &bezwaar.id,
+            &Map::new(),
+            day("2026-11-20"),
+        )
+        .unwrap();
+        assert_eq!(
+            beslist["beslissing"]["outputs"]["bestreden_besluit_herroepen"],
+            json!(false)
+        );
+        assert!(beslist["nieuw_besluit"].is_null());
+        let bewaard = cell.grams().iter().find(|g| g.id == verstrekt.id).unwrap();
+        assert_eq!(bewaard.outputs["kaart_geldig_tot"], json!("2031-10-19"));
+
+        // Scenario 5: on objection against a refusal, a new examination
+        // finds the walking limitation; the refusal is revoked and a card
+        // valid from the new decision takes its place.
+        let (corpus, mut cell) = kaart();
+        let geweigerd =
+            kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", false).besluit;
+        assert_eq!(
+            geweigerd.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(false)
+        );
+        let bezwaar = kaart_bezwaar(&corpus, &mut cell, &geweigerd.id, "2026-11-01");
+        let beslist = beslissen_op_bezwaar(
+            &corpus,
+            &mut cell,
+            &bezwaar.id,
+            &map(json!({ "langdurige_loopbeperking": true })),
+            day("2026-11-20"),
+        )
+        .unwrap();
+        assert_eq!(
+            beslist["beslissing"]["outputs"]["bestreden_besluit_herroepen"],
+            json!(true)
+        );
+        let nieuw = &beslist["nieuw_besluit"]["outputs"];
+        assert_eq!(nieuw["gehandicaptenparkeerkaart_verstrekt"], json!(true));
+        assert_eq!(nieuw["kaart_geldig_tot"], json!("2031-11-19"));
     }
 
     /// The first step in `stappen`, or under one, for which `past` holds.

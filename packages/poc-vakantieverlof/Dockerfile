@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
-# vakantieverlof: het proces van vakantieverlof (Leerplichtwet 1969 art. 13a)
-# naspelen op de cel van een fictieve school (chronolexografie).
+# vakantieverlof: een uitvoeringsproces naspelen op de cel van een fictieve
+# uitvoerder (chronolexografie). De bezoeker kiest een casus: vakantieverlof
+# (Leerplichtwet 1969 art. 13a) of de gehandicaptenparkeerkaart (BABW art. 49).
 #
 # Eigen component, niet gepubliceerd: alleen het poc-portaal bereikt hem, op
 # http://{deployment}-vakantieverlof:8000. Hij draait de cel (packages/cel) en
@@ -81,16 +82,24 @@ RUN apk add --no-cache ca-certificates && \
 
 COPY --from=builder /build/target/release/regelrecht-poc-vakantieverlof /usr/local/bin/
 COPY --from=frontend-builder /app/frontend-poc-vakantieverlof/dist /app/static
-# Alleen de regelwerken die de cel draait, en de cel van de school met haar
-# reductie. Dezelfde lijst als REGELWERKEN in src/kern.rs.
+# Alleen de regelwerken die de casussen draaien, en hun cellen met hun
+# reducties. De app leidt per casus af welke regelwerken dat zijn
+# (src/casus.rs); de test the_image_and_its_deploy_filter_hold_what_every_case_runs
+# in src/kern.rs houdt deze lijst en script/deploy-filters.mjs daarmee gelijk.
+COPY packages/poc-vakantieverlof/casussen/ /app/casussen/
 COPY corpus/regulation/nl/wet/leerplichtwet_1969/ /app/corpus/regulation/nl/wet/leerplichtwet_1969/
 COPY corpus/regulation/nl/wet/algemene_wet_bestuursrecht/ /app/corpus/regulation/nl/wet/algemene_wet_bestuursrecht/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/
 COPY corpus/cells/obs_de_klimop/ /app/corpus/cells/obs_de_klimop/
+COPY corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/ /app/corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/
+COPY corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/ /app/corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/
+COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/
+COPY corpus/cells/gemeente_wilgendaal/ /app/corpus/cells/gemeente_wilgendaal/
 
 WORKDIR /app
 ENV VERLOF_CORPUS_DIR=/app/corpus \
+    VERLOF_CASUS_DIR=/app/casussen \
     VERLOF_STATIC_DIR=/app/static \
     VERLOF_PORT=8000 \
     VERLOF_BASE_PATH=/vakantieverlof/
