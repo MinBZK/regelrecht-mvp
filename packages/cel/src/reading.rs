@@ -385,8 +385,13 @@ pub fn load<'a>(
     Ok(loaded)
 }
 
-/// The legal character of the decision of article `reference` on `day`.
-fn decision_kind(service: &LawExecutionService, reference: &str, day: NaiveDate) -> Result<String> {
+/// The legal character of the decision of article `reference` on `day`: of
+/// a decision taken on a submission and of one taken ex officio alike.
+pub fn decision_kind(
+    service: &LawExecutionService,
+    reference: &str,
+    day: NaiveDate,
+) -> Result<String> {
     reference
         .split_once('#')
         .and_then(|(law_id, article)| article_on(service, law_id, article, day))

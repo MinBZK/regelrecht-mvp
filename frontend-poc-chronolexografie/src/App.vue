@@ -2,10 +2,11 @@
 // Eerst de keuze van een casus (CasusKeuze.vue). Daarna één pagina met zes
 // tabbladen: de scenario's, de aanvrager, het bestuursorgaan, de kroniek,
 // de reductie en het logboek. Bovenaan de speeldatum, die voor elke stap
-// geldt, een knop die de kroniek leegmaakt en een knop terug naar de keuze.
-// Een weigering van de cel staat in een banner, in het Nederlands; de
-// melding van de cel zelf onder Details. Wat bij de casus hoort (de wet, de
-// cel, wie beslist), komt uit GET /api/casus.
+// geldt, een knop die de kroniek terugzet op wat de cel vooraf vastlegde
+// (meestal niets) en een knop terug naar de keuze. Een weigering van de cel
+// staat in een banner, in het Nederlands; de melding van de cel zelf onder
+// Details. Wat bij de casus hoort (de wet, de cel, wie beslist), komt uit
+// GET /api/casus.
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
 import { artikelNaam } from './logboek.js';

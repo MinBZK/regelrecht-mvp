@@ -2,12 +2,13 @@
 //!
 //! The app plays one case at a time (a casus: a cell and the article that
 //! establishes the application). `GET /api/casussen` lists them, `POST
-//! /api/casus` chooses one and starts its cell with an empty chronicle, and
-//! every other endpoint works on the chosen case; without a choice it says
-//! so (409). The state is in memory and shared by every visitor; `POST
-//! /api/reset` empties the chronicle of the chosen case. That is enough for a
-//! PoC that plays the process through and loses nothing worth keeping on a
-//! restart.
+//! /api/casus` chooses one and starts its cell ([`Corpus::cell`]: an empty
+//! chronicle, or what the case's cell recorded before the first scenario),
+//! and every other endpoint works on the chosen case; without a choice it
+//! says so (409). The state is in memory and shared by every visitor; `POST
+//! /api/reset` starts the chronicle of the chosen case anew. That is enough
+//! for a PoC that plays the process through and loses nothing worth keeping
+//! on a restart.
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -189,7 +190,7 @@ struct Keuze {
     casus: String,
 }
 
-/// Choose a case: its cell starts with an empty chronicle.
+/// Choose a case: its cell starts anew ([`Corpus::cell`]).
 async fn kiezen(State(s): State<AppState>, Json(k): Json<Keuze>) -> Antwoord {
     let i = s
         .casussen
@@ -295,9 +296,9 @@ async fn logboek(State(s): State<AppState>, v: Verwacht) -> Antwoord {
 }
 
 async fn reset(State(s): State<AppState>, v: Verwacht) -> Antwoord {
-    s.met(&v, |c, cell| {
+    let grammen = s.met(&v, |c, cell| {
         *cell = c.cell()?;
-        Ok(())
+        Ok(cell.grams().to_vec())
     })?;
-    ok(json!({ "grammen": [] }))
+    ok(json!({ "grammen": grammen }))
 }

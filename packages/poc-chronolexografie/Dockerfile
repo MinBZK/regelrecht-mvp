@@ -83,14 +83,16 @@ RUN apk add --no-cache ca-certificates && \
 COPY --from=builder /build/target/release/regelrecht-poc-chronolexografie /usr/local/bin/
 COPY --from=frontend-builder /app/frontend-poc-chronolexografie/dist /app/static
 # Alleen de regelwerken die de casussen draaien, en hun cellen met hun
-# reducties. De app leidt per casus af welke regelwerken dat zijn
-# (src/casus.rs); de test the_image_and_its_deploy_filter_hold_what_every_case_runs
+# reducties en stromen van executogrammen. De app leidt per casus af welke
+# regelwerken dat zijn (src/casus.rs); de test the_image_and_its_deploy_filter_hold_what_every_case_runs
 # in src/kern.rs houdt deze lijst en script/deploy-filters.mjs daarmee gelijk.
 COPY packages/poc-chronolexografie/casussen/ /app/casussen/
 COPY corpus/regulation/nl/wet/leerplichtwet_1969/ /app/corpus/regulation/nl/wet/leerplichtwet_1969/
 COPY corpus/regulation/nl/wet/algemene_wet_bestuursrecht/ /app/corpus/regulation/nl/wet/algemene_wet_bestuursrecht/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/
+COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vakantierooster_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vakantierooster_obs_de_klimop/
+COPY corpus/regulation/nl/ministeriele_regeling/regeling_vaststelling_schoolvakanties_20252030/ /app/corpus/regulation/nl/ministeriele_regeling/regeling_vaststelling_schoolvakanties_20252030/
 COPY corpus/cells/obs_de_klimop/ /app/corpus/cells/obs_de_klimop/
 COPY corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/ /app/corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/
 COPY corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/ /app/corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/

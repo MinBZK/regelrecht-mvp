@@ -151,9 +151,18 @@ export const herroepen = (besluit) =>
     (bz) => beslissingOp(bz.id)?.outputs?.bestreden_besluit_herroepen === true,
   );
 
+/**
+ * Een chronolexogram dat de cel uit zichzelf vastlegde, op niets dat iemand
+ * indiende (RFC-051): een executogram (zoals de vestiging van een school) of
+ * een besluit dat zij ambtshalve nam (zoals een vakantierooster).
+ */
+export const vanDeCel = (g) => !g.refers_to && g.kind !== 'AANVRAAG' && g.kind !== 'BEZWAAR';
+
 /** Wat een chronolexogram is in het proces, zoals het dossier en het logboek het noemen. */
 export function rol(g) {
   if (g.kind === 'AANVRAAG') return 'Aanvraag';
+  if (g.kind === 'EXECUTOGRAM') return 'Executogram';
+  if (vanDeCel(g)) return 'Ambtshalve besluit';
   if (g.kind === 'BEZWAAR') return 'Bezwaar';
   if (g.grondslag === bezwaarGrondslag()) return 'Beslissing op bezwaar';
   const op = spel.grammen.find((x) => x.id === g.refers_to);

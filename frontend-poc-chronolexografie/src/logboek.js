@@ -9,7 +9,7 @@
  * `uitkomst` (een uitvoer van het artikel) of `begrip` (een open begrip, met
  * wie het invulde).
  */
-import { bezwaarGrondslag, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
+import { bezwaarGrondslag, kort, leesbaar, spel, toegewezen, vanDeCel, waarde } from './spel.js';
 
 // Regelwerken die overal bij hun afkorting heten.
 const AFKORTINGEN = {
@@ -117,6 +117,7 @@ export function genummerd(stappen, prefix = '') {
 export function uitslag(g) {
   const o = g.outputs ?? {};
   if (g.kind === 'AANVRAAG' || g.kind === 'BEZWAAR') return { tekst: 'ontvangen', kleur: 'neutral' };
+  if (g.kind === 'EXECUTOGRAM') return { tekst: 'vastgelegd', kleur: 'neutral' };
   if (g.grondslag === bezwaarGrondslag()) {
     if (o.bezwaar_ontvankelijk === false) return { tekst: 'niet-ontvankelijk', kleur: 'warning' };
     return o.bestreden_besluit_herroepen
@@ -125,6 +126,8 @@ export function uitslag(g) {
   }
   if (toegewezen(g) === true) return { tekst: 'toegewezen', kleur: 'success' };
   if (toegewezen(g) === false) return { tekst: 'afgewezen', kleur: 'critical' };
+  // Een ambtshalve besluit van de cel, zoals het vakantierooster van een school.
+  if (vanDeCel(g)) return { tekst: 'vastgesteld', kleur: 'neutral' };
   return { tekst: 'besluit', kleur: 'neutral' };
 }
 

@@ -83,7 +83,7 @@ const uitlegBij = (i) => {
         @click="toon(i)"
       ></nldd-button>
       <nldd-container v-if="open[i]" gap="8">
-        <HoeBeantwoord v-for="h in uitlegBij(i)" :key="h.spoor" :uitleg="h" />
+        <HoeBeantwoord v-for="h in uitlegBij(i)" :key="h.spoor" :uitleg="h" :besluit="besluit" />
       </nldd-container>
     </nldd-container>
 
