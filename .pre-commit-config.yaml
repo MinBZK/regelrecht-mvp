@@ -10,12 +10,6 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
-        # One exception, by name: the Wet op het primair onderwijs as
-        # harvested (BWBR0003420, about 530 KB) is the legal_basis of the
-        # Regeling vaststelling schoolvakanties 2025-2030 (art. 15 lid 2) and
-        # cannot be split, since a rulework is all of a law's articles. The
-        # 500 KB limit stays for every other file.
-        exclude: ^corpus/regulation/nl/wet/wet_op_het_primair_onderwijs/2026-08-01\.yaml$
       - id: check-merge-conflict
       - id: check-case-conflict
 
