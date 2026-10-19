@@ -77,7 +77,7 @@ function trajectSupportingText(t) {
 </script>
 
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <nldd-page sticky-header>
       <nldd-top-title-bar
         slot="header"
@@ -145,5 +145,5 @@ function trajectSupportingText(t) {
 
       <nldd-page-footer slot="footer"></nldd-page-footer>
     </nldd-page>
-  </nldd-app-view>
+  </nldd-shell>
 </template>

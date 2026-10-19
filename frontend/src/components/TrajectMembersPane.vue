@@ -122,7 +122,7 @@ async function confirmRemoveInvite() {
   <nldd-simple-section>
     <nldd-title v-if="paneChromeVisible(loading)" id="instellingen-pane-titel" size="3"><h3>Leden</h3></nldd-title>
     <nldd-spacer v-if="paneChromeVisible(loading)" size="16"></nldd-spacer>
-    <nldd-toolbar v-if="isOwner && paneChromeVisible(loading)" label="Ledenacties">
+    <nldd-toolbar v-if="isOwner && paneChromeVisible(loading)" accessible-label="Ledenacties">
       <nldd-toolbar-item slot="start">
         <nldd-button appearance="secondary" size="md" start-icon="plus-small" text="Uitnodigen" @click="triggerInviteMembers"></nldd-button>
       </nldd-toolbar-item>

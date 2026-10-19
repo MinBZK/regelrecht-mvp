@@ -119,7 +119,7 @@ design system geen component heeft:
 | `.graph-canvas`, `.graph-law*`, `.graph-box*`, `.graph-item*`, `.graph-dim`, `.graph-zoom` | vue-flow heeft een expliciete hoogte nodig; de knopen tekenen het POC-beeld (wet als kader met vakken voor bronnen, invoer en uitvoer, met de waarde voor de persona) en dimmen wat buiten de selectie valt. Een graafcanvas bestaat niet in het design system (zelfde uitzondering als de editor). De vlakken komen uit de oppervlakte-tokens, de organisatiekleur zit alleen in rand en label. `.graph-zoom` plaatst alleen de knopgroep over het canvas; de knoppen zelf zijn `nldd-icon-button`, want de zoomknoppen van vue-flow brachten hun eigen stylesheet en vormgeving mee. |
 
 Eén afwijking buiten CSS: `App.vue` roept na elke routewissel `_evaluateScrollMode()` van
-`nldd-app-view` aan. Het design system leidt bij het koppelen af of het document of elk
+`nldd-shell` aan. Het design system leidt bij het koppelen af of het document of elk
 paneel scrolt, maar onze split view komt pas later (lazy routes) en de afleiding blijft dan
 op "document". Zonder die aanroep scrollen de panelen niet zelf en blijven de kopregels
 niet staan.

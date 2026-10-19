@@ -120,7 +120,7 @@ The UI is built from `@nldd/design-system` web components (element prefix `nldd-
 
 | Category | Components used |
 |----------|----------------|
-| **Layout** | `nldd-app-view`, `nldd-bar-split-view`, `nldd-navigation-split-view`, `nldd-side-by-side-split-view`, `nldd-page`, `nldd-toolbar`, `nldd-container` |
+| **Layout** | `nldd-shell`, `nldd-bar-split-view`, `nldd-navigation-split-view`, `nldd-side-by-side-split-view`, `nldd-page`, `nldd-toolbar`, `nldd-container` |
 | **Navigation** | `nldd-top-title-bar`, `nldd-tab-bar`, `nldd-document-tab-bar`, `nldd-menu` |
 | **Inputs** | `nldd-search-field`, `nldd-text-field`, `nldd-multi-line-text-field`, `nldd-dropdown`, `nldd-combo-box`, `nldd-segmented-control`, `nldd-switch` |
 | **Lists & cells** | `nldd-list`, `nldd-list-item`, `nldd-text-cell`, `nldd-icon-cell`, `nldd-collection` |

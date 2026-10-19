@@ -317,7 +317,7 @@ function onTabDismiss(e) {
 </script>
 
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <nldd-bar-split-view>
       <!-- Primary Bar: md only - search and settings as buttons. The bar-split-
            view draws the divider automatically where the bar group meets main:
@@ -611,7 +611,7 @@ function onTabDismiss(e) {
            sm it lands above the two mobile bars and on md+ it's the bottom bar. -->
       <nldd-split-view-pane v-if="editorChanges && (editorChanges.dirty || editorChanges.review)" slot="changes-bar">
         <nldd-container padding="8" sm-padding-bottom="0">
-          <nldd-toolbar size="md" label="Wijzigingen">
+          <nldd-toolbar size="md" accessible-label="Wijzigingen">
             <!-- Undo en redo zijn losse knoppen: die gebruik je herhaald, en
                  dan is elke klik door een menu er één te veel. De discard is
                  destructief en houdt daarom z'n eigen chevron-knop, zodat hij
@@ -838,7 +838,7 @@ function onTabDismiss(e) {
     <AboutSheet ref="aboutSheet"></AboutSheet>
     <SupportSheet ref="supportSheet"></SupportSheet>
     <SettingsSheet ref="settingsSheet"></SettingsSheet>
-  </nldd-app-view>
+  </nldd-shell>
 
   <!-- Editor requires login: a heads-up popover anchored to the clicked Editor
        tab (sm/md/lg) so the SSO screen never appears unannounced. -->

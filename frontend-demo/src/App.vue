@@ -42,7 +42,7 @@ const hasFeatureOverrides = computed(() => Object.keys(state.featureOverrides ??
 
 // The design system derives its scroll mode (document vs. per-pane) from the
 // outermost split view once, at connect. Ours arrives later (the tab views are
-// lazy routes), so the app-view settles on "document scrolls" and the pane
+// lazy routes), so the shell settles on "document scrolls" and the pane
 // headers stop sticking. Re-deriving after every route change puts it right;
 // it is a design-system timing gap, not something the demo should own.
 const appView = ref(null);
@@ -306,7 +306,7 @@ const openCases = computed(() => state.cases.filter((c) => c.status === 'IN_REVI
 </script>
 
 <template>
-  <nldd-app-view ref="appView" background="tinted">
+  <nldd-shell ref="appView" background="tinted">
     <!-- While the recorded walkthrough plays, the deck carries its controls
          and, under the slide, the presenter's bubble and the questions. -->
     <PresentationDeck>
@@ -317,7 +317,7 @@ const openCases = computed(() => state.cases.filter((c) => c.status === 'IN_REVI
     <component :is="RecorderPanel" v-if="RecorderPanel" />
     <nldd-bar-split-view>
       <nldd-container slot="toolbar" padding="8" background="base">
-        <nldd-toolbar size="md" :label="t('app.toolbar.label')">
+        <nldd-toolbar size="md" :accessible-label="t('app.toolbar.label')">
           <!-- Eén tab-bar met alle tabbladen, niet één per tabblad. Een tab-bar
                per tabblad leek de overloop netjes op te lossen, maar elke bar
                rendert zijn eigen `<nav>`-landmark en regelt pijltjesnavigatie
@@ -596,5 +596,5 @@ const openCases = computed(() => state.cases.filter((c) => c.status === 'IN_REVI
       <nldd-button slot="actions" appearance="destructive" :text="t('app.reset.confirm')" @click="confirmReset"></nldd-button>
       <nldd-button slot="actions" appearance="secondary" :text="t('app.reset.cancel')" @click="resetDialog?.hide?.()"></nldd-button>
     </nldd-modal-dialog>
-  </nldd-app-view>
+  </nldd-shell>
 </template>

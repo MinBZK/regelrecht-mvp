@@ -44,7 +44,7 @@ const canShare = computed(() => isDraft.value && props.canEdit);
   </template>
   <template v-if="canShare || canDelete">
     <nldd-spacer size="8"></nldd-spacer>
-    <nldd-toolbar size="md" label="Notitie-acties">
+    <nldd-toolbar size="md" accessible-label="Notitie-acties">
       <nldd-toolbar-item v-if="canDelete" slot="start" label="Bewerken">
         <nldd-icon-button
           icon="edit"

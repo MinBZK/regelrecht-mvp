@@ -1,5 +1,5 @@
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <div class="app-frame">
       <nldd-skip-link text="Direct naar de inhoud">
       <nldd-top-navigation-bar
@@ -52,7 +52,7 @@
         <router-view />
       </main>
     </div>
-  </nldd-app-view>
+  </nldd-shell>
 </template>
 
 <script setup>
@@ -79,7 +79,7 @@ const themaTekst = computed(() => (thema.value === 'donker' ? 'Licht' : 'Donker'
 .app-frame {
   display: flex;
   flex-direction: column;
-  /* nldd-app-view clipt zijn inhoud (overflow hidden in de shadow DOM);
+  /* nldd-shell clipt zijn inhoud (overflow hidden in de shadow DOM);
      het kind moet zelf scrollen. Vaste hoogte + scrollende main. */
   height: 100vh;
 }
