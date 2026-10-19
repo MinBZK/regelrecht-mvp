@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # chronolexografie: een uitvoeringsproces naspelen op de cel van een fictieve
-# uitvoerder. De bezoeker kiest een casus: vakantieverlof
-# (Leerplichtwet 1969 art. 13a) of de gehandicaptenparkeerkaart (BABW art. 49).
+# uitvoerder. De bezoeker kiest een casus: vakantieverlof (Leerplichtwet 1969
+# art. 13a) of de gehandicaptenparkeerkaart (BABW art. 49).
 #
 # Eigen component, niet gepubliceerd: alleen het poc-portaal bereikt hem, op
 # http://{deployment}-chronolexografie:8000. Hij draait de cel (packages/cel) en
