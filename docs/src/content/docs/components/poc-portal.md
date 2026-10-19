@@ -65,6 +65,8 @@ Each decision shows why it came out as it did, as the cell explains it (`Cell::e
 
 The API works on one chosen case. `GET /api/casussen` lists them, `POST /api/casus` chooses one and starts its cell with an empty chronicle, and any other call before a choice answers 409. The app sends the case it plays in an `X-Casus` header, so a step after another visitor chose another case answers 409 too, instead of landing in the wrong cell. The choice and the chronicle live in memory, shared by every visitor, and are gone after a restart. The regelwerken come from `corpus/regulation/`, not from `corpus-poc/`. A test in `packages/poc-chronolexografie/src/kern.rs` checks that the Dockerfile copies, and `script/deploy-filters.mjs` watches, every regelwerk and cell a case derives. The derivation reads the whole corpus at startup, so a new regelwerk that implements an open term of the Awb, or hooks on every decision, joins every case. That test and the tests on the derivation are written to catch exactly that.
 
+The third is wetsgeschiedenis, in `packages/poc-wetsgeschiedenis/` with its frontend in `frontend-poc-wetsgeschiedenis/`. It plays the parliamentary papers of a bill onto its text: the notes of amendment on their date and the adopted amendments on the date of the vote. It measures the result against the Senate's amended bill, the Staatsblad or the BWB text, and shows the explanatory memorandum and the rest of the file per article, in the order the papers appeared. Next to the bills it ships with (in `corpus-poc/wetsgeschiedenis/`), a visitor can look up any act by its BWB id. The service then reads on wetten.overheid.nl which parliamentary files made and amended it, fetches the chosen one from officielebekendmakingen.nl and the Tweede Kamer's Gegevensmagazijn, plays it, and adds it to the list. It can also follow the whole act through time, every version on wetten.overheid.nl, with every transition played from its Staatsblad. The service is Python (standard library and pyyaml) and fetches with curl. The replay chain in `afspeler/` is exported from the case repository where it is developed, so fixes belong there. One fetch runs at a time, and what is fetched is shared by every visitor; it lives in `WG_DATA` and is gone after a restart unless that is a volume. The component needs outbound access to wetten.overheid.nl, zoek.officielebekendmakingen.nl, repository.overheid.nl and gegevensmagazijn.tweedekamer.nl.
+
 ### The gate
 
 One shared password per PoC, read from `POC_PW_<SLUG>` (the slug in capitals, hyphens as underscores). The portal will not start when a PoC in the register has no password, since that PoC would otherwise be open to anyone.
@@ -81,7 +83,7 @@ The list of cases comes from `POC_ASSISTENT_CASUSSEN` in `start.sh`, not from th
 
 ### Image and deployment
 
-`packages/poc-portal/Dockerfile` builds the engine to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal, napp and chronolexografie deploy as three ZAD components, `poc`, `napp` and `chronolexografie`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds the engine, `script/deploy-filters.mjs` ties the `poc` component to two crates, the portal binary and the engine, so an engine change rebuilds the image even though the portal itself does not depend on the engine.
+`packages/poc-portal/Dockerfile` builds the engine to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal, napp, chronolexografie and wetsgeschiedenis deploy as four ZAD components, `poc`, `napp`, `chronolexografie` and `wetsgeschiedenis`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds the engine, `script/deploy-filters.mjs` ties the `poc` component to two crates, the portal binary and the engine, so an engine change rebuilds the image even though the portal itself does not depend on the engine.
 
 ## Running locally
 
@@ -130,6 +132,19 @@ napp runs as its own component and reads its own variables. The defaults below a
 | `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_DISCOVERY_URL` | none | SSO Rijk through the shared auth crate; without them only the mock login is available |
 | `OIDC_REQUIRED_ROLE` | realm membership | Role required after login; unset, membership of the ZAD realm is enough |
 
+### wetsgeschiedenis
+
+The image sets the port to `8000`, the base path to `/wetsgeschiedenis/`, the built frontend to `/app/static`, the shipped timelines to `/app/vast` and the data directory to `/data`. `just poc-wetsgeschiedenis` runs it locally.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `WG_PORT` | `8420` | Listening port |
+| `WG_BASE_PATH` | `/wetsgeschiedenis/` | Path prefix; must match the portal path |
+| `WG_STATIC_DIR` | `frontend-poc-wetsgeschiedenis/dist` | Built frontend |
+| `WG_VAST_DIR` | `corpus-poc/wetsgeschiedenis/gegevens` | The timelines the image ships with |
+| `WG_DATA` | `data` under `packages/poc-wetsgeschiedenis/` | Fetched papers and timelines |
+| `WG_MAX` | `40` | How many fetched files and acts are kept; the oldest goes first |
+
 ### chronolexografie
 
 The image sets the port to `8000`, the base path to `/chronolexografie/`, the corpus to `/app/corpus`, the cases to `/app/casussen` and the built frontend to `/app/static`. `just poc-chronolexografie` runs it locally.
@@ -146,4 +161,4 @@ The image sets the port to `8000`, the base path to `/chronolexografie/`, the co
 
 - [Shared Frontend Package](./frontend-shared) - the saved-state, variant and runner modules the static PoCs use
 - [Demo](./demo) - the one public entry on the index
-- [Deployment](/operations/deployment) - the `poc`, `napp` and `chronolexografie` components
+- [Deployment](/operations/deployment) - the `poc`, `napp`, `chronolexografie` and `wetsgeschiedenis` components

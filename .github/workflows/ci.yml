@@ -65,6 +65,7 @@ jobs:
               - frontend-poc-nieuwkomersbekostiging/**
               - frontend-poc-napp/**
               - frontend-poc-chronolexografie/**
+              - frontend-poc-wetsgeschiedenis/**
               - corpus-poc/**
               - pocs/**
               - packages/frontend-shared/**
@@ -733,6 +734,7 @@ jobs:
         run: |
           node script/check-nldd-imports.mjs frontend/src frontend/src/nldd-components.js
           node script/check-nldd-imports.mjs docs/src docs/src/nldd-components.js
+          node script/check-nldd-imports.mjs frontend-poc-wetsgeschiedenis/src frontend-poc-wetsgeschiedenis/src/nldd-components.js
 
   frontend-tests:
     name: Frontend tests
@@ -781,6 +783,14 @@ jobs:
 
       - name: Run chronolexografie poc tests
         run: npm test -w frontend-poc-chronolexografie
+
+      # De wetsgeschiedenis: de frontend (geen inline script, de gegevens onder
+      # de basis) en de Python-dienst, zonder netwerk.
+      - name: Run wetsgeschiedenis poc tests
+        run: |
+          npm test -w frontend-poc-wetsgeschiedenis
+          python3 -m pip install --quiet pyyaml==6.0.2
+          python3 -m unittest discover packages/poc-wetsgeschiedenis/tests
 
       # De rekenkunde van de opgenomen rondleiding (knippen, hoofdstukken,
       # ondertitels): pure Python zonder ffmpeg, dus hier in een paar seconden.

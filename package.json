@@ -12,7 +12,8 @@
     "frontend-poc-terugbetaalregimes",
     "frontend-poc-nieuwkomersbekostiging",
     "frontend-poc-napp",
-    "frontend-poc-chronolexografie"
+    "frontend-poc-chronolexografie",
+    "frontend-poc-wetsgeschiedenis"
   ],
   "overrides": {
     "brace-expansion": "^5.0.8",

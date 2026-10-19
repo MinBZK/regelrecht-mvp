@@ -121,6 +121,17 @@ export const COMPONENTS = {
       'packages/poc-chronolexografie/Dockerfile',
     ],
   },
+  // De wetsgeschiedenis draait als eigen, niet-gepubliceerd component: een
+  // Python-dienst met de afspeelketen ernaast (afspeler/), geen crate.
+  'poc-wetsgeschiedenis': {
+    crate: null,
+    paths: [
+      'pocs/',
+      'corpus-poc/wetsgeschiedenis/',
+      'frontend-poc-wetsgeschiedenis/',
+      'packages/poc-wetsgeschiedenis/',
+    ],
+  },
   // Het poc-portaal bakt de statische pocs in zijn eigen image, dus het raakt
   // ook aan hun frontends en hun casus-corpus. De crate-kant volgt uit de graaf,
   // over twee crates: de portaal-binary, en de engine die het image als WASM

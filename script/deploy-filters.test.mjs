@@ -173,6 +173,21 @@ test('het poc-portaal volgt zijn register, zijn corpus en zijn frontends', () =>
   assert.equal(namesOf(['frontend-poc-terugbetaalregimes/src/App.vue'])['poc-napp'], false);
 });
 
+test('de wetsgeschiedenis volgt haar dienst, haar frontend en haar gegevens, en niet het portaal', () => {
+  for (const pad of [
+    'packages/poc-wetsgeschiedenis/dienst.py',
+    'packages/poc-wetsgeschiedenis/afspeler/afspelen.py',
+    'frontend-poc-wetsgeschiedenis/src/pagina.js',
+    'corpus-poc/wetsgeschiedenis/gegevens/36742.json',
+  ]) {
+    assert.equal(namesOf([pad])['poc-wetsgeschiedenis'], true, pad);
+  }
+  assert.equal(namesOf(['packages/poc-wetsgeschiedenis/dienst.py']).poc, false);
+  assert.equal(namesOf(['frontend-poc-wetsgeschiedenis/src/pagina.js']).poc, false);
+  // Een wijziging aan een andere poc raakt haar niet.
+  assert.equal(namesOf(['frontend-poc-terugbetaalregimes/src/App.vue'])['poc-wetsgeschiedenis'], false);
+});
+
 test('chronolexografie volgt zijn cellen, hun regelwerken, de casussen en zijn frontend', () => {
   // De cellen van de casussen en de regelwerken die zij draaien, zitten
   // alleen in het chronolexografie-image, niet in het portaal.

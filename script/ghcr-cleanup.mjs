@@ -81,6 +81,7 @@ export const PACKAGES = [
   'regelrecht-poc',
   'regelrecht-poc-napp',
   'regelrecht-poc-chronolexografie',
+  'regelrecht-poc-wetsgeschiedenis',
 ];
 
 // Tags die een versie onaanraakbaar maken, wat er verder ook op zit. Dit is de
