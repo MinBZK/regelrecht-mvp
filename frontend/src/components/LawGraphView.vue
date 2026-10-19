@@ -261,46 +261,48 @@ const currentStep = computed(() =>
 
       <!-- Trace stepper - shown after a scenario runs -->
       <div v-if="hasTrace" class="law-graph-trace">
-        <nldd-toolbar size="md" accessible-label="Stappen van de uitvoering">
-          <nldd-toolbar-item slot="start" label="Vorige" :priority="3">
-            <nldd-button
-              start-icon="back"
-              text="Vorige"
-              appearance="secondary"
-              size="md"
-              :disabled="!hasPrevVisible || undefined"
-              @click="prevVisible"
-            ></nldd-button>
-            <nldd-menu-item slot="overflow" icon="back" text="Vorige stap" :disabled="!hasPrevVisible || undefined" @select="prevVisible"></nldd-menu-item>
-          </nldd-toolbar-item>
-          <nldd-toolbar-item slot="start" label="Volgende" :priority="3">
-            <nldd-button
-              end-icon="forward"
-              text="Volgende"
-              appearance="secondary"
-              size="md"
-              :disabled="!hasNextVisible || undefined"
-              @click="nextVisible"
-            ></nldd-button>
-            <nldd-menu-item slot="overflow" icon="forward" text="Volgende stap" :disabled="!hasNextVisible || undefined" @select="nextVisible"></nldd-menu-item>
-          </nldd-toolbar-item>
-          <nldd-toolbar-title slot="start" :text="`Stap ${currentStepIdx + 1} / ${steps.length}`"></nldd-toolbar-title>
-          <nldd-toolbar-item slot="end" label="Filter" :priority="2">
-            <nldd-segmented-control
-              size="md"
-              :value="filter"
-              accessible-label="Filter op stappen"
-              @change="onFilterChange"
-            >
-              <nldd-segmented-control-item value="highlights" text="Met highlights"></nldd-segmented-control-item>
-              <nldd-segmented-control-item value="all" :text="`Alles (${steps.length})`"></nldd-segmented-control-item>
-            </nldd-segmented-control>
-            <nldd-menu-group slot="overflow" text="Filter">
-              <nldd-menu-item type="radio" value="highlights" text="Met highlights" :selected="filter === 'highlights' || undefined" @select="filter = 'highlights'"></nldd-menu-item>
-              <nldd-menu-item type="radio" value="all" :text="`Alles (${steps.length})`" :selected="filter === 'all' || undefined" @select="filter = 'all'"></nldd-menu-item>
-            </nldd-menu-group>
-          </nldd-toolbar-item>
-        </nldd-toolbar>
+        <nldd-container padding="8">
+          <nldd-toolbar size="md" accessible-label="Stappen van de uitvoering">
+            <nldd-toolbar-item slot="start" label="Vorige" :priority="3">
+              <nldd-button
+                start-icon="back"
+                text="Vorige"
+                appearance="secondary"
+                size="md"
+                :disabled="!hasPrevVisible || undefined"
+                @click="prevVisible"
+              ></nldd-button>
+              <nldd-menu-item slot="overflow" icon="back" text="Vorige stap" :disabled="!hasPrevVisible || undefined" @select="prevVisible"></nldd-menu-item>
+            </nldd-toolbar-item>
+            <nldd-toolbar-item slot="start" label="Volgende" :priority="3">
+              <nldd-button
+                end-icon="forward"
+                text="Volgende"
+                appearance="secondary"
+                size="md"
+                :disabled="!hasNextVisible || undefined"
+                @click="nextVisible"
+              ></nldd-button>
+              <nldd-menu-item slot="overflow" icon="forward" text="Volgende stap" :disabled="!hasNextVisible || undefined" @select="nextVisible"></nldd-menu-item>
+            </nldd-toolbar-item>
+            <nldd-toolbar-title slot="start" :text="`Stap ${currentStepIdx + 1} / ${steps.length}`"></nldd-toolbar-title>
+            <nldd-toolbar-item slot="end" label="Filter" :priority="2">
+              <nldd-segmented-control
+                size="md"
+                :value="filter"
+                accessible-label="Filter op stappen"
+                @change="onFilterChange"
+              >
+                <nldd-segmented-control-item value="highlights" text="Met highlights"></nldd-segmented-control-item>
+                <nldd-segmented-control-item value="all" :text="`Alles (${steps.length})`"></nldd-segmented-control-item>
+              </nldd-segmented-control>
+              <nldd-menu-group slot="overflow" text="Filter">
+                <nldd-menu-item type="radio" value="highlights" text="Met highlights" :selected="filter === 'highlights' || undefined" @select="filter = 'highlights'"></nldd-menu-item>
+                <nldd-menu-item type="radio" value="all" :text="`Alles (${steps.length})`" :selected="filter === 'all' || undefined" @select="filter = 'all'"></nldd-menu-item>
+              </nldd-menu-group>
+            </nldd-toolbar-item>
+          </nldd-toolbar>
+        </nldd-container>
 
         <div class="law-graph-trace__body">
           <div class="law-graph-trace__list">
