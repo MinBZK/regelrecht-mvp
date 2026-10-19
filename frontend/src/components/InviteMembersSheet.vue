@@ -184,6 +184,7 @@ defineExpose({ show });
                 <nldd-text v-if="inviteResult.succeeded.length" size="sm" color="secondary">
                   {{ inviteResult.succeeded.length }} uitnodiging{{ inviteResult.succeeded.length === 1 ? '' : 'en' }} verstuurd. Toegang wordt actief bij de eerste login.
                 </nldd-text>
+                <nldd-spacer v-if="inviteResult.succeeded.length && inviteResult.failed.length" size="4"></nldd-spacer>
                 <nldd-text v-if="inviteResult.failed.length" size="sm" color="critical">
                   Mislukt:
                   <span v-for="(f, i) in inviteResult.failed" :key="f.email">{{ f.email }} ({{ f.message }}){{ i < inviteResult.failed.length - 1 ? ', ' : '' }}</span>
