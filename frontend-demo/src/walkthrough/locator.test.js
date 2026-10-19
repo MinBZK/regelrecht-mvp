@@ -126,6 +126,18 @@ describe('locator', () => {
     expect(resolve(describeEl(second))).toBe(second);
   });
 
+  it('finds a component by a property the design system renamed since the recording', () => {
+    // nldd-toolbar's `label` became `accessibleLabel` in 0.8.100; the take
+    // still names the toolbar by `label`.
+    const { el, button } = host('rr-test-toolbar', 'Meer');
+    el.accessibleLabel = 'Werkruimte';
+    const recorded = [{ tag: 'rr-test-toolbar', label: 'Werkruimte', nth: 0 }, { tag: 'button', '@aria-label': 'Meer', nth: 0 }];
+    expect(resolve(recorded)).toBe(button);
+    // An element that still has the old property is judged by it.
+    el.label = 'Iets anders';
+    expect(resolve(recorded)).toBeNull();
+  });
+
   it('returns null when the element is gone', () => {
     const { button } = host('rr-test-bar', 'Simulatie');
     const steps = describeEl(button);
