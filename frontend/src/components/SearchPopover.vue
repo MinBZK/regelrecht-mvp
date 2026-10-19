@@ -11,7 +11,7 @@ import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from '../constants.js';
 
 // Override the list's built-in search-field placeholder (i18n default "Zoeken")
 // so this popover stays in sync with the main search-field in AppShell.
-const listTranslations = { 'components.list.search-placeholder-text': SEARCH_PLACEHOLDER };
+const listTranslations = { 'components.list.search-placeholder-label': SEARCH_PLACEHOLDER };
 
 const emit = defineEmits(['select-law', 'harvest-available']);
 
