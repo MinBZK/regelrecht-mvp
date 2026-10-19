@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
-# vakantieverlof: een uitvoeringsproces naspelen op de cel van een fictieve
-# uitvoerder (chronolexografie). De bezoeker kiest een casus: vakantieverlof
-# (Leerplichtwet 1969 art. 13a) of de gehandicaptenparkeerkaart (BABW art. 49).
+# chronolexografie: een uitvoeringsproces naspelen op de cel van een fictieve
+# uitvoerder. De bezoeker kiest een casus: vakantieverlof (Leerplichtwet 1969
+# art. 13a) of de gehandicaptenparkeerkaart (BABW art. 49).
 #
 # Eigen component, niet gepubliceerd: alleen het poc-portaal bereikt hem, op
-# http://{deployment}-vakantieverlof:8000. Hij draait de cel (packages/cel) en
+# http://{deployment}-chronolexografie:8000. Hij draait de cel (packages/cel) en
 # de engine in een eigen proces, met de kroniek in het geheugen, en past
 # daarom niet in het statische poc-image. Zelfde opzet als packages/poc-napp.
 
@@ -13,13 +13,13 @@ FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 COPY packages/frontend-shared/package.json packages/frontend-shared/
-COPY frontend-poc-vakantieverlof/package.json frontend-poc-vakantieverlof/
+COPY frontend-poc-chronolexografie/package.json frontend-poc-chronolexografie/
 RUN npm ci --ignore-scripts
 COPY packages/frontend-shared/ packages/frontend-shared/
-COPY frontend-poc-vakantieverlof/ frontend-poc-vakantieverlof/
-# Zelfde voorvoegsel als VERLOF_BASE_PATH hieronder: het portaal stuurt het pad
+COPY frontend-poc-chronolexografie/ frontend-poc-chronolexografie/
+# Zelfde voorvoegsel als CHRONO_BASE_PATH hieronder: het portaal stuurt het pad
 # ongewijzigd door.
-RUN POC_BASE=/vakantieverlof/ npm run build -w poc-vakantieverlof
+RUN POC_BASE=/chronolexografie/ npm run build -w poc-chronolexografie
 
 # Stage 2: chef-basis.
 # Rust version: keep in sync with rust-toolchain.toml (source of truth).
@@ -53,7 +53,7 @@ RUN grep -qE '^members = \[$' Cargo.toml && \
 COPY packages/cel/ cel/
 COPY packages/engine/ engine/
 COPY packages/law-model/ law-model/
-COPY packages/poc-vakantieverlof/ poc-vakantieverlof/
+COPY packages/poc-chronolexografie/ poc-chronolexografie/
 COPY packages/shared/ shared/
 RUN cargo chef prepare --recipe-path recipe.json
 
@@ -69,24 +69,24 @@ COPY --from=planner /build/Cargo.toml ./Cargo.toml
 COPY packages/cel/ cel/
 COPY packages/engine/ engine/
 COPY packages/law-model/ law-model/
-COPY packages/poc-vakantieverlof/ poc-vakantieverlof/
+COPY packages/poc-chronolexografie/ poc-chronolexografie/
 COPY packages/shared/ shared/
 COPY schema/ /schema/
 RUN find . -name '*.rs' -exec touch {} + && \
-    cargo build --release --bin regelrecht-poc-vakantieverlof
+    cargo build --release --bin regelrecht-poc-chronolexografie
 
 # Stage 5: runtime.
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 RUN apk add --no-cache ca-certificates && \
     addgroup -S app && adduser -S app -G app
 
-COPY --from=builder /build/target/release/regelrecht-poc-vakantieverlof /usr/local/bin/
-COPY --from=frontend-builder /app/frontend-poc-vakantieverlof/dist /app/static
+COPY --from=builder /build/target/release/regelrecht-poc-chronolexografie /usr/local/bin/
+COPY --from=frontend-builder /app/frontend-poc-chronolexografie/dist /app/static
 # Alleen de regelwerken die de casussen draaien, en hun cellen met hun
 # reducties. De app leidt per casus af welke regelwerken dat zijn
 # (src/casus.rs); de test the_image_and_its_deploy_filter_hold_what_every_case_runs
 # in src/kern.rs houdt deze lijst en script/deploy-filters.mjs daarmee gelijk.
-COPY packages/poc-vakantieverlof/casussen/ /app/casussen/
+COPY packages/poc-chronolexografie/casussen/ /app/casussen/
 COPY corpus/regulation/nl/wet/leerplichtwet_1969/ /app/corpus/regulation/nl/wet/leerplichtwet_1969/
 COPY corpus/regulation/nl/wet/algemene_wet_bestuursrecht/ /app/corpus/regulation/nl/wet/algemene_wet_bestuursrecht/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/
@@ -98,11 +98,11 @@ COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerk
 COPY corpus/cells/gemeente_wilgendaal/ /app/corpus/cells/gemeente_wilgendaal/
 
 WORKDIR /app
-ENV VERLOF_CORPUS_DIR=/app/corpus \
-    VERLOF_CASUS_DIR=/app/casussen \
-    VERLOF_STATIC_DIR=/app/static \
-    VERLOF_PORT=8000 \
-    VERLOF_BASE_PATH=/vakantieverlof/
+ENV CHRONO_CORPUS_DIR=/app/corpus \
+    CHRONO_CASUS_DIR=/app/casussen \
+    CHRONO_STATIC_DIR=/app/static \
+    CHRONO_PORT=8000 \
+    CHRONO_BASE_PATH=/chronolexografie/
 USER app
 EXPOSE 8000
-CMD ["regelrecht-poc-vakantieverlof"]
+CMD ["regelrecht-poc-chronolexografie"]

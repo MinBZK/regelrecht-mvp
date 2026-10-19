@@ -970,29 +970,29 @@ poc: poc-build
     #!/usr/bin/env bash
     set -euo pipefail
     echo "poc-portaal → http://localhost:8611"
-    echo "wachtwoorden: terugbetaalregimes/nieuwkomersbekostiging/napp/vakantieverlof = 'demo'"
+    echo "wachtwoorden: terugbetaalregimes/nieuwkomersbekostiging/napp/chronolexografie = 'demo'"
     POC_COOKIE_SECRET=lokale-ontwikkelsleutel-niet-geheim-0123 \
     POC_PW_TERUGBETAALREGIMES=demo \
     POC_PW_NIEUWKOMERSBEKOSTIGING=demo \
     POC_PW_NAPP=demo \
-    POC_PW_VAKANTIEVERLOF=demo \
+    POC_PW_CHRONOLEXOGRAFIE=demo \
     POC_STATIC_DIR="$(pwd)/.poc-static" \
     POC_PORT=8611 \
     cargo run --manifest-path packages/Cargo.toml --package regelrecht-poc-portal
 
-# Start de vakantieverlof-poc los, op http://localhost:8410/vakantieverlof/
+# Start de chronolexografie-poc los, op http://localhost:8410/chronolexografie/
 #
 # Bouwt de frontend met hetzelfde voorvoegsel als achter het portaal, zodat
-# `POC_UPSTREAM_VAKANTIEVERLOF=http://127.0.0.1:8410 just poc` hem ook via de
+# `POC_UPSTREAM_CHRONOLEXOGRAFIE=http://127.0.0.1:8410 just poc` hem ook via de
 # poort laat zien. De kroniek staat in het geheugen: een herstart is een lege.
-poc-vakantieverlof port="8410":
+poc-chronolexografie port="8410":
     #!/usr/bin/env bash
     set -euo pipefail
-    POC_BASE=/vakantieverlof/ npm run build -w poc-vakantieverlof
-    echo "vakantieverlof → http://localhost:{{port}}/vakantieverlof/"
-    VERLOF_PORT={{port}} \
-    VERLOF_BASE_PATH=/vakantieverlof/ \
-    cargo run --manifest-path packages/Cargo.toml --package regelrecht-poc-vakantieverlof
+    POC_BASE=/chronolexografie/ npm run build -w poc-chronolexografie
+    echo "chronolexografie → http://localhost:{{port}}/chronolexografie/"
+    CHRONO_PORT={{port}} \
+    CHRONO_BASE_PATH=/chronolexografie/ \
+    cargo run --manifest-path packages/Cargo.toml --package regelrecht-poc-chronolexografie
 
 # Start de beleidsassistent van één casus, naast `just poc` in een tweede terminal
 #

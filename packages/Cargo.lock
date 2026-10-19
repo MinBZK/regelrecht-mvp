@@ -4162,6 +4162,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "regelrecht-poc-chronolexografie"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "http-body-util",
+ "regelrecht-cel",
+ "regelrecht-engine",
+ "regelrecht-law-model",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "tokio",
+ "tower",
+ "tower-http 0.7.1",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "regelrecht-poc-napp"
 version = "0.1.0"
 dependencies = [
@@ -4211,26 +4231,6 @@ dependencies = [
  "tower",
  "tower-http 0.7.1",
  "tracing",
-]
-
-[[package]]
-name = "regelrecht-poc-vakantieverlof"
-version = "0.1.0"
-dependencies = [
- "axum",
- "chrono",
- "http-body-util",
- "regelrecht-cel",
- "regelrecht-engine",
- "regelrecht-law-model",
- "serde",
- "serde_json",
- "serde_yaml_ng",
- "tokio",
- "tower",
- "tower-http 0.7.1",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

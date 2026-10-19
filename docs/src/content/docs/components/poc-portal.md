@@ -49,9 +49,9 @@ The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` 
 
 The first proxied PoC is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
 
-The second is vakantieverlof, in `packages/poc-vakantieverlof/` with its frontend in `frontend-poc-vakantieverlof/`. The visitor first picks a case, and the app then plays its administrative process on the cell from `packages/cel`. Vakantieverlof is an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, OBS De Klimop. The gehandicaptenparkeerkaart is an application for a disabled parking card under article 49 of the BABW at a fictional municipality, Wilgendaal. The slug stays `vakantieverlof` for now, so the portal path and the ZAD component keep their names.
+The second is chronolexografie, in `packages/poc-chronolexografie/` with its frontend in `frontend-poc-chronolexografie/`. It is named after the method it demonstrates, [chronolexography](/concepts/chronolexography), since it plays two cases: vakantieverlof and the gehandicaptenparkeerkaart. The visitor first picks one, and the app then plays its administrative process on the cell from `packages/cel`. Vakantieverlof is an application for leave under article 13a of the Leerplichtwet 1969 at a fictional school, OBS De Klimop. The gehandicaptenparkeerkaart is an application for a disabled parking card under article 49 of the BABW at a fictional municipality, Wilgendaal.
 
-Each case is one file in `packages/poc-vakantieverlof/casussen/`. It names the cell (a directory under `corpus/cells/`), the article that establishes the application, and one output the law does not mark, described below. The app derives the rest from the law when it starts (`packages/poc-vakantieverlof/src/casus.rs`):
+Each case is one file in `packages/poc-chronolexografie/casussen/`. It names the cell (a directory under `corpus/cells/`), the article that establishes the application, and one output the law does not mark, described below. The app derives the rest from the law when it starts (`packages/poc-chronolexografie/src/casus.rs`):
 
 - the regelwerken the cell runs: what the article's law reads (`source.regulation`, `source.article`, `source.decisions`), the regelwerken that implement one of its open terms, and the ones whose hooks or procedure apply to what it produces, which brings in the Awb. It follows the same references from every regelwerk it adds, and from the cell's reductions. An override from another law adds nothing, since it only applies inside an execution that law starts (RFC-007).
 - the article that establishes the objection: the one whose `produces` lists a `BEZWAAR`, Awb 7:11 for both cases.
@@ -63,7 +63,7 @@ The tabs are role-neutral. Aanvrager files the application and the objection; Be
 
 Each decision shows why it came out as it did, as the cell explains it (`Cell::explain`): who filled each open term, and the engine's trace under the law in force. The deciding authority is never asked what the cell answers from its chronicle through a reduction, such as whether the pupil already had leave this school year or whether the applicant already holds a valid card. In the trace that answer is a single step, which names the reduction version and the last chronolexogram the cell read. Asked how it got there, the cell runs the reduction again and shows its own trace (`Cell::explain_answer`). That trace shows the decisions revoked on objection and how many decisions the filter skipped.
 
-The API works on one chosen case. `GET /api/casussen` lists them, `POST /api/casus` chooses one and starts its cell with an empty chronicle, and any other call before a choice answers 409. The app sends the case it plays in an `X-Casus` header, so a step after another visitor chose another case answers 409 too, instead of landing in the wrong cell. The choice and the chronicle live in memory, shared by every visitor, and are gone after a restart. The regelwerken come from `corpus/regulation/`, not from `corpus-poc/`. A test in `packages/poc-vakantieverlof/src/kern.rs` checks that the Dockerfile copies, and `script/deploy-filters.mjs` watches, every regelwerk and cell a case derives. The derivation reads the whole corpus at startup, so a new regelwerk that implements an open term of the Awb, or hooks on every decision, joins every case. That test and the tests on the derivation are written to catch exactly that.
+The API works on one chosen case. `GET /api/casussen` lists them, `POST /api/casus` chooses one and starts its cell with an empty chronicle, and any other call before a choice answers 409. The app sends the case it plays in an `X-Casus` header, so a step after another visitor chose another case answers 409 too, instead of landing in the wrong cell. The choice and the chronicle live in memory, shared by every visitor, and are gone after a restart. The regelwerken come from `corpus/regulation/`, not from `corpus-poc/`. A test in `packages/poc-chronolexografie/src/kern.rs` checks that the Dockerfile copies, and `script/deploy-filters.mjs` watches, every regelwerk and cell a case derives. The derivation reads the whole corpus at startup, so a new regelwerk that implements an open term of the Awb, or hooks on every decision, joins every case. That test and the tests on the derivation are written to catch exactly that.
 
 ### The gate
 
@@ -81,7 +81,7 @@ The list of cases comes from `POC_ASSISTENT_CASUSSEN` in `start.sh`, not from th
 
 ### Image and deployment
 
-`packages/poc-portal/Dockerfile` builds the engine to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal, napp and vakantieverlof deploy as three ZAD components, `poc`, `napp` and `vakantieverlof`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds the engine, `script/deploy-filters.mjs` ties the `poc` component to two crates, the portal binary and the engine, so an engine change rebuilds the image even though the portal itself does not depend on the engine.
+`packages/poc-portal/Dockerfile` builds the engine to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal, napp and chronolexografie deploy as three ZAD components, `poc`, `napp` and `chronolexografie`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds the engine, `script/deploy-filters.mjs` ties the `poc` component to two crates, the portal binary and the engine, so an engine change rebuilds the image even though the portal itself does not depend on the engine.
 
 ## Running locally
 
@@ -130,20 +130,20 @@ napp runs as its own component and reads its own variables. The defaults below a
 | `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_DISCOVERY_URL` | none | SSO Rijk through the shared auth crate; without them only the mock login is available |
 | `OIDC_REQUIRED_ROLE` | realm membership | Role required after login; unset, membership of the ZAD realm is enough |
 
-### vakantieverlof
+### chronolexografie
 
-The image sets the port to `8000`, the base path to `/vakantieverlof/`, the corpus to `/app/corpus`, the cases to `/app/casussen` and the built frontend to `/app/static`. `just poc-vakantieverlof` runs it locally.
+The image sets the port to `8000`, the base path to `/chronolexografie/`, the corpus to `/app/corpus`, the cases to `/app/casussen` and the built frontend to `/app/static`. `just poc-chronolexografie` runs it locally.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VERLOF_PORT` | `8410` | Listening port |
-| `VERLOF_BASE_PATH` | `/` | Path prefix; must match the portal path |
-| `VERLOF_STATIC_DIR` | `dist` under `frontend-poc-vakantieverlof/` in the repository | Built frontend, made by `npm run build` |
-| `VERLOF_CORPUS_DIR` | `corpus/` in the repository | The regelwerken under `regulation/nl` and the cells under `cells/` |
-| `VERLOF_CASUS_DIR` | `casussen/` under `packages/poc-vakantieverlof/` | One YAML file per case |
+| `CHRONO_PORT` | `8410` | Listening port |
+| `CHRONO_BASE_PATH` | `/` | Path prefix; must match the portal path |
+| `CHRONO_STATIC_DIR` | `dist` under `frontend-poc-chronolexografie/` in the repository | Built frontend, made by `npm run build` |
+| `CHRONO_CORPUS_DIR` | `corpus/` in the repository | The regelwerken under `regulation/nl` and the cells under `cells/` |
+| `CHRONO_CASUS_DIR` | `casussen/` under `packages/poc-chronolexografie/` | One YAML file per case |
 
 ## Further reading
 
 - [Shared Frontend Package](./frontend-shared) - the saved-state, variant and runner modules the static PoCs use
 - [Demo](./demo) - the one public entry on the index
-- [Deployment](/operations/deployment) - the `poc`, `napp` and `vakantieverlof` components
+- [Deployment](/operations/deployment) - the `poc`, `napp` and `chronolexografie` components
