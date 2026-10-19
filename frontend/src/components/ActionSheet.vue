@@ -3,6 +3,15 @@ import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import type { NLDDSheet } from '@nldd/design-system/sheet';
 import { buildOperationTree, type OperationNode, type OperationTreeRow } from '../utils/operationTree';
 import OperationSettings, { type OperationSettingsArticle } from './OperationSettings.vue';
+import { articleContext, formatLiteral, pathKey, renderAction, renderFocus } from '@regelrecht/frontend-shared/regelrijm/index.js';
+import { useFeatureFlags } from '../composables/useFeatureFlags';
+import { fetchLaw } from '../composables/useLaw';
+import { humanize } from '../utils/outputFormat';
+import RegelRijmText from '../regelrijm/RegelRijmText.vue';
+import { followReference, isNavigable, originHint, rawAt, resolveReference } from '../regelrijm/regelrijmNav.js';
+
+/** A piece of a RegelRijm reading: plain text, or a token with its kind. */
+type RegelRijmSegment = string | { tk: string; ref: string; path?: string[] };
 
 /** An execution action: an operation node (or a `value`) plus its output name. */
 interface SheetAction extends Partial<OperationNode> {
@@ -16,18 +25,33 @@ const props = withDefaults(defineProps<{
   /** A freshly added action - Save is always offered (you opened the
    *  sheet to create it), regardless of the dirty snapshot. */
   isNew?: boolean;
+  /** For the RegelRijm reading (flag `panel.regelrijm`): the law the article
+   *  belongs to, so a name in the reading can lead to the rule computing it. */
+  law?: Record<string, unknown> | null;
+  lawId?: string | null;
+  trajectRef?: string | null;
+  /** The path of the part to open at, from a click on an operation word in a
+   *  RegelRijm reading. Null opens at the top of the action. */
+  focusPath?: string[] | null;
 }>(), {
   action: null,
   article: null,
   editable: false,
   isNew: false,
+  law: null,
+  lawId: null,
+  trajectRef: null,
+  focusPath: null,
 });
 
 const emit = defineEmits<{
   close: [];
   save: [];
   edit: [];
+  navigate: [target: { lawId: string; articleNumber: string }];
+  'open-output': [output: string];
 }>();
+const { isEnabled } = useFeatureFlags();
 
 const sheetEl = ref<NLDDSheet | null>(null);
 
@@ -69,6 +93,7 @@ watch(() => props.action, async (action) => {
     return;
   }
   actionBaseline.value = JSON.stringify(action);
+  if (props.focusPath) selectPath(props.focusPath);
   await nextTick();
   sheetEl.value?.show();
 }, { immediate: true });
@@ -113,6 +138,84 @@ function onOutputInput(event: Event) {
   const target = event.target as { value?: string } | null;
   const detail = (event as CustomEvent<{ value?: string } | undefined>).detail;
   action.output = target?.value ?? detail?.value ?? action.output;
+}
+
+// RegelRijm (RFC-054), behind `panel.regelrijm`: the selected operation as
+// readable text above its settings. An operation word in it selects that
+// part, so the reading is the way down into the tree; a name another rule
+// computes is a token that leads to that rule.
+const navError = ref<string | null>(null);
+watch(() => props.action, () => { navError.value = null; });
+
+const reading = computed(() => {
+  if (!isEnabled('panel.regelrijm') || !props.action) return null;
+  try {
+    const full = renderAction(props.action, { article: props.article });
+    // An action without an operation (a value or a single name) reads whole.
+    if (!selectedOperation.value) return { segments: full.segments, selectable: new Set<string>(), ...namesIn(full.segments) };
+    // Every operation of the reading, by its node in the action as written.
+    const pathOf = new Map<unknown, string[]>();
+    for (const key of full.numbers.keys()) {
+      const node = rawAt(props.action, String(key).split('/'));
+      if (node && typeof node === 'object' && !pathOf.has(node)) pathOf.set(node, String(key).split('/'));
+    }
+    const path = pathOf.get(selectedOperation.value.node) ?? ['value'];
+    const focus = renderFocus(props.action, path, { article: props.article, depth: Infinity });
+    const inTree = new Set(operationTree.value.map((op) => op.node));
+    const selectable = new Set<string>();
+    for (const [node, p] of pathOf) if (inTree.has(node) && node !== selectedOperation.value.node) selectable.add(pathKey(p));
+    return { segments: focus.segments, selectable, ...namesIn(focus.segments) };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+});
+
+// The names in a reading: which lead to the rule computing them, and the
+// tooltip of each, saying where its value comes from.
+function namesIn(segments: RegelRijmSegment[]) {
+  let declared;
+  try {
+    declared = articleContext(props.article)?.declared;
+  } catch {
+    declared = undefined;
+  }
+  const format = (t: { name: string; value: unknown }) => formatLiteral(t.value, declared?.get(t.name)) ?? JSON.stringify(t.value);
+  const navigable = new Set<string>();
+  const hints = new Map<string, string>();
+  for (const seg of segments) {
+    if (typeof seg === 'string' || (seg.tk !== 'name' && seg.tk !== 'term') || seg.path?.[0] === 'output') continue;
+    const target = resolveReference(seg.ref, props.law, props.article);
+    if (isNavigable(target)) navigable.add(seg.ref);
+    const text = originHint(seg.ref, target, { destination: destinationOf, format, label: humanize });
+    if (text) hints.set(seg.ref, text);
+  }
+  return { navigable, hints };
+}
+
+// Where a computed name is computed, for its tooltip. Another regelwerk is
+// named by its id; which article computes it there is only known on a click.
+function destinationOf(target: { kind: string; lawId: string; articleNumber?: string | number }) {
+  if (target.kind !== 'action') return humanize(target.lawId);
+  const sameLaw = target.lawId === (props.law?.$id ?? props.lawId);
+  if (sameLaw && String(target.articleNumber) === String(props.article?.number)) return 'dit artikel';
+  return `${humanize(target.lawId)}, artikel ${target.articleNumber}`;
+}
+
+function selectPath(path: string[]) {
+  const node = rawAt(props.action, path);
+  if (node) selectOperationByNode(node);
+}
+
+async function followName(seg: { ref: string }) {
+  navError.value = null;
+  const to = await followReference(seg.ref, {
+    law: props.law, lawId: props.lawId, article: props.article, label: humanize,
+    load: (id: string) => fetchLaw(props.trajectRef ?? null, id),
+  });
+  if (!to) return;
+  if (to.kind === 'error') navError.value = to.message;
+  else if (to.kind === 'navigate') emit('navigate', { lawId: to.lawId, articleNumber: to.articleNumber });
+  else emit('open-output', to.output);
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -176,8 +279,34 @@ onUnmounted(() => {
           </nldd-list>
         </template>
 
+        <!-- RegelRijm reading of the selected part (flag panel.regelrijm) -->
+        <template v-if="reading">
+          <nldd-spacer v-if="parentOperations.length" size="16"></nldd-spacer>
+          <nldd-box background="tinted" data-testid="action-sheet-regelrijm">
+            <nldd-container padding="16">
+              <nldd-inline-dialog v-if="reading.error" variant="alert" text="Deze regel is nog niet te lezen" :supporting-text="reading.error"></nldd-inline-dialog>
+              <RegelRijmText
+                v-else
+                :segments="reading.segments"
+                interactive
+                :navigable="reading.navigable"
+                :blocks="reading.navigable"
+                :selectable="reading.selectable"
+                :hints="reading.hints"
+                @select="selectPath"
+                @follow="followName"
+              />
+            </nldd-container>
+          </nldd-box>
+          <template v-if="navError">
+            <nldd-spacer size="8"></nldd-spacer>
+            <nldd-banner variant="warning" :text="navError"></nldd-banner>
+          </template>
+          <nldd-spacer size="24"></nldd-spacer>
+        </template>
+
         <!-- Section B: Operation Settings -->
-        <nldd-spacer v-if="parentOperations.length && selectedOperation" size="24"></nldd-spacer>
+        <nldd-spacer v-if="!reading && parentOperations.length && selectedOperation" size="24"></nldd-spacer>
         <OperationSettings v-if="selectedOperation" :operation="selectedOperation" :article="article" :editable="editable" :hide-title-row="editable && !parentOperations.length" @select-operation="selectOperationByNode">
           <template #lead-row>
             <nldd-list-item v-if="editable && action && !parentOperations.length" size="md">

@@ -42,7 +42,6 @@ import ActionSheet from './components/ActionSheet.vue';
 import EditSheet from './components/EditSheet.vue';
 import SearchPopover from './components/SearchPopover.vue';
 import MachineReadable from './components/MachineReadable.vue';
-import RegelRijmPane from './regelrijm/RegelRijmPane.vue';
 import MachineEmptyState from './components/MachineEmptyState.vue';
 import ScenarioBuilder from './components/ScenarioBuilder.vue';
 import ExecutionTraceView from './components/ExecutionTraceView.vue';
@@ -128,8 +127,6 @@ const { isEnabled } = useFeatureFlags();
 const VIEW_DEFINITIONS = [
   { id: 'text', flag: 'panel.article_text', label: 'Tekst' },
   { id: 'machine', flag: 'panel.machine_readable', label: 'Machine' },
-  // RFC-054: the rules of the article as readable text. Experimental.
-  { id: 'regelrijm', flag: 'panel.regelrijm', label: 'RegelRijm' },
   { id: 'scenario', flag: 'panel.scenario_form', label: "Scenario's" },
   { id: 'yaml', flag: 'panel.yaml_editor', label: 'YAML' },
   { id: 'notes', flag: 'panel.notes', label: 'Notities' },
@@ -1355,6 +1352,8 @@ watch(lawId, () => {
 
 // --- Editor state ---
 const activeAction = ref<ExecutionAction | null>(null);
+// From a RegelRijm reading: the path of the part of the action to open at.
+const activeActionPath = ref<string[] | null>(null);
 // True while the open action sheet is for a freshly added action, so its
 // Save button is always offered (no edit required to create it).
 const activeActionIsNew = ref(false);
@@ -2522,10 +2521,11 @@ function handleAddAction() {
   yamlSource.value = yaml.dump(machineReadable.value, dumpOpts);
   parseError.value = null;
   activeActionIsNew.value = true;
+  activeActionPath.value = null;
   activeAction.value = newAction;
 }
 
-// A name in the RegelRijm pane that another article computes: go there, the
+// A name in a RegelRijm reading that another article computes: go there, the
 // way a deep link does (the route watcher switches law or article).
 function handleRegelRijmNavigate({
   lawId: targetLaw,
@@ -2537,9 +2537,24 @@ function handleRegelRijmNavigate({
   router.push(editorRouteFor(targetLaw, articleNumber));
 }
 
-function handleOpenAction(action: ExecutionAction) {
+// From a RegelRijm reading in the action sheet: a name leads to the rule that
+// computes it. Unsaved edits in the sheet go, the same as with Annuleer.
+function handleSheetNavigate(target: { lawId: string; articleNumber: string }) {
+  handleActionClose();
+  handleRegelRijmNavigate(target);
+}
+
+function handleSheetOpenOutput(output: string) {
+  handleActionClose();
+  const next = machineReadable.value?.execution?.actions?.find((a) => a?.output === output);
+  if (next) handleOpenAction(next);
+}
+
+// `path`: from a RegelRijm reading, the part of the action to open at.
+function handleOpenAction(action: ExecutionAction, path: string[] | null = null) {
   actionSnapshot = JSON.stringify(machineReadable.value);
   activeActionIsNew.value = false;
+  activeActionPath.value = Array.isArray(path) ? path : null;
   activeAction.value = action;
   // Clear any stale parse error from a previous failed save
   parseError.value = null;
@@ -3263,7 +3278,10 @@ async function handleActionSave() {
                   :dirty="isMachineReadableDirty"
                   :saving="lawSaving"
                   :traject-ref="activeTrajectRef"
+                  :law="law"
+                  :law-id="lawId"
                   @open-action="handleOpenAction"
+                  @navigate="handleRegelRijmNavigate"
                   @open-edit="activeEditItem = $event"
                   @init-mr="handleInitMr"
                   @enrich="enrichLaw"
@@ -3273,18 +3291,6 @@ async function handleActionSave() {
                   @save="handleMachineReadableSave"
                   @patch="handleSave"
                   @delete="handleDelete"
-                />
-              </nldd-simple-section>
-
-              <!-- RegelRijm (RFC-054, experimental) -->
-              <nldd-simple-section v-else-if="view === 'regelrijm'" width="full">
-                <RegelRijmPane
-                  :article="editedArticle"
-                  :law="law"
-                  :law-id="lawId"
-                  :traject-ref="activeTrajectRef"
-                  @open-action="handleOpenAction"
-                  @navigate="handleRegelRijmNavigate"
                 />
               </nldd-simple-section>
 
@@ -3433,7 +3439,7 @@ async function handleActionSave() {
        would be slotted into the main pane and pick up its ::slotted flex-grow,
        stealing height from the pane content. -->
   <Teleport to="body">
-    <ActionSheet :action="activeAction" :article="editedArticle" :editable="canEdit" :is-new="activeActionIsNew" @close="handleActionClose" @save="handleActionSave" />
+    <ActionSheet :action="activeAction" :article="editedArticle" :editable="canEdit" :is-new="activeActionIsNew" :law="law" :law-id="lawId" :traject-ref="activeTrajectRef" :focus-path="activeActionPath" @close="handleActionClose" @save="handleActionSave" @navigate="handleSheetNavigate" @open-output="handleSheetOpenOutput" />
     <EditSheet :item="activeEditItem" :article="editedArticle" :traject-ref="activeTrajectRef" @save="handleSave" @close="activeEditItem = null" />
     <SearchPopover
       ref="searchPopoverRef"

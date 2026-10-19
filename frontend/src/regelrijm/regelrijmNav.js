@@ -68,3 +68,62 @@ export function resolveReference(ref, law, article) {
 export function isNavigable(target) {
   return target.kind === 'action' || target.kind === 'external';
 }
+
+/**
+ * The tooltip of a name in a reading: where its value comes from, or
+ * undefined when there is nothing to say. `destination(target)` names the
+ * rule a computed name leads to; `format(target)` writes a constant's value.
+ * A computed name is a token, which a narrow pane may cut short, so its
+ * tooltip names it in full.
+ */
+export function originHint(ref, target, { destination, format, label = (s) => s }) {
+  if (isNavigable(target)) return `${label(ref.slice(1).split('.')[0])}: berekend in ${destination(target)}`;
+  if (target.kind === 'definition') return `Vaste waarde in dit artikel: ${format(target)}`;
+  if (target.kind === 'parameter') return 'Wordt meegegeven bij het uitvoeren';
+  if (target.kind === 'context') return 'De rekendatum';
+  if (target.kind === 'data') return target.description ? `Gegeven van buiten: ${target.description}` : 'Gegeven van buiten';
+  return undefined;
+}
+
+/**
+ * Where following `ref` leads, for a click on a name in a reading:
+ * `{ kind: 'same-article', output }`, `{ kind: 'navigate', lawId, articleNumber }`,
+ * `{ kind: 'error', message }` or null when the name leads nowhere. `load`
+ * fetches another regelwerk (`lawId → { law }`).
+ */
+export async function followReference(ref, { law, lawId, article, load, label = (s) => s }) {
+  const t = resolveReference(ref, law, article);
+  if (t.kind === 'action') {
+    // resolveReference names the law by its `$id`; the editor's route may name
+    // it differently, so a rule in this law goes by the route's id.
+    const sameLaw = t.lawId === (law?.$id ?? lawId);
+    if (sameLaw && String(t.articleNumber) === String(article?.number)) return { kind: 'same-article', output: t.output };
+    return { kind: 'navigate', lawId: sameLaw ? lawId : t.lawId, articleNumber: String(t.articleNumber) };
+  }
+  if (t.kind !== 'external') return null;
+  let entry;
+  try {
+    entry = await load(t.lawId);
+  } catch (e) {
+    return { kind: 'error', message: `${label(t.lawId)} is niet geladen: ${e.message}` };
+  }
+  const hit = findOutput(entry?.law, t.output);
+  if (!hit) return { kind: 'error', message: `${label(t.output)} is in ${label(t.lawId)} geen uitkomst van een rekenregel.` };
+  return { kind: 'navigate', lawId: t.lawId, articleNumber: String(hit.article.number) };
+}
+
+/**
+ * The node of the action as written at `path`, a path in the normalised
+ * action of a RegelRijm reading (`value`, `value/values/1`, …). An action
+ * that is itself an operation stands at `value`; otherwise `value` is its
+ * value. Normalising keeps the field names, so the rest of the path holds.
+ */
+export function rawAt(action, path) {
+  if (!Array.isArray(path) || path[0] !== 'value') return undefined;
+  let v = action && typeof action.operation === 'string' ? action : action?.value;
+  for (const step of path.slice(1)) {
+    if (v === null || typeof v !== 'object') return undefined;
+    v = v[step];
+  }
+  return v;
+}

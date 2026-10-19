@@ -8,6 +8,8 @@ import { useCorpusLaws } from '../composables/useCorpusLaws';
 import BreakableName from './BreakableName.vue';
 import RowActionsMenu from './RowActionsMenu.vue';
 import MachineEmptyState from './MachineEmptyState.vue';
+import RegelRijmPane from '../regelrijm/RegelRijmPane.vue';
+import { useFeatureFlags } from '../composables/useFeatureFlags';
 
 // Law-format shapes (schema/latest/schema.json), only the fields read here.
 
@@ -77,6 +79,10 @@ const props = withDefaults(defineProps<{
   /** Anchor target for that button. Leave unset when the user isn't logged
    *  in, so the click gates on the login popover instead of the href. */
   createHref?: string;
+  /** For the RegelRijm reading (flag `panel.regelrijm`): the law the article
+   *  belongs to, so a name in the reading leads to the rule computing it. */
+  law?: Record<string, unknown> | null;
+  lawId?: string | null;
 }>(), {
   article: null,
   editable: false,
@@ -91,6 +97,8 @@ const props = withDefaults(defineProps<{
   reviewReady: false,
   reviewArticle: '',
   createHref: undefined,
+  law: null,
+  lawId: null,
 });
 
 const { displayName: lawDisplayName } = useCorpusLaws(toRef(props, 'trajectRef'));
@@ -99,7 +107,10 @@ const { displayName: lawDisplayName } = useCorpusLaws(toRef(props, 'trajectRef')
 const onLoginTriggerPointerdown = inject('onLoginTriggerPointerdown', () => {});
 
 const emit = defineEmits<{
-  'open-action': [action: ExecutionAction];
+  /** `path` selects a part of the action in the sheet. */
+  'open-action': [action: ExecutionAction, path?: string[]];
+  /** RegelRijm: a name leads to the article that computes it. */
+  'navigate': [target: { lawId: string; articleNumber: string }];
   'open-edit': [payload: OpenEditPayload];
   'init-mr': [];
   /** Ask for a generated proposal instead of writing one by hand. */
@@ -228,6 +239,10 @@ const outputs = computed(() =>
 );
 
 const actions = computed(() => execution.value?.actions ?? []);
+// Behind `panel.regelrijm` the actions come first, as RegelRijm readings: the
+// way into the article's rules, instead of a list of output names at the end.
+const { isEnabled } = useFeatureFlags();
+const regelrijm = computed(() => isEnabled('panel.regelrijm'));
 
 function onProducesChange(key: string, event: Event) {
   updateProduces(key, (event.target as HTMLSelectElement).value);
@@ -395,6 +410,20 @@ function addOutput() {
   ></MachineEmptyState>
 
   <div v-else data-testid="machine-readable">
+    <template v-if="regelrijm && (actions.length || editable)">
+      <RegelRijmPane
+        :article="article"
+        :law="law"
+        :law-id="lawId"
+        :traject-ref="trajectRef"
+        :editable="editable"
+        @open-action="(action, path) => emit('open-action', action, path)"
+        @navigate="emit('navigate', $event)"
+        @add-action="emit('add-action')"
+        @delete-action="deleteAction"
+      />
+      <nldd-spacer size="16"></nldd-spacer>
+    </template>
     <!-- Metadata: produces -->
     <nldd-list v-if="produces" appearance="box-tinted">
       <nldd-list-item v-if="produces.legal_character || editable" size="md">
@@ -575,8 +604,8 @@ function addOutput() {
       </nldd-list>
     </template>
 
-    <!-- Acties -->
-    <template v-if="actions.length || editable">
+    <!-- Acties (with the flag panel.regelrijm: first, as readings) -->
+    <template v-if="!regelrijm && (actions.length || editable)">
       <nldd-spacer size="16"></nldd-spacer>
       <nldd-title size="5" data-testid="section-actions"><h5>Acties</h5></nldd-title>
       <nldd-spacer size="8"></nldd-spacer>

@@ -1,41 +1,35 @@
 <script setup>
-// RegelRijm as a pane of the editor (RFC-054): every rule of the selected
-// article as readable text, next to the article text. It reads the article
-// as it is being edited, so a change in the Machine pane or the YAML shows up
-// here at once. A folded part opens one level deeper on a click; a name that
-// a rule computes goes to that rule, in this article, another article or
-// another regelwerk. Behind the feature flag `panel.regelrijm`; the other
-// panes do not change.
-import { computed, ref, useId, watch } from 'vue';
-import { articleContext, pathKey, renderFocus } from '@regelrecht/frontend-shared/regelrijm/index.js';
+// RegelRijm in the Machine pane (RFC-054): every rule of the article as
+// readable text, always in full, as the way into its actions. It reads the
+// article as it is being edited, so a change in the sheet or the YAML shows up
+// here at once. An operation word opens the action at that part; a name
+// another rule computes is a token that leads there, in this article, another
+// article or another regelwerk. Hovering or focusing a name says where it
+// comes from. Behind the feature flag `panel.regelrijm`.
+import { computed, reactive, ref, useId, watch } from 'vue';
+import { articleContext, formatLiteral, references, renderAction } from '@regelrecht/frontend-shared/regelrijm/index.js';
 import { fetchLaw } from '../composables/useLaw.js';
 import { humanize } from '../utils/outputFormat.js';
+import RowActionsMenu from '../components/RowActionsMenu.vue';
 import RegelRijmText from './RegelRijmText.vue';
-import { findOutput, isNavigable, resolveReference } from './regelrijmNav.js';
+import { findOutput, followReference, isNavigable, originHint, resolveReference } from './regelrijmNav.js';
 
 const props = defineProps({
   article: { type: Object, default: null },
   law: { type: Object, default: null },
   lawId: { type: String, default: null },
   trajectRef: { type: String, default: null },
+  editable: { type: Boolean, default: false },
 });
-const emit = defineEmits(['open-action', 'navigate']);
+// open-action: (action, path?) - the path of the part to open the sheet at.
+const emit = defineEmits(['open-action', 'navigate', 'add-action', 'delete-action']);
 
-const DEPTHS = ['1', '2', '3', 'alles'];
-const depth = ref('2');
-
-// Folded parts the reader opened, per rule (by its place in the article):
-// index → set of path keys. A view state only: an edit keeps it, another
-// article or depth starts folded again. The article prop is a new object on
-// every edit, so the watch looks at its number, not at the object.
-const opened = ref({});
 const navError = ref(null);
-watch([() => props.article?.number, depth], () => {
-  opened.value = {};
+watch(() => props.article?.number, () => {
   navError.value = null;
 });
 
-// Element ids per pane, so two RegelRijm panes side by side never share one.
+// Element ids per pane, so two Machine panes side by side never share one.
 const uid = useId();
 
 const actions = computed(() => {
@@ -44,8 +38,6 @@ const actions = computed(() => {
 });
 
 const rules = computed(() => {
-  if (!actions.value.length) return [];
-  const d = depth.value === 'alles' ? Infinity : Number(depth.value);
   let ctx;
   try {
     ctx = articleContext(props.article);
@@ -56,117 +48,149 @@ const rules = computed(() => {
     const key = String(index);
     const output = action && typeof action === 'object' && typeof action.output === 'string' ? action.output : null;
     // A tree half-way through an edit may not read yet; say so per rule.
-    if (!action || typeof action !== 'object' || Array.isArray(action)) return { key, action, output, error: 'Deze actie is nog leeg.' };
+    if (!action || typeof action !== 'object' || Array.isArray(action)) return { key, index, action, output, error: 'Deze actie is nog leeg.' };
     try {
-      const open = opened.value[key] ?? new Set();
-      const focus = renderFocus(action, ['value'], { article: props.article, ctx, depth: d, open });
+      const reading = renderAction(action, { article: props.article, ctx });
       const navigable = new Set();
-      for (const seg of focus.segments) {
-        if (typeof seg === 'string') continue;
-        const refs = seg.tk === 'fold' ? (seg.inputs ?? []).map((i) => i.ref) : (seg.tk === 'name' || seg.tk === 'term') ? [seg.ref] : [];
-        for (const r of refs) if (isNavigable(resolveReference(r, props.law, props.article))) navigable.add(r);
+      const targets = new Map();
+      for (const r of references(reading.segments)) {
+        if (r === `$${output}`) continue;
+        const target = resolveReference(r, props.law, props.article);
+        targets.set(r, target);
+        if (isNavigable(target)) navigable.add(r);
       }
-      return { key, action, output, focus, navigable, opened: open.size > 0 };
+      // Every operation word opens the action at its part.
+      const selectable = new Set(reading.numbers.keys());
+      return { key, index, action, output, reading, navigable, targets, selectable, unit: ctx?.declared };
     } catch (e) {
-      return { key, action, output, error: e.message };
+      return { key, index, action, output, error: e.message };
     }
   });
 });
 
-function onDepth(e) {
-  const v = e.target?.value ?? e.detail?.value;
-  if (DEPTHS.includes(String(v))) depth.value = String(v);
+// Where a name in another regelwerk is computed is only known once that
+// regelwerk is loaded; the tooltip fills in as it arrives.
+const elsewhere = reactive({});
+const ownName = ref(null);
+watch(() => props.lawId, async (id) => {
+  ownName.value = null;
+  if (!id) return;
+  try {
+    ownName.value = (await fetchLaw(props.trajectRef, id))?.lawName ?? null;
+  } catch {
+    ownName.value = null;
+  }
+}, { immediate: true });
+
+watch(rules, (list) => {
+  for (const rule of list) {
+    for (const target of rule.targets?.values() ?? []) {
+      if (target.kind !== 'external') continue;
+      const k = `${target.lawId}|${target.output}`;
+      if (k in elsewhere) continue;
+      elsewhere[k] = { loading: true };
+      fetchLaw(props.trajectRef, target.lawId).then(
+        (entry) => {
+          const hit = findOutput(entry?.law, target.output);
+          elsewhere[k] = { lawName: entry?.lawName ?? humanize(target.lawId), articleNumber: hit ? String(hit.article.number) : null };
+        },
+        (e) => {
+          elsewhere[k] = { error: e.message };
+        },
+      );
+    }
+  }
+}, { immediate: true });
+
+function destination(target) {
+  if (target.kind === 'action') {
+    const sameLaw = target.lawId === (props.law?.$id ?? props.lawId);
+    if (sameLaw && String(target.articleNumber) === String(props.article?.number)) return 'dit artikel';
+    const law = sameLaw ? (ownName.value ?? humanize(props.lawId ?? target.lawId)) : humanize(target.lawId);
+    return `${law}, artikel ${target.articleNumber}`;
+  }
+  const e = elsewhere[`${target.lawId}|${target.output}`];
+  if (!e || e.loading) return `${humanize(target.lawId)} (wordt opgezocht…)`;
+  if (e.error) return `${humanize(target.lawId)} (niet geladen)`;
+  if (!e.articleNumber) return `${e.lawName} (geen rekenregel gevonden)`;
+  return `${e.lawName}, artikel ${e.articleNumber}`;
 }
 
-function openFold(key, seg) {
-  const current = opened.value[key] ?? new Set();
-  opened.value = { ...opened.value, [key]: new Set([...current, pathKey(seg.path)]) };
-}
-
-function closeAll(key) {
-  const { [key]: _, ...rest } = opened.value;
-  opened.value = rest;
+// The tooltip of a name: where its value comes from.
+function hintsOf(rule) {
+  const hints = new Map();
+  const format = (t) => formatLiteral(t.value, rule.unit?.get(t.name)) ?? JSON.stringify(t.value);
+  for (const [r, target] of rule.targets ?? []) {
+    const text = originHint(r, target, { destination, format, label: humanize });
+    if (text) hints.set(r, text);
+  }
+  return hints;
 }
 
 async function follow(seg) {
   navError.value = null;
-  const t = resolveReference(seg.ref, props.law, props.article);
-  if (t.kind === 'action') {
-    // resolveReference names the law by its `$id`; the editor's route may name
-    // it differently, so a rule in this law goes by the route's id.
-    const sameLaw = t.lawId === (props.law?.$id ?? props.lawId);
-    if (sameLaw && String(t.articleNumber) === String(props.article?.number)) {
-      const index = actions.value.findIndex((a) => a?.output === t.output);
-      document.getElementById(ruleId(String(index)))?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    emit('navigate', { lawId: sameLaw ? props.lawId : t.lawId, articleNumber: String(t.articleNumber) });
-    return;
-  }
-  if (t.kind === 'external') {
-    let entry;
-    try {
-      entry = await fetchLaw(props.trajectRef, t.lawId);
-    } catch (e) {
-      navError.value = `${humanize(t.lawId)} is niet geladen: ${e.message}`;
-      return;
-    }
-    const hit = findOutput(entry?.law, t.output);
-    if (!hit) {
-      navError.value = `${humanize(t.output)} is in ${humanize(t.lawId)} geen uitkomst van een rekenregel.`;
-      return;
-    }
-    emit('navigate', { lawId: t.lawId, articleNumber: String(hit.article.number) });
+  const to = await followReference(seg.ref, {
+    law: props.law, lawId: props.lawId, article: props.article, label: humanize,
+    load: (id) => fetchLaw(props.trajectRef, id),
+  });
+  if (!to) return;
+  if (to.kind === 'error') navError.value = to.message;
+  else if (to.kind === 'navigate') emit('navigate', { lawId: to.lawId, articleNumber: to.articleNumber });
+  else {
+    const index = actions.value.findIndex((a) => a?.output === to.output);
+    document.getElementById(ruleId(String(index)))?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }
 }
 
 function ruleId(key) {
   return `regelrijm-pane-${uid}-${key}`;
 }
-
 </script>
 
 <template>
   <div data-testid="regelrijm-pane">
-    <nldd-banner
-      v-if="!rules.length"
-      variant="neutral"
-      text="Geen rekenregels"
-      supporting-text="Dit artikel heeft nog geen machine_readable-acties om te lezen."
-    ></nldd-banner>
+    <nldd-title size="5" data-testid="section-actions"><h5>Acties</h5></nldd-title>
+    <nldd-banner v-if="navError" variant="warning" :text="navError"></nldd-banner>
 
-    <template v-else>
-      <nldd-segmented-control :value="depth" size="sm" accessible-label="Diepte" @change="onDepth">
-        <nldd-segmented-control-item v-for="d in DEPTHS" :key="d" :value="d" :text="d === 'alles' ? 'Alles' : `Diepte ${d}`"></nldd-segmented-control-item>
-      </nldd-segmented-control>
-      <nldd-spacer size="8"></nldd-spacer>
-      <nldd-banner v-if="navError" variant="warning" :text="navError"></nldd-banner>
+    <template v-for="rule in rules" :key="rule.key">
+      <nldd-spacer size="24"></nldd-spacer>
+      <div :id="ruleId(rule.key)" :data-testid="`regelrijm-pane-rule-${rule.output ?? rule.key}`">
+        <nldd-title size="6"><h6>{{ rule.output ? humanize(rule.output) : 'Actie zonder uitkomst' }}</h6></nldd-title>
+        <nldd-spacer size="4"></nldd-spacer>
+        <nldd-box background="tinted">
+          <nldd-container padding="12">
+            <nldd-inline-dialog v-if="rule.error" variant="alert" text="Deze regel is nog niet te lezen" :supporting-text="rule.error"></nldd-inline-dialog>
+            <RegelRijmText
+              v-else
+              :segments="rule.reading.segments"
+              interactive
+              :navigable="rule.navigable"
+              :blocks="rule.navigable"
+              :selectable="rule.selectable"
+              :hints="hintsOf(rule)"
+              @follow="follow"
+              @select="emit('open-action', rule.action, $event)"
+            />
+          </nldd-container>
+        </nldd-box>
+        <nldd-spacer size="12"></nldd-spacer>
+        <nldd-button-group orientation="horizontal">
+          <nldd-button size="sm" text="Actie openen" :data-testid="`regelrijm-pane-open-${rule.output ?? rule.key}`" @click="emit('open-action', rule.action)"></nldd-button>
+          <RowActionsMenu
+            v-if="editable"
+            :accessible-label="`Acties voor actie ${rule.output}`"
+            :edit-testid="`action-${rule.output}-edit-btn`"
+            :delete-testid="`action-${rule.output}-delete-btn`"
+            @edit="emit('open-action', rule.action)"
+            @delete="emit('delete-action', rule.index)"
+          />
+        </nldd-button-group>
+      </div>
+    </template>
 
-      <template v-for="rule in rules" :key="rule.key">
-        <nldd-spacer size="16"></nldd-spacer>
-        <div :id="ruleId(rule.key)" :data-testid="`regelrijm-pane-rule-${rule.output ?? rule.key}`">
-          <nldd-title size="5"><h5>{{ rule.output ? humanize(rule.output) : 'Actie zonder uitkomst' }}</h5></nldd-title>
-          <nldd-spacer size="8"></nldd-spacer>
-          <nldd-box background="tinted">
-            <nldd-container padding="16">
-              <nldd-inline-dialog v-if="rule.error" variant="alert" text="Deze regel is nog niet te lezen" :supporting-text="rule.error"></nldd-inline-dialog>
-              <RegelRijmText
-                v-else
-                :segments="rule.focus.segments"
-                interactive
-                :navigable="rule.navigable"
-                @open="openFold(rule.key, $event)"
-                @follow="follow"
-              />
-            </nldd-container>
-          </nldd-box>
-          <nldd-spacer size="8"></nldd-spacer>
-          <nldd-button-group orientation="horizontal">
-            <nldd-button v-if="rule.action && typeof rule.action === 'object'" size="md" text="Actie openen" :data-testid="`regelrijm-pane-open-${rule.output ?? rule.key}`" @click="emit('open-action', rule.action)"></nldd-button>
-            <nldd-button v-if="rule.opened" size="md" text="Weer inklappen" @click="closeAll(rule.key)"></nldd-button>
-          </nldd-button-group>
-        </div>
-      </template>
+    <template v-if="editable">
+      <nldd-spacer size="16"></nldd-spacer>
+      <nldd-button width="full" start-icon="plus-small" data-testid="add-action-btn" text="Actie toevoegen" @click="emit('add-action')"></nldd-button>
     </template>
   </div>
 </template>

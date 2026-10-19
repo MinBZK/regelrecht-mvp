@@ -10,6 +10,7 @@
     "./gherkin/*.js": "./src/gherkin/*.js",
     "./gherkin/*": "./src/gherkin/*.ts",
     "./lib/*": "./src/lib/*.ts",
+    "./regelrijm/*.js": "./src/regelrijm/*.js",
     "./components/*": "./src/components/*",
     "./*": "./src/*.ts"
   },
