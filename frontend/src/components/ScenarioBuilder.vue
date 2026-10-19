@@ -605,7 +605,7 @@ defineExpose({ save: onSave });
                 </nldd-list>
               </template>
               <template v-else>
-                <span class="sb-no-expectations">Geen verwachte uitkomsten gedefinieerd</span>
+                <nldd-text size="sm" color="secondary">Geen verwachte uitkomsten gedefinieerd</nldd-text>
               </template>
             </nldd-container>
             <nldd-container slot="footer" padding-inline="16" padding-bottom="16">
@@ -746,12 +746,5 @@ defineExpose({ save: onSave });
   position: relative;
   min-height: 100%;
   flex-direction: column;
-}
-
-/* Card collection */
-.sb-no-expectations {
-  font-size: 13px;
-  color: var(--semantics-text-color-secondary, #545D68);
-  font-style: italic;
 }
 </style>

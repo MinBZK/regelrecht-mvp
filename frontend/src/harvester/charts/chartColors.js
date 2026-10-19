@@ -14,9 +14,10 @@
  * correct and available immediately.
  */
 
-// succeeded/failed use the same expressions as the .status-bar__segment--*
-// rules in harvester.css, so the charts stay color-consistent with the rest
-// of the dashboard. added is hemelblauw rather than the accent: the accent
+// succeeded/failed are the NLDD success and critical primitives. The job-status
+// bar in the grouped jobs view is an nldd-progress-bar and takes the design
+// system's semantic category colors, a shade darker than these. added is
+// hemelblauw rather than the accent: the accent
 // blue fails the chart-palette checks (chroma floor, dark-mode contrast),
 // hemelblauw is the nearest passing NLDD hue.
 const TOKEN_EXPRESSIONS = {

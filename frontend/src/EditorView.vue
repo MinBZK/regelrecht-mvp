@@ -2936,7 +2936,7 @@ async function handleActionSave() {
                   </nldd-toolbar-item>
                   <!-- YAML parse-status (Machine-readable pane). -->
                   <nldd-toolbar-item v-if="view === 'yaml' && parseError" slot="end" label="YAML">
-                    <span class="editor-parse-error">YAML parse error</span>
+                    <nldd-tag color="critical" size="sm" text="YAML parse error"></nldd-tag>
                     <nldd-menu-item
                       slot="overflow"
                       text="YAML parse error"
@@ -3378,45 +3378,3 @@ async function handleActionSave() {
     </nldd-page>
   </nldd-sheet>
 </template>
-
-<style>
-.editor-engine-error {
-  padding: 12px 16px;
-  background: #fee;
-  color: #c00;
-  font-size: 13px;
-}
-
-.editor-engine-error-hint {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #999;
-}
-
-.editor-engine-error-hint code {
-  background: #eee;
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-
-.editor-parse-error {
-  font-size: 12px;
-  font-weight: 600;
-  color: #c00;
-  background: #fee;
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-
-.editor-parse-error-detail {
-  margin-top: 8px;
-  background: #fef2f2;
-  color: #b91c1c;
-  font-family: var(--primitives-font-family-monospace);
-  font-size: 12px;
-  padding: 8px 12px;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-}
-
-</style>

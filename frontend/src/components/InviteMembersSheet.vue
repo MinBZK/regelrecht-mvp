@@ -179,15 +179,17 @@ defineExpose({ show });
               </nldd-form-field>
 
               <!-- Partial batch (a full success shows the success view above instead). -->
-              <div v-if="inviteResult" class="members-info">
-                <div v-if="inviteResult.succeeded.length">
+              <template v-if="inviteResult">
+                <nldd-spacer size="12"></nldd-spacer>
+                <nldd-text v-if="inviteResult.succeeded.length" size="sm" color="secondary">
                   {{ inviteResult.succeeded.length }} uitnodiging{{ inviteResult.succeeded.length === 1 ? '' : 'en' }} verstuurd. Toegang wordt actief bij de eerste login.
-                </div>
-                <div v-if="inviteResult.failed.length" class="members-invite-failed">
+                </nldd-text>
+                <nldd-text v-if="inviteResult.failed.length" size="sm" color="critical">
                   Mislukt:
                   <span v-for="(f, i) in inviteResult.failed" :key="f.email">{{ f.email }} ({{ f.message }}){{ i < inviteResult.failed.length - 1 ? ', ' : '' }}</span>
-                </div>
-              </div>
+                </nldd-text>
+                <nldd-spacer size="4"></nldd-spacer>
+              </template>
 
               <nldd-form-actions>
                 <nldd-button
@@ -206,15 +208,3 @@ defineExpose({ show });
     </nldd-sheet>
   </Teleport>
 </template>
-
-<style scoped>
-.members-info {
-  font-size: 13px;
-  color: var(--semantics-content-secondary-color, #555);
-  margin: 12px 0 4px;
-}
-.members-invite-failed {
-  color: var(--nldd-color-text-error, #c62828);
-  margin-top: 4px;
-}
-</style>

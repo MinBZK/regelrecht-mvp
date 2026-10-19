@@ -23,13 +23,19 @@ const columns = GROUPED_COLUMNS;
 
 const STATUS_BAR_KEYS = ['completed', 'failed', 'processing', 'pending'];
 
+const STATUS_BAR_COLORS = {
+  completed: 'success',
+  failed: 'critical',
+  processing: 'accent',
+  pending: 'neutral',
+};
+
 function statusSegments(group) {
   const total = group.total_jobs || 0;
   if (total === 0) return [];
   return STATUS_BAR_KEYS
     .map((key) => ({ key, count: group[key] || 0 }))
-    .filter((seg) => seg.count > 0)
-    .map((seg) => ({ ...seg, percent: (seg.count / total) * 100 }));
+    .filter((seg) => seg.count > 0);
 }
 
 function statusBarTitle(group) {
@@ -91,15 +97,23 @@ function statusBarTitle(group) {
             v-if="col.key === 'status_bar'"
             :width="col.width || 'stretch'"
           >
+            <!-- One tooltip for the whole bar, with every status in it. A
+                 segment with a tooltip-text or a name gets a tooltip of its
+                 own, and with it a tab stop inside the row's button. -->
             <nldd-tooltip :text="statusBarTitle(group)" placement="top" timing="instant">
-              <div class="status-bar">
-                <div
+              <nldd-progress-bar
+                variant="distribution"
+                value-display="none"
+                :max="group.total_jobs || 0"
+                :accessible-label="statusBarTitle(group)"
+              >
+                <nldd-progress-bar-segment-indicator
                   v-for="seg in statusSegments(group)"
                   :key="seg.key"
-                  :class="['status-bar__segment', `status-bar__segment--${seg.key}`]"
-                  :style="{ width: seg.percent + '%' }"
-                />
-              </div>
+                  :value="seg.count"
+                  :color="STATUS_BAR_COLORS[seg.key]"
+                ></nldd-progress-bar-segment-indicator>
+              </nldd-progress-bar>
             </nldd-tooltip>
           </nldd-cell>
           <nldd-text-cell

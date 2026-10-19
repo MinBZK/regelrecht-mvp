@@ -432,7 +432,7 @@ const dateControlId = useId();
       <nldd-banner v-if="error && !running" variant="critical" :text="error"></nldd-banner>
 
       <!-- Loading indicator -->
-      <div v-if="running" class="sf-running">Uitvoeren...</div>
+      <nldd-text v-if="running" size="xs" color="secondary">Uitvoeren...</nldd-text>
 
       <!-- Input: date + parameters -->
       <nldd-spacer v-if="hasExpectations" size="16"></nldd-spacer>
@@ -567,12 +567,5 @@ const dateControlId = useId();
  * layout (flex-grow / centering of an empty data source's dialog). */
 .sf-root {
   display: contents;
-}
-
-.sf-running {
-  font-size: 12px;
-  color: var(--semantics-text-color-secondary, #666);
-  font-style: italic;
-  padding: 4px 0;
 }
 </style>

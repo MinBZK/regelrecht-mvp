@@ -76,6 +76,11 @@ const {
 const hasTrace = computed(() => steps.value.length > 0);
 const filter = ref('highlights'); // 'highlights' | 'all'
 
+function onFilterChange(e) {
+  const next = e.detail?.value ?? e.target?.value;
+  if (next === 'highlights' || next === 'all') filter.value = next;
+}
+
 function stepIsVisible(step) {
   if (filter.value === 'all') return true;
   return stepHasHighlights(step);
@@ -256,39 +261,46 @@ const currentStep = computed(() =>
 
       <!-- Trace stepper - shown after a scenario runs -->
       <div v-if="hasTrace" class="law-graph-trace">
-        <div class="law-graph-trace__toolbar">
-          <button
-            type="button"
-            class="law-graph-trace__btn"
-            :disabled="!hasPrevVisible"
-            @click="prevVisible"
-          >◀ Vorige</button>
-          <button
-            type="button"
-            class="law-graph-trace__btn"
-            :disabled="!hasNextVisible"
-            @click="nextVisible"
-          >Volgende ▶</button>
-          <span class="law-graph-trace__counter">
-            Stap <strong>{{ currentStepIdx + 1 }}</strong> / {{ steps.length }}
-          </span>
-
-          <div class="law-graph-trace__filter">
-            <span>Filter:</span>
-            <button
-              type="button"
-              class="law-graph-trace__toggle"
-              :class="{ 'law-graph-trace__toggle--active': filter === 'highlights' }"
-              @click="filter = 'highlights'"
-            >Met highlights</button>
-            <button
-              type="button"
-              class="law-graph-trace__toggle"
-              :class="{ 'law-graph-trace__toggle--active': filter === 'all' }"
-              @click="filter = 'all'"
-            >Alles ({{ steps.length }})</button>
-          </div>
-        </div>
+        <nldd-toolbar size="md" accessible-label="Stappen van de uitvoering">
+          <nldd-toolbar-item slot="start" label="Vorige" :priority="3">
+            <nldd-button
+              start-icon="back"
+              text="Vorige"
+              appearance="secondary"
+              size="md"
+              :disabled="!hasPrevVisible || undefined"
+              @click="prevVisible"
+            ></nldd-button>
+            <nldd-menu-item slot="overflow" icon="back" text="Vorige stap" :disabled="!hasPrevVisible || undefined" @select="prevVisible"></nldd-menu-item>
+          </nldd-toolbar-item>
+          <nldd-toolbar-item slot="start" label="Volgende" :priority="3">
+            <nldd-button
+              end-icon="forward"
+              text="Volgende"
+              appearance="secondary"
+              size="md"
+              :disabled="!hasNextVisible || undefined"
+              @click="nextVisible"
+            ></nldd-button>
+            <nldd-menu-item slot="overflow" icon="forward" text="Volgende stap" :disabled="!hasNextVisible || undefined" @select="nextVisible"></nldd-menu-item>
+          </nldd-toolbar-item>
+          <nldd-toolbar-title slot="start" :text="`Stap ${currentStepIdx + 1} / ${steps.length}`"></nldd-toolbar-title>
+          <nldd-toolbar-item slot="end" label="Filter" :priority="2">
+            <nldd-segmented-control
+              size="md"
+              :value="filter"
+              accessible-label="Filter op stappen"
+              @change="onFilterChange"
+            >
+              <nldd-segmented-control-item value="highlights" text="Met highlights"></nldd-segmented-control-item>
+              <nldd-segmented-control-item value="all" :text="`Alles (${steps.length})`"></nldd-segmented-control-item>
+            </nldd-segmented-control>
+            <nldd-menu-group slot="overflow" text="Filter">
+              <nldd-menu-item type="radio" value="highlights" text="Met highlights" :selected="filter === 'highlights' || undefined" @select="filter = 'highlights'"></nldd-menu-item>
+              <nldd-menu-item type="radio" value="all" :text="`Alles (${steps.length})`" :selected="filter === 'all' || undefined" @select="filter = 'all'"></nldd-menu-item>
+            </nldd-menu-group>
+          </nldd-toolbar-item>
+        </nldd-toolbar>
 
         <div class="law-graph-trace__body">
           <div class="law-graph-trace__list">
@@ -369,49 +381,6 @@ const currentStep = computed(() =>
   background: var(--semantics-surfaces-background-color);
   color: var(--semantics-content-color);
   font-size: 13px;
-}
-
-.law-graph-trace__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--semantics-dividers-color);
-  background: var(--primitives-color-donkergeel-100);
-}
-
-.law-graph-trace__btn,
-.law-graph-trace__toggle {
-  border: 1px solid var(--primitives-color-coolgray-400);
-  background: var(--semantics-surfaces-background-color);
-  color: var(--semantics-content-color);
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.law-graph-trace__btn:hover:not(:disabled),
-.law-graph-trace__toggle:hover { background: var(--semantics-surfaces-tinted-background-color); }
-.law-graph-trace__btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.law-graph-trace__toggle--active {
-  border-color: var(--primitives-color-donkergeel-500);
-  background: var(--primitives-color-donkergeel-100);
-  color: var(--primitives-color-donkergeel-800);
-  font-weight: 600;
-}
-
-.law-graph-trace__counter { color: var(--semantics-content-secondary-color); }
-
-.law-graph-trace__filter {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--semantics-content-secondary-color);
 }
 
 .law-graph-trace__body {
