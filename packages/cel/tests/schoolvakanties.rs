@@ -434,3 +434,22 @@ fn a_second_rooster_for_the_same_school_year_fails_every_decision_in_it() {
         "{e}"
     );
 }
+
+#[test]
+fn a_sandbox_keeps_the_streams_and_answers_as_the_cell() {
+    let mut cell = school_in("Utrecht", "Utrecht");
+    let app = applied(&mut cell, "2026-12-21", "2026-12-23", "2026-11-02");
+    let mut sandbox = cell.sandbox();
+    assert_eq!(sandbox.streams(), cell.streams());
+    let gram = decide(&mut sandbox, &app.id, "2026-11-09").unwrap();
+    assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
+    // A move recorded in the sandbox stays out of the cell.
+    established(
+        &mut sandbox,
+        "Groningen",
+        "Groningen",
+        "2026-11-10",
+        "2026-11-10",
+    );
+    assert_eq!(cell.grams().len(), 3);
+}

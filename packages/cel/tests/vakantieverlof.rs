@@ -2138,8 +2138,9 @@ fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
 #[test]
 fn a_decision_in_a_sandbox_stays_out_of_the_cell_and_its_file() {
     let dir = tempfile::tempdir().unwrap();
+    let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
-    let mut cell = Cell::open(RECORDING_ACTOR, &path, cell_dir()).unwrap();
+    let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let before = std::fs::read_to_string(&path).unwrap();
 

@@ -294,6 +294,7 @@ impl Cell {
             recording_actor: self.recording_actor.clone(),
             chronicle: self.chronicle.in_memory_copy(),
             reductions: self.reductions.clone(),
+            streams: self.streams.clone(),
         }
     }
 
