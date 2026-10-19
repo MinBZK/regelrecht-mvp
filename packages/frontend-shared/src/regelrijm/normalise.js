@@ -48,6 +48,16 @@ export const OPERATIONS = Object.freeze(Object.keys(OPERATION_FIELDS));
 // associative and keep their nesting.
 const FLATTEN = { AND: 'conditions', OR: 'conditions', ADD: 'values', MULTIPLY: 'values' };
 
+// Each normalised operation → the node as written. Flattening moves operands
+// up a level, so a path in the normalised tree is no path in the written one;
+// an editor that maps a clicked part back to the YAML goes through this.
+const WRITTEN = new WeakMap();
+
+/** The operation as written that normalised operation `node` came from. */
+export function writtenOf(node) {
+  return node !== null && typeof node === 'object' ? WRITTEN.get(node) : undefined;
+}
+
 export function isOperation(node) {
   return node !== null && typeof node === 'object' && !Array.isArray(node)
     && !(node instanceof Date) && typeof node.operation === 'string';
@@ -87,9 +97,11 @@ export function normalise(node) {
   if (!fields) {
     const out = { operation: op };
     for (const k of Object.keys(node).sort()) if (k !== 'operation' && k !== 'legal_basis') out[k] = normalise(node[k]);
+    WRITTEN.set(out, node);
     return out;
   }
   const out = { operation: op };
+  WRITTEN.set(out, node);
   for (const f of fields) {
     if (!(f in node) || node[f] === undefined) continue;
     if (op === 'IF' && f === 'cases') {
@@ -131,6 +143,8 @@ export function normaliseAction(action) {
     if ('value' in action) op.value = action.value;
     if ('precision' in action) op.precision = action.precision;
     out.value = normalise(op);
+    // The operation as written is the action itself, not this copy.
+    WRITTEN.set(out.value, action);
   } else if (action && 'value' in action) {
     out.value = normalise(action.value);
   }

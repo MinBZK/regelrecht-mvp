@@ -62,11 +62,10 @@ The editor is a side-by-side split view with one pane per view. Each pane has a 
 | View | Content |
 |------|---------|
 | *Tekst* | The article text, editable for users with write access, with a formatting toolbar (bold, italic, list type). Selecting text starts a note. |
-| *Machine* | The `machine_readable` section as a structured view. `EditSheet.vue` and `ActionSheet.vue` edit definitions, inputs, outputs and actions. |
+| *Machine* | The `machine_readable` section as a structured view. `EditSheet.vue` and `ActionSheet.vue` edit definitions, inputs, outputs and actions. Behind `panel.regelrijm` the article's actions come first, each as Dutch text ([RFC-054](/rfcs/rfc-054)) with the article text that linking notes tie to it; a name leads to the rule that computes it, *Actie openen* opens `ActionSheet.vue`. |
 | *Scenario's* | `ScenarioBuilder.vue`: the law's Gherkin scenarios, run in the browser. Per scenario, *Resultaat* opens the execution trace and *Graaf* the cross-law graph with the trace laid over it (`LawGraphView.vue`). |
 | *YAML* | The raw YAML in a code editor. A parse error shows under it; if the engine refuses the YAML, a banner says so above the panes. |
 | *Notities* | All notes on the article, and the drafts that have not been saved yet. |
-| *RegelRijm* | Experimental, behind `panel.regelrijm`. Every rule of the article as Dutch text ([RFC-054](/rfcs/rfc-054)), read from the article as it is being edited. Deeper parts are folded into what they give and read, `⟨bedrag uit [a] en [b]⟩`, and open one level on a click; a name that a rule computes leads to that article. *Actie openen* opens the same `ActionSheet.vue` as *Machine*. |
 
 A law without a `machine_readable` section shows an empty state in *Machine* and *YAML*, with the option to request enrichment or start writing by hand.
 
@@ -102,10 +101,10 @@ The list in `packages/editor-api/src/feature_flags.rs` is also the allow-list: t
 | `panel.scenario_form` | on | Offers the *Scenario's* pane. |
 | `panel.yaml_editor` | on | Offers the *YAML* pane. |
 | `panel.notes` | on | Offers the *Notities* pane. |
-| `panel.regelrijm` | off | Offers the experimental *RegelRijm* pane. |
+| `panel.regelrijm` | off | Reads the actions in *Machine* as RegelRijm text (experimental). |
 | `github.user_oauth` | off | Traject writes require the acting user's own GitHub token, and the settings sheet offers linking a GitHub account. The `GITHUB_USER_TOKEN_REQUIRED` environment variable can force this on regardless of the flag. |
 
-Turning a `panel.*` flag off removes that pane from the editor; turning it back on adds it again. Other users see the change on their next page load.
+Turning a `panel.*` flag off removes that pane from the editor; turning it back on adds it again. `panel.regelrijm` is the exception: it adds no pane, but changes how *Machine* reads its actions. Other users see the change on their next page load.
 
 When the backend has no database, the PUT returns 503 and the frontend keeps the change in `localStorage`. In a development setup without OIDC a failed write is also kept locally, so the panes stay switchable.
 
@@ -144,7 +143,7 @@ Besides the views in `src/` (`AppShell.vue`, `LibraryView.vue`, `EditorView.vue`
 | `ScenarioBuilder.vue` / `ScenarioForm.vue` | Scenario list and authoring |
 | `ExecutionTraceView.vue` / `LawGraphView.vue` (+ `graph/`) | Execution trace and cross-law graph |
 | `NoteCreator.vue` / `NoteCard.vue` | Stand-off notes (RFC-018) |
-| `RegelRijmPane.vue` / `RegelRijmText.vue` (in `src/regelrijm/`) | The *RegelRijm* pane and the token text it shows (RFC-054) |
+| `RegelRijmPane.vue` / `RegelRijmText.vue` (in `src/regelrijm/`) | The RegelRijm readings at the top of *Machine* and the token text they show (RFC-054) |
 | `DocumentList.vue` / `DocumentEditor.vue` | Werkdocumenten |
 | `TasksCategoriesPane.vue` / `TasksListPane.vue` | Taken |
 | `TrajectDetailsPane.vue` / `TrajectMembersPane.vue` / `TrajectIntegrityPane.vue` | Traject settings and the structure report |

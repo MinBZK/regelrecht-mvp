@@ -10,19 +10,23 @@ import { quoteContext } from '../lib/quoteContext.js';
 const LINK = /^regelrecht:\/\/([^/#?]+)\/([^/#?]+)(?:#[^#?]*)?$/;
 
 /**
- * The output a note links to in law `lawId`, or null when it carries no such
+ * The output a note links to in law `lawId` (one id, or several that name the
+ * same law: the editor's note form writes the route id, the corpus the
+ * `$id`), or null when it carries no such
  * link. A note can combine a comment with a link (its motivation is then
  * `commenting`), so the link is read from a body with purpose `linking`, or
  * from an untagged body of a `linking` note.
  */
 export function linkedOutput(note, lawId) {
   if (!note) return null;
+  const ids = (Array.isArray(lawId) ? lawId : [lawId]).filter(Boolean);
   const bodies = Array.isArray(note.body) ? note.body : [note.body];
   for (const body of bodies) {
+    if (!body || typeof body !== 'object') continue;
     const linking = body?.purpose ? body.purpose === 'linking' : note.motivation === 'linking';
     if (!linking) continue;
     const m = typeof body.source === 'string' ? body.source.match(LINK) : null;
-    if (m && m[1] === lawId) return m[2];
+    if (m && ids.includes(m[1])) return m[2];
   }
   return null;
 }

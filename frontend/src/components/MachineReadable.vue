@@ -79,7 +79,10 @@ const props = withDefaults(defineProps<{
   /** Anchor target for that button. Leave unset when the user isn't logged
    *  in, so the click gates on the login popover instead of the href. */
   createHref?: string;
-  /** For the RegelRijm reading (flag `panel.regelrijm`): the law the article
+  /** Show the actions as RegelRijm readings (with flag `panel.regelrijm`).
+   *  Only the editor sets it: it is the view that handles `navigate`. */
+  regelrijm?: boolean;
+  /** For the RegelRijm reading: the law the article
    *  belongs to, so a name in the reading leads to the rule computing it. */
   law?: Record<string, unknown> | null;
   lawId?: string | null;
@@ -99,6 +102,7 @@ const props = withDefaults(defineProps<{
   reviewReady: false,
   reviewArticle: '',
   createHref: undefined,
+  regelrijm: false,
   law: null,
   lawId: null,
   links: () => new Map(),
@@ -245,7 +249,7 @@ const actions = computed(() => execution.value?.actions ?? []);
 // Behind `panel.regelrijm` the actions come first, as RegelRijm readings: the
 // way into the article's rules, instead of a list of output names at the end.
 const { isEnabled } = useFeatureFlags();
-const regelrijm = computed(() => isEnabled('panel.regelrijm'));
+const regelrijm = computed(() => props.regelrijm && isEnabled('panel.regelrijm'));
 
 function onProducesChange(key: string, event: Event) {
   updateProduces(key, (event.target as HTMLSelectElement).value);

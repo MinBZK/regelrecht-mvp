@@ -25,6 +25,9 @@ const props = withDefaults(defineProps<{
   /** A freshly added action - Save is always offered (you opened the
    *  sheet to create it), regardless of the dirty snapshot. */
   isNew?: boolean;
+  /** Show the selected part as a RegelRijm reading (with flag
+   *  `panel.regelrijm`); only the editor sets it, as it handles `navigate`. */
+  regelrijm?: boolean;
   /** For the RegelRijm reading (flag `panel.regelrijm`): the law the article
    *  belongs to, so a name in the reading can lead to the rule computing it. */
   law?: Record<string, unknown> | null;
@@ -38,6 +41,7 @@ const props = withDefaults(defineProps<{
   article: null,
   editable: false,
   isNew: false,
+  regelrijm: false,
   law: null,
   lawId: null,
   trajectRef: null,
@@ -148,7 +152,7 @@ const navError = ref<string | null>(null);
 watch(() => props.action, () => { navError.value = null; });
 
 const reading = computed(() => {
-  if (!isEnabled('panel.regelrijm') || !props.action) return null;
+  if (!props.regelrijm || !isEnabled('panel.regelrijm') || !props.action) return null;
   try {
     const full = renderAction(props.action, { article: props.article });
     // An action without an operation (a value or a single name) reads whole.
@@ -208,11 +212,18 @@ function selectPath(path: string[]) {
 
 async function followName(seg: { ref: string }) {
   navError.value = null;
+  // Following a name closes the sheet; unsaved edits would go with it.
+  if (isDirty.value) {
+    navError.value = 'Sla je wijziging eerst op of annuleer hem; daarna kun je naar die rekenregel.';
+    return;
+  }
+  const from = props.action;
   const to = await followReference(seg.ref, {
     law: props.law, lawId: props.lawId, article: props.article, label: humanize,
     load: (id: string) => fetchLaw(props.trajectRef ?? null, id),
   });
-  if (!to) return;
+  // The sheet may have closed or moved on while another law loaded.
+  if (!to || props.action !== from) return;
   if (to.kind === 'error') navError.value = to.message;
   else if (to.kind === 'navigate') emit('navigate', { lawId: to.lawId, articleNumber: to.articleNumber });
   else emit('open-output', to.output);

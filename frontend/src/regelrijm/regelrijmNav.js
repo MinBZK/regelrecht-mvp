@@ -1,6 +1,7 @@
 // Navigation for the RegelRijm pane: where a name in a rule comes from, and
 // whether it leads to another rule. Pure functions, so the pane stays thin and
 // this can be tested without a browser.
+import { normaliseAction, writtenOf } from '@regelrecht/frontend-shared/regelrijm/index.js';
 
 // A list from a tree that may be half-way through an edit: anything that is
 // not a list counts as empty, and entries that are no object are skipped.
@@ -113,17 +114,18 @@ export async function followReference(ref, { law, lawId, article, load, label = 
 }
 
 /**
- * The node of the action as written at `path`, a path in the normalised
- * action of a RegelRijm reading (`value`, `value/values/1`, …). An action
- * that is itself an operation stands at `value`; otherwise `value` is its
- * value. Normalising keeps the field names, so the rest of the path holds.
+ * The operation of the action as written at `path`, a path in the normalised
+ * action of a RegelRijm reading (`value`, `value/values/1`, …). Normalising
+ * flattens nested ADD/MULTIPLY/AND/OR, so the path is walked in the normalised
+ * action and mapped back through `writtenOf`; undefined where no operation
+ * stands.
  */
 export function rawAt(action, path) {
   if (!Array.isArray(path) || path[0] !== 'value') return undefined;
-  let v = action && typeof action.operation === 'string' ? action : action?.value;
+  let v = normaliseAction(action).value;
   for (const step of path.slice(1)) {
     if (v === null || typeof v !== 'object') return undefined;
     v = v[step];
   }
-  return v;
+  return writtenOf(v);
 }

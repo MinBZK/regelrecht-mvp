@@ -523,7 +523,7 @@ const editorAnnotations = computed(() => {
 const regelrijmLinks = computed(() => {
   if (!isEnabled('panel.regelrijm')) return new Map<string, unknown[]>();
   return linksByOutput(notesForArticle.value, {
-    lawId: law.value?.$id ?? lawId.value,
+    lawId: [law.value?.$id, lawId.value],
     text: selectedArticle.value?.text || '',
   });
 });
@@ -532,7 +532,7 @@ const regelrijmLinks = computed(() => {
 // the note popover; null for any other note or with the flag off.
 function linkedAction(note: Note): ExecutionAction | null {
   if (!isEnabled('panel.regelrijm')) return null;
-  const output = linkedOutput(note, law.value?.$id ?? lawId.value);
+  const output = linkedOutput(note, [law.value?.$id, lawId.value]);
   return output ? (machineReadable.value?.execution?.actions?.find((a) => a?.output === output) ?? null) : null;
 }
 
@@ -812,6 +812,15 @@ function noteText(note: Note) {
   const noteBody = note?.body as NoteBody | NoteBody[] | null | undefined;
   const body = Array.isArray(noteBody) ? noteBody[0] : noteBody;
   return body?.value || body?.source || '';
+}
+// The comment of a note that also links to a rule: its commenting body (or an
+// untagged text body), not a tag and not the link, wherever it stands.
+function noteComment(note: Note): string {
+  type Body = { type?: string; purpose?: string; value?: unknown };
+  const raw = (note as { body?: Body | Body[] } | null)?.body;
+  const bodies: (Body | undefined)[] = Array.isArray(raw) ? raw : [raw];
+  const c = bodies.find((b) => b?.type === 'TextualBody' && (b.purpose ? b.purpose === 'commenting' : true) && typeof b.value === 'string' && b.value.trim());
+  return (c?.value as string | undefined) ?? '';
 }
 function noteAuthor(note: Note) {
   // The { id, name } shape or a legacy plain string, as in NoteCard; not validated.
@@ -2566,7 +2575,7 @@ function handleRegelRijmNavigate({
 }
 
 // From a RegelRijm reading in the action sheet: a name leads to the rule that
-// computes it. Unsaved edits in the sheet go, the same as with Annuleer.
+// computes it. The sheet only follows a name when it has no unsaved edits.
 function handleSheetNavigate(target: { lawId: string; articleNumber: string }) {
   handleActionClose();
   handleRegelRijmNavigate(target);
@@ -3274,7 +3283,9 @@ async function handleActionSave() {
                     <template v-for="(note, i) in activeNotes" :key="i">
                       <nldd-spacer v-if="i > 0" size="16"></nldd-spacer>
                       <nldd-rich-text>
-                        <p>{{ linkedAction(note) ? `Gekoppeld aan de rekenregel ${humanize(linkedAction(note).output)}` : (noteText(note) || '-') }}</p>
+                        <p v-if="!linkedAction(note)">{{ noteText(note) || '-' }}</p>
+                        <p v-else-if="noteComment(note)">{{ noteComment(note) }}</p>
+                        <p v-if="linkedAction(note)">Gekoppeld aan de rekenregel {{ humanize(linkedAction(note).output) }}</p>
                       </nldd-rich-text>
                       <template v-if="noteAuthor(note)">
                         <nldd-spacer size="4"></nldd-spacer>
@@ -3311,6 +3322,7 @@ async function handleActionSave() {
                   :dirty="isMachineReadableDirty"
                   :saving="lawSaving"
                   :traject-ref="activeTrajectRef"
+                  regelrijm
                   :law="law"
                   :law-id="lawId"
                   :links="regelrijmLinks"
@@ -3473,7 +3485,7 @@ async function handleActionSave() {
        would be slotted into the main pane and pick up its ::slotted flex-grow,
        stealing height from the pane content. -->
   <Teleport to="body">
-    <ActionSheet :action="activeAction" :article="editedArticle" :editable="canEdit" :is-new="activeActionIsNew" :law="law" :law-id="lawId" :traject-ref="activeTrajectRef" :focus-path="activeActionPath" @close="handleActionClose" @save="handleActionSave" @navigate="handleSheetNavigate" @open-output="handleSheetOpenOutput" />
+    <ActionSheet regelrijm :action="activeAction" :article="editedArticle" :editable="canEdit" :is-new="activeActionIsNew" :law="law" :law-id="lawId" :traject-ref="activeTrajectRef" :focus-path="activeActionPath" @close="handleActionClose" @save="handleActionSave" @navigate="handleSheetNavigate" @open-output="handleSheetOpenOutput" />
     <EditSheet :item="activeEditItem" :article="editedArticle" :traject-ref="activeTrajectRef" @save="handleSave" @close="activeEditItem = null" />
     <SearchPopover
       ref="searchPopoverRef"

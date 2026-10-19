@@ -6,7 +6,7 @@
 //   node packages/frontend-shared/scripts/regelrijm-report.mjs <dir>… [--glossary file.yaml] [--names]
 //
 // A glossary is a YAML map `naam: term`. It is read, never written, so a
-// private corpus can be measured with its own words without them entering
+// corpus kept elsewhere can be measured with its own words without them entering
 // this repository.
 import { readFileSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';

@@ -77,30 +77,41 @@ const rules = computed(() => {
 // regelwerk is loaded; the tooltip fills in as it arrives.
 const elsewhere = reactive({});
 const ownName = ref(null);
-watch(() => props.lawId, async (id) => {
+watch(() => [props.lawId, props.trajectRef], async ([id, traject]) => {
   ownName.value = null;
   if (!id) return;
+  let name = null;
   try {
-    ownName.value = (await fetchLaw(props.trajectRef, id))?.lawName ?? null;
+    name = (await fetchLaw(traject, id))?.lawName ?? null;
   } catch {
-    ownName.value = null;
+    name = null;
   }
+  // An answer for a law or traject the pane has since left is dropped.
+  if (props.lawId === id && props.trajectRef === traject) ownName.value = name;
 }, { immediate: true });
 
-watch(rules, (list) => {
+// A traject can hold another version of a law, so the cache goes with it.
+let cachedFor = props.trajectRef;
+watch([rules, () => props.trajectRef], ([list, traject]) => {
+  if (traject !== cachedFor) {
+    for (const k of Object.keys(elsewhere)) delete elsewhere[k];
+    cachedFor = traject;
+  }
   for (const rule of list) {
     for (const target of rule.targets?.values() ?? []) {
       if (target.kind !== 'external') continue;
       const k = `${target.lawId}|${target.output}`;
       if (k in elsewhere) continue;
       elsewhere[k] = { loading: true };
-      fetchLaw(props.trajectRef, target.lawId).then(
+      // An answer that arrives after a traject switch belongs to the old one.
+      const keep = (v) => { if (cachedFor === traject) elsewhere[k] = v; };
+      fetchLaw(traject, target.lawId).then(
         (entry) => {
           const hit = findOutput(entry?.law, target.output);
-          elsewhere[k] = { lawName: entry?.lawName ?? humanize(target.lawId), articleNumber: hit ? String(hit.article.number) : null };
+          keep({ lawName: entry?.lawName ?? humanize(target.lawId), articleNumber: hit ? String(hit.article.number) : null });
         },
         (e) => {
-          elsewhere[k] = { error: e.message };
+          keep({ error: e.message });
         },
       );
     }
@@ -134,11 +145,13 @@ function hintsOf(rule) {
 
 async function follow(seg) {
   navError.value = null;
+  const from = `${props.lawId}|${props.article?.number}`;
   const to = await followReference(seg.ref, {
     law: props.law, lawId: props.lawId, article: props.article, label: humanize,
     load: (id) => fetchLaw(props.trajectRef, id),
   });
-  if (!to) return;
+  // The editor may have moved to another article while another law loaded.
+  if (!to || `${props.lawId}|${props.article?.number}` !== from) return;
   if (to.kind === 'error') navError.value = to.message;
   else if (to.kind === 'navigate') emit('navigate', { lawId: to.lawId, articleNumber: to.articleNumber });
   else {

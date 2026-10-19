@@ -10,7 +10,7 @@ import { normaliseAction, isOperation } from './normalise.js';
 import { Renderer, LEVEL, finish, chooseLegend } from './render.js';
 import { declaredUnits, literalUnits, pathKey } from './units.js';
 
-export { OPERATIONS, OPERATION_FIELDS, normalise, normaliseAction } from './normalise.js';
+export { OPERATIONS, OPERATION_FIELDS, normalise, normaliseAction, writtenOf } from './normalise.js';
 export { makeVocabulary, humanizeName, BUILTIN_TERMS } from './names.js';
 export { declaredUnits, pathKey } from './units.js';
 export { formatLiteral } from './literals.js';

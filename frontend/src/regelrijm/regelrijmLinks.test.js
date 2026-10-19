@@ -30,6 +30,14 @@ describe('linkedOutput', () => {
     expect(linkedOutput({ motivation: 'linking', body: { source: 'https://example.test/x' } }, 'wet_a')).toBeNull();
     expect(linkedOutput({ motivation: 'linking', body: { source: 'regelrecht://wet_a' } }, 'wet_a')).toBeNull();
     expect(linkedOutput(null, 'wet_a')).toBeNull();
+    expect(linkedOutput({ motivation: 'linking' }, 'wet_a')).toBeNull();
+    expect(linkedOutput({ motivation: 'linking', body: [null] }, 'wet_a')).toBeNull();
+  });
+
+  it('accepts any of the ids the law goes by', () => {
+    // The note form writes the route id, the corpus the $id.
+    expect(linkedOutput(link('hoogte', 'route_id'), ['wet_a', 'route_id'])).toBe('hoogte');
+    expect(linkedOutput(link('hoogte', 'wet_a'), [undefined, 'wet_a'])).toBe('hoogte');
   });
 });
 

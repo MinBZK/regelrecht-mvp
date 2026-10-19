@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findOutput, isNavigable, resolveReference } from './regelrijmNav.js';
+import { renderAction } from '@regelrecht/frontend-shared/regelrijm/index.js';
+import { findOutput, isNavigable, rawAt, resolveReference } from './regelrijmNav.js';
 
 const law = {
   $id: 'voorbeeldwet',
@@ -52,5 +53,38 @@ describe('isNavigable', () => {
     expect(isNavigable({ kind: 'action' })).toBe(true);
     expect(isNavigable({ kind: 'external' })).toBe(true);
     for (const kind of ['data', 'parameter', 'definition', 'context', 'local']) expect(isNavigable({ kind })).toBe(false);
+  });
+});
+
+describe('rawAt', () => {
+  // ADD(ADD(a, b), MULTIPLY(c, 2), SUBTRACT(d, e)) reads as one sum: the inner
+  // ADD is flattened away, so the reading's paths shift against the YAML.
+  const inner = { operation: 'ADD', values: ['$a', '$b'] };
+  const times = { operation: 'MULTIPLY', values: ['$c', 2] };
+  const minus = { operation: 'SUBTRACT', values: ['$d', '$e'] };
+  const sum = { operation: 'ADD', values: [inner, times, minus] };
+
+  it('maps every numbered part of a flattened reading to the operation as written', () => {
+    const action = { output: 'totaal', value: sum };
+    const { numbers } = renderAction(action);
+    const written = new Map([...numbers.keys()].map((k) => [k, rawAt(action, k.split('/'))]));
+    // The flattened sum is a, b, times, minus: the two operands moved up.
+    expect(written.get('value')).toBe(sum);
+    expect(written.get('value/values/2')).toBe(times);
+    expect(written.get('value/values/3')).toBe(minus);
+    expect([...written.values()]).not.toContain(undefined);
+  });
+
+  it('gives the action itself for an inline operation', () => {
+    const action = { output: 'totaal', ...sum };
+    expect(rawAt(action, ['value'])).toBe(action);
+    expect(rawAt(action, ['value', 'values', '2'])).toBe(times);
+  });
+
+  it('is undefined where no operation stands', () => {
+    const action = { output: 'totaal', value: sum };
+    expect(rawAt(action, ['value', 'values', '0'])).toBeUndefined();
+    expect(rawAt(action, ['value', 'values', '9'])).toBeUndefined();
+    expect(rawAt(action, ['output'])).toBeUndefined();
   });
 });
