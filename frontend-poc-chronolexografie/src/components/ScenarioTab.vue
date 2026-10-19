@@ -1,5 +1,5 @@
 <script setup>
-// De scenario's van de casus (packages/poc-vakantieverlof/casussen/): per
+// De scenario's van de casus (packages/poc-chronolexografie/casussen/): per
 // scenario de stappen in volgorde (welk tabblad, welke knop, welke waarde,
 // welke speeldatum) en wat je aan het eind ziet. De knop maakt de kroniek
 // leeg en zet de speeldatum op de eerste dag; daarna ga je naar het tabblad

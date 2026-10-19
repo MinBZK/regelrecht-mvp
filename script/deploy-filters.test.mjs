@@ -173,28 +173,28 @@ test('het poc-portaal volgt zijn register, zijn corpus en zijn frontends', () =>
   assert.equal(namesOf(['frontend-poc-terugbetaalregimes/src/App.vue'])['poc-napp'], false);
 });
 
-test('vakantieverlof volgt zijn cellen, hun regelwerken, de casussen en zijn frontend', () => {
+test('chronolexografie volgt zijn cellen, hun regelwerken, de casussen en zijn frontend', () => {
   // De cellen van de casussen en de regelwerken die zij draaien, zitten
-  // alleen in het vakantieverlof-image, niet in het portaal.
+  // alleen in het chronolexografie-image, niet in het portaal.
   for (const pad of [
     'corpus/cells/obs_de_klimop/reducties/reductie_verlof_al_verleend_in_schooljaar/2026-08-01.yaml',
     'corpus/regulation/nl/wet/leerplichtwet_1969/2026-08-01.yaml',
     'corpus/cells/gemeente_wilgendaal/reducties/reductie_geldige_gehandicaptenparkeerkaart/2026-01-01.yaml',
     'corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/2026-01-01.yaml',
-    'packages/poc-vakantieverlof/casussen/gehandicaptenparkeerkaart.yaml',
-    'frontend-poc-vakantieverlof/src/App.vue',
+    'packages/poc-chronolexografie/casussen/gehandicaptenparkeerkaart.yaml',
+    'frontend-poc-chronolexografie/src/App.vue',
   ]) {
     const geraakt = namesOf([pad]);
-    assert.equal(geraakt['poc-vakantieverlof'], true, pad);
+    assert.equal(geraakt['poc-chronolexografie'], true, pad);
     assert.equal(geraakt.poc, false, pad);
   }
 
   // De crate van de cel volgt uit de graaf.
-  assert.equal(namesOf(['packages/cel/src/cell.rs'])['poc-vakantieverlof'], true);
+  assert.equal(namesOf(['packages/cel/src/cell.rs'])['poc-chronolexografie'], true);
 
   // Een wet die de cel niet draait, raakt het niet.
   assert.equal(
-    namesOf(['corpus/regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml'])['poc-vakantieverlof'],
+    namesOf(['corpus/regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml'])['poc-chronolexografie'],
     false,
   );
 });

@@ -98,13 +98,13 @@ export const COMPONENTS = {
       'packages/poc-napp/Dockerfile',
     ],
   },
-  // vakantieverlof draait net als napp als eigen, niet-gepubliceerd component.
+  // chronolexografie draait net als napp als eigen, niet-gepubliceerd component.
   // De crate-kant (cel, engine, de casussen naast de crate) volgt uit de
   // graaf; het image neemt daarnaast per casus de regelwerken mee die de cel
-  // draait, en de cel zelf. Een test in packages/poc-vakantieverlof
+  // draait, en de cel zelf. Een test in packages/poc-chronolexografie
   // (src/kern.rs) houdt deze lijst gelijk met wat de app per casus afleidt.
-  'poc-vakantieverlof': {
-    crate: 'regelrecht-poc-vakantieverlof',
+  'poc-chronolexografie': {
+    crate: 'regelrecht-poc-chronolexografie',
     paths: [
       'pocs/',
       'corpus/regulation/nl/wet/leerplichtwet_1969/',
@@ -116,9 +116,9 @@ export const COMPONENTS = {
       'corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/',
       'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/',
       'corpus/cells/gemeente_wilgendaal/',
-      'frontend-poc-vakantieverlof/',
+      'frontend-poc-chronolexografie/',
       'packages/frontend-shared/',
-      'packages/poc-vakantieverlof/Dockerfile',
+      'packages/poc-chronolexografie/Dockerfile',
     ],
   },
   // Het poc-portaal bakt de statische pocs in zijn eigen image, dus het raakt

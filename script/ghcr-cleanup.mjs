@@ -80,7 +80,7 @@ export const PACKAGES = [
   'regelrecht-demo',
   'regelrecht-poc',
   'regelrecht-poc-napp',
-  'regelrecht-poc-vakantieverlof',
+  'regelrecht-poc-chronolexografie',
 ];
 
 // Tags die een versie onaanraakbaar maken, wat er verder ook op zit. Dit is de

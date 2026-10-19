@@ -105,9 +105,9 @@ fn product_crates_present() {
         "harvester",
         "law-model",
         "pipeline",
+        "poc-chronolexografie",
         "poc-napp",
         "poc-portal",
-        "poc-vakantieverlof",
         "shared",
         "tui",
     ]
@@ -296,11 +296,11 @@ fn frontend_apps_extracted() {
         "app:frontend",
         "app:frontend-demo",
         "app:frontend-lawmaking",
+        "app:frontend-poc-chronolexografie",
         "app:frontend-poc-napp",
         "app:frontend-poc-nieuwkomersbekostiging",
         "app:frontend-poc-portal",
         "app:frontend-poc-terugbetaalregimes",
-        "app:frontend-poc-vakantieverlof",
         "app:frontend-shared",
     ]
     .iter()

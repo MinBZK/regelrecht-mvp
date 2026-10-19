@@ -12,9 +12,9 @@ members = [
     "harvester",
     "law-model",
     "pipeline",
+    "poc-chronolexografie",
     "poc-napp",
     "poc-portal",
-    "poc-vakantieverlof",
     "shared",
     "tui",
 ]

@@ -7,14 +7,18 @@ use std::path::Path;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
-use regelrecht_poc_vakantieverlof::{api::AppState, kern::Corpus, router};
+use regelrecht_poc_chronolexografie::{api::AppState, kern::Corpus, router};
 use serde_json::{json, Value};
 use tower::ServiceExt;
 
 fn app() -> axum::Router {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let casussen = Corpus::alle(&dir.join("../../corpus"), &dir.join("casussen")).unwrap();
-    router(AppState::new(casussen), "/vakantieverlof/", "/nonexistent")
+    router(
+        AppState::new(casussen),
+        "/chronolexografie/",
+        "/nonexistent",
+    )
 }
 
 fn get(uri: &str) -> Request<Body> {
@@ -26,7 +30,7 @@ async fn app_met(id: &str) -> axum::Router {
     let app = app();
     let (status, _) = send(
         &app,
-        post("/vakantieverlof/api/casus", json!({ "casus": id })),
+        post("/chronolexografie/api/casus", json!({ "casus": id })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -55,7 +59,7 @@ async fn the_api_answers_under_the_prefix() {
     let app = app_met("vakantieverlof").await;
     let (status, vormen) = send(
         &app,
-        Request::get("/vakantieverlof/api/vormen?datum=2026-10-14")
+        Request::get("/chronolexografie/api/vormen?datum=2026-10-14")
             .body(Body::empty())
             .unwrap(),
     )
@@ -69,7 +73,7 @@ async fn the_api_answers_under_the_prefix() {
     let response = app
         .clone()
         .oneshot(
-            Request::get("/vakantieverlof/")
+            Request::get("/chronolexografie/")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -84,7 +88,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
     let (status, body) = send(
         &app,
         post(
-            "/vakantieverlof/api/aanvragen",
+            "/chronolexografie/api/aanvragen",
             json!({ "velden": { "bestemming": "Lissabon" }, "datum": "2026-10-13" }),
         ),
     )
@@ -98,7 +102,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
     let (status, _) = send(
         &app,
         post(
-            "/vakantieverlof/api/aanvragen",
+            "/chronolexografie/api/aanvragen",
             json!({ "velden": { "bsn_jongere": "999990019" }, "datum": "2026-10-13" }),
         ),
     )
@@ -107,7 +111,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
     let kroniek = |app: axum::Router| async move {
         send(
             &app,
-            Request::get("/vakantieverlof/api/kroniek")
+            Request::get("/chronolexografie/api/kroniek")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -124,7 +128,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
     // The log has the application as its one action; it is no decision.
     let (status, logboek) = send(
         &app,
-        Request::get("/vakantieverlof/api/logboek")
+        Request::get("/chronolexografie/api/logboek")
             .body(Body::empty())
             .unwrap(),
     )
@@ -134,7 +138,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
     assert_eq!(handelingen.len(), 1);
     assert_eq!(handelingen[0]["gram"]["kind"], json!("AANVRAAG"));
     assert!(handelingen[0]["waarom"].is_null());
-    send(&app, post("/vakantieverlof/api/reset", json!({}))).await;
+    send(&app, post("/chronolexografie/api/reset", json!({}))).await;
     assert!(kroniek(app.clone()).await["grammen"]
         .as_array()
         .unwrap()
@@ -144,7 +148,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
 #[tokio::test]
 async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_chronicle() {
     let app = app();
-    let (status, lijst) = send(&app, get("/vakantieverlof/api/casussen")).await;
+    let (status, lijst) = send(&app, get("/chronolexografie/api/casussen")).await;
     assert_eq!(status, StatusCode::OK);
     assert!(lijst["gekozen"].is_null());
     let ids: Vec<&str> = lijst["casussen"]
@@ -155,7 +159,10 @@ async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_
         .collect();
     assert_eq!(ids, ["gehandicaptenparkeerkaart", "vakantieverlof"]);
 
-    for uri in ["/vakantieverlof/api/kroniek", "/vakantieverlof/api/casus"] {
+    for uri in [
+        "/chronolexografie/api/kroniek",
+        "/chronolexografie/api/casus",
+    ] {
         let (status, body) = send(&app, get(uri)).await;
         assert_eq!(status, StatusCode::CONFLICT, "{uri}");
         assert!(
@@ -165,7 +172,7 @@ async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_
     }
     let (status, _) = send(
         &app,
-        post("/vakantieverlof/api/casus", json!({ "casus": "x" })),
+        post("/chronolexografie/api/casus", json!({ "casus": "x" })),
     )
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
@@ -174,7 +181,7 @@ async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_
     let (_, casus) = send(
         &app,
         post(
-            "/vakantieverlof/api/casus",
+            "/chronolexografie/api/casus",
             json!({ "casus": "vakantieverlof" }),
         ),
     )
@@ -185,13 +192,13 @@ async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_
         json!("algemene_wet_bestuursrecht#7:11")
     );
     assert_eq!(casus["rol"], json!("het hoofd"));
-    let (_, lijst) = send(&app, get("/vakantieverlof/api/casussen")).await;
+    let (_, lijst) = send(&app, get("/chronolexografie/api/casussen")).await;
     assert_eq!(lijst["gekozen"], json!("vakantieverlof"));
 
     // A step that expects another case than the chosen one is refused: it
     // would land in the wrong cell.
     let verwacht = |casus: &str| {
-        Request::get("/vakantieverlof/api/kroniek")
+        Request::get("/chronolexografie/api/kroniek")
             .header("x-casus", casus)
             .body(Body::empty())
             .unwrap()
@@ -214,7 +221,7 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
     // Scenario 3 of the parkeerkaart, as the app plays it: the case's own
     // example values, two applications and two decisions.
     let app = app_met("gehandicaptenparkeerkaart").await;
-    let (_, casus) = send(&app, get("/vakantieverlof/api/casus")).await;
+    let (_, casus) = send(&app, get("/chronolexografie/api/casus")).await;
     assert_eq!(
         casus["rol"],
         json!("het college van burgemeester en wethouders")
@@ -228,7 +235,7 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
         let (status, app_gram) = send(
             &app,
             post(
-                "/vakantieverlof/api/aanvragen",
+                "/chronolexografie/api/aanvragen",
                 json!({ "velden": aanvraag, "datum": datum }),
             ),
         )
@@ -237,7 +244,7 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
         let (status, besluit) = send(
             &app,
             post(
-                "/vakantieverlof/api/besluiten",
+                "/chronolexografie/api/besluiten",
                 json!({ "op": app_gram["id"], "bevindingen": bevindingen, "datum": datum }),
             ),
         )
@@ -258,7 +265,7 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
     let (status, hoe) = send(
         &app,
         get(&format!(
-            "/vakantieverlof/api/besluiten/{id}/antwoord/aanvrager_heeft_geldige_gehandicaptenparkeerkaart"
+            "/chronolexografie/api/besluiten/{id}/antwoord/aanvrager_heeft_geldige_gehandicaptenparkeerkaart"
         )),
     )
     .await;

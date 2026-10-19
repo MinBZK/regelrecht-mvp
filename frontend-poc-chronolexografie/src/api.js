@@ -1,11 +1,11 @@
 /**
- * De API van packages/poc-vakantieverlof. Eerst kies je een casus (POST
+ * De API van packages/poc-chronolexografie. Eerst kies je een casus (POST
  * /api/casus); elk ander pad werkt op de gekozen casus. Elk verzoek noemt de
  * casus die deze app speelt (X-Casus): koos een andere bezoeker intussen een
  * andere casus, dan weigert de server de stap in plaats van hem in de
  * verkeerde cel te doen. Elk pad gaat langs `b()`: achter
- * het poc-portaal staat de app onder /vakantieverlof/, en dan moet /api/x ook
- * /vakantieverlof/api/x worden. Een weigering van de cel komt terug als
+ * het poc-portaal staat de app onder /chronolexografie/, en dan moet /api/x ook
+ * /chronolexografie/api/x worden. Een weigering van de cel komt terug als
  * `{ fout }` en wordt de foutmelding.
  */
 import { apiFetchJson } from '@regelrecht/frontend-shared/apiFetch.js';
