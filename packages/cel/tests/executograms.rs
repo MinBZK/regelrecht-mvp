@@ -1,6 +1,5 @@
-//! A cell records what refers to no submission (RFC-051): a decision taken
-//! ex officio, under a small fictional law, and an executogram of a stream
-//! the cell keeps, a fact rather than a decision.
+//! A cell records a fact that refers to no submission (RFC-051): an
+//! executogram of a stream the cell keeps, under a small fictional law.
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
@@ -14,11 +13,9 @@ use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
 const ACTOR: &str = "school_fictief";
-const LAW: &str = "wet_vaststelling_fictief";
 
-/// A procedure for a beschikking, so an article whose decision is one
-/// follows it.
-const GENERAL_LAW: &str = r#"
+/// A procedure for a beschikking, so a decision on a submission has stages.
+const PROCEDURE_LAW: &str = r#"
 $id: wet_algemeen_fictief
 regulatory_layer: WET
 publication_date: '2026-01-01'
@@ -31,61 +28,16 @@ procedure:
       - name: AANVRAAG
       - name: BESLUIT
       - name: BEKENDMAKING
-articles:
-  - number: '1'
-    text: Een besluit wordt gemotiveerd.
-    machine_readable:
-      hooks:
-        - hook_point: post_actions
-          applies_to: {legal_character: BESCHIKKING, stage: BESLUIT}
-      execution:
-        output:
-          - {name: motivering_vereist, type: boolean}
-        actions:
-          - {output: motivering_vereist, value: true}
+articles: []
 "#;
 
-/// Article 1 is a decision an authority takes of its own accord; the other
-/// articles are what the cell does not take ex officio.
+/// Article 3 is the ground of the stream `stand`.
 const SPECIAL_LAW: &str = r#"
 $id: wet_vaststelling_fictief
 regulatory_layer: WET
 publication_date: '2026-01-01'
 valid_from: '2026-01-01'
 articles:
-  - number: '1'
-    text: Het bevoegd gezag stelt elk jaar een vrije week vast.
-    machine_readable:
-      execution:
-        produces:
-          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING
-          decision_type: ANDERE_HANDELING
-        parameters:
-          - {name: jaar, type: number}
-          - {name: eerste_dag, type: date}
-          - {name: opmerking, type: string, nullable: true}
-        output:
-          - {name: week_in_jaar, type: boolean}
-        actions:
-          - output: week_in_jaar
-            value:
-              operation: EQUALS
-              subject:
-                operation: DATE_PART
-                date: $eerste_dag
-                in: year
-              value: $jaar
-  - number: '2'
-    text: Het bestuur verleent ambtshalve een vergunning.
-    machine_readable:
-      execution:
-        produces:
-          legal_character: BESCHIKKING
-          decision_type: TOEKENNING
-        output:
-          - {name: vergunning_verleend, type: boolean}
-        actions:
-          - {output: vergunning_verleend, value: true}
   - number: '3'
     text: De plaats van een school is bepalend.
     machine_readable:
@@ -96,27 +48,10 @@ articles:
           - {name: plaats_bekend, type: boolean}
         actions:
           - {output: plaats_bekend, value: true}
-  - number: '4'
-    text: Het bestuur besluit op aanvraag.
-    machine_readable:
-      execution:
-        produces:
-          - type: AANVRAAG
-            requests: wet_vaststelling_fictief#4
-            parameters: [dagen]
-          - type: BESLUIT_VAN_ALGEMENE_STREKKING
-            outputs: [toegestaan]
-        parameters:
-          - {name: dagen, type: number}
-        output:
-          - {name: toegestaan, type: boolean}
-        actions:
-          - {output: toegestaan, value: true}
 "#;
 
 fn service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
-    service.load_law(GENERAL_LAW).unwrap();
     service.load_law(SPECIAL_LAW).unwrap();
     service
 }
@@ -152,142 +87,8 @@ fn cell() -> (Cell, tempfile::TempDir) {
     (Cell::in_memory(ACTOR, dir.path()).unwrap(), dir)
 }
 
-fn week() -> Map<String, Value> {
-    map(json!({ "jaar": 2026, "eerste_dag": "2026-10-19" }))
-}
-
 fn refused(e: &Error, says: &str) {
     assert!(matches!(e, Error::Refused(m) if m.contains(says)), "{e}");
-}
-
-#[test]
-fn a_decision_ex_officio_refers_to_no_submission() {
-    let (mut cell, _dir) = cell();
-    let gram = cell
-        .decide_ex_officio(&mut service(), LAW, "1", &week(), day("2026-08-01"))
-        .unwrap();
-    assert_eq!(gram.kind, "BESLUIT_VAN_ALGEMENE_STREKKING");
-    assert_eq!(gram.grondslag, "wet_vaststelling_fictief#1");
-    assert_eq!(gram.refers_to, None);
-    assert_eq!(gram.stream, None);
-    assert_eq!(gram.recording_actor, ACTOR);
-    assert_eq!(gram.recorded_on, day("2026-08-01"));
-    // The parameters are its fields; a nullable one left out is null.
-    assert_eq!(gram.fields["jaar"], json!(2026));
-    assert_eq!(gram.fields["opmerking"], Value::Null);
-    assert_eq!(gram.fields.len(), 3);
-    assert_eq!(gram.outputs["week_in_jaar"], json!(true));
-    assert_eq!(cell.grams(), [gram]);
-}
-
-#[test]
-fn a_decision_ex_officio_is_what_its_article_gives() {
-    let (mut cell, _dir) = cell();
-    let mut late = week();
-    late.insert("eerste_dag".into(), json!("2027-01-04"));
-    let gram = cell
-        .decide_ex_officio(&mut service(), LAW, "1", &late, day("2026-08-01"))
-        .unwrap();
-    assert_eq!(gram.outputs["week_in_jaar"], json!(false));
-}
-
-#[test]
-fn a_decision_ex_officio_is_whole_or_not_recorded() {
-    let (mut cell, _dir) = cell();
-    let mut service = service();
-    let on = day("2026-08-01");
-
-    let mut unknown = week();
-    unknown.insert("laatste_dag".into(), json!("2026-10-23"));
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &unknown, on)
-        .unwrap_err();
-    refused(&e, "holds no 'laatste_dag'");
-
-    let mut wrong = week();
-    wrong.insert("jaar".into(), json!("2026"));
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &wrong, on)
-        .unwrap_err();
-    refused(&e, "does not fit a non-nullable Number");
-
-    let mut left_out = week();
-    left_out.remove("eerste_dag");
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &left_out, on)
-        .unwrap_err();
-    refused(&e, "needs 'eerste_dag', which is left out");
-
-    let mut null = week();
-    null.insert("eerste_dag".into(), Value::Null);
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &null, on)
-        .unwrap_err();
-    refused(&e, "does not fit");
-
-    let mut decimal = week();
-    decimal.insert("opmerking".into(), json!({"__decimal": "1"}));
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &decimal, on)
-        .unwrap_err();
-    refused(&e, "keeps for a decimal");
-
-    assert!(cell.grams().is_empty());
-}
-
-#[test]
-fn the_cell_takes_ex_officio_only_a_decision_without_submission_or_procedure() {
-    let (mut cell, _dir) = cell();
-    let mut service = service();
-    let on = day("2026-08-01");
-    let none = Map::new();
-
-    // Article 3 takes no decision.
-    let plaats = map(json!({ "plaats": "Utrecht" }));
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "3", &plaats, on)
-        .unwrap_err();
-    refused(&e, "takes no decision");
-
-    // Article 4 decides on an application: that decision is taken on it.
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "4", &map(json!({"dagen": 2})), on)
-        .unwrap_err();
-    refused(
-        &e,
-        "is asked for by the submission of wet_vaststelling_fictief#4",
-    );
-
-    // Article 2 is a beschikking, which follows a procedure.
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "2", &none, on)
-        .unwrap_err();
-    refused(&e, "follows a procedure");
-
-    // An article that is not there on the day.
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &week(), day("2025-12-31"))
-        .unwrap_err();
-    refused(&e, "has no version in force on 2025-12-31");
-
-    assert!(cell.grams().is_empty());
-}
-
-#[test]
-fn a_decision_ex_officio_holds_no_decision() {
-    let law = SPECIAL_LAW.replace(
-        "          - {name: opmerking, type: string, nullable: true}\n",
-        "          - {name: opmerking, type: string, nullable: true}\n          - {name: \
-         eerder, type: decision, nullable: true}\n",
-    );
-    assert_ne!(law, SPECIAL_LAW);
-    let mut service = LawExecutionService::new();
-    service.load_law(&law).unwrap();
-    let (mut cell, _dir) = cell();
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &week(), day("2026-08-01"))
-        .unwrap_err();
-    refused(&e, "'eerder' of wet_vaststelling_fictief#1 is a decision");
 }
 
 fn stand(plaats: &str, sinds: &str) -> Map<String, Value> {
@@ -528,11 +329,19 @@ articles:
         - {id: x, type: boolean, decided_per_case_by: het bevoegd gezag}
       execution:
         produces:
-          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING
-          decision_type: ANDERE_HANDELING
+          - type: AANVRAAG
+            requests: wet_kring_fictief#1
+            parameters: [dagen]
+            outputs: [ontvangen]
+          - type: BESCHIKKING
+            outputs: [uit]
+        parameters:
+          - {name: dagen, type: number}
         output:
+          - {name: ontvangen, type: boolean}
           - {name: uit, type: boolean}
         actions:
+          - {output: ontvangen, value: true}
           - {output: uit, value: $x}
 "#;
     let reduction = r#"
@@ -563,36 +372,30 @@ articles:
     std::fs::write(here.join("2026-01-01.yaml"), reduction).unwrap();
     let mut cell = Cell::in_memory(ACTOR, dir.path()).unwrap();
     let mut service = LawExecutionService::new();
+    service.load_law(PROCEDURE_LAW).unwrap();
     service.load_law(law).unwrap();
-    let e = cell
-        .decide_ex_officio(
+    let on = day("2026-08-01");
+    let app = cell
+        .record_submission(
             &mut service,
             "wet_kring_fictief",
             "1",
+            None,
+            &map(json!({ "dagen": 2 })),
+            on,
+        )
+        .unwrap();
+    let e = cell
+        .decide(
+            &mut service,
+            "wet_kring_fictief",
+            "1",
+            &app.id,
             &Map::new(),
-            day("2026-08-01"),
+            &Map::new(),
+            on,
         )
         .unwrap_err();
     assert!(e.to_string().contains("asks its own answer"), "{e}");
-    assert!(cell.grams().is_empty());
-}
-
-#[test]
-fn a_decision_whose_procedure_cannot_be_found_is_an_error() {
-    let law = SPECIAL_LAW.replace(
-        "          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING\n          decision_type: ANDERE_HANDELING\n",
-        "          legal_character: BESLUIT_VAN_ALGEMENE_STREKKING\n          decision_type: ANDERE_HANDELING\n          procedure_id: nergens\n",
-    );
-    assert_ne!(law, SPECIAL_LAW);
-    let mut service = LawExecutionService::new();
-    service.load_law(&law).unwrap();
-    let (mut cell, _dir) = cell();
-    let e = cell
-        .decide_ex_officio(&mut service, LAW, "1", &week(), day("2026-08-01"))
-        .unwrap_err();
-    assert!(
-        matches!(&e, Error::Engine(m) if m.to_string().contains("'nergens'")),
-        "{e}"
-    );
-    assert!(cell.grams().is_empty());
+    assert_eq!(cell.grams(), [app]);
 }

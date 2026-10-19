@@ -20,7 +20,7 @@ const props = defineProps({
   besluit: { type: String, default: null },
 });
 
-/** Een rij uit de kroniek (met haar `id`) als het chronolexogram: `ambtshalve besluit 8f958fef`. */
+/** Een rij uit de kroniek (met haar `id`) als het chronolexogram: `executogram 8f958fef`. */
 const rij = (v) => {
   const g = spel.grammen.find((x) => x.id === v.id);
   return `${g ? rol(g).toLowerCase() : 'chronolexogram'} ${kort(v.id)}`;
@@ -28,8 +28,8 @@ const rij = (v) => {
 
 /**
  * Een uitvoer van de reductie: een lijst ids als besluiten, een rij uit de
- * kroniek (zoals het vakantierooster of de vestiging) als dat
- * chronolexogram, de rest als ja/nee of waarde.
+ * kroniek (zoals de vestiging) als dat chronolexogram, de rest als ja/nee of
+ * waarde.
  */
 const toonWaarde = (v) => {
   if (Array.isArray(v)) return v.length ? v.map((id) => `besluit ${kort(id)}`).join(', ') : 'geen';

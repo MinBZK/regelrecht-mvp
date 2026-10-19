@@ -18,8 +18,8 @@ use crate::error::{refused, setup, Result};
 use regelrecht_law_model::stored;
 
 /// A chronolexogram (`Gram` for short): one recorded application or
-/// objection, the decision on one, a decision taken ex officio, or an
-/// executogram (RFC-051), as the law or the cell's stream describes it.
+/// objection, the decision on one, or an executogram (RFC-051), as the law
+/// or the cell's stream describes it.
 ///
 /// The chronolexogram does not repeat the law. Its establishing article and the
 /// day it was recorded name the law version in force; the provisions each field
@@ -45,8 +45,7 @@ pub struct Gram {
     pub stream: Option<String>,
     /// The chronolexogram it refers to: for a decision, the application or
     /// objection it is taken on (RFC-047, RFC-050); for an objection, the
-    /// decision it contests. Absent for a decision taken ex officio and for
-    /// an executogram (RFC-051).
+    /// decision it contests. Absent for an executogram (RFC-051).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refers_to: Option<String>,
     /// The cell that recorded it (RFC-022 `recording_actor`).

@@ -8,7 +8,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { genomenBij, genummerd, toon, uitslag } from '../logboek.js';
-import { herroepen, kort, leesbaar, rol, spel, vanDeCel } from '../spel.js';
+import { herroepen, kort, leesbaar, rol, spel } from '../spel.js';
 import HoeBeantwoord from './HoeBeantwoord.vue';
 import KetenStap from './KetenStap.vue';
 
@@ -153,7 +153,7 @@ async function uitleg(knoop) {
                 :text="naam(handeling.gram.refers_to)"
                 @click.prevent="gekozen = handeling.gram.refers_to"
               ></nldd-link>
-              <template v-else-if="vanDeCel(handeling.gram)">geen; de cel legde dit uit zichzelf vast.</template>
+              <template v-else-if="handeling.gram.kind === 'EXECUTOGRAM'">geen; de cel legde dit uit zichzelf vast.</template>
               <template v-else>geen; dit is het begin van een dossier.</template>
             </nldd-text>
             <nldd-text v-if="bij" size="sm">
@@ -221,11 +221,6 @@ async function uitleg(knoop) {
             de dag vanaf wanneer het geldt (een executogram, RFC-051). Een reductie van de cel
             leest het terug, zoals de vestiging van een school waaruit de regeling de regio
             afleidt.
-          </nldd-text>
-          <nldd-text v-else-if="vanDeCel(handeling.gram)" size="sm" color="secondary">
-            Een besluit dat de cel ambtshalve nam, op geen aanvraag, zoals het vakantierooster van
-            een school. Een uitleg zoals bij een besluit op een aanvraag geeft de cel hier niet; wat
-            het besluit vaststelde, staat in de kroniek.
           </nldd-text>
           <nldd-text v-else size="sm" color="secondary">
             Geen besluit. De cel legde vast wat de aanvrager indiende. Wat het artikel daarbij

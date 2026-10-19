@@ -56,18 +56,16 @@ pub struct Casus {
 }
 
 /// What the cell records before the first scenario, on `datum`: facts of
-/// its streams (executograms, RFC-051) and decisions it takes ex officio,
-/// such as where a school is established and the holidays it fixes. The
-/// law asks for these, but no step of the process records them, so the
-/// case file gives them. The cell checks them as any other step.
+/// its streams (executograms, RFC-051), such as where a school is
+/// established. The law asks for these, but no step of the process records
+/// them, so the case file gives them. The cell checks them as any other
+/// step.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Begin {
     pub datum: NaiveDate,
     #[serde(default)]
     pub executogrammen: Vec<BeginExecutogram>,
-    #[serde(default)]
-    pub ambtshalve: Vec<BeginAmbtshalve>,
 }
 
 /// An executogram of the stream `stroom` with the values `velden`.
@@ -75,15 +73,6 @@ pub struct Begin {
 #[serde(deny_unknown_fields)]
 pub struct BeginExecutogram {
     pub stroom: String,
-    pub velden: Map<String, Value>,
-}
-
-/// A decision of `artikel` (`<law>#<article>`) taken ex officio, with the
-/// article's parameters in `velden`.
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct BeginAmbtshalve {
-    pub artikel: String,
     pub velden: Map<String, Value>,
 }
 

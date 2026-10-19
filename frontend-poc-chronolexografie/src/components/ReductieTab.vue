@@ -3,7 +3,7 @@
 // terugleest om een open begrip te beantwoorden. Bovenaan wat de cel zo
 // beantwoordt (Cell::answers); dan elke reductie als geschreven, met per
 // invoer de rijen die zij uit de kroniek krijgt: de besluiten onder een
-// artikel (zoals dat van de casus, Awb 7:11 of een vakantierooster) of de
+// artikel (zoals dat van de casus of Awb 7:11) of de
 // executogrammen van een stroom (zoals de vestiging van een school). Wat zij
 // bij een besluit antwoordde en waarom, staat bij dat besluit (tabblad
 // Bestuursorgaan).

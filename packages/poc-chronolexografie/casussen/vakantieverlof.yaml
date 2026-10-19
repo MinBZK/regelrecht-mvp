@@ -18,8 +18,8 @@ omschrijving: >-
   (Leerplichtwet 1969 artikel 13a). Het hoofd beslist, en de school leest
   haar eigen besluiten terug om te weten of de jongere dit schooljaar al
   verlof kreeg. Of het verlof buiten de schoolvakanties valt, leest zij uit
-  de regeling en uit wat zij zelf vastlegde: haar vestiging en haar
-  vakantierooster.
+  de regeling, uit haar eigen vakantierooster en uit wat zij zelf vastlegde:
+  haar vestiging.
 cel_naam: OBS De Klimop
 speeldatum: 2026-10-14
 
@@ -50,10 +50,10 @@ voorbeeld:
 # schoolvakanties leidt de regio af uit de plaats van vestiging (art. 2): de
 # vestiging is een executogram van de stroom vestiging
 # (corpus/cells/obs_de_klimop/executogrammen/vestiging.yaml). De herfst- en
-# voorjaarsvakantie stelt de school ambtshalve vast onder haar fictieve
-# beleid. Met deze twee beantwoordt de cel verlof_valt_buiten_schoolvakanties
-# zelf; 1 tot en met 5 februari en 10 tot en met 14 mei 2027 vallen buiten de
-# vakanties van regio midden.
+# voorjaarsvakantie staan in het fictieve beleid van de school
+# (fictief_beleid_vakantierooster_obs_de_klimop). Zo beantwoordt de cel
+# verlof_valt_buiten_schoolvakanties zelf; 1 tot en met 5 februari en 10 tot
+# en met 14 mei 2027 vallen buiten de vakanties van regio midden.
 begin:
   datum: 2026-08-01
   executogrammen:
@@ -62,14 +62,6 @@ begin:
         gemeente: Utrecht
         provincie: Utrecht
         sinds: '2020-08-01'
-  ambtshalve:
-    - artikel: fictief_beleid_vakantierooster_obs_de_klimop#1
-      velden:
-        eerste_jaar_schooljaar: 2026
-        herfstvakantie_eerste_dag: '2026-10-17'
-        herfstvakantie_laatste_dag: '2026-10-25'
-        voorjaarsvakantie_eerste_dag: '2027-02-20'
-        voorjaarsvakantie_laatste_dag: '2027-02-28'
 
 scenarios:
   - naam: Aanvraag wordt verleend
@@ -103,8 +95,8 @@ scenarios:
         beroep nu anders. Klik op Beslissen op bezwaar.
     eind: >-
       Gegrond: het besluit is herroepen. Er is een nieuw besluit, en dat
-      verleent het verlof. In de Kroniek staan zeven chronolexogrammen: de
-      twee die de school vooraf vastlegde en vijf uit dit scenario.
+      verleent het verlof. In de Kroniek staan zes chronolexogrammen: de
+      vestiging die de school vooraf vastlegde en vijf uit dit scenario.
   - naam: 'Afwijzing, bezwaar en heroverweging: ongegrond'
     stappen:
       - >-
@@ -199,9 +191,9 @@ scenarios:
       schoolvakanties: bij het besluit staat "verlof valt buiten
       schoolvakanties: nee", ingevuld door de cel. Onder "Hoe de cel dit
       beantwoordde" staat dat haar reductie de regio Midden en de kerstvakantie
-      van 19 december 2026 tot en met 3 januari 2027 uit de regeling las. De
+      van 19 december 2026 tot en met 3 januari 2027 uit de regeling las, en
+      de herfst- en voorjaarsvakantie uit het beleid van de school. De
       regio volgt uit de plaats van vestiging, Utrecht, die de cel binnen die
       reductie zelf beantwoordde; klik daar nog eens op "Hoe de cel dit
       beantwoordde" voor haar vestiging. In het Logboek staat het besluit met
-      dezelfde keten, en onderaan het executogram van de vestiging en het
-      ambtshalve besluit met het vakantierooster.
+      dezelfde keten, en onderaan het executogram van de vestiging.

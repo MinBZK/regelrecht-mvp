@@ -35,8 +35,8 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
         Eén kroniek, van de cel van de uitvoerder. Elke stap in het proces legt er één
         chronolexogram in vast (een beslissing op bezwaar die herroept, legt er twee vast); er wordt
         nooit iets in gewijzigd of uit verwijderd.<template v-if="spel.casus?.begin"> Bovenaan
-        staat wat de cel vóór het eerste scenario vastlegde, zoals de vestiging en het
-        vakantierooster van een school (RFC-051).</template>
+        staat wat de cel vóór het eerste scenario vastlegde, zoals de vestiging van een school
+        (RFC-051).</template>
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog

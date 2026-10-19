@@ -118,7 +118,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_starts_from_the_school() {
         .await
         .1
     };
-    // The school's vestiging and its rooster, and the application.
+    // The school's vestiging, and the application.
     let soorten = |k: Value| -> Vec<String> {
         k["grammen"]
             .as_array()
@@ -129,7 +129,7 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_starts_from_the_school() {
     };
     assert_eq!(
         soorten(kroniek(app.clone()).await),
-        ["EXECUTOGRAM", "BESLUIT_VAN_ALGEMENE_STREKKING", "AANVRAAG"]
+        ["EXECUTOGRAM", "AANVRAAG"]
     );
     // The log has the application on top; it is no decision.
     let (status, logboek) = send(
@@ -141,13 +141,13 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_starts_from_the_school() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let handelingen = logboek["handelingen"].as_array().unwrap();
-    assert_eq!(handelingen.len(), 3);
+    assert_eq!(handelingen.len(), 2);
     assert_eq!(handelingen[0]["gram"]["kind"], json!("AANVRAAG"));
     assert!(handelingen[0]["waarom"].is_null());
     // A reset starts from what the school recorded before the scenarios.
     let (status, terug) = send(&app, post("/chronolexografie/api/reset", json!({}))).await;
     assert_eq!(status, StatusCode::OK);
-    let vooraf = ["EXECUTOGRAM", "BESLUIT_VAN_ALGEMENE_STREKKING"];
+    let vooraf = ["EXECUTOGRAM"];
     assert_eq!(soorten(terug), vooraf);
     assert_eq!(soorten(kroniek(app.clone()).await), vooraf);
 }

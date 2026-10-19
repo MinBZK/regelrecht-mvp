@@ -6,8 +6,7 @@
 //! (`corpus/cells/<cell>/reducties/<id>/<valid_from>.yaml`) and only the cell
 //! loads it. It asks for the decisions taken under an article with
 //! `source: {decisions: <regulation>#<article>}`; the cell answers that input
-//! with one row per decision in its chronicle ([`rows`]), whether taken on a
-//! submission or ex officio. It asks for the executograms of a stream of
+//! with one row per decision in its chronicle ([`rows`]). It asks for the executograms of a stream of
 //! the cell with `source: {executograms: <stream>}` (schema v0.8.6,
 //! RFC-051), one row per executogram ([`executogram_rows`]). For the logic
 //! it calls law or policy like any rulework (`source.regulation`); where
@@ -185,13 +184,12 @@ impl Reduction {
 }
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
-/// whose legal character is `kind`, as rows ([`rows_of`]): those taken on a
-/// submission and those taken ex officio (RFC-051) alike.
+/// whose legal character is `kind`, as rows ([`rows_of`]).
 pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     rows_of(
         grams
             .iter()
-            .filter(|g| g.kind == kind && g.grondslag == grondslag),
+            .filter(|g| g.refers_to.is_some() && g.kind == kind && g.grondslag == grondslag),
     )
 }
 
@@ -385,8 +383,7 @@ pub fn load<'a>(
     Ok(loaded)
 }
 
-/// The legal character of the decision of article `reference` on `day`: of
-/// a decision taken on a submission and of one taken ex officio alike.
+/// The legal character of the decision of article `reference` on `day`.
 pub fn decision_kind(
     service: &LawExecutionService,
     reference: &str,

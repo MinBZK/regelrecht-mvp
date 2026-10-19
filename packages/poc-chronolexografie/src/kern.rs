@@ -74,24 +74,16 @@ impl Corpus {
     /// The case's cell, with the reductions in its directory and a
     /// chronicle that holds what the cell knew before the first scenario
     /// (the case's `begin`), recorded through the cell as any step: an
-    /// executogram per fact (`Cell::record_executogram`) and a decision per
-    /// fixing ex officio (`Cell::decide_ex_officio`). For vakantieverlof
-    /// that is where the school is established and its herfst- and
-    /// voorjaarsvakantie, so the cell answers whether leave falls outside
+    /// executogram per fact (`Cell::record_executogram`). For vakantieverlof
+    /// that is where the school is established; with the school's own
+    /// holidays in its policy, the cell answers whether leave falls outside
     /// the school holidays and the head is not asked.
     pub fn cell(&self) -> Result<Cell> {
         let mut cell = Cell::in_memory(&self.casus.cel, &self.cell_dir)?;
         if let Some(begin) = &self.casus.begin {
-            let mut service = self.service()?;
+            let service = self.service()?;
             for e in &begin.executogrammen {
                 cell.record_executogram(&service, &e.stroom, &e.velden, begin.datum)?;
-            }
-            for a in &begin.ambtshalve {
-                let (law_id, article) = a
-                    .artikel
-                    .split_once('#')
-                    .ok_or_else(|| Error::Setup(format!("'{}' names no article", a.artikel)))?;
-                cell.decide_ex_officio(&mut service, law_id, article, &a.velden, begin.datum)?;
             }
         }
         Ok(cell)
@@ -1194,9 +1186,9 @@ mod tests {
             .map(|b| (b["naam"].as_str().unwrap(), b["eerder"].clone()))
             .collect();
         assert_eq!(gevraagd, [("specifieke_aard_beroep_ouder", json!(false))]);
-        // The school's vestiging and rooster, the application, the refusal
-        // and the objection.
-        assert_eq!(cell.grams().len(), 5);
+        // The school's vestiging, the application, the refusal and the
+        // objection.
+        assert_eq!(cell.grams().len(), 4);
 
         // The head finds the profession anew: gegrond, and a new decision.
         let beslist = beslissen_op_bezwaar(
@@ -1283,25 +1275,23 @@ mod tests {
             rijen(lid_2, "besluiten_onder", "algemene_wet_bestuursrecht#7:11"),
             1
         );
-        // The vestiging is read from its stream, the rooster from the
-        // decision the school took ex officio.
+        // The vestiging is read from its stream. The holidays come from the
+        // regeling and the school's policy, not from the chronicle.
         assert_eq!(
             rijen("reductie_plaats_van_vestiging", "stroom", "vestiging"),
             1
         );
-        assert_eq!(
-            rijen(
-                "reductie_verlof_valt_buiten_schoolvakanties",
-                "besluiten_onder",
-                "fictief_beleid_vakantierooster_obs_de_klimop#1"
-            ),
-            1
+        assert!(
+            reductie("reductie_verlof_valt_buiten_schoolvakanties")["invoer"]
+                .as_array()
+                .unwrap()
+                .is_empty()
         );
         assert!(reductie(lid_2)["yaml"]
             .as_str()
             .unwrap()
             .contains("REDUCTIE"));
-        assert_eq!(cell.grams().len(), 7);
+        assert_eq!(cell.grams().len(), 6);
     }
 
     #[test]
@@ -1766,15 +1756,11 @@ mod tests {
         assert_eq!(stap["waarde"], json!(false));
         assert_eq!(stap["ingevuld_door"]["answer"]["answerer"], json!(SCHOOL));
         assert_eq!(stap["keer"], json!(0));
-        // The school's own grams open the log, oldest last: an executogram
-        // and a decision ex officio, neither with a chain.
+        // The school's own executogram is the oldest in the log, without a
+        // chain.
         let n = log.as_array().unwrap().len();
         assert_eq!(log[n - 1]["gram"]["kind"], json!("EXECUTOGRAM"));
-        assert_eq!(
-            log[n - 2]["gram"]["grondslag"],
-            json!(format!("{ROOSTER}#1"))
-        );
-        assert!(log[n - 1]["waarom"].is_null() && log[n - 2]["waarom"].is_null());
+        assert!(log[n - 1]["waarom"].is_null());
 
         // How the school answered: its reduction read the kerstvakantie of
         // the regeling for region midden, and in it the cell answered where
@@ -1886,7 +1872,7 @@ mod tests {
         // Vakantieverlof: the leave article, the policy that fills its open
         // term, the Awb with its hooks, the policy the reduction for lid 2
         // reads, and what the reductions on the holidays read: the
-        // regeling and the school's rooster. The Wet op het primair
+        // regeling and the school's policy on its rooster. The Wet op het primair
         // onderwijs is only the regeling's legal basis.
         let verlof = corpus();
         let a = &verlof.afleiding;

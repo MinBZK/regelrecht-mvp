@@ -15,7 +15,7 @@ const scenarios = computed(() => spel.casus.scenarios);
 // Hoeveel chronolexogrammen de cel vooraf vastlegt (RFC-051).
 const vooraf = computed(() => {
   const b = spel.casus.begin;
-  return b ? (b.executogrammen?.length ?? 0) + (b.ambtshalve?.length ?? 0) : 0;
+  return b?.executogrammen?.length ?? 0;
 });
 const eerste = computed(() =>
   // Een datum zonder tijd is middernacht UTC; in UTC tonen, anders wordt
@@ -42,8 +42,9 @@ async function begin() {
     <nldd-title slot="header" size="3" text="Scenario's">
       <nldd-text slot="supporting-text">
         Zo speel je het proces na. Elk scenario begint op {{ eerste }}<template v-if="vooraf">
-          met de kroniek van de cel zoals zij vooraf is vastgelegd: {{ vooraf }}
-          chronolexogrammen, zie het tabblad Kroniek</template><template v-else> met een lege
+          met de kroniek van de cel zoals zij vooraf is vastgelegd:
+          {{ vooraf === 1 ? 'één chronolexogram' : `${vooraf} chronolexogrammen` }}, zie het tabblad
+          Kroniek</template><template v-else> met een lege
           kroniek</template>. De speeldatum staat bovenaan en loopt alleen vooruit.
       </nldd-text>
     </nldd-title>

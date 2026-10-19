@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { artikelNaam, genomenBij, genummerd, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
-import { rol, spel, vanDeCel } from '../src/spel.js';
+import { rol, spel } from '../src/spel.js';
 
 // De casus zoals GET /api/casus haar geeft, voor zover het logboek haar leest.
 beforeEach(() => {
@@ -141,24 +141,9 @@ describe('uitslag', () => {
 
 describe('wat de cel uit zichzelf vastlegde', () => {
   const vestiging = { kind: 'EXECUTOGRAM', grondslag: 'regeling_vaststelling_schoolvakanties_20252030#2', stream: 'vestiging', outputs: {} };
-  const rooster = {
-    kind: 'BESLUIT_VAN_ALGEMENE_STREKKING',
-    grondslag: 'fictief_beleid_vakantierooster_obs_de_klimop#1',
-    outputs: { rooster_volgens_beleid: true },
-  };
   it('noemt de vestiging een executogram, vastgelegd', () => {
     expect(rol(vestiging)).toBe('Executogram');
     expect(uitslag(vestiging)).toEqual({ tekst: 'vastgelegd', kleur: 'neutral' });
-  });
-  it('noemt het vakantierooster een ambtshalve besluit, vastgesteld', () => {
-    expect(vanDeCel(rooster)).toBe(true);
-    expect(rol(rooster)).toBe('Ambtshalve besluit');
-    expect(uitslag(rooster)).toEqual({ tekst: 'vastgesteld', kleur: 'neutral' });
-  });
-  it('rekent een aanvraag en een bezwaar niet tot wat de cel vastlegde', () => {
-    expect(vanDeCel({ kind: 'AANVRAAG' })).toBe(false);
-    expect(vanDeCel({ kind: 'BEZWAAR', refers_to: 'x' })).toBe(false);
-    expect(vanDeCel({ kind: 'BESCHIKKING', refers_to: 'x' })).toBe(false);
   });
 });
 

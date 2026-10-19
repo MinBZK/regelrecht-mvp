@@ -39,7 +39,7 @@ A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). Th
 
 `decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
-**Recording without a submission** ([RFC-051](/rfcs/rfc-051)): `Cell::decide_ex_officio` takes the decision of an article that no submission asks for, such as the school fixing its holidays. `Cell::record_executogram` records a fact of a stream the cell keeps, such as where the school is established. Neither refers to anything, and both record nothing when a value is missing or malformed.
+**Recording without a submission** ([RFC-051](/rfcs/rfc-051)): `Cell::record_executogram` records a fact of a stream the cell keeps, such as where the school is established. It refers to nothing, and records nothing when a value is missing or malformed.
 
 **Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew. On revocation 7:11 gives the new decision, and the cell records that in the same append.
 
@@ -297,7 +297,7 @@ Art. 11, onder f, exempts a child whose parent, by the specific nature of their 
 
 - The Regeling vaststelling schoolvakanties 2025–2030 fixes the Christmas and May holidays of every school (art. 5) and the summer holiday per region (art. 6). The region follows from the place of establishment (art. 2), divided by province and municipality (art. 3). The regeling does not say where a school is, so art. 2 declares that as open terms.
 - The school has been established in Utrecht since 1 August 2020. That is an executogram in its chronicle, of the stream `vestiging` in `corpus/cells/obs_de_klimop/executogrammen/vestiging.yaml`. A move is a new executogram, and the region changes from its day.
-- The bevoegd gezag fixes the autumn and spring holidays per school year, under the school's fictitious policy. The cell records that fixing as a decision taken ex officio, without `refers_to`.
+- The autumn and spring holidays are a rule of the school, set out per school year in its fictitious policy, much as a school guide would. Each school year gets a version from 1 August; the one in the corpus holds 2026–2027.
 
 ```json
 {
@@ -310,11 +310,11 @@ Art. 11, onder f, exempts a child whose parent, by the specific nature of their 
 }
 ```
 
-`reductie_plaats_van_vestiging` reads that stream (`source: {executograms: vestiging}`) and fills the open terms of art. 2 with the establishment in force on the leave days. It picks that one with `combine: ONLY`, which refuses two, so leave during which the school moves fails the decision. Art. 2 names no day; the cell passes on the leave days of art. 13a. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, reads the school's fixing (`source: {decisions: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
+`reductie_plaats_van_vestiging` reads that stream (`source: {executograms: vestiging}`) and fills the open terms of art. 2 with the establishment in force on the leave days. It picks that one with `combine: ONLY`, which refuses two, so leave during which the school moves fails the decision. Art. 2 names no day; the cell passes on the leave days of art. 13a. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, asks the school's policy for its own holidays (`source: {regulation: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
 
 - Leave from 21 to 23 December 2026 is refused. The trace of the decision shows the term as one node, answered by obs_de_klimop, and `Cell::explain_answer` shows the Christmas holiday the reduction read.
 - From 12 to 16 July 2027 a school in regio Noord is on summer holiday and one in regio Zuid is not.
-- When the cell does not know a holiday, because the regeling fixes none for the year or the school fixed none, it is silent, and the head judges as before.
+- When the cell does not know a holiday, because the regeling fixes none for the year or the school's policy in force does not hold that school year, it is silent, and the head judges as before.
 
 Not modeled: art. 7 and 8 of the regeling (the school's extension of the summer by up to two days, the Wadden islands, the exemption by the minister) and a school with establishments in several regions.
 

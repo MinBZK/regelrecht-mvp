@@ -4,8 +4,9 @@
 //! vaststelling schoolvakanties 2025–2030 fixes the kerst-, mei- and
 //! zomervakantie, the last per region; the region follows from where the
 //! school is established, an executogram in its own chronicle; the herfst-
-//! and voorjaarsvakantie the school fixes itself, ex officio. The cell of
-//! OBS De Klimop answers the open term with its reduction.
+//! and voorjaarsvakantie are a rule of the school, in its own policy, one
+//! version per school year. The cell of OBS De Klimop answers the open term
+//! with its reduction.
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
@@ -30,6 +31,11 @@ const HOLIDAYS: &str = "reductie_verlof_valt_buiten_schoolvakanties";
 /// The Leerplichtwet, the Awb, the regeling and the school's policies from
 /// the corpus.
 fn service() -> LawExecutionService {
+    service_with(&[])
+}
+
+/// [`service`], with the versions `extra` loaded as well.
+fn service_with(extra: &[String]) -> LawExecutionService {
     let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
     for law in [
@@ -49,7 +55,39 @@ fn service() -> LawExecutionService {
             }
         }
     }
+    for yaml in extra {
+        service.load_law(yaml).unwrap();
+    }
     service
+}
+
+/// A fictional next version of the school's policy, for the school year
+/// 2027–2028, from 1 August 2027.
+fn rooster_2027() -> String {
+    let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
+    let current = std::fs::read_to_string(
+        regulation.join(format!("uitvoeringsbeleid/{ROOSTER}/2026-08-01.yaml")),
+    )
+    .unwrap();
+    let next = [
+        (
+            "publication_date: '2026-07-01'",
+            "publication_date: '2027-07-01'",
+        ),
+        ("valid_from: '2026-08-01'", "valid_from: '2027-08-01'"),
+        ("value: 2026\n", "value: 2027\n"),
+        ("'2026-10-17'", "'2027-10-16'"),
+        ("'2026-10-25'", "'2027-10-24'"),
+        ("'2027-02-20'", "'2028-02-19'"),
+        ("'2027-02-28'", "'2028-02-27'"),
+    ]
+    .iter()
+    .fold(current.clone(), |yaml, (from, to)| {
+        assert!(yaml.contains(from), "{from}");
+        yaml.replace(from, to)
+    });
+    assert_ne!(next, current);
+    next
 }
 
 fn day(s: &str) -> NaiveDate {
@@ -76,26 +114,11 @@ fn established(cell: &mut Cell, gemeente: &str, provincie: &str, sinds: &str, on
         .unwrap()
 }
 
-/// The school fixes its herfst- and voorjaarsvakantie of 2026–2027, ex
-/// officio.
-fn fix_holidays(cell: &mut Cell, on: &str) -> Gram {
-    let rooster = map(json!({
-        "eerste_jaar_schooljaar": 2026,
-        "herfstvakantie_eerste_dag": "2026-10-17",
-        "herfstvakantie_laatste_dag": "2026-10-25",
-        "voorjaarsvakantie_eerste_dag": "2027-02-20",
-        "voorjaarsvakantie_laatste_dag": "2027-02-28",
-    }));
-    cell.decide_ex_officio(&mut service(), ROOSTER, "1", &rooster, day(on))
-        .unwrap()
-}
-
-/// The school, established in `gemeente` since 2020, with its holidays of
-/// 2026–2027 fixed on 1 August 2026.
+/// The school, established in `gemeente` since 2020, recorded on 1 August
+/// 2026.
 fn school_in(gemeente: &str, provincie: &str) -> Cell {
     let mut cell = school();
     established(&mut cell, gemeente, provincie, "2020-08-01", "2026-08-01");
-    fix_holidays(&mut cell, "2026-08-01");
     cell
 }
 
@@ -223,7 +246,7 @@ fn the_summer_holiday_follows_the_region_of_the_school() {
 }
 
 #[test]
-fn the_herfstvakantie_the_school_fixed_itself_counts() {
+fn the_herfstvakantie_of_the_school_policy_counts() {
     let mut cell = school_in("Utrecht", "Utrecht");
     let app = applied(&mut cell, "2026-10-19", "2026-10-23", "2026-09-21");
     let gram = decide(&mut cell, &app.id, "2026-10-01").unwrap();
@@ -304,14 +327,13 @@ fn leave_during_which_the_school_moves_is_refused_loudly() {
 }
 
 #[test]
-fn without_holidays_the_school_knows_the_head_judges() {
-    // A school that recorded where it is but fixed no holidays: the cell
-    // does not know the herfst- and voorjaarsvakantie and is silent, so the
-    // head judges as without the reduction.
-    let mut cell = school();
-    established(&mut cell, "Utrecht", "Utrecht", "2020-08-01", "2026-08-01");
-    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let e = decide(&mut cell, &app.id, "2026-10-20").unwrap_err();
+fn a_school_year_the_policy_does_not_know_leaves_it_to_the_head() {
+    // The policy in force knows the herfst- and voorjaarsvakantie of
+    // 2026–2027 only. For leave in 2027–2028 the cell does not know them and
+    // is silent, so the head judges as without the reduction.
+    let mut cell = school_in("Utrecht", "Utrecht");
+    let app = applied(&mut cell, "2028-02-07", "2028-02-11", "2027-07-01");
+    let e = decide(&mut cell, &app.id, "2027-07-05").unwrap_err();
     asks_the_head(&e);
     let findings = map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: false }));
     let gram = cell
@@ -322,7 +344,7 @@ fn without_holidays_the_school_knows_the_head_judges() {
             &app.id,
             &Map::new(),
             &findings,
-            day("2026-10-20"),
+            day("2027-07-05"),
         )
         .unwrap()
         .remove(0);
@@ -332,33 +354,8 @@ fn without_holidays_the_school_knows_the_head_judges() {
 }
 
 #[test]
-fn a_rooster_against_the_policy_does_not_count() {
-    // A herfstvakantie that ends before it begins is no rooster of the
-    // policy; recorded all the same, it does not count for the school.
-    let mut cell = school();
-    established(&mut cell, "Utrecht", "Utrecht", "2020-08-01", "2026-08-01");
-    let rooster = map(json!({
-        "eerste_jaar_schooljaar": 2026,
-        "herfstvakantie_eerste_dag": "2026-10-25",
-        "herfstvakantie_laatste_dag": "2026-10-17",
-        "voorjaarsvakantie_eerste_dag": "2027-02-20",
-        "voorjaarsvakantie_laatste_dag": "2027-02-28",
-    }));
-    let gram = cell
-        .decide_ex_officio(&mut service(), ROOSTER, "1", &rooster, day("2026-08-01"))
-        .unwrap();
-    assert_eq!(gram.kind, "BESLUIT_VAN_ALGEMENE_STREKKING");
-    assert_eq!(gram.refers_to, None);
-    assert_eq!(gram.outputs["rooster_volgens_beleid"], json!(false));
-    let app = applied(&mut cell, "2026-10-19", "2026-10-23", "2026-09-21");
-    let e = decide(&mut cell, &app.id, "2026-10-01").unwrap_err();
-    asks_the_head(&e);
-}
-
-#[test]
 fn a_school_without_a_vestiging_has_no_region_and_the_head_judges() {
     let mut cell = school();
-    fix_holidays(&mut cell, "2026-08-01");
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     let e = decide(&mut cell, &app.id, "2026-10-20").unwrap_err();
     asks_the_head(&e);
@@ -383,7 +380,7 @@ fn two_vestigingen_from_the_same_day_are_refused() {
 }
 
 #[test]
-fn the_voorjaarsvakantie_the_school_fixed_itself_counts() {
+fn the_voorjaarsvakantie_of_the_school_policy_counts() {
     let mut cell = school_in("Utrecht", "Utrecht");
     let app = applied(&mut cell, "2027-02-22", "2027-02-26", "2026-11-02");
     let gram = decide(&mut cell, &app.id, "2026-11-09").unwrap();
@@ -395,26 +392,25 @@ fn the_voorjaarsvakantie_the_school_fixed_itself_counts() {
 fn the_summer_of_the_school_year_before_runs_into_the_next() {
     // 30 August to 3 September 2027 falls in schooljaar 2027–2028, and in
     // regio Zuid still in the summer of 2027 (until 5 September). In regio
-    // Noord that summer ended on 22 August.
-    let rooster_2027 = map(json!({
-        "eerste_jaar_schooljaar": 2027,
-        "herfstvakantie_eerste_dag": "2027-10-16",
-        "herfstvakantie_laatste_dag": "2027-10-24",
-        "voorjaarsvakantie_eerste_dag": "2028-02-19",
-        "voorjaarsvakantie_laatste_dag": "2028-02-27",
-    }));
+    // Noord that summer ended on 22 August. Decided in August 2027, the
+    // school's policy for 2027–2028 is in force.
+    let next = [rooster_2027()];
     let outside = |gemeente: &str, provincie: &str| {
         let mut cell = school_in(gemeente, provincie);
-        cell.decide_ex_officio(
-            &mut service(),
-            ROOSTER,
-            "1",
-            &rooster_2027,
-            day("2027-06-01"),
-        )
-        .unwrap();
         let app = applied(&mut cell, "2027-08-30", "2027-09-03", "2027-08-02");
-        let gram = decide(&mut cell, &app.id, "2027-08-06").unwrap();
+        let findings = map(json!({ PROFESSION: true }));
+        let gram = cell
+            .decide(
+                &mut service_with(&next),
+                LAW,
+                ARTICLE,
+                &app.id,
+                &Map::new(),
+                &findings,
+                day("2027-08-06"),
+            )
+            .unwrap()
+            .remove(0);
         gram.fields[OUTSIDE_HOLIDAYS].clone()
     };
     assert_eq!(outside("Maastricht", "Limburg"), json!(false));
@@ -422,17 +418,26 @@ fn the_summer_of_the_school_year_before_runs_into_the_next() {
 }
 
 #[test]
-fn a_second_rooster_for_the_same_school_year_fails_every_decision_in_it() {
-    // Replacing a fixing is not modeled (RFC-051): two roosters for one
-    // school year are two, and the reduction refuses to pick one.
+fn the_next_version_of_the_policy_holds_the_herfstvakantie_of_its_year() {
+    // In force from 1 August 2027, the policy for 2027–2028 puts the
+    // herfstvakantie on 16 to 24 October 2027.
+    let next = [rooster_2027()];
     let mut cell = school_in("Utrecht", "Utrecht");
-    fix_holidays(&mut cell, "2026-09-01");
-    let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    let e = decide(&mut cell, &app.id, "2026-10-20").unwrap_err();
-    assert!(
-        matches!(&e, Error::Engine(m) if m.to_string().contains("ONLY")),
-        "{e}"
-    );
+    let app = applied(&mut cell, "2027-10-18", "2027-10-22", "2027-09-01");
+    let findings = map(json!({ PROFESSION: true }));
+    let gram = cell
+        .decide(
+            &mut service_with(&next),
+            LAW,
+            ARTICLE,
+            &app.id,
+            &Map::new(),
+            &findings,
+            day("2027-09-06"),
+        )
+        .unwrap()
+        .remove(0);
+    assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
 }
 
 #[test]
@@ -451,5 +456,5 @@ fn a_sandbox_keeps_the_streams_and_answers_as_the_cell() {
         "2026-11-10",
         "2026-11-10",
     );
-    assert_eq!(cell.grams().len(), 3);
+    assert_eq!(cell.grams().len(), 2);
 }

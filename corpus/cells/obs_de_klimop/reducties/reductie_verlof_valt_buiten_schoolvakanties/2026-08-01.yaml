@@ -14,8 +14,8 @@ valid_from: '2026-08-01'
 # Wet op het primair onderwijs), de zomervakantie per regio; de regio volgt
 # uit de plaats van vestiging, die de cel uit haar executogrammen geeft
 # (reductie_plaats_van_vestiging). De herfst- en voorjaarsvakantie stelt het
-# bevoegd gezag zelf vast (fictief_beleid_vakantierooster_obs_de_klimop); de
-# cel legt die vaststelling ambtshalve vast in haar kroniek.
+# bevoegd gezag zelf vast, als regel van de school in zijn beleid
+# (fictief_beleid_vakantierooster_obs_de_klimop).
 # Niet gemodelleerd: de verlenging van de zomervakantie door het bevoegd
 # gezag (artikel 7, eerste lid, van de regeling), de afwijkingen in artikel 7,
 # tweede tot en met zesde lid, de ontheffing van artikel 8, en vrije dagen die
@@ -35,8 +35,8 @@ articles:
       gevraagde verlof valt buiten de schoolvakanties als geen dag ervan valt
       in de kerst-, mei- of zomervakantie die de Regeling vaststelling
       schoolvakanties 2025–2030 voor de regio van de school vaststelt, of in
-      de herfst- of voorjaarsvakantie die het bevoegd gezag voor het
-      schooljaar van de eerste verlofdag vaststelde.
+      de herfst- of voorjaarsvakantie die het beleid van het bevoegd gezag
+      vaststelt voor het schooljaar van de eerste verlofdag.
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel11
     machine_readable:
       implements:
@@ -53,12 +53,6 @@ articles:
             type: date
             description: Laatste dag van het gevraagde verlof.
         input:
-          # De vaststellingen van het vakantierooster door het bevoegd gezag,
-          # één rij per besluit, ambtshalve genomen (RFC-051).
-          - name: roosters
-            type: array
-            source:
-              decisions: fictief_beleid_vakantierooster_obs_de_klimop#1
           # Het schooljaar van het gevraagde verlof is dat van de eerste
           # verlofdag (eigen keuze, zoals bij artikel 13a, tweede lid).
           - name: eerste_jaar_schooljaar
@@ -165,13 +159,43 @@ articles:
                 jaar: $eerste_jaar_schooljaar
                 regio: $regio
             description: Artikel 6.
-        output:
-          - name: rooster
-            type: object
+          - name: herfstvakantie_eerste_dag
+            type: date
             nullable: true
-            description: >-
-              Het vakantierooster dat het bevoegd gezag volgens zijn beleid
-              voor het schooljaar van de eerste verlofdag vaststelde.
+            source:
+              regulation: fictief_beleid_vakantierooster_obs_de_klimop
+              output: herfstvakantie_eerste_dag
+              parameters:
+                eerste_jaar_schooljaar: $eerste_jaar_schooljaar
+            description: De herfstvakantie van het schooljaar, uit het beleid van de school.
+          - name: herfstvakantie_laatste_dag
+            type: date
+            nullable: true
+            source:
+              regulation: fictief_beleid_vakantierooster_obs_de_klimop
+              output: herfstvakantie_laatste_dag
+              parameters:
+                eerste_jaar_schooljaar: $eerste_jaar_schooljaar
+            description: Uit het beleid van de school.
+          - name: voorjaarsvakantie_eerste_dag
+            type: date
+            nullable: true
+            source:
+              regulation: fictief_beleid_vakantierooster_obs_de_klimop
+              output: voorjaarsvakantie_eerste_dag
+              parameters:
+                eerste_jaar_schooljaar: $eerste_jaar_schooljaar
+            description: De voorjaarsvakantie van het schooljaar, uit het beleid van de school.
+          - name: voorjaarsvakantie_laatste_dag
+            type: date
+            nullable: true
+            source:
+              regulation: fictief_beleid_vakantierooster_obs_de_klimop
+              output: voorjaarsvakantie_laatste_dag
+              parameters:
+                eerste_jaar_schooljaar: $eerste_jaar_schooljaar
+            description: Uit het beleid van de school.
+        output:
           - name: verlof_valt_buiten_schoolvakanties
             type: boolean
             nullable: true
@@ -179,30 +203,11 @@ articles:
               Of het gevraagde verlof buiten de schoolvakanties valt; afwezig
               als de cel een vakantie van het schooljaar niet kent.
         actions:
-          # Eén rooster per schooljaar. Zonder rooster is er geen (null): dan
-          # kent de cel de eigen vakanties van de school niet.
-          # Twee roosters voor één schooljaar weigert ONLY; een rooster dat
-          # een eerder vervangt, is niet gemodelleerd.
-          - output: rooster
-            value:
-              operation: FOREACH
-              collection: $roosters
-              as: r
-              filter:
-                operation: AND
-                conditions:
-                  - operation: EQUALS
-                    subject: $r.eerste_jaar_schooljaar
-                    value: $eerste_jaar_schooljaar
-                  - operation: EQUALS
-                    subject: $r.rooster_volgens_beleid
-                    value: true
-              body: $r
-              combine: ONLY
           # Een vakantie raakt het verlof als zij begint op of vóór de
           # laatste verlofdag en eindigt op of na de eerste. Weet de cel een
           # periode niet (de regeling stelt er geen vast voor deze regio of
-          # dit jaar, of de school heeft geen rooster), dan zwijgt zij
+          # dit jaar, of het beleid van de school kent het schooljaar
+          # niet), dan zwijgt zij
           # (null): het hoofd oordeelt dan, zoals zonder reductie (RFC-048).
           - output: verlof_valt_buiten_schoolvakanties
             value:
@@ -254,7 +259,22 @@ articles:
                       - operation: NOT
                         value:
                           operation: EQUALS
-                          subject: $rooster
+                          subject: $herfstvakantie_eerste_dag
+                          value: null
+                      - operation: NOT
+                        value:
+                          operation: EQUALS
+                          subject: $herfstvakantie_laatste_dag
+                          value: null
+                      - operation: NOT
+                        value:
+                          operation: EQUALS
+                          subject: $voorjaarsvakantie_eerste_dag
+                          value: null
+                      - operation: NOT
+                        value:
+                          operation: EQUALS
+                          subject: $voorjaarsvakantie_laatste_dag
                           value: null
                   then:
                     operation: NOT
@@ -329,13 +349,13 @@ articles:
                                 to: $zomervakantie_laatste_dag
                                 in: days
                               value: 0
-                        # Herfstvakantie (vastgesteld door de school).
+                        # Herfstvakantie (beleid van de school).
                         - operation: AND
                           conditions:
                             - operation: GREATER_THAN_OR_EQUAL
                               subject:
                                 operation: DATE_DIFF
-                                from: $rooster.herfstvakantie_eerste_dag
+                                from: $herfstvakantie_eerste_dag
                                 to: $laatste_verlofdag
                                 in: days
                               value: 0
@@ -343,16 +363,16 @@ articles:
                               subject:
                                 operation: DATE_DIFF
                                 from: $eerste_verlofdag
-                                to: $rooster.herfstvakantie_laatste_dag
+                                to: $herfstvakantie_laatste_dag
                                 in: days
                               value: 0
-                        # Voorjaarsvakantie (vastgesteld door de school).
+                        # Voorjaarsvakantie (beleid van de school).
                         - operation: AND
                           conditions:
                             - operation: GREATER_THAN_OR_EQUAL
                               subject:
                                 operation: DATE_DIFF
-                                from: $rooster.voorjaarsvakantie_eerste_dag
+                                from: $voorjaarsvakantie_eerste_dag
                                 to: $laatste_verlofdag
                                 in: days
                               value: 0
@@ -360,6 +380,6 @@ articles:
                               subject:
                                 operation: DATE_DIFF
                                 from: $eerste_verlofdag
-                                to: $rooster.voorjaarsvakantie_laatste_dag
+                                to: $voorjaarsvakantie_laatste_dag
                                 in: days
                               value: 0
