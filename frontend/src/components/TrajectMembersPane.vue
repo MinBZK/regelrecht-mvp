@@ -166,9 +166,9 @@ async function confirmRemoveInvite() {
             </nldd-icon-button>
           </nldd-cell>
         </nldd-list-item>
-        <div v-if="rowError.get(m.account_id)" class="members-row-error">
-          {{ rowError.get(m.account_id) }}
-        </div>
+        <nldd-container v-if="rowError.get(m.account_id)" padding-top="8">
+          <nldd-text size="sm" color="critical">{{ rowError.get(m.account_id) }}</nldd-text>
+        </nldd-container>
       </template>
       <!-- Pending invites live in the same list so a long roster stays filterable
            instead of scrolling them out of view in a separate section below. -->
@@ -193,9 +193,9 @@ async function confirmRemoveInvite() {
             ></nldd-button>
           </nldd-cell>
         </nldd-list-item>
-        <div v-if="rowError.get(inv.email)" class="members-row-error">
-          {{ rowError.get(inv.email) }}
-        </div>
+        <nldd-container v-if="rowError.get(inv.email)" padding-top="8">
+          <nldd-text size="sm" color="critical">{{ rowError.get(inv.email) }}</nldd-text>
+        </nldd-container>
       </template>
     </nldd-list>
     </template>
@@ -219,10 +219,5 @@ async function confirmRemoveInvite() {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-.members-row-error {
-  color: var(--nldd-color-text-error, #c62828);
-  font-size: 13px;
-  margin-top: 8px;
 }
 </style>
