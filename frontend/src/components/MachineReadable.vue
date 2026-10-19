@@ -83,6 +83,8 @@ const props = withDefaults(defineProps<{
    *  belongs to, so a name in the reading leads to the rule computing it. */
   law?: Record<string, unknown> | null;
   lawId?: string | null;
+  /** Output → fragments of the article text that linking notes tie to it. */
+  links?: Map<string, unknown[]>;
 }>(), {
   article: null,
   editable: false,
@@ -99,6 +101,7 @@ const props = withDefaults(defineProps<{
   createHref: undefined,
   law: null,
   lawId: null,
+  links: () => new Map(),
 });
 
 const { displayName: lawDisplayName } = useCorpusLaws(toRef(props, 'trajectRef'));
@@ -417,6 +420,7 @@ function addOutput() {
         :law-id="lawId"
         :traject-ref="trajectRef"
         :editable="editable"
+        :links="links"
         @open-action="(action, path) => emit('open-action', action, path)"
         @navigate="emit('navigate', $event)"
         @add-action="emit('add-action')"

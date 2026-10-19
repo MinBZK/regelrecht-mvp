@@ -27,6 +27,8 @@ import { apiFetch, apiFetchJson } from './lib/apiFetch';
 import { RETRY_MIN_SPINNER_MS } from './lib/retryFeedback';
 import { humanizeLawId } from './lib/lawName';
 import { quoteContext } from './lib/quoteContext';
+import { linkedOutput, linksByOutput } from './regelrijm/regelrijmLinks.js';
+import { humanize } from './utils/outputFormat';
 import { useLatest } from './lib/useLatest';
 import { useOpenTabs } from './composables/useOpenTabs';
 import { createTabRestore } from './composables/useTabRestore';
@@ -514,6 +516,32 @@ const editorAnnotations = computed(() => {
   });
   return out;
 });
+
+// RegelRijm (flag panel.regelrijm): per output, the fragments of the saved
+// article text that a linking note ties to that rule, for the Machine pane.
+// Same resolved notes as the highlights, so both show the same fragments.
+const regelrijmLinks = computed(() => {
+  if (!isEnabled('panel.regelrijm')) return new Map<string, unknown[]>();
+  return linksByOutput(notesForArticle.value, {
+    lawId: law.value?.$id ?? lawId.value,
+    text: selectedArticle.value?.text || '',
+  });
+});
+
+// The action a linking note points at in this article, for "Actie openen" in
+// the note popover; null for any other note or with the flag off.
+function linkedAction(note: Note): ExecutionAction | null {
+  if (!isEnabled('panel.regelrijm')) return null;
+  const output = linkedOutput(note, law.value?.$id ?? lawId.value);
+  return output ? (machineReadable.value?.execution?.actions?.find((a) => a?.output === output) ?? null) : null;
+}
+
+function openLinkedAction(note: Note) {
+  const action = linkedAction(note);
+  if (!action) return;
+  annotationPopEl.value?.hide?.();
+  handleOpenAction(action);
+}
 
 // NoteCreator (authoring popover) state, opened by the toolbar comment button
 // on the current editor selection.
@@ -3246,11 +3274,16 @@ async function handleActionSave() {
                     <template v-for="(note, i) in activeNotes" :key="i">
                       <nldd-spacer v-if="i > 0" size="16"></nldd-spacer>
                       <nldd-rich-text>
-                        <p>{{ noteText(note) || '-' }}</p>
+                        <p>{{ linkedAction(note) ? `Gekoppeld aan de rekenregel ${humanize(linkedAction(note).output)}` : (noteText(note) || '-') }}</p>
                       </nldd-rich-text>
                       <template v-if="noteAuthor(note)">
                         <nldd-spacer size="4"></nldd-spacer>
                         <nldd-identity :text="noteAuthor(note)"></nldd-identity>
+                      </template>
+                      <!-- RegelRijm: a linking note leads to its rule. -->
+                      <template v-if="linkedAction(note)">
+                        <nldd-spacer size="8"></nldd-spacer>
+                        <nldd-button size="sm" text="Actie openen" data-testid="note-open-linked-action" @click="openLinkedAction(note)"></nldd-button>
                       </template>
                     </template>
                     <nldd-spacer size="16"></nldd-spacer>
@@ -3280,6 +3313,7 @@ async function handleActionSave() {
                   :traject-ref="activeTrajectRef"
                   :law="law"
                   :law-id="lawId"
+                  :links="regelrijmLinks"
                   @open-action="handleOpenAction"
                   @navigate="handleRegelRijmNavigate"
                   @open-edit="activeEditItem = $event"

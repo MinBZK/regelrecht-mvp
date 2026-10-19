@@ -5,12 +5,15 @@
 // here at once. An operation word opens the action at that part; a name
 // another rule computes is a token that leads there, in this article, another
 // article or another regelwerk. Hovering or focusing a name says where it
-// comes from. Behind the feature flag `panel.regelrijm`.
+// comes from. Under a rule stand the fragments of the article text that a
+// linking note ties to it (regelrijmLinks.js). Behind the feature flag
+// `panel.regelrijm`.
 import { computed, reactive, ref, useId, watch } from 'vue';
 import { articleContext, formatLiteral, references, renderAction } from '@regelrecht/frontend-shared/regelrijm/index.js';
 import { fetchLaw } from '../composables/useLaw.js';
 import { humanize } from '../utils/outputFormat.js';
 import RowActionsMenu from '../components/RowActionsMenu.vue';
+import QuotedFragment from '../components/QuotedFragment.vue';
 import RegelRijmText from './RegelRijmText.vue';
 import { findOutput, followReference, isNavigable, originHint, resolveReference } from './regelrijmNav.js';
 
@@ -20,6 +23,8 @@ const props = defineProps({
   lawId: { type: String, default: null },
   trajectRef: { type: String, default: null },
   editable: { type: Boolean, default: false },
+  // Output → fragments of the article text linked to it (linksByOutput).
+  links: { type: Map, default: () => new Map() },
 });
 // open-action: (action, path?) - the path of the part to open the sheet at.
 const emit = defineEmits(['open-action', 'navigate', 'add-action', 'delete-action']);
@@ -173,6 +178,13 @@ function ruleId(key) {
             />
           </nldd-container>
         </nldd-box>
+        <template v-if="links.get(rule.output)?.length">
+          <nldd-spacer size="8"></nldd-spacer>
+          <div :data-testid="`regelrijm-pane-text-${rule.output}`">
+            <nldd-text size="sm" weight="medium" color="secondary">Uit de wettekst</nldd-text>
+            <QuotedFragment v-for="frag in links.get(rule.output)" :key="frag.start" :fragment="frag" />
+          </div>
+        </template>
         <nldd-spacer size="12"></nldd-spacer>
         <nldd-button-group orientation="horizontal">
           <nldd-button size="sm" text="Actie openen" :data-testid="`regelrijm-pane-open-${rule.output ?? rule.key}`" @click="emit('open-action', rule.action)"></nldd-button>

@@ -96,6 +96,15 @@ describe('RegelRijmPane', () => {
     expect(hint(wrapper, 'dubbel', '$hoogte')).toBe('hoogte: berekend in dit artikel');
   });
 
+  it('shows under a rule the fragments of the text linked to it, and nothing without links', async () => {
+    const links = new Map([['hoogte', [{ start: 4, quote: 'het verschil', before: 'bedraagt ', after: '.', ellipsisBefore: '…', ellipsisAfter: '' }]]]);
+    const wrapper = await pane({ links });
+    const text = wrapper.find('[data-testid="regelrijm-pane-text-hoogte"]');
+    expect(text.find('nldd-text').text()).toBe('Uit de wettekst');
+    expect(text.find('i').text()).toBe('het verschil');
+    expect(wrapper.find('[data-testid="regelrijm-pane-text-dubbel"]').exists()).toBe(false);
+  });
+
   it('reads a half-edited article rule by rule instead of failing as a whole', async () => {
     const article = structuredClone(ARTIKEL);
     article.machine_readable.execution.actions = [null, { output: 'k', value: { operation: 'IF', cases: 'foo', default: 1 } }, ...article.machine_readable.execution.actions];
