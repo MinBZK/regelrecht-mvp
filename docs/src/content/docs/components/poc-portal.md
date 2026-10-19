@@ -140,7 +140,7 @@ The image sets the port to `8000`, the base path to `/wetsgeschiedenis/`, the bu
 |----------|---------|---------|
 | `WG_PORT` | `8420` | Listening port |
 | `WG_BASE_PATH` | `/wetsgeschiedenis/` | Path prefix; must match the portal path |
-| `WG_STATIC_DIR` | `frontend-poc-wetsgeschiedenis/dist` | Built frontend |
+| `WG_STATIC_DIR` | `dist` under `frontend-poc-wetsgeschiedenis/` in the repository | Built frontend, made by `npm run build` |
 | `WG_VAST_DIR` | `corpus-poc/wetsgeschiedenis/gegevens` | The timelines the image ships with |
 | `WG_DATA` | `data` under `packages/poc-wetsgeschiedenis/` | Fetched papers and timelines |
 | `WG_MAX` | `40` | How many fetched files and acts are kept; the oldest goes first |
