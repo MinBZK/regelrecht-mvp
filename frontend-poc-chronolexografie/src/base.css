@@ -1,5 +1,5 @@
 /*
- * De enige eigen CSS: nldd-app-view vult zijn ouder, dus de ketting
+ * De enige eigen CSS: nldd-shell vult zijn ouder, dus de ketting
  * html → body → #app moet de hoogte van het venster doorgeven. Dezelfde
  * regel als in de andere pocs (frontend-poc-nieuwkomersbekostiging).
  */

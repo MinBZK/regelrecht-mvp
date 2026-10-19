@@ -82,10 +82,10 @@ const stappen = [
       </nldd-title>
       <nldd-list appearance="simple" no-dividers>
         <nldd-list-item v-for="(stap, i) in stappen" :key="stap.titel" size="md">
-          <nldd-timeline-track-cell
+          <nldd-step-cell
             status="past"
             :position="stappen.length === 1 ? 'only' : i === 0 ? 'first' : i === stappen.length - 1 ? 'last' : 'between'"
-          ></nldd-timeline-track-cell>
+          ></nldd-step-cell>
           <nldd-spacer-cell size="12"></nldd-spacer-cell>
           <nldd-text-cell :text="stap.titel" :supporting-text="stap.tekst"></nldd-text-cell>
         </nldd-list-item>

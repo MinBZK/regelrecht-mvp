@@ -9,7 +9,6 @@
 //
 // Regenerate: npm run nldd:imports
 import '@nldd/design-system/activity-indicator';
-import '@nldd/design-system/app-view';
 import '@nldd/design-system/avatar';
 import '@nldd/design-system/badge';
 import '@nldd/design-system/banner';
@@ -56,6 +55,7 @@ import '@nldd/design-system/rich-text';
 import '@nldd/design-system/search-field';
 import '@nldd/design-system/segmented-control';
 import '@nldd/design-system/sheet';
+import '@nldd/design-system/shell';
 import '@nldd/design-system/side-by-side-split-view';
 import '@nldd/design-system/simple-section';
 import '@nldd/design-system/spacer';

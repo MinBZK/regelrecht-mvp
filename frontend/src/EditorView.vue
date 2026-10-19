@@ -2669,7 +2669,7 @@ async function handleActionSave() {
               :background="view === 'scenario' ? 'base' : undefined"
             >
               <nldd-container slot="header" padding="8" padding-bottom="0">
-                <nldd-toolbar size="md" label="Paneelacties">
+                <nldd-toolbar size="md" accessible-label="Paneelacties">
                   <!-- Weergave-keuze (alle panes). Hoogste prioriteit zodat
                        deze als laatste naar het overflow-menu verhuist. -->
                   <nldd-toolbar-item slot="start" label="Weergave" :priority="4">

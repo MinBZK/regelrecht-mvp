@@ -28,7 +28,7 @@ function goBack() {
 </script>
 
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <nldd-page sticky-header>
       <nldd-top-title-bar
         slot="header"
@@ -59,5 +59,5 @@ function goBack() {
 
       <nldd-page-footer slot="footer"></nldd-page-footer>
     </nldd-page>
-  </nldd-app-view>
+  </nldd-shell>
 </template>

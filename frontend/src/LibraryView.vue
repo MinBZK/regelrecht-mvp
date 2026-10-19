@@ -2317,7 +2317,7 @@ watch(activeTrajectRef, () => {
               <nldd-simple-section width="full">
                 <nldd-title id="werkdoc-titel" size="3"><h3>Werkdocumenten</h3></nldd-title>
                 <nldd-spacer size="16"></nldd-spacer>
-                <nldd-toolbar label="Documentacties">
+                <nldd-toolbar accessible-label="Documentacties">
                   <nldd-toolbar-item slot="start">
                     <nldd-icon-button
                       icon="plus-small"
@@ -2361,7 +2361,7 @@ watch(activeTrajectRef, () => {
                      favourite button runs entirely off `selectedLawId` (route)
                      + `favorites`, never the loaded law, so waiting for
                      `selectedLaw` only hid the toolbar during the load. -->
-                <nldd-toolbar v-if="paneChromeVisible(selectedLawLoading)" label="Regelwerkacties">
+                <nldd-toolbar v-if="paneChromeVisible(selectedLawLoading)" accessible-label="Regelwerkacties">
                   <!-- priority: hoger blijft langer staan, lager verdwijnt als
                        eerste in het overflow-menu. -->
                   <nldd-toolbar-item slot="start" :priority="2">

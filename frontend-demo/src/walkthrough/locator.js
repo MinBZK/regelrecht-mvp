@@ -119,6 +119,20 @@ function read(el, key) {
   return key === 'href' ? sameOriginPath(raw) : norm(raw);
 }
 
+/**
+ * Properties the design system renamed. A take recorded before the rename
+ * names the element by the old property, which the element no longer has:
+ * nldd-toolbar's `label` became `accessibleLabel` in 0.8.100. Read the new
+ * one instead, only when the old one is absent, so an element that still
+ * carries the old property is judged by it.
+ */
+const RENAMED = { label: 'accessibleLabel' };
+
+function readRecorded(el, key) {
+  const have = read(el, key);
+  return have == null && RENAMED[key] ? read(el, RENAMED[key]) : have;
+}
+
 /** What identifies `el` within its own scope. */
 export function signature(el) {
   const sig = { tag: el.tagName.toLowerCase() };
@@ -189,7 +203,7 @@ function matches(el, sig, translate = null) {
     // Takes recorded before generated ids were left out still carry them.
     if (MADE_UP.has(k) && generatedId(v)) continue;
     if (k.startsWith('@data-') && passingData(k.slice(1), v)) continue;
-    if (!sameValue(el, k, read(el, k), v, sig.__masked, translate)) return false;
+    if (!sameValue(el, k, readRecorded(el, k), v, sig.__masked, translate)) return false;
   }
   return true;
 }

@@ -41,7 +41,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <nldd-page>
       <nldd-simple-section width="600px">
         <nldd-inline-dialog
@@ -54,5 +54,5 @@ onMounted(() => {
         </nldd-inline-dialog>
       </nldd-simple-section>
     </nldd-page>
-  </nldd-app-view>
+  </nldd-shell>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <nldd-page sticky-header>
       <!-- Sticky header: branding + playback/zoom/view controls -->
       <nldd-container slot="header" padding="8">
@@ -119,7 +119,7 @@
       :stage="selectedStage"
       @close="selectedStageId = null"
     />
-  </nldd-app-view>
+  </nldd-shell>
 </template>
 
 <script setup>

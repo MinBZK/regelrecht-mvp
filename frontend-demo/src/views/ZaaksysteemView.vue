@@ -372,7 +372,7 @@ function claimLawName(cl) {
 
             <nldd-list appearance="box-tinted" :accessible-label="t('zaak.events')">
               <nldd-list-item v-for="(ev, i) in selected.events" :key="i" size="sm">
-                <nldd-timeline-track-cell :status="i === selected.events.length - 1 ? 'future' : 'past'" :position="selected.events.length === 1 ? 'only' : i === 0 ? 'first' : i === selected.events.length - 1 ? 'last' : 'between'"></nldd-timeline-track-cell>
+                <nldd-step-cell :status="i === selected.events.length - 1 ? 'future' : 'past'" :position="selected.events.length === 1 ? 'only' : i === 0 ? 'first' : i === selected.events.length - 1 ? 'last' : 'between'"></nldd-step-cell>
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-text-cell size="sm" :text="eventText(ev)" :supporting-text="formatDateTime(ev.at)"></nldd-text-cell>
               </nldd-list-item>

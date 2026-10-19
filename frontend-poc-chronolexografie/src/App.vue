@@ -51,7 +51,7 @@ async function opnieuw() {
 </script>
 
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <nldd-page sticky-header>
       <nldd-container slot="header" padding="16" gap="12">
         <nldd-top-title-bar
@@ -126,5 +126,5 @@ async function opnieuw() {
         <LogboekTab v-else @kroniek="naarKroniek" />
       </template>
     </nldd-page>
-  </nldd-app-view>
+  </nldd-shell>
 </template>

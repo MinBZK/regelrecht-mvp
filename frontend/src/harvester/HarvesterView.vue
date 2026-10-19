@@ -61,7 +61,7 @@ function goToLibrary() {
 </script>
 
 <template>
-  <nldd-app-view>
+  <nldd-shell>
     <div class="harvesting-view">
       <nldd-container padding="8">
         <nldd-toolbar size="md">
@@ -151,5 +151,5 @@ function goToLibrary() {
       </nldd-page>
     </div>
     <NewHarvestJobSheet />
-  </nldd-app-view>
+  </nldd-shell>
 </template>
