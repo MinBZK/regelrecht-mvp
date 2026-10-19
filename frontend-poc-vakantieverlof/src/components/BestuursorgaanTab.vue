@@ -1,21 +1,24 @@
 <script setup>
-// De school: het hoofd beslist op aanvragen en bezwaren, en ziet bij elk
-// besluit waarom het zo uitviel (Waarom.vue). De bevindingen die het hoofd
-// per aanvraag geeft (artikel 11, onder f) komen uit de wet:
-// `decided_per_case_by` op de open begrippen van 13a (RFC-050), behalve wat
-// de school zelf uit haar kroniek beantwoordt (of de jongere dit schooljaar
-// al verlof kreeg). Bij een bezwaar komen ze uit het bestreden besluit: de
-// bevindingen die het gebruikte, met wat het hoofd toen vond.
+// Het bestuursorgaan (wie dat is, zegt de wet: het hoofd, het college)
+// beslist op aanvragen en bezwaren, en ziet bij elk besluit waarom het zo
+// uitviel (Waarom.vue). De bevindingen die het per aanvraag geeft, komen uit
+// de wet: `decided_per_case_by` op de open begrippen van het artikel
+// (RFC-050), behalve wat de cel zelf uit haar kroniek beantwoordt. Bij een
+// bezwaar komen ze uit het bestreden besluit: de bevindingen die het
+// gebruikte, met wat het bestuursorgaan toen vond. De voorbeeldwaarden van de
+// bevindingen komen uit de casus.
 import { computed, reactive } from 'vue';
 import { api } from '../api.js';
+import { artikelNaam } from '../logboek.js';
 import {
-  BESLUIT_13A,
   aanvragen,
+  besluitGrondslag,
   beslissingOp,
   besluitOp,
   alsJson,
   kort,
   leesbaar,
+  samenvatting,
   spel,
   stap,
 } from '../spel.js';
@@ -24,17 +27,23 @@ import Waarom from './Waarom.vue';
 import VeldInvoer from './VeldInvoer.vue';
 
 const oordelen = () => spel.vormen?.besluit.bevindingen ?? [];
-const standaard = () => Object.fromEntries(oordelen().map((o) => [o.naam, true]));
+const voorbeeld = (naam) => spel.casus.voorbeeld.bevindingen[naam] ?? true;
+const standaard = () => Object.fromEntries(oordelen().map((o) => [o.naam, voorbeeld(o.naam)]));
+
+const artikel = computed(() => {
+  const [wet, nummer] = besluitGrondslag().split('#');
+  return artikelNaam(wet, nummer);
+});
 
 const open = computed(() => aanvragen().filter((a) => !besluitOp(a.id)));
 const besluiten = computed(() =>
-  spel.grammen.filter((g) => g.grondslag === BESLUIT_13A && g.kind !== 'AANVRAAG'),
+  spel.grammen.filter((g) => g.grondslag === besluitGrondslag() && g.kind !== 'AANVRAAG'),
 );
 const openBezwaren = computed(() =>
   spel.grammen.filter((g) => g.kind === 'BEZWAAR' && !beslissingOp(g.id)),
 );
 
-// Per aanvraag de oordelen van het hoofd.
+// Per aanvraag de oordelen van het bestuursorgaan.
 const oordeel = reactive({});
 const oordeelVoor = (id) => (oordeel[id] ??= standaard());
 
@@ -52,9 +61,10 @@ async function waarom(b) {
 
 // Bij een bezwaar eerst de ontvankelijkheid, zoals Awb 7:11 die beslist
 // (op tijd volgens 6:9, en niet tegen een besluit op bezwaar). Alleen dan
-// heroverweegt het hoofd en vraagt de pagina bevindingen: een bevinding
-// zonder heroverweging weigert de cel. De vragen komen uit de bevindingen
-// van het bestreden besluit; 'Laat staan' houdt wat het hoofd toen vond.
+// heroverweegt het bestuursorgaan en vraagt de pagina bevindingen: een
+// bevinding zonder heroverweging weigert de cel. De vragen komen uit de
+// bevindingen van het bestreden besluit; 'Laat staan' houdt wat het toen
+// vond.
 const toetsen = reactive({});
 const opnieuw = reactive({});
 const beslissingen = reactive({});
@@ -95,16 +105,16 @@ const uitkomstOpBezwaar = (uit) =>
   <nldd-simple-section>
     <nldd-title slot="header" size="3" text="Open aanvragen">
       <nldd-text slot="supporting-text">
-        Het hoofd beslist. De aanvraag en het beleid van de school (de eerste lesdag) leveren
-        de rest. Of de jongere dit schooljaar al verlof kreeg, beantwoordt de school zelf uit
-        haar kroniek. De bevindingen hieronder geeft alleen het hoofd.
+        Het bestuursorgaan is hier {{ spel.casus.rol }} ({{ artikel }}). Het beslist met de
+        aanvraag, het beleid en de bevindingen hieronder. Wat de cel zelf uit haar
+        kroniek beantwoordt, vraagt deze pagina niet.
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog
       v-if="open.length === 0"
       icon="info"
       text="Geen open aanvragen"
-      supporting-text="Een ouder dient een aanvraag in onder het tabblad Ouder."
+      supporting-text="Een aanvraag dien je in onder het tabblad Aanvrager."
     ></nldd-inline-dialog>
     <nldd-container gap="16">
       <nldd-card v-for="a in open" :key="a.id">
@@ -112,13 +122,13 @@ const uitkomstOpBezwaar = (uit) =>
         <nldd-title
           size="5"
           :text="`Aanvraag ${kort(a.id)}`"
-          :supporting-text="`${a.fields.eerste_verlofdag} t/m ${a.fields.laatste_verlofdag} · BSN ${a.fields.bsn_jongere} · ontvangen ${a.recorded_on}`"
+          :supporting-text="samenvatting(a)"
         ></nldd-title>
         <nldd-container gap="12">
           <VeldInvoer
             v-for="o in oordelen()"
             :key="o.naam"
-            :model-value="oordeel[a.id]?.[o.naam] ?? true"
+            :model-value="oordeel[a.id]?.[o.naam] ?? voorbeeld(o.naam)"
             :veld="o"
             @update:model-value="oordeelVoor(a.id)[o.naam] = $event"
           />
@@ -134,9 +144,9 @@ const uitkomstOpBezwaar = (uit) =>
       <nldd-text slot="supporting-text">
         Beslissen op bezwaar (Awb 7:11). Eerst de ontvankelijkheid: een bezwaar dat te laat
         kwam, of tegen een besluit op bezwaar, wordt niet heroverwogen. Anders heroverweegt
-        het hoofd: artikel 13a wordt opnieuw toegepast op dezelfde aanvraag. Het hoofd kan een
-        bevinding opnieuw geven, bijvoorbeeld na een verklaring van de werkgever. Verschilt de
-        uitkomst, dan herroept de beslissing het besluit en komt er een nieuw besluit. Een
+        het bestuursorgaan: {{ artikel }} wordt opnieuw toegepast op dezelfde aanvraag. Het kan
+        een bevinding opnieuw geven, bijvoorbeeld na nieuwe stukken bij het bezwaar. Verschilt
+        de uitkomst, dan herroept de beslissing het besluit en komt er een nieuw besluit. Een
         besluit wordt maar één keer vervangen.
       </nldd-text>
     </nldd-title>
@@ -162,7 +172,7 @@ const uitkomstOpBezwaar = (uit) =>
             icon="warning"
             icon-color="warning"
             text="Niet-ontvankelijk"
-            :supporting-text="toetsen[bz.id].tijdig === false ? 'Het bezwaar kwam te laat (Awb 6:9). Er is geen heroverweging, dus het hoofd geeft geen bevindingen.' : 'Tegen dit besluit staat geen bezwaar open (Awb 7:1): het is genomen op bezwaar. Er is geen heroverweging.'"
+            :supporting-text="toetsen[bz.id].tijdig === false ? 'Het bezwaar kwam te laat (Awb 6:9). Er is geen heroverweging, dus het bestuursorgaan geeft geen bevindingen.' : 'Tegen dit besluit staat geen bezwaar open (Awb 7:1): het is genomen op bezwaar. Er is geen heroverweging.'"
           ></nldd-inline-dialog>
           <nldd-button appearance="primary" text="Beslissen op bezwaar" @click="beslisOpBezwaar(bz)"></nldd-button>
         </template>
@@ -171,7 +181,7 @@ const uitkomstOpBezwaar = (uit) =>
             icon="check-mark-circle"
             icon-color="success"
             text="Ontvankelijk"
-            supporting-text="Stap 2: het hoofd heroverweegt. Geef een bevinding opnieuw, of laat staan wat het hoofd in het bestreden besluit vond."
+            supporting-text="Stap 2: het bestuursorgaan heroverweegt. Geef een bevinding opnieuw, of laat staan wat het in het bestreden besluit vond."
           ></nldd-inline-dialog>
           <nldd-container gap="12">
             <nldd-form-field
@@ -220,7 +230,7 @@ const uitkomstOpBezwaar = (uit) =>
 
   <nldd-simple-section>
     <nldd-title slot="header" size="3" text="Besluiten">
-      <nldd-text slot="supporting-text">Elk besluit onder artikel 13a, met waarom het zo uitviel.</nldd-text>
+      <nldd-text slot="supporting-text">Elk besluit onder {{ artikel }}, met waarom het zo uitviel.</nldd-text>
     </nldd-title>
     <nldd-container gap="24">
       <nldd-container v-for="b in besluiten" :key="b.id" gap="8">

@@ -1,5 +1,20 @@
-import { describe, expect, it } from 'vitest';
-import { artikelNaam, genomenBij, genummerd, stapTekst, toon, uitslag } from '../src/logboek.js';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { artikelNaam, genomenBij, genummerd, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
+import { spel } from '../src/spel.js';
+
+// De casus zoals GET /api/casus haar geeft, voor zover het logboek haar leest.
+beforeEach(() => {
+  spel.casus = {
+    besluit: 'leerplichtwet_1969#13a',
+    beslissing_op_bezwaar: 'algemene_wet_bestuursrecht#7:11',
+    uitkomst: 'verlof_verleend',
+    regelwerken: [
+      { id: 'leerplichtwet_1969', naam: null },
+      { id: 'algemene_wet_bestuursrecht', naam: 'Algemene wet bestuursrecht' },
+      { id: 'fictief_beleid_met_naam', naam: 'Beleid van de gemeente' },
+    ],
+  };
+});
 
 // Ids verzonnen; de vormen zoals GET /api/logboek ze geeft (kern::Stap).
 const bezwaar = { id: '019a0000-0000-7000-8000-00000000bbbb', kind: 'BEZWAAR' };
@@ -73,9 +88,9 @@ describe('stapTekst', () => {
     });
   });
 
-  it('noemt een bevinding van het hoofd en een regeling', () => {
+  it('noemt een bevinding van het bestuursorgaan en een regeling', () => {
     const bevinding = { ...celAntwoord, naam: 'specifieke_aard_beroep_ouder', waarde: true, ingevuld_door: 'finding' };
-    expect(stapTekst(bevinding, grammen).toelichting).toBe('open begrip, bevinding van het hoofd');
+    expect(stapTekst(bevinding, grammen).toelichting).toBe('open begrip, bevinding van het bestuursorgaan');
     const regeling = {
       ...celAntwoord,
       ingevuld_door: { regulation: { law_id: 'leerplichtwet_1969', article: '1' } },
@@ -113,7 +128,10 @@ describe('stapTekst', () => {
 describe('uitslag', () => {
   it('leest de uitslag af aan de uitvoer van het chronolexogram', () => {
     expect(uitslag({ kind: 'AANVRAAG', outputs: {} }).tekst).toBe('ontvangen');
-    expect(uitslag({ kind: 'BESCHIKKING', grondslag: 'leerplichtwet_1969#13a', outputs: { verlof_verleend: false } })).toEqual({ tekst: 'geweigerd', kleur: 'critical' });
+    expect(uitslag({ kind: 'BESCHIKKING', grondslag: 'leerplichtwet_1969#13a', outputs: { verlof_verleend: false } })).toEqual({ tekst: 'afgewezen', kleur: 'critical' });
+    // De uitvoer die toewijst, noemt de casus.
+    spel.casus.uitkomst = 'gehandicaptenparkeerkaart_verstrekt';
+    expect(uitslag({ kind: 'BESCHIKKING', outputs: { gehandicaptenparkeerkaart_verstrekt: true } }).tekst).toBe('toegewezen');
     const op = (o) => uitslag({ kind: 'BESCHIKKING', grondslag: 'algemene_wet_bestuursrecht#7:11', outputs: o }).tekst;
     expect(op({ bezwaar_ontvankelijk: false })).toBe('niet-ontvankelijk');
     expect(op({ bezwaar_ontvankelijk: true, bestreden_besluit_herroepen: true })).toBe('gegrond');
@@ -135,6 +153,8 @@ describe('toon en artikelNaam', () => {
     expect(toon(true)).toBe('ja');
     expect(toon({ grondslag: 'leerplichtwet_1969#13a', fields: {} })).toBe('een besluit onder leerplichtwet_1969#13a');
     expect(toon({ __decimal: '1.50' })).toBe('1.50');
-    expect(artikelNaam('fictief_beleid', '2')).toBe('fictief beleid artikel 2');
+    expect(artikelNaam('fictief_beleid', '2')).toBe('Fictief beleid artikel 2');
+    expect(wetNaam('fictief_beleid_met_naam')).toBe('Beleid van de gemeente');
+    expect(wetNaam('besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw')).toBe('BABW');
   });
 });

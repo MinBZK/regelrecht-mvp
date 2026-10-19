@@ -1,21 +1,22 @@
 /**
- * De stand van het spel: de kroniek van de cel, wat de wet vraagt en de
- * speeldatum. Eén speeldatum voor alle stappen, omdat de kroniek één klok
+ * De stand van het spel: de gekozen casus, de kroniek van haar cel, wat de
+ * wet vraagt en de speeldatum. Eén speeldatum voor alle stappen, omdat de kroniek één klok
  * heeft die alleen vooruit loopt: een stap op een eerdere dag dan de vorige
  * weigert de cel.
  *
  * Wat in welke stap zit (aanvraag, besluit, bezwaar, beslissing op bezwaar)
  * leest dit bestand uit de kroniek af aan `kind`, `grondslag` en `refers_to`,
- * zoals de cel ze vastlegt (RFC-046, RFC-047, RFC-050).
+ * zoals de cel ze vastlegt (RFC-046, RFC-047, RFC-050). Onder welk artikel
+ * het besluit valt en onder welk de beslissing op bezwaar, zegt de casus
+ * (GET /api/casus); de backend leidt het af uit de wet.
  */
 import { reactive } from 'vue';
-import { api } from './api.js';
-
-export const BESLUIT_13A = 'leerplichtwet_1969#13a';
-export const BESLISSING_OP_BEZWAAR = 'algemene_wet_bestuursrecht#7:11';
+import { api, speelt } from './api.js';
 
 export const spel = reactive({
-  datum: '2026-10-14',
+  // De gekozen casus, zoals GET /api/casus haar geeft; null op het keuzescherm.
+  casus: null,
+  datum: '',
   grammen: [],
   vormen: null,
   fout: '',
@@ -23,8 +24,88 @@ export const spel = reactive({
   inKroniek: null,
 });
 
+/** Het artikel waaronder de casus op een aanvraag besluit, `<wet>#<artikel>`. */
+export const besluitGrondslag = () => spel.casus?.besluit;
+
+/** Het artikel van de beslissing op bezwaar (Awb 7:11). */
+export const bezwaarGrondslag = () => spel.casus?.beslissing_op_bezwaar;
+
+/** Of een besluit het gevraagde toewijst, volgens de uitvoer die de casus noemt. */
+export const toegewezen = (g) => g?.outputs?.[spel.casus?.uitkomst];
+
+// Of dit tabblad de casus koos. De keuze en de kroniek zijn van alle
+// bezoekers samen; een nieuw tabblad begint daarom op het keuzescherm, en een
+// herladen tabblad gaat verder waar het was. Zonder sessionStorage begint elk
+// laden op het keuzescherm.
+const SLEUTEL = 'poc-casus';
+const onthoud = (id) => {
+  try {
+    if (id) sessionStorage.setItem(SLEUTEL, id);
+    else sessionStorage.removeItem(SLEUTEL);
+  } catch {
+    // Geen opslag: dan niets onthouden.
+  }
+};
+const onthouden = () => {
+  try {
+    return sessionStorage.getItem(SLEUTEL);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Bij het openen: ga verder met de casus die dit tabblad koos, als de server
+ * die nog speelt. Anders blijft het keuzescherm staan.
+ */
+export async function hervatten() {
+  try {
+    const { gekozen } = await api.casussen();
+    if (gekozen && gekozen === onthouden()) {
+      // Met X-Casus: koos iemand intussen een andere casus, dan weigert de
+      // server dit verzoek (409) in plaats van die casus te openen.
+      speelt(gekozen);
+      await openen(await api.casus());
+    }
+  } catch (e) {
+    speelt(null);
+    spel.fout = e.message;
+  }
+}
+
+/** Kies een casus: de server begint haar cel met een lege kroniek. */
+export async function kiezen(id) {
+  spel.fout = '';
+  try {
+    await openen(await api.kies(id));
+    onthoud(id);
+    return true;
+  } catch (e) {
+    spel.fout = e.message;
+    return false;
+  }
+}
+
+async function openen(casus) {
+  spel.vormen = null;
+  spel.grammen = [];
+  spel.casus = casus;
+  speelt(casus.id);
+  spel.datum = casus.speeldatum;
+  await verversen();
+}
+
+/** Terug naar het keuzescherm; de server speelt de casus door tot een nieuwe keuze. */
+export function naarKeuze() {
+  onthoud(null);
+  speelt(null);
+  spel.casus = null;
+  spel.fout = '';
+}
+
 /** Haal de kroniek en de vormen op, voor de speeldatum. */
 export async function verversen() {
+  if (!spel.casus) return;
   try {
     const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(spel.datum)]);
     spel.grammen = kroniek.grammen;
@@ -55,15 +136,15 @@ export const verwijstNaar = (id) => spel.grammen.filter((g) => g.refers_to === i
 
 export const aanvragen = () => spel.grammen.filter((g) => g.kind === 'AANVRAAG');
 
-/** Het besluit onder 13a op een aanvraag of een bezwaar, als het er is. */
+/** Het besluit op een aanvraag of een bezwaar, als het er is. */
 export const besluitOp = (id) =>
-  verwijstNaar(id).find((g) => g.grondslag === BESLUIT_13A && g.kind !== 'BEZWAAR');
+  verwijstNaar(id).find((g) => g.grondslag === besluitGrondslag() && g.kind !== 'BEZWAAR');
 
 export const bezwarenTegen = (id) => verwijstNaar(id).filter((g) => g.kind === 'BEZWAAR');
 
 /** De beslissing op een bezwaar (Awb 7:11), als die er is. */
 export const beslissingOp = (bezwaar) =>
-  verwijstNaar(bezwaar).find((g) => g.grondslag === BESLISSING_OP_BEZWAAR);
+  verwijstNaar(bezwaar).find((g) => g.grondslag === bezwaarGrondslag());
 
 export const herroepen = (besluit) =>
   bezwarenTegen(besluit.id).some(
@@ -74,7 +155,7 @@ export const herroepen = (besluit) =>
 export function rol(g) {
   if (g.kind === 'AANVRAAG') return 'Aanvraag';
   if (g.kind === 'BEZWAAR') return 'Bezwaar';
-  if (g.grondslag === BESLISSING_OP_BEZWAAR) return 'Beslissing op bezwaar';
+  if (g.grondslag === bezwaarGrondslag()) return 'Beslissing op bezwaar';
   const op = spel.grammen.find((x) => x.id === g.refers_to);
   return op?.kind === 'BEZWAAR' ? 'Nieuw besluit' : 'Besluit';
 }
@@ -102,11 +183,11 @@ export function dossier(aanvraag) {
   return stappen;
 }
 
-/** Het besluit onder 13a dat nu voor een aanvraag geldt. */
+/** Het besluit dat nu voor een aanvraag geldt. */
 export function geldendBesluit(aanvraag) {
   const besluiten = dossier(aanvraag)
     .map((s) => s.gram)
-    .filter((g) => g.grondslag === BESLUIT_13A && g.refers_to);
+    .filter((g) => g.grondslag === besluitGrondslag() && g.refers_to);
   return besluiten.filter((b) => !herroepen(b)).at(-1) ?? null;
 }
 
@@ -114,6 +195,20 @@ export function geldendBesluit(aanvraag) {
 export const leesbaar = (naam) => String(naam).replaceAll('_', ' ');
 
 export const kort = (id) => String(id).slice(-8);
+
+/**
+ * Een aanvraag in één regel: de gegevens die het artikel van de casus zelf
+ * vraagt (niet die van de Awb), en de dag van ontvangst.
+ */
+export function samenvatting(aanvraag) {
+  const eigen = (spel.vormen?.aanvraag.velden ?? []).filter(
+    (v) => v.grondslag === besluitGrondslag() && v.naam in (aanvraag.fields ?? {}),
+  );
+  const delen = eigen.map((v) => `${leesbaar(v.naam)}: ${toonVeld(aanvraag.fields[v.naam])}`);
+  return [...delen, `ontvangen ${aanvraag.recorded_on}`].join(' · ');
+}
+
+const toonVeld = (v) => (v === true ? 'ja' : v === false ? 'nee' : String(v));
 
 /** Een besluit (geen aanvraag of bezwaar): het verwijst naar waarop het is genomen. */
 export const isBesluit = (g) => g.refers_to && g.kind !== 'AANVRAAG' && g.kind !== 'BEZWAAR';

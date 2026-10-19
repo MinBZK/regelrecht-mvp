@@ -1,11 +1,15 @@
-//! PoC: het proces van vakantieverlof (Leerplichtwet 1969 art. 13a) naspelen
-//! op de cel van een fictieve school, OBS De Klimop (chronolexografie,
-//! RFC-045 tot en met RFC-050).
+//! PoC: een uitvoeringsproces naspelen op de cel van een fictieve uitvoerder
+//! (chronolexografie, RFC-045 tot en met RFC-050). De bezoeker kiest een
+//! casus: vakantieverlof (Leerplichtwet 1969 art. 13a) bij OBS De Klimop, of
+//! de gehandicaptenparkeerkaart (BABW art. 49) bij de gemeente Wilgendaal.
 //!
 //! De cel zelf staat in `packages/cel`; deze crate zet er een kleine API voor
 //! een app omheen ([`api`]) en voegt niets toe aan wat de cel doet ([`kern`]).
+//! Een casus noemt alleen de cel en het artikel dat de aanvraag vestigt; de
+//! rest leidt [`casus`] af uit de wet.
 
 pub mod api;
+pub mod casus;
 pub mod kern;
 
 use axum::response::Redirect;

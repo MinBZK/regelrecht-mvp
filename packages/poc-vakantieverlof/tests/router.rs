@@ -12,12 +12,25 @@ use serde_json::{json, Value};
 use tower::ServiceExt;
 
 fn app() -> axum::Router {
-    let corpus = Corpus::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus")).unwrap();
-    router(
-        AppState::new(corpus).unwrap(),
-        "/vakantieverlof/",
-        "/nonexistent",
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let casussen = Corpus::alle(&dir.join("../../corpus"), &dir.join("casussen")).unwrap();
+    router(AppState::new(casussen), "/vakantieverlof/", "/nonexistent")
+}
+
+fn get(uri: &str) -> Request<Body> {
+    Request::get(uri).body(Body::empty()).unwrap()
+}
+
+/// The app with the case `id` chosen.
+async fn app_met(id: &str) -> axum::Router {
+    let app = app();
+    let (status, _) = send(
+        &app,
+        post("/vakantieverlof/api/casus", json!({ "casus": id })),
     )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    app
 }
 
 async fn send(app: &axum::Router, request: Request<Body>) -> (StatusCode, Value) {
@@ -39,7 +52,7 @@ fn post(uri: &str, body: Value) -> Request<Body> {
 
 #[tokio::test]
 async fn the_api_answers_under_the_prefix() {
-    let app = app();
+    let app = app_met("vakantieverlof").await;
     let (status, vormen) = send(
         &app,
         Request::get("/vakantieverlof/api/vormen?datum=2026-10-14")
@@ -67,7 +80,7 @@ async fn the_api_answers_under_the_prefix() {
 
 #[tokio::test]
 async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
-    let app = app();
+    let app = app_met("vakantieverlof").await;
     let (status, body) = send(
         &app,
         post(
@@ -126,4 +139,133 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
         .as_array()
         .unwrap()
         .is_empty());
+}
+
+#[tokio::test]
+async fn without_a_chosen_case_a_step_is_a_409_and_choosing_one_starts_an_empty_chronicle() {
+    let app = app();
+    let (status, lijst) = send(&app, get("/vakantieverlof/api/casussen")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(lijst["gekozen"].is_null());
+    let ids: Vec<&str> = lijst["casussen"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(ids, ["gehandicaptenparkeerkaart", "vakantieverlof"]);
+
+    for uri in ["/vakantieverlof/api/kroniek", "/vakantieverlof/api/casus"] {
+        let (status, body) = send(&app, get(uri)).await;
+        assert_eq!(status, StatusCode::CONFLICT, "{uri}");
+        assert!(
+            body["fout"].as_str().unwrap().contains("no case is chosen"),
+            "{body}"
+        );
+    }
+    let (status, _) = send(
+        &app,
+        post("/vakantieverlof/api/casus", json!({ "casus": "x" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Choosing a case gives what follows for it from the law.
+    let (_, casus) = send(
+        &app,
+        post(
+            "/vakantieverlof/api/casus",
+            json!({ "casus": "vakantieverlof" }),
+        ),
+    )
+    .await;
+    assert_eq!(casus["besluit"], json!("leerplichtwet_1969#13a"));
+    assert_eq!(
+        casus["beslissing_op_bezwaar"],
+        json!("algemene_wet_bestuursrecht#7:11")
+    );
+    assert_eq!(casus["rol"], json!("het hoofd"));
+    let (_, lijst) = send(&app, get("/vakantieverlof/api/casussen")).await;
+    assert_eq!(lijst["gekozen"], json!("vakantieverlof"));
+
+    // A step that expects another case than the chosen one is refused: it
+    // would land in the wrong cell.
+    let verwacht = |casus: &str| {
+        Request::get("/vakantieverlof/api/kroniek")
+            .header("x-casus", casus)
+            .body(Body::empty())
+            .unwrap()
+    };
+    let (status, body) = send(&app, verwacht("gehandicaptenparkeerkaart")).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert!(
+        body["fout"]
+            .as_str()
+            .unwrap()
+            .contains("the chosen case is now 'vakantieverlof'"),
+        "{body}"
+    );
+    let (status, _) = send(&app, verwacht("vakantieverlof")).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
+    // Scenario 3 of the parkeerkaart, as the app plays it: the case's own
+    // example values, two applications and two decisions.
+    let app = app_met("gehandicaptenparkeerkaart").await;
+    let (_, casus) = send(&app, get("/vakantieverlof/api/casus")).await;
+    assert_eq!(
+        casus["rol"],
+        json!("het college van burgemeester en wethouders")
+    );
+    let aanvraag = casus["voorbeeld"]["aanvraag"].clone();
+    let bevindingen = casus["voorbeeld"]["bevindingen"].clone();
+    let uitkomst = casus["uitkomst"].as_str().unwrap().to_string();
+
+    let mut besluiten = Vec::new();
+    for datum in ["2026-10-20", "2027-03-01"] {
+        let (status, app_gram) = send(
+            &app,
+            post(
+                "/vakantieverlof/api/aanvragen",
+                json!({ "velden": aanvraag, "datum": datum }),
+            ),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{app_gram}");
+        let (status, besluit) = send(
+            &app,
+            post(
+                "/vakantieverlof/api/besluiten",
+                json!({ "op": app_gram["id"], "bevindingen": bevindingen, "datum": datum }),
+            ),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{besluit}");
+        besluiten.push(besluit);
+    }
+    assert_eq!(besluiten[0]["besluit"]["outputs"][&uitkomst], json!(true));
+    assert_eq!(besluiten[1]["besluit"]["outputs"][&uitkomst], json!(false));
+    let antwoord = &besluiten[1]["waarom"]["antwoorden"][0];
+    assert_eq!(
+        antwoord["begrip"],
+        json!("aanvrager_heeft_geldige_gehandicaptenparkeerkaart")
+    );
+    assert_eq!(antwoord["waarde"], json!(true));
+
+    let id = besluiten[1]["besluit"]["id"].as_str().unwrap();
+    let (status, hoe) = send(
+        &app,
+        get(&format!(
+            "/vakantieverlof/api/besluiten/{id}/antwoord/aanvrager_heeft_geldige_gehandicaptenparkeerkaart"
+        )),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let eerste = besluiten[0]["besluit"]["id"].as_str().unwrap();
+    assert!(hoe["antwoorden"][0]["spoor"]
+        .as_str()
+        .unwrap()
+        .contains(eerste));
 }

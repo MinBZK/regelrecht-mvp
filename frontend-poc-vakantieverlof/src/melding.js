@@ -23,20 +23,31 @@ const vertalingen = [
     (laatste) =>
       `De speeldatum ligt vóór de laatste stap in de kroniek (${laatste}). De kroniek loopt alleen vooruit: kies die dag of een latere.`,
   ],
-  // De school beantwoordt een open begrip uit haar kroniek, maar op een
+  // De cel beantwoordt een open begrip uit haar kroniek, maar op een
   // speeldatum vóór de dag dat haar reductie geldt, heeft ze er geen.
   [
     /open term '([^']+)' of \S+ is filled by a reduction in \S+, but none is in force on (\d{4}-\d{2}-\d{2})/,
     (begrip, dag) =>
-      `De school beantwoordt "${leesbaar(begrip)}" uit haar kroniek, maar op ${dag} geldt haar reductie nog niet. Kies een latere speeldatum.`,
+      `De cel beantwoordt "${leesbaar(begrip)}" uit haar kroniek, maar op ${dag} geldt haar reductie nog niet. Kies een latere speeldatum.`,
   ],
-  // Uitleg gevraagd over een begrip dat het besluit de school niet vroeg.
+  // Uitleg gevraagd over een begrip dat het besluit de cel niet vroeg.
   [
     /the decision '([^']+)' did not ask the cell of '[^']+' for '([^']+)'/,
     (besluit, begrip) =>
-      `Besluit ${kort(besluit)} vroeg de school niet om "${leesbaar(begrip)}", dus er is geen antwoord om uit te leggen.`,
+      `Besluit ${kort(besluit)} vroeg de cel niet om "${leesbaar(begrip)}", dus er is geen antwoord om uit te leggen.`,
   ],
   [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
+  // Een andere bezoeker koos intussen een andere casus (X-Casus).
+  [
+    /the chosen case is now '[^']+'/,
+    () => 'Iemand anders koos intussen een andere casus. Kies er opnieuw een.',
+  ],
+  // Een stap voordat er een casus gekozen is, bijvoorbeeld na een herstart
+  // van de server.
+  [
+    /no case is chosen/,
+    () => 'Er is geen casus gekozen; misschien is de server herstart. Kies een casus.',
+  ],
   [
     /lacks '([^']+)', which the decision of \S+ needs \(Awb 4:5\)/,
     (veld) =>
@@ -45,7 +56,7 @@ const vertalingen = [
   [
     /asks '([^']+)' of the deciding authority/,
     (veld) =>
-      `Het hoofd heeft "${leesbaar(veld)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
+      `Het bestuursorgaan heeft "${leesbaar(veld)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
   ],
   [
     /'([^']+)' is .*, which does not fit a/,

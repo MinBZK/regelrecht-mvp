@@ -28,19 +28,19 @@ describe('melding', () => {
     expect(melding(fout)).toContain('vóór de laatste stap in de kroniek (2026-11-01)');
   });
 
-  it('zegt dat de reductie van de school op die dag nog niet geldt', () => {
+  it('zegt dat de reductie van de cel op die dag nog niet geldt', () => {
     const fout =
       "setup: open term 'verlof_al_verleend_in_schooljaar' of leerplichtwet_1969#13a is filled by a reduction in " +
       'corpus/cells/obs_de_klimop, but none is in force on 2026-07-01; the cell does not take it as a finding of the deciding authority';
     expect(melding(fout)).toBe(
-      'De school beantwoordt "verlof al verleend in schooljaar" uit haar kroniek, maar op 2026-07-01 geldt haar reductie nog niet. Kies een latere speeldatum.',
+      'De cel beantwoordt "verlof al verleend in schooljaar" uit haar kroniek, maar op 2026-07-01 geldt haar reductie nog niet. Kies een latere speeldatum.',
     );
   });
 
-  it('zegt dat het besluit de school niet om dat begrip vroeg', () => {
+  it('zegt dat het besluit de cel niet om dat begrip vroeg', () => {
     const fout = `refused: the decision '${ids.besluit}' did not ask the cell of 'obs_de_klimop' for 'verlofdagen'`;
     expect(melding(fout)).toBe(
-      'Besluit 0000aaaa vroeg de school niet om "verlofdagen", dus er is geen antwoord om uit te leggen.',
+      'Besluit 0000aaaa vroeg de cel niet om "verlofdagen", dus er is geen antwoord om uit te leggen.',
     );
   });
 
@@ -54,7 +54,7 @@ describe('melding', () => {
     expect(melding(fout)).toContain('"laatste verlofdag"');
   });
 
-  it('noemt de bevinding die het hoofd nog moet geven', () => {
+  it('noemt de bevinding die het bestuursorgaan nog moet geven', () => {
     const fout =
       "refused: the decision of leerplichtwet_1969#13a asks 'specifieke_aard_beroep_ouder' of the deciding authority (leerplichtwet_1969#11)";
     expect(melding(fout)).toContain('"specifieke aard beroep ouder" nog niet beoordeeld');
@@ -73,6 +73,10 @@ describe('melding', () => {
     expect(melding(fout.replace('AANVRAAG', 'BEZWAAR'))).toContain('bij het bezwaar');
   });
 
+  it('zegt dat er eerst een casus gekozen moet worden', () => {
+    expect(melding('no case is chosen: choose one with POST /api/casus')).toContain('Kies een casus');
+  });
+
   it('valt terug op een algemene zin', () => {
     expect(melding('engine: something else')).toBe(algemeen);
     expect(melding('De server gaf geen antwoord.')).toBe('Wat er misging, staat onder Details.');
@@ -85,5 +89,13 @@ describe('isEngels', () => {
     expect(isEngels('engine: x')).toBe(true);
     expect(isEngels('Failed to fetch')).toBe(true);
     expect(isEngels('De server gaf geen antwoord.')).toBe(false);
+  });
+});
+
+describe('een andere casus gekozen', () => {
+  it('zegt dat iemand anders intussen een andere casus koos', () => {
+    expect(melding("the chosen case is now 'vakantieverlof', not 'gehandicaptenparkeerkaart'")).toContain(
+      'Kies er opnieuw een',
+    );
   });
 });

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "PoC: het proces van vakantieverlof (Leerplichtwet 1969 art. 13a) naspelen op de cel van een fictieve school — aanvraag, besluit, bezwaar, kroniek en reductie",
+  "description": "PoC: een uitvoeringsproces naspelen op de cel van een fictieve uitvoerder, per casus (vakantieverlof, gehandicaptenparkeerkaart): aanvraag, besluit, bezwaar, kroniek en reductie",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -173,12 +173,15 @@ test('het poc-portaal volgt zijn register, zijn corpus en zijn frontends', () =>
   assert.equal(namesOf(['frontend-poc-terugbetaalregimes/src/App.vue'])['poc-napp'], false);
 });
 
-test('vakantieverlof volgt zijn cel, zijn regelwerken en zijn frontend', () => {
-  // De cel van de school en de regelwerken die zij draait, zitten alleen in
-  // het vakantieverlof-image, niet in het portaal.
+test('vakantieverlof volgt zijn cellen, hun regelwerken, de casussen en zijn frontend', () => {
+  // De cellen van de casussen en de regelwerken die zij draaien, zitten
+  // alleen in het vakantieverlof-image, niet in het portaal.
   for (const pad of [
     'corpus/cells/obs_de_klimop/reducties/reductie_verlof_al_verleend_in_schooljaar/2026-08-01.yaml',
     'corpus/regulation/nl/wet/leerplichtwet_1969/2026-08-01.yaml',
+    'corpus/cells/gemeente_wilgendaal/reducties/reductie_geldige_gehandicaptenparkeerkaart/2026-01-01.yaml',
+    'corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/2026-01-01.yaml',
+    'packages/poc-vakantieverlof/casussen/gehandicaptenparkeerkaart.yaml',
     'frontend-poc-vakantieverlof/src/App.vue',
   ]) {
     const geraakt = namesOf([pad]);

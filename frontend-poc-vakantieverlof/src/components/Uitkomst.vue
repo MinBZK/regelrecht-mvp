@@ -1,9 +1,10 @@
 <script setup>
-// Een besluit onder artikel 13a: verleend of geweigerd, de uitvoer, en
+// Een besluit op een aanvraag: toegewezen of afgewezen (volgens de uitvoer
+// die de casus noemt), de uitvoer, en
 // desgewenst waaróm (Waarom.vue). `waaromVan` is het besluit waarvan die
 // uitleg is: het besluit zelf, of de beslissing op bezwaar die het nam.
 import { computed } from 'vue';
-import { leesbaar, waarde } from '../spel.js';
+import { leesbaar, toegewezen, waarde } from '../spel.js';
 import Waarom from './Waarom.vue';
 
 const props = defineProps({
@@ -13,7 +14,7 @@ const props = defineProps({
   titel: { type: String, default: 'Besluit' },
 });
 
-const verleend = computed(() => props.besluit.outputs?.verlof_verleend === true);
+const verleend = computed(() => toegewezen(props.besluit) === true);
 const uitvoer = computed(() =>
   Object.entries(props.besluit.outputs ?? {}).map(([naam, waarde]) => ({ naam, waarde })),
 );
@@ -25,7 +26,7 @@ const uitvoer = computed(() =>
       <nldd-tag
         slot="end"
         :color="verleend ? 'success' : 'critical'"
-        :text="verleend ? 'Verlof verleend' : 'Verlof geweigerd'"
+        :text="verleend ? 'Toegewezen' : 'Afgewezen'"
       ></nldd-tag>
     </nldd-title>
     <nldd-list appearance="box-base">

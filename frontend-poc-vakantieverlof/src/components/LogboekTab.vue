@@ -87,7 +87,7 @@ async function uitleg(knoop) {
     <nldd-inline-dialog
       icon="info"
       text="Het logboek is leeg"
-      supporting-text="Dien als ouder een aanvraag in. Elke stap die de cel vastlegt, komt hier te staan."
+      supporting-text="Dien als aanvrager een aanvraag in. Elke stap die de cel vastlegt, komt hier te staan."
     ></nldd-inline-dialog>
   </nldd-simple-section>
   <nldd-side-by-side-split-view v-else-if="handelingen.length" panes="2">
@@ -192,7 +192,7 @@ async function uitleg(knoop) {
               </nldd-cell>
             </nldd-list-item>
             <nldd-list-item v-for="f in bevindingen" :key="f.naam" size="sm">
-              <nldd-text-cell :text="leesbaar(f.naam)" supporting-text="bevinding van het hoofd"></nldd-text-cell>
+              <nldd-text-cell :text="leesbaar(f.naam)" supporting-text="bevinding van het bestuursorgaan"></nldd-text-cell>
               <nldd-text-cell width="fit-content" :text="toon(f.waarde)"></nldd-text-cell>
             </nldd-list-item>
           </nldd-list>
@@ -216,7 +216,7 @@ async function uitleg(knoop) {
             <nldd-code-viewer v-if="spoor" appearance="box-tinted">{{ handeling.waarom.spoor }}</nldd-code-viewer>
           </template>
           <nldd-text v-else size="sm" color="secondary">
-            Geen besluit. De cel legde vast wat de ouder indiende. Wat het artikel daarbij
+            Geen besluit. De cel legde vast wat de aanvrager indiende. Wat het artikel daarbij
             uitrekende, zoals de laatste dag van de termijn, staat in de kroniek.
           </nldd-text>
         </nldd-container>

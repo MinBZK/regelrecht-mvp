@@ -1,4 +1,4 @@
-//! De server van de vakantieverlof-poc. Zie de crate-documentatie in `lib.rs`.
+//! De server van de poc. Zie de crate-documentatie in `lib.rs`.
 
 use std::path::PathBuf;
 
@@ -15,12 +15,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     // De repository-map `corpus/`: de regelwerken onder regulation/nl en de
-    // cel van de school onder cells/.
+    // cellen onder cells/.
     let corpus_dir = std::env::var("VERLOF_CORPUS_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../corpus")));
-    let corpus = Corpus::load(&corpus_dir)?;
-    let state = AppState::new(corpus)?;
+    // De casussen: per casus de cel, het artikel en de tekst voor de bezoeker.
+    let casus_dir = std::env::var("VERLOF_CASUS_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/casussen")));
+    let state = AppState::new(Corpus::alle(&corpus_dir, &casus_dir)?);
 
     let base = std::env::var("VERLOF_BASE_PATH").unwrap_or_else(|_| "/".into());
     let static_dir = std::env::var("VERLOF_STATIC_DIR").unwrap_or_else(|_| {
@@ -37,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(8410);
     let listener = tokio::net::TcpListener::bind(("0.0.0.0", port)).await?;
-    tracing::info!(%base, "vakantieverlof-poc luistert op http://localhost:{port}");
+    tracing::info!(%base, "poc luistert op http://localhost:{port}");
     axum::serve(listener, app).await?;
     Ok(())
 }

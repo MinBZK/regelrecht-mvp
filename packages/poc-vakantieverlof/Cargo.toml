@@ -3,7 +3,7 @@ name = "regelrecht-poc-vakantieverlof"
 version = "0.1.0"
 edition = "2021"
 authors = ["MinBZK <noreply@minbzk.nl>"]
-description = "PoC: het proces van vakantieverlof (Leerplichtwet 1969 art. 13a) naspelen op de cel van een fictieve school"
+description = "PoC: een uitvoeringsproces naspelen op de cel van een fictieve uitvoerder, per casus (vakantieverlof, gehandicaptenparkeerkaart)"
 license = "EUPL-1.2"
 repository = "https://github.com/NederlandseDigitaleDienst/regelrecht"
 publish = false
@@ -24,6 +24,7 @@ axum.workspace = true
 chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_yaml_ng.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower-http = { workspace = true, features = ["fs", "trace"] }
 tracing.workspace = true
