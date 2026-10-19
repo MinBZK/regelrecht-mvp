@@ -25,7 +25,8 @@ use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Answer, Asked, Loaded, Reader, Reduction, Term};
-use crate::shape::{self, Shape};
+use crate::shape::{self, Field, Shape};
+use crate::stream::{self, Stream, EXECUTOGRAM};
 use regelrecht_law_model::stored;
 
 /// A cell. It holds who it is, its chronicle and its reductions, not the
@@ -42,6 +43,8 @@ pub struct Cell {
     recording_actor: String,
     chronicle: Chronicle,
     reductions: Reductions,
+    /// The streams of executograms the cell keeps (RFC-051).
+    streams: Vec<Stream>,
 }
 
 /// The reductions of a cell and the directory they came from.
@@ -149,15 +152,18 @@ impl Cell {
     /// `reducties` gives a cell without reductions. A version that is no
     /// `REDUCTIE`, whose `$id` is not its directory's name, or whose file is
     /// not named after its `valid_from` is an error. So is any other entry
-    /// under `reducties`. A chronolexogram in the chronicle recorded by
-    /// another actor is an error too.
+    /// under `reducties`. The streams of executograms the cell keeps come
+    /// from `<cell_dir>/executogrammen/<id>.yaml` ([`crate::stream`],
+    /// RFC-051); a reduction that reads another stream is an error. A
+    /// chronolexogram in the chronicle recorded by another actor is an error
+    /// too, and so is an executogram of a stream the cell does not keep.
     pub fn open(
         recording_actor: impl Into<String>,
         path: impl AsRef<Path>,
         cell_dir: impl AsRef<Path>,
     ) -> Result<Self> {
         let recording_actor = recording_actor.into();
-        let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
+        let (reductions, streams) = Self::load_dir(&recording_actor, cell_dir.as_ref())?;
         let chronicle = Chronicle::open(path)?;
         if let Some(g) = chronicle
             .grams()
@@ -169,10 +175,14 @@ impl Cell {
                 g.id, g.recording_actor
             )));
         }
+        for gram in chronicle.grams() {
+            check_executogram(gram, &streams, &recording_actor)?;
+        }
         Ok(Self {
             recording_actor,
             chronicle,
             reductions,
+            streams,
         })
     }
 
@@ -184,12 +194,28 @@ impl Cell {
         cell_dir: impl AsRef<Path>,
     ) -> Result<Self> {
         let recording_actor = recording_actor.into();
-        let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
+        let (reductions, streams) = Self::load_dir(&recording_actor, cell_dir.as_ref())?;
         Ok(Self {
             recording_actor,
             chronicle: Chronicle::in_memory(),
             reductions,
+            streams,
         })
+    }
+
+    /// The reductions and the streams in the cell directory `dir`. A
+    /// reduction that reads a stream the cell does not keep is an error.
+    fn load_dir(recording_actor: &str, dir: &Path) -> Result<(Reductions, Vec<Stream>)> {
+        let reductions = Reductions::load(recording_actor, dir)?;
+        let streams = stream::load(dir)?;
+        reading::refuse_unknown_streams(&reductions.versions, &streams)?;
+        Ok((reductions, streams))
+    }
+
+    /// The streams of executograms the cell keeps (RFC-051), in the order of
+    /// their `$id`.
+    pub fn streams(&self) -> &[Stream] {
+        &self.streams
     }
 
     /// Load the cell's reductions for a decision on `on`
@@ -268,6 +294,7 @@ impl Cell {
             recording_actor: self.recording_actor.clone(),
             chronicle: self.chronicle.in_memory_copy(),
             reductions: self.reductions.clone(),
+            streams: self.streams.clone(),
         }
     }
 
@@ -505,12 +532,70 @@ impl Cell {
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
             refers_to: filled.refers_to,
+            stream: None,
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
             moment,
             fields,
             missing,
             outputs: output_values,
+        };
+        Ok(self.chronicle.append(gram)?.clone())
+    }
+
+    /// Record an executogram of the stream `stream` on `on` (RFC-051): a fact
+    /// the cell keeps, such as where a school is established, with the values
+    /// `supplied` for the fields the stream declares. No regulation runs for
+    /// it; the article the stream names as its ground must be in force on
+    /// `on`.
+    ///
+    /// The cell refuses a stream it does not keep, a field the stream does
+    /// not declare, a value of the wrong type, and a field that cannot be
+    /// absent and is left out: there is no submission whose incompleteness
+    /// a law speaks of, so what is recorded is whole or not recorded. A field
+    /// that can be absent and is left out is `null`.
+    pub fn record_executogram(
+        &mut self,
+        service: &LawExecutionService,
+        stream: &str,
+        supplied: &Map<String, serde_json::Value>,
+        on: NaiveDate,
+    ) -> Result<Gram> {
+        let declared = self
+            .streams
+            .iter()
+            .find(|s| s.id() == stream)
+            .ok_or_else(|| {
+                refused(format!(
+                    "the cell of '{}' keeps no stream '{stream}'",
+                    self.recording_actor
+                ))
+            })?;
+        let grondslag = declared.grondslag().to_string();
+        let in_force = grondslag
+            .split_once('#')
+            .and_then(|(law_id, article)| shape::article_on(service, law_id, article, on))
+            .is_some();
+        if !in_force {
+            return Err(refused(format!(
+                "the stream '{stream}' is recorded on the ground of {grondslag}, which has no \
+                 version in force on {on}"
+            )));
+        }
+        let what = format!("executogram of the stream '{stream}'");
+        let fields = whole(declared.fields(), supplied, &what)?;
+        let gram = Gram {
+            id: uuid::Uuid::now_v7().to_string(),
+            kind: EXECUTOGRAM.to_string(),
+            grondslag,
+            refers_to: None,
+            stream: Some(stream.to_string()),
+            recording_actor: self.recording_actor.clone(),
+            recorded_on: on,
+            moment: None,
+            fields,
+            missing: Vec::new(),
+            outputs: BTreeMap::new(),
         };
         Ok(self.chronicle.append(gram)?.clone())
     }
@@ -660,6 +745,7 @@ impl Cell {
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
             refers_to: Some(applied.id.clone()),
+            stream: None,
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
             moment: None,
@@ -1217,6 +1303,7 @@ impl Cell {
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
             refers_to: Some(submission.id.clone()),
+            stream: None,
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
             moment: None,
@@ -1625,6 +1712,97 @@ fn check_decision_supplied(
         }
     }
     Ok(())
+}
+
+/// An executogram read back from the chronicle holds what its stream
+/// declares, as [`Cell::record_executogram`] records it: its `kind` is
+/// [`EXECUTOGRAM`] exactly when it names a stream, the stream is one the cell
+/// keeps, and its fields are whole for that stream. Anything else read back
+/// as an executogram would give a reduction rows that no recording made.
+fn check_executogram(gram: &Gram, streams: &[Stream], recording_actor: &str) -> Result<()> {
+    let Some(name) = gram.stream.as_deref() else {
+        if gram.kind == EXECUTOGRAM {
+            return Err(setup(format!(
+                "chronolexogram '{}' in the chronicle of '{recording_actor}' is an executogram \
+                 of no stream",
+                gram.id
+            )));
+        }
+        return Ok(());
+    };
+    if gram.kind != EXECUTOGRAM {
+        return Err(setup(format!(
+            "chronolexogram '{}' in the chronicle of '{recording_actor}' names the stream \
+             '{name}' but is a {}",
+            gram.id, gram.kind
+        )));
+    }
+    if gram.refers_to.is_some() || !gram.outputs.is_empty() {
+        return Err(setup(format!(
+            "executogram '{}' in the chronicle of '{recording_actor}' refers to a \
+             chronolexogram or holds outputs; an executogram records a fact and nothing else",
+            gram.id
+        )));
+    }
+    let stream = streams.iter().find(|s| s.id() == name).ok_or_else(|| {
+        setup(format!(
+            "executogram '{}' in the chronicle of '{recording_actor}' is of the stream '{name}', \
+             which the cell does not keep",
+            gram.id
+        ))
+    })?;
+    let fields: Map<String, serde_json::Value> = gram.fields.clone().into_iter().collect();
+    let what = format!("executogram '{}' of the stream '{name}'", gram.id);
+    match whole(stream.fields(), &fields, &what) {
+        Ok(whole) if whole == gram.fields => Ok(()),
+        Ok(_) => Err(setup(format!(
+            "the {what} leaves out a field instead of holding null"
+        ))),
+        Err(e) => Err(setup(format!(
+            "in the chronicle of '{recording_actor}': {e}"
+        ))),
+    }
+}
+
+/// The values `supplied` for `fields`, whole: every name is a field, every
+/// value fits its field, and every field that cannot be absent has a value;
+/// one that can be absent and is left out is `null`. `what` names what is
+/// recorded, for the errors.
+fn whole(
+    fields: &[Field],
+    supplied: &Map<String, serde_json::Value>,
+    what: &str,
+) -> Result<Values> {
+    for (name, value) in supplied {
+        let field = fields
+            .iter()
+            .find(|f| &f.name == name)
+            .ok_or_else(|| refused(format!("the {what} holds no '{name}'")))?;
+        refuse_decimal_key(name, value)?;
+        if !shape::fits(field, value) {
+            return Err(refused(format!(
+                "'{name}' is {value}, which does not fit a {}{:?} ({})",
+                if field.nullable { "" } else { "non-nullable " },
+                field.type_,
+                field.first_declared_by()
+            )));
+        }
+    }
+    let mut values = Values::new();
+    for field in fields {
+        let value = match supplied.get(&field.name) {
+            Some(value) => value.clone(),
+            None if field.nullable => serde_json::Value::Null,
+            None => {
+                return Err(refused(format!(
+                    "the {what} needs '{}', which is left out",
+                    field.name
+                )))
+            }
+        };
+        values.insert(field.name.clone(), value);
+    }
+    Ok(values)
 }
 
 /// Refuse what the law does not ask of the submitter, and what comes from

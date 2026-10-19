@@ -111,6 +111,8 @@ export const COMPONENTS = {
       'corpus/regulation/nl/wet/algemene_wet_bestuursrecht/',
       'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/',
       'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/',
+      'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vakantierooster_obs_de_klimop/',
+      'corpus/regulation/nl/ministeriele_regeling/regeling_vaststelling_schoolvakanties_20252030/',
       'corpus/cells/obs_de_klimop/',
       'corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/',
       'corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/',

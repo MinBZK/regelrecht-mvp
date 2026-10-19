@@ -1,0 +1,43 @@
+---
+# Tier C: a reduction that reads the executograms of a stream of its cell
+# (schema v0.8.6, RFC-051) and picks the one in force with FOREACH combine
+# ONLY.
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$id: test_conformance_reduction_executograms
+regulatory_layer: REDUCTIE
+publication_date: '2026-10-18'
+valid_from: '2026-10-18'
+name: Testreductie vestiging
+url: https://example.invalid/reduction-executograms
+articles:
+  - number: '1'
+    url: https://example.invalid/reduction-executograms/1
+    text: De vestiging is die waarvan de dag het laatst ligt.
+    machine_readable:
+      implements:
+        - law: test_conformance_produces_list
+          article: '1'
+          open_term: gemeente
+      execution:
+        input:
+          - name: vestigingen
+            type: array
+            source:
+              executograms: vestiging
+              description: De vastgelegde vestigingen van de school.
+        output:
+          - name: gemeente
+            type: string
+            nullable: true
+        actions:
+          - output: gemeente
+            value:
+              operation: FOREACH
+              collection: $vestigingen
+              as: vestiging
+              filter:
+                operation: EQUALS
+                subject: $vestiging.huidig
+                value: true
+              body: $vestiging.gemeente
+              combine: ONLY

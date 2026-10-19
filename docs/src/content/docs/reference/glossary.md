@@ -26,7 +26,7 @@ Note that *verordening* names four different things in this list. An EU-verorden
 | `GEMEENTELIJKE_VERORDENING` | Gemeentelijke verordening | Municipal ordinance | Local regulation by a municipality |
 | `PROVINCIALE_VERORDENING` | Provinciale verordening | Provincial ordinance | Regional regulation by a province |
 | `WATERSCHAPS_VERORDENING` | Waterschapsverordening | Water authority ordinance | Regulation by a waterschap, the regional water authority |
-| `REDUCTIE` | Reductie | Reduction | No regulation: a cell's reduction over its own chronicle (RFC-022 §4). Kept with the cell, it alone reads decisions (`source.decisions`), and it does not act on law (no `implements`, `hooks`, `overrides`, `execution.produces` or `open_terms`) ([RFC-048](/rfcs/rfc-048)) |
+| `REDUCTIE` | Reductie | Reduction | No regulation: a cell's reduction over its own chronicle (RFC-022 §4). Kept with the cell, it alone reads the cell's chronicle: decisions (`source.decisions`) and executograms (`source.executograms`, [RFC-051](/rfcs/rfc-051)). It may fill an open term (`implements`), and does not act on law otherwise (no `hooks`, `overrides`, `execution.produces` or `open_terms`) ([RFC-048](/rfcs/rfc-048)) |
 
 ## Administrative Law (Bestuursrecht)
 

@@ -154,6 +154,7 @@ export const herroepen = (besluit) =>
 /** Wat een chronolexogram is in het proces, zoals het dossier en het logboek het noemen. */
 export function rol(g) {
   if (g.kind === 'AANVRAAG') return 'Aanvraag';
+  if (g.kind === 'EXECUTOGRAM') return 'Executogram';
   if (g.kind === 'BEZWAAR') return 'Bezwaar';
   if (g.grondslag === bezwaarGrondslag()) return 'Beslissing op bezwaar';
   const op = spel.grammen.find((x) => x.id === g.refers_to);

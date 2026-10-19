@@ -132,6 +132,8 @@ pub struct TypeSpec {
 /// - Same-law reference: `output: "field_name"` (resolved within the same law)
 /// - The decisions taken under an article: `decisions: "<regulation>#<article>"`
 ///   (schema v0.8.2, RFC-048), only in a `REDUCTIE`
+/// - The executograms of a stream of the cell: `executograms: "<stream>"`
+///   (schema v0.8.6, RFC-051), only in a `REDUCTIE`
 /// - The decision of an article: `article: "<regulation>#<article>"` or a
 ///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
 ///   RFC-050)
@@ -165,6 +167,14 @@ pub struct Source {
         deserialize_with = "optional_article_reference"
     )]
     pub decisions: Option<String>,
+    /// The executograms of a stream of the cell, by the stream's `$id`
+    /// (schema v0.8.6, RFC-051): a list with one row per executogram, as
+    /// `decisions` gives one per decision. Only a data source answers it,
+    /// such as the cell that keeps the stream, or the caller with a
+    /// parameter of that name; no regulation is executed for it. Only a
+    /// rulework with `regulatory_layer: REDUCTIE` may read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub executograms: Option<String>,
     /// The article whose decision this input takes (schema v0.8.4, RFC-050):
     /// an article reference `<regulation>#<article>`, or a `$`-reference to
     /// a value that holds one, such as the `grondslag` of a `decision`
@@ -774,6 +784,11 @@ pub enum CombineOp {
     And,
     Min,
     Max,
+    /// The one result: null when the filter left none, an error when it
+    /// left more than one (schema v0.8.6). It picks a single element, such
+    /// as the record in force on a day, where a lowest or highest of a
+    /// string or a date is not defined.
+    Only,
 }
 
 /// Default name for the FOREACH element binding when `as` is omitted.

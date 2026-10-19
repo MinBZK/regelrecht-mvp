@@ -17,7 +17,9 @@ omschrijving: >-
   Een ouder vraagt de school om verlof buiten de schoolvakanties
   (Leerplichtwet 1969 artikel 13a). Het hoofd beslist, en de school leest
   haar eigen besluiten terug om te weten of de jongere dit schooljaar al
-  verlof kreeg.
+  verlof kreeg. Of het verlof buiten de schoolvakanties valt, leest zij uit
+  de regeling, uit haar eigen vakantierooster en uit wat zij zelf vastlegde:
+  haar vestiging.
 cel_naam: OBS De Klimop
 speeldatum: 2026-10-14
 
@@ -36,7 +38,6 @@ voorbeeld:
     gevraagde_beschikking: vakantieverlof
   bevindingen:
     specifieke_aard_beroep_ouder: true
-    verlof_valt_buiten_schoolvakanties: true
   bezwaar:
     bezwaarschrift_ondertekend: true
     naam_indiener: J. Jansen
@@ -44,13 +45,34 @@ voorbeeld:
     omschrijving_bestreden_besluit: weigering vakantieverlof
     gronden_bezwaar: 'verklaring van de werkgever: geen verlof in de schoolvakanties'
 
+# Wat de school vastlegde vóór het eerste scenario (RFC-051), bij elke start
+# en reset opnieuw, via de cel zoals elke stap. De regeling vaststelling
+# schoolvakanties leidt de regio af uit de plaats van vestiging (art. 2): de
+# vestiging is een executogram van de stroom vestiging
+# (corpus/cells/obs_de_klimop/executogrammen/vestiging.yaml). De herfst- en
+# voorjaarsvakantie staan in het fictieve beleid van de school
+# (fictief_beleid_vakantierooster_obs_de_klimop). Zo beantwoordt de cel
+# verlof_valt_buiten_schoolvakanties zelf; 1 tot en met 5 februari en 10 tot
+# en met 14 mei 2027 vallen buiten de vakanties van regio midden.
+begin:
+  datum: 2026-08-01
+  executogrammen:
+    - stroom: vestiging
+      velden:
+        gemeente: Utrecht
+        provincie: Utrecht
+        sinds: '2020-08-01'
+
 scenarios:
   - naam: Aanvraag wordt verleend
     stappen:
       - >-
         Aanvrager, speeldatum 14 oktober 2026: klik op Aanvraag indienen. De
         voorbeeldwaarden vragen verlof van 1 tot en met 5 februari 2027.
-      - 'Bestuursorgaan: laat beide bevindingen aan staan en klik op Besluit nemen.'
+      - >-
+        Bestuursorgaan: laat de bevinding aan staan en klik op Besluit nemen.
+        Dat 1 tot en met 5 februari buiten de schoolvakanties valt, antwoordt
+        de school zelf: haar voorjaarsvakantie begint op 20 februari.
     eind: >-
       Onder Besluiten staat Toegewezen. Bij Aanvrager staat de aanvraag op
       Toegewezen.
@@ -73,7 +95,8 @@ scenarios:
         beroep nu anders. Klik op Beslissen op bezwaar.
     eind: >-
       Gegrond: het besluit is herroepen. Er is een nieuw besluit, en dat
-      verleent het verlof. In de Kroniek staan vijf chronolexogrammen.
+      verleent het verlof. In de Kroniek staan zes chronolexogrammen: de
+      vestiging die de school vooraf vastlegde en vijf uit dit scenario.
   - naam: 'Afwijzing, bezwaar en heroverweging: ongegrond'
     stappen:
       - >-
@@ -90,7 +113,7 @@ scenarios:
         Bezwaar maken en dan op Bezwaar indienen.
       - >-
         Bestuursorgaan, speeldatum 15 november 2026: klik op Ontvankelijkheid
-        toetsen. Laat alle bevindingen staan en klik op Beslissen op bezwaar.
+        toetsen. Laat de bevinding staan en klik op Beslissen op bezwaar.
     eind: >-
       Ongegrond: de heroverweging geeft dezelfde uitkomst. Het besluit blijft,
       er komt geen nieuw besluit.
@@ -146,7 +169,7 @@ scenarios:
       - 'Aanvrager, speeldatum 20 november 2026: maak bezwaar tegen B.'
       - >-
         Bestuursorgaan, speeldatum 1 december 2026: toets dat bezwaar, laat de
-        bevindingen staan en beslis.
+        bevinding staan en beslis.
     eind: >-
       Gegrond: B is herroepen, en het nieuwe besluit verleent het verlof. Bij
       het besluit staat "verlof al verleend in schooljaar: nee", ingevuld door
@@ -154,3 +177,23 @@ scenarios:
       besluiten, en het spoor laat zien dat het filter twee besluiten onder
       artikel 13a oversloeg. Dat zijn A en de weigering die ervoor in de
       plaats kwam.
+  - naam: 'Verlof in de kerstvakantie: geweigerd zonder oordeel van het hoofd'
+    stappen:
+      - >-
+        Aanvrager, speeldatum 14 oktober 2026: vul als eerste verlofdag 21
+        december 2026 en als laatste verlofdag 23 december 2026 in. Klik op
+        Aanvraag indienen.
+      - >-
+        Bestuursorgaan: het hoofd geeft alleen "specifieke aard beroep ouder".
+        Laat die aan staan en klik op Besluit nemen.
+    eind: >-
+      Het verlof wordt geweigerd. Het hoofd oordeelde niet over de
+      schoolvakanties: bij het besluit staat "verlof valt buiten
+      schoolvakanties: nee", ingevuld door de cel. Onder "Hoe de cel dit
+      beantwoordde" staat dat haar reductie de regio Midden en de kerstvakantie
+      van 19 december 2026 tot en met 3 januari 2027 uit de regeling las, en
+      de herfst- en voorjaarsvakantie uit het beleid van de school. De
+      regio volgt uit de plaats van vestiging, Utrecht, die de cel binnen die
+      reductie zelf beantwoordde; klik daar nog eens op "Hoe de cel dit
+      beantwoordde" voor haar vestiging. In het Logboek staat het besluit met
+      dezelfde keten, en onderaan het executogram van de vestiging.

@@ -1263,7 +1263,9 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                 // elements may be absences like the items of a LIST; with a
                 // combine the body is calculated with or decided on.
                 let body_info = match combine {
-                    None => self.check_expr(body, &body_facts, ABSENCE_ALLOWED),
+                    None | Some(CombineOp::Only) => {
+                        self.check_expr(body, &body_facts, ABSENCE_ALLOWED)
+                    }
                     Some(_) => self.operand(body, &body_facts, "FOREACH body"),
                 };
                 self.bound.pop();
@@ -1288,6 +1290,13 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
                             describe: "the FOREACH".to_string(),
                         }
                     }
+                    // The one element the filter left, of the body's type;
+                    // absent when it left none.
+                    Some(CombineOp::Only) => Info {
+                        ty: body_info.ty,
+                        nullness: Nullness::Unknown,
+                        describe: "the FOREACH".to_string(),
+                    },
                 }
             }
             ActionOperation::Age {
@@ -3813,6 +3822,36 @@ actions:
       value: null
 "#,
         );
+    }
+
+    #[test]
+    fn foreach_only_takes_a_body_of_any_type_where_min_wants_a_number() {
+        // ONLY picks the one element the filter leaves, such as the name in
+        // a record; MIN and MAX compare, so they want numbers.
+        let law = |combine: &str| {
+            format!(
+                r#"
+input:
+  - name: namen
+    type: array
+    source: {{}}
+output:
+  - name: de_naam
+    type: string
+    nullable: true
+actions:
+  - output: de_naam
+    value:
+      operation: FOREACH
+      collection: $namen
+      as: n
+      body: "Utrecht"
+      combine: {combine}
+"#
+            )
+        };
+        assert_clean(&law("ONLY"));
+        assert!(!check(&law("MIN")).is_empty());
     }
 
     #[test]

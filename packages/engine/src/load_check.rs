@@ -85,30 +85,48 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
             let Some(source) = input.source.as_ref() else {
                 continue;
             };
-            let Some(decisions) = &source.decisions else {
+            let Some(read) = chronicle_read(source) else {
                 continue;
             };
+            if source.decisions.is_some() && source.executograms.is_some() {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: input '{}' reads {read} and executograms besides; \
+                     an input reads one of them",
+                    law.id, input.name
+                )));
+            }
             if source.regulation.is_some()
                 || source.output.is_some()
                 || source.parameters.is_some()
                 || source.endpoint.is_some()
             {
                 return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: input '{}' reads the decisions taken under {decisions}, \
-                     which no regulation, output, parameters or endpoint can narrow",
+                    "law '{}' {where_}: input '{}' reads {read}, which no regulation, output, \
+                     parameters or endpoint can narrow",
                     law.id, input.name
                 )));
             }
             if !reduction {
                 return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: input '{}' reads the decisions taken under {decisions}; \
-                     only a REDUCTIE reads decisions (RFC-048)",
+                    "law '{}' {where_}: input '{}' reads {read}; only a REDUCTIE reads decisions \
+                     or executograms (RFC-048, RFC-051)",
                     law.id, input.name
                 )));
             }
         }
     }
     Ok(())
+}
+
+/// What an input reads from the chronicle of a cell, in words: the
+/// decisions taken under an article (RFC-048) or the executograms of a stream
+/// (RFC-051). `None` for an input that reads neither.
+pub(crate) fn chronicle_read(source: &regelrecht_law_model::Source) -> Option<String> {
+    match (&source.decisions, &source.executograms) {
+        (Some(decisions), _) => Some(format!("the decisions taken under {decisions}")),
+        (None, Some(stream)) => Some(format!("the executograms of the stream {stream}")),
+        (None, None) => None,
+    }
 }
 
 /// Refuse a call to an article (`source.article`, schema v0.8.4, RFC-050)
@@ -133,6 +151,7 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
             let beside = [
                 ("regulation", source.regulation.is_some()),
                 ("decisions", source.decisions.is_some()),
+                ("executograms", source.executograms.is_some()),
                 ("endpoint", source.endpoint.is_some()),
             ];
             if let Some((key, _)) = beside.iter().find(|(_, present)| *present) {

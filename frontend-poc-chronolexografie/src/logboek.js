@@ -117,6 +117,7 @@ export function genummerd(stappen, prefix = '') {
 export function uitslag(g) {
   const o = g.outputs ?? {};
   if (g.kind === 'AANVRAAG' || g.kind === 'BEZWAAR') return { tekst: 'ontvangen', kleur: 'neutral' };
+  if (g.kind === 'EXECUTOGRAM') return { tekst: 'vastgelegd', kleur: 'neutral' };
   if (g.grondslag === bezwaarGrondslag()) {
     if (o.bezwaar_ontvankelijk === false) return { tekst: 'niet-ontvankelijk', kleur: 'warning' };
     return o.bestreden_besluit_herroepen

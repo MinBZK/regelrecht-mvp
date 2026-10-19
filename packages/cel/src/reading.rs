@@ -6,8 +6,12 @@
 //! (`corpus/cells/<cell>/reducties/<id>/<valid_from>.yaml`) and only the cell
 //! loads it. It asks for the decisions taken under an article with
 //! `source: {decisions: <regulation>#<article>}`; the cell answers that input
-//! with one row per decision in its chronicle ([`rows`]). For the logic it
-//! calls law or policy like any rulework (`source.regulation`).
+//! with one row per decision in its chronicle ([`rows`]). It asks for the executograms of a stream of
+//! the cell with `source: {executograms: <stream>}` (schema v0.8.6,
+//! RFC-051), one row per executogram ([`executogram_rows`]). For the logic
+//! it calls law or policy like any rulework (`source.regulation`); where
+//! that rulework reads an open term the cell answers, the cell answers it
+//! there too.
 //!
 //! What a reduction yields is the answer to an open term of a law, which
 //! it names with `implements` (schema v0.8.5): the lexostatus the cell
@@ -39,8 +43,8 @@ use std::collections::BTreeMap;
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
-    Answer as EngineAnswer, AnswerProvenance, Article, ArticleBasedLaw, ArticleResult, EngineError,
-    LawExecutionService, LawLoad, OpenTermAnswerer, Question, RegulatoryLayer, Value,
+    Answer as EngineAnswer, AnswerProvenance, Article, ArticleBasedLaw, ArticleResult, Call,
+    EngineError, LawExecutionService, LawLoad, OpenTermAnswerer, Question, RegulatoryLayer, Value,
 };
 use serde::Serialize;
 use serde_json::Map;
@@ -48,6 +52,7 @@ use serde_json::Map;
 use crate::chronicle::Gram;
 use crate::error::{setup, Result};
 use crate::shape::article_on;
+use crate::stream::Stream;
 use regelrecht_law_model::stored;
 
 /// One version of a reduction of the cell, as written.
@@ -179,16 +184,28 @@ impl Reduction {
 }
 
 /// The decisions in `grams` taken under `grondslag` (`<regulation>#<article>`),
-/// whose legal character is `kind`, as rows: the fields, then the outputs,
-/// then the chronolexogram's `id`. A field or output named `id` is refused.
-/// A name that is both a field and an output with another value is
-/// refused: the row would hide one.
+/// whose legal character is `kind`, as rows ([`rows_of`]).
 pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
+    rows_of(
+        grams
+            .iter()
+            .filter(|g| g.refers_to.is_some() && g.kind == kind && g.grondslag == grondslag),
+    )
+}
+
+/// The executograms in `grams` of the stream `stream` (RFC-051), as rows
+/// ([`rows_of`]), in the order the cell recorded them.
+pub fn executogram_rows(grams: &[Gram], stream: &str) -> Result<Value> {
+    rows_of(grams.iter().filter(|g| g.stream.as_deref() == Some(stream)))
+}
+
+/// `grams` as rows: the fields, then the outputs, then the chronolexogram's
+/// `id`. A field or output named `id` is refused. A name that is both a
+/// field and an output with another value is refused: the row would hide
+/// one.
+fn rows_of<'g>(grams: impl Iterator<Item = &'g Gram>) -> Result<Value> {
     let mut rows = Vec::new();
-    for gram in grams
-        .iter()
-        .filter(|g| g.refers_to.is_some() && g.kind == kind && g.grondslag == grondslag)
-    {
+    for gram in grams {
         let mut row: Map<String, serde_json::Value> = gram.fields.clone().into_iter().collect();
         for (name, value) in &gram.outputs {
             match row.get(name) {
@@ -310,6 +327,30 @@ pub fn refuse_undeclared_terms(
     Ok(())
 }
 
+/// Each stream a version of `reductions` reads (`source.executograms`,
+/// RFC-051) must be one of the cell's `streams`: otherwise the reduction
+/// would read no executograms where the cell never records any.
+pub fn refuse_unknown_streams(reductions: &[Reduction], streams: &[Stream]) -> Result<()> {
+    for reduction in reductions {
+        for article in &reduction.law.articles {
+            for input in article.get_inputs() {
+                let Some(stream) = input.source.as_ref().and_then(|s| s.executograms.as_ref())
+                else {
+                    continue;
+                };
+                if !streams.iter().any(|s| s.id() == stream) {
+                    return Err(setup(format!(
+                        "reduction '{}' reads the executograms of the stream '{stream}', which \
+                         the cell does not keep (executogrammen/{stream}.yaml)",
+                        reduction.id
+                    )));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Load `reductions` into the service until the returned guard drops, so
 /// the cell can run them there ([`Reader`]). The engine does not run a
 /// reduction for the term it fills by itself: a reduction's `implements`
@@ -343,7 +384,11 @@ pub fn load<'a>(
 }
 
 /// The legal character of the decision of article `reference` on `day`.
-fn decision_kind(service: &LawExecutionService, reference: &str, day: NaiveDate) -> Result<String> {
+pub fn decision_kind(
+    service: &LawExecutionService,
+    reference: &str,
+    day: NaiveDate,
+) -> Result<String> {
     reference
         .split_once('#')
         .and_then(|(law_id, article)| article_on(service, law_id, article, day))
@@ -404,6 +449,13 @@ pub struct Reader<'c> {
     grams: Vec<Gram>,
     explain: Option<&'c str>,
     asked: RefCell<Vec<Asked>>,
+    /// The terms the cell is answering now, outermost first, each with the
+    /// parameters of the article that asked it. A reduction whose rulework
+    /// asks one of them again would answer itself without end; the cell
+    /// refuses that instead. A reduction asked inside another one gets a
+    /// parameter it declares from the questions around it when the article
+    /// that asks it has none of that name (RFC-051).
+    answering: RefCell<Vec<(Term, BTreeMap<String, Value>)>>,
 }
 
 impl<'c> Reader<'c> {
@@ -421,6 +473,7 @@ impl<'c> Reader<'c> {
             grams,
             explain,
             asked: RefCell::new(Vec::new()),
+            answering: RefCell::new(Vec::new()),
         }
     }
 
@@ -456,23 +509,44 @@ impl<'c> Reader<'c> {
             .into_iter()
             .flatten()
         {
-            if let Some(value) = question.parameters.get(&p.name) {
-                parameters.insert(p.name.clone(), value.clone());
+            // From the article that asks, else from the nearest question
+            // around this one that has it, such as the leave days of art.
+            // 13a for a regulation the reduction for art. 13a calls.
+            let around = self.answering.borrow();
+            let value = question.parameters.get(&p.name).cloned().or_else(|| {
+                around
+                    .iter()
+                    .rev()
+                    .find_map(|(_, asked)| asked.get(&p.name).cloned())
+            });
+            if let Some(value) = value {
+                parameters.insert(p.name.clone(), value);
             }
         }
         for input in article.get_inputs() {
-            let Some(decisions) = input.source.as_ref().and_then(|s| s.decisions.as_ref()) else {
+            let Some(source) = input.source.as_ref() else {
                 continue;
             };
-            let kind = decision_kind(service, decisions, day)?;
-            parameters.insert(input.name.clone(), rows(&self.grams, decisions, &kind)?);
+            if let Some(decisions) = &source.decisions {
+                let kind = decision_kind(service, decisions, day)?;
+                parameters.insert(input.name.clone(), rows(&self.grams, decisions, &kind)?);
+            } else if let Some(stream) = &source.executograms {
+                parameters.insert(input.name.clone(), executogram_rows(&self.grams, stream)?);
+            }
         }
         let outputs = [question.term];
         let date = question.calculation_date;
+        // The reduction may call rulework that reads an open term the cell
+        // answers too, such as a regulation that asks where the school is
+        // established (RFC-051): the cell answers it there as well.
+        let call = Call {
+            findings: BTreeMap::new(),
+            answerer: Some(self),
+        };
         Ok(if self.explain == Some(question.term) {
-            service.evaluate_law_with_trace(&reduction.id, &outputs, parameters, date)?
+            service.evaluate_law_with_trace_in(&reduction.id, &outputs, parameters, call, date)?
         } else {
-            service.evaluate_law(&reduction.id, &outputs, parameters, date)?
+            service.evaluate_law_in(&reduction.id, &outputs, parameters, call, date)?
         })
     }
 }
@@ -503,9 +577,27 @@ impl OpenTermAnswerer for Reader<'_> {
                 self.recording_actor
             )),
         };
-        let result = self
-            .run(service, reduction, question, &term, day)
-            .map_err(in_cell)?;
+        if self.answering.borrow().iter().any(|(t, _)| *t == term) {
+            let chain: Vec<String> = self
+                .answering
+                .borrow()
+                .iter()
+                .map(|(t, _)| t.to_string())
+                .collect();
+            return Err(EngineError::CircularReference(format!(
+                "the cell of '{}' is asked {term} while answering it ({}): its reduction \
+                 '{}' asks its own answer",
+                self.recording_actor,
+                chain.join(" -> "),
+                reduction.id
+            )));
+        }
+        self.answering
+            .borrow_mut()
+            .push((term.clone(), question.parameters.clone()));
+        let ran = self.run(service, reduction, question, &term, day);
+        self.answering.borrow_mut().pop();
+        let result = ran.map_err(in_cell)?;
         let value = result.outputs.get(question.term).cloned().ok_or_else(|| {
             EngineError::ResolutionError(format!(
                 "reduction '{}' of the cell of '{}' gave no '{}'",
@@ -545,6 +637,7 @@ mod tests {
             kind: kind.into(),
             grondslag: grondslag.into(),
             refers_to: refers_to.map(str::to_string),
+            stream: None,
             recording_actor: ACTOR.into(),
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
             moment: None,
