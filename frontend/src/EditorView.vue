@@ -2936,7 +2936,7 @@ async function handleActionSave() {
                   </nldd-toolbar-item>
                   <!-- YAML parse-status (Machine-readable pane). -->
                   <nldd-toolbar-item v-if="view === 'yaml' && parseError" slot="end" label="YAML">
-                    <nldd-tag color="critical" size="sm" text="YAML parse error"></nldd-tag>
+                    <nldd-badge color="critical" size="sm" text="YAML parse error"></nldd-badge>
                     <nldd-menu-item
                       slot="overflow"
                       text="YAML parse error"
