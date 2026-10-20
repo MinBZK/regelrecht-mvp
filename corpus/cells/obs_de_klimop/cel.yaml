@@ -1,0 +1,6 @@
+---
+# Wie deze cel is (RFC-052). De wet noemt een bevoegde (competent_authority);
+# de engine vraagt een cel alleen als die haar naam of categorie noemt.
+# Fictieve school.
+name: Het hoofd van OBS De Klimop
+category: het hoofd

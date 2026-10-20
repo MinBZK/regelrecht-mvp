@@ -270,6 +270,7 @@ pub fn aanvragen(
 ) -> Result<Gram> {
     cell.record_submission(
         &mut corpus.service()?,
+        &[],
         corpus.law(),
         corpus.article(),
         None,
@@ -322,7 +323,7 @@ fn keer(beantwoord: &[&PathNode], node: &PathNode) -> Option<usize> {
 /// Why the decision `id` came out as it did ([`Waarom`]).
 pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
     let mut service = corpus.service()?;
-    let result = cell.explain(&mut service, id)?;
+    let result = cell.explain(&mut service, &[], id)?;
     let mut antwoorden = Vec::new();
     if let Some(root) = &result.trace {
         let gevraagd = beantwoord(root);
@@ -353,7 +354,7 @@ pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
         keten: keten(&result)?,
         ingevuld: result.open_terms,
         antwoorden,
-        bevindingen: cell.findings(&mut service, id)?,
+        bevindingen: cell.findings(&mut service, &[], id)?,
     })
 }
 
@@ -751,7 +752,7 @@ pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cell, id: &str, begrip: &str) -> R
     // only inside the reductions for `begrip`, as the regeling's terms on
     // where the school is established are now.
     let mut eerder: std::collections::BTreeMap<String, usize> = Default::default();
-    for result in cell.explain_answer(&mut service, id, begrip)? {
+    for result in cell.explain_answer(&mut service, &[], id, begrip)? {
         let mut uitvoer = Map::new();
         let mut gelezen = Vec::new();
         if let Some(root) = &result.trace {
@@ -837,6 +838,7 @@ fn beslissen(
     let mut service = corpus.service()?;
     cell.decide(
         &mut service,
+        &[],
         law_id,
         article,
         op,
@@ -879,6 +881,7 @@ pub fn bezwaren(
 ) -> Result<Gram> {
     cell.record_submission(
         &mut corpus.service()?,
+        &[],
         corpus.awb(),
         corpus.objection(),
         Some(besluit),
@@ -926,7 +929,7 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
             .ok_or_else(|| Error::Setup(format!("'{}' has no grondslag", bestreden.id)))?;
         let mut service = corpus.service()?;
         let shape = decision::derive(&service, law_id, article, bestreden.recorded_on)?;
-        for naam in cell.findings(&mut service, &bestreden.id)? {
+        for naam in cell.findings(&mut service, &[], &bestreden.id)? {
             let Some(input) = shape.input(&naam) else {
                 continue;
             };

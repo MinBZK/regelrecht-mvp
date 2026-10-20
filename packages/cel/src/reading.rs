@@ -54,7 +54,7 @@ use serde_json::Map;
 
 use crate::chronicle::Gram;
 use crate::chronicle::EXECUTOGRAM;
-use crate::error::{setup, Result};
+use crate::error::{refused, setup, Result};
 use crate::shape::article_on;
 use regelrecht_law_model::stored;
 
@@ -334,6 +334,51 @@ pub fn refuse_undeclared_terms(
     Ok(())
 }
 
+/// Each term a reduction in force on `day` fills must be one the cell is
+/// competent for (RFC-052): where the open term names who may answer it
+/// (its own `competent_authority`), the cell's identity `authority` must be
+/// among them. The article's `competent_authority` says who decides and
+/// plays no part here. Otherwise the cell would answer for an actor the law does not name;
+/// an answer from a cell the law does not make competent is an error, never
+/// silently dropped.
+pub fn refuse_incompetent(
+    service: &LawExecutionService,
+    reductions: &[Reduction],
+    day: NaiveDate,
+    recording_actor: &str,
+    authority: &Authority,
+) -> Result<()> {
+    for reduction in in_force(reductions, day) {
+        for term in &reduction.terms {
+            let Some(named) = article_on(service, &term.law, &term.article, day)
+                .and_then(|article| article.machine_readable.as_ref())
+                .and_then(|mr| mr.open_terms.as_ref())
+                .and_then(|terms| terms.iter().find(|t| t.id == term.open_term))
+                .and_then(|open_term| open_term.competent_authority.as_ref())
+                .and_then(|authority| authority.named())
+            else {
+                continue;
+            };
+            if !authority.is_named_by(named) {
+                let names: Vec<String> = named.iter().map(|n| format!("'{}'", n.name)).collect();
+                return Err(refused(format!(
+                    "reduction '{}' of the cell of '{recording_actor}' fills open term {term}, \
+                     but that term makes {} competent on {day}, and the cell is '{}'{}",
+                    reduction.id,
+                    names.join(" or "),
+                    authority.name,
+                    authority
+                        .category
+                        .as_deref()
+                        .map(|c| format!(" ({c})"))
+                        .unwrap_or_default()
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Each fact a reduction in force on `day` reads (`source.facts`, RFC-051)
 /// must be one its article requires on that day: otherwise the reduction
 /// would read no executograms where the cell never records any.
@@ -369,25 +414,28 @@ pub fn refuse_unrequired_facts(
 /// during the decision leaves nothing behind.
 pub fn load<'a>(
     service: &'a mut LawExecutionService,
-    recording_actor: &str,
-    reductions: &[Reduction],
+    cells: &[(&str, &[Reduction])],
 ) -> Result<Loaded<'a>> {
     let mut loaded = Loaded {
         service,
         laws: Vec::new(),
     };
-    for reduction in reductions {
-        if !loaded.laws.contains(&reduction.id) {
-            if loaded.service.has_law(&reduction.id) {
-                return Err(setup(format!(
-                    "a law '{}' is already loaded; the cell of '{recording_actor}' loads its \
-                     reduction by that id itself",
-                    reduction.id
-                )));
+    for (recording_actor, reductions) in cells {
+        let mut own = Vec::new();
+        for reduction in *reductions {
+            if !own.contains(&reduction.id) {
+                if loaded.service.has_law(&reduction.id) {
+                    return Err(setup(format!(
+                        "a law '{}' is already loaded; the cell of '{recording_actor}' loads \
+                         its reduction by that id itself",
+                        reduction.id
+                    )));
+                }
+                own.push(reduction.id.clone());
+                loaded.laws.push(reduction.id.clone());
             }
-            loaded.laws.push(reduction.id.clone());
+            loaded.service.load_law(&reduction.yaml)?;
         }
-        loaded.service.load_law(&reduction.yaml)?;
     }
     Ok(loaded)
 }
@@ -455,7 +503,7 @@ pub struct Asked {
 pub struct Reader<'c> {
     recording_actor: &'c str,
     /// Who the cell is, for the engine's routing on competence (RFC-052).
-    authority: Authority,
+    authority: &'c Authority,
     reductions: &'c [Reduction],
     grams: Vec<Gram>,
     explain: Option<&'c str>,
@@ -470,22 +518,19 @@ pub struct Reader<'c> {
 }
 
 impl<'c> Reader<'c> {
-    /// The cell of `recording_actor` with `reductions`, reading `grams`.
-    /// The reader runs the reduction for the term `explain` with its trace.
+    /// The cell of `recording_actor`, who is `authority`, with
+    /// `reductions`, reading `grams`. The reader runs the reduction for the
+    /// term `explain` with its trace.
     pub fn new(
         recording_actor: &'c str,
+        authority: &'c Authority,
         reductions: &'c [Reduction],
         grams: Vec<Gram>,
         explain: Option<&'c str>,
     ) -> Self {
         Self {
             recording_actor,
-            // Until the cell has an identity of its own, it is known by the
-            // name of its directory, in no category.
-            authority: Authority {
-                name: recording_actor.to_string(),
-                category: None,
-            },
+            authority,
             reductions,
             grams,
             explain,
@@ -573,7 +618,7 @@ impl<'c> Reader<'c> {
 
 impl OpenTermAnswerer for Reader<'_> {
     fn authority(&self) -> &Authority {
-        &self.authority
+        self.authority
     }
 
     fn answer(
@@ -819,6 +864,15 @@ articles:
         .unwrap()
     }
 
+    /// Who the cell of these tests is.
+    fn authority() -> &'static Authority {
+        static AUTHORITY: std::sync::OnceLock<Authority> = std::sync::OnceLock::new();
+        AUTHORITY.get_or_init(|| Authority {
+            name: ACTOR.to_string(),
+            category: None,
+        })
+    }
+
     fn service() -> LawExecutionService {
         let mut service = LawExecutionService::new();
         service.load_law(DECIDING).unwrap();
@@ -861,8 +915,8 @@ articles:
     fn the_cell_answers_the_term_it_fills_and_the_engine_records_who_answered() {
         let mut service = service();
         let reductions = [reduction("reductie_a")];
-        let loaded = load(&mut service, ACTOR, &reductions).unwrap();
-        let reader = Reader::new(ACTOR, &reductions, decisions(), None);
+        let loaded = load(&mut service, &[(ACTOR, &reductions)]).unwrap();
+        let reader = Reader::new(ACTOR, authority(), &reductions, decisions(), None);
         let result = granted(&loaded, &reader).unwrap();
         // One grant in the chronicle: leave is already granted.
         assert_eq!(result.outputs["verleend"], Value::Bool(false));
@@ -893,8 +947,14 @@ articles:
     fn the_reduction_the_cell_explains_runs_with_its_trace() {
         let mut service = service();
         let reductions = [reduction("reductie_a")];
-        let loaded = load(&mut service, ACTOR, &reductions).unwrap();
-        let reader = Reader::new(ACTOR, &reductions, decisions(), Some("al_verleend"));
+        let loaded = load(&mut service, &[(ACTOR, &reductions)]).unwrap();
+        let reader = Reader::new(
+            ACTOR,
+            authority(),
+            &reductions,
+            decisions(),
+            Some("al_verleend"),
+        );
         granted(&loaded, &reader).unwrap();
         let asked = reader.asked();
         let trace = asked[0].explained.as_ref().unwrap().trace.as_ref().unwrap();
@@ -907,7 +967,7 @@ articles:
         // its implements is the cell's declaration, no implementation.
         let mut service = service();
         let reductions = [reduction("reductie_a")];
-        let loaded = load(&mut service, ACTOR, &reductions).unwrap();
+        let loaded = load(&mut service, &[(ACTOR, &reductions)]).unwrap();
         let e = loaded
             .evaluate_law("wet_fictief", &["verleend"], parameters(), "2026-10-20")
             .unwrap_err();
@@ -918,8 +978,8 @@ articles:
     fn without_the_decision_the_reduction_reads_an_empty_chronicle() {
         let mut service = service();
         let reductions = [reduction("reductie_a")];
-        let loaded = load(&mut service, ACTOR, &reductions).unwrap();
-        let reader = Reader::new(ACTOR, &reductions, Vec::new(), None);
+        let loaded = load(&mut service, &[(ACTOR, &reductions)]).unwrap();
+        let reader = Reader::new(ACTOR, authority(), &reductions, Vec::new(), None);
         let result = granted(&loaded, &reader).unwrap();
         assert_eq!(result.outputs["verleend"], Value::Bool(true));
         let regelrecht_engine::FilledBy::Answer(provenance) = &result.open_terms[0].filled_by
@@ -943,8 +1003,8 @@ articles:
         let reductions = [later];
         assert!(terms_on(&reductions, day()).is_empty());
         let mut service = service();
-        let loaded = load(&mut service, ACTOR, &reductions).unwrap();
-        let reader = Reader::new(ACTOR, &reductions, decisions(), None);
+        let loaded = load(&mut service, &[(ACTOR, &reductions)]).unwrap();
+        let reader = Reader::new(ACTOR, authority(), &reductions, decisions(), None);
         assert!(granted(&loaded, &reader).is_err());
         assert!(reader.asked().is_empty());
     }
@@ -982,7 +1042,7 @@ articles:
     fn a_law_already_loaded_under_the_id_is_not_replaced() {
         let mut service = service();
         let reductions = [reduction("wet_fictief")];
-        let e = load(&mut service, ACTOR, &reductions).err().unwrap();
+        let e = load(&mut service, &[(ACTOR, &reductions)]).err().unwrap();
         assert!(e.to_string().contains("already loaded"), "{e}");
         assert!(service.has_law("wet_fictief"));
     }
@@ -1036,14 +1096,14 @@ articles:
         let reductions = [reduction("reductie_a")];
         let mut service = service();
         let early = |service: &mut LawExecutionService| -> Result<()> {
-            let _loaded = load(service, ACTOR, &reductions)?;
+            let _loaded = load(service, &[(ACTOR, &reductions)])?;
             Err(setup("the decision failed"))
         };
         assert!(early(&mut service).is_err());
         assert!(!service.has_law("reductie_a"));
 
         let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _loaded = load(&mut service, ACTOR, &reductions).unwrap();
+            let _loaded = load(&mut service, &[(ACTOR, &reductions)]).unwrap();
             panic!("the decision panicked");
         }));
         assert!(panicked.is_err());

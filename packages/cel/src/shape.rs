@@ -14,8 +14,8 @@
 //! asks (RFC-050).
 
 use chrono::NaiveDate;
-use regelrecht_engine::{Article, LawExecutionService, ParameterType};
-use regelrecht_law_model::stored;
+use regelrecht_engine::{Article, Authority, LawExecutionService, ParameterType};
+use regelrecht_law_model::{stored, ArticleRequirement};
 use serde::Serialize;
 
 use crate::error::{refused, setup, Result};
@@ -268,17 +268,8 @@ pub fn fact_fields(
     fact: &str,
     day: NaiveDate,
 ) -> Result<Vec<Field>> {
-    let (grondslag, name) = split_fact(fact)?;
-    let (law_id, number) = grondslag
-        .split_once('#')
-        .ok_or_else(|| refused(format!("'{grondslag}' is no <regulation>#<article>")))?;
-    let article = article_on(service, law_id, number, day)
-        .ok_or_else(|| refused(format!("{grondslag} has no version in force on {day}")))?;
-    let required = article.required_fact(name).ok_or_else(|| {
-        refused(format!(
-            "{grondslag} requires no fact '{name}' (requires, fact) on {day}"
-        ))
-    })?;
+    let (grondslag, _) = split_fact(fact)?;
+    let (article, required) = required_fact(service, fact, day)?;
     required
         .parameters
         .iter()
@@ -307,6 +298,61 @@ pub fn fact_fields(
             })
         })
         .collect()
+}
+
+/// The article of `fact` in force on `day` and its `requires` entry for
+/// that fact. Refused when the article has no version in force on `day` or
+/// does not require that fact.
+fn required_fact<'s>(
+    service: &'s LawExecutionService,
+    fact: &str,
+    day: NaiveDate,
+) -> Result<(&'s Article, &'s ArticleRequirement)> {
+    let (grondslag, name) = split_fact(fact)?;
+    let (law_id, number) = grondslag
+        .split_once('#')
+        .ok_or_else(|| refused(format!("'{grondslag}' is no <regulation>#<article>")))?;
+    let article = article_on(service, law_id, number, day)
+        .ok_or_else(|| refused(format!("{grondslag} has no version in force on {day}")))?;
+    let required = article.required_fact(name).ok_or_else(|| {
+        refused(format!(
+            "{grondslag} requires no fact '{name}' (requires, fact) on {day}"
+        ))
+    })?;
+    Ok((article, required))
+}
+
+/// Refuse to record `fact` in the cell of `authority` when the fact names
+/// who establishes it (`competent_authority`, schema v0.8.8, RFC-052) and
+/// does not name this cell. A fact without one may be recorded by any cell.
+pub fn refuse_incompetent_fact(
+    service: &LawExecutionService,
+    fact: &str,
+    day: NaiveDate,
+    authority: &Authority,
+) -> Result<()> {
+    let (_, required) = required_fact(service, fact, day)?;
+    let Some(named) = required
+        .competent_authority
+        .as_ref()
+        .and_then(|competent| competent.named())
+    else {
+        return Ok(());
+    };
+    if authority.is_named_by(named) {
+        return Ok(());
+    }
+    let names: Vec<String> = named.iter().map(|n| format!("'{}'", n.name)).collect();
+    Err(refused(format!(
+        "{fact} is established by {}, and the cell is '{}'{}",
+        names.join(" or "),
+        authority.name,
+        authority
+            .category
+            .as_deref()
+            .map(|c| format!(" ({c})"))
+            .unwrap_or_default()
+    )))
 }
 
 pub(crate) fn article_on<'s>(

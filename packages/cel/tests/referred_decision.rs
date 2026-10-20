@@ -18,6 +18,14 @@ use regelrecht_cel::{reading, Cell, Error, Gram};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
+/// An empty directory for a cell, with only its identity (`cel.yaml`,
+/// RFC-052).
+fn cell_tempdir() -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("cel.yaml"), "name: Testcel\n").unwrap();
+    dir
+}
+
 /// A procedure for a beschikking, a period that runs from the
 /// announcement, and whether an objection came in within it.
 const PROCEDURE: &str = r#"
@@ -244,7 +252,7 @@ fn service() -> LawExecutionService {
 /// A cell with the reduction, kept in its directory as `Cell::in_memory`
 /// reads it.
 fn cell() -> (Cell, tempfile::TempDir) {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let path = dir
         .path()
         .join("reducties/reductie_al_verleend_fictief/2026-01-01.yaml");
@@ -257,7 +265,7 @@ fn cell() -> (Cell, tempfile::TempDir) {
 /// A cell whose directory holds no reductions: a term no regulation fills
 /// is then the deciding authority's finding.
 fn bare(actor: &str) -> Cell {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     Cell::in_memory(actor, dir.path()).unwrap()
 }
 
@@ -272,6 +280,7 @@ fn object(value: Value) -> Map<String, Value> {
 fn apply(cell: &mut Cell, service: &mut LawExecutionService, dagen: i64, on: &str) -> Gram {
     cell.record_submission(
         service,
+        &[],
         VERLOF_LAW,
         "1",
         None,
@@ -290,6 +299,7 @@ fn decide(
 ) -> Result<Vec<Gram>, Error> {
     cell.decide(
         service,
+        &[],
         law,
         "1",
         submission,
@@ -308,6 +318,7 @@ fn object_to(
 ) -> Result<Gram, Error> {
     cell.record_submission(
         service,
+        &[],
         BEZWAAR_LAW,
         "1",
         Some(contested),
@@ -388,6 +399,7 @@ fn what_comes_from_the_decision_the_submitter_does_not_supply() {
     let e = cell
         .record_submission(
             &mut service,
+            &[],
             BEZWAAR_LAW,
             "1",
             None,
@@ -403,6 +415,7 @@ fn what_comes_from_the_decision_the_submitter_does_not_supply() {
     let unreferred = cell
         .record_submission(
             &mut service,
+            &[],
             BEZWAAR_LAW,
             "1",
             None,
@@ -843,6 +856,7 @@ fn the_decision_value_holds_the_findings_apart() {
     let refused = cell
         .decide(
             &mut service,
+            &[],
             VERLOF_LAW,
             "1",
             &applied.id,
@@ -868,6 +882,7 @@ fn the_decision_value_holds_the_findings_apart() {
         let decided = cell
             .decide(
                 &mut service,
+                &[],
                 BEZWAAR_LAW,
                 "1",
                 &bezwaar.id,
@@ -912,6 +927,7 @@ fn the_decision_value_holds_the_findings_apart() {
     let e = cell
         .decide(
             &mut service,
+            &[],
             BEZWAAR_LAW,
             "1",
             &bezwaar.id,
@@ -946,6 +962,7 @@ fn the_decision_value_holds_the_findings_apart() {
         let e = cell
             .decide(
                 &mut service,
+                &[],
                 VERLOF_LAW,
                 "1",
                 &applied.id,
@@ -1006,6 +1023,7 @@ fn decided_with(cell: &mut Cell, service: &mut LawExecutionService, findings: Va
     findings.insert("al_verleend".into(), json!(false));
     cell.decide(
         service,
+        &[],
         VERLOF_LAW,
         "1",
         &applied.id,
@@ -1027,6 +1045,7 @@ fn decide_objection(
 ) -> Result<Vec<Gram>, Error> {
     cell.decide(
         service,
+        &[],
         BEZWAAR_LAW,
         "1",
         bezwaar,
@@ -1053,7 +1072,7 @@ fn a_term_a_regulation_filled_is_no_finding_of_the_decision() {
     assert_eq!(granted.fields["reden_gewichtig"], json!(true));
     // Only the head's finding that no leave was granted before.
     assert_eq!(
-        cell.findings(&mut service, &granted.id).unwrap(),
+        cell.findings(&mut service, &[], &granted.id).unwrap(),
         ["al_verleend"]
     );
 
@@ -1093,7 +1112,7 @@ fn a_term_a_regulation_filled_is_no_finding_of_the_decision() {
     let new = &decided[1];
     assert_eq!(new.fields["reden_gewichtig"], json!(false));
     assert_eq!(
-        cell.findings(&mut service, &new.id).unwrap(),
+        cell.findings(&mut service, &[], &new.id).unwrap(),
         ["al_verleend", "reden_gewichtig"]
     );
     assert_eq!(new.outputs["verleend"], json!(false));
@@ -1114,7 +1133,7 @@ fn a_regulation_in_force_at_the_call_anew_sets_the_old_finding_aside() {
     let refused = decided_with(&mut cell, &mut service, json!({"reden_gewichtig": false}));
     assert_eq!(refused.outputs["verleend"], json!(false));
     assert_eq!(
-        cell.findings(&mut service, &refused.id).unwrap(),
+        cell.findings(&mut service, &[], &refused.id).unwrap(),
         ["al_verleend", "reden_gewichtig"]
     );
 
@@ -1144,7 +1163,7 @@ fn a_regulation_in_force_at_the_call_anew_sets_the_old_finding_aside() {
     assert_eq!(new.fields["reden_gewichtig"], json!(true));
     // The regulation set the old finding aside; the other stays.
     assert_eq!(
-        cell.findings(&mut service, &new.id).unwrap(),
+        cell.findings(&mut service, &[], &new.id).unwrap(),
         ["al_verleend"]
     );
 }
@@ -1180,7 +1199,7 @@ fn a_finding_on_a_term_both_articles_name_reaches_the_call_anew() {
     .unwrap();
     assert_eq!(decided[0].fields["reden_gewichtig"], json!(true));
     assert_eq!(
-        cell.findings(&mut service, &decided[0].id).unwrap(),
+        cell.findings(&mut service, &[], &decided[0].id).unwrap(),
         ["reden_gewichtig"]
     );
     assert_eq!(decided.len(), 2, "{decided:#?}");
@@ -1359,6 +1378,7 @@ fn a_new_decision_that_takes_a_decision_in_turn_is_refused() {
     let applied = cell
         .record_submission(
             &mut service,
+            &[],
             "wet_nest_fictief",
             "1",
             None,
@@ -1369,6 +1389,7 @@ fn a_new_decision_that_takes_a_decision_in_turn_is_refused() {
     let nested = cell
         .decide(
             &mut service,
+            &[],
             "wet_nest_fictief",
             "1",
             &applied.id,
@@ -1461,6 +1482,7 @@ fn the_deciding_authority_supplies_no_decision() {
     let e = cell
         .decide(
             &mut service,
+            &[],
             BEZWAAR_LAW,
             "1",
             &bezwaar.id,
@@ -1564,6 +1586,7 @@ fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
     let again = cell
         .record_submission(
             &mut service,
+            &[],
             VERLOF_LAW,
             "1",
             Some(&granted.id),
@@ -1579,6 +1602,7 @@ fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
     let e = cell
         .record_submission(
             &mut service,
+            &[],
             VERLOF_LAW,
             "1",
             Some(&granted.id),
@@ -1615,8 +1639,11 @@ fn a_term_only_a_reduction_fills_is_no_finding_and_replays() {
     .unwrap()
     .remove(0);
     assert_eq!(granted.fields["al_verleend"], json!(false));
-    assert!(cell.findings(&mut service, &granted.id).unwrap().is_empty());
-    let result = cell.explain(&mut service, &granted.id).unwrap();
+    assert!(cell
+        .findings(&mut service, &[], &granted.id)
+        .unwrap()
+        .is_empty());
+    let result = cell.explain(&mut service, &[], &granted.id).unwrap();
     assert!(result.open_terms.iter().any(|f| f.term == "al_verleend"
         && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer(answer)
                 if answer.law_id == "reductie_al_verleend_fictief")));

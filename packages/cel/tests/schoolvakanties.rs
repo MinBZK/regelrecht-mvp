@@ -140,7 +140,7 @@ fn applied(cell: &mut Cell, first: &str, last: &str, on: &str) -> Gram {
         "dagtekening": on,
         "gevraagde_beschikking": "vakantieverlof",
     }));
-    cell.record_submission(&mut service(), LAW, ARTICLE, None, &supplied, day(on))
+    cell.record_submission(&mut service(), &[], LAW, ARTICLE, None, &supplied, day(on))
         .unwrap()
 }
 
@@ -151,6 +151,7 @@ fn decide(cell: &mut Cell, application: &str, on: &str) -> Result<Gram, Error> {
     let findings = map(json!({ PROFESSION: true }));
     cell.decide(
         &mut service(),
+        &[],
         LAW,
         ARTICLE,
         application,
@@ -194,12 +195,12 @@ fn leave_in_the_christmas_holiday_is_refused_and_nobody_judged_it() {
     assert!(!granted(&gram));
     // What the engine used: the cell's answer, not a finding of the head.
     assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
-    let found = cell.findings(&mut service(), &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &gram.id).unwrap();
     assert_eq!(found, vec![PROFESSION.to_string()]);
 
     // In the trace of the decision, the term is one node, filled in by the
     // school: its cell, with the reduction and its version.
-    let explained = cell.explain(&mut service(), &gram.id).unwrap();
+    let explained = cell.explain(&mut service(), &[], &gram.id).unwrap();
     let trace = explained.trace.as_ref().unwrap();
     let nodes = answered(trace);
     let node = nodes
@@ -219,7 +220,7 @@ fn leave_in_the_christmas_holiday_is_refused_and_nobody_judged_it() {
     // Why: the cell's own account runs its reduction, which read the
     // kerstvakantie from the regeling.
     let why = cell
-        .explain_answer(&mut service(), &gram.id, OUTSIDE_HOLIDAYS)
+        .explain_answer(&mut service(), &[], &gram.id, OUTSIDE_HOLIDAYS)
         .unwrap();
     assert_eq!(why.len(), 1);
     assert_eq!(why[0].outputs[OUTSIDE_HOLIDAYS].to_string(), "false");
@@ -289,7 +290,7 @@ fn a_school_that_moves_before_the_leave_is_judged_on_the_leave_days() {
     // The cell explains where the school was: the reduction for its
     // vestiging, asked inside the one for the holidays, read the move.
     let why = cell
-        .explain_answer(&mut service(), &gram.id, "gemeente_van_vestiging")
+        .explain_answer(&mut service(), &[], &gram.id, "gemeente_van_vestiging")
         .unwrap();
     assert_eq!(
         why[0].outputs["gemeente_van_vestiging"].to_string(),
@@ -302,7 +303,7 @@ fn a_school_that_moves_before_the_leave_is_judged_on_the_leave_days() {
     let early = applied(&mut cell, "2027-04-19", "2027-04-23", "2027-04-15");
     let gram = decide(&mut cell, &early.id, "2027-04-15").unwrap();
     let why = cell
-        .explain_answer(&mut service(), &gram.id, "gemeente_van_vestiging")
+        .explain_answer(&mut service(), &[], &gram.id, "gemeente_van_vestiging")
         .unwrap();
     assert_eq!(
         why[0].outputs["gemeente_van_vestiging"].to_string(),
@@ -344,6 +345,7 @@ fn a_school_year_the_policy_does_not_know_leaves_it_to_the_head() {
     let gram = cell
         .decide(
             &mut service(),
+            &[],
             LAW,
             ARTICLE,
             &app.id,
@@ -354,7 +356,7 @@ fn a_school_year_the_policy_does_not_know_leaves_it_to_the_head() {
         .unwrap()
         .remove(0);
     assert!(!granted(&gram));
-    let found = cell.findings(&mut service(), &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &gram.id).unwrap();
     assert!(found.contains(&OUTSIDE_HOLIDAYS.to_string()), "{found:?}");
 }
 
@@ -407,6 +409,7 @@ fn the_summer_of_the_school_year_before_runs_into_the_next() {
         let gram = cell
             .decide(
                 &mut service_with(&next),
+                &[],
                 LAW,
                 ARTICLE,
                 &app.id,
@@ -433,6 +436,7 @@ fn the_next_version_of_the_policy_holds_the_herfstvakantie_of_its_year() {
     let gram = cell
         .decide(
             &mut service_with(&next),
+            &[],
             LAW,
             ARTICLE,
             &app.id,
