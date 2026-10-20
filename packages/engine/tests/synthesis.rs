@@ -893,3 +893,112 @@ articles:
         "{e}"
     );
 }
+
+/// A deciding article with one more output beside its decision: whether a
+/// card was issued before, for the college or the national issuer to say.
+/// The decision does not read it, so it belongs to no item (RFC-052).
+const DECIDING: &str = r#"
+$id: wet_beslissing
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Het college verstrekt de kaart.
+    machine_readable:
+      competent_authority:
+        name: college van burgemeester en wethouders
+        type: CATEGORY
+      open_terms:
+        - id: eerder_verstrekt
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
+            - name: Landelijke uitgever
+          type: boolean
+          required: true
+          decided_per_case_by: het college
+          combine: OR
+      execution:
+        produces:
+          - type: BESCHIKKING
+            outputs: [kaart_verstrekt]
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        output:
+          - name: kaart_verstrekt
+            type: boolean
+          - name: eerder_verstrekt
+            type: boolean
+        actions:
+          - output: kaart_verstrekt
+            value: true
+          - output: eerder_verstrekt
+            value: $eerder_verstrekt
+"#;
+
+/// `output` of the deciding article, read through `source.regulation`.
+fn read_deciding(
+    output: &str,
+    answerer: &dyn OpenTermAnswerer,
+    sphere: Vec<&dyn OpenTermAnswerer>,
+) -> regelrecht_engine::ArticleResult {
+    let reader = format!(
+        r#"
+$id: wet_lezer_besluit
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Wat de lezer leest.
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        input:
+          - name: gelezen
+            type: boolean
+            source:
+              regulation: wet_beslissing
+              output: {output}
+              parameters:
+                bsn: $bsn
+        output:
+          - name: gelezen
+            type: boolean
+        actions:
+          - output: gelezen
+            value: $gelezen
+"#
+    );
+    let mut service = LawExecutionService::new();
+    service.load_law(DECIDING).unwrap();
+    service.load_law(&reader).unwrap();
+    let call = Call {
+        findings: BTreeMap::new(),
+        answerer: Some(answerer),
+        sphere,
+    };
+    service
+        .evaluate_law_with_trace_in("wet_lezer_besluit", &["gelezen"], parameters(), call, DATE)
+        .unwrap()
+}
+
+#[test]
+fn an_output_beside_the_decision_is_asked_only_when_read() {
+    let running = Fake::college("wilgendaal");
+    let other = Fake::college("oostmeer").answering("eerder_verstrekt", Value::Bool(true));
+    // The decision reads nothing of it: no cell is asked.
+    let result = read_deciding("kaart_verstrekt", &running, vec![&other]);
+    assert_eq!(result.outputs["gelezen"], Value::Bool(true));
+    assert!(running.asked().is_empty());
+    assert!(other.asked().is_empty());
+    // Read itself, the term is asked of every competent cell.
+    let result = read_deciding("eerder_verstrekt", &running, vec![&other]);
+    assert_eq!(result.outputs["gelezen"], Value::Bool(true));
+    assert_eq!(running.asked(), ["eerder_verstrekt"]);
+    assert_eq!(other.asked(), ["eerder_verstrekt"]);
+}

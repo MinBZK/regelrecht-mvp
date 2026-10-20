@@ -54,22 +54,43 @@ export const gelezen = (p, grammen) =>
     ? `${p.records_read} chronolexogram${p.records_read === 1 ? '' : 'men'} t/m ${gramNaam(p.last_record, grammen)}`
     : 'niets uit de kroniek gelezen';
 
+/**
+ * De cel die een begrip beantwoordde, zoals de bezoeker haar kent: de naam
+ * uit de casus (OBS De Klimop, gemeente Wilgendaal, GGD Wilgendaal) als zij
+ * de cel van de casus of een andere cel van haar sfeer is (RFC-052), anders
+ * haar id.
+ */
+export const celNaam = (cel) =>
+  (cel === spel.casus?.cel && spel.casus?.cel_naam) ||
+  spel.casus?.andere_cellen?.find((a) => a.cel === cel)?.cel_naam ||
+  `cel ${cel}`;
+
+/**
+ * De kroniek van de cel `cel`: die van de casus, of die van een andere cel
+ * van de sfeer (RFC-052), om daar het laatst gelezen chronolexogram te
+ * vinden.
+ */
+export const grammenVan = (cel, grammen) =>
+  cel === spel.casus?.cel ? grammen : (spel.andere?.find((a) => a.cel === cel)?.grammen ?? grammen);
+
+/** Namen als Nederlandse opsomming: "A", "A en B", "A, B en C". */
+export function opsomming(namen) {
+  if (namen.length < 2) return namen.join('');
+  return `${namen.slice(0, -1).join(', ')} en ${namen[namen.length - 1]}`;
+}
+
 /** Wie een open begrip invulde (`FilledBy`), in een zin. */
 export function ingevuldDoor(by, grammen) {
   if (by === 'finding') return 'bevinding van het bestuursorgaan';
   if (by?.regulation) return `ingevuld door ${artikelNaam(by.regulation.law_id, by.regulation.article)}`;
   if (by?.answer) {
-    return `de cel uit haar kroniek: reductie ${by.answer.law_id} (geldig vanaf ${by.answer.valid_from}), ${gelezen(by.answer, grammen)}`;
+    return `${celNaam(by.answer.answerer)} uit haar kroniek: reductie ${by.answer.law_id} (geldig vanaf ${by.answer.valid_from}), ${gelezen(by.answer, grammenVan(by.answer.answerer, grammen))}`;
   }
+  // Meer bevoegde cellen antwoordden; de wet zegt hoe hun antwoorden één
+  // waarde worden (combine, RFC-052).
+  if (by?.answers) return `samengevoegd uit de antwoorden van ${opsomming(by.answers.map((a) => celNaam(a.answerer)))}`;
   return 'niet ingevuld';
 }
-
-/**
- * De cel die een begrip beantwoordde, zoals de bezoeker haar kent: de naam
- * uit de casus (OBS De Klimop, gemeente Wilgendaal) als zij de cel van de
- * casus is, anders haar id.
- */
-const celNaam = (cel) => (cel === spel.casus?.cel && spel.casus?.cel_naam) || `cel ${cel}`;
 
 /** Een stap uit de keten in woorden: een regel tekst en een toelichting. */
 export function stapTekst(stap, grammen) {
@@ -89,10 +110,16 @@ export function stapTekst(stap, grammen) {
         : { tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}` };
     case 'begrip': {
       const cel = stap.ingevuld_door?.answer;
+      if (stap.ingevuld_door?.answers) {
+        return {
+          tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
+          toelichting: ingevuldDoor(stap.ingevuld_door, grammen),
+        };
+      }
       if (cel) {
         return {
           tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammen)})`,
+          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammenVan(cel.answerer, grammen))})`,
         };
       }
       // Een begrip dat zijn standaardwaarde kreeg, noemt de engine niet bij

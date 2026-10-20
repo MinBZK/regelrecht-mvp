@@ -62,9 +62,13 @@ articles:
                 bsn: $bsn
         output:
           - {name: kaart_verstrekt, type: boolean}
+          # Beside the decision: no item lists it (RFC-052).
+          - {name: kaart_genummerd, type: boolean}
         actions:
           - output: kaart_verstrekt
             value: {operation: NOT, value: $eerder}
+          - output: kaart_genummerd
+            value: true
   - number: '2'
     text: Of eerder een kaart is verstrekt, zegt de verstrekkende instantie.
     machine_readable:
@@ -376,6 +380,25 @@ fn an_incompetent_cell_of_the_sphere_is_refused_too() {
     let mut wilgendaal = college("wilgendaal");
     let e = issue(&mut service, &mut wilgendaal, &[&ggd], "2026-10-05").unwrap_err();
     assert!(e.to_string().contains("of the cell of 'ggd'"), "{e}");
+}
+
+#[test]
+fn an_output_beside_the_decision_is_not_recorded_with_it() {
+    // What belongs to the decision is what its item lists (RFC-047); another
+    // output of the article is not computed for it and not recorded.
+    let mut service = service();
+    let mut wilgendaal = college("wilgendaal");
+    let gram = first(&mut service, &mut wilgendaal, &[], "2026-10-05").unwrap();
+    assert!(
+        gram.outputs.contains_key("kaart_verstrekt"),
+        "{:?}",
+        gram.outputs
+    );
+    assert!(
+        !gram.outputs.contains_key("kaart_genummerd"),
+        "{:?}",
+        gram.outputs
+    );
 }
 
 #[test]

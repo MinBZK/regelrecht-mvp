@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
 regulatory_layer: AMVB
 publication_date: '2025-10-10'
@@ -949,6 +949,13 @@ articles:
       [ref2]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
+      # Bevoegd gezag (RFC-002), wie op de aanvraag beslist: het college
+      # (lid 1). Eigen keuze: alleen de categorie is gemodelleerd; welk
+      # college, zegt lid 1 (de gemeente van inschrijving), en dat is open
+      # (RFC-052). Het CBR (lid 3) is niet gemodelleerd.
+      competent_authority:
+        name: college van burgemeester en wethouders
+        type: CATEGORY
       # Lid 1: het college verstrekt de kaart aan een gehandicapte "overeenkomstig
       # de bij ministeriële regeling gestelde criteria". Die criteria staan in
       # artikel 1 van de Regeling gehandicaptenparkeerkaart. Lid 2 (de

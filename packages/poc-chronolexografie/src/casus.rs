@@ -16,7 +16,7 @@ use chrono::NaiveDate;
 use regelrecht_cel::{Cell, Error};
 use regelrecht_engine::LawLoad;
 use regelrecht_law_model::{
-    Article, ArticleBasedLaw, CompetentAuthority, HookFilter, ProcedureDefinition,
+    Article, ArticleBasedLaw, AuthorityType, CompetentAuthority, HookFilter, ProcedureDefinition,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -52,7 +52,23 @@ pub struct Casus {
     /// start and reset as the cell records anything ([`Begin`]).
     #[serde(default)]
     pub begin: Option<Begin>,
+    /// The other cells of the sphere (RFC-052): those the engine may ask
+    /// for a value another actor establishes, where the law makes them
+    /// competent. Each records what it knows before the first scenario.
+    #[serde(default)]
+    pub andere_cellen: Vec<AndereCel>,
     pub scenarios: Vec<Scenario>,
+}
+
+/// Another cell of the sphere: its directory under `corpus/cells`, its name
+/// as the visitor reads it, and what it records before the first scenario.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AndereCel {
+    pub cel: String,
+    pub cel_naam: String,
+    #[serde(default)]
+    pub begin: Option<Begin>,
 }
 
 /// What the cell records before the first scenario, on `datum`:
@@ -66,6 +82,22 @@ pub struct Begin {
     pub datum: NaiveDate,
     #[serde(default)]
     pub executogrammen: Vec<BeginExecutogram>,
+    /// Applications under the case's article, each decided on its day,
+    /// after the executograms: a card the cell issued before (RFC-052).
+    #[serde(default)]
+    pub aanvragen: Vec<BeginAanvraag>,
+}
+
+/// An application with its values `velden`, received and decided on
+/// `datum` with the deciding authority's `bevindingen`, without the
+/// sphere: the cell decides as the case file says it once did.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BeginAanvraag {
+    pub datum: NaiveDate,
+    pub velden: Map<String, Value>,
+    #[serde(default)]
+    pub bevindingen: Map<String, Value>,
 }
 
 /// An executogram of the fact `feit` (`<regulation>#<article>#<fact>`, a
@@ -229,8 +261,9 @@ pub struct Afleiding {
     pub regelwerken: Vec<String>,
 }
 
-/// Derive from the law what `casus` needs, with its `cell` (whose reductions
-/// read regelwerken of their own).
+/// Derive from the law what `casus` needs, with its `cells`: its own and the
+/// other cells of its sphere, whose reductions read regelwerken of their
+/// own.
 ///
 /// The regelwerken are those the article's law reaches, and what the cell's
 /// reductions reach. A regelwerk reaches another when it reads from it
@@ -239,7 +272,7 @@ pub struct Afleiding {
 /// or has a hook or a procedure that applies to what it produces (the Awb on
 /// every application and decision). A reduction
 /// reaches the regelwerk whose open term it fills, too.
-pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cell: &Cell) -> Result<Afleiding> {
+pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cells: &[&Cell]) -> Result<Afleiding> {
     let (law, article) = casus.artikel.split_once('#').ok_or_else(|| {
         Error::Setup(format!(
             "case '{}': '{}' names no article",
@@ -248,7 +281,7 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cell: &Cell) -> Result
     })?;
 
     let mut gevonden: Vec<String> = vec![law.to_string()];
-    for reduction in cell.reductions() {
+    for reduction in cells.iter().flat_map(|cell| cell.reductions()) {
         for id in leest(reduction.law().articles.iter()) {
             if !gevonden.contains(&id) {
                 gevonden.push(id);
@@ -422,9 +455,14 @@ fn past(filter: &HookFilter, id: &str, a: &Article) -> bool {
 fn rol(law: &ArticleBasedLaw, article: &str) -> Option<String> {
     let a = law.articles.iter().find(|a| a.number == article)?;
     let naam = |c: &CompetentAuthority| match c {
+        // A category names a kind of body: "het college van burgemeester en
+        // wethouders", as `decided_per_case_by` writes it.
+        CompetentAuthority::Structured(one) if one.kind() == AuthorityType::Category => {
+            Some(format!("het {}", one.name))
+        }
         CompetentAuthority::Structured(one) => Some(one.name.clone()),
-        // Several competent authorities: the role of the first the law names.
-        CompetentAuthority::List(all) => all.first().map(|one| one.name.clone()),
+        // On an article the loader refuses a list (RFC-052).
+        CompetentAuthority::List(_) => None,
         // A reference (`#...`) names no one by itself.
         CompetentAuthority::String(s) if !s.starts_with('#') => Some(s.clone()),
         CompetentAuthority::String(_) => None,

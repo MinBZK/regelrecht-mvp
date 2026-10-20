@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: regeling_gehandicaptenparkeerkaart
 regulatory_layer: MINISTERIELE_REGELING
 publication_date: '2012-09-14'
@@ -159,43 +159,28 @@ articles:
       # BABW: het CBR) en lid 3 (een instelling, artikel 49, tweede lid) zijn
       # niet gemodelleerd: die leden van artikel 49 zijn het ook niet, dus
       # hier vraagt geen kaart erom.
+      # Beide feiten stelt een ander vast dan wie de kaart afgeeft (RFC-052).
+      # Of het onderzoek plaatsvond, leest dit artikel bij artikel 3, dat het
+      # onderzoek omschrijft. Of eerder een kaart is verstrekt, staat hier in
+      # lid 2 zelf; het BABW spreekt nergens van een eerdere kaart.
       open_terms:
-        # Of het onderzoek plaatsvond, weet de verstrekkende instantie uit het
-        # rapport van wie het verrichtte (artikel 3, eerste lid). In de cel
-        # van de gemeente vult haar reductie het uit de ontvangen rapporten
-        # (implements); zonder rapport zwijgt zij, en geeft het college het
-        # als vaststelling. Eigen keuze: een onderzoek telt voor deze
-        # aanvraag als het op of na haar dagtekening plaatsvond. Lid 2 onder
-        # a en b laten het onderzoek achterwege bij wie eerder een kaart
-        # kreeg; dat veronderstelt een onderzoek per aanvraag, niet een
-        # onderzoek ooit.
-        # Eigen keuze: stelt het college vast dat er geen onderzoek
-        # plaatsvond (false), bijvoorbeeld omdat de aanvrager niet verschijnt,
-        # dan wordt de kaart geweigerd. Dat is een besluit van het college,
-        # geen gevolg van lid 1. Zonder vaststelling en zonder rapport faalt
-        # het besluit.
-        - id: geneeskundig_onderzoek_heeft_plaatsgehad
-          type: boolean
-          required: true
-          decided_per_case_by: >-
-            het college van burgemeester en wethouders, op het rapport van de
-            Gemeentelijke Gezondheidsdienst of de aangewezen deskundige
-            (artikel 3, eerste lid)
-          description: >-
-            Of op of na de dagtekening van de aanvraag en uiterlijk op de dag
-            van afgifte een geneeskundig onderzoek heeft plaatsgehad met
-            betrekking tot de handicap van de aanvrager (lid 1).
         # Lid 2, onder a en b: "aan de aanvrager eerder een
-        # gehandicaptenparkeerkaart is verstrekt". Een feit, geen oordeel. De
-        # cel van de gemeente kent alleen de kaarten die zij zelf verstrekte;
-        # vindt zij er geen, dan zwijgt zij, want een kaart van een andere
-        # gemeente of van het CBR telt ook.
+        # gehandicaptenparkeerkaart is verstrekt", met "de verstrekkende
+        # instantie". Wie kaarten verstrekt, zegt artikel 49 van het BABW:
+        # het college (eerste lid) en het CBR (derde lid). Elk van hen weet
+        # het uit de eigen besluiten; een kaart van een andere gemeente of
+        # van het CBR telt ook, dus elk antwoord telt mee (OR).
         - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
+            - name: CBR
           type: boolean
           required: true
           decided_per_case_by: >-
-            het college van burgemeester en wethouders, als verstrekkende
-            instantie (lid 2, onder a en b)
+            de verstrekkende instantie: het college of het CBR (artikel 49
+            van het BABW)
+          combine: OR
           description: >-
             Of aan de aanvrager eerder een gehandicaptenparkeerkaart is
             verstrekt (lid 2, onder a en b).
@@ -236,6 +221,18 @@ articles:
             description: >-
               Of de keurende instantie van oordeel is dat de aanvrager nog
               steeds voldoet aan de criteria van artikel 1 (lid 2, onder b).
+        input:
+          # Lid 1: of het onderzoek plaatsvond, zegt wie het verricht
+          # (artikel 3, eerste lid).
+          - name: geneeskundig_onderzoek_heeft_plaatsgehad
+            type: boolean
+            source:
+              regulation: regeling_gehandicaptenparkeerkaart
+              output: geneeskundig_onderzoek_heeft_plaatsgehad
+              parameters:
+                bsn_aanvrager: $bsn_aanvrager
+                dagtekening_aanvraag: $dagtekening_aanvraag
+                datum_afgifte: $datum_afgifte
         output:
           - name: gehandicaptenparkeerkaart_mag_worden_afgegeven
             type: boolean
@@ -302,18 +299,65 @@ articles:
       # aangewezen deskundige. Besluit van de eigenaar (20-10): het onderzoek
       # staat als feit (requires, fact) bij dit artikel, dat het omschrijft,
       # en niet bij artikel 2, eerste lid, dat eist dat het heeft
-      # plaatsgehad. Wat het bevat: wiens handicap is onderzocht (artikel 2,
-      # eerste lid: "de handicap van de aanvrager"), wanneer, en door wie
+      # plaatsgehad. Het feit is de handeling ("wordt het geneeskundig
+      # onderzoek verricht door", lid 1), niet de uitkomst; daarom heet het
+      # geneeskundig_onderzoek_verricht. Wat het bevat: wiens handicap is
+      # onderzocht (artikel 2, eerste lid: "de handicap van de aanvrager"),
+      # wanneer, en door wie
       # (lid 1 noemt de twee mogelijkheden; de naam van een aangewezen
       # deskundige verschilt per geval, dus vrije tekst). Wanneer het feit
       # ontstaat of wie het vastlegt, zegt de regeling niet. Lid 2 (de
       # Minister, met een arts) is niet gemodelleerd: de minister geeft hier
       # geen kaarten af.
-      requires:
-        - fact: geneeskundig_onderzoek
+      # Wie het onderzoek verricht, stelt het vast (competent_authority op
+      # het feit, RFC-052), en alleen die antwoordt op de vraag of het
+      # plaatsvond (competent_authority op het begrip). Eigen keuze: het
+      # begrip noemt zelf dezelfde twee, in plaats van ze af te leiden uit
+      # het feit dat zijn reductie leest; dat vraagt geen koppeling tussen
+      # begrip en feit in de engine. Eigen keuze: alleen de categorie is
+      # gemodelleerd; of het de GGD van de gemeente is die de kaart afgeeft,
+      # is open. Dit artikel beslist niets en noemt dus geen bevoegd gezag
+      # (RFC-002).
+      open_terms:
+        # Of het onderzoek voor deze aanvraag plaatsvond (artikel 2, eerste
+        # lid). Eigen keuze: een onderzoek telt als het op of na de
+        # dagtekening van de aanvraag plaatsvond, en uiterlijk op de dag van
+        # afgifte; lid 2 onder a en b laten het onderzoek achterwege bij wie
+        # eerder een kaart kreeg, dat veronderstelt een onderzoek per
+        # aanvraag. Zwijgt wie het onderzoek verricht, dan stelt het college
+        # het vast op het rapport dat het daarvan kreeg. Eigen keuze: stelt
+        # het college vast dat er geen onderzoek plaatsvond (false),
+        # bijvoorbeeld omdat de aanvrager niet verschijnt, dan wordt de kaart
+        # geweigerd.
+        - id: geneeskundig_onderzoek_heeft_plaatsgehad
+          competent_authority:
+            - name: Gemeentelijke Gezondheidsdienst
+              type: CATEGORY
+            - name: vanwege het gemeentelijk gezag aangewezen deskundige
+              type: CATEGORY
+          type: boolean
+          required: true
+          decided_per_case_by: >-
+            het college van burgemeester en wethouders, op het rapport van de
+            Gemeentelijke Gezondheidsdienst of de aangewezen deskundige
+            (artikel 3, eerste lid)
           description: >-
-            Het geneeskundig onderzoek met betrekking tot de handicap van de
-            aanvrager, verricht door de GGD of de aangewezen deskundige.
+            Of op of na de dagtekening van de aanvraag en uiterlijk op de dag
+            van afgifte een geneeskundig onderzoek heeft plaatsgehad met
+            betrekking tot de handicap van de aanvrager (artikel 2, eerste
+            lid).
+      requires:
+        - fact: geneeskundig_onderzoek_verricht
+          description: >-
+            Dat een geneeskundig onderzoek met betrekking tot de handicap van
+            de aanvrager is verricht door de GGD of de aangewezen deskundige:
+            voor wie, op welke dag en door wie. Het feit houdt geen uitkomst
+            van het onderzoek.
+          competent_authority:
+            - name: Gemeentelijke Gezondheidsdienst
+              type: CATEGORY
+            - name: vanwege het gemeentelijk gezag aangewezen deskundige
+              type: CATEGORY
           parameters:
             - bsn_aanvrager
             - datum_onderzoek
@@ -332,6 +376,26 @@ articles:
               Wie het onderzoek verrichtte: de Gemeentelijke Gezondheidsdienst,
               of bij externe advisering de vanwege het gemeentelijk gezag
               aangewezen deskundige (lid 1).
+          # Waarvoor artikel 2 het onderzoek vraagt: de aanvraag en de dag
+          # van afgifte. Geen gegeven van het onderzoek zelf.
+          - name: dagtekening_aanvraag
+            type: date
+            required: false
+            nullable: true
+            description: De dagtekening van de aanvraag.
+          - name: datum_afgifte
+            type: date
+            required: false
+            description: De dag waarop de kaart zou worden afgegeven.
+        output:
+          - name: geneeskundig_onderzoek_heeft_plaatsgehad
+            type: boolean
+            description: >-
+              Of voor de aanvraag een geneeskundig onderzoek heeft
+              plaatsgehad (artikel 2, eerste lid).
+        actions:
+          - output: geneeskundig_onderzoek_heeft_plaatsgehad
+            value: $geneeskundig_onderzoek_heeft_plaatsgehad
     references:
       - id: ref1
         bwb_id: BWBR0004826

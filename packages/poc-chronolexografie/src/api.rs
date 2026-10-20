@@ -19,16 +19,16 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::NaiveDate;
-use regelrecht_cel::{Cell, Error};
+use regelrecht_cel::Error;
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
 
-use crate::kern::{self, Corpus};
+use crate::kern::{self, Cellen, Corpus};
 
-/// The chosen case and its cell.
+/// The chosen case, its cell and the other cells of its sphere.
 struct Spel {
     casus: usize,
-    cell: Cell,
+    cell: Cellen,
 }
 
 #[derive(Clone)]
@@ -58,7 +58,7 @@ impl AppState {
     fn met<T>(
         &self,
         verwacht: &Verwacht,
-        stap: impl FnOnce(&Corpus, &mut Cell) -> kern::Result<T>,
+        stap: impl FnOnce(&Corpus, &mut Cellen) -> kern::Result<T>,
     ) -> Result<T, Fout> {
         let mut spel = self.spel();
         let spel = spel.as_mut().ok_or(Fout::GeenCasus)?;
@@ -101,6 +101,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/vormen", get(vormen))
         .route("/api/kroniek", get(kroniek))
         .route("/api/aanvragen", post(aanvragen))
+        .route("/api/executogrammen", post(executogrammen))
         .route("/api/besluiten", post(besluiten))
         .route("/api/besluiten/voorvertoning", post(voorvertoning_besluit))
         .route("/api/besluiten/{id}/waarom", get(waarom))
@@ -213,8 +214,26 @@ async fn vormen(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) ->
 }
 
 async fn kroniek(State(s): State<AppState>, v: Verwacht) -> Antwoord {
-    ok(s.met(&v, |_, cell| {
-        Ok(json!({ "cel": cell.recording_actor(), "grammen": cell.grams() }))
+    ok(s.met(&v, |c, cell| {
+        // The other cells of the sphere, each with its own chronicle
+        // (RFC-052), under the names the case file gives them.
+        let andere: Vec<Value> = cell
+            .andere
+            .iter()
+            .zip(&c.casus.andere_cellen)
+            .map(|(andere, a)| {
+                json!({
+                    "cel": andere.recording_actor(),
+                    "cel_naam": a.cel_naam,
+                    "grammen": andere.grams(),
+                })
+            })
+            .collect();
+        Ok(json!({
+            "cel": cell.recording_actor(),
+            "grammen": cell.grams(),
+            "andere": andere,
+        }))
     })?)
 }
 
@@ -227,6 +246,27 @@ struct Indiening {
 
 async fn aanvragen(State(s): State<AppState>, v: Verwacht, Json(b): Json<Indiening>) -> Antwoord {
     ok(s.met(&v, |c, cell| kern::aanvragen(c, cell, &b.velden, b.datum))?)
+}
+
+#[derive(Deserialize)]
+struct Vastlegging {
+    /// The other cell of the sphere that records it.
+    cel: String,
+    /// The fact, `<regulation>#<article>#<fact>`.
+    feit: String,
+    #[serde(default)]
+    velden: Map<String, Value>,
+    datum: NaiveDate,
+}
+
+async fn executogrammen(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Vastlegging>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::vastleggen(c, cell, &b.cel, &b.feit, &b.velden, b.datum)
+    })?)
 }
 
 #[derive(Deserialize)]

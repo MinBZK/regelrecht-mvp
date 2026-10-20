@@ -33,6 +33,55 @@ pub struct Corpus {
     regelwerken: Vec<(String, Option<String>, String)>,
     versies: Vec<String>,
     cell_dir: PathBuf,
+    /// The directories of the other cells of the sphere, in the order of
+    /// the case file.
+    andere_dirs: Vec<PathBuf>,
+}
+
+/// The cell of the case and the other cells of its sphere (RFC-052). It
+/// reads as the case's cell; a step that decides passes the others along.
+#[derive(Debug)]
+pub struct Cellen {
+    pub eigen: Cell,
+    pub andere: Vec<Cell>,
+}
+
+impl Cellen {
+    /// The other cells, as a decision takes them along.
+    pub fn sfeer(&self) -> Vec<&Cell> {
+        self.andere.iter().collect()
+    }
+
+    /// The open terms the reductions of every cell fill on `on`: of the
+    /// case's cell and of the sphere (RFC-052). A term one of them answers
+    /// is no judgement the form asks first.
+    pub fn terms_on(&self, on: NaiveDate) -> Vec<reading::Term> {
+        std::iter::once(&self.eigen)
+            .chain(&self.andere)
+            .flat_map(|cell| reading::terms_on(cell.reductions(), on))
+            .collect()
+    }
+
+    /// The case's cell to record in, and the others to ask.
+    pub fn splits(&mut self) -> (&mut Cell, Vec<&Cell>) {
+        (&mut self.eigen, self.andere.iter().collect())
+    }
+
+    /// Copies of every cell with the chronicle in memory, to try a decision
+    /// on ([`Cell::sandbox`]).
+    pub fn sandbox(&self) -> Self {
+        Self {
+            eigen: self.eigen.sandbox(),
+            andere: self.andere.iter().map(Cell::sandbox).collect(),
+        }
+    }
+}
+
+impl std::ops::Deref for Cellen {
+    type Target = Cell;
+    fn deref(&self) -> &Cell {
+        &self.eigen
+    }
 }
 
 impl Corpus {
@@ -42,7 +91,19 @@ impl Corpus {
     pub fn load(root: &Path, regelwerken: &Regelwerken, casus: Casus) -> Result<Self> {
         let cell_dir = root.join("cells").join(&casus.cel);
         let cell = Cell::in_memory(&casus.cel, &cell_dir)?;
-        let afleiding = afleiden(regelwerken, &casus, &cell)?;
+        let andere_dirs: Vec<PathBuf> = casus
+            .andere_cellen
+            .iter()
+            .map(|a| root.join("cells").join(&a.cel))
+            .collect();
+        let andere = casus
+            .andere_cellen
+            .iter()
+            .zip(&andere_dirs)
+            .map(|(a, dir)| Cell::in_memory(&a.cel, dir))
+            .collect::<Result<Vec<_>>>()?;
+        let cells: Vec<&Cell> = std::iter::once(&cell).chain(&andere).collect();
+        let afleiding = afleiden(regelwerken, &casus, &cells)?;
         let mut versies = Vec::new();
         let mut gelezen = Vec::new();
         for id in &afleiding.regelwerken {
@@ -59,6 +120,7 @@ impl Corpus {
             regelwerken: gelezen,
             versies,
             cell_dir,
+            andere_dirs,
         })
     }
 
@@ -71,20 +133,56 @@ impl Corpus {
             .collect()
     }
 
-    /// The case's cell, with the reductions in its directory and a
-    /// chronicle that holds what the cell knew before the first scenario
-    /// (the case's `begin`), recorded through the cell as any step: an
-    /// executogram per fact (`Cell::record_executogram`). For vakantieverlof
-    /// that is where the school is established; with the school's own
-    /// holidays in its policy, the cell answers whether leave falls outside
-    /// the school holidays and the head is not asked.
-    pub fn cell(&self) -> Result<Cell> {
-        let mut cell = Cell::in_memory(&self.casus.cel, &self.cell_dir)?;
-        if let Some(begin) = &self.casus.begin {
-            let service = self.service()?;
-            for e in &begin.executogrammen {
-                cell.record_executogram(&service, &e.feit, &e.velden, begin.datum)?;
-            }
+    /// The case's cell and the other cells of its sphere ([`Cellen`]), each
+    /// with the reductions in its directory and a chronicle that holds what
+    /// it knew before the first scenario (its `begin`), recorded through the
+    /// cell as any step: an executogram per fact
+    /// (`Cell::record_executogram`), then an application decided on its day.
+    /// For vakantieverlof that is where the school is established; with the
+    /// school's own holidays in its policy, the cell answers whether leave
+    /// falls outside the school holidays and the head is not asked.
+    pub fn cell(&self) -> Result<Cellen> {
+        let eigen = self.begonnen(&self.casus.cel, &self.cell_dir, self.casus.begin.as_ref())?;
+        let andere = self
+            .casus
+            .andere_cellen
+            .iter()
+            .zip(&self.andere_dirs)
+            .map(|(a, dir)| self.begonnen(&a.cel, dir, a.begin.as_ref()))
+            .collect::<Result<Vec<_>>>()?;
+        Ok(Cellen { eigen, andere })
+    }
+
+    /// The cell `cel` in `dir`, with what `begin` records.
+    fn begonnen(&self, cel: &str, dir: &Path, begin: Option<&crate::casus::Begin>) -> Result<Cell> {
+        let mut cell = Cell::in_memory(cel, dir)?;
+        let Some(begin) = begin else {
+            return Ok(cell);
+        };
+        let mut service = self.service()?;
+        for e in &begin.executogrammen {
+            cell.record_executogram(&service, &e.feit, &e.velden, begin.datum)?;
+        }
+        for a in &begin.aanvragen {
+            let ingediend = cell.record_submission(
+                &mut service,
+                &[],
+                self.law(),
+                self.article(),
+                None,
+                &a.velden,
+                a.datum,
+            )?;
+            cell.decide(
+                &mut service,
+                &[],
+                self.law(),
+                self.article(),
+                &ingediend.id,
+                &Map::new(),
+                &a.bevindingen,
+                a.datum,
+            )?;
         }
         Ok(cell)
     }
@@ -135,6 +233,7 @@ impl Corpus {
             "uitkomst": c.uitkomst,
             "voorbeeld": c.voorbeeld,
             "begin": c.begin,
+            "andere_cellen": c.andere_cellen,
             "scenarios": c.scenarios,
             "besluit": format!("{}#{}", a.law, a.article),
             "beslissing_op_bezwaar": format!("{}#{}", a.objection_law, a.objection),
@@ -197,9 +296,9 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
 /// objection does not change the application; a smaller request is a new
 /// application. What the authority finds anew on an objection follows from
 /// the contested decision ([`heroverweging`]).
-pub fn vormen(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
+pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
-    let beantwoord = reading::terms_on(cell.reductions(), on);
+    let beantwoord = cell.terms_on(on);
     let aanvraag = shape::derive(&service, corpus.law(), corpus.article(), on)?;
     let besluit = decision::derive_with(&service, corpus.law(), corpus.article(), on, &beantwoord)?;
     let bezwaar = shape::derive(&service, corpus.awb(), corpus.objection(), on)?;
@@ -257,20 +356,99 @@ pub fn vormen(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
             "grondslag": op_bezwaar.grondslag(),
             "uitvoer": op_bezwaar.outputs,
         },
+        "andere_cellen": handelingen(&service, corpus, cell, on)?,
     }))
+}
+
+/// What each other cell of the sphere records by hand (RFC-052): the facts
+/// whose executograms its reductions read (`source.facts`), each with the
+/// fields the article that requires it lists. For the parking card: the GGD
+/// records the medical examination (Regeling art. 3).
+fn handelingen(
+    service: &LawExecutionService,
+    corpus: &Corpus,
+    cellen: &Cellen,
+    on: NaiveDate,
+) -> Result<Vec<Value>> {
+    let mut uit = Vec::new();
+    for (cell, andere) in cellen.andere.iter().zip(&corpus.casus.andere_cellen) {
+        let mut feiten: Vec<&str> = Vec::new();
+        for reduction in cell.reductions() {
+            for article in &reduction.law().articles {
+                for input in article.get_inputs() {
+                    if let Some(f) = input.source.as_ref().and_then(|s| s.facts.as_deref()) {
+                        if !feiten.contains(&f) {
+                            feiten.push(f);
+                        }
+                    }
+                }
+            }
+        }
+        let mut acts = Vec::new();
+        for feit in feiten {
+            let velden: Vec<Value> = shape::fact_fields(service, feit, on, None)?
+                .iter()
+                .map(veld)
+                .collect();
+            acts.push(json!({ "feit": feit, "velden": velden }));
+        }
+        uit.push(json!({
+            "cel": cell.recording_actor(),
+            "cel_naam": andere.cel_naam,
+            "handelingen": acts,
+        }));
+    }
+    Ok(uit)
+}
+
+/// Another cell of the sphere records an executogram of the fact `feit`
+/// (`<regulation>#<article>#<fact>`) on `on` (RFC-051, RFC-052), such as the
+/// GGD recording that it examined the applicant. The case's own cell
+/// records nothing.
+pub fn vastleggen(
+    corpus: &Corpus,
+    cellen: &mut Cellen,
+    cel: &str,
+    feit: &str,
+    velden: &Map<String, Value>,
+    on: NaiveDate,
+) -> Result<Gram> {
+    // Only a fact this cell reads back, as the form offers it.
+    let service = corpus.service()?;
+    let mag = handelingen(&service, corpus, cellen, on)?
+        .into_iter()
+        .any(|c| {
+            c["cel"] == cel
+                && c["handelingen"]
+                    .as_array()
+                    .is_some_and(|h| h.iter().any(|h| h["feit"] == feit))
+        });
+    if !mag {
+        return Err(Error::Refused(format!(
+            "'{cel}' records no fact '{feit}': it is no other cell of this case, or none of its \
+             reductions reads that fact"
+        )));
+    }
+    let cell = cellen
+        .andere
+        .iter_mut()
+        .find(|c| c.recording_actor() == cel)
+        .ok_or_else(|| Error::Refused(format!("'{cel}' is no other cell of this case")))?;
+    cell.record_executogram(&service, feit, velden, on)
 }
 
 /// The applicant applies: record the application under the case's article,
 /// received on `on`.
 pub fn aanvragen(
     corpus: &Corpus,
-    cell: &mut Cell,
+    cell: &mut Cellen,
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Gram> {
+    let (cell, sfeer) = cell.splits();
     cell.record_submission(
         &mut corpus.service()?,
-        &[],
+        &sfeer,
         corpus.law(),
         corpus.article(),
         None,
@@ -307,23 +485,33 @@ fn beantwoord(node: &PathNode) -> Vec<&PathNode> {
     gevonden
 }
 
-/// How many times before `node` the decision asked the cell the same term,
-/// in trace order: the index of its explanation among those
-/// [`hoe_beantwoord`] gives. `None` when the cell did not answer at `node`.
+/// How many times before `node` the decision asked the same cell the same
+/// term, in trace order: the index of its explanation among those
+/// [`hoe_beantwoord`] gives. `None` when no cell answered at `node`.
 fn keer(beantwoord: &[&PathNode], node: &PathNode) -> Option<usize> {
     let i = beantwoord.iter().position(|n| std::ptr::eq(*n, node))?;
+    let door = |n: &PathNode| n.answer.as_ref().map(|a| a.answerer.clone());
     Some(
         beantwoord[..i]
             .iter()
-            .filter(|n| n.name == node.name)
+            .filter(|n| n.name == node.name && door(n) == door(node))
             .count(),
     )
 }
 
+/// Whether `child` is the node of one answerer under the node of the term
+/// `node` (RFC-052): the engine asked several competent cells, and each
+/// answer has its own node, named after the term.
+fn is_antwoord_onder(node: &PathNode, child: &PathNode) -> bool {
+    child.name == node.name
+        && child.node_type == PathNodeType::OpenTermResolution
+        && child.answer.is_some()
+}
+
 /// Why the decision `id` came out as it did ([`Waarom`]).
-pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
+pub fn waarom(corpus: &Corpus, cell: &Cellen, id: &str) -> Result<Waarom> {
     let mut service = corpus.service()?;
-    let result = cell.explain(&mut service, &[], id)?;
+    let result = cell.explain(&mut service, &cell.sfeer(), id)?;
     let mut antwoorden = Vec::new();
     if let Some(root) = &result.trace {
         let gevraagd = beantwoord(root);
@@ -332,7 +520,9 @@ pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
                 continue;
             };
             let waarde = node.result.as_ref().map(stored::to_stored).transpose()?;
-            let keer = keer(&gevraagd, node);
+            // The case's cell explains its own answers; another cell's
+            // reasoning is its own (RFC-048).
+            let keer = keer(&gevraagd, node).filter(|_| answer.answerer == cell.recording_actor());
             antwoorden.push(json!({
                 "begrip": node.name,
                 "keer": keer,
@@ -351,10 +541,10 @@ pub fn waarom(corpus: &Corpus, cell: &Cell, id: &str) -> Result<Waarom> {
             .as_ref()
             .map(PathNode::render_box_drawing)
             .unwrap_or_default(),
-        keten: keten(&result)?,
+        keten: keten(&result, cell.recording_actor())?,
         ingevuld: result.open_terms,
         antwoorden,
-        bevindingen: cell.findings(&mut service, &[], id)?,
+        bevindingen: cell.findings(&mut service, &cell.sfeer(), id)?,
     })
 }
 
@@ -413,6 +603,8 @@ pub enum Stap {
 struct Spoor<'a> {
     ingevuld: &'a [OpenTermFilled],
     beantwoord: Vec<&'a PathNode>,
+    /// The case's cell: only its answers have an explanation here.
+    eigen: &'a str,
 }
 
 /// The decision's trace condensed to the steps a reader follows: the
@@ -423,13 +615,14 @@ struct Spoor<'a> {
 /// filled it is their own account, unless the cell answered a term in that
 /// regulation; then its steps follow, down to that answer. A hook that determined nothing at the
 /// decision leaves no step either; the full trace still has it.
-pub fn keten(result: &ArticleResult) -> Result<Vec<Stap>> {
+pub fn keten<'a>(result: &'a ArticleResult, eigen: &'a str) -> Result<Vec<Stap>> {
     let Some(root) = &result.trace else {
         return Ok(Vec::new());
     };
     let spoor = Spoor {
         ingevuld: &result.open_terms,
         beantwoord: beantwoord(root),
+        eigen,
     };
     Ok(vec![Stap::Artikel {
         wet: result.law_id.clone(),
@@ -523,10 +716,23 @@ fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
                 .find(|f| f.term == node.name && f.law_id == wet && f.article == artikel)
                 .map(|f| f.filled_by.clone())
                 .or_else(|| node.answer.clone().map(FilledBy::Answer));
-            let keer = keer(&spoor.beantwoord, node);
+            // Several competent cells answered (RFC-052): each has a node
+            // below this one. The explanation is of the case's own cell, and
+            // only where its answer counted (not silent).
+            let eigen_antwoord = node.children.iter().find(|c| {
+                is_antwoord_onder(node, c)
+                    && c.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen)
+                    && c.result.as_ref().is_some_and(|r| !r.is_null())
+            });
+            let n = eigen_antwoord.unwrap_or(node);
+            let keer = keer(&spoor.beantwoord, n)
+                .filter(|_| n.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen));
             // The cell answered a term below this one, in the regulation that
             // filled it: the steps there lead to that answer.
-            let onder = node.children.iter().any(|c| !beantwoord(c).is_empty());
+            let onder = node
+                .children
+                .iter()
+                .any(|c| !is_antwoord_onder(node, c) && !beantwoord(c).is_empty());
             let stappen = if onder {
                 stappen_onder(node, spoor)?
             } else {
@@ -594,7 +800,7 @@ pub struct Handeling {
 /// The log of the cell, newest first: every chronolexogram as an action
 /// ([`Handeling`]). Nothing of it is stored apart from the chronicle; a
 /// refused step recorded nothing, so it is not in the log.
-pub fn logboek(corpus: &Corpus, cell: &Cell) -> Result<Vec<Handeling>> {
+pub fn logboek(corpus: &Corpus, cell: &Cellen) -> Result<Vec<Handeling>> {
     let service = corpus.service()?;
     let grams = cell.grams();
     let mut uit = Vec::new();
@@ -743,7 +949,7 @@ fn eerste_waarden(node: &PathNode, namen: &[String], uit: &mut Map<String, Value
 /// decisions), what it read from other rulework (such as the region of the
 /// school from the regeling), the terms the cell answered within it (such
 /// as where the school is established), and its own trace.
-pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cell, id: &str, begrip: &str) -> Result<Value> {
+pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cellen, id: &str, begrip: &str) -> Result<Value> {
     let mut service = corpus.service()?;
     let mut uit = Vec::new();
     // Per nested term, how many times the explanations before this one
@@ -752,7 +958,7 @@ pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cell, id: &str, begrip: &str) -> R
     // only inside the reductions for `begrip`, as the regeling's terms on
     // where the school is established are now.
     let mut eerder: std::collections::BTreeMap<String, usize> = Default::default();
-    for result in cell.explain_answer(&mut service, &[], id, begrip)? {
+    for result in cell.explain_answer(&mut service, &cell.sfeer(), id, begrip)? {
         let mut uitvoer = Map::new();
         let mut gelezen = Vec::new();
         if let Some(root) = &result.trace {
@@ -828,7 +1034,7 @@ pub struct Besluit {
 /// decision it takes in turn.
 fn beslissen(
     corpus: &Corpus,
-    cell: &mut Cell,
+    cell: &mut Cellen,
     law_id: &str,
     article: &str,
     op: &str,
@@ -836,9 +1042,10 @@ fn beslissen(
     on: NaiveDate,
 ) -> Result<Vec<Gram>> {
     let mut service = corpus.service()?;
+    let (cell, sfeer) = cell.splits();
     cell.decide(
         &mut service,
-        &[],
+        &sfeer,
         law_id,
         article,
         op,
@@ -851,7 +1058,7 @@ fn beslissen(
 /// The deciding authority decides on the application `aanvraag` with its findings.
 pub fn besluiten(
     corpus: &Corpus,
-    cell: &mut Cell,
+    cell: &mut Cellen,
     aanvraag: &str,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
@@ -874,14 +1081,15 @@ pub fn besluiten(
 /// 7:11 that refers to it (RFC-050).
 pub fn bezwaren(
     corpus: &Corpus,
-    cell: &mut Cell,
+    cell: &mut Cellen,
     besluit: &str,
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Gram> {
+    let (cell, sfeer) = cell.splits();
     cell.record_submission(
         &mut corpus.service()?,
-        &[],
+        &sfeer,
         corpus.awb(),
         corpus.objection(),
         Some(besluit),
@@ -899,7 +1107,12 @@ pub fn bezwaren(
 ///
 /// The admissibility is that of the decision without new findings, taken
 /// on a copy of the cell: the law decides it, not the app. Nothing is kept.
-pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate) -> Result<Value> {
+pub fn heroverweging(
+    corpus: &Corpus,
+    cell: &Cellen,
+    bezwaar: &str,
+    on: NaiveDate,
+) -> Result<Value> {
     let toets = beslissen(
         corpus,
         &mut cell.sandbox(),
@@ -929,7 +1142,7 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
             .ok_or_else(|| Error::Setup(format!("'{}' has no grondslag", bestreden.id)))?;
         let mut service = corpus.service()?;
         let shape = decision::derive(&service, law_id, article, bestreden.recorded_on)?;
-        for naam in cell.findings(&mut service, &[], &bestreden.id)? {
+        for naam in cell.findings(&mut service, &cell.sfeer(), &bestreden.id)? {
             let Some(input) = shape.input(&naam) else {
                 continue;
             };
@@ -955,7 +1168,7 @@ pub fn heroverweging(corpus: &Corpus, cell: &Cell, bezwaar: &str, on: NaiveDate)
 /// revoked one is its outcome.
 pub fn beslissen_op_bezwaar(
     corpus: &Corpus,
-    cell: &mut Cell,
+    cell: &mut Cellen,
     bezwaar: &str,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
@@ -1018,12 +1231,12 @@ fn zonder_oordeel(e: &Error) -> Option<(String, String)> {
 /// next one may surface; without, that is where it stops. Nothing is kept.
 fn voorvertonen<T>(
     corpus: &Corpus,
-    cell: &Cell,
+    cell: &Cellen,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
-    neem: impl Fn(&mut Cell, &Map<String, Value>) -> Result<T>,
+    neem: impl Fn(&mut Cellen, &Map<String, Value>) -> Result<T>,
 ) -> Result<Voorvertoning<T>> {
-    let beantwoord = reading::terms_on(cell.reductions(), on);
+    let beantwoord = cell.terms_on(on);
     let van_cel = |naam: &str| beantwoord.iter().any(|t| t.open_term == naam);
     let van_cel_op = |naam: &str, waar: &str| {
         beantwoord
@@ -1133,7 +1346,7 @@ fn toont(e: &Error, stil: &[(String, String)], bevindingen: &Map<String, Value>)
 /// outcome and the chain are those of the real decision. Nothing is kept.
 pub fn voorvertoning_besluit(
     corpus: &Corpus,
-    cell: &Cell,
+    cell: &Cellen,
     aanvraag: &str,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
@@ -1149,7 +1362,7 @@ pub fn voorvertoning_besluit(
 /// kept.
 pub fn voorvertoning_op_bezwaar(
     corpus: &Corpus,
-    cell: &Cell,
+    cell: &Cellen,
     bezwaar: &str,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
@@ -1163,7 +1376,7 @@ pub fn voorvertoning_op_bezwaar(
 /// its reductions as written, and per reduction what it reads from the
 /// chronicle, as rows: the decisions under an article (`source.decisions`)
 /// or the executograms of a fact an article requires (`source.facts`).
-pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
+pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let mut uit = Vec::new();
     for reduction in cell.reductions() {
@@ -1275,7 +1488,7 @@ mod tests {
     /// Five school days, applied for on 13 October and refused on 20
     /// October: the head judged the profession of a parent not of the kind
     /// art. 11 onder f asks.
-    fn geweigerd(corpus: &Corpus, cell: &mut Cell) -> Besluit {
+    fn geweigerd(corpus: &Corpus, cell: &mut Cellen) -> Besluit {
         let app = aanvragen(corpus, cell, &aanvraag("2027-02-05"), day("2026-10-13")).unwrap();
         besluiten(corpus, cell, &app.id, &beroep(false), day("2026-10-20")).unwrap()
     }
@@ -2039,6 +2252,7 @@ mod tests {
         let spoor = Spoor {
             ingevuld: &[],
             beantwoord: beantwoord(&root),
+            eigen: SCHOOL,
         };
         let stappen = serde_json::to_value(stappen_onder(&root, &spoor).unwrap()).unwrap();
         // The second time the term is asked counts on from the first.
@@ -2091,6 +2305,7 @@ mod tests {
         let kaart = casus("gehandicaptenparkeerkaart");
         let a = &kaart.afleiding;
         assert_eq!(a.objection, "7:11");
+        // The authority BABW art. 49 names as the one who decides (RFC-002).
         assert_eq!(a.rol, "het college van burgemeester en wethouders");
         let mut ids = a.regelwerken.clone();
         ids.sort();
@@ -2114,9 +2329,12 @@ mod tests {
         let filters = std::fs::read_to_string(dir.join("../../script/deploy-filters.mjs")).unwrap();
         let alle = Corpus::alle(&dir.join("../../corpus"), &dir.join("casussen")).unwrap();
         for c in &alle {
-            let cel = format!("corpus/cells/{}/", c.casus.cel);
+            // Its own cell and the other cells of its sphere (RFC-052).
+            let cellen = std::iter::once(&c.casus.cel)
+                .chain(c.casus.andere_cellen.iter().map(|a| &a.cel))
+                .map(|cel| format!("corpus/cells/{cel}/"));
             let mappen = c.mappen().map(|m| format!("corpus/regulation/nl/{m}/"));
-            for pad in mappen.chain([cel]) {
+            for pad in mappen.chain(cellen) {
                 assert!(
                     dockerfile.contains(&format!("COPY {pad} /app/{pad}")),
                     "{pad} not in the Dockerfile"
@@ -2216,7 +2434,7 @@ mod tests {
     /// Leave from 20 to 22 December 2027, applied for on 14 October 2026:
     /// school year 2027–2028, which the school's holiday rooster does not
     /// reach yet.
-    fn kerst_2027(corpus: &Corpus, cell: &mut Cell) -> Gram {
+    fn kerst_2027(corpus: &Corpus, cell: &mut Cellen) -> Gram {
         let mut velden = aanvraag("2027-12-22");
         velden.insert("eerste_verlofdag".into(), json!("2027-12-20"));
         aanvragen(corpus, cell, &velden, day("2026-10-14")).unwrap()
@@ -2304,7 +2522,7 @@ mod tests {
     }
 
     /// The case `gehandicaptenparkeerkaart`, with its example values.
-    fn kaart() -> (Corpus, Cell) {
+    fn kaart() -> (Corpus, Cellen) {
         let corpus = casus("gehandicaptenparkeerkaart");
         let cell = corpus.cell().unwrap();
         (corpus, cell)
@@ -2314,7 +2532,7 @@ mod tests {
     /// `besloten` with its example findings, `loopbeperking` changed.
     fn kaart_besluit(
         corpus: &Corpus,
-        cell: &mut Cell,
+        cell: &mut Cellen,
         aangevraagd: &str,
         besloten: &str,
         loopbeperking: bool,
@@ -2326,10 +2544,83 @@ mod tests {
         besluiten(corpus, cell, &app.id, &bevindingen, day(besloten)).unwrap()
     }
 
-    fn kaart_bezwaar(corpus: &Corpus, cell: &mut Cell, besluit: &str, op: &str) -> Gram {
+    fn kaart_bezwaar(corpus: &Corpus, cell: &mut Cellen, besluit: &str, op: &str) -> Gram {
         let mut velden = corpus.casus.voorbeeld.bezwaar.clone();
         velden.insert("dagtekening_bezwaarschrift".into(), json!(op));
         bezwaren(corpus, cell, besluit, &velden, day(op)).unwrap()
+    }
+
+    #[test]
+    fn parkeerkaart_synthesis_the_other_cells_answer() {
+        // Scenarios 1, 3 and 4 of the synthesis (RFC-052), through the app.
+        let (corpus, mut cell) = kaart();
+        assert_eq!(cell.andere.len(), 3);
+        let voorbeeld = &corpus.casus.voorbeeld;
+
+        // 4: the example applicant, no earlier card; the GGD answers that it
+        // examined him, and the card follows.
+        let kaart = kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", true);
+        assert_eq!(
+            kaart.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(true)
+        );
+        let ggd = kaart
+            .waarom
+            .antwoorden
+            .iter()
+            .find(|a| a["begrip"] == json!("geneeskundig_onderzoek_heeft_plaatsgehad"))
+            .unwrap();
+        assert_eq!(ggd["door"], json!("ggd_wilgendaal"));
+        // Another cell's answer has no explanation in this cell.
+        assert_eq!(ggd["keer"], Value::Null);
+
+        // 1: a card of Oostmeer (the case's begin) counts; the college
+        // leaves the examination out under lid 2 onder a.
+        let mut aanvraag = voorbeeld.aanvraag.clone();
+        aanvraag.insert("bsn_aanvrager".into(), json!("999990044"));
+        let app = aanvragen(&corpus, &mut cell, &aanvraag, day("2026-10-21")).unwrap();
+        let mut bevindingen = voorbeeld.bevindingen.clone();
+        bevindingen.insert(
+            "geneeskundig_onderzoek_achterwege_gelaten".into(),
+            json!(true),
+        );
+        bevindingen.insert(
+            "bekend_dat_aanvrager_nog_steeds_voldoet".into(),
+            json!(true),
+        );
+        let eerste =
+            besluiten(&corpus, &mut cell, &app.id, &bevindingen, day("2026-10-21")).unwrap();
+        assert_eq!(
+            eerste.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(true)
+        );
+        let ingevuld = |w: &Waarom| {
+            w.ingevuld
+                .iter()
+                .find(|f| f.term == "aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt")
+                .map(|f| f.filled_by.clone())
+                .unwrap()
+        };
+        let FilledBy::Answer(by) = ingevuld(&eerste.waarom) else {
+            panic!("one answer")
+        };
+        assert_eq!(by.answerer, "gemeente_oostmeer");
+
+        // 3: five years on, Wilgendaal and Oostmeer both issued a card; OR.
+        let mut later = aanvraag.clone();
+        later.insert("dagtekening".into(), json!("2031-10-21"));
+        let app = aanvragen(&corpus, &mut cell, &later, day("2031-10-21")).unwrap();
+        let tweede =
+            besluiten(&corpus, &mut cell, &app.id, &bevindingen, day("2031-10-21")).unwrap();
+        assert_eq!(
+            tweede.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(true)
+        );
+        let FilledBy::Answers(alle) = ingevuld(&tweede.waarom) else {
+            panic!("two answers")
+        };
+        let namen: Vec<&str> = alle.iter().map(|p| p.answerer.as_str()).collect();
+        assert_eq!(namen, ["gemeente_oostmeer", "gemeente_wilgendaal"]);
     }
 
     #[test]
@@ -2373,10 +2664,10 @@ mod tests {
         assert!(spoor.contains(&eerste.id), "{spoor}");
 
         // The log, newest first: art. 49 runs, the policy fills its term,
-        // and in it the cell answers. The GGD's report from the case's
-        // `begin` is the oldest.
+        // and in it the cell answers. The GGD's examination is in the GGD's
+        // own chronicle.
         let log = serde_json::to_value(logboek(&corpus, &cell).unwrap()).unwrap();
-        assert_eq!(log.as_array().unwrap().len(), 5);
+        assert_eq!(log.as_array().unwrap().len(), 4);
         assert_eq!(log[0]["gram"]["id"], json!(tweede.besluit.id));
         let keten = &log[0]["waarom"]["keten"];
         assert_eq!(keten[0]["artikel"], json!("49"));
@@ -2412,6 +2703,18 @@ mod tests {
             "{e}"
         );
         assert_eq!(cell.grams().len(), voor);
+        // The form asks the college about the examination, since the GGD,
+        // which the law makes competent, is silent for this application.
+        let voor = voorvertoning_besluit(
+            &corpus,
+            &cell,
+            &app.id,
+            &corpus.casus.voorbeeld.bevindingen,
+            day("2026-10-20"),
+        )
+        .unwrap();
+        let stil: Vec<&Value> = voor.stil.iter().map(|v| &v["naam"]).collect();
+        assert_eq!(stil, [&json!("geneeskundig_onderzoek_heeft_plaatsgehad")]);
 
         // Scenario 7: after the card of 2026 expired, the college leaves the
         // examination out for an applicant it knows still qualifies (lid 2
