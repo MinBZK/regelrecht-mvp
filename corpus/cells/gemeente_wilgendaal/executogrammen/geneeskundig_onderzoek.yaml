@@ -1,0 +1,30 @@
+---
+# Een stroom executogrammen van de cel van de (fictieve) gemeente Wilgendaal
+# (RFC-022 §1.3, RFC-051). Het geneeskundig onderzoek verricht de
+# Gemeentelijke Gezondheidsdienst of een door het college aangewezen
+# deskundige (artikel 3, eerste lid, van de Regeling
+# gehandicaptenparkeerkaart), niet de gemeente. Wat de gemeente vastlegt, is
+# dat zij het rapport van dat onderzoek ontving: een feit, geen besluit. Geen
+# regeling brengt het voort, dus de cel zegt zelf wat het bevat. De grondslag
+# is het artikel waarvoor het feit ertoe doet: de kaart "wordt niet afgegeven
+# alvorens een geneeskundig onderzoek heeft plaatsgehad" (artikel 2, eerste
+# lid). De reductie reductie_geneeskundig_onderzoek leest deze executogrammen.
+# De dag van ontvangst is de dag waarop de cel het executogram vastlegt; de
+# dag van het onderzoek staat erin. Een cel van de GGD die het onderzoek zelf
+# vastlegt, is niet gebouwd (RFC-051, open vragen).
+$id: geneeskundig_onderzoek
+grondslag: regeling_gehandicaptenparkeerkaart#2
+description: Het rapport van een geneeskundig onderzoek naar de handicap van een aanvrager, ontvangen door de gemeente.
+fields:
+  - name: bsn_aanvrager
+    type: string
+    description: Burgerservicenummer van de aanvrager die is onderzocht.
+  - name: datum_onderzoek
+    type: date
+    description: De dag waarop het onderzoek plaatsvond.
+  - name: verricht_door
+    type: string
+    description: >-
+      Wie het onderzoek verrichtte: de Gemeentelijke Gezondheidsdienst, of bij
+      externe advisering de door het college aangewezen deskundige (artikel 3,
+      eerste lid).

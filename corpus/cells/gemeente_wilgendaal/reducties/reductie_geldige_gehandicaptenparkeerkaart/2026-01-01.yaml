@@ -11,7 +11,10 @@ valid_from: '2026-01-01'
 # 51 van het BABW). Haar antwoord vult het open begrip van het fictieve beleid
 # van de gemeente (implements, schema v0.8.5): waar de engine dat begrip leest,
 # ook als Awb 7:11 artikel 49 opnieuw aanroept, vraagt hij het de cel, en de
-# cel draait haar. Er is geen bekendmaking; de url wijst naar artikel 49.
+# cel draait haar. Uit dezelfde besluiten vult zij ook een open begrip van
+# artikel 2 van de Regeling gehandicaptenparkeerkaart: of de aanvrager eerder
+# een kaart kreeg (tweede lid, onder a en b). Er is geen bekendmaking; de url
+# wijst naar artikel 49.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Geldige gehandicaptenparkeerkaart bij de gemeente Wilgendaal (reductie)
 competent_authority:
@@ -22,7 +25,9 @@ articles:
       Geen regelgeving: een reductie van de cel over haar eigen kroniek. De
       aanvrager heeft een geldige gehandicaptenparkeerkaart als het college hem
       in een besluit op een aanvraag (artikel 49 van het BABW) een kaart
-      verstrekte die op de dag van het besluit nog geldig is.
+      verstrekte die op de dag van het besluit nog geldig is. Hij kreeg eerder
+      een kaart als het college hem in zo'n besluit een kaart verstrekte,
+      geldig of niet; anders zegt de cel niets.
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
       # Het open begrip van het beleid, dat het college anders per geval
@@ -31,6 +36,11 @@ articles:
         - law: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
           article: '1'
           open_term: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
+        # Artikel 2, tweede lid, onder a en b, van de Regeling
+        # gehandicaptenparkeerkaart: of de aanvrager eerder een kaart kreeg.
+        - law: regeling_gehandicaptenparkeerkaart
+          article: '2'
+          open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
       execution:
         # Parameters van het beleid; de cel geeft ze op naam door.
         parameters:
@@ -70,6 +80,12 @@ articles:
             description: >-
               Of het college de aanvrager een kaart verstrekte die op de dag van
               het besluit nog geldig is.
+          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            type: boolean
+            nullable: true
+            description: >-
+              Waar, als het college de aanvrager eerder een kaart verstrekte;
+              anders afwezig.
         actions:
           # Een besluit dat een beslissing op bezwaar herriep, is er niet meer
           # (Awb 7:11, tweede lid). De koppeling loopt via een lijst ids:
@@ -125,3 +141,33 @@ articles:
                     value: 0
               body: true
               combine: OR
+          # Een besluit dat dezelfde aanvrager eerder een kaart verstrekte,
+          # geldig of niet, en niet herroepen. Vindt de cel er geen, dan zwijgt
+          # zij (null): een kaart van een andere gemeente of van het CBR kent
+          # zij niet, en die telt ook (artikel 2, tweede lid, van de regeling).
+          - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            value:
+              operation: IF
+              cases:
+                - when:
+                    operation: FOREACH
+                    collection: $besluiten
+                    as: besluit
+                    filter:
+                      operation: AND
+                      conditions:
+                        - operation: EQUALS
+                          subject: $besluit.gehandicaptenparkeerkaart_verstrekt
+                          value: true
+                        - operation: NOT
+                          value:
+                            operation: IN
+                            subject: $besluit.id
+                            value: $herroepen_besluiten
+                        - operation: EQUALS
+                          subject: $besluit.bsn_aanvrager
+                          value: $bsn_aanvrager
+                    body: true
+                    combine: OR
+                  then: true
+              default: null

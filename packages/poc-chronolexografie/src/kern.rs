@@ -2334,7 +2334,9 @@ mod tests {
         assert_eq!(eerste.outputs[corpus.casus.uitkomst.as_str()], json!(true));
         assert_eq!(eerste.outputs["kaart_geldig_tot"], json!("2031-10-19"));
 
-        // The college is asked the four findings, not the valid card.
+        // The college is asked the four findings and the three of art. 2
+        // lid 2 of the Regeling, not the valid card, the earlier card or the
+        // examination.
         let vormen = vormen(&corpus, &cell, day("2027-03-01")).unwrap();
         let gevraagd: Vec<&str> = vormen["besluit"]["bevindingen"]
             .as_array()
@@ -2342,7 +2344,8 @@ mod tests {
             .iter()
             .map(|b| b["naam"].as_str().unwrap())
             .collect();
-        assert_eq!(gevraagd.len(), 4, "{gevraagd:?}");
+        assert_eq!(gevraagd.len(), 7, "{gevraagd:?}");
+        assert!(gevraagd.contains(&"geneeskundig_onderzoek_achterwege_gelaten"));
 
         let tweede = kaart_besluit(&corpus, &mut cell, "2027-03-01", "2027-03-01", true);
         assert_eq!(
@@ -2361,9 +2364,10 @@ mod tests {
         assert!(spoor.contains(&eerste.id), "{spoor}");
 
         // The log, newest first: art. 49 runs, the policy fills its term,
-        // and in it the cell answers.
+        // and in it the cell answers. The GGD's report from the case's
+        // `begin` is the oldest.
         let log = serde_json::to_value(logboek(&corpus, &cell).unwrap()).unwrap();
-        assert_eq!(log.as_array().unwrap().len(), 4);
+        assert_eq!(log.as_array().unwrap().len(), 5);
         assert_eq!(log[0]["gram"]["id"], json!(tweede.besluit.id));
         let keten = &log[0]["waarom"]["keten"];
         assert_eq!(keten[0]["artikel"], json!("49"));
@@ -2376,6 +2380,72 @@ mod tests {
     }
 
     #[test]
+    fn parkeerkaart_without_a_report_no_card_and_lid_2_without_a_new_one() {
+        // Scenario 6 of the case: an applicant of whom the municipality has
+        // no report from the GGD gets no decision; the chronicle stays as it
+        // was (Regeling art. 2 lid 1).
+        let (corpus, mut cell) = kaart();
+        let mut aanvraag = corpus.casus.voorbeeld.aanvraag.clone();
+        aanvraag.insert("bsn_aanvrager".into(), json!("999990032"));
+        let app = aanvragen(&corpus, &mut cell, &aanvraag, day("2026-10-13")).unwrap();
+        let voor = cell.grams().len();
+        let e = besluiten(
+            &corpus,
+            &mut cell,
+            &app.id,
+            &corpus.casus.voorbeeld.bevindingen,
+            day("2026-10-20"),
+        )
+        .unwrap_err();
+        assert!(
+            e.to_string()
+                .contains("geneeskundig_onderzoek_heeft_plaatsgehad"),
+            "{e}"
+        );
+        assert_eq!(cell.grams().len(), voor);
+
+        // Scenario 7: after the card of 2026 expired, the college leaves the
+        // examination out for an applicant it knows still qualifies (lid 2
+        // onder a); the cell answers that a card was issued before.
+        let (corpus, mut cell) = kaart();
+        kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", true);
+        let mut aanvraag = corpus.casus.voorbeeld.aanvraag.clone();
+        aanvraag.insert("dagtekening".into(), json!("2031-10-20"));
+        let app = aanvragen(&corpus, &mut cell, &aanvraag, day("2031-10-20")).unwrap();
+        let mut bevindingen = corpus.casus.voorbeeld.bevindingen.clone();
+        bevindingen.insert(
+            "geneeskundig_onderzoek_achterwege_gelaten".into(),
+            json!(true),
+        );
+        bevindingen.insert(
+            "bekend_dat_aanvrager_nog_steeds_voldoet".into(),
+            json!(true),
+        );
+        let besluit =
+            besluiten(&corpus, &mut cell, &app.id, &bevindingen, day("2031-10-20")).unwrap();
+        assert_eq!(
+            besluit.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(true)
+        );
+        let begrippen: Vec<&Value> = besluit
+            .waarom
+            .antwoorden
+            .iter()
+            .map(|a| &a["begrip"])
+            .collect();
+        assert!(
+            begrippen.contains(&&json!(
+                "aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt"
+            )),
+            "{begrippen:?}"
+        );
+        assert!(
+            !begrippen.contains(&&json!("geneeskundig_onderzoek_heeft_plaatsgehad")),
+            "{begrippen:?}"
+        );
+    }
+
+    #[test]
     fn parkeerkaart_objections_ongegrond_keeps_the_validity_gegrond_grants() {
         // Scenario 4: an unfounded objection against a grant leaves it
         // standing with its own validity.
@@ -2384,7 +2454,8 @@ mod tests {
         let bezwaar = kaart_bezwaar(&corpus, &mut cell, &verstrekt.id, "2026-11-01");
         let toets = heroverweging(&corpus, &cell, &bezwaar.id, day("2026-11-20")).unwrap();
         assert_eq!(toets["ontvankelijk"], json!(true));
-        assert_eq!(toets["bevindingen"].as_array().unwrap().len(), 4);
+        // The four criteria and the three of art. 2 lid 2 of the Regeling.
+        assert_eq!(toets["bevindingen"].as_array().unwrap().len(), 7);
         let beslist = beslissen_op_bezwaar(
             &corpus,
             &mut cell,

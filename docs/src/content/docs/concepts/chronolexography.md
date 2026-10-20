@@ -14,7 +14,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | Law | Art. 13a (the application, the decision and its test); Awb 4:2, 4:13, 3:46, 6:7 and 6:8 as hooks; Awb 7:11 (the objection and the decision on it) with 6:5, 6:9 and 7:10; the Regeling vaststelling schoolvakanties 2025–2030 | `corpus/regulation/` |
 | Policy | Fictitious school policy: the first school day (`implements`), the bounds of a school year, and the school's own autumn and spring holidays | `corpus/regulation/nl/uitvoeringsbeleid/` |
 | Reduction | "Did the head already grant leave this school year?", "Does the leave fall outside the school holidays?" and "Where is the school established?", over the school's own chronicle | `corpus/cells/obs_de_klimop/reducties/` |
-| Stream | What an executogram of the school holds: where the school is established, since a day | `corpus/cells/obs_de_klimop/executogrammen/` |
+| Stream | What an executogram of a cell holds: where the school is established, since a day, or the GGD's report the municipality received | `corpus/cells/<cell>/executogrammen/` |
 | Engine | Executes articles: hooks per stage, cross-law sources, open terms, data sources. Stores nothing | `packages/engine` |
 | Cell | The school: keeps the chronicle, derives what it records, executes through the engine | `packages/cel` |
 
@@ -252,7 +252,7 @@ The cell contains no Awb article. [RFC-050](/rfcs/rfc-050) describes the design 
 
 ## A second case: the parking card
 
-The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`, without a change to the engine or the cell code. Only rulework and tests change.
+The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`, without a change to the engine or the cell code. Only rulework, the cell's stream and reductions, and tests change.
 
 ```yaml
 # BABW, art. 49
@@ -282,11 +282,13 @@ What differs:
 
 An applicant who fails the criteria is refused before art. 49 reads the college's power, so the engine does not ask the cell. Asked to explain its answer for such a decision (`Cell::explain_answer`), the cell says it was not asked.
 
-Not modeled: competence by place of residence (lid 1) and the CBR (lid 3), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and the medical examination itself (Regeling art. 2). The judgements rest on that examination, but no rule checks that it took place or when it may be left out (Regeling art. 2 lid 2).
+The card is not issued before a medical examination (Regeling art. 2 lid 1). The GGD examines (art. 3 lid 1); the municipality records that it received the report, an executogram of the stream `geneeskundig_onderzoek` ([RFC-051](/rfcs/rfc-051) §3). A reduction answers the Regeling's open term `geneeskundig_onderzoek_heeft_plaatsgehad` from the reports on the applicant, counting an examination from the date of the application up to the day of issue. Without a report the decision fails, because lid 1 makes the college wait and gives no ground to refuse. A refusal on another ground does not wait. Under lid 2 onder a and b the college may leave the examination out for someone who had a card before: the power and the two judgements are open terms on art. 49, and the cell answers whether it issued a card before.
+
+Not modeled: competence by place of residence (lid 1) and the CBR (lid 3), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and Regeling art. 2 lid 2 onder c and lid 3, which belong to the CBR and the institution.
 
 What the cell cannot do yet:
 
-- The medical judgements belong with the criteria in the Regeling (art. 1, after the examination of art. 2 and 3). The engine applies a finding to every article in the decision. The cell, however, derives the inputs of a decision only from the deciding article, and a decision value carries only that article's findings. At a heroverweging the college would have to give judgements on the Regeling anew. So they sit on art. 49 and go to the Regeling as parameters.
+- The medical judgements, and those of Regeling art. 2 lid 2, belong with the criteria in the Regeling (art. 1, after the examination of art. 2 and 3). The engine applies a finding to every article in the decision. The cell, however, derives the inputs of a decision only from the deciding article, and a decision value carries only that article's findings. At a heroverweging the college would have to give judgements on the Regeling anew. So they sit on art. 49 and go to the Regeling as parameters.
 - The cell does not pass its own identity to the law. Competence by place of residence cannot be checked, and a policy scoped by `gemeente_code` is not found, so the municipality's policy is unscoped.
 
 **Try it:** `just bdd`, which runs the scenarios next to the BABW and the Regeling, or `cargo test --manifest-path packages/cel/Cargo.toml --test parkeerkaart`, or play it in the PoC app, where the visitor picks this case or vakantieverlof at the start ([PoC portal](/components/poc-portal))
