@@ -23,7 +23,7 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-          isCustomElement: (tag) => tag.startsWith('nldd-'),
+          isCustomElement: (tag: string) => tag.startsWith('nldd-'),
         },
       },
     }),
@@ -31,7 +31,7 @@ export default defineConfig({
       name: 'spa-fallback',
       configureServer(server) {
         server.middlewares.use((req, _res, next) => {
-          const url = req.url.split('?')[0];
+          const url = (req.url ?? '').split('?')[0] ?? '';
           if (
             url === '/' ||
             url === '/editor.html' ||
@@ -47,27 +47,6 @@ export default defineConfig({
   ],
   resolve: {
     alias: isVitest ? {} : { 'node:module': nodeModuleShim },
-  },
-  test: {
-    environment: 'happy-dom',
-    // `e2e/` holds Playwright specs (`*.spec.js`) plus plain Node helpers those
-    // specs share; the helpers' own unit tests are `*.test.js` and run here.
-    // Playwright's `testMatch` is narrowed to `*.spec.js` so the two never
-    // collect each other's files.
-    include: ['src/**/*.test.js', 'e2e/**/*.test.js'],
-    pool: 'vmThreads',
-    testTimeout: 10000,
-    server: {
-      // @cucumber/gherkin 41 and @cucumber/messages 34 ship as pure ESM. The
-      // vmThreads pool loads external ESM in a separate VM context, which throws
-      // "Linked modules must use the same context". Inlining lets vitest process
-      // them in the test context instead. The @regelrecht/frontend-shared
-      // workspace package (ESM) hits the same issue when a test transitively
-      // imports it (e.g. usePollingFetch → apiFetch), so inline it too.
-      deps: {
-        inline: [/@cucumber\//, /@regelrecht\//],
-      },
-    },
   },
   build: {
     cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari18'],

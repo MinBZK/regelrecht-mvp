@@ -798,6 +798,9 @@ jobs:
         # rename of the `name` field can't silently skip the tests.
         run: npm test -w frontend
 
+      - name: Type check editor
+        run: npm run typecheck -w frontend
+
       - name: Run lawmaking tests
         run: npm test -w frontend-lawmaking
 
