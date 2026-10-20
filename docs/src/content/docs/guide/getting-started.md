@@ -9,7 +9,7 @@ This is the shortest path from nothing to a working build. Running the editor an
 
 - [Rust](https://rustup.rs/). The exact version is pinned in `rust-toolchain.toml`; rustup picks it up automatically.
 - [just](https://github.com/casey/just), the command runner. Use the `just` recipes rather than calling `cargo` yourself: they are what CI and the pre-commit hooks run.
-- [Node.js](https://nodejs.org/), for the frontends and for the script tests that `just check` runs.
+- [Node.js](https://nodejs.org/) 24, the LTS release CI runs on, for the frontends and for the script tests that `just check` runs. Its bundled npm 11 is also the npm that writes `package-lock.json`; an older npm rewrites platform fields in the lockfile that have nothing to do with your change.
 - [Docker](https://www.docker.com/), for the tests that start a PostgreSQL container.
 - [mold](https://github.com/rui314/mold), on x86_64 Linux (dev containers included). `packages/.cargo/config.toml` links with mold there, so a build fails without it. `just dev-setup` installs it; see [One-time setup](./dev-environment#one-time-setup-build-speed).
 
