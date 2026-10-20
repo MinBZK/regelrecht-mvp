@@ -32,7 +32,8 @@ articles: []
 "#;
 
 /// Article 3 establishes the act of fixing where a school stands, since a
-/// day; article 4 establishes nothing.
+/// day; article 4 establishes nothing; article 5 an executogram with a
+/// field `id`, which no row can hold.
 const SPECIAL_LAW: &str = r#"
 $id: wet_vaststelling_fictief
 regulatory_layer: WET
@@ -60,6 +61,15 @@ articles:
           - {name: plaats_bekend, type: boolean}
         actions:
           - {output: plaats_bekend, value: true}
+  - number: '5'
+    text: Het bevoegd gezag legt een nummer vast.
+    machine_readable:
+      execution:
+        produces:
+          - type: EXECUTOGRAM
+            parameters: [id]
+        parameters:
+          - {name: id, type: string}
 "#;
 
 const GRONDSLAG: &str = "wet_vaststelling_fictief#3";
@@ -172,6 +182,13 @@ fn an_executogram_is_whole_or_not_recorded() {
     )
     .unwrap_err();
     refused(&e, "needs 'sinds', which is left out");
+
+    // A field named `id`: the row gives the executogram's id under it.
+    let e = record(&mut cell, "5", &map(json!({"id": "x"})), "2026-08-01").unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("lists a field 'id'")),
+        "{e}"
+    );
 
     // The article must be in force on the day.
     let e = record(

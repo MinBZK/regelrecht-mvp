@@ -252,7 +252,7 @@ The cell contains no Awb article. [RFC-050](/rfcs/rfc-050) describes the design 
 
 ## A second case: the parking card
 
-The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`, without a change to the engine or the cell code. Only rulework, the cell's stream and reductions, the PoC case file and tests change.
+The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`. The case itself needs rulework, the cell's reductions, the PoC case file and tests, and no code of its own.
 
 ```yaml
 # BABW, art. 49
@@ -282,7 +282,7 @@ What differs:
 
 An applicant who fails the criteria is refused before art. 49 reads the college's power, so the engine does not ask the cell. Asked to explain its answer for such a decision (`Cell::explain_answer`), the cell says it was not asked.
 
-The card is not issued before a medical examination (Regeling art. 2 lid 1). The GGD examines (art. 3 lid 1); the municipality records that it received the report, an executogram under art. 3, which establishes the examination and says what the record holds ([RFC-051](/rfcs/rfc-051) §3). A reduction answers the Regeling's open term `geneeskundig_onderzoek_heeft_plaatsgehad` from the reports on the applicant. An examination counts from the date of the application up to the day of issue. Without a report and without a finding of the college, the decision fails, because lid 1 makes the college wait and gives no ground to refuse. A finding `false` of the college refuses the card: that is a decision of the college, not of lid 1 (own choice, RFC-051 §3). A refusal on another ground does not wait. Under lid 2 onder a and b the college may leave the examination out for someone who had a card before. The power and the two judgements are open terms on art. 49. The cell answers whether it issued a card before.
+The card is not issued before a medical examination (Regeling art. 2 lid 1). The GGD examines (art. 3 lid 1); the municipality records that it received the report (own choice: the regeling speaks of no report), an executogram under art. 3, whose `EXECUTOGRAM` item says what the record holds ([RFC-051](/rfcs/rfc-051) §3). A reduction answers the Regeling's open term `geneeskundig_onderzoek_heeft_plaatsgehad` from the reports on the applicant. An examination counts from the date of the application up to the day of issue. Without a report and without a finding of the college, the decision fails, because lid 1 makes the college wait and gives no ground to refuse. A finding `false` of the college refuses the card: that is a decision of the college, not of lid 1 (own choice, RFC-051 §3). A refusal on another ground does not wait. Under lid 2 onder a and b the college may leave the examination out for someone who had a card before. The power and the two judgements are open terms on art. 49. The cell answers whether it issued a card before.
 
 Not modeled: competence by place of residence (lid 1) and the CBR (lid 3), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and Regeling art. 2 lid 2 onder c and lid 3, which belong to the CBR and the institution.
 

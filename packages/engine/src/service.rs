@@ -4854,7 +4854,7 @@ impl LawExecutionService {
         // No regulation is executed for them, and no source is no empty
         // list: a reduction over decisions nobody supplied would say that
         // none were taken.
-        // The executograms of a stream (RFC-051) likewise.
+        // The executograms an article establishes (RFC-051) likewise.
         if let Some(read) = crate::load_check::chronicle_read(source) {
             let _guard = res_ctx.trace_guard(&input.name, PathNodeType::Resolve);
             let message = format!(

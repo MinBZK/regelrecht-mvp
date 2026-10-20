@@ -56,8 +56,9 @@ pub struct Casus {
 }
 
 /// What the cell records before the first scenario, on `datum`:
-/// executograms (RFC-051), such as where a school is established. The law asks for these, but no step of the process records
-/// them, so the case file gives them. The cell checks them as any other
+/// executograms (RFC-051), such as where a school is established. The law
+/// asks for these, but no step of the process records them, so the case
+/// file gives them. The cell checks them as any other
 /// step.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]

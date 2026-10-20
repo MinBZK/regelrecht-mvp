@@ -314,7 +314,11 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
         {
             return refuse(format!(
                 "lists derived outputs on its {}; only a decision has derived data (RFC-050)",
-                item.submission_kind().unwrap_or("item")
+                item.submission_kind()
+                    .or(item
+                        .is_executogram()
+                        .then_some(regelrecht_law_model::EXECUTOGRAM))
+                    .unwrap_or("item")
             ));
         }
         // An executogram (schema v0.8.7, RFC-051) records a fact the article
@@ -659,7 +663,7 @@ articles:
             ),
             (
                 "          - type: EXECUTOGRAM\n            parameters: [p]\n            derived: [x]",
-                "lists derived outputs on its item",
+                "lists derived outputs on its EXECUTOGRAM",
             ),
         ] {
             let mut service = LawExecutionService::new();

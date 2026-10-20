@@ -83,8 +83,8 @@ RUN apk add --no-cache ca-certificates && \
 COPY --from=builder /build/target/release/regelrecht-poc-chronolexografie /usr/local/bin/
 COPY --from=frontend-builder /app/frontend-poc-chronolexografie/dist /app/static
 # Alleen de regelwerken die de casussen draaien, en hun cellen met hun
-# reducties. De app leidt per casus af welke
-# regelwerken dat zijn (src/casus.rs); de test the_image_and_its_deploy_filter_hold_what_every_case_runs
+# reducties. De app leidt per casus af welke regelwerken dat zijn
+# (src/casus.rs); de test the_image_and_its_deploy_filter_hold_what_every_case_runs
 # in src/kern.rs houdt deze lijst en script/deploy-filters.mjs daarmee gelijk.
 COPY packages/poc-chronolexografie/casussen/ /app/casussen/
 COPY corpus/regulation/nl/wet/leerplichtwet_1969/ /app/corpus/regulation/nl/wet/leerplichtwet_1969/

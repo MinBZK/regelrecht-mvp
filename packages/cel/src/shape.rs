@@ -270,6 +270,12 @@ pub fn executogram_fields(
         .parameters_of(item)
         .into_iter()
         .map(|name| {
+            if name == crate::reading::ROW_ID {
+                return Err(setup(format!(
+                    "{grondslag}: the executogram lists a field '{name}'; its row gives the \
+                     executogram's own id under that name"
+                )));
+            }
             let p = article
                 .get_parameters()
                 .iter()

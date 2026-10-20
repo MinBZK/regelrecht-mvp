@@ -2,8 +2,8 @@
 $schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 $id: fictief_beleid_vestiging_obs_de_klimop
 regulatory_layer: UITVOERINGSBELEID
-publication_date: '2020-07-01'
-valid_from: '2020-08-01'
+publication_date: '2026-07-01'
+valid_from: '2026-08-01'
 # FICTIEF. OBS De Klimop bestaat niet en dit is geen bekendgemaakt beleid,
 # maar een eigen keuze in de modellering. Er is geen bekendmaking; de url wijst
 # daarom naar het artikel waarvoor de vestiging ertoe doet.
