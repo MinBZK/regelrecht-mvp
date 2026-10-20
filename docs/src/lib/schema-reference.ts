@@ -176,7 +176,7 @@ const CONCEPTS: Record<string, ConceptLink> = {
     label: 'Administrative procedure stages',
   },
   competent_authority: {
-    href: '/concepts/competent-authority#the-two-forms',
+    href: '/concepts/competent-authority#the-three-forms',
     label: 'Competent Authority',
   },
   markings: {
