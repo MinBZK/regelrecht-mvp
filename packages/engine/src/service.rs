@@ -4415,11 +4415,9 @@ impl LawExecutionService {
             };
             if routed.is_some() {
                 // One node per competent answerer that answered, under the
-                // node of the term (RFC-053).
-                let _guard = res_ctx.trace_guard(
-                    answer.provenance.answerer.clone(),
-                    PathNodeType::OpenTermResolution,
-                );
+                // node of the term and named after it (RFC-053); its
+                // `answer` says who.
+                let _guard = res_ctx.trace_guard(&term.id, PathNodeType::OpenTermResolution);
                 res_ctx.trace_set_result(answer.value.clone());
                 res_ctx.trace_set_answer(answer.provenance.clone());
                 res_ctx.trace_set_message(if answer.value.is_null() {
