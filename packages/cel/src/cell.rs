@@ -304,9 +304,11 @@ impl Cell {
     }
 
     /// The cell as another cell of the sphere answers a decision on `on`
-    /// (RFC-052): from what it recorded up to and including that day. A
-    /// replay asks it the same, so the decision keeps no position in its
-    /// chronicle (RFC-050: a source says what it knew on a given day).
+    /// (RFC-052): from what it recorded up to and including that day. The
+    /// decision keeps only the day, not a position in the other cell's
+    /// chronicle; a replay asks it as of that day, and a record made later
+    /// that same day fails the replay (RFC-050: a source says what it knew
+    /// on a given day).
     fn known_on(&self, on: NaiveDate) -> Reader<'_> {
         let grams = self
             .grams()

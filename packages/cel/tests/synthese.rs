@@ -296,11 +296,11 @@ fn a_replay_after_the_other_cell_recorded_later_is_the_same() {
     // Wilgendaal issues first, while Oostmeer knows nothing.
     let earlier = first(&mut service, &mut wilgendaal, &[&oostmeer], "2026-03-01").unwrap();
     assert!(issued(&earlier));
-    // Later Oostmeer issues one too (it asks Wilgendaal, which says true,
-    // so Oostmeer refuses; the card it records is its refusal).
-    let later = issue(&mut service, &mut oostmeer, &[&wilgendaal], "2026-05-01").unwrap();
-    assert!(!issued(&later));
-    // The replay of Wilgendaal's decision asks Oostmeer as of 1 March.
+    // Later Oostmeer issues a card too, without asking Wilgendaal.
+    let later = first(&mut service, &mut oostmeer, &[], "2026-05-01").unwrap();
+    assert!(issued(&later));
+    // The replay of Wilgendaal's decision asks Oostmeer as of 1 March, so
+    // the card of May does not count; with it, the replay would differ.
     wilgendaal
         .explain(&mut service, &[&oostmeer], &earlier.id)
         .unwrap();
@@ -429,7 +429,7 @@ fn a_blank_name_or_category_is_an_error() {
         std::fs::write(dir.path().join("cel.yaml"), identity).unwrap();
         let e = Cell::in_memory("x", dir.path()).unwrap_err();
         assert!(
-            matches!(&e, Error::Setup(m) if m.contains("not empty")),
+            matches!(&e, Error::Setup(m) if m.contains("may not be empty")),
             "{e}"
         );
     }

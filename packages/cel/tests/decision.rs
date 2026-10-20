@@ -12,13 +12,8 @@ use regelrecht_cel::{decision, Cell, Error, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
-/// An empty directory for a cell, with only its identity (`cel.yaml`,
-/// RFC-052).
-fn cell_tempdir() -> tempfile::TempDir {
-    let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("cel.yaml"), "name: Testcel\n").unwrap();
-    dir
-}
+mod common;
+use common::cell_tempdir;
 
 /// A procedure for a beschikking, with a stage for the application.
 const GENERAL_LAW: &str = r#"

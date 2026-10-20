@@ -424,6 +424,13 @@ pub fn load<'a>(
         let mut own = Vec::new();
         for reduction in *reductions {
             if !own.contains(&reduction.id) {
+                if loaded.laws.contains(&reduction.id) {
+                    return Err(setup(format!(
+                        "two cells of this decision have a reduction '{}'; the cell of \
+                         '{recording_actor}' cannot load it beside the other",
+                        reduction.id
+                    )));
+                }
                 if loaded.service.has_law(&reduction.id) {
                     return Err(setup(format!(
                         "a law '{}' is already loaded; the cell of '{recording_actor}' loads \

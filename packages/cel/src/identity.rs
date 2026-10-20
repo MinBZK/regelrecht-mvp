@@ -45,7 +45,7 @@ pub fn read(dir: &Path) -> Result<Authority> {
     let blank = |s: &str| s.trim().is_empty();
     if blank(&identity.name) || identity.category.as_deref().is_some_and(blank) {
         return Err(setup(format!(
-            "{}: name and category are not empty",
+            "{}: a cell's name, and its category where given, may not be empty",
             path.display()
         )));
     }
