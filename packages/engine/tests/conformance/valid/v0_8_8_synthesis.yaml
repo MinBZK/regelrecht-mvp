@@ -1,0 +1,38 @@
+---
+# Tier C: an article that establishes a fact several authorities record
+# (schema v0.8.8, RFC-053). competent_authority is a list, and the open term
+# combines the answers of the competent answerers with OR.
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
+$id: test_conformance_synthesis
+regulatory_layer: WET
+bwb_id: BWBR9999953
+publication_date: '2026-10-20'
+valid_from: '2026-10-20'
+name: Testwet verstrekking
+url: https://example.invalid/synthesis
+articles:
+  - number: '1'
+    url: https://example.invalid/synthesis/1
+    text: Het college of de landelijke uitgever verstrekt de kaart.
+    machine_readable:
+      competent_authority:
+        - name: college van burgemeester en wethouders
+          type: CATEGORY
+        - name: Landelijke uitgever
+      open_terms:
+        - id: eerder_verstrekt
+          type: boolean
+          required: true
+          decided_per_case_by: het college
+          combine: OR
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        output:
+          - name: eerder_verstrekt
+            type: boolean
+        actions:
+          - output: eerder_verstrekt
+            value: $eerder_verstrekt

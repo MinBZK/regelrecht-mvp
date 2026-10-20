@@ -42,7 +42,7 @@ machine_readable:
     - name: CBR
 ```
 
-For an article that establishes an act rather than a decision (a `produces` item of type `EXECUTOGRAM`), the field names who performs the act, such as the GGD that carries out a medical examination.
+For an article that requires a fact rather than a decision (`requires` with `fact`), the field names who establishes the fact, such as the GGD that carries out a medical examination.
 
 ## Who answers an open term
 
