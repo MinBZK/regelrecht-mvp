@@ -609,8 +609,8 @@ impl Cell {
         supplied: &Map<String, serde_json::Value>,
         on: NaiveDate,
     ) -> Result<Gram> {
-        let declared = shape::fact_fields(service, fact, on)?;
         shape::refuse_incompetent_fact(service, fact, on, &self.authority)?;
+        let declared = shape::fact_fields(service, fact, on)?;
         let what = format!("executogram of {fact}");
         let fields = whole(&declared, supplied, &what)?;
         let (grondslag, name) = shape::split_fact(fact)?;

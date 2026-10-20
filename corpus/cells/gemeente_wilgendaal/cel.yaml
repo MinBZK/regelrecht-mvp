@@ -1,6 +1,7 @@
 ---
-# Wie deze cel is (RFC-052). De wet noemt een bevoegde (competent_authority);
-# de engine vraagt een cel alleen als die haar naam of categorie noemt.
+# Wie deze cel is (RFC-052). Een open begrip of feit noemt wie bevoegd is
+# (competent_authority); de engine vraagt een cel alleen als die haar naam
+# of categorie noemt.
 # Fictieve gemeente.
 name: Het college van burgemeester en wethouders van de gemeente Wilgendaal
 category: college van burgemeester en wethouders
