@@ -12,6 +12,9 @@ use regelrecht_cel::{reading, Cell, Error, Reduction, EXECUTOGRAM};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
+mod common;
+use common::cell_tempdir;
+
 const ACTOR: &str = "school_fictief";
 
 /// A procedure for a beschikking, so a decision on a submission has stages.
@@ -91,7 +94,7 @@ fn map(value: Value) -> Map<String, Value> {
 
 /// A cell of the fictional school, without reductions.
 fn cell() -> (Cell, tempfile::TempDir) {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     (Cell::in_memory(ACTOR, dir.path()).unwrap(), dir)
 }
 
@@ -216,8 +219,8 @@ fn an_executogram_is_whole_or_not_recorded() {
 
 #[test]
 fn an_executogram_reads_back_from_the_file() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
+    let file = cell_tempdir();
     let path = file.path().join("kroniek.jsonl");
     let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let gram = record(
@@ -233,8 +236,8 @@ fn an_executogram_reads_back_from_the_file() {
 
 #[test]
 fn an_executogram_read_back_records_a_fact_and_nothing_else() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
+    let file = cell_tempdir();
     let path = file.path().join("kroniek.jsonl");
     {
         let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
@@ -419,7 +422,7 @@ articles:
         actions:
           - {output: x, value: $weer}
 "#;
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let here = dir.path().join("reducties/reductie_kring_fictief");
     std::fs::create_dir_all(&here).unwrap();
     std::fs::write(here.join("2026-01-01.yaml"), reduction).unwrap();
@@ -431,6 +434,7 @@ articles:
     let app = cell
         .record_submission(
             &mut service,
+            &[],
             "wet_kring_fictief",
             "1",
             None,
@@ -441,6 +445,7 @@ articles:
     let e = cell
         .decide(
             &mut service,
+            &[],
             "wet_kring_fictief",
             "1",
             &app.id,

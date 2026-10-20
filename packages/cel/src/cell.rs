@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
-    ArticleResult, Call, FilledBy, LawExecutionService, OpenTermAnswerer, OpenTermFilled,
-    OutputProvenance, ParameterType, Value,
+    ArticleResult, Authority, Call, FilledBy, LawExecutionService, OpenTermAnswerer,
+    OpenTermFilled, OutputProvenance, ParameterType, Value,
 };
 use serde_json::Map;
 
@@ -25,6 +25,7 @@ use crate::chronicle::EXECUTOGRAM;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
+use crate::identity;
 use crate::reading::{self, Answer, Asked, Loaded, Reader, Reduction, Term};
 use crate::shape::{self, Field, Shape};
 use regelrecht_law_model::stored;
@@ -41,6 +42,8 @@ use regelrecht_law_model::stored;
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
+    /// Who the cell is (`cel.yaml`, RFC-052).
+    authority: Authority,
     chronicle: Chronicle,
     reductions: Reductions,
 }
@@ -160,6 +163,7 @@ impl Cell {
     ) -> Result<Self> {
         let recording_actor = recording_actor.into();
         let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
+        let authority = identity::read(cell_dir.as_ref())?;
         let chronicle = Chronicle::open(path)?;
         if let Some(g) = chronicle
             .grams()
@@ -176,6 +180,7 @@ impl Cell {
         }
         Ok(Self {
             recording_actor,
+            authority,
             chronicle,
             reductions,
         })
@@ -190,21 +195,50 @@ impl Cell {
     ) -> Result<Self> {
         let recording_actor = recording_actor.into();
         let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
+        let authority = identity::read(cell_dir.as_ref())?;
         Ok(Self {
             recording_actor,
+            authority,
             chronicle: Chronicle::in_memory(),
             reductions,
         })
     }
 
-    /// Load the cell's reductions for a decision on `on`
-    /// ([`reading::load`]), so it can answer the engine with them
-    /// ([`Reader`]). Refused when a term one of them fills has no reduction
-    /// in force on `on`: the term would then be the deciding authority's
-    /// finding, or its default, where the cell's own reading is expected. A
-    /// replay so fails too. So is a reduction in force on `on` that fills a
-    /// term its article does not declare that day.
-    fn load<'s>(&self, service: &'s mut LawExecutionService, on: NaiveDate) -> Result<Loaded<'s>> {
+    /// Load the reductions of the cell and of the cells of `sphere` for a
+    /// decision on `on` ([`reading::load`]), so they can answer the engine
+    /// with them ([`Reader`]), after the checks of [`Cell::check`] on each.
+    fn load<'s>(
+        &self,
+        service: &'s mut LawExecutionService,
+        sphere: &[&Cell],
+        on: NaiveDate,
+    ) -> Result<Loaded<'s>> {
+        let cells: Vec<&Cell> = std::iter::once(self)
+            .chain(sphere.iter().copied())
+            .collect();
+        for cell in &cells {
+            cell.check(service, on)?;
+        }
+        let reductions: Vec<(&str, &[Reduction])> = cells
+            .iter()
+            .map(|cell| {
+                (
+                    cell.recording_actor.as_str(),
+                    cell.reductions.versions.as_slice(),
+                )
+            })
+            .collect();
+        reading::load(service, &reductions)
+    }
+
+    /// Whether the cell's reductions may answer on `on`. Refused when a term
+    /// one of them fills has no reduction in force on `on`: the term would
+    /// then be the deciding authority's finding, or its default, where the
+    /// cell's own reading is expected. A replay so fails too. So is a
+    /// reduction in force on `on` that fills a term its article does not
+    /// declare that day, and one that fills a term of an article that does
+    /// not make the cell competent (RFC-052).
+    fn check(&self, service: &LawExecutionService, on: NaiveDate) -> Result<()> {
         let reductions = &self.reductions;
         if let Some(term) = reading::unfilled(&reductions.versions, on) {
             return Err(setup(format!(
@@ -221,7 +255,13 @@ impl Cell {
         }
         reading::refuse_undeclared_terms(service, &reductions.versions, on)?;
         reading::refuse_unrequired_facts(service, &reductions.versions, on)?;
-        reading::load(service, &self.recording_actor, &reductions.versions)
+        reading::refuse_incompetent(
+            service,
+            &reductions.versions,
+            on,
+            &self.recording_actor,
+            &self.authority,
+        )
     }
 
     /// The cell as the engine's answerer for a decision that reads `grams`
@@ -229,6 +269,7 @@ impl Cell {
     fn reader<'c>(&'c self, grams: Vec<Gram>, explain: Option<&'c str>) -> Reader<'c> {
         Reader::new(
             &self.recording_actor,
+            &self.authority,
             &self.reductions.versions,
             grams,
             explain,
@@ -257,6 +298,27 @@ impl Cell {
         &self.recording_actor
     }
 
+    /// Who the cell is, from its `cel.yaml` (RFC-052).
+    pub fn authority(&self) -> &Authority {
+        &self.authority
+    }
+
+    /// The cell as another cell of the sphere answers a decision on `on`
+    /// (RFC-052): from what it recorded up to and including that day. The
+    /// decision keeps only the day, not a position in the other cell's
+    /// chronicle; a replay asks it as of that day (RFC-050: a source says
+    /// what it knew on a given day). A record it makes later, dated up to
+    /// that day, enters the replay; RFC-052 says when that fails it.
+    fn known_on(&self, on: NaiveDate) -> Reader<'_> {
+        let grams = self
+            .grams()
+            .iter()
+            .filter(|g| g.recorded_on <= on)
+            .cloned()
+            .collect();
+        self.reader(grams, None)
+    }
+
     pub fn grams(&self) -> &[Gram] {
         self.chronicle.grams()
     }
@@ -272,6 +334,7 @@ impl Cell {
     pub fn sandbox(&self) -> Self {
         Self {
             recording_actor: self.recording_actor.clone(),
+            authority: self.authority.clone(),
             chronicle: self.chronicle.in_memory_copy(),
             reductions: self.reductions.clone(),
         }
@@ -294,9 +357,11 @@ impl Cell {
     /// supplies neither. Without `refers_to`, a `decision` field is left
     /// out. The cell refuses a reference to what is no decision in its
     /// chronicle.
+    #[allow(clippy::too_many_arguments)]
     pub fn record_submission(
         &mut self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         law_id: &str,
         article: &str,
         refers_to: Option<&str>,
@@ -306,7 +371,7 @@ impl Cell {
         let shape = shape::derive(service, law_id, article, on)?;
         let (filled, from_referred) = self.referred(service, &shape, refers_to)?;
         check_supplied(&shape, supplied, &from_referred)?;
-        self.record(service, &shape, supplied, filled, on)
+        self.record(service, sphere, &shape, supplied, filled, on)
     }
 
     /// What a submission of `shape` takes from the decision `refers_to`:
@@ -423,6 +488,7 @@ impl Cell {
     fn record(
         &mut self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         shape: &Shape,
         supplied: &Map<String, serde_json::Value>,
         filled: Filled,
@@ -472,7 +538,7 @@ impl Cell {
         {
             if let Some(serde_json::Value::String(id)) = fields.get(&field.name) {
                 let gram = self.decision_gram(service, id)?.clone();
-                let value = self.decision_value(service, &gram)?;
+                let value = self.decision_value(service, sphere, &gram)?;
                 parameters.insert(field.name.clone(), stored::from_stored(&value)?);
             }
         }
@@ -533,7 +599,9 @@ impl Cell {
     /// the fact does not hold, a value of the wrong type, and a field that
     /// cannot be absent and is left out: there is no submission whose
     /// incompleteness a law speaks of, so what is recorded is whole or not
-    /// recorded. A field that can be absent and is left out is `null`.
+    /// recorded. A field that can be absent and is left out is `null`. Where
+    /// the fact names who establishes it (`competent_authority`, RFC-052),
+    /// the cell records it only when that names the cell.
     pub fn record_executogram(
         &mut self,
         service: &LawExecutionService,
@@ -541,7 +609,7 @@ impl Cell {
         supplied: &Map<String, serde_json::Value>,
         on: NaiveDate,
     ) -> Result<Gram> {
-        let declared = shape::fact_fields(service, fact, on)?;
+        let declared = shape::fact_fields(service, fact, on, Some(&self.authority))?;
         let what = format!("executogram of {fact}");
         let fields = whole(&declared, supplied, &what)?;
         let (grondslag, name) = shape::split_fact(fact)?;
@@ -615,6 +683,7 @@ impl Cell {
     pub fn decide(
         &mut self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         law_id: &str,
         article: &str,
         application: &str,
@@ -637,10 +706,12 @@ impl Cell {
         let answered = self.terms_on(on);
         let unloaded = decision::derive_with(service, law_id, article, on, &answered)?;
         let applied = self.application(&unloaded, application)?.clone();
-        let decisions = self.decision_values(service, &unloaded, &applied, on)?;
+        let decisions = self.decision_values(service, sphere, &unloaded, &applied, on)?;
         let grams = self.grams_but(except.as_deref());
-        let loaded = self.load(service, on)?;
+        let loaded = self.load(service, sphere, on)?;
         let reader = self.reader(grams, None);
+        let others = known_on(sphere, on);
+        let answerers = Answerers::new(&reader, &others);
         // A term the cell answers is the policy's first.
         let shape = unloaded;
         if let Some(name) = supplied.keys().find(|name| is_finding(&shape, name)) {
@@ -673,7 +744,7 @@ impl Cell {
         let given = &given;
         check_decision_supplied(&shape, given)?;
         let inputs = asked(&shape, &applied, &decisions, given, on)?;
-        let (mut fields, mut outputs) = take(&loaded, &shape, inputs, findings, &reader, on)?;
+        let (mut fields, mut outputs) = take(&loaded, &shape, inputs, findings, &answerers, on)?;
         for (name, (id, _)) in decisions {
             fields.insert(name, serde_json::Value::String(id));
         }
@@ -684,7 +755,7 @@ impl Cell {
             let Some(value) = outputs.get(&name).filter(|v| !v.is_null()) else {
                 continue;
             };
-            let gram = self.decided(&loaded, &shape, &name, value, &applied, &reader, on)?;
+            let gram = self.decided(&loaded, &shape, &name, value, &applied, &answerers, on)?;
             outputs.insert(name, serde_json::Value::String(gram.id.clone()));
             taken.push(gram);
         }
@@ -728,8 +799,13 @@ impl Cell {
     /// with the cell, the reduction and its version, and how far it read the
     /// chronicle. How the cell came to it is the cell's own account
     /// ([`Cell::explain_answer`]).
-    pub fn explain(&self, service: &mut LawExecutionService, id: &str) -> Result<ArticleResult> {
-        Ok(self.replay(service, id, None)?.result)
+    pub fn explain(
+        &self,
+        service: &mut LawExecutionService,
+        sphere: &[&Cell],
+        id: &str,
+    ) -> Result<ArticleResult> {
+        Ok(self.replay(service, sphere, id, None)?.result)
     }
 
     /// How the cell came to its answer on the open term `term` (its id) in
@@ -745,11 +821,12 @@ impl Cell {
     pub fn explain_answer(
         &self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         id: &str,
         term: &str,
     ) -> Result<Vec<ArticleResult>> {
         let explained: Vec<ArticleResult> = self
-            .replay(service, id, Some(term))?
+            .replay(service, sphere, id, Some(term))?
             .asked
             .into_iter()
             .filter(|asked| asked.term.open_term == term)
@@ -777,9 +854,14 @@ impl Cell {
     ///
     /// Nothing about findings is stored: the execution is deterministic, so
     /// the replay of the decision in its own context gives the same report.
-    pub fn findings(&self, service: &mut LawExecutionService, id: &str) -> Result<Vec<String>> {
+    pub fn findings(
+        &self,
+        service: &mut LawExecutionService,
+        sphere: &[&Cell],
+        id: &str,
+    ) -> Result<Vec<String>> {
         let gram = self.decision_gram(service, id)?.clone();
-        let replayed = self.replay(service, id, None)?;
+        let replayed = self.replay(service, sphere, id, None)?;
         Ok(used(
             &candidates(&replayed.shape, &gram),
             &replayed.result.open_terms,
@@ -818,6 +900,7 @@ impl Cell {
     fn replay(
         &self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         id: &str,
         explain: Option<&str>,
     ) -> Result<Replayed> {
@@ -861,7 +944,7 @@ impl Cell {
         // loads the reductions itself.
         let answered = self.terms_on(on);
         let shape = decision::derive_with(service, law_id, article, on, &answered)?;
-        let decisions = self.decision_values(service, &shape, &submission, on)?;
+        let decisions = self.decision_values(service, sphere, &shape, &submission, on)?;
         let replaces = decision_outputs(service, law_id, article, on);
         let except = submission
             .refers_to
@@ -872,8 +955,9 @@ impl Cell {
             .filter(|g| except != Some(g.id.as_str()))
             .cloned()
             .collect();
-        let loaded = self.load(service, on)?;
+        let loaded = self.load(service, sphere, on)?;
         let reader = self.reader(before, explain);
+        let others = known_on(sphere, on);
         let given = candidates(&shape, &decision);
         let mut parameters = BTreeMap::new();
         let mut findings = BTreeMap::new();
@@ -893,11 +977,7 @@ impl Cell {
         }
         let outputs: Vec<&str> = shape.outputs.iter().map(String::as_str).collect();
         let date = on.to_string();
-        let call = Call {
-            findings,
-            answerer: Some(&reader),
-            sphere: Vec::new(),
-        };
+        let call = Answerers::new(&reader, &others).call(findings);
         let result =
             loaded.evaluate_law_with_trace_in(law_id, &outputs, parameters, call, &date)?;
         for name in &shape.outputs {
@@ -971,6 +1051,7 @@ impl Cell {
     fn decision_values(
         &self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         shape: &DecisionShape,
         applied: &Gram,
         on: NaiveDate,
@@ -985,7 +1066,7 @@ impl Cell {
                 continue;
             };
             let gram = self.decision_gram(service, id)?.clone();
-            let mut value = self.decision_value(service, &gram)?;
+            let mut value = self.decision_value(service, sphere, &gram)?;
             refresh(service, &gram, &mut value, on, &self.terms_on(on))?;
             values.insert(input.field.name.clone(), (id.clone(), value));
         }
@@ -1056,9 +1137,10 @@ impl Cell {
     fn decision_value(
         &self,
         service: &mut LawExecutionService,
+        sphere: &[&Cell],
         gram: &Gram,
     ) -> Result<serde_json::Value> {
-        let used = self.findings(service, &gram.id)?;
+        let used = self.findings(service, sphere, &gram.id)?;
         let found = gram
             .grondslag
             .split_once('#')
@@ -1151,7 +1233,7 @@ impl Cell {
         output: &str,
         value: &serde_json::Value,
         submission: &Gram,
-        answerer: &dyn OpenTermAnswerer,
+        answerers: &Answerers<'_>,
         on: NaiveDate,
     ) -> Result<Gram> {
         let not_a_decision = || {
@@ -1212,7 +1294,7 @@ impl Cell {
             &shape,
             parameters,
             engine_values(given_findings)?,
-            answerer,
+            answerers,
             on,
             &mut fields,
         )?;
@@ -1308,6 +1390,36 @@ impl Cell {
     }
 }
 
+/// Who answers the engine in a decision of a cell (RFC-052): the cell itself,
+/// and the other cells of the sphere, each as it knew things on the day.
+struct Answerers<'r> {
+    own: &'r dyn OpenTermAnswerer,
+    sphere: Vec<&'r dyn OpenTermAnswerer>,
+}
+
+impl<'r> Answerers<'r> {
+    fn new(own: &'r Reader<'_>, others: &'r [Reader<'_>]) -> Self {
+        Self {
+            own,
+            sphere: others.iter().map(|r| r as &dyn OpenTermAnswerer).collect(),
+        }
+    }
+
+    /// A call of the engine with `findings` and these answerers.
+    fn call(&self, findings: BTreeMap<String, Value>) -> Call<'r> {
+        Call {
+            findings,
+            answerer: Some(self.own),
+            sphere: self.sphere.clone(),
+        }
+    }
+}
+
+/// The cells of `sphere` as they answer a decision on `on`.
+fn known_on<'c>(sphere: &[&'c Cell], on: NaiveDate) -> Vec<Reader<'c>> {
+    sphere.iter().map(|cell| cell.known_on(on)).collect()
+}
+
 /// A decision taken again ([`Cell::replay`]): the engine's result, what the
 /// decision asked for which it was taken again, and what the cell answered.
 struct Replayed {
@@ -1369,7 +1481,7 @@ fn take(
     shape: &DecisionShape,
     mut fields: Values,
     findings: &Map<String, serde_json::Value>,
-    answerer: &dyn OpenTermAnswerer,
+    answerers: &Answerers<'_>,
     on: NaiveDate,
 ) -> Result<(Values, Values)> {
     let parameters = engine_values(
@@ -1387,7 +1499,7 @@ fn take(
         shape,
         parameters,
         engine_values(findings)?,
-        answerer,
+        answerers,
         on,
         &mut fields,
     )?;
@@ -1507,7 +1619,7 @@ fn run_stages(
     shape: &DecisionShape,
     parameters: BTreeMap<String, Value>,
     findings: BTreeMap<String, Value>,
-    answerer: &dyn OpenTermAnswerer,
+    answerers: &Answerers<'_>,
     on: NaiveDate,
     fields: &mut BTreeMap<String, serde_json::Value>,
 ) -> Result<BTreeMap<String, serde_json::Value>> {
@@ -1516,11 +1628,7 @@ fn run_stages(
     for stage in &shape.stages {
         // Every stage computes the decision's outputs, so a hook at a later
         // stage can read them; they are the same at each.
-        let call = Call {
-            findings: findings.clone(),
-            answerer: Some(answerer),
-            sphere: Vec::new(),
-        };
+        let call = answerers.call(findings.clone());
         let result = service.execute_stage_in(
             &shape.law_id,
             &shape.article,

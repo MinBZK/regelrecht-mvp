@@ -74,7 +74,9 @@ repos:
         files: ^corpus/(regulation|demo/regulation|cells)/.*\.yaml$
         # Skip dot-prefixed sidecars (.enrichment.yaml, .enrichment-result.yaml):
         # enrichment metadata/result envelopes, not law files.
-        exclude: (^|/)\.[^/]*\.yaml$
+        # A cell's identity (corpus/cells/*/cel.yaml, RFC-052) is no rulework;
+        # the cell checks it when it opens.
+        exclude: (^|/)\.[^/]*\.yaml$|^corpus/cells/[^/]+/cel\.yaml$
         types: [yaml]
 
       - id: tool-pins-in-sync

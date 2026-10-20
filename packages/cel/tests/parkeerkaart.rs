@@ -122,6 +122,7 @@ const APPLICANT: &str = "999990020";
 fn applied(cell: &mut Cell, bsn: &str, on: &str) -> Gram {
     cell.record_submission(
         &mut service(),
+        &[],
         LAW,
         ARTICLE,
         None,
@@ -159,6 +160,7 @@ fn decide_with(
 ) -> Result<Gram, Error> {
     cell.decide(
         &mut service(),
+        &[],
         LAW,
         ARTICLE,
         application,
@@ -373,7 +375,7 @@ fn the_reduction_sets_a_finding_of_the_college_aside() {
         json!(true)
     );
     // The finding set aside is no finding the decision used.
-    let found = cell.findings(&mut service(), &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &gram.id).unwrap();
     assert!(!found.contains(&VALID.to_string()), "{found:?}");
     assert!(found.contains(&WALKING.to_string()), "{found:?}");
 }
@@ -494,6 +496,7 @@ fn object(
 ) -> Result<Gram, Error> {
     cell.record_submission(
         &mut service(),
+        &[],
         AWB,
         OBJECTION,
         Some(contested),
@@ -513,6 +516,7 @@ fn reconsider(
 ) -> Vec<Gram> {
     cell.decide(
         &mut service(),
+        &[],
         AWB,
         OBJECTION,
         objection,
@@ -717,7 +721,7 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     // within the policy that fills art. 49: the cell's answer, with the
     // reduction, its version and how far it read the chronicle. The policy
     // refuses, so art. 2 of the Regeling is not asked.
-    let result = cell.explain(&mut service(), &second.id).unwrap();
+    let result = cell.explain(&mut service(), &[], &second.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let nodes = answered(root);
     assert_eq!(nodes.len(), 1, "{}", root.render_box_drawing());
@@ -754,7 +758,7 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     // Step 2: asked why, the cell runs its reduction again with its own
     // trace, which shows the first card it counted.
     let explained = cell
-        .explain_answer(&mut service(), &second.id, VALID)
+        .explain_answer(&mut service(), &[], &second.id, VALID)
         .unwrap();
     assert_eq!(explained.len(), 1);
     assert_eq!(
@@ -766,7 +770,8 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
 
     // Nothing stays loaded.
     let mut kept = service();
-    cell.explain_answer(&mut kept, &second.id, VALID).unwrap();
+    cell.explain_answer(&mut kept, &[], &second.id, VALID)
+        .unwrap();
     assert!(!kept.has_law(REDUCTION));
 }
 
@@ -777,10 +782,10 @@ fn on_a_refusal_on_the_criteria_the_cell_is_not_asked() {
     // are not read, and the cell answers nothing.
     let mut cell = cell();
     let refused = apply_and_decide(&mut cell, APPLICANT, false, "2026-10-20");
-    let result = cell.explain(&mut service(), &refused.id).unwrap();
+    let result = cell.explain(&mut service(), &[], &refused.id).unwrap();
     assert!(answered(result.trace.as_ref().unwrap()).is_empty());
     let e = cell
-        .explain_answer(&mut service(), &refused.id, VALID)
+        .explain_answer(&mut service(), &[], &refused.id, VALID)
         .unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("did not ask")),
@@ -798,7 +803,7 @@ fn at_the_heroverweging_the_cell_answers_without_the_contested_grant() {
     // everything before this decision but the contested grant. Art. 49
     // would issue the card again, so it asks art. 2 of the Regeling too,
     // and the cell answers from the report it received for the grant.
-    let result = cell.explain(&mut service(), &decided[0].id).unwrap();
+    let result = cell.explain(&mut service(), &[], &decided[0].id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let all = answered(root);
     let names: Vec<&str> = all.iter().map(|n| n.name.as_str()).collect();
@@ -826,7 +831,7 @@ fn at_the_heroverweging_the_cell_answers_without_the_contested_grant() {
 
     // The reduction's own account does not read the contested grant.
     let explained = cell
-        .explain_answer(&mut service(), &decided[0].id, VALID)
+        .explain_answer(&mut service(), &[], &decided[0].id, VALID)
         .unwrap();
     let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(!why.contains(&granted.id), "{why}");
@@ -879,7 +884,7 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let result = cell.explain(&mut service(), &gram.id).unwrap();
+    let result = cell.explain(&mut service(), &[], &gram.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let node = answered(root)
         .into_iter()
@@ -893,7 +898,7 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
     assert_eq!(answer.law_id, REPORTS);
     assert_eq!(answer.last_record.as_deref(), Some(report.id.as_str()));
     let why = cell
-        .explain_answer(&mut service(), &gram.id, EXAMINED)
+        .explain_answer(&mut service(), &[], &gram.id, EXAMINED)
         .unwrap();
     let why = why[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(why.contains(&report.id), "{why}");
@@ -972,13 +977,13 @@ fn lid_2_onder_a_an_earlier_card_and_the_college_knows_the_applicant_still_quali
     assert_eq!(gram.fields[LEFT_OUT], json!(true));
     assert_eq!(gram.fields[KNOWN], json!(true));
 
-    let result = cell.explain(&mut service(), &gram.id).unwrap();
+    let result = cell.explain(&mut service(), &[], &gram.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let names: Vec<&str> = answered(root).iter().map(|n| n.name.as_str()).collect();
     // The examination is not asked: lid 2 decides first.
     assert_eq!(names, [VALID, EARLIER], "{}", root.render_box_drawing());
     let why = cell
-        .explain_answer(&mut service(), &gram.id, EARLIER)
+        .explain_answer(&mut service(), &[], &gram.id, EARLIER)
         .unwrap();
     let why = why[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(why.contains(&first.id), "{why}");
@@ -1046,6 +1051,6 @@ fn without_a_report_the_college_may_establish_the_examination_itself() {
         granted.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let found = cell.findings(&mut service(), &granted.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &granted.id).unwrap();
     assert!(found.contains(&EXAMINED.to_string()), "{found:?}");
 }

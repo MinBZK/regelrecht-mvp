@@ -28,6 +28,7 @@ pub mod cell;
 pub mod chronicle;
 pub mod decision;
 pub mod error;
+pub mod identity;
 pub mod reading;
 pub mod shape;
 

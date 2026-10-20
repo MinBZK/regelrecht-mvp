@@ -13,6 +13,9 @@ use regelrecht_cel::{decision, shape, Cell, Error, Gram, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
+mod common;
+use common::cell_tempdir;
+
 const LAW: &str = "leerplichtwet_1969";
 const ARTICLE: &str = "13a";
 const AWB: &str = "algemene_wet_bestuursrecht";
@@ -107,7 +110,7 @@ fn record(
     supplied: &Map<String, Value>,
     on: &str,
 ) -> Result<regelrecht_cel::Gram, Error> {
-    cell.record_submission(&mut service(), LAW, ARTICLE, None, supplied, day(on))
+    cell.record_submission(&mut service(), &[], LAW, ARTICLE, None, supplied, day(on))
 }
 
 #[test]
@@ -270,6 +273,7 @@ fn an_article_that_establishes_no_submission_is_refused() {
     let e = cell
         .record_submission(
             &mut service(),
+            &[],
             LAW,
             "2",
             None,
@@ -299,7 +303,7 @@ fn a_gram_dated_before_the_last_one_is_refused() {
 
 #[test]
 fn a_chronicle_in_a_file_reads_back_what_was_recorded() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("aanvragen.jsonl");
     let recorded = {
@@ -379,6 +383,7 @@ fn decide(
         .partition(|(name, _)| [PROFESSION, OUTSIDE_HOLIDAYS, ONCE].contains(&name.as_str()));
     cell.decide(
         &mut service(),
+        &[],
         LAW,
         ARTICLE,
         application,
@@ -664,7 +669,7 @@ fn a_decision_is_not_dated_before_its_application() {
 
 #[test]
 fn a_decision_reads_back_from_the_file() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
     let recorded = {
@@ -836,7 +841,7 @@ fn the_reduction_sets_a_finding_of_the_head_aside() {
     assert_eq!(gram.fields[ONCE], json!(true));
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     // The finding set aside is no finding the decision used.
-    let found = cell.findings(&mut service(), &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &gram.id).unwrap();
     assert!(!found.contains(&ONCE.to_string()), "{found:?}");
 }
 
@@ -847,6 +852,7 @@ fn the_reduction_and_the_decisions_it_reads_are_bound_for_the_decision_only() {
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
     cell.decide(
         &mut service,
+        &[],
         LAW,
         ARTICLE,
         &app.id,
@@ -878,6 +884,7 @@ fn a_source_for_the_decisions_does_not_reach_the_cells_reduction() {
     let decided = cell
         .decide(
             &mut service,
+            &[],
             LAW,
             ARTICLE,
             &app.id,
@@ -893,7 +900,7 @@ fn a_source_for_the_decisions_does_not_reach_the_cells_reduction() {
 
 /// A cell whose directory holds no reductions, as a school without one.
 fn without_reductions() -> Cell {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap()
 }
 
@@ -989,7 +996,7 @@ fn a_misplaced_reduction_file_is_refused() {
 /// A cell directory with the school's reduction, as `versions` gives it:
 /// per version its `valid_from` and the open term it fills.
 fn reductions_dir(versions: &[(&str, &str)]) -> tempfile::TempDir {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let here = dir.path().join("reducties").join(REDUCTION);
     std::fs::create_dir_all(&here).unwrap();
     let yaml =
@@ -1104,7 +1111,7 @@ fn a_term_no_reduction_in_force_fills_is_refused() {
 #[test]
 fn a_decision_from_before_the_reduction_is_the_heads_and_replays() {
     // Decided by the head, before the school had its reduction.
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let path = dir.path().join("kroniek.jsonl");
     let gram = {
         let mut cell = Cell::open(RECORDING_ACTOR, &path, dir.path()).unwrap();
@@ -1116,14 +1123,14 @@ fn a_decision_from_before_the_reduction_is_the_heads_and_replays() {
     // The reduction comes into force later; the decision stays the head's.
     let later = reductions_dir(&[("2027-08-01", ONCE)]);
     let cell = Cell::open(RECORDING_ACTOR, &path, later.path()).unwrap();
-    cell.explain(&mut service(), &gram.id).unwrap();
-    let found = cell.findings(&mut service(), &gram.id).unwrap();
+    cell.explain(&mut service(), &[], &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &gram.id).unwrap();
     assert!(found.contains(&ONCE.to_string()), "{found:?}");
 }
 
 #[test]
 fn reducties_that_is_no_directory_is_refused() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     std::fs::write(dir.path().join("reducties"), "").unwrap();
     let e = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap_err();
     assert!(
@@ -1134,7 +1141,7 @@ fn reducties_that_is_no_directory_is_refused() {
 
 #[test]
 fn the_cell_keeps_only_reductions() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let policy = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
         "../../corpus/regulation/nl/uitvoeringsbeleid/{SCHOOL_YEAR}/2026-08-01.yaml"
     ));
@@ -1148,7 +1155,7 @@ fn the_cell_keeps_only_reductions() {
     );
 
     // A reduction lives in a directory named after it.
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let elsewhere = dir.path().join("reducties").join("anders");
     std::fs::create_dir_all(&elsewhere).unwrap();
     std::fs::copy(
@@ -1204,6 +1211,7 @@ fn object(
 ) -> Result<Gram, Error> {
     cell.record_submission(
         &mut service(),
+        &[],
         AWB,
         OBJECTION,
         Some(contested),
@@ -1227,6 +1235,7 @@ fn reconsider(
 ) -> Result<Vec<Gram>, Error> {
     cell.decide(
         &mut service(),
+        &[],
         AWB,
         OBJECTION,
         objection,
@@ -1417,6 +1426,7 @@ fn an_objection_without_the_contested_decision_is_recorded_and_not_decided_on() 
     let bezwaar = cell
         .record_submission(
             &mut service(),
+            &[],
             AWB,
             OBJECTION,
             None,
@@ -1727,7 +1737,7 @@ fn a_late_objection_is_recorded_and_not_admissible() {
 
 #[test]
 fn an_objection_is_decided_with_decide_and_reads_back_from_the_file() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
     let recorded = {
@@ -1810,6 +1820,7 @@ fn a_late_objection_is_not_admissible_where_the_heroverweging_would_fail() {
     let decided = cell
         .decide(
             &mut without_policy,
+            &[],
             AWB,
             OBJECTION,
             &late.id,
@@ -1828,6 +1839,7 @@ fn a_late_objection_is_not_admissible_where_the_heroverweging_would_fail() {
     let e = timely
         .decide(
             &mut service_with_policy_lapsed(),
+            &[],
             AWB,
             OBJECTION,
             &on_time.id,
@@ -1990,14 +2002,14 @@ fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_re
     // The cell filled the term, so the new decision has no finding on it;
     // its value is the cell's answer.
     assert_eq!(new_b.fields[ONCE], json!(false));
-    let found = cell.findings(&mut service(), &new_b.id).unwrap();
+    let found = cell.findings(&mut service(), &[], &new_b.id).unwrap();
     assert!(!found.contains(&ONCE.to_string()), "{found:?}");
 
     // Step 1: the trace of the decision on B's objection holds one node for
     // the term, within art. 13a called anew: the cell's answer, with the
     // reduction, its version and how far it read the chronicle. It read
     // everything before this decision but B, the contested decision.
-    let result = cell.explain(&mut service(), &on_b[0].id).unwrap();
+    let result = cell.explain(&mut service(), &[], &on_b[0].id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let nodes = answered(root);
     assert_eq!(nodes.len(), 1, "{}", root.render_box_drawing());
@@ -2041,7 +2053,7 @@ fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_re
     // under art. 13a (A, and the refusal in its place) are skipped by the
     // filter; B itself is not read.
     let explained = cell
-        .explain_answer(&mut service(), &on_b[0].id, ONCE)
+        .explain_answer(&mut service(), &[], &on_b[0].id, ONCE)
         .unwrap();
     assert_eq!(explained.len(), 1);
     assert_eq!(
@@ -2059,7 +2071,7 @@ fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_re
     );
     // A term the decision did not ask the cell is refused.
     let e = cell
-        .explain_answer(&mut service(), &on_b[0].id, "verlofdagen")
+        .explain_answer(&mut service(), &[], &on_b[0].id, "verlofdagen")
         .unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("did not ask")),
@@ -2067,12 +2079,12 @@ fn a_grant_revoked_on_objection_no_longer_counts_on_the_objection_against_the_re
     );
 
     // Explaining the new decision explains the decision that took it.
-    let again = cell.explain(&mut service(), &new_b.id).unwrap();
+    let again = cell.explain(&mut service(), &[], &new_b.id).unwrap();
     assert_eq!(again.outputs, result.outputs);
     // Nothing stays loaded.
     let mut kept = service();
-    cell.explain(&mut kept, &b.id).unwrap();
-    cell.explain_answer(&mut kept, &b.id, ONCE).unwrap();
+    cell.explain(&mut kept, &[], &b.id).unwrap();
+    cell.explain_answer(&mut kept, &[], &b.id, ONCE).unwrap();
     assert!(!kept.has_law(REDUCTION));
 }
 
@@ -2083,7 +2095,7 @@ fn the_cell_explains_the_grant_its_reduction_counted_for_a_refusal() {
     let mut cell = cell();
     let a = apply_and_decide(&mut cell, "2027-02-01", "2027-02-05", "2026-10-20");
     let b = apply_and_decide(&mut cell, "2027-05-10", "2027-05-14", "2026-10-27");
-    let result = cell.explain(&mut service(), &b.id).unwrap();
+    let result = cell.explain(&mut service(), &[], &b.id).unwrap();
     let trace = result.trace.as_ref().unwrap().render_box_drawing();
     assert!(trace.contains(REDUCTION), "{trace}");
     assert!(!trace.contains(&a.id), "{trace}");
@@ -2091,7 +2103,9 @@ fn the_cell_explains_the_grant_its_reduction_counted_for_a_refusal() {
         result.outputs["verlof_verleend"],
         regelrecht_engine::Value::from(json!(false))
     );
-    let explained = cell.explain_answer(&mut service(), &b.id, ONCE).unwrap();
+    let explained = cell
+        .explain_answer(&mut service(), &[], &b.id, ONCE)
+        .unwrap();
     let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(why.contains(&a.id), "{why}");
     assert_eq!(
@@ -2104,7 +2118,7 @@ fn the_cell_explains_the_grant_its_reduction_counted_for_a_refusal() {
 /// the chronicle did not get from the law, the replay is not that decision.
 #[test]
 fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let school = lid_2_dir();
     let path = dir.path().join("kroniek.jsonl");
     let b = {
@@ -2114,7 +2128,7 @@ fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
     };
     assert_eq!(b.outputs["verlof_verleend"], json!(false));
     let with = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
-    let found = with.findings(&mut service(), &b.id).unwrap();
+    let found = with.findings(&mut service(), &[], &b.id).unwrap();
     assert!(!found.contains(&ONCE.to_string()), "{found:?}");
 
     // The last line is B; it now says leave was granted.
@@ -2125,19 +2139,19 @@ fn a_replay_that_does_not_run_as_the_decision_ran_fails() {
     assert_ne!(tampered, last);
     std::fs::write(&path, format!("{rest}\n{tampered}\n")).unwrap();
     let cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
-    let e = cell.explain(&mut service(), &b.id).unwrap_err();
+    let e = cell.explain(&mut service(), &[], &b.id).unwrap_err();
     assert!(
         matches!(&e, Error::Setup(m) if m.contains("the replay is not this decision")
             && m.contains("verlof_verleend")),
         "{e}"
     );
     // Nor does the cell derive findings from it.
-    assert!(cell.findings(&mut service(), &b.id).is_err());
+    assert!(cell.findings(&mut service(), &[], &b.id).is_err());
 }
 
 #[test]
 fn a_decision_in_a_sandbox_stays_out_of_the_cell_and_its_file() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     let school = lid_2_dir();
     let path = dir.path().join(RECORDING_ACTOR).join("kroniek.jsonl");
     let mut cell = Cell::open(RECORDING_ACTOR, &path, school.path()).unwrap();
