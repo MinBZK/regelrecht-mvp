@@ -70,7 +70,7 @@ RUN npm ci --ignore-scripts
 
 # De bron van het gedeelde pakket. npm ci hierboven legt alleen de symlink in
 # node_modules; zonder deze kopie staat daar een lege map en valt de build om
-# op de imports uit de pocs (Paneel, de Gherkin-runner, useBewaardeStand).
+# op de imports uit de pocs (Panel, de Gherkin-runner, usePersistedState).
 COPY packages/frontend-shared/ packages/frontend-shared/
 
 # Het portaal: alleen het ontwerpsysteem voor zijn eigen twee pagina's.

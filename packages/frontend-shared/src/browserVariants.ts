@@ -21,7 +21,7 @@
  * longer reads that way. `checkDrift` reports that; the app still lets the
  * variant activate, but says it belongs to an older version of the law. This
  * is exactly why edited YAML did not belong in plain persisted state (see the
- * header of useBewaardeStand), so without this check we would repeat that
+ * header of usePersistedState), so without this check we would repeat that
  * mistake.
  *
  * About space: localStorage fills up around 5 MB and a law here is ~50 KB, so
@@ -30,7 +30,7 @@
  * that turns out to be gone after a reload is worse than a refusal.
  */
 import { ref } from 'vue';
-import { persistedRef, protectKey, readPersisted, writePersisted } from './useBewaardeStand';
+import { persistedRef, protectKey, readPersisted, writePersisted } from './usePersistedState';
 
 /**
  * The key in persisted state. Its value is a stored format: users' variants

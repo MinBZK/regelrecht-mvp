@@ -3,7 +3,7 @@
     <div class="kt-head">
       <!-- De kolomkeuze staat bij de kolommen die hij vult, niet in het
            linkerpaneel waar alleen staat wat je wijzigt. -->
-      <kolommen-menu
+      <column-menu
         :variants="variants"
         :selected="selectedVariants"
         :max="MAX_VARIANTEN"
@@ -86,7 +86,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import KolommenMenu from '@regelrecht/frontend-shared/components/KolommenMenu.vue';
+import ColumnMenu from '@regelrecht/frontend-shared/components/ColumnMenu.vue';
 import { useLawStore, kortTitel } from '../../engine/lawStore.js';
 import { number, euroCompact, percent, regimeLabel, urenCompact } from '../../lib/format.js';
 import { KOLOM_BASIS, usePopulation, MAX_VARIANTEN } from '../../composables/usePopulation.js';

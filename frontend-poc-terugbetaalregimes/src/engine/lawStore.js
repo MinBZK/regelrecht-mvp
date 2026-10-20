@@ -29,7 +29,7 @@ import {
   deleteVariant as deleteBrowserVariant,
   checkDrift,
   isBrowserVariant,
-} from '@regelrecht/frontend-shared/browserVarianten';
+} from '@regelrecht/frontend-shared/browserVariants';
 
 // De wet die de simulatie daadwerkelijk raadpleegt; alleen die hoeft een
 // editor/diff te krijgen. De overige (WML, besluit, regelingen, werkinstructie)

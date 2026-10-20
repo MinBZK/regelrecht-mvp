@@ -23,7 +23,7 @@
          een orde kleiner is. Op één as zou die laatste een platte lijn zijn,
          terwijl een doel als "gelijktrekken zonder dat de uitgave stijgt" juist
          over de verhouding tussen die twee gaat. -->
-    <optimalisatiepad-chart
+    <optimization-path-chart
       v-if="modus === 'doel' && pad.length"
       :measurements="pad"
       :series="reeksen"
@@ -207,7 +207,7 @@ import { euroCompact } from '../../lib/format.js';
 import { b } from '../../basePad.js';
 import { VOORBEELDEN } from '../../lib/assistentVoorbeelden.js';
 import { persistedRef } from '../../composables/useBewaardeStand.js';
-import OptimalisatiepadChart from '@regelrecht/frontend-shared/components/OptimalisatiepadChart.vue';
+import OptimizationPathChart from '@regelrecht/frontend-shared/components/OptimizationPathChart.vue';
 
 // Geen `metrics`-emit meer. De assistent meet met een eigen n op een eigen
 // tussenstand; die cijfers naast de tegels zetten zou de doorrekening van de

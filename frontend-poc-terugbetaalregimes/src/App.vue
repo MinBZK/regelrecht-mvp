@@ -41,7 +41,7 @@
       </nldd-skip-link>
       <!-- Meldingen van de assistent: hier en niet in het paneel, want op de
            andere pagina's is dat paneel niet gemonteerd. -->
-      <assistent-meldingen
+      <assistant-notices
         :notices="meldingen"
         :on-assistant-page="route.name === 'beleid'"
         go-to-label="Naar de assistent"
@@ -61,7 +61,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useThema } from './composables/useThema.js';
 import { b } from './basePad.js';
 import WerkversieBalk from './components/WerkversieBalk.vue';
-import AssistentMeldingen from '@regelrecht/frontend-shared/components/AssistentMeldingen.vue';
+import AssistantNotices from '@regelrecht/frontend-shared/components/AssistantNotices.vue';
 import { useAssistent } from './composables/useAssistent.js';
 
 const route = useRoute();

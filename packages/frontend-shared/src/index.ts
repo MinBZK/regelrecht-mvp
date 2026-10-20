@@ -6,7 +6,7 @@
 //
 // Not everything hangs off this index. The Gherkin runner, the separate lib
 // modules and the shared components have their own subpath in `exports`
-// (./gherkin, ./lib/*, ./components/*, ./useBewaardeStand), so an app pulls
+// (./gherkin, ./lib/*, ./components/*, ./usePersistedState), so an app pulls
 // in only what it uses.
 export { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch';
 export type { ApiFetchInit } from './apiFetch';

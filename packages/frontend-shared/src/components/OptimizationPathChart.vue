@@ -1,8 +1,8 @@
 <template>
-  <div class="optimisation-path">
-    <span class="optimisation-path-title">{{ title }}</span>
+  <div class="optimization-path">
+    <span class="optimization-path-title">{{ title }}</span>
     <v-chart class="chart" :option="option" autoresize @click="onPoint" />
-    <p class="optimisation-path-hint">{{ hint }}</p>
+    <p class="optimization-path-hint">{{ hint }}</p>
   </div>
 </template>
 
@@ -18,7 +18,7 @@
   between those items. Hence series with their own unit instead of a fixed
   percentage axis.
 
-  The points are clickable: during a running optimisation you can take an
+  The points are clickable: during a running optimization you can take an
   intermediate state you like, without waiting for it to converge.
 -->
 
@@ -162,8 +162,8 @@ const option = computed(() => ({
 </script>
 
 <style scoped>
-.optimisation-path { display: flex; flex-direction: column; gap: var(--primitives-space-8); }
-.optimisation-path-title { font-size: 0.85em; font-weight: 600; color: var(--semantics-content-secondary-color); }
-.optimisation-path-hint { margin: 0; font-size: 0.8em; color: var(--semantics-content-secondary-color); }
+.optimization-path { display: flex; flex-direction: column; gap: var(--primitives-space-8); }
+.optimization-path-title { font-size: 0.85em; font-weight: 600; color: var(--semantics-content-secondary-color); }
+.optimization-path-hint { margin: 0; font-size: 0.8em; color: var(--semantics-content-secondary-color); }
 .chart { height: 220px; width: 100%; cursor: pointer; }
 </style>

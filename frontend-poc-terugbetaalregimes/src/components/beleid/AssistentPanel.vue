@@ -17,7 +17,7 @@
     </nldd-segmented-control>
 
 
-    <optimalisatiepad-chart
+    <optimization-path-chart
       v-if="modus === 'doel' && pad.length"
       :measurements="pad"
       :series="reeksen"
@@ -201,7 +201,7 @@ import { resolveToken } from '../../lib/tokens.js';
 import { b } from '../../basePad.js';
 import { VOORBEELDEN } from '../../lib/assistentVoorbeelden.js';
 import { persistedRef } from '../../composables/useBewaardeStand.js';
-import OptimalisatiepadChart from '@regelrecht/frontend-shared/components/OptimalisatiepadChart.vue';
+import OptimizationPathChart from '@regelrecht/frontend-shared/components/OptimizationPathChart.vue';
 
 // Geen `metrics`-emit meer. De assistent meet met een eigen n op een eigen
 // tussenstand; die cijfers naast de tegels zetten zou de doorrekening van de

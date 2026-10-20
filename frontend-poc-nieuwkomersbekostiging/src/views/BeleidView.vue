@@ -18,7 +18,7 @@
           <nldd-banner v-else-if="!ready" variant="accent">Rekenmachine wordt geladen…</nldd-banner>
 
           <template v-if="ready">
-            <paneel :title="`Regeling bijstellen`" :subtitle="`Bedragen, duur en drempel van ${werkversieLabel}. Elke wijziging rekent de werkversiekolom opnieuw.`" :summary="bijstellenSamenvatting" :badge="hasChanges ? `${changeCount} bewerkt` : ''">
+            <panel :title="`Regeling bijstellen`" :subtitle="`Bedragen, duur en drempel van ${werkversieLabel}. Elke wijziging rekent de werkversiekolom opnieuw.`" :summary="bijstellenSamenvatting" :badge="hasChanges ? `${changeCount} bewerkt` : ''">
               <parameter-panel />
               <details class="geavanceerd">
                 <summary>Geavanceerd: YAML rechtstreeks bewerken</summary>
@@ -31,26 +31,26 @@
                   <nldd-button text="Open in YAML-editor" start-icon="code" appearance="secondary" size="sm" :disabled="!yamlKeuze ? true : undefined" @click="openYaml(yamlKeuze)"></nldd-button>
                 </div>
               </details>
-            </paneel>
+            </panel>
 
-            <paneel title="Budgetneutraal" subtitle="Wat kan er veranderen zonder dat het meer geld kost? Zoekt het bedrag waarbij de werkversie evenveel uitgeeft als huidig recht." summary="zoekt een bedrag">
+            <panel title="Budgetneutraal" subtitle="Wat kan er veranderen zonder dat het meer geld kost? Zoekt het bedrag waarbij de werkversie evenveel uitgeeft als huidig recht." summary="zoekt een bedrag">
               <budgetneutraal-panel />
-            </paneel>
+            </panel>
 
             <!-- Loopt er een gesprek, dan staat dit paneel open. Je komt terug op
                  deze pagina om te zien wat de assistent doet; dan is dichtgeklapt
                  precies het verkeerde. -->
-            <paneel title="Beleidsassistent" subtitle="Een instructie of doel in gewone taal; de assistent wijzigt de werkversie en rekent door." summary="instructie of doel" :badge="assistentLoopt ? 'bezig' : ''" :open="assistentLoopt">
+            <panel title="Beleidsassistent" subtitle="Een instructie of doel in gewone taal; de assistent wijzigt de werkversie en rekent door." summary="instructie of doel" :badge="assistentLoopt ? 'bezig' : ''" :open="assistentLoopt">
               <assistent-panel />
-            </paneel>
+            </panel>
 
-            <paneel title="Uitvoeringslastmodel" subtitle="Handelingen × minuten × tarief per partij, investeringen en budget. Bijstellen is direct zichtbaar." :summary="uitvoeringSamenvatting" :badge="hasOverrides ? 'aangepast' : ''">
+            <panel title="Uitvoeringslastmodel" subtitle="Handelingen × minuten × tarief per partij, investeringen en budget. Bijstellen is direct zichtbaar." :summary="uitvoeringSamenvatting" :badge="hasOverrides ? 'aangepast' : ''">
               <handelingen-panel />
-            </paneel>
+            </panel>
 
-            <paneel title="Populatie" subtitle="Eén vaste steekproef van synthetische leerlingen, gewogen naar de echte instroom. Alle kolommen rekenen met dezelfde leerlingen." :summary="populatieSamenvatting" :badge="popGewijzigd ? 'aangepast' : ''">
+            <panel title="Populatie" subtitle="Eén vaste steekproef van synthetische leerlingen, gewogen naar de echte instroom. Alle kolommen rekenen met dezelfde leerlingen." :summary="populatieSamenvatting" :badge="popGewijzigd ? 'aangepast' : ''">
               <population-controls />
-            </paneel>
+            </panel>
           </template>
         </div>
       </nldd-page>
@@ -99,13 +99,13 @@
               />
             </section>
 
-            <paneel title="Huidig recht in cijfers" summary="kengetallen per jaar">
+            <panel title="Huidig recht in cijfers" summary="kengetallen per jaar">
               <metric-tiles :metrics="istMetrics" />
-            </paneel>
+            </panel>
 
-            <paneel title="Plausibiliteit" summary="simulatie naast factsheet en realisatie">
+            <panel title="Plausibiliteit" summary="simulatie naast factsheet en realisatie">
               <plausibiliteit-tabel :metrics="istMetrics" :distributions="distributions" />
-            </paneel>
+            </panel>
           </template>
         </div>
       </nldd-page>
@@ -123,7 +123,7 @@ import { useLawStore } from '../engine/lawStore.js';
 import { useSimulation } from '../composables/useSimulation.js';
 import { useHandelingen } from '../composables/useHandelingen.js';
 import { number } from '../lib/format.js';
-import Paneel from '@regelrecht/frontend-shared/components/Paneel.vue';
+import Panel from '@regelrecht/frontend-shared/components/Panel.vue';
 import ParameterPanel from '../components/beleid/ParameterPanel.vue';
 import HandelingenPanel from '../components/beleid/HandelingenPanel.vue';
 import BudgetneutraalPanel from '../components/beleid/BudgetneutraalPanel.vue';

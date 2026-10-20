@@ -58,7 +58,7 @@ function prefix(): string {
   if (caseName === null) {
     // Hard, because the alternative is writing silently into the wrong or an
     // unnamed space, which only shows when someone's choices are gone.
-    throw new Error('useBewaardeStand: setCase() has not been called');
+    throw new Error('usePersistedState: setCase() has not been called');
   }
   return `${caseName}:v${STORAGE_VERSION}:`;
 }

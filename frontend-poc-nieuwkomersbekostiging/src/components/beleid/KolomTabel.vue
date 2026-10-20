@@ -3,7 +3,7 @@
     <div class="kt-head">
       <!-- De kolomkeuze staat bij de kolommen die hij vult, niet in het
            linkerpaneel waar alleen staat wat je wijzigt. -->
-      <kolommen-menu
+      <column-menu
         :variants="variants"
         :selected="selectedVariants"
         :max="MAX_VARIANTEN"
@@ -57,7 +57,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import KolommenMenu from '@regelrecht/frontend-shared/components/KolommenMenu.vue';
+import ColumnMenu from '@regelrecht/frontend-shared/components/ColumnMenu.vue';
 import { euroCompact, euroDelta, number, numberDelta, years, decimal, jaNee } from '../../lib/format.js';
 import { useLawStore } from '../../engine/lawStore.js';
 import { useSimulation, shortTitle, MAX_VARIANTEN } from '../../composables/useSimulation.js';

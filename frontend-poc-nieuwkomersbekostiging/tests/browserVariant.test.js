@@ -29,7 +29,7 @@ function verseOpslag() {
 async function laadOpslag() {
   vi.resetModules();
   const stand = await import('../src/composables/useBewaardeStand.js');
-  return { stand, varianten: await import('@regelrecht/frontend-shared/browserVarianten') };
+  return { stand, varianten: await import('@regelrecht/frontend-shared/browserVariants') };
 }
 
 describe('een zelf bewaarde variant', () => {

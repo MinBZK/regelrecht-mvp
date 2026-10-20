@@ -82,7 +82,7 @@ const gekozenPunt = ref(null);
 
 /**
  * Meldingen voor wie niet op de beleidspagina staat. Elk item is
- * `{ id, kind, text }` (de vorm die AssistentMeldingen leest); de app haalt ze
+ * `{ id, kind, text }` (de vorm die AssistantNotices leest); de app haalt ze
  * weg zodra ze gezien zijn.
  */
 const meldingen = ref([]);

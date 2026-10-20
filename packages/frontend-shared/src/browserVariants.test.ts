@@ -22,9 +22,9 @@ let storage: ReturnType<typeof freshStorage>;
 
 async function load() {
   vi.resetModules();
-  const persisted = await import('./useBewaardeStand');
+  const persisted = await import('./usePersistedState');
   persisted.setCase('testcase');
-  return import('./browserVarianten');
+  return import('./browserVariants');
 }
 
 describe('browser variants', () => {
@@ -77,7 +77,7 @@ describe('browser variants', () => {
 
   it('stays when the user starts over', async () => {
     const { saveVariant } = await load();
-    const persisted = await import('./useBewaardeStand');
+    const persisted = await import('./usePersistedState');
     saveVariant({ title: 'Blijft', files: [file()] });
     persisted.writePersisted('kolommen', ['a1']);
 
@@ -387,8 +387,8 @@ describe('browser variants', () => {
     it('leaves stored variants alone when it loads before setCase()', async () => {
       storage.setItem(key, JSON.stringify([{ id: 'eigen-oud', titel: 'Oud', gemaakt: 'x', bestanden: [] }]));
       vi.resetModules();
-      const variants = await import('./browserVarianten');
-      (await import('./useBewaardeStand')).setCase('testcase');
+      const variants = await import('./browserVariants');
+      (await import('./usePersistedState')).setCase('testcase');
       await new Promise((r) => setTimeout(r, 0));
 
       expect(JSON.parse(storage.getItem(key)!)).toEqual([{ id: 'eigen-oud', titel: 'Oud', gemaakt: 'x', bestanden: [] }]);
