@@ -1952,7 +1952,7 @@
           "description": "Named endpoint for this article. The Rust law-model reads it, but the engine does not call by endpoint: a law calls another law by output name."
         },
         "competent_authority": {
-          "description": "Bevoegd gezag: the authority whose execution of this article produces a binding decision, or, for an article that requires a fact (`requires` with `fact`), the authority that establishes it. Another body may run the same calculation and get the same number, but its result carries no legal force (RFC-009). A list where the law names several authorities for the article (since v0.8.8). Where an article is read through `source.regulation`, the engine asks only the answerers this field names for its open terms (RFC-053).",
+          "description": "Bevoegd gezag: the authority whose execution of this article produces a binding decision, or, for an article that requires a fact (`requires` with `fact`), the authority that establishes it. Another body may run the same calculation and get the same number, but its result carries no legal force (RFC-009). A list where the law names several authorities for the article (since v0.8.8). Where an article is read through `source.regulation`, an engine that routes on competence (RFC-053) asks only the answerers this field names for its open terms, whatever version the file names.",
           "oneOf": [
             {
               "type": "string",
@@ -1960,50 +1960,14 @@
               "description": "Internal reference to output (e.g., '#bevoegd_gezag')."
             },
             {
-              "type": "object",
-              "required": [
-                "name"
-              ],
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "Name of the authority."
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "INSTANCE",
-                    "CATEGORY"
-                  ],
-                  "default": "INSTANCE",
-                  "description": "INSTANCE = specific organization (default), CATEGORY = must be resolved per context."
-                }
-              }
+              "$ref": "#/definitions/namedAuthority"
             },
             {
               "type": "array",
               "minItems": 1,
               "description": "Several authorities, each competent for the article (since v0.8.8, RFC-053).",
               "items": {
-                "type": "object",
-                "required": [
-                  "name"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Name of the authority."
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "INSTANCE",
-                      "CATEGORY"
-                    ],
-                    "default": "INSTANCE",
-                    "description": "INSTANCE = specific organization (default), CATEGORY = must be resolved per context."
-                  }
-                }
+                "$ref": "#/definitions/namedAuthority"
               }
             }
           ]
@@ -2208,10 +2172,9 @@
                   "OR",
                   "AND",
                   "MIN",
-                  "MAX",
-                  "ONLY"
+                  "MAX"
                 ],
-                "description": "How the answers of several competent answerers make one value (since v0.8.8, RFC-053), with the aggregations of FOREACH. Only on a term of an article whose `competent_authority` lets more than one answerer give it, such as a fact several issuing bodies record. Without it, two answers that are not null are an error at run time. `OR` and `AND` take a boolean, `ADD`, `MIN` and `MAX` a number or an amount, `ONLY` any type."
+                "description": "How the answers of several competent answerers make one value (since v0.8.8, RFC-053), with the aggregations of FOREACH. Only on a term of an article whose `competent_authority` names authorities, where more than one answerer may give it, such as a fact several issuing bodies record. Without it, two answers that are not null are an error at run time. `OR` and `AND` take a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` is no rule for answers and is not allowed here."
               }
             },
             "additionalProperties": false
@@ -2928,6 +2891,27 @@
           ]
         }
       ]
+    },
+    "namedAuthority": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the authority."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "INSTANCE",
+            "CATEGORY"
+          ],
+          "default": "INSTANCE",
+          "description": "INSTANCE = specific organization (default), CATEGORY = must be resolved per context."
+        }
+      }
     }
   }
 }

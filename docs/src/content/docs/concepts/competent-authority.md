@@ -46,7 +46,7 @@ For an article that requires a fact rather than a decision (`requires` with `fac
 
 ## Who answers an open term
 
-Where one law reads a fact that another actor establishes, it reads the output of the establishing article with `source.regulation`. For the open terms of that article the engine asks only the answerers that its `competent_authority` names, and combines their answers with the term's `combine` ([RFC-053](/rfcs/rfc-053)). A cell that the law does not name is not asked.
+Where one law reads a fact that another actor establishes, it reads the output of the establishing article with `source.regulation`. For the open terms of that article the engine asks only the answerers that its `competent_authority` names, and combines their answers with the term's `combine` ([RFC-053](/rfcs/rfc-053)). A cell that the law does not name is not asked. For an article without `competent_authority`, only the cell that runs the decision is asked, as before; a `#` reference is not routed yet, and an answer to it is an error.
 
 ## One law, several authorities
 

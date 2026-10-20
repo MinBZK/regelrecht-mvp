@@ -827,6 +827,20 @@ pub enum CombineOp {
     Only,
 }
 
+impl CombineOp {
+    /// The name as the law writes it (`ADD`, `OR`, ...).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CombineOp::Add => "ADD",
+            CombineOp::Or => "OR",
+            CombineOp::And => "AND",
+            CombineOp::Min => "MIN",
+            CombineOp::Max => "MAX",
+            CombineOp::Only => "ONLY",
+        }
+    }
+}
+
 /// Default name for the FOREACH element binding when `as` is omitted.
 ///
 /// Neutral and language-independent, so it does not collide with the Dutch

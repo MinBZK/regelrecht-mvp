@@ -21,7 +21,7 @@ const DATE: &str = "2026-10-20";
 /// The law that establishes the facts: who issued a card before (art. 1,
 /// a college or the fictitious national issuer), a fact of its own without
 /// competence (art. 2), one whose competence is a reference (art. 3), a
-/// mark only one college gives (art. 4, `ONLY`) and a fact one college
+/// mark one college gives (art. 4) and a fact one college
 /// gives without `combine` (art. 5).
 const ESTABLISHING: &str = r#"
 $id: wet_verstrekking
@@ -101,7 +101,6 @@ articles:
         - id: kenmerk
           type: string
           required: false
-          combine: ONLY
       execution:
         parameters:
           - name: bsn
@@ -565,15 +564,11 @@ fn two_answers_without_combine_are_an_error() {
 }
 
 #[test]
-fn only_takes_the_one_answer_and_refuses_two() {
+fn one_answer_beside_a_silent_one_needs_no_combine() {
     let running = Fake::college("wilgendaal").answering("kenmerk", Value::String("A".into()));
     let other = Fake::college("oostmeer").answering("kenmerk", Value::Null);
     let result = read("kenmerk_gelezen", &running, vec![&other], BTreeMap::new()).unwrap();
     assert_eq!(result.outputs["kenmerk_gelezen"], Value::String("A".into()));
-
-    let other = Fake::college("oostmeer").answering("kenmerk", Value::String("B".into()));
-    let e = read("kenmerk_gelezen", &running, vec![&other], BTreeMap::new()).unwrap_err();
-    assert!(e.to_string().contains("ONLY takes at most one"), "{e}");
 }
 
 #[test]
@@ -601,10 +596,23 @@ fn a_combine_that_does_not_fit_the_type_is_refused_at_load() {
         ),
         "{e}"
     );
-    let yaml = ESTABLISHING.replacen("combine: ONLY", "combine: AND", 1);
+    // ONLY is no rule for answers: one needs none, two without one fail.
+    let yaml = ESTABLISHING.replacen("combine: OR", "combine: ONLY", 1);
     let e = ArticleBasedLaw::from_yaml_str(&yaml).unwrap_err();
     assert!(
-        e.to_string().contains("which does not fit its type string"),
+        e.to_string().contains("which is no rule for answers"),
+        "{e}"
+    );
+    // Without competent authorities named, only one answerer is asked.
+    let yaml = ESTABLISHING.replacen(
+        "          decided_per_case_by: het college\n      execution:\n        parameters:\n          - name: bsn\n            type: string\n            required: true\n        output:\n          - name: ander_feit",
+        "          decided_per_case_by: het college\n          combine: OR\n      execution:\n        parameters:\n          - name: bsn\n            type: string\n            required: true\n        output:\n          - name: ander_feit",
+        1,
+    );
+    assert_ne!(yaml, ESTABLISHING);
+    let e = ArticleBasedLaw::from_yaml_str(&yaml).unwrap_err();
+    assert!(
+        e.to_string().contains("names no competent authority"),
         "{e}"
     );
 }

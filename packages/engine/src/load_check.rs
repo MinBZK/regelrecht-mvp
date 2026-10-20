@@ -36,7 +36,10 @@
 //! The `combine` of an open term (schema v0.8.8, RFC-053) makes one value of
 //! the answers of several competent answerers. It has to fit the term's
 //! type, as the `combine` of a FOREACH has to fit its body: `OR` and `AND`
-//! a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` fits any.
+//! a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` is no
+//! rule for answers: one answer needs none, and two without a rule are an
+//! error already. It sits only on a term of an article that names its
+//! competent authorities, since only there may several answer.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
@@ -176,27 +179,50 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
 /// Refuse an open term whose `combine` does not fit its type (RFC-053).
 pub(crate) fn reject_misfit_combine(law: &ArticleBasedLaw) -> Result<()> {
     for (where_, section) in sections(law) {
+        let named = section
+            .competent_authority
+            .as_ref()
+            .and_then(|authority| authority.named())
+            .is_some();
         for term in section.open_terms.iter().flatten() {
             let Some(op) = term.combine else {
                 continue;
             };
+            let refuse = |why: String| {
+                Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: open term '{}' combines its answers with {} \
+                     (combine), {why}",
+                    law.id,
+                    term.id,
+                    op.as_str()
+                )))
+            };
+            if !named {
+                return refuse(
+                    "but the article names no competent authority, so no more than one \
+                     answerer can answer it (RFC-053)"
+                        .to_string(),
+                );
+            }
             let fits = match op {
                 CombineOp::Or | CombineOp::And => term.term_type == ParameterType::Boolean,
                 CombineOp::Add | CombineOp::Min | CombineOp::Max => matches!(
                     term.term_type,
                     ParameterType::Number | ParameterType::Amount
                 ),
-                CombineOp::Only => true,
+                CombineOp::Only => {
+                    return refuse(
+                        "which is no rule for answers: one needs none, and two without one \
+                         are an error"
+                            .to_string(),
+                    )
+                }
             };
             if !fits {
-                return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: open term '{}' combines its answers with {} \
-                     (combine), which does not fit its type {}",
-                    law.id,
-                    term.id,
-                    format!("{op:?}").to_uppercase(),
+                return refuse(format!(
+                    "which does not fit its type {}",
                     format!("{:?}", term.term_type).to_lowercase()
-                )));
+                ));
             }
         }
     }

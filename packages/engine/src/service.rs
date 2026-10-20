@@ -4375,10 +4375,15 @@ impl LawExecutionService {
                     .windows(2)
                     .find(|pair| pair[0].authority().name == pair[1].authority().name)
                 {
-                    return Err(EngineError::InvalidOperation(format!(
-                        "two answerers of the call are named '{}'",
+                    let message = format!(
+                        "open term '{}' on {}#{}: two answerers of the call are named '{}'",
+                        term.id,
+                        law.id,
+                        article.number,
                         pair[0].authority().name
-                    )));
+                    );
+                    res_ctx.trace_set_message(message.clone());
+                    return Err(EngineError::InvalidOperation(message));
                 }
                 let any = res_ctx.answerer.is_some() || !res_ctx.sphere.is_empty();
                 if competent.is_empty() && any {
@@ -4433,12 +4438,14 @@ impl LawExecutionService {
             }
         }
         if let (Some(reference), Some(answer)) = (unrouted_reference, answers.first()) {
-            return Err(EngineError::InvalidOperation(format!(
+            let message = format!(
                 "open term '{}' on {}#{}: {} answered it, but the article's competent_authority \
                  is the reference '{reference}', on which the engine does not route yet \
                  (RFC-053)",
                 term.id, law.id, article.number, answer.provenance.answerer
-            )));
+            );
+            res_ctx.trace_set_message(message.clone());
+            return Err(EngineError::InvalidOperation(message));
         }
 
         let fallback = term.default.is_some() || term.decided_per_case_by.is_some();
@@ -4467,11 +4474,20 @@ impl LawExecutionService {
                     return Err(EngineError::InvalidOperation(message));
                 };
                 let values = answers.iter().map(|a| a.value.clone()).collect();
-                let value = crate::operations::combine_with(op, values).inspect_err(|e| {
-                    res_ctx.trace_set_message(format!(
-                        "Open term '{}': combining the answers failed: {e}",
-                        term.id
-                    ));
+                // The aggregation is that of FOREACH; the error says where it
+                // was used here.
+                let value = crate::operations::combine_with(op, values).map_err(|e| {
+                    let message = format!(
+                        "open term '{}' on {}#{}: combining the answers of {} with {} failed: \
+                         {e}",
+                        term.id,
+                        law.id,
+                        article.number,
+                        answerers(&answers),
+                        op.as_str()
+                    );
+                    res_ctx.trace_set_message(message.clone());
+                    EngineError::InvalidOperation(message)
                 })?;
                 (value, answers)
             }
@@ -4498,14 +4514,21 @@ impl LawExecutionService {
                 FilledBy::Answer(one.provenance.clone())
             }
             several => {
-                res_ctx.trace_set_message(format!(
-                    "Open term '{}' answered by {}, combined with {}{set_aside}",
-                    term.id,
-                    answerers(several),
-                    term.combine
-                        .map(|op| format!("{op:?}").to_uppercase())
-                        .unwrap_or_default()
-                ));
+                res_ctx.trace_set_message(match term.combine {
+                    Some(op) if !value.is_null() => format!(
+                        "Open term '{}' answered by {}, combined with {}{set_aside}",
+                        term.id,
+                        answerers(several),
+                        op.as_str()
+                    ),
+                    // All silent, and nothing to fall back on: null is the
+                    // answer (RFC-048).
+                    _ => format!(
+                        "Open term '{}': {} are silent (null)",
+                        term.id,
+                        answerers(several)
+                    ),
+                });
                 FilledBy::Answers(several.iter().map(|a| a.provenance.clone()).collect())
             }
         };
