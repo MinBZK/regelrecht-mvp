@@ -297,15 +297,15 @@ articles:
       # ontstaat of wie het vastlegt, zegt de regeling niet. Lid 2 (de
       # Minister, met een arts) is niet gemodelleerd: de minister geeft hier
       # geen kaarten af.
-      # Wie het onderzoek verricht, is bevoegd (competent_authority): alleen
-      # die antwoordt op de vraag of het plaatsvond (RFC-052). Eigen keuze:
-      # alleen de categorie is gemodelleerd; of het de GGD van de gemeente
-      # is die de kaart afgeeft, is open.
-      competent_authority:
-        - name: Gemeentelijke Gezondheidsdienst
-          type: CATEGORY
-        - name: vanwege het gemeentelijk gezag aangewezen deskundige
-          type: CATEGORY
+      # Wie het onderzoek verricht, stelt het vast (competent_authority op
+      # het feit, RFC-052), en alleen die antwoordt op de vraag of het
+      # plaatsvond (competent_authority op het begrip). Eigen keuze: het
+      # begrip noemt zelf dezelfde twee, in plaats van ze af te leiden uit
+      # het feit dat zijn reductie leest; dat vraagt geen koppeling tussen
+      # begrip en feit in de engine. Eigen keuze: alleen de categorie is
+      # gemodelleerd; of het de GGD van de gemeente is die de kaart afgeeft,
+      # is open. Dit artikel beslist niets en noemt dus geen bevoegd gezag
+      # (RFC-002).
       open_terms:
         # Of het onderzoek voor deze aanvraag plaatsvond (artikel 2, eerste
         # lid). Eigen keuze: een onderzoek telt als het op of na de
@@ -313,10 +313,16 @@ articles:
         # afgifte; lid 2 onder a en b laten het onderzoek achterwege bij wie
         # eerder een kaart kreeg, dat veronderstelt een onderzoek per
         # aanvraag. Zwijgt wie het onderzoek verricht, dan stelt het college
-        # het vast op het rapport dat het daarvan kreeg. Eigen keuze: stelt het college vast dat
-        # er geen onderzoek plaatsvond (false), bijvoorbeeld omdat de
-        # aanvrager niet verschijnt, dan wordt de kaart geweigerd.
+        # het vast op het rapport dat het daarvan kreeg. Eigen keuze: stelt
+        # het college vast dat er geen onderzoek plaatsvond (false),
+        # bijvoorbeeld omdat de aanvrager niet verschijnt, dan wordt de kaart
+        # geweigerd.
         - id: geneeskundig_onderzoek_heeft_plaatsgehad
+          competent_authority:
+            - name: Gemeentelijke Gezondheidsdienst
+              type: CATEGORY
+            - name: vanwege het gemeentelijk gezag aangewezen deskundige
+              type: CATEGORY
           type: boolean
           required: true
           decided_per_case_by: >-
@@ -333,6 +339,11 @@ articles:
           description: >-
             Het geneeskundig onderzoek met betrekking tot de handicap van de
             aanvrager, verricht door de GGD of de aangewezen deskundige.
+          competent_authority:
+            - name: Gemeentelijke Gezondheidsdienst
+              type: CATEGORY
+            - name: vanwege het gemeentelijk gezag aangewezen deskundige
+              type: CATEGORY
           parameters:
             - bsn_aanvrager
             - datum_onderzoek

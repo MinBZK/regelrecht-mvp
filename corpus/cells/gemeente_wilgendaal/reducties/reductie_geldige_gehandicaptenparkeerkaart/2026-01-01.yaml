@@ -15,7 +15,7 @@ valid_from: '2026-01-01'
 # artikel 51 van het BABW: of de aanvrager eerder een kaart kreeg, zoals
 # artikel 2, tweede lid, onder a en b, van de Regeling
 # gehandicaptenparkeerkaart het vraagt. Daarvoor is elk college bevoegd
-# (RFC-052), dus ook de colleges van andere gemeenten antwoorden. Er is geen
+# (competent_authority van dat begrip, RFC-052), dus ook de colleges van andere gemeenten antwoorden. Er is geen
 # bekendmaking; de url wijst naar artikel 49.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Geldige gehandicaptenparkeerkaart bij de gemeente Wilgendaal (reductie)

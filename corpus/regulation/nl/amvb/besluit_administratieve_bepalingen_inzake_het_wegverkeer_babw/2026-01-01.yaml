@@ -949,14 +949,13 @@ articles:
       [ref2]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
-      # Bevoegd (RFC-002): het college onder lid 1 en 2, het CBR onder lid
-      # 3. Eigen keuze: alleen de categorie is gemodelleerd; welk college,
-      # zegt lid 1 (de gemeente van inschrijving), en dat is open (RFC-052).
-      # Lid 3 is niet gemodelleerd.
+      # Bevoegd gezag (RFC-002), wie op de aanvraag beslist: het college
+      # (lid 1). Eigen keuze: alleen de categorie is gemodelleerd; welk
+      # college, zegt lid 1 (de gemeente van inschrijving), en dat is open
+      # (RFC-052). Het CBR (lid 3) is niet gemodelleerd.
       competent_authority:
-        - name: college van burgemeester en wethouders
-          type: CATEGORY
-        - name: CBR
+        name: college van burgemeester en wethouders
+        type: CATEGORY
       # Lid 1: het college verstrekt de kaart aan een gehandicapte "overeenkomstig
       # de bij ministeriële regeling gestelde criteria". Die criteria staan in
       # artikel 1 van de Regeling gehandicaptenparkeerkaart. Lid 2 (de
@@ -1277,12 +1276,6 @@ articles:
       # Lid 1. Lid 2 (een kortere termijn als redelijke grond bestaat voor de
       # verwachting dat de gehandicapte korter in aanmerking komt) en lid 3
       # (tijdelijk verblijf in Nederland) zijn niet gemodelleerd.
-      # Lid 2 en 3 noemen "het gezag dat bevoegd is tot de afgifte van
-      # gehandicaptenparkeerkaarten": het college of het CBR (artikel 49).
-      competent_authority:
-        - name: college van burgemeester en wethouders
-          type: CATEGORY
-        - name: CBR
       open_terms:
         # Of aan de aanvrager eerder een kaart is verstrekt, zoals artikel 2,
         # tweede lid, onder a en b, van de Regeling gehandicaptenparkeerkaart
@@ -1292,9 +1285,15 @@ articles:
         # staat hier en niet bij artikel 49, het artikel dat de kaart
         # vestigt. Artikel 49 neemt een besluit, en een uitvoer van een
         # besluit hoort bij dat besluit (RFC-047); dan zou elk besluit op een
-        # aanvraag dit feit vragen. Artikel 51 gaat over de verstrekte kaart
-        # en noemt wie bevoegd is tot afgifte.
+        # aanvraag dit feit vragen. Artikel 51 gaat over de verstrekte kaart.
+        # Wie het mag beantwoorden (RFC-052): lid 2 en 3 noemen "het gezag
+        # dat bevoegd is tot de afgifte van gehandicaptenparkeerkaarten", het
+        # college of het CBR (artikel 49, eerste en derde lid).
         - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
+            - name: CBR
           type: boolean
           required: true
           decided_per_case_by: >-

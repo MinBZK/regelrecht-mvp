@@ -54,10 +54,11 @@ voorbeeld:
     omschrijving_bestreden_besluit: besluit op de aanvraag om een gehandicaptenparkeerkaart
     gronden_bezwaar: ik kan niet verder lopen dan vijftig meter
 
-# De andere cellen van de sfeer (RFC-052). De wet zegt wie bevoegd is: de GGD
-# voor het onderzoek (Regeling gehandicaptenparkeerkaart, artikel 3), het
-# college van elke gemeente en het CBR voor een eerdere kaart (BABW artikel
-# 51). De engine vraagt alleen een cel die de wet noemt. Elke cel legt bij
+# De andere cellen van de sfeer (RFC-052). Het open begrip zegt wie bevoegd
+# is: de GGD of de aangewezen deskundige voor het onderzoek (Regeling
+# gehandicaptenparkeerkaart, artikel 3), het college van elke gemeente en het
+# CBR voor een eerdere kaart (BABW artikel 51). De engine vraagt alleen een
+# cel die het begrip noemt. Elke cel legt bij
 # elke start en reset opnieuw vast wat zij vóór het eerste scenario wist, via
 # de cel zoals elke stap.
 #

@@ -10,7 +10,7 @@ valid_from: '2026-01-01'
 # gehandicaptenparkeerkaart omschrijft: de onderzoeken die de GGD verrichtte.
 # Wat elk executogram bevat, zegt dat artikel (requires, fact). Haar antwoord
 # vult het open begrip van dat artikel: of het onderzoek plaatsvond. Daarvoor
-# is de GGD bevoegd (competent_authority van artikel 3, RFC-052). Er is geen
+# is de GGD bevoegd (competent_authority van dat begrip, RFC-052). Er is geen
 # bekendmaking; de url wijst naar dat artikel.
 url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
 name: Geneeskundig onderzoek bij de GGD Wilgendaal (reductie)

@@ -984,13 +984,35 @@ fn only_an_examination_of_the_applicant_for_this_application_counts() {
 
 #[test]
 fn the_cell_refuses_a_report_that_is_not_whole() {
-    let mut cell = cell();
     let partial =
         object_map(json!({ "bsn_aanvrager": APPLICANT, "datum_onderzoek": "2026-10-16" }));
+    GGD.with(|ggd| {
+        let mut ggd = ggd.borrow_mut();
+        let e = ggd
+            .record_executogram(&service(), EXAMINATION, &partial, day("2026-10-19"))
+            .unwrap_err();
+        assert!(e.to_string().contains("verricht_door"), "{e}");
+        assert!(ggd.grams().is_empty());
+    });
+}
+
+#[test]
+fn only_who_examines_records_the_examination() {
+    // Regeling art. 3 lid 1: the GGD or the designated expert. The
+    // municipality receives the report; it does not record the examination.
+    let mut cell = cell();
+    let whole = object_map(json!({
+        "bsn_aanvrager": APPLICANT,
+        "datum_onderzoek": "2026-10-16",
+        "verricht_door": "GGD Wilgendaal",
+    }));
     let e = cell
-        .record_executogram(&service(), EXAMINATION, &partial, day("2026-10-19"))
+        .record_executogram(&service(), EXAMINATION, &whole, day("2026-10-19"))
         .unwrap_err();
-    assert!(e.to_string().contains("verricht_door"), "{e}");
+    assert!(
+        e.to_string().contains("is established by 'Gemeentelijke Gezondheidsdienst' or 'vanwege het gemeentelijk gezag aangewezen deskundige'"),
+        "{e}"
+    );
     assert!(cell.grams().is_empty());
 }
 
