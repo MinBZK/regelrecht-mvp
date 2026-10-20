@@ -9,20 +9,49 @@ use crate::{Operation, ParameterType, RegulatoryLayer, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
-/// Represents a competent authority - can be a simple string or a structured object
+/// Represents a competent authority: a reference, one named authority, or a
+/// list of them where the law names several for one article (schema v0.8.8,
+/// RFC-053).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CompetentAuthority {
     /// Simple string reference (e.g., "#bevoegd_gezag")
     String(String),
-    /// Structured authority with name field
-    Structured {
-        name: String,
-        /// `INSTANCE` (a named organisation, the schema default) or `CATEGORY`
-        /// (must be resolved per context)
-        #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
-        authority_type: Option<AuthorityType>,
-    },
+    /// One named authority
+    Structured(NamedAuthority),
+    /// Several named authorities, each competent for the article: BABW art.
+    /// 49 names the college (lid 1 and 2) and the CBR (lid 3).
+    List(Vec<NamedAuthority>),
+}
+
+/// An authority the law names: an organisation or a category of them.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NamedAuthority {
+    pub name: String,
+    /// `INSTANCE` (a named organisation, the schema default) or `CATEGORY`
+    /// (must be resolved per context)
+    #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
+    pub authority_type: Option<AuthorityType>,
+}
+
+impl NamedAuthority {
+    /// The type, `INSTANCE` when the law leaves it out (the schema default).
+    pub fn kind(&self) -> AuthorityType {
+        self.authority_type.unwrap_or(AuthorityType::Instance)
+    }
+}
+
+impl CompetentAuthority {
+    /// The authorities this names, in the law's order. `None` for a
+    /// reference to an output (`#...`) or a bare name, which name no
+    /// authority with a type.
+    pub fn named(&self) -> Option<&[NamedAuthority]> {
+        match self {
+            CompetentAuthority::String(_) => None,
+            CompetentAuthority::Structured(one) => Some(std::slice::from_ref(one)),
+            CompetentAuthority::List(all) => Some(all),
+        }
+    }
 }
 
 /// Whether a competent authority names one organisation or a category of them
@@ -1085,6 +1114,11 @@ pub struct OpenTerm {
     /// Default execution if no implementing regulation exists
     #[serde(default)]
     pub default: Option<OpenTermDefault>,
+    /// How the answers of several competent answerers make one value, with
+    /// the aggregations of FOREACH (schema v0.8.8, RFC-053). Without it, two
+    /// answers are an error.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combine: Option<CombineOp>,
 }
 
 fn default_true() -> bool {

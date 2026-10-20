@@ -32,11 +32,17 @@
 //! A call to an article (`source.article`, schema v0.8.4, RFC-050) stands
 //! apart from `regulation`, `decisions` and `endpoint`, and only such a call
 //! takes `parameters_from`.
+//!
+//! The `combine` of an open term (schema v0.8.8, RFC-053) makes one value of
+//! the answers of several competent answerers. It has to fit the term's
+//! type, as the `combine` of a FOREACH has to fit its body: `OR` and `AND`
+//! a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` fits any.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
 use regelrecht_law_model::{
-    parse_schema_version, ActionOperation, ActionValue, MachineReadable, RegulatoryLayer,
+    parse_schema_version, ActionOperation, ActionValue, CombineOp, MachineReadable, ParameterType,
+    RegulatoryLayer,
 };
 
 /// The first schema version in which a `REDUCTIE` may have `implements`.
@@ -160,6 +166,36 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
                     "law '{}' {where_}: input '{}' calls the article {target}, which no {key} \
                      can stand beside",
                     law.id, input.name
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Refuse an open term whose `combine` does not fit its type (RFC-053).
+pub(crate) fn reject_misfit_combine(law: &ArticleBasedLaw) -> Result<()> {
+    for (where_, section) in sections(law) {
+        for term in section.open_terms.iter().flatten() {
+            let Some(op) = term.combine else {
+                continue;
+            };
+            let fits = match op {
+                CombineOp::Or | CombineOp::And => term.term_type == ParameterType::Boolean,
+                CombineOp::Add | CombineOp::Min | CombineOp::Max => matches!(
+                    term.term_type,
+                    ParameterType::Number | ParameterType::Amount
+                ),
+                CombineOp::Only => true,
+            };
+            if !fits {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: open term '{}' combines its answers with {} \
+                     (combine), which does not fit its type {}",
+                    law.id,
+                    term.id,
+                    format!("{op:?}").to_uppercase(),
+                    format!("{:?}", term.term_type).to_lowercase()
                 )));
             }
         }

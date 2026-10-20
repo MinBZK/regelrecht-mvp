@@ -45,8 +45,9 @@ use std::collections::BTreeMap;
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
-    Answer as EngineAnswer, AnswerProvenance, Article, ArticleBasedLaw, ArticleResult, Call,
-    EngineError, LawExecutionService, LawLoad, OpenTermAnswerer, Question, RegulatoryLayer, Value,
+    Answer as EngineAnswer, AnswerProvenance, Article, ArticleBasedLaw, ArticleResult, Authority,
+    Call, EngineError, LawExecutionService, LawLoad, OpenTermAnswerer, Question, RegulatoryLayer,
+    Value,
 };
 use serde::Serialize;
 use serde_json::Map;
@@ -453,6 +454,8 @@ pub struct Asked {
 /// day is not the cell's: the engine goes on without an answer.
 pub struct Reader<'c> {
     recording_actor: &'c str,
+    /// Who the cell is, for the engine's routing on competence (RFC-053).
+    authority: Authority,
     reductions: &'c [Reduction],
     grams: Vec<Gram>,
     explain: Option<&'c str>,
@@ -477,6 +480,12 @@ impl<'c> Reader<'c> {
     ) -> Self {
         Self {
             recording_actor,
+            // Until the cell has an identity of its own, it is known by the
+            // name of its directory, in no category.
+            authority: Authority {
+                name: recording_actor.to_string(),
+                category: None,
+            },
             reductions,
             grams,
             explain,
@@ -547,9 +556,12 @@ impl<'c> Reader<'c> {
         // The reduction may call rulework that reads an open term the cell
         // answers too, such as a regulation that asks where the school is
         // established (RFC-051): the cell answers it there as well.
+        // Inside a reduction the cell asks only itself (RFC-053): synthesis
+        // happens in the process, never in a cell.
         let call = Call {
             findings: BTreeMap::new(),
             answerer: Some(self),
+            sphere: Vec::new(),
         };
         Ok(if self.explain == Some(question.term) {
             service.evaluate_law_with_trace_in(&reduction.id, &outputs, parameters, call, date)?
@@ -560,6 +572,10 @@ impl<'c> Reader<'c> {
 }
 
 impl OpenTermAnswerer for Reader<'_> {
+    fn authority(&self) -> &Authority {
+        &self.authority
+    }
+
     fn answer(
         &self,
         service: &LawExecutionService,
@@ -830,6 +846,7 @@ articles:
         let call = regelrecht_engine::Call {
             findings: BTreeMap::new(),
             answerer: Some(reader),
+            sphere: Vec::new(),
         };
         service.evaluate_law_with_trace_in(
             "wet_fictief",

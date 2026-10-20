@@ -896,6 +896,7 @@ impl Cell {
         let call = Call {
             findings,
             answerer: Some(&reader),
+            sphere: Vec::new(),
         };
         let result =
             loaded.evaluate_law_with_trace_in(law_id, &outputs, parameters, call, &date)?;
@@ -1518,6 +1519,7 @@ fn run_stages(
         let call = Call {
             findings: findings.clone(),
             answerer: Some(answerer),
+            sphere: Vec::new(),
         };
         let result = service.execute_stage_in(
             &shape.law_id,

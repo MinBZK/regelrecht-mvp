@@ -25,7 +25,7 @@
 //! )?;
 //! ```
 
-use crate::answer::{AnswerProvenance, Call, OpenTermAnswerer, Question};
+use crate::answer::{Answer, AnswerProvenance, Call, OpenTermAnswerer, Question};
 use crate::article::{
     Article, ArticleBasedLaw, Execution, HookPoint, Input, MachineReadable, ProcedureDefinition,
     Stage, StageRequirement,
@@ -73,6 +73,10 @@ struct CacheEntry {
     outputs: BTreeMap<String, Value>,
     output_provenance: BTreeMap<String, OutputProvenance>,
     parameters: BTreeMap<String, Value>,
+    /// Whether a `source.regulation` read evaluated it: the engine then
+    /// routes the article's open terms on competence (RFC-053), so its
+    /// value is not that of the same output read otherwise.
+    by_reference: bool,
 }
 
 impl CacheEntry {
@@ -80,15 +84,19 @@ impl CacheEntry {
     ///
     /// Cache keys are `u64` hashes, so two different evaluations can in theory
     /// land on the same key. For legally binding decisions a wrong hit is never
-    /// acceptable, so every read re-checks the full identity: all three fields
+    /// acceptable, so every read re-checks the full identity: all four fields
     /// must match, a difference in any one of them means "not this entry".
     fn matches(
         &self,
         law_id: &str,
         output_name: &str,
         parameters: &BTreeMap<String, Value>,
+        by_reference: bool,
     ) -> bool {
-        self.law_id == law_id && self.output_name == output_name && self.parameters == *parameters
+        self.law_id == law_id
+            && self.output_name == output_name
+            && self.parameters == *parameters
+            && self.by_reference == by_reference
     }
 }
 
@@ -151,6 +159,18 @@ struct ResolutionContext<'a> {
     /// What the caller supplies to answer open terms (RFC-048), asked before
     /// a regulation or a finding at every depth of the execution.
     answerer: Option<&'a dyn OpenTermAnswerer>,
+    /// The other answerers of the call (RFC-053), asked with
+    /// [`Self::answerer`] for an open term of an article reached through
+    /// `source.regulation` that names them in `competent_authority`.
+    sphere: Vec<&'a dyn OpenTermAnswerer>,
+    /// The articles being evaluated because a `source.regulation` read an
+    /// output of them, as `(law_id, article_number)`, innermost last. Only
+    /// for the open terms of the innermost one does the engine route on
+    /// competence (RFC-053).
+    by_reference: Vec<(String, String)>,
+    /// Set by a `source.regulation` read just before it evaluates its
+    /// target, and taken by that evaluation (RFC-053).
+    reference_pending: bool,
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
@@ -267,6 +287,9 @@ impl<'a> ResolutionContext<'a> {
             findings_asked: BTreeSet::new(),
             open_terms: Vec::new(),
             answerer: None,
+            sphere: Vec::new(),
+            by_reference: Vec::new(),
+            reference_pending: false,
         })
     }
 
@@ -274,6 +297,15 @@ impl<'a> ResolutionContext<'a> {
     fn take_call(&mut self, call: Call<'a>) {
         self.findings = call.findings;
         self.answerer = call.answerer;
+        self.sphere = call.sphere;
+    }
+
+    /// Whether `article` of `law` is the article a `source.regulation` read
+    /// is evaluating right now (RFC-053).
+    fn reached_by_reference(&self, law: &str, article: &str) -> bool {
+        self.by_reference
+            .last()
+            .is_some_and(|(l, a)| l == law && a == article)
     }
 
     /// The caller's findings (RFC-050) that apply to `article` of `law`: one
@@ -541,6 +573,36 @@ impl Drop for TraceGuard {
     }
 }
 
+/// What the answerers of a call said for an open term
+/// ([`LawExecutionService::ask_answerers`]).
+enum Asked {
+    /// The term's value, filled by one answer or by several combined.
+    Filled(Value),
+    /// Every answer was silent (null) where the term falls back on its
+    /// default or a finding: who was silent, for the trace.
+    Silent(Vec<String>),
+    /// No answerer was asked, or none answers the term.
+    Nobody,
+}
+
+/// The authorities `named`, for a message: "'a' or 'b'".
+fn authorities(named: &[crate::article::NamedAuthority]) -> String {
+    named
+        .iter()
+        .map(|authority| format!("'{}'", authority.name))
+        .collect::<Vec<_>>()
+        .join(" or ")
+}
+
+/// Who gave `answers`, for a message: "a, b".
+fn answerers(answers: &[Answer]) -> String {
+    answers
+        .iter()
+        .map(|a| a.provenance.answerer.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 /// Build a cache key from law_id, output_name, and parameters.
 ///
 /// The cache key includes output_name because different outputs within the same
@@ -552,10 +614,16 @@ impl Drop for TraceGuard {
 /// BTreeMap guarantees sorted key order for deterministic hashing.
 /// Note: `DefaultHasher` is randomly seeded per process, so keys are only
 /// valid for per-execution memoization (not persisted across runs).
-fn cache_key(law_id: &str, output_name: &str, params: &BTreeMap<String, Value>) -> u64 {
+fn cache_key(
+    law_id: &str,
+    output_name: &str,
+    params: &BTreeMap<String, Value>,
+    by_reference: bool,
+) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     law_id.hash(&mut hasher);
     output_name.hash(&mut hasher);
+    by_reference.hash(&mut hasher);
     // BTreeMap iterates in sorted key order — no explicit sort needed
     for (key, value) in params {
         key.hash(&mut hasher);
@@ -2946,14 +3014,16 @@ impl LawExecutionService {
         // A value computed with an override held back is not the value of
         // that output, so it neither comes from nor goes into the cache.
         let cacheable = output_names.len() == 1 && res_ctx.held_back.is_empty();
+        // A `source.regulation` read asked for this evaluation (RFC-053).
+        let by_reference = std::mem::take(&mut res_ctx.reference_pending);
 
         // --- Cache check (before depth check: cached results don't increase depth) ---
-        let key = cache_key(law_id, output_name, &parameters);
+        let key = cache_key(law_id, output_name, &parameters, by_reference);
         if let Some(cached) = res_ctx.cache.get(&key).filter(|_| cacheable) {
             // Runtime collision check: hash keys are u64 so collisions are
             // theoretically possible. For legally binding decisions, we must
             // never silently return wrong results.
-            if !cached.matches(law_id, output_name, &parameters) {
+            if !cached.matches(law_id, output_name, &parameters, by_reference) {
                 tracing::warn!(
                     cached_law = cached.law_id,
                     cached_output = cached.output_name,
@@ -3046,6 +3116,13 @@ impl LawExecutionService {
         // Execute with service provider (default stage BESLUIT for cross-law
         // calls). The anchor is entered and restored by
         // `evaluate_article_with_service` itself, for every path into it.
+        // An article a `source.regulation` read reaches has its open terms
+        // routed on competence while it runs (RFC-053).
+        if by_reference {
+            res_ctx
+                .by_reference
+                .push((law.id.clone(), article.number.clone()));
+        }
         let result = self.evaluate_article_with_service(
             article,
             law,
@@ -3053,7 +3130,11 @@ impl LawExecutionService {
             Some(output_names),
             "BESLUIT",
             res_ctx,
-        )?;
+        );
+        if by_reference {
+            res_ctx.by_reference.pop();
+        }
+        let result = result?;
         if !cacheable {
             return Ok(result);
         }
@@ -3071,6 +3152,7 @@ impl LawExecutionService {
                 outputs: result.outputs.clone(),
                 output_provenance: result.output_provenance.clone(),
                 parameters: params_for_cache,
+                by_reference,
             },
         );
 
@@ -4246,6 +4328,189 @@ impl LawExecutionService {
         Ok(result)
     }
 
+    /// Ask the answerers of the call for `term` of `article` (RFC-048,
+    /// RFC-053). Without routing only the caller's answerer is asked. An
+    /// article that a `source.regulation` read reaches and that names its
+    /// `competent_authority` routes on competence: every answerer of the
+    /// call whose [`Authority`](crate::answer::Authority) the article
+    /// names is asked, in the order of their names, and none other. A
+    /// `null` answer is silence where the term has a default or is decided
+    /// per case; otherwise it is the value. Several answers that are not
+    /// `null` make one value with the term's `combine`, and are an error
+    /// without it. A `#` reference as `competent_authority` is not routed
+    /// yet: only the caller's answerer is asked, and an answer from it is
+    /// an error.
+    fn ask_answerers<'c>(
+        &self,
+        article: &Article,
+        law: &ArticleBasedLaw,
+        term: &crate::article::OpenTerm,
+        parameters: &BTreeMap<String, Value>,
+        res_ctx: &mut ResolutionContext<'c>,
+    ) -> Result<Asked> {
+        let competence = if res_ctx.reached_by_reference(&law.id, &article.number) {
+            article
+                .machine_readable
+                .as_ref()
+                .and_then(|mr| mr.competent_authority.as_ref())
+        } else {
+            None
+        };
+        let routed = competence.and_then(|authority| authority.named());
+        let unrouted_reference = match competence {
+            Some(crate::article::CompetentAuthority::String(reference)) => Some(reference),
+            _ => None,
+        };
+        let askees: Vec<&'c dyn OpenTermAnswerer> = match routed {
+            None => res_ctx.answerer.into_iter().collect(),
+            Some(named) => {
+                let mut competent: Vec<&'c dyn OpenTermAnswerer> = res_ctx
+                    .answerer
+                    .into_iter()
+                    .chain(res_ctx.sphere.iter().copied())
+                    .filter(|answerer| answerer.authority().is_named_by(named))
+                    .collect();
+                competent.sort_by(|a, b| a.authority().name.cmp(&b.authority().name));
+                if let Some(pair) = competent
+                    .windows(2)
+                    .find(|pair| pair[0].authority().name == pair[1].authority().name)
+                {
+                    return Err(EngineError::InvalidOperation(format!(
+                        "two answerers of the call are named '{}'",
+                        pair[0].authority().name
+                    )));
+                }
+                let any = res_ctx.answerer.is_some() || !res_ctx.sphere.is_empty();
+                if competent.is_empty() && any {
+                    let _guard = res_ctx.trace_guard(&term.id, PathNodeType::OpenTermResolution);
+                    res_ctx.trace_set_message(format!(
+                        "No competent answerer in the sphere for {}",
+                        authorities(named)
+                    ));
+                }
+                competent
+            }
+        };
+
+        let mut answers: Vec<Answer> = Vec::new();
+        let mut silent: Vec<Answer> = Vec::new();
+        for askee in askees {
+            let question = Question {
+                law_id: &law.id,
+                article: &article.number,
+                term: &term.id,
+                calculation_date: res_ctx.calculation_date,
+                parameters,
+            };
+            let answer = match askee.answer(self, &question) {
+                Ok(Some(answer)) => answer,
+                Ok(None) => continue,
+                Err(e) => {
+                    res_ctx.trace_set_message(format!(
+                        "Open term '{}': the answerer failed: {e}",
+                        term.id
+                    ));
+                    return Err(e);
+                }
+            };
+            if routed.is_some() {
+                // One node per competent answerer that answered, under the
+                // node of the term (RFC-053).
+                let _guard = res_ctx.trace_guard(
+                    answer.provenance.answerer.clone(),
+                    PathNodeType::OpenTermResolution,
+                );
+                res_ctx.trace_set_result(answer.value.clone());
+                res_ctx.trace_set_answer(answer.provenance.clone());
+                res_ctx.trace_set_message(if answer.value.is_null() {
+                    format!("{} is silent (null)", answer.provenance)
+                } else {
+                    format!("Answered by {}", answer.provenance)
+                });
+            }
+            if answer.value.is_null() {
+                silent.push(answer);
+            } else {
+                answers.push(answer);
+            }
+        }
+        if let (Some(reference), Some(answer)) = (unrouted_reference, answers.first()) {
+            return Err(EngineError::InvalidOperation(format!(
+                "open term '{}' on {}#{}: {} answered it, but the article's competent_authority \
+                 is the reference '{reference}', on which the engine does not route yet \
+                 (RFC-053)",
+                term.id, law.id, article.number, answer.provenance.answerer
+            )));
+        }
+
+        let fallback = term.default.is_some() || term.decided_per_case_by.is_some();
+        let (value, given) = match answers.len() {
+            0 if fallback || silent.is_empty() => {
+                return Ok(if silent.is_empty() {
+                    Asked::Nobody
+                } else {
+                    Asked::Silent(silent.iter().map(|a| a.provenance.to_string()).collect())
+                });
+            }
+            // Nothing to fall back on: null is the answer (RFC-048).
+            0 => (Value::Null, silent),
+            1 => (answers[0].value.clone(), answers),
+            n => {
+                let Some(op) = term.combine else {
+                    let message = format!(
+                        "open term '{}' on {}#{} has {n} answers, from {}, and no combine to \
+                         make one value of them (RFC-053)",
+                        term.id,
+                        law.id,
+                        article.number,
+                        answerers(&answers)
+                    );
+                    res_ctx.trace_set_message(message.clone());
+                    return Err(EngineError::InvalidOperation(message));
+                };
+                let values = answers.iter().map(|a| a.value.clone()).collect();
+                let value = crate::operations::combine_with(op, values).inspect_err(|e| {
+                    res_ctx.trace_set_message(format!(
+                        "Open term '{}': combining the answers failed: {e}",
+                        term.id
+                    ));
+                })?;
+                (value, answers)
+            }
+        };
+
+        res_ctx.trace_set_result(value.clone());
+        let set_aside = match &term.decided_per_case_by {
+            Some(by) if parameters.contains_key(&term.id) => {
+                format!("; the judgement of {by} for this case is set aside")
+            }
+            _ => String::new(),
+        };
+        let filled_by = match given.as_slice() {
+            [one] => {
+                res_ctx.trace_set_message(format!(
+                    "Open term '{}' answered by {}{set_aside}",
+                    term.id, one.provenance
+                ));
+                res_ctx.trace_set_answer(one.provenance.clone());
+                FilledBy::Answer(one.provenance.clone())
+            }
+            several => {
+                res_ctx.trace_set_message(format!(
+                    "Open term '{}' answered by {}, combined with {}{set_aside}",
+                    term.id,
+                    answerers(several),
+                    term.combine
+                        .map(|op| format!("{op:?}").to_uppercase())
+                        .unwrap_or_default()
+                ));
+                FilledBy::Answers(several.iter().map(|a| a.provenance.clone()).collect())
+            }
+        };
+        res_ctx.note_open_term(&law.id, &article.number, &term.id, filled_by);
+        Ok(Asked::Filled(value))
+    }
+
     /// Resolve one open term declared on an article via IoC (implements index),
     /// the first time an action reads it (RFC-043).
     ///
@@ -4383,53 +4648,17 @@ impl LawExecutionService {
         // regulation, so its answer wins over a finding for the case. The
         // engine records who answered; how is the answerer's own business,
         // so the answer is this one node of the trace.
-        if let Some(answerer) = res_ctx.answerer {
-            let question = Question {
-                law_id: &law.id,
-                article: &article.number,
-                term: &term.id,
-                calculation_date: res_ctx.calculation_date,
-                parameters,
-            };
-            match answerer.answer(self, &question) {
-                Err(e) => {
-                    res_ctx.trace_set_message(format!(
-                        "Open term '{}': the answerer failed: {e}",
-                        term.id
-                    ));
-                    res_ctx.leave(&ot_key);
-                    return Err(e);
-                }
-                Ok(Some(answer))
-                    if answer.value.is_null()
-                        && (term.default.is_some() || term.decided_per_case_by.is_some()) =>
-                {
-                    silent.push(answer.provenance.to_string());
-                }
-                Ok(Some(answer)) => {
-                    res_ctx.trace_set_result(answer.value.clone());
-                    let set_aside = match &term.decided_per_case_by {
-                        Some(by) if parameters.contains_key(&term.id) => {
-                            format!("; the judgement of {by} for this case is set aside")
-                        }
-                        _ => String::new(),
-                    };
-                    res_ctx.trace_set_message(format!(
-                        "Open term '{}' answered by {}{set_aside}",
-                        term.id, answer.provenance
-                    ));
-                    res_ctx.trace_set_answer(answer.provenance.clone());
-                    res_ctx.note_open_term(
-                        &law.id,
-                        &article.number,
-                        &term.id,
-                        FilledBy::Answer(answer.provenance),
-                    );
-                    res_ctx.leave(&ot_key);
-                    return Ok(answer.value);
-                }
-                Ok(None) => {}
+        match self.ask_answerers(article, law, term, parameters, res_ctx) {
+            Err(e) => {
+                res_ctx.leave(&ot_key);
+                return Err(e);
             }
+            Ok(Asked::Filled(value)) => {
+                res_ctx.leave(&ot_key);
+                return Ok(value);
+            }
+            Ok(Asked::Silent(names)) => silent.extend(names),
+            Ok(Asked::Nobody) => {}
         }
 
         // Every candidate that survives `find_implementations` is competent:
@@ -5281,8 +5510,11 @@ impl LawExecutionService {
             .filter(|held| res_ctx.held_back.insert((*held).clone()))
             .collect();
 
-        // Execute the target article
+        // Execute the target article, as an article a `source.regulation`
+        // read reaches (RFC-053).
+        res_ctx.reference_pending = true;
         let result = self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
+        res_ctx.reference_pending = false;
 
         // Leave scope (even on error, for correct cycle tracking)
         for held in newly_held {
@@ -10664,7 +10896,7 @@ articles:
         let key_of = |value: Value| {
             let mut params = BTreeMap::new();
             params.insert("bsn".to_string(), value);
-            cache_key("zorgtoeslag", "recht_op_zorgtoeslag", &params)
+            cache_key("zorgtoeslag", "recht_op_zorgtoeslag", &params, false)
         };
 
         assert_ne!(key_of(Value::Int(1)), key_of(Value::Int(2)));
@@ -10693,18 +10925,19 @@ articles:
         // Law and output are part of the identity too.
         let empty = BTreeMap::new();
         assert_ne!(
-            cache_key("law_a", "output", &empty),
-            cache_key("law_b", "output", &empty)
+            cache_key("law_a", "output", &empty, false),
+            cache_key("law_b", "output", &empty, false)
         );
         assert_ne!(
-            cache_key("law_a", "output_x", &empty),
-            cache_key("law_a", "output_y", &empty)
+            cache_key("law_a", "output_x", &empty, false),
+            cache_key("law_a", "output_y", &empty, false)
         );
     }
 
     #[test]
     fn test_cache_entry_matches_requires_every_identity_field() {
-        // A cache hit is only honoured when law, output *and* parameters match.
+        // A cache hit is only honoured when law, output, parameters and the
+        // way the output is read match.
         // The key is a u64 hash, so a collision must never hand one decision
         // the outputs of another.
         let mut params = BTreeMap::new();
@@ -10716,22 +10949,27 @@ articles:
             outputs: BTreeMap::new(),
             output_provenance: BTreeMap::new(),
             parameters: params.clone(),
+            by_reference: false,
         };
 
-        assert!(entry.matches("law_a", "output_x", &params));
+        assert!(entry.matches("law_a", "output_x", &params, false));
         assert!(
-            !entry.matches("law_b", "output_x", &params),
+            !entry.matches("law_b", "output_x", &params, false),
             "another law must never reuse this entry"
         );
         assert!(
-            !entry.matches("law_a", "output_y", &params),
+            !entry.matches("law_a", "output_y", &params, false),
             "another output must never reuse this entry"
+        );
+        assert!(
+            !entry.matches("law_a", "output_x", &params, true),
+            "a read through source.regulation must never reuse this entry"
         );
 
         let mut other_params = params.clone();
         other_params.insert("bsn".to_string(), Value::String("222".to_string()));
         assert!(
-            !entry.matches("law_a", "output_x", &other_params),
+            !entry.matches("law_a", "output_x", &other_params, false),
             "other parameters must never reuse this entry"
         );
     }

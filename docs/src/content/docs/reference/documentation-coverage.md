@@ -59,6 +59,7 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-049 | FOREACH with `as` binds only its name | [Collections](../concepts/collections#the-element-binding) |
 | RFC-050 | The objection is a second submission (`BEZWAAR`, Awb 7:11 reconsiders the contested decision by calling its article); calling the decision of an article (`source.article`, `parameters_from`, type `decision`, findings, `derived`) | [Chronolexography](../concepts/chronolexography#the-objection), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article), [Schema](./schema) |
 | RFC-051 | What a cell records without a submission (`Cell::record_executogram`, a fact in `requires`, `source.facts`, `combine: ONLY`) | [Chronolexography](../concepts/chronolexography#outside-the-school-holidays), [Schema](./schema) |
+| RFC-053 | Synthesis: values of other actors by competence (`competent_authority` as a list, `combine` on an open term, `Call::sphere`, `FilledBy::Answers`) | [Competent Authority](../concepts/competent-authority#who-answers-an-open-term), [Schema](./schema) |
 
 ## Backlog
 

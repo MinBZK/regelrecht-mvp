@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use regelrecht_engine::{
-    Answer, AnswerProvenance, ArticleBasedLaw, Call, DataSource, EngineError, FilledBy,
+    Answer, AnswerProvenance, ArticleBasedLaw, Authority, Call, DataSource, EngineError, FilledBy,
     LawExecutionService, LawLoad, OpenTermAnswerer, Question, Value,
 };
 use serde_json::json;
@@ -431,6 +431,7 @@ fn granted_13a(
 struct Answerer {
     value: Option<Value>,
     asked: RefCell<Vec<(String, BTreeMap<String, Value>)>>,
+    authority: Authority,
 }
 
 impl Answerer {
@@ -442,7 +443,17 @@ impl Answerer {
         Self {
             value,
             asked: RefCell::new(Vec::new()),
+            authority: cell_authority(),
         }
+    }
+}
+
+/// Who the answerer of these tests is; no article it answers for routes on
+/// competence.
+fn cell_authority() -> Authority {
+    Authority {
+        name: "een_cel".to_string(),
+        category: None,
     }
 }
 
@@ -457,6 +468,10 @@ fn provenance() -> AnswerProvenance {
 }
 
 impl OpenTermAnswerer for Answerer {
+    fn authority(&self) -> &Authority {
+        &self.authority
+    }
+
     fn answer(
         &self,
         _service: &LawExecutionService,
@@ -485,6 +500,7 @@ fn granted_13a_with(
     let call = Call {
         findings: BTreeMap::new(),
         answerer: Some(answerer),
+        sphere: Vec::new(),
     };
     service.evaluate_law_with_trace_in(
         "leerplichtwet_1969",
@@ -608,9 +624,13 @@ fn an_answer_without_a_finding_sets_nothing_aside() {
 }
 
 /// An answerer whose own work fails.
-struct Failing;
+struct Failing(Authority);
 
 impl OpenTermAnswerer for Failing {
+    fn authority(&self) -> &Authority {
+        &self.0
+    }
+
     fn answer(
         &self,
         _service: &LawExecutionService,
@@ -629,7 +649,8 @@ fn an_answerer_that_fails_ends_the_execution() {
     parameters.insert(ONCE.to_string(), Value::Bool(true));
     let call = Call {
         findings: BTreeMap::new(),
-        answerer: Some(&Failing),
+        answerer: Some(&Failing(cell_authority())),
+        sphere: Vec::new(),
     };
     let e = service
         .evaluate_law_in(
@@ -698,6 +719,7 @@ fn revoked_on_objection_with(
     let call = Call {
         findings: BTreeMap::new(),
         answerer: Some(answerer),
+        sphere: Vec::new(),
     };
     service.evaluate_law_with_trace_in(
         AWB,

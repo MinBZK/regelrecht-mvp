@@ -65,8 +65,8 @@ pub enum OutputProvenance {
 /// rests on, instead of guessing from the value: a regulation can give what
 /// the authority found. Serialized as `"finding"`, as `{"regulation":
 /// {"law_id", "article"}}`, so the regulation's article does not collide
-/// with the declaring one, or as `{"answer": {...}}` with the
-/// [`AnswerProvenance`].
+/// with the declaring one, as `{"answer": {...}}` with the
+/// [`AnswerProvenance`], or as `{"answers": [...]}` for several combined.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FilledBy {
@@ -78,6 +78,10 @@ pub enum FilledBy {
     /// The caller's answerer ([`crate::answer::OpenTermAnswerer`]), with what
     /// it says it answered from.
     Answer(AnswerProvenance),
+    /// Several competent answerers whose answers the term's `combine` made
+    /// one value of (RFC-053), in the order of their names. Serialized as
+    /// `{"answers": [...]}`.
+    Answers(Vec<AnswerProvenance>),
 }
 
 /// One open term of one article that was filled in an execution, and by

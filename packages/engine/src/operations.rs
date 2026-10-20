@@ -1558,13 +1558,22 @@ pub fn execute_foreach(
     }
 
     match combine {
-        Some(CombineOp::Add) => combine_add(&results),
-        Some(CombineOp::Or) => combine_or(&results),
-        Some(CombineOp::And) => combine_and(&results),
-        Some(CombineOp::Min) => combine_min_max(&results, true),
-        Some(CombineOp::Max) => combine_min_max(&results, false),
-        Some(CombineOp::Only) => combine_only(results),
+        Some(op) => combine_with(*op, results),
         None => Ok(Value::Array(results)),
+    }
+}
+
+/// Combine `results` with `op`: the per-element results of a FOREACH
+/// (RFC-016), or the answers of several competent answerers to one open
+/// term (RFC-053).
+pub(crate) fn combine_with(op: CombineOp, results: Vec<Value>) -> Result<Value> {
+    match op {
+        CombineOp::Add => combine_add(&results),
+        CombineOp::Or => combine_or(&results),
+        CombineOp::And => combine_and(&results),
+        CombineOp::Min => combine_min_max(&results, true),
+        CombineOp::Max => combine_min_max(&results, false),
+        CombineOp::Only => combine_only(results),
     }
 }
 

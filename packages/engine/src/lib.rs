@@ -57,7 +57,7 @@ pub use annotation::{
     law_id_from_source, resolve as resolve_note, MatchResult, MatchStatus, SelectorHint,
     SkipReason, TextMatch, TextQuoteSelector,
 };
-pub use answer::{Answer, AnswerProvenance, Call, OpenTermAnswerer, Question};
+pub use answer::{Answer, AnswerProvenance, Authority, Call, OpenTermAnswerer, Question};
 pub use article::{
     Action, ActionOperation, ActionValue, Article, ArticleBasedLaw, Case, Execution,
     HookDeclaration, HookFilter, HookPoint, LawLoad, MachineReadable, OverrideDeclaration,

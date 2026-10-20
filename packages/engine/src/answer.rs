@@ -13,11 +13,20 @@
 //! and from what ([`AnswerProvenance`]) in the report of the execution
 //! (`ArticleResult::open_terms`) and as one node in the trace. Explaining the
 //! answer is the answerer's own business.
+//!
+//! A value that another actor establishes is read with `source.regulation`
+//! from the article that establishes it (RFC-053). For the open terms of
+//! such an article the engine asks every answerer of the call, the
+//! answerer and those of the sphere ([`Call::sphere`]), whose
+//! [`Authority`] the article names in `competent_authority`, and combines
+//! their answers with the term's `combine`. It compares names; what an
+//! answerer is, it does not know.
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::article::{AuthorityType, NamedAuthority};
 use crate::error::Result;
 use crate::service::LawExecutionService;
 use crate::types::Value;
@@ -73,8 +82,34 @@ impl std::fmt::Display for AnswerProvenance {
     }
 }
 
+/// Who an answerer is, as the law can name it (RFC-053): its name, and the
+/// category of authorities it belongs to, if any. The engine matches this
+/// against the `competent_authority` of an article: an `INSTANCE` by
+/// `name`, a `CATEGORY` by `category`, as exact text.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Authority {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+}
+
+impl Authority {
+    /// Whether one of `named` names this authority: an `INSTANCE` by its
+    /// name, a `CATEGORY` by its category.
+    pub fn is_named_by(&self, named: &[NamedAuthority]) -> bool {
+        named.iter().any(|authority| match authority.kind() {
+            AuthorityType::Instance => authority.name == self.name,
+            AuthorityType::Category => self.category.as_deref() == Some(authority.name.as_str()),
+        })
+    }
+}
+
 /// What answers open terms for the caller of an execution.
 pub trait OpenTermAnswerer {
+    /// Who this answerer is, for the engine to tell whether the law makes
+    /// it competent for an article ([`Authority`]).
+    fn authority(&self) -> &Authority;
+
     /// Answer `question`, or `None` when the term is not one this answerer
     /// fills. `service` is the service that runs the execution: an answerer
     /// may run rulework of its own on it, in an execution of its own. An
@@ -87,11 +122,18 @@ pub trait OpenTermAnswerer {
 }
 
 /// What a caller gives an execution apart from its parameters: the
-/// findings for the case (RFC-050), and an answerer for open terms.
+/// findings for the case (RFC-050), an answerer for open terms, and the
+/// other answerers of the sphere (RFC-053).
 #[derive(Default)]
 pub struct Call<'a> {
     pub findings: BTreeMap<String, Value>,
+    /// Asked for every open term the execution reads (RFC-048), except
+    /// where the law routes on competence and does not make it competent.
     pub answerer: Option<&'a dyn OpenTermAnswerer>,
+    /// Asked only for an open term of an article that the execution reads
+    /// through `source.regulation` and that names them in
+    /// `competent_authority` (RFC-053).
+    pub sphere: Vec<&'a dyn OpenTermAnswerer>,
 }
 
 impl Call<'_> {
@@ -99,7 +141,7 @@ impl Call<'_> {
     pub fn with_findings(findings: BTreeMap<String, Value>) -> Self {
         Self {
             findings,
-            answerer: None,
+            ..Self::default()
         }
     }
 }
