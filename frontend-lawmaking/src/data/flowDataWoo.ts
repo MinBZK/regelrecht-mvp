@@ -1,7 +1,7 @@
 /**
  * Real law: Wet open overheid (Woo) - kamerstuk 33328 + novelle 35112
  *
- * 9+ year journey from initiatiefwet to inwerkingtreding.
+ * 9+ year journey from initiative bill (initiatiefwet) to entry into force.
  * Dates are real. Row spacing is semi-proportional to time.
  *
  * Layout:
@@ -426,7 +426,7 @@ export const stages: Stage[] = [
     col: 2, step: 16,
   },
 
-  // Stemming TK
+  // TK vote
   {
     id: 'tk-vote',
     branch: 'parliament',
@@ -738,7 +738,7 @@ export const connections: Connection[] = [
   { from: 'amend-22', to: 'plenair-2', type: 'merge-in' },
   { from: 'amend-28', to: 'plenair-2', type: 'merge-in' },
   { from: 'amend-34', to: 'plenair-2', type: 'merge-in' },
-  // amend-rejected: dead end - no merge back (verworpen)
+  // amend-rejected: dead end - no merge back (rejected)
   { from: 'nvw-4', to: 'plenair-2', type: 'straight' },
 
   { from: 'plenair-2', to: 'tk-vote', type: 'straight' },
@@ -762,7 +762,7 @@ export const connections: Connection[] = [
   { from: 'novelle-committee', to: 'novelle-amend-accepted', type: 'branch-off' },
   { from: 'novelle-committee', to: 'novelle-amend-rejected', type: 'branch-off' },
   { from: 'novelle-amend-accepted', to: 'novelle-tk-vote', type: 'merge-in' },
-  // novelle-amend-rejected: dead end - no merge back (verworpen)
+  // novelle-amend-rejected: dead end - no merge back (rejected)
   { from: 'novelle-committee', to: 'novelle-tk-vote', type: 'straight' },
 
   // Both go to EK
