@@ -1,3 +1,18 @@
+export interface LruMapOptions<K, V> {
+  onEvict?: (key: K, value: V) => void;
+}
+
+export interface LruMap<K, V> {
+  has(key: K): boolean;
+  get(key: K): V | undefined;
+  peek(key: K): V | undefined;
+  set(key: K, value: V): LruMap<K, V>;
+  delete(key: K): boolean;
+  clear(): void;
+  keys(): MapIterator<K>;
+  readonly size: number;
+}
+
 /**
  * createLruMap - a Map with least-recently-used eviction.
  *
@@ -16,21 +31,6 @@
  * @param {number} maxSize
  * @param {{ onEvict?: (key: K, value: V) => void }} [options]
  */
-export interface LruMapOptions<K, V> {
-  onEvict?: (key: K, value: V) => void;
-}
-
-export interface LruMap<K, V> {
-  has(key: K): boolean;
-  get(key: K): V | undefined;
-  peek(key: K): V | undefined;
-  set(key: K, value: V): LruMap<K, V>;
-  delete(key: K): boolean;
-  clear(): void;
-  keys(): MapIterator<K>;
-  readonly size: number;
-}
-
 export function createLruMap<K, V>(
   maxSize: number,
   { onEvict }: LruMapOptions<K, V> = {},

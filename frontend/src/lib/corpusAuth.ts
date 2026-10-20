@@ -7,7 +7,7 @@
  * traject form shows operators the exact name they have to set, so it has to
  * arrive at the same string.
  *
- * Kept in two steps like the backend, and pinned by corpusAuth.test.js with the
+ * Kept in two steps like the backend, and pinned by corpusAuth.test.ts with the
  * fixtures from the Rust unit tests: a change on either side then shows up as a
  * failing test instead of a wrong name on screen.
  */

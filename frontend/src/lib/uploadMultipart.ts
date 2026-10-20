@@ -1,3 +1,8 @@
+/** What `uploadMultipart` resolves to. */
+export type UploadResult =
+  | { ok: true; json: unknown }
+  | { ok: false; error: string; retryable: boolean };
+
 /**
  * uploadMultipart - de gedeelde multipart-POST voor bestandsuploads
  * (werkdocument- en wet-upload). Eén plek voor de raw-fetch (bewust geen
@@ -8,10 +13,6 @@
  * responsebody (of `null` bij een lege body) zodat de aanroeper er zijn
  * eigen velden (target_path, job_id) uit kan lezen.
  */
-export type UploadResult =
-  | { ok: true; json: unknown }
-  | { ok: false; error: string; retryable: boolean };
-
 export async function uploadMultipart(url: string, file: Blob): Promise<UploadResult> {
   const form = new FormData();
   form.append('file', file);
