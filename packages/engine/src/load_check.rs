@@ -179,6 +179,20 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
 /// Refuse an open term whose `combine` does not fit its type (RFC-053).
 pub(crate) fn reject_misfit_combine(law: &ArticleBasedLaw) -> Result<()> {
     for (where_, section) in sections(law) {
+        // A list names at least one authority; an empty one would route to
+        // nobody without a word (RFC-053).
+        if section
+            .competent_authority
+            .as_ref()
+            .and_then(|authority| authority.named())
+            .is_some_and(<[_]>::is_empty)
+        {
+            return Err(EngineError::LoadError(format!(
+                "law '{}' {where_}: competent_authority is an empty list; name at least one \
+                 authority",
+                law.id
+            )));
+        }
         let named = section
             .competent_authority
             .as_ref()

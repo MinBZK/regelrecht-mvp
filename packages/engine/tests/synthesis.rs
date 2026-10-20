@@ -176,6 +176,29 @@ articles:
         actions:
           - output: zevende_feit
             value: $zevende_feit
+  - number: '8'
+    text: Het aantal kaarten dat elk college telt.
+    machine_readable:
+      competent_authority:
+        - name: college van burgemeester en wethouders
+          type: CATEGORY
+      open_terms:
+        - id: aantal_kaarten
+          type: number
+          required: false
+          combine: ADD
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        output:
+          - name: aantal_kaarten
+            type: number
+            nullable: true
+        actions:
+          - output: aantal_kaarten
+            value: $aantal_kaarten
 "#;
 
 /// The law that reads those facts, each through `source.regulation`.
@@ -687,4 +710,95 @@ fn a_null_answer_without_a_fallback_is_the_value() {
         filled_by(&result, "kenmerk"),
         FilledBy::Answer(provenance("wilgendaal"))
     );
+}
+
+/// Art. 8 read through `source.regulation`, with `answerer` and `sphere`.
+fn aantal(
+    answerer: &dyn OpenTermAnswerer,
+    sphere: Vec<&dyn OpenTermAnswerer>,
+) -> regelrecht_engine::ArticleResult {
+    let reader = r#"
+$id: wet_teller
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Het aantal kaarten.
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        input:
+          - name: aantal
+            type: number
+            nullable: true
+            source:
+              regulation: wet_verstrekking
+              output: aantal_kaarten
+              parameters:
+                bsn: $bsn
+        output:
+          - name: aantal_gelezen
+            type: number
+            nullable: true
+        actions:
+          - output: aantal_gelezen
+            value: $aantal
+"#;
+    let mut service = service();
+    service.load_law(reader).unwrap();
+    let call = Call {
+        findings: BTreeMap::new(),
+        answerer: Some(answerer),
+        sphere,
+    };
+    service
+        .evaluate_law_with_trace_in("wet_teller", &["aantal_gelezen"], parameters(), call, DATE)
+        .unwrap()
+}
+
+/// The message on the node where the engine resolves `term`.
+fn term_message(result: &regelrecht_engine::ArticleResult, term: &str) -> String {
+    node(result.trace.as_ref().unwrap(), term)
+        .unwrap()
+        .message
+        .clone()
+        .unwrap()
+}
+
+#[test]
+fn two_answers_add_up_and_the_trace_names_the_rule() {
+    let a = Fake::college("wilgendaal").answering("aantal_kaarten", Value::Int(1));
+    let b = Fake::college("oostmeer").answering("aantal_kaarten", Value::Int(2));
+    let result = aantal(&a, vec![&b]);
+    assert_eq!(result.outputs["aantal_gelezen"], Value::Int(3));
+    let message = term_message(&result, "aantal_kaarten");
+    assert!(message.contains("combined with ADD"), "{message}");
+}
+
+#[test]
+fn several_silent_answers_without_a_fallback_are_null_and_combine_nothing() {
+    // No default and nobody decides it per case: null is the answer, also
+    // from two cells, and the trace says they were silent, not combined.
+    let a = Fake::college("wilgendaal").answering("aantal_kaarten", Value::Null);
+    let b = Fake::college("oostmeer").answering("aantal_kaarten", Value::Null);
+    let result = aantal(&a, vec![&b]);
+    assert_eq!(result.outputs["aantal_gelezen"], Value::Null);
+    let message = term_message(&result, "aantal_kaarten");
+    assert!(message.contains("are silent (null)"), "{message}");
+    assert!(!message.contains("combined"), "{message}");
+}
+
+#[test]
+fn an_empty_list_of_competent_authorities_is_refused_at_load() {
+    let yaml = ESTABLISHING.replacen(
+        "      competent_authority:\n        - name: college van burgemeester en wethouders\n          type: CATEGORY\n        - name: Landelijke uitgever\n",
+        "      competent_authority: []\n",
+        1,
+    );
+    assert_ne!(yaml, ESTABLISHING);
+    let e = ArticleBasedLaw::from_yaml_str(&yaml).unwrap_err();
+    assert!(e.to_string().contains("empty list"), "{e}");
 }
