@@ -4492,7 +4492,11 @@ impl LawExecutionService {
                     "Open term '{}' answered by {}{set_aside}",
                     term.id, one.provenance
                 ));
-                res_ctx.trace_set_answer(one.provenance.clone());
+                // Routed, the answer is on the node of the answerer below;
+                // otherwise on this one, as before (RFC-048).
+                if routed.is_none() {
+                    res_ctx.trace_set_answer(one.provenance.clone());
+                }
                 FilledBy::Answer(one.provenance.clone())
             }
             several => {

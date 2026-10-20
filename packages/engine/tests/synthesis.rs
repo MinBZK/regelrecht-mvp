@@ -367,6 +367,7 @@ fn node<'n>(node: &'n PathNode, name: &str) -> Option<&'n PathNode> {
 }
 
 /// The answerers under the node of `term`, in the order of the trace.
+/// Without routing the term's own node carries the answer (RFC-048).
 fn answer_nodes(result: &regelrecht_engine::ArticleResult, term: &str) -> Vec<String> {
     let trace = result.trace.as_ref().expect("traced");
     let term_node = node(trace, term).expect("a node for the term");
@@ -411,6 +412,9 @@ fn only_the_answerers_the_article_names_are_asked() {
         FilledBy::Answer(provenance("oostmeer"))
     );
     assert_eq!(answer_nodes(&result, "eerder_verstrekt"), ["oostmeer"]);
+    // The answer is on the answerer's node, not twice.
+    let trace = result.trace.as_ref().unwrap();
+    assert!(node(trace, "eerder_verstrekt").unwrap().answer.is_none());
 }
 
 #[test]
