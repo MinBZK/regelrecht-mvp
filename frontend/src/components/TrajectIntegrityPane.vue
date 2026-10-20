@@ -13,7 +13,7 @@
 // gepusht wordt, en dan weet de gebruiker dat zelf.
 import { onMounted, watch } from 'vue';
 import { SEVERITY_ICONS, useTrajectIntegrity } from '../composables/useTrajectIntegrity.js';
-import { paneChromeVisible } from '../constants.js';
+import { paneChromeVisible } from '../constants';
 
 const props = defineProps({
   /** Traject-ref uit de URL (`{slug}-{8hex}`). */

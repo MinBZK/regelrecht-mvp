@@ -3,7 +3,7 @@
 // users at the support inbox when they run into something. Exposes show()/hide()
 // so the shell can drive it from the menu item.
 import { ref } from 'vue';
-import { SUPPORT_EMAIL } from '../constants.js';
+import { SUPPORT_EMAIL } from '../constants';
 
 const sheetEl = ref(null);
 

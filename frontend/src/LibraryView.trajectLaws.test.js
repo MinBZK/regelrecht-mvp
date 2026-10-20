@@ -132,7 +132,7 @@ const { server, ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
   };
 });
 
-vi.mock('./lib/apiFetch.js', () => ({
+vi.mock('./lib/apiFetch', () => ({
   apiFetch: (...a) => apiFetch(...a),
   apiFetchJson: (...a) => apiFetchJson(...a),
   ApiError: ApiErrorStub,

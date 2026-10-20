@@ -21,7 +21,7 @@ import {
   DETERMINISTIC,
   LLM_ONLY,
   UNKNOWN,
-} from '../lib/uploadFormats.js';
+} from '../lib/uploadFormats';
 
 const props = defineProps({
   /** Het gekozen bestand dat op bevestiging wacht; `null` = dialoog dicht. */

@@ -31,7 +31,7 @@ vi.mock('@regelrecht/frontend-shared', async (importOriginal) => ({
 // De pane vertaalt law_ids naar weergavenamen via useCorpusLaws; dat is de
 // tweede netwerkpoot (zelfde mock-vorm als useCorpusLaws.test.js).
 const apiFetchJson = vi.fn();
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetchJson: (...a) => apiFetchJson(...a),
   apiFetch: (...a) => apiFetch(...a),
 }));

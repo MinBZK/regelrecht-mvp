@@ -8,7 +8,7 @@ vi.mock('@regelrecht/frontend-shared', () => ({ apiFetch: (...a) => apiFetch(...
 // useCorpusLaws' network leg: the pane resolves law_ids to display names
 // through it (same mock shape as useCorpusLaws.test.js).
 const apiFetchJson = vi.fn();
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetchJson: (...a) => apiFetchJson(...a),
   apiFetch: (...a) => apiFetch(...a),
 }));

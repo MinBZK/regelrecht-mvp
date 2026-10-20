@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { apiFetch, apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetch, apiFetchJson } from '../lib/apiFetch';
 import { useAuth } from './useAuth.js';
 
 // Pure predicate: the URL names a traject (`trajectRef`) but, for a user who

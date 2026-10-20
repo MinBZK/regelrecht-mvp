@@ -17,7 +17,7 @@ import { ref, computed, watch } from 'vue';
 import * as yaml from 'js-yaml';
 import { lastSavedPr, sanitizeSavedPr } from './useSavedPr.js';
 import { annotationsUrl, requireTraject } from './corpusUrls.js';
-import { apiFetch, apiFetchText } from '../lib/apiFetch.js';
+import { apiFetch, apiFetchText } from '../lib/apiFetch';
 
 const STORAGE_PREFIX = 'regelrecht-draft-notes:';
 

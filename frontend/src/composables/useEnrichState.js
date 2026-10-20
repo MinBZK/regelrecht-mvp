@@ -19,7 +19,7 @@ import { computed, onMounted, toValue } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from './useAuth.js';
 import { useTaskActions, usePollWhile } from './useTasks.js';
-import { reviewTarget, sameTraject } from '../lib/taskReview.js';
+import { reviewTarget, sameTraject } from '../lib/taskReview';
 
 /**
  * @param {object} sources - refs/getters van de view.

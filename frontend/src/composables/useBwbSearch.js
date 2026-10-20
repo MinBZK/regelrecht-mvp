@@ -5,7 +5,7 @@
  * pipeline-api (proxied through editor-api at /api/harvest/search).
  */
 import { ref } from 'vue';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetchJson } from '../lib/apiFetch';
 
 const DEBOUNCE_MS = 400;
 export const MIN_QUERY_LENGTH = 3;

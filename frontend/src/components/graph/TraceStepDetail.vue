@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { formatOutputValue, normalizeForCompare, matchStatus as _matchStatus } from '../../utils/outputFormat.js';
+import { formatOutputValue, normalizeForCompare, matchStatus as _matchStatus } from '../../utils/outputFormat';
 
 const props = defineProps({
   step: { type: Object, default: null },

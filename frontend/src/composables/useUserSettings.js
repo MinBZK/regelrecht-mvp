@@ -12,7 +12,7 @@
  * takes over.
  */
 import { ref, readonly, computed } from 'vue';
-import { apiFetch, apiFetchJson, ApiError } from '../lib/apiFetch.js';
+import { apiFetch, apiFetchJson, ApiError } from '../lib/apiFetch';
 
 const VALID_THEMES = ['auto', 'light', 'dark'];
 

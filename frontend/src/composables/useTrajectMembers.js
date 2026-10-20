@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { apiFetch, apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetch, apiFetchJson } from '../lib/apiFetch';
 
 /**
  * Per-traject member + pending-invite state.

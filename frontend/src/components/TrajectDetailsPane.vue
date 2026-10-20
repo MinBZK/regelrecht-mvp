@@ -17,7 +17,7 @@ import {
   updateTraject,
 } from '../composables/useTrajects.js';
 import { hasRole } from '../composables/useAuth.js';
-import { paneChromeVisible } from '../constants.js';
+import { paneChromeVisible } from '../constants';
 
 const router = useRouter();
 

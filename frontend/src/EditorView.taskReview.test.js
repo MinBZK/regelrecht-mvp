@@ -188,7 +188,7 @@ vi.mock('./composables/useLastVisitedRoute.js', () => ({
   homeTarget: () => ({ name: 'home' }),
 }));
 
-vi.mock('./lib/apiFetch.js', () => ({
+vi.mock('./lib/apiFetch', () => ({
   apiFetch: vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }),
   apiFetchJson: vi.fn().mockResolvedValue({}),
   ApiError: class ApiError extends Error {},

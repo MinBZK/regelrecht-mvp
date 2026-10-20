@@ -28,8 +28,8 @@ import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch.js';
 import { useTrajects } from '../composables/useTrajects.js';
 import { useLawPromote } from '../composables/useLawPromote.js';
 import { lawsListUrl, trajectHarvestUrl } from '../composables/corpusUrls.js';
-import { apiFetch, apiFetchJson, ApiError } from '../lib/apiFetch.js';
-import { useLatest } from '../lib/useLatest.js';
+import { apiFetch, apiFetchJson, ApiError } from '../lib/apiFetch';
+import { useLatest } from '../lib/useLatest';
 
 const emit = defineEmits(['promoted', 'harvest-requested', 'upload-requested']);
 

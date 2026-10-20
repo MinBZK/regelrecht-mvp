@@ -23,7 +23,7 @@ vi.mock('../composables/useEngine.js', () => ({
   }),
 }));
 
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetch: async () => ({
     status: 200,
     text: async () => 'annotations: []\n',

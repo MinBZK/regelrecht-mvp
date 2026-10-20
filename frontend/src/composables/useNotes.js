@@ -11,8 +11,8 @@
 import { ref, computed, watch } from 'vue';
 import { useEngine } from './useEngine.js';
 import { annotationsUrl } from './corpusUrls.js';
-import { apiFetch } from '../lib/apiFetch.js';
-import { useLatest } from '../lib/useLatest.js';
+import { apiFetch } from '../lib/apiFetch';
+import { useLatest } from '../lib/useLatest';
 
 // Cache resolved notes per `${trajectRef}::${lawId}::${validFrom}` for the
 // session. The resolver result only changes when the law text or the sidecar

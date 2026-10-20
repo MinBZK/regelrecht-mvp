@@ -20,9 +20,9 @@ import {
   documentUploadUrl,
   requireTraject,
 } from './corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
-import { uploadMultipart } from '../lib/uploadMultipart.js';
-import { useLatest } from '../lib/useLatest.js';
+import { apiFetchJson } from '../lib/apiFetch';
+import { uploadMultipart } from '../lib/uploadMultipart';
+import { useLatest } from '../lib/useLatest';
 
 const STORAGE_PREFIX = 'regelrecht-doc-draft:';
 const DRAFT_DEBOUNCE_MS = 500;

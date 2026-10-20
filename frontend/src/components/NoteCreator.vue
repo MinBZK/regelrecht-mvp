@@ -15,9 +15,9 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { buildSelector, cpToUtf16 } from '../composables/useTextSelection.js';
 import { useAmbiguityVocabulary } from '../composables/useAmbiguityVocabulary.js';
 import { documentsListUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetchJson } from '../lib/apiFetch';
 import { useAuth } from '../composables/useAuth.js';
-import { quoteContext } from '../lib/quoteContext.js';
+import { quoteContext } from '../lib/quoteContext';
 import QuotedFragment from './QuotedFragment.vue';
 
 const props = defineProps({

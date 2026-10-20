@@ -6,7 +6,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useTrajectMembers } from '../composables/useTrajectMembers.js';
 import { useAddActions } from '../composables/useAddActions.js';
-import { paneChromeVisible } from '../constants.js';
+import { paneChromeVisible } from '../constants';
 
 const props = defineProps({
   /** Traject to manage (UUID id). */

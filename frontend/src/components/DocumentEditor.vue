@@ -29,8 +29,8 @@ import {
   runCommand,
   onToolbarState,
   attachOverflowSelectListener,
-} from '../lib/editorToolbar.js';
-import { paneChromeVisible } from '../constants.js';
+} from '../lib/editorToolbar';
+import { paneChromeVisible } from '../constants';
 
 const props = defineProps({
   manager: { type: Object, required: true },

@@ -9,7 +9,7 @@ import vue from '@vitejs/plugin-vue';
 // only - under vitest (Node) the real `node:module` works, so we leave it.
 const isVitest = !!process.env.VITEST;
 const nodeModuleShim = fileURLToPath(
-  new URL('./src/shims/node-module.js', import.meta.url),
+  new URL('./src/shims/node-module.ts', import.meta.url),
 );
 
 // Backend port the dev proxy forwards /api, /auth and /health to. Defaults to

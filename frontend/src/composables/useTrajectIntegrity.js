@@ -12,7 +12,7 @@
  * aanroep niet even het vorige rapport laat staan.
  */
 import { computed, ref } from 'vue';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetchJson } from '../lib/apiFetch';
 
 /**
  * Volgorde waarin bevindingen binnen een wet-groep staan: fouten (breken nu

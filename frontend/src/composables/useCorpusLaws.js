@@ -1,8 +1,8 @@
 import { ref, computed, watch } from 'vue';
 import { lawsListUrl } from './corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
-import { createLruMap } from '../lib/lruMap.js';
-import { humanizeLawId } from '../lib/lawName.js';
+import { apiFetchJson } from '../lib/apiFetch';
+import { createLruMap } from '../lib/lruMap';
+import { humanizeLawId } from '../lib/lawName';
 
 /**
  * Shared corpus-laws list, scoped by the active traject. Each distinct

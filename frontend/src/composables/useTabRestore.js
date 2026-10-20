@@ -1,5 +1,5 @@
-import { MAX_TABS } from '../lib/openTabsStorage.js';
-import { useLatest } from '../lib/useLatest.js';
+import { MAX_TABS } from '../lib/openTabsStorage';
+import { useLatest } from '../lib/useLatest';
 
 /**
  * The editor's "open the right document when you enter a traject" flow.

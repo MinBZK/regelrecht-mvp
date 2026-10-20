@@ -4,7 +4,7 @@ import ScenarioForm from './ScenarioForm.vue';
 import DataSourceTable from './DataSourceTable.vue';
 import ScenarioParameterInput from './ScenarioParameterInput.vue';
 import AbsenceToggle from './AbsenceToggle.vue';
-import { NOT_NULLABLE_MESSAGE } from '../utils/nullability.js';
+import { NOT_NULLABLE_MESSAGE } from '../utils/nullability';
 
 // RFC-036 / schema v0.5.8: a scenario parameter takes the word `null` (a
 // stated absence) only when the law declares the parameter `nullable: true`.

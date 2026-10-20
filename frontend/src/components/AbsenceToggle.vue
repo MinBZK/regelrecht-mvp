@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { isNullText } from '../utils/nullability.js';
+import { isNullText } from '../utils/nullability';
 
 // The one control for stating an absence (RFC-036): a checkbox "afwezig"
 // next to a field the law declares `nullable: true`. Checked, the field

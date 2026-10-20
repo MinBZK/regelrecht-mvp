@@ -22,15 +22,15 @@ import {
   registerEditorActions,
   clearEditorChrome,
 } from './composables/useAppChrome.js';
-import { SUPPORT_EMAIL } from './constants.js';
-import { apiFetch, apiFetchJson } from './lib/apiFetch.js';
-import { RETRY_MIN_SPINNER_MS } from './lib/retryFeedback.js';
-import { humanizeLawId } from './lib/lawName.js';
-import { quoteContext } from './lib/quoteContext.js';
-import { useLatest } from './lib/useLatest.js';
+import { SUPPORT_EMAIL } from './constants';
+import { apiFetch, apiFetchJson } from './lib/apiFetch';
+import { RETRY_MIN_SPINNER_MS } from './lib/retryFeedback';
+import { humanizeLawId } from './lib/lawName';
+import { quoteContext } from './lib/quoteContext';
+import { useLatest } from './lib/useLatest';
 import { useOpenTabs } from './composables/useOpenTabs.js';
 import { createTabRestore } from './composables/useTabRestore.js';
-import { proposalDivergence } from './lib/taskReview.js';
+import { proposalDivergence } from './lib/taskReview';
 import ArticleText from './components/ArticleText.vue';
 import ArticleTextEditor from './components/ArticleTextEditor.vue';
 import NoteCreator from './components/NoteCreator.vue';
@@ -45,7 +45,7 @@ import MachineReadable from './components/MachineReadable.vue';
 import MachineEmptyState from './components/MachineEmptyState.vue';
 import ScenarioBuilder from './components/ScenarioBuilder.vue';
 import ExecutionTraceView from './components/ExecutionTraceView.vue';
-import { buildOutputTypeMap } from './utils/articleMapping.js';
+import { buildOutputTypeMap } from './utils/articleMapping';
 import LawGraphView from './components/LawGraphView.vue';
 
 const { authenticated, oidcConfigured } = useAuth();

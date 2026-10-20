@@ -5,7 +5,7 @@
  * hardcoded defaults when the API is unavailable (e.g. no database).
  */
 import { ref, readonly } from 'vue';
-import { apiFetch, apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetch, apiFetchJson } from '../lib/apiFetch';
 import { useAuth } from './useAuth.js';
 
 // Must match DEFAULTS in packages/editor-api/src/feature_flags.rs, which is

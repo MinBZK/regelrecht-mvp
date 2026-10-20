@@ -10,7 +10,7 @@
  */
 import { ref } from 'vue';
 import * as yaml from 'js-yaml';
-import { apiFetchText } from '../lib/apiFetch.js';
+import { apiFetchText } from '../lib/apiFetch';
 
 // Session cache: the file does not change while the editor is open.
 let cached = null;

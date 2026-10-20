@@ -17,9 +17,9 @@ import TraceStepDetail from './graph/TraceStepDetail.vue';
 import { useLawGraph, rootOfId } from '../composables/useLawGraph.js';
 import { useTraceStepping } from '../composables/useTraceStepping.js';
 import { useColorScheme } from '../composables/useColorScheme.js';
-import { stepHasHighlights } from '../lib/traceEdges.js';
+import { stepHasHighlights } from '../lib/traceEdges';
 import { lawUrl } from '../composables/corpusUrls.js';
-import { apiFetchText } from '../lib/apiFetch.js';
+import { apiFetchText } from '../lib/apiFetch';
 
 const props = defineProps({
   lawId: { type: String, default: null },

@@ -2,7 +2,7 @@
 import { ref, computed, useId } from 'vue';
 import ScenarioParameterInput from './ScenarioParameterInput.vue';
 import AbsenceToggle from './AbsenceToggle.vue';
-import { NOT_NULLABLE_MESSAGE, nullAllowed, isNullText } from '../utils/nullability.js';
+import { NOT_NULLABLE_MESSAGE, nullAllowed, isNullText } from '../utils/nullability';
 
 let nextRowId = 0;
 

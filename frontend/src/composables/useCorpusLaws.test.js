@@ -4,7 +4,7 @@ import { ref } from 'vue';
 // Route the composable's network leg through a controllable spy. The
 // factory closes over `apiFetchJson` so it survives `vi.resetModules()`.
 const apiFetchJson = vi.fn();
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetchJson: (...args) => apiFetchJson(...args),
 }));
 

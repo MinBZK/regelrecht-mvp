@@ -7,7 +7,7 @@ import TrajectDetailsPane from './TrajectDetailsPane.vue';
 // en verder draaien de echte composables mee.
 const apiFetch = vi.fn();
 const apiFetchJson = vi.fn();
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetch: (...a) => apiFetch(...a),
   apiFetchJson: (...a) => apiFetchJson(...a),
 }));

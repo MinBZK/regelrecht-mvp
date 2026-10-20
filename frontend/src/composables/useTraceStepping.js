@@ -22,7 +22,7 @@ import {
   graphNodeIdsForStep,
   buildEdgeIndex,
   buildNodeIdSet,
-} from '../lib/traceEdges.js';
+} from '../lib/traceEdges';
 
 /**
  * @param {object} opts

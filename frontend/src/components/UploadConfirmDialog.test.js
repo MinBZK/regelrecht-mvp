@@ -10,7 +10,7 @@ const formats = {
   deterministic: ['docx', 'pdf'],
 };
 const loadUploadFormats = vi.fn();
-vi.mock('../lib/uploadFormats.js', async (importOriginal) => {
+vi.mock('../lib/uploadFormats', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, loadUploadFormats: () => loadUploadFormats() };
 });

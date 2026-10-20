@@ -8,7 +8,7 @@
  * State is shared at module level so all callers see the same harvest status.
  */
 import { ref, computed } from 'vue';
-import { apiFetch, apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetch, apiFetchJson } from '../lib/apiFetch';
 
 const TERMINAL_STATUSES = new Set([
   'harvest_failed', 'harvest_exhausted', 'enrich_failed', 'enrich_exhausted', 'error', 'timeout', 'unauthorized',

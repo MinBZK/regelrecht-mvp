@@ -5,7 +5,7 @@ import {
   loadSavedActiveTab,
   saveActiveTab,
   MAX_TABS,
-} from '../lib/openTabsStorage.js';
+} from '../lib/openTabsStorage';
 
 /**
  * The editor's open-tab store, bucketed per traject.

@@ -13,7 +13,7 @@ import * as yaml from 'js-yaml';
 import { useBwbHarvest } from './useBwbHarvest.js';
 import { loadLawVersions } from './useEngine.js';
 import { implementorsUrl } from './corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetchJson } from '../lib/apiFetch';
 
 /**
  * Extract all unique `source.regulation` references from a parsed law object,

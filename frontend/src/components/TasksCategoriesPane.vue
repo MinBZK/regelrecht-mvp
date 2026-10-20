@@ -38,7 +38,7 @@ import {
   WACHTEN,
   WERKDOCUMENTEN,
   WET,
-} from '../lib/taskCategories.js';
+} from '../lib/taskCategories';
 
 const props = defineProps({
   trajectRef: { type: String, default: null },

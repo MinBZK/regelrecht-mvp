@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed, watch, watchEffect, nextTick } from 'vue';
-import { collectAvailableVariables } from '../utils/operationTree.js';
-import { centsToEuros, eurosToCents } from '../utils/currency.js';
+import { collectAvailableVariables } from '../utils/operationTree';
+import { centsToEuros, eurosToCents } from '../utils/currency';
 import { lawsListUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetchJson } from '../lib/apiFetch';
 
 const props = defineProps({
   item: { type: Object, default: null },

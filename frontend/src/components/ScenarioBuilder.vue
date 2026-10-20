@@ -20,13 +20,13 @@ import { useDependencies } from '../composables/useDependencies.js';
 import { loadLawVersions } from '../composables/useEngine.js';
 import { useScenarios, isScenarioMismatch } from '../composables/useScenarios.js';
 import { lawVersionsUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
-import { useLatest } from '../lib/useLatest.js';
-import { parseFeature } from '../gherkin/parser.js';
-import { mapFeatureToForm, getEffectiveSetup, formStateToGherkin, syncEditedValues } from '../gherkin/formMapper.js';
-import { matchStatus, humanize, formatOutputValue, normalizeForCompare, expectationsFromAssertions } from '../utils/outputFormat.js';
+import { apiFetchJson } from '../lib/apiFetch';
+import { useLatest } from '../lib/useLatest';
+import { parseFeature } from '../gherkin/parser';
+import { mapFeatureToForm, getEffectiveSetup, formStateToGherkin, syncEditedValues } from '../gherkin/formMapper';
+import { matchStatus, humanize, formatOutputValue, normalizeForCompare, expectationsFromAssertions } from '../utils/outputFormat';
 import * as yaml from 'js-yaml';
-import { buildArticleMap, buildTypeMap, buildExternalFieldTypeMap } from '../utils/articleMapping.js';
+import { buildArticleMap, buildTypeMap, buildExternalFieldTypeMap } from '../utils/articleMapping';
 import ScenarioForm from './ScenarioForm.vue';
 
 const props = defineProps({

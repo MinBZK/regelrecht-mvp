@@ -28,7 +28,7 @@ import { useEnrichState } from './composables/useEnrichState.js';
 import { lawFetchInit } from './composables/useLaw.js';
 import { useTrajects, refreshTrajects } from './composables/useTrajects.js';
 import { lawsListUrl, lawUrl, lawUploadUrl, changedLawsUrl, favoritesUrl, favoriteUrl } from './composables/corpusUrls.js';
-import { SUPPORT_EMAIL, paneChromeVisible } from './constants.js';
+import { SUPPORT_EMAIL, paneChromeVisible } from './constants';
 import { registerSearchPopover, setLibraryEmpty, openSearch } from './composables/useAppChrome.js';
 import { homeTarget } from './composables/useLastVisitedRoute.js';
 import { useDocumentsManager } from './composables/useDocumentsManager.js';
@@ -36,12 +36,12 @@ import { useTrajectDocumentJobs } from './composables/useTrajectDocumentJobs.js'
 import { useDocumentUpload } from './composables/useDocumentUpload.js';
 import { useAddActions } from './composables/useAddActions.js';
 import { useDocumentTaskReview } from './composables/useDocumentTaskReview.js';
-import { humanizeLawId } from './lib/lawName.js';
-import { sameTraject } from './lib/taskReview.js';
-import { apiFetch, apiFetchJson, ApiError } from './lib/apiFetch.js';
-import { uploadMultipart } from './lib/uploadMultipart.js';
-import { useLatest } from './lib/useLatest.js';
-import { holdRetryFloor, RETRY_MIN_SPINNER_MS } from './lib/retryFeedback.js';
+import { humanizeLawId } from './lib/lawName';
+import { sameTraject } from './lib/taskReview';
+import { apiFetch, apiFetchJson, ApiError } from './lib/apiFetch';
+import { uploadMultipart } from './lib/uploadMultipart';
+import { useLatest } from './lib/useLatest';
+import { holdRetryFloor, RETRY_MIN_SPINNER_MS } from './lib/retryFeedback';
 
 const { authenticated, login } = useAuth();
 

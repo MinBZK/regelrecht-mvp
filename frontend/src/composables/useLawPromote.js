@@ -10,7 +10,7 @@
 // markeert de wet alsnog als al-in-traject.
 import { ref } from 'vue';
 import { lawPromoteUrl } from './corpusUrls.js';
-import { apiFetchJson, ApiError } from '../lib/apiFetch.js';
+import { apiFetchJson, ApiError } from '../lib/apiFetch';
 
 export const PROMOTE_ERROR_TEXT =
   'Toevoegen aan het traject is mislukt. Probeer het opnieuw of neem contact op.';

@@ -16,7 +16,7 @@
  */
 import { computed } from 'vue';
 import { useTasks } from '../composables/useTasks.js';
-import { isPrioriteit } from '../lib/taskCategories.js';
+import { isPrioriteit } from '../lib/taskCategories';
 
 defineProps({
   current: { type: Boolean, default: false },

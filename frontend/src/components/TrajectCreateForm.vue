@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { deriveAuthRef, tokenEnvName as tokenEnvNameFor } from '../lib/corpusAuth.js';
+import { deriveAuthRef, tokenEnvName as tokenEnvNameFor } from '../lib/corpusAuth';
 
 // Gedeeld aanmaakformulier voor een traject - gebruikt door de
 // TrajectMenu-sheet en de /editor/nieuw-traject-pagina. Gebouwd op de

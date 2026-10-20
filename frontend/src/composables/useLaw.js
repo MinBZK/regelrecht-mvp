@@ -2,11 +2,11 @@ import { computed, ref, shallowRef } from 'vue';
 import * as yaml from 'js-yaml';
 import { lastSavedPr, sanitizeSavedPr } from './useSavedPr.js';
 import { lawCreateUrl, lawUrl } from './corpusUrls.js';
-import { apiFetch } from '../lib/apiFetch.js';
-import { createLruMap } from '../lib/lruMap.js';
-import { useLatest } from '../lib/useLatest.js';
-import { humanizeLawId } from '../lib/lawName.js';
-import { holdRetryFloor } from '../lib/retryFeedback.js';
+import { apiFetch } from '../lib/apiFetch';
+import { createLruMap } from '../lib/lruMap';
+import { useLatest } from '../lib/useLatest';
+import { humanizeLawId } from '../lib/lawName';
+import { holdRetryFloor } from '../lib/retryFeedback';
 
 // Shared law cache, keyed by `${trajectRef || ''}::${lawId}` so a law
 // opened in traject A and in traject B (or globally) returns the

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
-import { centsToEuros, eurosToCents } from '../utils/currency.js';
-import { isNullText } from '../utils/nullability.js';
+import { centsToEuros, eurosToCents } from '../utils/currency';
+import { isNullText } from '../utils/nullability';
 
 // Generic, datatype-driven scenario input control. Given a declared datatype
 // (and optional unit), it renders the matching NDD component and emits a

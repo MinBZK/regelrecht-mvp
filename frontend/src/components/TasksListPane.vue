@@ -26,8 +26,8 @@ import { useRouter } from 'vue-router';
 import { useTasks } from '../composables/useTasks.js';
 import { useCorpusLaws } from '../composables/useCorpusLaws.js';
 import { homeTarget } from '../composables/useLastVisitedRoute.js';
-import { reviewTarget } from '../lib/taskReview.js';
-import { taskTitle, runningTitle } from '../lib/taskTitle.js';
+import { reviewTarget } from '../lib/taskReview';
+import { taskTitle, runningTitle } from '../lib/taskTitle';
 import {
   filterTasks,
   filterRunning,
@@ -38,7 +38,7 @@ import {
   jobLawId,
   WACHTEN,
   WERKDOCUMENTEN,
-} from '../lib/taskCategories.js';
+} from '../lib/taskCategories';
 
 const props = defineProps({
   trajectRef: { type: String, default: null },

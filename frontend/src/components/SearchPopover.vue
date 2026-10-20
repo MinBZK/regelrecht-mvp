@@ -5,9 +5,9 @@ import { useBwbHarvest } from '../composables/useBwbHarvest.js';
 import { useAuth } from '../composables/useAuth.js';
 import { useTrajects } from '../composables/useTrajects.js';
 import { lawsListUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
-import { useLatest } from '../lib/useLatest.js';
-import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from '../constants.js';
+import { apiFetchJson } from '../lib/apiFetch';
+import { useLatest } from '../lib/useLatest';
+import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from '../constants';
 
 // Override the list's built-in search-field placeholder (i18n default "Zoeken")
 // so this popover stays in sync with the main search-field in AppShell.

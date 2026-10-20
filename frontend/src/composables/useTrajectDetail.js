@@ -9,7 +9,7 @@
  * URL `ref` form.
  */
 import { ref } from 'vue';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { apiFetchJson } from '../lib/apiFetch';
 
 /**
  * Pick the writable-own source from a `TrajectDetail`. That is the source the

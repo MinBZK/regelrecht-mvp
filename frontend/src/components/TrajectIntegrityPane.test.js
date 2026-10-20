@@ -6,7 +6,7 @@ import { groupByLaw, impactSummary } from '../composables/useTrajectIntegrity.js
 // De pane haalt het rapport via useTrajectIntegrity -> apiFetchJson op; die
 // ene netwerkpoot sturen we hier (zelfde mock-vorm als TasksCategoriesPane).
 const apiFetchJson = vi.fn();
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetchJson: (...a) => apiFetchJson(...a),
 }));
 

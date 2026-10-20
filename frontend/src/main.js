@@ -3,8 +3,8 @@ import '@nldd/design-system/styles';
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router.js';
-import { installApiAuthGuard } from './lib/apiAuthGuard.js';
-import { installDevSlowMode } from './lib/devSlowMode.js';
+import { installApiAuthGuard } from './lib/apiAuthGuard';
+import { installDevSlowMode } from './lib/devSlowMode';
 
 // Catch 401s on /api/* calls fired while a page is open and redirect to login,
 // mirroring the router's navigation guard. Must run before any fetch.

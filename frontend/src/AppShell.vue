@@ -21,7 +21,7 @@ import {
   rememberHarvesterOrigin,
 } from './composables/useLastVisitedRoute.js';
 import { useAppChrome, openSearch, onBarSearchKeydown } from './composables/useAppChrome.js';
-import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from './constants.js';
+import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from './constants';
 
 // Persistent shell that owns the shared chrome (tab-bar, search trigger,
 // TrajectMenu, settings menu) and a nested <router-view> for the editor /

@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, useId } from 'vue';
-import { quotedValue, tableCellValue } from '../gherkin/actions.js';
-import { isCollectionValue, collectionColumns, formCollectionToState } from '../gherkin/formMapper.js';
-import { formatValue, formatMissing, normalizeForCompare, matchStatus as _matchStatus, humanize, expectationsFromAssertions } from '../utils/outputFormat.js';
-import { NOT_NULLABLE_MESSAGE, nullAllowed, isNullText } from '../utils/nullability.js';
+import { quotedValue, tableCellValue } from '../gherkin/actions';
+import { isCollectionValue, collectionColumns, formCollectionToState } from '../gherkin/formMapper';
+import { formatValue, formatMissing, normalizeForCompare, matchStatus as _matchStatus, humanize, expectationsFromAssertions } from '../utils/outputFormat';
+import { NOT_NULLABLE_MESSAGE, nullAllowed, isNullText } from '../utils/nullability';
 import DataSourceTable from './DataSourceTable.vue';
 import ScenarioParameterInput from './ScenarioParameterInput.vue';
 import AbsenceToggle from './AbsenceToggle.vue';

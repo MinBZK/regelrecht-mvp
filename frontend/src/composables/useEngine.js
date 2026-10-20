@@ -5,8 +5,8 @@
  */
 import { ref } from 'vue';
 import { lawVersionsUrl } from './corpusUrls.js';
-import { apiFetchJson, apiFetchText } from '../lib/apiFetch.js';
-import { createLruMap } from '../lib/lruMap.js';
+import { apiFetchJson, apiFetchText } from '../lib/apiFetch';
+import { createLruMap } from '../lib/lruMap';
 
 let engineInstance = null;
 let initPromise = null;

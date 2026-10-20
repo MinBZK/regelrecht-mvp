@@ -4,7 +4,7 @@ import {
   OPERATION_LABELS,
   collectAvailableVariables,
   derivedTitle,
-} from '../utils/operationTree.js';
+} from '../utils/operationTree';
 import BreakableName from './BreakableName.vue';
 
 const props = defineProps({

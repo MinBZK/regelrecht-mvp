@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { buildOperationTree } from '../utils/operationTree.js';
+import { buildOperationTree } from '../utils/operationTree';
 import OperationSettings from './OperationSettings.vue';
 
 const props = defineProps({

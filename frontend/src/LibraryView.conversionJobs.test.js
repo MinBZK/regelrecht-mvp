@@ -41,7 +41,7 @@ vi.mock('./composables/useTrajects.js', () => ({
   refreshTrajects: vi.fn(),
 }));
 
-vi.mock('./lib/apiFetch.js', () => ({
+vi.mock('./lib/apiFetch', () => ({
   apiFetch: vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] }),
   apiFetchJson: vi.fn().mockResolvedValue([]),
   ApiError: class ApiError extends Error {},

@@ -14,7 +14,7 @@
 import { ref, watch } from 'vue';
 import { lastSavedPr, sanitizeSavedPr } from './useSavedPr.js';
 import { requireTraject, scenarioFileUrl, scenariosListUrl } from './corpusUrls.js';
-import { apiFetch } from '../lib/apiFetch.js';
+import { apiFetch } from '../lib/apiFetch';
 
 /**
  * True when the scenario file declares execution targets and none of

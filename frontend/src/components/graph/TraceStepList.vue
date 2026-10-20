@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue';
-import { formatValue } from '../../utils/outputFormat.js';
-import { stepHasHighlights } from '../../lib/traceEdges.js';
+import { formatValue } from '../../utils/outputFormat';
+import { stepHasHighlights } from '../../lib/traceEdges';
 
 const props = defineProps({
   steps: { type: Array, required: true },

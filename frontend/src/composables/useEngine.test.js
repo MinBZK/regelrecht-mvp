@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 // called. A regression that dropped the import (it's used only on the WASM-
 // init path, which the dependency-loader tests mock past) would instead make
 // `initEngine` throw `ReferenceError: apiFetchText is not defined` - caught here.
-vi.mock('../lib/apiFetch.js', () => ({
+vi.mock('../lib/apiFetch', () => ({
   apiFetchText: vi.fn().mockRejectedValue(new Error('SENTINEL_GLUE_FETCH')),
   apiFetchJson: vi.fn().mockResolvedValue([]),
 }));
