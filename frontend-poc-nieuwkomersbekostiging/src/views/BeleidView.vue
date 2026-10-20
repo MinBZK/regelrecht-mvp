@@ -18,7 +18,7 @@
           <nldd-banner v-else-if="!ready" variant="accent">Rekenmachine wordt geladen…</nldd-banner>
 
           <template v-if="ready">
-            <paneel :titel="`Regeling bijstellen`" :subtitel="`Bedragen, duur en drempel van ${werkversieLabel}. Elke wijziging rekent de werkversiekolom opnieuw.`" :samenvatting="bijstellenSamenvatting" :badge="hasChanges ? `${changeCount} bewerkt` : ''">
+            <paneel :title="`Regeling bijstellen`" :subtitle="`Bedragen, duur en drempel van ${werkversieLabel}. Elke wijziging rekent de werkversiekolom opnieuw.`" :summary="bijstellenSamenvatting" :badge="hasChanges ? `${changeCount} bewerkt` : ''">
               <parameter-panel />
               <details class="geavanceerd">
                 <summary>Geavanceerd: YAML rechtstreeks bewerken</summary>
@@ -33,22 +33,22 @@
               </details>
             </paneel>
 
-            <paneel titel="Budgetneutraal" subtitel="Wat kan er veranderen zonder dat het meer geld kost? Zoekt het bedrag waarbij de werkversie evenveel uitgeeft als huidig recht." samenvatting="zoekt een bedrag">
+            <paneel title="Budgetneutraal" subtitle="Wat kan er veranderen zonder dat het meer geld kost? Zoekt het bedrag waarbij de werkversie evenveel uitgeeft als huidig recht." summary="zoekt een bedrag">
               <budgetneutraal-panel />
             </paneel>
 
             <!-- Loopt er een gesprek, dan staat dit paneel open. Je komt terug op
                  deze pagina om te zien wat de assistent doet; dan is dichtgeklapt
                  precies het verkeerde. -->
-            <paneel titel="Beleidsassistent" subtitel="Een instructie of doel in gewone taal; de assistent wijzigt de werkversie en rekent door." samenvatting="instructie of doel" :badge="assistentLoopt ? 'bezig' : ''" :open="assistentLoopt">
+            <paneel title="Beleidsassistent" subtitle="Een instructie of doel in gewone taal; de assistent wijzigt de werkversie en rekent door." summary="instructie of doel" :badge="assistentLoopt ? 'bezig' : ''" :open="assistentLoopt">
               <assistent-panel />
             </paneel>
 
-            <paneel titel="Uitvoeringslastmodel" subtitel="Handelingen × minuten × tarief per partij, investeringen en budget. Bijstellen is direct zichtbaar." :samenvatting="uitvoeringSamenvatting" :badge="hasOverrides ? 'aangepast' : ''">
+            <paneel title="Uitvoeringslastmodel" subtitle="Handelingen × minuten × tarief per partij, investeringen en budget. Bijstellen is direct zichtbaar." :summary="uitvoeringSamenvatting" :badge="hasOverrides ? 'aangepast' : ''">
               <handelingen-panel />
             </paneel>
 
-            <paneel titel="Populatie" subtitel="Eén vaste steekproef van synthetische leerlingen, gewogen naar de echte instroom. Alle kolommen rekenen met dezelfde leerlingen." :samenvatting="populatieSamenvatting" :badge="popGewijzigd ? 'aangepast' : ''">
+            <paneel title="Populatie" subtitle="Eén vaste steekproef van synthetische leerlingen, gewogen naar de echte instroom. Alle kolommen rekenen met dezelfde leerlingen." :summary="populatieSamenvatting" :badge="popGewijzigd ? 'aangepast' : ''">
               <population-controls />
             </paneel>
           </template>
@@ -99,11 +99,11 @@
               />
             </section>
 
-            <paneel titel="Huidig recht in cijfers" samenvatting="kengetallen per jaar">
+            <paneel title="Huidig recht in cijfers" summary="kengetallen per jaar">
               <metric-tiles :metrics="istMetrics" />
             </paneel>
 
-            <paneel titel="Plausibiliteit" samenvatting="simulatie naast factsheet en realisatie">
+            <paneel title="Plausibiliteit" summary="simulatie naast factsheet en realisatie">
               <plausibiliteit-tabel :metrics="istMetrics" :distributions="distributions" />
             </paneel>
           </template>

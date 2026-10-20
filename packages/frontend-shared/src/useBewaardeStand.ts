@@ -1,91 +1,91 @@
 /**
- * useBewaardeStand - keuzes en instellingen overleven een pagina-ververs.
+ * Persisted state: choices and settings that survive a page reload.
  *
- * Waarom dit één plek is en geen losse localStorage-aanroepen: een casus heeft
- * op drie schermen bij elkaar een stuk of tien instellingen, en die moeten
- * allemaal op dezelfde manier terugkomen, versiebestendig zijn en met één
- * knop te wissen. Dat is precies wat hier gebeurt.
+ * Why this is one place and not loose localStorage calls: a case has about ten
+ * settings across its three screens, and all of them have to come back the
+ * same way, survive a change of format, and be cleared with one button.
  *
- * Wat wél wordt bewaard: wat de gebruiker zélf koos (welke varianten als
- * kolom, de werkversie, de persona, de keuzes van die persona,
- * populatie-instellingen, sessie-aannames). Wat niet: uitkomsten van
- * berekeningen. Die zijn afgeleid, kosten niets om opnieuw te maken en zouden
- * bij een gewijzigd corpus stilletjes verouderd terugkomen.
+ * What is persisted: what the user chose themselves (which variants show as a
+ * column, the working version, the persona, that persona's choices,
+ * population settings, session assumptions). What is not: results of
+ * calculations. Those are derived, cost nothing to recompute, and would come
+ * back silently stale after the corpus changed.
  *
- * Bewerkte YAML gaat niet door `bewaardeRef`. Een wetstekst moet tegen het
- * corpus in de repo passen, en die na een ververs blind terugzetten kan
- * betekenen dat je een wijziging bewerkt die niet meer bestaat. Zulke
- * bewerkingen horen in een variant, die zijn uitgangspunt meebewaart en bij
- * drift meldt dat hij bij een oudere wetsversie hoort.
+ * Edited YAML does not go through `persistedRef`. A law text has to match the
+ * corpus in the repository, and restoring it blindly after a reload can mean
+ * editing a change that no longer exists. Such edits belong in a variant,
+ * which keeps its starting point and reports drift when it belongs to an
+ * older version of the law.
+ *
+ * The key names callers pass, and the values stored under them, are a stored
+ * format: renaming one makes the saved value unreachable.
  */
 import { ref, watch, type Ref } from 'vue';
 
 /**
- * Welke casus deze opslag bedient. Bepaalt de sleutelprefix, zodat twee
- * casussen elkaars keuzes niet lezen. Dat is geen theoretisch geval: ze
- * draaien hosted achter hetzelfde portaal en dus op dezelfde origin, waar
- * localStorage gedeeld is. Lokaal scheiden de poorten ze nog wel.
+ * Which case this storage serves. It sets the key prefix, so two cases do not
+ * read each other's choices. That is not a theoretical case: hosted, they run
+ * behind the same portal and so on the same origin, where localStorage is
+ * shared. Locally their ports still keep them apart.
  */
-let casus: string | null = null;
+let caseName: string | null = null;
 
 /**
- * Versie van het opslagformaat. Verhogen zodra bewaarde waarden niet meer
- * kloppen met de code; oude sleutels worden dan genegeerd in plaats van
- * verkeerd ingelezen.
+ * Version of the storage format. Raise it when stored values no longer match
+ * the code; old keys are then ignored instead of read wrongly.
  */
-const VERSIE = 1;
+const STORAGE_VERSION = 1;
 
-/** Alles wat deze casus bewaart, zodat "begin opnieuw" niets mist. */
-const sleutels = new Set<string>();
+/** Every key this case uses, so a reset misses nothing. */
+const keys = new Set<string>();
 
 /**
- * Zet de casus. Eén keer aanroepen bij het opstarten van de app, vóór de
- * eerste `bewaardeRef`. Een tweede naam is een fout: er hangen dan al refs aan
- * de oude prefix die stil hun waarde zouden verliezen.
+ * Set the case. Call it once at app start, before the first `persistedRef`.
+ * A second, different name is an error: refs already hang off the old prefix
+ * and would silently lose their value.
  */
-export function stelCasusIn(naam: string): void {
-  if (!/^[a-z0-9-]+$/.test(String(naam ?? ''))) {
-    throw new Error(`stelCasusIn: ongeldige casusnaam ${JSON.stringify(naam)}`);
+export function setCase(name: string): void {
+  if (!/^[a-z0-9-]+$/.test(String(name ?? ''))) {
+    throw new Error(`setCase: invalid case name ${JSON.stringify(name)}`);
   }
-  if (casus !== null && casus !== naam) {
-    throw new Error(`stelCasusIn: casus staat al op '${casus}' en kan niet naar '${naam}'`);
+  if (caseName !== null && caseName !== name) {
+    throw new Error(`setCase: the case is already '${caseName}' and cannot become '${name}'`);
   }
-  casus = naam;
+  caseName = name;
 }
 
 function prefix(): string {
-  if (casus === null) {
-    // Hard, want het alternatief is stil in de verkeerde of in een naamloze
-    // ruimte schrijven, en dat merk je pas als iemands keuzes weg zijn.
-    throw new Error('useBewaardeStand: stelCasusIn() is nog niet aangeroepen');
+  if (caseName === null) {
+    // Hard, because the alternative is writing silently into the wrong or an
+    // unnamed space, which only shows when someone's choices are gone.
+    throw new Error('useBewaardeStand: setCase() has not been called');
   }
-  return `${casus}:v${VERSIE}:`;
+  return `${caseName}:v${STORAGE_VERSION}:`;
 }
 
-function lees<T>(naam: string, standaard: T): T {
+function read<T>(name: string, fallback: T): T {
   try {
-    const rauw = localStorage.getItem(prefix() + naam);
-    if (rauw === null) return standaard;
-    return JSON.parse(rauw);
+    const raw = localStorage.getItem(prefix() + name);
+    if (raw === null) return fallback;
+    return JSON.parse(raw);
   } catch {
-    // Kapotte of onleesbare waarde: begin met de standaard in plaats van de
-    // pagina te laten struikelen.
-    return standaard;
+    // A broken or unreadable value: start from the fallback instead of
+    // letting the page stumble.
+    return fallback;
   }
 }
 
 /**
- * Schrijf een waarde weg. Geeft terug of dat lukte.
+ * Write a value away. Returns whether that worked.
  *
- * Voor de meeste dingen hier (welke kolom, welke persona, de stand van een
- * schuifje) is een mislukte schrijfactie geen ramp: in privémodus werkt de
- * demo dan gewoon zonder onthouden, en de aanroeper negeert de uitkomst.
- * Voor iets dat de gebruiker zelf gemaakt heeft, is het dat wél, en die
- * aanroeper kijkt dus naar wat hier uitkomt.
+ * For most things here (which column, which persona, a slider's position) a
+ * failed write is no disaster: in private mode the app then works without
+ * remembering, and the caller ignores the result. For something the user made
+ * themselves it is, and that caller checks what comes back.
  */
-function schrijf(naam: string, waarde: unknown): boolean {
+function write(name: string, value: unknown): boolean {
   try {
-    localStorage.setItem(prefix() + naam, JSON.stringify(waarde));
+    localStorage.setItem(prefix() + name, JSON.stringify(value));
     return true;
   } catch {
     return false;
@@ -93,95 +93,98 @@ function schrijf(naam: string, waarde: unknown): boolean {
 }
 
 /**
- * Een ref die zichzelf bewaart. Gebruik dit in plaats van ref() voor alles
- * wat de gebruiker instelt.
+ * A ref that persists itself. Use it instead of ref() for everything the user
+ * sets.
  *
- * De gelezen waarde is wat er in localStorage stond, met het type van de
- * standaard. Wie daar niet op kan vertrouwen, geeft `geldig` mee; die krijgt
- * de waarde ongecontroleerd, als `unknown`.
+ * The value read back is whatever localStorage held, typed as the fallback.
+ * Callers that cannot rely on that pass `isValid`, which receives the value
+ * unchecked, as `unknown`.
  *
- * @param naam unieke sleutel binnen deze casus
- * @param standaard waarde als er niets bewaard is
- * @param opties.geldig controle op de gelezen waarde; bij false wordt de
- *   standaard gebruikt. Handig voor id's die naar een variant verwijzen die
- *   niet meer bestaat.
+ * @param name unique key within this case
+ * @param fallback value when nothing is stored
+ * @param options.isValid check on the value read; on false the fallback is
+ *   used. Useful for ids that point at a variant that no longer exists.
+ * @param options.upgrade turns a stored value in an older format into the
+ *   current one. It runs before the ref exists, so it writes nothing itself;
+ *   the caller decides whether to write the result back.
  */
-export function bewaardeRef<T>(
-  naam: string,
-  standaard: T,
-  { geldig }: { geldig?: (waarde: unknown) => boolean } = {},
+export function persistedRef<T>(
+  name: string,
+  fallback: T,
+  { isValid, upgrade }: { isValid?: (value: unknown) => boolean; upgrade?: (value: unknown) => T } = {},
 ): Ref<T> {
-  sleutels.add(naam);
-  const gelezen = lees(naam, standaard);
-  const start = geldig && gelezen !== standaard && !geldig(gelezen) ? standaard : gelezen;
+  keys.add(name);
+  const raw = read<unknown>(name, fallback);
+  const stored = (upgrade && raw !== fallback ? upgrade(raw) : raw) as T;
+  const start = isValid && stored !== fallback && !isValid(stored) ? fallback : stored;
   const r = ref(start) as Ref<T>;
-  watch(r, (nieuw) => schrijf(naam, nieuw), { deep: true });
+  watch(r, (next) => write(name, next), { deep: true });
   return r;
 }
 
-/** Losse waarde lezen zonder ref, voor code die zelf al reactief is. */
-export function leesStand<T>(naam: string, standaard: T): T {
-  sleutels.add(naam);
-  return lees(naam, standaard);
+/** Read one value without a ref, for code that is already reactive itself. */
+export function readPersisted<T>(name: string, fallback: T): T {
+  keys.add(name);
+  return read(name, fallback);
 }
 
-/** Losse waarde bewaren zonder ref. Geeft terug of het lukte. */
-export function bewaarStand(naam: string, waarde: unknown): boolean {
-  sleutels.add(naam);
-  return schrijf(naam, waarde);
-}
-
-/**
- * Sleutels die `wisStand` laat staan. "Begin opnieuw" wist de keuzes van de
- * gebruiker, niet zijn werk: de banner bij die knop belooft met zoveel woorden
- * dat opgeslagen varianten blijven staan, en een variant is het enige dat hier
- * niet opnieuw te maken is.
- */
-const beschermd = new Set<string>();
-
-/** Meld een sleutel die "begin opnieuw" niet mag wissen. */
-export function beschermSleutel(naam: string): void {
-  beschermd.add(naam);
+/** Persist one value without a ref. Returns whether it worked. */
+export function writePersisted(name: string, value: unknown): boolean {
+  keys.add(name);
+  return write(name, value);
 }
 
 /**
- * Wis alles wat deze casus onthoudt en herlaad, zodat elke composable met
- * zijn eigen standaardwaarde begint. Herladen is hier eerlijker dan de refs
- * terugzetten: er hangen simulaties, engines en workers aan die stand, en die
- * allemaal met de hand terugdraaien is precies waar bugs in kruipen.
+ * Keys that `resetPersistedState` leaves alone. "Start over" clears the user's
+ * choices, not their work: the banner at that button promises in so many words
+ * that saved variants stay, and a variant is the only thing here that cannot
+ * be made again.
  */
-export function wisStand(): void {
+const protectedKeys = new Set<string>();
+
+/** Register a key that "start over" must not clear. */
+export function protectKey(name: string): void {
+  protectedKeys.add(name);
+}
+
+/**
+ * Clear everything this case remembers and reload, so every composable starts
+ * from its own fallback. Reloading is more reliable here than resetting the
+ * refs: simulations, engines and workers hang off that state, and winding
+ * them all back by hand is exactly where bugs creep in.
+ */
+export function resetPersistedState(): void {
   try {
     const p = prefix();
-    const houden = new Set([...beschermd].map((naam) => p + naam));
-    for (const naam of [...sleutels]) {
-      if (!houden.has(p + naam)) localStorage.removeItem(p + naam);
+    const keep = new Set([...protectedKeys].map((name) => p + name));
+    for (const name of [...keys]) {
+      if (!keep.has(p + name)) localStorage.removeItem(p + name);
     }
-    // Ook sleutels van een vorige sessie die deze keer nog niet zijn
-    // geregistreerd, bijvoorbeeld van een scherm dat je niet hebt geopend.
+    // Also keys from an earlier session that were not registered this time,
+    // for example from a screen that was not opened.
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(p) && !houden.has(key)) localStorage.removeItem(key);
+      if (key.startsWith(p) && !keep.has(key)) localStorage.removeItem(key);
     }
   } catch {
-    // Niets te wissen als opslag niet beschikbaar is.
+    // Nothing to clear when storage is not available.
   }
   window.location.reload();
 }
 
-/** Is er iets bewaard? Bepaalt of de "begin opnieuw"-knop zin heeft. */
-export function heeftBewaardeStand(): boolean {
+/** Is anything persisted? Decides whether the "start over" button makes sense. */
+export function hasPersistedState(): boolean {
   try {
     const p = prefix();
-    const houden = new Set([...beschermd].map((naam) => p + naam));
-    return Object.keys(localStorage).some((k) => k.startsWith(p) && !houden.has(k));
+    const keep = new Set([...protectedKeys].map((name) => p + name));
+    return Object.keys(localStorage).some((k) => k.startsWith(p) && !keep.has(k));
   } catch {
     return false;
   }
 }
 
-/** Alleen voor tests: vergeet de casus en de geregistreerde sleutels. */
-export function _resetVoorTest(): void {
-  casus = null;
-  sleutels.clear();
-  beschermd.clear();
+/** For tests only: forget the case and the registered keys. */
+export function _resetForTest(): void {
+  caseName = null;
+  keys.clear();
+  protectedKeys.clear();
 }

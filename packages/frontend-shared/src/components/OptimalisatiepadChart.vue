@@ -1,25 +1,25 @@
 <template>
-  <div class="opt-pad">
-    <span class="op-title">{{ titel }}</span>
-    <v-chart class="chart" :option="option" autoresize @click="opPunt" />
-    <p class="op-hint">{{ hint }}</p>
+  <div class="optimisation-path">
+    <span class="optimisation-path-title">{{ title }}</span>
+    <v-chart class="chart" :option="option" autoresize @click="onPoint" />
+    <p class="optimisation-path-hint">{{ hint }}</p>
   </div>
 </template>
 
 <!--
-  Het pad dat de beleidsassistent aflegt naar een doel: één punt per meting die
-  hij onderweg doet.
+  The path the policy assistant takes toward a target: one point per
+  measurement it makes on the way.
 
-  Waarom dit gedeeld is en niet per casus: de vorm is dezelfde (meten, bijstellen,
-  opnieuw meten), alleen de grootheid verschilt. Terugbetaalregimes meet een
-  percentage debiteuren met betalingsproblemen; nieuwkomersbekostiging meet
-  bedragen, en daar staan er drie naast elkaar (po, vo, uitvoeringslast) omdat
-  een doel als "gelijktrekken zonder dat de uitgave stijgt" over de verhouding
-  tussen die posten gaat. Vandaar reeksen met een eigen eenheid in plaats van
-  een vaste procent-as.
+  Why this is shared and not per case: the shape is the same (measure, adjust,
+  measure again), only the quantity differs. Terugbetaalregimes measures a
+  percentage of debtors with payment problems; nieuwkomersbekostiging measures
+  amounts, three side by side (po, vo, implementation burden), because a target
+  like "level the two without the spending going up" is about the ratio
+  between those items. Hence series with their own unit instead of a fixed
+  percentage axis.
 
-  De punten zijn aanklikbaar: tijdens een lopende optimalisatie kun je een
-  tussenstand pakken die je bevalt, zonder te wachten tot hij convergeert.
+  The points are clickable: during a running optimisation you can take an
+  intermediate state you like, without waiting for it to converge.
 -->
 
 <script setup lang="ts">
@@ -33,25 +33,25 @@ import VChart from 'vue-echarts';
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent]);
 
 /**
- * Eén meting. Een reeks die in een meting ontbreekt, krijgt een gat in plaats
- * van een nul: niet gemeten is iets anders dan nul.
+ * One measurement. A series missing from a measurement gets a gap instead of
+ * a zero: not measured is something else than zero.
  */
-export interface Meting {
-  iteratie: number | string;
-  waarden?: Record<string, number | null | undefined>;
+export interface Measurement {
+  iteration: number | string;
+  values?: Record<string, number | null | undefined>;
 }
 
-/** Een lijn in de grafiek. `as` is 0 (links) of 1 (rechts), voor twee grootheden naast elkaar. */
-export interface Reeks {
-  sleutel: string;
+/** A line in the chart. `axis` is 0 (left) or 1 (right), for two quantities side by side. */
+export interface Series {
+  key: string;
   label: string;
-  kleur: string;
-  as?: 0 | 1;
-  formatter?: (waarde: number) => string;
+  color: string;
+  axis?: 0 | 1;
+  formatter?: (value: number) => string;
 }
 
-/** Wat ECharts meegeeft aan een tooltip-formatter met `trigger: 'axis'`, voor zover hier gebruikt. */
-interface TooltipPunt {
+/** What ECharts passes to a tooltip formatter with `trigger: 'axis'`, as far as used here. */
+interface TooltipPoint {
   axisValue?: string | number;
   marker?: unknown;
   seriesName?: string;
@@ -61,109 +61,109 @@ interface TooltipPunt {
 
 const props = withDefaults(
   defineProps<{
-    /** De metingen, oplopend. */
-    pad?: Meting[];
-    /** Wat er getekend wordt. */
-    reeksen: Reeks[];
-    /** Titels van de assen, per index. */
-    asTitels?: string[];
-    /** Formatters per as. */
-    asFormatters?: ((waarde: number) => string)[];
-    titel?: string;
+    /** The measurements, in ascending order. */
+    measurements?: Measurement[];
+    /** What is drawn. */
+    series: Series[];
+    /** Axis titles, per index. */
+    axisTitles?: string[];
+    /** Formatters per axis. */
+    axisFormatters?: ((value: number) => string)[];
+    title?: string;
     hint?: string;
-    /** Index van het punt dat als gekozen wordt getoond, of null. */
-    gekozen?: number | null;
+    /** Index of the point shown as selected, or null. */
+    selected?: number | null;
   }>(),
   {
-    pad: () => [],
-    asTitels: () => [],
-    asFormatters: () => [],
-    titel: 'Optimalisatiepad',
+    measurements: () => [],
+    axisTitles: () => [],
+    axisFormatters: () => [],
+    title: 'Optimalisatiepad',
     hint: 'Klik op een punt om die tussenstand te bekijken.',
-    gekozen: null,
+    selected: null,
   },
 );
 
-const emit = defineEmits<{ kies: [index: number] }>();
+const emit = defineEmits<{ select: [index: number] }>();
 
-/** Welke iteratie hoort bij de aangeklikte punt-index. */
-function opPunt(e: { dataIndex?: unknown } | undefined) {
+/** The measurement that belongs to the clicked point index. */
+function onPoint(e: { dataIndex?: unknown } | undefined) {
   if (typeof e?.dataIndex !== 'number') return;
-  emit('kies', e.dataIndex);
+  emit('select', e.dataIndex);
 }
 
-const heeftTweedeAs = computed(() => props.reeksen.some((r) => r.as === 1));
+const hasSecondAxis = computed(() => props.series.some((s) => s.axis === 1));
 
-function formatteer(reeks: Partial<Reeks>, waarde: unknown): string {
-  if (waarde === null || waarde === undefined) return '—';
-  // Een getal als tekst gaat ook door de formatter, zoals voorheen; wat geen
-  // getal is, komt er onopgemaakt door.
-  const getal = typeof waarde === 'number' ? waarde : Number(waarde);
-  return reeks.formatter && Number.isFinite(getal) ? reeks.formatter(getal) : String(waarde);
+function formatValue(s: Partial<Series>, value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  // A number as text goes through the formatter too, as before; what is no
+  // number comes through unformatted.
+  const num = typeof value === 'number' ? value : Number(value);
+  return s.formatter && Number.isFinite(num) ? s.formatter(num) : String(value);
 }
 
 const option = computed(() => ({
   tooltip: {
     trigger: 'axis',
-    formatter: (params: TooltipPunt[]) => {
-      const kop = `meting ${params[0]?.axisValue ?? ''}`;
-      const regels = params.map((p) => {
-        const reeks: Partial<Reeks> = (p.seriesIndex === undefined ? undefined : props.reeksen[p.seriesIndex]) ?? {};
-        return `${p.marker} ${p.seriesName}: ${formatteer(reeks, p.value)}`;
+    formatter: (params: TooltipPoint[]) => {
+      const heading = `meting ${params[0]?.axisValue ?? ''}`;
+      const lines = params.map((p) => {
+        const s: Partial<Series> = (p.seriesIndex === undefined ? undefined : props.series[p.seriesIndex]) ?? {};
+        return `${p.marker} ${p.seriesName}: ${formatValue(s, p.value)}`;
       });
-      return [kop, ...regels].join('<br>');
+      return [heading, ...lines].join('<br>');
     },
   },
-  legend: props.reeksen.length > 1
-    ? { top: 0, data: props.reeksen.map((r) => r.label), textStyle: { fontSize: 11 } }
+  legend: props.series.length > 1
+    ? { top: 0, data: props.series.map((s) => s.label), textStyle: { fontSize: 11 } }
     : undefined,
   grid: {
     left: 52,
-    right: heeftTweedeAs.value ? 52 : 16,
-    top: props.reeksen.length > 1 ? 28 : 16,
+    right: hasSecondAxis.value ? 52 : 16,
+    top: props.series.length > 1 ? 28 : 16,
     bottom: 32,
   },
   xAxis: {
     type: 'category',
-    data: props.pad.map((p) => p.iteratie),
+    data: props.measurements.map((m) => m.iteration),
     name: 'meting',
     nameLocation: 'end',
   },
-  yAxis: [0, 1].filter((i) => i === 0 || heeftTweedeAs.value).map((i) => ({
+  yAxis: [0, 1].filter((i) => i === 0 || hasSecondAxis.value).map((i) => ({
     type: 'value',
-    name: props.asTitels[i] ?? '',
+    name: props.axisTitles[i] ?? '',
     axisLabel: {
-      formatter: props.asFormatters[i] ? (v: number) => props.asFormatters[i]!(v) : undefined,
+      formatter: props.axisFormatters[i] ? (v: number) => props.axisFormatters[i]!(v) : undefined,
     },
-    // Niet vanaf nul: een doel-run beweegt vaak in een smalle band, en dan
-    // is een as vanaf nul een vlakke lijn waar niets aan te zien is.
+    // Not from zero: a target run often moves within a narrow band, and an
+    // axis from zero then shows a flat line with nothing to see.
     scale: true,
   })),
-  series: props.reeksen.map((reeks) => ({
-    name: reeks.label,
+  series: props.series.map((s) => ({
+    name: s.label,
     type: 'line',
     smooth: true,
     showSymbol: true,
     symbolSize: 8,
-    yAxisIndex: heeftTweedeAs.value ? (reeks.as ?? 0) : 0,
+    yAxisIndex: hasSecondAxis.value ? (s.axis ?? 0) : 0,
     lineStyle: { width: 2 },
-    color: reeks.kleur,
-    data: props.pad.map((p) => p.waarden?.[reeks.sleutel] ?? null),
-    // Het gekozen punt groter, zodat zichtbaar is welke tussenstand je bekijkt.
-    markPoint: props.gekozen === null ? undefined : {
+    color: s.color,
+    data: props.measurements.map((m) => m.values?.[s.key] ?? null),
+    // The selected point larger, so it shows which intermediate state you are looking at.
+    markPoint: props.selected === null ? undefined : {
       symbol: 'circle',
       symbolSize: 14,
-      itemStyle: { color: reeks.kleur, opacity: 0.35 },
+      itemStyle: { color: s.color, opacity: 0.35 },
       label: { show: false },
-      data: [{ coord: [props.gekozen, props.pad[props.gekozen]?.waarden?.[reeks.sleutel] ?? null] }],
+      data: [{ coord: [props.selected, props.measurements[props.selected]?.values?.[s.key] ?? null] }],
     },
   })),
 }));
 </script>
 
 <style scoped>
-.opt-pad { display: flex; flex-direction: column; gap: var(--primitives-space-8); }
-.op-title { font-size: 0.85em; font-weight: 600; color: var(--semantics-content-secondary-color); }
-.op-hint { margin: 0; font-size: 0.8em; color: var(--semantics-content-secondary-color); }
+.optimisation-path { display: flex; flex-direction: column; gap: var(--primitives-space-8); }
+.optimisation-path-title { font-size: 0.85em; font-weight: 600; color: var(--semantics-content-secondary-color); }
+.optimisation-path-hint { margin: 0; font-size: 0.8em; color: var(--semantics-content-secondary-color); }
 .chart { height: 220px; width: 100%; cursor: pointer; }
 </style>

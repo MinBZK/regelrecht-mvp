@@ -4,12 +4,12 @@
       <!-- De kolomkeuze staat bij de kolommen die hij vult, niet in het
            linkerpaneel waar alleen staat wat je wijzigt. -->
       <kolommen-menu
-        :varianten="variants"
-        :gekozen="selectedVariants"
+        :variants="variants"
+        :selected="selectedVariants"
         :max="MAX_VARIANTEN"
-        :titel="kortTitel"
-        voet="Tonen, niet bewerken. Geldt ook voor de persona's."
-        @update:gekozen="selectedVariants = $event"
+        :title-of="kortTitel"
+        footer="Tonen, niet bewerken. Geldt ook voor de persona's."
+        @update:selected="selectedVariants = $event"
       />
       <nldd-segmented-control size="sm" :value="detail" @change="detail = $event.detail?.value ?? detail">
         <nldd-segmented-control-item value="kern" text="Kern"></nldd-segmented-control-item>

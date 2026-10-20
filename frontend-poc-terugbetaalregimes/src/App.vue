@@ -42,11 +42,11 @@
       <!-- Meldingen van de assistent: hier en niet in het paneel, want op de
            andere pagina's is dat paneel niet gemonteerd. -->
       <assistent-meldingen
-        :meldingen="meldingen"
-        :op-assistent-pagina="route.name === 'beleid'"
-        naar-label="Naar de assistent"
-        @wis="wisMelding"
-        @ga="router.push('/beleid')"
+        :notices="meldingen"
+        :on-assistant-page="route.name === 'beleid'"
+        go-to-label="Naar de assistent"
+        @dismiss="wisMelding"
+        @go="router.push('/beleid')"
       />
       <main id="hoofdinhoud" class="app-main" tabindex="-1">
         <router-view />

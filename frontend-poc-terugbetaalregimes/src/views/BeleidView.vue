@@ -15,7 +15,7 @@
           <nldd-banner v-else-if="!ready" variant="accent">Rekenmachine wordt geladen…</nldd-banner>
 
           <template v-if="ready">
-            <paneel titel="Wet bijstellen" :subtitel="`Percentages, voeten en termijnen van ${werkversieLabel}. Elke wijziging rekent de werkversie opnieuw door.`" :samenvatting="bijstellenSamenvatting" :badge="hasChanges ? `${changeCount} bewerkt` : ''">
+            <paneel title="Wet bijstellen" :subtitle="`Percentages, voeten en termijnen van ${werkversieLabel}. Elke wijziging rekent de werkversie opnieuw door.`" :summary="bijstellenSamenvatting" :badge="hasChanges ? `${changeCount} bewerkt` : ''">
               <parameter-panel />
               <details class="geavanceerd">
                 <summary>Geavanceerd: YAML rechtstreeks bewerken</summary>
@@ -36,19 +36,19 @@
             <!-- Loopt er een gesprek, dan staat dit paneel open. Je komt terug op
                  deze pagina om te zien wat de assistent doet; dan is dichtgeklapt
                  precies het verkeerde. -->
-            <paneel titel="Beleidsassistent" subtitel="Een instructie of doel in gewone taal; de assistent wijzigt de werkversie en rekent door." samenvatting="instructie of doel" :badge="assistentLoopt ? 'bezig' : ''" :open="assistentLoopt">
+            <paneel title="Beleidsassistent" subtitle="Een instructie of doel in gewone taal; de assistent wijzigt de werkversie en rekent door." summary="instructie of doel" :badge="assistentLoopt ? 'bezig' : ''" :open="assistentLoopt">
               <assistent-panel />
             </paneel>
 
-            <paneel titel="Uitvoeringslastmodel" subtitel="Handelingen × minuten × tarief. Wat DUO het kost staat in euro's, wat het debiteuren kost in uren." :samenvatting="uitvoeringSamenvatting" :badge="handelingenGewijzigd ? 'aangepast' : ''">
+            <paneel title="Uitvoeringslastmodel" subtitle="Handelingen × minuten × tarief. Wat DUO het kost staat in euro's, wat het debiteuren kost in uren." :summary="uitvoeringSamenvatting" :badge="handelingenGewijzigd ? 'aangepast' : ''">
               <handelingen-panel />
             </paneel>
 
-            <paneel titel="Populatie" subtitel="Eén vaste steekproef van synthetische debiteuren, gewogen naar de echte aantallen. Beide kolommen rekenen met dezelfde debiteuren." :samenvatting="populatieSamenvatting">
+            <paneel title="Populatie" subtitle="Eén vaste steekproef van synthetische debiteuren, gewogen naar de echte aantallen. Beide kolommen rekenen met dezelfde debiteuren." :summary="populatieSamenvatting">
               <population-controls />
             </paneel>
 
-            <paneel titel="Varianten uit de Stand van de Uitvoering" subtitel="De vier beleidsvarianten als branches, met de kostenraming uit de brief." :samenvatting="`${variants.length} varianten · werkversie ${werkversieLabel}`">
+            <paneel title="Varianten uit de Stand van de Uitvoering" subtitle="De vier beleidsvarianten als branches, met de kostenraming uit de brief." :summary="`${variants.length} varianten · werkversie ${werkversieLabel}`">
               <varianten-lijst />
             </paneel>
           </template>

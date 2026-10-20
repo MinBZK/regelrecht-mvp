@@ -1,70 +1,73 @@
 <template>
-  <div v-if="zichtbaar.length" class="am">
+  <div v-if="visible.length" class="assistant-notices">
     <nldd-banner
-      v-for="m in zichtbaar"
-      :key="m.id"
-      :variant="m.soort === 'vraag' ? 'warning' : 'accent'"
+      v-for="n in visible"
+      :key="n.id"
+      :variant="n.kind === 'question' ? 'warning' : 'accent'"
       dismissible
-      @dismiss="$emit('wis', m.id)"
+      @dismiss="$emit('dismiss', n.id)"
     >
-      {{ m.tekst }}
+      {{ n.text }}
       <nldd-button
-        v-if="naarLabel"
+        v-if="goToLabel"
         slot="actions"
         size="sm"
         appearance="secondary"
-        :text="naarLabel"
-        @click="$emit('ga')"
+        :text="goToLabel"
+        @click="$emit('go')"
       ></nldd-button>
     </nldd-banner>
   </div>
 </template>
 
 <!--
-  Meldingen van de beleidsassistent, op elke pagina.
+  Notices from the policy assistant, on every page.
 
-  Waarom in de app en niet alleen als browsernotificatie: een notificatie
-  verschijnt pas zinvol als de pagina verborgen is. Wie binnen de app naar
-  Scenario's is gelopen heeft de pagina gewoon open, en ziet dus niets. Juist
-  dat is het geval waar het om begon: doorwerken op een ander tabblad terwijl
-  de assistent rekent.
+  Why in the app and not only as a browser notification: a notification only
+  makes sense when the page is hidden. Someone who walked over to Scenario's
+  within the app still has the page open, and so sees nothing. That is
+  exactly the case this started from: working on in another tab while the
+  assistant computes.
 
-  De melding staat hier los van het assistentpaneel, want dat paneel is op die
-  andere pagina's niet gemonteerd.
+  The notices live here, apart from the assistant panel, because that panel is
+  not mounted on those other pages.
 -->
 
 <script setup lang="ts">
 import { computed } from 'vue';
 
-/** Een melding van de assistent. Soort `vraag` wacht op de gebruiker. */
-export interface Melding {
+/**
+ * A notice from the assistant. A `question` waits for the user; any other
+ * kind (such as `done`) only informs.
+ */
+export interface Notice {
   id: number;
-  soort: string;
-  tekst: string;
+  kind: 'question' | 'done' | (string & {});
+  text: string;
 }
 
 const props = withDefaults(
   defineProps<{
-    meldingen?: Melding[];
-    /** Staat de gebruiker al op de pagina van de assistent? Dan hoeft dit niet. */
-    opAssistentPagina?: boolean;
-    /** Tekst van de knop die naar de assistent gaat; leeg laat de knop weg. */
-    naarLabel?: string;
+    notices?: Notice[];
+    /** Is the user already on the assistant's page? Then this is not needed. */
+    onAssistantPage?: boolean;
+    /** Text of the button that goes to the assistant; empty leaves it out. */
+    goToLabel?: string;
   }>(),
-  { meldingen: () => [], opAssistentPagina: false, naarLabel: '' },
+  { notices: () => [], onAssistantPage: false, goToLabel: '' },
 );
-defineEmits<{ wis: [id: number]; ga: [] }>();
+defineEmits<{ dismiss: [id: number]; go: [] }>();
 
 /**
- * Op de pagina van de assistent zelf zegt een banner niets: daar staat het
- * gesprek al in beeld. Hooguit de laatste twee, want een rij banners duwt de
- * inhoud weg.
+ * On the assistant's own page a banner says nothing: the conversation is
+ * already in view. At most the last two, because a row of banners pushes the
+ * content away.
  */
-const zichtbaar = computed(() => (props.opAssistentPagina ? [] : props.meldingen.slice(-2)));
+const visible = computed(() => (props.onAssistantPage ? [] : props.notices.slice(-2)));
 </script>
 
 <style scoped>
-.am {
+.assistant-notices {
   display: flex; flex-direction: column; gap: var(--primitives-space-8);
   padding: var(--primitives-space-8) var(--primitives-space-24);
 }

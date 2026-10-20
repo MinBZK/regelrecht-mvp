@@ -1,42 +1,43 @@
 <template>
-  <!-- De knop draagt de stand ("2 van 3"), zodat dicht ook iets zegt. De
-       varianten zelf staan in het menu, want hun titels zijn een halve regel
-       lang en er kunnen er bij komen: een rij chips groeit mee met het aantal,
-       een knop niet. -->
+  <!-- The button carries the state ("2 van 3"), so it says something while
+       closed. The variants themselves are in the menu, because their titles
+       are half a line long and more can be added: a row of chips grows with
+       their number, a button does not. -->
   <nldd-button
     expandable
     appearance="neutral-tinted"
     size="sm"
-    :text="knopTekst"
-    :disabled="!varianten.length ? true : undefined"
+    :text="buttonText"
+    :disabled="!variants.length ? true : undefined"
   >
-    <nldd-menu slot="popup" max-items="8" @select="opSelect">
+    <nldd-menu slot="popup" max-items="8" @select="onSelect">
       <nldd-menu-item
-        v-for="v in varianten"
+        v-for="v in variants"
         :key="v.id"
         type="checkbox"
-        :text="titel(v)"
+        :text="titleOf(v)"
         :value="v.id"
-        :selected="gekozen.includes(v.id) ? true : undefined"
-        :disabled="!gekozen.includes(v.id) && gekozen.length >= max ? true : undefined"
+        :selected="selected.includes(v.id) ? true : undefined"
+        :disabled="!selected.includes(v.id) && selected.length >= max ? true : undefined"
       ></nldd-menu-item>
-      <span v-if="voet" slot="footer" class="km-voet">{{ voet }}</span>
+      <span v-if="footer" slot="footer" class="column-menu-footer">{{ footer }}</span>
     </nldd-menu>
   </nldd-button>
 </template>
 
 <!--
-  Kolomkeuze naast de tabel die hij vult.
+  Column picker, next to the table it fills.
 
-  De keuze stond in het linkerpaneel, terwijl alles wat hij bepaalt (de tabel en
-  de twee grafieken) rechts staat. Links gaat over wat je wijzigt, en dit
-  wijzigt niets: het kiest wat er naast huidig recht wordt doorgerekend.
+  The choice used to sit in the left panel, while everything it decides (the
+  table and the two charts) is on the right. The left is about what you
+  change, and this changes nothing: it picks what is computed next to the law
+  in force.
 
-  Waarom een menu en geen rij chips: varianten zijn niet met een vast aantal
-  gegeven. Naast die uit het dossier maakt "Bewaar als variant" er zelf een, met
-  een titel die de gebruiker kiest. Chips zouden de kop laten groeien met elke
-  variant erbij, en hun labels waren al afgeknipt tot "nk-2: één definitie
-  van…". In het menu past de hele titel en blijft de knop even breed.
+  Why a menu and not a row of chips: the number of variants is not fixed. Next
+  to the ones from the case, "Bewaar als variant" makes new ones, with a title
+  the user chooses. Chips would make the header grow with every variant, and
+  their labels were already cut off to "nk-2: één definitie van…". The menu
+  fits the whole title and the button keeps its width.
 -->
 
 <script setup lang="ts" generic="V extends { id: string }">
@@ -44,54 +45,54 @@ import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    /** Alle beschikbare varianten, elk met een `id`. */
-    varianten: V[];
-    /** De gekozen variant-ids, in keuzevolgorde. */
-    gekozen: string[];
-    /** Hoeveel varianten er naast huidig recht passen. */
+    /** Every available variant, each with an `id`. */
+    variants: V[];
+    /** The selected variant ids, in the order they were picked. */
+    selected: string[];
+    /** How many variants fit next to the law in force. */
     max?: number;
-    /** Hoe een variant zijn naam schrijft; per casus net anders. */
-    titel: (variant: V) => string;
+    /** How a variant writes its name; slightly different per case. */
+    titleOf: (variant: V) => string;
     /**
-     * Korte regel onder het menu, voor wat je niet uit de lijst afleidt. Houd hem
-     * kort: hij bepaalt mede de hoogte van het menu, en een alinea leest hier
-     * niemand. Leeg laten mag.
+     * A short line under the menu, for what the list does not tell. Keep it
+     * short: it partly sets the menu's height, and nobody reads a paragraph
+     * here. May be left empty.
      */
-    voet?: string;
+    footer?: string;
   }>(),
-  { max: 3, voet: '' },
+  { max: 3, footer: '' },
 );
-const emit = defineEmits<{ 'update:gekozen': [gekozen: string[]] }>();
+const emit = defineEmits<{ 'update:selected': [selected: string[]] }>();
 
 /**
- * Dicht moet de knop zeggen wat er staat. "Kolommen" alleen zou een knop zijn
- * waarvan je de stand niet ziet zonder hem te openen, en dat is precies wat het
- * paneel hiervoor wel kon.
+ * Closed, the button has to say what is shown. "Kolommen" alone would be a
+ * button whose state you cannot see without opening it, which is exactly
+ * what the panel before it could do.
  */
-const knopTekst = computed(() => {
-  if (!props.varianten.length) return 'Kolommen: geen varianten';
-  if (!props.gekozen.length) return `Kolommen: alleen huidig recht`;
-  return `Kolommen: ${props.gekozen.length} van ${props.max}`;
+const buttonText = computed(() => {
+  if (!props.variants.length) return 'Kolommen: geen varianten';
+  if (!props.selected.length) return `Kolommen: alleen huidig recht`;
+  return `Kolommen: ${props.selected.length} van ${props.max}`;
 });
 
 /**
- * Het menu-item vertelt zelf welk item is aangeklikt; de selectiestand komt van
- * ons, zodat het maximum ook klopt als er snel achter elkaar geklikt wordt.
+ * The menu item says which item was clicked; the selection state comes from
+ * us, so the maximum holds even when items are clicked in quick succession.
  */
-function opSelect(event: Event) {
+function onSelect(event: Event) {
   const item = (event.target as Element | null)?.closest<HTMLElement & { value?: unknown }>('nldd-menu-item');
   if (!item) return;
   const id = String(item.value);
-  const aan = props.gekozen.includes(id);
-  if (!aan && props.gekozen.length >= props.max) return;
-  emit('update:gekozen', aan ? props.gekozen.filter((x) => x !== id) : [...props.gekozen, id]);
+  const isOn = props.selected.includes(id);
+  if (!isOn && props.selected.length >= props.max) return;
+  emit('update:selected', isOn ? props.selected.filter((x) => x !== id) : [...props.selected, id]);
 }
 </script>
 
 <style scoped>
-/* De voetregel is de uitleg die eerst onder het paneel stond. Het menu laat
-   zijn footer onopgemaakt, dus de marge en de toon komen van hier. */
-.km-voet {
+/* The footer line is the explanation that used to sit under the panel. The
+   menu leaves its footer unstyled, so the margin and the tone come from here. */
+.column-menu-footer {
   display: block;
   padding: var(--primitives-space-4) var(--primitives-space-12) var(--primitives-space-8);
   font-size: 0.8em;

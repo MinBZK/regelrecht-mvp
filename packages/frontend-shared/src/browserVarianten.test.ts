@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 /**
- * Een browser-variant is het enige dat een gebruiker in deze demo maakt en
- * niet zo weer terugheeft. Deze test legt vast dat hij een ververs overleeft,
- * dat hij nooit een ingecheckte variant kan overschaduwen, en dat hij het
- * meldt als het corpus onder hem vandaan is gewijzigd.
+ * A browser variant is the only thing a user makes in this demo that they
+ * cannot simply get back. These tests pin that it survives a reload, that it
+ * can never shadow a checked-in variant, and that it reports when the corpus
+ * changed underneath it.
  */
-function verseOpslag() {
+function freshStorage() {
   const data = new Map<string, string>();
   return {
     getItem: (k: string) => (data.has(k) ? data.get(k)! : null),
@@ -18,322 +18,431 @@ function verseOpslag() {
   };
 }
 
-let opslag: ReturnType<typeof verseOpslag>;
+let storage: ReturnType<typeof freshStorage>;
 
-async function laad() {
+async function load() {
   vi.resetModules();
-  const stand = await import('./useBewaardeStand');
-  stand.stelCasusIn('testcasus');
+  const persisted = await import('./useBewaardeStand');
+  persisted.setCase('testcase');
   return import('./browserVarianten');
 }
 
-describe('browser-varianten', () => {
+describe('browser variants', () => {
   beforeEach(() => {
-    opslag = verseOpslag();
-    vi.stubGlobal('localStorage', new Proxy(opslag, {
-      ownKeys: () => [...opslag._data.keys()],
+    storage = freshStorage();
+    vi.stubGlobal('localStorage', new Proxy(storage, {
+      ownKeys: () => [...storage._data.keys()],
       getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
     }));
     vi.stubGlobal('window', { location: { reload: vi.fn() } });
   });
 
-  const bestand = (yamlTekst = 'value: 2', origineel = 'value: 1') => ({
-    pad: 'laws/wet/2025-01-01.yaml',
-    yaml: yamlTekst,
-    origineel,
+  const file = (yamlText = 'value: 2', original = 'value: 1') => ({
+    path: 'laws/wet/2025-01-01.yaml',
+    yaml: yamlText,
+    original,
   });
 
-  it('bewaart een variant in de vorm die de lawStore kent', async () => {
-    const { bewaarVariant } = await laad();
+  it('saves a variant in the shape the lawStore knows', async () => {
+    const { saveVariant } = await load();
 
-    const v = bewaarVariant({ titel: 'Voet naar 90%', bestanden: [bestand()] });
+    const v = saveVariant({ title: 'Voet naar 90%', files: [file()] });
 
     expect(v).toMatchObject({
       id: 'eigen-voet-naar-90',
       title: 'Voet naar 90%',
-      herkomst: 'browser',
+      origin: 'browser',
       files: [{ path: 'laws/wet/2025-01-01.yaml', base: 'laws/wet/2025-01-01.yaml' }],
     });
   });
 
-  it('geeft de bewaarde YAML terug per bestand', async () => {
-    const { bewaarVariant, browserVariantYaml } = await laad();
-    const v = bewaarVariant({ titel: 'Test', bestanden: [bestand('value: 42')] });
+  it('returns the saved YAML per file', async () => {
+    const { saveVariant, browserVariantYaml } = await load();
+    const v = saveVariant({ title: 'Test', files: [file('value: 42')] });
 
     expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 42');
     expect(browserVariantYaml(v.id, 'laws/andere.yaml')).toBe(null);
   });
 
-  it('overleeft een ververs', async () => {
-    const eerste = await laad();
-    eerste.bewaarVariant({ titel: 'Blijft staan', bestanden: [bestand()] });
+  it('survives a reload', async () => {
+    const first = await load();
+    first.saveVariant({ title: 'Blijft staan', files: [file()] });
 
-    // Nieuwe moduleinstantie, zelfde localStorage: dit is wat een ververs doet.
-    const opnieuw = await laad();
+    // A new module instance with the same localStorage: that is what a reload does.
+    const again = await load();
 
-    expect(opnieuw.browserVarianten()).toHaveLength(1);
-    expect(opnieuw.browserVarianten()[0].title).toBe('Blijft staan');
+    expect(again.browserVariants()).toHaveLength(1);
+    expect(again.browserVariants()[0]?.title).toBe('Blijft staan');
   });
 
-  it('blijft staan als de gebruiker opnieuw begint', async () => {
-    const { bewaarVariant } = await laad();
-    const stand = await import('./useBewaardeStand');
-    bewaarVariant({ titel: 'Blijft', bestanden: [bestand()] });
-    stand.bewaarStand('kolommen', ['a1']);
+  it('stays when the user starts over', async () => {
+    const { saveVariant } = await load();
+    const persisted = await import('./useBewaardeStand');
+    saveVariant({ title: 'Blijft', files: [file()] });
+    persisted.writePersisted('kolommen', ['a1']);
 
-    stand.wisStand();
+    persisted.resetPersistedState();
 
-    const opnieuw = await laad();
-    expect(opnieuw.browserVarianten()).toHaveLength(1);
+    const again = await load();
+    expect(again.browserVariants()).toHaveLength(1);
   });
 
-  it('nummert door bij een dubbele titel in plaats van te overschrijven', async () => {
-    const { bewaarVariant, browserVarianten } = await laad();
+  it('numbers a duplicate title instead of overwriting', async () => {
+    const { saveVariant, browserVariants } = await load();
 
-    const a = bewaarVariant({ titel: 'Zelfde naam', bestanden: [bestand('a: 1')] });
-    const b = bewaarVariant({ titel: 'Zelfde naam', bestanden: [bestand('b: 2')] });
+    const a = saveVariant({ title: 'Zelfde naam', files: [file('a: 1')] });
+    const b = saveVariant({ title: 'Zelfde naam', files: [file('b: 2')] });
 
     expect(a.id).toBe('eigen-zelfde-naam');
     expect(b.id).toBe('eigen-zelfde-naam-2');
-    expect(browserVarianten()).toHaveLength(2);
+    expect(browserVariants()).toHaveLength(2);
   });
 
-  // Een eigen variant die 'a1' heet zou de ingecheckte a1 uit variants.json
-  // overschaduwen, en dan rekent de demo met iets anders dan de kolomkop zegt.
-  it('kan een ingecheckte variant niet overschaduwen', async () => {
-    const { bewaarVariant, isBrowserVariant } = await laad();
+  // A browser variant called 'a1' would shadow the checked-in a1 from
+  // variants.json, and the demo would then compute with something other than
+  // the column header says.
+  it('cannot shadow a checked-in variant', async () => {
+    const { saveVariant, isBrowserVariant } = await load();
 
-    const v = bewaarVariant({ titel: 'a1', bestanden: [bestand()], bestaandeIds: ['a1', 'a2'] });
+    const v = saveVariant({ title: 'a1', files: [file()], takenIds: ['a1', 'a2'] });
 
     expect(v.id).not.toBe('a1');
     expect(isBrowserVariant(v.id)).toBe(true);
     expect(isBrowserVariant('a1')).toBe(false);
   });
 
-  it('weigert een variant zonder titel of zonder bewerkingen', async () => {
-    const { bewaarVariant } = await laad();
+  it('refuses a variant without a title or without edits', async () => {
+    const { saveVariant } = await load();
 
-    expect(() => bewaarVariant({ titel: '  ', bestanden: [bestand()] })).toThrow(/titel/i);
-    expect(() => bewaarVariant({ titel: 'Leeg', bestanden: [] })).toThrow(/niets bewerkt/i);
+    expect(() => saveVariant({ title: '  ', files: [file()] })).toThrow(/titel/i);
+    expect(() => saveVariant({ title: 'Leeg', files: [] })).toThrow(/niets bewerkt/i);
   });
 
-  it('verwijdert een variant', async () => {
-    const { bewaarVariant, verwijderVariant, browserVarianten } = await laad();
-    const v = bewaarVariant({ titel: 'Weg ermee', bestanden: [bestand()] });
+  it('deletes a variant', async () => {
+    const { saveVariant, deleteVariant, browserVariants } = await load();
+    const v = saveVariant({ title: 'Weg ermee', files: [file()] });
 
-    expect(verwijderVariant(v.id)).toBe(true);
-    expect(browserVarianten()).toHaveLength(0);
-    expect(verwijderVariant(v.id)).toBe(false);
+    expect(deleteVariant(v.id)).toBe(true);
+    expect(browserVariants()).toHaveLength(0);
+    expect(deleteVariant(v.id)).toBe(false);
   });
 
-  describe('bijwerken', () => {
-    // Zonder dit kon een variant alleen groeien: wie in zijn eigen variant
-    // doorwerkte kreeg er bij elke keer bewaren een bijna-gelijke naast.
-    it('overschrijft dezelfde variant in plaats van er een naast te zetten', async () => {
-      const { bewaarVariant, werkVariantBij, browserVarianten, browserVariantYaml } = await laad();
-      const v = bewaarVariant({ titel: 'Mijn variant', bestanden: [bestand('value: 2')] });
+  describe('updating', () => {
+    // Without this a variant could only grow: someone who kept working in their
+    // own variant got a nearly identical one next to it on every save.
+    it('overwrites the same variant instead of adding one next to it', async () => {
+      const { saveVariant, updateVariant, browserVariants, browserVariantYaml } = await load();
+      const v = saveVariant({ title: 'Mijn variant', files: [file('value: 2')] });
 
-      const { variant: bij } = werkVariantBij(v.id, { bestanden: [bestand('value: 3')] });
+      const { variant: updated } = updateVariant(v.id, { files: [file('value: 3')] });
 
-      expect(bij.id).toBe(v.id);
-      expect(browserVarianten()).toHaveLength(1);
+      expect(updated.id).toBe(v.id);
+      expect(browserVariants()).toHaveLength(1);
       expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 3');
     });
 
-    it('houdt de titel als er geen nieuwe wordt meegegeven', async () => {
-      const { bewaarVariant, werkVariantBij } = await laad();
-      const v = bewaarVariant({ titel: 'Blijft heten', bestanden: [bestand()] });
+    it('keeps the title when no new one is given', async () => {
+      const { saveVariant, updateVariant } = await load();
+      const v = saveVariant({ title: 'Blijft heten', files: [file()] });
 
-      expect(werkVariantBij(v.id, { bestanden: [bestand('value: 9')] }).variant.title).toBe('Blijft heten');
+      expect(updateVariant(v.id, { files: [file('value: 9')] }).variant.title).toBe('Blijft heten');
     });
 
-    it('hernoemt als er wel een titel bij zit, met hetzelfde id', async () => {
-      const { bewaarVariant, werkVariantBij } = await laad();
-      const v = bewaarVariant({ titel: 'Oude naam', bestanden: [bestand()] });
+    it('renames when a title is given, keeping the id', async () => {
+      const { saveVariant, updateVariant } = await load();
+      const v = saveVariant({ title: 'Oude naam', files: [file()] });
 
-      const { variant: bij } = werkVariantBij(v.id, { bestanden: [bestand()], titel: 'Nieuwe naam' });
+      const { variant: updated } = updateVariant(v.id, { files: [file()], title: 'Nieuwe naam' });
 
-      // Het id blijft: anders verwijst een bewaarde kolomkeuze naar niets meer.
-      expect(bij.id).toBe(v.id);
-      expect(bij.title).toBe('Nieuwe naam');
+      // The id stays: otherwise a saved column choice points at nothing.
+      expect(updated.id).toBe(v.id);
+      expect(updated.title).toBe('Nieuwe naam');
     });
 
-    // Bijwerken overschrijft werk dat er al stond. Gaat het activeren daarna
-    // mis, dan moet de vorige inhoud terug kunnen komen; anders blijft er een
-    // variant staan die nooit meer laadt.
-    it('zet de vorige inhoud terug met herstel()', async () => {
-      const { bewaarVariant, werkVariantBij, browserVariantYaml, browserVariant } = await laad();
-      const v = bewaarVariant({ titel: 'Herstel', bestanden: [bestand('value: 2')] });
-      const gemaakt = browserVariant(v.id)?.gemaakt;
-      expect(gemaakt).toBeTruthy();
+    // Updating overwrites work that was already there. When activating it
+    // fails afterwards, the previous content has to be able to come back;
+    // otherwise a variant stays behind that never loads again.
+    it('restores the previous content with restore()', async () => {
+      const { saveVariant, updateVariant, browserVariantYaml, browserVariant } = await load();
+      const v = saveVariant({ title: 'Herstel', files: [file('value: 2')] });
+      const created = browserVariant(v.id)?.created;
+      expect(created).toBeTruthy();
 
-      const { herstel } = werkVariantBij(v.id, { bestanden: [bestand('value: 3')], titel: 'Andere naam' });
+      const { restore } = updateVariant(v.id, { files: [file('value: 3')], title: 'Andere naam' });
       expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 3');
 
-      herstel();
+      restore();
 
-      const na = browserVariant(v.id);
-      expect(na).not.toBeNull();
+      const after = browserVariant(v.id);
+      expect(after).not.toBeNull();
       expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 2');
-      expect(na?.titel).toBe('Herstel');
-      expect(na?.gemaakt).toBe(gemaakt);
-      expect(na?.bijgewerkt).toBeUndefined();
+      expect(after?.title).toBe('Herstel');
+      expect(after?.created).toBe(created);
+      expect(after?.updated).toBeUndefined();
     });
 
-    it('laat na herstel geen tweede variant achter', async () => {
-      const { bewaarVariant, werkVariantBij, browserVarianten } = await laad();
-      const v = bewaarVariant({ titel: 'Eén blijft', bestanden: [bestand()] });
+    it('leaves no second variant behind after restore', async () => {
+      const { saveVariant, updateVariant, browserVariants } = await load();
+      const v = saveVariant({ title: 'Eén blijft', files: [file()] });
 
-      werkVariantBij(v.id, { bestanden: [bestand('value: 5')] }).herstel();
+      updateVariant(v.id, { files: [file('value: 5')] }).restore();
 
-      expect(browserVarianten()).toHaveLength(1);
+      expect(browserVariants()).toHaveLength(1);
     });
 
-    it('draagt `bijgewerkt` mee naar de vorm die de app leest', async () => {
-      const { bewaarVariant, werkVariantBij, browserVarianten } = await laad();
-      const v = bewaarVariant({ titel: 'Zichtbaar', bestanden: [bestand()] });
+    it('carries `updated` into the shape the app reads', async () => {
+      const { saveVariant, updateVariant, browserVariants } = await load();
+      const v = saveVariant({ title: 'Zichtbaar', files: [file()] });
 
-      // Vers bewaard: nog nooit bijgewerkt.
-      expect(browserVarianten()[0].bijgewerkt).toBe(null);
+      // Freshly saved: never updated.
+      expect(browserVariants()[0]?.updated).toBe(null);
 
-      werkVariantBij(v.id, { bestanden: [bestand('value: 6')] });
+      updateVariant(v.id, { files: [file('value: 6')] });
 
-      expect(browserVarianten()[0].bijgewerkt).toBeTruthy();
+      expect(browserVariants()[0]?.updated).toBeTruthy();
     });
 
-    it('houdt `gemaakt` staan en noteert wanneer er bijgewerkt is', async () => {
-      const { bewaarVariant, werkVariantBij, browserVariant } = await laad();
-      const v = bewaarVariant({ titel: 'Tijden', bestanden: [bestand()] });
-      const gemaakt = browserVariant(v.id)?.gemaakt;
-      expect(gemaakt).toBeTruthy();
+    it('keeps `created` and records when it was updated', async () => {
+      const { saveVariant, updateVariant, browserVariant } = await load();
+      const v = saveVariant({ title: 'Tijden', files: [file()] });
+      const created = browserVariant(v.id)?.created;
+      expect(created).toBeTruthy();
 
-      werkVariantBij(v.id, { bestanden: [bestand('value: 4')] });
+      updateVariant(v.id, { files: [file('value: 4')] });
 
-      const na = browserVariant(v.id);
-      expect(na).not.toBeNull();
-      expect(na?.gemaakt).toBe(gemaakt);
-      expect(na?.bijgewerkt).toBeTruthy();
+      const after = browserVariant(v.id);
+      expect(after).not.toBeNull();
+      expect(after?.created).toBe(created);
+      expect(after?.updated).toBeTruthy();
     });
 
-    it('ververst de vingerafdruk, zodat drift van de nieuwe basis uitgaat', async () => {
-      const { bewaarVariant, werkVariantBij, controleerDrift } = await laad();
-      const v = bewaarVariant({ titel: 'Drift', bestanden: [bestand('value: 2', 'value: 1')] });
+    it('refreshes the fingerprint, so drift starts from the new base', async () => {
+      const { saveVariant, updateVariant, checkDrift } = await load();
+      const v = saveVariant({ title: 'Drift', files: [file('value: 2', 'value: 1')] });
 
-      // De wet is gewijzigd; opnieuw bewaren gebeurt op die nieuwe tekst.
-      werkVariantBij(v.id, { bestanden: [bestand('value: 3', 'value: 1b')] });
+      // The law changed; saving again happens on that new text.
+      updateVariant(v.id, { files: [file('value: 3', 'value: 1b')] });
 
-      expect(controleerDrift(v.id, () => 'value: 1b').afgedreven).toBe(false);
-      expect(controleerDrift(v.id, () => 'value: 1').afgedreven).toBe(true);
+      expect(checkDrift(v.id, () => 'value: 1b').drifted).toBe(false);
+      expect(checkDrift(v.id, () => 'value: 1').drifted).toBe(true);
     });
 
-    it('overleeft een ververs', async () => {
-      const eerste = await laad();
-      const v = eerste.bewaarVariant({ titel: 'Na ververs', bestanden: [bestand('value: 2')] });
-      eerste.werkVariantBij(v.id, { bestanden: [bestand('value: 7')] });
+    it('survives a reload', async () => {
+      const first = await load();
+      const v = first.saveVariant({ title: 'Na ververs', files: [file('value: 2')] });
+      first.updateVariant(v.id, { files: [file('value: 7')] });
 
-      const tweede = await laad();
-      expect(tweede.browserVarianten()).toHaveLength(1);
-      expect(tweede.browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 7');
+      const second = await load();
+      expect(second.browserVariants()).toHaveLength(1);
+      expect(second.browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 7');
     });
 
-    it('weigert een variant die hier niet staat', async () => {
-      const { werkVariantBij } = await laad();
+    it('refuses a variant that is not stored here', async () => {
+      const { updateVariant } = await load();
 
-      expect(() => werkVariantBij('eigen-bestaat-niet', { bestanden: [bestand()] })).toThrow(/niet in deze browser/);
+      expect(() => updateVariant('eigen-bestaat-niet', { files: [file()] })).toThrow(/niet in deze browser/);
     });
 
-    it('weigert een lege set bestanden', async () => {
-      const { bewaarVariant, werkVariantBij } = await laad();
-      const v = bewaarVariant({ titel: 'Leeg', bestanden: [bestand()] });
+    it('refuses an empty set of files', async () => {
+      const { saveVariant, updateVariant } = await load();
+      const v = saveVariant({ title: 'Leeg', files: [file()] });
 
-      expect(() => werkVariantBij(v.id, { bestanden: [] })).toThrow(/niets bewerkt/);
+      expect(() => updateVariant(v.id, { files: [] })).toThrow(/niets bewerkt/);
     });
   });
 
   describe('drift', () => {
-    it('meldt niets zolang het corpus gelijk blijft', async () => {
-      const { bewaarVariant, controleerDrift } = await laad();
-      const v = bewaarVariant({ titel: 'Stabiel', bestanden: [bestand('value: 2', 'value: 1')] });
+    it('reports nothing while the corpus stays the same', async () => {
+      const { saveVariant, checkDrift } = await load();
+      const v = saveVariant({ title: 'Stabiel', files: [file('value: 2', 'value: 1')] });
 
-      expect(controleerDrift(v.id, () => 'value: 1')).toEqual({
-        afgedreven: false, paden: [], onbekend: false,
+      expect(checkDrift(v.id, () => 'value: 1')).toEqual({
+        drifted: false, paths: [], unknown: false,
       });
     });
 
-    // De wet is onder de variant vandaan gewijzigd: de bewerking is gemaakt op
-    // een tekst die er niet meer zo staat.
-    it('meldt het bestand waarvan de basis is gewijzigd', async () => {
-      const { bewaarVariant, controleerDrift } = await laad();
-      const v = bewaarVariant({ titel: 'Afgedreven', bestanden: [bestand('value: 2', 'value: 1')] });
+    // The law changed underneath the variant: the edit was made on a text that
+    // no longer reads that way.
+    it('reports the file whose base changed', async () => {
+      const { saveVariant, checkDrift } = await load();
+      const v = saveVariant({ title: 'Afgedreven', files: [file('value: 2', 'value: 1')] });
 
-      const uitkomst = controleerDrift(v.id, () => 'value: 999');
+      const result = checkDrift(v.id, () => 'value: 999');
 
-      expect(uitkomst.afgedreven).toBe(true);
-      expect(uitkomst.paden).toEqual(['laws/wet/2025-01-01.yaml']);
+      expect(result.drifted).toBe(true);
+      expect(result.paths).toEqual(['laws/wet/2025-01-01.yaml']);
     });
 
-    // Een variant van voor deze controle draagt geen origineel mee. Dan valt
-    // er niets te vergelijken en zegt de app liever niets dan iets onwaars.
-    it('zegt onbekend als de variant geen uitgangspunt meedraagt', async () => {
-      const { bewaarVariant, controleerDrift } = await laad();
-      const v = bewaarVariant({
-        titel: 'Oud',
-        bestanden: [{ pad: 'laws/wet/2025-01-01.yaml', yaml: 'value: 2' }],
+    // A variant from before this check carries no original. Then there is
+    // nothing to compare, and the app would rather say nothing than something
+    // untrue.
+    it('says unknown when the variant carries no starting point', async () => {
+      const { saveVariant, checkDrift } = await load();
+      const v = saveVariant({
+        title: 'Oud',
+        files: [{ path: 'laws/wet/2025-01-01.yaml', yaml: 'value: 2' }],
       });
 
-      const uitkomst = controleerDrift(v.id, () => 'value: 999');
+      const result = checkDrift(v.id, () => 'value: 999');
 
-      expect(uitkomst).toEqual({ afgedreven: false, paden: [], onbekend: true });
+      expect(result).toEqual({ drifted: false, paths: [], unknown: true });
     });
 
-    it('slaat een bestand over dat de app nu niet kent', async () => {
-      const { bewaarVariant, controleerDrift } = await laad();
-      const v = bewaarVariant({ titel: 'Verdwenen', bestanden: [bestand()] });
+    it('skips a file the app does not know now', async () => {
+      const { saveVariant, checkDrift } = await load();
+      const v = saveVariant({ title: 'Verdwenen', files: [file()] });
 
-      expect(controleerDrift(v.id, () => undefined).afgedreven).toBe(false);
+      expect(checkDrift(v.id, () => undefined).drifted).toBe(false);
     });
 
-    // De basistekst wordt niet nog een keer bewaard: een wet is hier ~50 KB en
-    // de opslag gaat rond de 5 MB dicht.
-    it('bewaart een vingerafdruk en niet de hele basistekst', async () => {
-      const { bewaarVariant, browserVariant } = await laad();
-      const groot = `x: ${'y'.repeat(5000)}`;
-      const v = bewaarVariant({
-        titel: 'Groot',
-        bestanden: [{ pad: 'laws/a.yaml', yaml: 'bewerkt', origineel: groot }],
+    // The base text is not stored a second time: a law here is ~50 KB and
+    // storage fills up around 5 MB.
+    it('stores a fingerprint and not the whole base text', async () => {
+      const { saveVariant, browserVariant } = await load();
+      const large = `x: ${'y'.repeat(5000)}`;
+      const v = saveVariant({
+        title: 'Groot',
+        files: [{ path: 'laws/a.yaml', yaml: 'bewerkt', original: large }],
       });
 
-      const bewaard = browserVariant(v.id)?.bestanden[0];
-      // The type has no `origineel`; the test checks that none was stored.
-      expect((bewaard as Record<string, unknown> | undefined)?.origineel).toBeUndefined();
-      expect(bewaard?.origineelHash?.length).toBeLessThan(20);
+      const stored = browserVariant(v.id)?.files[0];
+      // The type has no `original`; the test checks that none was stored.
+      expect((stored as Record<string, unknown> | undefined)?.original).toBeUndefined();
+      expect(stored?.originalHash?.length).toBeLessThan(20);
     });
   });
 
-  describe('vingerafdruk', () => {
-    it('verschilt zodra de tekst verandert', async () => {
-      const { vingerafdruk } = await laad();
-      expect(vingerafdruk('value: 1')).toBe(vingerafdruk('value: 1'));
-      expect(vingerafdruk('value: 1')).not.toBe(vingerafdruk('value: 2'));
-      expect(vingerafdruk('ab')).not.toBe(vingerafdruk('ba'));
-      expect(vingerafdruk(null)).toBe(null);
+  describe('fingerprint', () => {
+    it('differs as soon as the text changes', async () => {
+      const { fingerprint } = await load();
+      expect(fingerprint('value: 1')).toBe(fingerprint('value: 1'));
+      expect(fingerprint('value: 1')).not.toBe(fingerprint('value: 2'));
+      expect(fingerprint('ab')).not.toBe(fingerprint('ba'));
+      expect(fingerprint(null)).toBe(null);
     });
   });
 
-  // Een "bewaard" dat na een ververs weg blijkt te zijn, is erger dan een
-  // weigering: de gebruiker denkt dan dat zijn werk veilig staat.
-  it('meldt het hard als de opslag vol zit in plaats van stil te falen', async () => {
-    const { bewaarVariant, browserVarianten } = await laad();
-    const echteSet = opslag.setItem;
-    opslag.setItem = () => { throw new DOMException('vol', 'QuotaExceededError'); };
+  // Variants saved before the code was translated carry Dutch field names.
+  // They must keep working, and come back in the current format.
+  describe('variants saved in the old format', () => {
+    const key = 'testcase:v1:varianten';
+    const oldFormat = (fingerprintOfBase: string | null) => [{
+      id: 'eigen-oud-formaat',
+      titel: 'Oud formaat',
+      gemaakt: '2026-09-01T10:00:00.000Z',
+      bijgewerkt: '2026-09-02T10:00:00.000Z',
+      basis: 'a1',
+      bestanden: [{ pad: 'laws/wet/2025-01-01.yaml', yaml: 'value: 2', origineelHash: fingerprintOfBase }],
+    }];
+
+    it('are read under their old field names', async () => {
+      const { fingerprint } = await load();
+      storage.setItem(key, JSON.stringify(oldFormat(fingerprint('value: 1'))));
+
+      const { browserVariants, browserVariantYaml, checkDrift } = await load();
+
+      expect(browserVariants()).toEqual([{
+        id: 'eigen-oud-formaat',
+        title: 'Oud formaat',
+        files: [{ path: 'laws/wet/2025-01-01.yaml', base: 'laws/wet/2025-01-01.yaml' }],
+        origin: 'browser',
+        created: '2026-09-01T10:00:00.000Z',
+        updated: '2026-09-02T10:00:00.000Z',
+        base: 'a1',
+      }]);
+      expect(browserVariantYaml('eigen-oud-formaat', 'laws/wet/2025-01-01.yaml')).toBe('value: 2');
+      expect(checkDrift('eigen-oud-formaat', () => 'value: 1')).toEqual({ drifted: false, paths: [], unknown: false });
+      expect(checkDrift('eigen-oud-formaat', () => 'value: 9').drifted).toBe(true);
+    });
+
+    it('are written back in the current format', async () => {
+      storage.setItem(key, JSON.stringify(oldFormat(null)));
+
+      await load();
+
+      const stored = JSON.parse(storage.getItem(key) ?? '[]');
+      expect(stored).toEqual([{
+        id: 'eigen-oud-formaat',
+        title: 'Oud formaat',
+        created: '2026-09-01T10:00:00.000Z',
+        updated: '2026-09-02T10:00:00.000Z',
+        base: 'a1',
+        files: [{ path: 'laws/wet/2025-01-01.yaml', yaml: 'value: 2', originalHash: null }],
+      }]);
+    });
+  });
+
+  describe('loading', () => {
+    const key = 'testcase:v1:varianten';
+    const current = [{
+      id: 'eigen-huidig', title: 'Huidig', created: '2026-10-01T10:00:00.000Z', updated: null, base: null,
+      files: [{ path: 'laws/a.yaml', yaml: 'value: 1', originalHash: null }],
+    }];
+
+    // An import sort could load this module before the app calls setCase().
+    // Storage then cannot be read, and the variants must not be overwritten
+    // with the empty fallback once the case is set. Vitest awaits between
+    // module bodies, so it cannot reproduce the browser's order exactly; this
+    // checks that loading without a case writes nothing.
+    it('leaves stored variants alone when it loads before setCase()', async () => {
+      storage.setItem(key, JSON.stringify([{ id: 'eigen-oud', titel: 'Oud', gemaakt: 'x', bestanden: [] }]));
+      vi.resetModules();
+      const variants = await import('./browserVarianten');
+      (await import('./useBewaardeStand')).setCase('testcase');
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(JSON.parse(storage.getItem(key)!)).toEqual([{ id: 'eigen-oud', titel: 'Oud', gemaakt: 'x', bestanden: [] }]);
+      expect(variants.browserVariants()).toEqual([]);
+    });
+
+    it('does not write when everything is already in the current format', async () => {
+      const text = JSON.stringify(current);
+      storage.setItem(key, text);
+
+      const { browserVariants } = await load();
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(storage.getItem(key)).toBe(text);
+      expect(browserVariants()).toHaveLength(1);
+    });
+
+    it('creates nothing for a user without variants', async () => {
+      await load();
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(storage.getItem(key)).toBe(null);
+    });
+
+    it('skips records it cannot read instead of failing to load', async () => {
+      storage.setItem(key, JSON.stringify([
+        null,
+        { titel: 'Zonder id', bestanden: [] },
+        { id: 'eigen-raar', titel: 'Rare bestanden', gemaakt: 'x', bestanden: { pad: 'laws/a.yaml' } },
+        { id: 'eigen-gat', titel: 'Met een gat', gemaakt: 'x', bestanden: [null, { pad: 'laws/a.yaml', yaml: 'v: 1' }] },
+      ]));
+
+      const { browserVariants, browserVariantYaml } = await load();
+
+      expect(browserVariants().map((v) => v.id).sort()).toEqual(['eigen-gat', 'eigen-raar']);
+      expect(browserVariantYaml('eigen-gat', 'laws/a.yaml')).toBe('v: 1');
+      expect(browserVariantYaml('eigen-raar', 'laws/a.yaml')).toBe(null);
+    });
+  });
+
+  // A "saved" that turns out to be gone after a reload is worse than a
+  // refusal: the user then believes their work is safe.
+  it('fails loudly when storage is full instead of silently', async () => {
+    const { saveVariant, browserVariants } = await load();
+    const realSet = storage.setItem;
+    storage.setItem = () => { throw new DOMException('vol', 'QuotaExceededError'); };
 
     try {
-      expect(() => bewaarVariant({ titel: 'Past niet', bestanden: [bestand()] }))
+      expect(() => saveVariant({ title: 'Past niet', files: [file()] }))
         .toThrow(/opslag zit vol|staat uit/i);
     } finally {
-      opslag.setItem = echteSet;
+      storage.setItem = realSet;
     }
 
-    expect(browserVarianten()).toHaveLength(0);
+    expect(browserVariants()).toHaveLength(0);
   });
 });

@@ -108,7 +108,7 @@ import CategorieUitleg from '../components/casus/CategorieUitleg.vue';
 import PeildataTijdlijn from '../components/casus/PeildataTijdlijn.vue';
 import BerekeningSheet from '../components/casus/BerekeningSheet.vue';
 import { datumLabel, sectorLabel, variantVanaf } from '../lib/nieuwkomerFacts.js';
-import { bewaardeRef } from '../composables/useBewaardeStand.js';
+import { persistedRef } from '../composables/useBewaardeStand.js';
 
 const { ready, initError, lawIndex, initEngine } = useEngine();
 const { initStore, version, variants, werkversie, changeCount } = useLawStore();
@@ -119,7 +119,7 @@ const selected = ref(null);
 // Meerdere regelingen tegelijk, net als op het beleidstabblad: de impact van
 // varianten op één leerling is pas te zien als ze naast elkaar staan, niet als
 // je ze twee aan twee moet vergelijken. Huidig recht staat altijd links.
-const variantIds = bewaardeRef('casussen.varianten', []);
+const variantIds = persistedRef('casussen.varianten', []);
 const variantVanafDatum = computed(() => {
   // De vroegste ingangsdatum onder de gekozen varianten: daarvoor zijn alle
   // kolommen per definitie gelijk.
