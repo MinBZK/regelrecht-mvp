@@ -382,7 +382,7 @@ async fn the_ggd_records_an_examination_and_the_card_follows() {
     assert_eq!(ggd["cel"], json!("ggd_wilgendaal"));
     assert_eq!(
         ggd["handelingen"][0]["feit"],
-        json!("regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek")
+        json!("regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht")
     );
     let (status, gram) = send(
         &app,
@@ -390,7 +390,7 @@ async fn the_ggd_records_an_examination_and_the_card_follows() {
             "/chronolexografie/api/executogrammen",
             json!({
                 "cel": "ggd_wilgendaal",
-                "feit": "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek",
+                "feit": "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht",
                 "velden": {
                     "bsn_aanvrager": "999990032",
                     "datum_onderzoek": "2026-10-16",

@@ -1276,56 +1276,18 @@ articles:
       # Lid 1. Lid 2 (een kortere termijn als redelijke grond bestaat voor de
       # verwachting dat de gehandicapte korter in aanmerking komt) en lid 3
       # (tijdelijk verblijf in Nederland) zijn niet gemodelleerd.
-      open_terms:
-        # Of aan de aanvrager eerder een kaart is verstrekt, zoals artikel 2,
-        # tweede lid, onder a en b, van de Regeling gehandicaptenparkeerkaart
-        # het vraagt. Een feit dat elke verstrekkende instantie uit haar eigen
-        # besluiten kent: een kaart van een andere gemeente of van het CBR
-        # telt ook, dus elk antwoord telt mee (OR). Eigen keuze: het begrip
-        # staat hier en niet bij artikel 49, het artikel dat de kaart
-        # vestigt. Artikel 49 neemt een besluit, en een uitvoer van een
-        # besluit hoort bij dat besluit (RFC-047); dan zou elk besluit op een
-        # aanvraag dit feit vragen. Artikel 51 gaat over de verstrekte kaart.
-        # Wie het mag beantwoorden (RFC-052): lid 2 en 3 noemen "het gezag
-        # dat bevoegd is tot de afgifte van gehandicaptenparkeerkaarten", het
-        # college of het CBR (artikel 49, eerste en derde lid).
-        - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
-          competent_authority:
-            - name: college van burgemeester en wethouders
-              type: CATEGORY
-            - name: CBR
-          type: boolean
-          required: true
-          decided_per_case_by: >-
-            het gezag dat bevoegd is tot de afgifte (het college of het CBR),
-            als verstrekkende instantie (Regeling gehandicaptenparkeerkaart,
-            artikel 2, tweede lid, onder a en b)
-          combine: OR
-          description: >-
-            Of aan de aanvrager eerder een gehandicaptenparkeerkaart is
-            verstrekt.
       execution:
         parameters:
           - name: datum_afgifte
             type: date
             description: De dag waarop de gehandicaptenparkeerkaart is afgegeven.
-          - name: bsn_aanvrager
-            type: string
-            description: >-
-              Burgerservicenummer van de aanvrager, voor de vraag of hem
-              eerder een kaart is verstrekt.
         output:
           - name: einde_geldigheidsduur
             type: date
             description: >-
               De laatste dag van de vijf achtereenvolgende jaren, gerekend vanaf
               de dag van afgifte (lid 1).
-          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
-            type: boolean
-            description: Of aan de aanvrager eerder een gehandicaptenparkeerkaart is verstrekt.
         actions:
-          - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
-            value: $aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
           # "gerekend vanaf de dag van afgifte": de dag van afgifte is de eerste
           # dag, dus vijf jaren eindigen de dag vóór dezelfde dag vijf jaar
           # later. Eigen keuze in de telling. Een kaart afgegeven op 29

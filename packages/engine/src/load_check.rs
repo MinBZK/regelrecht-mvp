@@ -393,8 +393,8 @@ pub(crate) fn reject_malformed_facts(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
-/// items of one type, does not give each output to exactly one item (as one
-/// of its `outputs`, or as data `derived` for the decision, RFC-050), lists
+/// items of one type, gives an output to two items (as one of its
+/// `outputs`, or as data `derived` for the decision, RFC-050), lists
 /// `derived` on an item that is no decision, names a
 /// parameter or output the article lacks, or has a submission that requests
 /// a decision this law does not take. One item per type makes article and
@@ -403,6 +403,11 @@ pub(crate) fn reject_malformed_facts(law: &ArticleBasedLaw) -> Result<()> {
 /// submission, every other stage the decision). A submission that requests a
 /// decision of another law is checked when it is used, since that law may be
 /// loaded later.
+///
+/// An output that no item lists, beside a decision that lists its own,
+/// belongs to no item: it is an output of the article that another article
+/// may read, not part of the decision, and only computed when read
+/// (RFC-052).
 pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
     for article in law.articles.iter().filter(|a| a.produces_list()) {
         let produced = article.get_produced();
@@ -472,6 +477,27 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 item.submission_kind().unwrap_or("item")
             ));
         }
+        // Without a decision, an output no submission lists would be read by
+        // nothing the article produces: refused, so a forgotten or misspelt
+        // output fails. Beside a decision that lists its outputs, it belongs
+        // to no item (RFC-052).
+        if article.get_decision().is_none() {
+            if let Some(name) = article
+                .get_outputs()
+                .iter()
+                .map(|o| o.name.as_str())
+                .find(|name| {
+                    !produced
+                        .iter()
+                        .any(|&p| article.outputs_of(p).contains(name))
+                })
+            {
+                return refuse(format!(
+                    "declares output '{name}', but nothing it produces yields it; \
+                     a submission yields only the outputs it lists"
+                ));
+            }
+        }
         let mut listed: Vec<&str> = Vec::new();
         let named = produced
             .iter()
@@ -488,24 +514,6 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 return refuse(format!("gives output '{name}' to two things it produces"));
             }
             listed.push(name);
-        }
-        let derived = article.derived_outputs();
-        if let Some(name) = article
-            .get_outputs()
-            .iter()
-            .map(|o| o.name.as_str())
-            .find(|name| {
-                !derived.contains(name)
-                    && !produced
-                        .iter()
-                        .any(|&p| article.outputs_of(p).contains(name))
-            })
-        {
-            return refuse(format!(
-                "declares output '{name}', but nothing it produces yields it; \
-                 a submission yields only the outputs it lists, and data derived \
-                 for the decision is listed under its derived"
-            ));
         }
         for &item in &produced {
             for name in article.parameters_of(item) {
@@ -858,17 +866,30 @@ articles:
         }
     }
 
-    /// Derived data is listed, never inferred: an output no item lists in
-    /// `outputs` or `derived` is refused, also beside a decision, so a
-    /// forgotten or misspelt output fails instead of turning into derived
-    /// data. `derived` names an output, and only a decision has it.
+    /// An output beside a decision that lists its own outputs belongs to no
+    /// item (RFC-052): the article loads, and the output is neither an
+    /// output of the decision nor derived data for it.
+    #[test]
+    fn an_output_beside_the_decision_belongs_to_no_item() {
+        let yaml = law_with_two_outputs(
+            "          - type: AANVRAAG\n            parameters: [p]\n          - type: BESCHIKKING\n            outputs: [x]",
+        );
+        let mut service = LawExecutionService::new();
+        service
+            .load_law(&yaml)
+            .expect("an output beside the decision loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let article = &law.articles[0];
+        let decision = article.get_decision().expect("a decision");
+        assert_eq!(article.outputs_of(decision), ["x"]);
+        assert!(article.derived_outputs().is_empty());
+    }
+
+    /// Derived data is listed, never inferred: `derived` names an output,
+    /// and only a decision has it.
     #[test]
     fn derived_data_is_listed_on_the_decision() {
         for (items, why) in [
-            (
-                "          - type: AANVRAAG\n            parameters: [p]\n          - type: BESCHIKKING\n            outputs: [x]",
-                "declares output 'afgeleid', but nothing it produces yields it",
-            ),
             (
                 "          - type: BESCHIKKING\n            outputs: [x]\n            derived: [afgeleidd]",
                 "lists output 'afgeleidd' under produces",

@@ -2305,7 +2305,7 @@ mod tests {
         let kaart = casus("gehandicaptenparkeerkaart");
         let a = &kaart.afleiding;
         assert_eq!(a.objection, "7:11");
-        // The first authority BABW art. 49 names (RFC-052).
+        // The authority BABW art. 49 names as the one who decides (RFC-002).
         assert_eq!(a.rol, "het college van burgemeester en wethouders");
         let mut ids = a.regelwerken.clone();
         ids.sort();

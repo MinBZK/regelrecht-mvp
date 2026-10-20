@@ -17,7 +17,7 @@ const invoer = reactive({});
 const sleutel = (cel, grondslag) => `${cel} ${grondslag}`;
 const velden = (cel, grondslag) => (invoer[sleutel(cel, grondslag)] ??= {});
 
-// `regeling_x#3#geneeskundig_onderzoek` → `Geneeskundig onderzoek (… artikel 3)`.
+// `regeling_x#3#geneeskundig_onderzoek_verricht` → `Geneeskundig onderzoek verricht (… artikel 3)`.
 const naam = (feit) => {
   const [wet, artikel, wat] = feit.split('#');
   return `${hoofdletter(leesbaar(wat))} (${artikelNaam(wet, artikel)})`;

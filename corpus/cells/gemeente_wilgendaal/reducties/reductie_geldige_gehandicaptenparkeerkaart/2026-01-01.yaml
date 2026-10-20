@@ -12,10 +12,10 @@ valid_from: '2026-01-01'
 # van de gemeente (implements, schema v0.8.5): waar de engine dat begrip leest,
 # ook als Awb 7:11 artikel 49 opnieuw aanroept, vraagt hij het de cel, en de
 # cel draait haar. Uit dezelfde besluiten vult zij ook het open begrip van
-# artikel 51 van het BABW: of de aanvrager eerder een kaart kreeg, zoals
 # artikel 2, tweede lid, onder a en b, van de Regeling
-# gehandicaptenparkeerkaart het vraagt. Daarvoor is elk college bevoegd
-# (competent_authority van dat begrip, RFC-052), dus ook de colleges van andere gemeenten antwoorden. Er is geen
+# gehandicaptenparkeerkaart: of de aanvrager eerder een kaart kreeg.
+# Daarvoor is elk college bevoegd (competent_authority van dat begrip,
+# RFC-052), dus ook de colleges van andere gemeenten antwoorden. Er is geen
 # bekendmaking; de url wijst naar artikel 49.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Geldige gehandicaptenparkeerkaart bij de gemeente Wilgendaal (reductie)
@@ -38,11 +38,10 @@ articles:
         - law: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
           article: '1'
           open_term: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
-        # Artikel 51 van het BABW: of de aanvrager eerder een kaart kreeg
-        # (Regeling gehandicaptenparkeerkaart, artikel 2, tweede lid, onder a
-        # en b).
-        - law: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
-          article: '51'
+        # Of de aanvrager eerder een kaart kreeg (Regeling
+        # gehandicaptenparkeerkaart, artikel 2, tweede lid, onder a en b).
+        - law: regeling_gehandicaptenparkeerkaart
+          article: '2'
           open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
       execution:
         # Parameters van het beleid; de cel geeft ze op naam door.

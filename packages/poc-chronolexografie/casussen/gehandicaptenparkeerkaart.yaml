@@ -57,7 +57,7 @@ voorbeeld:
 # De andere cellen van de sfeer (RFC-052). Het open begrip zegt wie bevoegd
 # is: de GGD of de aangewezen deskundige voor het onderzoek (Regeling
 # gehandicaptenparkeerkaart, artikel 3), het college van elke gemeente en het
-# CBR voor een eerdere kaart (BABW artikel 51). De engine vraagt alleen een
+# CBR voor een eerdere kaart (artikel 2, tweede lid, van de regeling). De engine vraagt alleen een
 # cel die het begrip noemt. Elke cel legt bij
 # elke start en reset opnieuw vast wat zij vóór het eerste scenario wist, via
 # de cel zoals elke stap.
@@ -80,7 +80,7 @@ andere_cellen:
     begin:
       datum: 2026-10-09
       executogrammen:
-        - feit: regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek
+        - feit: regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht
           velden:
             bsn_aanvrager: '999990020'
             datum_onderzoek: '2026-10-09'
@@ -269,8 +269,8 @@ scenarios:
     eind: >-
       Toegewezen, zonder onderzoek (Regeling gehandicaptenparkeerkaart,
       artikel 2, tweede lid, onder a). Wilgendaal kent die eerdere kaart niet,
-      maar vroeg elke instantie die de wet bevoegd maakt tot afgifte (BABW
-      artikel 51): het CBR en Wilgendaal zelf zwegen, Oostmeer antwoordde ja.
+      maar vroeg elke verstrekkende instantie die de wet noemt (Regeling
+      gehandicaptenparkeerkaart, artikel 2, tweede lid): het CBR en Wilgendaal zelf zwegen, Oostmeer antwoordde ja.
       Het Logboek noemt bij het begrip de gemeente Oostmeer.
   - naam: Een kaart van het CBR telt ook
     stappen:
@@ -299,4 +299,4 @@ scenarios:
       Toegewezen. Nu antwoordden twee cellen ja: Oostmeer en Wilgendaal. De
       wet zegt hoe hun antwoorden één waarde worden: eerder een kaart
       verstrekt is waar als één verstrekkende instantie het zegt (combine:
-      OR op BABW artikel 51). Het Logboek noemt beide.
+      OR op artikel 2 van de regeling). Het Logboek noemt beide.

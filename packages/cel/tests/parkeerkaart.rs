@@ -46,7 +46,7 @@ const EARLIER: &str = "aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt";
 /// The fact art. 3 lid 1 of the Regeling requires: the medical
 /// examination. The GGD records it as an executogram in its own cell, and
 /// its reduction reads those executograms.
-const EXAMINATION: &str = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek";
+const EXAMINATION: &str = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht";
 const REPORTS: &str = "reductie_geneeskundig_onderzoek";
 /// The fictitious GGD that examines for the municipality.
 const GGD_ACTOR: &str = "ggd_wilgendaal";
@@ -469,7 +469,7 @@ fn a_card_of_someone_else_does_not_count() {
 #[test]
 fn a_cell_lists_the_lexostatus_it_answers() {
     // The terms the municipality's reduction fills: the policy's, and
-    // whether a card was issued before (BABW art. 51, RFC-052). The
+    // whether a card was issued before (Regeling art. 2 lid 2, RFC-052). The
     // examination is the GGD's, in a cell of its own.
     let mut answers: Vec<(String, String, String, String)> = cell()
         .answers()
@@ -486,8 +486,8 @@ fn a_cell_lists_the_lexostatus_it_answers() {
     assert_eq!(
         answers,
         vec![
-            owned(LAW, "51", EARLIER, REDUCTION),
             owned(POLICY, "1", VALID, REDUCTION),
+            owned(REGELING, "2", EARLIER, REDUCTION),
         ]
     );
 }
@@ -910,7 +910,10 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
     let report = reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
     assert_eq!(report.kind, "EXECUTOGRAM");
     assert_eq!(report.grondslag, format!("{REGELING}#3"));
-    assert_eq!(report.fact.as_deref(), Some("geneeskundig_onderzoek"));
+    assert_eq!(
+        report.fact.as_deref(),
+        Some("geneeskundig_onderzoek_verricht")
+    );
     let gram = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap();
     assert_eq!(
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
@@ -1114,7 +1117,8 @@ fn without_a_report_the_college_may_establish_the_examination_itself() {
 }
 
 // Synthesis (RFC-052): whether a card was issued before is a fact of every
-// issuing body (BABW art. 51), and each answers from its own chronicle.
+// issuing body (Regeling art. 2 lid 2: "de verstrekkende instantie"), and
+// each answers from its own chronicle.
 
 /// Another issuing body: the fictitious municipality of Oostmeer, or the CBR.
 fn issuer(actor: &str) -> Cell {
@@ -1216,7 +1220,7 @@ fn a_card_of_the_cbr_counts() {
 fn cards_of_two_issuers_combine_with_or() {
     // Wilgendaal issued a card in 2026 and Oostmeer one before; after the
     // card of Wilgendaal expired, both say true. Without `combine: OR` on
-    // BABW art. 51 the two answers would be an error.
+    // the term of Regeling art. 2 the two answers would be an error.
     let mut oostmeer = issuer("gemeente_oostmeer");
     issued_by(&mut oostmeer, "999990044", "2026-01-15");
     let mut cell = cell();
@@ -1239,17 +1243,17 @@ fn cards_of_two_issuers_combine_with_or() {
 }
 
 #[test]
-fn babw_51_combines_the_answers_of_the_issuers_with_or() {
+fn regeling_2_combines_the_answers_of_the_issuers_with_or() {
     let service = service();
     let law = service
         .resolver()
-        .get_law_for_date(LAW, Some(day("2026-10-20")))
+        .get_law_for_date(REGELING, Some(day("2026-10-20")))
         .unwrap();
     let term = law
-        .find_article_by_number("51")
+        .find_article_by_number("2")
         .and_then(|a| a.get_open_terms())
         .and_then(|terms| terms.iter().find(|t| t.id == EARLIER))
-        .expect("art. 51 declares the term");
+        .expect("art. 2 declares the term");
     assert_eq!(
         term.combine,
         Some(regelrecht_engine::article::CombineOp::Or)

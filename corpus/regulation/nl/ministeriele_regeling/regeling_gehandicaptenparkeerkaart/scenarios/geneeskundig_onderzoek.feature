@@ -4,7 +4,7 @@ Feature: Geen kaart voordat het geneeskundig onderzoek heeft plaatsgehad
   verstrekkende instantie vast op het rapport van de GGD of de aangewezen
   deskundige (artikel 3, eerste lid); in een cel van de GGD leest haar
   reductie het uit de onderzoeken die zij vastlegde. Of eerder een kaart is
-  verstrekt, zegt artikel 51 van het BABW. Het tweede lid laat het
+  verstrekt, zegt de verstrekkende instantie (lid 2, onder a en b). Het tweede lid laat het
   onderzoek achterwege bij wie eerder een kaart kreeg, als de verstrekkende
   instantie weet dat hij nog steeds voldoet (onder a) of de keurende
   instantie daarover oordeelt (onder b). Of het college die bevoegdheid

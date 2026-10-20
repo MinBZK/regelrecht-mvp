@@ -159,11 +159,31 @@ articles:
       # BABW: het CBR) en lid 3 (een instelling, artikel 49, tweede lid) zijn
       # niet gemodelleerd: die leden van artikel 49 zijn het ook niet, dus
       # hier vraagt geen kaart erom.
-      # Beide feiten stelt een ander vast dan wie de kaart afgeeft, en dit
-      # artikel leest ze bij het artikel dat ze vestigt (RFC-052): of het
-      # onderzoek plaatsvond bij artikel 3 (de GGD of de aangewezen
-      # deskundige), of eerder een kaart is verstrekt bij artikel 51 van het
-      # BABW ("het gezag dat bevoegd is tot de afgifte").
+      # Beide feiten stelt een ander vast dan wie de kaart afgeeft (RFC-052).
+      # Of het onderzoek plaatsvond, leest dit artikel bij artikel 3, dat het
+      # onderzoek omschrijft. Of eerder een kaart is verstrekt, staat hier in
+      # lid 2 zelf; het BABW spreekt nergens van een eerdere kaart.
+      open_terms:
+        # Lid 2, onder a en b: "aan de aanvrager eerder een
+        # gehandicaptenparkeerkaart is verstrekt", met "de verstrekkende
+        # instantie". Wie kaarten verstrekt, zegt artikel 49 van het BABW:
+        # het college (eerste lid) en het CBR (derde lid). Elk van hen weet
+        # het uit de eigen besluiten; een kaart van een andere gemeente of
+        # van het CBR telt ook, dus elk antwoord telt mee (OR).
+        - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
+            - name: CBR
+          type: boolean
+          required: true
+          decided_per_case_by: >-
+            de verstrekkende instantie: het college of het CBR (artikel 49
+            van het BABW)
+          combine: OR
+          description: >-
+            Of aan de aanvrager eerder een gehandicaptenparkeerkaart is
+            verstrekt (lid 2, onder a en b).
       execution:
         parameters:
           - name: bsn_aanvrager
@@ -213,17 +233,6 @@ articles:
                 bsn_aanvrager: $bsn_aanvrager
                 dagtekening_aanvraag: $dagtekening_aanvraag
                 datum_afgifte: $datum_afgifte
-          # Lid 2, onder a en b: "aan de aanvrager eerder een
-          # gehandicaptenparkeerkaart is verstrekt", met "de verstrekkende
-          # instantie". Dat zegt wie kaarten verstrekt (artikel 51 van het
-          # BABW): het college van elke gemeente en het CBR.
-          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
-            type: boolean
-            source:
-              regulation: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
-              output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
-              parameters:
-                bsn_aanvrager: $bsn_aanvrager
         output:
           - name: gehandicaptenparkeerkaart_mag_worden_afgegeven
             type: boolean
@@ -290,8 +299,11 @@ articles:
       # aangewezen deskundige. Besluit van de eigenaar (20-10): het onderzoek
       # staat als feit (requires, fact) bij dit artikel, dat het omschrijft,
       # en niet bij artikel 2, eerste lid, dat eist dat het heeft
-      # plaatsgehad. Wat het bevat: wiens handicap is onderzocht (artikel 2,
-      # eerste lid: "de handicap van de aanvrager"), wanneer, en door wie
+      # plaatsgehad. Het feit is de handeling ("wordt het geneeskundig
+      # onderzoek verricht door", lid 1), niet de uitkomst; daarom heet het
+      # geneeskundig_onderzoek_verricht. Wat het bevat: wiens handicap is
+      # onderzocht (artikel 2, eerste lid: "de handicap van de aanvrager"),
+      # wanneer, en door wie
       # (lid 1 noemt de twee mogelijkheden; de naam van een aangewezen
       # deskundige verschilt per geval, dus vrije tekst). Wanneer het feit
       # ontstaat of wie het vastlegt, zegt de regeling niet. Lid 2 (de
@@ -335,10 +347,12 @@ articles:
             betrekking tot de handicap van de aanvrager (artikel 2, eerste
             lid).
       requires:
-        - fact: geneeskundig_onderzoek
+        - fact: geneeskundig_onderzoek_verricht
           description: >-
-            Het geneeskundig onderzoek met betrekking tot de handicap van de
-            aanvrager, verricht door de GGD of de aangewezen deskundige.
+            Dat een geneeskundig onderzoek met betrekking tot de handicap van
+            de aanvrager is verricht door de GGD of de aangewezen deskundige:
+            voor wie, op welke dag en door wie. Het feit houdt geen uitkomst
+            van het onderzoek.
           competent_authority:
             - name: Gemeentelijke Gezondheidsdienst
               type: CATEGORY

@@ -6,12 +6,13 @@ publication_date: '2025-12-01'
 valid_from: '2026-01-01'
 # Geen regelgeving: een reductie van de cel van het CBR over
 # haar eigen kroniek (RFC-022 §4.1, RFC-048). Ze vult het open begrip van
-# artikel 51 van het BABW: of de aanvrager eerder een kaart kreeg, van deze
+# artikel 2, tweede lid, van de Regeling gehandicaptenparkeerkaart: of de
+# aanvrager eerder een kaart kreeg, van deze
 # verstrekkende instantie (RFC-052). Een kopie van het filter van de reductie
 # van de gemeente Wilgendaal (reductie_geldige_gehandicaptenparkeerkaart);
 # het gaat op in een gedeelde reductie zodra een cel die kan laden. Er is
-# geen bekendmaking; de url wijst naar artikel 51.
-url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel51
+# geen bekendmaking; de url wijst naar dat artikel.
+url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
 name: Eerder verstrekte gehandicaptenparkeerkaart bij het CBR (reductie)
 competent_authority:
   name: CBR
@@ -22,11 +23,11 @@ articles:
       aanvrager kreeg eerder een kaart als deze instantie hem in een besluit op
       een aanvraag (artikel 49 van het BABW) een kaart verstrekte die niet op
       bezwaar is herroepen; anders zegt de cel niets.
-    url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel51
+    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
     machine_readable:
       implements:
-        - law: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
-          article: '51'
+        - law: regeling_gehandicaptenparkeerkaart
+          article: '2'
           open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
       execution:
         parameters:
