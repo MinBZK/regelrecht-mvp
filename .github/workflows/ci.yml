@@ -125,7 +125,7 @@ jobs:
               - bdd/**
               - schema/**
               - corpus/regulation/**
-              - justfile
+              - Justfile
               - .claude/skills/docs-writing/**
               - .github/workflows/ci.yml
             # Wat de bouw van een Rust-image kan breken. Smaller dan `ci`: een
@@ -696,6 +696,15 @@ jobs:
           RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
         run: cargo test --test bdd -- --nocapture
 
+      # Zoals `just bdd-demo`: de Awb-levensloop over hetzelfde democorpus.
+      # De unit-baan draait deze test alleen tegen corpus/regulation.
+      - name: Run Awb lifecycle over demo corpus
+        working-directory: packages/engine
+        env:
+          REGULATION_PATH: ${{ github.workspace }}/corpus/demo/regulation
+          RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
+        run: cargo test --test awb_lifecycle
+
   nldd-imports:
     name: Ontwerpsysteem-imports
     needs: changes
@@ -768,6 +777,17 @@ jobs:
           node bdd/codegen/gen-js.mjs
           git diff --exit-code packages/frontend-shared/src/gherkin/grammar.generated.js \
             || { echo "::error::grammar.generated.js is stale — run 'just bdd-codegen' and commit the result"; exit 1; }
+
+      # De pre-commit-baan draait de slot-guard ook, maar zonder `npm ci`: daar
+      # ontbreekt het ontwerpsysteem en slaan de guard en zijn ijktest zich
+      # over. Hier staat het er wel.
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3  # v4.0.0
+
+      - name: Design-system slot guard
+        run: |
+          just nldd-slots
+          just nldd-slots-test
 
       - name: Run frontend tests
         # Directory form (`-w frontend`) rather than the package name, so a

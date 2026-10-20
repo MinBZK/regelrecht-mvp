@@ -128,6 +128,13 @@ repos:
         pass_filenames: false
         files: ^(script/(linkify|require)-werkpakket(\.test)?\.sh|\.github/workflows/werkpakket-gate\.yml)$
 
+      - id: private-repo-guard-tests
+        name: Push-guard van de stelselanalyse laat alleen een privérepo door
+        entry: .claude/skills/regelrecht-stelselanalyse/scripts/test-assert-private-repo.sh
+        language: system
+        pass_filenames: false
+        files: ^\.claude/skills/regelrecht-stelselanalyse/scripts/(test-)?assert-private-repo\.sh$
+
       - id: ci-gate-tests
         name: Test-poort in ci.yml blokkeert op een gevallen voorganger
         entry: just ci-gate-test

@@ -402,11 +402,11 @@ github-test:
 harvester-test:
     cd packages/harvester && {{ci_flags}} cargo test
 
-# Run pipeline unit tests. Five of these are container-backed and carry
-# #[ignore]; add `-- --ignored` to run those instead. The two CLI test
-# suites run the built binaries against temp directories and need no
+# Run pipeline unit tests. The container-backed suites live in tests/ and
+# run in `pipeline-integration-test`; `--lib` does not reach them. The CLI
+# test suites run the built binaries against temp directories and need no
 # Docker either, so they belong in this recipe, not only in the db-leg.
-[doc("Run pipeline unit tests (the container-backed ones are #[ignore]d)")]
+[doc("Run pipeline unit tests (no Docker; the container-backed suites are in pipeline-integration-test)")]
 pipeline-test:
     cd packages/pipeline && {{ci_flags}} cargo test --lib
     cd packages/pipeline && {{ci_flags}} cargo test --test law_source_cli --test law_check_cli --test enrich_once_cli
