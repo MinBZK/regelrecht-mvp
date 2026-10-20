@@ -1,6 +1,6 @@
 ---
 # An input reads decisions or executograms, not both (schema v0.8.6, RFC-051).
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 $id: test_conformance_executograms_with_decisions
 regulatory_layer: REDUCTIE
 publication_date: '2026-10-18'
@@ -16,7 +16,7 @@ articles:
           - name: vestigingen
             type: array
             source:
-              executograms: vestiging
+              executograms: test_conformance_executogram#1
               decisions: wet_fictief#1
         output:
           - name: alle_vestigingen

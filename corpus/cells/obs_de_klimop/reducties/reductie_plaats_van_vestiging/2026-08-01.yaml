@@ -1,12 +1,13 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 $id: reductie_plaats_van_vestiging
 regulatory_layer: REDUCTIE
 publication_date: '2026-07-01'
 valid_from: '2026-08-01'
 # Geen regelgeving: een reductie van de cel van OBS De Klimop over haar eigen
-# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen van de
-# stroom vestiging (executogrammen/vestiging.yaml) en geeft de vestiging die
+# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen die
+# het fictieve beleid fictief_beleid_vestiging_obs_de_klimop (artikel 1)
+# vestigt, en geeft de vestiging die
 # op de verlofdagen geldt. Haar antwoord vult de open begrippen van artikel 2
 # van de Regeling vaststelling schoolvakanties 2025–2030 ("De plaats van
 # vestiging is bepalend voor de regio"). Er is geen bekendmaking; de url wijst
@@ -26,8 +27,8 @@ articles:
   - number: '1'
     text: >-
       Geen regelgeving: een reductie van de cel over haar eigen kroniek. De
-      plaats van vestiging van de school is die van het executogram van de
-      stroom vestiging dat op de eerste en op de laatste verlofdag geldt: het
+      plaats van vestiging van de school is die van het executogram van haar
+      vestiging dat op de eerste en op de laatste verlofdag geldt: het
       executogram met de laatste dag "sinds" op of vóór die dag. Verhuist de
       school binnen het verlof, dan zijn dat twee vestigingen en geeft de
       reductie geen antwoord maar een fout.
@@ -57,7 +58,7 @@ articles:
           - name: vestigingen
             type: array
             source:
-              executograms: vestiging
+              executograms: fictief_beleid_vestiging_obs_de_klimop#1
         output:
           - name: dagen_sinds_vestiging_op_eerste_verlofdag
             type: number

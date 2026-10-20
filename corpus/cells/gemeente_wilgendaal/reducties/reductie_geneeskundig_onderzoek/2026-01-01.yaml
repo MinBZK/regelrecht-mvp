@@ -1,15 +1,15 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 $id: reductie_geneeskundig_onderzoek
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
 valid_from: '2026-01-01'
 # Geen regelgeving: een reductie van de cel van de (fictieve) gemeente
 # Wilgendaal over haar eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest
-# de executogrammen van de stroom geneeskundig_onderzoek
-# (executogrammen/geneeskundig_onderzoek.yaml): de rapporten die de gemeente
-# ontving van de GGD of de aangewezen deskundige (artikel 3, eerste lid, van
-# de Regeling gehandicaptenparkeerkaart). Haar antwoord vult het open begrip
+# de executogrammen die artikel 3, eerste lid, van de Regeling
+# gehandicaptenparkeerkaart vestigt: dat de gemeente het rapport ontving van
+# een geneeskundig onderzoek door de GGD of de aangewezen deskundige. Wat
+# elk executogram bevat, zegt dat artikel. Haar antwoord vult het open begrip
 # van artikel 2 van die regeling. Er is geen bekendmaking; de url wijst naar
 # dat artikel.
 url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
@@ -51,7 +51,7 @@ articles:
           - name: onderzoeken
             type: array
             source:
-              executograms: geneeskundig_onderzoek
+              executograms: regeling_gehandicaptenparkeerkaart#3
         output:
           - name: geneeskundig_onderzoek_heeft_plaatsgehad
             type: boolean

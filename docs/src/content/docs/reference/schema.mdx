@@ -13,12 +13,12 @@ This page owns the field-level detail, down to which operands each operation tak
 
 ## Current Version
 
-The current schema version is **v0.8.6**.
+The current schema version is **v0.8.7**.
 
 Schema URLs use immutable git tags to guarantee reproducibility. The format is:
 
 ```
-https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 ```
 
 The tag `schema-vX.Y.Z` is created when a schema version is released. Using tags instead of `refs/heads/main` ensures that the schema a version of a rulework references can never change underneath it. See [RFC-013](/rfcs/rfc-013) for the rationale.
@@ -31,6 +31,7 @@ This table is the single source of truth for which schema version introduced whi
 
 | Version | Introduces | RFC |
 |---------|-----------|-----|
+| v0.8.7 | `EXECUTOGRAM` as the `type` of a `produces` item: the article establishes an act that a cell records as a fact, such as a medical examination (Regeling gehandicaptenparkeerkaart art. 3). The item lists the article's `parameters` it holds and has no `requests`, `outputs`, `derived`, `decision_type` or `procedure_id`. `source.executograms` names that article (`<regulation>#<article>`) instead of a stream of the cell. Not additive: a reduction that named a stream under v0.8.6 names the article under v0.8.7 | [RFC-051](/rfcs/rfc-051) |
 | v0.8.6 | A `REDUCTIE` may read the executograms of a stream of its cell (`source.executograms`), as it reads decisions; `combine: ONLY` gives the one result a FOREACH filter leaves, null when it leaves none and an error when it leaves more. A file valid under v0.8.5 is valid under v0.8.6 unchanged | [RFC-051](/rfcs/rfc-051) |
 | v0.8.5 | A `REDUCTIE` may fill an open term with `implements`: the engine runs it for that term like any implementation, also in a nested call. It still has no `hooks`, `overrides`, `execution.produces` or `open_terms`. A file valid under v0.8.4 is valid under v0.8.5 unchanged | [RFC-048](/rfcs/rfc-048) |
 | v0.8.4 | `source.article`: an input calls the decision of an article, named as `<regulation>#<article>` or by a `$`-reference to a value that holds one; a `$`-reference to a decision value calls that decision anew, with its own fields and findings. Without `output` the input is a decision value `{grondslag, fields, findings, outputs}`, with it one output of the decision. `source.parameters_from`: objects merged in order into the parameters of that call, with `parameters` on top; only with `article`, and `article` stands apart from `regulation`, `decisions` and `endpoint`. The field type `decision` for such a value. `derived` on the decision item of `produces`: outputs that are data derived for the decision, computed at its stages but left out of the decision value. Additive: a file valid under v0.8.3 is valid under v0.8.4 unchanged | [RFC-050](/rfcs/rfc-050) |

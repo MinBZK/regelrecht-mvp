@@ -31,7 +31,7 @@ pub use model::{
     OverrideDeclaration, Parameter, Placement, PlacementContainer, Preamble, ProcedureAppliesTo,
     ProcedureDefinition, Produced, ProducedItem, Produces, ProducesList, ProvisionReference,
     ResolveSpec, Source, Stage, StageRequirement, Submission, Temporal, TypeSpec,
-    UntranslatableEntry, DEFAULT_FOREACH_AS, SUBMISSION_KINDS,
+    UntranslatableEntry, DEFAULT_FOREACH_AS, EXECUTOGRAM, SUBMISSION_KINDS,
 };
 /// The engine reads a version through the model, not from `regelrecht-shared`
 /// itself: it sits on the model alone.

@@ -19,7 +19,7 @@ use regelrecht_law_model::stored;
 
 /// A chronolexogram (`Gram` for short): one recorded application or
 /// objection, the decision on one, or an executogram (RFC-051), as the law
-/// or the cell's stream describes it.
+/// describes it.
 ///
 /// The chronolexogram does not repeat the law. Its establishing article and the
 /// day it was recorded name the law version in force; the provisions each field
@@ -30,19 +30,14 @@ pub struct Gram {
     pub id: String,
     /// What the law says arises, in its own word: the kind of the
     /// submission (`produces.submission.kind`), such as `AANVRAAG` or
-    /// `BEZWAAR`, or the
+    /// `BEZWAAR`, the
     /// legal character of a decision (`produces.legal_character`), such as
-    /// `BESCHIKKING`.
+    /// `BESCHIKKING`, or `EXECUTOGRAM` for an executogram (schema v0.8.7).
     pub kind: String,
     /// The article that establishes it or decides, `<regulation>#<article>`
-    /// (RFC-022 `grondslag`); for an executogram, the article on whose
-    /// ground the cell records the fact, as its stream names it.
+    /// (RFC-022 `grondslag`); for an executogram, the article that
+    /// establishes the act it records (its `EXECUTOGRAM` item, RFC-051).
     pub grondslag: String,
-    /// For an executogram, the stream of the cell it belongs to, by `$id`
-    /// ([`crate::stream`], RFC-051); its `kind` is then
-    /// [`crate::stream::EXECUTOGRAM`]. Absent for what the law establishes.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub stream: Option<String>,
     /// The chronolexogram it refers to: for a decision, the application or
     /// objection it is taken on (RFC-047, RFC-050); for an objection, the
     /// decision it contests. Absent for an executogram (RFC-051).

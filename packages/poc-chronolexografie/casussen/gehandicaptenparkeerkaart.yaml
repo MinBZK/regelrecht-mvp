@@ -56,8 +56,8 @@ voorbeeld:
 # Wat de gemeente vastlegde vóór het eerste scenario (RFC-051), bij elke
 # start en reset opnieuw, via de cel zoals elke stap: het rapport van de GGD
 # over het geneeskundig onderzoek van de voorbeeldaanvrager, een executogram
-# van de stroom geneeskundig_onderzoek
-# (corpus/cells/gemeente_wilgendaal/executogrammen/geneeskundig_onderzoek.yaml).
+# dat artikel 3, eerste lid, van de regeling vestigt; dat artikel zegt ook
+# wat het bevat.
 # Zonder rapport geeft het college geen kaart af (Regeling
 # gehandicaptenparkeerkaart, artikel 2, eerste lid). Het onderzoek van 9
 # oktober valt na de dagtekening van de voorbeeldaanvraag (5 oktober), dus het
@@ -66,7 +66,7 @@ voorbeeld:
 begin:
   datum: 2026-10-12
   executogrammen:
-    - stroom: geneeskundig_onderzoek
+    - grondslag: regeling_gehandicaptenparkeerkaart#3
       velden:
         bsn_aanvrager: '999990020'
         datum_onderzoek: '2026-10-09'

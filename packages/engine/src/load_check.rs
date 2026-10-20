@@ -119,12 +119,13 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// What an input reads from the chronicle of a cell, in words: the
-/// decisions taken under an article (RFC-048) or the executograms of a stream
-/// (RFC-051). `None` for an input that reads neither.
+/// decisions taken under an article (RFC-048) or the executograms an article
+/// establishes (schema v0.8.7, RFC-051). `None` for an input that reads
+/// neither.
 pub(crate) fn chronicle_read(source: &regelrecht_law_model::Source) -> Option<String> {
     match (&source.decisions, &source.executograms) {
         (Some(decisions), _) => Some(format!("the decisions taken under {decisions}")),
-        (None, Some(stream)) => Some(format!("the executograms of the stream {stream}")),
+        (None, Some(article)) => Some(format!("the executograms established by {article}")),
         (None, None) => None,
     }
 }
@@ -262,6 +263,9 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
             let ty = item
                 .legal_character()
                 .or(item.submission_kind())
+                .or(item
+                    .is_executogram()
+                    .then_some(regelrecht_law_model::EXECUTOGRAM))
                 .unwrap_or("");
             if types.contains(&ty) {
                 return refuse(format!(
@@ -275,8 +279,13 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 continue;
             };
             if item.submission_kind().is_none() {
+                let on = if item.is_executogram() {
+                    "an executogram"
+                } else {
+                    "a decision"
+                };
                 return refuse(format!(
-                    "requests '{target}' on a decision; only a submission requests a decision"
+                    "requests '{target}' on {on}; only a submission requests a decision"
                 ));
             }
             let Some((regulation, number)) = target.split_once('#') else {
@@ -307,6 +316,22 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 "lists derived outputs on its {}; only a decision has derived data (RFC-050)",
                 item.submission_kind().unwrap_or("item")
             ));
+        }
+        // An executogram (schema v0.8.7, RFC-051) records a fact the article
+        // establishes: it holds the parameters it lists and yields nothing.
+        if let Some(item) = produced.iter().find(|p| p.is_executogram()) {
+            if item.listed_outputs().is_some() {
+                return refuse(
+                    "lists outputs on its EXECUTOGRAM; an executogram holds parameters and \
+                     yields nothing (RFC-051)"
+                        .to_string(),
+                );
+            }
+            if article.parameters_of(*item).is_empty() {
+                return refuse(
+                    "produces an EXECUTOGRAM that holds no parameters (RFC-051)".to_string(),
+                );
+            }
         }
         let mut listed: Vec<&str> = Vec::new();
         let named = produced
@@ -588,6 +613,64 @@ articles:
         let decision = article.get_decision().expect("a decision");
         assert!(article.outputs_of(submission).is_empty());
         assert_eq!(article.outputs_of(decision), ["x"]);
+    }
+
+    /// An executogram (schema v0.8.7, RFC-051) holds the parameters it lists
+    /// and yields nothing: it is no decision and no submission, so the
+    /// decision beside it still takes every output.
+    #[test]
+    fn an_executogram_holds_parameters_and_yields_nothing() {
+        let yaml = law_producing(
+            "          - type: EXECUTOGRAM\n            parameters: [p]\n          - type: BESCHIKKING",
+        );
+        let mut service = LawExecutionService::new();
+        service
+            .load_law(&yaml)
+            .expect("an executogram beside a decision loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let article = &law.articles[0];
+        let executogram = article.get_executogram().expect("an executogram");
+        assert!(executogram.legal_character().is_none());
+        assert!(executogram.submission_kind().is_none());
+        assert!(article.outputs_of(executogram).is_empty());
+        assert_eq!(article.parameters_of(executogram), ["p"]);
+        assert_eq!(
+            article.outputs_of(article.get_decision().expect("a decision")),
+            ["x"]
+        );
+        assert!(article.get_submission().is_none());
+
+        for (items, why) in [
+            (
+                "          - type: EXECUTOGRAM\n            parameters: [p]\n            outputs: [x]",
+                "lists outputs on its EXECUTOGRAM",
+            ),
+            (
+                "          - type: EXECUTOGRAM\n          - type: BESCHIKKING",
+                "produces an EXECUTOGRAM that holds no parameters",
+            ),
+            (
+                "          - type: EXECUTOGRAM\n            parameters: [p]\n            requests: lijst#1\n          - type: BESCHIKKING",
+                "requests 'lijst#1' on an executogram",
+            ),
+            (
+                "          - type: EXECUTOGRAM\n            parameters: [p]\n          - type: EXECUTOGRAM\n            parameters: [p]\n          - type: BESCHIKKING",
+                "two items of type EXECUTOGRAM",
+            ),
+            (
+                "          - type: EXECUTOGRAM\n            parameters: [p]\n            derived: [x]",
+                "lists derived outputs on its item",
+            ),
+        ] {
+            let mut service = LawExecutionService::new();
+            let err = service
+                .load_law(&law_producing(items))
+                .expect_err("a malformed executogram must not load");
+            assert!(
+                matches!(err, EngineError::LoadError(_)) && err.to_string().contains(why),
+                "{why}: got {err:?}"
+            );
+        }
     }
 
     /// `law_producing` with a second output `afgeleid` and `items` spliced in.

@@ -83,7 +83,13 @@ impl Corpus {
         if let Some(begin) = &self.casus.begin {
             let service = self.service()?;
             for e in &begin.executogrammen {
-                cell.record_executogram(&service, &e.stroom, &e.velden, begin.datum)?;
+                let (law_id, article) = e.grondslag.split_once('#').ok_or_else(|| {
+                    Error::Setup(format!(
+                        "begin: '{}' is no <regulation>#<article>",
+                        e.grondslag
+                    ))
+                })?;
+                cell.record_executogram(&service, law_id, article, &e.velden, begin.datum)?;
             }
         }
         Ok(cell)
@@ -1159,7 +1165,7 @@ pub fn voorvertoning_op_bezwaar(
 /// The open terms the cell answers from its chronicle ([`Cell::answers`]),
 /// its reductions as written, and per reduction what it reads from the
 /// chronicle, as rows: the decisions under an article (`source.decisions`)
-/// or the executograms of a stream (`source.executograms`).
+/// or the executograms an article establishes (`source.executograms`).
 pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let mut uit = Vec::new();
@@ -1175,10 +1181,10 @@ pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
                     json!({ "besluiten_onder": grondslag }),
                     reading::rows(cell.grams(), grondslag, &kind)?,
                 )
-            } else if let Some(stream) = &source.executograms {
+            } else if let Some(grondslag) = &source.executograms {
                 (
-                    json!({ "stroom": stream }),
-                    reading::executogram_rows(cell.grams(), stream)?,
+                    json!({ "executogrammen_van": grondslag }),
+                    reading::executogram_rows(cell.grams(), grondslag)?,
                 )
             } else {
                 continue;
@@ -1455,10 +1461,14 @@ mod tests {
             rijen(lid_2, "besluiten_onder", "algemene_wet_bestuursrecht#7:11"),
             1
         );
-        // The vestiging is read from its stream. The holidays come from the
-        // regeling and the school's policy, not from the chronicle.
+        // The vestiging is read from its executograms. The holidays come
+        // from the regeling and the school's policy, not from the chronicle.
         assert_eq!(
-            rijen("reductie_plaats_van_vestiging", "stroom", "vestiging"),
+            rijen(
+                "reductie_plaats_van_vestiging",
+                "executogrammen_van",
+                "fictief_beleid_vestiging_obs_de_klimop#1"
+            ),
             1
         );
         assert!(
@@ -2052,8 +2062,9 @@ mod tests {
         // Vakantieverlof: the leave article, the policy that fills its open
         // term, the Awb with its hooks, the policy the reduction for lid 2
         // reads, and what the reductions on the holidays read: the
-        // regeling and the school's policy on its rooster. The Wet op het primair
-        // onderwijs is only the regeling's legal basis.
+        // regeling and the school's policy on its rooster, and the policy
+        // that establishes the executograms of its vestiging. The Wet op het
+        // primair onderwijs is only the regeling's legal basis.
         let verlof = corpus();
         let a = &verlof.afleiding;
         assert_eq!((a.law.as_str(), a.article.as_str()), (LAW, ARTICLE));
@@ -2072,6 +2083,7 @@ mod tests {
                 "fictief_beleid_schooljaar_obs_de_klimop",
                 "fictief_beleid_schooljaargrenzen_obs_de_klimop",
                 ROOSTER,
+                "fictief_beleid_vestiging_obs_de_klimop",
                 LAW,
                 "regeling_vaststelling_schoolvakanties_20252030",
             ]

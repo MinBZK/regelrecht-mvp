@@ -245,6 +245,50 @@ pub(crate) fn add_field(fields: &mut Vec<Field>, field: Field, reference: &str) 
     Ok(())
 }
 
+/// The fields of an executogram established by `grondslag`
+/// (`<regulation>#<article>`, schema v0.8.7, RFC-051), in the law in force
+/// on `day`: the parameters its `EXECUTOGRAM` item lists, with their types,
+/// as the fields of an application are the parameters its item lists.
+/// Refused when the article has no version in force on `day` or establishes
+/// no executogram.
+pub fn executogram_fields(
+    service: &LawExecutionService,
+    grondslag: &str,
+    day: NaiveDate,
+) -> Result<Vec<Field>> {
+    let (law_id, number) = grondslag
+        .split_once('#')
+        .ok_or_else(|| refused(format!("'{grondslag}' is no <regulation>#<article>")))?;
+    let article = article_on(service, law_id, number, day)
+        .ok_or_else(|| refused(format!("{grondslag} has no version in force on {day}")))?;
+    let item = article.get_executogram().ok_or_else(|| {
+        refused(format!(
+            "{grondslag} establishes no executogram (no produces item of type EXECUTOGRAM) on {day}"
+        ))
+    })?;
+    article
+        .parameters_of(item)
+        .into_iter()
+        .map(|name| {
+            let p = article
+                .get_parameters()
+                .iter()
+                .find(|p| p.name == name)
+                .ok_or_else(|| {
+                    setup(format!(
+                        "{grondslag}: the executogram holds '{name}', which is no parameter"
+                    ))
+                })?;
+            Ok(Field {
+                name: name.to_string(),
+                type_: p.param_type,
+                nullable: p.is_nullable(),
+                declared_by: vec![grondslag.to_string()],
+            })
+        })
+        .collect()
+}
+
 pub(crate) fn article_on<'s>(
     service: &'s LawExecutionService,
     law_id: &str,

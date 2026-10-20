@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.3/schema/v0.8.3/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 $id: regeling_gehandicaptenparkeerkaart
 regulatory_layer: MINISTERIELE_REGELING
 publication_date: '2012-09-14'
@@ -297,6 +297,34 @@ articles:
 
       [ref1]: https://wetten.overheid.nl/BWBR0004826#Artikel49
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
+    machine_readable:
+      # Lid 1 vestigt de handeling: het geneeskundig onderzoek, verricht door
+      # de GGD of de aangewezen deskundige. De gemeente verricht het niet; zij
+      # legt vast dat het plaatsvond, als executogram (RFC-051), zodra het
+      # rapport binnen is. Wat dat executogram bevat, volgt uit dit lid: wiens
+      # handicap is onderzocht (artikel 2, eerste lid: "de handicap van de
+      # aanvrager"), wanneer, en door wie. Lid 2 (de Minister, met een arts)
+      # is niet gemodelleerd: de minister geeft hier geen kaarten af.
+      execution:
+        produces:
+          - type: EXECUTOGRAM
+            parameters:
+              - bsn_aanvrager
+              - datum_onderzoek
+              - verricht_door
+        parameters:
+          - name: bsn_aanvrager
+            type: string
+            description: Burgerservicenummer van de aanvrager wiens handicap is onderzocht.
+          - name: datum_onderzoek
+            type: date
+            description: De dag waarop het geneeskundig onderzoek plaatsvond.
+          - name: verricht_door
+            type: string
+            description: >-
+              Wie het onderzoek verrichtte: de Gemeentelijke Gezondheidsdienst,
+              of bij externe advisering de vanwege het gemeentelijk gezag
+              aangewezen deskundige (lid 1).
     references:
       - id: ref1
         bwb_id: BWBR0004826

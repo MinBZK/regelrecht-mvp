@@ -217,8 +217,8 @@ async function uitleg(knoop) {
             <nldd-code-viewer v-if="spoor" appearance="box-tinted">{{ handeling.waarom.spoor }}</nldd-code-viewer>
           </template>
           <nldd-text v-else-if="handeling.gram.kind === 'EXECUTOGRAM'" size="sm" color="secondary">
-            Geen besluit. De cel legde een feit vast van de stroom {{ handeling.gram.stream }}, met
-            de dag vanaf wanneer het geldt (een executogram, RFC-051). Een reductie van de cel
+            Geen besluit. De cel legde een feit vast onder {{ handeling.gram.grondslag }}, het
+            artikel dat de handeling vestigt (een executogram, RFC-051). Een reductie van de cel
             leest het terug, zoals de vestiging van een school waaruit de regeling de regio
             afleidt.
           </nldd-text>

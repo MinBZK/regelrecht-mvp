@@ -6,9 +6,11 @@
 //! (`corpus/cells/<cell>/reducties/<id>/<valid_from>.yaml`) and only the cell
 //! loads it. It asks for the decisions taken under an article with
 //! `source: {decisions: <regulation>#<article>}`; the cell answers that input
-//! with one row per decision in its chronicle ([`rows`]). It asks for the executograms of a stream of
-//! the cell with `source: {executograms: <stream>}` (schema v0.8.6,
-//! RFC-051), one row per executogram ([`executogram_rows`]). For the logic
+//! with one row per decision in its chronicle ([`rows`]). It asks for the
+//! executograms an article establishes with
+//! `source: {executograms: <regulation>#<article>}` (schema v0.8.7,
+//! RFC-051), one row per executogram ([`executogram_rows`]); the article's
+//! `EXECUTOGRAM` item says what each holds. For the logic
 //! it calls law or policy like any rulework (`source.regulation`); where
 //! that rulework reads an open term the cell answers, the cell answers it
 //! there too.
@@ -52,8 +54,7 @@ use serde_json::Map;
 use crate::chronicle::Gram;
 use crate::error::{setup, Result};
 use crate::shape::article_on;
-use crate::stream::Stream;
-use regelrecht_law_model::stored;
+use regelrecht_law_model::{stored, EXECUTOGRAM};
 
 /// One version of a reduction of the cell, as written.
 #[derive(Debug, Clone)]
@@ -193,10 +194,15 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     )
 }
 
-/// The executograms in `grams` of the stream `stream` (RFC-051), as rows
-/// ([`rows_of`]), in the order the cell recorded them.
-pub fn executogram_rows(grams: &[Gram], stream: &str) -> Result<Value> {
-    rows_of(grams.iter().filter(|g| g.stream.as_deref() == Some(stream)))
+/// The executograms in `grams` established by `grondslag`
+/// (`<regulation>#<article>`, RFC-051), as rows ([`rows_of`]), in the order
+/// the cell recorded them.
+pub fn executogram_rows(grams: &[Gram], grondslag: &str) -> Result<Value> {
+    rows_of(
+        grams
+            .iter()
+            .filter(|g| g.kind == EXECUTOGRAM && g.grondslag == grondslag),
+    )
 }
 
 /// `grams` as rows: the fields, then the outputs, then the chronolexogram's
@@ -327,24 +333,28 @@ pub fn refuse_undeclared_terms(
     Ok(())
 }
 
-/// Each stream a version of `reductions` reads (`source.executograms`,
-/// RFC-051) must be one of the cell's `streams`: otherwise the reduction
-/// would read no executograms where the cell never records any.
-pub fn refuse_unknown_streams(reductions: &[Reduction], streams: &[Stream]) -> Result<()> {
-    for reduction in reductions {
+/// Each article whose executograms a reduction in force on `day` reads
+/// (`source.executograms`, RFC-051) must establish an executogram on that
+/// day: otherwise the reduction would read no executograms where the cell
+/// never records any.
+pub fn refuse_unestablished_executograms(
+    service: &LawExecutionService,
+    reductions: &[Reduction],
+    day: NaiveDate,
+) -> Result<()> {
+    for reduction in in_force(reductions, day) {
         for article in &reduction.law.articles {
             for input in article.get_inputs() {
-                let Some(stream) = input.source.as_ref().and_then(|s| s.executograms.as_ref())
+                let Some(grondslag) = input.source.as_ref().and_then(|s| s.executograms.as_ref())
                 else {
                     continue;
                 };
-                if !streams.iter().any(|s| s.id() == stream) {
-                    return Err(setup(format!(
-                        "reduction '{}' reads the executograms of the stream '{stream}', which \
-                         the cell does not keep (executogrammen/{stream}.yaml)",
+                crate::shape::executogram_fields(service, grondslag, day).map_err(|e| {
+                    setup(format!(
+                        "reduction '{}' reads the executograms of {grondslag}: {e}",
                         reduction.id
-                    )));
-                }
+                    ))
+                })?;
             }
         }
     }
@@ -530,8 +540,11 @@ impl<'c> Reader<'c> {
             if let Some(decisions) = &source.decisions {
                 let kind = decision_kind(service, decisions, day)?;
                 parameters.insert(input.name.clone(), rows(&self.grams, decisions, &kind)?);
-            } else if let Some(stream) = &source.executograms {
-                parameters.insert(input.name.clone(), executogram_rows(&self.grams, stream)?);
+            } else if let Some(grondslag) = &source.executograms {
+                parameters.insert(
+                    input.name.clone(),
+                    executogram_rows(&self.grams, grondslag)?,
+                );
             }
         }
         let outputs = [question.term];
@@ -637,7 +650,6 @@ mod tests {
             kind: kind.into(),
             grondslag: grondslag.into(),
             refers_to: refers_to.map(str::to_string),
-            stream: None,
             recording_actor: ACTOR.into(),
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
             moment: None,

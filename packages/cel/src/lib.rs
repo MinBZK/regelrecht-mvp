@@ -30,7 +30,6 @@ pub mod decision;
 pub mod error;
 pub mod reading;
 pub mod shape;
-pub mod stream;
 
 pub use cell::Cell;
 pub use chronicle::{Chronicle, Gram, GramMoment};
@@ -38,4 +37,3 @@ pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
 pub use reading::{Answer, Reduction, Term};
 pub use shape::{Field, Moment, Shape};
-pub use stream::Stream;

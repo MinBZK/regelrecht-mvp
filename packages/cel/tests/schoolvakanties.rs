@@ -45,6 +45,7 @@ fn service_with(extra: &[String]) -> LawExecutionService {
         "uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop".to_string(),
         "uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop".to_string(),
         format!("uitvoeringsbeleid/{ROOSTER}"),
+        "uitvoeringsbeleid/fictief_beleid_vestiging_obs_de_klimop".to_string(),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -98,8 +99,7 @@ fn map(value: Value) -> Map<String, Value> {
     value.as_object().unwrap().clone()
 }
 
-/// The school's own cell, with all its reductions and its stream of
-/// vestigingen, and an empty chronicle.
+/// The school's own cell, with all its reductions, and an empty chronicle.
 fn school() -> Cell {
     let dir =
         Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{RECORDING_ACTOR}"));
@@ -110,8 +110,14 @@ fn school() -> Cell {
 /// `sinds`, on `on` (an executogram).
 fn established(cell: &mut Cell, gemeente: &str, provincie: &str, sinds: &str, on: &str) -> Gram {
     let fact = map(json!({ "gemeente": gemeente, "provincie": provincie, "sinds": sinds }));
-    cell.record_executogram(&service(), "vestiging", &fact, day(on))
-        .unwrap()
+    cell.record_executogram(
+        &service(),
+        "fictief_beleid_vestiging_obs_de_klimop",
+        "1",
+        &fact,
+        day(on),
+    )
+    .unwrap()
 }
 
 /// The school, established in `gemeente` since 2020, recorded on 1 August
@@ -441,11 +447,11 @@ fn the_next_version_of_the_policy_holds_the_herfstvakantie_of_its_year() {
 }
 
 #[test]
-fn a_sandbox_keeps_the_streams_and_answers_as_the_cell() {
+fn a_sandbox_keeps_the_executograms_and_answers_as_the_cell() {
     let mut cell = school_in("Utrecht", "Utrecht");
     let app = applied(&mut cell, "2026-12-21", "2026-12-23", "2026-11-02");
     let mut sandbox = cell.sandbox();
-    assert_eq!(sandbox.streams(), cell.streams());
+    assert_eq!(sandbox.grams(), cell.grams());
     let gram = decide(&mut sandbox, &app.id, "2026-11-09").unwrap();
     assert_eq!(gram.fields[OUTSIDE_HOLIDAYS], json!(false));
     // A move recorded in the sandbox stays out of the cell.

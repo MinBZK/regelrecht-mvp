@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.8.6",
+  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.7",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -895,9 +895,8 @@
                   "description": "The decisions taken under this article, `<regulation>#<article>`: a list with one row per decision, holding the inputs and outputs of the decision item of that article. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the decisions in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters` or `endpoint`. Without a source that answers it the input is an error, never an empty list."
                 },
                 "executograms": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$",
-                  "description": "The executograms of a stream of the cell, by the stream's `$id` (RFC-051): a list with one row per executogram, holding the fields the stream declares and the executogram's `id`. An executogram records a fact, not a decision, such as where a school is established; its stream is declared with the cell, not in a regulation. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the executograms in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
+                  "$ref": "#/definitions/articleReference",
+                  "description": "The executograms established by this article, `<regulation>#<article>` (since v0.8.7; in v0.8.6 the `$id` of a stream of the cell, RFC-051): a list with one row per executogram, holding the fields its `EXECUTOGRAM` item lists and the executogram's `id`. An executogram records a fact, not a decision, such as the receipt of a medical report; what it holds follows from the article that establishes it (`produces` item of type `EXECUTOGRAM`), as the fields of an application follow from the article that establishes the application. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the executograms in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
                 },
                 "article": {
                   "oneOf": [
@@ -1022,7 +1021,7 @@
                   "decisions": "leerplichtwet_1969#13a"
                 },
                 {
-                  "executograms": "vestiging"
+                  "executograms": "fictief_beleid_vestiging_obs_de_klimop#1"
                 },
                 {
                   "article": "$besluit"
@@ -2659,6 +2658,7 @@
           "enum": [
             "AANVRAAG",
             "BEZWAAR",
+            "EXECUTOGRAM",
             "BESCHIKKING",
             "TOETS",
             "WAARDEBEPALING",
@@ -2666,7 +2666,7 @@
             "INFORMATIEF",
             "RECHTSPOSITIE"
           ],
-          "description": "What this item is: a submission of a belanghebbende (AANVRAAG: a request to take a decision, Awb 1:3 lid 3; BEZWAAR: an objection against a decision, Awb 1:5, RFC-050) or a decision with its legal character (BESCHIKKING, TOETS, ...). An article lists at most one item of each type, so the article and the type together name the item (RFC-047). Hooks with applies_to.submission match a submission type, hooks with applies_to.legal_character a decision type."
+          "description": "What this item is: a submission of a belanghebbende (AANVRAAG: a request to take a decision, Awb 1:3 lid 3; BEZWAAR: an objection against a decision, Awb 1:5, RFC-050), an act the law establishes that a cell records as a fact (EXECUTOGRAM, since v0.8.7, RFC-051: such as a medical examination; it holds the article's parameters it lists and yields nothing), or a decision with its legal character (BESCHIKKING, TOETS, ...). An article lists at most one item of each type, so the article and the type together name the item (RFC-047). Hooks with applies_to.submission match a submission type, hooks with applies_to.legal_character a decision type."
         },
         "requests": {
           "$ref": "#/definitions/articleReference",
@@ -2789,9 +2789,52 @@
               ]
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "EXECUTOGRAM"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "parameters"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "outputs"
+                  ]
+                },
+                {
+                  "required": [
+                    "derived"
+                  ]
+                },
+                {
+                  "required": [
+                    "decision_type"
+                  ]
+                },
+                {
+                  "required": [
+                    "procedure_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "requests"
+                  ]
+                }
+              ]
+            }
+          }
         }
       ],
-      "description": "One thing that executing this article yields, when produces is a list (RFC-047): a submission, such as an application with what it contains and the decision it asks for, or a decision with the outputs that belong to it. `type` selects which hooks fire and, for a decision, with `procedure_id` the Awb procedure.",
+      "description": "One thing that executing this article yields, when produces is a list (RFC-047): a submission, such as an application with what it contains and the decision it asks for, an executogram with the fields it holds (since v0.8.7), or a decision with the outputs that belong to it. `type` selects which hooks fire and, for a decision, with `procedure_id` the Awb procedure.",
       "examples": [
         {
           "type": "AANVRAAG",
