@@ -168,3 +168,39 @@ describe('toon en artikelNaam', () => {
     expect(wetNaam('besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw')).toBe('BABW');
   });
 });
+
+describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
+  beforeEach(() => {
+    spel.casus.andere_cellen = [
+      { cel: 'gemeente_oostmeer', cel_naam: 'gemeente Oostmeer' },
+      { cel: 'cbr', cel_naam: 'CBR' },
+    ];
+  });
+  const eerder = (ingevuld_door) => ({
+    soort: 'begrip',
+    naam: 'aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt',
+    wet: 'besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw',
+    artikel: '51',
+    waarde: true,
+    ontbreekt: [],
+    keer: null,
+    ingevuld_door,
+  });
+  const bron = (answerer) => ({
+    answerer,
+    law_id: `reductie_${answerer}`,
+    valid_from: '2026-01-01',
+    records_read: 1,
+    last_record: null,
+  });
+
+  it('noemt de andere cel bij haar naam', () => {
+    const t = stapTekst(eerder({ answer: bron('gemeente_oostmeer') }), []);
+    expect(t.toelichting).toContain('gemeente Oostmeer');
+  });
+
+  it('noemt elke cel waarvan het antwoord meetelde', () => {
+    const t = stapTekst(eerder({ answers: [bron('cbr'), bron('gemeente_oostmeer')] }), []);
+    expect(t.toelichting).toBe('samengevoegd uit de antwoorden van CBR en gemeente Oostmeer');
+  });
+});

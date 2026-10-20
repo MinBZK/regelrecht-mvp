@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
 regulatory_layer: AMVB
 publication_date: '2025-10-10'
@@ -949,6 +949,13 @@ articles:
       [ref2]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
+      # Bevoegd (RFC-002): het college onder lid 1 en 2, het CBR onder lid
+      # 3. Welk college, zegt lid 1 (de gemeente van inschrijving); de PoC
+      # toetst alleen de categorie (RFC-052).
+      competent_authority:
+        - name: college van burgemeester en wethouders
+          type: CATEGORY
+        - name: CBR
       # Lid 1: het college verstrekt de kaart aan een gehandicapte "overeenkomstig
       # de bij ministeriële regeling gestelde criteria". Die criteria staan in
       # artikel 1 van de Regeling gehandicaptenparkeerkaart. Lid 2 (de
@@ -1269,18 +1276,58 @@ articles:
       # Lid 1. Lid 2 (een kortere termijn als redelijke grond bestaat voor de
       # verwachting dat de gehandicapte korter in aanmerking komt) en lid 3
       # (tijdelijk verblijf in Nederland) zijn niet gemodelleerd.
+      # Lid 2 en 3 noemen "het gezag dat bevoegd is tot de afgifte van
+      # gehandicaptenparkeerkaarten": het college of het CBR (artikel 49).
+      competent_authority:
+        - name: college van burgemeester en wethouders
+          type: CATEGORY
+        - name: CBR
+      open_terms:
+        # Of aan de aanvrager eerder een kaart is verstrekt, zoals artikel 2,
+        # tweede lid, onder a en b, van de Regeling gehandicaptenparkeerkaart
+        # het vraagt. Een feit dat elke verstrekkende instantie uit haar eigen
+        # besluiten kent: een kaart van een andere gemeente of van het CBR
+        # telt ook, dus elk antwoord telt mee (OR). Eigen keuze: het begrip
+        # staat hier en niet bij artikel 49, het artikel dat de kaart
+        # vestigt. Artikel 49 neemt een besluit, en een uitvoer van een
+        # besluit hoort bij dat besluit (RFC-047); dan zou elk besluit op een
+        # aanvraag dit feit vragen. Artikel 51 gaat over de verstrekte kaart
+        # en noemt wie bevoegd is tot afgifte.
+        - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+          type: boolean
+          required: true
+          decided_per_case_by: >-
+            het college van burgemeester en wethouders, als verstrekkende
+            instantie (Regeling gehandicaptenparkeerkaart, artikel 2, tweede
+            lid, onder a en b)
+          combine: OR
+          description: >-
+            Of aan de aanvrager eerder een gehandicaptenparkeerkaart is
+            verstrekt.
       execution:
         parameters:
           - name: datum_afgifte
             type: date
+            required: false
             description: De dag waarop de gehandicaptenparkeerkaart is afgegeven.
+          - name: bsn_aanvrager
+            type: string
+            required: false
+            description: >-
+              Burgerservicenummer van de aanvrager, voor de vraag of hem
+              eerder een kaart is verstrekt.
         output:
           - name: einde_geldigheidsduur
             type: date
             description: >-
               De laatste dag van de vijf achtereenvolgende jaren, gerekend vanaf
               de dag van afgifte (lid 1).
+          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            type: boolean
+            description: Of aan de aanvrager eerder een gehandicaptenparkeerkaart is verstrekt.
         actions:
+          - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            value: $aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
           # "gerekend vanaf de dag van afgifte": de dag van afgifte is de eerste
           # dag, dus vijf jaren eindigen de dag vóór dezelfde dag vijf jaar
           # later. Eigen keuze in de telling. Een kaart afgegeven op 29

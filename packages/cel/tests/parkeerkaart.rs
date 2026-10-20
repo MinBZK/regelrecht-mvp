@@ -4,6 +4,10 @@
 //! with the Awb on it, a reduction over its own decisions and the objection
 //! under Awb 7:11. Nothing in the cell knows this case: it follows from the
 //! law, the municipality's policy and its reduction, as vakantieverlof does.
+//!
+//! The medical examination is the GGD's (Regeling art. 3): a cell of its
+//! own records it, and the municipality's decisions take that cell along
+//! as their sphere (RFC-052). Each test has its own GGD ([`GGD`]).
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
@@ -40,10 +44,28 @@ const REGELING: &str = "regeling_gehandicaptenparkeerkaart";
 const EXAMINED: &str = "geneeskundig_onderzoek_heeft_plaatsgehad";
 const EARLIER: &str = "aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt";
 /// The fact art. 3 lid 1 of the Regeling requires: the medical
-/// examination. The municipality records receipt of the report as an
-/// executogram of it, and the reduction reads those executograms.
+/// examination. The GGD records it as an executogram in its own cell, and
+/// its reduction reads those executograms.
 const EXAMINATION: &str = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek";
 const REPORTS: &str = "reductie_geneeskundig_onderzoek";
+/// The fictitious GGD that examines for the municipality.
+const GGD_ACTOR: &str = "ggd_wilgendaal";
+
+thread_local! {
+    /// The GGD's cell of this test: tests run on threads of their own.
+    static GGD: std::cell::RefCell<Cell> = std::cell::RefCell::new(
+        Cell::in_memory(
+            GGD_ACTOR,
+            Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{GGD_ACTOR}")),
+        )
+        .unwrap(),
+    );
+}
+
+/// A copy of the GGD's cell as it stands, to take along as the sphere.
+fn ggd() -> Cell {
+    GGD.with(|g| g.borrow().sandbox())
+}
 /// The college's power to leave the examination out, and the two
 /// judgements of lid 2, onder a en b, all on art. 49.
 const LEFT_OUT: &str = "geneeskundig_onderzoek_achterwege_gelaten";
@@ -122,7 +144,7 @@ const APPLICANT: &str = "999990020";
 fn applied(cell: &mut Cell, bsn: &str, on: &str) -> Gram {
     cell.record_submission(
         &mut service(),
-        &[],
+        &[&ggd()],
         LAW,
         ARTICLE,
         None,
@@ -132,16 +154,19 @@ fn applied(cell: &mut Cell, bsn: &str, on: &str) -> Gram {
     .unwrap()
 }
 
-/// The municipality receives on `on` the report of the GGD on the medical
-/// examination of `bsn` on `examined_on` (art. 3 lid 1 of the Regeling).
-fn reported(cell: &mut Cell, bsn: &str, examined_on: &str, on: &str) -> Gram {
+/// The GGD records on `on` that it examined `bsn` on `examined_on` (art. 3
+/// lid 1 of the Regeling), in its own chronicle.
+fn reported(_municipality: &mut Cell, bsn: &str, examined_on: &str, on: &str) -> Gram {
     let supplied = object_map(json!({
         "bsn_aanvrager": bsn,
         "datum_onderzoek": examined_on,
         "verricht_door": "Gemeentelijke Gezondheidsdienst",
     }));
-    cell.record_executogram(&service(), EXAMINATION, &supplied, day(on))
-        .unwrap()
+    GGD.with(|g| {
+        g.borrow_mut()
+            .record_executogram(&service(), EXAMINATION, &supplied, day(on))
+            .unwrap()
+    })
 }
 
 /// The college's findings after the medical examination: only a long-term
@@ -160,7 +185,7 @@ fn decide_with(
 ) -> Result<Gram, Error> {
     cell.decide(
         &mut service(),
-        &[],
+        &[&ggd()],
         LAW,
         ARTICLE,
         application,
@@ -375,7 +400,7 @@ fn the_reduction_sets_a_finding_of_the_college_aside() {
         json!(true)
     );
     // The finding set aside is no finding the decision used.
-    let found = cell.findings(&mut service(), &[], &gram.id).unwrap();
+    let found = cell.findings(&mut service(), &[&ggd()], &gram.id).unwrap();
     assert!(!found.contains(&VALID.to_string()), "{found:?}");
     assert!(found.contains(&WALKING.to_string()), "{found:?}");
 }
@@ -443,8 +468,9 @@ fn a_card_of_someone_else_does_not_count() {
 
 #[test]
 fn a_cell_lists_the_lexostatus_it_answers() {
-    // The terms the reductions fill are the policy's and the Regeling's,
-    // not the BABW's.
+    // The terms the municipality's reduction fills: the policy's, and
+    // whether a card was issued before (BABW art. 51, RFC-052). The
+    // examination is the GGD's, in a cell of its own.
     let mut answers: Vec<(String, String, String, String)> = cell()
         .answers()
         .into_iter()
@@ -460,9 +486,8 @@ fn a_cell_lists_the_lexostatus_it_answers() {
     assert_eq!(
         answers,
         vec![
+            owned(LAW, "51", EARLIER, REDUCTION),
             owned(POLICY, "1", VALID, REDUCTION),
-            owned(REGELING, "2", EARLIER, REDUCTION),
-            owned(REGELING, "2", EXAMINED, REPORTS),
         ]
     );
 }
@@ -496,7 +521,7 @@ fn object(
 ) -> Result<Gram, Error> {
     cell.record_submission(
         &mut service(),
-        &[],
+        &[&ggd()],
         AWB,
         OBJECTION,
         Some(contested),
@@ -516,7 +541,7 @@ fn reconsider(
 ) -> Vec<Gram> {
     cell.decide(
         &mut service(),
-        &[],
+        &[&ggd()],
         AWB,
         OBJECTION,
         objection,
@@ -548,8 +573,9 @@ fn an_objection_does_not_change_the_application() {
         matches!(&e, Error::Refused(m) if m.contains("does not ask 'kaart_als_passagier'")),
         "{e}"
     );
-    // The application, the report and the refusal.
-    assert_eq!(cell.grams().len(), 3);
+    // The application and the refusal; the examination is in the GGD's
+    // chronicle.
+    assert_eq!(cell.grams().len(), 2);
 }
 
 #[test]
@@ -721,7 +747,7 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     // within the policy that fills art. 49: the cell's answer, with the
     // reduction, its version and how far it read the chronicle. The policy
     // refuses, so art. 2 of the Regeling is not asked.
-    let result = cell.explain(&mut service(), &[], &second.id).unwrap();
+    let result = cell.explain(&mut service(), &[&ggd()], &second.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let nodes = answered(root);
     assert_eq!(nodes.len(), 1, "{}", root.render_box_drawing());
@@ -736,13 +762,15 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     assert_eq!(answer.answerer, RECORDING_ACTOR);
     assert_eq!(answer.law_id, REDUCTION);
     assert_eq!(answer.valid_from, "2026-01-01");
-    // Everything before this decision: the first application, report and
-    // decision, and the second application and report.
-    assert_eq!(answer.records_read, 5);
-    let report = &cell.grams()[4];
-    assert_eq!(report.grondslag, format!("{REGELING}#3"));
-    assert_eq!(report.fact.as_deref(), Some("geneeskundig_onderzoek"));
-    assert_eq!(answer.last_record.as_deref(), Some(report.id.as_str()));
+    // Everything before this decision: the first application and decision,
+    // and the second application.
+    assert_eq!(answer.records_read, 3);
+    let second_application = &cell.grams()[2];
+    assert_eq!(second_application.kind, "AANVRAAG");
+    assert_eq!(
+        answer.last_record.as_deref(),
+        Some(second_application.id.as_str())
+    );
     // The reduction's FOREACH is not in the decision's trace.
     let trace = root.render_box_drawing();
     assert!(!trace.contains("FOREACH"), "{trace}");
@@ -758,7 +786,7 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     // Step 2: asked why, the cell runs its reduction again with its own
     // trace, which shows the first card it counted.
     let explained = cell
-        .explain_answer(&mut service(), &[], &second.id, VALID)
+        .explain_answer(&mut service(), &[&ggd()], &second.id, VALID)
         .unwrap();
     assert_eq!(explained.len(), 1);
     assert_eq!(
@@ -770,7 +798,7 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
 
     // Nothing stays loaded.
     let mut kept = service();
-    cell.explain_answer(&mut kept, &[], &second.id, VALID)
+    cell.explain_answer(&mut kept, &[&ggd()], &second.id, VALID)
         .unwrap();
     assert!(!kept.has_law(REDUCTION));
 }
@@ -782,10 +810,12 @@ fn on_a_refusal_on_the_criteria_the_cell_is_not_asked() {
     // are not read, and the cell answers nothing.
     let mut cell = cell();
     let refused = apply_and_decide(&mut cell, APPLICANT, false, "2026-10-20");
-    let result = cell.explain(&mut service(), &[], &refused.id).unwrap();
+    let result = cell
+        .explain(&mut service(), &[&ggd()], &refused.id)
+        .unwrap();
     assert!(answered(result.trace.as_ref().unwrap()).is_empty());
     let e = cell
-        .explain_answer(&mut service(), &[], &refused.id, VALID)
+        .explain_answer(&mut service(), &[&ggd()], &refused.id, VALID)
         .unwrap_err();
     assert!(
         matches!(&e, Error::Refused(m) if m.contains("did not ask")),
@@ -803,7 +833,9 @@ fn at_the_heroverweging_the_cell_answers_without_the_contested_grant() {
     // everything before this decision but the contested grant. Art. 49
     // would issue the card again, so it asks art. 2 of the Regeling too,
     // and the cell answers from the report it received for the grant.
-    let result = cell.explain(&mut service(), &[], &decided[0].id).unwrap();
+    let result = cell
+        .explain(&mut service(), &[&ggd()], &decided[0].id)
+        .unwrap();
     let root = result.trace.as_ref().unwrap();
     let all = answered(root);
     let names: Vec<&str> = all.iter().map(|n| n.name.as_str()).collect();
@@ -831,7 +863,7 @@ fn at_the_heroverweging_the_cell_answers_without_the_contested_grant() {
 
     // The reduction's own account does not read the contested grant.
     let explained = cell
-        .explain_answer(&mut service(), &[], &decided[0].id, VALID)
+        .explain_answer(&mut service(), &[&ggd()], &decided[0].id, VALID)
         .unwrap();
     let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(!why.contains(&granted.id), "{why}");
@@ -873,8 +905,8 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
     blocked_on(&e, EXAMINED);
     assert_eq!(cell.grams().len(), 1);
 
-    // Once the municipality has received the GGD's report, the card is
-    // issued; the cell answered the Regeling's term from the report.
+    // Once the GGD has recorded the examination, the card is issued; the
+    // GGD's cell answered the term of art. 3 (RFC-052).
     let report = reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
     assert_eq!(report.kind, "EXECUTOGRAM");
     assert_eq!(report.grondslag, format!("{REGELING}#3"));
@@ -884,7 +916,7 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let result = cell.explain(&mut service(), &[], &gram.id).unwrap();
+    let result = cell.explain(&mut service(), &[&ggd()], &gram.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let node = answered(root)
         .into_iter()
@@ -895,13 +927,15 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
         Some(regelrecht_engine::Value::from(json!(true)))
     );
     let answer = node.answer.as_ref().unwrap();
+    assert_eq!(answer.answerer, GGD_ACTOR);
     assert_eq!(answer.law_id, REPORTS);
     assert_eq!(answer.last_record.as_deref(), Some(report.id.as_str()));
-    let why = cell
-        .explain_answer(&mut service(), &[], &gram.id, EXAMINED)
-        .unwrap();
-    let why = why[0].trace.as_ref().unwrap().render_box_drawing();
-    assert!(why.contains(&report.id), "{why}");
+    // The municipality did not answer it, so it has nothing to explain;
+    // the GGD's reasoning is its own.
+    let e = cell
+        .explain_answer(&mut service(), &[&ggd()], &gram.id, EXAMINED)
+        .unwrap_err();
+    assert!(e.to_string().contains("did not ask the cell"), "{e}");
 }
 
 #[test]
@@ -977,13 +1011,13 @@ fn lid_2_onder_a_an_earlier_card_and_the_college_knows_the_applicant_still_quali
     assert_eq!(gram.fields[LEFT_OUT], json!(true));
     assert_eq!(gram.fields[KNOWN], json!(true));
 
-    let result = cell.explain(&mut service(), &[], &gram.id).unwrap();
+    let result = cell.explain(&mut service(), &[&ggd()], &gram.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let names: Vec<&str> = answered(root).iter().map(|n| n.name.as_str()).collect();
     // The examination is not asked: lid 2 decides first.
     assert_eq!(names, [VALID, EARLIER], "{}", root.render_box_drawing());
     let why = cell
-        .explain_answer(&mut service(), &[], &gram.id, EARLIER)
+        .explain_answer(&mut service(), &[&ggd()], &gram.id, EARLIER)
         .unwrap();
     let why = why[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(why.contains(&first.id), "{why}");
@@ -1051,6 +1085,183 @@ fn without_a_report_the_college_may_establish_the_examination_itself() {
         granted.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let found = cell.findings(&mut service(), &[], &granted.id).unwrap();
+    let found = cell
+        .findings(&mut service(), &[&ggd()], &granted.id)
+        .unwrap();
     assert!(found.contains(&EXAMINED.to_string()), "{found:?}");
+}
+
+// Synthesis (RFC-052): whether a card was issued before is a fact of every
+// issuing body (BABW art. 51), and each answers from its own chronicle.
+
+/// Another issuing body: the fictitious municipality of Oostmeer, or the CBR.
+fn issuer(actor: &str) -> Cell {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{actor}"));
+    Cell::in_memory(actor, dir).unwrap()
+}
+
+/// `issuer` issues `bsn` a card on `on`, after an examination by the GGD.
+/// The policy of Wilgendaal is unscoped (it says so), so the other body
+/// gives its own finding on a valid card.
+fn issued_by(issuer: &mut Cell, bsn: &str, on: &str) -> Gram {
+    let app = applied(issuer, bsn, on);
+    reported(issuer, bsn, on, on);
+    let mut findings = examined(true);
+    findings.insert(VALID.into(), json!(false));
+    let gram = decide_with(issuer, &app.id, &findings, on).unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    gram
+}
+
+/// The college of Wilgendaal decides with `sphere` and leaves the
+/// examination out because it knows the applicant still qualifies (Regeling
+/// art. 2 lid 2 onder a), which needs an earlier card.
+fn without_examination(
+    cell: &mut Cell,
+    sphere: &[&Cell],
+    application: &str,
+    on: &str,
+) -> Result<Gram, Error> {
+    let mut findings = examined(true);
+    findings.insert(LEFT_OUT.into(), json!(true));
+    findings.insert(KNOWN.into(), json!(true));
+    cell.decide(
+        &mut service(),
+        sphere,
+        LAW,
+        ARTICLE,
+        application,
+        &Map::new(),
+        &findings,
+        day(on),
+    )
+    .map(|mut grams| grams.remove(0))
+}
+
+/// Who filled whether a card was issued before, in the decision `id`.
+fn earlier_filled_by(cell: &Cell, sphere: &[&Cell], id: &str) -> regelrecht_engine::FilledBy {
+    cell.explain(&mut service(), sphere, id)
+        .unwrap()
+        .open_terms
+        .into_iter()
+        .find(|f| f.term == EARLIER)
+        .map(|f| f.filled_by)
+        .expect("the term was filled")
+}
+
+#[test]
+fn a_card_of_another_municipality_counts() {
+    let mut oostmeer = issuer("gemeente_oostmeer");
+    issued_by(&mut oostmeer, "999990044", "2026-01-15");
+    let mut cell = cell();
+    let app = applied(&mut cell, "999990044", "2026-10-13");
+    let gram = without_examination(&mut cell, &[&ggd(), &oostmeer], &app.id, "2026-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    let regelrecht_engine::FilledBy::Answer(by) =
+        earlier_filled_by(&cell, &[&ggd(), &oostmeer], &gram.id)
+    else {
+        panic!("one answer")
+    };
+    assert_eq!(by.answerer, "gemeente_oostmeer");
+}
+
+#[test]
+fn a_card_of_the_cbr_counts() {
+    let mut cbr = issuer("cbr");
+    issued_by(&mut cbr, "999990056", "2026-02-02");
+    let mut cell = cell();
+    let app = applied(&mut cell, "999990056", "2026-10-13");
+    let gram = without_examination(&mut cell, &[&ggd(), &cbr], &app.id, "2026-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    let regelrecht_engine::FilledBy::Answer(by) =
+        earlier_filled_by(&cell, &[&ggd(), &cbr], &gram.id)
+    else {
+        panic!("one answer")
+    };
+    assert_eq!(by.answerer, "cbr");
+}
+
+#[test]
+fn cards_of_two_issuers_combine_with_or() {
+    // Wilgendaal issued a card in 2026 and Oostmeer one before; after the
+    // card of Wilgendaal expired, both say true. Without `combine: OR` on
+    // BABW art. 51 the two answers would be an error.
+    let mut oostmeer = issuer("gemeente_oostmeer");
+    issued_by(&mut oostmeer, "999990044", "2026-01-15");
+    let mut cell = cell();
+    let app = applied(&mut cell, "999990044", "2026-10-13");
+    without_examination(&mut cell, &[&ggd(), &oostmeer], &app.id, "2026-10-20").unwrap();
+    let again = applied(&mut cell, "999990044", "2031-10-20");
+    let gram =
+        without_examination(&mut cell, &[&ggd(), &oostmeer], &again.id, "2031-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    let regelrecht_engine::FilledBy::Answers(all) =
+        earlier_filled_by(&cell, &[&ggd(), &oostmeer], &gram.id)
+    else {
+        panic!("two answers")
+    };
+    let names: Vec<&str> = all.iter().map(|p| p.answerer.as_str()).collect();
+    assert_eq!(names, ["gemeente_oostmeer", RECORDING_ACTOR]);
+}
+
+#[test]
+fn babw_51_combines_the_answers_of_the_issuers_with_or() {
+    let service = service();
+    let law = service
+        .resolver()
+        .get_law_for_date(LAW, Some(day("2026-10-20")))
+        .unwrap();
+    let term = law
+        .find_article_by_number("51")
+        .and_then(|a| a.get_open_terms())
+        .and_then(|terms| terms.iter().find(|t| t.id == EARLIER))
+        .expect("art. 51 declares the term");
+    assert_eq!(
+        term.combine,
+        Some(regelrecht_engine::article::CombineOp::Or)
+    );
+}
+
+#[test]
+fn a_municipality_that_reads_examinations_itself_is_refused() {
+    // The examination is the GGD's (Regeling art. 3): a municipality whose
+    // reduction would answer it is not competent, and the cell refuses to
+    // decide (RFC-052).
+    let dir = tempfile::tempdir().unwrap();
+    let copy = |from: &Path, to: &Path| {
+        std::fs::create_dir_all(to).unwrap();
+        for entry in std::fs::read_dir(from).unwrap() {
+            let path = entry.unwrap().path();
+            std::fs::copy(&path, to.join(path.file_name().unwrap())).unwrap();
+        }
+    };
+    let corpus = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/cells");
+    std::fs::copy(cell_dir().join("cel.yaml"), dir.path().join("cel.yaml")).unwrap();
+    copy(
+        &cell_dir().join(format!("reducties/{REDUCTION}")),
+        &dir.path().join(format!("reducties/{REDUCTION}")),
+    );
+    copy(
+        &corpus.join(format!("{GGD_ACTOR}/reducties/{REPORTS}")),
+        &dir.path().join(format!("reducties/{REPORTS}")),
+    );
+    let mut cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains(EXAMINED) && m.contains("Gemeentelijke Gezondheidsdienst")),
+        "{e}"
+    );
 }

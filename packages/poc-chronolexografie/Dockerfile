@@ -99,6 +99,9 @@ COPY corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_weg
 COPY corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/ /app/corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/
 COPY corpus/cells/gemeente_wilgendaal/ /app/corpus/cells/gemeente_wilgendaal/
+COPY corpus/cells/ggd_wilgendaal/ /app/corpus/cells/ggd_wilgendaal/
+COPY corpus/cells/gemeente_oostmeer/ /app/corpus/cells/gemeente_oostmeer/
+COPY corpus/cells/cbr/ /app/corpus/cells/cbr/
 
 WORKDIR /app
 ENV CHRONO_CORPUS_DIR=/app/corpus \

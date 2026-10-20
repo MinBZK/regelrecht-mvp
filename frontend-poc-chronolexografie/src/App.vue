@@ -1,7 +1,8 @@
 <script setup>
 // Eerst de keuze van een casus (CasusKeuze.vue). Daarna één pagina met zes
 // tabbladen: de scenario's, de aanvrager, het bestuursorgaan, de kroniek,
-// de reductie en het logboek. Bovenaan de speeldatum, die voor elke stap
+// de reductie en het logboek, en bij een casus met andere cellen (RFC-052)
+// een zevende voor die cellen. Bovenaan de speeldatum, die voor elke stap
 // geldt, een knop die de kroniek terugzet op wat de cel vooraf vastlegde
 // (meestal niets) en een knop terug naar de keuze. Een weigering van de cel
 // staat in een banner, in het Nederlands; de melding van de cel zelf onder
@@ -13,6 +14,7 @@ import { artikelNaam } from './logboek.js';
 import { isEngels, melding } from './melding.js';
 import { hervatten, naarKeuze, spel, stap, verversen } from './spel.js';
 import AanvragerTab from './components/AanvragerTab.vue';
+import AndereCellenTab from './components/AndereCellenTab.vue';
 import BestuursorgaanTab from './components/BestuursorgaanTab.vue';
 import CasusKeuze from './components/CasusKeuze.vue';
 import KroniekTab from './components/KroniekTab.vue';
@@ -20,14 +22,17 @@ import LogboekTab from './components/LogboekTab.vue';
 import ReductieTab from './components/ReductieTab.vue';
 import ScenarioTab from './components/ScenarioTab.vue';
 
-const tabs = [
+// Het tabblad Andere cellen staat er alleen bij een casus met een sfeer
+// (RFC-052).
+const tabs = computed(() => [
   { id: 'scenarios', tekst: "Scenario's" },
   { id: 'aanvrager', tekst: 'Aanvrager' },
   { id: 'bestuursorgaan', tekst: 'Bestuursorgaan' },
+  ...(spel.casus?.andere_cellen?.length ? [{ id: 'andere', tekst: 'Andere cellen' }] : []),
   { id: 'kroniek', tekst: 'Kroniek' },
   { id: 'reductie', tekst: 'Reductie' },
   { id: 'logboek', tekst: 'Logboek' },
-];
+]);
 const tab = ref('scenarios');
 const details = ref(false);
 watch(() => spel.fout, () => (details.value = false));
@@ -122,6 +127,7 @@ async function opnieuw() {
         <ScenarioTab v-if="tab === 'scenarios'" @start="tab = 'aanvrager'" />
         <AanvragerTab v-else-if="tab === 'aanvrager'" />
         <BestuursorgaanTab v-else-if="tab === 'bestuursorgaan'" />
+        <AndereCellenTab v-else-if="tab === 'andere'" />
         <KroniekTab v-else-if="tab === 'kroniek'" />
         <ReductieTab v-else-if="tab === 'reductie'" />
         <LogboekTab v-else @kroniek="naarKroniek" />

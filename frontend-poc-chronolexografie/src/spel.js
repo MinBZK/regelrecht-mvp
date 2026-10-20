@@ -18,6 +18,9 @@ export const spel = reactive({
   casus: null,
   datum: '',
   grammen: [],
+  // De kronieken van de andere cellen van de sfeer (RFC-052), elk met
+  // `cel`, `cel_naam` en `grammen`; leeg bij een casus zonder.
+  andere: [],
   vormen: null,
   fout: '',
   // Het chronolexogram dat de kroniek bij openen kiest (een link uit het logboek).
@@ -109,6 +112,7 @@ export async function verversen() {
   try {
     const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(spel.datum)]);
     spel.grammen = kroniek.grammen;
+    spel.andere = kroniek.andere ?? [];
     spel.vormen = vormen;
   } catch (e) {
     spel.fout = e.message;

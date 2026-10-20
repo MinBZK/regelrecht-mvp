@@ -1,39 +1,38 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: reductie_geneeskundig_onderzoek
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
 valid_from: '2026-01-01'
-# Geen regelgeving: een reductie van de cel van de (fictieve) gemeente
-# Wilgendaal over haar eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest
-# de executogrammen van het feit dat artikel 3, eerste lid, van de Regeling
-# gehandicaptenparkeerkaart omschrijft: het geneeskundig onderzoek door de
-# GGD of de aangewezen deskundige, vastgelegd toen de gemeente het rapport
-# ontving. Wat elk executogram bevat, zegt dat artikel (requires, fact).
-# Haar antwoord vult het open begrip van artikel 2 van die regeling. Er is
-# geen bekendmaking; de url wijst naar dat artikel.
-url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
-name: Geneeskundig onderzoek bij de gemeente Wilgendaal (reductie)
+# Geen regelgeving: een reductie van de cel van de (fictieve) GGD Wilgendaal
+# over haar eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de
+# executogrammen van het feit dat artikel 3, eerste lid, van de Regeling
+# gehandicaptenparkeerkaart omschrijft: de onderzoeken die de GGD verrichtte.
+# Wat elk executogram bevat, zegt dat artikel (requires, fact). Haar antwoord
+# vult het open begrip van dat artikel: of het onderzoek plaatsvond. Daarvoor
+# is de GGD bevoegd (competent_authority van artikel 3, RFC-052). Er is geen
+# bekendmaking; de url wijst naar dat artikel.
+url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
+name: Geneeskundig onderzoek bij de GGD Wilgendaal (reductie)
 competent_authority:
-  name: Het college van burgemeester en wethouders van de gemeente Wilgendaal
+  name: GGD Wilgendaal
 articles:
   - number: '1'
     text: >-
       Geen regelgeving: een reductie van de cel over haar eigen kroniek. Een
-      geneeskundig onderzoek heeft voor deze aanvraag plaatsgehad als de
-      gemeente het rapport ontving van een onderzoek naar dezelfde aanvrager
-      op of na de dagtekening van de aanvraag en uiterlijk op de dag van
-      afgifte. Vindt de cel zo'n rapport niet, dan zwijgt zij: dat zij geen
-      rapport heeft, betekent niet dat er geen onderzoek was.
-    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
+      geneeskundig onderzoek heeft voor deze aanvraag plaatsgehad als de GGD
+      een onderzoek naar dezelfde aanvrager verrichtte op of na de
+      dagtekening van de aanvraag en uiterlijk op de dag van afgifte. Vindt
+      de cel er geen, dan zwijgt zij, en stelt het college het vast.
+    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
     machine_readable:
       implements:
         - law: regeling_gehandicaptenparkeerkaart
-          article: '2'
+          article: '3'
           open_term: geneeskundig_onderzoek_heeft_plaatsgehad
       execution:
-        # Parameters van artikel 2 van de regeling; de cel geeft ze op naam
-        # door.
+        # Parameters van artikel 3 van de regeling, zoals artikel 2 ze
+        # meegeeft; de cel geeft ze op naam door.
         parameters:
           - name: bsn_aanvrager
             type: string
@@ -46,7 +45,7 @@ articles:
             type: date
             description: De dag waarop de kaart zou worden afgegeven.
         input:
-          # De ontvangen rapporten, één rij per executogram, met
+          # De verrichte onderzoeken, één rij per executogram, met
           # bsn_aanvrager, datum_onderzoek en verricht_door.
           - name: onderzoeken
             type: array
@@ -57,8 +56,8 @@ articles:
             type: boolean
             nullable: true
             description: >-
-              Waar, als de gemeente een rapport van een onderzoek voor deze
-              aanvraag ontving; anders afwezig.
+              Waar, als de GGD een onderzoek voor deze aanvraag verrichtte;
+              anders afwezig.
         actions:
           # Zonder dagtekening valt niet te zeggen of een onderzoek bij deze
           # aanvraag hoort: dan telt er geen. De voorwaarde staat eerst: AND

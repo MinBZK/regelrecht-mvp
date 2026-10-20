@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.5/schema/v0.8.5/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: reductie_geldige_gehandicaptenparkeerkaart
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
@@ -11,10 +11,12 @@ valid_from: '2026-01-01'
 # 51 van het BABW). Haar antwoord vult het open begrip van het fictieve beleid
 # van de gemeente (implements, schema v0.8.5): waar de engine dat begrip leest,
 # ook als Awb 7:11 artikel 49 opnieuw aanroept, vraagt hij het de cel, en de
-# cel draait haar. Uit dezelfde besluiten vult zij ook een open begrip van
-# artikel 2 van de Regeling gehandicaptenparkeerkaart: of de aanvrager eerder
-# een kaart kreeg (tweede lid, onder a en b). Er is geen bekendmaking; de url
-# wijst naar artikel 49.
+# cel draait haar. Uit dezelfde besluiten vult zij ook het open begrip van
+# artikel 51 van het BABW: of de aanvrager eerder een kaart kreeg, zoals
+# artikel 2, tweede lid, onder a en b, van de Regeling
+# gehandicaptenparkeerkaart het vraagt. Daarvoor is elk college bevoegd
+# (RFC-052), dus ook de colleges van andere gemeenten antwoorden. Er is geen
+# bekendmaking; de url wijst naar artikel 49.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Geldige gehandicaptenparkeerkaart bij de gemeente Wilgendaal (reductie)
 competent_authority:
@@ -36,10 +38,11 @@ articles:
         - law: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
           article: '1'
           open_term: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
-        # Artikel 2, tweede lid, onder a en b, van de Regeling
-        # gehandicaptenparkeerkaart: of de aanvrager eerder een kaart kreeg.
-        - law: regeling_gehandicaptenparkeerkaart
-          article: '2'
+        # Artikel 51 van het BABW: of de aanvrager eerder een kaart kreeg
+        # (Regeling gehandicaptenparkeerkaart, artikel 2, tweede lid, onder a
+        # en b).
+        - law: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
+          article: '51'
           open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
       execution:
         # Parameters van het beleid; de cel geeft ze op naam door.
@@ -144,7 +147,7 @@ articles:
           # Een besluit dat dezelfde aanvrager eerder een kaart verstrekte,
           # geldig of niet, en niet herroepen. Vindt de cel er geen, dan zwijgt
           # zij (null): een kaart van een andere gemeente of van het CBR kent
-          # zij niet, en die telt ook (artikel 2, tweede lid, van de regeling).
+          # zij niet; die cel antwoordt zelf (RFC-052).
           - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
             value:
               operation: IF

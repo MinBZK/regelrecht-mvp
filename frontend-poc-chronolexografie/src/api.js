@@ -45,6 +45,9 @@ export const api = {
   vormen: (datum) => get(`/api/vormen?datum=${datum}`),
   kroniek: () => get('/api/kroniek'),
   aanvragen: (velden, datum) => post('/api/aanvragen', { velden, datum }),
+  // Een andere cel van de sfeer legt een handeling vast, zoals de GGD een
+  // geneeskundig onderzoek (RFC-052).
+  vastleggen: (cel, feit, velden, datum) => post('/api/executogrammen', { cel, feit, velden, datum }),
   besluiten: (op, bevindingen, datum) => post('/api/besluiten', { op, bevindingen, datum }),
   // Wat het besluit zou worden, op een kopie van de cel: er wordt niets
   // vastgelegd. Een weigering van de cel komt terug als `{ geweigerd }`.
