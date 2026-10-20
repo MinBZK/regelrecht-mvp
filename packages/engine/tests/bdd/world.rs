@@ -187,19 +187,3 @@ fn trace_output_dir() -> PathBuf {
         .join("..")
         .join("trace_output")
 }
-
-#[cfg(test)]
-#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-mod tests {
-    use super::RegelrechtWorld;
-
-    #[test]
-    fn test_world_initialization() {
-        let world = RegelrechtWorld::new();
-        // Should have laws loaded
-        assert!(
-            world.service.law_count() > 0,
-            "Expected at least one law to be loaded"
-        );
-    }
-}

@@ -70,17 +70,13 @@ mod tests {
     use super::load_all_regulations;
     use regelrecht_engine::LawExecutionService;
 
-    #[test]
-    fn test_load_all_regulations() {
-        let mut service = LawExecutionService::new();
-        let count = load_all_regulations(&mut service).expect("Failed to load regulations");
-        assert!(count > 0, "Expected to load at least one regulation");
-    }
-
+    // Runs in the `bdd_regulation_loader` target; the `bdd` target is
+    // `harness = false` and never runs it.
     #[test]
     fn test_specific_laws_loaded() {
         let mut service = LawExecutionService::new();
-        load_all_regulations(&mut service).expect("Failed to load regulations");
+        let count = load_all_regulations(&mut service).expect("Failed to load regulations");
+        assert!(count > 0, "Expected to load at least one regulation");
 
         // Check that key laws are loaded
         assert!(
