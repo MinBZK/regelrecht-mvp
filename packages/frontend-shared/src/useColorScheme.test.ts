@@ -5,7 +5,7 @@ import {
   applyColorScheme,
   createLocalStoragePersistence,
   useColorScheme,
-} from './useColorScheme.js';
+} from './useColorScheme';
 
 beforeEach(() => {
   document.documentElement.removeAttribute('data-scheme');
@@ -109,6 +109,7 @@ describe('useColorScheme', () => {
   it('returns a read-only colorScheme (writes go through setColorScheme)', () => {
     const backend = { theme: ref('light'), setTheme: vi.fn() };
     const { colorScheme } = useColorScheme(backend);
+    // @ts-expect-error -- writing to the read-only ref is what this test checks
     colorScheme.value = 'dark'; // readonly: ignored (Vue warns)
     expect(colorScheme.value).toBe('light');
   });
@@ -127,7 +128,7 @@ describe('useColorScheme', () => {
     // localStorage rather than state left by an earlier test in this file.
     vi.resetModules();
     window.localStorage.setItem('rr-theme', 'dark');
-    const fresh = await import('./useColorScheme.js');
+    const fresh = await import('./useColorScheme');
     const { colorScheme } = fresh.useColorScheme();
     expect(colorScheme.value).toBe('dark');
     expect(document.documentElement.getAttribute('data-scheme')).toBe('dark');

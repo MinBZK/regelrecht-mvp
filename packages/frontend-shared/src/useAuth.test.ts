@@ -14,14 +14,14 @@ function stubLocation({ pathname = '/', search = '', hash = '' } = {}) {
 
 // Each test imports a fresh module so useAuth's module-singleton refs and
 // readyPromise start clean, and so vi.doMock('./apiFetch.js', …) is applied.
-async function freshAuth(apiFetchJson) {
+async function freshAuth(apiFetchJson: ReturnType<typeof vi.fn>) {
   vi.resetModules();
   vi.doMock('./apiFetch.js', () => ({ apiFetchJson }));
-  return import('./useAuth.js');
+  return import('./useAuth');
 }
 
 describe('login / logout URL construction', () => {
-  let loc;
+  let loc: ReturnType<typeof stubLocation>;
   beforeEach(() => {
     loc = stubLocation({ pathname: '/editor', search: '?a=1', hash: '#h' });
   });

@@ -33,9 +33,9 @@ The package root (`src/index.js`) exports only the small primitives. Everything 
 | Module | Purpose |
 |--------|---------|
 | `apiFetch.js` | A thin wrapper around `fetch`. A non-ok response throws an `ApiError` carrying the status, the body text and the content type. It deliberately has no retries, timeouts or auth handling; `apiFetch` returns the raw `Response` so callers keep the headers the ETag/If-Match handling relies on |
-| `useAuth.js` | Sign-in state from `/auth/status`, the realm roles of the current user, and `hasRole` / `hasAnyRole` for showing role-specific UI. The backend still enforces every route |
-| `useGithubAuth.js` | Whether the user has linked a GitHub account, from the editor API's `/auth/github/status`. When the endpoint is missing or fails, the controls are hidden |
-| `useColorScheme.js` | The light/dark/auto picker. It sets `data-scheme` on `<html>`, which the design system keys its dark tokens on, and leaves it off for `auto`. Persistence is injected: the editor stores the choice server-side, other apps use `localStorage` |
+| `useAuth.ts` | Sign-in state from `/auth/status`, the realm roles of the current user, and `hasRole` / `hasAnyRole` for showing role-specific UI. The backend still enforces every route |
+| `useGithubAuth.ts` | Whether the user has linked a GitHub account, from the editor API's `/auth/github/status`. When the endpoint is missing or fails, the controls are hidden |
+| `useColorScheme.ts` | The light/dark/auto picker. It sets `data-scheme` on `<html>`, which the design system keys its dark tokens on, and leaves it off for `auto`. Persistence is injected: the editor stores the choice server-side, other apps use `localStorage` |
 | `values.ts` | `isUnknown` and `missingFacts`: one definition of how the engine's Unknown value ([RFC-036](/rfcs/rfc-036)) arrives in JavaScript |
 
 ### TypeScript
@@ -66,7 +66,7 @@ These came in with the proof-of-concepts behind the [PoC Portal](./poc-portal). 
 
 | Module | Purpose |
 |--------|---------|
-| `useBewaardeStand.js` | Keeps choices and settings across a page reload in `localStorage`, under a prefix per case. Two PoCs share one origin behind the portal, and without the prefix they would read each other's state. An edited rulework is deliberately not stored here |
+| `useBewaardeStand.ts` | Keeps choices and settings across a page reload in `localStorage`, under a prefix per case. Two PoCs share one origin behind the portal, and without the prefix they would read each other's state. An edited rulework is deliberately not stored here |
 | `browserVarianten.js` | Variants a user saves in their own browser, in the same shape as the variants checked into the case. Each file keeps a fingerprint of the law text it started from, so the app can say when the corpus has changed underneath it |
 | `reloadOnStaleBundle.js` | Reloads the page when a lazily loaded view no longer exists after a deploy, at most once per ten seconds |
 | `formatToolCall.js` | Renders a tool call in the policy assistant's feed as one readable line, whatever shape the model's arguments take. Used by `AssistentPanel.vue` in both static PoCs |

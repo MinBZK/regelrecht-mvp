@@ -31,7 +31,7 @@
  * zit: een "bewaard" dat na een ververs weg blijkt, is erger dan een weigering.
  */
 import { ref } from 'vue';
-import { bewaardeRef, beschermSleutel, bewaarStand } from './useBewaardeStand.js';
+import { bewaardeRef, beschermSleutel, bewaarStand } from './useBewaardeStand';
 
 /** De sleutel in de bewaarde stand. */
 const SLEUTEL = 'varianten';

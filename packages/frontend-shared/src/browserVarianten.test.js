@@ -22,7 +22,7 @@ let opslag;
 
 async function laad() {
   vi.resetModules();
-  const stand = await import('./useBewaardeStand.js');
+  const stand = await import('./useBewaardeStand');
   stand.stelCasusIn('testcasus');
   return import('./browserVarianten.js');
 }
@@ -77,7 +77,7 @@ describe('browser-varianten', () => {
 
   it('blijft staan als de gebruiker opnieuw begint', async () => {
     const { bewaarVariant } = await laad();
-    const stand = await import('./useBewaardeStand.js');
+    const stand = await import('./useBewaardeStand');
     bewaarVariant({ titel: 'Blijft', bestanden: [bestand()] });
     stand.bewaarStand('kolommen', ['a1']);
 

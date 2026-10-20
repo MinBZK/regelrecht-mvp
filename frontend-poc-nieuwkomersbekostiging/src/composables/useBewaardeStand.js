@@ -4,7 +4,7 @@
 // De casus staat hier en niet in het gedeelde bestand omdat de twee OCW-pocs
 // hosted achter hetzelfde portaal op dezelfde origin draaien; zonder eigen
 // prefix zouden ze elkaars keuzes lezen.
-import { stelCasusIn } from '@regelrecht/frontend-shared/useBewaardeStand.js';
+import { stelCasusIn } from '@regelrecht/frontend-shared/useBewaardeStand';
 
 stelCasusIn('nieuwkomersbekostiging');
 
@@ -15,4 +15,4 @@ export {
   beschermSleutel,
   wisStand,
   heeftBewaardeStand,
-} from '@regelrecht/frontend-shared/useBewaardeStand.js';
+} from '@regelrecht/frontend-shared/useBewaardeStand';

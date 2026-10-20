@@ -1,17 +1,29 @@
 import { ref } from 'vue';
 import { apiFetch, apiFetchJson } from './apiFetch.js';
 
-// Per-user GitHub link status (spike). Shape mirrors the editor-api
-// `/auth/github/status` response:
-//   { connected, configured, github_login?, scopes?, expired, required }
-// `configured: false` means the deployment has no GitHub OAuth App wired up,
-// so the UI should hide the whole affordance.
-const status = ref(null);
+/**
+ * Per-user GitHub link status (spike), as `GithubStatus` in
+ * `packages/editor-api` serializes the `/auth/github/status` response.
+ * `configured: false` means the deployment has no GitHub OAuth App wired up,
+ * so the UI should hide the whole affordance.
+ */
+export interface GithubStatus {
+  connected: boolean;
+  configured: boolean;
+  github_login?: string;
+  scopes?: string;
+  /** A linked token exists but has expired, so the user has to reconnect. */
+  expired: boolean;
+  /** Whether writes require a linked user token in this deployment. */
+  required: boolean;
+}
+
+const status = ref<GithubStatus | null>(null);
 const loading = ref(true);
 
-let readyPromise = null;
+let readyPromise: Promise<void> | null = null;
 
-async function fetchStatus() {
+async function fetchStatus(): Promise<void> {
   try {
     status.value = await apiFetchJson('/auth/github/status');
   } catch {
@@ -23,7 +35,7 @@ async function fetchStatus() {
   }
 }
 
-export function ensureGithubReady() {
+export function ensureGithubReady(): Promise<void> {
   if (!readyPromise) {
     readyPromise = fetchStatus();
   }
@@ -37,7 +49,7 @@ export function useGithubAuth() {
   // same-origin relative path the backend validates and bounces back to with
   // a `?github=connected|error|denied` marker. Guards against being passed a
   // bare event object (`@click="connect"`).
-  function connect(returnUrl) {
+  function connect(returnUrl?: unknown): void {
     const url =
       typeof returnUrl === 'string' && returnUrl
         ? returnUrl
@@ -45,14 +57,14 @@ export function useGithubAuth() {
     window.location.href = '/auth/github/login?return_url=' + encodeURIComponent(url);
   }
 
-  async function disconnect() {
+  async function disconnect(): Promise<void> {
     await apiFetch('/auth/github/disconnect', { method: 'POST' });
     await refresh();
   }
 
   // Force a re-fetch of the shared status (after connect/disconnect, or when a
   // save reported a 428 that may have been resolved in another tab).
-  async function refresh() {
+  async function refresh(): Promise<void> {
     readyPromise = null;
     return ensureGithubReady();
   }
