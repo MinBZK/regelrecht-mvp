@@ -136,6 +136,47 @@ articles:
         actions:
           - output: enig_feit
             value: $enig_feit
+  - number: '6'
+    text: Een feit dat een ander artikel van deze wet geeft.
+    machine_readable:
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        input:
+          - name: zevende
+            type: boolean
+            source:
+              output: zevende_feit
+        output:
+          - name: zesde_feit
+            type: boolean
+        actions:
+          - output: zesde_feit
+            value: $zevende
+  - number: '7'
+    text: Een feit dat de GGD vaststelt.
+    machine_readable:
+      competent_authority:
+        name: Gemeentelijke Gezondheidsdienst
+        type: CATEGORY
+      open_terms:
+        - id: zevende_feit
+          type: boolean
+          required: true
+          decided_per_case_by: het college
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        output:
+          - name: zevende_feit
+            type: boolean
+        actions:
+          - output: zevende_feit
+            value: $zevende_feit
 "#;
 
 /// The law that reads those facts, each through `source.regulation`.
@@ -189,6 +230,13 @@ articles:
               output: enig_feit
               parameters:
                 bsn: $bsn
+          - name: zesde
+            type: boolean
+            source:
+              regulation: wet_verstrekking
+              output: zesde_feit
+              parameters:
+                bsn: $bsn
         output:
           - name: eerder_gelezen
             type: boolean
@@ -201,6 +249,8 @@ articles:
             nullable: true
           - name: enig_gelezen
             type: boolean
+          - name: zesde_gelezen
+            type: boolean
         actions:
           - output: eerder_gelezen
             value: $eerder
@@ -212,6 +262,8 @@ articles:
             value: $gelezen_kenmerk
           - output: enig_gelezen
             value: $enig
+          - output: zesde_gelezen
+            value: $zesde
 "#;
 
 fn service() -> LawExecutionService {
@@ -550,5 +602,77 @@ fn a_combine_that_does_not_fit_the_type_is_refused_at_load() {
     assert!(
         e.to_string().contains("which does not fit its type string"),
         "{e}"
+    );
+}
+
+/// The messages of the trace of `result`, at every depth.
+fn messages(result: &regelrecht_engine::ArticleResult) -> Vec<String> {
+    fn walk(node: &PathNode, out: &mut Vec<String>) {
+        out.extend(node.message.clone());
+        for child in &node.children {
+            walk(child, out);
+        }
+    }
+    let mut out = Vec::new();
+    walk(result.trace.as_ref().expect("traced"), &mut out);
+    out
+}
+
+#[test]
+fn an_article_the_target_reads_in_its_own_law_is_not_routed() {
+    // Art. 6 is read through source.regulation; art. 7, which art. 6 reads
+    // within its own law, is not, so the running college answers its term
+    // although art. 7 names the GGD.
+    let running = Fake::college("wilgendaal").answering("zevende_feit", Value::Bool(true));
+    let ggd = Fake::new("ggd", Some("Gemeentelijke Gezondheidsdienst"))
+        .answering("zevende_feit", Value::Bool(false));
+    let result = read("zesde_gelezen", &running, vec![&ggd], BTreeMap::new()).unwrap();
+    assert_eq!(result.outputs["zesde_gelezen"], Value::Bool(true));
+    assert!(ggd.asked().is_empty());
+}
+
+#[test]
+fn without_answerers_the_trace_names_no_missing_competent_one() {
+    let result = service()
+        .evaluate_law_with_trace_in(
+            "wet_lezer",
+            &["eerder_gelezen"],
+            parameters(),
+            Call::with_findings(BTreeMap::from([(
+                "eerder_verstrekt".to_string(),
+                Value::Bool(true),
+            )])),
+            DATE,
+        )
+        .unwrap();
+    assert_eq!(result.outputs["eerder_gelezen"], Value::Bool(true));
+    assert!(
+        !messages(&result)
+            .iter()
+            .any(|m| m.contains("No competent answerer")),
+        "{:?}",
+        messages(&result)
+    );
+}
+
+#[test]
+fn with_a_competent_answerer_the_trace_names_no_missing_one() {
+    let running = Fake::college("wilgendaal").answering("eerder_verstrekt", Value::Bool(true));
+    let result = read("eerder_gelezen", &running, vec![], BTreeMap::new()).unwrap();
+    assert!(!messages(&result)
+        .iter()
+        .any(|m| m.contains("No competent answerer")));
+}
+
+#[test]
+fn a_null_answer_without_a_fallback_is_the_value() {
+    // `kenmerk` has no default and nobody decides it per case: null is the
+    // answer, as with one answerer (RFC-048), and the report says who gave it.
+    let running = Fake::college("wilgendaal").answering("kenmerk", Value::Null);
+    let result = read("kenmerk_gelezen", &running, vec![], BTreeMap::new()).unwrap();
+    assert_eq!(result.outputs["kenmerk_gelezen"], Value::Null);
+    assert_eq!(
+        filled_by(&result, "kenmerk"),
+        FilledBy::Answer(provenance("wilgendaal"))
     );
 }
