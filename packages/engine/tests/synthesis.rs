@@ -1,10 +1,11 @@
-//! Synthesis (RFC-053): a value that another actor establishes is read with
+//! Synthesis (RFC-052): a value that another actor establishes is read with
 //! `source.regulation` from the article that establishes it. For the open
 //! terms of such an article the engine asks every answerer of the call that
-//! the article names in `competent_authority`, and none other, and makes
-//! one value of their answers with the term's `combine`. At the top of an
-//! execution, and for an article without `competent_authority`, only the
-//! caller's answerer is asked, as before.
+//! the term names in its own `competent_authority`, and none other, and
+//! makes one value of their answers with the term's `combine`. At the top of
+//! an execution, and for a term without `competent_authority`, only the
+//! caller's answerer is asked, as before. The article's `competent_authority`
+//! says who decides (RFC-002) and routes nothing.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -18,11 +19,12 @@ use regelrecht_engine::{
 
 const DATE: &str = "2026-10-20";
 
-/// The law that establishes the facts: who issued a card before (art. 1,
-/// a college or the fictitious national issuer), a fact of its own without
-/// competence (art. 2), one whose competence is a reference (art. 3), a
-/// mark one college gives (art. 4) and a fact one college
-/// gives without `combine` (art. 5).
+/// The law that establishes the facts, with the competence on each term:
+/// who issued a card before (art. 1, a college or the fictitious national
+/// issuer), a fact without competence (art. 2), one of an article whose
+/// decider is a reference (art. 3), a mark one college gives (art. 4), a
+/// fact one college gives without `combine` (art. 5), and one the GGD
+/// establishes for an article the college decides (art. 7).
 const ESTABLISHING: &str = r#"
 $id: wet_verstrekking
 regulatory_layer: WET
@@ -31,12 +33,12 @@ articles:
   - number: '1'
     text: Het college of de landelijke uitgever verstrekt de kaart.
     machine_readable:
-      competent_authority:
-        - name: college van burgemeester en wethouders
-          type: CATEGORY
-        - name: Landelijke uitgever
       open_terms:
         - id: eerder_verstrekt
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
+            - name: Landelijke uitgever
           type: boolean
           required: true
           decided_per_case_by: het college
@@ -94,11 +96,11 @@ articles:
   - number: '4'
     text: Het kenmerk dat één college geeft.
     machine_readable:
-      competent_authority:
-        name: college van burgemeester en wethouders
-        type: CATEGORY
       open_terms:
         - id: kenmerk
+          competent_authority:
+            name: college van burgemeester en wethouders
+            type: CATEGORY
           type: string
           required: false
       execution:
@@ -116,11 +118,11 @@ articles:
   - number: '5'
     text: Een feit dat één college geeft.
     machine_readable:
-      competent_authority:
-        name: college van burgemeester en wethouders
-        type: CATEGORY
       open_terms:
         - id: enig_feit
+          competent_authority:
+            name: college van burgemeester en wethouders
+            type: CATEGORY
           type: boolean
           required: true
           decided_per_case_by: het college
@@ -155,13 +157,16 @@ articles:
           - output: zesde_feit
             value: $zevende
   - number: '7'
-    text: Een feit dat de GGD vaststelt.
+    text: Het college beslist op een feit dat de GGD vaststelt.
     machine_readable:
       competent_authority:
-        name: Gemeentelijke Gezondheidsdienst
+        name: college van burgemeester en wethouders
         type: CATEGORY
       open_terms:
         - id: zevende_feit
+          competent_authority:
+            name: Gemeentelijke Gezondheidsdienst
+            type: CATEGORY
           type: boolean
           required: true
           decided_per_case_by: het college
@@ -179,11 +184,11 @@ articles:
   - number: '8'
     text: Het aantal kaarten dat elk college telt.
     machine_readable:
-      competent_authority:
-        - name: college van burgemeester en wethouders
-          type: CATEGORY
       open_terms:
         - id: aantal_kaarten
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
           type: number
           required: false
           combine: ADD
@@ -410,7 +415,7 @@ fn filled_by(result: &regelrecht_engine::ArticleResult, term: &str) -> FilledBy 
 }
 
 #[test]
-fn only_the_answerers_the_article_names_are_asked() {
+fn only_the_answerers_the_term_names_are_asked() {
     let running = Fake::college("wilgendaal");
     let other = Fake::college("oostmeer").answering("eerder_verstrekt", Value::Bool(true));
     let national = Fake::new("Landelijke uitgever", None);
@@ -440,7 +445,7 @@ fn only_the_answerers_the_article_names_are_asked() {
 }
 
 #[test]
-fn a_running_answerer_the_article_does_not_name_is_not_asked() {
+fn a_running_answerer_the_term_does_not_name_is_not_asked() {
     let running = Fake::new("ggd", Some("Gemeentelijke Gezondheidsdienst"))
         .answering("eerder_verstrekt", Value::Bool(true));
     let mut findings = BTreeMap::new();
@@ -487,7 +492,7 @@ fn at_the_top_only_the_running_answerer_is_asked() {
 }
 
 #[test]
-fn an_article_without_competent_authority_asks_only_the_running_answerer() {
+fn a_term_without_competent_authority_asks_only_the_running_answerer() {
     let running = Fake::new("ggd", None).answering("ander_feit", Value::Bool(true));
     let other = Fake::college("oostmeer").answering("ander_feit", Value::Bool(false));
     let result = read("ander_gelezen", &running, vec![&other], BTreeMap::new()).unwrap();
@@ -595,10 +600,14 @@ fn one_answer_beside_a_silent_one_needs_no_combine() {
 }
 
 #[test]
-fn an_answer_for_a_competence_by_reference_is_an_error() {
+fn the_competence_of_the_article_routes_nothing() {
+    // Art. 3 names who decides by a reference; its term names no one, so
+    // only the running answerer is asked, and its answer counts.
     let running = Fake::college("wilgendaal").answering("verwezen_feit", Value::Bool(true));
-    let e = read("verwezen_gelezen", &running, vec![], BTreeMap::new()).unwrap_err();
-    assert!(e.to_string().contains("the reference '#uitgever'"), "{e}");
+    let other = Fake::college("oostmeer").answering("verwezen_feit", Value::Bool(false));
+    let result = read("verwezen_gelezen", &running, vec![&other], BTreeMap::new()).unwrap();
+    assert_eq!(result.outputs["verwezen_gelezen"], Value::Bool(true));
+    assert!(other.asked().is_empty());
 }
 
 #[test]
@@ -635,7 +644,7 @@ fn a_combine_that_does_not_fit_the_type_is_refused_at_load() {
     assert_ne!(yaml, ESTABLISHING);
     let e = ArticleBasedLaw::from_yaml_str(&yaml).unwrap_err();
     assert!(
-        e.to_string().contains("names no competent authority"),
+        e.to_string().contains("names no competent authorities"),
         "{e}"
     );
 }
@@ -792,13 +801,95 @@ fn several_silent_answers_without_a_fallback_are_null_and_combine_nothing() {
 }
 
 #[test]
-fn an_empty_list_of_competent_authorities_is_refused_at_load() {
-    let yaml = ESTABLISHING.replacen(
-        "      competent_authority:\n        - name: college van burgemeester en wethouders\n          type: CATEGORY\n        - name: Landelijke uitgever\n",
-        "      competent_authority: []\n",
-        1,
+fn competence_in_the_wrong_place_is_refused_at_load() {
+    let refused = |from: &str, to: &str, says: &str| {
+        let yaml = ESTABLISHING.replacen(from, to, 1);
+        assert_ne!(yaml, ESTABLISHING, "{from}");
+        let e = ArticleBasedLaw::from_yaml_str(&yaml).unwrap_err();
+        assert!(e.to_string().contains(says), "{e}");
+    };
+    let term_list = "          competent_authority:\n            - name: college van burgemeester en wethouders\n              type: CATEGORY\n            - name: Landelijke uitgever\n";
+    // An empty list would route to nobody without a word.
+    refused(
+        term_list,
+        "          competent_authority: []\n",
+        "empty competent_authority list",
     );
-    assert_ne!(yaml, ESTABLISHING);
-    let e = ArticleBasedLaw::from_yaml_str(&yaml).unwrap_err();
-    assert!(e.to_string().contains("empty list"), "{e}");
+    // A term names its authorities, not an output that points at one.
+    refused(
+        term_list,
+        "          competent_authority: '#uitgever'\n",
+        "name the authorities themselves",
+    );
+    // On an article the field says who decides: one authority.
+    refused(
+        "      competent_authority: '#uitgever'\n",
+        "      competent_authority:\n        - name: Landelijke uitgever\n",
+        "a list of those who may answer belongs on an open term or a fact",
+    );
+}
+
+#[test]
+fn the_competence_of_a_fact_is_read_and_checked() {
+    let with_fact = |entry: &str| {
+        format!(
+            r#"
+$id: wet_feit
+regulatory_layer: WET
+publication_date: '2025-01-01'
+articles:
+  - number: '1'
+    text: Een onderzoek heeft plaatsgehad.
+    machine_readable:
+      requires:
+{entry}
+      execution:
+        parameters:
+          - name: bsn
+            type: string
+            required: true
+        output:
+          - name: klaar
+            type: boolean
+        actions:
+          - output: klaar
+            value: true
+"#
+        )
+    };
+    let law = ArticleBasedLaw::from_yaml_str(&with_fact(
+        "        - fact: onderzoek\n          parameters: [bsn]\n          competent_authority:\n            - name: Gemeentelijke Gezondheidsdienst\n              type: CATEGORY\n",
+    ))
+    .unwrap();
+    let requirement = &law.articles[0]
+        .machine_readable
+        .as_ref()
+        .unwrap()
+        .requires
+        .as_ref()
+        .unwrap()[0];
+    let named = requirement
+        .competent_authority
+        .as_ref()
+        .unwrap()
+        .named()
+        .unwrap();
+    assert_eq!(named[0].name, "Gemeentelijke Gezondheidsdienst");
+    let e = ArticleBasedLaw::from_yaml_str(&with_fact(
+        "        - fact: onderzoek\n          parameters: [bsn]\n          competent_authority: []\n",
+    ))
+    .unwrap_err();
+    assert!(
+        e.to_string().contains("fact 'onderzoek' has an empty"),
+        "{e}"
+    );
+    let e = ArticleBasedLaw::from_yaml_str(&with_fact(
+        "        - article: '2'\n          competent_authority:\n            name: Gemeentelijke Gezondheidsdienst\n",
+    ))
+    .unwrap_err();
+    assert!(
+        e.to_string()
+            .contains("has a competent_authority but no fact"),
+        "{e}"
+    );
 }

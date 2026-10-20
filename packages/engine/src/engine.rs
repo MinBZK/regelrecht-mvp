@@ -79,7 +79,7 @@ pub enum FilledBy {
     /// it says it answered from.
     Answer(AnswerProvenance),
     /// Several competent answerers whose answers the term's `combine` made
-    /// one value of (RFC-053), in the order of their names. Serialized as
+    /// one value of (RFC-052), in the order of their names. Serialized as
     /// `{"answers": [...]}`.
     Answers(Vec<AnswerProvenance>),
 }

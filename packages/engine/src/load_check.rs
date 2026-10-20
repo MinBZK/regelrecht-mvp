@@ -33,19 +33,21 @@
 //! apart from `regulation`, `decisions` and `endpoint`, and only such a call
 //! takes `parameters_from`.
 //!
-//! The `combine` of an open term (schema v0.8.8, RFC-053) makes one value of
-//! the answers of several competent answerers. It has to fit the term's
-//! type, as the `combine` of a FOREACH has to fit its body: `OR` and `AND`
-//! a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` is no
-//! rule for answers: one answer needs none, and two without a rule are an
-//! error already. It sits only on a term of an article that names its
-//! competent authorities, since only there may several answer.
+//! Who may answer an open term, or establish a fact, sits on that term or
+//! fact (`competent_authority`, schema v0.8.8, RFC-052); on an article the
+//! field keeps its meaning of RFC-002, who decides, and names one authority.
+//! The `combine` of an open term makes one value of the answers of several
+//! competent answerers. It has to fit the term's type, as the `combine` of a
+//! FOREACH has to fit its body: `OR` and `AND` a boolean, `ADD`, `MIN` and
+//! `MAX` a number or an amount. `ONLY` is no rule for answers: one answer
+//! needs none, and two without a rule are an error already. It sits only on
+//! a term that names its competent authorities.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
 use regelrecht_law_model::{
-    parse_schema_version, ActionOperation, ActionValue, CombineOp, MachineReadable, ParameterType,
-    RegulatoryLayer,
+    parse_schema_version, ActionOperation, ActionValue, CombineOp, CompetentAuthority,
+    MachineReadable, ParameterType, RegulatoryLayer,
 };
 
 /// The first schema version in which a `REDUCTIE` may have `implements`.
@@ -176,46 +178,78 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
     Ok(())
 }
 
-/// Refuse an open term whose `combine` does not fit its type (RFC-053).
-pub(crate) fn reject_misfit_combine(law: &ArticleBasedLaw) -> Result<()> {
+/// Refuse competence and `combine` where they do not belong (RFC-052):
+///
+/// - an article names one competent authority (RFC-002), never a list;
+/// - an open term or a fact names its competent authorities by name, one or
+///   a list of at least one, never a `#` reference;
+/// - `competent_authority` on a `requires` entry only with `fact`;
+/// - `combine` only on a term that names its competent authorities, fitting
+///   the term's type, and never `ONLY`.
+pub(crate) fn reject_misplaced_competence(law: &ArticleBasedLaw) -> Result<()> {
     for (where_, section) in sections(law) {
-        // A list names at least one authority; an empty one would route to
-        // nobody without a word (RFC-053).
-        if section
-            .competent_authority
-            .as_ref()
-            .and_then(|authority| authority.named())
-            .is_some_and(<[_]>::is_empty)
-        {
-            return Err(EngineError::LoadError(format!(
-                "law '{}' {where_}: competent_authority is an empty list; name at least one \
-                 authority",
+        let refuse = |why: String| {
+            Err(EngineError::LoadError(format!(
+                "law '{}' {where_}: {why} (RFC-052)",
                 law.id
-            )));
+            )))
+        };
+        if matches!(
+            section.competent_authority,
+            Some(CompetentAuthority::List(_))
+        ) {
+            return refuse(
+                "competent_authority on an article names who decides (RFC-002), one \
+                 authority; a list of those who may answer belongs on an open term or a fact"
+                    .to_string(),
+            );
         }
-        let named = section
-            .competent_authority
-            .as_ref()
-            .and_then(|authority| authority.named())
-            .is_some();
+        let named = |authority: &Option<CompetentAuthority>, what: &str| -> Result<bool> {
+            match authority {
+                None => Ok(false),
+                Some(CompetentAuthority::String(reference)) => refuse(format!(
+                    "{what} names its competent_authority as '{reference}'; name the \
+                     authorities themselves"
+                ))
+                .map(|()| false),
+                Some(CompetentAuthority::List(all)) if all.is_empty() => {
+                    refuse(format!("{what} has an empty competent_authority list")).map(|()| false)
+                }
+                Some(_) => Ok(true),
+            }
+        };
+        for requirement in section.requires.iter().flatten() {
+            match &requirement.fact {
+                Some(fact) => {
+                    named(&requirement.competent_authority, &format!("fact '{fact}'"))?;
+                }
+                None if requirement.competent_authority.is_some() => {
+                    return refuse(
+                        "a requires entry has a competent_authority but no fact".to_string(),
+                    )
+                }
+                None => {}
+            }
+        }
         for term in section.open_terms.iter().flatten() {
+            let competent = named(
+                &term.competent_authority,
+                &format!("open term '{}'", term.id),
+            )?;
             let Some(op) = term.combine else {
                 continue;
             };
-            let refuse = |why: String| {
-                Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: open term '{}' combines its answers with {} \
-                     (combine), {why}",
-                    law.id,
+            let combines = |why: &str| {
+                refuse(format!(
+                    "open term '{}' combines its answers with {} (combine), {why}",
                     term.id,
                     op.as_str()
-                )))
+                ))
             };
-            if !named {
-                return refuse(
-                    "but the article names no competent authority, so no more than one \
-                     answerer can answer it (RFC-053)"
-                        .to_string(),
+            if !competent {
+                return combines(
+                    "but names no competent authorities, so no more than one answerer can \
+                     answer it",
                 );
             }
             let fits = match op {
@@ -225,15 +259,14 @@ pub(crate) fn reject_misfit_combine(law: &ArticleBasedLaw) -> Result<()> {
                     ParameterType::Number | ParameterType::Amount
                 ),
                 CombineOp::Only => {
-                    return refuse(
+                    return combines(
                         "which is no rule for answers: one needs none, and two without one \
-                         are an error"
-                            .to_string(),
+                         are an error",
                     )
                 }
             };
             if !fits {
-                return refuse(format!(
+                return combines(&format!(
                     "which does not fit its type {}",
                     format!("{:?}", term.term_type).to_lowercase()
                 ));

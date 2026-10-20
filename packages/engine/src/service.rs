@@ -74,7 +74,7 @@ struct CacheEntry {
     output_provenance: BTreeMap<String, OutputProvenance>,
     parameters: BTreeMap<String, Value>,
     /// Whether a `source.regulation` read evaluated it: the engine then
-    /// routes the article's open terms on competence (RFC-053), so its
+    /// routes the article's open terms on competence (RFC-052), so its
     /// value is not that of the same output read otherwise.
     by_reference: bool,
 }
@@ -159,17 +159,17 @@ struct ResolutionContext<'a> {
     /// What the caller supplies to answer open terms (RFC-048), asked before
     /// a regulation or a finding at every depth of the execution.
     answerer: Option<&'a dyn OpenTermAnswerer>,
-    /// The other answerers of the call (RFC-053), asked with
+    /// The other answerers of the call (RFC-052), asked with
     /// [`Self::answerer`] for an open term of an article reached through
     /// `source.regulation` that names them in `competent_authority`.
     sphere: Vec<&'a dyn OpenTermAnswerer>,
     /// The articles being evaluated because a `source.regulation` read an
     /// output of them, as `(law_id, article_number)`, innermost last. Only
     /// for the open terms of the innermost one does the engine route on
-    /// competence (RFC-053).
+    /// competence (RFC-052).
     by_reference: Vec<(String, String)>,
     /// Set by a `source.regulation` read just before it evaluates its
-    /// target, and taken by that evaluation (RFC-053).
+    /// target, and taken by that evaluation (RFC-052).
     reference_pending: bool,
 }
 
@@ -301,7 +301,7 @@ impl<'a> ResolutionContext<'a> {
     }
 
     /// Whether `article` of `law` is the article a `source.regulation` read
-    /// is evaluating right now (RFC-053).
+    /// is evaluating right now (RFC-052).
     fn reached_by_reference(&self, law: &str, article: &str) -> bool {
         self.by_reference
             .last()
@@ -3014,7 +3014,7 @@ impl LawExecutionService {
         // A value computed with an override held back is not the value of
         // that output, so it neither comes from nor goes into the cache.
         let cacheable = output_names.len() == 1 && res_ctx.held_back.is_empty();
-        // A `source.regulation` read asked for this evaluation (RFC-053).
+        // A `source.regulation` read asked for this evaluation (RFC-052).
         let by_reference = std::mem::take(&mut res_ctx.reference_pending);
 
         // --- Cache check (before depth check: cached results don't increase depth) ---
@@ -3117,7 +3117,7 @@ impl LawExecutionService {
         // calls). The anchor is entered and restored by
         // `evaluate_article_with_service` itself, for every path into it.
         // An article a `source.regulation` read reaches has its open terms
-        // routed on competence while it runs (RFC-053).
+        // routed on competence while it runs (RFC-052).
         if by_reference {
             res_ctx
                 .by_reference
@@ -4329,17 +4329,15 @@ impl LawExecutionService {
     }
 
     /// Ask the answerers of the call for `term` of `article` (RFC-048,
-    /// RFC-053). Without routing only the caller's answerer is asked. An
-    /// article that a `source.regulation` read reaches and that names its
-    /// `competent_authority` routes on competence: every answerer of the
-    /// call whose [`Authority`](crate::answer::Authority) the article
-    /// names is asked, in the order of their names, and none other. A
-    /// `null` answer is silence where the term has a default or is decided
+    /// RFC-052). Without routing only the caller's answerer is asked. A term
+    /// that names its own `competent_authority`, of an article a
+    /// `source.regulation` read reaches, routes on competence: every
+    /// answerer of the call whose [`Authority`](crate::answer::Authority)
+    /// the term names is asked, in the order of their names, and none other.
+    /// A `null` answer is silence where the term has a default or is decided
     /// per case; otherwise it is the value. Several answers that are not
     /// `null` make one value with the term's `combine`, and are an error
-    /// without it. A `#` reference as `competent_authority` is not routed
-    /// yet: only the caller's answerer is asked, and an answer from it is
-    /// an error.
+    /// without it.
     fn ask_answerers<'c>(
         &self,
         article: &Article,
@@ -4348,18 +4346,14 @@ impl LawExecutionService {
         parameters: &BTreeMap<String, Value>,
         res_ctx: &mut ResolutionContext<'c>,
     ) -> Result<Asked> {
-        let competence = if res_ctx.reached_by_reference(&law.id, &article.number) {
-            article
-                .machine_readable
+        // The competence of the term itself (RFC-052): who may answer it.
+        // The article's own competent_authority says who decides (RFC-002).
+        let routed = if res_ctx.reached_by_reference(&law.id, &article.number) {
+            term.competent_authority
                 .as_ref()
-                .and_then(|mr| mr.competent_authority.as_ref())
+                .and_then(|authority| authority.named())
         } else {
             None
-        };
-        let routed = competence.and_then(|authority| authority.named());
-        let unrouted_reference = match competence {
-            Some(crate::article::CompetentAuthority::String(reference)) => Some(reference),
-            _ => None,
         };
         let askees: Vec<&'c dyn OpenTermAnswerer> = match routed {
             None => res_ctx.answerer.into_iter().collect(),
@@ -4420,7 +4414,7 @@ impl LawExecutionService {
             };
             if routed.is_some() {
                 // One node per competent answerer that answered, under the
-                // node of the term and named after it (RFC-053); its
+                // node of the term and named after it (RFC-052); its
                 // `answer` says who.
                 let _guard = res_ctx.trace_guard(&term.id, PathNodeType::OpenTermResolution);
                 res_ctx.trace_set_result(answer.value.clone());
@@ -4437,17 +4431,6 @@ impl LawExecutionService {
                 answers.push(answer);
             }
         }
-        if let (Some(reference), Some(answer)) = (unrouted_reference, answers.first()) {
-            let message = format!(
-                "open term '{}' on {}#{}: {} answered it, but the article's competent_authority \
-                 is the reference '{reference}', on which the engine does not route yet \
-                 (RFC-053)",
-                term.id, law.id, article.number, answer.provenance.answerer
-            );
-            res_ctx.trace_set_message(message.clone());
-            return Err(EngineError::InvalidOperation(message));
-        }
-
         let fallback = term.default.is_some() || term.decided_per_case_by.is_some();
         let (value, given) = match answers.len() {
             0 if fallback || silent.is_empty() => {
@@ -4464,7 +4447,7 @@ impl LawExecutionService {
                 let Some(op) = term.combine else {
                     let message = format!(
                         "open term '{}' on {}#{} has {n} answers, from {}, and no combine to \
-                         make one value of them (RFC-053)",
+                         make one value of them (RFC-052)",
                         term.id,
                         law.id,
                         article.number,
@@ -5536,7 +5519,7 @@ impl LawExecutionService {
             .collect();
 
         // Execute the target article, as an article a `source.regulation`
-        // read reaches (RFC-053).
+        // read reaches (RFC-052).
         res_ctx.reference_pending = true;
         let result = self.evaluate_law_output_internal(regulation, output, target_params, res_ctx);
         res_ctx.reference_pending = false;

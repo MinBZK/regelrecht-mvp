@@ -1,7 +1,7 @@
 ---
-# Tier C: an article that establishes a fact several authorities record
-# (schema v0.8.8, RFC-053). competent_authority is a list, and the open term
-# combines the answers of the competent answerers with OR.
+# Tier C: competence on an open term and on a fact (schema v0.8.8, RFC-052).
+# The article names who decides; the open term names who may answer it, a
+# list, and combines their answers with OR; the fact names who establishes it.
 $schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: test_conformance_synthesis
 regulatory_layer: WET
@@ -16,11 +16,21 @@ articles:
     text: Het college of de landelijke uitgever verstrekt de kaart.
     machine_readable:
       competent_authority:
-        - name: college van burgemeester en wethouders
-          type: CATEGORY
-        - name: Landelijke uitgever
+        name: college van burgemeester en wethouders
+        type: CATEGORY
+      requires:
+        - fact: onderzoek
+          parameters:
+            - bsn
+          competent_authority:
+            name: Gemeentelijke Gezondheidsdienst
+            type: CATEGORY
       open_terms:
         - id: eerder_verstrekt
+          competent_authority:
+            - name: college van burgemeester en wethouders
+              type: CATEGORY
+            - name: Landelijke uitgever
           type: boolean
           required: true
           decided_per_case_by: het college

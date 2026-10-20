@@ -5,9 +5,9 @@ description: "How an article records the bevoegd gezag: the authority whose exec
 
 A *beschikking* is only binding when the right body issues it. Income is assessed by the tax inspector (*inspecteur*), but a long-term care indication is the CIZ's to decide, and social assistance is granted by a municipal college. An article records which body that is in `competent_authority`, the *bevoegd gezag*. The engine uses it to tell a binding decision apart from a calculation anyone may run (see [Multi-Org Execution](./multi-org-execution)), and to derive who may authoritatively annotate a law (see [Notes and Annotations](./notes-and-annotations)).
 
-## The three forms
+## The two forms
 
-`competent_authority` sits in an article's `machine_readable` section and takes one of three shapes.
+`competent_authority` sits in an article's `machine_readable` section and takes one of two shapes.
 
 A named authority, when the body is fixed:
 
@@ -32,21 +32,26 @@ machine_readable:
 
 The `#` form points at an output computed elsewhere in the same law. The Wet langdurige zorg uses this: which body is competent (`2_1_3_bevoegd_gezag`) is itself a rule, so the article references the output rather than hard-coding a name.
 
-A list, since schema v0.8.8, when the law names several bodies for one article. BABW art. 49 lets the college issue a parking card under lid 1 and 2, and the CBR under lid 3:
-
-```yaml
-machine_readable:
-  competent_authority:
-    - name: college van burgemeester en wethouders
-      type: CATEGORY
-    - name: CBR
-```
-
-For an article that requires a fact rather than a decision (`requires` with `fact`), the field names who establishes the fact, such as the GGD that carries out a medical examination.
+On the article, the field names who decides. It is one authority, in either form.
 
 ## Who answers an open term
 
-Where one law reads a fact that another actor establishes, it reads the output of the establishing article with `source.regulation`. For the open terms of that article the engine asks only the answerers that its `competent_authority` names, and combines their answers with the term's `combine` ([RFC-053](/rfcs/rfc-053)). A cell that the law does not name is not asked. For an article without `competent_authority`, only the cell that runs the decision is asked, as before; a `#` reference is not routed yet, and an answer to it is an error.
+Since schema v0.8.8 an open term and a required fact (`requires` with `fact`) may carry a `competent_authority` of their own. It takes the named form, or a list of named authorities. On a term it says who may answer it, on a fact who establishes it. An article that establishes several terms can give each its own actors.
+
+BABW art. 49 lets the college issue a parking card under lid 1 and 2, and the CBR under lid 3. Whether an applicant had a card before is something any college or the CBR may answer:
+
+```yaml
+open_terms:
+  - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+    type: boolean
+    competent_authority:
+      - name: college van burgemeester en wethouders
+        type: CATEGORY
+      - name: CBR
+    combine: OR
+```
+
+Where one law reads such a term, it reads the output of the establishing article with `source.regulation`. The engine then asks only the answerers the term names, and combines their answers with the term's `combine` ([RFC-052](/rfcs/rfc-052)). A cell the term does not name is not asked. For a term without `competent_authority`, only the cell that runs the decision is asked, as before. The article's own `competent_authority` routes nothing.
 
 ## One law, several authorities
 
@@ -57,6 +62,6 @@ A single law can name a different authority per article, because different artic
 - [Multi-Org Execution](./multi-org-execution) - how the competent authority decides execute-vs-accept
 - [Notes and Annotations](./notes-and-annotations) - how note authority is derived from the competent authority
 - [RFC-002: Bevoegdheid](/rfcs/rfc-002) - full specification
-- [RFC-053: Synthesis](/rfcs/rfc-053) - asking the competent cells for a value of another actor
+- [RFC-052: Synthesis](/rfcs/rfc-052) - asking the competent cells for a value of another actor
 - [Rules as Executed, section 4.3](/research/rules-as-executed#sec:whochooses) - the position paper on which authority chooses and publishes an encoding
 - [Rules as Executed, section 4.6](/research/rules-as-executed#sec:overrides) - the position paper on overrides and discretion

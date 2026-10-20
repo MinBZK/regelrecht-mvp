@@ -9,9 +9,9 @@ use crate::{Operation, ParameterType, RegulatoryLayer, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
-/// Represents a competent authority: a reference, one named authority, or a
-/// list of them where the law names several for one article (schema v0.8.8,
-/// RFC-053).
+/// Represents a competent authority: a reference or one named authority on an
+/// article (RFC-002), or, on an open term or a fact (schema v0.8.8, RFC-052),
+/// one named authority or a list of them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CompetentAuthority {
@@ -19,8 +19,9 @@ pub enum CompetentAuthority {
     String(String),
     /// One named authority
     Structured(NamedAuthority),
-    /// Several named authorities, each competent for the article: BABW art.
-    /// 49 names the college (lid 1 and 2) and the CBR (lid 3).
+    /// Several named authorities, each competent, on an open term or a
+    /// fact: whether a parking card was issued before is for any college
+    /// and for the CBR (BABW art. 49 lid 1 and 3).
     List(Vec<NamedAuthority>),
 }
 
@@ -1128,8 +1129,14 @@ pub struct OpenTerm {
     /// Default execution if no implementing regulation exists
     #[serde(default)]
     pub default: Option<OpenTermDefault>,
+    /// Who may answer this term for a reader that reaches the article
+    /// through `source.regulation` (schema v0.8.8, RFC-052): one named
+    /// authority or a list. The article's own `competent_authority` says
+    /// who decides (RFC-002), which is another question.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub competent_authority: Option<CompetentAuthority>,
     /// How the answers of several competent answerers make one value, with
-    /// the aggregations of FOREACH (schema v0.8.8, RFC-053). Without it, two
+    /// the aggregations of FOREACH (schema v0.8.8, RFC-052). Without it, two
     /// answers are an error.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub combine: Option<CombineOp>,
@@ -1175,6 +1182,10 @@ pub struct ArticleRequirement {
     /// With `fact`: what the fact is, in words.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// With `fact`: who establishes it (schema v0.8.8, RFC-052), one named
+    /// authority or a list, such as the GGD for a medical examination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub competent_authority: Option<CompetentAuthority>,
 }
 
 /// Declares that this article fills an open term from a higher-level law.

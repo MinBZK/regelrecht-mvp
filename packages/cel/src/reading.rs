@@ -454,7 +454,7 @@ pub struct Asked {
 /// day is not the cell's: the engine goes on without an answer.
 pub struct Reader<'c> {
     recording_actor: &'c str,
-    /// Who the cell is, for the engine's routing on competence (RFC-053).
+    /// Who the cell is, for the engine's routing on competence (RFC-052).
     authority: Authority,
     reductions: &'c [Reduction],
     grams: Vec<Gram>,
@@ -556,7 +556,7 @@ impl<'c> Reader<'c> {
         // The reduction may call rulework that reads an open term the cell
         // answers too, such as a regulation that asks where the school is
         // established (RFC-051): the cell answers it there as well.
-        // Inside a reduction the cell asks only itself (RFC-053): synthesis
+        // Inside a reduction the cell asks only itself (RFC-052): synthesis
         // happens in the process, never in a cell.
         let call = Call {
             findings: BTreeMap::new(),

@@ -15,7 +15,7 @@
 //! answer is the answerer's own business.
 //!
 //! A value that another actor establishes is read with `source.regulation`
-//! from the article that establishes it (RFC-053). For the open terms of
+//! from the article that establishes it (RFC-052). For the open terms of
 //! such an article the engine asks every answerer of the call, the
 //! answerer and those of the sphere ([`Call::sphere`]), whose
 //! [`Authority`] the article names in `competent_authority`, and combines
@@ -82,7 +82,7 @@ impl std::fmt::Display for AnswerProvenance {
     }
 }
 
-/// Who an answerer is, as the law can name it (RFC-053): its name, and the
+/// Who an answerer is, as the law can name it (RFC-052): its name, and the
 /// category of authorities it belongs to, if any. The engine matches this
 /// against the `competent_authority` of an article: an `INSTANCE` by
 /// `name`, a `CATEGORY` by `category`, as exact text.
@@ -123,7 +123,7 @@ pub trait OpenTermAnswerer {
 
 /// What a caller gives an execution apart from its parameters: the
 /// findings for the case (RFC-050), an answerer for open terms, and the
-/// other answerers of the sphere (RFC-053).
+/// other answerers of the sphere (RFC-052).
 #[derive(Default)]
 pub struct Call<'a> {
     pub findings: BTreeMap<String, Value>,
@@ -132,7 +132,7 @@ pub struct Call<'a> {
     pub answerer: Option<&'a dyn OpenTermAnswerer>,
     /// Asked only for an open term of an article that the execution reads
     /// through `source.regulation` and that names them in
-    /// `competent_authority` (RFC-053).
+    /// `competent_authority` (RFC-052).
     pub sphere: Vec<&'a dyn OpenTermAnswerer>,
 }
 

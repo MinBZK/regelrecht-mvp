@@ -121,7 +121,7 @@ impl LawLoad for ArticleBasedLaw {
         reject_literal_operations(&law)?;
         crate::load_check::reject_misplaced_reduction(&law)?;
         crate::load_check::reject_misplaced_article_call(&law)?;
-        crate::load_check::reject_misfit_combine(&law)?;
+        crate::load_check::reject_misplaced_competence(&law)?;
 
         // Validate schema version is supported (RFC-013)
         if let Some(version) = law.schema_version() {

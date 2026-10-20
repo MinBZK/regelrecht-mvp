@@ -1952,7 +1952,7 @@
           "description": "Named endpoint for this article. The Rust law-model reads it, but the engine does not call by endpoint: a law calls another law by output name."
         },
         "competent_authority": {
-          "description": "Bevoegd gezag: the authority whose execution of this article produces a binding decision, or, for an article that requires a fact (`requires` with `fact`), the authority that establishes it. Another body may run the same calculation and get the same number, but its result carries no legal force (RFC-009). A list where the law names several authorities for the article (since v0.8.8). Where an article is read through `source.regulation`, an engine that routes on competence (RFC-053) asks only the answerers this field names for its open terms, whatever version the file names.",
+          "description": "Bevoegd gezag: the authority whose execution of this article produces a binding decision. Another body may run the same calculation and get the same number, but its result carries no legal force (RFC-009). Annotation only: the engine computes the same either way.",
           "oneOf": [
             {
               "type": "string",
@@ -1961,14 +1961,6 @@
             },
             {
               "$ref": "#/definitions/namedAuthority"
-            },
-            {
-              "type": "array",
-              "minItems": 1,
-              "description": "Several authorities, each competent for the article (since v0.8.8, RFC-053).",
-              "items": {
-                "$ref": "#/definitions/namedAuthority"
-              }
             }
           ]
         },
@@ -2018,6 +2010,21 @@
               "description": {
                 "type": "string",
                 "description": "Since v0.8.7, only with `fact`: what the fact is, in words."
+              },
+              "competent_authority": {
+                "description": "Since v0.8.8, only with `fact`: who establishes the fact (RFC-052), one named authority or a list, such as the GGD for a medical examination.",
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/namedAuthority"
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/definitions/namedAuthority"
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false,
@@ -2073,6 +2080,11 @@
                       {
                         "required": [
                           "description"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "competent_authority"
                         ]
                       }
                     ]
@@ -2165,6 +2177,21 @@
                 "type": "string",
                 "description": "The authority that fills this norm in the individual case while no general specification exists, with the article that makes it competent. Which authority may decide is a property of the law, so it belongs here. Its answer needs a motivation (Awb 3:46) and is part of the besluit rather than a ground for it, which is what separates a discretionary power from a value that is merely missing. When no implementation fills the term, the judgement for the case is supplied with the execution, under the term's id (RFC-047)."
               },
+              "competent_authority": {
+                "description": "Since v0.8.8 (RFC-052): who may answer this term for a reader that reaches the article through `source.regulation`, one named authority or a list. An engine that routes on competence asks only those. The article's own `competent_authority` says who decides (RFC-002), which is another question.",
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/namedAuthority"
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/definitions/namedAuthority"
+                    }
+                  }
+                ]
+              },
               "combine": {
                 "type": "string",
                 "enum": [
@@ -2174,7 +2201,7 @@
                   "MIN",
                   "MAX"
                 ],
-                "description": "How the answers of several competent answerers make one value (since v0.8.8, RFC-053), with the aggregations of FOREACH. Only on a term of an article whose `competent_authority` names authorities, where more than one answerer may give it, such as a fact several issuing bodies record. Without it, two answers that are not null are an error at run time. `OR` and `AND` take a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` is no rule for answers and is not allowed here."
+                "description": "How the answers of several competent answerers make one value (since v0.8.8, RFC-052), with the aggregations of FOREACH. Only on a term that names its `competent_authority`, where more than one answerer may give it, such as a fact several issuing bodies record. Without it, two answers that are not null are an error at run time. `OR` and `AND` take a boolean, `ADD`, `MIN` and `MAX` a number or an amount. `ONLY` is no rule for answers and is not allowed here."
               }
             },
             "additionalProperties": false
