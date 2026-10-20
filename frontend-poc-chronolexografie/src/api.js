@@ -46,6 +46,10 @@ export const api = {
   kroniek: () => get('/api/kroniek'),
   aanvragen: (velden, datum) => post('/api/aanvragen', { velden, datum }),
   besluiten: (op, bevindingen, datum) => post('/api/besluiten', { op, bevindingen, datum }),
+  // Wat het besluit zou worden, op een kopie van de cel: er wordt niets
+  // vastgelegd. Een weigering van de cel komt terug als `{ geweigerd }`.
+  voorvertoningBesluit: (op, bevindingen, datum) =>
+    post('/api/besluiten/voorvertoning', { op, bevindingen, datum }),
   waarom: (id) => get(`/api/besluiten/${encodeURIComponent(id)}/waarom`),
   hoeBeantwoord: (id, begrip) =>
     get(`/api/besluiten/${encodeURIComponent(id)}/antwoord/${encodeURIComponent(begrip)}`),
@@ -54,6 +58,8 @@ export const api = {
     get(`/api/bezwaren/${encodeURIComponent(bezwaar)}/heroverweging?datum=${datum}`),
   beslissenOpBezwaar: (op, bevindingen, datum) =>
     post('/api/beslissingen-op-bezwaar', { op, bevindingen, datum }),
+  voorvertoningOpBezwaar: (op, bevindingen, datum) =>
+    post('/api/beslissingen-op-bezwaar/voorvertoning', { op, bevindingen, datum }),
   reducties: (datum) => get(`/api/reducties?datum=${datum}`),
   logboek: () => get('/api/logboek'),
   reset: () => post('/api/reset'),

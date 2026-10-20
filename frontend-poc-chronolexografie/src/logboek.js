@@ -65,6 +65,13 @@ export function ingevuldDoor(by, grammen) {
   return 'niet ingevuld';
 }
 
+/**
+ * De cel die een begrip beantwoordde, zoals de bezoeker haar kent: de naam
+ * uit de casus (OBS De Klimop, gemeente Wilgendaal) als zij de cel van de
+ * casus is, anders haar id.
+ */
+const celNaam = (cel) => (cel === spel.casus?.cel && spel.casus?.cel_naam) || `cel ${cel}`;
+
 /** Een stap uit de keten in woorden: een regel tekst en een toelichting. */
 export function stapTekst(stap, grammen) {
   switch (stap.soort) {
@@ -86,7 +93,7 @@ export function stapTekst(stap, grammen) {
       if (cel) {
         return {
           tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: `cel ${cel.answerer} antwoordt ${toon(stap.waarde)} (${cel.law_id}, ${gelezen(cel, grammen)})`,
+          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammen)})`,
         };
       }
       // Een begrip dat zijn standaardwaarde kreeg, noemt de engine niet bij

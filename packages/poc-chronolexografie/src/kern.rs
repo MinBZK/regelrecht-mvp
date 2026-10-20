@@ -976,6 +976,34 @@ pub fn beslissen_op_bezwaar(
     }))
 }
 
+/// What the decision on the application `aanvraag` would be with these
+/// findings on `on`, before the authority takes it: [`besluiten`] on a copy
+/// of the cell with the chronicle in memory ([`Cell::sandbox`]), so the
+/// outcome and the chain are those of the real decision. Nothing is kept.
+pub fn voorvertoning_besluit(
+    corpus: &Corpus,
+    cell: &Cell,
+    aanvraag: &str,
+    bevindingen: &Map<String, Value>,
+    on: NaiveDate,
+) -> Result<Besluit> {
+    besluiten(corpus, &mut cell.sandbox(), aanvraag, bevindingen, on)
+}
+
+/// What the decision on the objection `bezwaar` would be with these
+/// findings anew, and the new decision that would follow: as
+/// [`voorvertoning_besluit`], with [`beslissen_op_bezwaar`]. Nothing is
+/// kept.
+pub fn voorvertoning_op_bezwaar(
+    corpus: &Corpus,
+    cell: &Cell,
+    bezwaar: &str,
+    bevindingen: &Map<String, Value>,
+    on: NaiveDate,
+) -> Result<Value> {
+    beslissen_op_bezwaar(corpus, &mut cell.sandbox(), bezwaar, bevindingen, on)
+}
+
 /// The open terms the cell answers from its chronicle ([`Cell::answers`]),
 /// its reductions as written, and per reduction what it reads from the
 /// chronicle, as rows: the decisions under an article (`source.decisions`)
@@ -1938,6 +1966,80 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn the_preview_of_a_decision_is_the_decision_and_records_nothing() {
+        let corpus = corpus();
+        let mut cell = corpus.cell().unwrap();
+        let app = aanvragen(
+            &corpus,
+            &mut cell,
+            &aanvraag("2027-02-05"),
+            day("2026-10-13"),
+        )
+        .unwrap();
+        let vastgelegd = cell.grams().len();
+        let op = day("2026-10-20");
+        let verleend = voorvertoning_besluit(&corpus, &cell, &app.id, &beroep(true), op).unwrap();
+        assert_eq!(verleend.besluit.outputs["verlof_verleend"], json!(true));
+        let voorlopig = voorvertoning_besluit(&corpus, &cell, &app.id, &beroep(false), op).unwrap();
+        // A finding not given yet: refused, as the decision itself would be.
+        let e = voorvertoning_besluit(&corpus, &cell, &app.id, &Map::new(), op).unwrap_err();
+        assert!(
+            e.to_string().contains("specifieke_aard_beroep_ouder"),
+            "{e}"
+        );
+        assert_eq!(cell.grams().len(), vastgelegd);
+
+        let genomen = besluiten(&corpus, &mut cell, &app.id, &beroep(false), op).unwrap();
+        assert_eq!(voorlopig.besluit.outputs, genomen.besluit.outputs);
+        assert_eq!(
+            serde_json::to_value(&voorlopig.waarom.keten).unwrap(),
+            serde_json::to_value(&genomen.waarom.keten).unwrap()
+        );
+        assert_eq!(cell.grams().len(), vastgelegd + 1);
+    }
+
+    #[test]
+    fn the_preview_of_a_decision_on_objection_is_that_decision_and_records_nothing() {
+        let corpus = corpus();
+        let mut cell = corpus.cell().unwrap();
+        let besluit = geweigerd(&corpus, &mut cell);
+        let bezwaar = bezwaren(
+            &corpus,
+            &mut cell,
+            &besluit.besluit.id,
+            &bezwaar_velden("2026-11-01"),
+            day("2026-11-01"),
+        )
+        .unwrap();
+        let vastgelegd = cell.grams().len();
+        let op = day("2026-11-15");
+        let ongegrond =
+            voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &Map::new(), op).unwrap();
+        assert_eq!(
+            ongegrond["beslissing"]["outputs"]["bestreden_besluit_herroepen"],
+            json!(false)
+        );
+        assert!(ongegrond["nieuw_besluit"].is_null());
+        let voorlopig =
+            voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &beroep(true), op).unwrap();
+        assert_eq!(cell.grams().len(), vastgelegd);
+
+        let genomen =
+            beslissen_op_bezwaar(&corpus, &mut cell, &bezwaar.id, &beroep(true), op).unwrap();
+        assert_eq!(
+            voorlopig["beslissing"]["outputs"]["heroverweging_geeft_aanleiding"],
+            json!(true)
+        );
+        for pad in ["/nieuw_besluit/outputs/verlof_verleend", "/waarom/keten"] {
+            assert_eq!(voorlopig.pointer(pad), genomen.pointer(pad), "{pad}");
+        }
+        let herroepen = "/beslissing/outputs/bestreden_besluit_herroepen";
+        assert_eq!(voorlopig.pointer(herroepen), Some(&json!(true)));
+        assert_eq!(voorlopig.pointer(herroepen), genomen.pointer(herroepen));
+        assert_eq!(cell.grams().len(), vastgelegd + 2);
     }
 
     /// The case `gehandicaptenparkeerkaart`, with its example values.

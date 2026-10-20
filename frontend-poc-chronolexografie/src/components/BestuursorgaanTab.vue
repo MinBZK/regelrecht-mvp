@@ -3,7 +3,9 @@
 // beslist op aanvragen en bezwaren, en ziet bij elk besluit waarom het zo
 // uitviel (Waarom.vue). De bevindingen die het per aanvraag geeft, komen uit
 // de wet: `decided_per_case_by` op de open begrippen van het artikel
-// (RFC-050), behalve wat de cel zelf uit haar kroniek beantwoordt. Bij een
+// (RFC-050), behalve wat de cel zelf uit haar kroniek beantwoordt. Naast de
+// bevindingen staat wat het besluit ermee zou worden (Voorvertoning.vue),
+// zonder dat er iets wordt vastgelegd; op een smal scherm eronder. Bij een
 // bezwaar komen ze uit het bestreden besluit: de bevindingen die het
 // gebruikte, met wat het bestuursorgaan toen vond. De voorbeeldwaarden van de
 // bevindingen komen uit de casus.
@@ -23,6 +25,7 @@ import {
   stap,
 } from '../spel.js';
 import Uitkomst from './Uitkomst.vue';
+import Voorvertoning from './Voorvertoning.vue';
 import Waarom from './Waarom.vue';
 import VeldInvoer from './VeldInvoer.vue';
 
@@ -79,13 +82,17 @@ async function toets(bz) {
 
 const jaNee = (v) => (v === true ? 'ja' : v === false ? 'nee' : String(v));
 
-async function beslisOpBezwaar(bz) {
-  const t = toetsen[bz.id];
-  const gegeven = Object.fromEntries(
-    Object.entries(t?.ontvankelijk ? (opnieuw[bz.id] ?? {}) : {})
+// Wat het bestuursorgaan bij de heroverweging opnieuw vindt; 'Laat staan'
+// geeft niets.
+const gegevenOpBezwaar = (bz) =>
+  Object.fromEntries(
+    Object.entries(toetsen[bz.id]?.ontvankelijk ? (opnieuw[bz.id] ?? {}) : {})
       .filter(([, v]) => v !== '')
       .map(([k, v]) => [k, v === 'ja']),
   );
+
+async function beslisOpBezwaar(bz) {
+  const gegeven = gegevenOpBezwaar(bz);
   const antwoord = await stap(() => api.beslissenOpBezwaar(bz.id, gegeven, spel.datum));
   if (antwoord) {
     beslissingen[bz.id] = antwoord;
@@ -124,16 +131,19 @@ const uitkomstOpBezwaar = (uit) =>
           :text="`Aanvraag ${kort(a.id)}`"
           :supporting-text="samenvatting(a)"
         ></nldd-title>
-        <nldd-container gap="12">
-          <VeldInvoer
-            v-for="o in oordelen()"
-            :key="o.naam"
-            :model-value="oordeel[a.id]?.[o.naam] ?? voorbeeld(o.naam)"
-            :veld="o"
-            @update:model-value="oordeelVoor(a.id)[o.naam] = $event"
-          />
+        <nldd-container layout="grid" gap="16">
+          <nldd-container gap="12">
+            <VeldInvoer
+              v-for="o in oordelen()"
+              :key="o.naam"
+              :model-value="oordeel[a.id]?.[o.naam] ?? voorbeeld(o.naam)"
+              :veld="o"
+              @update:model-value="oordeelVoor(a.id)[o.naam] = $event"
+            />
+            <nldd-button appearance="primary" text="Besluit nemen" @click="besluit(a)"></nldd-button>
+          </nldd-container>
+          <Voorvertoning :op="a.id" :bevindingen="oordeel[a.id] ?? standaard()" />
         </nldd-container>
-        <nldd-button appearance="primary" text="Besluit nemen" @click="besluit(a)"></nldd-button>
         </nldd-container>
       </nldd-card>
     </nldd-container>
@@ -174,7 +184,12 @@ const uitkomstOpBezwaar = (uit) =>
             text="Niet-ontvankelijk"
             :supporting-text="toetsen[bz.id].tijdig === false ? 'Het bezwaar kwam te laat (Awb 6:9). Er is geen heroverweging, dus het bestuursorgaan geeft geen bevindingen.' : 'Tegen dit besluit staat geen bezwaar open (Awb 7:1): het is genomen op bezwaar. Er is geen heroverweging.'"
           ></nldd-inline-dialog>
-          <nldd-button appearance="primary" text="Beslissen op bezwaar" @click="beslisOpBezwaar(bz)"></nldd-button>
+          <nldd-container layout="grid" gap="16">
+            <nldd-container>
+              <nldd-button appearance="primary" text="Beslissen op bezwaar" @click="beslisOpBezwaar(bz)"></nldd-button>
+            </nldd-container>
+            <Voorvertoning soort="bezwaar" :op="bz.id" :bevindingen="{}" />
+          </nldd-container>
         </template>
         <template v-else>
           <nldd-inline-dialog
@@ -183,23 +198,26 @@ const uitkomstOpBezwaar = (uit) =>
             text="Ontvankelijk"
             supporting-text="Stap 2: het bestuursorgaan heroverweegt. Geef een bevinding opnieuw, of laat staan wat het in het bestreden besluit vond."
           ></nldd-inline-dialog>
-          <nldd-container gap="12">
-            <nldd-form-field
-              v-for="o in toetsen[bz.id].bevindingen"
-              :key="o.naam"
-              :label="leesbaar(o.naam)"
-              :supporting-label="`${o.grondslag} · eerder: ${jaNee(o.eerder)}`"
-            >
-              <nldd-dropdown>
-                <select @change="opnieuw[bz.id][o.naam] = $event.target.value">
-                  <option value="">Laat staan ({{ jaNee(o.eerder) }})</option>
-                  <option value="ja">Ja</option>
-                  <option value="nee">Nee</option>
-                </select>
-              </nldd-dropdown>
-            </nldd-form-field>
+          <nldd-container layout="grid" gap="16">
+            <nldd-container gap="12">
+              <nldd-form-field
+                v-for="o in toetsen[bz.id].bevindingen"
+                :key="o.naam"
+                :label="leesbaar(o.naam)"
+                :supporting-label="`${o.grondslag} · eerder: ${jaNee(o.eerder)}`"
+              >
+                <nldd-dropdown>
+                  <select @change="opnieuw[bz.id][o.naam] = $event.target.value">
+                    <option value="">Laat staan ({{ jaNee(o.eerder) }})</option>
+                    <option value="ja">Ja</option>
+                    <option value="nee">Nee</option>
+                  </select>
+                </nldd-dropdown>
+              </nldd-form-field>
+              <nldd-button appearance="primary" text="Beslissen op bezwaar" @click="beslisOpBezwaar(bz)"></nldd-button>
+            </nldd-container>
+            <Voorvertoning soort="bezwaar" :op="bz.id" :bevindingen="gegevenOpBezwaar(bz)" />
           </nldd-container>
-          <nldd-button appearance="primary" text="Beslissen op bezwaar" @click="beslisOpBezwaar(bz)"></nldd-button>
         </template>
         </nldd-container>
       </nldd-card>

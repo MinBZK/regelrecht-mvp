@@ -8,6 +8,8 @@ beforeEach(() => {
     besluit: 'leerplichtwet_1969#13a',
     beslissing_op_bezwaar: 'algemene_wet_bestuursrecht#7:11',
     uitkomst: 'verlof_verleend',
+    cel: 'obs_de_klimop',
+    cel_naam: 'OBS De Klimop',
     regelwerken: [
       { id: 'leerplichtwet_1969', naam: null },
       { id: 'algemene_wet_bestuursrecht', naam: 'Algemene wet bestuursrecht' },
@@ -84,7 +86,7 @@ describe('stapTekst', () => {
     expect(stapTekst(celAntwoord, grammen)).toEqual({
       tekst: 'verlof al verleend in schooljaar: nee',
       toelichting:
-        'cel obs_de_klimop antwoordt nee (reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
+        'ingevuld door OBS De Klimop uit haar kroniek (reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
     });
   });
 

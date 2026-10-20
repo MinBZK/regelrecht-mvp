@@ -102,11 +102,16 @@ pub fn routes() -> Router<AppState> {
         .route("/api/kroniek", get(kroniek))
         .route("/api/aanvragen", post(aanvragen))
         .route("/api/besluiten", post(besluiten))
+        .route("/api/besluiten/voorvertoning", post(voorvertoning_besluit))
         .route("/api/besluiten/{id}/waarom", get(waarom))
         .route("/api/besluiten/{id}/antwoord/{begrip}", get(hoe_beantwoord))
         .route("/api/bezwaren", post(bezwaren))
         .route("/api/bezwaren/{id}/heroverweging", get(heroverweging))
         .route("/api/beslissingen-op-bezwaar", post(beslissen_op_bezwaar))
+        .route(
+            "/api/beslissingen-op-bezwaar/voorvertoning",
+            post(voorvertoning_op_bezwaar),
+        )
         .route("/api/reducties", get(reducties))
         .route("/api/logboek", get(logboek))
         .route("/api/reset", post(reset))
@@ -283,6 +288,43 @@ async fn beslissen_op_bezwaar(
     ok(s.met(&v, |c, cell| {
         kern::beslissen_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
     })?)
+}
+
+/// A preview ([`kern::voorvertoning_besluit`]): what the step would come to,
+/// as `{ "voorlopig": ... }`. What the cell or the engine refuses (a finding
+/// not given yet) is what the preview shows until it is given, so it comes
+/// back as `{ "geweigerd": ... }` with 200, in the words of the cell. The
+/// rest fails as any step.
+fn voorlopig(stap: Result<impl serde::Serialize, Fout>) -> Antwoord {
+    match stap {
+        Ok(v) => ok(json!({
+            "voorlopig": serde_json::to_value(v).map_err(|e| Fout::Intern(e.to_string()))?,
+        })),
+        Err(Fout::Cel(e)) if !matches!(e, Error::Io(_)) => {
+            ok(json!({ "geweigerd": e.to_string() }))
+        }
+        Err(f) => Err(f),
+    }
+}
+
+async fn voorvertoning_besluit(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    voorlopig(s.met(&v, |c, cell| {
+        kern::voorvertoning_besluit(c, cell, &b.op, &b.bevindingen, b.datum)
+    }))
+}
+
+async fn voorvertoning_op_bezwaar(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    voorlopig(s.met(&v, |c, cell| {
+        kern::voorvertoning_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
+    }))
 }
 
 async fn reducties(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) -> Antwoord {
