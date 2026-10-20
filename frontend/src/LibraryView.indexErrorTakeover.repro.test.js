@@ -30,7 +30,7 @@ vi.mock('vue-router', () => ({
   onBeforeRouteLeave: vi.fn(),
 }));
 
-vi.mock('./composables/useAuth.js', () => ({
+vi.mock('./composables/useAuth', () => ({
   useAuth: () => ({ authenticated: ref(true), login: vi.fn() }),
 }));
 
@@ -40,7 +40,7 @@ vi.mock('./composables/useAuth.js', () => ({
 // are hoisted above module-level consts, hence `vi.hoisted`.)
 const { trajectScope } = vi.hoisted(() => ({ trajectScope: {} }));
 
-vi.mock('./composables/useTrajects.js', () => {
+vi.mock('./composables/useTrajects', () => {
   trajectScope.activeTrajectRef = ref('traject-abcd1234');
   return {
     useTrajects: () => ({
@@ -94,11 +94,11 @@ vi.mock('./lib/apiFetch', () => ({
   ApiError: ApiErrorStub,
 }));
 
-vi.mock('./composables/useFeatureFlags.js', () => ({
+vi.mock('./composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ isEnabled: () => true }),
 }));
 
-vi.mock('./composables/useDocumentsManager.js', () => ({
+vi.mock('./composables/useDocumentsManager', () => ({
   useDocumentsManager: () => ({
     documents: ref([]),
     listLoading: ref(false),
@@ -119,7 +119,7 @@ vi.mock('./composables/useDocumentsManager.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useTrajectDocumentJobs.js', () => ({
+vi.mock('./composables/useTrajectDocumentJobs', () => ({
   useTrajectDocumentJobs: () => ({
     jobs: ref([]),
     cancelJob: vi.fn(),
@@ -129,7 +129,7 @@ vi.mock('./composables/useTrajectDocumentJobs.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useDocumentUpload.js', () => ({
+vi.mock('./composables/useDocumentUpload', () => ({
   useDocumentUpload: () => ({
     fileInput: ref(null),
     uploadError: ref(null),
@@ -139,7 +139,7 @@ vi.mock('./composables/useDocumentUpload.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useDocumentTaskReview.js', () => ({
+vi.mock('./composables/useDocumentTaskReview', () => ({
   useDocumentTaskReview: () => ({
     reviewTask: ref(null),
     proposedContent: ref(null),

@@ -16,10 +16,10 @@ let versionsCacheTrajectRef = null;
 
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
-import { useDependencies } from '../composables/useDependencies.js';
-import { loadLawVersions } from '../composables/useEngine.js';
-import { useScenarios, isScenarioMismatch } from '../composables/useScenarios.js';
-import { lawVersionsUrl } from '../composables/corpusUrls.js';
+import { useDependencies } from '../composables/useDependencies';
+import { loadLawVersions } from '../composables/useEngine';
+import { useScenarios, isScenarioMismatch } from '../composables/useScenarios';
+import { lawVersionsUrl } from '../composables/corpusUrls';
 import { apiFetchJson } from '../lib/apiFetch';
 import { useLatest } from '../lib/useLatest';
 import { parseFeature } from '../gherkin/parser';

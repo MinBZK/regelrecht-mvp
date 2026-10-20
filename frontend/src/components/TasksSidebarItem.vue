@@ -15,7 +15,7 @@
  * bedoeling.
  */
 import { computed } from 'vue';
-import { useTasks } from '../composables/useTasks.js';
+import { useTasks } from '../composables/useTasks';
 import { isPrioriteit } from '../lib/taskCategories';
 
 defineProps({

@@ -10,7 +10,7 @@ const engineCalls = vi.hoisted(() => []);
 const RESOLVE_ERROR =
   "law 'wet_kapot' has no loaded version with valid_from 2024-01-01; the viewed version may have failed to load";
 
-vi.mock('../composables/useEngine.js', () => ({
+vi.mock('../composables/useEngine', () => ({
   useEngine: () => ({
     initEngine: async () => ({
       resolveNotes(lawId, _yaml, validFrom) {
@@ -30,7 +30,7 @@ vi.mock('../lib/apiFetch', () => ({
   }),
 }));
 
-import { useNotes } from '../composables/useNotes.js';
+import { useNotes } from '../composables/useNotes';
 import NotesLoadError from './NotesLoadError.vue';
 
 /** Harness: real useNotes wired to the dialog, exactly as EditorView does. */

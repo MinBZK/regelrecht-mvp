@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useTrajects, refreshTrajects } from './composables/useTrajects.js';
-import { lastHomePath, homeTarget } from './composables/useLastVisitedRoute.js';
+import { useTrajects, refreshTrajects } from './composables/useTrajects';
+import { lastHomePath, homeTarget } from './composables/useLastVisitedRoute';
 
 // Trajectkeuze-pagina - de landing wanneer de editor (of een traject-scoped
 // bibliotheek) een traject vereist. Hier kies je een bestaand traject of ga je

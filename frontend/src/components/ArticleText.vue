@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { renderArticleHtml } from '../composables/useArticleMarkdown.js';
+import { renderArticleHtml } from '../composables/useArticleMarkdown';
 
 const props = defineProps({
   article: { type: Object, default: null },

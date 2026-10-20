@@ -11,7 +11,7 @@ const { loginSpy, connectSpy, navSpy, authState } = vi.hoisted(() => ({
   authState: { authenticated: true, oidcConfigured: true },
 }));
 
-vi.mock('../composables/useAuth.js', () => ({
+vi.mock('../composables/useAuth', () => ({
   ensureAuthReady: vi.fn().mockResolvedValue(undefined),
   useAuth: () => ({
     // Read authState at call time so a test can set it before the 401 fires.
@@ -21,7 +21,7 @@ vi.mock('../composables/useAuth.js', () => ({
   }),
 }));
 
-vi.mock('../composables/useGithubAuth.js', () => ({
+vi.mock('../composables/useGithubAuth', () => ({
   useGithubAuth: () => ({ connect: connectSpy }),
 }));
 

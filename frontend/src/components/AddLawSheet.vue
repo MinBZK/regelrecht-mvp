@@ -24,10 +24,10 @@
  * nldd-simple-section, footer) spiegelt EditSheet.vue en NewHarvestJobSheet.vue.
  */
 import { ref, computed, watch, nextTick } from 'vue';
-import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch.js';
-import { useTrajects } from '../composables/useTrajects.js';
-import { useLawPromote } from '../composables/useLawPromote.js';
-import { lawsListUrl, trajectHarvestUrl } from '../composables/corpusUrls.js';
+import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch';
+import { useTrajects } from '../composables/useTrajects';
+import { useLawPromote } from '../composables/useLawPromote';
+import { lawsListUrl, trajectHarvestUrl } from '../composables/corpusUrls';
 import { apiFetch, apiFetchJson, ApiError } from '../lib/apiFetch';
 import { useLatest } from '../lib/useLatest';
 

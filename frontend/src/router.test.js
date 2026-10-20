@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import router from './router.js';
-import { sectionTarget, homeTabTarget } from './composables/useLastVisitedRoute.js';
+import { sectionTarget, homeTabTarget } from './composables/useLastVisitedRoute';
 
 // A valid traject ref is `{slug}-{8hex}` (see the route regex). A plain
 // law `$id` uses underscores and must NOT match the traject route.

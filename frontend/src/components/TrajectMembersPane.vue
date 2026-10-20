@@ -4,8 +4,8 @@
 // which also opens from the universal "+" in the header. Loads on mount, on
 // traject change, and whenever an invite elsewhere signals a change.
 import { computed, onMounted, ref, watch } from 'vue';
-import { useTrajectMembers } from '../composables/useTrajectMembers.js';
-import { useAddActions } from '../composables/useAddActions.js';
+import { useTrajectMembers } from '../composables/useTrajectMembers';
+import { useAddActions } from '../composables/useAddActions';
 import { paneChromeVisible } from '../constants';
 
 const props = defineProps({

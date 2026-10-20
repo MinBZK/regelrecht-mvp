@@ -2,7 +2,7 @@
 import { ref, computed, watch, watchEffect, nextTick } from 'vue';
 import { collectAvailableVariables } from '../utils/operationTree';
 import { centsToEuros, eurosToCents } from '../utils/currency';
-import { lawsListUrl } from '../composables/corpusUrls.js';
+import { lawsListUrl } from '../composables/corpusUrls';
 import { apiFetchJson } from '../lib/apiFetch';
 
 const props = defineProps({

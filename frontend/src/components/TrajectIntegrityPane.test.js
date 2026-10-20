@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import TrajectIntegrityPane from './TrajectIntegrityPane.vue';
-import { groupByLaw, impactSummary } from '../composables/useTrajectIntegrity.js';
+import { groupByLaw, impactSummary } from '../composables/useTrajectIntegrity';
 
 // De pane haalt het rapport via useTrajectIntegrity -> apiFetchJson op; die
 // ene netwerkpoot sturen we hier (zelfde mock-vorm als TasksCategoriesPane).

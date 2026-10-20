@@ -9,14 +9,14 @@ import {
   writableSource,
   branchTreeUrl,
   isCentralSource,
-} from '../composables/useTrajectDetail.js';
+} from '../composables/useTrajectDetail';
 import {
   deleteTraject,
   leaveTraject,
   moveTrajectRepo,
   updateTraject,
-} from '../composables/useTrajects.js';
-import { hasRole } from '../composables/useAuth.js';
+} from '../composables/useTrajects';
+import { hasRole } from '../composables/useAuth';
 import { paneChromeVisible } from '../constants';
 
 const router = useRouter();

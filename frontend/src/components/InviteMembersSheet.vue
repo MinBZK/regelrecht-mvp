@@ -11,8 +11,8 @@
  * useAddActions().triggerMembersChanged() zodat de pane herlaadt.
  */
 import { computed, nextTick, ref, watch } from 'vue';
-import { useTrajectMembers } from '../composables/useTrajectMembers.js';
-import { useAddActions } from '../composables/useAddActions.js';
+import { useTrajectMembers } from '../composables/useTrajectMembers';
+import { useAddActions } from '../composables/useAddActions';
 
 const props = defineProps({
   /** Traject to invite into (UUID id). */

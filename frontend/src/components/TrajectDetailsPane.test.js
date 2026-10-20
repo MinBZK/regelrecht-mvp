@@ -14,7 +14,7 @@ vi.mock('../lib/apiFetch', () => ({
 
 // Rollen komen uit de sessie; standaard heeft de gebruiker er geen.
 const roles = new Set();
-vi.mock('../composables/useAuth.js', () => ({
+vi.mock('../composables/useAuth', () => ({
   hasRole: (role) => roles.has(role),
 }));
 

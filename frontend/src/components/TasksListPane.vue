@@ -23,9 +23,9 @@
  */
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useTasks } from '../composables/useTasks.js';
-import { useCorpusLaws } from '../composables/useCorpusLaws.js';
-import { homeTarget } from '../composables/useLastVisitedRoute.js';
+import { useTasks } from '../composables/useTasks';
+import { useCorpusLaws } from '../composables/useCorpusLaws';
+import { homeTarget } from '../composables/useLastVisitedRoute';
 import { reviewTarget } from '../lib/taskReview';
 import { taskTitle, runningTitle } from '../lib/taskTitle';
 import {

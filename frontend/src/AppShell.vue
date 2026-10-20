@@ -6,12 +6,12 @@ import MobileTrajectSheet from './components/MobileTrajectSheet.vue';
 import AboutSheet from './components/AboutSheet.vue';
 import SupportSheet from './components/SupportSheet.vue';
 import SettingsSheet from './components/SettingsSheet.vue';
-import { useAuth } from './composables/useAuth.js';
-import { useGithubAuth } from './composables/useGithubAuth.js';
-import { useTrajects } from './composables/useTrajects.js';
-import { useColorScheme } from './composables/useColorScheme.js';
-import { useSettingsSections } from './composables/useSettingsSections.js';
-import { useAddActions } from './composables/useAddActions.js';
+import { useAuth } from './composables/useAuth';
+import { useGithubAuth } from './composables/useGithubAuth';
+import { useTrajects } from './composables/useTrajects';
+import { useColorScheme } from './composables/useColorScheme';
+import { useSettingsSections } from './composables/useSettingsSections';
+import { useAddActions } from './composables/useAddActions';
 import {
   lastHomePath,
   lastEditorPath,
@@ -19,8 +19,8 @@ import {
   homeTabTarget,
   isHomeSection,
   rememberHarvesterOrigin,
-} from './composables/useLastVisitedRoute.js';
-import { useAppChrome, openSearch, onBarSearchKeydown } from './composables/useAppChrome.js';
+} from './composables/useLastVisitedRoute';
+import { useAppChrome, openSearch, onBarSearchKeydown } from './composables/useAppChrome';
 import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from './constants';
 
 // Persistent shell that owns the shared chrome (tab-bar, search trigger,

@@ -12,11 +12,11 @@
  * highlights live alongside committed ones.
  */
 import { ref, computed, watch, onMounted } from 'vue';
-import { buildSelector, cpToUtf16 } from '../composables/useTextSelection.js';
-import { useAmbiguityVocabulary } from '../composables/useAmbiguityVocabulary.js';
-import { documentsListUrl } from '../composables/corpusUrls.js';
+import { buildSelector, cpToUtf16 } from '../composables/useTextSelection';
+import { useAmbiguityVocabulary } from '../composables/useAmbiguityVocabulary';
+import { documentsListUrl } from '../composables/corpusUrls';
 import { apiFetchJson } from '../lib/apiFetch';
-import { useAuth } from '../composables/useAuth.js';
+import { useAuth } from '../composables/useAuth';
 import { quoteContext } from '../lib/quoteContext';
 import QuotedFragment from './QuotedFragment.vue';
 

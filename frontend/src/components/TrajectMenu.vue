@@ -1,10 +1,10 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useTrajects } from '../composables/useTrajects.js';
-import { useAuth } from '../composables/useAuth.js';
-import { useLoginToChooser } from '../composables/useLoginToChooser.js';
-import { homeTarget, trajectSwitchTarget } from '../composables/useLastVisitedRoute.js';
+import { useTrajects } from '../composables/useTrajects';
+import { useAuth } from '../composables/useAuth';
+import { useLoginToChooser } from '../composables/useLoginToChooser';
+import { homeTarget, trajectSwitchTarget } from '../composables/useLastVisitedRoute';
 import TrajectCreateForm from './TrajectCreateForm.vue';
 
 const props = defineProps({

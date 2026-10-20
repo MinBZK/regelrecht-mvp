@@ -3,17 +3,17 @@ import { ref, computed, reactive, watch, watchEffect, nextTick, onBeforeUnmount 
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import * as yaml from 'js-yaml';
 import { withDecisionField } from '@regelrecht/frontend-shared/produces';
-import { useLaw, fetchLaw } from './composables/useLaw.js';
-import { useCorpusLaws } from './composables/useCorpusLaws.js';
-import { useEngine } from './composables/useEngine.js';
-import { useAuth } from './composables/useAuth.js';
-import { useTrajects } from './composables/useTrajects.js';
-import { useFeatureFlags } from './composables/useFeatureFlags.js';
-import { useEnrichState } from './composables/useEnrichState.js';
-import { useTaskReview } from './composables/useTaskReview.js';
-import { useNotes, useResolvedDraftNotes } from './composables/useNotes.js';
-import { useDraftNotes } from './composables/useDraftNotes.js';
-import { lastHomePath, homeTarget } from './composables/useLastVisitedRoute.js';
+import { useLaw, fetchLaw } from './composables/useLaw';
+import { useCorpusLaws } from './composables/useCorpusLaws';
+import { useEngine } from './composables/useEngine';
+import { useAuth } from './composables/useAuth';
+import { useTrajects } from './composables/useTrajects';
+import { useFeatureFlags } from './composables/useFeatureFlags';
+import { useEnrichState } from './composables/useEnrichState';
+import { useTaskReview } from './composables/useTaskReview';
+import { useNotes, useResolvedDraftNotes } from './composables/useNotes';
+import { useDraftNotes } from './composables/useDraftNotes';
+import { lastHomePath, homeTarget } from './composables/useLastVisitedRoute';
 import {
   registerSearchPopover,
   setEditorChrome,
@@ -21,15 +21,15 @@ import {
   setEditorChanges,
   registerEditorActions,
   clearEditorChrome,
-} from './composables/useAppChrome.js';
+} from './composables/useAppChrome';
 import { SUPPORT_EMAIL } from './constants';
 import { apiFetch, apiFetchJson } from './lib/apiFetch';
 import { RETRY_MIN_SPINNER_MS } from './lib/retryFeedback';
 import { humanizeLawId } from './lib/lawName';
 import { quoteContext } from './lib/quoteContext';
 import { useLatest } from './lib/useLatest';
-import { useOpenTabs } from './composables/useOpenTabs.js';
-import { createTabRestore } from './composables/useTabRestore.js';
+import { useOpenTabs } from './composables/useOpenTabs';
+import { createTabRestore } from './composables/useTabRestore';
 import { proposalDivergence } from './lib/taskReview';
 import ArticleText from './components/ArticleText.vue';
 import ArticleTextEditor from './components/ArticleTextEditor.vue';
@@ -37,7 +37,7 @@ import NoteCreator from './components/NoteCreator.vue';
 import NotesLoadError from './components/NotesLoadError.vue';
 import NoteCard from './components/NoteCard.vue';
 import QuotedFragment from './components/QuotedFragment.vue';
-import { cpToUtf16, utf16ToCp } from './composables/useTextSelection.js';
+import { cpToUtf16, utf16ToCp } from './composables/useTextSelection';
 import ActionSheet from './components/ActionSheet.vue';
 import EditSheet from './components/EditSheet.vue';
 import SearchPopover from './components/SearchPopover.vue';

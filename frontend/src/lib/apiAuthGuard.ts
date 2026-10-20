@@ -1,5 +1,5 @@
-import { ensureAuthReady, useAuth } from '../composables/useAuth.js';
-import { useGithubAuth } from '../composables/useGithubAuth.js';
+import { ensureAuthReady, useAuth } from '../composables/useAuth';
+import { useGithubAuth } from '../composables/useGithubAuth';
 
 // Global 401/428 interceptor for the editor SPA.
 //

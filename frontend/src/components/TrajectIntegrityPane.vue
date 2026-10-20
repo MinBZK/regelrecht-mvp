@@ -12,7 +12,7 @@
 // en bij de verversknop - niet periodiek: het rapport verandert alleen als er
 // gepusht wordt, en dan weet de gebruiker dat zelf.
 import { onMounted, watch } from 'vue';
-import { SEVERITY_ICONS, useTrajectIntegrity } from '../composables/useTrajectIntegrity.js';
+import { SEVERITY_ICONS, useTrajectIntegrity } from '../composables/useTrajectIntegrity';
 import { paneChromeVisible } from '../constants';
 
 const props = defineProps({

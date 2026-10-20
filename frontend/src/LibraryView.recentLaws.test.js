@@ -21,14 +21,14 @@ vi.mock('vue-router', () => ({
   onBeforeRouteLeave: vi.fn(),
 }));
 
-vi.mock('./composables/useAuth.js', () => ({
+vi.mock('./composables/useAuth', () => ({
   useAuth: () => ({ authenticated: ref(true), login: vi.fn() }),
 }));
 
 // The ref the view watches: switching traject keeps the view mounted, so the
 // test drives the switch by writing to this exact ref.
 const activeTrajectRef = ref('traject-aaaa1111');
-vi.mock('./composables/useTrajects.js', () => ({
+vi.mock('./composables/useTrajects', () => ({
   useTrajects: () => ({
     activeTrajectRef,
     activeTraject: ref({ name: 'Traject A' }),
@@ -42,11 +42,11 @@ vi.mock('./lib/apiFetch', () => ({
   ApiError: class ApiError extends Error {},
 }));
 
-vi.mock('./composables/useFeatureFlags.js', () => ({
+vi.mock('./composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ isEnabled: () => true }),
 }));
 
-vi.mock('./composables/useDocumentsManager.js', () => ({
+vi.mock('./composables/useDocumentsManager', () => ({
   useDocumentsManager: () => ({
     documents: ref([]),
     listLoading: ref(false),
@@ -66,7 +66,7 @@ vi.mock('./composables/useDocumentsManager.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useTrajectDocumentJobs.js', () => ({
+vi.mock('./composables/useTrajectDocumentJobs', () => ({
   useTrajectDocumentJobs: () => ({
     jobs: ref([]),
     refresh: vi.fn(),
@@ -75,7 +75,7 @@ vi.mock('./composables/useTrajectDocumentJobs.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useDocumentUpload.js', () => ({
+vi.mock('./composables/useDocumentUpload', () => ({
   useDocumentUpload: () => ({
     fileInput: ref(null),
     uploadError: ref(null),
@@ -85,7 +85,7 @@ vi.mock('./composables/useDocumentUpload.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useDocumentTaskReview.js', () => ({
+vi.mock('./composables/useDocumentTaskReview', () => ({
   useDocumentTaskReview: () => ({
     reviewTask: ref(null),
     proposedContent: ref(null),

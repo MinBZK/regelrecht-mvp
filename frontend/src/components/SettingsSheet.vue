@@ -13,9 +13,9 @@
 // The composables backing this are singletons, so the sheet reads them
 // directly instead of taking the whole set as props.
 import { computed, ref } from 'vue';
-import { useFeatureFlags } from '../composables/useFeatureFlags.js';
-import { useGithubAuth } from '../composables/useGithubAuth.js';
-import { useSettingsSections } from '../composables/useSettingsSections.js';
+import { useFeatureFlags } from '../composables/useFeatureFlags';
+import { useGithubAuth } from '../composables/useGithubAuth';
+import { useSettingsSections } from '../composables/useSettingsSections';
 
 const sheetEl = ref(null);
 

@@ -1,11 +1,11 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useTrajects } from '../composables/useTrajects.js';
-import { useAuth } from '../composables/useAuth.js';
-import { useLoginToChooser } from '../composables/useLoginToChooser.js';
-import { homeTarget, trajectSwitchTarget } from '../composables/useLastVisitedRoute.js';
-import { useAppChrome } from '../composables/useAppChrome.js';
+import { useTrajects } from '../composables/useTrajects';
+import { useAuth } from '../composables/useAuth';
+import { useLoginToChooser } from '../composables/useLoginToChooser';
+import { homeTarget, trajectSwitchTarget } from '../composables/useLastVisitedRoute';
+import { useAppChrome } from '../composables/useAppChrome';
 import TrajectCreateForm from './TrajectCreateForm.vue';
 
 // Mobiele (sm) samenvoeging van de traject-knop en de artikel-tabbladen-knop:

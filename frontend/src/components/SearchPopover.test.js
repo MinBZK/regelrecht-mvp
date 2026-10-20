@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import SearchPopover from './SearchPopover.vue';
-import { MIN_QUERY_LENGTH } from '../composables/useBwbSearch.js';
+import { MIN_QUERY_LENGTH } from '../composables/useBwbSearch';
 
 // SearchPopover queries the corpus server-side (`/corpus/laws?q=`) and orders
 // the response into a flat option list (private repo first). We drive it via

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import NoteCreator from './NoteCreator.vue';
-import { useAuth } from '../composables/useAuth.js';
+import { useAuth } from '../composables/useAuth';
 
 // NoteCreator pulls in useAmbiguityVocabulary, which fetches the vocabulary
 // file on first use. Stub fetch so the test does not hit the network (and

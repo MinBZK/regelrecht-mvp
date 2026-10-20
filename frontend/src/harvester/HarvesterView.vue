@@ -15,11 +15,11 @@
  */
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuth } from '../composables/useAuth.js';
-import { useColorScheme } from '../composables/useColorScheme.js';
+import { useAuth } from '../composables/useAuth';
+import { useColorScheme } from '../composables/useColorScheme';
 import { usePlatformInfo } from './composables/usePlatformInfo.js';
 import { useNewHarvestJob } from './composables/useNewHarvestJob.js';
-import { harvesterReturnPath } from '../composables/useLastVisitedRoute.js';
+import { harvesterReturnPath } from '../composables/useLastVisitedRoute';
 import NewHarvestJobSheet from './components/NewHarvestJobSheet.vue';
 import './harvester.css';
 

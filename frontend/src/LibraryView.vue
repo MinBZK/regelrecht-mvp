@@ -18,24 +18,24 @@ import TasksCategoriesPane from './components/TasksCategoriesPane.vue';
 import TasksListPane from './components/TasksListPane.vue';
 import TasksSidebarItem from './components/TasksSidebarItem.vue';
 import UploadConfirmDialog from './components/UploadConfirmDialog.vue';
-import { useAuth } from './composables/useAuth.js';
-import { useCorpusLaws } from './composables/useCorpusLaws.js';
+import { useAuth } from './composables/useAuth';
+import { useCorpusLaws } from './composables/useCorpusLaws';
 // useEnrichState (bovenop useTaskActions), niet useTasks: LibraryView heeft
 // alleen gerichte refreshes nodig - na een geannuleerde job, na een eigen
 // aanvraag - en mag daarvoor niet de 30s-poll aanzetten (die hoort bij de
 // taken-componenten, en anonieme bezoekers pollen nooit).
-import { useEnrichState } from './composables/useEnrichState.js';
-import { lawFetchInit } from './composables/useLaw.js';
-import { useTrajects, refreshTrajects } from './composables/useTrajects.js';
-import { lawsListUrl, lawUrl, lawUploadUrl, changedLawsUrl, favoritesUrl, favoriteUrl } from './composables/corpusUrls.js';
+import { useEnrichState } from './composables/useEnrichState';
+import { lawFetchInit } from './composables/useLaw';
+import { useTrajects, refreshTrajects } from './composables/useTrajects';
+import { lawsListUrl, lawUrl, lawUploadUrl, changedLawsUrl, favoritesUrl, favoriteUrl } from './composables/corpusUrls';
 import { SUPPORT_EMAIL, paneChromeVisible } from './constants';
-import { registerSearchPopover, setLibraryEmpty, openSearch } from './composables/useAppChrome.js';
-import { homeTarget } from './composables/useLastVisitedRoute.js';
-import { useDocumentsManager } from './composables/useDocumentsManager.js';
-import { useTrajectDocumentJobs } from './composables/useTrajectDocumentJobs.js';
-import { useDocumentUpload } from './composables/useDocumentUpload.js';
-import { useAddActions } from './composables/useAddActions.js';
-import { useDocumentTaskReview } from './composables/useDocumentTaskReview.js';
+import { registerSearchPopover, setLibraryEmpty, openSearch } from './composables/useAppChrome';
+import { homeTarget } from './composables/useLastVisitedRoute';
+import { useDocumentsManager } from './composables/useDocumentsManager';
+import { useTrajectDocumentJobs } from './composables/useTrajectDocumentJobs';
+import { useDocumentUpload } from './composables/useDocumentUpload';
+import { useAddActions } from './composables/useAddActions';
+import { useDocumentTaskReview } from './composables/useDocumentTaskReview';
 import { humanizeLawId } from './lib/lawName';
 import { sameTraject } from './lib/taskReview';
 import { apiFetch, apiFetchJson, ApiError } from './lib/apiFetch';

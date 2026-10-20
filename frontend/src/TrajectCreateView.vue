@@ -2,8 +2,8 @@
 import { ref, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import TrajectCreateForm from './components/TrajectCreateForm.vue';
-import { createTraject } from './composables/useTrajects.js';
-import { homeTarget } from './composables/useLastVisitedRoute.js';
+import { createTraject } from './composables/useTrajects';
+import { homeTarget } from './composables/useLastVisitedRoute';
 
 // Nieuw-traject-pagina - bereikbaar vanaf de trajectkeuze-pagina. Gebruikt
 // hetzelfde gedeelde formulier als de TrajectMenu-sheet; na het aanmaken ga je

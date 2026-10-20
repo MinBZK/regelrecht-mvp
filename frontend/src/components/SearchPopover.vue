@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch.js';
-import { useBwbHarvest } from '../composables/useBwbHarvest.js';
-import { useAuth } from '../composables/useAuth.js';
-import { useTrajects } from '../composables/useTrajects.js';
-import { lawsListUrl } from '../composables/corpusUrls.js';
+import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch';
+import { useBwbHarvest } from '../composables/useBwbHarvest';
+import { useAuth } from '../composables/useAuth';
+import { useTrajects } from '../composables/useTrajects';
+import { lawsListUrl } from '../composables/corpusUrls';
 import { apiFetchJson } from '../lib/apiFetch';
 import { useLatest } from '../lib/useLatest';
 import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from '../constants';

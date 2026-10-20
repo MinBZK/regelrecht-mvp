@@ -28,8 +28,8 @@
  * één interval (consumers-teller in useTasks).
  */
 import { computed, toRef } from 'vue';
-import { useTasks } from '../composables/useTasks.js';
-import { useCorpusLaws } from '../composables/useCorpusLaws.js';
+import { useTasks } from '../composables/useTasks';
+import { useCorpusLaws } from '../composables/useCorpusLaws';
 import {
   categoryCounts,
   lawContexts,

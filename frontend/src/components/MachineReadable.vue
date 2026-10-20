@@ -2,7 +2,7 @@
 import { computed, inject, ref, toRef, watch, nextTick } from 'vue';
 import { humanize } from '../utils/outputFormat';
 import { decisionOf } from '@regelrecht/frontend-shared/produces';
-import { useCorpusLaws } from '../composables/useCorpusLaws.js';
+import { useCorpusLaws } from '../composables/useCorpusLaws';
 import BreakableName from './BreakableName.vue';
 import RowActionsMenu from './RowActionsMenu.vue';
 import MachineEmptyState from './MachineEmptyState.vue';

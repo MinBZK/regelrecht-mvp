@@ -14,11 +14,11 @@ import LawNode from './graph/LawNode.vue';
 import LeafNode from './graph/LeafNode.vue';
 import TraceStepList from './graph/TraceStepList.vue';
 import TraceStepDetail from './graph/TraceStepDetail.vue';
-import { useLawGraph, rootOfId } from '../composables/useLawGraph.js';
-import { useTraceStepping } from '../composables/useTraceStepping.js';
-import { useColorScheme } from '../composables/useColorScheme.js';
+import { useLawGraph, rootOfId } from '../composables/useLawGraph';
+import { useTraceStepping } from '../composables/useTraceStepping';
+import { useColorScheme } from '../composables/useColorScheme';
 import { stepHasHighlights } from '../lib/traceEdges';
-import { lawUrl } from '../composables/corpusUrls.js';
+import { lawUrl } from '../composables/corpusUrls';
 import { apiFetchText } from '../lib/apiFetch';
 
 const props = defineProps({

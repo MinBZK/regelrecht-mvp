@@ -15,7 +15,7 @@ import {
   setEditorChrome,
   registerTabActions,
   clearEditorChrome,
-} from '../composables/useAppChrome.js';
+} from '../composables/useAppChrome';
 
 // nldd-sheet compiles to a raw custom element; stub show()/hide() with spies.
 let showSpy, hideSpy;

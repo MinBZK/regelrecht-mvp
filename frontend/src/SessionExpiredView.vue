@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuth } from './composables/useAuth.js';
+import { useAuth } from './composables/useAuth';
 
 // Bare "you're logged out" page (top-level route, no app-chrome). Reached when
 // the session expired: both the router guard (on a protected route) and the

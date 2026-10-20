@@ -31,15 +31,15 @@ vi.mock('vue-router', () => ({
   onBeforeRouteLeave: vi.fn(),
 }));
 
-vi.mock('./composables/useAuth.js', () => ({
+vi.mock('./composables/useAuth', () => ({
   useAuth: () => ({ authenticated: ref(true), oidcConfigured: ref(true), login: vi.fn() }),
 }));
 
-vi.mock('./composables/useFeatureFlags.js', () => ({
+vi.mock('./composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ isEnabled: () => true }),
 }));
 
-vi.mock('./composables/useTrajects.js', () => ({
+vi.mock('./composables/useTrajects', () => ({
   useTrajects: () => ({
     activeTrajectRef: ref('kieswet-kandidaatstelling-86070ac7'),
     activeTraject: ref({ name: 'Kieswet-Kandidaatstelling' }),
@@ -89,7 +89,7 @@ const currentEtag = ref('etag-1');
 const seedFromYaml = vi.fn();
 const saveLaw = vi.fn().mockResolvedValue(undefined);
 const reloadLaw = vi.fn().mockResolvedValue(undefined);
-vi.mock('./composables/useLaw.js', () => ({
+vi.mock('./composables/useLaw', () => ({
   useLaw: () => ({
     law: ref({ $id: 'kieswet', valid_from: '2025-01-01' }),
     lawId,
@@ -115,11 +115,11 @@ vi.mock('./composables/useLaw.js', () => ({
   fetchLaw: vi.fn(),
 }));
 
-vi.mock('./composables/useCorpusLaws.js', () => ({
+vi.mock('./composables/useCorpusLaws', () => ({
   useCorpusLaws: () => ({ displayName: (id) => id, refresh: vi.fn() }),
 }));
 
-vi.mock('./composables/useEngine.js', () => ({
+vi.mock('./composables/useEngine', () => ({
   useEngine: () => ({
     ready: ref(false),
     initError: ref(null),
@@ -130,7 +130,7 @@ vi.mock('./composables/useEngine.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useNotes.js', () => ({
+vi.mock('./composables/useNotes', () => ({
   useNotes: () => ({
     notesForArticle: ref([]),
     issues: ref([]),
@@ -140,7 +140,7 @@ vi.mock('./composables/useNotes.js', () => ({
   useResolvedDraftNotes: () => ({ draftNotesForArticle: ref([]) }),
 }));
 
-vi.mock('./composables/useDraftNotes.js', () => ({
+vi.mock('./composables/useDraftNotes', () => ({
   useDraftNotes: () => ({
     drafts: ref([]),
     draftCount: ref(0),
@@ -152,7 +152,7 @@ vi.mock('./composables/useDraftNotes.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useOpenTabs.js', () => ({
+vi.mock('./composables/useOpenTabs', () => ({
   useOpenTabs: () => ({
     tabs: ref([]),
     activeTab: ref(null),
@@ -168,11 +168,11 @@ vi.mock('./composables/useOpenTabs.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useTabRestore.js', () => ({
+vi.mock('./composables/useTabRestore', () => ({
   createTabRestore: () => ({ restoreForTraject: vi.fn().mockResolvedValue(undefined) }),
 }));
 
-vi.mock('./composables/useEnrichState.js', () => ({
+vi.mock('./composables/useEnrichState', () => ({
   useEnrichState: () => ({
     isEnriching: ref(false),
     reviewReady: ref(false),
@@ -183,7 +183,7 @@ vi.mock('./composables/useEnrichState.js', () => ({
   }),
 }));
 
-vi.mock('./composables/useLastVisitedRoute.js', () => ({
+vi.mock('./composables/useLastVisitedRoute', () => ({
   lastHomePath: ref({ name: 'home' }),
   homeTarget: () => ({ name: 'home' }),
 }));
@@ -198,7 +198,7 @@ vi.mock('./lib/apiFetch', () => ({
 // publiceert er alleen naartoe. `editorChanges` is dus precies wat de
 // gebruiker ziet: `review: true` = de beoordeel-weergave staat op het scherm.
 let editorChanges = null;
-vi.mock('./composables/useAppChrome.js', () => ({
+vi.mock('./composables/useAppChrome', () => ({
   registerSearchPopover: vi.fn(),
   setEditorChrome: vi.fn(),
   registerTabActions: vi.fn(),
@@ -215,7 +215,7 @@ const fetchTask = vi.fn();
 const resolveTask = vi.fn();
 const fetchJobTasks = vi.fn();
 const applyEnrichment = vi.fn();
-vi.mock('./composables/useTasks.js', () => ({
+vi.mock('./composables/useTasks', () => ({
   useTaskActions: () => ({
     fetchTask: (...a) => fetchTask(...a),
     resolveTask: (...a) => resolveTask(...a),

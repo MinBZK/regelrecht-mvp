@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AppShell from './AppShell.vue';
 import LibraryView from './LibraryView.vue';
-import { ensureAuthReady, useAuth } from './composables/useAuth.js';
-import { recordLastVisited } from './composables/useLastVisitedRoute.js';
+import { ensureAuthReady, useAuth } from './composables/useAuth';
+import { recordLastVisited } from './composables/useLastVisitedRoute';
 
 const router = createRouter({
   history: createWebHistory(),
