@@ -154,17 +154,20 @@ scenarios:
         en klik op Aanvraag indienen. Van deze aanvrager heeft de gemeente geen
         rapport van de GGD.
       - >-
-        Bestuursorgaan, speeldatum 20 oktober 2026: laat de bevindingen staan
-        en klik op Besluit nemen.
+        Bestuursorgaan, speeldatum 20 oktober 2026: het formulier vraagt nu
+        ook "geneeskundig onderzoek heeft plaatsgehad", want de cel weet het
+        niet voor deze aanvraag. Laat het op "Nog niet beoordeeld" en klik op
+        Besluit nemen.
     eind: >-
-      Er komt geen besluit, maar een melding: niemand stelde vast dat het
-      geneeskundig onderzoek plaatsvond. De kaart "wordt niet afgegeven
-      alvorens een geneeskundig onderzoek heeft plaatsgehad" (Regeling
-      gehandicaptenparkeerkaart, artikel 2, eerste lid); dat is geen grond om
-      te weigeren, dus het college wacht. De kroniek blijft zoals zij was. Dat
-      de kaart volgt zodra het rapport binnen is, kan de app niet naspelen:
-      zij heeft geen knop om een rapport te ontvangen. Voor de
-      voorbeeldaanvrager staat het rapport er al (zie het eerste scenario).
+      Er komt geen besluit, maar een melding: het college heeft niet
+      beoordeeld of het geneeskundig onderzoek plaatsvond. De kaart "wordt
+      niet afgegeven alvorens een geneeskundig onderzoek heeft plaatsgehad"
+      (Regeling gehandicaptenparkeerkaart, artikel 2, eerste lid); dat is geen
+      grond om te weigeren, dus het college wacht. De kroniek blijft zoals zij
+      was. Kiest het college Ja, dan stelt het zelf vast dat het onderzoek
+      plaatsvond en volgt de kaart; kiest het Nee, dan weigert het (eigen
+      keuze). De app heeft geen knop om een rapport van de GGD te ontvangen;
+      voor de voorbeeldaanvrager staat het rapport er al.
   - naam: Een nieuwe kaart zonder nieuw onderzoek
     stappen:
       - 'Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen.'
