@@ -7,10 +7,10 @@
 //! loads it. It asks for the decisions taken under an article with
 //! `source: {decisions: <regulation>#<article>}`; the cell answers that input
 //! with one row per decision in its chronicle ([`rows`]). It asks for the
-//! executograms an article establishes with
-//! `source: {executograms: <regulation>#<article>}` (schema v0.8.7,
+//! recorded instances of a fact an article requires with
+//! `source: {facts: <regulation>#<article>#<fact>}` (schema v0.8.7,
 //! RFC-051), one row per executogram ([`executogram_rows`]); the article's
-//! `EXECUTOGRAM` item says what each holds. For the logic
+//! `requires` entry for that fact says what each holds. For the logic
 //! it calls law or policy like any rulework (`source.regulation`); where
 //! that rulework reads an open term the cell answers, the cell answers it
 //! there too.
@@ -52,9 +52,10 @@ use serde::Serialize;
 use serde_json::Map;
 
 use crate::chronicle::Gram;
+use crate::chronicle::EXECUTOGRAM;
 use crate::error::{setup, Result};
 use crate::shape::article_on;
-use regelrecht_law_model::{stored, EXECUTOGRAM};
+use regelrecht_law_model::stored;
 
 /// One version of a reduction of the cell, as written.
 #[derive(Debug, Clone)]
@@ -194,15 +195,14 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
     )
 }
 
-/// The executograms in `grams` established by `grondslag`
-/// (`<regulation>#<article>`, RFC-051), as rows ([`rows_of`]), in the order
-/// the cell recorded them.
-pub fn executogram_rows(grams: &[Gram], grondslag: &str) -> Result<Value> {
-    rows_of(
-        grams
-            .iter()
-            .filter(|g| g.kind == EXECUTOGRAM && g.grondslag == grondslag),
-    )
+/// The executograms in `grams` of the fact `fact`
+/// (`<regulation>#<article>#<fact>`, RFC-051), as rows ([`rows_of`]), in the
+/// order the cell recorded them.
+pub fn executogram_rows(grams: &[Gram], fact: &str) -> Result<Value> {
+    let (grondslag, name) = crate::shape::split_fact(fact)?;
+    rows_of(grams.iter().filter(|g| {
+        g.kind == EXECUTOGRAM && g.grondslag == grondslag && g.fact.as_deref() == Some(name)
+    }))
 }
 
 /// `grams` as rows: the fields, then the outputs, then the chronolexogram's
@@ -333,11 +333,10 @@ pub fn refuse_undeclared_terms(
     Ok(())
 }
 
-/// Each article whose executograms a reduction in force on `day` reads
-/// (`source.executograms`, RFC-051) must establish an executogram on that
-/// day: otherwise the reduction would read no executograms where the cell
-/// never records any.
-pub fn refuse_unestablished_executograms(
+/// Each fact a reduction in force on `day` reads (`source.facts`, RFC-051)
+/// must be one its article requires on that day: otherwise the reduction
+/// would read no executograms where the cell never records any.
+pub fn refuse_unrequired_facts(
     service: &LawExecutionService,
     reductions: &[Reduction],
     day: NaiveDate,
@@ -345,13 +344,12 @@ pub fn refuse_unestablished_executograms(
     for reduction in in_force(reductions, day) {
         for article in &reduction.law.articles {
             for input in article.get_inputs() {
-                let Some(grondslag) = input.source.as_ref().and_then(|s| s.executograms.as_ref())
-                else {
+                let Some(fact) = input.source.as_ref().and_then(|s| s.facts.as_ref()) else {
                     continue;
                 };
-                crate::shape::executogram_fields(service, grondslag, day).map_err(|e| {
+                crate::shape::fact_fields(service, fact, day).map_err(|e| {
                     setup(format!(
-                        "reduction '{}' reads the executograms of {grondslag}: {e}",
+                        "reduction '{}' reads the facts {fact}: {e}",
                         reduction.id
                     ))
                 })?;
@@ -540,11 +538,8 @@ impl<'c> Reader<'c> {
             if let Some(decisions) = &source.decisions {
                 let kind = decision_kind(service, decisions, day)?;
                 parameters.insert(input.name.clone(), rows(&self.grams, decisions, &kind)?);
-            } else if let Some(grondslag) = &source.executograms {
-                parameters.insert(
-                    input.name.clone(),
-                    executogram_rows(&self.grams, grondslag)?,
-                );
+            } else if let Some(fact) = &source.facts {
+                parameters.insert(input.name.clone(), executogram_rows(&self.grams, fact)?);
             }
         }
         let outputs = [question.term];
@@ -649,6 +644,7 @@ mod tests {
             id: format!("{kind}-{grondslag}"),
             kind: kind.into(),
             grondslag: grondslag.into(),
+            fact: None,
             refers_to: refers_to.map(str::to_string),
             recording_actor: ACTOR.into(),
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   decisionOf,
-  isExecutogram,
   legalCharacterOf,
   producedDecision,
   producedItems,
@@ -44,21 +43,6 @@ describe('produces', () => {
     expect(submissionKindOf({ type: 'BEZWAAR' })).toBe('BEZWAAR');
     expect(producedDecision(objection)).toBe(objection[1]);
     expect(producedSubmission(objection)).toBe(objection[0]);
-  });
-
-  it('reads an executogram as neither a decision nor a submission (schema v0.8.7)', () => {
-    const items = [
-      { type: 'EXECUTOGRAM', parameters: ['bsn_aanvrager', 'datum_onderzoek'] },
-      { type: 'BESCHIKKING', outputs: ['verstrekt'] },
-    ];
-    expect(isExecutogram(items[0])).toBe(true);
-    expect(isExecutogram(items[1])).toBe(false);
-    expect(legalCharacterOf(items[0])).toBeNull();
-    expect(submissionKindOf(items[0])).toBeNull();
-    expect(producedDecision(items)).toBe(items[1]);
-    expect(producedDecision([items[0]])).toBeNull();
-    expect(decisionOf([items[0]])).toBeNull();
-    expect(producedSubmission(items)).toBeNull();
   });
 
   it('gives the decision in the object form terms', () => {

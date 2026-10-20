@@ -88,9 +88,9 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
             let Some(read) = chronicle_read(source) else {
                 continue;
             };
-            if source.decisions.is_some() && source.executograms.is_some() {
+            if source.decisions.is_some() && source.facts.is_some() {
                 return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: input '{}' reads {read} and executograms besides; \
+                    "law '{}' {where_}: input '{}' reads {read} and facts besides; \
                      an input reads one of them",
                     law.id, input.name
                 )));
@@ -109,7 +109,7 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
             if !reduction {
                 return Err(EngineError::LoadError(format!(
                     "law '{}' {where_}: input '{}' reads {read}; only a REDUCTIE reads decisions \
-                     or executograms (RFC-048, RFC-051)",
+                     or facts (RFC-048, RFC-051)",
                     law.id, input.name
                 )));
             }
@@ -119,13 +119,13 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// What an input reads from the chronicle of a cell, in words: the
-/// decisions taken under an article (RFC-048) or the executograms an article
-/// establishes (schema v0.8.7, RFC-051). `None` for an input that reads
-/// neither.
+/// decisions taken under an article (RFC-048) or the recorded instances of a
+/// fact an article requires (schema v0.8.7, RFC-051). `None` for an input
+/// that reads neither.
 pub(crate) fn chronicle_read(source: &regelrecht_law_model::Source) -> Option<String> {
-    match (&source.decisions, &source.executograms) {
+    match (&source.decisions, &source.facts) {
         (Some(decisions), _) => Some(format!("the decisions taken under {decisions}")),
-        (None, Some(article)) => Some(format!("the executograms established by {article}")),
+        (None, Some(fact)) => Some(format!("the recorded facts {fact}")),
         (None, None) => None,
     }
 }
@@ -152,7 +152,7 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
             let beside = [
                 ("regulation", source.regulation.is_some()),
                 ("decisions", source.decisions.is_some()),
-                ("executograms", source.executograms.is_some()),
+                ("facts", source.facts.is_some()),
                 ("endpoint", source.endpoint.is_some()),
             ];
             if let Some((key, _)) = beside.iter().find(|(_, present)| *present) {
@@ -240,6 +240,60 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
 /// submission, every other stage the decision). A submission that requests a
 /// decision of another law is checked when it is used, since that law may be
 /// loaded later.
+/// Refuse a fact an article requires (`requires` with `fact`, schema v0.8.7,
+/// RFC-051) that names a provision besides, holds no parameter or one the
+/// article does not declare, or whose name another fact of the article has.
+/// The law says what the fact holds; a reduction reads it by that shape.
+pub(crate) fn reject_malformed_facts(law: &ArticleBasedLaw) -> Result<()> {
+    for article in &law.articles {
+        let refuse = |why: String| {
+            Err(EngineError::LoadError(format!(
+                "law '{}': article {} {why} (RFC-051)",
+                law.id, article.number
+            )))
+        };
+        let mut names: Vec<&str> = Vec::new();
+        for requirement in article.get_requires() {
+            let Some(fact) = requirement.fact.as_deref() else {
+                if requirement.parameters.is_some() {
+                    return refuse(
+                        "lists parameters on a requirement that names no fact".to_string(),
+                    );
+                }
+                continue;
+            };
+            if requirement.article.is_some()
+                || requirement.law.is_some()
+                || requirement.regeling.is_some()
+                || requirement.koninklijk_besluit.is_some()
+                || requirement.values.is_some()
+            {
+                return refuse(format!(
+                    "requires the fact '{fact}' and names another provision in the same entry"
+                ));
+            }
+            if names.contains(&fact) {
+                return refuse(format!("requires the fact '{fact}' twice"));
+            }
+            names.push(fact);
+            let parameters = requirement.parameters.as_deref().unwrap_or_default();
+            if parameters.is_empty() {
+                return refuse(format!(
+                    "requires the fact '{fact}', which holds no parameters"
+                ));
+            }
+            for name in parameters {
+                if !article.get_parameters().iter().any(|p| &p.name == name) {
+                    return refuse(format!(
+                        "requires the fact '{fact}' holding '{name}', but declares no such parameter"
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
     for article in law.articles.iter().filter(|a| a.produces_list()) {
         let produced = article.get_produced();
@@ -263,9 +317,6 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
             let ty = item
                 .legal_character()
                 .or(item.submission_kind())
-                .or(item
-                    .is_executogram()
-                    .then_some(regelrecht_law_model::EXECUTOGRAM))
                 .unwrap_or("");
             if types.contains(&ty) {
                 return refuse(format!(
@@ -279,13 +330,8 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 continue;
             };
             if item.submission_kind().is_none() {
-                let on = if item.is_executogram() {
-                    "an executogram"
-                } else {
-                    "a decision"
-                };
                 return refuse(format!(
-                    "requests '{target}' on {on}; only a submission requests a decision"
+                    "requests '{target}' on a decision; only a submission requests a decision"
                 ));
             }
             let Some((regulation, number)) = target.split_once('#') else {
@@ -314,28 +360,8 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
         {
             return refuse(format!(
                 "lists derived outputs on its {}; only a decision has derived data (RFC-050)",
-                item.submission_kind()
-                    .or(item
-                        .is_executogram()
-                        .then_some(regelrecht_law_model::EXECUTOGRAM))
-                    .unwrap_or("item")
+                item.submission_kind().unwrap_or("item")
             ));
-        }
-        // An executogram (schema v0.8.7, RFC-051) records a fact the article
-        // establishes: it holds the parameters it lists and yields nothing.
-        if let Some(item) = produced.iter().find(|p| p.is_executogram()) {
-            if item.listed_outputs().is_some() {
-                return refuse(
-                    "lists outputs on its EXECUTOGRAM; an executogram holds parameters and \
-                     yields nothing (RFC-051)"
-                        .to_string(),
-                );
-            }
-            if article.parameters_of(*item).is_empty() {
-                return refuse(
-                    "produces an EXECUTOGRAM that holds no parameters (RFC-051)".to_string(),
-                );
-            }
         }
         let mut listed: Vec<&str> = Vec::new();
         let named = produced
@@ -591,6 +617,75 @@ articles:
         )
     }
 
+    /// `law_producing` with the decision only and `requires` spliced in.
+    fn law_requiring(requires: &str) -> String {
+        law_producing("          - type: BESCHIKKING").replace(
+            "    machine_readable:\n      execution:\n",
+            &format!("    machine_readable:\n      requires:\n{requires}\n      execution:\n"),
+        )
+    }
+
+    /// A fact the article requires (schema v0.8.7, RFC-051) holds parameters
+    /// the article declares, has a name of its own within the article, and
+    /// names no other provision in the same entry.
+    #[test]
+    fn a_required_fact_holds_parameters_of_the_article() {
+        let yaml = law_requiring("        - fact: onderzoek\n          parameters: [p]");
+        let mut service = LawExecutionService::new();
+        service.load_law(&yaml).expect("a well-formed fact loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let fact = law.articles[0]
+            .required_fact("onderzoek")
+            .expect("the fact");
+        assert_eq!(fact.parameters.as_deref(), Some(&["p".to_string()][..]));
+        assert!(law.articles[0].required_fact("ander").is_none());
+
+        for (requires, why) in [
+            (
+                "        - fact: onderzoek\n          parameters: [q]",
+                "holding 'q', but declares no such parameter",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n        - fact: onderzoek\n          parameters: [p]",
+                "requires the fact 'onderzoek' twice",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          law: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          article: '2'",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          regeling: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          koninklijk_besluit: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          values: [x]",
+                "names another provision in the same entry",
+            ),
+            ("        - fact: onderzoek", "which holds no parameters"),
+            (
+                "        - article: '2'\n          parameters: [p]",
+                "lists parameters on a requirement that names no fact",
+            ),
+        ] {
+            let mut service = LawExecutionService::new();
+            let err = service
+                .load_law(&law_requiring(requires))
+                .expect_err("a malformed fact must not load");
+            assert!(
+                matches!(err, EngineError::LoadError(_)) && err.to_string().contains(why),
+                "{why}: got {err:?}"
+            );
+        }
+    }
+
     #[test]
     fn a_produces_list_that_divides_the_outputs_loads() {
         let yaml = law_producing(
@@ -617,64 +712,6 @@ articles:
         let decision = article.get_decision().expect("a decision");
         assert!(article.outputs_of(submission).is_empty());
         assert_eq!(article.outputs_of(decision), ["x"]);
-    }
-
-    /// An executogram (schema v0.8.7, RFC-051) holds the parameters it lists
-    /// and yields nothing: it is no decision and no submission, so the
-    /// decision beside it still takes every output.
-    #[test]
-    fn an_executogram_holds_parameters_and_yields_nothing() {
-        let yaml = law_producing(
-            "          - type: EXECUTOGRAM\n            parameters: [p]\n          - type: BESCHIKKING",
-        );
-        let mut service = LawExecutionService::new();
-        service
-            .load_law(&yaml)
-            .expect("an executogram beside a decision loads");
-        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
-        let article = &law.articles[0];
-        let executogram = article.get_executogram().expect("an executogram");
-        assert!(executogram.legal_character().is_none());
-        assert!(executogram.submission_kind().is_none());
-        assert!(article.outputs_of(executogram).is_empty());
-        assert_eq!(article.parameters_of(executogram), ["p"]);
-        assert_eq!(
-            article.outputs_of(article.get_decision().expect("a decision")),
-            ["x"]
-        );
-        assert!(article.get_submission().is_none());
-
-        for (items, why) in [
-            (
-                "          - type: EXECUTOGRAM\n            parameters: [p]\n            outputs: [x]",
-                "lists outputs on its EXECUTOGRAM",
-            ),
-            (
-                "          - type: EXECUTOGRAM\n          - type: BESCHIKKING",
-                "produces an EXECUTOGRAM that holds no parameters",
-            ),
-            (
-                "          - type: EXECUTOGRAM\n            parameters: [p]\n            requests: lijst#1\n          - type: BESCHIKKING",
-                "requests 'lijst#1' on an executogram",
-            ),
-            (
-                "          - type: EXECUTOGRAM\n            parameters: [p]\n          - type: EXECUTOGRAM\n            parameters: [p]\n          - type: BESCHIKKING",
-                "two items of type EXECUTOGRAM",
-            ),
-            (
-                "          - type: EXECUTOGRAM\n            parameters: [p]\n            derived: [x]",
-                "lists derived outputs on its EXECUTOGRAM",
-            ),
-        ] {
-            let mut service = LawExecutionService::new();
-            let err = service
-                .load_law(&law_producing(items))
-                .expect_err("a malformed executogram must not load");
-            assert!(
-                matches!(err, EngineError::LoadError(_)) && err.to_string().contains(why),
-                "{why}: got {err:?}"
-            );
-        }
     }
 
     /// `law_producing` with a second output `afgeleid` and `items` spliced in.

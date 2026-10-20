@@ -154,32 +154,3 @@ fn an_error_inside_either_form_is_reported_as_written() {
         assert!(!message.contains("did not match any variant"), "got: {message}");
     }
 }
-
-#[test]
-fn an_executogram_holds_its_parameters_and_is_no_decision_or_submission() {
-    // Schema v0.8.7 (RFC-051): the article establishes an act a cell records
-    // as a fact, beside the decision.
-    let law = law("          - type: EXECUTOGRAM
-            parameters: [dagen, reden]
-          - type: BESCHIKKING")
-    .unwrap();
-    let article = &law.articles[0];
-    let executogram = article.get_executogram().unwrap();
-    assert!(executogram.is_executogram());
-    assert_eq!(executogram.legal_character(), None);
-    assert_eq!(executogram.submission_kind(), None);
-    assert_eq!(article.parameters_of(executogram), ["dagen", "reden"]);
-    assert!(article.outputs_of(executogram).is_empty());
-    assert!(article.get_submission().is_none());
-    let decision = article.get_decision().unwrap();
-    assert!(!decision.is_executogram());
-    assert_eq!(decision.legal_character(), Some("BESCHIKKING"));
-    // The decision takes every output, as no other item lists one.
-    assert_eq!(
-        article.outputs_of(decision),
-        ["verlof_verleend", "ontvangen"]
-    );
-    // Without an EXECUTOGRAM item there is none.
-    let without = self::law(LIST).unwrap();
-    assert!(without.articles[0].get_executogram().is_none());
-}

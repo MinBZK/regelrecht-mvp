@@ -1314,17 +1314,12 @@ pub fn dangling_bindings(doc: &Value) -> Vec<Finding> {
 /// Whether the engine may fire hooks on this entry: only when
 /// `execution.produces` carries a `legal_character` (a hook on a decision)
 /// or a `submission` (a hook on an application, RFC-045), or, when it is a
-/// list (schema v0.8.1), has an item, whose `type` is one of the two. An
-/// executogram (schema v0.8.7, RFC-051) receives none.
+/// list (schema v0.8.1), has an item, whose `type` is one of the two.
 fn receives_hook_outputs(mr: &Value) -> bool {
     match mr.get("execution").and_then(|e| e.get("produces")) {
-        // Every item has a `type`: a decision or a submission receives hooks,
-        // an executogram does not.
-        Some(Value::Sequence(items)) => items.iter().any(|p| {
-            p.get("type")
-                .and_then(Value::as_str)
-                .is_some_and(|t| t != "EXECUTOGRAM")
-        }),
+        // Every item has a `type`, a decision or a submission; either
+        // receives hooks.
+        Some(Value::Sequence(items)) => items.iter().any(|p| p.get("type").is_some()),
         Some(p) => p.get("legal_character").is_some() || p.get("submission").is_some(),
         None => false,
     }
@@ -5784,30 +5779,6 @@ articles:
 "#;
         let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
         assert_eq!(dangling_bindings(&doc), Vec::<Finding>::new());
-    }
-
-    /// An executogram (schema v0.8.7, RFC-051) receives no hooks, so reading
-    /// a hook output in an article that only establishes one is dangling.
-    #[test]
-    fn dangling_bindings_flags_a_hook_output_on_an_executogram() {
-        let yaml = r#"
-articles:
-  - number: '1'
-    machine_readable:
-      execution:
-        produces:
-          - type: EXECUTOGRAM
-            parameters: [p]
-        parameters:
-          - name: p
-        output:
-          - name: volledig
-        actions:
-          - output: volledig
-            value: $aanvraag_bevat_wat_artikel_4_2_eist
-"#;
-        let doc: Value = serde_yaml_ng::from_str(yaml).unwrap();
-        assert_eq!(dangling_bindings(&doc).len(), 1);
     }
 
     /// A loop variable exists inside its own loop and nowhere else, and a

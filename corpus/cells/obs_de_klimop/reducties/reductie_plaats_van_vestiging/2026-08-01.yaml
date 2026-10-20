@@ -5,9 +5,10 @@ regulatory_layer: REDUCTIE
 publication_date: '2026-07-01'
 valid_from: '2026-08-01'
 # Geen regelgeving: een reductie van de cel van OBS De Klimop over haar eigen
-# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen die
-# het fictieve beleid fictief_beleid_vestiging_obs_de_klimop (artikel 1)
-# vestigt, en geeft de vestiging die
+# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen van
+# het feit vestiging, dat het fictieve beleid
+# fictief_beleid_vestiging_obs_de_klimop (artikel 1) vereist, en geeft de
+# vestiging die
 # op de verlofdagen geldt. Haar antwoord vult de open begrippen van artikel 2
 # van de Regeling vaststelling schoolvakanties 2025–2030 ("De plaats van
 # vestiging is bepalend voor de regio"). Er is geen bekendmaking; de url wijst
@@ -58,7 +59,7 @@ articles:
           - name: vestigingen
             type: array
             source:
-              executograms: fictief_beleid_vestiging_obs_de_klimop#1
+              facts: fictief_beleid_vestiging_obs_de_klimop#1#vestiging
         output:
           - name: dagen_sinds_vestiging_op_eerste_verlofdag
             type: number

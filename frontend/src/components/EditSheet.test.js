@@ -392,17 +392,17 @@ describe('EditSheet', () => {
       });
     });
 
-    it('keeps a source that reads only executograms', async () => {
+    it('keeps a source that reads only facts', async () => {
       const wrapper = mountSheet();
       await setItem(wrapper, {
         section: 'input',
         index: 0,
-        data: { name: 'vestigingen', source: { executograms: 'vestiging' } },
+        data: { name: 'vestigingen', source: { facts: 'beleid_school#1#vestiging' } },
       });
       wrapper.vm.save();
       await nextTick();
       expect(wrapper.emitted('save')[0][0].data.source).toEqual({
-        executograms: 'vestiging',
+        facts: 'beleid_school#1#vestiging',
       });
     });
 

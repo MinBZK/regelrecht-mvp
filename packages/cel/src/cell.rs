@@ -21,12 +21,13 @@ use regelrecht_engine::{
 };
 use serde_json::Map;
 
+use crate::chronicle::EXECUTOGRAM;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
 use crate::reading::{self, Answer, Asked, Loaded, Reader, Reduction, Term};
 use crate::shape::{self, Field, Shape};
-use regelrecht_law_model::{stored, EXECUTOGRAM};
+use regelrecht_law_model::stored;
 
 /// A cell. It holds who it is, its chronicle and its reductions, not the
 /// law: every call that needs the law gets the service that executes it.
@@ -219,7 +220,7 @@ impl Cell {
             )));
         }
         reading::refuse_undeclared_terms(service, &reductions.versions, on)?;
-        reading::refuse_unestablished_executograms(service, &reductions.versions, on)?;
+        reading::refuse_unrequired_facts(service, &reductions.versions, on)?;
         reading::load(service, &self.recording_actor, &reductions.versions)
     }
 
@@ -509,6 +510,7 @@ impl Cell {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
+            fact: None,
             refers_to: filled.refers_to,
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
@@ -520,34 +522,34 @@ impl Cell {
         Ok(self.chronicle.append(gram)?.clone())
     }
 
-    /// Record an executogram established by article `article` of `law_id`
-    /// on `on` (RFC-051): a fact the cell keeps, such as the receipt of the
-    /// report of a medical examination, with the values `supplied` for the
-    /// parameters the article's `EXECUTOGRAM` item lists (schema v0.8.7). No
-    /// regulation runs for it; the article must be in force on `on` and
-    /// establish an executogram.
+    /// Record an executogram on `on` (RFC-051): an instance of the fact
+    /// `fact`, `<regulation>#<article>#<fact>`, that the article requires
+    /// (`requires`, schema v0.8.7), such as the receipt of the report of a
+    /// medical examination, with the values `supplied` for the parameters the
+    /// fact holds. No regulation runs for it; the article must be in force on
+    /// `on` and require that fact.
     ///
-    /// The cell refuses an article that establishes no executogram, a field
-    /// the item does not list, a value of the wrong type, and a field that
+    /// The cell refuses a fact the article does not require, a field
+    /// the fact does not hold, a value of the wrong type, and a field that
     /// cannot be absent and is left out: there is no submission whose
     /// incompleteness a law speaks of, so what is recorded is whole or not
     /// recorded. A field that can be absent and is left out is `null`.
     pub fn record_executogram(
         &mut self,
         service: &LawExecutionService,
-        law_id: &str,
-        article: &str,
+        fact: &str,
         supplied: &Map<String, serde_json::Value>,
         on: NaiveDate,
     ) -> Result<Gram> {
-        let grondslag = format!("{law_id}#{article}");
-        let declared = shape::executogram_fields(service, &grondslag, on)?;
-        let what = format!("executogram of {grondslag}");
+        let declared = shape::fact_fields(service, fact, on)?;
+        let what = format!("executogram of {fact}");
         let fields = whole(&declared, supplied, &what)?;
+        let (grondslag, name) = shape::split_fact(fact)?;
         let gram = Gram {
             id: uuid::Uuid::now_v7().to_string(),
             kind: EXECUTOGRAM.to_string(),
-            grondslag,
+            grondslag: grondslag.to_string(),
+            fact: Some(name.to_string()),
             refers_to: None,
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
@@ -703,6 +705,7 @@ impl Cell {
             id,
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
+            fact: None,
             refers_to: Some(applied.id.clone()),
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
@@ -1260,6 +1263,7 @@ impl Cell {
             id: uuid::Uuid::now_v7().to_string(),
             kind: shape.kind.clone(),
             grondslag: shape.grondslag(),
+            fact: None,
             refers_to: Some(submission.id.clone()),
             recording_actor: self.recording_actor.clone(),
             recorded_on: on,
@@ -1672,23 +1676,33 @@ fn check_decision_supplied(
 }
 
 /// An executogram read back from the chronicle records a fact and nothing
-/// else, as [`Cell::record_executogram`] records it: it refers to no
-/// chronolexogram, holds no outputs, names no moment and misses nothing.
+/// else, as [`Cell::record_executogram`] records it: it names its fact, and
+/// refers to no chronolexogram, holds no outputs, names no moment and misses
+/// nothing. A chronolexogram of another kind names no fact.
 /// Its fields are checked against the article that establishes it when it
 /// is recorded; the cell opens without the law, so it does not check them
 /// again here.
 fn check_executogram(gram: &Gram, recording_actor: &str) -> Result<()> {
     if gram.kind != EXECUTOGRAM {
+        if gram.fact.is_some() {
+            return Err(setup(format!(
+                "chronolexogram '{}' in the chronicle of '{recording_actor}' names a fact but is \
+                 a {}",
+                gram.id, gram.kind
+            )));
+        }
         return Ok(());
     }
-    if gram.refers_to.is_some()
+    if gram.fact.is_none()
+        || gram.refers_to.is_some()
         || !gram.outputs.is_empty()
         || gram.moment.is_some()
         || !gram.missing.is_empty()
     {
         return Err(setup(format!(
             "executogram '{}' in the chronicle of '{recording_actor}' refers to a \
-             chronolexogram, holds outputs, names a moment or misses a field; an executogram \
+             chronolexogram, holds outputs, names a moment or misses a field, or names no \
+             fact; an executogram \
              records a fact and nothing else",
             gram.id
         )));

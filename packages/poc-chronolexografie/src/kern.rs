@@ -83,13 +83,7 @@ impl Corpus {
         if let Some(begin) = &self.casus.begin {
             let service = self.service()?;
             for e in &begin.executogrammen {
-                let (law_id, article) = e.grondslag.split_once('#').ok_or_else(|| {
-                    Error::Setup(format!(
-                        "begin: '{}' is no <regulation>#<article>",
-                        e.grondslag
-                    ))
-                })?;
-                cell.record_executogram(&service, law_id, article, &e.velden, begin.datum)?;
+                cell.record_executogram(&service, &e.feit, &e.velden, begin.datum)?;
             }
         }
         Ok(cell)
@@ -1165,7 +1159,7 @@ pub fn voorvertoning_op_bezwaar(
 /// The open terms the cell answers from its chronicle ([`Cell::answers`]),
 /// its reductions as written, and per reduction what it reads from the
 /// chronicle, as rows: the decisions under an article (`source.decisions`)
-/// or the executograms an article establishes (`source.executograms`).
+/// or the executograms of a fact an article requires (`source.facts`).
 pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let mut uit = Vec::new();
@@ -1181,10 +1175,10 @@ pub fn reducties(corpus: &Corpus, cell: &Cell, on: NaiveDate) -> Result<Value> {
                     json!({ "besluiten_onder": grondslag }),
                     reading::rows(cell.grams(), grondslag, &kind)?,
                 )
-            } else if let Some(grondslag) = &source.executograms {
+            } else if let Some(feit) = &source.facts {
                 (
-                    json!({ "executogrammen_van": grondslag }),
-                    reading::executogram_rows(cell.grams(), grondslag)?,
+                    json!({ "executogrammen_van": feit }),
+                    reading::executogram_rows(cell.grams(), feit)?,
                 )
             } else {
                 continue;
@@ -1467,7 +1461,7 @@ mod tests {
             rijen(
                 "reductie_plaats_van_vestiging",
                 "executogrammen_van",
-                "fictief_beleid_vestiging_obs_de_klimop#1"
+                "fictief_beleid_vestiging_obs_de_klimop#1#vestiging"
             ),
             1
         );
@@ -2063,7 +2057,7 @@ mod tests {
         // term, the Awb with its hooks, the policy the reduction for lid 2
         // reads, and what the reductions on the holidays read: the
         // regeling and the school's policy on its rooster, and the policy
-        // that establishes the executograms of its vestiging. The Wet op het
+        // that requires the fact of its vestiging. The Wet op het
         // primair onderwijs is only the regeling's legal basis.
         let verlof = corpus();
         let a = &verlof.afleiding;

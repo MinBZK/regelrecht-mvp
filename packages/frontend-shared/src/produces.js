@@ -3,26 +3,13 @@
  * schema allows: one object, the form most laws use, or a list of produced
  * items, such as an application and the decision on it (schema v0.8.1,
  * RFC-047). A list item says what it is with `type`: a submission kind
- * (`AANVRAAG`), an executogram (`EXECUTOGRAM`, schema v0.8.7, RFC-051) or a
- * legal character (`BESCHIKKING`). The object form says it with
- * `submission.kind` and `legal_character`. Readers go through these helpers
- * so neither form is missed.
+ * (`AANVRAAG`) or a legal character (`BESCHIKKING`). The object form says it
+ * with `submission.kind` and `legal_character`. Readers go through these
+ * helpers so neither form is missed.
  */
 
-/** The submission kinds a list item's `type` can name; any other but `EXECUTOGRAM` is a legal character. */
+/** The submission kinds a list item's `type` can name; any other is a legal character. */
 export const SUBMISSION_KINDS = ['AANVRAAG', 'BEZWAAR'];
-
-/**
- * The `type` of an item for an act the article establishes and a cell records
- * as a fact (schema v0.8.7, RFC-051): it holds parameters and is neither a
- * submission nor a decision.
- */
-export const EXECUTOGRAM = 'EXECUTOGRAM';
-
-/** Whether `item` is an executogram item. */
-export function isExecutogram(item) {
-  return item != null && item.type === EXECUTOGRAM;
-}
 
 /** Every produced item, in the order written: one for the object form. */
 export function producedItems(produces) {
@@ -38,9 +25,7 @@ export function isListItem(item) {
 /** The legal character of `item`, or `null` when it is no decision. */
 export function legalCharacterOf(item) {
   if (item == null) return null;
-  if (isListItem(item)) {
-    return SUBMISSION_KINDS.includes(item.type) || isExecutogram(item) ? null : item.type;
-  }
+  if (isListItem(item)) return SUBMISSION_KINDS.includes(item.type) ? null : item.type;
   return item.legal_character ?? null;
 }
 

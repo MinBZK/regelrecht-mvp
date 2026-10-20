@@ -32,7 +32,7 @@ pub mod reading;
 pub mod shape;
 
 pub use cell::Cell;
-pub use chronicle::{Chronicle, Gram, GramMoment};
+pub use chronicle::{Chronicle, Gram, GramMoment, EXECUTOGRAM};
 pub use decision::{DecisionShape, Input, Source};
 pub use error::{Error, Result};
 pub use reading::{Answer, Reduction, Term};

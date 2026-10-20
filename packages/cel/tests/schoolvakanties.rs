@@ -112,8 +112,7 @@ fn established(cell: &mut Cell, gemeente: &str, provincie: &str, sinds: &str, on
     let fact = map(json!({ "gemeente": gemeente, "provincie": provincie, "sinds": sinds }));
     cell.record_executogram(
         &service(),
-        "fictief_beleid_vestiging_obs_de_klimop",
-        "1",
+        "fictief_beleid_vestiging_obs_de_klimop#1#vestiging",
         &fact,
         day(on),
     )

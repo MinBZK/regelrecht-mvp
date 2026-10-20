@@ -1,15 +1,15 @@
 //! A cell records a fact that refers to no submission (RFC-051): an
-//! executogram, of the act an article establishes, under a small fictional
-//! law. The article's `EXECUTOGRAM` item says what it holds (schema v0.8.7).
+//! executogram of a fact an article requires, under a small fictional law.
+//! The article's `requires` entry for the fact says what it holds (schema
+//! v0.8.7).
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use chrono::NaiveDate;
-use regelrecht_cel::{reading, Cell, Error, Reduction};
+use regelrecht_cel::{reading, Cell, Error, Reduction, EXECUTOGRAM};
 use regelrecht_engine::LawExecutionService;
-use regelrecht_law_model::EXECUTOGRAM;
 use serde_json::{json, Map, Value};
 
 const ACTOR: &str = "school_fictief";
@@ -31,9 +31,9 @@ procedure:
 articles: []
 "#;
 
-/// Article 3 establishes the act of fixing where a school stands, since a
-/// day; article 4 establishes nothing; article 5 an executogram with a
-/// field `id`, which no row can hold.
+/// Article 3 requires the fact of where a school stands, since a day;
+/// article 4 requires none; article 5 a fact with a field `id`, which no row
+/// can hold.
 const SPECIAL_LAW: &str = r#"
 $id: wet_vaststelling_fictief
 regulatory_layer: WET
@@ -43,10 +43,10 @@ articles:
   - number: '3'
     text: Het bevoegd gezag legt vast waar de school staat, en sinds wanneer.
     machine_readable:
+      requires:
+        - fact: stand
+          parameters: [plaats, sinds, opmerking]
       execution:
-        produces:
-          - type: EXECUTOGRAM
-            parameters: [plaats, sinds, opmerking]
         parameters:
           - {name: plaats, type: string}
           - {name: sinds, type: date}
@@ -64,15 +64,16 @@ articles:
   - number: '5'
     text: Het bevoegd gezag legt een nummer vast.
     machine_readable:
+      requires:
+        - fact: nummer
+          parameters: [id]
       execution:
-        produces:
-          - type: EXECUTOGRAM
-            parameters: [id]
         parameters:
           - {name: id, type: string}
 "#;
 
 const GRONDSLAG: &str = "wet_vaststelling_fictief#3";
+const FACT: &str = "wet_vaststelling_fictief#3#stand";
 
 fn service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
@@ -104,31 +105,26 @@ fn stand(plaats: &str, sinds: &str) -> Map<String, Value> {
 
 fn record(
     cell: &mut Cell,
-    article: &str,
+    fact: &str,
     supplied: &Map<String, Value>,
     on: &str,
 ) -> Result<regelrecht_cel::Gram, Error> {
-    cell.record_executogram(
-        &service(),
-        "wet_vaststelling_fictief",
-        article,
-        supplied,
-        day(on),
-    )
+    cell.record_executogram(&service(), fact, supplied, day(on))
 }
 
 #[test]
-fn an_executogram_records_a_fact_the_article_establishes() {
+fn an_executogram_records_a_fact_the_article_requires() {
     let (mut cell, _dir) = cell();
     let gram = record(
         &mut cell,
-        "3",
+        FACT,
         &stand("Utrecht", "2020-08-01"),
         "2026-08-01",
     )
     .unwrap();
     assert_eq!(gram.kind, EXECUTOGRAM);
     assert_eq!(gram.grondslag, GRONDSLAG);
+    assert_eq!(gram.fact.as_deref(), Some("stand"));
     assert_eq!(gram.refers_to, None);
     assert_eq!(gram.recording_actor, ACTOR);
     assert_eq!(gram.fields["plaats"], json!("Utrecht"));
@@ -142,18 +138,27 @@ fn an_executogram_records_a_fact_the_article_establishes() {
 fn an_executogram_is_whole_or_not_recorded() {
     let (mut cell, _dir) = cell();
 
-    // An article that establishes no executogram.
+    // An article that requires no such fact, and a reference that names no
+    // fact.
     let e = record(
         &mut cell,
-        "4",
+        "wet_vaststelling_fictief#4#stand",
         &map(json!({"plaats": "Utrecht"})),
         "2026-08-01",
     )
     .unwrap_err();
-    refused(&e, "establishes no executogram");
+    refused(&e, "requires no fact 'stand'");
     let e = record(
         &mut cell,
-        "9",
+        GRONDSLAG,
+        &stand("Utrecht", "2020-08-01"),
+        "2026-08-01",
+    )
+    .unwrap_err();
+    refused(&e, "is no <regulation>#<article>#<fact>");
+    let e = record(
+        &mut cell,
+        "wet_vaststelling_fictief#9#stand",
         &stand("Utrecht", "2020-08-01"),
         "2026-08-01",
     )
@@ -162,12 +167,12 @@ fn an_executogram_is_whole_or_not_recorded() {
 
     let mut unknown = stand("Utrecht", "2020-08-01");
     unknown.insert("straat".into(), json!("Lindelaan"));
-    let e = record(&mut cell, "3", &unknown, "2026-08-01").unwrap_err();
+    let e = record(&mut cell, FACT, &unknown, "2026-08-01").unwrap_err();
     refused(&e, "holds no 'straat'");
 
     let e = record(
         &mut cell,
-        "3",
+        FACT,
         &map(json!({"plaats": "Utrecht", "sinds": 2020})),
         "2026-08-01",
     )
@@ -176,7 +181,7 @@ fn an_executogram_is_whole_or_not_recorded() {
 
     let e = record(
         &mut cell,
-        "3",
+        FACT,
         &map(json!({"plaats": "Utrecht"})),
         "2026-08-01",
     )
@@ -184,16 +189,22 @@ fn an_executogram_is_whole_or_not_recorded() {
     refused(&e, "needs 'sinds', which is left out");
 
     // A field named `id`: the row gives the executogram's id under it.
-    let e = record(&mut cell, "5", &map(json!({"id": "x"})), "2026-08-01").unwrap_err();
+    let e = record(
+        &mut cell,
+        "wet_vaststelling_fictief#5#nummer",
+        &map(json!({"id": "x"})),
+        "2026-08-01",
+    )
+    .unwrap_err();
     assert!(
-        matches!(&e, Error::Setup(m) if m.contains("lists a field 'id'")),
+        matches!(&e, Error::Setup(m) if m.contains("holds a field 'id'")),
         "{e}"
     );
 
     // The article must be in force on the day.
     let e = record(
         &mut cell,
-        "3",
+        FACT,
         &stand("Utrecht", "2020-08-01"),
         "2025-06-01",
     )
@@ -211,7 +222,7 @@ fn an_executogram_reads_back_from_the_file() {
     let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
     let gram = record(
         &mut cell,
-        "3",
+        FACT,
         &stand("Utrecht", "2020-08-01"),
         "2026-08-01",
     )
@@ -229,7 +240,7 @@ fn an_executogram_read_back_records_a_fact_and_nothing_else() {
         let mut cell = Cell::open(ACTOR, &path, dir.path()).unwrap();
         record(
             &mut cell,
-            "3",
+            FACT,
             &stand("Utrecht", "2020-08-01"),
             "2026-08-01",
         )
@@ -252,37 +263,56 @@ fn an_executogram_read_back_records_a_fact_and_nothing_else() {
         matches!(&e, Error::Setup(m) if m.contains("records a fact and nothing else")),
         "{e}"
     );
+    let e = opens(line.replace(
+        "\"recording_actor\"",
+        "\"refers_to\":\"x\",\"recording_actor\"",
+    ))
+    .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("records a fact and nothing else")),
+        "{e}"
+    );
+    let e = opens(line.replace("\"fact\":\"stand\",", "")).unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("records a fact and nothing else")),
+        "{e}"
+    );
+    let e = opens(line.replace("\"kind\":\"EXECUTOGRAM\"", "\"kind\":\"AANVRAAG\"")).unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("names a fact but is a AANVRAAG")),
+        "{e}"
+    );
     std::fs::write(&path, &line).unwrap();
     assert!(Cell::open(ACTOR, &path, dir.path()).is_ok());
 }
 
 #[test]
-fn the_rows_are_the_executograms_of_that_article() {
+fn the_rows_are_the_executograms_of_that_fact() {
     let (mut cell, _dir) = cell();
     let first = record(
         &mut cell,
-        "3",
+        FACT,
         &stand("Utrecht", "2020-08-01"),
         "2026-08-01",
     )
     .unwrap();
-    record(&mut cell, "3", &stand("Zeist", "2027-01-01"), "2026-09-01").unwrap();
+    record(&mut cell, FACT, &stand("Zeist", "2027-01-01"), "2026-09-01").unwrap();
     let rows =
-        serde_json::to_value(reading::executogram_rows(cell.grams(), GRONDSLAG).unwrap()).unwrap();
+        serde_json::to_value(reading::executogram_rows(cell.grams(), FACT).unwrap()).unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 2);
     assert_eq!(rows[0]["id"], json!(first.id));
     assert_eq!(rows[0]["plaats"], json!("Utrecht"));
     assert_eq!(rows[1]["plaats"], json!("Zeist"));
     let none = serde_json::to_value(
-        reading::executogram_rows(cell.grams(), "wet_vaststelling_fictief#4").unwrap(),
+        reading::executogram_rows(cell.grams(), "wet_vaststelling_fictief#3#ander").unwrap(),
     )
     .unwrap();
     assert_eq!(none, json!([]));
 }
 
-/// A reduction of the fictional school that reads the executograms of
-/// `grondslag`.
-fn reduction(grondslag: &str) -> String {
+/// A reduction of the fictional school that reads the executograms of the
+/// fact `fact`.
+fn reduction(fact: &str) -> String {
     format!(
         r#"
 $id: reductie_plaats_fictief
@@ -300,7 +330,7 @@ articles:
           - name: standen
             type: array
             source:
-              executograms: {grondslag}
+              facts: {fact}
         output:
           - {{name: plaats, type: string, nullable: true}}
         actions:
@@ -316,21 +346,23 @@ articles:
 }
 
 #[test]
-fn a_reduction_reads_only_the_executograms_of_an_article_that_establishes_them() {
+fn a_reduction_reads_only_a_fact_its_article_requires() {
     let service = service();
     let on = day("2026-08-01");
-    let reads = |grondslag: &str| {
-        let r = Reduction::parse(reduction(grondslag)).unwrap();
-        reading::refuse_unestablished_executograms(&service, &[r], on)
+    let reads = |fact: &str| {
+        let r = Reduction::parse(reduction(fact)).unwrap();
+        reading::refuse_unrequired_facts(&service, &[r], on)
     };
-    assert!(reads(GRONDSLAG).is_ok());
-    let e = reads("wet_vaststelling_fictief#4").unwrap_err();
+    assert!(reads(FACT).is_ok());
+    let e = reads("wet_vaststelling_fictief#4#stand").unwrap_err();
     assert!(
-        matches!(&e, Error::Setup(m) if m.contains("establishes no executogram")),
+        matches!(&e, Error::Setup(m) if m.contains("requires no fact 'stand'")),
         "{e}"
     );
-    // A stream id, as v0.8.6 had it, is no article reference.
+    // A stream id, as v0.8.6 had it, or an article alone is no fact
+    // reference.
     assert!(Reduction::parse(reduction("stand")).is_err());
+    assert!(Reduction::parse(reduction(GRONDSLAG)).is_err());
 }
 
 #[test]

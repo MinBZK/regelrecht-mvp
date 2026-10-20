@@ -512,6 +512,7 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         id: "g".into(),
         kind: "AANVRAAG".into(),
         grondslag: format!("{ID}#1"),
+        fact: None,
         refers_to: None,
         recording_actor: ACTOR.into(),
         recorded_on: day(),

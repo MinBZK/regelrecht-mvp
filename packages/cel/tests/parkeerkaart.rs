@@ -39,10 +39,10 @@ const REDUCTION: &str = "reductie_geldige_gehandicaptenparkeerkaart";
 const REGELING: &str = "regeling_gehandicaptenparkeerkaart";
 const EXAMINED: &str = "geneeskundig_onderzoek_heeft_plaatsgehad";
 const EARLIER: &str = "aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt";
-/// The article that establishes the medical examination (art. 3 lid 1 of
-/// the Regeling, an EXECUTOGRAM item): the municipality records receipt of
-/// the report under it, and the reduction reads those executograms.
-const EXAMINATION: &str = "3";
+/// The fact art. 3 lid 1 of the Regeling requires: the medical
+/// examination. The municipality records receipt of the report as an
+/// executogram of it, and the reduction reads those executograms.
+const EXAMINATION: &str = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek";
 const REPORTS: &str = "reductie_geneeskundig_onderzoek";
 /// The college's power to leave the examination out, and the two
 /// judgements of lid 2, onder a en b, all on art. 49.
@@ -139,7 +139,7 @@ fn reported(cell: &mut Cell, bsn: &str, examined_on: &str, on: &str) -> Gram {
         "datum_onderzoek": examined_on,
         "verricht_door": "Gemeentelijke Gezondheidsdienst",
     }));
-    cell.record_executogram(&service(), REGELING, EXAMINATION, &supplied, day(on))
+    cell.record_executogram(&service(), EXAMINATION, &supplied, day(on))
         .unwrap()
 }
 
@@ -736,7 +736,8 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     // decision, and the second application and report.
     assert_eq!(answer.records_read, 5);
     let report = &cell.grams()[4];
-    assert_eq!(report.grondslag, format!("{REGELING}#{EXAMINATION}"));
+    assert_eq!(report.grondslag, format!("{REGELING}#3"));
+    assert_eq!(report.fact.as_deref(), Some("geneeskundig_onderzoek"));
     assert_eq!(answer.last_record.as_deref(), Some(report.id.as_str()));
     // The reduction's FOREACH is not in the decision's trace.
     let trace = root.render_box_drawing();
@@ -871,7 +872,8 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
     // issued; the cell answered the Regeling's term from the report.
     let report = reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
     assert_eq!(report.kind, "EXECUTOGRAM");
-    assert_eq!(report.grondslag, format!("{REGELING}#{EXAMINATION}"));
+    assert_eq!(report.grondslag, format!("{REGELING}#3"));
+    assert_eq!(report.fact.as_deref(), Some("geneeskundig_onderzoek"));
     let gram = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap();
     assert_eq!(
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
@@ -947,13 +949,7 @@ fn the_cell_refuses_a_report_that_is_not_whole() {
     let partial =
         object_map(json!({ "bsn_aanvrager": APPLICANT, "datum_onderzoek": "2026-10-16" }));
     let e = cell
-        .record_executogram(
-            &service(),
-            REGELING,
-            EXAMINATION,
-            &partial,
-            day("2026-10-19"),
-        )
+        .record_executogram(&service(), EXAMINATION, &partial, day("2026-10-19"))
         .unwrap_err();
     assert!(e.to_string().contains("verricht_door"), "{e}");
     assert!(cell.grams().is_empty());

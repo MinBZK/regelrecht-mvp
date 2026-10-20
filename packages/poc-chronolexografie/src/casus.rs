@@ -68,13 +68,12 @@ pub struct Begin {
     pub executogrammen: Vec<BeginExecutogram>,
 }
 
-/// An executogram established by the article `grondslag`
-/// (`<regulation>#<article>`, its `EXECUTOGRAM` item), with the values
-/// `velden`.
+/// An executogram of the fact `feit` (`<regulation>#<article>#<fact>`, a
+/// fact the article requires), with the values `velden`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct BeginExecutogram {
-    pub grondslag: String,
+    pub feit: String,
     pub velden: Map<String, Value>,
 }
 
@@ -341,7 +340,7 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cell: &Cell) -> Result
 }
 
 /// The regelwerken `artikelen` read from: `source.regulation`, and the law of
-/// `source.article`, `source.decisions` and `source.executograms` (not a
+/// `source.article`, `source.decisions` and `source.facts` (not a
 /// `$`-reference, which names the article only when it runs).
 fn leest<'a>(artikelen: impl Iterator<Item = &'a Article>) -> BTreeSet<String> {
     let mut uit = BTreeSet::new();
@@ -350,7 +349,7 @@ fn leest<'a>(artikelen: impl Iterator<Item = &'a Article>) -> BTreeSet<String> {
             if let Some(id) = &source.regulation {
                 uit.insert(id.clone());
             }
-            for verwijzing in [&source.article, &source.decisions, &source.executograms]
+            for verwijzing in [&source.article, &source.decisions, &source.facts]
                 .into_iter()
                 .flatten()
             {

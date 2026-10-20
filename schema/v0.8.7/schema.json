@@ -54,7 +54,7 @@
         "WATERSCHAPS_VERORDENING",
         "REDUCTIE"
       ],
-      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read its chronicle: decisions (`source.decisions`) and, since v0.8.6, executograms (`source.executograms`, RFC-051); it may fill an open term of an article (`implements`, since v0.8.5), and the engine then runs it for that term like any implementation, also in a nested call; beyond that it does not act on law (no `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
+      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read its chronicle: decisions (`source.decisions`) and the facts its cell recorded (`source.facts`, since v0.8.7; `source.executograms` in v0.8.6, RFC-051); it may fill an open term of an article (`implements`, since v0.8.5), and the engine then runs it for that term like any implementation, also in a nested call; beyond that it does not act on law (no `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
       "examples": [
         "WET",
         "GEMEENTELIJKE_VERORDENING"
@@ -654,7 +654,7 @@
                                     },
                                     {
                                       "required": [
-                                        "executograms"
+                                        "facts"
                                       ]
                                     }
                                   ]
@@ -689,7 +689,7 @@
                                   },
                                   {
                                     "required": [
-                                      "executograms"
+                                      "facts"
                                     ]
                                   }
                                 ]
@@ -894,9 +894,10 @@
                   "$ref": "#/definitions/articleReference",
                   "description": "The decisions taken under this article, `<regulation>#<article>`: a list with one row per decision, holding the inputs and outputs of the decision item of that article. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the decisions in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters` or `endpoint`. Without a source that answers it the input is an error, never an empty list."
                 },
-                "executograms": {
-                  "$ref": "#/definitions/articleReference",
-                  "description": "The executograms established by this article, `<regulation>#<article>` (since v0.8.7; in v0.8.6 the `$id` of a stream of the cell, RFC-051): a list with one row per executogram, holding the fields its `EXECUTOGRAM` item lists and the executogram's `id`. An executogram records a fact, not a decision, such as the receipt of a medical report; what it holds follows from the article that establishes it (`produces` item of type `EXECUTOGRAM`), as the fields of an application follow from the article that establishes the application. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the executograms in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
+                "facts": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?#[a-z][a-z0-9_]*$",
+                  "description": "Since v0.8.7 (`executograms` in v0.8.6): the recorded instances of a fact an article requires, `<regulation>#<article>#<fact>`: the article and the `fact` of its `requires` entry, since an article may require more than one fact. A list with one row per recorded instance, holding the parameters the `requires` entry lists and the record's `id`. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the facts it recorded; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
                 },
                 "article": {
                   "oneOf": [
@@ -966,7 +967,7 @@
                       },
                       {
                         "required": [
-                          "executograms"
+                          "facts"
                         ]
                       }
                     ]
@@ -977,7 +978,7 @@
                     "article"
                   ]
                 },
-                "executograms": {
+                "facts": {
                   "not": {
                     "anyOf": [
                       {
@@ -1021,7 +1022,7 @@
                   "decisions": "leerplichtwet_1969#13a"
                 },
                 {
-                  "executograms": "fictief_beleid_vestiging_obs_de_klimop#1"
+                  "facts": "fictief_beleid_vestiging_obs_de_klimop#1#vestiging"
                 },
                 {
                   "article": "$besluit"
@@ -1980,7 +1981,7 @@
         },
         "requires": {
           "type": "array",
-          "description": "Other provisions this article depends on. The Rust law-model reads the structure below; the engine does not act on it at runtime.",
+          "description": "Other provisions this article depends on, and the facts it requires (since v0.8.7). The Rust law-model reads the structure below; the engine does not act on it at runtime.",
           "items": {
             "type": "object",
             "properties": {
@@ -2006,9 +2007,86 @@
                   "type": "string"
                 },
                 "description": "The outputs this article needs from the dependency, named so the dependency is checkable rather than implied."
+              },
+              "fact": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$",
+                "description": "Since v0.8.7: a fact this article requires to exist, by a name unique within the article, such as `geneeskundig_onderzoek` for 'een geneeskundig onderzoek heeft plaatsgehad'. The law says what the fact holds (`parameters`), not when it arises or who records it. An entry with `fact` names no other provision."
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true,
+                "description": "Since v0.8.7, only with `fact`: the names of this article's parameters that the fact holds, with their types. Every name must be a parameter of the article; the loader checks it."
+              },
+              "description": {
+                "type": "string",
+                "description": "Since v0.8.7, only with `fact`: what the fact is, in words."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "fact"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "parameters"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "article"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "law"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "regeling"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "koninklijk_besluit"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "values"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "parameters"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "description"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
           }
         },
         "open_terms": {
@@ -2658,7 +2736,6 @@
           "enum": [
             "AANVRAAG",
             "BEZWAAR",
-            "EXECUTOGRAM",
             "BESCHIKKING",
             "TOETS",
             "WAARDEBEPALING",
@@ -2666,7 +2743,7 @@
             "INFORMATIEF",
             "RECHTSPOSITIE"
           ],
-          "description": "What this item is: a submission of a belanghebbende (AANVRAAG: a request to take a decision, Awb 1:3 lid 3; BEZWAAR: an objection against a decision, Awb 1:5, RFC-050), an act the law establishes that a cell records as a fact (EXECUTOGRAM, since v0.8.7, RFC-051: such as a medical examination; it holds the article's parameters it lists and yields nothing), or a decision with its legal character (BESCHIKKING, TOETS, ...). An article lists at most one item of each type, so the article and the type together name the item (RFC-047). Hooks with applies_to.submission match a submission type, hooks with applies_to.legal_character a decision type."
+          "description": "What this item is: a submission of a belanghebbende (AANVRAAG: a request to take a decision, Awb 1:3 lid 3; BEZWAAR: an objection against a decision, Awb 1:5, RFC-050) or a decision with its legal character (BESCHIKKING, TOETS, ...). An article lists at most one item of each type, so the article and the type together name the item (RFC-047). Hooks with applies_to.submission match a submission type, hooks with applies_to.legal_character a decision type."
         },
         "requests": {
           "$ref": "#/definitions/articleReference",
@@ -2789,52 +2866,9 @@
               ]
             }
           }
-        },
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "EXECUTOGRAM"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "parameters"
-            ],
-            "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "outputs"
-                  ]
-                },
-                {
-                  "required": [
-                    "derived"
-                  ]
-                },
-                {
-                  "required": [
-                    "decision_type"
-                  ]
-                },
-                {
-                  "required": [
-                    "procedure_id"
-                  ]
-                },
-                {
-                  "required": [
-                    "requests"
-                  ]
-                }
-              ]
-            }
-          }
         }
       ],
-      "description": "One thing that executing this article yields, when produces is a list (RFC-047): a submission, such as an application with what it contains and the decision it asks for, an executogram with the fields it holds (since v0.8.7), or a decision with the outputs that belong to it. `type` selects which hooks fire and, for a decision, with `procedure_id` the Awb procedure.",
+      "description": "One thing that executing this article yields, when produces is a list (RFC-047): a submission, such as an application with what it contains and the decision it asks for, or a decision with the outputs that belong to it. `type` selects which hooks fire and, for a decision, with `procedure_id` the Awb procedure.",
       "examples": [
         {
           "type": "AANVRAAG",

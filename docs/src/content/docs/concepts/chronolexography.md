@@ -14,7 +14,7 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 | Law | Art. 13a (the application, the decision and its test); Awb 4:2, 4:13, 3:46, 6:7 and 6:8 as hooks; Awb 7:11 (the objection and the decision on it) with 6:5, 6:9 and 7:10; the Regeling vaststelling schoolvakanties 2025–2030 | `corpus/regulation/` |
 | Policy | Fictitious school policy: the first school day (`implements`), the bounds of a school year, and the school's own autumn and spring holidays | `corpus/regulation/nl/uitvoeringsbeleid/` |
 | Reduction | "Did the head already grant leave this school year?", "Does the leave fall outside the school holidays?" and "Where is the school established?", over the school's own chronicle | `corpus/cells/obs_de_klimop/reducties/` |
-| Executogram item | What an executogram holds, on the article that establishes the act (`produces` item of type `EXECUTOGRAM`, schema v0.8.7): where the school is established and since when, or the GGD's examination | the rulework of that article |
+| Required fact | What an executogram holds, as the article that requires the fact says it (`requires` with `fact`, schema v0.8.7): where the school is established and since when, or the GGD's examination | the rulework of that article |
 | Engine | Executes articles: hooks per stage, cross-law sources, open terms, data sources. Stores nothing | `packages/engine` |
 | Cell | The school: keeps the chronicle, derives what it records, executes through the engine | `packages/cel` |
 
@@ -39,7 +39,7 @@ A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). Th
 
 `decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
-**Recording without a submission** ([RFC-051](/rfcs/rfc-051)): `Cell::record_executogram` records a fact under the article that establishes it, such as where the school is established. The article's `EXECUTOGRAM` item says what the fact holds. It refers to nothing, and records nothing when a value is missing or malformed.
+**Recording without a submission** ([RFC-051](/rfcs/rfc-051)): `Cell::record_executogram` records an instance of a fact an article requires, such as where the school is established. The article's `requires` entry for that fact says what it holds. It refers to nothing, and records nothing when a value is missing or malformed.
 
 **Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew. On revocation 7:11 gives the new decision, and the cell records that in the same append.
 
@@ -282,7 +282,7 @@ What differs:
 
 An applicant who fails the criteria is refused before art. 49 reads the college's power, so the engine does not ask the cell. Asked to explain its answer for such a decision (`Cell::explain_answer`), the cell says it was not asked.
 
-The card is not issued before a medical examination (Regeling art. 2 lid 1). The GGD examines (art. 3 lid 1); the municipality records that it received the report (own choice: the regeling speaks of no report), an executogram under art. 3, whose `EXECUTOGRAM` item says what the record holds ([RFC-051](/rfcs/rfc-051) §3). A reduction answers the Regeling's open term `geneeskundig_onderzoek_heeft_plaatsgehad` from the reports on the applicant. An examination counts from the date of the application up to the day of issue. Without a report and without a finding of the college, the decision fails, because lid 1 makes the college wait and gives no ground to refuse. A finding `false` of the college refuses the card: that is a decision of the college, not of lid 1 (own choice, RFC-051 §3). A refusal on another ground does not wait. Under lid 2 onder a and b the college may leave the examination out for someone who had a card before. The power and the two judgements are open terms on art. 49. The cell answers whether it issued a card before.
+The card is not issued before a medical examination (Regeling art. 2 lid 1). The GGD examines (art. 3 lid 1); the municipality records that it received the report (own choice: the regeling speaks of no report), an executogram of the fact `geneeskundig_onderzoek` that art. 3 requires and describes ([RFC-051](/rfcs/rfc-051) §3). A reduction answers the Regeling's open term `geneeskundig_onderzoek_heeft_plaatsgehad` from the reports on the applicant. An examination counts from the date of the application up to the day of issue. Without a report and without a finding of the college, the decision fails, because lid 1 makes the college wait and gives no ground to refuse. A finding `false` of the college refuses the card: that is a decision of the college, not of lid 1 (own choice, RFC-051 §3). A refusal on another ground does not wait. Under lid 2 onder a and b the college may leave the examination out for someone who had a card before. The power and the two judgements are open terms on art. 49. The cell answers whether it issued a card before.
 
 Not modeled: competence by place of residence (lid 1) and the CBR (lid 3), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and Regeling art. 2 lid 2 onder c and lid 3, which belong to the CBR and the institution.
 
@@ -298,20 +298,21 @@ What the cell cannot do yet:
 Art. 11, onder f, exempts a child whose parent, by the specific nature of their profession, can go on holiday with the child "slechts buiten de schoolvakanties". Art. 13a reads that as the open term `verlof_valt_buiten_schoolvakanties`, which the head decides per case. In the school's cell no one has to: a reduction answers it from the law and from what the school recorded.
 
 - The Regeling vaststelling schoolvakanties 2025–2030 fixes the Christmas and May holidays of every school (art. 5) and the summer holiday per region (art. 6). The region follows from the place of establishment (art. 2), divided by province and municipality (art. 3). The regeling does not say where a school is, so art. 2 declares that as open terms.
-- The school has been established in Utrecht since 1 August 2020. That is an executogram in its chronicle. No article in the corpus establishes that recording, so a fictitious policy of the school does (`fictief_beleid_vestiging_obs_de_klimop`, art. 1). A move is a new executogram, and the region changes from its day.
+- The school has been established in Utrecht since 1 August 2020. That is an executogram in its chronicle. No article in the corpus requires that fact, so a fictitious policy of the school does (`fictief_beleid_vestiging_obs_de_klimop`, art. 1). A move is a new executogram, and the region changes from its day.
 - The autumn and spring holidays are a rule of the school, set out per school year in its fictitious policy, much as a school guide would. Each school year gets a version from 1 August; the one in the corpus holds 2026–2027.
 
 ```json
 {
   "kind": "EXECUTOGRAM",
   "grondslag": "fictief_beleid_vestiging_obs_de_klimop#1",
+  "fact": "vestiging",
   "recorded_on": "2026-08-01",
   "fields": { "gemeente": "Utrecht", "provincie": "Utrecht", "deel_van_gemeente": null, "sinds": "2020-08-01" },
   "outputs": {}
 }
 ```
 
-`reductie_plaats_van_vestiging` reads those executograms (`source: {executograms: fictief_beleid_vestiging_obs_de_klimop#1}`) and fills the open terms of art. 2 with the establishment in force on the leave days. It picks that one with `combine: ONLY`, which refuses two, so leave during which the school moves fails the decision. Art. 2 names no day; the cell passes on the leave days of art. 13a. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, asks the school's policy for its own holidays (`source: {regulation: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
+`reductie_plaats_van_vestiging` reads those executograms (`source: {facts: fictief_beleid_vestiging_obs_de_klimop#1#vestiging}`) and fills the open terms of art. 2 with the establishment in force on the leave days. It picks that one with `combine: ONLY`, which refuses two, so leave during which the school moves fails the decision. Art. 2 names no day; the cell passes on the leave days of art. 13a. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, asks the school's policy for its own holidays (`source: {regulation: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
 
 - Leave from 21 to 23 December 2026 is refused. The trace of the decision shows the term as one node, answered by obs_de_klimop, and `Cell::explain_answer` shows the Christmas holiday the reduction read.
 - From 12 to 16 July 2027 a school in regio Noord is on summer holiday and one in regio Zuid is not.

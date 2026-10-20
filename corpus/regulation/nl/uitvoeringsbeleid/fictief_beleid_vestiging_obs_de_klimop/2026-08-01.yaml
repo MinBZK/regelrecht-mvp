@@ -18,8 +18,8 @@ competent_authority:
 # behoort"), maar zegt niet wie haar vastlegt. De Wet op het primair onderwijs
 # kent de vestiging (artikel 1, "nevenvestiging"), en de registratie van
 # instellingen bij DUO (RIO) staat niet in het corpus. Daarom is dit het
-# eigen beleid van de school, gemarkeerd als fictief: het vestigt de
-# handeling, en de cel legt haar vast als executogram (RFC-051).
+# eigen beleid van de school, gemarkeerd als fictief: het vereist het feit
+# van de vestiging en zegt wat het bevat (RFC-051).
 articles:
   - number: '1'
     text: >-
@@ -29,18 +29,19 @@ articles:
       nieuwe vestiging vast; de oude blijft vastgelegd.
     url: https://wetten.overheid.nl/BWBR0049811/2025-08-01#Artikel2
     machine_readable:
+      # De vestiging is een feit dat dit beleid vereist (requires, fact).
+      # Artikel 3 van de regeling deelt in naar provincie en gemeente, en vier
+      # gemeenten naar een voormalige gemeente of een kern; daarom ook de
+      # provincie en het deel van de gemeente.
+      requires:
+        - fact: vestiging
+          description: De gemeente waarin de school gevestigd is, en sinds welke dag.
+          parameters:
+            - gemeente
+            - provincie
+            - deel_van_gemeente
+            - sinds
       execution:
-        # Wat de vastlegging bevat. Artikel 3 van de regeling deelt in naar
-        # provincie en gemeente, en vier gemeenten naar een voormalige
-        # gemeente of een kern; daarom ook de provincie en het deel van de
-        # gemeente.
-        produces:
-          - type: EXECUTOGRAM
-            parameters:
-              - gemeente
-              - provincie
-              - deel_van_gemeente
-              - sinds
         parameters:
           - name: gemeente
             type: string

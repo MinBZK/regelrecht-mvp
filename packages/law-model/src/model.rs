@@ -132,8 +132,9 @@ pub struct TypeSpec {
 /// - Same-law reference: `output: "field_name"` (resolved within the same law)
 /// - The decisions taken under an article: `decisions: "<regulation>#<article>"`
 ///   (schema v0.8.2, RFC-048), only in a `REDUCTIE`
-/// - The executograms an article establishes: `executograms:
-///   "<regulation>#<article>"` (schema v0.8.7, RFC-051), only in a `REDUCTIE`
+/// - The recorded instances of a fact an article requires: `facts:
+///   "<regulation>#<article>#<fact>"` (schema v0.8.7, RFC-051), only in a
+///   `REDUCTIE`
 /// - The decision of an article: `article: "<regulation>#<article>"` or a
 ///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
 ///   RFC-050)
@@ -167,19 +168,20 @@ pub struct Source {
         deserialize_with = "optional_article_reference"
     )]
     pub decisions: Option<String>,
-    /// The executograms established by this article, `<regulation>#<article>`
-    /// (schema v0.8.7, RFC-051): a list with one row per executogram, as
-    /// `decisions` gives one per decision. The article's `EXECUTOGRAM` item
-    /// says what each holds. Only a data source answers it, such as the cell
-    /// that records the executograms, or the caller with a parameter of that
-    /// name; no regulation is executed for it. Only a rulework with
-    /// `regulatory_layer: REDUCTIE` may read it.
+    /// The recorded instances of a fact an article requires,
+    /// `<regulation>#<article>#<fact>` (schema v0.8.7, RFC-051; v0.8.6
+    /// named a stream of the cell under `executograms`): a list with one row
+    /// per instance, as `decisions` gives one per decision. The article's
+    /// `requires` entry with that `fact` says what each holds. Only a data
+    /// source answers it, such as the cell that records the facts, or the
+    /// caller with a parameter of that name; no regulation is executed for
+    /// it. Only a rulework with `regulatory_layer: REDUCTIE` may read it.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_article_reference"
+        deserialize_with = "optional_fact_reference"
     )]
-    pub executograms: Option<String>,
+    pub facts: Option<String>,
     /// The article whose decision this input takes (schema v0.8.4, RFC-050):
     /// an article reference `<regulation>#<article>`, or a `$`-reference to
     /// a value that holds one, such as the `grondslag` of a `decision`
@@ -366,14 +368,8 @@ impl From<Produces> for ProducesList {
 }
 
 /// The kinds of submission a produced item's `type` can name (RFC-045). Any
-/// other `type` is a legal character, or [`EXECUTOGRAM`].
+/// other `type` is a legal character.
 pub const SUBMISSION_KINDS: &[&str] = &["AANVRAAG", "BEZWAAR"];
-
-/// The produced item `type` of an act the article establishes and a cell
-/// records as a fact (schema v0.8.7, RFC-051), such as a medical
-/// examination: it holds the parameters it lists and yields nothing. Neither
-/// a submission nor a decision.
-pub const EXECUTOGRAM: &str = "EXECUTOGRAM";
 
 /// One item of `produces` in the list form (schema v0.8.1, RFC-047): a
 /// submission, such as an application, or a decision, each with what it
@@ -425,11 +421,6 @@ impl ProducedItem {
     pub fn is_submission(&self) -> bool {
         SUBMISSION_KINDS.contains(&self.item_type.as_str())
     }
-
-    /// Whether this is an executogram (schema v0.8.7, RFC-051).
-    pub fn is_executogram(&self) -> bool {
-        self.item_type == EXECUTOGRAM
-    }
 }
 
 /// One thing an article produces, in either form of `produces`: the object
@@ -448,9 +439,7 @@ impl<'a> Produced<'a> {
     pub fn legal_character(self) -> Option<&'a str> {
         match self {
             Self::Object(p) => p.legal_character.as_deref(),
-            Self::Item(i) => {
-                (!i.is_submission() && !i.is_executogram()).then_some(i.item_type.as_str())
-            }
+            Self::Item(i) => (!i.is_submission()).then_some(i.item_type.as_str()),
         }
     }
 
@@ -460,12 +449,6 @@ impl<'a> Produced<'a> {
             Self::Object(p) => p.submission.as_ref().map(|s| s.kind.as_str()),
             Self::Item(i) => i.is_submission().then_some(i.item_type.as_str()),
         }
-    }
-
-    /// Whether this is an executogram the article establishes (schema
-    /// v0.8.7, RFC-051).
-    pub fn is_executogram(self) -> bool {
-        matches!(self, Self::Item(i) if i.is_executogram())
     }
 
     /// The kind of decision, within its legal character.
@@ -1113,7 +1096,9 @@ fn default_true() -> bool {
 ///
 /// Every field is optional in the schema (`machineReadableSection.requires`),
 /// so an entry only names the dimensions it needs: an intra-law dependency
-/// carries just `article`, a cross-law dependency `law` + `values`.
+/// carries just `article`, a cross-law dependency `law` + `values`. Since
+/// schema v0.8.7 an entry may instead name a fact the article requires to
+/// exist (`fact`), with the parameters it holds (RFC-051).
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ArticleRequirement {
     /// Article number within this law
@@ -1131,6 +1116,17 @@ pub struct ArticleRequirement {
     /// Values/outputs required from the dependency
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub values: Option<Vec<String>>,
+    /// A fact the article requires to exist (schema v0.8.7, RFC-051), by a
+    /// name unique within the article. The law says what it holds, not when
+    /// it arises.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fact: Option<String>,
+    /// With `fact`: the article's parameters the fact holds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<Vec<String>>,
+    /// With `fact`: what the fact is, in words.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// Declares that this article fills an open term from a higher-level law.
@@ -1220,6 +1216,40 @@ pub fn is_article_reference(s: &str) -> bool {
             .chars()
             .all(|c| alnum(c) || matches!(c, ':' | '.' | '_' | ' ' | '-'))
         && !names_paragraph
+}
+
+/// Whether `s` names a fact an article requires, `<regulation>#<article>#<fact>`
+/// (schema v0.8.7): an article reference, `#`, and a fact name in lowercase
+/// letters, digits and underscores. An article number holds no `#`, so the
+/// last one separates the fact.
+pub fn is_fact_reference(s: &str) -> bool {
+    let Some((article, fact)) = s.rsplit_once('#') else {
+        return false;
+    };
+    is_article_reference(article)
+        && fact.starts_with(|c: char| c.is_ascii_lowercase())
+        && fact
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
+/// Deserialize an optional string that, when present, must be a fact
+/// reference ([`is_fact_reference`]).
+fn optional_fact_reference<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| {
+            if is_fact_reference(&s) {
+                Ok(s)
+            } else {
+                Err(serde::de::Error::custom(format!(
+                    "'{s}' is not <regulation>#<article>#<fact>"
+                )))
+            }
+        })
+        .transpose()
 }
 
 /// Deserialize an optional string that, when present, must be an
@@ -1694,6 +1724,14 @@ impl Article {
             .unwrap_or_default()
     }
 
+    /// The fact named `fact` this article requires to exist (schema v0.8.7,
+    /// RFC-051), as its `requires` entry.
+    pub fn required_fact(&self, fact: &str) -> Option<&ArticleRequirement> {
+        self.get_requires()
+            .iter()
+            .find(|r| r.fact.as_deref() == Some(fact))
+    }
+
     /// Check if this article produces a specific output (allocation-free).
     ///
     /// More efficient than `get_output_names().contains(&name)` as it
@@ -1825,15 +1863,9 @@ impl Article {
             .find(|p| p.submission_kind().is_some())
     }
 
-    /// The executogram this article establishes (schema v0.8.7, RFC-051), as
-    /// the item that carries it.
-    pub fn get_executogram(&self) -> Option<Produced<'_>> {
-        self.get_produced().into_iter().find(|p| p.is_executogram())
-    }
-
     /// The names of the outputs that belong to `item`, one of
     /// [`Self::get_produced`]: those it lists under `outputs`. An item that
-    /// lists none yields nothing if it is a submission or an executogram, and if it is the
+    /// lists none yields nothing if it is a submission, and if it is the
     /// decision every output of the article that no other item lists and
     /// that it does not list as derived. For the object form that is every
     /// output.
@@ -1841,7 +1873,7 @@ impl Article {
         if let Some(listed) = item.listed_outputs() {
             return listed.iter().map(String::as_str).collect();
         }
-        if matches!(item, Produced::Item(i) if i.is_submission() || i.is_executogram()) {
+        if matches!(item, Produced::Item(i) if i.is_submission()) {
             return Vec::new();
         }
         let produced = self.get_produced();
