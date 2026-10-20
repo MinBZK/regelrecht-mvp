@@ -73,6 +73,12 @@ export const celNaam = (cel) =>
 export const grammenVan = (cel, grammen) =>
   cel === spel.casus?.cel ? grammen : (spel.andere?.find((a) => a.cel === cel)?.grammen ?? grammen);
 
+/** Namen als Nederlandse opsomming: "A", "A en B", "A, B en C". */
+export function opsomming(namen) {
+  if (namen.length < 2) return namen.join('');
+  return `${namen.slice(0, -1).join(', ')} en ${namen[namen.length - 1]}`;
+}
+
 /** Wie een open begrip invulde (`FilledBy`), in een zin. */
 export function ingevuldDoor(by, grammen) {
   if (by === 'finding') return 'bevinding van het bestuursorgaan';
@@ -82,7 +88,7 @@ export function ingevuldDoor(by, grammen) {
   }
   // Meer bevoegde cellen antwoordden; de wet zegt hoe hun antwoorden één
   // waarde worden (combine, RFC-052).
-  if (by?.answers) return `samengevoegd uit de antwoorden van ${by.answers.map((a) => celNaam(a.answerer)).join(' en ')}`;
+  if (by?.answers) return `samengevoegd uit de antwoorden van ${opsomming(by.answers.map((a) => celNaam(a.answerer)))}`;
   return 'niet ingevuld';
 }
 

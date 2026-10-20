@@ -16,7 +16,7 @@ use chrono::NaiveDate;
 use regelrecht_cel::{Cell, Error};
 use regelrecht_engine::LawLoad;
 use regelrecht_law_model::{
-    Article, ArticleBasedLaw, CompetentAuthority, HookFilter, ProcedureDefinition,
+    Article, ArticleBasedLaw, AuthorityType, CompetentAuthority, HookFilter, ProcedureDefinition,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -455,9 +455,14 @@ fn past(filter: &HookFilter, id: &str, a: &Article) -> bool {
 fn rol(law: &ArticleBasedLaw, article: &str) -> Option<String> {
     let a = law.articles.iter().find(|a| a.number == article)?;
     let naam = |c: &CompetentAuthority| match c {
+        // A category names a kind of body: "het college van burgemeester en
+        // wethouders", as `decided_per_case_by` writes it.
+        CompetentAuthority::Structured(one) if one.kind() == AuthorityType::Category => {
+            Some(format!("het {}", one.name))
+        }
         CompetentAuthority::Structured(one) => Some(one.name.clone()),
-        // Several competent authorities: the role of the first the law names.
-        CompetentAuthority::List(all) => all.first().map(|one| one.name.clone()),
+        // On an article the loader refuses a list (RFC-052).
+        CompetentAuthority::List(_) => None,
         // A reference (`#...`) names no one by itself.
         CompetentAuthority::String(s) if !s.starts_with('#') => Some(s.clone()),
         CompetentAuthority::String(_) => None,

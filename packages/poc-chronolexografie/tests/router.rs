@@ -231,7 +231,7 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
     let (_, casus) = send(&app, get("/chronolexografie/api/casus")).await;
     assert_eq!(
         casus["rol"],
-        json!("college van burgemeester en wethouders")
+        json!("het college van burgemeester en wethouders")
     );
     // The other cells of the sphere (RFC-052), from the case file.
     let andere: Vec<&str> = casus["andere_cellen"]

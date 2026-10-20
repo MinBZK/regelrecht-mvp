@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { artikelNaam, genomenBij, genummerd, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
+import { artikelNaam, genomenBij, genummerd, opsomming, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
 import { rol, spel } from '../src/spel.js';
 
 // De casus zoals GET /api/casus haar geeft, voor zover het logboek haar leest.
@@ -215,5 +215,13 @@ describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
   it('noemt elke cel waarvan het antwoord meetelde', () => {
     const t = stapTekst(eerder({ answers: [bron('cbr'), bron('gemeente_oostmeer')] }), []);
     expect(t.toelichting).toBe('samengevoegd uit de antwoorden van CBR en gemeente Oostmeer');
+  });
+});
+
+describe('opsomming', () => {
+  it('zet een komma tussen de eerste namen en "en" voor de laatste', () => {
+    expect(opsomming(['A'])).toBe('A');
+    expect(opsomming(['A', 'B'])).toBe('A en B');
+    expect(opsomming(['A', 'B', 'C'])).toBe('A, B en C');
   });
 });
