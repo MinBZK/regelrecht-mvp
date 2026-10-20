@@ -1,0 +1,103 @@
+---
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
+$id: reductie_geneeskundig_onderzoek
+regulatory_layer: REDUCTIE
+publication_date: '2025-12-01'
+valid_from: '2026-01-01'
+# Geen regelgeving: een reductie van de cel van de (fictieve) gemeente
+# Wilgendaal over haar eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest
+# de executogrammen van het feit dat artikel 3, eerste lid, van de Regeling
+# gehandicaptenparkeerkaart omschrijft: het geneeskundig onderzoek door de
+# GGD of de aangewezen deskundige, vastgelegd toen de gemeente het rapport
+# ontving. Wat elk executogram bevat, zegt dat artikel (requires, fact).
+# Haar antwoord vult het open begrip van artikel 2 van die regeling. Er is
+# geen bekendmaking; de url wijst naar dat artikel.
+url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
+name: Geneeskundig onderzoek bij de gemeente Wilgendaal (reductie)
+competent_authority:
+  name: Het college van burgemeester en wethouders van de gemeente Wilgendaal
+articles:
+  - number: '1'
+    text: >-
+      Geen regelgeving: een reductie van de cel over haar eigen kroniek. Een
+      geneeskundig onderzoek heeft voor deze aanvraag plaatsgehad als de
+      gemeente het rapport ontving van een onderzoek naar dezelfde aanvrager
+      op of na de dagtekening van de aanvraag en uiterlijk op de dag van
+      afgifte. Vindt de cel zo'n rapport niet, dan zwijgt zij: dat zij geen
+      rapport heeft, betekent niet dat er geen onderzoek was.
+    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
+    machine_readable:
+      implements:
+        - law: regeling_gehandicaptenparkeerkaart
+          article: '2'
+          open_term: geneeskundig_onderzoek_heeft_plaatsgehad
+      execution:
+        # Parameters van artikel 2 van de regeling; de cel geeft ze op naam
+        # door.
+        parameters:
+          - name: bsn_aanvrager
+            type: string
+            description: Burgerservicenummer van de aanvrager.
+          - name: dagtekening_aanvraag
+            type: date
+            nullable: true
+            description: De dagtekening van de aanvraag.
+          - name: datum_afgifte
+            type: date
+            description: De dag waarop de kaart zou worden afgegeven.
+        input:
+          # De ontvangen rapporten, één rij per executogram, met
+          # bsn_aanvrager, datum_onderzoek en verricht_door.
+          - name: onderzoeken
+            type: array
+            source:
+              facts: regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek
+        output:
+          - name: geneeskundig_onderzoek_heeft_plaatsgehad
+            type: boolean
+            nullable: true
+            description: >-
+              Waar, als de gemeente een rapport van een onderzoek voor deze
+              aanvraag ontving; anders afwezig.
+        actions:
+          # Zonder dagtekening valt niet te zeggen of een onderzoek bij deze
+          # aanvraag hoort: dan telt er geen. De voorwaarde staat eerst: AND
+          # stopt bij de eerste onwaar, en DATE_DIFF faalt op een afwezige
+          # dag.
+          - output: geneeskundig_onderzoek_heeft_plaatsgehad
+            value:
+              operation: IF
+              cases:
+                - when:
+                    operation: FOREACH
+                    collection: $onderzoeken
+                    as: onderzoek
+                    filter:
+                      operation: AND
+                      conditions:
+                        - operation: NOT
+                          value:
+                            operation: EQUALS
+                            subject: $dagtekening_aanvraag
+                            value: null
+                        - operation: EQUALS
+                          subject: $onderzoek.bsn_aanvrager
+                          value: $bsn_aanvrager
+                        - operation: GREATER_THAN_OR_EQUAL
+                          subject:
+                            operation: DATE_DIFF
+                            from: $dagtekening_aanvraag
+                            to: $onderzoek.datum_onderzoek
+                            in: days
+                          value: 0
+                        - operation: GREATER_THAN_OR_EQUAL
+                          subject:
+                            operation: DATE_DIFF
+                            from: $onderzoek.datum_onderzoek
+                            to: $datum_afgifte
+                            in: days
+                          value: 0
+                    body: true
+                    combine: OR
+                  then: true
+              default: null

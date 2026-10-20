@@ -28,6 +28,7 @@ Feature: De aanvraag om een gehandicaptenparkeerkaart, met de Awb erop
       | ernstige_beperkingen_andere_dan_loopbeperkingen | false |
     Given the following findings:
       | aanvrager_heeft_geldige_gehandicaptenparkeerkaart | false |
+      | geneeskundig_onderzoek_heeft_plaatsgehad          | true  |
     When I evaluate "gehandicaptenparkeerkaart_verstrekt" of "besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw"
     Then the execution succeeds
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" is true
@@ -53,6 +54,7 @@ Feature: De aanvraag om een gehandicaptenparkeerkaart, met de Awb erop
       | ernstige_beperkingen_andere_dan_loopbeperkingen | false |
     Given the following findings:
       | aanvrager_heeft_geldige_gehandicaptenparkeerkaart | false |
+      | geneeskundig_onderzoek_heeft_plaatsgehad          | true  |
     When I evaluate "gehandicaptenparkeerkaart_verstrekt" of "besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw"
     Then the execution succeeds
     Then output "aanvraag_bevat_wat_artikel_4_2_eist" is false

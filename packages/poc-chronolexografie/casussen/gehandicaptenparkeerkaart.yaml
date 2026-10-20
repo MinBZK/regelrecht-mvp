@@ -17,14 +17,17 @@ titel: Gehandicaptenparkeerkaart
 omschrijving: >-
   Iemand met een loopbeperking vraagt de gemeente om een
   gehandicaptenparkeerkaart (BABW artikel 49). Het college beslist na een
-  geneeskundig onderzoek, en de gemeente leest haar eigen besluiten terug om
-  te weten of de aanvrager al een geldige kaart heeft.
+  geneeskundig onderzoek door de GGD, waarvan de gemeente het rapport
+  ontvangt. Zij leest haar eigen besluiten terug om te weten of de aanvrager
+  al een geldige kaart heeft, of eerder een kaart kreeg.
 cel_naam: gemeente Wilgendaal
 speeldatum: 2026-10-13
 
 # Fictieve voorbeeldgegevens, zodat je snel door het proces klikt. Een BSN
 # uit de testreeks; een kaart als bestuurder, en uit het geneeskundig
-# onderzoek alleen een langdurige loopbeperking.
+# onderzoek alleen een langdurige loopbeperking. Het college laat het
+# onderzoek niet achterwege (Regeling gehandicaptenparkeerkaart, artikel 2,
+# tweede lid): die drie bevindingen staan uit.
 voorbeeld:
   aanvraag:
     bsn_aanvrager: '999990020'
@@ -33,19 +36,41 @@ voorbeeld:
     aanvraag_ondertekend: true
     naam_aanvrager: A. de Vries
     adres_aanvrager: Voorbeeldlaan 2
-    dagtekening: '2026-10-12'
+    dagtekening: '2026-10-05'
     gevraagde_beschikking: gehandicaptenparkeerkaart
   bevindingen:
     langdurige_loopbeperking: true
     continu_afhankelijk_van_hulp_bestuurder: false
     permanent_rolstoelgebonden: false
     ernstige_beperkingen_andere_dan_loopbeperkingen: false
+    geneeskundig_onderzoek_achterwege_gelaten: false
+    bekend_dat_aanvrager_nog_steeds_voldoet: false
+    keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: false
   bezwaar:
     bezwaarschrift_ondertekend: true
     naam_indiener: A. de Vries
     adres_indiener: Voorbeeldlaan 2
     omschrijving_bestreden_besluit: besluit op de aanvraag om een gehandicaptenparkeerkaart
     gronden_bezwaar: ik kan niet verder lopen dan vijftig meter
+
+# Wat de gemeente vastlegde vóór het eerste scenario (RFC-051), bij elke
+# start en reset opnieuw, via de cel zoals elke stap: het rapport van de GGD
+# over het geneeskundig onderzoek van de voorbeeldaanvrager, een executogram
+# van het feit dat artikel 3, eerste lid, van de regeling vereist; dat
+# artikel zegt ook wat het bevat.
+# Zonder rapport geeft het college geen kaart af (Regeling
+# gehandicaptenparkeerkaart, artikel 2, eerste lid). Het onderzoek van 9
+# oktober valt na de dagtekening van de voorbeeldaanvraag (5 oktober), dus het
+# telt voor die aanvraag. De app heeft geen knop om een rapport te ontvangen;
+# daarom staat het hier, en is het rapport er al voordat de aanvraag binnenkomt.
+begin:
+  datum: 2026-10-12
+  executogrammen:
+    - feit: regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek
+      velden:
+        bsn_aanvrager: '999990020'
+        datum_onderzoek: '2026-10-09'
+        verricht_door: Gemeentelijke Gezondheidsdienst
 
 scenarios:
   - naam: De kaart wordt verstrekt
@@ -122,3 +147,43 @@ scenarios:
       Gegrond: de weigering is herroepen. Het nieuwe besluit verstrekt de
       kaart, geldig tot en met 19 november 2031, vijf jaar vanaf dat nieuwe
       besluit.
+  - naam: Zonder geneeskundig onderzoek nog geen kaart
+    stappen:
+      - >-
+        Aanvrager, speeldatum 13 oktober 2026: verander het BSN in 999990032
+        en klik op Aanvraag indienen. Van deze aanvrager heeft de gemeente geen
+        rapport van de GGD.
+      - >-
+        Bestuursorgaan, speeldatum 20 oktober 2026: het formulier vraagt nu
+        ook "geneeskundig onderzoek heeft plaatsgehad", want de cel weet het
+        niet voor deze aanvraag. Laat het op "Nog niet beoordeeld" en klik op
+        Besluit nemen.
+    eind: >-
+      Er komt geen besluit, maar een melding: het college heeft niet
+      beoordeeld of het geneeskundig onderzoek plaatsvond. De kaart "wordt
+      niet afgegeven alvorens een geneeskundig onderzoek heeft plaatsgehad"
+      (Regeling gehandicaptenparkeerkaart, artikel 2, eerste lid); dat is geen
+      grond om te weigeren, dus het college wacht. De kroniek blijft zoals zij
+      was. Kiest het college Ja, dan stelt het zelf vast dat het onderzoek
+      plaatsvond en volgt de kaart; kiest het Nee, dan weigert het (eigen
+      keuze). De app heeft geen knop om een rapport van de GGD te ontvangen;
+      voor de voorbeeldaanvrager staat het rapport er al.
+  - naam: Een nieuwe kaart zonder nieuw onderzoek
+    stappen:
+      - 'Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen.'
+      - >-
+        Bestuursorgaan, speeldatum 20 oktober 2026: klik op Besluit nemen. De
+        kaart is geldig tot en met 19 oktober 2031.
+      - >-
+        Aanvrager, speeldatum 20 oktober 2031: zet de dagtekening op 20
+        oktober 2031 en klik op Aanvraag indienen. Het rapport van 2026 telt
+        niet voor deze aanvraag.
+      - >-
+        Bestuursorgaan: zet "geneeskundig onderzoek achterwege gelaten" en
+        "bekend dat aanvrager nog steeds voldoet" aan, en klik op Besluit
+        nemen.
+    eind: >-
+      Toegewezen, zonder nieuw onderzoek (Regeling gehandicaptenparkeerkaart,
+      artikel 2, tweede lid, onder a). Bij het besluit staat "aanvrager eerder
+      gehandicaptenparkeerkaart verstrekt: ja", ingevuld door de cel uit haar
+      kroniek. Laat je ze uit, dan volgt de melding van het vorige scenario.

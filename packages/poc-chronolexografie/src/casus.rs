@@ -55,10 +55,10 @@ pub struct Casus {
     pub scenarios: Vec<Scenario>,
 }
 
-/// What the cell records before the first scenario, on `datum`: facts of
-/// its streams (executograms, RFC-051), such as where a school is
-/// established. The law asks for these, but no step of the process records
-/// them, so the case file gives them. The cell checks them as any other
+/// What the cell records before the first scenario, on `datum`:
+/// executograms (RFC-051), such as where a school is established. The law
+/// asks for these, but no step of the process records them, so the case
+/// file gives them. The cell checks them as any other
 /// step.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -68,11 +68,12 @@ pub struct Begin {
     pub executogrammen: Vec<BeginExecutogram>,
 }
 
-/// An executogram of the stream `stroom` with the values `velden`.
+/// An executogram of the fact `feit` (`<regulation>#<article>#<fact>`, a
+/// fact the article requires), with the values `velden`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct BeginExecutogram {
-    pub stroom: String,
+    pub feit: String,
     pub velden: Map<String, Value>,
 }
 
@@ -339,8 +340,8 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cell: &Cell) -> Result
 }
 
 /// The regelwerken `artikelen` read from: `source.regulation`, and the law of
-/// `source.article` and `source.decisions` (not a `$`-reference, which names
-/// the article only when it runs).
+/// `source.article`, `source.decisions` and `source.facts` (not a
+/// `$`-reference, which names the article only when it runs).
 fn leest<'a>(artikelen: impl Iterator<Item = &'a Article>) -> BTreeSet<String> {
     let mut uit = BTreeSet::new();
     for a in artikelen {
@@ -348,7 +349,10 @@ fn leest<'a>(artikelen: impl Iterator<Item = &'a Article>) -> BTreeSet<String> {
             if let Some(id) = &source.regulation {
                 uit.insert(id.clone());
             }
-            for verwijzing in [&source.article, &source.decisions].into_iter().flatten() {
+            for verwijzing in [&source.article, &source.decisions, &source.facts]
+                .into_iter()
+                .flatten()
+            {
                 if let Some((id, _)) = verwijzing.split_once('#') {
                     if !id.starts_with('$') {
                         uit.insert(id.to_string());

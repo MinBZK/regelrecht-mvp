@@ -420,7 +420,7 @@ impl<'a> ArticleEngine<'a> {
             }
             // The decisions taken under an article come from a data source
             // only (RFC-048); this engine has none, so they must be passed.
-            // So do the executograms of a stream (RFC-051).
+            // So do the recorded facts an article requires (RFC-051).
             if let Some(read) = crate::load_check::chronicle_read(source) {
                 if !parameters.contains_key(&input.name) {
                     return Err(EngineError::DataSourceError(format!(

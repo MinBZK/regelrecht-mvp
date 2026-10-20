@@ -88,9 +88,9 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
             let Some(read) = chronicle_read(source) else {
                 continue;
             };
-            if source.decisions.is_some() && source.executograms.is_some() {
+            if source.decisions.is_some() && source.facts.is_some() {
                 return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: input '{}' reads {read} and executograms besides; \
+                    "law '{}' {where_}: input '{}' reads {read} and facts besides; \
                      an input reads one of them",
                     law.id, input.name
                 )));
@@ -109,7 +109,7 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
             if !reduction {
                 return Err(EngineError::LoadError(format!(
                     "law '{}' {where_}: input '{}' reads {read}; only a REDUCTIE reads decisions \
-                     or executograms (RFC-048, RFC-051)",
+                     or facts (RFC-048, RFC-051)",
                     law.id, input.name
                 )));
             }
@@ -119,12 +119,13 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
 }
 
 /// What an input reads from the chronicle of a cell, in words: the
-/// decisions taken under an article (RFC-048) or the executograms of a stream
-/// (RFC-051). `None` for an input that reads neither.
+/// decisions taken under an article (RFC-048) or the recorded instances of a
+/// fact an article requires (schema v0.8.7, RFC-051). `None` for an input
+/// that reads neither.
 pub(crate) fn chronicle_read(source: &regelrecht_law_model::Source) -> Option<String> {
-    match (&source.decisions, &source.executograms) {
+    match (&source.decisions, &source.facts) {
         (Some(decisions), _) => Some(format!("the decisions taken under {decisions}")),
-        (None, Some(stream)) => Some(format!("the executograms of the stream {stream}")),
+        (None, Some(fact)) => Some(format!("the recorded facts {fact}")),
         (None, None) => None,
     }
 }
@@ -151,7 +152,7 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
             let beside = [
                 ("regulation", source.regulation.is_some()),
                 ("decisions", source.decisions.is_some()),
-                ("executograms", source.executograms.is_some()),
+                ("facts", source.facts.is_some()),
                 ("endpoint", source.endpoint.is_some()),
             ];
             if let Some((key, _)) = beside.iter().find(|(_, present)| *present) {
@@ -221,6 +222,60 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
             for operand in operands {
                 if action_value_contains_unknown(operand) {
                     return Err(unknown_literal(law, &article.number, where_));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Refuse a fact an article requires (`requires` with `fact`, schema v0.8.7,
+/// RFC-051) that names a provision besides, holds no parameter or one the
+/// article does not declare, or whose name another fact of the article has.
+/// The law says what the fact holds; a reduction reads it by that shape.
+pub(crate) fn reject_malformed_facts(law: &ArticleBasedLaw) -> Result<()> {
+    for article in &law.articles {
+        let refuse = |why: String| {
+            Err(EngineError::LoadError(format!(
+                "law '{}': article {} {why} (RFC-051)",
+                law.id, article.number
+            )))
+        };
+        let mut names: Vec<&str> = Vec::new();
+        for requirement in article.get_requires() {
+            let Some(fact) = requirement.fact.as_deref() else {
+                if requirement.parameters.is_some() {
+                    return refuse(
+                        "lists parameters on a requirement that names no fact".to_string(),
+                    );
+                }
+                continue;
+            };
+            if requirement.article.is_some()
+                || requirement.law.is_some()
+                || requirement.regeling.is_some()
+                || requirement.koninklijk_besluit.is_some()
+                || requirement.values.is_some()
+            {
+                return refuse(format!(
+                    "requires the fact '{fact}' and names another provision in the same entry"
+                ));
+            }
+            if names.contains(&fact) {
+                return refuse(format!("requires the fact '{fact}' twice"));
+            }
+            names.push(fact);
+            let parameters = requirement.parameters.as_deref().unwrap_or_default();
+            if parameters.is_empty() {
+                return refuse(format!(
+                    "requires the fact '{fact}', which holds no parameters"
+                ));
+            }
+            for name in parameters {
+                if !article.get_parameters().iter().any(|p| &p.name == name) {
+                    return refuse(format!(
+                        "requires the fact '{fact}' holding '{name}', but declares no such parameter"
+                    ));
                 }
             }
         }
@@ -560,6 +615,75 @@ articles:
             value: true
 "#
         )
+    }
+
+    /// `law_producing` with the decision only and `requires` spliced in.
+    fn law_requiring(requires: &str) -> String {
+        law_producing("          - type: BESCHIKKING").replace(
+            "    machine_readable:\n      execution:\n",
+            &format!("    machine_readable:\n      requires:\n{requires}\n      execution:\n"),
+        )
+    }
+
+    /// A fact the article requires (schema v0.8.7, RFC-051) holds parameters
+    /// the article declares, has a name of its own within the article, and
+    /// names no other provision in the same entry.
+    #[test]
+    fn a_required_fact_holds_parameters_of_the_article() {
+        let yaml = law_requiring("        - fact: onderzoek\n          parameters: [p]");
+        let mut service = LawExecutionService::new();
+        service.load_law(&yaml).expect("a well-formed fact loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let fact = law.articles[0]
+            .required_fact("onderzoek")
+            .expect("the fact");
+        assert_eq!(fact.parameters.as_deref(), Some(&["p".to_string()][..]));
+        assert!(law.articles[0].required_fact("ander").is_none());
+
+        for (requires, why) in [
+            (
+                "        - fact: onderzoek\n          parameters: [q]",
+                "holding 'q', but declares no such parameter",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n        - fact: onderzoek\n          parameters: [p]",
+                "requires the fact 'onderzoek' twice",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          law: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          article: '2'",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          regeling: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          koninklijk_besluit: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          values: [x]",
+                "names another provision in the same entry",
+            ),
+            ("        - fact: onderzoek", "which holds no parameters"),
+            (
+                "        - article: '2'\n          parameters: [p]",
+                "lists parameters on a requirement that names no fact",
+            ),
+        ] {
+            let mut service = LawExecutionService::new();
+            let err = service
+                .load_law(&law_requiring(requires))
+                .expect_err("a malformed fact must not load");
+            assert!(
+                matches!(err, EngineError::LoadError(_)) && err.to_string().contains(why),
+                "{why}: got {err:?}"
+            );
+        }
     }
 
     #[test]

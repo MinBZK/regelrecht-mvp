@@ -33,6 +33,23 @@ const POWER: &str = "bevoegdheid_tot_verstrekken_gebruikt";
 const VALID: &str = "aanvrager_heeft_geldige_gehandicaptenparkeerkaart";
 const REDUCTION: &str = "reductie_geldige_gehandicaptenparkeerkaart";
 
+/// Art. 2 of the Regeling: no card before a medical examination (lid 1),
+/// unless it is left out for someone who had a card before (lid 2, onder a
+/// en b). The cell answers its two facts.
+const REGELING: &str = "regeling_gehandicaptenparkeerkaart";
+const EXAMINED: &str = "geneeskundig_onderzoek_heeft_plaatsgehad";
+const EARLIER: &str = "aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt";
+/// The fact art. 3 lid 1 of the Regeling requires: the medical
+/// examination. The municipality records receipt of the report as an
+/// executogram of it, and the reduction reads those executograms.
+const EXAMINATION: &str = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek";
+const REPORTS: &str = "reductie_geneeskundig_onderzoek";
+/// The college's power to leave the examination out, and the two
+/// judgements of lid 2, onder a en b, all on art. 49.
+const LEFT_OUT: &str = "geneeskundig_onderzoek_achterwege_gelaten";
+const KNOWN: &str = "bekend_dat_aanvrager_nog_steeds_voldoet";
+const JUDGED: &str = "keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet";
+
 /// The four judgements the college gives after the medical examination.
 const WALKING: &str = "langdurige_loopbeperking";
 const HELP: &str = "continu_afhankelijk_van_hulp_bestuurder";
@@ -85,9 +102,9 @@ fn object_map(value: Value) -> Map<String, Value> {
     value.as_object().unwrap().clone()
 }
 
-/// A complete application of `bsn` for a card as a driver, with fictional
-/// data (BSNs from the test range).
-fn application(bsn: &str) -> Map<String, Value> {
+/// A complete application of `bsn` for a card as a driver, dated
+/// `dagtekening`, with fictional data (BSNs from the test range).
+fn application(bsn: &str, dagtekening: &str) -> Map<String, Value> {
     object_map(json!({
         "bsn_aanvrager": bsn,
         "kaart_als_bestuurder": true,
@@ -95,7 +112,7 @@ fn application(bsn: &str) -> Map<String, Value> {
         "aanvraag_ondertekend": true,
         "naam_aanvrager": "A. de Vries",
         "adres_aanvrager": "Voorbeeldlaan 2",
-        "dagtekening": "2026-10-12",
+        "dagtekening": dagtekening,
         "gevraagde_beschikking": "gehandicaptenparkeerkaart",
     }))
 }
@@ -108,10 +125,22 @@ fn applied(cell: &mut Cell, bsn: &str, on: &str) -> Gram {
         LAW,
         ARTICLE,
         None,
-        &application(bsn),
+        &application(bsn, on),
         day(on),
     )
     .unwrap()
+}
+
+/// The municipality receives on `on` the report of the GGD on the medical
+/// examination of `bsn` on `examined_on` (art. 3 lid 1 of the Regeling).
+fn reported(cell: &mut Cell, bsn: &str, examined_on: &str, on: &str) -> Gram {
+    let supplied = object_map(json!({
+        "bsn_aanvrager": bsn,
+        "datum_onderzoek": examined_on,
+        "verricht_door": "Gemeentelijke Gezondheidsdienst",
+    }));
+    cell.record_executogram(&service(), EXAMINATION, &supplied, day(on))
+        .unwrap()
 }
 
 /// The college's findings after the medical examination: only a long-term
@@ -144,8 +173,11 @@ fn decide(cell: &mut Cell, application: &str, walking: bool, on: &str) -> Gram {
     decide_with(cell, application, &examined(walking), on).unwrap()
 }
 
+/// Apply on `on`, receive the GGD's report of an examination that day, and
+/// decide.
 fn apply_and_decide(cell: &mut Cell, bsn: &str, walking: bool, on: &str) -> Gram {
     let app = applied(cell, bsn, on);
+    reported(cell, bsn, on, on);
     decide(cell, &app.id, walking, on)
 }
 
@@ -231,16 +263,35 @@ fn the_decision_asks_from_the_application_the_college_the_policy_and_the_cell() 
             // stage also needs) and the day it is made known, both from the
             // cell.
             ("besluit_datum", &Source::Cell, false),
+            // The date of the application (Awb 4:2): an examination counts
+            // for it from that day (art. 2 of the Regeling, own choice).
+            ("dagtekening", &Source::Application, false),
             ("bekendmaking_datum", &Source::Cell, false),
             (WALKING, &Source::Caller, false),
             (HELP, &Source::Caller, false),
             (WHEELCHAIR, &Source::Caller, false),
             (OTHER, &Source::Caller, false),
+            // Art. 2 lid 2 of the Regeling: whether to leave the examination
+            // out, and the judgements under a and b.
+            (LEFT_OUT, &Source::Caller, false),
+            (KNOWN, &Source::Caller, false),
+            (JUDGED, &Source::Caller, false),
             // The college's power, which its policy fills first.
             (POWER, &Source::Caller, true),
         ]
     );
-    assert_eq!(shape.judgements, [WALKING, HELP, WHEELCHAIR, OTHER]);
+    assert_eq!(
+        shape.judgements,
+        [WALKING, HELP, WHEELCHAIR, OTHER, LEFT_OUT, KNOWN, JUDGED]
+    );
+    // The college may leave the three of lid 2 out: then it does not leave
+    // the examination out.
+    for name in [LEFT_OUT, KNOWN, JUDGED] {
+        assert!(shape.input(name).unwrap().field.nullable, "{name}");
+    }
+    // Whether the examination took place is no input of art. 49: the
+    // Regeling asks it, and in the cell the reduction answers it there.
+    assert!(shape.input(EXAMINED).is_none());
     // Whether the applicant holds a valid card is no input of art. 49: the
     // policy asks it, and in the cell the reduction answers it there.
     assert!(shape.input(VALID).is_none());
@@ -250,6 +301,7 @@ fn the_decision_asks_from_the_application_the_college_the_policy_and_the_cell() 
 fn a_driver_with_a_long_term_walking_limitation_gets_a_card_for_five_years() {
     let mut cell = cell();
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
     let gram = decide(&mut cell, &app.id, true, "2026-10-20");
 
     assert_eq!(gram.kind, "BESCHIKKING");
@@ -312,6 +364,7 @@ fn the_reduction_sets_a_finding_of_the_college_aside() {
     // is none in its chronicle, and the card is granted.
     let mut cell = cell();
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
     let mut given = examined(true);
     given.insert(VALID.into(), json!(true));
     let gram = decide_with(&mut cell, &app.id, &given, "2026-10-20").unwrap();
@@ -388,20 +441,28 @@ fn a_card_of_someone_else_does_not_count() {
 
 #[test]
 fn a_cell_lists_the_lexostatus_it_answers() {
-    // The term the reduction fills is the policy's, not the BABW's.
-    let answers = cell().answers();
-    assert_eq!(answers.len(), 1);
-    let answer = &answers[0];
+    // The terms the reductions fill are the policy's and the Regeling's,
+    // not the BABW's.
+    let mut answers: Vec<(String, String, String, String)> = cell()
+        .answers()
+        .into_iter()
+        .map(|a| {
+            assert_eq!(a.valid_from, day("2026-01-01"));
+            (a.term.law, a.term.article, a.term.open_term, a.reduction)
+        })
+        .collect();
+    answers.sort();
+    let owned = |law: &str, article: &str, term: &str, reduction: &str| {
+        (law.into(), article.into(), term.into(), reduction.into())
+    };
     assert_eq!(
-        (
-            answer.term.law.as_str(),
-            answer.term.article.as_str(),
-            answer.term.open_term.as_str()
-        ),
-        (POLICY, "1", VALID)
+        answers,
+        vec![
+            owned(POLICY, "1", VALID, REDUCTION),
+            owned(REGELING, "2", EARLIER, REDUCTION),
+            owned(REGELING, "2", EXAMINED, REPORTS),
+        ]
     );
-    assert_eq!(answer.reduction, REDUCTION);
-    assert_eq!(answer.valid_from, day("2026-01-01"));
 }
 
 // ---------------------------------------------------------------------------
@@ -483,7 +544,8 @@ fn an_objection_does_not_change_the_application() {
         matches!(&e, Error::Refused(m) if m.contains("does not ask 'kaart_als_passagier'")),
         "{e}"
     );
-    assert_eq!(cell.grams().len(), 2);
+    // The application, the report and the refusal.
+    assert_eq!(cell.grams().len(), 3);
 }
 
 #[test]
@@ -653,7 +715,8 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
 
     // Step 1: the trace of the second decision holds one node for the term,
     // within the policy that fills art. 49: the cell's answer, with the
-    // reduction, its version and how far it read the chronicle.
+    // reduction, its version and how far it read the chronicle. The policy
+    // refuses, so art. 2 of the Regeling is not asked.
     let result = cell.explain(&mut service(), &second.id).unwrap();
     let root = result.trace.as_ref().unwrap();
     let nodes = answered(root);
@@ -669,10 +732,13 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     assert_eq!(answer.answerer, RECORDING_ACTOR);
     assert_eq!(answer.law_id, REDUCTION);
     assert_eq!(answer.valid_from, "2026-01-01");
-    // Everything before this decision: the first application and decision,
-    // and the second application.
-    assert_eq!(answer.records_read, 3);
-    assert_eq!(answer.last_record.as_deref(), second.refers_to.as_deref());
+    // Everything before this decision: the first application, report and
+    // decision, and the second application and report.
+    assert_eq!(answer.records_read, 5);
+    let report = &cell.grams()[4];
+    assert_eq!(report.grondslag, format!("{REGELING}#3"));
+    assert_eq!(report.fact.as_deref(), Some("geneeskundig_onderzoek"));
+    assert_eq!(answer.last_record.as_deref(), Some(report.id.as_str()));
     // The reduction's FOREACH is not in the decision's trace.
     let trace = root.render_box_drawing();
     assert!(!trace.contains("FOREACH"), "{trace}");
@@ -729,11 +795,21 @@ fn at_the_heroverweging_the_cell_answers_without_the_contested_grant() {
     let decided = reconsider(&mut cell, &bezwaar.id, &Map::new(), "2026-11-20");
 
     // One node for the term, within art. 49 called anew: the cell read
-    // everything before this decision but the contested grant.
+    // everything before this decision but the contested grant. Art. 49
+    // would issue the card again, so it asks art. 2 of the Regeling too,
+    // and the cell answers from the report it received for the grant.
     let result = cell.explain(&mut service(), &decided[0].id).unwrap();
     let root = result.trace.as_ref().unwrap();
-    let nodes = answered(root);
-    assert_eq!(nodes.len(), 1, "{}", root.render_box_drawing());
+    let all = answered(root);
+    let names: Vec<&str> = all.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(names, [VALID, EXAMINED], "{}", root.render_box_drawing());
+    assert_eq!(
+        all[1].answer.as_ref().unwrap().law_id,
+        REPORTS,
+        "{}",
+        root.render_box_drawing()
+    );
+    let nodes = &all[..1];
     assert_eq!(
         nodes[0].result,
         Some(regelrecht_engine::Value::from(json!(false)))
@@ -754,4 +830,222 @@ fn at_the_heroverweging_the_cell_answers_without_the_contested_grant() {
         .unwrap();
     let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(!why.contains(&granted.id), "{why}");
+}
+
+// ---------------------------------------------------------------------------
+// The medical examination (art. 2 and 3 of the Regeling)
+// ---------------------------------------------------------------------------
+
+/// The college's findings after the examination, with what it decides on
+/// lid 2: whether it leaves the examination out, and the judgements under
+/// a and b.
+fn lid_2(left_out: bool, known: bool, judged: bool) -> Map<String, Value> {
+    let mut findings = examined(true);
+    findings.insert(LEFT_OUT.into(), json!(left_out));
+    findings.insert(KNOWN.into(), json!(known));
+    findings.insert(JUDGED.into(), json!(judged));
+    findings
+}
+
+/// The decision fails on the term `term`: nobody answered it, and nothing
+/// is recorded.
+fn blocked_on(e: &Error, term: &str) {
+    assert!(
+        matches!(e, Error::Engine(regelrecht_engine::EngineError::ResolutionError(m))
+            if m.contains(&format!("'{term}'")) && m.contains("no judgement was given")),
+        "{e}"
+    );
+}
+
+#[test]
+fn without_a_report_the_college_cannot_issue_the_card_yet() {
+    // Art. 2 lid 1: "wordt niet afgegeven alvorens een geneeskundig onderzoek
+    // heeft plaatsgehad". Not a ground for refusal: the decision waits for
+    // the report, and the cell records nothing.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
+    blocked_on(&e, EXAMINED);
+    assert_eq!(cell.grams().len(), 1);
+
+    // Once the municipality has received the GGD's report, the card is
+    // issued; the cell answered the Regeling's term from the report.
+    let report = reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
+    assert_eq!(report.kind, "EXECUTOGRAM");
+    assert_eq!(report.grondslag, format!("{REGELING}#3"));
+    assert_eq!(report.fact.as_deref(), Some("geneeskundig_onderzoek"));
+    let gram = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    let result = cell.explain(&mut service(), &gram.id).unwrap();
+    let root = result.trace.as_ref().unwrap();
+    let node = answered(root)
+        .into_iter()
+        .find(|n| n.name == EXAMINED)
+        .unwrap_or_else(|| panic!("{}", root.render_box_drawing()));
+    assert_eq!(
+        node.result,
+        Some(regelrecht_engine::Value::from(json!(true)))
+    );
+    let answer = node.answer.as_ref().unwrap();
+    assert_eq!(answer.law_id, REPORTS);
+    assert_eq!(answer.last_record.as_deref(), Some(report.id.as_str()));
+    let why = cell
+        .explain_answer(&mut service(), &gram.id, EXAMINED)
+        .unwrap();
+    let why = why[0].trace.as_ref().unwrap().render_box_drawing();
+    assert!(why.contains(&report.id), "{why}");
+}
+
+#[test]
+fn a_refusal_does_not_wait_for_the_examination() {
+    // Art. 2 lid 1 is about issuing a card. Art. 49 asks it only for a card
+    // it would issue, so a refusal on the policy needs no report.
+    let mut cell = cell();
+    apply_and_decide(&mut cell, APPLICANT, true, "2026-10-20");
+    let app = applied(&mut cell, APPLICANT, "2027-03-01");
+    let second = decide_with(&mut cell, &app.id, &examined(true), "2027-03-01").unwrap();
+    assert_eq!(second.fields[POWER], json!(false));
+    assert_eq!(
+        second.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
+    );
+}
+
+#[test]
+fn only_an_examination_of_the_applicant_for_this_application_counts() {
+    // Own choice: from the date of the application (Awb 4:2) up to the day
+    // of issue. Not before: lid 2 onder a en b would mean nothing if an
+    // examination for an earlier card still counted.
+    let mut cell = cell();
+    reported(&mut cell, APPLICANT, "2026-10-01", "2026-10-02");
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, "999990032", "2026-10-16", "2026-10-16");
+    let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
+    blocked_on(&e, EXAMINED);
+
+    // An examination after the day of issue does not count either. The cell
+    // records the report on the day it receives it, and the examination
+    // date in it is the GGD's; it does not check that the examination came
+    // before the report, so this constructed report tests the upper bound.
+    reported(&mut cell, APPLICANT, "2026-10-25", "2026-10-19");
+    let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
+    blocked_on(&e, EXAMINED);
+
+    // On the date of the application, it counts.
+    reported(&mut cell, APPLICANT, "2026-10-13", "2026-10-19");
+    let gram = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+}
+
+#[test]
+fn the_cell_refuses_a_report_that_is_not_whole() {
+    let mut cell = cell();
+    let partial =
+        object_map(json!({ "bsn_aanvrager": APPLICANT, "datum_onderzoek": "2026-10-16" }));
+    let e = cell
+        .record_executogram(&service(), EXAMINATION, &partial, day("2026-10-19"))
+        .unwrap_err();
+    assert!(e.to_string().contains("verricht_door"), "{e}");
+    assert!(cell.grams().is_empty());
+}
+
+#[test]
+fn lid_2_onder_a_an_earlier_card_and_the_college_knows_the_applicant_still_qualifies() {
+    // The card of 2026 has expired. The college knows the applicant still
+    // meets the criteria and leaves the examination out: no report needed.
+    // That the applicant had a card before, the cell answers from its own
+    // decisions.
+    let mut cell = cell();
+    let first = apply_and_decide(&mut cell, APPLICANT, true, "2026-10-20");
+    let app = applied(&mut cell, APPLICANT, "2031-10-20");
+    let gram = decide_with(&mut cell, &app.id, &lid_2(true, true, false), "2031-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    assert_eq!(gram.fields[LEFT_OUT], json!(true));
+    assert_eq!(gram.fields[KNOWN], json!(true));
+
+    let result = cell.explain(&mut service(), &gram.id).unwrap();
+    let root = result.trace.as_ref().unwrap();
+    let names: Vec<&str> = answered(root).iter().map(|n| n.name.as_str()).collect();
+    // The examination is not asked: lid 2 decides first.
+    assert_eq!(names, [VALID, EARLIER], "{}", root.render_box_drawing());
+    let why = cell
+        .explain_answer(&mut service(), &gram.id, EARLIER)
+        .unwrap();
+    let why = why[0].trace.as_ref().unwrap().render_box_drawing();
+    assert!(why.contains(&first.id), "{why}");
+}
+
+#[test]
+fn lid_2_onder_b_the_judgement_of_the_examining_body() {
+    let mut cell = cell();
+    apply_and_decide(&mut cell, APPLICANT, true, "2026-10-20");
+    let app = applied(&mut cell, APPLICANT, "2031-10-20");
+    let gram = decide_with(&mut cell, &app.id, &lid_2(true, false, true), "2031-10-20").unwrap();
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+}
+
+#[test]
+fn lid_2_leaving_the_examination_out_without_its_ground_falls_back_on_lid_1() {
+    // Neither a nor b: the college may not leave it out, so the card waits
+    // for a report.
+    let mut cell = cell();
+    apply_and_decide(&mut cell, APPLICANT, true, "2026-10-20");
+    let app = applied(&mut cell, APPLICANT, "2031-10-20");
+    let e = decide_with(&mut cell, &app.id, &lid_2(true, false, false), "2031-10-20").unwrap_err();
+    blocked_on(&e, EXAMINED);
+    // The college that knows but does not leave it out, waits too.
+    let e = decide_with(&mut cell, &app.id, &lid_2(false, true, true), "2031-10-20").unwrap_err();
+    blocked_on(&e, EXAMINED);
+}
+
+#[test]
+fn lid_2_without_an_earlier_card_in_the_chronicle_the_cell_is_silent() {
+    // A card from another municipality counts too, so the cell does not say
+    // there was none: the college would have to find it, and without that
+    // finding the decision fails. A refused or revoked card is no card
+    // issued.
+    let mut cell = cell();
+    apply_and_decide(&mut cell, APPLICANT, false, "2026-10-20");
+    let app = applied(&mut cell, APPLICANT, "2027-03-01");
+    let e = decide_with(&mut cell, &app.id, &lid_2(true, true, false), "2027-03-01").unwrap_err();
+    blocked_on(&e, EARLIER);
+}
+
+#[test]
+fn without_a_report_the_college_may_establish_the_examination_itself() {
+    // The term is the college's to decide per case: the cell is silent, so
+    // the college's own finding counts. Finding that no examination took
+    // place (the applicant did not appear, say) refuses the card: own
+    // choice, a decision of the college and no consequence of lid 1.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    let mut given = examined(true);
+    given.insert(EXAMINED.into(), json!(false));
+    let refused = decide_with(&mut cell, &app.id, &given, "2026-10-20").unwrap();
+    assert_eq!(
+        refused.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
+    );
+
+    let app = applied(&mut cell, "999990032", "2026-10-21");
+    given.insert(EXAMINED.into(), json!(true));
+    let granted = decide_with(&mut cell, &app.id, &given, "2026-10-21").unwrap();
+    assert_eq!(
+        granted.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    let found = cell.findings(&mut service(), &granted.id).unwrap();
+    assert!(found.contains(&EXAMINED.to_string()), "{found:?}");
 }

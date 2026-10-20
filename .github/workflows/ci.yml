@@ -266,8 +266,7 @@ jobs:
           # Every $schema URL in corpus YAML must reference a known schema version
           KNOWN_VERSIONS=$(ls -d schema/v*/ | xargs -n1 basename)
           FAILED=false
-          # A cell's streams (corpus/cells/*/executogrammen, RFC-051) are no
-          # rulework and carry no $schema; only its reductions do.
+          # A cell holds rulework only under reducties (RFC-048).
           for file in $(find corpus/regulation -name "*.yaml"; find corpus/cells -path "*/reducties/*" -name "*.yaml"); do
             SCHEMA_URL=$(grep '^\$schema:' "$file" | head -1 | sed 's/\$schema: *//')
             # Handle multi-line $schema with >-

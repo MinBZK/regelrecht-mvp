@@ -245,6 +245,70 @@ pub(crate) fn add_field(fields: &mut Vec<Field>, field: Field, reference: &str) 
     Ok(())
 }
 
+/// The article and the fact name of a fact reference
+/// `<regulation>#<article>#<fact>` (schema v0.8.7, RFC-051).
+pub fn split_fact(fact: &str) -> Result<(&str, &str)> {
+    if !regelrecht_law_model::is_fact_reference(fact) {
+        return Err(refused(format!(
+            "'{fact}' is no <regulation>#<article>#<fact>"
+        )));
+    }
+    fact.rsplit_once('#')
+        .ok_or_else(|| refused(format!("'{fact}' is no <regulation>#<article>#<fact>")))
+}
+
+/// The fields of an executogram of the fact `fact`
+/// (`<regulation>#<article>#<fact>`, schema v0.8.7, RFC-051), in the law in
+/// force on `day`: the parameters the article's `requires` entry for that
+/// fact lists, with their types, as the fields of an application are the
+/// parameters its item lists. Refused when the article has no version in
+/// force on `day` or does not require that fact.
+pub fn fact_fields(
+    service: &LawExecutionService,
+    fact: &str,
+    day: NaiveDate,
+) -> Result<Vec<Field>> {
+    let (grondslag, name) = split_fact(fact)?;
+    let (law_id, number) = grondslag
+        .split_once('#')
+        .ok_or_else(|| refused(format!("'{grondslag}' is no <regulation>#<article>")))?;
+    let article = article_on(service, law_id, number, day)
+        .ok_or_else(|| refused(format!("{grondslag} has no version in force on {day}")))?;
+    let required = article.required_fact(name).ok_or_else(|| {
+        refused(format!(
+            "{grondslag} requires no fact '{name}' (requires, fact) on {day}"
+        ))
+    })?;
+    required
+        .parameters
+        .iter()
+        .flatten()
+        .map(|field| {
+            if field == crate::reading::ROW_ID {
+                return Err(setup(format!(
+                    "{fact}: the fact holds a field '{field}'; its row gives the executogram's \
+                     own id under that name"
+                )));
+            }
+            let p = article
+                .get_parameters()
+                .iter()
+                .find(|p| &p.name == field)
+                .ok_or_else(|| {
+                    setup(format!(
+                        "{fact}: the fact holds '{field}', which is no parameter"
+                    ))
+                })?;
+            Ok(Field {
+                name: field.clone(),
+                type_: p.param_type,
+                nullable: p.is_nullable(),
+                declared_by: vec![grondslag.to_string()],
+            })
+        })
+        .collect()
+}
+
 pub(crate) fn article_on<'s>(
     service: &'s LawExecutionService,
     law_id: &str,

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json",
-  "title": "Machine-Readable Dutch Law Schema v0.8.6",
+  "$id": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json",
+  "title": "Machine-Readable Dutch Law Schema v0.8.7",
   "description": "Article-based schema for machine-readable representation of Dutch laws and regulations.",
   "type": "object",
   "required": [
@@ -54,7 +54,7 @@
         "WATERSCHAPS_VERORDENING",
         "REDUCTIE"
       ],
-      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read its chronicle: decisions (`source.decisions`) and, since v0.8.6, executograms (`source.executograms`, RFC-051); it may fill an open term of an article (`implements`, since v0.8.5), and the engine then runs it for that term like any implementation, also in a nested call; beyond that it does not act on law (no `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
+      "description": "Type of legal instrument (regelgevingslaag). It fixes which identifier the file must carry, and it ranks candidates when several regulations implement the same open term. Which layer may implement a term is set by that term's `delegation_type`, not by this field alone. `REDUCTIE`: not a regulation but a cell's reduction over its own chronicle (RFC-022 §4). Such a rulework is kept with its cell, not in the corpus of regulations, and is the only one that may read its chronicle: decisions (`source.decisions`) and the facts its cell recorded (`source.facts`, since v0.8.7; `source.executograms` in v0.8.6, RFC-051); it may fill an open term of an article (`implements`, since v0.8.5), and the engine then runs it for that term like any implementation, also in a nested call; beyond that it does not act on law (no `hooks` or `overrides`), takes no decisions (no `execution.produces`) and delegates nothing (no `open_terms`).",
       "examples": [
         "WET",
         "GEMEENTELIJKE_VERORDENING"
@@ -654,7 +654,7 @@
                                     },
                                     {
                                       "required": [
-                                        "executograms"
+                                        "facts"
                                       ]
                                     }
                                   ]
@@ -689,7 +689,7 @@
                                   },
                                   {
                                     "required": [
-                                      "executograms"
+                                      "facts"
                                     ]
                                   }
                                 ]
@@ -894,10 +894,13 @@
                   "$ref": "#/definitions/articleReference",
                   "description": "The decisions taken under this article, `<regulation>#<article>`: a list with one row per decision, holding the inputs and outputs of the decision item of that article. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the decisions in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters` or `endpoint`. Without a source that answers it the input is an error, never an empty list."
                 },
-                "executograms": {
+                "facts": {
                   "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$",
-                  "description": "The executograms of a stream of the cell, by the stream's `$id` (RFC-051): a list with one row per executogram, holding the fields the stream declares and the executogram's `id`. An executogram records a fact, not a decision, such as where a school is established; its stream is declared with the cell, not in a regulation. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the executograms in its chronicle; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
+                  "pattern": "^[a-z0-9_]+#[A-Za-z0-9]([A-Za-z0-9:._ -]*[A-Za-z0-9])?#[a-z][a-z0-9_]*$",
+                  "not": {
+                    "pattern": " lid [0-9]"
+                  },
+                  "description": "Since v0.8.7 (`executograms` in v0.8.6): the recorded instances of a fact an article requires, `<regulation>#<article>#<fact>`: the article and the `fact` of its `requires` entry, since an article may require more than one fact. A list with one row per recorded instance, holding the parameters the `requires` entry lists and the record's `id`. Only a `REDUCTIE` rulework reads it, and only a data source (or the caller, as a parameter) answers it: its cell binds the facts it recorded; no regulation is executed for it, so it stands alone, without `regulation`, `output`, `parameters`, `endpoint` or `decisions`. Without a source that answers it the input is an error, never an empty list."
                 },
                 "article": {
                   "oneOf": [
@@ -967,7 +970,7 @@
                       },
                       {
                         "required": [
-                          "executograms"
+                          "facts"
                         ]
                       }
                     ]
@@ -978,7 +981,7 @@
                     "article"
                   ]
                 },
-                "executograms": {
+                "facts": {
                   "not": {
                     "anyOf": [
                       {
@@ -1022,7 +1025,7 @@
                   "decisions": "leerplichtwet_1969#13a"
                 },
                 {
-                  "executograms": "vestiging"
+                  "facts": "fictief_beleid_vestiging_obs_de_klimop#1#vestiging"
                 },
                 {
                   "article": "$besluit"
@@ -1981,7 +1984,7 @@
         },
         "requires": {
           "type": "array",
-          "description": "Other provisions this article depends on. The Rust law-model reads the structure below; the engine does not act on it at runtime.",
+          "description": "Other provisions this article depends on, and the facts it requires (since v0.8.7). The Rust law-model reads the structure below; the engine does not act on it at runtime.",
           "items": {
             "type": "object",
             "properties": {
@@ -2007,9 +2010,86 @@
                   "type": "string"
                 },
                 "description": "The outputs this article needs from the dependency, named so the dependency is checkable rather than implied."
+              },
+              "fact": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$",
+                "description": "Since v0.8.7: a fact this article requires to exist, by a name unique within the article, such as `geneeskundig_onderzoek` for 'een geneeskundig onderzoek heeft plaatsgehad'. The law says what the fact holds (`parameters`), not when it arises or who records it. An entry with `fact` names no other provision."
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true,
+                "description": "Since v0.8.7, only with `fact`: the names of this article's parameters that the fact holds, with their types. Every name must be a parameter of the article; the loader checks it."
+              },
+              "description": {
+                "type": "string",
+                "description": "Since v0.8.7, only with `fact`: what the fact is, in words."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "fact"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "parameters"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "article"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "law"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "regeling"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "koninklijk_besluit"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "values"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "parameters"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "description"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
           }
         },
         "open_terms": {

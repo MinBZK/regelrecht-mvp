@@ -23,10 +23,10 @@ mod value;
 
 pub use header::{parse_law_header, LawHeader};
 pub use model::{
-    foreach_binding, is_article_reference, is_variable_reference, Action, ActionOperation,
-    ActionValue, Article, ArticleBasedLaw, ArticleReference, ArticleRequirement, AuthorityType,
-    Case, CombineOp, CompetentAuthority, Declaration, DeclaredProperty, Definition, Execution,
-    HookDeclaration, HookFilter, HookPoint, ImplementsDeclaration, Input, LegalBasis,
+    foreach_binding, is_article_reference, is_fact_reference, is_variable_reference, Action,
+    ActionOperation, ActionValue, Article, ArticleBasedLaw, ArticleReference, ArticleRequirement,
+    AuthorityType, Case, CombineOp, CompetentAuthority, Declaration, DeclaredProperty, Definition,
+    Execution, HookDeclaration, HookFilter, HookPoint, ImplementsDeclaration, Input, LegalBasis,
     MachineReadable, Marking, MarkingResolution, Moment, OpenTerm, OpenTermDefault, Output,
     OverrideDeclaration, Parameter, Placement, PlacementContainer, Preamble, ProcedureAppliesTo,
     ProcedureDefinition, Produced, ProducedItem, Produces, ProducesList, ProvisionReference,

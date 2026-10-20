@@ -132,8 +132,9 @@ pub struct TypeSpec {
 /// - Same-law reference: `output: "field_name"` (resolved within the same law)
 /// - The decisions taken under an article: `decisions: "<regulation>#<article>"`
 ///   (schema v0.8.2, RFC-048), only in a `REDUCTIE`
-/// - The executograms of a stream of the cell: `executograms: "<stream>"`
-///   (schema v0.8.6, RFC-051), only in a `REDUCTIE`
+/// - The recorded instances of a fact an article requires: `facts:
+///   "<regulation>#<article>#<fact>"` (schema v0.8.7, RFC-051), only in a
+///   `REDUCTIE`
 /// - The decision of an article: `article: "<regulation>#<article>"` or a
 ///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
 ///   RFC-050)
@@ -167,14 +168,20 @@ pub struct Source {
         deserialize_with = "optional_article_reference"
     )]
     pub decisions: Option<String>,
-    /// The executograms of a stream of the cell, by the stream's `$id`
-    /// (schema v0.8.6, RFC-051): a list with one row per executogram, as
-    /// `decisions` gives one per decision. Only a data source answers it,
-    /// such as the cell that keeps the stream, or the caller with a
-    /// parameter of that name; no regulation is executed for it. Only a
-    /// rulework with `regulatory_layer: REDUCTIE` may read it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub executograms: Option<String>,
+    /// The recorded instances of a fact an article requires,
+    /// `<regulation>#<article>#<fact>` (schema v0.8.7, RFC-051; v0.8.6
+    /// named a stream of the cell under `executograms`): a list with one row
+    /// per instance, as `decisions` gives one per decision. The article's
+    /// `requires` entry with that `fact` says what each holds. Only a data
+    /// source answers it, such as the cell that records the facts, or the
+    /// caller with a parameter of that name; no regulation is executed for
+    /// it. Only a rulework with `regulatory_layer: REDUCTIE` may read it.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_fact_reference"
+    )]
+    pub facts: Option<String>,
     /// The article whose decision this input takes (schema v0.8.4, RFC-050):
     /// an article reference `<regulation>#<article>`, or a `$`-reference to
     /// a value that holds one, such as the `grondslag` of a `decision`
@@ -1089,7 +1096,9 @@ fn default_true() -> bool {
 ///
 /// Every field is optional in the schema (`machineReadableSection.requires`),
 /// so an entry only names the dimensions it needs: an intra-law dependency
-/// carries just `article`, a cross-law dependency `law` + `values`.
+/// carries just `article`, a cross-law dependency `law` + `values`. Since
+/// schema v0.8.7 an entry may instead name a fact the article requires to
+/// exist (`fact`), with the parameters it holds (RFC-051).
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ArticleRequirement {
     /// Article number within this law
@@ -1107,6 +1116,17 @@ pub struct ArticleRequirement {
     /// Values/outputs required from the dependency
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub values: Option<Vec<String>>,
+    /// A fact the article requires to exist (schema v0.8.7, RFC-051), by a
+    /// name unique within the article. The law says what it holds, not when
+    /// it arises.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fact: Option<String>,
+    /// With `fact`: the article's parameters the fact holds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<Vec<String>>,
+    /// With `fact`: what the fact is, in words.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// Declares that this article fills an open term from a higher-level law.
@@ -1196,6 +1216,40 @@ pub fn is_article_reference(s: &str) -> bool {
             .chars()
             .all(|c| alnum(c) || matches!(c, ':' | '.' | '_' | ' ' | '-'))
         && !names_paragraph
+}
+
+/// Whether `s` names a fact an article requires, `<regulation>#<article>#<fact>`
+/// (schema v0.8.7): an article reference, `#`, and a fact name in lowercase
+/// letters, digits and underscores. An article number holds no `#`, so the
+/// last one separates the fact.
+pub fn is_fact_reference(s: &str) -> bool {
+    let Some((article, fact)) = s.rsplit_once('#') else {
+        return false;
+    };
+    is_article_reference(article)
+        && fact.starts_with(|c: char| c.is_ascii_lowercase())
+        && fact
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
+/// Deserialize an optional string that, when present, must be a fact
+/// reference ([`is_fact_reference`]).
+fn optional_fact_reference<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| {
+            if is_fact_reference(&s) {
+                Ok(s)
+            } else {
+                Err(serde::de::Error::custom(format!(
+                    "'{s}' is not <regulation>#<article>#<fact>"
+                )))
+            }
+        })
+        .transpose()
 }
 
 /// Deserialize an optional string that, when present, must be an
@@ -1668,6 +1722,14 @@ impl Article {
             .and_then(|exec| exec.output.as_ref())
             .map(|outputs| outputs.iter().map(|o| o.name.as_str()).collect())
             .unwrap_or_default()
+    }
+
+    /// The fact named `fact` this article requires to exist (schema v0.8.7,
+    /// RFC-051), as its `requires` entry.
+    pub fn required_fact(&self, fact: &str) -> Option<&ArticleRequirement> {
+        self.get_requires()
+            .iter()
+            .find(|r| r.fact.as_deref() == Some(fact))
     }
 
     /// Check if this article produces a specific output (allocation-free).

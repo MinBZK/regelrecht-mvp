@@ -333,5 +333,6 @@ async fn the_preview_answers_a_refusal_as_a_state_and_records_nothing() {
         .iter()
         .map(|g| g["kind"].as_str().unwrap())
         .collect();
-    assert_eq!(kinds, ["AANVRAAG"]);
+    // The GGD's report from the case's `begin`, and the application.
+    assert_eq!(kinds, ["EXECUTOGRAM", "AANVRAAG"]);
 }

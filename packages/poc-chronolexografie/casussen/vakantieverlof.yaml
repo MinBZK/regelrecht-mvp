@@ -48,8 +48,9 @@ voorbeeld:
 # Wat de school vastlegde vóór het eerste scenario (RFC-051), bij elke start
 # en reset opnieuw, via de cel zoals elke stap. De regeling vaststelling
 # schoolvakanties leidt de regio af uit de plaats van vestiging (art. 2): de
-# vestiging is een executogram van de stroom vestiging
-# (corpus/cells/obs_de_klimop/executogrammen/vestiging.yaml). De herfst- en
+# vestiging is een executogram van het feit dat het fictieve beleid
+# fictief_beleid_vestiging_obs_de_klimop vereist; geen artikel in het corpus
+# vereist dat feit letterlijk. De herfst- en
 # voorjaarsvakantie staan in het fictieve beleid van de school
 # (fictief_beleid_vakantierooster_obs_de_klimop). Zo beantwoordt de cel
 # verlof_valt_buiten_schoolvakanties zelf; 1 tot en met 5 februari en 10 tot
@@ -57,7 +58,7 @@ voorbeeld:
 begin:
   datum: 2026-08-01
   executogrammen:
-    - stroom: vestiging
+    - feit: fictief_beleid_vestiging_obs_de_klimop#1#vestiging
       velden:
         gemeente: Utrecht
         provincie: Utrecht

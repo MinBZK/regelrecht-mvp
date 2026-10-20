@@ -10,9 +10,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # If no files given, validate all regulation YAML files, and the reductions
 # kept with each cell (corpus/cells/*/reducties, RFC-048): rulework in the
-# same format, but no regulation, so the corpus loaders leave them out. A
-# cell's streams of executograms (corpus/cells/*/executogrammen, RFC-051) are
-# no rulework; the cell reads and checks them when it opens.
+# same format, but no regulation, so the corpus loaders leave them out.
 if [ $# -eq 0 ]; then
     FILES=()
     while IFS= read -r -d '' f; do
