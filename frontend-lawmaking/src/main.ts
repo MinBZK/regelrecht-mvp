@@ -2,7 +2,7 @@ import '@nldd/design-system';
 import '@nldd/design-system/styles';
 import { createApp } from 'vue';
 import { useColorScheme } from '@regelrecht/frontend-shared';
-import App from './src/App.vue';
+import App from './App.vue';
 
 const app = createApp(App);
 // Participate in the shared color-scheme system (localStorage-backed default):

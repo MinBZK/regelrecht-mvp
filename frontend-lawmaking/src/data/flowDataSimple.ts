@@ -9,7 +9,9 @@
  *   col 4 - fork: advisory (Raad van State / toetsende organen)
  */
 
-export const branches = [
+import type { Branch, Stage, Connection } from './types';
+
+export const branches: Branch[] = [
   {
     id: 'main',
     label: 'Corpus Juris',
@@ -57,7 +59,7 @@ export const branches = [
   },
 ];
 
-export const stages = [
+export const stages: Stage[] = [
   // === MAIN: Corpus Juris ===
   {
     id: 'corpus-start',
@@ -406,7 +408,7 @@ export const stages = [
   },
 ];
 
-export const connections = [
+export const connections: Connection[] = [
   // main → develop (branch-off with vertical distance)
   { from: 'corpus-start', to: 'develop-start', type: 'branch-off' },
   // develop → wetsvoorstel fork

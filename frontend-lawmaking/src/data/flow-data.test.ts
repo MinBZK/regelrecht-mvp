@@ -7,38 +7,33 @@
 // tekent gewoon niets, en een stage op een branch die niet bestaat krijgt geen
 // kleur. Beide zijn onzichtbaar tot iemand het diagram naast de bedoeling legt.
 
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from 'vitest';
+import * as simple from './flowDataSimple';
+import * as advanced from './flowDataAdvanced';
+import * as woo from './flowDataWoo';
+import type { Branch, Connection, Stage } from './types';
 
-const DATASETS = ['flowDataSimple.js', 'flowDataAdvanced.js', 'flowDataWoo.js'];
-
-const loaded = await Promise.all(
-  DATASETS.map(async (file) => {
-    const m = await import(`./${file}`);
-    return {
-      file,
-      branches: m.branches ?? [],
-      stages: m.stages ?? [],
-      connections: m.connections ?? [],
-    };
-  }),
-);
+const loaded: { file: string; branches: Branch[]; stages: Stage[]; connections: Connection[] }[] = [
+  { file: 'flowDataSimple.ts', ...simple },
+  { file: 'flowDataAdvanced.ts', ...advanced },
+  { file: 'flowDataWoo.ts', ...woo },
+];
 
 test('elke dataset heeft branches, stages en verbindingen', () => {
   // Zonder deze assertie zegt een groene run niets over een dataset die per
   // ongeluk leeg importeert.
   for (const { file, branches, stages, connections } of loaded) {
-    assert.ok(branches.length > 0, `${file} heeft geen branches`);
-    assert.ok(stages.length > 0, `${file} heeft geen stages`);
-    assert.ok(connections.length > 0, `${file} heeft geen verbindingen`);
+    expect(branches.length, `${file} heeft geen branches`).toBeGreaterThan(0);
+    expect(stages.length, `${file} heeft geen stages`).toBeGreaterThan(0);
+    expect(connections.length, `${file} heeft geen verbindingen`).toBeGreaterThan(0);
   }
 });
 
 test('stage-ids zijn uniek binnen een dataset', () => {
   for (const { file, stages } of loaded) {
-    const seen = new Set();
+    const seen = new Set<string>();
     for (const s of stages) {
-      assert.ok(!seen.has(s.id), `${file}: stage-id "${s.id}" komt meer dan eens voor`);
+      expect(seen.has(s.id), `${file}: stage-id "${s.id}" komt meer dan eens voor`).toBe(false);
       seen.add(s.id);
     }
   }
@@ -46,9 +41,9 @@ test('stage-ids zijn uniek binnen een dataset', () => {
 
 test('branch-ids zijn uniek binnen een dataset', () => {
   for (const { file, branches } of loaded) {
-    const seen = new Set();
+    const seen = new Set<string>();
     for (const b of branches) {
-      assert.ok(!seen.has(b.id), `${file}: branch-id "${b.id}" komt meer dan eens voor`);
+      expect(seen.has(b.id), `${file}: branch-id "${b.id}" komt meer dan eens voor`).toBe(false);
       seen.add(b.id);
     }
   }
@@ -58,7 +53,7 @@ test('elke stage staat op een branch die bestaat', () => {
   for (const { file, branches, stages } of loaded) {
     const ids = new Set(branches.map((b) => b.id));
     for (const s of stages) {
-      assert.ok(ids.has(s.branch), `${file}: stage "${s.id}" staat op onbekende branch "${s.branch}"`);
+      expect(ids.has(s.branch), `${file}: stage "${s.id}" staat op onbekende branch "${s.branch}"`).toBe(true);
     }
   }
 });
@@ -67,8 +62,8 @@ test('elke verbinding wijst aan beide kanten naar een bestaande stage', () => {
   for (const { file, stages, connections } of loaded) {
     const ids = new Set(stages.map((s) => s.id));
     for (const c of connections) {
-      assert.ok(ids.has(c.from), `${file}: verbinding vanaf onbekende stage "${c.from}"`);
-      assert.ok(ids.has(c.to), `${file}: verbinding naar onbekende stage "${c.to}"`);
+      expect(ids.has(c.from), `${file}: verbinding vanaf onbekende stage "${c.from}"`).toBe(true);
+      expect(ids.has(c.to), `${file}: verbinding naar onbekende stage "${c.to}"`).toBe(true);
     }
   }
 });
@@ -76,7 +71,7 @@ test('elke verbinding wijst aan beide kanten naar een bestaande stage', () => {
 test('geen enkele stage verwijst naar zichzelf', () => {
   for (const { file, connections } of loaded) {
     for (const c of connections) {
-      assert.notEqual(c.from, c.to, `${file}: stage "${c.from}" verwijst naar zichzelf`);
+      expect(c.from, `${file}: stage "${c.from}" verwijst naar zichzelf`).not.toBe(c.to);
     }
   }
 });
@@ -89,19 +84,18 @@ test('een stage zonder inkomende verbinding staat op de trunk', () => {
   for (const { file, stages, connections } of loaded) {
     const reachable = new Set(connections.map((c) => c.to));
     const zwevend = stages.filter((s) => !reachable.has(s.id) && s.col !== 0);
-    assert.deepEqual(
+    expect(
       zwevend.map((s) => s.id),
-      [],
       `${file}: stage(s) buiten de trunk zonder inkomende verbinding`,
-    );
+    ).toEqual([]);
   }
 });
 
 test('elke stage heeft een numerieke step en col', () => {
   for (const { file, stages } of loaded) {
     for (const s of stages) {
-      assert.equal(typeof s.step, 'number', `${file}: stage "${s.id}" heeft geen numerieke step`);
-      assert.equal(typeof s.col, 'number', `${file}: stage "${s.id}" heeft geen numerieke col`);
+      expect(typeof s.step, `${file}: stage "${s.id}" heeft geen numerieke step`).toBe('number');
+      expect(typeof s.col, `${file}: stage "${s.id}" heeft geen numerieke col`).toBe('number');
     }
   }
 });

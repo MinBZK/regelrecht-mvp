@@ -11,7 +11,9 @@
  *   col 3: novelle (reparatie-fork)
  */
 
-export const branches = [
+import type { Branch, Phase, Stage, Connection } from './types';
+
+export const branches: Branch[] = [
   {
     id: 'main',
     label: 'Corpus Juris',
@@ -140,7 +142,7 @@ export const branches = [
   },
 ];
 
-export const phases = [
+export const phases: Phase[] = [
   { id: 'A', label: 'A. Departementale voorbereiding', startStage: 'ministry-fork', endStage: 'ministry-merge-intern', color: 'var(--color-branch-wetsvoorstel)' },
   { id: 'B', label: 'B. Interdepartementaal & toetsen', startStage: 'interdept', endStage: 'voorportaal', color: 'var(--color-branch-advisory)' },
   { id: 'C', label: 'C. Externe consultatie', startStage: 'internetconsultatie', endStage: 'verwerking-reacties', color: 'var(--color-branch-advisory)' },
@@ -151,7 +153,7 @@ export const phases = [
   { id: 'H', label: 'H. Bekrachtiging', startStage: 'koninklijk-besluit', endStage: 'corpus-updated', color: 'var(--color-branch-main)' },
 ];
 
-export const stages = [
+export const stages: Stage[] = [
   // === MAIN ===
   {
     id: 'corpus-start',
@@ -750,7 +752,7 @@ export const stages = [
   },
 ];
 
-export const connections = [
+export const connections: Connection[] = [
   // main → develop
   { from: 'corpus-start', to: 'develop-start', type: 'branch-off' },
 
