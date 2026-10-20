@@ -163,7 +163,12 @@ select { font: var(--primitives-font-body-sm-regular-snug); height: var(--semant
   background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
 select:hover { border-color: var(--accent); }
 .speler-regel select { height: var(--semantics-controls-md-min-size); border-radius: var(--semantics-controls-md-corner-radius); }
-.dossierkeuze { width: 300px; height: var(--semantics-controls-md-min-size) !important; border-radius: var(--semantics-controls-md-corner-radius) !important; }
+/* De keuzelijst naast de knoppen: even hoog, dezelfde letter, en de tekst in
+   het midden (Safari zet de tekst van een select zonder eigen vorm bovenin). */
+.dossierkeuze { width: 300px; box-sizing: border-box; align-self: center; height: var(--semantics-controls-md-min-size) !important;
+  font: var(--primitives-font-body-md-regular-snug); line-height: calc(var(--semantics-controls-md-min-size) - 2px); padding-block: 0;
+  border-radius: var(--semantics-controls-md-corner-radius) !important; }
+.speler-regel select { line-height: calc(var(--semantics-controls-md-min-size) - 2px); padding-block: 0; box-sizing: border-box; }
 
 /* de rail: het artikel door de tijd */
 .railkop { position: sticky; top: 0; z-index: 2; background: var(--vlak-getint); border-bottom: 1px solid var(--lijn); padding: 12px var(--ruimte) 10px; }
@@ -183,6 +188,8 @@ select:hover { border-color: var(--accent); }
 .kaart h4 { font: var(--primitives-font-body-sm-semi-bold-snug); margin: 0 0 6px; }
 .kaart .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
 .kaart p { font: var(--primitives-font-body-sm-regular-loose); margin: 0 0 6px; }
+.kaart ul.bronnen { font: var(--primitives-font-body-sm-regular-loose); margin: 0 0 8px; padding-left: 18px; }
+.kaart ul.bronnen button, .kaart p button.klein { margin-left: 4px; }
 .kaart p.tk { font: var(--primitives-font-body-sm-semi-bold-snug); margin-top: 8px; }
 .kaart p.li { padding-left: 14px; }
 .kaart .klein { font: var(--primitives-font-body-xs-regular-snug); color: var(--tekst-zacht); }

@@ -86,36 +86,98 @@ class Dienst(unittest.TestCase):
         self.assertEqual(vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "x; rm -rf /", "keten": True})[0], 400)
         self.assertEqual(vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "../1"})[0], 400)
 
-    def test_een_opdracht_tegelijk_en_haar_uitkomst_komt_in_de_lijst(self):
-        poort = threading.Event()
+    def nep(self, poort=None):
+        """Het internet en de keten vervangen: een opdracht wacht (op `poort`)
+        en zet dan een dossier neer."""
+        oud = (dienst.kamerdossier.main, dienst.bouw.tijdlijn, dienst.keten.bouw)
 
-        def nep(args):  # in plaats van het internet: wacht, en zet dan een dossier neer
-            poort.wait(5)
+        def main(args):
+            if poort and "--dossier" in args:
+                poort.wait(5)
             print("stukken opgehaald")
 
-        oud_main, oud_tijdlijn = dienst.kamerdossier.main, dienst.bouw.tijdlijn
-        dienst.kamerdossier.main = nep
+        dienst.kamerdossier.main = main
         dienst.bouw.tijdlijn = lambda nr: ({"dossier": nr, "naam": f"Dossier {nr}", "soort": "wijzigingswet"}, None)
+        dienst.keten.bouw = lambda bwb, **kw: {"dossier": bwb, "naam": f"{bwb} door de tijd", "soort": "keten",
+                                               "dossiers_er": [nr for nr in ("35968", "10101", "20202", "30303")
+                                                               if kw["tijdlijn_van"](nr)]}
+        return oud
+
+    def herstel(self, oud):
+        dienst.kamerdossier.main, dienst.bouw.tijdlijn, dienst.keten.bouw = oud
+
+    def wacht_op(self, tid):
+        for _ in range(100):
+            t = vraag("GET", f"/wetsgeschiedenis/api/taak?id={tid}")[1]
+            if t["status"] in ("klaar", "fout"):
+                return t
+            time.sleep(0.05)
+        self.fail(f"opdracht {tid} werd niet klaar")
+
+    def test_opdrachten_lopen_na_elkaar_en_hun_uitkomst_komt_in_de_lijst(self):
+        poort = threading.Event()
+        oud = self.nep(poort)
         try:
             # Zoals achter het portaal: de body in stukken (preview, 20-10-2026).
-            status, t = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "36889"},
-                              stukken=True)
-            self.assertEqual((status, t["status"]), (202, "bezig"))
-            status, x = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "35968"})
-            self.assertEqual(status, 409)
+            status, t1 = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "36889"},
+                               stukken=True)
+            self.assertEqual(status, 202)
+            time.sleep(0.1)
+            status, t2 = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "20202"})
+            self.assertEqual((status, t2["status"], t2["plaats"]), (202, "wacht", 1))
+            # Dezelfde opdracht nog eens: geen tweede in de rij.
+            self.assertEqual(vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "20202"})[1]["id"],
+                             t2["id"])
             poort.set()
-            for _ in range(50):
-                t = vraag("GET", "/wetsgeschiedenis/api/taak")[1]
-                if t["status"] != "bezig":
-                    break
-                time.sleep(0.05)
-            self.assertEqual((t["status"], t["uitkomst"]), ("klaar", "36889"))
-            self.assertIn("stukken opgehaald", t["log"])
+            a, b = self.wacht_op(t1["id"]), self.wacht_op(t2["id"])
+            self.assertEqual((a["status"], a["uitkomst"], b["uitkomst"]), ("klaar", "36889", "20202"))
+            self.assertIn("stukken opgehaald", a["log"])
             lijst = vraag("GET", "/wetsgeschiedenis/gegevens/dossiers.json")[1]
-            self.assertEqual([d["dossier"] for d in lijst], ["35968", "36889"])
-            self.assertTrue(lijst[1]["opgehaald"])
+            self.assertIn("36889", [d["dossier"] for d in lijst])
+            self.assertTrue(next(d for d in lijst if d["dossier"] == "36889")["opgehaald"])
         finally:
-            dienst.kamerdossier.main, dienst.bouw.tijdlijn = oud_main, oud_tijdlijn
+            self.herstel(oud)
+
+    def test_een_wet_zet_haar_dossiers_op_de_achtergrond_de_jongste_eerst(self):
+        bwb = "BWBR0099999"
+        map_ = dienst.keten.REGELINGEN / bwb
+        map_.mkdir(parents=True, exist_ok=True)
+        (map_ / "keten.json").write_text(json.dumps({"overgangen": [
+            {"tot": "2001-01-01", "dossiers": ["10101"]},
+            {"tot": "2020-01-01", "dossiers": ["30303", "35968"]},   # 35968 zit in het image
+            {"tot": "2010-01-01", "dossiers": ["20202", "40404"]}]}))
+        dienst.mislukt("40404", "geen XML")
+        poort = threading.Event()
+        oud = self.nep(poort)
+        try:
+            status, t = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": bwb, "keten": True})
+            self.assertEqual(status, 202)
+            for _ in range(100):
+                rij = vraag("GET", "/wetsgeschiedenis/api/status")[1]["rij"]
+                if len(rij["wachtend"]) >= 2:
+                    break
+                time.sleep(0.02)
+            # Jongste eerst; wat er al is of mislukte, niet; elk voor deze wet.
+            alles = ([rij["huidig"]] if rij["huidig"] else []) + rij["wachtend"]
+            self.assertEqual([x["dossier"] for x in alles if x["wat"] == "dossier"], ["30303", "20202", "10101"])
+            self.assertTrue(all(x["voor"] == bwb for x in alles if x["wat"] == "dossier"))
+            self.assertEqual(dienst.status_van("40404"), {"status": "mislukt", "reden": "geen XML"})
+            # Een bezoeker die 10101 vraagt, gaat voor op de achtergrond.
+            vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": bwb, "dossier": "10101"})
+            wachtend = vraag("GET", "/wetsgeschiedenis/api/status")[1]["rij"]["wachtend"]
+            self.assertEqual(wachtend[0]["dossier"], "10101")
+            poort.set()
+            for _ in range(200):
+                if not dienst.Rij.wachtend and not (dienst.Rij.huidig and dienst.Rij.huidig.status == "bezig"):
+                    break
+                time.sleep(0.02)
+            # Na elk dossier is de wet opnieuw opgebouwd, met wat er nu is: het
+            # image en het laatst opgehaalde dossier. WG_MAX is hier 2, en de
+            # wet zelf telt mee; de eerder opgehaalde vielen eruit.
+            w = vraag("GET", f"/wetsgeschiedenis/gegevens/{bwb}.json")[1]
+            self.assertEqual(w["dossiers_er"], ["35968", "20202"])
+        finally:
+            self.herstel(oud)
 
     def test_wat_is_opgehaald_blijft_onder_het_maximum(self):
         for nr in ("10001", "10002", "10003"):

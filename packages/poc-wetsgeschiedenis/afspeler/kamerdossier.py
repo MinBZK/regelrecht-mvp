@@ -58,6 +58,16 @@ BRON = Path(os.environ.get("WETSGESCHIEDENIS_BRON") or WERKBANK / "bron")
 KAMERDOSSIERS = BRON / "kamerdossiers"
 REGELINGEN = BRON / "regelingen"
 WETTEN = "https://wetten.overheid.nl/"
+# De informatiepagina van een grote regeling breekt soms halverwege af (curl 18,
+# de Regeling zorgverzekering: 2,4 MB, gemeten 20-10-2026); --retry alleen
+# herhaalt dat niet.
+CURL = ["curl", "-sfL", "--http1.1", "--retry", "3", "--retry-all-errors", "-A", "Mozilla/5.0 (regelrecht-werkbank)"]
+# Een regeling met honderden versies (diezelfde regeling: 718) speelt de keten
+# niet helemaal af: alleen de jongste.
+KETEN_MAX = int(os.environ.get("WETSGESCHIEDENIS_KETEN_MAX") or 40)
+# Een bekendmaking: het Staatsblad (wet, besluit) of de Staatscourant
+# (ministeriële regeling).
+BEKENDMAKING = r"(?:stb|stcrt)-\d{4}-\d+"
 BWB_REPO = "https://repository.officiele-overheidspublicaties.nl/bwb/"
 
 spec = importlib.util.spec_from_file_location("haal_kamerstukken", HIER / "haal-kamerstukken.py")
@@ -81,10 +91,10 @@ def wetten_versie(bwb, datum, log):
     doel = REGELINGEN / bwb / "toestanden" / f"{datum}.html.gz"
     if doel.exists():
         return doel
-    kop = ["curl", "-sfL", "--http1.1", "--retry", "3", "-A", "Mozilla/5.0 (regelrecht-werkbank)"]
+    kop = CURL
     r = subprocess.run(kop + [f"{WETTEN}{bwb}/{datum}/0"], capture_output=True)
     ruw = r.stdout
-    if r.returncode or b'class="wettekst"' not in ruw:
+    if r.returncode or not (b'class="wettekst"' in ruw or b'class="regeling-tekst"' in ruw):
         log.append(f"versie {datum}: geen wettekst op wetten.overheid.nl")
         return None
     doel.parent.mkdir(parents=True, exist_ok=True)
@@ -105,6 +115,10 @@ def keten(reg, log):
         if d:
             per_datum.setdefault(d, []).append(v)
     data = sorted(per_datum)
+    if len(data) > KETEN_MAX:
+        log.append(f"keten: {len(data)} versies; alleen de jongste {KETEN_MAX} (WETSGESCHIEDENIS_KETEN_MAX)")
+        data = data[-KETEN_MAX:]
+        per_datum = {d: per_datum[d] for d in data}
     stb_map = REGELINGEN / bwb / "stb"
     uit = {"bwb": bwb, "titel": reg["titel"], "afkorting": reg.get("afkorting"), "versies": [], "overgangen": []}
     beschikbaar = set(reg.get("beschikbaar") or data)
@@ -151,7 +165,7 @@ def wetten(bwb):
     """De informatiepagina van wetten.overheid.nl. Zonder datum stuurt de site
     door naar de geldende versie; de informatie hangt onder die versie. Zonder
     browserkenmerk antwoordt zij niet (gemeten 19-10-2026)."""
-    kop = ["curl", "-sfL", "--http1.1", "--retry", "3", "-A", "Mozilla/5.0 (regelrecht-werkbank)"]
+    kop = CURL
     r = subprocess.run(kop + ["-o", os.devnull, "-w", "%{url_effective}", f"{WETTEN}{bwb}/"],
                        check=True, capture_output=True, text=True)
     basis = r.stdout.strip().rstrip("/")
@@ -173,11 +187,11 @@ def regeling(bwb):
         betreft = next((v for k, v in cellen if k == "Betreft"), None)
         if not betreft:
             continue
-        stb = list(dict.fromkeys(re.findall(r"stb-\d{4}-\d+", r)))
+        stb = list(dict.fromkeys(re.findall(BEKENDMAKING, r)))
         # De eerste cel 'Bekendmaking' noemt de wet(ten), ook 'Stb. 2021, 500 samen
         # met Stb. 2021, 499'; de tweede het besluit dat haar in werking zet.
         cel = re.findall(r'<td data-before="Bekendmaking"[^>]*>(.*?)</td>', r, re.S)
-        wetten_stb = list(dict.fromkeys(re.findall(r"stb-\d{4}-\d+", cel[0]))) if cel else stb[:1]
+        wetten_stb = list(dict.fromkeys(re.findall(BEKENDMAKING, cel[0]))) if cel else stb[:1]
         art = re.search(r"Artikelen: ([^<]+)", r)
         versies.append({
             "inwerking": iso(next((v for k, v in cellen if k == "Datum van inwerkingtreding"), "")),

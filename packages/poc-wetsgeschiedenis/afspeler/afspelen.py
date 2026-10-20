@@ -1265,10 +1265,15 @@ def wijzigingsonderdelen(pad, titels):
         if wat is None:
             continue
         w, titel = txt(wat), txt(kop.find("titel")) if kop is not None and kop.find("titel") is not None else ""
-        geheel = any(re.match(rf"^(?:In )?[Dd]e {re.escape(t)}(?=\s|$)", w) for t in titels)
+        # 'De Archiefwet 1995 wordt ...', maar ook 'Het Besluit zorgverzekering BES
+        # wordt ...' (een besluit of regeling heeft 'het'; gemeten 20-10-2026). Een
+        # langere naam is een andere regeling: 'Besluit zorgverzekering' is niet
+        # 'Besluit zorgverzekering BES'.
+        einde = r"(?=\s|$|,)(?!\s+(?:[A-Z]{2,}|\d{4})\b)"
+        geheel = any(re.match(rf"^(?:In )?(?:[Dd]e|[Hh]et) {re.escape(t)}{einde}", w) for t in titels)
         # 'Artikel 3.2 Archiefwet 1995: In artikel 2a van de Archiefwet 1995 wordt ...':
         # één opdracht in een eigen artikel dat de wet noemt.
-        los = not geheel and any(re.search(rf"\bvan de {re.escape(t)}(?=[\s,.]|$)", w) or titel == t for t in titels)
+        los = not geheel and any(re.search(rf"\bvan (?:de|het) {re.escape(t)}{einde}", w) or titel == t for t in titels)
         if not (geheel or los):
             continue
         nr = re.sub(r"^ARTIKEL\s+", "", txt(kop.find("nr"))).rstrip(".") if kop is not None and kop.find("nr") is not None else ""

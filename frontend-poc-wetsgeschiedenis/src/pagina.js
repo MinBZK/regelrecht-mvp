@@ -43,7 +43,7 @@ function stukSoort(stuk) {
   const x = STUK[stuk] || {}, s = x.soort || "";
   if (stuk === VOORSTEL) return "voorstel";
   // Een wet door de tijd: versies, en de wetten die ze maakten.
-  if (s === "Wijzigingswet" || s === "Nieuwe wet") return "wijziging";
+  if (/^(Wijzigings(wet|besluit|regeling)|Nieuwe? (wet|besluit|regeling))$/.test(s)) return "wijziging";
   if (s === "Intrekking") return "intrekking";
   if (s === "Aanhangig voorstel") return "aanhangig";
   if (s.startsWith("Nota van wijziging")) return "nota";
@@ -55,7 +55,7 @@ function stukSoort(stuk) {
   if (s.startsWith("Amendement")) return "amendement";
   return "brief";
 }
-const SOORTNAAM = { voorstel: "voorstel van wet", nota: "nota van wijziging", ek: "Eerste Kamer: gewijzigd voorstel", memorie: "memorie van toelichting", advies: "Raad van State", vraag: "verslag (vragen)", antwoord: "nota n.a.v. verslag (antwoorden)", amendement: "amendement", brief: "brief of ander stuk", stemming: "stemming", ijkpunt: "Staatsblad of BWB", wijziging: "wijzigingswet", intrekking: "intrekking", aanhangig: "aanhangig voorstel" };
+const SOORTNAAM = { voorstel: "voorstel van wet", nota: "nota van wijziging", ek: "Eerste Kamer: gewijzigd voorstel", memorie: "memorie van toelichting", advies: "Raad van State", vraag: "verslag (vragen)", antwoord: "nota n.a.v. verslag (antwoorden)", amendement: "amendement", brief: "brief of ander stuk", stemming: "stemming", ijkpunt: "Staatsblad of BWB", wijziging: "wijziging", intrekking: "intrekking", aanhangig: "aanhangig voorstel" };
 const NOTAKLEUR = ["--stuk-8", "--stuk-20", "--stuk-ander"];
 const NOTAS = T.stukken.filter((s) => s.soort.startsWith("Nota van wijziging")).map((s) => s.stuk);
 const streepKlasse = (stuk) => { const i = NOTAS.indexOf(stuk); return i < 0 ? (stuk === VOORSTEL ? "" : "sander") : ["s8", "s20", "sander"][Math.min(i, 2)]; };
@@ -598,6 +598,29 @@ function wanneer(stuk, extra) {
   const st = STUK[stuk] || {};
   return `<div class="wanneer"><b>${datumTekst(st.datum)}</b><span>nr. ${esc(nrVan(stuk))} · ${esc(st.soort || "")}${st.kamer === "Eerste Kamer" ? " (EK)" : ""}</span>${extra || ""}</div>`;
 }
+// Waar een brok vandaan komt, in een regel: bij een wet door de tijd is dat een
+// nota van toelichting of een Kamerstuk van het dossier achter de overgang.
+const bekendmaking = (x) => (x || "").replace(/^stb-(\d{4})-(\d+)$/, "Stb. $1, $2").replace(/^stcrt-(\d{4})-(\d+)$/, "Stcrt. $1, $2");
+function bronTekst(b) {
+  const x = b.bron;
+  if (!x) return "";
+  if (x.soort === "nota van toelichting") return `nota van toelichting, ${bekendmaking(x.publicatie)}`;
+  return `Kamerstuk ${x.stuk.replace(/^kst-/, "")}, ${SOORTNAAM[b.soort] || b.soort}${x.datum ? ", " + datumTekst(x.datum) : ""}`;
+}
+const dossierKnop = (nr) => DOSSIERS.some((d) => d.dossier === nr) ? ` <button class="klein" data-dossier="${esc(nr)}">speel dossier ${esc(nr)} af</button>` : "";
+function bronnenHtml(stuk, bronnen) {
+  const alle = PERSTUK.get(stuk) || [];
+  const algemeen = alle.filter((x) => x.rol === "overgang"), perArt = alle.filter((x) => x.rol !== "overgang");
+  if (!bronnen && !alle.length) return "";
+  const b = bronnen || {};
+  const pub = (b.publicaties || []).map((p) => `<li>${esc(bekendmaking(p))}: ${b.nota && p in b.nota ? `nota van toelichting gelezen, ${b.nota[p]} ${b.nota[p] === 1 ? "brok" : "brokken"}` : "geen nota van toelichting gelezen"}${b.artikel && b.artikel[p] ? `; wijzigt deze regeling in artikel ${esc(b.artikel[p])}` : ""}</li>`);
+  const dos = (b.dossiers || []).map((d) => `<li>Kamerdossier ${esc(d.nr)}: ${d.status === "opgehaald" ? `${d.brokken} ${d.brokken === 1 ? "brok" : "brokken"} over deze regeling${d.artikel ? ` (artikel ${esc(d.artikel)} van die wet)` : ""}${dossierKnop(d.nr)}`
+    : d.status === "mislukt" ? `niet te lezen (${esc(d.reden || "onbekend")})` : d.status === "bezig" ? "wordt nu opgehaald" : d.status === "in de rij" ? "in de rij om op te halen" : "nog niet opgehaald"}</li>`);
+  const ids = [...new Set(perArt.flatMap((x) => x.ids || []).filter(Boolean))];
+  return `${pub.length || dos.length ? `<p class="klein">Waar de toelichting vandaan komt:</p><ul class="bronnen">${pub.join("")}${dos.join("")}</ul>` : ""}
+    ${ids.length ? `<p class="klein">Toelichting bij ${ids.length} ${ids.length === 1 ? "artikel" : "artikelen"}:</p><div class="links">${ids.slice(0, 60).map((a) => `<button data-art="${esc(a)}">art. ${esc(nrVanId(a))}</button>`).join("")}</div>` : ""}
+    ${algemeen.map((x) => `<details class="meer"><summary>${esc(x.titel || x.kop || "Toelichting")} <span class="zacht">· ${esc(bronTekst(x))}</span></summary>${alineas(x.tekst, null, 99)}</details>`).join("")}`;
+}
 function brokKaart(b, nr) {
   const leden = (b.leden[nr] || []).map((l) => `<nldd-tag size="sm" color="neutral" text="lid ${l}"></nldd-tag>`).join("");
   if (b.rol === "amendement") {
@@ -611,7 +634,8 @@ function brokKaart(b, nr) {
   const titel = b.rol === "artikelsgewijs" ? (b.titel || `Artikel ${nr}`) : b.kop || "Elders in het stuk";
   const label = b.rol === "artikelsgewijs" ? "artikelsgewijs" : "noemt dit artikel";
   const doel = (b.doelartikelen || []).length ? `<nldd-tag size="sm" color="neutral" text="wijzigt art. ${esc(b.doelartikelen.join(", "))}"></nldd-tag>` : "";
-  return `<div class="kaart"><h4>${esc(titel)}</h4><div class="tags"><nldd-tag size="sm" color="neutral" text="${label}"></nldd-tag>${leden}${doel}</div>${alineas(b.tekst, b.rol === "vermelding" ? nr : null, b.rol === "artikelsgewijs" ? 2 : 1)}</div>`;
+  const bron = b.bron ? `<p class="klein zacht">${esc(bronTekst(b))}${b.bron.dossier ? dossierKnop(b.bron.dossier) : ""}</p>` : "";
+  return `<div class="kaart"><h4>${esc(titel)}</h4><div class="tags"><nldd-tag size="sm" color="neutral" text="${label}"></nldd-tag>${leden}${doel}</div>${bron}${alineas(b.tekst, b.rol === "vermelding" ? nr : null, b.rol === "artikelsgewijs" ? 2 : 1)}</div>`;
 }
 function wijzigingKaart(id, stappen) {
   // De handelingen van één stuk op dit artikel, tot het moment in de speler.
@@ -704,9 +728,18 @@ function stapHtml() {
     const brokken = PERSTUK.get(t.stuk) || [];
     const ids = [...new Set(brokken.flatMap((b) => b.ids || []).filter(Boolean))];
     return `<div class="kaart"><h4>${esc(st.titel || st.soort || "")}</h4><div class="tags"><nldd-tag size="sm" color="neutral" text="${esc(SOORTNAAM[stukSoort(t.stuk)])}"></nldd-tag>${st.kamer === "Eerste Kamer" ? `<nldd-tag size="sm" color="neutral" text="Eerste Kamer"></nldd-tag>` : ""}${st.soort && st.soort.startsWith("Amendement") ? `<nldd-tag size="sm" color="neutral" text="${esc(uitslagTekst(st) || "niet gestemd")}"></nldd-tag>` : ""}</div>
-      ${t.moment.stappen ? `<p class="klein">Hierna volgen de handelingen van deze nota.</p>` : ids.length ? `<p class="klein">Zegt iets over ${ids.length} ${ids.length === 1 ? "artikel" : "artikelen"}:</p><div class="links">${ids.slice(0, 60).map((a) => `<button data-art="${esc(a)}">art. ${esc(nrVanId(a))}</button>`).join("")}${ids.length > 60 ? `<span class="klein">en ${ids.length - 60} meer</span>` : ""}</div>` : `<p class="klein">Dit stuk hangt aan geen artikel.</p>`}</div>`;
+      ${st.bronnen ? bronnenHtml(t.stuk, st.bronnen) : t.moment.stappen ? `<p class="klein">Hierna volgen de handelingen van deze nota.</p>` : ids.length ? `<p class="klein">Zegt iets over ${ids.length} ${ids.length === 1 ? "artikel" : "artikelen"}:</p><div class="links">${ids.slice(0, 60).map((a) => `<button data-art="${esc(a)}">art. ${esc(nrVanId(a))}</button>`).join("")}${ids.length > 60 ? `<span class="klein">en ${ids.length - 60} meer</span>` : ""}</div>` : `<p class="klein">Dit stuk hangt aan geen artikel.</p>`}</div>`;
   }
   const geraakt = STAPART[s.i - 1];
+  if (s.soort === "versie") {
+    // Een overgang van een wet door de tijd: wat veranderde, en waar de
+    // toelichting op die verandering vandaan komt.
+    return `<div class="kaart"><h4>${esc((STUK[s.stuk] || {}).titel || s.opdracht)}</h4>
+      <div class="tags"><nldd-tag size="sm" color="${STATUS[s.status][1]}" text="${STATUS[s.status][0]}"></nldd-tag></div>
+      <div class="opdracht">${opdrachtHtml(s.opdracht)}</div>
+      ${s.reden ? `<div class="reden ${s.status}">${s.status === "niet" ? "Niet afgespeeld: " : "Aanname: "}${esc(s.reden)}</div>` : ""}
+      ${bronnenHtml(s.stuk, s.bronnen)}</div>`;
+  }
   return `<div class="kaart"><h4>Nr. ${esc(nrVan(s.stuk))}, onderdeel ${esc(s.onderdeel)}${s.sub ? " onder " + s.sub : ""}</h4>
     <div class="tags"><nldd-tag size="sm" color="${STATUS[s.status][1]}" text="${STATUS[s.status][0]}"></nldd-tag>${s.veeg ? `<nldd-tag size="sm" color="neutral" text="veegactie"></nldd-tag>` : ""}${s.ronde === 2 ? `<nldd-tag size="sm" color="neutral" text="tweede ronde"></nldd-tag>` : ""}</div>
     <div class="opdracht">${opdrachtHtml(s.opdracht)}</div>
@@ -766,7 +799,13 @@ function kiesArtikel(id, scroll) {
   if (scroll) scrollNaar(id);
 }
 
+function naarDossier(id) {
+  try { localStorage.setItem("wg-dossier", id); } catch (x) {}
+  location.hash = "d=" + id;
+  location.reload();
+}
 $("rail").addEventListener("click", (e) => {
+  const d = e.target.closest("[data-dossier]"); if (d) return naarDossier(d.dataset.dossier);
   const p = e.target.closest("[data-pos]"); if (p) { stop(); Z.volg = false; return ga(+p.dataset.pos); }
   const st = e.target.closest("[data-stap]"); if (st) { stop(); Z.volg = false; return ga(POSSTAP[+st.dataset.stap]); }
   const a = e.target.closest("[data-art]"); if (a) kiesArtikel(a.dataset.art, true);
@@ -925,7 +964,7 @@ zetModus(Z.modus);
     r.host ? r.host + r.pad : r.pad || r.bij, r.status ?? r.http ?? (r.code ? "curl " + r.code : ""),
     r.uitleg || r.fout || r.oordeel, r.ms != null ? r.ms + " ms" : r.s != null ? r.s + " s" : ""].filter((v) => v != null && v !== "").join("  ");
   const open = (id) => { try { localStorage.setItem("wg-dossier", id); } catch (e) {} location.hash = "d=" + id; location.reload(); };
-  $("ophalen").addEventListener("click", () => { dlg.showModal(); if (st.taak && st.taak.status === "bezig") volg(); });
+  $("ophalen").addEventListener("click", () => { dlg.showModal(); if (!gevolgd && st.taak && st.taak.status === "bezig") volg(st.taak.id); });
   $("ophaal-sluit").addEventListener("click", () => dlg.close());
   async function zoek() {
     const bwb = $("ophaal-bwb").value.trim().toUpperCase();
@@ -935,36 +974,48 @@ zetModus(Z.modus);
     klaar();
     if (!ok) return fout(reg.fout);
     const knop = (id, tekst, attr) => `<button type="button" class="ophaal-actie" data-id="${esc(id)}" ${attr}>${esc(tekst)}</button>`;
+    const stand = (d) => d.beschikbaar ? "" : d.rij === "bezig" ? " (wordt nu opgehaald)" : d.rij ? " (in de rij)" : d.mislukt ? " (eerder mislukt)" : "";
+    const nDossiers = new Set(reg.versies.flatMap((v) => v.dossiers.map((d) => d.nr))).size;
     uit.innerHTML = `<h3>${esc(reg.titel)}${reg.afkorting ? ` (${esc(reg.afkorting)})` : ""}</h3>
-      <p>${knop(reg.bwb, reg.keten ? "Open de wet door de tijd" : "Haal de wet door de tijd op", 'data-keten="1"')}
-        elke versie op wetten.overheid.nl, elke overgang afgespeeld uit het Staatsblad.</p>
-      ${reg.versies.length ? `<table class="ophaal-lijst"><thead><tr><th>In werking</th><th>Wat</th><th>Staatsblad</th><th>Kamerdossier</th></tr></thead><tbody>
+      <p>${knop(reg.bwb, reg.keten ? "Haal de wet opnieuw op" : "Haal de wet op", 'data-keten="1"')}${reg.keten ? " " + knop(reg.bwb, "Open", 'data-open="1"') : ""}</p>
+      <p class="klein">Elke versie op wetten.overheid.nl, elke overgang afgespeeld uit haar bekendmaking, met de nota van toelichting die daarin staat.
+        ${nDossiers ? `Daarna haalt de dienst op de achtergrond de ${nDossiers} Kamerdossiers hieronder op, de jongste eerst; elk dossier dat klaar is, hangt zijn toelichting aan zijn overgang. Een dossier kun je ook los ophalen en afspelen.`
+          : "Geen versie kwam uit een Kamerdossier: een algemene maatregel van bestuur of een ministeriële regeling gaat niet langs de Kamer, en haar toelichting staat in haar eigen bekendmaking."}</p>
+      ${reg.versies.length ? `<table class="ophaal-lijst"><thead><tr><th>In werking</th><th>Wat</th><th>Bekendmaking</th><th>Kamerdossier</th></tr></thead><tbody>
       ${reg.versies.map((v) => `<tr><td>${v.inwerking ? datumTekst(v.inwerking) : "nog niet"}</td><td>${esc(v.betreft || "")}</td>
-        <td>${esc(v.staatsblad || "")}</td><td>${v.dossiers.map((d) => knop(d.nr, (d.beschikbaar ? "Open " : "Haal op: ") + d.nr, d.beschikbaar ? 'data-open="1"' : "")).join("")}</td></tr>`).join("")}
-      </tbody></table>` : `<p>Geen versie van deze regeling kwam uit een Kamerdossier. Een algemene maatregel van bestuur of een ministeriële regeling gaat niet langs de Kamer; alleen de regeling door de tijd kan.</p>`}`;
+        <td>${esc(bekendmaking(v.staatsblad || ""))}</td><td>${v.dossiers.map((d) => knop(d.nr, (d.beschikbaar ? "Open " : "Haal nu op: ") + d.nr + stand(d), d.beschikbaar ? 'data-open="1"' : "")).join("")}</td></tr>`).join("")}
+      </tbody></table>` : ""}`;
     uit.querySelectorAll(".ophaal-actie").forEach((b) => b.addEventListener("click", async () => {
-      if (b.dataset.open || (b.dataset.keten && reg.keten)) return open(b.dataset.id);
+      if (b.dataset.open) return open(b.dataset.id);
       const vraag = b.dataset.keten ? { bwb: reg.bwb, keten: true } : { bwb: reg.bwb, dossier: b.dataset.id };
-      const { ok, status, x: a } = await api("api/haal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(vraag) });
-      if (status === 409) { melding("Er loopt al een opdracht; die volgt hieronder."); return volg(); }
+      const { ok, x: a } = await api("api/haal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(vraag) });
       if (!ok) return melding(a.fout);
-      volg();
+      volg(a.id);
     }));
   }
   $("ophaal-zoek").addEventListener("click", zoek);
   $("ophaal-bwb").addEventListener("keydown", (e) => { if (e.key === "Enter") zoek(); });
-  async function volg() {
-    const { ok, x: t } = await api("api/taak");
+  // Een opdracht volgen op haar id: ook als zij nog in de rij staat, en met wat
+  // de rij daarna nog voor dezelfde wet ophaalt.
+  let gevolgd = null;
+  const korteNaam = (x) => x.wat === "keten" ? `${x.bwb} door de tijd` : `dossier ${x.dossier}`;
+  async function volg(id) {
+    if (id) gevolgd = id;
+    const [{ ok, x: t }, { x: stand }] = await Promise.all([api("api/taak" + (gevolgd ? "?id=" + encodeURIComponent(gevolgd) : "")), api("api/status")]);
     if (!ok) return fout(t.fout);
     if (!t) return;
-    const wat = t.wat === "keten" ? `${t.bwb} door de tijd` : `dossier ${t.dossier}`;
-    uit.innerHTML = `<h3>${esc({ bezig: "Bezig: ", klaar: "Klaar: ", fout: "Mislukt: " }[t.status] + wat)}</h3>`
+    const rij = (stand && stand.rij) || { huidig: null, wachtend: [] };
+    const wet = t.wat === "keten" ? t.bwb : t.voor;
+    const achter = [rij.huidig, ...rij.wachtend].filter((x) => x && x.voor && x.voor === wet && x.id !== t.id);
+    uit.innerHTML = `<h3>${esc({ wacht: "In de rij: ", bezig: "Bezig: ", klaar: "Klaar: ", fout: "Mislukt: " }[t.status] + korteNaam(t))}</h3>`
+      + (t.status === "wacht" ? `<p>Plaats ${t.plaats} in de rij${rij.huidig ? `; nu bezig: ${esc(korteNaam(rij.huidig))}` : ""}.</p>` : "")
       + (t.fout ? `<p class="ophaal-fout">${esc(t.fout)}</p>` : "")
       + (t.status === "klaar" ? `<p><button type="button" class="ophaal-actie" id="ophaal-open">Open ${esc(t.uitkomst)}</button></p>` : "")
       + (t.status === "bezig" ? "<p>De stukken ophalen en afspelen duurt een paar minuten.</p>" : "")
-      + `<pre class="ophaal-log">${esc(t.log.join("\n"))}</pre>`;
+      + (achter.length ? `<p class="klein">Op de achtergrond nog ${achter.length} Kamerdossier${achter.length === 1 ? "" : "s"} voor ${esc(wet)}: ${achter.map((x) => esc(x.dossier) + (x.status === "bezig" ? " (nu)" : "")).join(", ")}. Je kunt de wet al openen; wat later klaar is, staat erin als je de pagina opnieuw laadt.</p>` : "")
+      + (t.log.length ? `<pre class="ophaal-log">${esc(t.log.join("\n"))}</pre>` : "");
     if (t.status === "klaar") $("ophaal-open").addEventListener("click", () => open(t.uitkomst));
-    if (t.status === "bezig") setTimeout(volg, 1500);
+    if (t.status === "bezig" || t.status === "wacht" || achter.length) setTimeout(volg, 1500);
   }
   // Wat de dienst bereikt en wat hij de laatste tijd deed. Met een BWB-id in het
   // veld toetst hij ook de opzoeking zelf.

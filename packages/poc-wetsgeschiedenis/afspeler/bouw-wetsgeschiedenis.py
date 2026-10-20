@@ -145,8 +145,10 @@ def verzamel():
                       + "".join(f"; doorwerking in de {d[0]} volgens {d[1]}: {d[2]['afgespeeld']} van "
                                 f"{sum(d[2].values())}" for d in uitkomst["doorwerking"]))
     # Een wet door de tijd (keten.py): elke versie van bron/regelingen/<BWB>.
+    # Elk dossier dat hier is, hangt zijn toelichting aan zijn overgang; een
+    # dossier dat er niet is, haal je met kamerdossier.py --dossier.
     for bwb in keten.regelingen():
-        t = keten.bouw(bwb)
+        t = keten.bouw(bwb, tijdlijn_van=gegevens_.get)
         werk = os.path.join(WERK, bwb)
         os.makedirs(werk, exist_ok=True)
         with open(os.path.join(werk, "tijdlijn.json"), "w", encoding="utf-8") as fh:

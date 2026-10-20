@@ -24,7 +24,7 @@ Alleen de standaardbibliotheek, pyyaml en curl.
   WG_STATIC_DIR  de gebouwde frontend (dist)
   WG_VAST_DIR    de gegevens die in het image zitten
   WG_DATA        waar opgehaalde stukken en tijdlijnen landen
-  WG_MAX         hoeveel opgehaalde dossiers en wetten er ten hoogste blijven staan (40)
+  WG_MAX         hoeveel opgehaalde dossiers en wetten er ten hoogste blijven staan (150)
   WG_LOG         hoeveel regels het logboek in het geheugen houdt (400)
   WG_CONNECT_TIMEOUT  seconden die curl krijgt om een verbinding te maken (15)
 
@@ -87,7 +87,8 @@ def _schrijfbaar(map_):
 # tijdelijke map: ophalen werkt, maar wat is opgehaald, is na een herstart weg.
 # De diagnose zegt het.
 DATA = DATA_GEVRAAGD if _schrijfbaar(DATA_GEVRAAGD) else Path(tempfile.gettempdir()) / "wetsgeschiedenis"
-MAX = int(os.environ.get("WG_MAX") or 40)
+# Een wet met haar Kamerdossiers telt al snel twintig (de Archiefwet 1995: 24).
+MAX = int(os.environ.get("WG_MAX") or 150)
 OPGEHAALD = DATA / "gegevens"
 VERBINDEN = str(int(os.environ.get("WG_CONNECT_TIMEOUT") or 15))
 
@@ -104,6 +105,7 @@ CURL_FOUT = {
     6: "de host is niet te vinden (DNS)",
     7: "geen verbinding met de host (uitgaand verkeer dicht?)",
     22: "de server antwoordde met een HTTP-fout",
+    18: "de overdracht brak halverwege af (een grote pagina; opnieuw proberen helpt meestal)",
     28: "geen antwoord binnen de tijd (uitgaand verkeer dicht, of de host is traag)",
     35: "de TLS-verbinding mislukte",
     47: "te vaak doorgestuurd",
@@ -236,13 +238,16 @@ def index():
     return vast + [dict(d, opgehaald=True) for d in eigen]
 
 
-def bewaar(t):
-    """Zet een tijdlijn bij de opgehaalde; de oudste valt weg boven MAX."""
+def bewaar(t, bij=None):
+    """Zet een tijdlijn bij de opgehaalde; de oudste valt weg boven MAX. `bij`
+    is de wet waarvoor de rij dit dossier ophaalde."""
     OPGEHAALD.mkdir(parents=True, exist_ok=True)
     (OPGEHAALD / f"{t['dossier']}.json").write_text(json.dumps(t, ensure_ascii=False, separators=(",", ":")),
                                                     encoding="utf-8")
     lijst = [d for d in lees_json(OPGEHAALD / "dossiers.json", []) if d["dossier"] != t["dossier"]]
-    lijst.append({"dossier": t["dossier"], "naam": t["naam"], "soort": t["soort"]})
+    oud = next((d for d in lees_json(OPGEHAALD / "dossiers.json", []) if d["dossier"] == t["dossier"]), {})
+    lijst.append({"dossier": t["dossier"], "naam": t["naam"], "soort": t["soort"],
+                  **({"bij": bij or oud.get("bij")} if bij or oud.get("bij") else {})})
     for weg in lijst[:-MAX]:
         with contextlib.suppress(OSError):
             (OPGEHAALD / f"{weg['dossier']}.json").unlink()
@@ -251,43 +256,63 @@ def bewaar(t):
 
 # ---------------------------------------------------------------- de opdracht
 class Taak:
-    """Eén opdracht tegelijk: de keten schrijft in gedeelde mappen en print
-    naar stdout, en twee tegelijk zouden elkaars log en bron delen."""
+    """Eén opdracht: een wet door de tijd (keten), of één Kamerdossier. Ze
+    lopen na elkaar in de rij (Rij); de keten schrijft in gedeelde mappen en
+    print naar stdout, en twee tegelijk zouden elkaars log en bron delen."""
 
-    slot = threading.Lock()
-    huidig = None
+    _teller = 0
 
-    def __init__(self, wat, bwb, dossier=None):
-        self.id = f"{int(time.time())}"
+    def __init__(self, wat, bwb, dossier=None, voor=None):
+        Taak._teller += 1
+        self.id = f"{int(time.time())}-{Taak._teller}"
         self.wat, self.bwb, self.dossier = wat, bwb, dossier
-        self.status, self.uitkomst, self.fout = "bezig", None, None
+        # Een dossier dat de rij voor een wet ophaalt: na afloop wordt die wet
+        # opnieuw opgebouwd, met de toelichting van dit dossier erin.
+        self.voor = voor
+        self.status, self.uitkomst, self.fout = "wacht", None, None
         self.log = io.StringIO()
+
+    def sleutel(self):
+        return (self.wat, self.bwb if self.wat == "keten" else None, self.dossier)
 
     def regels(self):
         return [r for r in self.log.getvalue().splitlines() if r.strip()][-40:]
 
     def als_json(self):
-        return {"id": self.id, "wat": self.wat, "bwb": self.bwb, "dossier": self.dossier, "status": self.status,
-                "uitkomst": self.uitkomst, "fout": self.fout, "log": self.regels()}
+        return {"id": self.id, "wat": self.wat, "bwb": self.bwb, "dossier": self.dossier, "voor": self.voor,
+                "status": self.status, "plaats": Rij.plaats(self), "uitkomst": self.uitkomst, "fout": self.fout,
+                "log": self.regels()}
+
+    def kort(self):
+        return {"id": self.id, "wat": self.wat, "bwb": self.bwb, "dossier": self.dossier, "voor": self.voor,
+                "status": self.status}
 
     def draai(self):
         _TAAK.actief = True
+        self.status = "bezig"
         t0 = time.monotonic()
-        logboek("taak", id=self.id, wat=self.wat, bwb=self.bwb, dossier=self.dossier, status="bezig")
+        logboek("taak", id=self.id, wat=self.wat, bwb=self.bwb, dossier=self.dossier, voor=self.voor, status="bezig")
         try:
             with contextlib.redirect_stdout(self.log):
                 if self.wat == "keten":
-                    print(f"De versies van {self.bwb} en de Staatsbladen ertussen ophalen")
+                    print(f"De versies van {self.bwb} en de bekendmakingen ertussen ophalen")
                     kamerdossier.main([self.bwb, "--keten"])
-                    print("Elke overgang afspelen")
-                    t = keten.bouw(self.bwb)
+                    print("Elke overgang afspelen, met de toelichting die er al is")
+                    t = keten.bouw(self.bwb, tijdlijn_van=tijdlijn_van, status_van=status_van)
+                    bewaar(t)
+                    n = verdiep(self.bwb)
+                    print(f"Klaar: {t['naam']}" + (f"; de rij haalt nog {n} Kamerdossier(s) op" if n else ""))
                 else:
                     print(f"Dossier {self.dossier} ophalen")
                     kamerdossier.main([self.bwb, "--dossier", self.dossier])
                     print(f"Dossier {self.dossier} afspelen")
                     t, _ = bouw.tijdlijn(self.dossier)
-                bewaar(t)
-                print(f"Klaar: {t['naam']}")
+                    bewaar(t, bij=self.voor)
+                    MISLUKT.pop(self.dossier, None)
+                    print(f"Klaar: {t['naam']}")
+                    if self.voor and (keten.REGELINGEN / self.voor / "keten.json").exists():
+                        print(f"{self.voor} opnieuw opbouwen, met de toelichting van dossier {self.dossier}")
+                        bewaar(keten.bouw(self.voor, tijdlijn_van=tijdlijn_van, status_van=status_van))
             self.status, self.uitkomst = "klaar", t["dossier"]
         except SystemExit as e:
             self.status, self.fout = "fout", str(e.code or "gestopt")
@@ -297,17 +322,137 @@ class Taak:
             traceback.print_exc()
         finally:
             _TAAK.actief = False
-            logboek("taak", id=self.id, wat=self.wat, bwb=self.bwb, dossier=self.dossier, status=self.status,
-                    s=round(time.monotonic() - t0, 1), uitkomst=self.uitkomst, fout=self.fout)
-            Taak.slot.release()
+            if self.status == "fout" and self.wat == "dossier":
+                mislukt(self.dossier, self.fout)
+            logboek("taak", id=self.id, wat=self.wat, bwb=self.bwb, dossier=self.dossier, voor=self.voor,
+                    status=self.status, s=round(time.monotonic() - t0, 1), uitkomst=self.uitkomst, fout=self.fout)
+
+
+class Rij:
+    """De opdrachten, één tegelijk. Wat een bezoeker vraagt, gaat vóór wat de
+    rij op de achtergrond ophaalt; dezelfde opdracht staat er nooit twee keer
+    in."""
+
+    wacht = threading.Condition()
+    wachtend = collections.deque()
+    huidig = None
+    alle = collections.OrderedDict()  # id -> Taak, de laatste honderd
+    draad = None
 
     @classmethod
-    def start(cls, wat, bwb, dossier=None):
-        if not cls.slot.acquire(blocking=False):
-            return None
-        cls.huidig = Taak(wat, bwb, dossier)
-        threading.Thread(target=cls.huidig.draai, daemon=True).start()
-        return cls.huidig
+    def voeg(cls, taak, achtergrond=False):
+        with cls.wacht:
+            for t in ([cls.huidig] if cls.huidig and cls.huidig.status == "bezig" else []) + list(cls.wachtend):
+                if t.sleutel() == taak.sleutel():
+                    if not achtergrond and t in cls.wachtend and t.voor:
+                        # Wat de bezoeker nu vraagt, gaat voor.
+                        cls.wachtend.remove(t)
+                        cls.wachtend.appendleft(t)
+                    return t
+            if achtergrond:
+                cls.wachtend.append(taak)
+            else:
+                # Vóór de achtergrond, achter wat andere bezoekers al vroegen.
+                i = next((n for n, t in enumerate(cls.wachtend) if t.voor), len(cls.wachtend))
+                cls.wachtend.insert(i, taak)
+            cls.alle[taak.id] = taak
+            while len(cls.alle) > 100:
+                cls.alle.popitem(last=False)
+            cls.wacht.notify()
+        cls.start()
+        return taak
+
+    @classmethod
+    def plaats(cls, taak):
+        return list(cls.wachtend).index(taak) + 1 if taak in cls.wachtend else None
+
+    @classmethod
+    def start(cls):
+        if cls.draad is None or not cls.draad.is_alive():
+            cls.draad = threading.Thread(target=cls.werk, daemon=True)
+            cls.draad.start()
+
+    @classmethod
+    def werk(cls):
+        while True:
+            with cls.wacht:
+                while not cls.wachtend:
+                    cls.wacht.wait()
+                cls.huidig = cls.wachtend.popleft()
+                cls.huidig.status = "bezig"  # meteen, anders lijkt de rij even leeg
+            cls.huidig.draai()
+
+    @classmethod
+    def in_de_rij(cls, nr):
+        t = cls.huidig
+        if t and t.status == "bezig" and t.dossier == nr:
+            return "bezig"
+        return "in de rij" if any(x.dossier == nr for x in list(cls.wachtend)) else None
+
+    @classmethod
+    def overzicht(cls):
+        return {"huidig": cls.huidig.kort() if cls.huidig and cls.huidig.status == "bezig" else None,
+                "wachtend": [t.kort() for t in list(cls.wachtend)]}
+
+
+# ---------------------------------------------------------------- wat er is, en wat niet
+def tijdlijn_van(nr):
+    """De tijdlijn van een dossier of wet, uit het image of opgehaald."""
+    for map_ in (OPGEHAALD, VAST):  # opnieuw opgehaald is rijker dan het image
+        if ID.fullmatch(nr) and (map_ / f"{nr}.json").is_file():
+            return lees_json(map_ / f"{nr}.json", None)
+    return None
+
+
+MISLUKT_PAD = OPGEHAALD / "mislukt.json"
+MISLUKT = lees_json(MISLUKT_PAD, {}) if MISLUKT_PAD.exists() else {}
+
+
+def mislukt(nr, reden):
+    """Een dossier dat niet lukte: de rij probeert het niet vanzelf opnieuw (een
+    bezoeker kan het wel)."""
+    MISLUKT[nr] = {"reden": reden, "t": time.strftime("%Y-%m-%d")}
+    with contextlib.suppress(OSError):
+        OPGEHAALD.mkdir(parents=True, exist_ok=True)
+        MISLUKT_PAD.write_text(json.dumps(MISLUKT, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def status_van(nr):
+    """Waarom een dossier er (nog) niet is; de keten zet het bij zijn overgang."""
+    rij = Rij.in_de_rij(nr)
+    if rij:
+        return {"status": rij}
+    if nr in MISLUKT:
+        return {"status": "mislukt", "reden": MISLUKT[nr]["reden"]}
+    return {"status": "niet opgehaald"}
+
+
+def verdiep(bwb):
+    """Zet elk Kamerdossier van deze wet dat er nog niet is in de rij, de
+    jongste eerst: die hebben het vaakst XML en zijn het rijkst. Geeft hoeveel."""
+    k = lees_json(keten.REGELINGEN / bwb / "keten.json", None)
+    if not k:
+        return 0
+    nrs = list(dict.fromkeys(nr for o in sorted(k["overgangen"], key=lambda o: o["tot"], reverse=True)
+                             for nr in o["dossiers"]))
+    n = 0
+    for nr in nrs:
+        if tijdlijn_van(nr) or nr in MISLUKT:
+            continue
+        Rij.voeg(Taak("dossier", bwb, nr, voor=bwb), achtergrond=True)
+        n += 1
+    return n
+
+
+def herstel():
+    """Na een herstart: zet weer in de rij wat de opgehaalde wetten nog missen."""
+    n = 0
+    for d in index():
+        if d.get("soort") == "keten" and (keten.REGELINGEN / d["dossier"] / "keten.json").exists():
+            n += verdiep(d["dossier"])
+    if n:
+        logboek("rij", herstel=n)
+    return n
 
 
 def regeling(bwb):
@@ -321,7 +466,9 @@ def regeling(bwb):
         "bwb": reg["bwb"], "titel": reg["titel"].split("|")[0], "afkorting": reg.get("afkorting"),
         "keten": bwb in beschikbaar,
         "versies": [{"inwerking": v["inwerking"], "betreft": v["betreft"], "staatsblad": v["staatsblad"],
-                     "dossiers": [{"nr": d, "beschikbaar": d in beschikbaar} for d in v["dossiers"]],
+                     "dossiers": [{"nr": d, "beschikbaar": d in beschikbaar, "rij": Rij.in_de_rij(d),
+                                   **({"mislukt": MISLUKT[d]["reden"]} if d in MISLUKT and d not in beschikbaar else {})}
+                                  for d in v["dossiers"]],
                      "artikelen": len(v.get("artikelen") or [])}
                     for v in reg["versies"] if v["dossiers"]],
     }
@@ -399,7 +546,8 @@ def diagnose(bwb=None):
         except Exception as e:  # noqa: BLE001
             d["opzoeking"] = {"bwb": bwb, "ok": False, "fout": uitleg(e)}
         d["opzoeking"]["s"] = round(time.monotonic() - t1, 1)
-    d["taak"] = Taak.huidig.als_json() if Taak.huidig else None
+    d["taak"] = Rij.huidig.als_json() if Rij.huidig else None
+    d["rij"] = Rij.overzicht()
     nodig = [h for h, w in HOSTS.items() if w.startswith("nodig") and not d["hosts"][h].get("ok")]
     d["oordeel"] = ("ophalen kan" if not nodig and d["data"]["schrijfbaar"] and not d["curl"].startswith("ontbreekt")
                     else "ophalen faalt: " + "; ".join(
@@ -468,9 +616,13 @@ class Verzoek(BaseHTTPRequestHandler):
             return self.stuur(404, {"fout": "onbekend pad"})
         rest = p[len(BASIS):]
         if rest == "api/status":
-            return self.stuur(200, {"ophalen": True, "taak": Taak.huidig.als_json() if Taak.huidig else None})
+            h = Rij.huidig if Rij.huidig and Rij.huidig.status == "bezig" else None
+            return self.stuur(200, {"ophalen": True, "taak": h.als_json() if h else None, "rij": Rij.overzicht()})
         if rest == "api/taak":
-            return self.stuur(200, Taak.huidig.als_json() if Taak.huidig else None)
+            # ?id=: die ene opdracht, ook als zij nog wacht of al klaar is.
+            tid = (parse_qs(urlsplit(self.path).query).get("id") or [""])[0]
+            t = Rij.alle.get(tid) if tid else Rij.huidig
+            return self.stuur(200 if t or not tid else 404, t.als_json() if t else None)
         if rest == "api/log":
             return self.stuur(200, list(LOGBOEK))
         if rest == "api/diagnose":
@@ -495,7 +647,7 @@ class Verzoek(BaseHTTPRequestHandler):
         if m:
             if not ID.fullmatch(m[1]):
                 return self.stuur(404, {"fout": "onbekend"})
-            for map_ in (VAST, OPGEHAALD):
+            for map_ in (OPGEHAALD, VAST):  # opnieuw opgehaald is rijker dan het image
                 if (map_ / f"{m[1]}.json").is_file():
                     return self.stuur(200, (map_ / f"{m[1]}.json").read_bytes())
             return self.stuur(404, {"fout": f"{m[1]} is er niet"})
@@ -548,19 +700,18 @@ class Verzoek(BaseHTTPRequestHandler):
         if not BWB.fullmatch(bwb):
             return self.stuur(400, {"fout": "een BWB-id ziet eruit als BWBR0007376"})
         if vraag.get("keten"):
-            taak = Taak.start("keten", bwb)
+            taak = Rij.voeg(Taak("keten", bwb))
         elif nr and DOSSIER.fullmatch(str(nr)):
-            taak = Taak.start("dossier", bwb, str(nr))
+            taak = Rij.voeg(Taak("dossier", bwb, str(nr)))
         else:
             return self.stuur(400, {"fout": "kies een dossier (5 cijfers) of de hele wet"})
-        if taak is None:
-            return self.stuur(409, {"fout": "er loopt al een opdracht", "taak": Taak.huidig.als_json()})
         return self.stuur(202, taak.als_json())
 
 
 def main():
     DATA.mkdir(parents=True, exist_ok=True)
     print(f"wetsgeschiedenis luistert op :{POORT}{BASIS} (gegevens in {DATA})", flush=True)
+    herstel()
     ThreadingHTTPServer(("0.0.0.0", POORT), Verzoek).serve_forever()
 
 

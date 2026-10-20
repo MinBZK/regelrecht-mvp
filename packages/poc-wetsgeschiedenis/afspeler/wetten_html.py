@@ -81,9 +81,11 @@ def lees_wetten_html(tekst, stuk, knoop):
     constructor van afspelen.py, zodat beide lezers dezelfde knopen maken."""
     b = Bouwer()
     b.feed(tekst)
-    wet = zoek(b.wortel, lambda k: "wettekst" in k.klassen())
+    # Een wet en een AMvB staan in div.wettekst, een ministeriële regeling in
+    # div.regeling-tekst (de Regeling zorgverzekering, gemeten 20-10-2026).
+    wet = zoek(b.wortel, lambda k: bool(k.klassen() & {"wettekst", "regeling-tekst"}))
     if wet is None:
-        raise ValueError("geen div.wettekst in deze pagina")
+        raise ValueError("geen div.wettekst of div.regeling-tekst in deze pagina")
     herkomst = [{"stuk": stuk}]
     uit = []
 
