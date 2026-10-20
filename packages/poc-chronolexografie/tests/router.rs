@@ -319,9 +319,12 @@ async fn the_preview_answers_a_refusal_as_a_state_and_records_nothing() {
     );
     assert!(voorlopig["voorlopig"]["waarom"]["keten"].is_array());
 
+    assert_eq!(voorlopig["stil"], json!([]));
+
     let (status, geweigerd) = send(&app, voorvertoning(json!({}))).await;
     assert_eq!(status, StatusCode::OK, "{geweigerd}");
     assert!(geweigerd["geweigerd"].as_str().unwrap().contains("refused"));
+    assert!(geweigerd.get("voorlopig").is_none());
 
     let (_, kroniek) = send(&app, get("/chronolexografie/api/kroniek")).await;
     let kinds: Vec<&str> = kroniek["grammen"]

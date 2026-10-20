@@ -7,7 +7,10 @@
 // bevinding nog ontbreekt, dan staat dat hier in plaats van een uitkomst.
 // Mislukt het verzoek zelf, dan zegt het paneel dat, met de melding erbij.
 // Bij een bezwaar (`soort="bezwaar"`) is het de beslissing op bezwaar: of
-// het bezwaar gegrond is en welk nieuw besluit er dan komt.
+// het bezwaar gegrond is en welk nieuw besluit er dan komt. Met elk
+// antwoord geeft het paneel door welke begrippen de cel voor dit geval niet
+// weet (`stil`): die beoordeelt het bestuursorgaan, en het formulier vraagt
+// ze dan.
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { genummerd, toon, uitslag } from '../logboek.js';
@@ -33,9 +36,11 @@ const vraag = () =>
     { ...props.bevindingen },
     spel.datum,
   );
+const emit = defineEmits(['stil']);
 const volg = volger(vraag, (uit) => {
   stand.value = uit;
   bezig.value = false;
+  if (uit.antwoord?.stil?.length) emit('stil', uit.antwoord.stil);
 });
 watch(
   () => [props.op, JSON.stringify(props.bevindingen), spel.datum, spel.grammen.length],

@@ -290,29 +290,18 @@ async fn beslissen_op_bezwaar(
     })?)
 }
 
-/// A preview ([`kern::voorvertoning_besluit`]): what the step would come to,
-/// as `{ "voorlopig": ... }`. What the cell refuses (a finding not given
-/// yet) is what the preview shows until it is given, so it comes back as
-/// `{ "geweigerd": ... }` with 200, in the words of the cell. Any other
-/// error, from the engine or the setup, fails as in any step.
-fn voorlopig(stap: Result<impl serde::Serialize, Fout>) -> Antwoord {
-    match stap {
-        Ok(v) => ok(json!({
-            "voorlopig": serde_json::to_value(v).map_err(|e| Fout::Intern(e.to_string()))?,
-        })),
-        Err(Fout::Cel(e @ Error::Refused(_))) => ok(json!({ "geweigerd": e.to_string() })),
-        Err(f) => Err(f),
-    }
-}
-
+/// A preview ([`kern::voorvertoning_besluit`]): `{ voorlopig }` or, when
+/// the cell refuses (a finding not given yet), `{ geweigerd }` with 200, and
+/// in both the terms the authority judges because the cell is silent
+/// (`stil`). Any other error fails as in any step.
 async fn voorvertoning_besluit(
     State(s): State<AppState>,
     v: Verwacht,
     Json(b): Json<Beslissing>,
 ) -> Antwoord {
-    voorlopig(s.met(&v, |c, cell| {
+    ok(s.met(&v, |c, cell| {
         kern::voorvertoning_besluit(c, cell, &b.op, &b.bevindingen, b.datum)
-    }))
+    })?)
 }
 
 async fn voorvertoning_op_bezwaar(
@@ -320,9 +309,9 @@ async fn voorvertoning_op_bezwaar(
     v: Verwacht,
     Json(b): Json<Beslissing>,
 ) -> Antwoord {
-    voorlopig(s.met(&v, |c, cell| {
+    ok(s.met(&v, |c, cell| {
         kern::voorvertoning_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
-    }))
+    })?)
 }
 
 async fn reducties(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) -> Antwoord {

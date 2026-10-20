@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isEngels, melding } from '../src/melding.js';
+import { spel } from '../src/spel.js';
 
 // De meldingen zoals de cel ze geeft (packages/cel: cell.rs, chronicle.rs),
 // met verzonnen ids. Elk patroon in melding.js heeft hier een geval.
@@ -26,6 +27,25 @@ describe('melding', () => {
       `refused: chronolexogram '${ids.besluit}' is dated 2026-10-20, before the last chronolexogram of the chronicle ` +
       `('${ids.vervanger}', 2026-11-01): the chronicle does not go back in time`;
     expect(melding(fout)).toContain('vóór de laatste stap in de kroniek (2026-11-01)');
+  });
+
+  it('zegt dat de cel een begrip voor deze aanvraag niet weet, en wie dan oordeelt', () => {
+    // De melding van de engine (packages/engine/src/service.rs).
+    const engine =
+      "engine: Resolution error: Required open term 'verlof_valt_buiten_schoolvakanties' on leerplichtwet_1969#13a " +
+      'is decided per case by het hoofd (artikel 13a, eerste lid), and no judgement was given for this case';
+    spel.casus = { cel_naam: 'OBS De Klimop', rol: 'het hoofd' };
+    // Zo zegt de voorvertoning het (kern::voorvertonen).
+    expect(
+      melding(`the cell is silent on 'verlof_valt_buiten_schoolvakanties' for this case: ${engine}`),
+    ).toBe(
+      'OBS De Klimop weet "verlof valt buiten schoolvakanties" niet voor deze aanvraag, dus het hoofd oordeelt. Geef die bevinding.',
+    );
+    // De engine alleen: geen woord over de cel.
+    expect(melding(engine)).toBe(
+      'Het hoofd heeft "verlof valt buiten schoolvakanties" nog niet beoordeeld, en het besluit heeft die bevinding nodig.',
+    );
+    spel.casus = null;
   });
 
   it('zegt dat de reductie van de cel op die dag nog niet geldt', () => {

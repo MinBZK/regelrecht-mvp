@@ -976,9 +976,157 @@ pub fn beslissen_op_bezwaar(
     }))
 }
 
+/// A preview of a decision ([`voorvertoning_besluit`]): what it would come
+/// to, or the cell's refusal, and the terms the authority must judge
+/// because the cell is silent on them for this case.
+#[derive(Debug, serde::Serialize)]
+pub struct Voorvertoning<T> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voorlopig: Option<T>,
+    /// What the cell refuses, in its own words: a finding not given yet.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub geweigerd: Option<String>,
+    /// The terms the cell implements but leaves silent (null) for this case,
+    /// as fields of the form: the authority judges them (RFC-051).
+    pub stil: Vec<Value>,
+}
+
+/// The open term that the engine says is required and has no judgement, in
+/// its own message: `Required open term '<term>' on <law>#<article> ...`.
+fn zonder_oordeel(e: &Error) -> Option<(String, String)> {
+    let Error::Engine(regelrecht_engine::EngineError::ResolutionError(m)) = e else {
+        return None;
+    };
+    let rest = m.strip_prefix("Required open term '")?;
+    let (term, rest) = rest.split_once("' on ")?;
+    let (waar, _) = rest.split_once(' ')?;
+    m.contains("no judgement was given")
+        .then(|| (term.to_string(), waar.to_string()))
+}
+
+/// Take a decision on a copy of the cell ([`Cell::sandbox`]) with
+/// `bevindingen`, and find which terms the cell implements but leaves silent
+/// for this case. The form hides a term the cell implements, since it
+/// answers it from its chronicle; for some cases its reduction answers null
+/// (the school's holiday rooster does not reach that school year), and then
+/// the authority judges. Which terms that are shows only by asking: the
+/// decision is taken without a finding for any of them, and each term the
+/// engine then misses is silent. With the authority's finding on it, the
+/// next one may surface; without, that is where it stops. Nothing is kept.
+fn voorvertonen<T>(
+    corpus: &Corpus,
+    cell: &Cell,
+    bevindingen: &Map<String, Value>,
+    on: NaiveDate,
+    neem: impl Fn(&mut Cell, &Map<String, Value>) -> Result<T>,
+) -> Result<Voorvertoning<T>> {
+    let beantwoord = reading::terms_on(cell.reductions(), on);
+    let van_cel = |naam: &str| beantwoord.iter().any(|t| t.open_term == naam);
+    let van_cel_op = |naam: &str, waar: &str| {
+        beantwoord
+            .iter()
+            .any(|t| t.open_term == naam && format!("{}#{}", t.law, t.article) == waar)
+    };
+    let mut gegeven: Map<String, Value> = bevindingen
+        .iter()
+        .filter(|(naam, _)| !van_cel(naam))
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    // Per silent term its name and the article it is open on.
+    let mut stil: Vec<(String, String)> = Vec::new();
+    let uitkomst = loop {
+        let e = match neem(&mut cell.sandbox(), &gegeven) {
+            Ok(v) => break Ok(v),
+            Err(e) => e,
+        };
+        let Some((term, waar)) = zonder_oordeel(&e) else {
+            break Err(e);
+        };
+        // A judgement of the authority that shares its name with a term
+        // of the cell elsewhere: give it back, as the real decision would.
+        if !gegeven.contains_key(&term)
+            && bevindingen.contains_key(&term)
+            && !van_cel_op(&term, &waar)
+        {
+            gegeven.insert(term.clone(), bevindingen[&term].clone());
+            continue;
+        }
+        if !van_cel_op(&term, &waar) || stil.iter().any(|(t, _)| *t == term) {
+            break Err(e);
+        }
+        stil.push((term.clone(), waar));
+        match bevindingen.get(&term) {
+            Some(oordeel) => {
+                gegeven.insert(term, oordeel.clone());
+            }
+            None => break Err(e),
+        }
+    };
+    let (voorlopig, geweigerd) = match uitkomst {
+        Ok(v) => (Some(v), None),
+        Err(e) if toont(&e, &stil, bevindingen) => (None, Some(geweigerd_om(&e))),
+        Err(e) => return Err(e),
+    };
+    let stil = if stil.is_empty() {
+        Vec::new()
+    } else {
+        let service = corpus.service()?;
+        stil.iter()
+            .map(|(term, waar)| stil_veld(&service, term, waar, on))
+            .collect()
+    };
+    Ok(Voorvertoning {
+        voorlopig,
+        geweigerd,
+        stil,
+    })
+}
+
+/// The field for the silent term `term`, open on `waar` (`<law>#<article>`):
+/// as that article's decision asks it, and otherwise with only its name and
+/// where it is open, so the form still asks it.
+fn stil_veld(service: &LawExecutionService, term: &str, waar: &str, on: NaiveDate) -> Value {
+    waar.split_once('#')
+        .and_then(|(law, article)| decision::derive(service, law, article, on).ok())
+        .and_then(|shape| shape.input(term).map(|i| veld(&i.field)))
+        .unwrap_or_else(|| {
+            // An article that takes no decision of its own: the type as its
+            // open term declares it.
+            let type_ = waar.split_once('#').and_then(|(law, article)| {
+                let law = service.get_law_version(law, None).ok()?;
+                let article = law.articles.iter().find(|a| a.number == article)?;
+                let open = article.get_open_terms()?.iter().find(|o| o.id == term)?;
+                serde_json::to_value(open.term_type).ok()
+            });
+            json!({ "naam": term, "type": type_, "mag_leeg": false, "grondslag": waar })
+        })
+}
+
+/// The refusal as the preview shows it. A judgement missing on a term the
+/// cell is silent on says so first, so the app does not take a missing
+/// judgement of another kind for the cell's silence.
+fn geweigerd_om(e: &Error) -> String {
+    match zonder_oordeel(e) {
+        Some((term, _)) => format!("the cell is silent on '{term}' for this case: {e}"),
+        None => e.to_string(),
+    }
+}
+
+/// Whether the preview shows `e` as a refusal: the cell's own, or the
+/// engine missing the judgement on a term the cell is silent on, which the
+/// authority has not given yet.
+fn toont(e: &Error, stil: &[(String, String)], bevindingen: &Map<String, Value>) -> bool {
+    match e {
+        Error::Refused(_) => true,
+        e => zonder_oordeel(e).is_some_and(|(term, _)| {
+            stil.iter().any(|(t, _)| *t == term) && !bevindingen.contains_key(&term)
+        }),
+    }
+}
+
 /// What the decision on the application `aanvraag` would be with these
 /// findings on `on`, before the authority takes it: [`besluiten`] on a copy
-/// of the cell with the chronicle in memory ([`Cell::sandbox`]), so the
+/// of the cell with the chronicle in memory ([`voorvertonen`]), so the
 /// outcome and the chain are those of the real decision. Nothing is kept.
 pub fn voorvertoning_besluit(
     corpus: &Corpus,
@@ -986,8 +1134,10 @@ pub fn voorvertoning_besluit(
     aanvraag: &str,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
-) -> Result<Besluit> {
-    besluiten(corpus, &mut cell.sandbox(), aanvraag, bevindingen, on)
+) -> Result<Voorvertoning<Besluit>> {
+    voorvertonen(corpus, cell, bevindingen, on, |c, b| {
+        besluiten(corpus, c, aanvraag, b, on)
+    })
 }
 
 /// What the decision on the objection `bezwaar` would be with these
@@ -1000,8 +1150,10 @@ pub fn voorvertoning_op_bezwaar(
     bezwaar: &str,
     bevindingen: &Map<String, Value>,
     on: NaiveDate,
-) -> Result<Value> {
-    beslissen_op_bezwaar(corpus, &mut cell.sandbox(), bezwaar, bevindingen, on)
+) -> Result<Voorvertoning<Value>> {
+    voorvertonen(corpus, cell, bevindingen, on, |c, b| {
+        beslissen_op_bezwaar(corpus, c, bezwaar, b, on)
+    })
 }
 
 /// The open terms the cell answers from its chronicle ([`Cell::answers`]),
@@ -1981,15 +2133,21 @@ mod tests {
         .unwrap();
         let vastgelegd = cell.grams().len();
         let op = day("2026-10-20");
-        let verleend = voorvertoning_besluit(&corpus, &cell, &app.id, &beroep(true), op).unwrap();
+        let voorlopig = |b: &Map<String, Value>| {
+            voorvertoning_besluit(&corpus, &cell, &app.id, b, op)
+                .unwrap()
+                .voorlopig
+                .unwrap()
+        };
+        let verleend = voorlopig(&beroep(true));
         assert_eq!(verleend.besluit.outputs["verlof_verleend"], json!(true));
-        let voorlopig = voorvertoning_besluit(&corpus, &cell, &app.id, &beroep(false), op).unwrap();
+        let voorlopig = voorlopig(&beroep(false));
         // A finding not given yet: refused, as the decision itself would be.
-        let e = voorvertoning_besluit(&corpus, &cell, &app.id, &Map::new(), op).unwrap_err();
-        assert!(
-            e.to_string().contains("specifieke_aard_beroep_ouder"),
-            "{e}"
-        );
+        let zonder = voorvertoning_besluit(&corpus, &cell, &app.id, &Map::new(), op).unwrap();
+        let e = zonder.geweigerd.unwrap();
+        assert!(e.contains("specifieke_aard_beroep_ouder"), "{e}");
+        // The cell answers both of its terms for February 2027.
+        assert!(zonder.stil.is_empty());
         assert_eq!(cell.grams().len(), vastgelegd);
 
         let genomen = besluiten(&corpus, &mut cell, &app.id, &beroep(false), op).unwrap();
@@ -2016,15 +2174,19 @@ mod tests {
         .unwrap();
         let vastgelegd = cell.grams().len();
         let op = day("2026-11-15");
-        let ongegrond =
-            voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &Map::new(), op).unwrap();
+        let voorlopig = |b: &Map<String, Value>| {
+            voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, b, op)
+                .unwrap()
+                .voorlopig
+                .unwrap()
+        };
+        let ongegrond = voorlopig(&Map::new());
         assert_eq!(
             ongegrond["beslissing"]["outputs"]["bestreden_besluit_herroepen"],
             json!(false)
         );
         assert!(ongegrond["nieuw_besluit"].is_null());
-        let voorlopig =
-            voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &beroep(true), op).unwrap();
+        let voorlopig = voorlopig(&beroep(true));
         assert_eq!(cell.grams().len(), vastgelegd);
 
         let genomen =
@@ -2040,6 +2202,96 @@ mod tests {
         assert_eq!(voorlopig.pointer(herroepen), Some(&json!(true)));
         assert_eq!(voorlopig.pointer(herroepen), genomen.pointer(herroepen));
         assert_eq!(cell.grams().len(), vastgelegd + 2);
+    }
+
+    /// Leave from 20 to 22 December 2027, applied for on 14 October 2026:
+    /// school year 2027–2028, which the school's holiday rooster does not
+    /// reach yet.
+    fn kerst_2027(corpus: &Corpus, cell: &mut Cell) -> Gram {
+        let mut velden = aanvraag("2027-12-22");
+        velden.insert("eerste_verlofdag".into(), json!("2027-12-20"));
+        aanvragen(corpus, cell, &velden, day("2026-10-14")).unwrap()
+    }
+
+    fn namen(velden: &[Value]) -> Vec<&str> {
+        velden.iter().map(|v| v["naam"].as_str().unwrap()).collect()
+    }
+
+    #[test]
+    fn a_term_the_cell_leaves_silent_is_asked_of_the_head() {
+        // The bug from production: the cell implements
+        // verlof_valt_buiten_schoolvakanties, so the form hid it, but for
+        // 2027–2028 its reduction answers null and the decision failed for
+        // want of a judgement the head could not give.
+        let corpus = corpus();
+        let mut cell = corpus.cell().unwrap();
+        let app = kerst_2027(&corpus, &mut cell);
+        let op = day("2026-10-14");
+        let term = "verlof_valt_buiten_schoolvakanties";
+
+        let zonder = voorvertoning_besluit(&corpus, &cell, &app.id, &beroep(true), op).unwrap();
+        assert_eq!(namen(&zonder.stil), [term]);
+        assert_eq!(zonder.stil[0]["grondslag"], json!("leerplichtwet_1969#13a"));
+        assert!(zonder.voorlopig.is_none());
+        assert!(zonder.geweigerd.unwrap().contains(term));
+
+        // With the head's judgement the preview decides, and the term stays
+        // on the form.
+        let mut oordeel = beroep(true);
+        oordeel.insert(term.into(), json!(false));
+        let met = voorvertoning_besluit(&corpus, &cell, &app.id, &oordeel, op).unwrap();
+        assert_eq!(namen(&met.stil), [term]);
+        let voorlopig = met.voorlopig.unwrap();
+        assert_eq!(voorlopig.besluit.outputs["verlof_verleend"], json!(false));
+
+        // The real decision takes the judgement too, and comes out the same.
+        let genomen = besluiten(&corpus, &mut cell, &app.id, &oordeel, op).unwrap();
+        assert_eq!(genomen.besluit.outputs, voorlopig.besluit.outputs);
+        assert!(genomen.waarom.bevindingen.contains(&term.to_string()));
+    }
+
+    #[test]
+    fn a_silent_term_is_asked_on_objection_too() {
+        // Refused on the profession, so the decision never asked the cell. At
+        // the heroverweging the head finds the profession anew; then art. 13a
+        // asks the term the cell is silent on.
+        let corpus = corpus();
+        let mut cell = corpus.cell().unwrap();
+        let app = kerst_2027(&corpus, &mut cell);
+        let besluit = besluiten(
+            &corpus,
+            &mut cell,
+            &app.id,
+            &beroep(false),
+            day("2026-10-14"),
+        )
+        .unwrap()
+        .besluit;
+        let bezwaar = bezwaren(
+            &corpus,
+            &mut cell,
+            &besluit.id,
+            &bezwaar_velden("2026-11-01"),
+            day("2026-11-01"),
+        )
+        .unwrap();
+        let op = day("2026-11-15");
+        let term = "verlof_valt_buiten_schoolvakanties";
+        let zonder =
+            voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &beroep(true), op).unwrap();
+        assert_eq!(namen(&zonder.stil), [term]);
+        assert!(zonder.voorlopig.is_none());
+
+        let mut oordeel = beroep(true);
+        oordeel.insert(term.into(), json!(true));
+        let met = voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &oordeel, op)
+            .unwrap()
+            .voorlopig
+            .unwrap();
+        let genomen = beslissen_op_bezwaar(&corpus, &mut cell, &bezwaar.id, &oordeel, op).unwrap();
+        let verleend = "/nieuw_besluit/outputs/verlof_verleend";
+        assert_eq!(met.pointer(verleend), Some(&json!(true)));
+        assert_eq!(met.pointer(verleend), genomen.pointer(verleend));
     }
 
     /// The case `gehandicaptenparkeerkaart`, with its example values.
