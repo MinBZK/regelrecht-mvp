@@ -298,9 +298,9 @@ articles:
       # Minister, met een arts) is niet gemodelleerd: de minister geeft hier
       # geen kaarten af.
       # Wie het onderzoek verricht, is bevoegd (competent_authority): alleen
-      # die antwoordt op de vraag of het plaatsvond (RFC-052). Of het om de
-      # GGD van de gemeente gaat die de kaart afgeeft, toetst de PoC niet:
-      # alleen de categorie telt.
+      # die antwoordt op de vraag of het plaatsvond (RFC-052). Eigen keuze:
+      # alleen de categorie is gemodelleerd; of het de GGD van de gemeente
+      # is die de kaart afgeeft, is open.
       competent_authority:
         - name: Gemeentelijke Gezondheidsdienst
           type: CATEGORY
@@ -313,7 +313,7 @@ articles:
         # afgifte; lid 2 onder a en b laten het onderzoek achterwege bij wie
         # eerder een kaart kreeg, dat veronderstelt een onderzoek per
         # aanvraag. Zwijgt wie het onderzoek verricht, dan stelt het college
-        # het vast op het rapport. Eigen keuze: stelt het college vast dat
+        # het vast op het rapport dat het daarvan kreeg. Eigen keuze: stelt het college vast dat
         # er geen onderzoek plaatsvond (false), bijvoorbeeld omdat de
         # aanvrager niet verschijnt, dan wordt de kaart geweigerd.
         - id: geneeskundig_onderzoek_heeft_plaatsgehad

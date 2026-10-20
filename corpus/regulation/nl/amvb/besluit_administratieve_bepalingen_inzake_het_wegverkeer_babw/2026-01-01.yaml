@@ -950,9 +950,9 @@ articles:
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
       # Bevoegd (RFC-002): het college onder lid 1 en 2, het CBR onder lid
-      # 3. Welk college, zegt lid 1 (de gemeente van inschrijving); de PoC
-      # toetst alleen de categorie (RFC-052). Lid 3 is niet gemodelleerd: in
-      # de PoC beslist het CBR op het model van lid 1 (eigen keuze).
+      # 3. Eigen keuze: alleen de categorie is gemodelleerd; welk college,
+      # zegt lid 1 (de gemeente van inschrijving), en dat is open (RFC-052).
+      # Lid 3 is niet gemodelleerd.
       competent_authority:
         - name: college van burgemeester en wethouders
           type: CATEGORY

@@ -71,7 +71,8 @@ voorbeeld:
 #   artikel 49, eerste lid, en het fictieve beleid van Wilgendaal geldt ook
 #   voor hen (het is ongescoped); daarom geven zij hier ook de bevinding of
 #   de aanvrager al een geldige kaart heeft. Het derde lid (het CBR, voor
-#   wie geen ingezetene is) is niet gemodelleerd.
+#   wie geen ingezetene is) is niet gemodelleerd: het CBR beslist hier op
+#   het model van het eerste lid.
 andere_cellen:
   - cel: ggd_wilgendaal
     cel_naam: GGD Wilgendaal
