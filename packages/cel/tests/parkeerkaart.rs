@@ -923,9 +923,10 @@ fn only_an_examination_of_the_applicant_for_this_application_counts() {
     let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
     blocked_on(&e, EXAMINED);
 
-    // An examination after the day of issue does not count either; the cell
+    // An examination after the day of issue does not count either. The cell
     // records the report on the day it receives it, and the examination
-    // date in it is the GGD's.
+    // date in it is the GGD's; it does not check that the examination came
+    // before the report, so this constructed report tests the upper bound.
     reported(&mut cell, APPLICANT, "2026-10-25", "2026-10-19");
     let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
     blocked_on(&e, EXAMINED);
@@ -1017,4 +1018,31 @@ fn lid_2_without_an_earlier_card_in_the_chronicle_the_cell_is_silent() {
     let app = applied(&mut cell, APPLICANT, "2027-03-01");
     let e = decide_with(&mut cell, &app.id, &lid_2(true, true, false), "2027-03-01").unwrap_err();
     blocked_on(&e, EARLIER);
+}
+
+#[test]
+fn without_a_report_the_college_may_establish_the_examination_itself() {
+    // The term is the college's to decide per case: the cell is silent, so
+    // the college's own finding counts. Finding that no examination took
+    // place (the applicant did not appear, say) refuses the card: own
+    // choice, a decision of the college and no consequence of lid 1.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    let mut given = examined(true);
+    given.insert(EXAMINED.into(), json!(false));
+    let refused = decide_with(&mut cell, &app.id, &given, "2026-10-20").unwrap();
+    assert_eq!(
+        refused.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
+    );
+
+    let app = applied(&mut cell, "999990032", "2026-10-21");
+    given.insert(EXAMINED.into(), json!(true));
+    let granted = decide_with(&mut cell, &app.id, &given, "2026-10-21").unwrap();
+    assert_eq!(
+        granted.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    let found = cell.findings(&mut service(), &granted.id).unwrap();
+    assert!(found.contains(&EXAMINED.to_string()), "{found:?}");
 }

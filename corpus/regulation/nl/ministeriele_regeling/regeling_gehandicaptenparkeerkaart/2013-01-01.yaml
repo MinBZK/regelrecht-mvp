@@ -169,6 +169,11 @@ articles:
         # a en b laten het onderzoek achterwege bij wie eerder een kaart
         # kreeg; dat veronderstelt een onderzoek per aanvraag, niet een
         # onderzoek ooit.
+        # Eigen keuze: stelt het college vast dat er geen onderzoek
+        # plaatsvond (false), bijvoorbeeld omdat de aanvrager niet verschijnt,
+        # dan wordt de kaart geweigerd. Dat is een besluit van het college,
+        # geen gevolg van lid 1. Zonder vaststelling en zonder rapport faalt
+        # het besluit.
         - id: geneeskundig_onderzoek_heeft_plaatsgehad
           type: boolean
           required: true
@@ -177,9 +182,9 @@ articles:
             Gemeentelijke Gezondheidsdienst of de aangewezen deskundige
             (artikel 3, eerste lid)
           description: >-
-            Of na de aanvraag en uiterlijk op de dag van afgifte een
-            geneeskundig onderzoek heeft plaatsgehad met betrekking tot de
-            handicap van de aanvrager (lid 1).
+            Of op of na de dagtekening van de aanvraag en uiterlijk op de dag
+            van afgifte een geneeskundig onderzoek heeft plaatsgehad met
+            betrekking tot de handicap van de aanvrager (lid 1).
         # Lid 2, onder a en b: "aan de aanvrager eerder een
         # gehandicaptenparkeerkaart is verstrekt". Een feit, geen oordeel. De
         # cel van de gemeente kent alleen de kaarten die zij zelf verstrekte;
@@ -190,7 +195,7 @@ articles:
           required: true
           decided_per_case_by: >-
             het college van burgemeester en wethouders, als verstrekkende
-            instantie (lid 2, onder a)
+            instantie (lid 2, onder a en b)
           description: >-
             Of aan de aanvrager eerder een gehandicaptenparkeerkaart is
             verstrekt (lid 2, onder a en b).

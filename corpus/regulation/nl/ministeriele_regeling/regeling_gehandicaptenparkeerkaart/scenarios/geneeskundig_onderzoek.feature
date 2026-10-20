@@ -40,6 +40,22 @@ Feature: Geen kaart voordat het geneeskundig onderzoek heeft plaatsgehad
     When I evaluate "gehandicaptenparkeerkaart_mag_worden_afgegeven" of "regeling_gehandicaptenparkeerkaart"
     Then the execution fails with "geneeskundig_onderzoek_heeft_plaatsgehad"
 
+  Scenario: Stelt het college vast dat er geen onderzoek was, dan mag de kaart niet worden afgegeven
+    # Eigen keuze: bijvoorbeeld omdat de aanvrager niet verscheen. Artikel 49
+    # van het BABW weigert de kaart dan.
+    Given the following parameters:
+      | bsn_aanvrager                                                | 999990020  |
+      | dagtekening_aanvraag                                         | 2026-10-12 |
+      | datum_afgifte                                                | 2026-10-20 |
+      | geneeskundig_onderzoek_achterwege_gelaten                    | null       |
+      | bekend_dat_aanvrager_nog_steeds_voldoet                      | null       |
+      | keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet | null       |
+    Given the following findings:
+      | geneeskundig_onderzoek_heeft_plaatsgehad             | false |
+    When I evaluate "gehandicaptenparkeerkaart_mag_worden_afgegeven" of "regeling_gehandicaptenparkeerkaart"
+    Then the execution succeeds
+    Then output "gehandicaptenparkeerkaart_mag_worden_afgegeven" is false
+
   Scenario: Onder a blijft het onderzoek achterwege bij wie eerder een kaart kreeg
     Given the following parameters:
       | bsn_aanvrager                                                | 999990020  |
@@ -71,7 +87,8 @@ Feature: Geen kaart voordat het geneeskundig onderzoek heeft plaatsgehad
   Scenario: Zonder grond onder a of b geldt het eerste lid
     # Het college laat het onderzoek achterwege, maar weet niet dat de
     # aanvrager nog steeds voldoet, en de keurende instantie oordeelt er niet
-    # over. Het onderzoek moet dan plaatsvinden.
+    # over. Het onderzoek moet dan plaatsvinden, ook al kreeg de aanvrager
+    # eerder een kaart; de engine vraagt daar dan niet meer naar.
     Given the following parameters:
       | bsn_aanvrager                                                | 999990020  |
       | dagtekening_aanvraag                                         | 2026-10-12 |

@@ -62,7 +62,7 @@ voorbeeld:
 # gehandicaptenparkeerkaart, artikel 2, eerste lid). Het onderzoek van 9
 # oktober valt na de dagtekening van de voorbeeldaanvraag (5 oktober), dus het
 # telt voor die aanvraag. De app heeft geen knop om een rapport te ontvangen;
-# daarom staat het hier, en is het rapport er vóór de aanvraag binnenkomt.
+# daarom staat het hier, en is het rapport er al voordat de aanvraag binnenkomt.
 begin:
   datum: 2026-10-12
   executogrammen:
@@ -167,10 +167,10 @@ scenarios:
       voorbeeldaanvrager staat het rapport er al (zie het eerste scenario).
   - naam: Een nieuwe kaart zonder nieuw onderzoek
     stappen:
+      - 'Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen.'
       - >-
-        Aanvrager, speeldatum 13 oktober 2026: klik op Aanvraag indienen. Bestuursorgaan,
-        speeldatum 20 oktober 2026: klik op Besluit nemen. De kaart is geldig
-        tot en met 19 oktober 2031.
+        Bestuursorgaan, speeldatum 20 oktober 2026: klik op Besluit nemen. De
+        kaart is geldig tot en met 19 oktober 2031.
       - >-
         Aanvrager, speeldatum 20 oktober 2031: zet de dagtekening op 20
         oktober 2031 en klik op Aanvraag indienen. Het rapport van 2026 telt
