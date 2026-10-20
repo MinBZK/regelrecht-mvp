@@ -422,7 +422,9 @@ fn past(filter: &HookFilter, id: &str, a: &Article) -> bool {
 fn rol(law: &ArticleBasedLaw, article: &str) -> Option<String> {
     let a = law.articles.iter().find(|a| a.number == article)?;
     let naam = |c: &CompetentAuthority| match c {
-        CompetentAuthority::Structured { name, .. } => Some(name.clone()),
+        CompetentAuthority::Structured(one) => Some(one.name.clone()),
+        // Several competent authorities: the role of the first the law names.
+        CompetentAuthority::List(all) => all.first().map(|one| one.name.clone()),
         // A reference (`#...`) names no one by itself.
         CompetentAuthority::String(s) if !s.starts_with('#') => Some(s.clone()),
         CompetentAuthority::String(_) => None,

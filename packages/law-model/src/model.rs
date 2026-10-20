@@ -9,20 +9,50 @@ use crate::{Operation, ParameterType, RegulatoryLayer, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
-/// Represents a competent authority - can be a simple string or a structured object
+/// Represents a competent authority: a reference or one named authority on an
+/// article (RFC-002), or, on an open term or a fact (schema v0.8.8, RFC-052),
+/// one named authority or a list of them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CompetentAuthority {
     /// Simple string reference (e.g., "#bevoegd_gezag")
     String(String),
-    /// Structured authority with name field
-    Structured {
-        name: String,
-        /// `INSTANCE` (a named organisation, the schema default) or `CATEGORY`
-        /// (must be resolved per context)
-        #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
-        authority_type: Option<AuthorityType>,
-    },
+    /// One named authority
+    Structured(NamedAuthority),
+    /// Several named authorities, each competent, on an open term or a
+    /// fact: whether a parking card was issued before is for any college
+    /// and for the CBR (BABW art. 49 lid 1 and 3).
+    List(Vec<NamedAuthority>),
+}
+
+/// An authority the law names: an organisation or a category of them.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NamedAuthority {
+    pub name: String,
+    /// `INSTANCE` (a named organisation, the schema default) or `CATEGORY`
+    /// (must be resolved per context)
+    #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
+    pub authority_type: Option<AuthorityType>,
+}
+
+impl NamedAuthority {
+    /// The type, `INSTANCE` when the law leaves it out (the schema default).
+    pub fn kind(&self) -> AuthorityType {
+        self.authority_type.unwrap_or(AuthorityType::Instance)
+    }
+}
+
+impl CompetentAuthority {
+    /// The authorities this names, in the law's order. `None` for a
+    /// reference to an output (`#...`) or a bare name, which name no
+    /// authority with a type.
+    pub fn named(&self) -> Option<&[NamedAuthority]> {
+        match self {
+            CompetentAuthority::String(_) => None,
+            CompetentAuthority::Structured(one) => Some(std::slice::from_ref(one)),
+            CompetentAuthority::List(all) => Some(all),
+        }
+    }
 }
 
 /// Whether a competent authority names one organisation or a category of them
@@ -798,6 +828,20 @@ pub enum CombineOp {
     Only,
 }
 
+impl CombineOp {
+    /// The name as the law writes it (`ADD`, `OR`, ...).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CombineOp::Add => "ADD",
+            CombineOp::Or => "OR",
+            CombineOp::And => "AND",
+            CombineOp::Min => "MIN",
+            CombineOp::Max => "MAX",
+            CombineOp::Only => "ONLY",
+        }
+    }
+}
+
 /// Default name for the FOREACH element binding when `as` is omitted.
 ///
 /// Neutral and language-independent, so it does not collide with the Dutch
@@ -1085,6 +1129,17 @@ pub struct OpenTerm {
     /// Default execution if no implementing regulation exists
     #[serde(default)]
     pub default: Option<OpenTermDefault>,
+    /// Who may answer this term for a reader that reaches the article
+    /// through `source.regulation` (schema v0.8.8, RFC-052): one named
+    /// authority or a list. The article's own `competent_authority` says
+    /// who decides (RFC-002), which is another question.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub competent_authority: Option<CompetentAuthority>,
+    /// How the answers of several competent answerers make one value, with
+    /// the aggregations of FOREACH (schema v0.8.8, RFC-052). Without it, two
+    /// answers are an error.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combine: Option<CombineOp>,
 }
 
 fn default_true() -> bool {
@@ -1127,6 +1182,10 @@ pub struct ArticleRequirement {
     /// With `fact`: what the fact is, in words.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// With `fact`: who establishes it (schema v0.8.8, RFC-052), one named
+    /// authority or a list, such as the GGD for a medical examination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub competent_authority: Option<CompetentAuthority>,
 }
 
 /// Declares that this article fills an open term from a higher-level law.
