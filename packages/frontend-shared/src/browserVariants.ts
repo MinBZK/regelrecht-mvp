@@ -119,15 +119,7 @@ export interface EditedFile {
   original?: string;
 }
 
-/**
- * Bring a stored variant into the current format.
- *
- * Variants saved before the code was translated to English carry Dutch field
- * names (`titel`, `gemaakt`, `bijgewerkt`, `basis`, `bestanden` with `pad`
- * and `origineelHash`). They are read under both names and written back in
- * the new one, so nobody loses a variant. Once every browser has loaded the
- * app since, this function can go.
- */
+/** The top-level field names a variant had before the code was translated. */
 const OLD_FIELDS = ['titel', 'gemaakt', 'bijgewerkt', 'basis', 'bestanden'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -139,6 +131,15 @@ function hasOldFormat(raw: unknown): boolean {
   return Array.isArray(raw) && raw.some((v) => isRecord(v) && OLD_FIELDS.some((f) => f in v));
 }
 
+/**
+ * Bring a stored variant into the current format.
+ *
+ * Variants saved before the code was translated to English carry Dutch field
+ * names (`titel`, `gemaakt`, `bijgewerkt`, `basis`, `bestanden` with `pad`
+ * and `origineelHash`). They are read under both names and written back in
+ * the new one, so nobody loses a variant. Once every browser has loaded the
+ * app since, this function can go.
+ */
 function upgradeStoredVariant(v: Record<string, unknown>): StoredVariant {
   const newFiles = Array.isArray(v.files) ? v.files : [];
   const oldFiles = Array.isArray(v.bestanden) ? v.bestanden : [];
