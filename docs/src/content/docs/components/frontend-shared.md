@@ -7,10 +7,11 @@ description: "The npm workspace package with the code the Vue frontends share: A
 
 ## Overview
 
-- **Language**: JavaScript and Vue 3 single-file components
+- **Language**: JavaScript, TypeScript and Vue 3 single-file components, moving to TypeScript one module at a time
 - **Location**: `packages/frontend-shared/`
 - **Type**: npm workspace package (`private`, not published)
 - **Tests**: Vitest with happy-dom, `npm test -w packages/frontend-shared`
+- **Type check**: `vue-tsc`, `npm run typecheck -w packages/frontend-shared`
 
 ## What it does
 
@@ -25,7 +26,7 @@ The editor is the reference for what lives here, and the other apps conform to i
 
 ## Architecture
 
-The package root (`src/index.js`) exports only the small primitives. Everything else has its own subpath in the `exports` map of `package.json`, so an app pulls in only what it imports: `./gherkin`, `./lib/*`, `./components/*` and the individual `./*.js` modules.
+The package root (`src/index.js`) exports only the small primitives. Everything else has its own subpath in the `exports` map of `package.json`, so an app pulls in only what it imports: `./gherkin`, `./lib/*`, `./components/*` and the individual modules: `./*.js` for a JavaScript module, and `./*` without an extension for a TypeScript one.
 
 ### Exported from the root
 
@@ -35,7 +36,15 @@ The package root (`src/index.js`) exports only the small primitives. Everything 
 | `useAuth.js` | Sign-in state from `/auth/status`, the realm roles of the current user, and `hasRole` / `hasAnyRole` for showing role-specific UI. The backend still enforces every route |
 | `useGithubAuth.js` | Whether the user has linked a GitHub account, from the editor API's `/auth/github/status`. When the endpoint is missing or fails, the controls are hidden |
 | `useColorScheme.js` | The light/dark/auto picker. It sets `data-scheme` on `<html>`, which the design system keys its dark tokens on, and leaves it off for `auto`. Persistence is injected: the editor stores the choice server-side, other apps use `localStorage` |
-| `values.js` | `isUnknown` and `missingFacts`: one definition of how the engine's Unknown value ([RFC-036](/rfcs/rfc-036)) arrives in JavaScript |
+| `values.ts` | `isUnknown` and `missingFacts`: one definition of how the engine's Unknown value ([RFC-036](/rfcs/rfc-036)) arrives in JavaScript |
+
+### TypeScript
+
+The package is migrating from JavaScript to TypeScript. `tsconfig.json` extends `@vue/tsconfig/tsconfig.dom.json` (strict mode) and sets `allowJs`, so converted `.ts` modules and the remaining `.js` modules live side by side. Only the `.ts` files and `<script lang="ts">` blocks are type-checked; `.js` files are not.
+
+- Nothing is compiled ahead of time. The apps' Vite builds and Vitest strip the types when they bundle or test the source, as they do for the JavaScript.
+- An import of a TypeScript module leaves out the extension (`'./values'`), also from a `.js` module. Vite and Vitest resolve it, and the code only runs through them. A JavaScript module keeps its `.js` in the import until it is converted itself. Plain Node does not resolve an import without an extension, so a script run with `node` cannot load these modules.
+- The check runs `vue-tsc`, not `tsc`, because only `vue-tsc` reads the script blocks in `.vue` files. The workspace pins TypeScript 6 through an `overrides` entry in the root `package.json`: `vue-tsc` builds on the JavaScript compiler API that TypeScript 7 no longer ships. The docs site has its own lockfile and stays on TypeScript 7.
 
 ### The Gherkin runner (`./gherkin`)
 

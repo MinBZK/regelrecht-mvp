@@ -10,13 +10,15 @@
     "./gherkin/*": "./src/gherkin/*",
     "./lib/*": "./src/lib/*",
     "./components/*": "./src/components/*",
-    "./*.js": "./src/*.js"
+    "./*.js": "./src/*.js",
+    "./*": "./src/*.ts"
   },
   "dependencies": {
     "@cucumber/gherkin": "^42.0.1",
     "@cucumber/messages": "^34.2.1"
   },
   "scripts": {
+    "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -34,7 +36,10 @@
     }
   },
   "devDependencies": {
+    "@vue/tsconfig": "^0.9.1",
     "happy-dom": "^20.14.6",
-    "vitest": "^5.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3",
+    "vue-tsc": "^3.3.13"
   }
 }

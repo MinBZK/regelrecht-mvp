@@ -16,6 +16,7 @@
   ],
   "overrides": {
     "brace-expansion": "^5.0.8",
-    "postcss": "^8.5.18"
+    "postcss": "^8.5.18",
+    "typescript": "~6.0.3"
   }
 }

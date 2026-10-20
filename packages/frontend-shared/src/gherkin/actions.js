@@ -15,7 +15,7 @@
  */
 
 import { VALUE_TYPING } from './grammar.generated.js';
-import { isUnknown, missingFacts } from '../values.js';
+import { isUnknown, missingFacts } from '../values';
 
 /**
  * Parse a string value to a typed value, mirroring Rust value_conversion.rs

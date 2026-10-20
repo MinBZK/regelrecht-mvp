@@ -92,17 +92,20 @@ shared="$repo/packages/frontend-shared/src"
 gherkin_out="$docs/src/lib/gherkin"
 
 mkdir -p "$gherkin_out"
-for f in "$shared"/gherkin/*.js "$shared/values.js"; do
+for f in "$shared"/gherkin/*.js "$shared/values.ts"; do
     base=$(basename "$f")
     # The test file belongs to the package, not to the page.
     [ "$base" = "actions.test.js" ] && continue
     cp "$f" "$gherkin_out/$base"
 done
 
-# values.js sits a directory up in the package, so the imports that reach for it
-# have to be flattened to match the copy's own flat layout.
+# values.ts sits a directory up in the package, so the imports that reach for it
+# have to be flattened to match the copy's own flat layout. The imports carry no
+# extension, and Vite tries .js before .ts: a values.js left by a run from before
+# the module became TypeScript would win over the fresh copy, so it goes.
+rm -f "$gherkin_out/values.js"
 for f in "$gherkin_out"/*.js; do
-    sed -i.bak "s#'\.\./values\.js'#'./values.js'#g" "$f"
+    sed -i.bak "s#'\.\./values'#'./values'#g" "$f"
     rm -f "$f.bak"
 done
 

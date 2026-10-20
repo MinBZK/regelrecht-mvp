@@ -831,6 +831,12 @@ jobs:
       - name: Run shared-package tests
         run: npm test -w packages/frontend-shared
 
+      # vue-tsc, niet tsc: alleen vue-tsc leest de <script>-blokken in .vue.
+      # Gepind op TypeScript 6 (override in de root-package.json), omdat
+      # vue-tsc nog niet op TypeScript 7 draait.
+      - name: Type check shared package
+        run: npm run typecheck -w packages/frontend-shared
+
       # De productiebundel werd tot nu toe alleen in frontend/Dockerfile
       # gemaakt, en sinds de images uit de standaardloop van een PR zijn
       # gehaald draaide `vite build` nergens meer. Dit dekt in één stap de
