@@ -29,10 +29,18 @@ sys.path.insert(0, str(HIER.parent))
 import dienst  # noqa: E402
 
 
-def vraag(methode, pad, body=None):
+def vraag(methode, pad, body=None, stukken=False):
+    """Een verzoek; met `stukken` gaat de body zoals het portaal hem doorstuurt:
+    in stukken (chunked), zonder Content-Length."""
     a, b = socket.socketpair()
     data = json.dumps(body).encode() if body is not None else b""
-    b.sendall(f"{methode} {pad} HTTP/1.0\r\nContent-Length: {len(data)}\r\n\r\n".encode() + data)
+    if stukken:
+        midden = len(data) // 2
+        delen = b"".join(b"%x\r\n%s\r\n" % (len(d), d) for d in (data[:midden], data[midden:]) if d)
+        b.sendall(f"{methode} {pad} HTTP/1.1\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n".encode()
+                  + delen + b"0\r\n\r\n")
+    else:
+        b.sendall(f"{methode} {pad} HTTP/1.0\r\nContent-Length: {len(data)}\r\n\r\n".encode() + data)
     t = threading.Thread(target=dienst.Verzoek, args=(a, ("test", 0), None))
     t.start()
     t.join(10)
@@ -89,7 +97,9 @@ class Dienst(unittest.TestCase):
         dienst.kamerdossier.main = nep
         dienst.bouw.tijdlijn = lambda nr: ({"dossier": nr, "naam": f"Dossier {nr}", "soort": "wijzigingswet"}, None)
         try:
-            status, t = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "36889"})
+            # Zoals achter het portaal: de body in stukken (preview, 20-10-2026).
+            status, t = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "36889"},
+                              stukken=True)
             self.assertEqual((status, t["status"]), (202, "bezig"))
             status, x = vraag("POST", "/wetsgeschiedenis/api/haal", {"bwb": "BWBR0007376", "dossier": "35968"})
             self.assertEqual(status, 409)
@@ -162,6 +172,18 @@ class Dienst(unittest.TestCase):
         self.assertIn("DNS", d["hosts"]["gegevensmagazijn.tweedekamer.nl"]["uitleg"])
         self.assertEqual(d["oordeel"], "ophalen faalt: gegevensmagazijn.tweedekamer.nl niet bereikbaar")
         self.assertEqual(vraag("GET", "/wetsgeschiedenis/api/diagnose?bwb=x")[0], 400)
+
+    def test_een_map_zonder_schrijfrecht_wordt_herkend(self):
+        if os.getuid() == 0:
+            self.skipTest("root schrijft overal")
+        dicht = Path(TMP) / "dicht"
+        dicht.mkdir()
+        dicht.chmod(0o555)
+        try:
+            self.assertFalse(dienst._schrijfbaar(dicht))
+            self.assertTrue(dienst._schrijfbaar(Path(TMP) / "open"))
+        finally:
+            dicht.chmod(0o755)
 
 
 if __name__ == "__main__":

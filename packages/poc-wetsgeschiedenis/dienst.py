@@ -53,6 +53,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -67,7 +68,25 @@ POORT = int(os.environ.get("WG_PORT") or 8420)
 BASIS = "/" + (os.environ.get("WG_BASE_PATH") or "/wetsgeschiedenis/").strip("/") + "/"
 STATISCH = Path(os.environ.get("WG_STATIC_DIR") or HIER.parent.parent / "frontend-poc-wetsgeschiedenis" / "dist")
 VAST = Path(os.environ.get("WG_VAST_DIR") or HIER.parent.parent / "corpus-poc" / "wetsgeschiedenis" / "gegevens")
-DATA = Path(os.environ.get("WG_DATA") or HIER / "data")
+DATA_GEVRAAGD = Path(os.environ.get("WG_DATA") or HIER / "data")
+
+
+def _schrijfbaar(map_):
+    try:
+        map_.mkdir(parents=True, exist_ok=True)
+        proef = map_ / ".schrijfproef"
+        proef.write_text("ok")
+        proef.unlink()
+        return True
+    except OSError:
+        return False
+
+
+# Een volume dat als root is aangekoppeld, is niet van de gebruiker `app`
+# (gemeten in de preview, 20-10-2026). Dan wijkt de dienst uit naar een
+# tijdelijke map: ophalen werkt, maar wat is opgehaald, is na een herstart weg.
+# De diagnose zegt het.
+DATA = DATA_GEVRAAGD if _schrijfbaar(DATA_GEVRAAGD) else Path(tempfile.gettempdir()) / "wetsgeschiedenis"
 MAX = int(os.environ.get("WG_MAX") or 40)
 OPGEHAALD = DATA / "gegevens"
 VERBINDEN = str(int(os.environ.get("WG_CONNECT_TIMEOUT") or 15))
@@ -348,15 +367,17 @@ def diagnose(bwb=None):
         d["curl"] = _run(["curl", "--version"], capture_output=True, text=True).stdout.splitlines()[0]
     except OSError as e:
         d["curl"] = f"ontbreekt ({e})"
-    try:
-        DATA.mkdir(parents=True, exist_ok=True)
-        proef = DATA / ".schrijfproef"
-        proef.write_text("ok")
-        proef.unlink()
-        vrij = shutil.disk_usage(DATA).free // 2**20
-        d["data"] = {"pad": str(DATA), "schrijfbaar": True, "vrij_mb": vrij}
-    except OSError as e:
-        d["data"] = {"pad": str(DATA), "schrijfbaar": False, "fout": f"{type(e).__name__}: {e}"}
+    d["data"] = {"pad": str(DATA), "schrijfbaar": _schrijfbaar(DATA), "proces": f"uid {os.getuid()}, gid {os.getgid()}"}
+    if d["data"]["schrijfbaar"]:
+        d["data"]["vrij_mb"] = shutil.disk_usage(DATA).free // 2**20
+    if DATA != DATA_GEVRAAGD:
+        try:
+            st = DATA_GEVRAAGD.stat()
+            eigen = f"van uid {st.st_uid}, gid {st.st_gid}, modus {oct(st.st_mode & 0o777)}"
+        except OSError as e:
+            eigen = f"niet te lezen ({e})"
+        d["data"]["uitgeweken"] = (f"{DATA_GEVRAAGD} is niet schrijfbaar ({eigen}); de dienst schrijft in "
+                                   f"{DATA}, en wat is opgehaald, is na een herstart weg")
     d["proxy"] = {k: _zonder_wachtwoord(v) for k in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy",
                                                      "NO_PROXY", "no_proxy") if (v := os.environ.get(k))}
     d["dossiers"] = {"in_het_image": len(lees_json(VAST / "dossiers.json", [])),
@@ -385,6 +406,8 @@ def diagnose(bwb=None):
                         ([f"{h} niet bereikbaar" for h in nodig])
                         + ([] if d["data"]["schrijfbaar"] else [f"{DATA} niet schrijfbaar"])
                         + (["curl ontbreekt"] if d["curl"].startswith("ontbreekt") else [])))
+    if d["oordeel"] == "ophalen kan" and DATA != DATA_GEVRAAGD:
+        d["oordeel"] = "ophalen kan, maar niet blijvend: " + d["data"]["uitgeweken"]
     d["s"] = round(time.monotonic() - t0, 1)
     logboek("diagnose", oordeel=d["oordeel"], s=d["s"])
     return d
@@ -491,14 +514,36 @@ class Verzoek(BaseHTTPRequestHandler):
             soort += "; charset=utf-8"
         return self.stuur(200, doel.read_bytes(), soort)
 
+    def lees_body(self, grens=4096):
+        """De body, met Content-Length of in stukken (chunked). Het portaal
+        stuurt een verzoek als stroom door; dan is er geen Content-Length."""
+        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+            data = b""
+            while True:
+                n = int(self.rfile.readline(64).split(b";")[0].strip() or b"0", 16)
+                if n == 0:
+                    while self.rfile.readline(1024) not in (b"\r\n", b"\n", b""):
+                        pass
+                    return data
+                if len(data) + n > grens:
+                    raise ValueError("te groot")
+                data += self.rfile.read(n)
+                self.rfile.readline(8)
+        return self.rfile.read(min(int(self.headers.get("Content-Length") or 0), grens))
+
     def do_POST(self):
         if self.pad() != BASIS + "api/haal":
             return self.stuur(404, {"fout": "onbekend pad"})
         try:
-            n = int(self.headers.get("Content-Length") or 0)
-            vraag = json.loads(self.rfile.read(min(n, 4096)) or b"{}")
-        except ValueError:
-            return self.stuur(400, {"fout": "geen JSON"})
+            ruw = self.lees_body()
+            vraag = json.loads(ruw or b"{}")
+        except ValueError as e:
+            return self.stuur(400, {"fout": f"geen JSON ({e})"})
+        if not ruw:
+            # Zo kwam het binnen toen het portaal de body in stukken doorgaf
+            # en de dienst alleen Content-Length las (preview, 20-10-2026).
+            logboek("fout", bij="api/haal", fout="lege body", content_length=self.headers.get("Content-Length"),
+                    transfer_encoding=self.headers.get("Transfer-Encoding"))
         bwb, nr = str(vraag.get("bwb") or ""), vraag.get("dossier")
         if not BWB.fullmatch(bwb):
             return self.stuur(400, {"fout": "een BWB-id ziet eruit als BWBR0007376"})
