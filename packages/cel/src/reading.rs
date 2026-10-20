@@ -393,7 +393,7 @@ pub fn refuse_unrequired_facts(
                 let Some(fact) = input.source.as_ref().and_then(|s| s.facts.as_ref()) else {
                     continue;
                 };
-                crate::shape::fact_fields(service, fact, day).map_err(|e| {
+                crate::shape::fact_fields(service, fact, day, None).map_err(|e| {
                     setup(format!(
                         "reduction '{}' reads the facts {fact}: {e}",
                         reduction.id

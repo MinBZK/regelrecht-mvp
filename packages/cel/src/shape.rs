@@ -263,13 +263,22 @@ pub fn split_fact(fact: &str) -> Result<(&str, &str)> {
 /// fact lists, with their types, as the fields of an application are the
 /// parameters its item lists. Refused when the article has no version in
 /// force on `day` or does not require that fact.
+///
+/// With `recorder`, the cell of that authority is about to record an
+/// instance: refused first when the fact names who establishes it
+/// (`competent_authority`, schema v0.8.8, RFC-052) and does not name this
+/// cell. A fact without one may be recorded by any cell.
 pub fn fact_fields(
     service: &LawExecutionService,
     fact: &str,
     day: NaiveDate,
+    recorder: Option<&Authority>,
 ) -> Result<Vec<Field>> {
     let (grondslag, _) = split_fact(fact)?;
     let (article, required) = required_fact(service, fact, day)?;
+    if let Some(authority) = recorder {
+        refuse_incompetent_fact(required, fact, authority)?;
+    }
     required
         .parameters
         .iter()
@@ -322,16 +331,13 @@ fn required_fact<'s>(
     Ok((article, required))
 }
 
-/// Refuse to record `fact` in the cell of `authority` when the fact names
-/// who establishes it (`competent_authority`, schema v0.8.8, RFC-052) and
-/// does not name this cell. A fact without one may be recorded by any cell.
-pub fn refuse_incompetent_fact(
-    service: &LawExecutionService,
+/// Refuse to record `fact` in the cell of `authority` when its `requires`
+/// entry names who establishes it and does not name this cell.
+fn refuse_incompetent_fact(
+    required: &ArticleRequirement,
     fact: &str,
-    day: NaiveDate,
     authority: &Authority,
 ) -> Result<()> {
-    let (_, required) = required_fact(service, fact, day)?;
     let Some(named) = required
         .competent_authority
         .as_ref()
