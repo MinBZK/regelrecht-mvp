@@ -114,6 +114,55 @@ class Dienst(unittest.TestCase):
         self.assertEqual(eigen, ["10002", "10003"])
         self.assertFalse((dienst.OPGEHAALD / "10001.json").exists())
 
+    def test_elk_verzoek_staat_in_het_logboek_maar_het_pollen_niet(self):
+        vraag("GET", "/wetsgeschiedenis/gegevens/dossiers.json")
+        vraag("GET", "/wetsgeschiedenis/api/taak")
+        status, log = vraag("GET", "/wetsgeschiedenis/api/log")
+        self.assertEqual(status, 200)
+        verzoeken = [r for r in log if r["soort"] == "verzoek"]
+        self.assertEqual(verzoeken[-1]["pad"], "/wetsgeschiedenis/gegevens/dossiers.json")
+        self.assertEqual(verzoeken[-1]["status"], 200)
+        self.assertNotIn("/wetsgeschiedenis/api/taak", [r["pad"] for r in verzoeken])
+
+    def test_een_curlfout_zegt_welke_host_en_waarom(self):
+        def dicht(cmd, *a, **k):  # zoals een cluster zonder uitgaand verkeer
+            self.assertEqual(cmd[:4], ["curl", "-S", "--connect-timeout", dienst.VERBINDEN])
+            raise dienst.subprocess.CalledProcessError(28, cmd, b"", b"curl: (28) Connection timed out after 15001 ms")
+
+        oud = dienst._run
+        dienst._run = dicht
+        try:
+            status, x = vraag("GET", "/wetsgeschiedenis/api/regeling/BWBR0029404")
+        finally:
+            dienst._run = oud
+        self.assertEqual(status, 502)
+        self.assertIn("wetten.overheid.nl: geen antwoord binnen de tijd", x["fout"])
+        self.assertIn("curl 28", x["fout"])
+        uit = [r for r in dienst.LOGBOEK if r["soort"] == "uit"][-1]
+        self.assertEqual((uit["host"], uit["code"]), ("wetten.overheid.nl", 28))
+
+    def test_de_diagnose_noemt_de_host_die_niet_bereikbaar_is(self):
+        def nep(cmd, *a, **k):
+            if cmd[1] == "--version":
+                return dienst.subprocess.CompletedProcess(cmd, 0, "curl 8.0.0 (test)\n", "")
+            if cmd[-1] == "https://gegevensmagazijn.tweedekamer.nl/":
+                return dienst.subprocess.CompletedProcess(cmd, 6, "000  0 0 0", "curl: (6) Could not resolve host")
+            return dienst.subprocess.CompletedProcess(cmd, 0, "200 192.0.2.1 0.01 0.02 0.10", "")
+
+        oud = dienst._run
+        dienst._run = nep
+        try:
+            status, d = vraag("GET", "/wetsgeschiedenis/api/diagnose")
+        finally:
+            dienst._run = oud
+        self.assertEqual(status, 200)
+        self.assertTrue(d["data"]["schrijfbaar"])
+        self.assertTrue(d["hosts"]["wetten.overheid.nl"]["ok"])
+        self.assertFalse(d["hosts"]["gegevensmagazijn.tweedekamer.nl"]["ok"])
+        self.assertIn("DNS", d["hosts"]["gegevensmagazijn.tweedekamer.nl"]["uitleg"])
+        self.assertEqual(d["oordeel"], "ophalen faalt: gegevensmagazijn.tweedekamer.nl niet bereikbaar")
+        self.assertEqual(vraag("GET", "/wetsgeschiedenis/api/diagnose?bwb=x")[0], 400)
+
 
 if __name__ == "__main__":
     unittest.main()

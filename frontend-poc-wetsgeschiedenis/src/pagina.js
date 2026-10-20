@@ -896,37 +896,66 @@ zetModus(Z.modus);
   $("ophalen-plek").classList.remove("verborgen");
   const dlg = $("ophaal"), uit = $("ophaal-uit");
   const melding = (t) => uit.insertAdjacentHTML("afterbegin", `<p class="ophaal-fout">${esc(t)}</p>`);
+  const fout = (t) => { uit.innerHTML = ""; melding(t + " Diagnose laat zien wat de dienst wel en niet bereikt."); };
+  // Elk antwoord als {ok, status, x, s}. Een fout van het portaal (platte tekst)
+  // of van de ingress (HTML) is geen JSON; dan zegt de melding wie antwoordde.
+  async function api(pad, opties) {
+    const t0 = performance.now();
+    let r;
+    try { r = await fetch(BASIS + pad, opties); }
+    catch (e) { return { ok: false, status: 0, x: { fout: `Geen verbinding met de dienst (${e.message}).` } }; }
+    const tekst = await r.text(), s = Math.round((performance.now() - t0) / 100) / 10;
+    try { return { ok: r.ok, status: r.status, x: JSON.parse(tekst), s }; } catch (e) { /* geen JSON */ }
+    const wie = r.status === 502 ? "Het portaal kreeg geen antwoord van de dienst"
+      : r.status === 504 ? "De ingress wachtte te lang op de dienst" : "Een tussenliggende server antwoordde";
+    const kort = tekst.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+    return { ok: false, status: r.status, s, x: { fout: `${wie} (HTTP ${r.status}, na ${s} s)${kort ? ": " + kort : "."}` } };
+  }
+  // Een teller zolang er gewacht wordt; de opzoeking kan tientallen seconden duren.
+  function wacht(tekst) {
+    const t0 = performance.now();
+    uit.innerHTML = `<p>${esc(tekst)} <span id="ophaal-tijd"></span></p>`;
+    const klok = setInterval(() => {
+      const el = $("ophaal-tijd");
+      if (el) el.textContent = Math.round((performance.now() - t0) / 1000) + " s"; else clearInterval(klok);
+    }, 1000);
+    return () => clearInterval(klok);
+  }
+  const regel = (r) => [r.t.slice(11), r.soort, r.methode, r.wat && `${r.wat} ${r.bwb}${r.dossier ? " " + r.dossier : ""}`,
+    r.host ? r.host + r.pad : r.pad || r.bij, r.status ?? r.http ?? (r.code ? "curl " + r.code : ""),
+    r.uitleg || r.fout || r.oordeel, r.ms != null ? r.ms + " ms" : r.s != null ? r.s + " s" : ""].filter((v) => v != null && v !== "").join("  ");
   const open = (id) => { try { localStorage.setItem("wg-dossier", id); } catch (e) {} location.hash = "d=" + id; location.reload(); };
   $("ophalen").addEventListener("click", () => { dlg.showModal(); if (st.taak && st.taak.status === "bezig") volg(); });
   $("ophaal-sluit").addEventListener("click", () => dlg.close());
   async function zoek() {
     const bwb = $("ophaal-bwb").value.trim().toUpperCase();
     if (!/^BWBR\d{7}$/.test(bwb)) { uit.innerHTML = ""; return melding("Een BWB-id ziet eruit als BWBR0007376."); }
-    uit.innerHTML = `<p>Op wetten.overheid.nl opzoeken wat ${esc(bwb)} maakte en wijzigde …</p>`;
-    const r = await fetch(BASIS + "api/regeling/" + bwb), reg = await r.json();
-    if (!r.ok) { uit.innerHTML = ""; return melding(reg.fout); }
+    const klaar = wacht(`Op wetten.overheid.nl opzoeken wat ${bwb} maakte en wijzigde …`);
+    const { ok, x: reg } = await api("api/regeling/" + bwb);
+    klaar();
+    if (!ok) return fout(reg.fout);
     const knop = (id, tekst, attr) => `<button type="button" class="ophaal-actie" data-id="${esc(id)}" ${attr}>${esc(tekst)}</button>`;
     uit.innerHTML = `<h3>${esc(reg.titel)}${reg.afkorting ? ` (${esc(reg.afkorting)})` : ""}</h3>
       <p>${knop(reg.bwb, reg.keten ? "Open de wet door de tijd" : "Haal de wet door de tijd op", 'data-keten="1"')}
         elke versie op wetten.overheid.nl, elke overgang afgespeeld uit het Staatsblad.</p>
-      <table class="ophaal-lijst"><thead><tr><th>In werking</th><th>Wat</th><th>Staatsblad</th><th>Kamerdossier</th></tr></thead><tbody>
+      ${reg.versies.length ? `<table class="ophaal-lijst"><thead><tr><th>In werking</th><th>Wat</th><th>Staatsblad</th><th>Kamerdossier</th></tr></thead><tbody>
       ${reg.versies.map((v) => `<tr><td>${v.inwerking ? datumTekst(v.inwerking) : "nog niet"}</td><td>${esc(v.betreft || "")}</td>
         <td>${esc(v.staatsblad || "")}</td><td>${v.dossiers.map((d) => knop(d.nr, (d.beschikbaar ? "Open " : "Haal op: ") + d.nr, d.beschikbaar ? 'data-open="1"' : "")).join("")}</td></tr>`).join("")}
-      </tbody></table>`;
+      </tbody></table>` : `<p>Geen versie van deze regeling kwam uit een Kamerdossier. Een algemene maatregel van bestuur of een ministeriële regeling gaat niet langs de Kamer; alleen de regeling door de tijd kan.</p>`}`;
     uit.querySelectorAll(".ophaal-actie").forEach((b) => b.addEventListener("click", async () => {
       if (b.dataset.open || (b.dataset.keten && reg.keten)) return open(b.dataset.id);
       const vraag = b.dataset.keten ? { bwb: reg.bwb, keten: true } : { bwb: reg.bwb, dossier: b.dataset.id };
-      const r = await fetch(BASIS + "api/haal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(vraag) });
-      const a = await r.json();
-      if (r.status === 409) { melding("Er loopt al een opdracht; die volgt hieronder."); return volg(); }
-      if (!r.ok) return melding(a.fout);
+      const { ok, status, x: a } = await api("api/haal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(vraag) });
+      if (status === 409) { melding("Er loopt al een opdracht; die volgt hieronder."); return volg(); }
+      if (!ok) return melding(a.fout);
       volg();
     }));
   }
   $("ophaal-zoek").addEventListener("click", zoek);
   $("ophaal-bwb").addEventListener("keydown", (e) => { if (e.key === "Enter") zoek(); });
   async function volg() {
-    const t = await (await fetch(BASIS + "api/taak")).json();
+    const { ok, x: t } = await api("api/taak");
+    if (!ok) return fout(t.fout);
     if (!t) return;
     const wat = t.wat === "keten" ? `${t.bwb} door de tijd` : `dossier ${t.dossier}`;
     uit.innerHTML = `<h3>${esc({ bezig: "Bezig: ", klaar: "Klaar: ", fout: "Mislukt: " }[t.status] + wat)}</h3>`
@@ -937,4 +966,28 @@ zetModus(Z.modus);
     if (t.status === "klaar") $("ophaal-open").addEventListener("click", () => open(t.uitkomst));
     if (t.status === "bezig") setTimeout(volg, 1500);
   }
+  // Wat de dienst bereikt en wat hij de laatste tijd deed. Met een BWB-id in het
+  // veld toetst hij ook de opzoeking zelf.
+  async function diagnose() {
+    const bwb = $("ophaal-bwb").value.trim().toUpperCase(), met = /^BWBR\d{7}$/.test(bwb);
+    const klaar = wacht(`De dienst toetst wat hij bereikt${met ? " en zoekt " + bwb + " op" : ""} …`);
+    const [{ ok, x: d }, { x: log }] = await Promise.all([api("api/diagnose" + (met ? "?bwb=" + bwb : "")), api("api/log")]);
+    klaar();
+    if (!ok) return fout(d.fout);
+    const proxy = Object.entries(d.proxy).map(([k, v]) => `${k}=${v}`).join(", ") || "geen";
+    uit.innerHTML = `<h3 class="${d.oordeel === "ophalen kan" ? "" : "ophaal-fout"}">${esc(d.oordeel)}</h3>
+      <table class="ophaal-lijst"><thead><tr><th>Host</th><th>Bereikbaar</th><th>Waarvoor</th></tr></thead><tbody>
+      ${Object.entries(d.hosts).map(([h, v]) => `<tr><td>${esc(h)}</td><td>${v.ok ? `ja, HTTP ${esc(v.http)} in ${esc(v.totaal_s)} s`
+        : `<span class="ophaal-fout">nee: ${esc(v.uitleg || v.fout || "onbekend")}</span>`}</td><td>${esc(v.waarvoor)}</td></tr>`).join("")}
+      </tbody></table>
+      <p>Schrijven in ${esc(d.data.pad)}: ${d.data.schrijfbaar ? `ja, ${esc(d.data.vrij_mb)} MB vrij` : `<span class="ophaal-fout">nee: ${esc(d.data.fout)}</span>`}.
+        ${esc(d.curl)}. Proxy: ${esc(proxy)}. Dossiers: ${d.dossiers.in_het_image} in het image, ${d.dossiers.opgehaald} opgehaald (ten hoogste ${d.dossiers.max}).</p>
+      ${d.opzoeking ? `<p>Opzoeking van ${esc(d.opzoeking.bwb)}: ${d.opzoeking.ok ? `${esc(d.opzoeking.titel)}, ${d.opzoeking.versies_met_dossier} versies met een Kamerdossier`
+        : `<span class="ophaal-fout">${esc(d.opzoeking.fout)}</span>`} (${d.opzoeking.s} s).</p>` : ""}
+      <h3>Logboek</h3>
+      <pre class="ophaal-log">${esc((Array.isArray(log) ? log : []).slice(-40).map(regel).join("\n") || "leeg")}</pre>
+      <p>Als JSON, om door te sturen: <a href="${BASIS}api/diagnose${met ? "?bwb=" + bwb : ""}" target="_blank" rel="noopener">api/diagnose</a>,
+        <a href="${BASIS}api/log" target="_blank" rel="noopener">api/log</a>.</p>`;
+  }
+  $("ophaal-diagnose").addEventListener("click", diagnose);
 })();

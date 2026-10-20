@@ -27,7 +27,7 @@ Er wordt geen bouwdatum geinjecteerd: twee keer draaien geeft een
 byte-identiek bestand.
 
   python3 generatoren/bouw-wetsgeschiedenis.py
-  python3 generatoren/bouw-wetsgeschiedenis.py --poc <checkout van MinBZK/regelrecht>
+  python3 generatoren/bouw-wetsgeschiedenis.py --poc <checkout van NederlandseDigitaleDienst/regelrecht>
 
 DE POC-VORM. Achter het poc-portaal (poc.regelrecht.rijks.app) laat de CSP
 geen inline script toe en geen lettertype als data-URI. `--poc` schrijft
@@ -221,7 +221,7 @@ def poc(doel, index, gegevens_):
     index = [d for d in index if in_poc(d["dossier"])]
     gegevens_ = {i: t for i, t in gegevens_.items() if in_poc(i)}
     if not os.path.exists(os.path.join(doel, "pocs", "registry.yaml")):
-        sys.exit(f"--poc: {doel} is geen checkout van MinBZK/regelrecht (pocs/registry.yaml ontbreekt)")
+        sys.exit(f"--poc: {doel} is geen checkout van NederlandseDigitaleDienst/regelrecht (pocs/registry.yaml ontbreekt)")
     html = lees(SJABLOON)
     stijl, script = STIJL.findall(html), SCRIPT.findall(html)
     if len(stijl) != 1 or len(script) != 1:
@@ -278,7 +278,7 @@ def main():
     if args[:1] == ["--poc"] and len(args) == 2:
         doel = os.path.abspath(args[1])
     elif args:
-        sys.exit("gebruik: bouw-wetsgeschiedenis.py [--poc <checkout van MinBZK/regelrecht>]")
+        sys.exit("gebruik: bouw-wetsgeschiedenis.py [--poc <checkout van NederlandseDigitaleDienst/regelrecht>]")
     index, gegevens_, regels = verzamel()
     uit = los(index, gegevens_)
     print(f"wetsgeschiedenis: {len(index)} dossiers, {os.path.getsize(uit) // 1024} kB")

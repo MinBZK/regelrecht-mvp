@@ -195,7 +195,9 @@ def regeling(bwb):
     # De versies die wetten.overheid.nl zelf heeft (de knop 'vergelijk'); oudere
     # staan in de tabel maar niet als tekst.
     beschikbaar = sorted(set(re.findall(r'value="(\d{4}-\d{2}-\d{2})" class="wti-compare', x)))
-    return {"bwb": bwb, "titel": titel, "afkorting": schoon(afk[1]) if afk else None, "versies": versies,
+    # Zonder afkorting zet de site er 'Geen' (BWBR0029404, gemeten 20-10-2026).
+    afk = schoon(afk[1]) if afk else None
+    return {"bwb": bwb, "titel": titel, "afkorting": afk if afk and afk != "Geen" else None, "versies": versies,
             "beschikbaar": beschikbaar}
 
 
