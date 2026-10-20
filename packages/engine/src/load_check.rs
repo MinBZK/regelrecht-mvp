@@ -229,17 +229,6 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
     Ok(())
 }
 
-/// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
-/// items of one type, does not give each output to exactly one item (as one
-/// of its `outputs`, or as data `derived` for the decision, RFC-050), lists
-/// `derived` on an item that is no decision, names a
-/// parameter or output the article lacks, or has a submission that requests
-/// a decision this law does not take. One item per type makes article and
-/// type name an item, so nothing in the list needs a name of its own; a
-/// staged execution also picks the item by kind (the stage named after the
-/// submission, every other stage the decision). A submission that requests a
-/// decision of another law is checked when it is used, since that law may be
-/// loaded later.
 /// Refuse a fact an article requires (`requires` with `fact`, schema v0.8.7,
 /// RFC-051) that names a provision besides, holds no parameter or one the
 /// article does not declare, or whose name another fact of the article has.
@@ -294,6 +283,17 @@ pub(crate) fn reject_malformed_facts(law: &ArticleBasedLaw) -> Result<()> {
     Ok(())
 }
 
+/// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
+/// items of one type, does not give each output to exactly one item (as one
+/// of its `outputs`, or as data `derived` for the decision, RFC-050), lists
+/// `derived` on an item that is no decision, names a
+/// parameter or output the article lacks, or has a submission that requests
+/// a decision this law does not take. One item per type makes article and
+/// type name an item, so nothing in the list needs a name of its own; a
+/// staged execution also picks the item by kind (the stage named after the
+/// submission, every other stage the decision). A submission that requests a
+/// decision of another law is checked when it is used, since that law may be
+/// loaded later.
 pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
     for article in law.articles.iter().filter(|a| a.produces_list()) {
         let produced = article.get_produced();

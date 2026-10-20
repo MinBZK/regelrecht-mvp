@@ -7,11 +7,11 @@ valid_from: '2026-01-01'
 # Geen regelgeving: een reductie van de cel van de (fictieve) gemeente
 # Wilgendaal over haar eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest
 # de executogrammen van het feit dat artikel 3, eerste lid, van de Regeling
-# gehandicaptenparkeerkaart vereist: het geneeskundig onderzoek door de GGD
-# of de aangewezen deskundige, vastgelegd toen de gemeente het rapport
-# ontving. Wat elk executogram bevat, zegt dat artikel (requires, fact). Haar antwoord vult het open begrip
-# van artikel 2 van die regeling. Er is geen bekendmaking; de url wijst naar
-# dat artikel.
+# gehandicaptenparkeerkaart omschrijft: het geneeskundig onderzoek door de
+# GGD of de aangewezen deskundige, vastgelegd toen de gemeente het rapport
+# ontving. Wat elk executogram bevat, zegt dat artikel (requires, fact).
+# Haar antwoord vult het open begrip van artikel 2 van die regeling. Er is
+# geen bekendmaking; de url wijst naar dat artikel.
 url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
 name: Geneeskundig onderzoek bij de gemeente Wilgendaal (reductie)
 competent_authority:

@@ -4,7 +4,8 @@
 // beantwoordt (Cell::answers); dan elke reductie als geschreven, met per
 // invoer de rijen die zij uit de kroniek krijgt: de besluiten onder een
 // artikel (zoals dat van de casus of Awb 7:11) of de
-// executogrammen die een artikel vestigt (zoals de vestiging van een school). Wat zij
+// executogrammen van een feit dat een artikel vereist (zoals de vestiging van
+// een school). Wat zij
 // bij een besluit antwoordde en waarom, staat bij dat besluit (tabblad
 // Bestuursorgaan).
 import { onMounted, ref, watch } from 'vue';

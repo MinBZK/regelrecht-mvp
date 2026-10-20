@@ -299,8 +299,10 @@ articles:
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
     machine_readable:
       # Lid 1 zegt wie het geneeskundig onderzoek verricht: de GGD of de
-      # aangewezen deskundige. Het onderzoek is een feit dat dit artikel
-      # vereist (requires, fact): wiens handicap is onderzocht (artikel 2,
+      # aangewezen deskundige. Besluit van de eigenaar (20-10): het onderzoek
+      # staat als feit (requires, fact) bij dit artikel, dat het omschrijft,
+      # en niet bij artikel 2, eerste lid, dat eist dat het heeft
+      # plaatsgehad. Wat het bevat: wiens handicap is onderzocht (artikel 2,
       # eerste lid: "de handicap van de aanvrager"), wanneer, en door wie
       # (lid 1 noemt de twee mogelijkheden; de naam van een aangewezen
       # deskundige verschilt per geval, dus vrije tekst). Wanneer het feit
