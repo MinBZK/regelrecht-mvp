@@ -421,3 +421,16 @@ fn the_cell_is_known_by_its_identity() {
     assert_eq!(cell.authority().name, "wilgendaal");
     assert_eq!(cell.authority().category.as_deref(), Some(COLLEGE));
 }
+
+#[test]
+fn a_blank_name_or_category_is_an_error() {
+    for identity in ["name: ' '\ncategory: c\n", "name: n\ncategory: ''\n"] {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("cel.yaml"), identity).unwrap();
+        let e = Cell::in_memory("x", dir.path()).unwrap_err();
+        assert!(
+            matches!(&e, Error::Setup(m) if m.contains("not empty")),
+            "{e}"
+        );
+    }
+}
