@@ -784,8 +784,12 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3  # v4.0.0
 
+      # Zonder ontwerpsysteem slaan guard en ijktest zich groen over. Hier
+      # moet het er staan; verhuist de package, dan valt deze baan om.
       - name: Design-system slot guard
         run: |
+          test -d node_modules/@nldd/design-system/dist/components \
+            || { echo "::error::@nldd/design-system/dist/components ontbreekt; de slot-guard zou zich overslaan"; exit 1; }
           just nldd-slots
           just nldd-slots-test
 
