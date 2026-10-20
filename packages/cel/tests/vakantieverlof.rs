@@ -6,15 +6,15 @@
 // a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod common;
+
+use common::{answered, cell_tempdir, day, load_corpus, object_map, regulation_dir};
+
 use std::path::Path;
 
-use chrono::NaiveDate;
 use regelrecht_cel::{decision, shape, Cell, Error, Gram, Reference, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
-
-mod common;
-use common::cell_tempdir;
 
 const LAW: &str = "leerplichtwet_1969";
 const ARTICLE: &str = "13a";
@@ -47,30 +47,22 @@ fn service() -> LawExecutionService {
 
 /// As [`service`], without the regelwerken under `without`.
 fn service_without(without: &[&str]) -> LawExecutionService {
-    let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
-    for law in [
-        format!("wet/{LAW}"),
-        format!("wet/{AWB}"),
-        format!("uitvoeringsbeleid/{POLICY}"),
-        format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
-        format!("uitvoeringsbeleid/{LEAVE_POLICY}"),
-        // The school's reduction for lid 2, in the corpus under its holder
-        // (RFC-048).
-        format!("reducties/{REDUCTION}"),
-    ]
-    .into_iter()
-    .filter(|law| !without.iter().any(|w| law.ends_with(w)))
-    {
-        for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
-            let path = entry.unwrap().path();
-            if path.extension().is_some_and(|x| x == "yaml") {
-                service
-                    .load_law(&std::fs::read_to_string(&path).unwrap())
-                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-            }
-        }
-    }
+    load_corpus(
+        &mut service,
+        [
+            format!("wet/{LAW}"),
+            format!("wet/{AWB}"),
+            format!("uitvoeringsbeleid/{POLICY}"),
+            format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
+            format!("uitvoeringsbeleid/{LEAVE_POLICY}"),
+            // The school's reduction for lid 2, in the corpus under its
+            // holder (RFC-048).
+            format!("reducties/{REDUCTION}"),
+        ]
+        .into_iter()
+        .filter(|law| !without.iter().any(|w| law.ends_with(w))),
+    );
     service
 }
 
@@ -108,10 +100,6 @@ fn lid_2_dir() -> tempfile::TempDir {
 /// directory may go after.
 fn cell() -> Cell {
     Cell::in_memory(RECORDING_ACTOR, lid_2_dir().path()).unwrap()
-}
-
-fn day(s: &str) -> NaiveDate {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
 }
 
 /// A complete application, with fictional data (BSNs from the test range).
@@ -1069,9 +1057,9 @@ fn a_catalogue_that_names_an_empty_answer_or_reduction_is_refused() {
 /// The service with the school's reduction for lid 2 in force from `from`.
 fn service_with_reduction_from(from: &str) -> LawExecutionService {
     let mut service = service_without(&[REDUCTION]);
-    let yaml = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
-        "../../corpus/regulation/nl/reducties/{REDUCTION}/2026-08-01.yaml"
-    )))
+    let yaml = std::fs::read_to_string(
+        regulation_dir().join(format!("reducties/{REDUCTION}/2026-08-01.yaml")),
+    )
     .unwrap();
     let later = yaml.replace("valid_from: '2026-08-01'", &format!("valid_from: '{from}'"));
     assert_ne!(later, yaml);
@@ -1219,7 +1207,7 @@ fn refused_on_profession(cell: &mut Cell) -> Gram {
 /// The head's finding on the profession of a parent, given anew at the
 /// heroverweging, apart from the parameters.
 fn profession(judged: bool) -> Map<String, Value> {
-    json!({ PROFESSION: judged }).as_object().unwrap().clone()
+    object_map(json!({ PROFESSION: judged }))
 }
 
 #[test]
@@ -1751,9 +1739,7 @@ fn the_heroverweging_does_not_count_the_contested_grant() {
 /// then on. A decision taken before still replays under the version of its
 /// own day.
 fn service_with_policy_lapsed() -> LawExecutionService {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
-        "../../corpus/regulation/nl/uitvoeringsbeleid/{POLICY}/2026-08-01.yaml"
-    ));
+    let path = regulation_dir().join(format!("uitvoeringsbeleid/{POLICY}/2026-08-01.yaml"));
     let yaml = std::fs::read_to_string(path).unwrap();
     // The article keeps its text and loses its machine-readable part.
     let start = yaml.find("    machine_readable:").unwrap();
@@ -1891,7 +1877,7 @@ fn the_head_gives_at_the_decision_on_objection_only_findings_an_article_asks() {
             "a boolean for the finding 'specifieke_aard_beroep_ouder'",
         ),
     ] {
-        let given = given.as_object().unwrap().clone();
+        let given = object_map(given);
         let e = reconsider(&mut cell, &bezwaar.id, &given, "2026-11-15").unwrap_err();
         assert!(e.to_string().contains(says), "{says}: {e}");
     }
@@ -1921,15 +1907,6 @@ fn a_reduction_reads_the_decisions_on_objection_with_their_own_outcome() {
     assert_eq!(rows[0][REVOKED], json!(true));
     assert_eq!(rows[0][ADMISSIBLE], json!(true));
     assert_eq!(rows[0][NEW], json!(decided[1].id));
-}
-
-/// The nodes of `node` and below where the cell answered an open term.
-fn answered(node: &regelrecht_engine::PathNode) -> Vec<&regelrecht_engine::PathNode> {
-    let mut found: Vec<_> = node.children.iter().flat_map(answered).collect();
-    if node.answer.is_some() {
-        found.insert(0, node);
-    }
-    found
 }
 
 /// The owner's case (slice 4c): leave A is granted, leave B in the same

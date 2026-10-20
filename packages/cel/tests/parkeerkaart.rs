@@ -17,9 +17,12 @@
 // a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod common;
+
+use common::{day, load_corpus, object_map};
+
 use std::path::{Path, PathBuf};
 
-use chrono::NaiveDate;
 use regelrecht_cel::{decision, shape, Cell, Error, Gram, Reference, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
@@ -109,32 +112,25 @@ const NEW: &str = "nieuw_besluit";
 /// The BABW, the Regeling, the Awb and the municipality's policy from the
 /// corpus.
 fn service() -> LawExecutionService {
-    let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
-    for law in [
-        format!("amvb/{LAW}"),
-        "ministeriele_regeling/regeling_gehandicaptenparkeerkaart".to_string(),
-        format!("wet/{AWB}"),
-        format!("uitvoeringsbeleid/{POLICY}"),
-        // The reductions of every issuing body and of the GGD, in the corpus
-        // under their holders (RFC-048).
-        format!("reducties/{REDUCTION}"),
-        "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer"
-            .to_string(),
-        "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr".to_string(),
-        format!("reducties/{REPORTS}"),
-        format!("reducties/{ADVICE_REDUCTION}"),
-        format!("uitvoeringsbeleid/{ADVICE_POLICY}"),
-    ] {
-        for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
-            let path = entry.unwrap().path();
-            if path.extension().is_some_and(|x| x == "yaml") {
-                service
-                    .load_law(&std::fs::read_to_string(&path).unwrap())
-                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-            }
-        }
-    }
+    load_corpus(
+        &mut service,
+        [
+            format!("amvb/{LAW}"),
+            "ministeriele_regeling/regeling_gehandicaptenparkeerkaart".to_string(),
+            format!("wet/{AWB}"),
+            format!("uitvoeringsbeleid/{POLICY}"),
+            // The reductions of every issuing body and of the GGD, in the
+            // corpus under their holders (RFC-048).
+            format!("reducties/{REDUCTION}"),
+            "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer"
+                .to_string(),
+            "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr".to_string(),
+            format!("reducties/{REPORTS}"),
+            format!("reducties/{ADVICE_REDUCTION}"),
+            format!("uitvoeringsbeleid/{ADVICE_POLICY}"),
+        ],
+    );
     service
 }
 
@@ -147,14 +143,6 @@ fn cell_dir() -> PathBuf {
 /// The municipality's cell, with an empty chronicle.
 fn cell() -> Cell {
     Cell::in_memory(RECORDING_ACTOR, cell_dir()).unwrap()
-}
-
-fn day(s: &str) -> NaiveDate {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
-}
-
-fn object_map(value: Value) -> Map<String, Value> {
-    value.as_object().unwrap().clone()
 }
 
 /// A complete application of `bsn` for a card as a driver, dated
@@ -770,11 +758,10 @@ fn an_unfounded_objection_against_a_grant_leaves_the_decision_standing() {
 /// its advice (policy art. 5 and 6); the tests below are about the other
 /// terms, and the advice has tests of its own.
 fn answered(node: &regelrecht_engine::PathNode) -> Vec<&regelrecht_engine::PathNode> {
-    let mut found: Vec<_> = node.children.iter().flat_map(answered).collect();
-    if node.answer.is_some() && !ADVICE.contains(&node.name.as_str()) {
-        found.insert(0, node);
-    }
-    found
+    common::answered(node)
+        .into_iter()
+        .filter(|n| !ADVICE.contains(&n.name.as_str()))
+        .collect()
 }
 
 #[test]

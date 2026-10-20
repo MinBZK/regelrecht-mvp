@@ -7,13 +7,14 @@
 // a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod common;
+
+use common::{bare_cell, object_map, service_of};
+
 use chrono::NaiveDate;
-use regelrecht_cel::{decision, Cell, Error, Source};
+use regelrecht_cel::{decision, Error, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
-
-mod common;
-use common::cell_tempdir;
 
 /// A procedure for a beschikking, with a stage for the application.
 const GENERAL_LAW: &str = r#"
@@ -108,27 +109,8 @@ articles:
 const LAW: &str = "wet_verlof_fictief";
 const ON: &str = "2026-10-13";
 
-fn service(laws: &[&str]) -> LawExecutionService {
-    let mut service = LawExecutionService::new();
-    for law in laws {
-        service.load_law(law).unwrap();
-    }
-    service
-}
-
-/// A cell whose directory holds no reductions: a term no regulation fills
-/// is then the deciding authority's finding.
-fn bare(actor: &str) -> Cell {
-    let dir = cell_tempdir();
-    Cell::in_memory(actor, dir.path()).unwrap()
-}
-
 fn day() -> NaiveDate {
-    NaiveDate::parse_from_str(ON, "%Y-%m-%d").unwrap()
-}
-
-fn object(value: Value) -> Map<String, Value> {
-    value.as_object().unwrap().clone()
+    common::day(ON)
 }
 
 /// Record an application for `dagen` days and decide on it with `supplied`:
@@ -138,7 +120,7 @@ fn decide(
     dagen: i64,
     supplied: Value,
 ) -> Result<(regelrecht_cel::Gram, Vec<String>), Error> {
-    let mut cell = bare("fictieve_school");
+    let mut cell = bare_cell("fictieve_school");
     let app = cell
         .record_submission(
             service,
@@ -146,7 +128,7 @@ fn decide(
             LAW,
             "1",
             None,
-            &object(json!({"dagen": dagen})),
+            &object_map(json!({"dagen": dagen})),
             day(),
         )
         .unwrap();
@@ -157,7 +139,7 @@ fn decide(
         "1",
         &app.id,
         &Map::new(),
-        &object(supplied),
+        &object_map(supplied),
         day(),
     )
     .map(|mut grams| grams.remove(0))
@@ -169,7 +151,7 @@ fn decide(
 
 #[test]
 fn a_judgement_on_a_term_a_regulation_also_fills_may_be_supplied() {
-    let service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let service = service_of(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     let input = shape.input("grond_aanwezig").unwrap();
     assert_eq!(input.source, Source::Caller);
@@ -178,7 +160,7 @@ fn a_judgement_on_a_term_a_regulation_also_fills_may_be_supplied() {
 
 #[test]
 fn where_the_regulation_is_silent_the_judgement_decides() {
-    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let mut service = service_of(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
     let (gram, findings) = decide(&mut service, 5, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     assert_eq!(gram.fields["grond_aanwezig"], json!(false));
@@ -194,7 +176,7 @@ fn where_the_regulation_is_silent_the_judgement_decides() {
 
 #[test]
 fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
-    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let mut service = service_of(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
     let (gram, findings) = decide(&mut service, 2, json!({"grond_aanwezig": false})).unwrap();
     assert_eq!(gram.outputs["verlof_verleend"], json!(true));
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
@@ -212,7 +194,7 @@ fn where_the_regulation_fills_the_term_it_sets_the_judgement_aside() {
 /// read it from the value.
 #[test]
 fn a_regulation_that_gives_the_judgement_s_value_still_sets_it_aside() {
-    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
+    let mut service = service_of(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
     let (gram, findings) = decide(&mut service, 2, json!({"grond_aanwezig": true})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], json!(true));
     assert!(findings.is_empty(), "{:?}", findings);
@@ -224,8 +206,8 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
         "requires: [{name: aanvraag_datum, type: date}]",
         "requires: [{name: kanaal, type: string}]",
     );
-    let mut service = service(&[&general, SPECIAL_LAW]);
-    let mut cell = bare("fictieve_school");
+    let mut service = service_of(&[&general, SPECIAL_LAW]);
+    let mut cell = bare_cell("fictieve_school");
     let e = cell
         .record_submission(
             &mut service,
@@ -233,7 +215,7 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
             LAW,
             "1",
             None,
-            &object(json!({"dagen": 2})),
+            &object_map(json!({"dagen": 2})),
             day(),
         )
         .unwrap_err();
@@ -254,7 +236,7 @@ fn the_application_holds_what_its_item_lists() {
         "          - {name: dagen, type: number}\n          - {name: reden, type: string}\n        output:",
     );
     assert_ne!(special, SPECIAL_LAW);
-    let service = service(&[GENERAL_LAW, &special]);
+    let service = service_of(&[GENERAL_LAW, &special]);
     let application = regelrecht_cel::shape::derive(&service, LAW, "1", day()).unwrap();
     let names: Vec<&str> = application.fields.iter().map(|f| f.name.as_str()).collect();
     assert_eq!(names, ["dagen"]);
@@ -308,10 +290,10 @@ articles:
 
 #[test]
 fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article() {
-    let mut service = service(&[GENERAL_LAW, SPLIT_LAW]);
+    let mut service = service_of(&[GENERAL_LAW, SPLIT_LAW]);
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     assert_eq!(shape.application, "wet_verlof_fictief#2");
-    let mut cell = bare("fictieve_school");
+    let mut cell = bare_cell("fictieve_school");
     let app = cell
         .record_submission(
             &mut service,
@@ -319,7 +301,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
             LAW,
             "2",
             None,
-            &object(json!({"dagen": 2})),
+            &object_map(json!({"dagen": 2})),
             day(),
         )
         .unwrap();
@@ -347,8 +329,8 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
         "requests: wet_verlof_fictief#1",
         "requests: wet_elders_fictief#4",
     );
-    let mut service = service(&[GENERAL_LAW, &split]);
-    let mut cell = bare("fictieve_school");
+    let mut service = service_of(&[GENERAL_LAW, &split]);
+    let mut cell = bare_cell("fictieve_school");
     let e = cell
         .record_submission(
             &mut service,
@@ -356,7 +338,7 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
             LAW,
             "2",
             None,
-            &object(json!({"dagen": 2})),
+            &object_map(json!({"dagen": 2})),
             day(),
         )
         .unwrap_err();
@@ -387,10 +369,10 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
           - {name: dagen, type: number}
 "#;
     let split = format!("{SPLIT_LAW}{}", second.trim_start_matches('\n'));
-    let mut service = service(&[GENERAL_LAW, &split]);
+    let mut service = service_of(&[GENERAL_LAW, &split]);
     let e = decision::derive(&service, LAW, "1", day()).unwrap_err();
     assert!(e.to_string().contains("several applications"), "{e}");
-    let mut cell = bare("fictieve_school");
+    let mut cell = bare_cell("fictieve_school");
     let app = cell
         .record_submission(
             &mut service,
@@ -398,7 +380,7 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
             LAW,
             "2",
             None,
-            &object(json!({"dagen": 2})),
+            &object_map(json!({"dagen": 2})),
             day(),
         )
         .unwrap();
@@ -439,7 +421,7 @@ fn a_hook_that_reads_derived_data_asks_nothing_for_it() {
           - {output: dagen_vermeld, value: $dagen_gevraagd}
 "#
     );
-    let mut service = service(&[&general, &special, POLICY]);
+    let mut service = service_of(&[&general, &special, POLICY]);
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     assert!(
         shape.input("dagen_gevraagd").is_none(),
@@ -466,7 +448,7 @@ fn a_judgement_left_out_is_no_finding() {
             "          - {name: verlof_verleend, type: boolean, nullable: true}",
         );
     assert_ne!(special, SPECIAL_LAW);
-    let mut service = service(&[GENERAL_LAW, &special]);
+    let mut service = service_of(&[GENERAL_LAW, &special]);
     let (gram, findings) = decide(&mut service, 5, json!({})).unwrap();
     assert_eq!(gram.fields["grond_aanwezig"], Value::Null);
     assert!(findings.is_empty(), "{:?}", findings);
