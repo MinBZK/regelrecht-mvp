@@ -951,7 +951,8 @@ articles:
     machine_readable:
       # Bevoegd (RFC-002): het college onder lid 1 en 2, het CBR onder lid
       # 3. Welk college, zegt lid 1 (de gemeente van inschrijving); de PoC
-      # toetst alleen de categorie (RFC-052).
+      # toetst alleen de categorie (RFC-052). Lid 3 is niet gemodelleerd: in
+      # de PoC beslist het CBR op het model van lid 1 (eigen keuze).
       competent_authority:
         - name: college van burgemeester en wethouders
           type: CATEGORY
@@ -1297,9 +1298,9 @@ articles:
           type: boolean
           required: true
           decided_per_case_by: >-
-            het college van burgemeester en wethouders, als verstrekkende
-            instantie (Regeling gehandicaptenparkeerkaart, artikel 2, tweede
-            lid, onder a en b)
+            het gezag dat bevoegd is tot de afgifte (het college of het CBR),
+            als verstrekkende instantie (Regeling gehandicaptenparkeerkaart,
+            artikel 2, tweede lid, onder a en b)
           combine: OR
           description: >-
             Of aan de aanvrager eerder een gehandicaptenparkeerkaart is
@@ -1308,11 +1309,9 @@ articles:
         parameters:
           - name: datum_afgifte
             type: date
-            required: false
             description: De dag waarop de gehandicaptenparkeerkaart is afgegeven.
           - name: bsn_aanvrager
             type: string
-            required: false
             description: >-
               Burgerservicenummer van de aanvrager, voor de vraag of hem
               eerder een kaart is verstrekt.

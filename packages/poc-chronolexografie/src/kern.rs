@@ -52,6 +52,16 @@ impl Cellen {
         self.andere.iter().collect()
     }
 
+    /// The open terms the reductions of every cell fill on `on`: of the
+    /// case's cell and of the sphere (RFC-052). A term one of them answers
+    /// is no judgement the form asks first.
+    pub fn terms_on(&self, on: NaiveDate) -> Vec<reading::Term> {
+        std::iter::once(&self.eigen)
+            .chain(&self.andere)
+            .flat_map(|cell| reading::terms_on(cell.reductions(), on))
+            .collect()
+    }
+
     /// The case's cell to record in, and the others to ask.
     pub fn splits(&mut self) -> (&mut Cell, Vec<&Cell>) {
         (&mut self.eigen, self.andere.iter().collect())
@@ -288,7 +298,7 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
 /// the contested decision ([`heroverweging`]).
 pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
-    let beantwoord = reading::terms_on(cell.reductions(), on);
+    let beantwoord = cell.terms_on(on);
     let aanvraag = shape::derive(&service, corpus.law(), corpus.article(), on)?;
     let besluit = decision::derive_with(&service, corpus.law(), corpus.article(), on, &beantwoord)?;
     let bezwaar = shape::derive(&service, corpus.awb(), corpus.objection(), on)?;
@@ -403,12 +413,28 @@ pub fn vastleggen(
     velden: &Map<String, Value>,
     on: NaiveDate,
 ) -> Result<Gram> {
+    // Only a fact this cell reads back, as the form offers it.
+    let service = corpus.service()?;
+    let mag = handelingen(&service, corpus, cellen, on)?
+        .into_iter()
+        .any(|c| {
+            c["cel"] == cel
+                && c["handelingen"]
+                    .as_array()
+                    .is_some_and(|h| h.iter().any(|h| h["feit"] == feit))
+        });
+    if !mag {
+        return Err(Error::Refused(format!(
+            "'{cel}' records no fact '{feit}': it is no other cell of this case, or none of its \
+             reductions reads that fact"
+        )));
+    }
     let cell = cellen
         .andere
         .iter_mut()
         .find(|c| c.recording_actor() == cel)
         .ok_or_else(|| Error::Refused(format!("'{cel}' is no other cell of this case")))?;
-    cell.record_executogram(&corpus.service()?, feit, velden, on)
+    cell.record_executogram(&service, feit, velden, on)
 }
 
 /// The applicant applies: record the application under the case's article,
@@ -698,12 +724,9 @@ fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
                     && c.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen)
                     && c.result.as_ref().is_some_and(|r| !r.is_null())
             });
-            let keer = keer(&spoor.beantwoord, eigen_antwoord.unwrap_or(node)).filter(|_| {
-                eigen_antwoord
-                    .or(Some(node))
-                    .and_then(|n| n.answer.as_ref())
-                    .is_some_and(|a| a.answerer == spoor.eigen)
-            });
+            let n = eigen_antwoord.unwrap_or(node);
+            let keer = keer(&spoor.beantwoord, n)
+                .filter(|_| n.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen));
             // The cell answered a term below this one, in the regulation that
             // filled it: the steps there lead to that answer.
             let onder = node
@@ -1213,7 +1236,7 @@ fn voorvertonen<T>(
     on: NaiveDate,
     neem: impl Fn(&mut Cellen, &Map<String, Value>) -> Result<T>,
 ) -> Result<Voorvertoning<T>> {
-    let beantwoord = reading::terms_on(cell.reductions(), on);
+    let beantwoord = cell.terms_on(on);
     let van_cel = |naam: &str| beantwoord.iter().any(|t| t.open_term == naam);
     let van_cel_op = |naam: &str, waar: &str| {
         beantwoord
@@ -2680,6 +2703,18 @@ mod tests {
             "{e}"
         );
         assert_eq!(cell.grams().len(), voor);
+        // The form asks the college about the examination, since the GGD,
+        // which the law makes competent, is silent for this application.
+        let voor = voorvertoning_besluit(
+            &corpus,
+            &cell,
+            &app.id,
+            &corpus.casus.voorbeeld.bevindingen,
+            day("2026-10-20"),
+        )
+        .unwrap();
+        let stil: Vec<&Value> = voor.stil.iter().map(|v| &v["naam"]).collect();
+        assert_eq!(stil, [&json!("geneeskundig_onderzoek_heeft_plaatsgehad")]);
 
         // Scenario 7: after the card of 2026 expired, the college leaves the
         // examination out for an applicant it knows still qualifies (lid 2

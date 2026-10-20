@@ -9,7 +9,7 @@
 import { reactive } from 'vue';
 import { api } from '../api.js';
 import { artikelNaam } from '../logboek.js';
-import { hoofdletter, kort, leesbaar, spel, stap } from '../spel.js';
+import { hoofdletter, leesbaar, spel, stap } from '../spel.js';
 import VeldInvoer from './VeldInvoer.vue';
 
 // Per cel en handeling de ingevulde velden.
@@ -55,20 +55,9 @@ async function vastleggen(cel, grondslag) {
           <nldd-button appearance="primary" text="Vastleggen" @click="vastleggen(c.cel, h.feit)"></nldd-button>
         </nldd-container>
       </nldd-card>
-      <nldd-inline-dialog
-        v-if="kroniek(c.cel).length === 0"
-        icon="info"
-        text="De kroniek is leeg"
-      ></nldd-inline-dialog>
-      <nldd-list v-else appearance="box-base" :accessible-label="`Kroniek van ${c.cel_naam}`">
-        <nldd-list-item v-for="(g, i) in kroniek(c.cel)" :key="g.id" size="sm">
-          <nldd-text-cell
-            :overline="`${i + 1} · ${g.recorded_on}`"
-            :text="`${g.kind} · ${g.grondslag}`"
-            :supporting-text="kort(g.id)"
-          ></nldd-text-cell>
-        </nldd-list-item>
-      </nldd-list>
+      <nldd-text size="sm" color="secondary">
+        {{ kroniek(c.cel).length }} chronolexogram(men) in haar kroniek; ze staan onder Kroniek.
+      </nldd-text>
     </nldd-container>
   </nldd-simple-section>
 </template>

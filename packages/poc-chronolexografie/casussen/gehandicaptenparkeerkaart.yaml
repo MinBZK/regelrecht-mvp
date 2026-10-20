@@ -67,7 +67,11 @@ voorbeeld:
 #   artikel zegt ook wat het bevat.
 # - Oostmeer (fictief) en het CBR verstrekten in 2026 een kaart aan een
 #   andere aanvrager. Eerder kan niet: het BABW staat hier vanaf 1 januari
-#   2026 in het corpus.
+#   2026 in het corpus. Eigen keuze: beide beslissen op het model van
+#   artikel 49, eerste lid, en het fictieve beleid van Wilgendaal geldt ook
+#   voor hen (het is ongescoped); daarom geven zij hier ook de bevinding of
+#   de aanvrager al een geldige kaart heeft. Het derde lid (het CBR, voor
+#   wie geen ingezetene is) is niet gemodelleerd.
 andere_cellen:
   - cel: ggd_wilgendaal
     cel_naam: GGD Wilgendaal
@@ -271,8 +275,7 @@ scenarios:
       - >-
         Aanvrager, speeldatum 13 oktober 2026: verander het BSN in 999990056
         en klik op Aanvraag indienen. Het CBR gaf deze aanvrager in februari
-        2026 een kaart, toen hij geen ingezetene was (BABW artikel 49, derde
-        lid).
+        2026 een kaart.
       - >-
         Bestuursorgaan, speeldatum 20 oktober 2026: zet "geneeskundig
         onderzoek achterwege gelaten" en "bekend dat aanvrager nog steeds

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { artikelNaam, genomenBij, genummerd, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
 import { rol, spel } from '../src/spel.js';
 
@@ -175,6 +175,19 @@ describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
       { cel: 'gemeente_oostmeer', cel_naam: 'gemeente Oostmeer' },
       { cel: 'cbr', cel_naam: 'CBR' },
     ];
+    spel.andere = [{ cel: 'gemeente_oostmeer', grammen: [{ id: '019a0000-0000-7000-8000-00000000cccc', kind: 'BESCHIKKING' }] }];
+  });
+  afterEach(() => {
+    delete spel.casus.andere_cellen;
+    spel.andere = [];
+  });
+
+  it('leest het laatste chronolexogram in de kroniek van de andere cel', () => {
+    const t = stapTekst(
+      eerder({ answer: { ...bron('gemeente_oostmeer'), last_record: '019a0000-0000-7000-8000-00000000cccc' } }),
+      [],
+    );
+    expect(t.toelichting).toContain('beschikking 0000cccc');
   });
   const eerder = (ingevuld_door) => ({
     soort: 'begrip',

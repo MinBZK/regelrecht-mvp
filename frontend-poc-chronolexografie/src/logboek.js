@@ -65,12 +65,20 @@ export const celNaam = (cel) =>
   spel.casus?.andere_cellen?.find((a) => a.cel === cel)?.cel_naam ||
   `cel ${cel}`;
 
+/**
+ * De kroniek van de cel `cel`: die van de casus, of die van een andere cel
+ * van de sfeer (RFC-052), om daar het laatst gelezen chronolexogram te
+ * vinden.
+ */
+export const grammenVan = (cel, grammen) =>
+  cel === spel.casus?.cel ? grammen : (spel.andere?.find((a) => a.cel === cel)?.grammen ?? grammen);
+
 /** Wie een open begrip invulde (`FilledBy`), in een zin. */
 export function ingevuldDoor(by, grammen) {
   if (by === 'finding') return 'bevinding van het bestuursorgaan';
   if (by?.regulation) return `ingevuld door ${artikelNaam(by.regulation.law_id, by.regulation.article)}`;
   if (by?.answer) {
-    return `${celNaam(by.answer.answerer)} uit haar kroniek: reductie ${by.answer.law_id} (geldig vanaf ${by.answer.valid_from}), ${gelezen(by.answer, grammen)}`;
+    return `${celNaam(by.answer.answerer)} uit haar kroniek: reductie ${by.answer.law_id} (geldig vanaf ${by.answer.valid_from}), ${gelezen(by.answer, grammenVan(by.answer.answerer, grammen))}`;
   }
   // Meer bevoegde cellen antwoordden; de wet zegt hoe hun antwoorden één
   // waarde worden (combine, RFC-052).
@@ -105,7 +113,7 @@ export function stapTekst(stap, grammen) {
       if (cel) {
         return {
           tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammen)})`,
+          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammenVan(cel.answerer, grammen))})`,
         };
       }
       // Een begrip dat zijn standaardwaarde kreeg, noemt de engine niet bij
