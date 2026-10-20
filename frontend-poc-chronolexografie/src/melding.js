@@ -69,15 +69,20 @@ const vertalingen = [
   ],
 ];
 
-/** De Nederlandse zin bij de melding `fout` van de cel of de server. */
-export function melding(fout) {
+/** De Nederlandse zin bij `fout`, of null als er geen vertaling voor is. */
+export function vertaling(fout) {
   for (const [patroon, zin] of vertalingen) {
     const gevonden = String(fout).match(patroon);
     if (gevonden) return zin(...gevonden.slice(1));
   }
-  return isEngels(fout)
+  return null;
+}
+
+/** De Nederlandse zin bij de melding `fout` van de cel of de server. */
+export function melding(fout) {
+  return vertaling(fout) ?? (isEngels(fout)
     ? 'Wat er misging, staat onder Details, in het Engels.'
-    : 'Wat er misging, staat onder Details.';
+    : 'Wat er misging, staat onder Details.');
 }
 
 /**

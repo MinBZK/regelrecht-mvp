@@ -291,18 +291,16 @@ async fn beslissen_op_bezwaar(
 }
 
 /// A preview ([`kern::voorvertoning_besluit`]): what the step would come to,
-/// as `{ "voorlopig": ... }`. What the cell or the engine refuses (a finding
-/// not given yet) is what the preview shows until it is given, so it comes
-/// back as `{ "geweigerd": ... }` with 200, in the words of the cell. The
-/// rest fails as any step.
+/// as `{ "voorlopig": ... }`. What the cell refuses (a finding not given
+/// yet) is what the preview shows until it is given, so it comes back as
+/// `{ "geweigerd": ... }` with 200, in the words of the cell. Any other
+/// error, from the engine or the setup, fails as in any step.
 fn voorlopig(stap: Result<impl serde::Serialize, Fout>) -> Antwoord {
     match stap {
         Ok(v) => ok(json!({
             "voorlopig": serde_json::to_value(v).map_err(|e| Fout::Intern(e.to_string()))?,
         })),
-        Err(Fout::Cel(e)) if !matches!(e, Error::Io(_)) => {
-            ok(json!({ "geweigerd": e.to_string() }))
-        }
+        Err(Fout::Cel(e @ Error::Refused(_))) => ok(json!({ "geweigerd": e.to_string() })),
         Err(f) => Err(f),
     }
 }

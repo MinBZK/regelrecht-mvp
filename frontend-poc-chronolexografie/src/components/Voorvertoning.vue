@@ -5,13 +5,14 @@
 // Na elke wijziging van een bevinding vraagt het paneel opnieuw, 300 ms na
 // de laatste (voorvertoning.js). Weigert de cel, bijvoorbeeld omdat een
 // bevinding nog ontbreekt, dan staat dat hier in plaats van een uitkomst.
+// Mislukt het verzoek zelf, dan zegt het paneel dat, met de melding erbij.
 // Bij een bezwaar (`soort="bezwaar"`) is het de beslissing op bezwaar: of
 // het bezwaar gegrond is en welk nieuw besluit er dan komt.
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { genummerd, toon, uitslag } from '../logboek.js';
-import { melding } from '../melding.js';
-import { leesbaar, spel, toegewezen } from '../spel.js';
+import { vertaling } from '../melding.js';
+import { hoofdletter, leesbaar, spel, toegewezen } from '../spel.js';
 import { volger } from '../voorvertoning.js';
 import KetenStap from './KetenStap.vue';
 
@@ -24,32 +25,39 @@ const props = defineProps({
 
 // null zolang het eerste antwoord er niet is; daarna { antwoord } of { fout }.
 const stand = ref(null);
+// Of er een nieuwere vraag loopt dan het antwoord dat er staat.
+const bezig = ref(false);
 const vraag = () =>
   (props.soort === 'bezwaar' ? api.voorvertoningOpBezwaar : api.voorvertoningBesluit)(
     props.op,
     { ...props.bevindingen },
     spel.datum,
   );
-const volg = volger(vraag, (uit) => (stand.value = uit));
+const volg = volger(vraag, (uit) => {
+  stand.value = uit;
+  bezig.value = false;
+});
 watch(
   () => [props.op, JSON.stringify(props.bevindingen), spel.datum, spel.grammen.length],
-  () => volg.plan(),
+  () => {
+    bezig.value = true;
+    volg.plan();
+  },
   { immediate: true },
 );
 onUnmounted(() => volg.stop());
 
 const voorlopig = computed(() => stand.value?.antwoord?.voorlopig ?? null);
-const geweigerd = computed(
-  () => stand.value?.antwoord?.geweigerd ?? stand.value?.fout ?? null,
-);
+const geweigerd = computed(() => stand.value?.antwoord?.geweigerd ?? null);
+const mislukt = computed(() => stand.value?.fout ?? null);
+// De reden in het Nederlands; zonder vertaling de melding zelf.
+const reden = (fout) => vertaling(fout) ?? fout;
 // Het besluit op de aanvraag, of het nieuwe besluit na een gegrond bezwaar.
 const besluit = computed(() =>
   props.soort === 'bezwaar' ? voorlopig.value?.nieuw_besluit : voorlopig.value?.besluit,
 );
 const beslissing = computed(() => (props.soort === 'bezwaar' ? voorlopig.value?.beslissing : null));
 const keten = computed(() => genummerd(voorlopig.value?.waarom?.keten ?? []));
-
-const hoofdletter = (tekst) => tekst.charAt(0).toUpperCase() + tekst.slice(1);
 
 /** De uitkomst als badge: de uitvoer die de casus noemt, met ja of nee. */
 function badge(b) {
@@ -79,7 +87,7 @@ const opBezwaarRegels = computed(() =>
       <nldd-title
         size="5"
         text="Voorlopige uitkomst · nog niet vastgelegd"
-        supporting-text="Zo zou het besluit uitvallen met de bevindingen zoals ze nu staan. Het loopt mee met elke wijziging; pas de knop legt het vast."
+        :supporting-text="bezig && stand !== null ? 'Wordt bijgewerkt…' : 'Zo zou het besluit uitvallen met de bevindingen zoals ze nu staan. Het loopt mee met elke wijziging; pas de knop legt het vast.'"
       ></nldd-title>
       <nldd-inline-dialog
         v-if="stand === null"
@@ -87,10 +95,17 @@ const opBezwaarRegels = computed(() =>
         text="De uitkomst wordt berekend"
       ></nldd-inline-dialog>
       <nldd-inline-dialog
+        v-else-if="mislukt"
+        icon="warning"
+        icon-color="critical"
+        text="De voorlopige uitkomst lukt niet"
+        :supporting-text="reden(mislukt)"
+      ></nldd-inline-dialog>
+      <nldd-inline-dialog
         v-else-if="geweigerd"
         icon="info"
         text="Nog geen uitkomst"
-        :supporting-text="melding(geweigerd)"
+        :supporting-text="reden(geweigerd)"
       ></nldd-inline-dialog>
       <template v-else-if="voorlopig">
         <nldd-title v-if="opBezwaar" size="6" text="Beslissing op bezwaar" :supporting-text="opBezwaarRegels">

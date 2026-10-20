@@ -9,7 +9,7 @@
  * `uitkomst` (een uitvoer van het artikel) of `begrip` (een open begrip, met
  * wie het invulde).
  */
-import { bezwaarGrondslag, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
+import { bezwaarGrondslag, hoofdletter, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
 
 // Regelwerken die overal bij hun afkorting heten.
 const AFKORTINGEN = {
@@ -25,8 +25,7 @@ export function wetNaam(wet) {
   if (AFKORTINGEN[wet]) return AFKORTINGEN[wet];
   const naam = spel.casus?.regelwerken?.find((r) => r.id === wet)?.naam;
   if (naam) return naam;
-  const tekst = leesbaar(wet);
-  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+  return hoofdletter(leesbaar(wet));
 }
 
 /** `leerplichtwet_1969`, `13a` → `Leerplichtwet 1969 artikel 13a`. */

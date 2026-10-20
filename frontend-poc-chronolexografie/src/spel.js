@@ -195,6 +195,9 @@ export function geldendBesluit(aanvraag) {
 /** Een naam uit de wet leesbaar: `laatste_verlofdag` → `laatste verlofdag`. */
 export const leesbaar = (naam) => String(naam).replaceAll('_', ' ');
 
+/** `verlof verleend` → `Verlof verleend`. */
+export const hoofdletter = (tekst) => tekst.charAt(0).toUpperCase() + tekst.slice(1);
+
 export const kort = (id) => String(id).slice(-8);
 
 /**
