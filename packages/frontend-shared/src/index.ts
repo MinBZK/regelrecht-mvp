@@ -8,7 +8,7 @@
 // lib-modules en de gedeelde componenten hebben hun eigen subpad in
 // `exports` (./gherkin, ./lib/*, ./components/*, ./useBewaardeStand),
 // zodat een app alleen binnenhaalt wat hij gebruikt.
-export { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch.js';
+export { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch';
 export { useAuth, ensureAuthReady, hasRole, hasAnyRole } from './useAuth';
 export { useGithubAuth, ensureGithubReady } from './useGithubAuth';
 // `applyColorScheme`, `createLocalStoragePersistence` and `VALID_THEMES` stay
@@ -29,4 +29,4 @@ export {
   producedSubmission,
   submissionKindOf,
   withDecisionField,
-} from './produces.js';
+} from './produces';

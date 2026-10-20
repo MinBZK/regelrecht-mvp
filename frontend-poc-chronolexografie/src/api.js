@@ -8,7 +8,7 @@
  * /chronolexografie/api/x worden. Een weigering van de cel komt terug als
  * `{ fout }` en wordt de foutmelding.
  */
-import { apiFetchJson } from '@regelrecht/frontend-shared/apiFetch.js';
+import { apiFetchJson } from '@regelrecht/frontend-shared/apiFetch';
 
 const b = (pad) => import.meta.env.BASE_URL + String(pad).replace(/^\//, '');
 

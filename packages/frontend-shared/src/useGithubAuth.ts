@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { apiFetch, apiFetchJson } from './apiFetch.js';
+import { apiFetch, apiFetchJson } from './apiFetch';
 
 /**
  * Per-user GitHub link status (spike), as `GithubStatus` in
@@ -25,7 +25,7 @@ let readyPromise: Promise<void> | null = null;
 
 async function fetchStatus(): Promise<void> {
   try {
-    status.value = await apiFetchJson('/auth/github/status');
+    status.value = await apiFetchJson<GithubStatus>('/auth/github/status');
   } catch {
     // Endpoint missing/errored (e.g. auth-disabled dev mode) — treat as
     // unconfigured so the UI simply hides the GitHub controls.

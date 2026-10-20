@@ -91,20 +91,22 @@ cp "$scenario" "$out/scenario.feature"
 shared="$repo/packages/frontend-shared/src"
 gherkin_out="$docs/src/lib/gherkin"
 
+# The directory holds nothing but this copy (it is gitignored), so it starts
+# empty. The imports carry no extension and Vite tries .js before .ts, so a JS
+# file left by a run from before the runner became TypeScript would otherwise
+# win over the fresh copy.
+rm -rf "$gherkin_out"
 mkdir -p "$gherkin_out"
-for f in "$shared"/gherkin/*.js "$shared/values.ts"; do
+for f in "$shared"/gherkin/*.js "$shared"/gherkin/*.ts "$shared/values.ts"; do
     base=$(basename "$f")
-    # The test file belongs to the package, not to the page.
-    [ "$base" = "actions.test.js" ] && continue
+    # Tests belong to the package, not to the page.
+    case "$base" in *.test.*) continue ;; esac
     cp "$f" "$gherkin_out/$base"
 done
 
 # values.ts sits a directory up in the package, so the imports that reach for it
-# have to be flattened to match the copy's own flat layout. The imports carry no
-# extension, and Vite tries .js before .ts: a values.js left by a run from before
-# the module became TypeScript would win over the fresh copy, so it goes.
-rm -f "$gherkin_out/values.js"
-for f in "$gherkin_out"/*.js; do
+# have to be flattened to match the copy's own flat layout.
+for f in "$gherkin_out"/*.ts; do
     sed -i.bak "s#'\.\./values'#'./values'#g" "$f"
     rm -f "$f.bak"
 done

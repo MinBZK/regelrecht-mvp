@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { apiFetchJson } from './apiFetch.js';
+import { apiFetchJson } from './apiFetch';
 
 /** The signed-in person, as `PersonInfo` in `packages/auth` serializes it. */
 export interface AuthPerson {
@@ -41,7 +41,7 @@ let readyPromise: Promise<void> | null = null;
 
 async function checkAuth(): Promise<void> {
   try {
-    const status: AuthStatus = await apiFetchJson('/auth/status');
+    const status = await apiFetchJson<AuthStatus>('/auth/status');
     authenticated.value = status.authenticated;
     oidcConfigured.value = status.oidc_configured;
     person.value = status.person || null;

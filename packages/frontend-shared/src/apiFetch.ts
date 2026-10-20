@@ -30,11 +30,14 @@
  */
 
 export class ApiError extends Error {
-  /**
-   * @param {string} message
-   * @param {{ status: number, body?: string, contentType?: string }} info
-   */
-  constructor(message, { status, body = '', contentType = '' }) {
+  status: number;
+  body: string;
+  contentType: string;
+
+  constructor(
+    message: string,
+    { status, body = '', contentType = '' }: { status: number; body?: string; contentType?: string },
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -45,7 +48,7 @@ export class ApiError extends Error {
 
 /** Best-effort body read: '' when the body is unreadable (network drop
  *  after headers, already-consumed stream, …). */
-async function safeText(res) {
+async function safeText(res: Response): Promise<string> {
   try {
     return await res.text();
   } catch {
@@ -53,18 +56,18 @@ async function safeText(res) {
   }
 }
 
+/** `fetch` options plus the two this wrapper adds; see the header comment. */
+export interface ApiFetchInit extends RequestInit {
+  allowStatuses?: number[];
+  errorMessage?: string | ((status: number, body: string, contentType: string) => string);
+}
+
 /**
  * `fetch` with an ok-check. Resolves with the raw `Response` (headers
  * stay accessible); throws `ApiError` on a non-ok status that is not in
  * `allowStatuses`. Network errors propagate unchanged, like plain fetch.
- *
- * @param {string} url
- * @param {RequestInit & { allowStatuses?: number[],
- *   errorMessage?: string |
- *     ((status: number, body: string, contentType: string) => string) }} init
- * @returns {Promise<Response>}
  */
-export async function apiFetch(url, init = {}) {
+export async function apiFetch(url: string, init: ApiFetchInit = {}): Promise<Response> {
   const { allowStatuses, errorMessage, ...fetchInit } = init;
   const res = await fetch(url, fetchInit);
   if (res.ok || (allowStatuses && allowStatuses.includes(res.status))) {
@@ -81,14 +84,17 @@ export async function apiFetch(url, init = {}) {
   throw new ApiError(message, { status: res.status, body, contentType });
 }
 
-/** `apiFetch` + `res.json()`. */
-export async function apiFetchJson(url, init = {}) {
+/**
+ * `apiFetch` + `res.json()`. The body is not validated: `T` is what the
+ * caller expects the endpoint to return, and defaults to `unknown`.
+ */
+export async function apiFetchJson<T = unknown>(url: string, init: ApiFetchInit = {}): Promise<T> {
   const res = await apiFetch(url, init);
   return res.json();
 }
 
 /** `apiFetch` + `res.text()`. */
-export async function apiFetchText(url, init = {}) {
+export async function apiFetchText(url: string, init: ApiFetchInit = {}): Promise<string> {
   const res = await apiFetch(url, init);
   return res.text();
 }

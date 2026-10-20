@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatToolCall, formatToolValue } from './formatToolCall.js';
+import { formatToolCall, formatToolValue } from './formatToolCall';
 
 describe('formatToolCall', () => {
   it('shows the options of a question by their label, not as [object Object]', () => {

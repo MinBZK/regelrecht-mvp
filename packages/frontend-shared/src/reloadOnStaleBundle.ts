@@ -13,17 +13,28 @@
 // something else is wrong (server unreachable, mid-restart), and a reload loop
 // would only hide that.
 
+import type { RouteLocationNormalized } from 'vue-router';
+
+/** The two router methods the handler uses. A vue-router `Router` fits. */
+export interface StaleBundleRouter {
+  onError(handler: (error: unknown, to?: RouteLocationNormalized) => unknown): unknown;
+  resolve(to: RouteLocationNormalized): { href: string };
+}
+
 const STORAGE_KEY = 'regelrecht:stale-bundle-reload';
 const MIN_INTERVAL_MS = 10_000;
 
 // Chrome, Firefox and Safari each word a failed dynamic import differently.
 const CHUNK_ERROR = /dynamically imported module|Importing a module script failed|Unable to preload CSS/i;
 
-export function isChunkLoadError(error) {
-  return CHUNK_ERROR.test(String(error?.message ?? error ?? ''));
+export function isChunkLoadError(error: unknown): boolean {
+  return CHUNK_ERROR.test(String((error as { message?: unknown } | null | undefined)?.message ?? error ?? ''));
 }
 
-function readLast(storage) {
+/** The part of `Storage` the loop guard uses, so tests can pass a stub. */
+type GuardStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+function readLast(storage: GuardStorage | null): number {
   try {
     return Number(storage?.getItem(STORAGE_KEY)) || 0;
   } catch {
@@ -31,7 +42,7 @@ function readLast(storage) {
   }
 }
 
-function writeLast(storage, value) {
+function writeLast(storage: GuardStorage | null, value: number): void {
   try {
     storage?.setItem(STORAGE_KEY, String(value));
   } catch {
@@ -39,7 +50,7 @@ function writeLast(storage, value) {
   }
 }
 
-function defaultStorage() {
+function defaultStorage(): GuardStorage | null {
   try {
     return window.sessionStorage;
   } catch {
@@ -56,16 +67,22 @@ function defaultStorage() {
  * they asked for. The pocs have no dynamic import outside the router that goes
  * through Vite's preload (the WASM imports are `@vite-ignore`).
  *
- * @param {import('vue-router').Router} router
- * @param {object} [opts] for tests only
+ * The options are for tests only.
  */
-export function reloadOnStaleBundle(router, {
-  target = window,
-  storage = defaultStorage(),
-  now = Date.now,
-} = {}) {
+export function reloadOnStaleBundle(
+  router: StaleBundleRouter,
+  {
+    target = window,
+    storage = defaultStorage(),
+    now = Date.now,
+  }: {
+    target?: { location: Pick<Location, 'assign' | 'reload'> };
+    storage?: GuardStorage | null;
+    now?: () => number;
+  } = {},
+): void {
   /** Reload to `href`, unless the loop guard blocks it. */
-  function reload(href) {
+  function reload(href?: string) {
     const t = now();
     if (t - readLast(storage) < MIN_INTERVAL_MS) return;
     writeLast(storage, t);

@@ -22,7 +22,7 @@
  */
 import { ref, watch } from 'vue';
 import * as yaml from 'js-yaml';
-import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces';
 import { MarkerType, Position } from '@vue-flow/core';
 import { extractRegulationRefs } from './useDependencies.js';
 import { useLatest } from '../lib/useLatest.js';

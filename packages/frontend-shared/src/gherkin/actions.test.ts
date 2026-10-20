@@ -1,7 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { valuesEqual, primitiveEqual, quotedValue, tableCellValue, tableToRecords, dispatch } from './actions.js';
+import {
+  valuesEqual,
+  primitiveEqual,
+  quotedValue,
+  tableCellValue,
+  tableToRecords,
+  dispatch,
+  type GherkinEngine,
+} from './actions';
+import { ExecutionContext } from './context';
 
-const unknownFor = (...names) => ({
+// The tests drive dispatch with a context holding only the fields a step
+// reads, and with an engine stub that has only the methods it calls.
+const asCtx = (fields: Partial<ExecutionContext>) => Object.assign(new ExecutionContext(), fields);
+const stubEngine = (methods: Partial<GherkinEngine> = {}) => methods as GherkinEngine;
+
+const unknownFor = (...names: string[]) => ({
   __unknown: true,
   missing: names.map((name) => ({ law: 'test_wet', name, kind: 'no_data' })),
 });
@@ -169,8 +183,8 @@ describe('quoted and table-cell values', () => {
 
 describe('set_parameters_table through dispatch', () => {
   it('leaves a parameter with an empty cell out and passes null for the word null (RFC-036)', async () => {
-    const ctx = { parameters: {} };
-    await dispatch(ctx, null, 'set_parameters_table', [], [
+    const ctx = asCtx({ parameters: {} });
+    await dispatch(ctx, stubEngine(), 'set_parameters_table', [], [
       ['bsn', '999993653'],
       ['aanvraag_bedrag', ''],
       ['partner_bsn', 'null'],
@@ -182,9 +196,9 @@ describe('set_parameters_table through dispatch', () => {
 });
 
 describe('assert_equals through dispatch', () => {
-  const ctxWith = (outputs) => ({ result: { outputs }, executed: true, error: null });
-  const run = (ctx, expected) =>
-    dispatch(ctx, null, 'assert_equals', ['kinderen', expected], null, { loadDependency: async () => {} });
+  const ctxWith = (outputs: Record<string, unknown>) => asCtx({ result: { outputs }, executed: true, error: null });
+  const run = (ctx: ExecutionContext, expected: unknown) =>
+    dispatch(ctx, stubEngine(), 'assert_equals', ['kinderen', expected], null, { loadDependency: async () => {} });
 
   it('accepts an empty array output against a quoted "[]"', async () => {
     await expect(run(ctxWith({ kinderen: [] }), quotedValue('[]'))).resolves.toBeUndefined();
@@ -216,9 +230,9 @@ describe('assert_equals through dispatch', () => {
 });
 
 describe('assert_unknown and assert_unknown_for through dispatch', () => {
-  const ctxWith = (outputs) => ({ result: { outputs }, executed: true, error: null });
-  const run = (ctx, action, args) =>
-    dispatch(ctx, null, action, args, null, { loadDependency: async () => {} });
+  const ctxWith = (outputs: Record<string, unknown>) => asCtx({ result: { outputs }, executed: true, error: null });
+  const run = (ctx: ExecutionContext, action: string, args: unknown[]) =>
+    dispatch(ctx, stubEngine(), action, args, null, { loadDependency: async () => {} });
 
   it('assert_unknown passes on an unknown output whatever is missing', async () => {
     await expect(run(ctxWith({ x: unknownFor('huur') }), 'assert_unknown', ['x'])).resolves.toBeUndefined();
@@ -271,20 +285,31 @@ describe('assert_unknown and assert_unknown_for through dispatch', () => {
 
   it('assert_unknown reports a failed or missing execution like the other asserts', async () => {
     await expect(
-      run({ result: null, executed: true, error: new Error('boom') }, 'assert_unknown', ['x']),
+      run(asCtx({ result: null, executed: true, error: new Error('boom') }), 'assert_unknown', ['x']),
     ).rejects.toThrow('No outputs available (execution failed)');
   });
 });
 
 describe('set_data_source through dispatch', () => {
   it('registers records without a key for an empty cell', async () => {
-    const calls = [];
-    const engine = { registerDataSource: (...a) => calls.push(a) };
-    await dispatch({}, engine, 'set_data_source', ['huurgegevens', 'bsn'], [
+    const calls: unknown[][] = [];
+    const engine = stubEngine({ registerDataSource: (...a) => void calls.push(a) });
+    await dispatch(asCtx({}), engine, 'set_data_source', ['huurgegevens', 'bsn'], [
       ['bsn', 'huur'],
       ['1', ''],
       ['2', 'null'],
     ], { loadDependency: async () => {} });
     expect(calls).toEqual([['huurgegevens', 'bsn', [{ bsn: 1 }, { bsn: 2, huur: null }]]]);
+  });
+});
+
+describe('text arguments through dispatch', () => {
+  // A quoted capture is typed by inference, so "404" arrives as a number.
+  // The arms that compare text must still treat it as text.
+  it('assert_fails_with matches a numeric quoted capture against the error', async () => {
+    const ctx = asCtx({ executed: true, error: new Error('HTTP 404 from source') });
+    await expect(
+      dispatch(ctx, stubEngine(), 'assert_fails_with', [quotedValue('404')], null, { loadDependency: async () => {} }),
+    ).resolves.toBeUndefined();
   });
 });

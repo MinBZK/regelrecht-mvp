@@ -13,13 +13,13 @@ function stubLocation({ pathname = '/', search = '', hash = '' } = {}) {
 }
 
 // Fresh module per test so the module-singleton status/readyPromise start clean
-// and vi.doMock('./apiFetch.js', …) applies.
+// and vi.doMock('./apiFetch', …) applies.
 async function freshGithub({
   apiFetchJson,
   apiFetch,
 }: { apiFetchJson?: ReturnType<typeof vi.fn>; apiFetch?: ReturnType<typeof vi.fn> } = {}) {
   vi.resetModules();
-  vi.doMock('./apiFetch.js', () => ({
+  vi.doMock('./apiFetch', () => ({
     apiFetchJson: apiFetchJson || vi.fn().mockResolvedValue({}),
     apiFetch: apiFetch || vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
   }));

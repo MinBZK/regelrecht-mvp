@@ -29,7 +29,7 @@ import {
   verwijderVariant as verwijderBrowserVariant,
   controleerDrift,
   isBrowserVariant,
-} from '@regelrecht/frontend-shared/browserVarianten.js';
+} from '@regelrecht/frontend-shared/browserVarianten';
 import { LAW_PO, LAW_VO, LAW_UITVOERINGSBESLUIT_WVO, LAW_WERKINSTRUCTIE } from '../lib/nieuwkomerFacts.js';
 
 // De regelingen die de simulatie daadwerkelijk raadpleegt; alleen deze hoeven

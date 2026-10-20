@@ -7,24 +7,24 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
  * meldt als het corpus onder hem vandaan is gewijzigd.
  */
 function verseOpslag() {
-  const data = new Map();
+  const data = new Map<string, string>();
   return {
-    getItem: (k) => (data.has(k) ? data.get(k) : null),
-    setItem: (k, v) => data.set(k, String(v)),
-    removeItem: (k) => data.delete(k),
+    getItem: (k: string) => (data.has(k) ? data.get(k)! : null),
+    setItem: (k: string, v: unknown) => void data.set(k, String(v)),
+    removeItem: (k: string) => void data.delete(k),
     get length() { return data.size; },
-    key: (i) => [...data.keys()][i],
+    key: (i: number) => [...data.keys()][i] ?? null,
     _data: data,
   };
 }
 
-let opslag;
+let opslag: ReturnType<typeof verseOpslag>;
 
 async function laad() {
   vi.resetModules();
   const stand = await import('./useBewaardeStand');
   stand.stelCasusIn('testcasus');
-  return import('./browserVarianten.js');
+  return import('./browserVarianten');
 }
 
 describe('browser-varianten', () => {
@@ -164,7 +164,8 @@ describe('browser-varianten', () => {
     it('zet de vorige inhoud terug met herstel()', async () => {
       const { bewaarVariant, werkVariantBij, browserVariantYaml, browserVariant } = await laad();
       const v = bewaarVariant({ titel: 'Herstel', bestanden: [bestand('value: 2')] });
-      const gemaakt = browserVariant(v.id).gemaakt;
+      const gemaakt = browserVariant(v.id)?.gemaakt;
+      expect(gemaakt).toBeTruthy();
 
       const { herstel } = werkVariantBij(v.id, { bestanden: [bestand('value: 3')], titel: 'Andere naam' });
       expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 3');
@@ -172,10 +173,11 @@ describe('browser-varianten', () => {
       herstel();
 
       const na = browserVariant(v.id);
+      expect(na).not.toBeNull();
       expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 2');
-      expect(na.titel).toBe('Herstel');
-      expect(na.gemaakt).toBe(gemaakt);
-      expect(na.bijgewerkt).toBeUndefined();
+      expect(na?.titel).toBe('Herstel');
+      expect(na?.gemaakt).toBe(gemaakt);
+      expect(na?.bijgewerkt).toBeUndefined();
     });
 
     it('laat na herstel geen tweede variant achter', async () => {
@@ -202,13 +204,15 @@ describe('browser-varianten', () => {
     it('houdt `gemaakt` staan en noteert wanneer er bijgewerkt is', async () => {
       const { bewaarVariant, werkVariantBij, browserVariant } = await laad();
       const v = bewaarVariant({ titel: 'Tijden', bestanden: [bestand()] });
-      const gemaakt = browserVariant(v.id).gemaakt;
+      const gemaakt = browserVariant(v.id)?.gemaakt;
+      expect(gemaakt).toBeTruthy();
 
       werkVariantBij(v.id, { bestanden: [bestand('value: 4')] });
 
       const na = browserVariant(v.id);
-      expect(na.gemaakt).toBe(gemaakt);
-      expect(na.bijgewerkt).toBeTruthy();
+      expect(na).not.toBeNull();
+      expect(na?.gemaakt).toBe(gemaakt);
+      expect(na?.bijgewerkt).toBeTruthy();
     });
 
     it('ververst de vingerafdruk, zodat drift van de nieuwe basis uitgaat', async () => {
@@ -299,9 +303,10 @@ describe('browser-varianten', () => {
         bestanden: [{ pad: 'laws/a.yaml', yaml: 'bewerkt', origineel: groot }],
       });
 
-      const bewaard = browserVariant(v.id).bestanden[0];
-      expect(bewaard.origineel).toBeUndefined();
-      expect(bewaard.origineelHash.length).toBeLessThan(20);
+      const bewaard = browserVariant(v.id)?.bestanden[0];
+      // The type has no `origineel`; the test checks that none was stored.
+      expect((bewaard as Record<string, unknown> | undefined)?.origineel).toBeUndefined();
+      expect(bewaard?.origineelHash?.length).toBeLessThan(20);
     });
   });
 
