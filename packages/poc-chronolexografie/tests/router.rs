@@ -283,3 +283,55 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
         .unwrap()
         .contains(eerste));
 }
+
+#[tokio::test]
+async fn the_preview_answers_a_refusal_as_a_state_and_records_nothing() {
+    // The app asks for a preview after every change to a finding, also
+    // before the authority has given each one: the cell's refusal is then
+    // the preview's answer, not an error.
+    let app = app_met("gehandicaptenparkeerkaart").await;
+    let (_, casus) = send(&app, get("/chronolexografie/api/casus")).await;
+    let datum = "2026-10-20";
+    let (_, aanvraag) = send(
+        &app,
+        post(
+            "/chronolexografie/api/aanvragen",
+            json!({ "velden": casus["voorbeeld"]["aanvraag"], "datum": datum }),
+        ),
+    )
+    .await;
+    let voorvertoning = |bevindingen: Value| {
+        post(
+            "/chronolexografie/api/besluiten/voorvertoning",
+            json!({ "op": aanvraag["id"], "bevindingen": bevindingen, "datum": datum }),
+        )
+    };
+    let (status, voorlopig) = send(
+        &app,
+        voorvertoning(casus["voorbeeld"]["bevindingen"].clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{voorlopig}");
+    let uitkomst = casus["uitkomst"].as_str().unwrap();
+    assert_eq!(
+        voorlopig["voorlopig"]["besluit"]["outputs"][uitkomst],
+        json!(true)
+    );
+    assert!(voorlopig["voorlopig"]["waarom"]["keten"].is_array());
+
+    assert_eq!(voorlopig["stil"], json!([]));
+
+    let (status, geweigerd) = send(&app, voorvertoning(json!({}))).await;
+    assert_eq!(status, StatusCode::OK, "{geweigerd}");
+    assert!(geweigerd["geweigerd"].as_str().unwrap().contains("refused"));
+    assert!(geweigerd.get("voorlopig").is_none());
+
+    let (_, kroniek) = send(&app, get("/chronolexografie/api/kroniek")).await;
+    let kinds: Vec<&str> = kroniek["grammen"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|g| g["kind"].as_str().unwrap())
+        .collect();
+    assert_eq!(kinds, ["AANVRAAG"]);
+}

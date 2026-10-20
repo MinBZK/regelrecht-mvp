@@ -102,11 +102,16 @@ pub fn routes() -> Router<AppState> {
         .route("/api/kroniek", get(kroniek))
         .route("/api/aanvragen", post(aanvragen))
         .route("/api/besluiten", post(besluiten))
+        .route("/api/besluiten/voorvertoning", post(voorvertoning_besluit))
         .route("/api/besluiten/{id}/waarom", get(waarom))
         .route("/api/besluiten/{id}/antwoord/{begrip}", get(hoe_beantwoord))
         .route("/api/bezwaren", post(bezwaren))
         .route("/api/bezwaren/{id}/heroverweging", get(heroverweging))
         .route("/api/beslissingen-op-bezwaar", post(beslissen_op_bezwaar))
+        .route(
+            "/api/beslissingen-op-bezwaar/voorvertoning",
+            post(voorvertoning_op_bezwaar),
+        )
         .route("/api/reducties", get(reducties))
         .route("/api/logboek", get(logboek))
         .route("/api/reset", post(reset))
@@ -282,6 +287,30 @@ async fn beslissen_op_bezwaar(
 ) -> Antwoord {
     ok(s.met(&v, |c, cell| {
         kern::beslissen_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
+    })?)
+}
+
+/// A preview ([`kern::voorvertoning_besluit`]): `{ voorlopig }` or, when
+/// the cell refuses (a finding not given yet), `{ geweigerd }` with 200, and
+/// in both the terms the authority judges because the cell is silent
+/// (`stil`). Any other error fails as in any step.
+async fn voorvertoning_besluit(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::voorvertoning_besluit(c, cell, &b.op, &b.bevindingen, b.datum)
+    })?)
+}
+
+async fn voorvertoning_op_bezwaar(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::voorvertoning_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
     })?)
 }
 

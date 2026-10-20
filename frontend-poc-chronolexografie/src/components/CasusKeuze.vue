@@ -5,7 +5,7 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api.js';
 import { artikelNaam } from '../logboek.js';
-import { kiezen, spel } from '../spel.js';
+import { hoofdletter, kiezen, spel } from '../spel.js';
 
 const emit = defineEmits(['gekozen']);
 const casussen = ref([]);
@@ -22,8 +22,6 @@ const artikel = (c) => {
   const [wet, nummer] = c.besluit.split('#');
   return artikelNaam(wet, nummer);
 };
-
-const hoofdletter = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
 async function kies(c) {
   if (await kiezen(c.id)) emit('gekozen');

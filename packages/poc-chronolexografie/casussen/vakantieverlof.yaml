@@ -197,3 +197,19 @@ scenarios:
       reductie zelf beantwoordde; klik daar nog eens op "Hoe de cel dit
       beantwoordde" voor haar vestiging. In het Logboek staat het besluit met
       dezelfde keten, en onderaan het executogram van de vestiging.
+  - naam: 'Verlof in een schooljaar dat de school nog niet kent: het hoofd oordeelt'
+    stappen:
+      - >-
+        Aanvrager, speeldatum 14 oktober 2026: vul als eerste verlofdag 20
+        december 2027 en als laatste verlofdag 22 december 2027 in. Klik op
+        Aanvraag indienen.
+      - >-
+        Bestuursorgaan: het vakantierooster van de school reikt nog niet tot
+        schooljaar 2027–2028, dus de school weet niet of het verlof buiten de
+        schoolvakanties valt. De voorvertoning meldt dat, en het formulier
+        vraagt het nu aan het hoofd. Kies bij "verlof valt buiten
+        schoolvakanties" Nee en klik op Besluit nemen.
+    eind: >-
+      Het verlof wordt geweigerd. Bij het besluit staat "verlof valt buiten
+      schoolvakanties: nee" als bevinding van het bestuursorgaan, niet als
+      antwoord van de school.

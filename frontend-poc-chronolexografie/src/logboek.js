@@ -9,7 +9,7 @@
  * `uitkomst` (een uitvoer van het artikel) of `begrip` (een open begrip, met
  * wie het invulde).
  */
-import { bezwaarGrondslag, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
+import { bezwaarGrondslag, hoofdletter, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
 
 // Regelwerken die overal bij hun afkorting heten.
 const AFKORTINGEN = {
@@ -25,8 +25,7 @@ export function wetNaam(wet) {
   if (AFKORTINGEN[wet]) return AFKORTINGEN[wet];
   const naam = spel.casus?.regelwerken?.find((r) => r.id === wet)?.naam;
   if (naam) return naam;
-  const tekst = leesbaar(wet);
-  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+  return hoofdletter(leesbaar(wet));
 }
 
 /** `leerplichtwet_1969`, `13a` → `Leerplichtwet 1969 artikel 13a`. */
@@ -65,6 +64,13 @@ export function ingevuldDoor(by, grammen) {
   return 'niet ingevuld';
 }
 
+/**
+ * De cel die een begrip beantwoordde, zoals de bezoeker haar kent: de naam
+ * uit de casus (OBS De Klimop, gemeente Wilgendaal) als zij de cel van de
+ * casus is, anders haar id.
+ */
+const celNaam = (cel) => (cel === spel.casus?.cel && spel.casus?.cel_naam) || `cel ${cel}`;
+
 /** Een stap uit de keten in woorden: een regel tekst en een toelichting. */
 export function stapTekst(stap, grammen) {
   switch (stap.soort) {
@@ -86,7 +92,7 @@ export function stapTekst(stap, grammen) {
       if (cel) {
         return {
           tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: `cel ${cel.answerer} antwoordt ${toon(stap.waarde)} (${cel.law_id}, ${gelezen(cel, grammen)})`,
+          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammen)})`,
         };
       }
       // Een begrip dat zijn standaardwaarde kreeg, noemt de engine niet bij
