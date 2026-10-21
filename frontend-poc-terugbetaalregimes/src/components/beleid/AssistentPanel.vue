@@ -192,7 +192,7 @@
 </template>
 
 <script setup>
-import { formatToolCall } from '@regelrecht/frontend-shared/formatToolCall.js';
+import { formatToolCall } from '@regelrecht/frontend-shared/formatToolCall';
 import { watch, ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { useAssistent } from '../../composables/useAssistent.js';
 import { useLawStore } from '../../engine/lawStore.js';

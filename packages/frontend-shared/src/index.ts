@@ -6,18 +6,23 @@
 //
 // Niet alles hier hangt aan deze index. De Gherkin-runner, de losse
 // lib-modules en de gedeelde componenten hebben hun eigen subpad in
-// `exports` (./gherkin, ./lib/*, ./components/*, ./useBewaardeStand.js),
+// `exports` (./gherkin, ./lib/*, ./components/*, ./useBewaardeStand),
 // zodat een app alleen binnenhaalt wat hij gebruikt.
-export { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch.js';
-export { useAuth, ensureAuthReady, hasRole, hasAnyRole } from './useAuth.js';
-export { useGithubAuth, ensureGithubReady } from './useGithubAuth.js';
+export { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch';
+export type { ApiFetchInit } from './apiFetch';
+export { useAuth, ensureAuthReady, hasRole, hasAnyRole } from './useAuth';
+export type { AuthPerson, AuthStatus } from './useAuth';
+export { useGithubAuth, ensureGithubReady } from './useGithubAuth';
+export type { GithubStatus } from './useGithubAuth';
 // `applyColorScheme`, `createLocalStoragePersistence` and `VALID_THEMES` stay
 // internal to useColorScheme — they're implementation details, not part of the
 // package's public surface (no consumer imports them).
-export { useColorScheme } from './useColorScheme.js';
+export { useColorScheme } from './useColorScheme';
+export type { ColorSchemePersistence, Theme } from './useColorScheme';
 // Engine value helpers (RFC-036): one definition of the Unknown value shape
 // for the editor, the demo and the Gherkin runner.
-export { isUnknown, missingFacts } from './values.js';
+export { isUnknown, missingFacts } from './values';
+export type { MissingFact, MissingKind, UnknownValue } from './values';
 // What an article produces, in the object form or as a list (schema v0.8.1).
 export {
   SUBMISSION_KINDS,
@@ -29,4 +34,5 @@ export {
   producedSubmission,
   submissionKindOf,
   withDecisionField,
-} from './produces.js';
+} from './produces';
+export type { Decision, ProducedItem, Produces } from './produces';

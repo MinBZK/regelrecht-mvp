@@ -31,7 +31,7 @@
  * zit: een "bewaard" dat na een ververs weg blijkt, is erger dan een weigering.
  */
 import { ref } from 'vue';
-import { bewaardeRef, beschermSleutel, bewaarStand } from './useBewaardeStand.js';
+import { bewaardeRef, beschermSleutel, bewaarStand } from './useBewaardeStand';
 
 /** De sleutel in de bewaarde stand. */
 const SLEUTEL = 'varianten';
@@ -43,7 +43,7 @@ const SLEUTEL = 'varianten';
 export const BROWSER_PREFIX = 'eigen-';
 
 /** Is dit het id van een variant uit de browser? */
-export function isBrowserVariant(id) {
+export function isBrowserVariant(id: unknown): id is string {
   return typeof id === 'string' && id.startsWith(BROWSER_PREFIX);
 }
 
@@ -57,7 +57,7 @@ export function isBrowserVariant(id) {
  * Geen cryptografie: dit weert geen aanvaller af, het merkt een wijziging op.
  * FNV-1a is daar genoeg voor en heeft geen async nodig, anders dan SubtleCrypto.
  */
-export function vingerafdruk(tekst) {
+export function vingerafdruk(tekst: unknown): string | null {
   if (typeof tekst !== 'string') return null;
   let h = 0x811c9dc5;
   for (let i = 0; i < tekst.length; i++) {
@@ -77,19 +77,60 @@ export function vingerafdruk(tekst) {
 beschermSleutel(SLEUTEL);
 
 /**
- * De bewaarde varianten. Vorm per stuk:
- *   { id, titel, gemaakt, basis, bestanden: [{ pad, yaml, origineelHash }] }
- * waarin `pad` het indexpad van het basisdocument is (hetzelfde als `base` in
- * variants.json) en `origineelHash` de vingerafdruk van de tekst waarop
- * bewerkt is.
+ * Eén bestand van een bewaarde variant. `pad` is het indexpad van het
+ * basisdocument (hetzelfde als `base` in variants.json) en `origineelHash` de
+ * vingerafdruk van de tekst waarop bewerkt is. Een variant van voor die
+ * vingerafdruk heeft hem niet.
  */
-const opgeslagen = bewaardeRef(SLEUTEL, []);
+export interface BewaardBestand {
+  pad: string;
+  yaml: string;
+  origineelHash?: string | null;
+}
+
+/** Een variant zoals hij in de browser bewaard staat. */
+export interface BewaardeVariant {
+  id: string;
+  titel: string;
+  gemaakt: string;
+  bijgewerkt?: string | null;
+  basis?: string | null;
+  bestanden: BewaardBestand[];
+}
+
+/** Een variant in de vorm van variants.json, zoals de lawStore hem leest. */
+export interface BrowserVariant {
+  id: string;
+  title: string;
+  files: { path: string; base: string }[];
+  herkomst: 'browser';
+  gemaakt: string;
+  bijgewerkt: string | null;
+  basis: string | null;
+}
+
+/**
+ * Wat de gebruiker bewerkte: een bestand met zijn nieuwe en zijn
+ * oorspronkelijke tekst. Zonder `origineel` krijgt het geen vingerafdruk, en
+ * meldt `controleerDrift` het als onbekend.
+ */
+export interface BewerktBestand {
+  pad: string;
+  yaml: string;
+  origineel?: string;
+}
+
+/**
+ * De bewaarde varianten. Wat uit localStorage komt is niet gecontroleerd;
+ * de afnemers hieronder lezen alleen velden die bewaarVariant zelf schreef.
+ */
+const opgeslagen = bewaardeRef<BewaardeVariant[]>(SLEUTEL, []);
 
 /** Een oplopend nummer dat bumpt bij elke wijziging, om op te watchen. */
 const versie = ref(0);
 
 /** Maak van een bewaarde variant de vorm die de lawStore van variants.json kent. */
-function alsVariant(v) {
+function alsVariant(v: BewaardeVariant): BrowserVariant {
   return {
     id: v.id,
     title: v.titel,
@@ -105,7 +146,7 @@ function alsVariant(v) {
 }
 
 /** Alle browser-varianten, in de vorm van variants.json, nieuwste eerst. */
-export function browserVarianten() {
+export function browserVarianten(): BrowserVariant[] {
   versie.value;
   return [...opgeslagen.value]
     .sort((a, b) => String(b.gemaakt ?? '').localeCompare(String(a.gemaakt ?? '')))
@@ -113,7 +154,7 @@ export function browserVarianten() {
 }
 
 /** De rauwe bewaarde vorm van één variant, of null. */
-export function browserVariant(id) {
+export function browserVariant(id: string): BewaardeVariant | null {
   versie.value;
   return opgeslagen.value.find((v) => v.id === id) ?? null;
 }
@@ -123,7 +164,7 @@ export function browserVariant(id) {
  * dat bestand niet bewerkt. Dit is wat de lawStore inleest in plaats van een
  * fetch.
  */
-export function browserVariantYaml(id, pad) {
+export function browserVariantYaml(id: string, pad: string): string | null {
   return browserVariant(id)?.bestanden.find((b) => b.pad === pad)?.yaml ?? null;
 }
 
@@ -132,7 +173,7 @@ export function browserVariantYaml(id, pad) {
  * browser-voorvoegsel ervoor. Botst hij met een bestaande, dan komt er een
  * nummer achter.
  */
-export function maakId(titel, bestaandeIds = []) {
+export function maakId(titel: unknown, bestaandeIds: Iterable<string> = []): string {
   const kern = String(titel ?? '')
     .toLowerCase()
     .normalize('NFD')
@@ -147,26 +188,26 @@ export function maakId(titel, bestaandeIds = []) {
 }
 
 /** Een titel die overblijft na trimmen en het samentrekken van spaties. */
-function keurTitel(titel) {
+function keurTitel(titel: unknown): string {
   const schoon = String(titel ?? '').trim().replace(/\s+/g, ' ');
   if (!schoon) throw new Error('Een variant heeft een titel nodig.');
   return schoon;
 }
 
 /** Bestanden moeten een pad en een tekst dragen; anders is de variant stuk. */
-function keurBestanden(bestanden) {
+function keurBestanden(bestanden: unknown): asserts bestanden is BewerktBestand[] {
   if (!Array.isArray(bestanden) || !bestanden.length) {
     throw new Error('Er is niets bewerkt om te bewaren.');
   }
-  for (const b of bestanden) {
-    if (!b?.pad || typeof b.yaml !== 'string') {
+  for (const b of bestanden as Partial<BewerktBestand>[]) {
+    if (typeof b?.pad !== 'string' || !b.pad || typeof b.yaml !== 'string') {
       throw new Error(`Onbruikbaar bestand in de variant: ${JSON.stringify(b?.pad)}`);
     }
   }
 }
 
 /** De bestanden in de bewaarde vorm, met een vingerafdruk van de basistekst. */
-function alsBestanden(bestanden) {
+function alsBestanden(bestanden: BewerktBestand[]): BewaardBestand[] {
   return bestanden.map((b) => ({
     pad: b.pad,
     yaml: b.yaml,
@@ -178,7 +219,7 @@ function alsBestanden(bestanden) {
 }
 
 /** Schrijf de lijst weg; gooit als de opslag vol zit of uit staat. */
-function schrijf(nieuw) {
+function schrijf(nieuw: BewaardeVariant[]): void {
   // Meteen schrijven en kijken of het lukte, in plaats van het aan de watcher
   // van de ref over te laten. Die slikt een volle opslag stil in, en dan meldt
   // de app "bewaard" terwijl het werk na een ververs weg is.
@@ -195,19 +236,26 @@ function schrijf(nieuw) {
 /**
  * Bewaar een variant.
  *
- * @param {object} opties
- * @param {string} opties.titel - wat de gebruiker intypte
- * @param {Array<{pad: string, yaml: string, origineel: string}>} opties.bestanden
- * @param {string|null} [opties.basis] - het variant-id waarop voortgeborduurd is
- * @param {string[]} [opties.bestaandeIds] - id's die al bezet zijn (ook de
- *   ingecheckte varianten, zodat een eigen variant er nooit een overschaduwt)
- * @returns {object} de bewaarde variant in variants.json-vorm
+ * `titel` is wat de gebruiker intypte, `basis` het variant-id waarop
+ * voortgeborduurd is, en `bestaandeIds` de id's die al bezet zijn (ook de
+ * ingecheckte varianten, zodat een eigen variant er nooit een overschaduwt).
+ * Geeft de bewaarde variant terug in variants.json-vorm.
  */
-export function bewaarVariant({ titel, bestanden, basis = null, bestaandeIds = [] }) {
+export function bewaarVariant({
+  titel,
+  bestanden,
+  basis = null,
+  bestaandeIds = [],
+}: {
+  titel: string;
+  bestanden: BewerktBestand[];
+  basis?: string | null;
+  bestaandeIds?: string[];
+}): BrowserVariant {
   const schoon = keurTitel(titel);
   keurBestanden(bestanden);
   const id = maakId(schoon, [...bestaandeIds, ...opgeslagen.value.map((v) => v.id)]);
-  const variant = {
+  const variant: BewaardeVariant = {
     id,
     titel: schoon,
     gemaakt: new Date().toISOString(),
@@ -237,19 +285,19 @@ export function bewaarVariant({ titel, bestanden, basis = null, bestaandeIds = [
  * bewerkte wet afkeurt moet de oude, werkende inhoud terug kunnen komen.
  * Zonder dat blijft er een variant staan die nooit meer laadt.
  *
- * @param {string} id - de variant die wordt overschreven
- * @param {object} opties
- * @param {Array<{pad: string, yaml: string, origineel: string}>} opties.bestanden
- * @param {string} [opties.titel] - een nieuwe naam; weggelaten blijft de oude
- * @returns {{variant: object, herstel: () => void}} de bijgewerkte variant in
- *   variants.json-vorm, plus een functie die de vorige inhoud terugzet
+ * `titel` is een nieuwe naam; weggelaten blijft de oude. Geeft de
+ * bijgewerkte variant terug in variants.json-vorm, plus een functie die de
+ * vorige inhoud terugzet.
  */
-export function werkVariantBij(id, { bestanden, titel } = {}) {
+export function werkVariantBij(
+  id: string,
+  { bestanden, titel }: { bestanden?: BewerktBestand[]; titel?: string } = {},
+): { variant: BrowserVariant; herstel: () => void } {
   const bestaand = opgeslagen.value.find((v) => v.id === id);
   if (!bestaand) throw new Error(`Deze variant staat niet in deze browser: ${id}`);
   keurBestanden(bestanden);
   const vorige = bestaand;
-  const variant = {
+  const variant: BewaardeVariant = {
     ...bestaand,
     titel: titel === undefined ? bestaand.titel : keurTitel(titel),
     bijgewerkt: new Date().toISOString(),
@@ -269,7 +317,7 @@ export function werkVariantBij(id, { bestanden, titel } = {}) {
 }
 
 /** Verwijder een bewaarde variant. Geeft terug of er iets weg was. */
-export function verwijderVariant(id) {
+export function verwijderVariant(id: string): boolean {
   const voor = opgeslagen.value.length;
   opgeslagen.value = opgeslagen.value.filter((v) => v.id !== id);
   const weg = opgeslagen.value.length !== voor;
@@ -280,18 +328,18 @@ export function verwijderVariant(id) {
 /**
  * Is het corpus gewijzigd sinds deze variant is gemaakt?
  *
- * @param {string} id
- * @param {(pad: string) => string|undefined} huidigeBasis - de basistekst van
- *   een document zoals die nu in de app staat
- * @returns {{afgedreven: boolean, paden: string[], onbekend: boolean}}
- *   `onbekend` als de variant van voor deze controle is en geen vingerafdruk
- *   meedraagt; dan valt er niets te vergelijken en zwijgt de app liever dan
- *   iets te beweren.
+ * `huidigeBasis` geeft de basistekst van een document zoals die nu in de app
+ * staat. `onbekend` is waar als de variant van voor deze controle is en geen
+ * vingerafdruk meedraagt; dan valt er niets te vergelijken en zwijgt de app
+ * liever dan iets te beweren.
  */
-export function controleerDrift(id, huidigeBasis) {
+export function controleerDrift(
+  id: string,
+  huidigeBasis: (pad: string) => string | undefined,
+): { afgedreven: boolean; paden: string[]; onbekend: boolean } {
   const v = browserVariant(id);
   if (!v) return { afgedreven: false, paden: [], onbekend: false };
-  const paden = [];
+  const paden: string[] = [];
   let onbekend = false;
   for (const b of v.bestanden) {
     if (typeof b.origineelHash !== 'string') {

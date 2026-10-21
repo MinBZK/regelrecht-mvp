@@ -29,7 +29,7 @@ import {
   verwijderVariant as verwijderBrowserVariant,
   controleerDrift,
   isBrowserVariant,
-} from '@regelrecht/frontend-shared/browserVarianten.js';
+} from '@regelrecht/frontend-shared/browserVarianten';
 
 // De wet die de simulatie daadwerkelijk raadpleegt; alleen die hoeft een
 // editor/diff te krijgen. De overige (WML, besluit, regelingen, werkinstructie)

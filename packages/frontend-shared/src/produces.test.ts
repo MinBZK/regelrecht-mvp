@@ -7,7 +7,8 @@ import {
   producedSubmission,
   submissionKindOf,
   withDecisionField,
-} from './produces.js';
+  type ProducedItem,
+} from './produces';
 
 const object = { legal_character: 'BESCHIKKING', submission: { kind: 'AANVRAAG' } };
 const list = [
@@ -47,7 +48,7 @@ describe('produces', () => {
 
   it('gives the decision in the object form terms', () => {
     expect(decisionOf(list)).toEqual({ legal_character: 'BESCHIKKING', decision_type: 'TOEKENNING', procedure_id: undefined });
-    expect(decisionOf(object).legal_character).toBe('BESCHIKKING');
+    expect(decisionOf(object)?.legal_character).toBe('BESCHIKKING');
     expect(decisionOf([list[0]])).toBeNull();
     expect(decisionOf({ submission: { kind: 'AANVRAAG' } })).toBeNull();
   });
@@ -64,10 +65,10 @@ describe('produces', () => {
     expect(withDecisionField(object, 'decision_type', 'TOEKENNING')).toEqual({ ...object, decision_type: 'TOEKENNING' });
     expect(withDecisionField(undefined, 'decision_type', 'TOEKENNING')).toEqual({ decision_type: 'TOEKENNING' });
     expect(withDecisionField({ decision_type: 'TOEKENNING' }, 'decision_type', null)).toBeUndefined();
-    const patched = withDecisionField(list, 'decision_type', 'AFWIJZING');
-    expect(patched[1].decision_type).toBe('AFWIJZING');
+    const patched = withDecisionField(list, 'decision_type', 'AFWIJZING') as ProducedItem[];
+    expect(patched[1]?.decision_type).toBe('AFWIJZING');
     expect(list[1].decision_type).toBe('TOEKENNING');
-    expect(withDecisionField(list, 'legal_character', 'TOETS')[1].type).toBe('TOETS');
+    expect((withDecisionField(list, 'legal_character', 'TOETS') as ProducedItem[])[1]?.type).toBe('TOETS');
     expect(withDecisionField(list, 'legal_character', null)).toEqual([list[0]]);
     expect(withDecisionField([list[1]], 'legal_character', null)).toBeUndefined();
   });

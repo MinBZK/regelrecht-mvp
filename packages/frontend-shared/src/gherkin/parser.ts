@@ -7,13 +7,28 @@
 import * as Gherkin from '@cucumber/gherkin';
 import * as Messages from '@cucumber/messages';
 
-/**
- * Parse a .feature text into a structured object.
- *
- * @param {string} featureText - Raw Gherkin feature text
- * @returns {{ feature: string, background: Step[]|null, scenarios: Scenario[] }}
- */
-export function parseFeature(featureText) {
+/** A step in the runner's simplified form. */
+export interface Step {
+  keyword: string;
+  text: string;
+  dataTable?: string[][];
+  docString?: string;
+}
+
+export interface Scenario {
+  name: string;
+  tags: string[];
+  steps: Step[];
+}
+
+export interface ParsedFeature {
+  feature: string;
+  background: Step[] | null;
+  scenarios: Scenario[];
+}
+
+/** Parse a .feature text into a structured object. */
+export function parseFeature(featureText: string): ParsedFeature {
   const uuidFn = Messages.IdGenerator.uuid();
   const builder = new Gherkin.AstBuilder(uuidFn);
   const matcher = new Gherkin.GherkinClassicTokenMatcher();
@@ -26,8 +41,8 @@ export function parseFeature(featureText) {
     return { feature: '', background: null, scenarios: [] };
   }
 
-  let background = null;
-  const scenarios = [];
+  let background: Step[] | null = null;
+  const scenarios: Scenario[] = [];
 
   for (const child of feature.children) {
     if (child.background) {
@@ -52,8 +67,8 @@ export function parseFeature(featureText) {
 /**
  * Map a Gherkin step AST node to our simplified step format.
  */
-function mapStep(step) {
-  const result = {
+function mapStep(step: Messages.Step): Step {
+  const result: Step = {
     keyword: step.keyword.trim(),
     text: step.text,
   };

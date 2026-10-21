@@ -18,7 +18,7 @@
  * bewerkingen horen in een variant, die zijn uitgangspunt meebewaart en bij
  * drift meldt dat hij bij een oudere wetsversie hoort.
  */
-import { ref, watch } from 'vue';
+import { ref, watch, type Ref } from 'vue';
 
 /**
  * Welke casus deze opslag bedient. Bepaalt de sleutelprefix, zodat twee
@@ -26,7 +26,7 @@ import { ref, watch } from 'vue';
  * draaien hosted achter hetzelfde portaal en dus op dezelfde origin, waar
  * localStorage gedeeld is. Lokaal scheiden de poorten ze nog wel.
  */
-let casus = null;
+let casus: string | null = null;
 
 /**
  * Versie van het opslagformaat. Verhogen zodra bewaarde waarden niet meer
@@ -36,14 +36,14 @@ let casus = null;
 const VERSIE = 1;
 
 /** Alles wat deze casus bewaart, zodat "begin opnieuw" niets mist. */
-const sleutels = new Set();
+const sleutels = new Set<string>();
 
 /**
  * Zet de casus. Eén keer aanroepen bij het opstarten van de app, vóór de
  * eerste `bewaardeRef`. Een tweede naam is een fout: er hangen dan al refs aan
  * de oude prefix die stil hun waarde zouden verliezen.
  */
-export function stelCasusIn(naam) {
+export function stelCasusIn(naam: string): void {
   if (!/^[a-z0-9-]+$/.test(String(naam ?? ''))) {
     throw new Error(`stelCasusIn: ongeldige casusnaam ${JSON.stringify(naam)}`);
   }
@@ -53,7 +53,7 @@ export function stelCasusIn(naam) {
   casus = naam;
 }
 
-function prefix() {
+function prefix(): string {
   if (casus === null) {
     // Hard, want het alternatief is stil in de verkeerde of in een naamloze
     // ruimte schrijven, en dat merk je pas als iemands keuzes weg zijn.
@@ -62,7 +62,7 @@ function prefix() {
   return `${casus}:v${VERSIE}:`;
 }
 
-function lees(naam, standaard) {
+function lees<T>(naam: string, standaard: T): T {
   try {
     const rauw = localStorage.getItem(prefix() + naam);
     if (rauw === null) return standaard;
@@ -83,7 +83,7 @@ function lees(naam, standaard) {
  * Voor iets dat de gebruiker zelf gemaakt heeft, is het dat wél, en die
  * aanroeper kijkt dus naar wat hier uitkomt.
  */
-function schrijf(naam, waarde) {
+function schrijf(naam: string, waarde: unknown): boolean {
   try {
     localStorage.setItem(prefix() + naam, JSON.stringify(waarde));
     return true;
@@ -96,31 +96,37 @@ function schrijf(naam, waarde) {
  * Een ref die zichzelf bewaart. Gebruik dit in plaats van ref() voor alles
  * wat de gebruiker instelt.
  *
- * @param {string} naam - unieke sleutel binnen deze casus
- * @param {*} standaard - waarde als er niets bewaard is
- * @param {object} opties
- * @param {(waarde: any) => boolean} [opties.geldig] - controle op de gelezen
- *   waarde; bij false wordt de standaard gebruikt. Handig voor id's die naar
- *   een variant verwijzen die niet meer bestaat.
- * @returns {import('vue').Ref}
+ * De gelezen waarde is wat er in localStorage stond, met het type van de
+ * standaard. Wie daar niet op kan vertrouwen, geeft `geldig` mee; die krijgt
+ * de waarde ongecontroleerd, als `unknown`.
+ *
+ * @param naam unieke sleutel binnen deze casus
+ * @param standaard waarde als er niets bewaard is
+ * @param opties.geldig controle op de gelezen waarde; bij false wordt de
+ *   standaard gebruikt. Handig voor id's die naar een variant verwijzen die
+ *   niet meer bestaat.
  */
-export function bewaardeRef(naam, standaard, { geldig } = {}) {
+export function bewaardeRef<T>(
+  naam: string,
+  standaard: T,
+  { geldig }: { geldig?: (waarde: unknown) => boolean } = {},
+): Ref<T> {
   sleutels.add(naam);
   const gelezen = lees(naam, standaard);
   const start = geldig && gelezen !== standaard && !geldig(gelezen) ? standaard : gelezen;
-  const r = ref(start);
+  const r = ref(start) as Ref<T>;
   watch(r, (nieuw) => schrijf(naam, nieuw), { deep: true });
   return r;
 }
 
 /** Losse waarde lezen zonder ref, voor code die zelf al reactief is. */
-export function leesStand(naam, standaard) {
+export function leesStand<T>(naam: string, standaard: T): T {
   sleutels.add(naam);
   return lees(naam, standaard);
 }
 
 /** Losse waarde bewaren zonder ref. Geeft terug of het lukte. */
-export function bewaarStand(naam, waarde) {
+export function bewaarStand(naam: string, waarde: unknown): boolean {
   sleutels.add(naam);
   return schrijf(naam, waarde);
 }
@@ -131,10 +137,10 @@ export function bewaarStand(naam, waarde) {
  * dat opgeslagen varianten blijven staan, en een variant is het enige dat hier
  * niet opnieuw te maken is.
  */
-const beschermd = new Set();
+const beschermd = new Set<string>();
 
 /** Meld een sleutel die "begin opnieuw" niet mag wissen. */
-export function beschermSleutel(naam) {
+export function beschermSleutel(naam: string): void {
   beschermd.add(naam);
 }
 
@@ -144,7 +150,7 @@ export function beschermSleutel(naam) {
  * terugzetten: er hangen simulaties, engines en workers aan die stand, en die
  * allemaal met de hand terugdraaien is precies waar bugs in kruipen.
  */
-export function wisStand() {
+export function wisStand(): void {
   try {
     const p = prefix();
     const houden = new Set([...beschermd].map((naam) => p + naam));
@@ -163,7 +169,7 @@ export function wisStand() {
 }
 
 /** Is er iets bewaard? Bepaalt of de "begin opnieuw"-knop zin heeft. */
-export function heeftBewaardeStand() {
+export function heeftBewaardeStand(): boolean {
   try {
     const p = prefix();
     const houden = new Set([...beschermd].map((naam) => p + naam));
@@ -174,7 +180,7 @@ export function heeftBewaardeStand() {
 }
 
 /** Alleen voor tests: vergeet de casus en de geregistreerde sleutels. */
-export function _resetVoorTest() {
+export function _resetVoorTest(): void {
   casus = null;
   sleutels.clear();
   beschermd.clear();

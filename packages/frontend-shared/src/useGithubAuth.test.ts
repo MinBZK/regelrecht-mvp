@@ -13,18 +13,21 @@ function stubLocation({ pathname = '/', search = '', hash = '' } = {}) {
 }
 
 // Fresh module per test so the module-singleton status/readyPromise start clean
-// and vi.doMock('./apiFetch.js', …) applies.
-async function freshGithub({ apiFetchJson, apiFetch } = {}) {
+// and vi.doMock('./apiFetch', …) applies.
+async function freshGithub({
+  apiFetchJson,
+  apiFetch,
+}: { apiFetchJson?: ReturnType<typeof vi.fn>; apiFetch?: ReturnType<typeof vi.fn> } = {}) {
   vi.resetModules();
-  vi.doMock('./apiFetch.js', () => ({
+  vi.doMock('./apiFetch', () => ({
     apiFetchJson: apiFetchJson || vi.fn().mockResolvedValue({}),
     apiFetch: apiFetch || vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
   }));
-  return import('./useGithubAuth.js');
+  return import('./useGithubAuth');
 }
 
 describe('connect URL construction', () => {
-  let loc;
+  let loc: ReturnType<typeof stubLocation>;
   beforeEach(() => {
     loc = stubLocation({ pathname: '/editor', search: '?a=1', hash: '#h' });
   });
@@ -70,8 +73,8 @@ describe('ensureGithubReady / status', () => {
     await ensureGithubReady();
     const { status, loading } = useGithubAuth();
     expect(apiFetchJson).toHaveBeenCalledWith('/auth/github/status');
-    expect(status.value.connected).toBe(true);
-    expect(status.value.github_login).toBe('octocat');
+    expect(status.value?.connected).toBe(true);
+    expect(status.value?.github_login).toBe('octocat');
     expect(loading.value).toBe(false);
   });
 
@@ -81,8 +84,8 @@ describe('ensureGithubReady / status', () => {
     });
     await ensureGithubReady();
     const { status } = useGithubAuth();
-    expect(status.value.configured).toBe(false);
-    expect(status.value.connected).toBe(false);
+    expect(status.value?.configured).toBe(false);
+    expect(status.value?.connected).toBe(false);
   });
 
   it('fetches status only once across calls (readyPromise singleton)', async () => {
@@ -106,6 +109,6 @@ describe('ensureGithubReady / status', () => {
     const gh = useGithubAuth();
     await gh.disconnect();
     expect(apiFetch).toHaveBeenCalledWith('/auth/github/disconnect', { method: 'POST' });
-    expect(gh.status.value.connected).toBe(false);
+    expect(gh.status.value?.connected).toBe(false);
   });
 });

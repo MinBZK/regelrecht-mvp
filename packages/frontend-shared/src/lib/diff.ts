@@ -3,8 +3,37 @@
  * genoeg om toegevoegde/verwijderde regels tussen twee YAML-teksten te tonen.
  */
 
-/** @returns {Array<{type:'context'|'add'|'del', text:string}>} */
-export function lineDiff(a, b) {
+/** One line of a diff. `gap` stands for context that `compactDiff` left out. */
+export interface DiffLine {
+  type: 'context' | 'add' | 'del' | 'gap';
+  text: string;
+}
+
+/** A changed article text, as `articleTextDiff` reports it. */
+export interface ArticleTextChange {
+  article: string | number;
+  oud: string;
+  nieuw: string;
+}
+
+/** A changed definition value, as `definitionDiff` reports it. */
+export interface DefinitionChange {
+  article: string | number;
+  name: string;
+  oud: unknown;
+  nieuw: unknown;
+}
+
+/** The part of a parsed rulework the two document diffs read. */
+interface DiffDocument {
+  articles?: {
+    number: string | number;
+    text?: unknown;
+    machine_readable?: { definitions?: Record<string, { value?: unknown } | null | undefined> };
+  }[];
+}
+
+export function lineDiff(a: string, b: string): DiffLine[] {
   const A = a.split('\n');
   const B = b.split('\n');
   const n = A.length;
@@ -18,7 +47,7 @@ export function lineDiff(a, b) {
     }
   }
 
-  const out = [];
+  const out: DiffLine[] = [];
   let i = 0;
   let j = 0;
   while (i < n && j < m) {
@@ -40,9 +69,9 @@ export function lineDiff(a, b) {
 }
 
 /** Alleen de gewijzigde blokken (context ingekort tot 2 regels rondom). */
-export function compactDiff(a, b, contextLines = 2) {
+export function compactDiff(a: string, b: string, contextLines = 2): DiffLine[] {
   const full = lineDiff(a, b);
-  const keep = new Array(full.length).fill(false);
+  const keep: boolean[] = new Array(full.length).fill(false);
   full.forEach((d, idx) => {
     if (d.type !== 'context') {
       for (let k = Math.max(0, idx - contextLines); k <= Math.min(full.length - 1, idx + contextLines); k++) {
@@ -50,7 +79,7 @@ export function compactDiff(a, b, contextLines = 2) {
       }
     }
   });
-  const out = [];
+  const out: DiffLine[] = [];
   let gap = false;
   full.forEach((d, idx) => {
     if (keep[idx]) {
@@ -72,8 +101,11 @@ export function compactDiff(a, b, contextLines = 2) {
  * alleen in de formule zit vertelt een andere wet dan de proza eromheen. Wie
  * de diff leest, moet beide zien staan.
  */
-export function articleTextDiff(baseDoc, currentDoc) {
-  const changes = [];
+export function articleTextDiff(
+  baseDoc: DiffDocument | null | undefined,
+  currentDoc: DiffDocument | null | undefined,
+): ArticleTextChange[] {
+  const changes: ArticleTextChange[] = [];
   const curByNumber = new Map((currentDoc?.articles ?? []).map((a) => [String(a.number), a]));
   for (const art of baseDoc?.articles ?? []) {
     const cur = curByNumber.get(String(art.number));
@@ -91,8 +123,11 @@ export function articleTextDiff(baseDoc, currentDoc) {
  * Verschillen in definitie-waarden tussen twee geparste documenten, als
  * leesbare "artikel X: naam: oud → nieuw"-regels.
  */
-export function definitionDiff(baseDoc, currentDoc) {
-  const changes = [];
+export function definitionDiff(
+  baseDoc: DiffDocument | null | undefined,
+  currentDoc: DiffDocument | null | undefined,
+): DefinitionChange[] {
+  const changes: DefinitionChange[] = [];
   const baseArticles = baseDoc?.articles ?? [];
   const curArticles = currentDoc?.articles ?? [];
   const curByNumber = new Map(curArticles.map((a) => [String(a.number), a]));

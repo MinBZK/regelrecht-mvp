@@ -15,7 +15,32 @@
  */
 
 import { VALUE_TYPING } from './grammar.generated.js';
-import { isUnknown, missingFacts } from '../values.js';
+import { isUnknown, missingFacts } from '../values';
+import type { ExecutionContext, ExecutionResult } from './context';
+
+/**
+ * The engine methods the dispatch calls. The WASM engine's `WasmEngine`
+ * fits; its generated `.d.ts` lives in each app's `public/wasm/pkg`, out of
+ * reach of this package, so the runner names only what it uses.
+ */
+export interface GherkinEngine {
+  hasLaw(lawId: string): boolean;
+  registerDataSource(name: string, keyField: string, records: Record<string, unknown>[]): void;
+  registerDataSourceForLaw(lawId: string, name: string, keyField: string, records: Record<string, unknown>[]): void;
+  execute(lawId: string, outputName: string, parameters: Record<string, unknown>, calculationDate: string): ExecutionResult;
+}
+
+export interface DispatchOptions {
+  /** Fetch and load a law a scenario depends on. */
+  loadDependency: (lawId: string) => Promise<void>;
+}
+
+/** A step's data table: rows of cells, as the parser gives them. */
+export type DataTable = string[][];
+
+/** Same shape as the runtime checks below; mirrors the codegen. */
+type ValueTyping = { quoted: string; bare: string; table_cell: string };
+const TYPING: ValueTyping = VALUE_TYPING;
 
 /**
  * Parse a string value to a typed value, mirroring Rust value_conversion.rs
@@ -29,7 +54,7 @@ import { isUnknown, missingFacts } from '../values.js';
  * The empty *cell* in a table never reaches here: `tableToRecords` and
  * `set_parameters_table` leave the key out first (RFC-036, "not stated").
  */
-export function parseValue(str) {
+export function parseValue(str: unknown): unknown {
   // Already typed (a form hands real booleans and numbers straight through).
   if (typeof str !== 'string') return str;
   if (str === 'true') return true;
@@ -65,30 +90,30 @@ export function parseValue(str) {
  * bdd/grammar.yaml and reach both dispatchers through codegen, so neither
  * engine can hold its own opinion about what a quote means.
  */
-export function quotedValue(raw) {
-  switch (VALUE_TYPING.quoted) {
+export function quotedValue(raw: unknown): unknown {
+  switch (TYPING.quoted) {
     case 'literal': return raw;
     case 'inferred': return parseValue(raw);
     default:
-      throw new Error(`bdd/grammar.yaml: unknown value_typing.quoted '${VALUE_TYPING.quoted}'`);
+      throw new Error(`bdd/grammar.yaml: unknown value_typing.quoted '${TYPING.quoted}'`);
   }
 }
 
 /** Type a bare (unquoted) capture; see [quotedValue] for where the rule lives. */
-export function bareValue(raw) {
-  if (VALUE_TYPING.bare !== 'number') {
-    throw new Error(`bdd/grammar.yaml: unknown value_typing.bare '${VALUE_TYPING.bare}'`);
+export function bareValue(raw: string): number {
+  if (TYPING.bare !== 'number') {
+    throw new Error(`bdd/grammar.yaml: unknown value_typing.bare '${TYPING.bare}'`);
   }
   return Number(raw);
 }
 
 /** Type a data-table cell; see [quotedValue] for where the rule lives. */
-export function tableCellValue(raw) {
-  switch (VALUE_TYPING.table_cell) {
+export function tableCellValue(raw: string): unknown {
+  switch (TYPING.table_cell) {
     case 'inferred': return parseValue(raw);
     case 'literal': return raw.trim();
     default:
-      throw new Error(`bdd/grammar.yaml: unknown value_typing.table_cell '${VALUE_TYPING.table_cell}'`);
+      throw new Error(`bdd/grammar.yaml: unknown value_typing.table_cell '${TYPING.table_cell}'`);
   }
 }
 
@@ -115,25 +140,26 @@ export function tableCellValue(raw) {
  * different parser. The explicit check keeps both sides failing the same way
  * if either parser ever loosens.
  */
-export function tableToRecords(dataTable) {
+export function tableToRecords(dataTable: DataTable | null | undefined): Record<string, unknown>[] {
   if (!dataTable || dataTable.length < 2) return [];
-  const headers = dataTable[0];
+  const headers = dataTable[0]!;
   return dataTable.slice(1).map((row, rowIndex) => {
     if (row.length !== headers.length) {
       throw new Error(
         `data table row ${rowIndex + 1} has ${row.length} cells, header row has ${headers.length}`,
       );
     }
-    const record = {};
+    const record: Record<string, unknown> = {};
     headers.forEach((h, i) => {
-      if (row[i].trim() === '') return;
-      record[h] = tableCellValue(row[i]);
+      const cell = row[i]!;
+      if (cell.trim() === '') return;
+      record[h] = tableCellValue(cell);
     });
     return record;
   });
 }
 
-export function getOutput(ctx, name) {
+export function getOutput(ctx: ExecutionContext, name: string): unknown {
   if (!ctx.result || !ctx.result.outputs) {
     throw new Error(`No outputs available (execution ${ctx.executed ? 'failed' : 'not performed'})`);
   }
@@ -160,31 +186,34 @@ export function getOutput(ctx, name) {
  * not exist in JS (both are `number`), so a recursive tolerance is the
  * closest mapping and never rejects what Rust accepts.
  */
-export function valuesEqual(a, b) {
+export function valuesEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a === null || b === null || a === undefined || b === undefined) return false;
   if (typeof a !== typeof b) return false;
-  if (typeof a === 'number') return Math.abs(a - b) < 1e-9;
-  if (typeof a !== 'object') return false;
+  if (typeof a === 'number') return Math.abs(a - (b as number)) < 1e-9;
+  if (typeof a !== 'object' || typeof b !== 'object') return false;
   if (isUnknown(a) || isUnknown(b)) return isUnknown(a) && isUnknown(b);
 
   const aIsArray = Array.isArray(a);
   if (aIsArray !== Array.isArray(b)) return false;
-  if (aIsArray) {
-    if (a.length !== b.length) return false;
-    return a.every((item, i) => valuesEqual(item, b[i]));
+  if (Array.isArray(a)) {
+    const bList = b as unknown[];
+    if (a.length !== bList.length) return false;
+    return a.every((item, i) => valuesEqual(item, bList[i]));
   }
 
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
+  const aRecord = a as Record<string, unknown>;
+  const bRecord = b as Record<string, unknown>;
+  const aKeys = Object.keys(aRecord);
+  const bKeys = Object.keys(bRecord);
   if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((key) => Object.hasOwn(b, key) && valuesEqual(a[key], b[key]));
+  return aKeys.every((key) => Object.hasOwn(bRecord, key) && valuesEqual(aRecord[key], bRecord[key]));
 }
 
 /** @deprecated Kept for callers of the old name; arrays and objects are compared too. */
 export const primitiveEqual = valuesEqual;
 
-function assertOutput(ctx, name, expected) {
+function assertOutput(ctx: ExecutionContext, name: string, expected: unknown): void {
   const actual = getOutput(ctx, name);
   if (!valuesEqual(actual, expected)) {
     throw new Error(
@@ -194,11 +223,11 @@ function assertOutput(ctx, name, expected) {
 }
 
 /** `name (law)` per missing fact, for error messages. */
-function describeMissing(value) {
+function describeMissing(value: unknown): string {
   return missingFacts(value).map((f) => `${f.name} (${f.law})`).join(', ');
 }
 
-function assertUnknown(ctx, name) {
+function assertUnknown(ctx: ExecutionContext, name: string): unknown {
   const actual = getOutput(ctx, name);
   if (!isUnknown(actual)) {
     throw new Error(`Expected output "${name}" to be unknown, got: ${JSON.stringify(actual)}`);
@@ -206,31 +235,38 @@ function assertUnknown(ctx, name) {
   return actual;
 }
 
-function tierUnsupported(tier) {
+function tierUnsupported(tier: string): Error {
   return new Error(`tier ${tier} not supported by the editor engine`);
 }
 
 /**
  * Run a canonical grammar action against the execution context + WASM engine.
  *
- * @param {object} ctx - ExecutionContext (calculationDate, parameters, result, error, executed)
- * @param {object} engine - WasmEngine instance
- * @param {string} action - canonical action id from the grammar
- * @param {Array} args - ordered typed captures + literals
- * @param {string[][]|null} table - step dataTable rows, or null; row 0 is a
- *   header for a data-source table and a value row for a parameter table
- * @param {object} options
- * @param {(lawId: string) => Promise<void>} options.loadDependency
+ * `action` is the canonical action id from the grammar and `args` the
+ * ordered typed captures plus literals. A quoted capture is typed by
+ * inference (`value_typing.quoted`), so `"404"` arrives as a number; the arms
+ * that need text, such as a law id or the substring of an error message,
+ * read it through `text`, which turns it back into one. `table`
+ * holds the step's data table rows, or null; row 0 is a header for a
+ * data-source table and a value row for a parameter table.
  */
-export async function dispatch(ctx, engine, action, args, table, { loadDependency }) {
+export async function dispatch(
+  ctx: ExecutionContext,
+  engine: GherkinEngine,
+  action: string,
+  args: unknown[],
+  table: DataTable | null,
+  { loadDependency }: DispatchOptions,
+): Promise<void> {
+  const text = (i: number) => String(args[i]);
   switch (action) {
     // --- core: setup ---
     case 'set_calculation_date':
-      ctx.calculationDate = args[0];
+      ctx.calculationDate = text(0);
       break;
 
     case 'load_law': {
-      const lawId = args[0];
+      const lawId = text(0);
       if (!engine.hasLaw(lawId)) {
         await loadDependency(lawId);
       }
@@ -239,7 +275,7 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
 
     case 'set_parameter':
       // Already typed by the grammar's `value_typing` rule in buildArgs.
-      ctx.parameters[args[0]] = args[1];
+      ctx.parameters[text(0)] = args[1];
       break;
 
     // No header row on a parameter table (mirror of Rust `rows_to_params`);
@@ -249,20 +285,21 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
     // absence. The same meaning of the empty cell as in a data table.
     case 'set_parameters_table':
       for (const row of table || []) {
-        if (row.length < 2 || row[1].trim() === '') continue;
-        ctx.parameters[row[0].trim()] = tableCellValue(row[1]);
+        const [name, value] = row;
+        if (name === undefined || value === undefined || value.trim() === '') continue;
+        ctx.parameters[name.trim()] = tableCellValue(value);
       }
       break;
 
     case 'set_parameter_collection':
       // Header row plus one row per element, each element an object keyed by
       // the column names — the shape the iterating operations expect (RFC-016).
-      ctx.parameters[args[0]] = tableToRecords(table);
+      ctx.parameters[text(0)] = tableToRecords(table);
       break;
 
     case 'set_data_source': {
-      const sourceName = args[0];
-      const keyField = args[1];
+      const sourceName = text(0);
+      const keyField = text(1);
       const records = tableToRecords(table);
       engine.registerDataSource(sourceName, keyField, records);
       break;
@@ -271,9 +308,9 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
     // Bound to one law: consulted only while that law's inputs resolve, so
     // the rows can never shadow a same-named cross-law input elsewhere.
     case 'set_data_source_for_law': {
-      const sourceName = args[0];
-      const keyField = args[1];
-      const lawId = args[2];
+      const sourceName = text(0);
+      const keyField = text(1);
+      const lawId = text(2);
       const records = tableToRecords(table);
       engine.registerDataSourceForLaw(lawId, sourceName, keyField, records);
       break;
@@ -281,8 +318,8 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
 
     // --- core: execute ---
     case 'evaluate': {
-      const outputName = args[0];
-      const lawId = args[1];
+      const outputName = text(0);
+      const lawId = text(1);
       if (!ctx.calculationDate) {
         throw new Error('No calculation date set. Add: Given the calculation date is "YYYY-MM-DD"');
       }
@@ -318,7 +355,7 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
       if (!ctx.error) {
         throw new Error('Expected execution to fail, but it succeeded');
       }
-      const expected = args[0];
+      const expected = text(0);
       const errorStr = String(ctx.error);
       if (!errorStr.toLowerCase().includes(expected.toLowerCase())) {
         throw new Error(`Expected error containing "${expected}", got: ${errorStr}`);
@@ -328,28 +365,28 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
 
     case 'assert_boolean':
       // args = [output, literalBool]
-      assertOutput(ctx, args[0], args[1]);
+      assertOutput(ctx, text(0), args[1]);
       break;
 
     case 'assert_equals':
       // Numeric form arrives as Number; string form as String.
-      assertOutput(ctx, args[0], args[1]);
+      assertOutput(ctx, text(0), args[1]);
       break;
 
     case 'assert_null':
-      assertOutput(ctx, args[0], null);
+      assertOutput(ctx, text(0), null);
       break;
 
     // Unknown (RFC-036): the output is the `{__unknown: true, missing: [...]}`
     // value, whatever it lists as missing.
     case 'assert_unknown':
-      assertUnknown(ctx, args[0]);
+      assertUnknown(ctx, text(0));
       break;
 
     // ... and one of the facts it lists as missing has this name.
     case 'assert_unknown_for': {
-      const name = args[0];
-      const fact = args[1];
+      const name = text(0);
+      const fact = text(1);
       const actual = assertUnknown(ctx, name);
       if (!missingFacts(actual).some((f) => f.name === fact)) {
         throw new Error(
@@ -360,8 +397,8 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
     }
 
     case 'assert_contains': {
-      const name = args[0];
-      const substring = args[1];
+      const name = text(0);
+      const substring = text(1);
       const actual = getOutput(ctx, name);
       if (typeof actual !== 'string' || !actual.toLowerCase().includes(substring.toLowerCase())) {
         throw new Error(
@@ -411,7 +448,7 @@ export async function dispatch(ctx, engine, action, args, table, { loadDependenc
  * every call site. A bare step passes through unchanged, so a trace recorded
  * before the envelope still renders.
  */
-export function traceRoot(trace) {
+export function traceRoot<T>(trace: { root?: T } | T | null | undefined): T | null {
   if (!trace) return null;
-  return trace.root ?? trace;
+  return (trace as { root?: T }).root ?? (trace as T);
 }

@@ -22,7 +22,7 @@
   tussenstand pakken die je bevalt, zonder te wachten tot hij convergeert.
 -->
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -32,50 +32,83 @@ import VChart from 'vue-echarts';
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent]);
 
-const props = defineProps({
-  /**
-   * De metingen, oplopend: [{ iteratie, waarden: { <reeks-sleutel>: number } }].
-   * Een reeks die in een meting ontbreekt, krijgt een gat in plaats van een nul:
-   * niet gemeten is iets anders dan nul.
-   */
-  pad: { type: Array, default: () => [] },
-  /**
-   * Wat er getekend wordt: [{ sleutel, label, kleur, as?, formatter? }].
-   * `as` is 0 (links) of 1 (rechts), voor twee grootheden naast elkaar.
-   */
-  reeksen: { type: Array, required: true },
-  /** Titels van de assen, per index. */
-  asTitels: { type: Array, default: () => [] },
-  /** Formatters per as: (waarde) => string. */
-  asFormatters: { type: Array, default: () => [] },
-  titel: { type: String, default: 'Optimalisatiepad' },
-  hint: { type: String, default: 'Klik op een punt om die tussenstand te bekijken.' },
-  /** Index van het punt dat als gekozen wordt getoond, of null. */
-  gekozen: { type: Number, default: null },
-});
+/**
+ * Eén meting. Een reeks die in een meting ontbreekt, krijgt een gat in plaats
+ * van een nul: niet gemeten is iets anders dan nul.
+ */
+export interface Meting {
+  iteratie: number | string;
+  waarden?: Record<string, number | null | undefined>;
+}
 
-const emit = defineEmits(['kies']);
+/** Een lijn in de grafiek. `as` is 0 (links) of 1 (rechts), voor twee grootheden naast elkaar. */
+export interface Reeks {
+  sleutel: string;
+  label: string;
+  kleur: string;
+  as?: 0 | 1;
+  formatter?: (waarde: number) => string;
+}
+
+/** Wat ECharts meegeeft aan een tooltip-formatter met `trigger: 'axis'`, voor zover hier gebruikt. */
+interface TooltipPunt {
+  axisValue?: string | number;
+  marker?: unknown;
+  seriesName?: string;
+  seriesIndex?: number;
+  value?: unknown;
+}
+
+const props = withDefaults(
+  defineProps<{
+    /** De metingen, oplopend. */
+    pad?: Meting[];
+    /** Wat er getekend wordt. */
+    reeksen: Reeks[];
+    /** Titels van de assen, per index. */
+    asTitels?: string[];
+    /** Formatters per as. */
+    asFormatters?: ((waarde: number) => string)[];
+    titel?: string;
+    hint?: string;
+    /** Index van het punt dat als gekozen wordt getoond, of null. */
+    gekozen?: number | null;
+  }>(),
+  {
+    pad: () => [],
+    asTitels: () => [],
+    asFormatters: () => [],
+    titel: 'Optimalisatiepad',
+    hint: 'Klik op een punt om die tussenstand te bekijken.',
+    gekozen: null,
+  },
+);
+
+const emit = defineEmits<{ kies: [index: number] }>();
 
 /** Welke iteratie hoort bij de aangeklikte punt-index. */
-function opPunt(e) {
+function opPunt(e: { dataIndex?: unknown } | undefined) {
   if (typeof e?.dataIndex !== 'number') return;
   emit('kies', e.dataIndex);
 }
 
 const heeftTweedeAs = computed(() => props.reeksen.some((r) => r.as === 1));
 
-function formatteer(reeks, waarde) {
+function formatteer(reeks: Partial<Reeks>, waarde: unknown): string {
   if (waarde === null || waarde === undefined) return '—';
-  return reeks.formatter ? reeks.formatter(waarde) : String(waarde);
+  // Een getal als tekst gaat ook door de formatter, zoals voorheen; wat geen
+  // getal is, komt er onopgemaakt door.
+  const getal = typeof waarde === 'number' ? waarde : Number(waarde);
+  return reeks.formatter && Number.isFinite(getal) ? reeks.formatter(getal) : String(waarde);
 }
 
 const option = computed(() => ({
   tooltip: {
     trigger: 'axis',
-    formatter: (params) => {
+    formatter: (params: TooltipPunt[]) => {
       const kop = `meting ${params[0]?.axisValue ?? ''}`;
       const regels = params.map((p) => {
-        const reeks = props.reeksen[p.seriesIndex] ?? {};
+        const reeks: Partial<Reeks> = (p.seriesIndex === undefined ? undefined : props.reeksen[p.seriesIndex]) ?? {};
         return `${p.marker} ${p.seriesName}: ${formatteer(reeks, p.value)}`;
       });
       return [kop, ...regels].join('<br>');
@@ -100,7 +133,7 @@ const option = computed(() => ({
     type: 'value',
     name: props.asTitels[i] ?? '',
     axisLabel: {
-      formatter: props.asFormatters[i] ? (v) => props.asFormatters[i](v) : undefined,
+      formatter: props.asFormatters[i] ? (v: number) => props.asFormatters[i]!(v) : undefined,
     },
     // Niet vanaf nul: een doel-run beweegt vaak in een smalle band, en dan
     // is een as vanaf nul een vlakke lijn waar niets aan te zien is.

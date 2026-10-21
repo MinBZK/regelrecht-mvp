@@ -1,9 +1,25 @@
 import { computed, ref } from 'vue';
-import { apiFetchJson } from './apiFetch.js';
+import { apiFetchJson } from './apiFetch';
+
+/** The signed-in person, as `PersonInfo` in `packages/auth` serializes it. */
+export interface AuthPerson {
+  sub: string;
+  email: string;
+  name: string;
+  /** Keycloak realm roles, such as `editor-reader` or `harvester-writer`. */
+  roles: string[];
+}
+
+/** The `/auth/status` response, as `AuthStatus` in `packages/auth` serializes it. */
+export interface AuthStatus {
+  authenticated: boolean;
+  oidc_configured: boolean;
+  person?: AuthPerson;
+}
 
 const authenticated = ref(false);
 const oidcConfigured = ref(false);
-const person = ref(null);
+const person = ref<AuthPerson | null>(null);
 const loading = ref(true);
 
 // Realm roles the signed-in user holds, surfaced by `/auth/status`. Empty when
@@ -12,20 +28,20 @@ const loading = ref(true);
 const roles = computed(() => person.value?.roles ?? []);
 
 /** True when the user holds the given realm role. */
-export function hasRole(role) {
+export function hasRole(role: string): boolean {
   return roles.value.includes(role);
 }
 
 /** True when the user holds at least one of the given realm roles. */
-export function hasAnyRole(candidates) {
+export function hasAnyRole(candidates: readonly string[]): boolean {
   return candidates.some((role) => roles.value.includes(role));
 }
 
-let readyPromise = null;
+let readyPromise: Promise<void> | null = null;
 
-async function checkAuth() {
+async function checkAuth(): Promise<void> {
   try {
-    const status = await apiFetchJson('/auth/status');
+    const status = await apiFetchJson<AuthStatus>('/auth/status');
     authenticated.value = status.authenticated;
     oidcConfigured.value = status.oidc_configured;
     person.value = status.person || null;
@@ -39,7 +55,7 @@ async function checkAuth() {
 // Kick off the single shared /auth/status fetch and expose its promise so
 // callers outside the Vue component tree (e.g. router guards) can await it
 // without touching the reactive `loading` ref.
-export function ensureAuthReady() {
+export function ensureAuthReady(): Promise<void> {
   if (!readyPromise) {
     readyPromise = checkAuth();
   }
@@ -56,7 +72,7 @@ export function useAuth() {
   // relative/same-origin path only: `returnUrl` is forwarded verbatim as the
   // SSO `return_url` (the backend validates it, but don't widen the surface by
   // handing it an absolute external URL).
-  function login(returnUrl) {
+  function login(returnUrl?: unknown): void {
     // Only accept an explicit string: a template that passes `login` as a
     // bare event handler (`@click="login"`) hands us a PointerEvent, which
     // would otherwise stringify into return_url=[object PointerEvent].
@@ -66,7 +82,7 @@ export function useAuth() {
     window.location.href = '/auth/login?return_url=' + encodeURIComponent(url);
   }
 
-  function logout() {
+  function logout(): void {
     window.location.href = '/auth/logout';
   }
 

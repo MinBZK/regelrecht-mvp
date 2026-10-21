@@ -33,18 +33,27 @@
   andere pagina's niet gemonteerd.
 -->
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 
-const props = defineProps({
-  /** [{ id, soort, tekst }] */
-  meldingen: { type: Array, default: () => [] },
-  /** Staat de gebruiker al op de pagina van de assistent? Dan hoeft dit niet. */
-  opAssistentPagina: { type: Boolean, default: false },
-  /** Tekst van de knop die naar de assistent gaat; leeg laat de knop weg. */
-  naarLabel: { type: String, default: '' },
-});
-defineEmits(['wis', 'ga']);
+/** Een melding van de assistent. Soort `vraag` wacht op de gebruiker. */
+export interface Melding {
+  id: number;
+  soort: string;
+  tekst: string;
+}
+
+const props = withDefaults(
+  defineProps<{
+    meldingen?: Melding[];
+    /** Staat de gebruiker al op de pagina van de assistent? Dan hoeft dit niet. */
+    opAssistentPagina?: boolean;
+    /** Tekst van de knop die naar de assistent gaat; leeg laat de knop weg. */
+    naarLabel?: string;
+  }>(),
+  { meldingen: () => [], opAssistentPagina: false, naarLabel: '' },
+);
+defineEmits<{ wis: [id: number]; ga: [] }>();
 
 /**
  * Op de pagina van de assistent zelf zegt een banner niets: daar staat het

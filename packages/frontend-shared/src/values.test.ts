@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isUnknown, missingFacts } from './values.js';
+import { isUnknown, missingFacts } from './values';
 
 const unknown = {
   __unknown: true,

@@ -101,7 +101,7 @@ Among other checks, the `provenance-checks` job verifies that every `$schema` UR
 The required `Test` check is a gate job that fails when any job it depends on fails. Besides the Rust tests, the BDD jobs, the provenance checks and the docs accessibility gate, it waits for:
 
 - **Cross-law integrity** - `script/cross-law-integriteit.py` over the corpus: misplaced, dangling or plain-param source bindings and broken `implements` declarations
-- **Frontend tests** - unit tests for the editor, lawmaking, demo, arch-explorer and shared packages, bundle builds for the editor, lawmaking and demo, a check that the BDD grammar codegen is in sync, and the design-system slot guard (`just nldd-slots`), which fails the job when the design system is missing instead of skipping
+- **Frontend tests** - unit tests for the editor, lawmaking, demo, arch-explorer and shared packages, a type check of the shared package, bundle builds for the editor, lawmaking and demo, a check that the BDD grammar codegen is in sync, and the design-system slot guard (`just nldd-slots`), which fails the job when the design system is missing instead of skipping
 - **Ontwerpsysteem-imports** - checks that the design-system imports match the tags in use
 - **E2E (mocked)** - `just test-e2e`, the Playwright suite against mocked backends
 - **Rust image build** - builds the `pipeline-api` image to catch Dockerfile breakage

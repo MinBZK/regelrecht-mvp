@@ -1,12 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isChunkLoadError, reloadOnStaleBundle } from './reloadOnStaleBundle.js';
+import type { RouteLocationNormalized, Router } from 'vue-router';
+import { isChunkLoadError, reloadOnStaleBundle, type StaleBundleRouter } from './reloadOnStaleBundle';
+
+// Compile-time check: a real vue-router Router can be passed in.
+const routerFits: (router: Router) => StaleBundleRouter = (router) => router;
+void routerFits;
+
+type Handler = (error: unknown, to?: RouteLocationNormalized) => unknown;
 
 function fakeRouter() {
-  const handlers = [];
+  const handlers: Handler[] = [];
   return {
-    onError: (h) => handlers.push(h),
-    resolve: (to) => ({ href: `/terugbetaalregimes${to.fullPath}` }),
-    fail: (error, to) => handlers.forEach((h) => h(error, to)),
+    onError: (h: Handler) => handlers.push(h),
+    resolve: (to: RouteLocationNormalized) => ({ href: `/terugbetaalregimes${to.fullPath}` }),
+    // The tests pass only the field the handler reads.
+    fail: (error: unknown, to?: { fullPath: string }) =>
+      handlers.forEach((h) => h(error, to as RouteLocationNormalized)),
   };
 }
 
@@ -15,8 +24,8 @@ function fakeTarget() {
 }
 
 function fakeStorage() {
-  const m = new Map();
-  return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v) };
+  const m = new Map<string, string>();
+  return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) };
 }
 
 const chromeError = new TypeError('Failed to fetch dynamically imported module: https://x/assets/BeleidView-abc.js');

@@ -5,25 +5,28 @@
   "type": "module",
   "description": "Shared frontend primitives (auth, color scheme, API fetch, Gherkin runner, saved state) for the regelrecht Vue frontends",
   "exports": {
-    ".": "./src/index.js",
-    "./gherkin": "./src/gherkin/index.js",
-    "./gherkin/*": "./src/gherkin/*",
-    "./lib/*": "./src/lib/*",
+    ".": "./src/index.ts",
+    "./gherkin": "./src/gherkin/index.ts",
+    "./gherkin/*.js": "./src/gherkin/*.js",
+    "./gherkin/*": "./src/gherkin/*.ts",
+    "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*",
-    "./*.js": "./src/*.js"
+    "./*": "./src/*.ts"
   },
   "dependencies": {
     "@cucumber/gherkin": "^42.0.1",
     "@cucumber/messages": "^34.2.1"
   },
   "scripts": {
+    "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "peerDependencies": {
     "echarts": "^6.1.0",
     "vue": "^3.5.43",
-    "vue-echarts": "^8.3.2"
+    "vue-echarts": "^8.3.2",
+    "vue-router": "^5.4.0"
   },
   "peerDependenciesMeta": {
     "echarts": {
@@ -31,10 +34,16 @@
     },
     "vue-echarts": {
       "optional": true
+    },
+    "vue-router": {
+      "optional": true
     }
   },
   "devDependencies": {
+    "@vue/tsconfig": "^0.9.1",
     "happy-dom": "^20.14.6",
-    "vitest": "^5.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3",
+    "vue-tsc": "^3.3.13"
   }
 }

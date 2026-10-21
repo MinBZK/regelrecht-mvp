@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lineDiff, compactDiff, definitionDiff, articleTextDiff } from './diff.js';
+import { lineDiff, compactDiff, definitionDiff, articleTextDiff } from './diff';
 
 describe('lineDiff', () => {
   it('marks an added line and keeps the rest as context', () => {
@@ -51,7 +51,7 @@ describe('compactDiff', () => {
 });
 
 describe('articleTextDiff', () => {
-  const doc = (text) => ({ articles: [{ number: '6.10', text }] });
+  const doc = (text: unknown) => ({ articles: [{ number: '6.10', text }] });
 
   it('meldt een gewijzigde wettekst met het artikelnummer', () => {
     expect(articleTextDiff(doc('Vier procent.'), doc('Vijf procent.'))).toEqual([
@@ -76,7 +76,7 @@ describe('articleTextDiff', () => {
 });
 
 describe('definitionDiff', () => {
-  const doc = (value) => ({
+  const doc = (value: unknown) => ({
     articles: [{ number: '6.10', machine_readable: { definitions: { voet_ratio: { value } } } }],
   });
 

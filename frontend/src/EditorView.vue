@@ -2,7 +2,7 @@
 import { ref, computed, reactive, watch, watchEffect, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import * as yaml from 'js-yaml';
-import { withDecisionField } from '@regelrecht/frontend-shared/produces.js';
+import { withDecisionField } from '@regelrecht/frontend-shared/produces';
 import { useLaw, fetchLaw } from './composables/useLaw.js';
 import { useCorpusLaws } from './composables/useCorpusLaws.js';
 import { useEngine } from './composables/useEngine.js';

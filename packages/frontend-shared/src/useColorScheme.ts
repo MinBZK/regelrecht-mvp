@@ -14,20 +14,37 @@
  *   - admin and lawmaking have no settings endpoint, so they use the default
  *     localStorage adapter.
  *
- * A persistence adapter is `{ theme: Ref<string>, setTheme(value): void }`.
+ * A persistence adapter is a `ColorSchemePersistence`.
  */
-import { ref, readonly, watch, effectScope } from 'vue';
+import { ref, readonly, watch, effectScope, type Ref, type DeepReadonly } from 'vue';
 
-export const VALID_THEMES = ['auto', 'light', 'dark'];
+export const VALID_THEMES = ['auto', 'light', 'dark'] as const;
+
+/** A theme the picker offers. `auto` follows the operating system. */
+export type Theme = (typeof VALID_THEMES)[number];
+
+/**
+ * Where an app keeps the chosen theme. `theme` may hold a value that is not a
+ * `Theme`, for example a stale value from a server-side settings store, which
+ * is why it is typed as a string and checked with `isTheme`.
+ */
+export interface ColorSchemePersistence {
+  theme: Ref<string>;
+  setTheme: (value: string) => void;
+}
+
+function isTheme(value: unknown): value is Theme {
+  return (VALID_THEMES as readonly unknown[]).includes(value);
+}
 
 /**
  * Apply a theme to `<html>`. 'auto' (and any invalid value) removes the
  * attribute so `@media (prefers-color-scheme: dark)` drives the palette.
  */
-export function applyColorScheme(theme) {
+export function applyColorScheme(theme: string): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  if (theme === 'auto' || !VALID_THEMES.includes(theme)) {
+  if (theme === 'auto' || !isTheme(theme)) {
     root.removeAttribute('data-scheme');
   } else {
     root.setAttribute('data-scheme', theme);
@@ -39,16 +56,16 @@ export function applyColorScheme(theme) {
  * server-side settings store. Reads synchronously on creation so the cached
  * palette applies on first paint without a flicker.
  */
-export function createLocalStoragePersistence(storageKey = 'rr-theme') {
-  function read() {
+export function createLocalStoragePersistence(storageKey = 'rr-theme'): ColorSchemePersistence {
+  function read(): Theme | null {
     try {
       const v = window.localStorage?.getItem(storageKey);
-      return VALID_THEMES.includes(v) ? v : null;
+      return isTheme(v) ? v : null;
     } catch {
       return null;
     }
   }
-  function write(value) {
+  function write(value: string): void {
     try {
       window.localStorage?.setItem(storageKey, value);
     } catch {
@@ -56,11 +73,11 @@ export function createLocalStoragePersistence(storageKey = 'rr-theme') {
       // consequence is the scheme resets to 'auto' on next load.
     }
   }
-  const theme = ref((typeof window !== 'undefined' && read()) || 'auto');
+  const theme = ref<string>((typeof window !== 'undefined' && read()) || 'auto');
   return {
     theme,
     setTheme(value) {
-      if (!VALID_THEMES.includes(value)) return;
+      if (!isTheme(value)) return;
       theme.value = value;
       write(value);
     },
@@ -69,11 +86,11 @@ export function createLocalStoragePersistence(storageKey = 'rr-theme') {
 
 // The default localStorage adapter is a module-level singleton so every
 // `useColorScheme()` call within one app shares one theme ref.
-let defaultPersistence = null;
+let defaultPersistence: ColorSchemePersistence | null = null;
 
 // Track which persistence backends already have the data-scheme applier wired
 // so repeated `useColorScheme` calls don't stack duplicate watchers.
-const appliedBackends = new WeakSet();
+const appliedBackends = new WeakSet<ColorSchemePersistence>();
 
 // Detached scope so the data-scheme watcher lives for the app's lifetime,
 // independent of which component's setup() first calls `useColorScheme`. Without
@@ -83,11 +100,13 @@ const appliedBackends = new WeakSet();
 const applierScope = effectScope(true);
 
 /**
- * @param {{ theme: import('vue').Ref<string>, setTheme: (v: string) => void }} [persistence]
- *   Optional persistence adapter. Defaults to a shared localStorage adapter.
- * @returns {{ colorScheme: import('vue').Ref<string>, setColorScheme: (v: string) => void }}
+ * @param persistence Optional persistence adapter. Defaults to a shared
+ *   localStorage adapter.
  */
-export function useColorScheme(persistence) {
+export function useColorScheme(persistence?: ColorSchemePersistence): {
+  colorScheme: DeepReadonly<Ref<string>>;
+  setColorScheme: (value: string) => void;
+} {
   const backend =
     persistence ||
     (defaultPersistence ??= createLocalStoragePersistence());

@@ -1,5 +1,5 @@
 <template>
-  <details ref="el" class="paneel" :open="open ? true : undefined" @toggle="isOpen = $event.target.open">
+  <details ref="el" class="paneel" :open="open ? true : undefined" @toggle="opToggle">
     <summary class="paneel-kop">
       <span class="paneel-titel">{{ titel }}</span>
       <nldd-badge v-if="badge" size="sm" color="warning" :text="badge"></nldd-badge>
@@ -16,23 +16,30 @@
   beleidsview, zodat de linkerkolom als een lijst van taken leest.
 -->
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from 'vue';
 
-const props = defineProps({
-  titel: { type: String, required: true },
-  subtitel: { type: String, default: '' },
-  /** Eén regel die staat als de sectie dicht is (huidige stand van de knoppen). */
-  samenvatting: { type: String, default: '' },
-  badge: { type: String, default: '' },
-  /**
-   * Openen. Gaat dit van onwaar naar waar terwijl de sectie dichtstaat, dan
-   * klapt hij open: er is iets te zien waar de bezoeker voor kwam.
-   */
-  open: { type: Boolean, default: false },
-});
+const props = withDefaults(
+  defineProps<{
+    titel: string;
+    subtitel?: string;
+    /** Eén regel die staat als de sectie dicht is (huidige stand van de knoppen). */
+    samenvatting?: string;
+    badge?: string;
+    /**
+     * Openen. Gaat dit van onwaar naar waar terwijl de sectie dichtstaat, dan
+     * klapt hij open: er is iets te zien waar de bezoeker voor kwam.
+     */
+    open?: boolean;
+  }>(),
+  { subtitel: '', samenvatting: '', badge: '', open: false },
+);
 const isOpen = ref(props.open);
-const el = ref(null);
+const el = ref<HTMLDetailsElement | null>(null);
+
+function opToggle(event: Event) {
+  isOpen.value = (event.target as HTMLDetailsElement).open;
+}
 
 // Alleen op de omslag naar waar, en alleen openen. Een `open` die waar blijft
 // mag een sectie die de bezoeker zelf dichtklapte niet telkens weer

@@ -39,26 +39,29 @@
   van…". In het menu past de hele titel en blijft de knop even breed.
 -->
 
-<script setup>
+<script setup lang="ts" generic="V extends { id: string }">
 import { computed } from 'vue';
 
-const props = defineProps({
-  /** Alle beschikbare varianten: [{ id, title }]. */
-  varianten: { type: Array, required: true },
-  /** De gekozen variant-ids, in keuzevolgorde. */
-  gekozen: { type: Array, required: true },
-  /** Hoeveel varianten er naast huidig recht passen. */
-  max: { type: Number, default: 3 },
-  /** Hoe een variant zijn naam schrijft; per casus net anders. */
-  titel: { type: Function, required: true },
-  /**
-   * Korte regel onder het menu, voor wat je niet uit de lijst afleidt. Houd hem
-   * kort: hij bepaalt mede de hoogte van het menu, en een alinea leest hier
-   * niemand. Leeg laten mag.
-   */
-  voet: { type: String, default: '' },
-});
-const emit = defineEmits(['update:gekozen']);
+const props = withDefaults(
+  defineProps<{
+    /** Alle beschikbare varianten, elk met een `id`. */
+    varianten: V[];
+    /** De gekozen variant-ids, in keuzevolgorde. */
+    gekozen: string[];
+    /** Hoeveel varianten er naast huidig recht passen. */
+    max?: number;
+    /** Hoe een variant zijn naam schrijft; per casus net anders. */
+    titel: (variant: V) => string;
+    /**
+     * Korte regel onder het menu, voor wat je niet uit de lijst afleidt. Houd hem
+     * kort: hij bepaalt mede de hoogte van het menu, en een alinea leest hier
+     * niemand. Leeg laten mag.
+     */
+    voet?: string;
+  }>(),
+  { max: 3, voet: '' },
+);
+const emit = defineEmits<{ 'update:gekozen': [gekozen: string[]] }>();
 
 /**
  * Dicht moet de knop zeggen wat er staat. "Kolommen" alleen zou een knop zijn
@@ -75,8 +78,8 @@ const knopTekst = computed(() => {
  * Het menu-item vertelt zelf welk item is aangeklikt; de selectiestand komt van
  * ons, zodat het maximum ook klopt als er snel achter elkaar geklikt wordt.
  */
-function opSelect(event) {
-  const item = event.target.closest('nldd-menu-item');
+function opSelect(event: Event) {
+  const item = (event.target as Element | null)?.closest<HTMLElement & { value?: unknown }>('nldd-menu-item');
   if (!item) return;
   const id = String(item.value);
   const aan = props.gekozen.includes(id);

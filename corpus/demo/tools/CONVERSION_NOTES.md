@@ -177,7 +177,7 @@ the same function, a quoted capture) that starts with `[` or `{` and parses as J
 becomes an Array/Object value. Needed for array- and object-typed register inputs
 (`kinderen_leeftijden`, `adres`). A cell that does not parse stays a string. Unit
 test `test_convert_json_array_and_object` in the same file (runs in the
-`bdd_table` test target). Mirrored in `packages/frontend-shared/src/gherkin/actions.js`
+`bdd_table` test target). Mirrored in `packages/frontend-shared/src/gherkin/actions.ts`
 (`parseValue`).
 
 ## Law and binding changes

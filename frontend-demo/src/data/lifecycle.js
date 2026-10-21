@@ -26,7 +26,7 @@
  * het moment door de fase beschreven.
  */
 
-import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces';
 
 /**
  * Of een burger of bedrijf deze regeling kan aanvragen. Een beschikking wel,

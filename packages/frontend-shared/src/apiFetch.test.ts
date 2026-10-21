@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch.js';
+import { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch';
 
-function mockResponse({ status = 200, body = '', contentType = null, json = undefined } = {}) {
+function mockResponse({
+  status = 200,
+  body = '',
+  contentType = null,
+  json = undefined,
+}: { status?: number; body?: string; contentType?: string | null; json?: unknown } = {}) {
   const headers = new Headers();
   if (contentType) headers.set('content-type', contentType);
   return {
@@ -36,7 +41,7 @@ describe('apiFetch', () => {
       allowStatuses: [404],
       errorMessage: 'nope',
     });
-    const [, init] = globalThis.fetch.mock.calls[0];
+    const [, init] = vi.mocked(globalThis.fetch).mock.calls[0]!;
     expect(init).toEqual({ method: 'PUT' });
   });
 
