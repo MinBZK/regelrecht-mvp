@@ -450,12 +450,16 @@ id: <slug>
 titel: Korte titel, past op het raster
 aanname: |-
   De volledige bewering, als zin. Die staat in het detailpaneel.
+soort: hypothese
 impact: 4
 zekerheid: 2
 onderbouwing: |-
   Waarom deze twee scores: welk bewijs er is, of welk niet.
 toetsing: |-
   Hoe we de aanname toetsen.
+clusters:
+  - naam: Adoptie door uitvoering
+    kaartjes: 5
 werkpakketIds:
   - <slug van een werkpakket>
 ---
@@ -466,6 +470,20 @@ een vaste omschrijving in `IMPACT_NIVEAUS` en `ZEKERHEID_NIVEAUS`, en die
 staat ook onderaan de pagina. Score tegen die omschrijving en niet op gevoel:
 "zekerheid 3" betekent dat een verkenning, prototype of reeks interviews de
 aanname ondersteunt.
+
+Een aanname zonder score mag: laat `impact` en `zekerheid` dan allebei weg.
+Hij staat dan onder het raster bij "Nog niet op het raster". Eén van de twee
+invullen laat de build vallen. Verzin geen score om het vak te vullen.
+
+`soort` is `hypothese` (specifiek voor RegelRecht, die toetsen we) of
+`randvoorwaarde` (geldt voor elk project, die bewaken we). `clusters` zijn
+de groepen pre-mortem-kaartjes waar de aanname uit kwam, met het aantal
+kaartjes; leeg laten mag voor een aanname die niet uit een pre-mortem komt.
+`onderbouwing` verschijnt alleen als hij is ingevuld.
+
+De eerste set komt uit de pre-mortem van RegelRecht (het is oktober 2028 en
+de verkenning is mislukt; wat staat er in het rapport?). De posities zijn die
+van de wand aan het eind van de sessie.
 
 `werkpakketIds` koppelt de aanname aan werkpakketten. Je schrijft de koppeling
 alleen hier; de werkpakketpagina leidt zijn lijst "Aannames" er zelf uit af.

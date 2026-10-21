@@ -10,7 +10,7 @@ import {
   CAPABILITY_IDS,
 } from '~/lib/roadmap';
 import { RFC_TOPIC_IDS } from '~/lib/rfc-topics';
-import { SCORE_MIN, SCORE_MAX } from '~/lib/aannames';
+import { SCORE_MIN, SCORE_MAX, SOORT_IDS } from '~/lib/aannames';
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: 'src/content/docs' }),
@@ -361,18 +361,39 @@ const aannames = defineCollection({
     pattern: '*.md',
     base: 'src/content/roadmap/aannames',
   }),
-  schema: z.object({
-    id: slug(),
-    titel: z.string(),
-    aanname: z.string(),
-    impact: score(),
-    zekerheid: score(),
-    // Why these two scores: the evidence there is, or the lack of it.
-    onderbouwing: z.string().default(''),
-    // How the aanname gets tested: the experiment, the interview, the casus.
-    toetsing: z.string().default(''),
-    werkpakketIds: z.array(slug()).default([]),
-  }),
+  schema: z
+    .object({
+      id: slug(),
+      titel: z.string(),
+      aanname: z.string(),
+      soort: z.enum(SOORT_IDS).or(z.literal('')).default(''),
+      // Optional together: an aanname that nobody has placed yet waits under
+      // the grid rather than getting a score made up to fill the field.
+      impact: score().optional(),
+      zekerheid: score().optional(),
+      // Why these two scores: the evidence there is, or the lack of it.
+      onderbouwing: z.string().default(''),
+      // How the aanname gets tested: the experiment, the interview, the casus.
+      toetsing: z.string().default(''),
+      // Where the aanname came from: pre-mortem clusters and their card count.
+      clusters: z
+        .array(
+          z.object({ naam: z.string(), kaartjes: z.number().int().positive() }),
+        )
+        .default([]),
+      werkpakketIds: z.array(slug()).default([]),
+    })
+    .superRefine((a, ctx) => {
+      // One score without the other has no place on the grid and would drop
+      // out of it without a word.
+      if ((a.impact === undefined) !== (a.zekerheid === undefined)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [a.impact === undefined ? 'impact' : 'zekerheid'],
+          message: 'impact en zekerheid horen allebei ingevuld of allebei leeg',
+        });
+      }
+    }),
 });
 
 export const collections = { docs, rfcs, werkpakketten, aannames };

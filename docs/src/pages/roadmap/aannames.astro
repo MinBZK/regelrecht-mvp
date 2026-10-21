@@ -13,7 +13,8 @@
  * page CSS (styles/aannames.css); everything inside a cell, and everything
  * outside the grid, is a design-system component.
  *
- * Every aanname opens in an nldd-sheet with its scores, its onderbouwing and
+ * Every aanname opens in an nldd-sheet with its scores, its kind, the
+ * pre-mortem clusters it came from, a proposed test, and
  * the werkpakketten it rests on. The trigger is a link to `#<id>` rather than
  * a bare button, so an aanname has a URL: a werkpakket page links straight to
  * it, and so can anyone pasting it in a chat. The script below opens the sheet
@@ -36,8 +37,12 @@ import {
   getImpact,
   getZekerheid,
   eerstToetsen,
+  SOORTEN,
+  getSoort,
+  gescoord,
   risico,
   opRisico,
+  ongescoord,
   aannamesInCel,
   scoreTekst,
   assertAannameReferences,
@@ -67,6 +72,7 @@ const kolommen = ZEKERHEID_NIVEAUS;
 
 const MAX_RISICO = risico({ impact: SCORE_MAX, zekerheid: SCORE_MIN });
 const gesorteerd = opRisico(aannames);
+const wachtend = ongescoord(aannames);
 
 // Header ids for the `headers` attribute on every cell. Two levels of header
 // on each axis (the axis name and the level) is the case pa11y's htmlcs runner
@@ -106,7 +112,15 @@ const pathname = AANNAMES_PAD;
           Elke aanname heeft twee scores van 1 tot 5: hoeveel er van afhangt,
           en hoeveel bewijs er voor is. Het gekleurde vlak linksboven is waar
           veel van afhangt en weinig bewijs voor is. Klik op een aanname voor
-          de onderbouwing en de werkpakketten die erop rusten.
+          de clusters eronder, een voorstel voor een toets en de werkpakketten
+          die erop rusten.
+        </nldd-text>
+        <nldd-text size="sm" color="secondary">
+          De aannames komen uit een pre-mortem: het is oktober 2028 en de
+          verkenning is mislukt, wat staat er in het rapport? De posities komen
+          van de wand aan het eind van die sessie, omgezet naar deze schaal. De
+          sessie kende geen vaste niveaus, dus een aanname kan bij nader inzien
+          een vakje verschuiven.
         </nldd-text>
 
         {/* tabindex + role make the sideways-scrolling grid reachable by
@@ -214,6 +228,32 @@ const pathname = AANNAMES_PAD;
             </tbody>
           </table>
         </div>
+
+        {/*
+          Aannames without a score. They are listed, not hidden: an aanname
+          written down and not yet placed is the state of the work, and leaving
+          it off the page would read as if it had never been raised.
+        */}
+        {wachtend.length > 0 && (
+          <nldd-container gap="8">
+            <nldd-title size="5"><h3>Nog niet op het raster</h3></nldd-title>
+            <nldd-text size="sm" color="secondary">
+              Deze aannames hebben nog geen score, en dus nog geen plek op het
+              raster.
+            </nldd-text>
+            <nldd-container layout="wrap" gap="8">
+              {wachtend.map((a) => (
+                <nldd-button
+                  href={`#${a.data.id}`}
+                  appearance="secondary"
+                  size="sm"
+                  text={a.data.titel}
+                  accessible-label={`${a.data.titel}, nog niet gescoord`}
+                />
+              ))}
+            </nldd-container>
+          </nldd-container>
+        )}
       </nldd-container>
 
       <nldd-container gap="16">
@@ -229,7 +269,12 @@ const pathname = AANNAMES_PAD;
               {gesorteerd.map((a) => (
                 <nldd-list-item href={`#${a.data.id}`}>
                   <nldd-text-cell
-                    overline={`Risico ${risico(a.data)} van ${MAX_RISICO}`}
+                    overline={[
+                      `Risico ${risico(a.data)} van ${MAX_RISICO}`,
+                      getSoort(a.data.soort)?.label,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                     text={a.data.titel}
                     supporting-text={scoreTekst(a.data)}
                     width="full"
@@ -254,7 +299,7 @@ const pathname = AANNAMES_PAD;
       </nldd-container>
 
       <nldd-container gap="16">
-        <nldd-title size="3"><h2>Wat de scores betekenen</h2></nldd-title>
+        <nldd-title size="3"><h2>Wat de scores en soorten betekenen</h2></nldd-title>
         <nldd-container layout="columns" column-count="2" sm-column-count="1" gap="24">
           {
             [
@@ -279,6 +324,20 @@ const pathname = AANNAMES_PAD;
             ))
           }
         </nldd-container>
+        <nldd-container gap="8">
+          <nldd-title size="5"><h3>Soort</h3></nldd-title>
+          <nldd-list appearance="box-tinted" dividers="always">
+            {SOORTEN.map((soort) => (
+              <nldd-list-item>
+                <nldd-text-cell
+                  text={soort.label}
+                  supporting-text={soort.omschrijving}
+                  width="full"
+                />
+              </nldd-list-item>
+            ))}
+          </nldd-list>
+        </nldd-container>
       </nldd-container>
     </nldd-container>
   </RoadmapSectie>
@@ -299,8 +358,13 @@ const pathname = AANNAMES_PAD;
   */}
   {
     aannames.map((a) => {
-      const impact = getImpact(a.data.impact)!;
-      const zekerheid = getZekerheid(a.data.zekerheid)!;
+      const scores = gescoord(a.data)
+        ? [
+            { naam: 'Impact', niveau: getImpact(a.data.impact)! },
+            { naam: 'Zekerheid', niveau: getZekerheid(a.data.zekerheid)! },
+          ]
+        : [];
+      const soort = getSoort(a.data.soort);
       const titelId = `rr-aanname-titel-${a.data.id}`;
       const gekoppeld = a.data.werkpakketIds
         .map(werkpakket)
@@ -330,11 +394,30 @@ const pathname = AANNAMES_PAD;
                 <p slot="supporting-text">{a.data.aanname}</p>
               </nldd-title>
 
+              <nldd-container layout="wrap" gap="8">
+                {soort && (
+                  <nldd-tag color={soort.tagColor} size="md" text={soort.label} />
+                )}
+                {gescoord(a.data) && (
+                  <nldd-tag
+                    color="neutral"
+                    size="md"
+                    text={`Risico ${risico(a.data)} van ${MAX_RISICO}`}
+                  />
+                )}
+                {gescoord(a.data) && eerstToetsen(a.data.impact, a.data.zekerheid) && (
+                  <nldd-tag color="critical" size="md" text="Eerst toetsen" />
+                )}
+              </nldd-container>
+
+              {scores.length === 0 && (
+                <nldd-text size="sm" color="secondary">
+                  Nog niet gescoord op impact en zekerheid.
+                </nldd-text>
+              )}
+              {scores.length > 0 && (
               <nldd-container layout="columns" column-count="2" sm-column-count="1" gap="16">
-                {[
-                  { naam: 'Impact', niveau: impact },
-                  { naam: 'Zekerheid', niveau: zekerheid },
-                ].map((score) => (
+                {scores.map((score) => (
                   <nldd-box>
                     <nldd-container padding="16" gap="4">
                       <nldd-text size="xs" weight="medium" color="secondary">
@@ -350,33 +433,39 @@ const pathname = AANNAMES_PAD;
                   </nldd-box>
                 ))}
               </nldd-container>
+              )}
 
-              <nldd-container layout="wrap" gap="8">
-                <nldd-tag
-                  color="neutral"
-                  size="md"
-                  text={`Risico ${risico(a.data)} van ${MAX_RISICO}`}
-                />
-                {eerstToetsen(a.data.impact, a.data.zekerheid) && (
-                  <nldd-tag color="critical" size="md" text="Eerst toetsen" />
-                )}
-              </nldd-container>
+              {a.data.clusters.length > 0 && (
+                <nldd-container gap="8">
+                  <nldd-title size="5"><h3>Clusters uit de pre-mortem</h3></nldd-title>
+                  <nldd-list appearance="box-tinted" dividers="always">
+                    {a.data.clusters.map((c) => (
+                      <nldd-list-item>
+                        <nldd-text-cell
+                          overline={`${c.kaartjes} ${c.kaartjes === 1 ? 'kaartje' : 'kaartjes'}`}
+                          text={c.naam}
+                          width="full"
+                        />
+                      </nldd-list-item>
+                    ))}
+                  </nldd-list>
+                </nldd-container>
+              )}
 
-              <nldd-container gap="8">
-                <nldd-title size="5"><h3>Onderbouwing</h3></nldd-title>
-                {onderbouwing ? (
+              {/* Only when written: the pre-mortem set has its scores from the
+                  wall and says so in the page text, and eleven sheets saying
+                  "nog geen onderbouwing" would bury the clusters above. */}
+              {onderbouwing && (
+                <nldd-container gap="8">
+                  <nldd-title size="5"><h3>Onderbouwing</h3></nldd-title>
                   <nldd-rich-text>
                     <Fragment set:html={onderbouwing} />
                   </nldd-rich-text>
-                ) : (
-                  <nldd-text size="sm" color="secondary">
-                    Nog geen onderbouwing toegevoegd.
-                  </nldd-text>
-                )}
-              </nldd-container>
+                </nldd-container>
+              )}
 
               <nldd-container gap="8">
-                <nldd-title size="5"><h3>Zo toetsen we het</h3></nldd-title>
+                <nldd-title size="5"><h3>Toetsing</h3></nldd-title>
                 {toetsing ? (
                   <nldd-rich-text>
                     <Fragment set:html={toetsing} />

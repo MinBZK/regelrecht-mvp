@@ -50,7 +50,7 @@ import {
 } from '~/lib/roadmap';
 import {
   scoreTekst,
-  opRisico,
+  inLeesvolgorde,
   aannameHref,
 } from '~/lib/aannames';
 import {
@@ -105,7 +105,7 @@ const blokkeert = all.filter((w) => w.data.afhankelijkVan.includes(wp.id));
 // The aannames this werkpakket rests on. Written down on the aanname, read
 // here the other way round, like `blokkeert` above; the build check on those
 // pointers lives with the aannames page (assertAannameReferences).
-const aannamesHier = opRisico(
+const aannamesHier = inLeesvolgorde(
   aannames.filter((a) => a.data.werkpakketIds.includes(wp.id)),
 );
 

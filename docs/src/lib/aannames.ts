@@ -106,16 +106,53 @@ export const getZekerheid = (score: number) =>
 export const eerstToetsen = (impact: number, zekerheid: number) =>
   impact >= 4 && zekerheid <= 2;
 
+/*
+ * Two kinds of aanname, taken over from the pre-mortem the first set came
+ * from. A hypothese is particular to RegelRecht, so there is something to
+ * learn and it gets tested. A randvoorwaarde holds for any project (funding, a
+ * stable team) and is watched rather than tested. Both go on the same grid,
+ * because the method asks how much rests on an aanname and how much evidence
+ * there is, whatever kind it is.
+ */
+export const SOORTEN = [
+  {
+    id: 'hypothese',
+    label: 'Hypothese',
+    tagColor: 'accent',
+    omschrijving:
+      'Specifiek voor RegelRecht. Hier valt iets te leren, dus toetsen we ze.',
+  },
+  {
+    id: 'randvoorwaarde',
+    label: 'Randvoorwaarde',
+    tagColor: 'neutral',
+    omschrijving:
+      'Geldt voor elk project. Die bewaken we in plaats van ze te toetsen.',
+  },
+] as const;
+export const SOORT_IDS = SOORTEN.map((s) => s.id) as [string, ...string[]];
+export const getSoort = (id: string) => SOORTEN.find((s) => s.id === id);
+
 export interface AannameData {
   id: string;
   titel: string;
   aanname: string;
-  impact: number;
-  zekerheid: number;
+  soort: string;
+  // Both or neither: an aanname can be written down before anyone has placed
+  // it, and then it waits under the grid instead of getting a made-up score.
+  impact?: number;
+  zekerheid?: number;
   onderbouwing: string;
   toetsing: string;
+  // The pre-mortem clusters behind the aanname: groups of cards that named
+  // the same way of failing, with how many cards each.
+  clusters: { naam: string; kaartjes: number }[];
   werkpakketIds: string[];
 }
+
+export type Gescoord = AannameData & { impact: number; zekerheid: number };
+export const gescoord = (a: AannameData): a is Gescoord =>
+  a.impact !== undefined && a.zekerheid !== undefined;
 
 /*
  * Risk is impact times the lack of evidence: 5 × (6 − 1) = 25 for the worst
@@ -123,16 +160,37 @@ export interface AannameData {
  * two aannames with the same product the one with more resting on it comes
  * first, and then to the titel, so the order is stable between builds.
  */
-export const risico = (a: Pick<AannameData, 'impact' | 'zekerheid'>) =>
+export const risico = (a: { impact: number; zekerheid: number }) =>
   a.impact * (SCORE_MAX + 1 - a.zekerheid);
 
-export function opRisico<T extends { data: AannameData }>(alle: T[]): T[] {
-  return [...alle].sort(
+/** The scored aannames, riskiest first. Unscored ones have no place here. */
+export function opRisico<T extends { data: AannameData }>(
+  alle: T[],
+): (T & { data: Gescoord })[] {
+  return (
+    alle.filter((a) => gescoord(a.data)) as (T & { data: Gescoord })[]
+  ).sort(
     (a, b) =>
       risico(b.data) - risico(a.data) ||
       b.data.impact - a.data.impact ||
       a.data.titel.localeCompare(b.data.titel, 'nl'),
   );
+}
+
+/**
+ * Every aanname in reading order: the scored ones riskiest first, then the
+ * ones still waiting for a place, by titel. For lists that show both, such as
+ * the aannames under a werkpakket.
+ */
+export function inLeesvolgorde<T extends { data: AannameData }>(alle: T[]): T[] {
+  return [...opRisico(alle), ...ongescoord(alle)];
+}
+
+/** The aannames without a score yet, by titel. */
+export function ongescoord<T extends { data: AannameData }>(alle: T[]): T[] {
+  return alle
+    .filter((a) => !gescoord(a.data))
+    .sort((a, b) => a.data.titel.localeCompare(b.data.titel, 'nl'));
 }
 
 export function aannamesInCel<T extends { data: AannameData }>(
@@ -190,9 +248,11 @@ export function assertAannameReferences(
 }
 
 /** "Impact 5 · Fundamenteel, zekerheid 1 · Onderbuikgevoel" */
-export const scoreTekst = (a: Pick<AannameData, 'impact' | 'zekerheid'>) =>
-  `Impact ${a.impact} · ${getImpact(a.impact)?.label}, ` +
-  `zekerheid ${a.zekerheid} · ${getZekerheid(a.zekerheid)?.label}`;
+export const scoreTekst = (a: AannameData) =>
+  gescoord(a)
+    ? `Impact ${a.impact} · ${getImpact(a.impact)?.label}, ` +
+      `zekerheid ${a.zekerheid} · ${getZekerheid(a.zekerheid)?.label}`
+    : 'Nog niet gescoord';
 
 export const AANNAMES_PAD = '/roadmap/aannames';
 export const aannameHref = (id: string) => `${AANNAMES_PAD}#${id}`;
