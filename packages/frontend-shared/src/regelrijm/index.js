@@ -63,6 +63,8 @@ function valueOf(normalised, path) {
 /**
  * The full reading of one action: `[uitkomst] wordt: …`.
  *
+ * @param {object} action
+ * @param {{ article?: object | null, ctx?: object | null, glossary?: object }} [options]
  * @returns {{ output, text, segments, normalised, numbers }}
  *   `numbers` maps the path key of every operation to its number (1, 1.2, …).
  */
@@ -99,6 +101,9 @@ export function renderAction(action, { article = null, ctx = null, glossary = un
  * keys of folded parts to show one level deeper (the reader clicked them).
  * The folded text is a view: the full text stays the reading.
  *
+ * @param {object} action
+ * @param {string[]} [path]
+ * @param {{ article?: object | null, ctx?: object | null, glossary?: object, depth?: number, open?: Set<string> }} [options]
  * @returns {{ text, segments, folds, number, node, signature }}
  */
 export function renderFocus(action, path = ['value'], { article = null, ctx = null, glossary = undefined, depth = 2, open = new Set() } = {}) {

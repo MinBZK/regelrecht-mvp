@@ -419,10 +419,10 @@ function addOutput() {
   <div v-else data-testid="machine-readable">
     <template v-if="regelrijm && (actions.length || editable)">
       <RegelRijmPane
-        :article="article"
-        :law="law"
-        :law-id="lawId"
-        :traject-ref="trajectRef"
+        :article="article ?? undefined"
+        :law="law ?? undefined"
+        :law-id="lawId ?? undefined"
+        :traject-ref="trajectRef ?? undefined"
         :editable="editable"
         :links="links"
         @open-action="(action, path) => emit('open-action', action, path)"

@@ -3285,7 +3285,7 @@ async function handleActionSave() {
                       <nldd-rich-text>
                         <p v-if="!linkedAction(note)">{{ noteText(note) || '-' }}</p>
                         <p v-else-if="noteComment(note)">{{ noteComment(note) }}</p>
-                        <p v-if="linkedAction(note)">Gekoppeld aan de rekenregel {{ humanize(linkedAction(note).output) }}</p>
+                        <p v-if="linkedAction(note)">Gekoppeld aan de rekenregel {{ humanize(linkedAction(note)?.output ?? '') }}</p>
                       </nldd-rich-text>
                       <template v-if="noteAuthor(note)">
                         <nldd-spacer size="4"></nldd-spacer>

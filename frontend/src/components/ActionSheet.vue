@@ -151,26 +151,35 @@ function onOutputInput(event: Event) {
 const navError = ref<string | null>(null);
 watch(() => props.action, () => { navError.value = null; });
 
-const reading = computed(() => {
+/** The reading shown above the settings; `error` when it cannot be read. */
+interface Reading {
+  error: string | null;
+  segments: RegelRijmSegment[];
+  selectable: Set<string>;
+  navigable: Set<string>;
+  hints: Map<string, string>;
+}
+
+const reading = computed((): Reading | null => {
   if (!props.regelrijm || !isEnabled('panel.regelrijm') || !props.action) return null;
   try {
     const full = renderAction(props.action, { article: props.article });
     // An action without an operation (a value or a single name) reads whole.
-    if (!selectedOperation.value) return { segments: full.segments, selectable: new Set<string>(), ...namesIn(full.segments) };
+    if (!selectedOperation.value) return { error: null, segments: full.segments, selectable: new Set<string>(), ...namesIn(full.segments) };
     // Every operation of the reading, by its node in the action as written.
-    const pathOf = new Map<unknown, string[]>();
+    const pathOf = new Map<OperationNode, string[]>();
     for (const key of full.numbers.keys()) {
       const node = rawAt(props.action, String(key).split('/'));
-      if (node && typeof node === 'object' && !pathOf.has(node)) pathOf.set(node, String(key).split('/'));
+      if (node && typeof node === 'object' && !pathOf.has(node as OperationNode)) pathOf.set(node as OperationNode, String(key).split('/'));
     }
     const path = pathOf.get(selectedOperation.value.node) ?? ['value'];
     const focus = renderFocus(props.action, path, { article: props.article, depth: Infinity });
     const inTree = new Set(operationTree.value.map((op) => op.node));
     const selectable = new Set<string>();
     for (const [node, p] of pathOf) if (inTree.has(node) && node !== selectedOperation.value.node) selectable.add(pathKey(p));
-    return { segments: focus.segments, selectable, ...namesIn(focus.segments) };
+    return { error: null, segments: focus.segments, selectable, ...namesIn(focus.segments) };
   } catch (e) {
-    return { error: (e as Error).message };
+    return { error: (e as Error).message, segments: [], selectable: new Set(), navigable: new Set(), hints: new Map() };
   }
 });
 
@@ -201,13 +210,13 @@ function namesIn(segments: RegelRijmSegment[]) {
 function destinationOf(target: { kind: string; lawId: string; articleNumber?: string | number }) {
   if (target.kind !== 'action') return humanize(target.lawId);
   const sameLaw = target.lawId === (props.law?.$id ?? props.lawId);
-  if (sameLaw && String(target.articleNumber) === String(props.article?.number)) return 'dit artikel';
+  if (sameLaw && String(target.articleNumber) === String((props.article as { number?: string | number } | null)?.number)) return 'dit artikel';
   return `${humanize(target.lawId)}, artikel ${target.articleNumber}`;
 }
 
 function selectPath(path: string[]) {
   const node = rawAt(props.action, path);
-  if (node) selectOperationByNode(node);
+  if (node) selectOperationByNode(node as OperationNode);
 }
 
 async function followName(seg: { ref: string }) {
@@ -224,9 +233,9 @@ async function followName(seg: { ref: string }) {
   });
   // The sheet may have closed or moved on while another law loaded.
   if (!to || props.action !== from) return;
-  if (to.kind === 'error') navError.value = to.message;
-  else if (to.kind === 'navigate') emit('navigate', { lawId: to.lawId, articleNumber: to.articleNumber });
-  else emit('open-output', to.output);
+  if (to.kind === 'error') navError.value = to.message ?? null;
+  else if (to.kind === 'navigate') emit('navigate', { lawId: String(to.lawId), articleNumber: String(to.articleNumber) });
+  else emit('open-output', String(to.output));
 }
 
 function handleKeydown(e: KeyboardEvent) {
