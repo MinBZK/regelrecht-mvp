@@ -44,7 +44,7 @@ The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` 
 
 ### Two kinds of PoC
 
-- **`statisch`**: a Vue app built into this image with `POC_BASE=/<slug>/` and served from `/app/static/<slug>` with its own single-page fallback. Today these are `frontend-poc-terugbetaalregimes/` and `frontend-poc-nieuwkomersbekostiging/`, each with its case corpus under `corpus-poc/`, and `frontend-poc-chronolexografie/`. They run the engine as WASM in the browser.
+- **`statisch`**: a Vue app built into this image with `POC_BASE=/<slug>/` and served from `/app/static/<slug>` with its own single-page fallback. Today these are `frontend-poc-terugbetaalregimes/`, `frontend-poc-nieuwkomersbekostiging/` and `frontend-poc-chronolexografie/`. The first two take their case corpus from `corpus-poc/`, chronolexografie from `corpus/`. They run the engine as WASM in the browser.
 - **`proxy`**: a PoC that runs as its own component, not published on the web, and is forwarded to in-cluster at `http://{deployment}-{upstream}:8000`. The deployment name comes from the pod's hostname, so a preview reaches its own upstream and not production's. Outside the cluster, `POC_UPSTREAM_<SLUG>` sets the address. The path is forwarded unchanged and cookies pass both ways, because the proxied app keeps its own session.
 
 The proxied PoC is napp, in `packages/poc-napp/` with its frontend in `frontend-poc-napp/`. It runs the subsidy process from a bill as a chain of requests, decisions, payment orders and objections, on an Axum backend with SQLite and a reconstruction of the bill as its law. It has its own README.
@@ -75,15 +75,15 @@ The preview also tells the form which terms to ask. A reduction can be silent fo
 
 #### In the browser
 
-Everything runs in the visitor's browser. The cell, the engine and the app's core (`kern.rs`, `casus.rs`) compile to WebAssembly in one crate, `packages/poc-chronolexografie` with the feature `wasm`. There is no server with state of its own: every browser tab holds its own game, so two visitors play their own case at the same time and a reset in one tab leaves the other alone.
+Everything runs in the visitor's browser. The cell, the engine and the app's core (`kern.rs`, `casus.rs`) compile to WebAssembly in one crate, `packages/poc-chronolexografie` with the feature `wasm`. No server holds state. Every browser tab holds its own game, so two visitors play their own case at the same time and a reset in one tab leaves the other alone.
 
-`packages/poc-chronolexografie/src/spel.rs` holds one game: the cases to choose from and the chosen one with its cells. `src/wasm.rs` next to it puts it behind wasm-bindgen as the class `Poc`, with one method per step. These are the steps of the HTTP API the app had before: the cases, choosing one, the forms, the chronicle, applications, decisions, objections, the previews, the log, the explanations, the reductions and a reset. Each method answers in JSON text, and a refusal of the cell is a thrown `Error` with the cell's message. `frontend-poc-chronolexografie/src/api.js` calls them in place of `fetch`, so the components did not change. A panic in the cell aborts the WebAssembly instance; the app then says the cell stopped and that a reload goes on from the last step that worked.
+`packages/poc-chronolexografie/src/spel.rs` holds one game: the cases to choose from and the chosen one with its cells. `src/wasm.rs` next to it puts it behind wasm-bindgen as the class `Poc`, with one method per step of the game, from choosing a case to a reset. Each method answers in JSON text, and a refusal of the cell is a thrown `Error` with the cell's message. The components call only `frontend-poc-chronolexografie/src/api.js`, which forwards each call to `Poc`. A panic in the cell aborts the WebAssembly instance; the app then says the cell stopped and that a reload goes on from the last step that worked.
 
 The cell reads its directory through the trait `Files` in `packages/cel/src/files.rs`. `Disk` reads the file system, for the tests and the tools; `Bundle` holds the files in memory. The browser gets the bundle as `bundel.json`: every file the cases need, by its path in the repository, without the scenarios. Which directories that takes is listed under `corpus` for `chronolexografie` in `pocs/registry.yaml`, and `frontend-poc-chronolexografie/scripts/copy-assets.js` builds the bundle from that list. `packages/poc-chronolexografie/src/bundel.rs` derives the same list from the case files and the law. Its tests check that the register lists exactly that, that the bundle plays every case as the whole corpus does, and that `script/deploy-filters.mjs` watches each directory. A new regelwerk that implements an open term of the Awb, or hooks on every decision, joins every case, and those tests say which list to extend.
 
-The chronicle of every cell lives in memory. After each step the app saves the chosen case and the chronicles in `sessionStorage` (`frontend-poc-chronolexografie/src/spel.js`), so a reload of the tab goes on where it was (`Cell::restore` checks them as it checks a chronicle file). That storage belongs to the tab, so two tabs never overwrite each other's game. Without storage, in a private window or with a full quota, the game plays on and a reload starts at the choice of case. A saved game the cell refuses, for instance after the law changed, is dropped with a message.
+The chronicle of every cell lives in memory. After each step `frontend-poc-chronolexografie/src/spel.js` saves the chosen case, the chronicles and the play date in `sessionStorage`. A reload of the tab then goes on where it was. `Cell::restore` checks the saved chronicles as `Cell::open` checks a chronicle file. That storage belongs to the tab, so two tabs never overwrite each other's game. Without storage, in a private window or with a full quota, the game plays on and a reload starts at the choice of case. A saved game the cell refuses, for instance after the law changed, is dropped with a message.
 
-The WASM file is about 3.1 MB (0.9 MB gzipped) and the bundle about 380 kB. The portal serves both uncompressed, as it does the engine of the other static PoCs.
+When this page was written (October 2026), the WASM file was about 3.1 MB (0.9 MB gzipped) and the bundle about 380 kB. The portal serves both uncompressed, as it does the engine of the other static PoCs.
 
 ### The gate
 
@@ -101,7 +101,7 @@ The list of cases comes from `POC_ASSISTENT_CASUSSEN` in `start.sh`, not from th
 
 ### Image and deployment
 
-`packages/poc-portal/Dockerfile` builds the engine and chronolexografie to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal and napp deploy as two ZAD components, `poc` and `napp`; see [Deployment](/operations/deployment). Only `poc` is published on the web. Because the image builds WASM, `script/deploy-filters.mjs` ties the `poc` component to three crates, the portal binary, the engine and `regelrecht-poc-chronolexografie`, so a change to the engine or the cell rebuilds the image even though the portal itself depends on neither. The directories the chronolexografie bundle takes from `corpus/` are listed there too.
+`packages/poc-portal/Dockerfile` builds the engine and chronolexografie to WASM, the portal's design-system bundle from `frontend-poc-portal/`, each static PoC with its own base path, and the Rust binary. The portal and napp deploy as two ZAD components, `poc` and `napp`; see [Deployment](/operations/deployment). Only `poc` is published on the web. The image builds WASM from two crates the portal does not depend on: the engine and `regelrecht-poc-chronolexografie`. `script/deploy-filters.mjs` therefore ties the `poc` component to those two and to the portal binary, so a change to the engine or the cell rebuilds the image. The directories the chronolexografie bundle takes from `corpus/` are listed there too.
 
 ## Running locally
 
@@ -109,7 +109,7 @@ The list of cases comes from `POC_ASSISTENT_CASUSSEN` in `start.sh`, not from th
 just poc
 ```
 
-This builds the WASM engine, chronolexografie as WASM, the design-system bundle and the static PoCs into `.poc-static/`, then starts the portal at `http://localhost:8611`. The recipe sets the local cookie key and the password `demo` for every PoC; both are dev-only values written in the Justfile, and production reads its own from ZAD.
+This builds the engine and chronolexografie to WASM, the design-system bundle and the static PoCs into `.poc-static/`, then starts the portal at `http://localhost:8611`. The recipe sets the local cookie key and the password `demo` for every PoC; both are dev-only values written in the Justfile, and production reads its own from ZAD.
 
 `just poc-build`, the step behind it, names the static PoCs one by one (`terugbetaalregimes`, `nieuwkomersbekostiging` and `chronolexografie`), as does `packages/poc-portal/Dockerfile`. Neither is derived from the register, so a new static PoC has to be added to both by hand.
 

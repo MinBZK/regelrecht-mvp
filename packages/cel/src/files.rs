@@ -80,6 +80,22 @@ impl Bundle {
                 ));
             }
         }
+        // A path is a file or a directory, never both, as on a disk.
+        let mut paths = bundle.keys().peekable();
+        while let Some(path) = paths.next() {
+            if let Some(next) = paths.peek() {
+                if next.starts_with(path) {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "'{}' is a file in the bundle and a directory of '{}'",
+                            path.display(),
+                            next.display()
+                        ),
+                    ));
+                }
+            }
+        }
         Ok(Self { files: bundle })
     }
 
@@ -142,6 +158,7 @@ mod tests {
                 "r".to_string(),
             ),
             ("cells/b/cel.yaml".to_string(), "name: B".to_string()),
+            ("cells/ab/cel.yaml".to_string(), "name: AB".to_string()),
         ])
         .unwrap()
     }
@@ -155,8 +172,8 @@ mod tests {
         assert!(!b.is_dir(Path::new("cells/a/cel.yaml")));
         assert!(b.is_file(Path::new("cells/a/cel.yaml")));
         assert!(!b.exists(Path::new("cells/c")));
-        // `cells/ab` is no entry of `cells/a`: paths compare by component.
         assert!(!b.is_dir(Path::new("cells/a/r")));
+        // `cells/ab` is no entry of `cells/a`: paths compare by component.
         let mut entries = b.entries(Path::new("cells/a")).unwrap();
         entries.sort();
         assert_eq!(
@@ -188,5 +205,10 @@ mod tests {
             ("a/b".to_string(), String::new()),
         ]);
         assert!(twice.is_err());
+        let both = Bundle::new([
+            ("a/b".to_string(), String::new()),
+            ("a/b/c".to_string(), String::new()),
+        ]);
+        assert!(both.is_err());
     }
 }

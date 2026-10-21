@@ -64,7 +64,7 @@ wasm-bindgen-cli:
 wasm-build:
     #!/usr/bin/env bash
     set -euo pipefail
-    bindgen=$(just wasm-bindgen-cli)
+    bindgen=$({{just_executable()}} wasm-bindgen-cli)
     # Pin the target dir explicitly. A CLI --target-dir overrides any shared
     # [build] target-dir from `just dev-setup` (root .cargo/config.toml), so the
     # artifact always lands at packages/target — no metadata lookup (and no jq/
@@ -1002,7 +1002,7 @@ poc: poc-build
 poc-chronolexografie-wasm:
     #!/usr/bin/env bash
     set -euo pipefail
-    bindgen=$(just wasm-bindgen-cli)
+    bindgen=$({{just_executable()}} wasm-bindgen-cli)
     # Zelfde vaste target-map als wasm-build, om dezelfde reden.
     cargo build --manifest-path packages/Cargo.toml --package regelrecht-poc-chronolexografie --features wasm --target wasm32-unknown-unknown --release --target-dir packages/target
     "$bindgen" --target web --out-dir frontend-poc-chronolexografie/public/wasm/pkg packages/target/wasm32-unknown-unknown/release/regelrecht_poc_chronolexografie.wasm

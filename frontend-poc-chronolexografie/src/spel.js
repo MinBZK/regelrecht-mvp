@@ -46,9 +46,13 @@ const SLEUTEL = 'poc-spel';
 async function bewaar() {
   const bewaard = await api.bewaren();
   try {
-    sessionStorage.setItem(SLEUTEL, JSON.stringify(bewaard));
+    // Met de speeldatum: de kroniek loopt alleen vooruit, dus een herlaad
+    // die terugzet naar de eerste dag van de casus zou elke stap weigeren.
+    sessionStorage.setItem(SLEUTEL, JSON.stringify({ spel: bewaard, datum: spel.datum }));
   } catch {
-    // Geen opslag: dan niets bewaren.
+    // Geen opslag of een volle: dan ook geen ouder spel laten staan, anders
+    // gaat een herlaad stil verder bij een eerdere stap.
+    vergeet();
   }
 }
 const vergeet = () => {
@@ -75,9 +79,13 @@ export async function hervatten() {
   const spelTotNu = bewaard();
   if (!spelTotNu) return;
   try {
-    await openen(await api.herstellen(JSON.parse(spelTotNu)));
+    const { spel: bewaardSpel, datum } = JSON.parse(spelTotNu);
+    await openen(await api.herstellen(bewaardSpel), datum);
   } catch (e) {
-    vergeet();
+    // Laadde de cel niet (het netwerk, een deploy), dan blijft het spel
+    // bewaard voor de volgende herlaad; alleen een spel dat de cel weigert,
+    // gaat weg.
+    if (!/the cell did not load/.test(e.message)) vergeet();
     spel.casus = null;
     spel.fout = e.message;
   }
@@ -95,11 +103,11 @@ export async function kiezen(id) {
   }
 }
 
-async function openen(casus) {
+async function openen(casus, datum = casus.speeldatum) {
   spel.vormen = null;
   spel.grammen = [];
   spel.casus = casus;
-  spel.datum = casus.speeldatum;
+  spel.datum = datum;
   await verversen();
 }
 

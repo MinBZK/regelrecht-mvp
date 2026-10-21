@@ -97,7 +97,7 @@ export function vertaling(fout) {
 
 /**
  * De Nederlandse zin bij de melding `fout` van de cel, de engine of de
- * browser. Die melden allemaal in het Engels.
+ * browser. Die melden in het Engels.
  */
 export function melding(fout) {
   return vertaling(fout) ?? 'Wat er misging, staat onder Details, in het Engels.';
