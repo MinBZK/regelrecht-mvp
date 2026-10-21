@@ -61,7 +61,7 @@ Test scenarios are derived from the **Memorie van Toelichting** (MvT), the expla
 
 ## Everything at once
 
-`just check` runs what CI runs: formatting, lints, a build check, schema and annotation validation, the script test suites, and the full Rust test suite. Run it before pushing.
+`just check` runs what CI runs: formatting, lints, a build check, schema and annotation validation, the script test suites, the frontend unit tests and type checks (`just frontend-test`), and the full Rust test suite. Run it before pushing.
 
 The first three also run on their own, and the pre-commit hooks call them the same way:
 

@@ -240,7 +240,7 @@ preview-environments-test:
 # container-backed suites; on a machine without a daemon, swap `test` for
 # `test-no-docker`.
 [doc("Run all quality checks, exactly what CI runs (needs Docker)")]
-check: format lint build-check validate validate-annotations deploy-filters-test ghcr-cleanup-test precompress-test security-headers-test first-load-test ci-gate-test merge-queue-checks-test nldd-imports-test nldd-slots nldd-slots-test dockerfile-consistency-test deploy-gate-test deployed-urls-test preview-environments-test advisories-report-test dev-preflight-test test
+check: format lint build-check validate validate-annotations deploy-filters-test ghcr-cleanup-test precompress-test security-headers-test first-load-test ci-gate-test merge-queue-checks-test nldd-imports-test nldd-slots nldd-slots-test dockerfile-consistency-test deploy-gate-test deployed-urls-test preview-environments-test advisories-report-test dev-preflight-test frontend-test test
 
 # --- Tests ---
 
@@ -262,6 +262,19 @@ db_crates := "-p regelrecht-pipeline -p regelrecht-editor-api -p regelrecht-admi
 [doc("Run every Rust test in the workspace (needs Docker)")]
 test:
     cd packages && {{ci_flags}} cargo test --workspace --all-features
+
+# The frontend unit tests and type checks, as the "Frontend tests" job in CI
+# runs them. Needs `npm ci` at the repository root.
+[doc("Run the frontend unit tests and type checks")]
+frontend-test:
+    npm test -w packages/frontend-shared
+    npm run typecheck -w packages/frontend-shared
+    npm test -w frontend
+    npm run typecheck -w frontend
+    npm test -w frontend-lawmaking
+    npm run typecheck -w frontend-lawmaking
+    npm test -w frontend-demo
+    npm test -w frontend-poc-chronolexografie
 
 # Every test that needs no external services: the workspace minus the
 # container-backed crates. For a machine without a Docker daemon, and the
