@@ -350,10 +350,13 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
 ## Frontend code
 
 Frontends are Vue applications that follow Vue's own conventions: Vite to build,
-Vitest to test, single-file components with `<script setup lang="ts">`, and
-composables for shared state. Code that runs in the browser is TypeScript.
-Scripts that run in plain Node, the modules they load, and generated files stay
-JavaScript. The setup is in `docs/src/content/docs/guide/frontend-code.md`.
+Vitest to test, single-file components, and composables for shared state. The
+aim is TypeScript for code that runs in the browser (`.ts`,
+`<script setup lang="ts">`). The editor, lawmaking and `frontend-shared` are
+there; the demo and the PoC frontends are still JavaScript and will be migrated
+later, so keep new code in those in JavaScript until then. Scripts that run in
+plain Node, the modules they load, and generated files stay JavaScript. The
+setup is in `docs/src/content/docs/guide/frontend-code.md`.
 
 - Import a TypeScript module without its extension (`'./values'`). Plain Node
   cannot resolve that, so a module that Node loads keeps its `.js`.
