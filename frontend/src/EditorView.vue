@@ -2072,12 +2072,13 @@ async function decideReview(action: Verdict['action']) {
     await processReview();
     return;
   }
+  // No review task is loaded (the review ended while the reject-confirmation
+  // dialog was open): there is nothing to decide, so keep the panes as they are.
+  if (!next) return;
   // De geseede wijziging is vastgelegd in het oordeel; de panes gaan terug
   // naar de opgeslagen wet voordat het volgende onderdeel eroverheen komt.
   discardArticle();
-  // `next` is null with `done` false only when no review task is loaded; the
-  // route builder then throws on it, as it did before.
-  router.replace(reviewRouteForPart(next as JobTaskSummary));
+  router.replace(reviewRouteForPart(next));
 }
 
 // De editor-route van een ander onderdeel van dezelfde verrijking, met de

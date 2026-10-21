@@ -212,15 +212,15 @@ function cancelDelete(): void {
   confirmingDelete.value = false;
 }
 async function confirmDelete(): Promise<void> {
-  if (deleteBusy.value) return;
+  // The traject can disappear while the modal is open; then there is nothing to delete.
+  const trajectId = props.trajectId;
+  if (deleteBusy.value || !trajectId) return;
   deleteBusy.value = true;
   deleteError.value = null;
   try {
-    // The delete control only renders once this traject's detail has loaded, so
-    // trajectId was set then; it is not re-checked here.
-    await deleteTraject(props.trajectId as string);
+    await deleteTraject(trajectId);
     confirmingDelete.value = false;
-    emit('deleted', props.trajectId);
+    emit('deleted', trajectId);
   } catch (e) {
     deleteError.value = (e as Error).message || 'Verwijderen mislukt';
   } finally {
@@ -249,14 +249,15 @@ function cancelLeave(): void {
   confirmingLeave.value = false;
 }
 async function confirmLeave(): Promise<void> {
-  if (leaveBusy.value) return;
+  // Same as confirmDelete: no traject left to leave.
+  const trajectId = props.trajectId;
+  if (leaveBusy.value || !trajectId) return;
   leaveBusy.value = true;
   leaveError.value = null;
   try {
-    // Same as confirmDelete: the leave control needs the loaded detail.
-    await leaveTraject(props.trajectId as string);
+    await leaveTraject(trajectId);
     confirmingLeave.value = false;
-    emit('left', props.trajectId);
+    emit('left', trajectId);
   } catch (e) {
     leaveError.value = (e as Error).message || 'Verlaten mislukt';
   } finally {

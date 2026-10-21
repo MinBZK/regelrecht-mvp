@@ -67,14 +67,15 @@ function setRowError(key: string, message: string | null): void {
   rowError.value = next;
 }
 
-// The row actions below only render once load(props.trajectId) has filled the
-// list, so the id was set then; it is not re-checked here.
+// The row actions below act on the last loaded list, which stays on screen when
+// the traject disappears (trajectId goes to null); then they do nothing.
 async function changeMemberRole(member: TrajectMember, newRole: string): Promise<void> {
-  if (member.role === newRole) return;
+  const trajectId = props.trajectId;
+  if (member.role === newRole || !trajectId) return;
   setRowError(member.account_id, null);
   markBusy(member.account_id, true);
   try {
-    await updateRole(props.trajectId as string, member.account_id, newRole);
+    await updateRole(trajectId, member.account_id, newRole);
   } catch (e) {
     setRowError(member.account_id, (e as Error).message || 'Wijzigen mislukt');
   } finally {
@@ -83,10 +84,12 @@ async function changeMemberRole(member: TrajectMember, newRole: string): Promise
 }
 
 async function clickRemoveMember(member: TrajectMember): Promise<void> {
+  const trajectId = props.trajectId;
+  if (!trajectId) return;
   setRowError(member.account_id, null);
   markBusy(member.account_id, true);
   try {
-    await removeMember(props.trajectId as string, member.account_id);
+    await removeMember(trajectId, member.account_id);
   } catch (e) {
     setRowError(member.account_id, (e as Error).message || 'Verwijderen mislukt');
   } finally {
@@ -95,10 +98,12 @@ async function clickRemoveMember(member: TrajectMember): Promise<void> {
 }
 
 async function clickRemoveInvite(inv: TrajectInvite): Promise<void> {
+  const trajectId = props.trajectId;
+  if (!trajectId) return;
   setRowError(inv.email, null);
   markBusy(inv.email, true);
   try {
-    await removeInvite(props.trajectId as string, inv.email);
+    await removeInvite(trajectId, inv.email);
   } catch (e) {
     setRowError(inv.email, (e as Error).message || 'Intrekken mislukt');
   } finally {

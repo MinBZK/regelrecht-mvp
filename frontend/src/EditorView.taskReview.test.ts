@@ -467,6 +467,27 @@ describe('EditorView review-modus', () => {
     expect(target.params).toMatchObject({ lawId: 'kieswet' });
   });
 
+  // The reject-confirmation dialog can stay open while the review ends (the
+  // task leaves the URL). Confirming it then has no task to decide on: it must
+  // do nothing, rather than discard the panes and throw building the next route.
+  it('does nothing when a reject is confirmed after the review has ended', async () => {
+    routeState.query = { task: 'taak-1' };
+    const wrapper = mountEditor();
+    await settle();
+    expect(changes().review).toBe(true);
+
+    routeState.query = {};
+    await settle();
+    expect(changes().review).toBe(false);
+    replaceMock.mockReset();
+
+    await expect(internals(wrapper).rejectReview()).resolves.toBeUndefined();
+    await settle();
+
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(applyEnrichment).not.toHaveBeenCalled();
+  });
+
   // Tweede helft van dezelfde bug: terug op het artikel van de taak was de
   // inhoud weg (de panes zijn opnieuw uit de opgeslagen wet gevuld) terwijl de
   // beoordeel-weergave er nog stond. Komt de taak wél terug in de URL, dan
