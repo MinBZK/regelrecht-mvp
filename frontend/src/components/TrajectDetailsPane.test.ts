@@ -350,6 +350,7 @@ describe('TrajectDetailsPane without a traject id', () => {
 
     expect(apiFetch).not.toHaveBeenCalled();
     expect(w.emitted('deleted')).toBeUndefined();
+    expect(paneState(w).confirmingDelete).toBe(false);
     w.unmount();
   });
 
@@ -363,6 +364,29 @@ describe('TrajectDetailsPane without a traject id', () => {
 
     expect(apiFetch).not.toHaveBeenCalled();
     expect(w.emitted('left')).toBeUndefined();
+    expect(paneState(w).confirmingLeave).toBe(false);
+    w.unmount();
+  });
+
+  it('reports the deleted traject by the id the request was for', async () => {
+    const w = await mountPane(detail());
+    let finish: () => void = () => {};
+    apiFetch.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    await found(w.findAll('nldd-button').find((b) => b.attributes('text') === 'Traject verwijderen')).trigger('click');
+    modalButton('Verwijder traject').click();
+    await flush(w);
+
+    // The pane moves on to another traject while the DELETE is still running.
+    await w.setProps({ trajectId: 'ander-traject' });
+    finish();
+    await flush(w);
+
+    expect(w.emitted('deleted')).toEqual([[TRAJECT_ID]]);
     w.unmount();
   });
 });
+
+/** The modal flags in the pane's setup scope (script setup exposes them on `vm` in tests). */
+function paneState(w: VueWrapper): { confirmingDelete: boolean; confirmingLeave: boolean } {
+  return w.vm as unknown as { confirmingDelete: boolean; confirmingLeave: boolean };
+}

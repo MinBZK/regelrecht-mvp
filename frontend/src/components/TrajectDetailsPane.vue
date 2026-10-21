@@ -212,9 +212,15 @@ function cancelDelete(): void {
   confirmingDelete.value = false;
 }
 async function confirmDelete(): Promise<void> {
-  // The traject can disappear while the modal is open; then there is nothing to delete.
+  // The traject can disappear while the modal is open; then there is nothing
+  // to delete, so the modal just closes. The event carries the id the request
+  // was for, even if the prop changes while it runs.
   const trajectId = props.trajectId;
-  if (deleteBusy.value || !trajectId) return;
+  if (deleteBusy.value) return;
+  if (!trajectId) {
+    confirmingDelete.value = false;
+    return;
+  }
   deleteBusy.value = true;
   deleteError.value = null;
   try {
@@ -249,9 +255,13 @@ function cancelLeave(): void {
   confirmingLeave.value = false;
 }
 async function confirmLeave(): Promise<void> {
-  // Same as confirmDelete: no traject left to leave.
+  // Same as confirmDelete: no traject left to leave closes the modal.
   const trajectId = props.trajectId;
-  if (leaveBusy.value || !trajectId) return;
+  if (leaveBusy.value) return;
+  if (!trajectId) {
+    confirmingLeave.value = false;
+    return;
+  }
   leaveBusy.value = true;
   leaveError.value = null;
   try {

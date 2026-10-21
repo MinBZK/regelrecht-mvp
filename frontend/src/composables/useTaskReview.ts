@@ -236,7 +236,7 @@ export function useTaskReview() {
     if (!jobId.value) {
       const onlyRejected = decisions.length > 0 && decisions.every((d) => d.action === 'rejected');
       if (!onlyRejected) {
-        throw new Error('Deze taak hoort bij geen verrijking meer en kan niet worden overgenomen.');
+        throw new Error('Deze taak hoort bij geen verrijking meer en kan niet worden overgenomen. Verwerp haar om haar af te sluiten.');
       }
       await resolveTask(task.id, 'rejected');
       clearVerdicts(key);

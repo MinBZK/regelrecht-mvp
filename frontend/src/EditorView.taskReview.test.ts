@@ -283,6 +283,7 @@ interface EditorViewInternals {
   editorRouteFor(lawId: string | null, articleNumber: string | null): { query?: unknown };
   handleLawSave(): Promise<void>;
   rejectReview(): Promise<void>;
+  editedText: string;
 }
 const internals = (wrapper: VueWrapper) => wrapper.vm as unknown as EditorViewInternals;
 
@@ -474,12 +475,15 @@ describe('EditorView review-modus', () => {
     await settle();
     expect(changes().review).toBe(false);
     replaceMock.mockReset();
+    internals(wrapper).editedText = 'een onopgeslagen wijziging';
 
     await expect(internals(wrapper).rejectReview()).resolves.toBeUndefined();
     await settle();
 
     expect(replaceMock).not.toHaveBeenCalled();
     expect(applyEnrichment).not.toHaveBeenCalled();
+    // The panes keep what the user typed.
+    expect(internals(wrapper).editedText).toBe('een onopgeslagen wijziging');
   });
 
   // Tweede helft van dezelfde bug: terug op het artikel van de taak was de
