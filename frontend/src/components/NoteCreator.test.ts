@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import NoteCreator from './NoteCreator.vue';
 import { useAuth } from '../composables/useAuth';
+import type { Note } from '../composables/useNotes';
+import type { BuiltSelector } from '../composables/useTextSelection';
 
 // NoteCreator pulls in useAmbiguityVocabulary, which fetches the vocabulary
 // file on first use. Stub fetch so the test does not hit the network (and
@@ -37,7 +40,31 @@ const stubs = {
 
 const RAW = 'Indien de normpremie voor een verzekerde';
 
-function mountCreator(extraProps = {}, extraStubs = {}) {
+/**
+ * Setup state the tests set and read through `vm`. NoteCreator exposes
+ * nothing, but test-utils proxies the setup state onto `vm`.
+ */
+interface NoteCreatorInternals {
+  commentText: string;
+  links: { type: 'element' | 'document'; value: string; label: string }[];
+  ambiguityTags: string[];
+  isTask: boolean;
+  taskDone: boolean;
+  shareWithTraject: boolean;
+  canSave: boolean;
+  selectorResult: BuiltSelector | null;
+  save(): void;
+}
+const vmOf = (w: VueWrapper) => w.vm as unknown as NoteCreatorInternals;
+
+/** The first `create` event's arguments (note, share), asserted to exist. */
+function firstCreated(w: VueWrapper): [Note, boolean] {
+  const event = w.emitted<[Note, boolean]>('create')?.[0];
+  expect(event).toBeDefined();
+  return event!; // asserted on the line above
+}
+
+function mountCreator(extraProps: Record<string, unknown> = {}, extraStubs: Record<string, unknown> = {}) {
   const engine = {
     resolveNote: () => ({
       status: 'found',
@@ -67,12 +94,12 @@ describe('NoteCreator', () => {
   it('builds a commenting note with a TextualBody', async () => {
     const w = mountCreator();
     await nextTick();
-    w.vm.commentText = 'uitleg over de normpremie';
+    vmOf(w).commentText = 'uitleg over de normpremie';
     await nextTick();
-    w.vm.save();
-    const [[note]] = w.emitted('create');
+    vmOf(w).save();
+    const [note] = firstCreated(w);
     expect(note.motivation).toBe('commenting');
-    expect(note.target.selector.exact).toBe('normpremie');
+    expect(note.target?.selector?.exact).toBe('normpremie');
     expect(note.body).toEqual({
       type: 'TextualBody',
       value: 'uitleg over de normpremie',
@@ -87,13 +114,13 @@ describe('NoteCreator', () => {
     const w = mountCreator({ trajectRef: 't-123' });
     await nextTick();
     // One element link and one document link -> two SpecificResource bodies.
-    w.vm.links = [
+    vmOf(w).links = [
       { type: 'element', value: 'hoogte_zorgtoeslag', label: 'hoogte_zorgtoeslag' },
       { type: 'document', value: 'mvt/concept.md', label: 'mvt/concept.md' },
     ];
     await nextTick();
-    w.vm.save();
-    const [[note]] = w.emitted('create');
+    vmOf(w).save();
+    const [note] = firstCreated(w);
     expect(note.motivation).toBe('linking');
     expect(note.body).toEqual([
       {
@@ -114,27 +141,27 @@ describe('NoteCreator', () => {
     await nextTick();
     // "Afgehandeld" is hidden until the note is a task.
     expect(w.find('[data-testid="note-task-done"]').exists()).toBe(false);
-    w.vm.commentText = 'x';
-    w.vm.isTask = true;
-    w.vm.taskDone = true;
+    vmOf(w).commentText = 'x';
+    vmOf(w).isTask = true;
+    vmOf(w).taskDone = true;
     await nextTick();
     expect(w.find('[data-testid="note-task-done"]').exists()).toBe(true);
-    w.vm.save();
-    expect(w.emitted('create')[0][0].workflow).toBe('resolved');
+    vmOf(w).save();
+    expect(firstCreated(w)[0].workflow).toBe('resolved');
   });
 
   it('combines a comment, ambiguity tag and open action into one note', async () => {
     const w = mountCreator();
     await nextTick();
-    w.vm.commentText = 'is dit een open norm?';
-    w.vm.ambiguityTags = ['open-norm-partial'];
-    w.vm.isTask = true; // a task, not done -> workflow 'open'
+    vmOf(w).commentText = 'is dit een open norm?';
+    vmOf(w).ambiguityTags = ['open-norm-partial'];
+    vmOf(w).isTask = true; // a task, not done -> workflow 'open'
     await nextTick();
-    w.vm.save();
-    const [[note]] = w.emitted('create');
+    vmOf(w).save();
+    const [note] = firstCreated(w);
     expect(note.workflow).toBe('open');
     expect(Array.isArray(note.body)).toBe(true);
-    expect(note.body[1]).toEqual({
+    expect((note.body as unknown[])[1]).toEqual({
       type: 'TextualBody',
       value: 'open-norm-partial',
       purpose: 'tagging',
@@ -144,10 +171,10 @@ describe('NoteCreator', () => {
   it('builds a tagging note with multiple ambiguity labels', async () => {
     const w = mountCreator();
     await nextTick();
-    w.vm.ambiguityTags = ['missing-document', 'open-norm-partial'];
+    vmOf(w).ambiguityTags = ['missing-document', 'open-norm-partial'];
     await nextTick();
-    w.vm.save();
-    const [[note]] = w.emitted('create');
+    vmOf(w).save();
+    const [note] = firstCreated(w);
     expect(note.body).toEqual([
       { type: 'TextualBody', value: 'missing-document', purpose: 'tagging' },
       { type: 'TextualBody', value: 'open-norm-partial', purpose: 'tagging' },
@@ -161,10 +188,10 @@ describe('NoteCreator', () => {
       },
     });
     await nextTick();
-    w.vm.commentText = 'iets';
+    vmOf(w).commentText = 'iets';
     await nextTick();
-    expect(w.vm.canSave).toBe(false);
-    w.vm.save();
+    expect(vmOf(w).canSave).toBe(false);
+    vmOf(w).save();
     expect(w.emitted('create')).toBeUndefined();
   });
 
@@ -268,11 +295,11 @@ describe('NoteCreator', () => {
     await nextTick();
     // `/auth/status` returns the identity as `sub` (no `id` field); creator.id
     // is derived from it.
-    person.value = { sub: 'u1', name: 'J. de Vries' };
-    w.vm.commentText = 'x';
+    person.value = { sub: 'u1', name: 'J. de Vries', email: 'j.devries@example.org', roles: [] };
+    vmOf(w).commentText = 'x';
     await nextTick();
-    w.vm.save();
-    const note = w.emitted('create')[0][0];
+    vmOf(w).save();
+    const [note] = firstCreated(w);
     expect(note.creator).toEqual({ id: 'u1', name: 'J. de Vries' });
     person.value = null; // reset shared module state for other tests
   });
@@ -280,25 +307,25 @@ describe('NoteCreator', () => {
   it('emits the share intent as the second create arg (default off)', async () => {
     const w = mountCreator({ trajectRef: 't-123' });
     await nextTick();
-    w.vm.commentText = 'x';
+    vmOf(w).commentText = 'x';
     await nextTick();
-    w.vm.save();
-    expect(w.emitted('create')[0][1]).toBe(false);
+    vmOf(w).save();
+    expect(firstCreated(w)[1]).toBe(false);
 
     const w2 = mountCreator({ trajectRef: 't-123' });
     await nextTick();
-    w2.vm.commentText = 'x';
-    w2.vm.shareWithTraject = true;
+    vmOf(w2).commentText = 'x';
+    vmOf(w2).shareWithTraject = true;
     await nextTick();
-    w2.vm.save();
-    expect(w2.emitted('create')[0][1]).toBe(true);
+    vmOf(w2).save();
+    expect(firstCreated(w2)[1]).toBe(true);
   });
 
   it('shows the irreversible-share warning only when the switch is on', async () => {
     const w = mountCreator({ trajectRef: 't-123' });
     await nextTick();
     expect(w.find('[data-testid="note-share-warning"]').exists()).toBe(false);
-    w.vm.shareWithTraject = true;
+    vmOf(w).shareWithTraject = true;
     await nextTick();
     expect(w.find('[data-testid="note-share-warning"]').exists()).toBe(true);
   });
@@ -310,7 +337,7 @@ describe('NoteCreator', () => {
       new CustomEvent('change', { detail: { checked: true }, bubbles: true, composed: true }),
     );
     await nextTick();
-    expect(w.vm.shareWithTraject).toBe(true);
+    expect(vmOf(w).shareWithTraject).toBe(true);
     expect(w.find('[data-testid="note-share-warning"]').exists()).toBe(true);
   });
 
@@ -324,7 +351,7 @@ describe('NoteCreator', () => {
     const w = mountCreator();
     await nextTick();
     // Premise check: the form is genuinely open against article 1.
-    expect(w.vm.selectorResult?.status).toBe('found');
+    expect(vmOf(w).selectorResult?.status).toBe('found');
     expect(w.emitted('cancel')).toBeUndefined();
     await w.setProps({
       article: { number: '2', machine_readable: null },

@@ -19,7 +19,7 @@ function mountEmpty(needs = '') {
   });
 }
 
-function enrichLabel(wrapper) {
+function enrichLabel(wrapper: ReturnType<typeof mountEmpty>) {
   return wrapper.find('[data-testid="enrich-btn"]').attributes('text');
 }
 

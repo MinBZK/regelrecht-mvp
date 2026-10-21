@@ -78,9 +78,10 @@ describe('ArticleTextEditor', () => {
 
     const events = wrapper.emitted('update:modelValue');
     expect(events).toBeDefined();
-    expect(events.length).toBeGreaterThan(0);
+    // The toBeDefined assertion above guarantees events.
+    expect(events!.length).toBeGreaterThan(0);
     // The last emission should be a string containing the inserted text.
-    const last = events[events.length - 1][0];
+    const last = events![events!.length - 1]![0]; // length > 0 asserted above
     expect(typeof last).toBe('string');
     expect(last).toContain('world');
   });

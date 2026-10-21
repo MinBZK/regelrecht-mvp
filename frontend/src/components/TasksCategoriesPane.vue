@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * TasksCategoriesPane - het categorie-panel van Taken (secondary sidebar van
  * Home). Navigatie, geen inhoud: de gekozen categorie opent zijn takenlijst in
@@ -40,13 +40,22 @@ import {
   WET,
 } from '../lib/taskCategories';
 
-const props = defineProps({
-  trajectRef: { type: String, default: null },
-  categorie: { type: String, default: null },
-  lawId: { type: String, default: null },
-});
+const props = withDefaults(
+  defineProps<{
+    trajectRef?: string | null;
+    categorie?: string | null;
+    lawId?: string | null;
+  }>(),
+  { trajectRef: null, categorie: null, lawId: null },
+);
 
-const emit = defineEmits(['select']);
+// The `select` payload; `categorie` is the key LibraryView destructures.
+interface CategorySelection {
+  categorie: string;
+  lawId: string | null;
+}
+
+const emit = defineEmits<{ select: [selection: CategorySelection] }>();
 
 const { tasks, running } = useTasks();
 const { displayName } = useCorpusLaws(toRef(props, 'trajectRef'));
@@ -62,11 +71,11 @@ const hasContexten = computed(() => hasWerkdocumenten.value || laws.value.length
 
 // Een wet-context is alleen geselecteerd bij een exacte match op law_id;
 // "Wetten" zelf alleen zonder law_id, anders lichten beide tegelijk op.
-function isSelected(categorie, lawId = null) {
+function isSelected(categorie: string, lawId: string | null = null): boolean {
   return props.categorie === categorie && (props.lawId ?? null) === lawId;
 }
 
-function select(categorie, lawId = null) {
+function select(categorie: string, lawId: string | null = null): void {
   emit('select', { categorie, lawId });
 }
 </script>

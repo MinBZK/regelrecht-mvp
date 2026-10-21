@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 // The component (and useTrajects) use vue-router; provide a light mock so it
@@ -16,9 +17,10 @@ import {
   registerTabActions,
   clearEditorChrome,
 } from '../composables/useAppChrome';
+import type { OpenTab } from '../lib/openTabsStorage';
 
 // nldd-sheet compiles to a raw custom element; stub show()/hide() with spies.
-let showSpy, hideSpy;
+let showSpy: Mock<() => void> | undefined, hideSpy: Mock<() => void> | undefined;
 beforeAll(() => {
   if (typeof customElements !== 'undefined' && !customElements.get('nldd-sheet')) {
     class NddSheetTestStub extends HTMLElement {
@@ -29,19 +31,19 @@ beforeAll(() => {
   }
 });
 
-const TABS = [
+const TABS: OpenTab[] = [
   { lawId: 'zorgtoeslagwet', articleNumber: '3' },
   { lawId: 'awir', articleNumber: '1' },
 ];
-const NAMES = { zorgtoeslagwet: 'Zorgtoeslagwet', awir: 'Awir' };
-const tabKey = (t) => `${t.lawId}:${t.articleNumber}`;
+const NAMES: Record<string, string> = { zorgtoeslagwet: 'Zorgtoeslagwet', awir: 'Awir' };
+const tabKey = (t: OpenTab) => `${t.lawId}:${t.articleNumber}`;
 
 beforeEach(() => {
   showSpy = vi.fn();
   hideSpy = vi.fn();
   registerTabActions({
     key: tabKey,
-    displayName: (t) => NAMES[t.lawId] || t.lawId,
+    displayName: (t: OpenTab) => NAMES[t.lawId] || t.lawId,
     select: vi.fn(),
     close: vi.fn(),
     reorder: vi.fn(),
@@ -80,12 +82,16 @@ describe('MobileTrajectSheet', () => {
   });
 
   it('closes the sheet when the viewport grows past sm', () => {
-    let changeHandler = null;
+    // Typed via `as` so TS does not narrow it to `null` (it is set in a callback).
+    let changeHandler = null as ((e: { matches: boolean }) => void) | null;
+    // A partial MediaQueryList: only what the component touches.
     const spy = vi.spyOn(window, 'matchMedia').mockReturnValue({
       matches: false,
-      addEventListener: (event, handler) => { if (event === 'change') changeHandler = handler; },
+      addEventListener: (event: string, handler: (e: { matches: boolean }) => void) => {
+        if (event === 'change') changeHandler = handler;
+      },
       removeEventListener: () => {},
-    });
+    } as unknown as MediaQueryList);
     try {
       mountSheet();
       changeHandler?.({ matches: true });

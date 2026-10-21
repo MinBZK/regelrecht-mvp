@@ -4,6 +4,7 @@
 // wat de dialoog ermee doet.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 
 const formats = {
   passthrough: ['md', 'markdown'],
@@ -11,7 +12,7 @@ const formats = {
 };
 const loadUploadFormats = vi.fn();
 vi.mock('../lib/uploadFormats', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import('../lib/uploadFormats')>();
   return { ...actual, loadUploadFormats: () => loadUploadFormats() };
 });
 
@@ -21,7 +22,7 @@ beforeEach(() => {
   loadUploadFormats.mockResolvedValue(formats);
 });
 
-async function mountFor(filename) {
+async function mountFor(filename: string) {
   const wrapper = mount(UploadConfirmDialog, {
     props: { file: { name: filename } },
     global: { stubs: { teleport: true } },
@@ -32,9 +33,10 @@ async function mountFor(filename) {
   return wrapper;
 }
 
-const checkbox = (w) => w.find('[data-testid="upload-confirm-llm"]');
-const submit = (w) => w.find('[data-testid="upload-confirm-submit"]');
-const supportingText = (w) => w.find('nldd-modal-dialog').attributes('supporting-text');
+type Wrapper = VueWrapper<InstanceType<typeof UploadConfirmDialog>>;
+const checkbox = (w: Wrapper) => w.find('[data-testid="upload-confirm-llm"]');
+const submit = (w: Wrapper) => w.find('[data-testid="upload-confirm-submit"]');
+const supportingText = (w: Wrapper) => w.find('nldd-modal-dialog').attributes('supporting-text');
 
 describe('UploadConfirmDialog', () => {
   it('toont de bestandsnaam', async () => {
@@ -70,11 +72,12 @@ describe('UploadConfirmDialog', () => {
   it('bevestigen meldt de gemaakte keuze', async () => {
     const wrapper = await mountFor('rapport.docx');
     await submit(wrapper).trigger('click');
-    expect(wrapper.emitted('confirm')[0]).toEqual([{ allowLlm: false }]);
+    expect(wrapper.emitted('confirm')).toBeDefined();
+    expect(wrapper.emitted('confirm')![0]).toEqual([{ allowLlm: false }]);
 
     await checkbox(wrapper).trigger('change', { detail: { checked: true } });
     await submit(wrapper).trigger('click');
-    expect(wrapper.emitted('confirm')[1]).toEqual([{ allowLlm: true }]);
+    expect(wrapper.emitted('confirm')![1]).toEqual([{ allowLlm: true }]);
   });
 
   it('een niet-toegestane bevestiging levert geen upload op', async () => {

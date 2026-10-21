@@ -1,10 +1,41 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 import MachineReadable from './MachineReadable.vue';
 
+type ArticleProp = NonNullable<InstanceType<typeof MachineReadable>['$props']['article']>;
+type MachineReadableSection = NonNullable<ArticleProp['machine_readable']>;
+/** The fixture: an article whose machine_readable and execution are always present. */
+type ArticleFixture = ArticleProp & {
+  machine_readable: MachineReadableSection & {
+    execution: NonNullable<MachineReadableSection['execution']>;
+  };
+};
+
+/** An emitted payload, typed for the fields these tests read. */
+interface EmitPayload {
+  section?: string;
+  key?: string;
+  index?: number;
+  isNew?: boolean;
+  rawDef?: unknown;
+  output?: string;
+  data?: { name?: string; source?: { regulation?: string }; type_spec?: unknown };
+}
+
+/** The first argument of the first emit; throws when nothing was emitted. */
+function firstPayload(events: unknown[][] | undefined): EmitPayload {
+  const args = events?.[0];
+  if (!args) throw new Error('expected the event to have been emitted');
+  return args[0] as EmitPayload;
+}
+
 // Minimal article fixture with all section types
-function createArticle(overrides = {}) {
-  return {
+function createArticle(overrides: Omit<Partial<MachineReadableSection>, 'execution'> = {}): ArticleFixture {
+  // Built as a plain object first: it carries law-format fields the component
+  // does not read (source.output, operation, ...), which a direct return
+  // would reject as excess properties.
+  const article = {
     number: '2',
     machine_readable: {
       definitions: {
@@ -50,9 +81,10 @@ function createArticle(overrides = {}) {
       ...overrides,
     },
   };
+  return article;
 }
 
-function mountEditable(articleOverrides = {}) {
+function mountEditable(articleOverrides: Omit<Partial<MachineReadableSection>, 'execution'> = {}) {
   return mount(MachineReadable, {
     props: {
       article: createArticle(articleOverrides),
@@ -66,37 +98,37 @@ function mountEditable(articleOverrides = {}) {
 // menu-item is just a DOM node and triggering click still fires the
 // component's @click → emit('edit'). DOM order per row is unchanged, so
 // the index mapping used by the tests is preserved.
-function findBewerkButtons(wrapper) {
+function findBewerkButtons(wrapper: VueWrapper) {
   return wrapper.findAll('nldd-menu-item[text="Bewerk"]');
 }
 
-function findBekijkButtons(wrapper) {
+function findBekijkButtons(wrapper: VueWrapper) {
   return wrapper.findAll('nldd-button[text="Bekijk"]');
 }
 
-async function clickBewerk(wrapper, index) {
+async function clickBewerk(wrapper: VueWrapper, index: number) {
   const buttons = findBewerkButtons(wrapper);
-  await buttons[index].trigger('click');
+  await buttons.at(index)?.trigger('click');
 }
 
 // Add buttons all carry a stable data-testid (`add-{section}-btn`); using
 // it sidesteps copy churn - we changed labels from "Nieuwe X" to
 // "X toevoegen" and don't want the test to break on the next reword.
-const ADD_BTN_TESTID = {
+const ADD_BTN_TESTID: Record<string, string> = {
   definitie: 'add-def-btn',
   parameter: 'add-param-btn',
   input: 'add-input-btn',
   output: 'add-output-btn',
   action: 'add-action-btn',
 };
-function findAddButton(wrapper, section) {
+function findAddButton(wrapper: VueWrapper, section: string) {
   return wrapper.find(`[data-testid="${ADD_BTN_TESTID[section]}"]`);
 }
 
 // The destructive button in the confirm modal that actually emits the
 // delete event. There's one per pendingDelete (the modal renders only
 // when something is staged) so a single global lookup is fine.
-function findConfirmDeleteButton(wrapper) {
+function findConfirmDeleteButton(wrapper: VueWrapper) {
   return wrapper.find('nldd-button[appearance="destructive"][text="Verwijder"]');
 }
 
@@ -129,8 +161,8 @@ describe('MachineReadable', () => {
         { type: 'BESCHIKKING', decision_type: 'AFWIJZING', outputs: ['heeft_recht'] },
       ];
       const wrapper = mount(MachineReadable, { props: { article, editable: true } });
-      expect(wrapper.find('select[aria-label="Juridische basis"]').element.value).toBe('BESCHIKKING');
-      expect(wrapper.find('select[aria-label="Besluit-type"]').element.value).toBe('AFWIJZING');
+      expect(wrapper.find<HTMLSelectElement>('select[aria-label="Juridische basis"]').element.value).toBe('BESCHIKKING');
+      expect(wrapper.find<HTMLSelectElement>('select[aria-label="Besluit-type"]').element.value).toBe('AFWIJZING');
     });
 
     it('offers no decision type for a produces list without a decision', () => {
@@ -139,7 +171,7 @@ describe('MachineReadable', () => {
         { type: 'AANVRAAG', requests: 'test#1', parameters: ['bsn'] },
       ];
       const wrapper = mount(MachineReadable, { props: { article, editable: true } });
-      expect(wrapper.find('select[aria-label="Juridische basis"]').element.value).toBe('');
+      expect(wrapper.find<HTMLSelectElement>('select[aria-label="Juridische basis"]').element.value).toBe('');
       expect(wrapper.find('select[aria-label="Besluit-type"]').exists()).toBe(false);
     });
 
@@ -149,7 +181,7 @@ describe('MachineReadable', () => {
       const read = mount(MachineReadable, { props: { article, editable: false } });
       expect(read.findAll('nldd-text-cell').some((c) => c.attributes('text') === 'Besluit-type')).toBe(true);
       const edit = mount(MachineReadable, { props: { article, editable: true } });
-      expect(edit.find('select[aria-label="Besluit-type"]').element.value).toBe('TOEKENNING');
+      expect(edit.find<HTMLSelectElement>('select[aria-label="Besluit-type"]').element.value).toBe('TOEKENNING');
     });
 
     it('shows empty state when no machine_readable', () => {
@@ -197,17 +229,17 @@ describe('MachineReadable', () => {
       await clickBewerk(wrapper, 0);
       const events = wrapper.emitted('open-edit');
       expect(events).toHaveLength(1);
-      expect(events[0][0].section).toBe('definition');
-      expect(events[0][0].key).toBe('drempelinkomen');
-      expect(events[0][0].rawDef).toEqual({ value: 3971900 });
+      expect(firstPayload(events).section).toBe('definition');
+      expect(firstPayload(events).key).toBe('drempelinkomen');
+      expect(firstPayload(events).rawDef).toEqual({ value: 3971900 });
     });
 
     it('emits open-edit for eurocent definition', async () => {
       const wrapper = mountEditable();
       await clickBewerk(wrapper, 2);
       const events = wrapper.emitted('open-edit');
-      expect(events[0][0].key).toBe('standaard_bedrag');
-      expect(events[0][0].rawDef).toEqual({ value: 150000, type_spec: { unit: 'eurocent' } });
+      expect(firstPayload(events).key).toBe('standaard_bedrag');
+      expect(firstPayload(events).rawDef).toEqual({ value: 150000, type_spec: { unit: 'eurocent' } });
     });
   });
 
@@ -217,7 +249,7 @@ describe('MachineReadable', () => {
       await clickBewerk(wrapper, 3);
       const events = wrapper.emitted('open-edit');
       expect(events).toHaveLength(1);
-      expect(events[0][0]).toEqual({
+      expect(firstPayload(events)).toEqual({
         section: 'parameter',
         index: 0,
         data: { name: 'bsn', type: 'string', required: true },
@@ -231,10 +263,10 @@ describe('MachineReadable', () => {
       await clickBewerk(wrapper, 4);
       const events = wrapper.emitted('open-edit');
       expect(events).toHaveLength(1);
-      expect(events[0][0].section).toBe('input');
-      expect(events[0][0].index).toBe(0);
-      expect(events[0][0].data.name).toBe('leeftijd');
-      expect(events[0][0].data.source.regulation).toBe('wet_brp');
+      expect(firstPayload(events).section).toBe('input');
+      expect(firstPayload(events).index).toBe(0);
+      expect(firstPayload(events).data?.name).toBe('leeftijd');
+      expect(firstPayload(events).data?.source?.regulation).toBe('wet_brp');
     });
   });
 
@@ -244,7 +276,7 @@ describe('MachineReadable', () => {
       await clickBewerk(wrapper, 6);
       const events = wrapper.emitted('open-edit');
       expect(events).toHaveLength(1);
-      expect(events[0][0]).toEqual({
+      expect(firstPayload(events)).toEqual({
         section: 'output',
         index: 0,
         data: { name: 'heeft_recht', type: 'boolean' },
@@ -255,7 +287,7 @@ describe('MachineReadable', () => {
       const wrapper = mountEditable();
       await clickBewerk(wrapper, 7);
       const events = wrapper.emitted('open-edit');
-      expect(events[0][0].data.type_spec).toEqual({ unit: 'eurocent' });
+      expect(firstPayload(events).data?.type_spec).toEqual({ unit: 'eurocent' });
     });
   });
 
@@ -265,7 +297,7 @@ describe('MachineReadable', () => {
       await clickBewerk(wrapper, 8);
       const events = wrapper.emitted('open-action');
       expect(events).toHaveLength(1);
-      expect(events[0][0].output).toBe('hoogte');
+      expect(firstPayload(events).output).toBe('hoogte');
     });
   });
 
@@ -291,32 +323,32 @@ describe('MachineReadable', () => {
       const wrapper = mountEditable();
       await findAddButton(wrapper, 'definitie').trigger('click');
       const events = wrapper.emitted('open-edit');
-      expect(events[0][0].section).toBe('add-definition');
-      expect(events[0][0].isNew).toBe(true);
+      expect(firstPayload(events).section).toBe('add-definition');
+      expect(firstPayload(events).isNew).toBe(true);
     });
 
     it('emits open-edit for new parameter', async () => {
       const wrapper = mountEditable();
       await findAddButton(wrapper, 'parameter').trigger('click');
       const events = wrapper.emitted('open-edit');
-      expect(events[0][0].section).toBe('add-parameter');
-      expect(events[0][0].isNew).toBe(true);
+      expect(firstPayload(events).section).toBe('add-parameter');
+      expect(firstPayload(events).isNew).toBe(true);
     });
 
     it('emits open-edit for new input', async () => {
       const wrapper = mountEditable();
       await findAddButton(wrapper, 'input').trigger('click');
       const events = wrapper.emitted('open-edit');
-      expect(events[0][0].section).toBe('add-input');
-      expect(events[0][0].isNew).toBe(true);
+      expect(firstPayload(events).section).toBe('add-input');
+      expect(firstPayload(events).isNew).toBe(true);
     });
 
     it('emits open-edit for new output', async () => {
       const wrapper = mountEditable();
       await findAddButton(wrapper, 'output').trigger('click');
       const events = wrapper.emitted('open-edit');
-      expect(events[0][0].section).toBe('add-output');
-      expect(events[0][0].isNew).toBe(true);
+      expect(firstPayload(events).section).toBe('add-output');
+      expect(firstPayload(events).isNew).toBe(true);
     });
   });
 
@@ -336,7 +368,7 @@ describe('MachineReadable', () => {
         props: { article: createArticle(), editable: false },
       });
       const actionItems = wrapper.findAll('nldd-list-item[button]');
-      await actionItems[0].trigger('click');
+      await actionItems.at(0)?.trigger('click');
       expect(wrapper.emitted('open-action')).toHaveLength(1);
       expect(wrapper.emitted('open-edit')).toBeUndefined();
     });
@@ -346,7 +378,7 @@ describe('MachineReadable', () => {
   // as a single modal over the whole editor.
 
   describe('delete row buttons', () => {
-    function findDeleteByTestId(wrapper, testid) {
+    function findDeleteByTestId(wrapper: VueWrapper, testid: string) {
       return wrapper.find(`[data-testid="${testid}"]`);
     }
 
@@ -367,7 +399,7 @@ describe('MachineReadable', () => {
     // destructive button in the modal-dialog is what actually emits the
     // delete event. Each test exercises that two-step flow so we cover the
     // user-facing contract, not the internal staging state.
-    async function clickDeleteAndConfirm(wrapper, testid) {
+    async function clickDeleteAndConfirm(wrapper: VueWrapper, testid: string) {
       await findDeleteByTestId(wrapper, testid).trigger('click');
       await findConfirmDeleteButton(wrapper).trigger('click');
     }
@@ -377,7 +409,7 @@ describe('MachineReadable', () => {
       await clickDeleteAndConfirm(wrapper, 'def-drempelinkomen-delete-btn');
       const events = wrapper.emitted('delete');
       expect(events).toHaveLength(1);
-      expect(events[0][0]).toEqual({ section: 'definition', key: 'drempelinkomen' });
+      expect(firstPayload(events)).toEqual({ section: 'definition', key: 'drempelinkomen' });
     });
 
     it('does not emit delete on the minus click alone (waits for confirmation)', async () => {
@@ -390,28 +422,28 @@ describe('MachineReadable', () => {
       const wrapper = mountEditable();
       await clickDeleteAndConfirm(wrapper, 'param-bsn-delete-btn');
       const events = wrapper.emitted('delete');
-      expect(events[0][0]).toEqual({ section: 'parameter', index: 0 });
+      expect(firstPayload(events)).toEqual({ section: 'parameter', index: 0 });
     });
 
     it('emits delete with input index payload after confirming', async () => {
       const wrapper = mountEditable();
       await clickDeleteAndConfirm(wrapper, 'input-leeftijd-delete-btn');
       const events = wrapper.emitted('delete');
-      expect(events[0][0]).toEqual({ section: 'input', index: 0 });
+      expect(firstPayload(events)).toEqual({ section: 'input', index: 0 });
     });
 
     it('emits delete with output index payload after confirming', async () => {
       const wrapper = mountEditable();
       await clickDeleteAndConfirm(wrapper, 'output-heeft_recht-delete-btn');
       const events = wrapper.emitted('delete');
-      expect(events[0][0]).toEqual({ section: 'output', index: 0 });
+      expect(firstPayload(events)).toEqual({ section: 'output', index: 0 });
     });
 
     it('emits delete with action index payload after confirming', async () => {
       const wrapper = mountEditable();
       await clickDeleteAndConfirm(wrapper, 'action-hoogte-delete-btn');
       const events = wrapper.emitted('delete');
-      expect(events[0][0]).toEqual({ section: 'action', index: 0 });
+      expect(firstPayload(events)).toEqual({ section: 'action', index: 0 });
     });
   });
 });

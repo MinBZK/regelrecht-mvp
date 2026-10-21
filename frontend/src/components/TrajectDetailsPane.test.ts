@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils';
 import TrajectDetailsPane from './TrajectDetailsPane.vue';
+import type { TrajectSource } from '../composables/useTrajectDetail';
 
 // De pane praat via twee poten met de backend: het detail-GET (apiFetchJson, in
 // useTrajectDetail) en de PATCH (apiFetch, in useTrajects). Beide mocken we hier
@@ -8,14 +10,14 @@ import TrajectDetailsPane from './TrajectDetailsPane.vue';
 const apiFetch = vi.fn();
 const apiFetchJson = vi.fn();
 vi.mock('../lib/apiFetch', () => ({
-  apiFetch: (...a) => apiFetch(...a),
-  apiFetchJson: (...a) => apiFetchJson(...a),
+  apiFetch: (...a: unknown[]) => apiFetch(...a),
+  apiFetchJson: (...a: unknown[]) => apiFetchJson(...a),
 }));
 
 // Rollen komen uit de sessie; standaard heeft de gebruiker er geen.
-const roles = new Set();
+const roles = new Set<string>();
 vi.mock('../composables/useAuth', () => ({
-  hasRole: (role) => roles.has(role),
+  hasRole: (role: string) => roles.has(role),
 }));
 
 vi.mock('vue-router', () => ({
@@ -26,7 +28,26 @@ vi.mock('vue-router', () => ({
 const TRAJECT_ID = '11111111-2222-3333-4444-555555555555';
 
 // Fictieve repo-coördinaten: dit is een publieke repo.
-function ownSource(overrides = {}) {
+// Index into a list and fail loudly instead of reading through undefined.
+function at<T>(list: readonly T[], i: number): T {
+  const item = list[i];
+  if (item === undefined) throw new Error(`no item at index ${i}`);
+  return item;
+}
+
+// Narrow a `find()` result; throws (failing the test) when nothing matched.
+function found<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a match');
+  return value;
+}
+
+// The text fields are bare custom elements here; tests set their `value`
+// property the way the real nldd-text-field would carry it.
+function setValue(field: DOMWrapper<Element>, value: string): void {
+  (field.element as HTMLInputElement).value = value;
+}
+
+function ownSource(overrides: Partial<TrajectSource> = {}) {
   return {
     source_id: 'traject-own',
     name: 'Eigen repo',
@@ -43,7 +64,10 @@ function ownSource(overrides = {}) {
   };
 }
 
-function detail({ role = 'owner', source = ownSource() } = {}) {
+function detail({
+  role = 'owner',
+  source = ownSource(),
+}: { role?: string; source?: ReturnType<typeof ownSource> } = {}) {
   return {
     id: TRAJECT_ID,
     name: 'Voorbeeldtraject',
@@ -57,7 +81,7 @@ function detail({ role = 'owner', source = ownSource() } = {}) {
   };
 }
 
-async function mountPane(body) {
+async function mountPane(body: unknown) {
   apiFetchJson.mockResolvedValue(body);
   const wrapper = mount(TrajectDetailsPane, {
     props: { trajectId: TRAJECT_ID },
@@ -71,17 +95,17 @@ async function mountPane(body) {
   return wrapper;
 }
 
-const subpathField = (w) => w.find('nldd-text-field[name="repo_path"]');
-const saveButton = (w) =>
+const subpathField = (w: VueWrapper) => w.find('nldd-text-field[name="repo_path"]');
+const saveButton = (w: VueWrapper) =>
   w.findAll('nldd-button').find((b) => b.attributes('text') === 'Opslaan');
 // Alleen-lezen waarden staan als `text`-attribuut op een cel: web components
 // renderen in deze testomgeving geen shadow-DOM, dus w.text() ziet ze niet.
-const cellTexts = (w) =>
+const cellTexts = (w: VueWrapper) =>
   w.findAll('nldd-text-cell').map((c) => c.attributes('text'));
 
 // De opslag-actie hangt een paar microtasks diep: PATCH, lijst verversen,
 // detail herladen. Geef ze allemaal de beurt.
-async function flush(w) {
+async function flush(w: VueWrapper) {
   for (let i = 0; i < 6; i += 1) {
     await Promise.resolve();
     await w.vm.$nextTick();
@@ -143,7 +167,7 @@ describe('TrajectDetailsPane subpath', () => {
     const field = subpathField(w);
     // Zoals het echte veld het doet: de host zet z'n eigen `value` en
     // dispatcht een CustomEvent met diezelfde waarde in `detail`.
-    field.element.value = 'regulation/nl';
+    setValue(field, 'regulation/nl');
     field.element.dispatchEvent(
       new CustomEvent('input', {
         detail: { value: 'regulation/nl' },
@@ -154,11 +178,11 @@ describe('TrajectDetailsPane subpath', () => {
     await w.vm.$nextTick();
     apiFetchJson.mockClear();
 
-    await saveButton(w).trigger('click');
+    await found(saveButton(w)).trigger('click');
     await flush(w);
 
     expect(apiFetch).toHaveBeenCalledTimes(1);
-    const [url, options] = apiFetch.mock.calls[0];
+    const [url, options] = at(apiFetch.mock.calls, 0);
     expect(url).toBe(`/api/trajects/${TRAJECT_ID}`);
     expect(options.method).toBe('PATCH');
     expect(JSON.parse(options.body)).toEqual({ repo_path: 'regulation/nl' });
@@ -174,7 +198,7 @@ describe('TrajectDetailsPane subpath', () => {
     const w = await mountPane(detail());
     apiFetch.mockRejectedValueOnce(new Error('repo_path moet een relatief pad zijn'));
 
-    await saveButton(w).trigger('click');
+    await found(saveButton(w)).trigger('click');
     await flush(w);
 
     expect(w.find('#subpath-error').text()).toContain(
@@ -190,7 +214,7 @@ describe('TrajectDetailsPane subpath', () => {
     // Zodra de gebruiker het pad corrigeert verdwijnt de melding, samen met
     // de invalid-markering op het veld.
     const field = subpathField(w);
-    field.element.value = 'regulation/nl';
+    setValue(field, 'regulation/nl');
     field.element.dispatchEvent(
       new CustomEvent('input', {
         detail: { value: 'regulation/nl' },
@@ -204,12 +228,12 @@ describe('TrajectDetailsPane subpath', () => {
   });
 });
 
-const repoField = (w) => w.find('nldd-text-field[name="repo"]');
-const repoButton = (w) =>
+const repoField = (w: VueWrapper) => w.find('nldd-text-field[name="repo"]');
+const repoButton = (w: VueWrapper) =>
   w.findAll('nldd-button').find((b) => b.attributes('text') === 'Repo wijzigen');
 
-function typeInto(field, value) {
-  field.element.value = value;
+function typeInto(field: DOMWrapper<Element>, value: string) {
+  setValue(field, value);
   field.element.dispatchEvent(
     new CustomEvent('input', { detail: { value }, bubbles: true, composed: true }),
   );
@@ -259,11 +283,11 @@ describe('TrajectDetailsPane repo', () => {
     await w.vm.$nextTick();
     apiFetchJson.mockClear();
 
-    await repoButton(w).trigger('click');
+    await found(repoButton(w)).trigger('click');
     await flush(w);
 
     expect(apiFetch).toHaveBeenCalledTimes(1);
-    const [url, options] = apiFetch.mock.calls[0];
+    const [url, options] = at(apiFetch.mock.calls, 0);
     expect(url).toBe(`/api/trajects/${TRAJECT_ID}/repo`);
     expect(options.method).toBe('PUT');
     expect(JSON.parse(options.body)).toEqual({
@@ -279,7 +303,7 @@ describe('TrajectDetailsPane repo', () => {
     typeInto(repoField(w), 'alleen-een-naam');
     await w.vm.$nextTick();
 
-    await repoButton(w).trigger('click');
+    await found(repoButton(w)).trigger('click');
     await flush(w);
 
     expect(apiFetch).not.toHaveBeenCalled();
@@ -294,7 +318,7 @@ describe('TrajectDetailsPane repo', () => {
     await w.vm.$nextTick();
     apiFetch.mockRejectedValueOnce(new Error('het geconfigureerde token heeft geen schrijftoegang'));
 
-    await repoButton(w).trigger('click');
+    await found(repoButton(w)).trigger('click');
     await flush(w);
 
     expect(w.find('#repo-error').text()).toContain('geen schrijftoegang');

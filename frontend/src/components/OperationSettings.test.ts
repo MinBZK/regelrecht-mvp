@@ -1,7 +1,24 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import OperationSettings from './OperationSettings.vue';
+import type { OperationNode, OperationTreeRow } from '../utils/operationTree';
+
+/** A test node: an operation type plus whatever slots the test sets or reads. */
+type TestNode = { operation: string; [key: string]: unknown };
+
+/** The value-row fields the tests pass in; the component fills the rest. */
+type TestRow = { _kind: string; _label?: string; _value?: unknown; _index?: number; _caseIndex?: number };
+
+/** The script-setup bindings the tests drive through wrapper.vm. */
+interface OperationSettingsVm {
+  operationValues: TestRow[];
+  canAddValue: boolean;
+  changeOperationType(newType: string): void;
+  applyValueMutation(row: TestRow, newVal: unknown): void;
+  canRemoveValue(row: TestRow): boolean;
+  canChangeValueKind(row: TestRow): boolean;
+}
 
 // `nldd-*` tags are configured as custom elements in vite.config.js, so
 // Vue Test Utils' stub system doesn't replace them. None of the tests
@@ -20,31 +37,34 @@ beforeAll(() => {
  * mutable underlying object that operationValues / mutations read and
  * write). Helper to build a minimal valid prop.
  */
-function makeOpProp(node) {
+function makeOpProp(node: TestNode): OperationTreeRow {
   return {
     number: '1',
     title: 'test op',
     subtitle: '',
     operation: node.operation,
-    values: node.values || [],
-    node,
+    values: (node.values as unknown[] | undefined) || [],
+    // A test node is a loosely typed operation node.
+    node: node as OperationNode,
   };
 }
 
-function mountOp(node, { editable = true } = {}) {
-  return mount(OperationSettings, {
+function mountOp(node: TestNode, { editable = true } = {}) {
+  const wrapper = mount(OperationSettings, {
     props: {
       operation: makeOpProp(node),
       article: { machine_readable: { execution: { input: [] } } },
       editable,
     },
   });
+  // Script-setup bindings are reachable on vm at runtime, but not in its type.
+  return wrapper as unknown as Omit<VueWrapper, 'vm'> & { vm: OperationSettingsVm };
 }
 
 describe('OperationSettings - AGE op', () => {
   describe('operationValues', () => {
     it('returns date_of_birth and reference_date rows for an AGE node', () => {
-      const node = {
+      const node: TestNode = {
         operation: 'AGE',
         date_of_birth: '$geboortedatum',
         reference_date: '2025-01-01',
@@ -65,17 +85,17 @@ describe('OperationSettings - AGE op', () => {
     });
 
     it('falls back to empty strings for missing AGE fields', () => {
-      const node = { operation: 'AGE' };
+      const node: TestNode = { operation: 'AGE' };
       const wrapper = mountOp(node);
       const rows = wrapper.vm.operationValues;
-      expect(rows[0]._value).toBe('');
-      expect(rows[1]._value).toBe('');
+      expect(rows[0]!._value).toBe('');
+      expect(rows[1]!._value).toBe('');
     });
   });
 
   describe('changeOperationType to AGE', () => {
     it('seeds date_of_birth and reference_date as empty strings', async () => {
-      const node = {
+      const node: TestNode = {
         operation: 'EQUALS',
         subject: '$foo',
         value: 42,
@@ -95,7 +115,7 @@ describe('OperationSettings - AGE op', () => {
     });
 
     it('preserves existing AGE fields when re-entering AGE', async () => {
-      const node = {
+      const node: TestNode = {
         operation: 'AGE',
         date_of_birth: '$geboortedatum',
         reference_date: '2025-01-01',
@@ -111,7 +131,7 @@ describe('OperationSettings - AGE op', () => {
     });
 
     it('strips AGE fields when switching back to a comparison op', async () => {
-      const node = {
+      const node: TestNode = {
         operation: 'AGE',
         date_of_birth: '$geboortedatum',
         reference_date: '2025-01-01',
@@ -138,7 +158,7 @@ describe('OperationSettings - AGE op', () => {
       ['SWITCH', { cases: expect.any(Array), default: 0 }],
       ['ADD', { values: [] }],
     ])('strips AGE fields when switching to %s', async (newType, _expected) => {
-      const node = {
+      const node: TestNode = {
         operation: 'AGE',
         date_of_birth: '$geboortedatum',
         reference_date: '2025-01-01',
@@ -156,14 +176,14 @@ describe('OperationSettings - AGE op', () => {
 
   describe('applyValueMutation', () => {
     it('writes date_of_birth on the node', () => {
-      const node = { operation: 'AGE', date_of_birth: '', reference_date: '' };
+      const node: TestNode = { operation: 'AGE', date_of_birth: '', reference_date: '' };
       const wrapper = mountOp(node);
       wrapper.vm.applyValueMutation({ _kind: 'date_of_birth' }, '$geboortedatum');
       expect(node.date_of_birth).toBe('$geboortedatum');
     });
 
     it('writes reference_date on the node', () => {
-      const node = { operation: 'AGE', date_of_birth: '', reference_date: '' };
+      const node: TestNode = { operation: 'AGE', date_of_birth: '', reference_date: '' };
       const wrapper = mountOp(node);
       wrapper.vm.applyValueMutation({ _kind: 'reference_date' }, '2025-01-01');
       expect(node.reference_date).toBe('2025-01-01');
@@ -172,7 +192,7 @@ describe('OperationSettings - AGE op', () => {
 
   describe('canRemoveValue', () => {
     it('blocks removal of both AGE structural fields', () => {
-      const node = {
+      const node: TestNode = {
         operation: 'AGE',
         date_of_birth: '$geboortedatum',
         reference_date: '2025-01-01',
@@ -187,7 +207,7 @@ describe('OperationSettings - AGE op', () => {
     // Operations are added by switching a value's Type via the per-row
     // menu, so there is only the single "Voeg waarde toe" path now.
     it('disables the add-value button for AGE', () => {
-      const node = {
+      const node: TestNode = {
         operation: 'AGE',
         date_of_birth: '$geboortedatum',
         reference_date: '2025-01-01',
@@ -199,7 +219,7 @@ describe('OperationSettings - AGE op', () => {
 });
 
 describe('OperationSettings - DATE_DIFF op', () => {
-  function dateDiffNode() {
+  function dateDiffNode(): TestNode {
     return {
       operation: 'DATE_DIFF',
       from: '$indieningsdatum',
@@ -227,7 +247,7 @@ describe('OperationSettings - DATE_DIFF op', () => {
 
   describe('changeOperationType to DATE_DIFF', () => {
     it('seeds from/to as empty strings and in with a valid unit', async () => {
-      const node = { operation: 'EQUALS', subject: '$foo', value: 42 };
+      const node: TestNode = { operation: 'EQUALS', subject: '$foo', value: 42 };
       const wrapper = mountOp(node);
 
       wrapper.vm.changeOperationType('DATE_DIFF');
@@ -269,7 +289,7 @@ describe('OperationSettings - DATE_DIFF op', () => {
 
   describe('applyValueMutation', () => {
     it('writes from, to and in on the node', () => {
-      const node = { operation: 'DATE_DIFF', from: '', to: '', in: 'days' };
+      const node: TestNode = { operation: 'DATE_DIFF', from: '', to: '', in: 'days' };
       const wrapper = mountOp(node);
       wrapper.vm.applyValueMutation({ _kind: 'from' }, '$indieningsdatum');
       wrapper.vm.applyValueMutation({ _kind: 'to' }, '$referencedate.iso');
@@ -307,7 +327,7 @@ describe('OperationSettings - DATE_DIFF op', () => {
 });
 
 describe('OperationSettings - FOREACH op', () => {
-  function foreachNode() {
+  function foreachNode(): TestNode {
     return {
       operation: 'FOREACH',
       collection: '$medebewoners',
@@ -329,7 +349,7 @@ describe('OperationSettings - FOREACH op', () => {
     });
 
     it('shows the filter row between the binding and the body when present', () => {
-      const node = { ...foreachNode(), filter: { operation: 'GREATER_THAN', subject: '$x', value: 21 } };
+      const node: TestNode = { ...foreachNode(), filter: { operation: 'GREATER_THAN', subject: '$x', value: 21 } };
       const rows = mountOp(node).vm.operationValues;
       expect(rows.map((r) => r._kind)).toEqual(['collection', 'as', 'filter', 'body', 'combine']);
     });
@@ -342,7 +362,7 @@ describe('OperationSettings - FOREACH op', () => {
 
   describe('changeOperationType to FOREACH', () => {
     it('seeds an empty collection and body, and the schema default binding', () => {
-      const node = { operation: 'EQUALS', subject: '$foo', value: 42 };
+      const node: TestNode = { operation: 'EQUALS', subject: '$foo', value: 42 };
       const wrapper = mountOp(node);
 
       wrapper.vm.changeOperationType('FOREACH');
@@ -362,7 +382,7 @@ describe('OperationSettings - FOREACH op', () => {
     it.each([['EQUALS'], ['AND'], ['IF'], ['NOT'], ['ADD'], ['AGE'], ['DATE_DIFF']])(
       'strips FOREACH fields when switching to %s',
       (newType) => {
-        const node = { ...foreachNode(), filter: { operation: 'NOT', value: '$x' } };
+        const node: TestNode = { ...foreachNode(), filter: { operation: 'NOT', value: '$x' } };
         const wrapper = mountOp(node);
 
         wrapper.vm.changeOperationType(newType);
@@ -381,7 +401,7 @@ describe('OperationSettings - FOREACH op', () => {
 
   describe('applyValueMutation', () => {
     it('writes every FOREACH slot on the node', () => {
-      const node = { operation: 'FOREACH', collection: '', as: 'item', body: '' };
+      const node: TestNode = { operation: 'FOREACH', collection: '', as: 'item', body: '' };
       const wrapper = mountOp(node);
       wrapper.vm.applyValueMutation({ _kind: 'collection' }, '$kinderen');
       wrapper.vm.applyValueMutation({ _kind: 'as' }, 'kind');

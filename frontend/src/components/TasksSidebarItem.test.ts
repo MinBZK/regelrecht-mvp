@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils';
 // Same mocking pattern as TasksListPane.test.js - route useTasks.js's network
 // leg through a controllable spy.
 const apiFetch = vi.fn();
-vi.mock('@regelrecht/frontend-shared', () => ({ apiFetch: (...a) => apiFetch(...a) }));
+vi.mock('@regelrecht/frontend-shared', () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
 
 describe('TasksSidebarItem', () => {
   beforeEach(() => {
@@ -12,7 +12,8 @@ describe('TasksSidebarItem', () => {
     apiFetch.mockReset();
   });
 
-  async function mountItem(tasks, running = [], props = {}) {
+  // Rows go into the mocked JSON response as-is, so they stay untyped here.
+  async function mountItem(tasks: unknown[], running: unknown[] = [], props: { current?: boolean } = {}) {
     apiFetch.mockResolvedValue({
       status: 200,
       json: async () => ({ tasks, open_count: tasks.length, running }),

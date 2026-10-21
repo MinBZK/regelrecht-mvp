@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import AddLawSheet from './AddLawSheet.vue';
+import type { CorpusLaw } from '../composables/useCorpusLaws';
+import type { BwbSearchResult } from '../composables/useBwbSearch';
 
 // De sheet is traject-gebonden: useTrajects() leest de trajectRef uit de
 // route. Fictieve ref, geen echte repo/traject-namen (publiek testbestand).
@@ -14,7 +18,7 @@ vi.mock('vue-router', () => ({
 // Traject-scoped zoekrespons: het traject federeert de centrale seed, dus de
 // lijst mengt eigen-repo-treffers (source_priority 0, al in het traject) met
 // centrale-seed-treffers (hogere priority, promoteerbaar). Fictieve namen.
-const SEARCH_LAWS = [
+const SEARCH_LAWS: CorpusLaw[] = [
   {
     law_id: 'wet_voorbeeld',
     name: 'Wet voorbeeld',
@@ -31,12 +35,44 @@ const SEARCH_LAWS = [
   },
 ];
 
-const PROMOTABLE = SEARCH_LAWS[0];
+const PROMOTABLE = SEARCH_LAWS[0]!; // a literal two-element array
 
-function stubFetch({ searchLaws = SEARCH_LAWS, bwbResults = [] } = {}) {
+/** The part of a Response apiFetch reads; the stubs return only this. */
+interface StubResponse {
+  ok: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+  headers?: { get: () => string };
+}
+type FetchStub = (url: string | URL | Request, init?: RequestInit) => Promise<StubResponse>;
+
+/** The stubbed global fetch, typed as the stub it is rather than as `fetch`. */
+const fetchMock = () => vi.mocked(fetch) as unknown as Mock<FetchStub>;
+
+/**
+ * Setup state the tests reach through `wrapper.vm`. It is not exposed (only
+ * `show` is), but test-utils proxies the setup state onto `vm`.
+ */
+interface AddLawSheetInternals {
+  search: string;
+  mode: 'search' | 'upload';
+  sortedLaws: CorpusLaw[];
+  bwbIdQuery: string | null;
+  harvestState: Record<string, string>;
+  promote(law: CorpusLaw): Promise<void>;
+  isInTraject(law: CorpusLaw): boolean;
+  requestTrajectHarvest(bwbId: string, lawName?: string): Promise<void>;
+  $refs: { sheetRef: { hide: () => void } };
+}
+const internals = (wrapper: VueWrapper) => wrapper.vm as unknown as AddLawSheetInternals;
+
+function stubFetch(
+  { searchLaws = SEARCH_LAWS, bwbResults = [] }: { searchLaws?: CorpusLaw[]; bwbResults?: BwbSearchResult[] } = {},
+) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url, init = {}) => {
+    vi.fn<FetchStub>(async (url, init = {}) => {
       const u = String(url);
       if (u.includes('/auth/status')) return { ok: false, json: async () => ({}) };
       if (u.includes('/harvest/search')) return { ok: true, json: async () => bwbResults };
@@ -61,8 +97,8 @@ beforeEach(() => {
 // Voorbij de 200ms-debounce plus de fetches.
 const settle = () => new Promise((r) => setTimeout(r, 300));
 
-async function searchFor(wrapper, term) {
-  wrapper.vm.search = term;
+async function searchFor(wrapper: VueWrapper, term: string) {
+  internals(wrapper).search = term;
   await nextTick();
   await settle();
   await nextTick();
@@ -73,7 +109,7 @@ describe('AddLawSheet', () => {
     const wrapper = mount(AddLawSheet);
     await searchFor(wrapper, 'wet');
 
-    const urls = fetch.mock.calls.map((c) => String(c[0]));
+    const urls = fetchMock().mock.calls.map((c) => String(c[0]));
     expect(
       urls.some(
         (u) => u.startsWith(`/api/trajects/${TRAJECT_REF}/corpus/laws?`) && u.includes('q=wet'),
@@ -81,7 +117,7 @@ describe('AddLawSheet', () => {
     ).toBe(true);
     // Geen tweede zoekpad: de globale corpus-URL wordt niet aangeroepen.
     expect(urls.some((u) => u.startsWith('/api/corpus/laws'))).toBe(false);
-    expect(wrapper.vm.sortedLaws.map((l) => l.law_id)).toEqual([
+    expect(internals(wrapper).sortedLaws.map((l) => l.law_id)).toEqual([
       'wet_al_binnen',
       'wet_voorbeeld',
     ]);
@@ -93,23 +129,27 @@ describe('AddLawSheet', () => {
 
     const rows = wrapper.findAll('nldd-list-item[data-law-id]');
     const binnen = rows.find((r) => r.attributes('data-law-id') === 'wet_al_binnen');
-    expect(binnen.get('nldd-text-cell').attributes('supporting-text')).toBe('Al in dit traject');
-    expect(binnen.get('nldd-button').attributes('disabled')).toBeDefined();
+    expect(binnen).toBeDefined();
+    // Defined: asserted on the line above (and below for buiten).
+    expect(binnen!.get('nldd-text-cell').attributes('supporting-text')).toBe('Al in dit traject');
+    expect(binnen!.get('nldd-button').attributes('disabled')).toBeDefined();
 
     const buiten = rows.find((r) => r.attributes('data-law-id') === 'wet_voorbeeld');
-    expect(buiten.get('nldd-button').attributes('disabled')).toBeUndefined();
+    expect(buiten).toBeDefined();
+    expect(buiten!.get('nldd-button').attributes('disabled')).toBeUndefined();
   });
 
   it('promoot via POST /promote en emit "promoted"', async () => {
     const wrapper = mount(AddLawSheet);
     await searchFor(wrapper, 'wet');
 
-    await wrapper.vm.promote(PROMOTABLE);
+    await internals(wrapper).promote(PROMOTABLE);
 
-    const promoteCall = fetch.mock.calls.find(
+    const promoteCall = fetchMock().mock.calls.find(
       (c) => String(c[0]).includes('/promote') && c[1]?.method === 'POST',
     );
-    expect(String(promoteCall[0])).toBe(
+    expect(promoteCall).toBeDefined();
+    expect(String(promoteCall![0])).toBe(
       `/api/trajects/${TRAJECT_REF}/corpus/laws/wet_voorbeeld/promote`,
     );
     expect(wrapper.emitted('promoted')).toEqual([['wet_voorbeeld']]);
@@ -117,7 +157,7 @@ describe('AddLawSheet', () => {
 
   it('een 409 op promote markeert de wet alsnog als al-in-traject', async () => {
     stubFetch();
-    fetch.mockImplementation(async (url, init = {}) => {
+    fetchMock().mockImplementation(async (url, init = {}) => {
       const u = String(url);
       if (u.includes('/promote') && init.method === 'POST') {
         return { ok: false, status: 409, text: async () => 'al in traject', headers: { get: () => '' } };
@@ -131,11 +171,11 @@ describe('AddLawSheet', () => {
 
     const wrapper = mount(AddLawSheet);
     await searchFor(wrapper, 'wet');
-    await wrapper.vm.promote(PROMOTABLE);
+    await internals(wrapper).promote(PROMOTABLE);
     await nextTick();
 
     expect(wrapper.emitted('promoted')).toBeUndefined();
-    expect(wrapper.vm.isInTraject(PROMOTABLE)).toBe(true);
+    expect(internals(wrapper).isInTraject(PROMOTABLE)).toBe(true);
   });
 
   it('valt bij nul corpus-treffers terug op de wetten.overheid.nl-zoeker', async () => {
@@ -149,7 +189,7 @@ describe('AddLawSheet', () => {
     await new Promise((r) => setTimeout(r, 450));
     await nextTick();
 
-    const urls = fetch.mock.calls.map((c) => String(c[0]));
+    const urls = fetchMock().mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes('/harvest/search'))).toBe(true);
     const row = wrapper.get('nldd-list-item[data-bwb-id="BWBR0002399"]');
     expect(row.get('nldd-text-cell').attributes('text')).toBe('Voorbeeldwet extern');
@@ -163,7 +203,7 @@ describe('AddLawSheet', () => {
   it('wijst bij een mislukte zoekopdracht naar het traject, niet naar het centrale corpus', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (url) => {
+      vi.fn<FetchStub>(async (url) => {
         const u = String(url);
         if (u.startsWith(`/api/trajects/${TRAJECT_REF}/corpus/laws`)) throw new Error('boom');
         return { ok: true, json: async () => [] };
@@ -180,22 +220,24 @@ describe('AddLawSheet', () => {
 
   it('start een traject-scoped harvest voor een BWB-resultaat en emit "harvest-requested"', async () => {
     const wrapper = mount(AddLawSheet);
-    await wrapper.vm.requestTrajectHarvest('BWBR0002399', 'Voorbeeldwet extern');
+    await internals(wrapper).requestTrajectHarvest('BWBR0002399', 'Voorbeeldwet extern');
 
-    const call = fetch.mock.calls.find(
+    const call = fetchMock().mock.calls.find(
       (c) => String(c[0]).includes('/corpus/harvest') && c[1]?.method === 'POST',
     );
-    expect(String(call[0])).toBe(`/api/trajects/${TRAJECT_REF}/corpus/harvest`);
-    expect(JSON.parse(call[1].body)).toEqual({
+    expect(call).toBeDefined();
+    expect(String(call![0])).toBe(`/api/trajects/${TRAJECT_REF}/corpus/harvest`);
+    // The component sends a JSON string body.
+    expect(JSON.parse(call![1]!.body as string)).toEqual({
       bwb_id: 'BWBR0002399',
       law_name: 'Voorbeeldwet extern',
     });
     expect(wrapper.emitted('harvest-requested')).toEqual([['BWBR0002399']]);
-    expect(wrapper.vm.harvestState.BWBR0002399).toBe('requested');
+    expect(internals(wrapper).harvestState.BWBR0002399).toBe('requested');
   });
 
   it('een 409 op de harvest-aanvraag toont "er loopt al een aanvraag"', async () => {
-    fetch.mockImplementation(async (url, init = {}) => {
+    fetchMock().mockImplementation(async (url, init = {}) => {
       const u = String(url);
       if (u.includes('/corpus/harvest') && init.method === 'POST') {
         return { ok: false, status: 409, text: async () => 'loopt al', headers: { get: () => '' } };
@@ -204,8 +246,8 @@ describe('AddLawSheet', () => {
       return { ok: true, json: async () => [] };
     });
     const wrapper = mount(AddLawSheet);
-    await wrapper.vm.requestTrajectHarvest('BWBR0002399');
-    expect(wrapper.vm.harvestState.BWBR0002399).toBe('conflict');
+    await internals(wrapper).requestTrajectHarvest('BWBR0002399');
+    expect(internals(wrapper).harvestState.BWBR0002399).toBe('conflict');
     expect(wrapper.emitted('harvest-requested')).toBeUndefined();
   });
 
@@ -213,10 +255,10 @@ describe('AddLawSheet', () => {
     stubFetch({ searchLaws: [] });
     const wrapper = mount(AddLawSheet);
     await searchFor(wrapper, 'bwbr0002399');
-    expect(wrapper.vm.bwbIdQuery).toBe('BWBR0002399');
+    expect(internals(wrapper).bwbIdQuery).toBe('BWBR0002399');
 
     await searchFor(wrapper, 'wet op het voortgezet onderwijs');
-    expect(wrapper.vm.bwbIdQuery).toBe(null);
+    expect(internals(wrapper).bwbIdQuery).toBe(null);
   });
 
   it('toont één rij wanneer de externe zoeker het getypte BWB-id ook vindt', async () => {
@@ -232,14 +274,14 @@ describe('AddLawSheet', () => {
 
     const rows = wrapper.findAll('nldd-list-item[data-bwb-id="BWBR0002399"]');
     expect(rows).toHaveLength(1);
-    expect(rows[0].get('nldd-text-cell').attributes('text')).toBe('Voorbeeldwet extern');
+    expect(rows[0]!.get('nldd-text-cell').attributes('text')).toBe('Voorbeeldwet extern');
   });
 
   it('wisselt met de segmented control tussen zoeken en uploaden', async () => {
     const wrapper = mount(AddLawSheet);
     // Standaard staat de zoek-tab open; de upload-knop hoort er dan niet te zijn.
     expect(wrapper.find('[data-testid="add-law-upload"]').exists()).toBe(false);
-    wrapper.vm.mode = 'upload';
+    internals(wrapper).mode = 'upload';
     await nextTick();
     expect(wrapper.find('[data-testid="add-law-upload"]').exists()).toBe(true);
   });
@@ -249,8 +291,8 @@ describe('AddLawSheet', () => {
     // zodat de picker niet achter de sheet opent.
     const wrapper = mount(AddLawSheet);
     const hide = vi.fn();
-    wrapper.vm.$refs.sheetRef.hide = hide;
-    wrapper.vm.mode = 'upload';
+    internals(wrapper).$refs.sheetRef.hide = hide;
+    internals(wrapper).mode = 'upload';
     await nextTick();
 
     await wrapper.get('[data-testid="add-law-upload"]').trigger('click');

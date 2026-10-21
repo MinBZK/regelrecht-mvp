@@ -1,17 +1,21 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue';
 import { formatValue } from '../../utils/outputFormat';
 import { stepHasHighlights } from '../../lib/traceEdges';
+import type { TraceStep } from '../../lib/traceEdges';
 
-const props = defineProps({
-  steps: { type: Array, required: true },
-  currentStepIdx: { type: Number, required: true },
-  filter: { type: String, default: 'highlights' }, // 'highlights' | 'all'
-});
+const props = withDefaults(
+  defineProps<{
+    steps: TraceStep[];
+    currentStepIdx: number;
+    filter?: string; // 'highlights' | 'all'
+  }>(),
+  { filter: 'highlights' },
+);
 
-const emit = defineEmits(['select-step']);
+const emit = defineEmits<{ 'select-step': [idx: number] }>();
 
-const listEl = ref(null);
+const listEl = ref<HTMLElement | null>(null);
 
 // Tag each visible step with its index in the unfiltered `steps` array
 // so the template can read it directly - avoids an O(n) `steps.indexOf`
@@ -23,7 +27,7 @@ const visibleSteps = computed(() => {
   return entries.filter(({ step }) => stepHasHighlights(step));
 });
 
-function truncate(v) {
+function truncate(v: unknown): string {
   const s = formatValue(v);
   return s.length > 60 ? `${s.substring(0, 57)}…` : s;
 }

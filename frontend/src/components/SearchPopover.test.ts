@@ -1,8 +1,45 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import SearchPopover from './SearchPopover.vue';
 import { MIN_QUERY_LENGTH } from '../composables/useBwbSearch';
+import type { CorpusLaw } from '../composables/useCorpusLaws';
+
+/** The part of a Response apiFetch reads; the stubs return only this. */
+interface StubResponse {
+  ok: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+}
+type FetchStub = (url: string | URL | Request, init?: RequestInit) => Promise<StubResponse>;
+
+/** The stubbed global fetch, typed as the stub it is rather than as `fetch`. */
+const fetchMock = () => vi.mocked(fetch) as unknown as Mock<FetchStub>;
+
+/**
+ * Setup state the tests reach through `wrapper.vm`. Only `show` is exposed;
+ * test-utils proxies the rest of the setup state onto `vm`.
+ */
+interface SearchPopoverInternals {
+  search: string;
+  sortedLaws: CorpusLaw[];
+  searchFailed: boolean;
+  useCenteredPosition: boolean;
+  isAnchored: boolean;
+}
+const internals = (wrapper: VueWrapper) => wrapper.vm as unknown as SearchPopoverInternals;
+
+/** The (not upgraded, under happy-dom) popover element, with the members the tests replace. */
+interface PopoverStub {
+  show: () => void;
+  hide: () => void;
+  matches: (selector: string) => boolean;
+  reposition: () => unknown;
+  anchorElement: Element | null;
+}
+const popoverEl = (wrapper: VueWrapper) => wrapper.find('nldd-popover').element as PopoverStub;
 
 // SearchPopover queries the corpus server-side (`/corpus/laws?q=`) and orders
 // the response into a flat option list (private repo first). We drive it via
@@ -12,7 +49,7 @@ import { MIN_QUERY_LENGTH } from '../composables/useBwbSearch';
 // without a router. Default: no active traject → global /api/corpus URL. The
 // traject-scoped tests swap in a trajectRef per test (vi.hoisted so the
 // hoisted mock factory can reference it).
-const routeMock = vi.hoisted(() => ({ params: {} }));
+const routeMock = vi.hoisted((): { params: Record<string, string> } => ({ params: {} }));
 vi.mock('vue-router', () => ({
   useRoute: () => routeMock,
 }));
@@ -20,7 +57,7 @@ vi.mock('vue-router', () => ({
 // Central corpus (priority 2) listed before the private traject repo
 // (priority 0) to prove the sort order comes from source_priority, not
 // response order. Source name/law id are anonymized fixtures, not real repos.
-const LAWS = [
+const LAWS: CorpusLaw[] = [
   {
     law_id: 'besluit_zorgverzekering',
     source_id: 'central',
@@ -39,7 +76,7 @@ beforeEach(() => {
   routeMock.params = {};
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url) => {
+    vi.fn<FetchStub>(async (url) => {
       const u = String(url);
       if (u.includes('/auth/status')) return { ok: false, json: async () => ({}) };
       if (u.includes('/corpus/laws') && u.includes('q=')) {
@@ -56,7 +93,7 @@ const settle = () => new Promise((r) => setTimeout(r, 300));
 describe('SearchPopover server-side search', () => {
   it('orders corpus matches private repo (priority 0) first, source per row', async () => {
     const wrapper = mount(SearchPopover);
-    wrapper.vm.search = 'zorgverzekering';
+    internals(wrapper).search = 'zorgverzekering';
     await nextTick();
     await settle();
     await nextTick();
@@ -64,7 +101,7 @@ describe('SearchPopover server-side search', () => {
     // Flat option list sorted by source_priority: the private traject repo
     // (priority 0) sorts above the central corpus (priority 2). Each row keeps
     // its own source_name (shown as supporting-text in the listbox).
-    const laws = wrapper.vm.sortedLaws;
+    const laws = internals(wrapper).sortedLaws;
     expect(laws.map((l) => l.law_id)).toEqual([
       'besluit_zorgverzekering_example',
       'besluit_zorgverzekering',
@@ -77,25 +114,25 @@ describe('SearchPopover server-side search', () => {
 
   it('queries the backend with the q parameter (not a client-side filter)', async () => {
     const wrapper = mount(SearchPopover);
-    wrapper.vm.search = 'kieswet';
+    internals(wrapper).search = 'kieswet';
     await nextTick();
     await settle();
 
-    const urls = fetch.mock.calls.map((c) => String(c[0]));
+    const urls = fetchMock().mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes('/corpus/laws') && u.includes('q=kieswet'))).toBe(true);
   });
 
   it('debounces: a single query fires one corpus request', async () => {
     const wrapper = mount(SearchPopover);
-    wrapper.vm.search = 'z';
+    internals(wrapper).search = 'z';
     await nextTick();
-    wrapper.vm.search = 'zo';
+    internals(wrapper).search = 'zo';
     await nextTick();
-    wrapper.vm.search = 'zorg';
+    internals(wrapper).search = 'zorg';
     await nextTick();
     await settle();
 
-    const corpusCalls = fetch.mock.calls
+    const corpusCalls = fetchMock().mock.calls
       .map((c) => String(c[0]))
       .filter((u) => u.includes('/corpus/laws') && u.includes('q='));
     expect(corpusCalls).toHaveLength(1);
@@ -104,12 +141,12 @@ describe('SearchPopover server-side search', () => {
 
   it('clearing the query discards an in-flight corpus fetch (no stale results)', async () => {
     // Make the corpus fetch hang so we can clear the input mid-flight.
-    let resolveCorpus;
-    fetch.mockImplementation((url) => {
+    let resolveCorpus: (() => void) | undefined;
+    fetchMock().mockImplementation((url) => {
       const u = String(url);
       if (u.includes('/auth/status')) return Promise.resolve({ ok: false, json: async () => ({}) });
       if (u.includes('/corpus/laws') && u.includes('q=')) {
-        return new Promise((r) => {
+        return new Promise<StubResponse>((r) => {
           resolveCorpus = () => r({ ok: true, json: async () => LAWS });
         });
       }
@@ -117,28 +154,28 @@ describe('SearchPopover server-side search', () => {
     });
 
     const wrapper = mount(SearchPopover);
-    wrapper.vm.search = 'zorg';
+    internals(wrapper).search = 'zorg';
     await nextTick();
     await settle(); // debounce fires; the corpus fetch is now pending
 
     // Clear before the fetch resolves, then let the stale fetch settle.
-    wrapper.vm.search = '';
+    internals(wrapper).search = '';
     await nextTick();
-    resolveCorpus();
+    resolveCorpus!(); // set when the pending corpus fetch started
     await settle();
     await nextTick();
 
     // The cleared term's response must not repopulate the list, and no
     // wetten.overheid.nl search should have been fired for it.
-    expect(wrapper.vm.sortedLaws).toEqual([]);
-    const bwbCalls = fetch.mock.calls
+    expect(internals(wrapper).sortedLaws).toEqual([]);
+    const bwbCalls = fetchMock().mock.calls
       .map((c) => String(c[0]))
       .filter((u) => u.includes('/harvest/search'));
     expect(bwbCalls).toHaveLength(0);
   });
 
   it('a backend error surfaces as failed, not a cascade to the external fallback', async () => {
-    fetch.mockImplementation((url) => {
+    fetchMock().mockImplementation((url) => {
       const u = String(url);
       if (u.includes('/auth/status')) return Promise.resolve({ ok: false, json: async () => ({}) });
       if (u.includes('/corpus/laws') && u.includes('q=')) {
@@ -148,14 +185,14 @@ describe('SearchPopover server-side search', () => {
     });
 
     const wrapper = mount(SearchPopover);
-    wrapper.vm.search = 'zorg';
+    internals(wrapper).search = 'zorg';
     await nextTick();
     await settle();
     await nextTick();
 
-    expect(wrapper.vm.searchFailed).toBe(true);
-    expect(wrapper.vm.sortedLaws).toEqual([]);
-    const bwbCalls = fetch.mock.calls
+    expect(internals(wrapper).searchFailed).toBe(true);
+    expect(internals(wrapper).sortedLaws).toEqual([]);
+    const bwbCalls = fetchMock().mock.calls
       .map((c) => String(c[0]))
       .filter((u) => u.includes('/harvest/search'));
     expect(bwbCalls).toHaveLength(0);
@@ -173,14 +210,14 @@ describe('SearchPopover server-side search', () => {
 // Fictieve traject-ref (publiek testbestand, geen echte repo/traject-namen).
 const TRAJECT_REF = 'voorbeeld-abcd1234';
 
-async function searchFor(wrapper, term) {
-  wrapper.vm.search = term;
+async function searchFor(wrapper: VueWrapper, term: string) {
+  internals(wrapper).search = term;
   await nextTick();
   await settle();
   await nextTick();
 }
 
-function promoteButtons(wrapper) {
+function promoteButtons(wrapper: VueWrapper) {
   return wrapper
     .findAll('nldd-button')
     .filter((b) => b.attributes('text') === 'Toevoegen aan traject');
@@ -206,7 +243,8 @@ describe('SearchPopover zonder "Toevoegen aan traject" in zoekresultaten', () =>
     expect(promoteButtons(wrapper)).toHaveLength(0);
 
     const central = rows.find((r) => r.attributes('data-law-id') === 'besluit_zorgverzekering');
-    expect(central.get('nldd-text-cell').attributes('supporting-text')).toBe(
+    expect(central).toBeDefined();
+    expect(central!.get('nldd-text-cell').attributes('supporting-text')).toBe(
       'Centrale Regelrecht Corpus',
     );
   });
@@ -223,7 +261,7 @@ describe('SearchPopover zonder "Toevoegen aan traject" in zoekresultaten', () =>
 
     expect(wrapper.emitted('select-law')).toEqual([['besluit_zorgverzekering']]);
     expect(wrapper.emitted('promoted')).toBeUndefined();
-    const promoteCalls = fetch.mock.calls.filter(
+    const promoteCalls = fetchMock().mock.calls.filter(
       (c) => String(c[0]).includes('/promote') && c[1]?.method === 'POST',
     );
     expect(promoteCalls).toHaveLength(0);
@@ -237,7 +275,7 @@ describe('SearchPopover: tweede klik op de trigger sluit', () => {
   // en leek er niets te gebeuren.
   function mountMetPopoverStub() {
     const wrapper = mount(SearchPopover);
-    const el = wrapper.find('nldd-popover').element;
+    const el = popoverEl(wrapper);
     const state = { open: false };
     el.show = () => {
       state.open = true;
@@ -272,21 +310,21 @@ describe('SearchPopover volgt het breakpoint terwijl hij openstaat', () => {
   // md-geankerd paneel dat nog naar een knop wijst die inmiddels het brede
   // zoekveld is. Sluiten bij resize zou simpeler zijn maar gooit weg wat de
   // gebruiker aan het typen was.
-  function stubMatchMedia(breedte) {
-    const luisteraars = new Set();
-    vi.stubGlobal('matchMedia', (query) => {
+  function stubMatchMedia(breedte: { waarde: number }) {
+    const luisteraars = new Set<() => void>();
+    vi.stubGlobal('matchMedia', (query: string) => {
       const min = Number(/min-width:\s*(\d+)/.exec(query)?.[1] ?? 0);
       const max = Number(/max-width:\s*(\d+)/.exec(query)?.[1] ?? Infinity);
       const mql = {
         get matches() {
           return breedte.waarde >= min && breedte.waarde <= max;
         },
-        addEventListener: (_, fn) => luisteraars.add(fn),
-        removeEventListener: (_, fn) => luisteraars.delete(fn),
+        addEventListener: (_: string, fn: () => void) => luisteraars.add(fn),
+        removeEventListener: (_: string, fn: () => void) => luisteraars.delete(fn),
       };
       return mql;
     });
-    return { verander: (nieuw) => {
+    return { verander: (nieuw: number) => {
       breedte.waarde = nieuw;
       for (const fn of luisteraars) fn();
     } };
@@ -296,19 +334,19 @@ describe('SearchPopover volgt het breakpoint terwijl hij openstaat', () => {
     const breedte = { waarde: 1280 };
     const { verander } = stubMatchMedia(breedte);
     const wrapper = mount(SearchPopover);
-    const el = wrapper.find('nldd-popover').element;
+    const el = popoverEl(wrapper);
     el.show = () => {};
     el.matches = () => true;
     el.reposition = vi.fn();
 
     await wrapper.vm.show(document.createElement('button'));
-    expect(wrapper.vm.useCenteredPosition).toBe(true);
-    expect(wrapper.vm.isAnchored).toBe(false);
+    expect(internals(wrapper).useCenteredPosition).toBe(true);
+    expect(internals(wrapper).isAnchored).toBe(false);
 
     verander(768);
     await nextTick();
-    expect(wrapper.vm.useCenteredPosition).toBe(false);
-    expect(wrapper.vm.isAnchored).toBe(true);
+    expect(internals(wrapper).useCenteredPosition).toBe(false);
+    expect(internals(wrapper).isAnchored).toBe(true);
     expect(el.reposition).toHaveBeenCalled();
   });
 
@@ -318,16 +356,17 @@ describe('SearchPopover volgt het breakpoint terwijl hij openstaat', () => {
     // nul en parkeert Floating UI 'm linksboven.
     const verborgen = document.createElement('div');
     verborgen.setAttribute('data-search-trigger', '');
-    verborgen.getBoundingClientRect = () => ({ width: 0, height: 0 });
+    // Only width and height are read (visibleTrigger, syncToViewport).
+    verborgen.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
     const zichtbaar = document.createElement('div');
     zichtbaar.setAttribute('data-search-trigger', '');
-    zichtbaar.getBoundingClientRect = () => ({ width: 120, height: 40 });
+    zichtbaar.getBoundingClientRect = () => ({ width: 120, height: 40 }) as DOMRect;
     document.body.append(verborgen, zichtbaar);
 
     const breedte = { waarde: 1280 };
     const { verander } = stubMatchMedia(breedte);
     const wrapper = mount(SearchPopover);
-    const el = wrapper.find('nldd-popover').element;
+    const el = popoverEl(wrapper);
     const staat = { open: false };
     el.show = () => {
       staat.open = true;
@@ -350,7 +389,7 @@ describe('SearchPopover volgt het breakpoint terwijl hij openstaat', () => {
     const breedte = { waarde: 1280 };
     const { verander } = stubMatchMedia(breedte);
     const wrapper = mount(SearchPopover);
-    const el = wrapper.find('nldd-popover').element;
+    const el = popoverEl(wrapper);
     el.matches = () => false;
     el.reposition = vi.fn();
 
@@ -365,14 +404,14 @@ describe('SearchPopover volgt het breakpoint terwijl hij openstaat', () => {
 // bedoeling: de constante, de AddLawSheet-hint en de backend zeggen het alle
 // drie. Deze tests binden de tekst aan het gedrag.
 describe('SearchPopover: minimale zoeklengte', () => {
-  const WORDS = { 3: 'drie' };
+  const WORDS: Record<number, string> = { 3: 'drie' };
 
-  function emptyTexts(wrapper) {
+  function emptyTexts(wrapper: VueWrapper) {
     return wrapper.findAll('nldd-inline-dialog').map((d) => d.attributes('text'));
   }
 
   function corpusCalls() {
-    return fetch.mock.calls
+    return fetchMock().mock.calls
       .map(([u]) => String(u))
       .filter((u) => u.includes('/corpus/laws') && u.includes('q='));
   }

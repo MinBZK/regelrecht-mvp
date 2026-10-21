@@ -7,9 +7,10 @@ import AbsenceToggle from './AbsenceToggle.vue';
 // checking stores `null`, unchecking stores a blank (unknown), never a value.
 // nldd-* tags render as raw custom elements, so the change is driven by the
 // CustomEvent the real nldd-checkbox-field emits (detail.checked).
-const mountToggle = (props) => mount(AbsenceToggle, { props });
-const box = (w) => w.find('nldd-checkbox-field');
-const change = (w, checked) =>
+const mountToggle = (props: { value: unknown; disabled?: boolean }) => mount(AbsenceToggle, { props });
+type Wrapper = ReturnType<typeof mountToggle>;
+const box = (w: Wrapper) => w.find('nldd-checkbox-field');
+const change = (w: Wrapper, checked: boolean) =>
   box(w).element.dispatchEvent(new CustomEvent('change', { detail: { checked } }));
 
 describe('AbsenceToggle', () => {

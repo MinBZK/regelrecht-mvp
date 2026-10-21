@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils';
+import type { RouteLocationRaw } from 'vue-router';
 // De echte app-router, alleen voor `resolve` in de router-stub verderop: de
 // href van het Beoordelen-item hoort uit de route-definities van de app te
 // komen, niet uit een handgemaakte url.
@@ -25,15 +27,15 @@ beforeAll(() => {
 const apiFetch = vi.fn();
 vi.mock('@regelrecht/frontend-shared', async (importOriginal) => ({
   ...(await importOriginal()),
-  apiFetch: (...a) => apiFetch(...a),
+  apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
 
 // De pane vertaalt law_ids naar weergavenamen via useCorpusLaws; dat is de
 // tweede netwerkpoot (zelfde mock-vorm als useCorpusLaws.test.js).
 const apiFetchJson = vi.fn();
 vi.mock('../lib/apiFetch', () => ({
-  apiFetchJson: (...a) => apiFetchJson(...a),
-  apiFetch: (...a) => apiFetch(...a),
+  apiFetchJson: (...a: unknown[]) => apiFetchJson(...a),
+  apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
 
 // The component navigates on "Beoordelen" via vue-router; stub `push` so the
@@ -43,7 +45,7 @@ vi.mock('../lib/apiFetch', () => ({
 const pushMock = vi.fn();
 vi.mock('vue-router', async (importOriginal) => ({
   ...(await importOriginal()),
-  useRouter: () => ({ push: pushMock, resolve: (target) => appRouter.resolve(target) }),
+  useRouter: () => ({ push: pushMock, resolve: (target: RouteLocationRaw) => appRouter.resolve(target) }),
 }));
 
 const DOC_TASK = {
@@ -59,10 +61,23 @@ const LAW_TASK = {
   payload: { law_id: 'test_wet', traject_ref: 'traject-abcd1234' },
 };
 
+// Index into a list and fail loudly instead of reading through undefined.
+function at<T>(list: readonly T[], i: number): T {
+  const item = list[i];
+  if (item === undefined) throw new Error(`no item at index ${i}`);
+  return item;
+}
+
+// Narrow a `find()` result; throws (failing the test) when nothing matched.
+function found<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a match');
+  return value;
+}
+
 describe('TasksListPane', () => {
   // De sheet teleporteert naar body en blijft daar staan als de wrapper niet
   // wordt opgeruimd - dan vindt de volgende test de sheet van de vorige.
-  let mounted = [];
+  let mounted: VueWrapper[] = [];
   beforeEach(() => {
     vi.resetModules();
     apiFetch.mockReset();
@@ -79,7 +94,12 @@ describe('TasksListPane', () => {
   // useTasks is a module singleton; re-import dynamically after
   // resetModules() so each test starts from a clean slate (mirrors
   // useTasks.test.js).
-  async function mountPane(tasks, running = [], props = { categorie: 'alle' }) {
+  // Rows go into the mocked JSON response as-is, so they stay untyped here.
+  async function mountPane(
+    tasks: unknown[],
+    running: unknown[] = [],
+    props: { categorie?: string; lawId?: string } = { categorie: 'alle' },
+  ) {
     apiFetch.mockResolvedValue({
       status: 200,
       json: async () => ({ tasks, open_count: tasks.length, running }),
@@ -109,18 +129,18 @@ describe('TasksListPane', () => {
 
   // De acties zitten achter één Acties-menu per rij; `select` is het event dat
   // nldd-menu-item vuurt.
-  function menuItems(wrapper) {
+  function menuItems(wrapper: VueWrapper) {
     return wrapper.findAll('nldd-menu-item');
   }
-  function itemLabels(wrapper) {
+  function itemLabels(wrapper: VueWrapper) {
     return menuItems(wrapper).map((i) => i.attributes('text'));
   }
-  function findItem(wrapper, text) {
+  function findItem(wrapper: VueWrapper, text: string) {
     const item = menuItems(wrapper).find((i) => i.attributes('text') === text);
     if (!item) throw new Error(`Geen menu-item "${text}" - wel: ${itemLabels(wrapper).join(', ')}`);
     return item;
   }
-  async function selectItem(wrapper, text) {
+  async function selectItem(wrapper: VueWrapper, text: string) {
     await findItem(wrapper, text).trigger('select');
   }
 
@@ -131,7 +151,7 @@ describe('TasksListPane', () => {
   // deze test niet geladen), dus staat dat "binnenwerk" als tijdelijke
   // kindnode die het select-event vuurt - alleen zo loopt het select-pad écht
   // tussen beide click-fases door.
-  function clickItem(item, init = {}) {
+  function clickItem(item: DOMWrapper<Element>, init: MouseEventInit = {}) {
     const inner = document.createElement('span');
     item.element.appendChild(inner);
     inner.addEventListener('click', () => {
@@ -148,13 +168,13 @@ describe('TasksListPane', () => {
     expect(wrapper.findAll('nldd-button')).toHaveLength(0);
     const btns = wrapper.findAll('nldd-icon-button');
     expect(btns).toHaveLength(2);
-    expect(btns[0].attributes('text')).toBe('Acties');
+    expect(at(btns, 0).attributes('text')).toBe('Acties');
     // Geen `expandable`: dat zou nog een chevron naast het more-icoon zetten.
-    expect(btns[0].attributes('icon')).toBe('more');
+    expect(at(btns, 0).attributes('icon')).toBe('more');
     // Het menu zit in de popup-slot van de knop, die het daarmee zelf ankert
     // en togglet. Sinds design-system 0.8.76 volgt aria-haspopup daaruit, dus
     // die staat niet meer als popup-type in de markup.
-    expect(btns[0].find('nldd-menu[slot="popup"]').exists()).toBe(true);
+    expect(at(btns, 0).find('nldd-menu[slot="popup"]').exists()).toBe(true);
   });
 
   const FAILED_TASK = {
@@ -184,7 +204,11 @@ describe('TasksListPane', () => {
   it('zet de foutmelding in de details-sheet, geopend via "Toon details"', async () => {
     const wrapper = await mountPane([FAILED_TASK]);
     // De sheet is naar body geteleporteerd, dus buiten de wrapper zoeken.
-    const sheet = () => document.body.querySelector('nldd-sheet');
+    const sheet = () => {
+      const el = document.body.querySelector('nldd-sheet');
+      if (!el) throw new Error('nldd-sheet not in the document');
+      return el;
+    };
     expect(sheet().textContent).not.toContain('Foutmelding');
     expect(sheetShown).toBe(false);
 
@@ -384,14 +408,14 @@ describe('TasksListPane', () => {
     const wrapper = await mountPane([DOC_TASK, LAW_TASK], [], { categorie: 'werkdocumenten' });
     const cells = wrapper.findAll('nldd-text-cell');
     expect(cells).toHaveLength(1);
-    expect(cells[0].attributes('text')).toBe('Beoordeel werkdocument bijv-rapport.md');
+    expect(at(cells, 0).attributes('text')).toBe('Beoordeel werkdocument bijv-rapport.md');
   });
 
   it('filtert op de wet-context', async () => {
     const wrapper = await mountPane([DOC_TASK, LAW_TASK], [], { categorie: 'wet' });
     const cells = wrapper.findAll('nldd-text-cell');
     expect(cells).toHaveLength(1);
-    expect(cells[0].attributes('text')).toBe('Beoordeel verrijking van Test Wet');
+    expect(at(cells, 0).attributes('text')).toBe('Beoordeel verrijking van Test Wet');
   });
 
   it('filtert op een individuele wet', async () => {
@@ -440,7 +464,7 @@ describe('TasksListPane', () => {
     });
     const indicators = wrapper.findAll('nldd-activity-indicator');
     expect(indicators).toHaveLength(1);
-    expect(indicators[0].attributes('text')).toBe('Wachten op verrijking van Test Wet');
+    expect(at(indicators, 0).attributes('text')).toBe('Wachten op verrijking van Test Wet');
     expect(wrapper.find('nldd-inline-dialog').exists()).toBe(false);
   });
 
@@ -467,7 +491,7 @@ describe('TasksListPane', () => {
     );
     const indicators = wrapper.findAll('nldd-activity-indicator');
     expect(indicators).toHaveLength(1);
-    expect(indicators[0].attributes('text')).toBe('Wachten op conversie van rapport.md');
+    expect(at(indicators, 0).attributes('text')).toBe('Wachten op conversie van rapport.md');
   });
 
   it('toont onder wachten een eigen lege staat, niet die van de takenlijst', async () => {
@@ -571,16 +595,16 @@ describe('TasksListPane', () => {
     await selectItem(wrapper, 'Bekijk document');
     // Emit i.p.v. navigeren: LibraryView zet viewingJobPath vóór de navigatie,
     // zodat de job-weergave deterministisch verschijnt (geen 404/mislukt-race).
-    expect(wrapper.emitted('view-job')[0]).toEqual(['nota.md']);
+    expect(wrapper.emitted('view-job')?.[0]).toEqual(['nota.md']);
     expect(pushMock).not.toHaveBeenCalled();
 
     // Annuleren gooit de job én de bron-upload weg - dat mag niet lezen als een
     // gewone actie naast "Bekijk document".
-    const annuleer = menuItems(wrapper).find((i) => i.attributes('text') === 'Annuleer conversie');
+    const annuleer = found(menuItems(wrapper).find((i) => i.attributes('text') === 'Annuleer conversie'));
     expect(annuleer.attributes('variant')).toBe('destructive');
 
     await selectItem(wrapper, 'Annuleer conversie');
-    expect(wrapper.emitted('cancel-job')[0]).toEqual([convertJob]);
+    expect(wrapper.emitted('cancel-job')?.[0]).toEqual([convertJob]);
   });
 
   // Annuleren bestaat alleen voor conversies, dus zonder dit zou een lopende

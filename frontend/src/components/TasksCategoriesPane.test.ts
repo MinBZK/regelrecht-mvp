@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 
 // useTasks' network leg - same pattern as TasksListPane.test.js.
 const apiFetch = vi.fn();
-vi.mock('@regelrecht/frontend-shared', () => ({ apiFetch: (...a) => apiFetch(...a) }));
+vi.mock('@regelrecht/frontend-shared', () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
 
 // useCorpusLaws' network leg: the pane resolves law_ids to display names
 // through it (same mock shape as useCorpusLaws.test.js).
 const apiFetchJson = vi.fn();
 vi.mock('../lib/apiFetch', () => ({
-  apiFetchJson: (...a) => apiFetchJson(...a),
-  apiFetch: (...a) => apiFetch(...a),
+  apiFetchJson: (...a: unknown[]) => apiFetchJson(...a),
+  apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
 
 const LAW_TASK = {
@@ -32,6 +33,19 @@ const DOC_TASK = {
   payload: { kind: 'document', traject_ref: 't-1', target_path: 'mvt.md' },
 };
 
+// Index into a list and fail loudly instead of reading through undefined.
+function at<T>(list: readonly T[], i: number): T {
+  const item = list[i];
+  if (item === undefined) throw new Error(`no item at index ${i}`);
+  return item;
+}
+
+// Narrow a `find()` result; throws (failing the test) when nothing matched.
+function found<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a match');
+  return value;
+}
+
 describe('TasksCategoriesPane', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -39,7 +53,12 @@ describe('TasksCategoriesPane', () => {
     apiFetchJson.mockReset();
   });
 
-  async function mountPane(tasks, running = [], props = {}) {
+  // Rows go into the mocked JSON response as-is, so they stay untyped here.
+  async function mountPane(
+    tasks: unknown[],
+    running: unknown[] = [],
+    props: { categorie?: string; lawId?: string } = {},
+  ) {
     apiFetch.mockResolvedValue({
       status: 200,
       json: async () => ({ tasks, open_count: tasks.length, running }),
@@ -60,13 +79,13 @@ describe('TasksCategoriesPane', () => {
 
   // De labels: alleen de cellen zonder color, want de aantallen zijn óók
   // text-cells (secondary).
-  function labelsOf(wrapper) {
+  function labelsOf(wrapper: VueWrapper) {
     return wrapper
       .findAll('nldd-text-cell')
       .filter((c) => c.attributes('color') === undefined)
       .map((c) => c.attributes('text'));
   }
-  function countsOf(wrapper) {
+  function countsOf(wrapper: VueWrapper) {
     return wrapper
       .findAll('nldd-text-cell')
       .filter((c) => c.attributes('color') === 'secondary')
@@ -114,9 +133,9 @@ describe('TasksCategoriesPane', () => {
     // Prioriteit 1 (de mislukte), Alle taken 3, Werkdocumenten 1, dan de twee
     // wet-contexten (1 elk). Wachten op heeft geen aantal: niets loopt.
     expect(countsOf(wrapper)).toEqual(['1', '3', '1', '1', '1']);
-    const first = wrapper
-      .findAll('nldd-text-cell')
-      .find((c) => c.attributes('color') === 'secondary');
+    const first = found(
+      wrapper.findAll('nldd-text-cell').find((c) => c.attributes('color') === 'secondary'),
+    );
     expect(first.attributes('horizontal-alignment')).toBe('right');
   });
 
@@ -219,7 +238,7 @@ describe('TasksCategoriesPane', () => {
     const wrapper = await mountPane([DOC_TASK], [], { categorie: 'werkdocumenten' });
     const current = wrapper.findAll('nldd-list-item').filter((i) => i.attributes('current') !== undefined);
     expect(current).toHaveLength(1);
-    expect(current[0].get('nldd-text-cell').attributes('text')).toBe('Werkdocumenten');
+    expect(at(current, 0).get('nldd-text-cell').attributes('text')).toBe('Werkdocumenten');
   });
 
   it('licht bij een wet-context alleen die ene wet op', async () => {
@@ -229,7 +248,7 @@ describe('TasksCategoriesPane', () => {
     });
     const current = wrapper.findAll('nldd-list-item').filter((i) => i.attributes('current') !== undefined);
     expect(current).toHaveLength(1);
-    expect(current[0].get('nldd-text-cell').attributes('text')).toBe('Wet op de zorgtoeslag');
+    expect(at(current, 0).get('nldd-text-cell').attributes('text')).toBe('Wet op de zorgtoeslag');
   });
 
   it('emit de gekozen categorie', async () => {
@@ -238,17 +257,17 @@ describe('TasksCategoriesPane', () => {
       { job_id: 'j1', job_type: 'enrich', law_id: 'kieswet' },
     ]);
     const items = wrapper.findAll('nldd-list-item');
-    await items[0].trigger('click');
-    expect(wrapper.emitted('select')[0]).toEqual([{ categorie: 'prioriteit', lawId: null }]);
-    await items[2].trigger('click');
-    expect(wrapper.emitted('select')[1]).toEqual([{ categorie: 'alle', lawId: null }]);
+    await at(items, 0).trigger('click');
+    expect(wrapper.emitted('select')?.[0]).toEqual([{ categorie: 'prioriteit', lawId: null }]);
+    await at(items, 2).trigger('click');
+    expect(wrapper.emitted('select')?.[1]).toEqual([{ categorie: 'alle', lawId: null }]);
   });
 
   it('emit een wet-context met haar law_id', async () => {
     const wrapper = await mountPane([LAW_TASK]);
     const items = wrapper.findAll('nldd-list-item');
-    await items[items.length - 1].trigger('click');
-    expect(wrapper.emitted('select')[0]).toEqual([
+    await at(items, items.length - 1).trigger('click');
+    expect(wrapper.emitted('select')?.[0]).toEqual([
       { categorie: 'wet', lawId: 'wet_op_de_zorgtoeslag' },
     ]);
   });

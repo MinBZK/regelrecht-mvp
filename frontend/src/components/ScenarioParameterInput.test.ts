@@ -6,18 +6,22 @@ import ScenarioParameterInput from './ScenarioParameterInput.vue';
 // so we drive the component by dispatching the CustomEvents the real NDD
 // components emit (detail.checked / detail.value) and assert the typed value
 // the component emits via `update`.
-function mountInput(props) {
+type InputProps = InstanceType<typeof ScenarioParameterInput>['$props'];
+
+function mountInput(props: InputProps) {
   return mount(ScenarioParameterInput, { attachTo: document.body, props });
 }
 
-function lastUpdate(wrapper) {
-  const events = wrapper.emitted('update');
-  return events[events.length - 1][0];
+function lastUpdate(wrapper: ReturnType<typeof mountInput>): unknown {
+  const events = wrapper.emitted<[unknown]>('update');
+  if (!events?.length) throw new Error('no update event emitted');
+  // Non-empty, checked above.
+  return events[events.length - 1]![0];
 }
 
 describe('ScenarioParameterInput', () => {
   describe('control selection per datatype', () => {
-    const cases = [
+    const cases: [string, string][] = [
       ['boolean', 'nldd-switch-field'],
       ['number', 'nldd-number-field'],
       ['amount', 'nldd-number-field'],

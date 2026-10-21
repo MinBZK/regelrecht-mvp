@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * TasksSidebarItem - het "Taken"-item in de primary sidebar van Home, met
  * badge. Eigen component zodat `useTasks()` (start de gedeelde 30s-poll bij de
@@ -18,9 +18,7 @@ import { computed } from 'vue';
 import { useTasks } from '../composables/useTasks';
 import { isPrioriteit } from '../lib/taskCategories';
 
-defineProps({
-  current: { type: Boolean, default: false },
-});
+withDefaults(defineProps<{ current?: boolean }>(), { current: false });
 
 const { tasks } = useTasks();
 

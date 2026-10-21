@@ -1,20 +1,35 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { buildOperationTree } from '../utils/operationTree';
-import OperationSettings from './OperationSettings.vue';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import { buildOperationTree, type OperationNode, type OperationTreeRow } from '../utils/operationTree';
+import OperationSettings, { type OperationSettingsArticle } from './OperationSettings.vue';
 
-const props = defineProps({
-  action: { type: Object, default: null },
-  article: { type: Object, default: null },
-  editable: { type: Boolean, default: false },
+/** An execution action: an operation node (or a `value`) plus its output name. */
+interface SheetAction extends Partial<OperationNode> {
+  output?: string;
+}
+
+const props = withDefaults(defineProps<{
+  action?: SheetAction | null;
+  article?: OperationSettingsArticle | null;
+  editable?: boolean;
   /** A freshly added action - Save is always offered (you opened the
    *  sheet to create it), regardless of the dirty snapshot. */
-  isNew: { type: Boolean, default: false },
+  isNew?: boolean;
+}>(), {
+  action: null,
+  article: null,
+  editable: false,
+  isNew: false,
 });
 
-const emit = defineEmits(['close', 'save', 'edit']);
+const emit = defineEmits<{
+  close: [];
+  save: [];
+  edit: [];
+}>();
 
-const sheetEl = ref(null);
+const sheetEl = ref<NLDDSheet | null>(null);
 
 const operationTree = computed(() => props.action ? buildOperationTree(props.action) : []);
 
@@ -81,17 +96,26 @@ const parentOperations = computed(() => {
   );
 });
 
-function selectOperation(op) {
+function selectOperation(op: OperationTreeRow) {
   const idx = operationTree.value.indexOf(op);
   if (idx >= 0) selectedOpIndex.value = idx;
 }
 
-function selectOperationByNode(node) {
+function selectOperationByNode(node: OperationNode) {
   const idx = operationTree.value.findIndex(op => op.node === node);
   if (idx >= 0) selectedOpIndex.value = idx;
 }
 
-function handleKeydown(e) {
+// The output field only renders while an action is open (directly, or via
+// directValue, which is null without one), so `action` is set here.
+function onOutputInput(event: Event) {
+  const action = props.action!;
+  const target = event.target as { value?: string } | null;
+  const detail = (event as CustomEvent<{ value?: string } | undefined>).detail;
+  action.output = target?.value ?? detail?.value ?? action.output;
+}
+
+function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && props.action) {
     emit('close');
   }
@@ -160,7 +184,7 @@ onUnmounted(() => {
               <nldd-text-cell text="Output" width="120px"></nldd-text-cell>
               <nldd-spacer-cell size="12"></nldd-spacer-cell>
               <nldd-cell>
-                <nldd-text-field size="md" :value="action.output" @input="action.output = $event.target?.value ?? $event.detail?.value ?? action.output" data-testid="action-output-field"></nldd-text-field>
+                <nldd-text-field size="md" :value="action?.output" @input="onOutputInput" data-testid="action-output-field"></nldd-text-field>
               </nldd-cell>
             </nldd-list-item>
           </template>
@@ -175,9 +199,9 @@ onUnmounted(() => {
             <nldd-text-cell text="Output" :width="editable ? '120px' : 'fit-content'"></nldd-text-cell>
             <nldd-spacer-cell size="12"></nldd-spacer-cell>
             <nldd-cell v-if="editable">
-              <nldd-text-field size="md" :value="action.output" @input="action.output = $event.target?.value ?? $event.detail?.value ?? action.output" data-testid="action-output-field"></nldd-text-field>
+              <nldd-text-field size="md" :value="action?.output" @input="onOutputInput" data-testid="action-output-field"></nldd-text-field>
             </nldd-cell>
-            <nldd-text-cell v-else horizontal-alignment="right" :text="action.output || '(leeg)'"></nldd-text-cell>
+            <nldd-text-cell v-else horizontal-alignment="right" :text="action?.output || '(leeg)'"></nldd-text-cell>
           </nldd-list-item>
           <nldd-list-item size="md">
             <nldd-text-cell text="Waarde" width="fit-content"></nldd-text-cell>

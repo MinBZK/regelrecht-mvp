@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import ScenarioForm from './ScenarioForm.vue';
 import DataSourceTable from './DataSourceTable.vue';
 import ScenarioParameterInput from './ScenarioParameterInput.vue';
+import type { EditorEngine } from '../composables/useEngine';
 
 // A collection-valued parameter (RFC-016) as formMapper hands it to the form:
 // records plus the column list.
@@ -18,10 +19,18 @@ const setup = () => ({
 const fakeEngine = () => ({
   clearDataSources: vi.fn(),
   registerDataSource: vi.fn(),
-  executeWithTrace: vi.fn(() => ({ outputs: { aantal: 2 }, trace_text: '' })),
+  executeWithTrace: vi.fn<EditorEngine['executeWithTrace']>(() => ({ outputs: { aantal: 2 }, trace_text: '' })),
 });
+type FakeEngine = ReturnType<typeof fakeEngine>;
 
-const mountForm = (engine = null) =>
+// The parameters of the engine's executeWithTrace call at `index` (default: the last).
+function paramsOf(engine: FakeEngine, index = -1): Record<string, unknown> {
+  const call = engine.executeWithTrace.mock.calls.at(index);
+  if (!call) throw new Error('executeWithTrace was not called');
+  return call[2];
+}
+
+const mountForm = (engine: FakeEngine | null = null) =>
   mount(ScenarioForm, {
     props: {
       scenario: { assertions: [], execution: { outputName: 'aantal', lawId: 'participatiewet' } },
@@ -67,14 +76,14 @@ describe('ScenarioForm collection parameters', () => {
     expect(table.props('keyField')).toBeNull();
     expect(table.props('fields').map((f) => f.name)).toEqual(['leeftijd']);
     expect(table.props('modelValue')).toEqual([{ _id: 'init-0', leeftijd: 25 }, { _id: 'init-1', leeftijd: 19 }]);
-    expect(w.emitted('drill-change').at(-1)).toEqual(['medebewoners']);
+    expect(w.emitted('drill-change')?.at(-1)).toEqual(['medebewoners']);
   });
 
   it('passes the collection to the engine as an array of typed records', () => {
     const engine = fakeEngine();
     const w = mountForm(engine);
     w.vm.execute();
-    const params = engine.executeWithTrace.mock.calls[0][2];
+    const params = paramsOf(engine, 0);
     expect(params.leeftijd).toBe(35);
     expect(params.medebewoners).toEqual([{ leeftijd: 25 }, { leeftijd: 19 }]);
   });
@@ -88,8 +97,10 @@ describe('ScenarioForm collection parameters', () => {
     w.findComponent(DataSourceTable).vm.$emit('update:modelValue', [{ _id: 7, leeftijd: '' }]);
     await w.vm.$nextTick();
     w.vm.execute();
-    expect(engine.executeWithTrace.mock.calls.at(-1)[2].medebewoners).toEqual([{}]);
-    expect(Object.hasOwn(engine.executeWithTrace.mock.calls.at(-1)[2].medebewoners[0], 'leeftijd')).toBe(false);
+    const medebewoners = paramsOf(engine).medebewoners as Record<string, unknown>[];
+    expect(medebewoners).toEqual([{}]);
+    // One element, asserted on the line above.
+    expect(Object.hasOwn(medebewoners[0]!, 'leeftijd')).toBe(false);
   });
 
   it('passes an emptied collection as an empty array, not as a missing input', async () => {
@@ -99,7 +110,7 @@ describe('ScenarioForm collection parameters', () => {
     w.findComponent(DataSourceTable).vm.$emit('update:modelValue', []);
     await w.vm.$nextTick();
     w.vm.execute();
-    const params = engine.executeWithTrace.mock.calls.at(-1)[2];
+    const params = paramsOf(engine);
     expect(params.medebewoners).toEqual([]);
   });
 

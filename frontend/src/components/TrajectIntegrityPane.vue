@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // Structuurrapport van een traject: wat er mis is met de inrichting van het
 // traject-corpus, en per bevinding wat je eraan doet.
 //
@@ -13,16 +13,20 @@
 // gepusht wordt, en dan weet de gebruiker dat zelf.
 import { onMounted, watch } from 'vue';
 import { SEVERITY_ICONS, useTrajectIntegrity } from '../composables/useTrajectIntegrity';
+import type { IntegrityReport } from '../composables/useTrajectIntegrity';
 import { paneChromeVisible } from '../constants';
 
-const props = defineProps({
-  /** Traject-ref uit de URL (`{slug}-{8hex}`). */
-  trajectRef: { type: String, default: null },
-});
+const props = withDefaults(
+  defineProps<{
+    /** Traject-ref uit de URL (`{slug}-{8hex}`). */
+    trajectRef?: string | null;
+  }>(),
+  { trajectRef: null },
+);
 
 const { report, groups, summary, hasFindings, loading, error, load } = useTrajectIntegrity();
 
-function reload() {
+function reload(): void {
   load(props.trajectRef);
 }
 onMounted(reload);
@@ -32,11 +36,16 @@ watch(() => props.trajectRef, reload);
  * Samenvattende regel onder de titel: hoeveel is er nagekeken. Zonder dit
  * leest "Geen problemen gevonden" als "er is niets gecontroleerd".
  */
-function scopeSummary(r) {
+function scopeSummary(r: IntegrityReport | null): string | null {
   if (!r) return null;
   const laws = `${r.checked_laws} ${r.checked_laws === 1 ? 'versie' : 'versies'}`;
   const scenarios = `${r.checked_scenarios} ${r.checked_scenarios === 1 ? 'scenario' : "scenario's"}`;
   return `${laws} en ${scenarios} nagekeken in de eigen repo van dit traject.`;
+}
+
+// `error` holds whatever load() caught; read its message the way the template did.
+function errorMessage(e: unknown): string | undefined {
+  return (e as { message?: string } | null)?.message;
 }
 </script>
 
@@ -75,7 +84,7 @@ function scopeSummary(r) {
       v-else-if="error"
       variant="alert"
       text="Structuurcontrole niet gelukt"
-      :supporting-text="error.message || 'De gegevens konden niet worden opgehaald.'"
+      :supporting-text="errorMessage(error) || 'De gegevens konden niet worden opgehaald.'"
     >
       <nldd-button slot="actions" appearance="primary" text="Probeer opnieuw" @click="reload"></nldd-button>
     </nldd-inline-dialog>

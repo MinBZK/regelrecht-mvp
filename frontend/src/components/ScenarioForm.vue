@@ -1,49 +1,112 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, useId } from 'vue';
 import { quotedValue, tableCellValue } from '../gherkin/actions';
 import { isCollectionValue, collectionColumns, formCollectionToState } from '../gherkin/formMapper';
+import type { CollectionRecord, EditedValues, FormParameter, FormScenario, FormSetup } from '../gherkin/formMapper';
+import type { EditorEngine } from '../composables/useEngine';
+import type { Expectation } from '../utils/outputFormat';
 import { formatValue, formatMissing, normalizeForCompare, matchStatus as _matchStatus, humanize, expectationsFromAssertions } from '../utils/outputFormat';
 import { NOT_NULLABLE_MESSAGE, nullAllowed, isNullText } from '../utils/nullability';
 import DataSourceTable from './DataSourceTable.vue';
 import ScenarioParameterInput from './ScenarioParameterInput.vue';
 import AbsenceToggle from './AbsenceToggle.vue';
 
-const props = defineProps({
-  /** Scenario object from mapFeatureToForm() */
-  scenario: { type: Object, required: true },
-  /** Merged setup from getEffectiveSetup() */
-  setup: { type: Object, required: true },
+/** A field's declared datatype, amount unit and (when known) nullability. */
+interface DeclaredField {
+  type: string;
+  unit: string | null;
+  nullable?: boolean;
+}
+
+/** A field as the data-source table types its column. */
+interface TypedField {
+  name: string;
+  type: string;
+  unit: string | null;
+  nullable: boolean | undefined;
+}
+
+/** A table row as the form edits it: an `_id` plus one cell per column. */
+type EditedRow = Record<string, unknown>;
+
+/** A data source as the form edits it (DataSourceTable format). */
+interface EditedDataSource {
+  sourceName: string;
+  keyField: string;
+  fields: TypedField[];
+  rows: EditedRow[];
+}
+
+/** A collection parameter as the form edits it (DataSourceTable format, no key). */
+interface EditedCollection {
+  name: string;
+  columns: { name: string; type: string; unit: string | null }[];
+  rows: EditedRow[];
+}
+
+/** The fields of an executeWithTrace() result read here and by ScenarioBuilder. */
+export interface TraceResult {
+  outputs?: Record<string, unknown>;
+  trace_text?: string | null;
+}
+
+/** What getExecutionData() hands the parent. */
+export interface ExecutionData {
+  result: TraceResult | null;
+  traceText: unknown;
+  error: unknown;
+  running: boolean;
+  expectations: Record<string, Expectation>;
+  outputName: string | null;
+}
+
+const props = withDefaults(defineProps<{
+  /** Scenario object from mapFeatureToForm() (only the fields read here) */
+  scenario: Pick<FormScenario, 'assertions'> & { execution?: FormScenario['execution'] };
+  /** Merged setup from getEffectiveSetup() (only the fields read here) */
+  setup: Pick<FormSetup, 'calculationDate' | 'parameters' | 'dataSources'>;
   /** WASM engine instance */
-  engine: { type: Object, default: null },
+  engine?: Pick<EditorEngine, 'clearDataSources' | 'registerDataSource' | 'executeWithTrace'> | null;
   /** Engine ready state */
-  ready: { type: Boolean, default: false },
+  ready?: boolean;
   /** Law ID for execution */
-  lawId: { type: String, required: true },
+  lawId: string;
   /** Article mapping: { outputToArticle, inputToArticle, paramToArticle } */
-  articleMap: { type: Object, default: null },
+  articleMap?: { paramToArticle?: ReadonlyMap<string | undefined, string> } | null;
   /** Datatype mapping from buildTypeMap(): name -> { type, unit, nullable } */
-  typeMap: { type: Object, default: null },
+  typeMap?: ReadonlyMap<string, DeclaredField> | null;
   /** External data-source field types from buildExternalFieldTypeMap(): name -> { type, unit, nullable } */
-  externalFieldTypeMap: { type: Object, default: null },
+  externalFieldTypeMap?: ReadonlyMap<string, DeclaredField> | null;
+}>(), {
+  engine: null,
+  ready: false,
+  articleMap: null,
+  typeMap: null,
+  externalFieldTypeMap: null,
 });
 
 // Resolve a parameter's declared datatype/unit; default to a plain text field
 // for params not found in the map (background-only params, articles without
 // machine_readable). Such a parameter has no `nullable` either: no
 // declaration, no claim (utils/nullability.js).
-function paramMeta(name) {
+function paramMeta(name: string): DeclaredField {
   return props.typeMap?.get(name) ?? { type: 'string', unit: null };
 }
 
 // Resolve an external data-source column's datatype/unit/nullability from the
 // dependency graph; default to a plain text field, nullability unknown, for
 // columns not found in the map.
-function typeField(name) {
+function typeField(name: string): TypedField {
   const meta = props.externalFieldTypeMap?.get(name);
   return { name, type: meta?.type ?? 'string', unit: meta?.unit ?? null, nullable: meta?.nullable };
 }
 
-const emit = defineEmits(['show-details', 'executed', 'change', 'drill-change']);
+const emit = defineEmits<{
+  'show-details': [];
+  executed: [data: ExecutionData];
+  change: [];
+  'drill-change': [name: string | null];
+}>();
 
 // --- Form state (initialized from scenario setup) ---
 const calculationDate = ref(props.setup.calculationDate || new Date().toISOString().slice(0, 10));
@@ -54,7 +117,7 @@ const calculationDate = ref(props.setup.calculationDate || new Date().toISOStrin
 // the control loop below never meets an array.
 const scalarParams = () => (props.setup.parameters || []).filter((p) => !isCollectionValue(p.value));
 
-const parameterValues = ref(
+const parameterValues = ref<Record<string, unknown>>(
   Object.fromEntries(scalarParams().map((p) => [p.name, p.value ?? ''])),
 );
 
@@ -66,10 +129,10 @@ const parameterValues = ref(
 // keeps showing what was typed, so the message points at the text it is
 // about. A `null` that is already there (read from the feature file) is
 // marked the same way but kept: it came from the file, a human decides.
-const rejectedNullParams = ref(new Set());
+const rejectedNullParams = ref(new Set<string>());
 const paramErrorIdPrefix = useId();
 
-function paramNullAllowed(name) {
+function paramNullAllowed(name: string) {
   return nullAllowed(paramMeta(name));
 }
 // The "afwezig" checkbox (AbsenceToggle) is the explicit way to state an
@@ -78,10 +141,10 @@ function paramNullAllowed(name) {
 // cannot show it. Not offered on `false` (refused anyway) nor on an unknown
 // declaration (a text field, where typing `null` already works; a control
 // there would read as a claim the form cannot make).
-function paramOffersAbsenceToggle(name) {
+function paramOffersAbsenceToggle(name: string) {
   return paramMeta(name).nullable === true;
 }
-function updateParameter(name, value) {
+function updateParameter(name: string, value: unknown) {
   if (isNullText(value) && !paramNullAllowed(name)) {
     rejectedNullParams.value.add(name);
     parameterValues.value = { ...parameterValues.value, [name]: '' };
@@ -91,13 +154,13 @@ function updateParameter(name, value) {
   }
   emit('change');
 }
-function paramNullInvalid(name, value) {
+function paramNullInvalid(name: string, value: unknown) {
   return rejectedNullParams.value.has(name) || (isNullText(value) && !paramNullAllowed(name));
 }
-function paramErrorId(name) {
+function paramErrorId(name: string) {
   return `${paramErrorIdPrefix}-${name}`;
 }
-function paramControlId(name) {
+function paramControlId(name: string) {
   return `${paramErrorId(name)}-control`;
 }
 
@@ -109,22 +172,23 @@ function paramControlId(name) {
 // The setup is the merged background plus scenario list, so a scenario that
 // overrides a background collection lists the name twice. Last wins, the
 // same rule `Object.fromEntries` applies to the scalars above.
-function initCollections() {
-  const byName = new Map();
+function initCollections(): EditedCollection[] {
+  const byName = new Map<string, FormParameter>();
   for (const p of props.setup.parameters || []) {
     if (isCollectionValue(p.value)) byName.set(p.name, p);
   }
   return [...byName.values()].map((p) => ({
     name: p.name,
     columns: collectionColumns(p).map((c) => ({ name: c, type: 'string', unit: null })),
-    rows: p.value.map((record, i) => ({ _id: `init-${i}`, ...record })),
+    // Only collection-valued parameters were put in `byName`.
+    rows: (p.value as CollectionRecord[]).map((record, i) => ({ _id: `init-${i}`, ...record })),
   }));
 }
 
-const collections = ref(initCollections());
+const collections = ref<EditedCollection[]>(initCollections());
 
 // Convert scenario data sources to DataSourceTable format
-function initDataSources() {
+function initDataSources(): EditedDataSource[] {
   return (props.setup.dataSources || []).map((ds) => ({
     sourceName: ds.sourceName,
     keyField: ds.keyField,
@@ -132,24 +196,24 @@ function initDataSources() {
     // A string id: DataSourceTable.addRow numbers new rows from a counter
     // of its own, and an integer here would collide with it in `:key`.
     rows: ds.rows.map((row, i) => {
-      const obj = { _id: `init-${i}` };
+      const obj: EditedRow = { _id: `init-${i}` };
       ds.headers.forEach((h, j) => { obj[h] = row[j] ?? ''; });
       return obj;
     }),
   }));
 }
 
-const dataSources = ref(initDataSources());
+const dataSources = ref<EditedDataSource[]>(initDataSources());
 
 // Drill-in navigation: null = scenario overview, otherwise the index of the
 // data source whose table is shown one level deeper in the sheet. The back
 // affordance lives in the sheet's top-title-bar (a single level deep, so the
 // ActionSheet-style breadcrumb rows would be overkill), so the parent needs
 // to know the drilled source name and be able to pop back out.
-const selectedSource = ref(null);
+const selectedSource = ref<number | null>(null);
 // Same, for a collection parameter (index into `collections`). At most one
 // of the two is non-null.
-const selectedCollection = ref(null);
+const selectedCollection = ref<number | null>(null);
 
 const drilledIn = computed(() => selectedSource.value !== null || selectedCollection.value !== null);
 
@@ -160,7 +224,7 @@ function clearDrill() {
 
 // Data-source names render human-readable AND sentence-cased ("personal_data"
 // → "Personal data"). humanize() only de-snakes; it doesn't capitalise.
-function sourceLabel(name) {
+function sourceLabel(name: string) {
   const h = humanize(name);
   return h ? h.charAt(0).toUpperCase() + h.slice(1) : h;
 }
@@ -176,7 +240,7 @@ const expectations = ref(expectationsFromAssertions(props.scenario.assertions));
 
 // Output selection: default to outputs referenced in execution + assertions
 const initOutputs = () => {
-  const names = new Set();
+  const names = new Set<string>();
   if (props.scenario.execution?.outputName) names.add(props.scenario.execution.outputName);
   for (const a of props.scenario.assertions || []) {
     if (a.outputName) names.add(a.outputName);
@@ -186,10 +250,10 @@ const initOutputs = () => {
 const selectedOutputs = ref(initOutputs());
 
 // --- Execution state (per-scenario) ---
-const result = ref(null);
+const result = ref<TraceResult | null>(null);
 const running = ref(false);
-const error = ref(null);
-const errorTraceText = ref(null);
+const error = ref<unknown>(null);
+const errorTraceText = ref<unknown>(null);
 
 // Re-initialise every local input/result ref from the (read-only) props.
 // All edits live in these refs and are only written back to formState on
@@ -260,7 +324,7 @@ function execute() {
       // applies to the saved table (RFC-036): the engine then reports the
       // input as unknown instead of reading an empty string.
       const typedRows = ds.rows.map((row) => {
-        const typed = {};
+        const typed: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(row)) {
           if (k === '_id' || v === '' || v === undefined) continue;
           typed[k] = typeof v === 'string' ? tableCellValue(v) : v;
@@ -273,7 +337,7 @@ function execute() {
     // Build parameters
     // Type each parameter by the grammar's rule, so a live run in the editor
     // sees the same values the Rust runner reads back from the saved feature.
-    const params = {};
+    const params: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(parameterValues.value)) {
       if (v !== '' && v !== null && v !== undefined) {
         params[k] = typeof v === 'string' ? quotedValue(v) : v;
@@ -293,13 +357,16 @@ function execute() {
       calculationDate.value,
     );
 
-    result.value = execResult;
+    // The engine hands its result back untyped; this is the shape it has.
+    result.value = execResult as TraceResult;
   } catch (e) {
-    if (e && typeof e === 'object' && e.error) {
+    if (e && typeof e === 'object' && 'error' in e && e.error) {
       error.value = e.error;
-      errorTraceText.value = e.trace_text || null;
+      errorTraceText.value = ('trace_text' in e && e.trace_text) || null;
     } else {
-      const msg = typeof e === 'string' ? e : (e.message || String(e));
+      // Reads `.message` off whatever was thrown, as before: a thrown
+      // null or undefined makes this line throw.
+      const msg = typeof e === 'string' ? e : ((e as { message?: unknown }).message || String(e));
       error.value = msg;
     }
   } finally {
@@ -316,7 +383,7 @@ function execute() {
 }
 
 /** Returns the current execution data for use by parent components */
-function getExecutionData() {
+function getExecutionData(): ExecutionData {
   return {
     result: result.value,
     traceText: result.value?.trace_text || errorTraceText.value || null,
@@ -338,13 +405,13 @@ function getFormValues() {
     calculationDate: calculationDate.value,
     dataSources: [...dataSources.value],
     collections: [...collections.value],
-  };
+  } satisfies EditedValues;
 }
 
 defineExpose({ execute, getExecutionData, getFormValues, clearDrill, discardEdits });
 
 // --- Auto-re-execute when input values change ---
-let executeTimer = null;
+let executeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
   [parameterValues, calculationDate, dataSources, collections],
   () => {
@@ -359,22 +426,24 @@ onBeforeUnmount(() => {
   clearTimeout(executeTimer);
 });
 
-function updateDataSourceRows(index, rows) {
+function updateDataSourceRows(index: number, rows: EditedRow[]) {
   const updated = [...dataSources.value];
-  updated[index] = { ...updated[index], rows };
+  // `index` is the drilled-in source, an index into this list.
+  updated[index] = { ...updated[index]!, rows };
   dataSources.value = updated;
   emit('change');
 }
 
-function updateCollectionRows(index, rows) {
+function updateCollectionRows(index: number, rows: EditedRow[]) {
   const updated = [...collections.value];
-  updated[index] = { ...updated[index], rows };
+  // `index` is the drilled-in collection, an index into this list.
+  updated[index] = { ...updated[index]!, rows };
   collections.value = updated;
   emit('change');
 }
 
 // --- Result formatting (delegates to shared utils) ---
-function matchStatus(outputName, actualValue) {
+function matchStatus(outputName: string, actualValue: unknown) {
   return _matchStatus(outputName, actualValue, expectations.value);
 }
 
@@ -443,6 +512,7 @@ const dateControlId = useId();
           <nldd-text-cell text="Datum" min-width="120px" max-width="200px"></nldd-text-cell>
           <nldd-spacer-cell size="8"></nldd-spacer-cell>
           <nldd-cell width="full" min-width="120px">
+            <!-- The date control is a date-typed text field: it emits text. -->
             <ScenarioParameterInput
               :id="dateControlId"
               type="date"
@@ -450,7 +520,7 @@ const dateControlId = useId();
               :value="calculationDate"
               :invalid="dateInvalid"
               :unmet="dateErrorId"
-              @update="calculationDate = $event; emit('change')"
+              @update="calculationDate = $event as string; emit('change')"
             />
             <nldd-validation-list v-if="dateInvalid" :for="dateControlId">
               <nldd-validation-item :id="dateErrorId">Datum is verplicht</nldd-validation-item>
@@ -533,28 +603,33 @@ const dateControlId = useId();
     <!-- One level deeper: a single data source's table. Back to the scenario
          overview is the sheet's top-title-bar back button (driven by the
          parent via clearDrill / drill-change). -->
+    <!-- selectedSource / selectedCollection hold an index from the v-for over
+         the same list and are reset whenever that list is rebuilt, so the
+         entry exists. -->
     <template v-else-if="selectedSource !== null">
       <DataSourceTable
-        :key="dataSources[selectedSource].sourceName"
-        :title="sourceLabel(dataSources[selectedSource].sourceName)"
-        :key-field="dataSources[selectedSource].keyField"
-        :fields="dataSources[selectedSource].fields"
-        :model-value="dataSources[selectedSource].rows"
+        :key="dataSources[selectedSource]!.sourceName"
+        :title="sourceLabel(dataSources[selectedSource]!.sourceName)"
+        :key-field="dataSources[selectedSource]!.keyField"
+        :fields="dataSources[selectedSource]!.fields"
+        :model-value="dataSources[selectedSource]!.rows"
         :drilled-in="true"
         @update:model-value="updateDataSourceRows(selectedSource, $event)"
       />
     </template>
 
-    <!-- A collection parameter's elements: the same table, without a key column. -->
+    <!-- A collection parameter's elements: the same table, without a key column.
+         Reached only while drilled in and not into a source, so
+         selectedCollection is set. -->
     <template v-else>
       <DataSourceTable
-        :key="collections[selectedCollection].name"
-        :title="collections[selectedCollection].name"
+        :key="collections[selectedCollection!]!.name"
+        :title="collections[selectedCollection!]!.name"
         :key-field="null"
-        :fields="collections[selectedCollection].columns"
-        :model-value="collections[selectedCollection].rows"
+        :fields="collections[selectedCollection!]!.columns"
+        :model-value="collections[selectedCollection!]!.rows"
         :drilled-in="true"
-        @update:model-value="updateCollectionRows(selectedCollection, $event)"
+        @update:model-value="updateCollectionRows(selectedCollection!, $event)"
       />
     </template>
 

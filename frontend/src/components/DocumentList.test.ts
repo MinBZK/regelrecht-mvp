@@ -7,7 +7,7 @@ import DocumentList from './DocumentList.vue';
 // than rendered shadow DOM.
 const DOCS = [{ path: 'beleid.md' }, { path: 'nota/bijlage.txt' }];
 
-function mountList(props = {}) {
+function mountList(props: { selectedPath?: string } = {}) {
   return mount(DocumentList, {
     props: { documents: DOCS, ...props },
   });
@@ -28,9 +28,12 @@ describe('DocumentList', () => {
 
   it('emits select with the document path when a row is clicked', async () => {
     const wrapper = mountList();
-    await wrapper.findAll('nldd-list-item')[0].trigger('click');
-    expect(wrapper.emitted('select')).toBeTruthy();
-    expect(wrapper.emitted('select')[0]).toEqual(['beleid.md']);
+    const first = wrapper.findAll('nldd-list-item')[0];
+    expect(first).toBeDefined();
+    await first!.trigger('click');
+    const emitted = wrapper.emitted('select');
+    expect(emitted).toBeTruthy();
+    expect(emitted![0]).toEqual(['beleid.md']);
   });
 
   it('marks the open document row as current', () => {

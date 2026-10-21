@@ -6,7 +6,7 @@ import ScenarioParameterInput from './ScenarioParameterInput.vue';
 // The elements of a collection-valued parameter (RFC-016) edit in the same
 // table as a data source, but a collection has no key column.
 describe('DataSourceTable without a key field', () => {
-  const mountKeyless = (rows) =>
+  const mountKeyless = (rows: Record<string, unknown>[]) =>
     mount(DataSourceTable, {
       props: {
         title: 'medebewoners',
@@ -27,7 +27,10 @@ describe('DataSourceTable without a key field', () => {
   it('adds a row without a key cell', async () => {
     const w = mountKeyless([]);
     await w.find('nldd-button[start-icon="plus-small"]').trigger('click');
-    const row = w.emitted('update:modelValue').at(-1)[0][0];
-    expect(Object.keys(row).sort()).toEqual(['_id', 'leeftijd']);
+    const rows = w.emitted('update:modelValue')?.at(-1)?.[0];
+    expect(Array.isArray(rows)).toBe(true);
+    const row = (rows as Record<string, unknown>[])[0];
+    expect(row).toBeDefined();
+    expect(Object.keys(row ?? {}).sort()).toEqual(['_id', 'leeftijd']);
   });
 });

@@ -1,7 +1,55 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { nextTick } from 'vue';
-import EditSheet from './EditSheet.vue';
+import EditSheet, { type EditSheetItem } from './EditSheet.vue';
+
+/** A source.parameters row as the tests read and write it. */
+type TestParamRow = { key: string; value: string; _rowId?: number };
+
+/**
+ * The form state as the tests use it, after the watch has filled it for the
+ * section under test.
+ */
+interface TestFormValues {
+  name: string;
+  type: string;
+  required?: boolean;
+  sourceRegulation: string;
+  sourceOutput: string;
+  sourceParameters: TestParamRow[];
+}
+
+/** The script-setup bindings the tests drive through wrapper.vm. */
+interface EditSheetVm {
+  values: TestFormValues;
+  save(): void;
+  allLaws: { law_id: string }[];
+  availableOutputs: unknown[];
+  onLawComboChange(event: { detail: { value: string } }): Promise<void>;
+  onOutputComboChange(event: { detail: { value: string } }): void;
+  displayName(law: { display_name: string | null; name: string | null; law_id: string }): string;
+}
+
+type SheetWrapper = Omit<VueWrapper, 'vm'> & { vm: EditSheetVm };
+
+/** An emitted save payload, loosely typed: each test reads the fields it asserts on. */
+type SavedPayload = {
+  section: string;
+  key?: string;
+  data: { source: { parameters?: unknown }; type_spec?: unknown; [key: string]: unknown };
+};
+
+/** The first argument of the first emitted event; a missing event fails the test. */
+function firstSave(events: unknown[][] | undefined): SavedPayload {
+  const first = events?.[0];
+  if (!first) throw new Error('no save event emitted');
+  return first[0] as SavedPayload;
+}
+
+/** A fetch Response stand-in with only what apiFetchJson reads. */
+function fakeResponse(ok: boolean, body: unknown): Response {
+  return { ok, json: async () => body } as unknown as Response;
+}
 
 // Vite is configured with `isCustomElement: tag => tag.startsWith('nldd-')`
 // (vite.config.js), so Vue's compiler emits raw HTML elements for the
@@ -34,20 +82,22 @@ beforeAll(() => {
  * doesn't crash, then sets a `props.item` to drive the watch and exercise
  * each section's data flow.
  */
-function mountSheet(item = null) {
+function mountSheet(item: EditSheetItem | null = null): SheetWrapper {
   // No stubs needed: nldd-* tags are treated as raw HTML by Vue's compiler
   // (see vite.config.js `isCustomElement`), and `nldd-sheet` is registered
   // above with no-op show/hide so the watcher in EditSheet doesn't crash.
   // The remaining nldd-* elements render as empty <nldd-*> nodes; the tests
   // poke values directly through `wrapper.vm.values` and exercise the
   // emitted save payloads, not the rendered form.
-  return mount(EditSheet, {
+  const wrapper = mount(EditSheet, {
     attachTo: document.body,
     props: { item },
   });
+  // Script-setup bindings are reachable on vm at runtime, but not in its type.
+  return wrapper as unknown as SheetWrapper;
 }
 
-async function setItem(wrapper, item) {
+async function setItem(wrapper: SheetWrapper, item: EditSheetItem) {
   await wrapper.setProps({ item });
   await nextTick();
 }
@@ -68,7 +118,7 @@ describe('EditSheet', () => {
 
       const events = wrapper.emitted('save');
       expect(events).toBeTruthy();
-      expect(events[0][0]).toMatchObject({
+      expect(firstSave(events)).toMatchObject({
         section: 'definition',
         key: 'old_name',
         newKey: 'new_name',
@@ -87,8 +137,8 @@ describe('EditSheet', () => {
       await nextTick();
 
       const events = wrapper.emitted('save');
-      expect(events[0][0].section).toBe('add-definition');
-      expect(events[0][0].key).toBe('foo');
+      expect(firstSave(events).section).toBe('add-definition');
+      expect(firstSave(events).key).toBe('foo');
     });
   });
 
@@ -111,7 +161,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0]).toMatchObject({
+      expect(firstSave(events)).toMatchObject({
         section: 'parameter',
         index: 0,
         data: { name: 'bsn', type: 'string', required: true },
@@ -138,8 +188,8 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].section).toBe('add-input');
-      expect(events[0][0].data).toMatchObject({
+      expect(firstSave(events).section).toBe('add-input');
+      expect(firstSave(events).data).toMatchObject({
         name: 'leeftijd',
         type: 'number',
         source: {
@@ -167,7 +217,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data.source).toMatchObject({
+      expect(firstSave(events).data.source).toMatchObject({
         regulation: 'wet_basisregistratie_personen',
         output: 'leeftijd',
         parameters: { bsn: '$bsn', peildatum: '2025-01-01' },
@@ -203,9 +253,9 @@ describe('EditSheet', () => {
 
     it('skips non-scalar source.parameter values from the editable rows but preserves them on save', async () => {
       const wrapper = mountSheet();
-      const warnings = [];
+      const warnings: string[] = [];
       const origWarn = console.warn;
-      console.warn = (msg) => warnings.push(String(msg));
+      console.warn = (msg: unknown) => warnings.push(String(msg));
 
       try {
         await setItem(wrapper, {
@@ -237,7 +287,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data.source.parameters).toEqual({
+      expect(firstSave(events).data.source.parameters).toEqual({
         bsn: '$bsn',
         nested: { foo: 'bar' },
       });
@@ -262,7 +312,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data.source.parameters).toEqual({
+      expect(firstSave(events).data.source.parameters).toEqual({
         threshold: 42,
         enabled: true,
         bsn: '$bsn',
@@ -285,7 +335,8 @@ describe('EditSheet', () => {
       });
 
       // Simulate the user editing the value field.
-      wrapper.vm.values.sourceParameters[0].value = '99';
+      // Hydration built a row for `threshold`; without it this throws, as before.
+      wrapper.vm.values.sourceParameters[0]!.value = '99';
 
       wrapper.vm.save();
       await nextTick();
@@ -293,7 +344,7 @@ describe('EditSheet', () => {
       // User-typed value emits as a string - we don't second-guess what
       // they meant, and the save path treats explicit edits as opaque
       // text.
-      expect(events[0][0].data.source.parameters).toEqual({ threshold: '99' });
+      expect(firstSave(events).data.source.parameters).toEqual({ threshold: '99' });
     });
 
     it('lets a user-added row override an overflow key with the same name', async () => {
@@ -316,7 +367,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data.source.parameters).toEqual({ complex: 'replaced' });
+      expect(firstSave(events).data.source.parameters).toEqual({ complex: 'replaced' });
     });
 
     it('keeps the source keys it does not edit (article, parameters_from, decisions)', async () => {
@@ -339,7 +390,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data).toEqual({
+      expect(firstSave(events).data).toEqual({
         name: 'heroverweging',
         type: 'decision',
         source: {
@@ -367,7 +418,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data).toEqual({
+      expect(firstSave(events).data).toEqual({
         name: 'heroverweging',
         type: 'decision',
         nullable: true,
@@ -386,7 +437,7 @@ describe('EditSheet', () => {
       wrapper.vm.values.sourceOutput = 'verleend';
       wrapper.vm.save();
       await nextTick();
-      expect(wrapper.emitted('save')[0][0].data.source).toEqual({
+      expect(firstSave(wrapper.emitted('save')).data.source).toEqual({
         decisions: 'wet_a#1',
         output: 'verleend',
       });
@@ -401,7 +452,7 @@ describe('EditSheet', () => {
       });
       wrapper.vm.save();
       await nextTick();
-      expect(wrapper.emitted('save')[0][0].data.source).toEqual({
+      expect(firstSave(wrapper.emitted('save')).data.source).toEqual({
         facts: 'beleid_school#1#vestiging',
       });
     });
@@ -424,7 +475,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data.source.parameters).toEqual({ bsn: '$bsn' });
+      expect(firstSave(events).data.source.parameters).toEqual({ bsn: '$bsn' });
     });
 
     it('omits source entirely when no regulation/output/parameters set', async () => {
@@ -440,7 +491,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data).not.toHaveProperty('source');
+      expect(firstSave(events).data).not.toHaveProperty('source');
     });
 
     it('drops the source block when the user clears regulation and output, even if overflow params remain', async () => {
@@ -469,7 +520,7 @@ describe('EditSheet', () => {
       // No `source` should be emitted: parameters alone don't make a
       // valid source block (the schema requires regulation), and the
       // user explicitly cleared the binding.
-      expect(events[0][0].data).not.toHaveProperty('source');
+      expect(firstSave(events).data).not.toHaveProperty('source');
     });
   });
 
@@ -485,7 +536,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0]).toMatchObject({
+      expect(firstSave(events)).toMatchObject({
         section: 'output',
         index: 0,
         data: { name: 'heeft_recht', type: 'boolean' },
@@ -507,7 +558,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0].data.type_spec).toEqual({ unit: 'eurocent' });
+      expect(firstSave(events).data.type_spec).toEqual({ unit: 'eurocent' });
     });
   });
 
@@ -522,18 +573,18 @@ describe('EditSheet', () => {
       { name: 'leeftijd', output_type: 'number', article_number: '2.7', parameters: [{ name: 'bsn', param_type: 'string' }, { name: 'peildatum', param_type: 'date' }] },
       { name: 'heeft_partner', output_type: 'boolean', article_number: '2.8', parameters: [{ name: 'bsn', param_type: 'string' }] },
     ];
-    let fetchSpy;
+    let fetchSpy: MockInstance<typeof fetch>;
 
     beforeEach(() => {
       fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
         const urlStr = typeof url === 'string' ? url : url.toString();
         if (urlStr.includes('/api/corpus/laws') && urlStr.includes('/outputs')) {
-          return { ok: true, json: async () => mockOutputs };
+          return fakeResponse(true, mockOutputs);
         }
         if (urlStr.includes('/api/corpus/laws')) {
-          return { ok: true, json: async () => mockLaws };
+          return fakeResponse(true, mockLaws);
         }
-        return { ok: false, json: async () => ({}) };
+        return fakeResponse(false, {});
       });
     });
 
@@ -635,7 +686,7 @@ describe('EditSheet', () => {
       wrapper.vm.save();
       await nextTick();
       const events = wrapper.emitted('save');
-      expect(events[0][0]).toMatchObject({
+      expect(firstSave(events)).toMatchObject({
         section: 'add-input',
         data: {
           name: 'leeftijd',

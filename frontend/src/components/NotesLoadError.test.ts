@@ -6,14 +6,14 @@ import { ref, h, defineComponent } from 'vue';
 // visible dialog, not only as a filled `error` ref. The premise is the
 // schema-drift case: the viewed version failed to load into the engine, so
 // resolveNotes throws the version error (a WASM throw is a bare string).
-const engineCalls = vi.hoisted(() => []);
+const engineCalls = vi.hoisted((): { lawId: string; validFrom?: string }[] => []);
 const RESOLVE_ERROR =
   "law 'wet_kapot' has no loaded version with valid_from 2024-01-01; the viewed version may have failed to load";
 
 vi.mock('../composables/useEngine', () => ({
   useEngine: () => ({
     initEngine: async () => ({
-      resolveNotes(lawId, _yaml, validFrom) {
+      resolveNotes(lawId: string, _yaml: string, validFrom?: string) {
         engineCalls.push({ lawId, validFrom });
         if (lawId === 'wet_kapot') throw RESOLVE_ERROR;
         return [];
@@ -34,7 +34,7 @@ import { useNotes } from '../composables/useNotes';
 import NotesLoadError from './NotesLoadError.vue';
 
 /** Harness: real useNotes wired to the dialog, exactly as EditorView does. */
-function mountWithLaw(lawId) {
+function mountWithLaw(lawId: string) {
   const Harness = defineComponent({
     setup() {
       const { error } = useNotes(
@@ -43,7 +43,9 @@ function mountWithLaw(lawId) {
         ref(null),
         ref('2024-01-01'),
       );
-      return () => h(NotesLoadError, { error: error.value });
+      // useNotes types `error` as unknown (whatever it caught); the resolver
+      // throws an Error or, from WASM, a bare string.
+      return () => h(NotesLoadError, { error: error.value as Error | string | null });
     },
   });
   return mount(Harness);
@@ -76,6 +78,7 @@ describe('NotesLoadError', () => {
       expect(engineCalls.some((c) => c.lawId === 'wet_notes_vf')).toBe(true);
     });
     const call = engineCalls.find((c) => c.lawId === 'wet_notes_vf');
-    expect(call.validFrom).toBe('2024-01-01');
+    expect(call).toBeDefined();
+    expect(call?.validFrom).toBe('2024-01-01');
   });
 });

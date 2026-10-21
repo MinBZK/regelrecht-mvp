@@ -24,7 +24,7 @@ import ArticleText from './ArticleText.vue';
 
 // nldd-* tags are compiled as custom elements (vite.config isCustomElement),
 // so they render as-is and are asserted on by tag name, not stubbed.
-function mountWith(article, extraProps = {}) {
+function mountWith(article: { number: string; text: string } | null, extraProps: Record<string, unknown> = {}) {
   return mount(ArticleText, { props: { article, ...extraProps } });
 }
 

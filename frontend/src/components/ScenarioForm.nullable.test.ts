@@ -5,6 +5,7 @@ import DataSourceTable from './DataSourceTable.vue';
 import ScenarioParameterInput from './ScenarioParameterInput.vue';
 import AbsenceToggle from './AbsenceToggle.vue';
 import { NOT_NULLABLE_MESSAGE } from '../utils/nullability';
+import type { FormParameter } from '../gherkin/formMapper';
 
 // RFC-036 / schema v0.5.8: a scenario parameter takes the word `null` (a
 // stated absence) only when the law declares the parameter `nullable: true`.
@@ -12,7 +13,7 @@ import { NOT_NULLABLE_MESSAGE } from '../utils/nullability';
 // articles (buildTypeMap); data-source columns get theirs through the
 // externalFieldTypeMap and are checked in DataSourceTable.
 
-const setupWith = (parameters) => ({
+const setupWith = (parameters: FormParameter[]) => ({
   calculationDate: '2025-01-01',
   parameters,
   dataSources: [
@@ -20,7 +21,9 @@ const setupWith = (parameters) => ({
   ],
 });
 
-const typeMap = new Map([
+type FieldMetaMap = Map<string, { type: string; unit: string | null; nullable?: boolean }>;
+
+const typeMap: FieldMetaMap = new Map([
   ['huur', { type: 'string', unit: null, nullable: true }],
   ['inkomen', { type: 'string', unit: null, nullable: false }],
   ['spaargeld', { type: 'amount', unit: 'eurocent', nullable: true }],
@@ -28,15 +31,20 @@ const typeMap = new Map([
   ['heeft_partner', { type: 'boolean', unit: null, nullable: true }],
 ]);
 
-const mountForm = (parameters, externalFieldTypeMap = null) =>
+const mountForm = (parameters: FormParameter[], externalFieldTypeMap: FieldMetaMap | null = null) =>
   mount(ScenarioForm, {
     props: { scenario: { assertions: [] }, setup: setupWith(parameters), lawId: 'l', typeMap, externalFieldTypeMap },
   });
 
-const inputFor = (w, name) =>
-  w.findAllComponents(ScenarioParameterInput).find((c) => c.props('name') === name);
-const errorTexts = (w) => w.findAll('nldd-validation-item').map((e) => e.text());
-const values = (w) => w.vm.getFormValues().parameterValues;
+type FormWrapper = ReturnType<typeof mountForm>;
+// The parameter control named `name`; fails the test when there is none.
+const inputFor = (w: FormWrapper, name: string) => {
+  const input = w.findAllComponents(ScenarioParameterInput).find((c) => c.props('name') === name);
+  if (!input) throw new Error(`no parameter input ${name}`);
+  return input;
+};
+const errorTexts = (w: FormWrapper) => w.findAll('nldd-validation-item').map((e) => e.text());
+const values = (w: FormWrapper) => w.vm.getFormValues().parameterValues;
 
 describe('ScenarioForm parameter nullability', () => {
   it('accepts null for a nullable parameter', async () => {
@@ -101,8 +109,18 @@ describe('ScenarioForm parameter nullability', () => {
   // (number, amount, date, boolean). Offered only where the law declares the
   // parameter nullable.
   describe('the afwezig toggle', () => {
-    const toggleFor = (w, name) => w.findAllComponents(AbsenceToggle).find((t) => t.attributes('data-testid') === `absent-${name}`);
-    const check = (t, checked) => t.find('nldd-checkbox-field').element.dispatchEvent(new CustomEvent('change', { detail: { checked } }));
+    // The toggle for `name`, or undefined: several tests assert it is absent.
+    const toggleFor = (w: FormWrapper, name: string) => w.findAllComponents(AbsenceToggle).find((t) => t.attributes('data-testid') === `absent-${name}`);
+    // The toggle for `name`; fails the test when there is none.
+    const requireToggle = (w: FormWrapper, name: string) => {
+      const t = toggleFor(w, name);
+      if (!t) throw new Error(`no afwezig toggle for ${name}`);
+      return t;
+    };
+    const check = (t: ReturnType<typeof toggleFor>, checked: boolean) => {
+      if (!t) throw new Error('no afwezig toggle');
+      return t.find('nldd-checkbox-field').element.dispatchEvent(new CustomEvent('change', { detail: { checked } }));
+    };
 
     it('is offered for a nullable parameter of any type, not for a non-nullable or undeclared one', () => {
       const w = mountForm([
@@ -131,7 +149,7 @@ describe('ScenarioForm parameter nullability', () => {
       const field = inputFor(w, 'spaargeld');
       expect(field.find('nldd-text-field').attributes('value')).toBe('null');
       expect(field.props('invalid')).toBe(false);
-      expect(toggleFor(w, 'spaargeld').find('nldd-checkbox-field').attributes('checked')).toBeDefined();
+      expect(requireToggle(w, 'spaargeld').find('nldd-checkbox-field').attributes('checked')).toBeDefined();
       expect(errorTexts(w)).toEqual([]);
       expect(w.emitted('change')).toHaveLength(1);
     });
@@ -148,12 +166,12 @@ describe('ScenarioForm parameter nullability', () => {
 
     it('unchecking it stores a blank (unknown) and brings the typed control back', async () => {
       const w = mountForm([{ name: 'spaargeld', value: 'null' }]);
-      expect(toggleFor(w, 'spaargeld').find('nldd-checkbox-field').attributes('checked')).toBeDefined();
+      expect(requireToggle(w, 'spaargeld').find('nldd-checkbox-field').attributes('checked')).toBeDefined();
       check(toggleFor(w, 'spaargeld'), false);
       await w.vm.$nextTick();
       expect(values(w).spaargeld).toBe('');
       expect(inputFor(w, 'spaargeld').find('nldd-number-field').exists()).toBe(true);
-      expect(toggleFor(w, 'spaargeld').find('nldd-checkbox-field').attributes('checked')).toBeUndefined();
+      expect(requireToggle(w, 'spaargeld').find('nldd-checkbox-field').attributes('checked')).toBeUndefined();
     });
 
     it('a null read from the file for a number parameter shows as the word null, not NaN', () => {
@@ -184,14 +202,18 @@ describe('ScenarioForm parameter nullability', () => {
       ['spaargeld', { type: 'amount', unit: 'eurocent', nullable: false }],
     ]));
     await w.find('[data-testid="ds-row-0"]').trigger('click');
-    const fields = w.findComponent(DataSourceTable).props('fields');
-    expect(fields.find((c) => c.name === 'huur').nullable).toBe(true);
-    expect(fields.find((c) => c.name === 'spaargeld').nullable).toBe(false);
+    // The column named `name` of the drilled-in table; fails the test when there is none.
+    const column = (name: string) => {
+      const field = w.findComponent(DataSourceTable).props('fields').find((c) => c.name === name);
+      if (!field) throw new Error(`no column ${name}`);
+      return field;
+    };
+    expect(column('huur').nullable).toBe(true);
+    expect(column('spaargeld').nullable).toBe(false);
 
     // Re-typing in place when the map arrives later carries nullability too.
     await w.setProps({ externalFieldTypeMap: new Map([['spaargeld', { type: 'amount', unit: 'eurocent', nullable: true }]]) });
-    const retyped = w.findComponent(DataSourceTable).props('fields');
-    expect(retyped.find((c) => c.name === 'spaargeld').nullable).toBe(true);
-    expect(retyped.find((c) => c.name === 'huur').nullable).toBeUndefined();
+    expect(column('spaargeld').nullable).toBe(true);
+    expect(column('huur').nullable).toBeUndefined();
   });
 });

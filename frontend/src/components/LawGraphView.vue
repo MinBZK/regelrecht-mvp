@@ -1,6 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, toRef, markRaw, watch } from 'vue';
 import { VueFlow } from '@vue-flow/core';
+import type { GraphNode as FlowGraphNode, NodeMouseEvent, NodeTypesObject } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
@@ -16,36 +17,54 @@ import TraceStepList from './graph/TraceStepList.vue';
 import TraceStepDetail from './graph/TraceStepDetail.vue';
 import { useLawGraph, rootOfId } from '../composables/useLawGraph';
 import { useTraceStepping } from '../composables/useTraceStepping';
+import type { TraceSteppingOptions } from '../composables/useTraceStepping';
 import { useColorScheme } from '../composables/useColorScheme';
 import { stepHasHighlights } from '../lib/traceEdges';
+import type { TraceStep } from '../lib/traceEdges';
 import { lawUrl } from '../composables/corpusUrls';
 import { apiFetchText } from '../lib/apiFetch';
 
-const props = defineProps({
-  lawId: { type: String, default: null },
-  // Latest scenario execution result (TraceResult). When set, the graph
-  // enters trace-stepping mode: step list + detail panel appear below
-  // the graph and nodes/edges get .trace-active/.trace-visited classes.
-  result: { type: Object, default: null },
-  // The scenario's entry output name - pins the "▶ start" marker to the
-  // matching output leaf on the root law.
-  outputName: { type: String, default: null },
-  expectations: { type: Object, default: () => ({}) },
-  /** Active traject ref - routes dependency reads through the
-   *  traject's backend so the graph mirrors what the editor pane shows. */
-  trajectRef: { type: String, default: null },
-});
+/** The engine's TraceResult: the trace read by useTraceStepping, plus the outputs. */
+type GraphTraceResult = NonNullable<TraceSteppingOptions['result']['value']> & {
+  outputs?: Record<string, unknown> | null;
+};
 
-async function fetchLawYaml(lawId) {
+const props = withDefaults(
+  defineProps<{
+    lawId?: string | null;
+    // Latest scenario execution result (TraceResult). When set, the graph
+    // enters trace-stepping mode: step list + detail panel appear below
+    // the graph and nodes/edges get .trace-active/.trace-visited classes.
+    result?: GraphTraceResult | null;
+    // The scenario's entry output name - pins the "▶ start" marker to the
+    // matching output leaf on the root law.
+    outputName?: string | null;
+    expectations?: Record<string, unknown>;
+    /** Active traject ref - routes dependency reads through the
+     *  traject's backend so the graph mirrors what the editor pane shows. */
+    trajectRef?: string | null;
+  }>(),
+  {
+    lawId: null,
+    result: null,
+    outputName: null,
+    expectations: () => ({}),
+    trajectRef: null,
+  },
+);
+
+async function fetchLawYaml(lawId: string) {
   return apiFetchText(lawUrl(props.trajectRef, lawId), {
     errorMessage: (status) => `Law '${lawId}' niet gevonden (${status})`,
   });
 }
 
+// Vue Flow types a node component against its full NodeProps; ours declare
+// only the props they read (useLawGraph gives every node a `data.label`).
 const nodeTypes = markRaw({
   law: LawNode,
   leaf: LeafNode,
-});
+} as NodeTypesObject);
 
 const { nodes, edges, loading, error, missingDeps } = useLawGraph({
   rootLawId: toRef(props, 'lawId'),
@@ -76,12 +95,14 @@ const {
 const hasTrace = computed(() => steps.value.length > 0);
 const filter = ref('highlights'); // 'highlights' | 'all'
 
-function onFilterChange(e) {
-  const next = e.detail?.value ?? e.target?.value;
+function onFilterChange(e: Event) {
+  const next =
+    (e as CustomEvent<{ value?: string } | null | undefined>).detail?.value ??
+    (e.target as { value?: string } | null)?.value;
   if (next === 'highlights' || next === 'all') filter.value = next;
 }
 
-function stepIsVisible(step) {
+function stepIsVisible(step: TraceStep) {
   if (filter.value === 'all') return true;
   return stepHasHighlights(step);
 }
@@ -89,10 +110,11 @@ function stepIsVisible(step) {
 // Filter-aware nav: when the user has the "Met highlights" filter on,
 // Vorige/Volgende must skip context-only steps that aren't rendered in
 // the list - otherwise the counter advances onto a row that the user
-// can't see and the step list looks frozen.
+// can't see and the step list looks frozen. (The `!`s below index inside
+// the loop bounds.)
 function nextVisible() {
   for (let i = currentStepIdx.value + 1; i < steps.value.length; i++) {
-    if (stepIsVisible(steps.value[i])) {
+    if (stepIsVisible(steps.value[i]!)) {
       goto(i);
       return;
     }
@@ -100,7 +122,7 @@ function nextVisible() {
 }
 function prevVisible() {
   for (let i = currentStepIdx.value - 1; i >= 0; i--) {
-    if (stepIsVisible(steps.value[i])) {
+    if (stepIsVisible(steps.value[i]!)) {
       goto(i);
       return;
     }
@@ -108,13 +130,13 @@ function prevVisible() {
 }
 const hasNextVisible = computed(() => {
   for (let i = currentStepIdx.value + 1; i < steps.value.length; i++) {
-    if (stepIsVisible(steps.value[i])) return true;
+    if (stepIsVisible(steps.value[i]!)) return true;
   }
   return false;
 });
 const hasPrevVisible = computed(() => {
   for (let i = currentStepIdx.value - 1; i >= 0; i--) {
-    if (stepIsVisible(steps.value[i])) return true;
+    if (stepIsVisible(steps.value[i]!)) return true;
   }
   return false;
 });
@@ -123,16 +145,16 @@ const hasPrevVisible = computed(() => {
 
 // Which root law's edges are currently highlighted (inbound/outbound).
 // null = no highlight. Toggles off when the same law is clicked twice.
-const selectedRoot = ref(null);
+const selectedRoot = ref<string | null>(null);
 
 // Laws the user hid via the close button (visible but excluded).
-const hiddenLaws = ref(new Set());
+const hiddenLaws = ref(new Set<string>());
 
 // Reset local UI state when the underlying law changes - the hidden set /
 // selection shouldn't bleed into an unrelated graph.
 watch(() => props.lawId, () => {
   selectedRoot.value = null;
-  hiddenLaws.value = new Set();
+  hiddenLaws.value = new Set<string>();
 });
 
 const visibleNodes = computed(() => {
@@ -141,7 +163,7 @@ const visibleNodes = computed(() => {
   const active = activeNodeIds.value;
   const visited = visitedNodeIds.value;
   return nodes.value.map((n) => {
-    const classes = [];
+    const classes: string[] = [];
     if (n.class) classes.push(n.class);
     if (starts.has(n.id)) classes.push('trace-start');
     if (active.has(n.id)) classes.push('trace-active');
@@ -163,7 +185,7 @@ const visibleEdges = computed(() => {
     const sourceRoot = rootOfId(e.source);
     const targetRoot = rootOfId(e.target);
     const edgeHidden = hidden.has(sourceRoot) || hidden.has(targetRoot);
-    const classes = [];
+    const classes: string[] = [];
     if (highlight) {
       if (sourceRoot === highlight) classes.push('inbound');
       else if (targetRoot === highlight) classes.push('outbound');
@@ -174,7 +196,7 @@ const visibleEdges = computed(() => {
   });
 });
 
-function handleNodeClick({ node, event }) {
+function handleNodeClick({ node, event }: NodeMouseEvent) {
   // A11Y LIMITATION (tracked for PR3 polish): the close button on a root
   // law node is detected here by DOM sniffing the click target. Keyboard
   // activation (Enter/Space on a focused button) dispatches a synthetic
@@ -182,7 +204,8 @@ function handleNodeClick({ node, event }) {
   // but the close button has no independent activation path if Vue Flow
   // ever stops forwarding inner clicks via `node-click`. Wiring a proper
   // data-callback from the custom node component is deferred to PR3.
-  const target = event?.target;
+  // Duck-typed as before: anything with a closest() counts.
+  const target = event?.target as { closest?: Element['closest'] } | null | undefined;
   if (target && target.closest && target.closest('.close')) {
     hiddenLaws.value = new Set([...hiddenLaws.value, node.id]);
     if (selectedRoot.value === node.id) selectedRoot.value = null;
@@ -216,14 +239,16 @@ function resolveMiniMapMarkerColor() {
 resolveMiniMapMarkerColor();
 watch(colorScheme, resolveMiniMapMarkerColor);
 
-function miniMapNodeColor(node) {
-  if (!(node.class?.includes('root') && !node.hidden)) return 'transparent';
+function miniMapNodeColor(node: FlowGraphNode) {
+  // visibleNodes always sets `class` to a string or undefined.
+  const nodeClass = node.class as string | undefined;
+  if (!(nodeClass?.includes('root') && !node.hidden)) return 'transparent';
   return miniMapMarkerColor.value;
 }
 
 const currentStep = computed(() =>
   currentStepIdx.value >= 0 && currentStepIdx.value < steps.value.length
-    ? steps.value[currentStepIdx.value]
+    ? steps.value[currentStepIdx.value]! // index bounds-checked above
     : null,
 );
 </script>

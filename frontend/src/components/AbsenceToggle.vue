@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { isNullText } from '../utils/nullability';
 
@@ -14,19 +14,26 @@ import { isNullText } from '../utils/nullability';
 // Purely presentational, like ScenarioParameterInput: the parent owns the
 // value and decides whether the null is allowed (the parent only renders
 // this control where the declaration says it is).
-const props = defineProps({
+const props = withDefaults(defineProps<{
   /** The field's stored value; the word `null` (or a JS null) means checked */
-  value: { default: '' },
+  value?: unknown;
   /** Disabled state, for a read-only table */
-  disabled: { type: Boolean, default: false },
+  disabled?: boolean;
+}>(), {
+  // A factory only because the type is `unknown`; Vue calls it, so the
+  // default is still ''.
+  value: () => '',
+  disabled: false,
 });
 
-const emit = defineEmits(['update']);
+const emit = defineEmits<{
+  update: [value: 'null' | ''];
+}>();
 
 const absent = computed(() => isNullText(props.value));
 
-function onChange(event) {
-  emit('update', event.detail?.checked ? 'null' : '');
+function onChange(event: Event) {
+  emit('update', (event as CustomEvent<{ checked?: boolean } | undefined>).detail?.checked ? 'null' : '');
 }
 </script>
 

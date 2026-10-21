@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // "Instellingen" — the account settings sheet, opened from the account menu.
 //
 // Collects what used to be submenus of that menu (Weergave, Functies) plus the
@@ -13,16 +13,20 @@
 // The composables backing this are singletons, so the sheet reads them
 // directly instead of taking the whole set as props.
 import { computed, ref } from 'vue';
+import type { NLDDModalDialog } from '@nldd/design-system/modal-dialog';
+import type { NLDDPopover } from '@nldd/design-system/popover';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import type { NLDDSwitch } from '@nldd/design-system/switch';
 import { useFeatureFlags } from '../composables/useFeatureFlags';
 import { useGithubAuth } from '../composables/useGithubAuth';
 import { useSettingsSections } from '../composables/useSettingsSections';
 
-const sheetEl = ref(null);
+const sheetEl = ref<NLDDSheet | null>(null);
 
-function show() {
+function show(): void {
   sheetEl.value?.show?.();
 }
-function hide() {
+function hide(): void {
   sheetEl.value?.hide?.();
 }
 
@@ -35,7 +39,7 @@ const {
   disconnect: disconnectGithub,
 } = useGithubAuth();
 
-const editorPanelFlags = [
+const editorPanelFlags: [key: string, label: string][] = [
   ['panel.article_text', 'Tekst editor'],
   ['panel.machine_readable', 'Machine editor'],
   ['panel.scenario_form', 'Scenario editor'],
@@ -63,9 +67,9 @@ const githubEnforced = computed(() => isEnabled('github.user_oauth'));
 const githubForcedByConfig = computed(() => githubRequired.value && !githubEnforced.value);
 const githubConnected = computed(() => !!githubStatus.value?.connected);
 
-function onPanelFlagChange(key, event) {
+function onPanelFlagChange(key: string, event: Event): void {
   // Follow the store rather than the switch's own DOM state.
-  if (event.detail.checked !== isEnabled(key)) toggleFlag(key);
+  if ((event as CustomEvent<{ checked: boolean }>).detail.checked !== isEnabled(key)) toggleFlag(key);
 }
 
 // Enabling `github.user_oauth` is not a personal display preference like the
@@ -75,16 +79,18 @@ function onPanelFlagChange(key, event) {
 // GitHub account (an unlinked user's save 428s into the connect flow).
 // Intercept the enable with an explicit confirmation. Disabling restores the
 // pre-existing service-token behaviour and stays a plain toggle.
-const enforcementConfirm = ref(null);
-const enforcementSwitch = ref(null);
+const enforcementConfirm = ref<NLDDPopover | null>(null);
+const enforcementSwitch = ref<NLDDSwitch | null>(null);
 
-function onEnforcementChange(event) {
+function onEnforcementChange(event: Event): void {
+  // The change event comes from the nldd-switch itself.
+  const target = event.target as NLDDSwitch;
   if (!isEnabled('github.user_oauth')) {
     // Revert the switch: it flipped itself, and the flag only actually turns
     // on once the confirmation is accepted.
-    event.target.checked = false;
+    target.checked = false;
     if (enforcementConfirm.value) {
-      enforcementConfirm.value.anchorElement = enforcementSwitch.value || event.target;
+      enforcementConfirm.value.anchorElement = enforcementSwitch.value || target;
       enforcementConfirm.value.show();
     }
     return;
@@ -92,7 +98,7 @@ function onEnforcementChange(event) {
   toggleFlag('github.user_oauth');
 }
 
-function confirmUserOauthEnforcement() {
+function confirmUserOauthEnforcement(): void {
   enforcementConfirm.value?.hide();
   toggleFlag('github.user_oauth');
 }
@@ -100,16 +106,16 @@ function confirmUserOauthEnforcement() {
 // Release the anchor when the popover closes (confirm, cancel, or light
 // dismiss): nldd-popover toggles itself on every subsequent click on its
 // anchor element, so a stale anchor makes the switch reopen it.
-function onEnforcementConfirmClose() {
+function onEnforcementConfirmClose(): void {
   if (enforcementConfirm.value) enforcementConfirm.value.anchorElement = null;
 }
 
 // Disconnecting revokes the token at GitHub and, with the flag on, makes the
 // next traject save fail with a 428 — so it asks first instead of firing on
 // the click.
-const disconnectConfirm = ref(null);
+const disconnectConfirm = ref<NLDDModalDialog | null>(null);
 
-function confirmDisconnect() {
+function confirmDisconnect(): void {
   disconnectConfirm.value?.hide();
   disconnectGithub();
 }
@@ -138,7 +144,7 @@ function confirmDisconnect() {
               <nldd-list-item>
                 <nldd-text-cell
                   text="GitHub"
-                  :supporting-text="githubConnected ? githubStatus.github_login : 'Niet gekoppeld'"
+                  :supporting-text="githubConnected ? githubStatus?.github_login : 'Niet gekoppeld'"
                 ></nldd-text-cell>
                 <nldd-cell>
                   <nldd-button
