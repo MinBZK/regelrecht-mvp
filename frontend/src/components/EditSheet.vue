@@ -1,25 +1,100 @@
-<script setup>
+<script setup lang="ts">
+import type { ExecutionField, InputSource, RawDefinition } from '../lib/lawFormat';
 import { ref, computed, watch, watchEffect, nextTick } from 'vue';
-import { collectAvailableVariables } from '../utils/operationTree.js';
-import { centsToEuros, eurosToCents } from '../utils/currency.js';
-import { lawsListUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
+import { collectAvailableVariables } from '../utils/operationTree';
+import { centsToEuros, eurosToCents } from '../utils/currency';
+import { lawsListUrl } from '../composables/corpusUrls';
+import { apiFetchJson } from '../lib/apiFetch';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import type { NLDDComboBox } from '@nldd/design-system/combo-box';
+import type { OperationSettingsArticle } from './OperationSettings.vue';
 
-const props = defineProps({
-  item: { type: Object, default: null },
-  article: { type: Object, default: null },
+/** The entry the sheet edits, as the editor view hands it in. */
+export interface EditSheetItem {
+  section: string;
+  key?: string;
+  index?: number;
+  isNew?: boolean;
+  rawDef?: RawDefinition | null;
+  data?: ExecutionField | null;
+}
+
+/** The saved entry, emitted with `save`. */
+export type EditSheetSave =
+  | { section: 'definition'; key: string | undefined; newKey: string; data: unknown }
+  | { section: 'add-definition'; key: string; data: unknown }
+  | { section: 'parameter'; index: number | undefined; data: { name: string; type?: string; required?: boolean } }
+  | { section: 'add-parameter'; data: { name: string; type?: string; required?: boolean } }
+  | { section: 'input'; index: number | undefined; data: ExecutionField }
+  | { section: 'add-input'; data: ExecutionField }
+  | { section: 'output'; index: number | undefined; data: ExecutionField }
+  | { section: 'add-output'; data: ExecutionField };
+
+type ControlType = 'boolean' | 'currency' | 'percentage' | 'number' | 'text';
+
+/** One editable source.parameters row. */
+interface ParamRow {
+  _rowId: number;
+  key: string;
+  value: string;
+  _origValue: unknown;
+}
+
+/** The form state. Which fields are set depends on the section (see the watch on `item`). */
+interface FormValues {
+  name?: string;
+  displayValue?: unknown;
+  controlType?: ControlType;
+  unit?: string;
+  rawDef?: unknown;
+  type?: string;
+  required?: boolean;
+  sourceRegulation?: string;
+  sourceOutput?: string;
+  sourceParameters?: ParamRow[];
+  sourceParametersOverflow?: Record<string, unknown>;
+}
+
+/** A law in the corpus list (GET laws), as far as the sheet reads it. */
+interface LawListEntry {
+  law_id: string;
+  name?: string | null;
+  display_name?: string | null;
+}
+
+/** An output of a law (GET .../outputs), as far as the sheet reads it. */
+interface LawOutput {
+  name: string;
+  output_type?: string;
+  parameters?: { name: string }[] | null;
+}
+
+// `_displayValue` is not part of NLDDComboBox's declared API; the watchEffects
+// below write it anyway.
+type ComboBoxElement = NLDDComboBox & { _displayValue?: string };
+
+const props = withDefaults(defineProps<{
+  item?: EditSheetItem | null;
+  article?: OperationSettingsArticle | null;
   /** Active traject ref. When set the law search dropdown is scoped to
    *  the traject's corpus so newly-added laws in this traject can be
    *  selected as a source. */
-  trajectRef: { type: String, default: null },
+  trajectRef?: string | null;
+}>(), {
+  item: null,
+  article: null,
+  trajectRef: null,
 });
 
-const emit = defineEmits(['save', 'close']);
+const emit = defineEmits<{
+  save: [payload: EditSheetSave];
+  close: [];
+}>();
 
-const sheetEl = ref(null);
-const lawComboBoxEl = ref(null);
-const outputComboBoxEl = ref(null);
-const values = ref({});
+const sheetEl = ref<NLDDSheet | null>(null);
+const lawComboBoxEl = ref<ComboBoxElement | null>(null);
+const outputComboBoxEl = ref<ComboBoxElement | null>(null);
+const values = ref<FormValues>({});
 
 // Snapshot of the form taken when an item opens. For a NEW item the Save
 // button is always shown (you opened the sheet to add it); for an existing
@@ -42,10 +117,11 @@ const typeOptions = ['string', 'number', 'boolean', 'amount', 'decision'];
 // OperationSettings uses for subject dropdowns.
 const paramValueGroups = computed(() => {
   const vars = collectAvailableVariables(props.article);
-  const groups = new Map();
+  const groups = new Map<string, { value: string; label: string }[]>();
   for (const v of vars) {
     if (!groups.has(v.category)) groups.set(v.category, []);
-    groups.get(v.category).push({
+    // Set on the line above when missing.
+    groups.get(v.category)!.push({
       value: v.ref,
       label: v.name.replace(/_/g, ' '),
     });
@@ -60,16 +136,16 @@ const paramValueGroups = computed(() => {
 // Cache scoped per (traject, instance). Resetting on a traject change
 // keeps cross-traject content from leaking when the same sheet is
 // opened again under a different traject.
-let lawsCache = null;
-let lawsCacheTrajectRef = null;
-async function fetchLawsList() {
+let lawsCache: LawListEntry[] | null = null;
+let lawsCacheTrajectRef: string | null = null;
+async function fetchLawsList(): Promise<LawListEntry[]> {
   if (lawsCacheTrajectRef !== props.trajectRef) {
     lawsCache = null;
     lawsCacheTrajectRef = props.trajectRef;
   }
   if (lawsCache) return lawsCache;
   try {
-    lawsCache = await apiFetchJson(lawsListUrl(props.trajectRef, 'limit=1000'));
+    lawsCache = await apiFetchJson<LawListEntry[]>(lawsListUrl(props.trajectRef, 'limit=1000'));
   } catch {
     // HTTP or network failure - the law combobox just offers no
     // suggestions; nothing is cached so the next open retries.
@@ -78,28 +154,28 @@ async function fetchLawsList() {
   return lawsCache;
 }
 
-const allLaws = ref([]);
-const availableOutputs = ref([]);
+const allLaws = ref<LawListEntry[]>([]);
+const availableOutputs = ref<LawOutput[]>([]);
 const outputsLoading = ref(false);
 
-function displayName(law) {
+function displayName(law: LawListEntry) {
   if (law.display_name) return law.display_name;
   if (law.name) return law.name;
   return law.law_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function outputDisplayName(out) {
+function outputDisplayName(out: LawOutput) {
   return `${out.name} (${out.output_type})`;
 }
 
-async function fetchOutputsForLaw(lawId) {
+async function fetchOutputsForLaw(lawId: string | undefined) {
   if (!lawId) {
     availableOutputs.value = [];
     return;
   }
   outputsLoading.value = true;
   try {
-    availableOutputs.value = await apiFetchJson(
+    availableOutputs.value = await apiFetchJson<LawOutput[]>(
       `/api/corpus/laws/${encodeURIComponent(lawId)}/outputs`,
     );
   } catch {
@@ -129,16 +205,16 @@ watchEffect(() => {
   outputComboBoxEl.value._displayValue = match ? outputDisplayName(match) : (outName || '');
 });
 
-async function onLawComboChange(event) {
-  const next = event.detail?.value ?? '';
+async function onLawComboChange(event: Event) {
+  const next = (event as CustomEvent<{ value?: string } | undefined>).detail?.value ?? '';
   if (next === values.value.sourceRegulation) return;
   values.value.sourceRegulation = next;
   values.value.sourceOutput = '';
   await fetchOutputsForLaw(next);
 }
 
-function onOutputComboChange(event) {
-  const outputName = event.detail?.value ?? '';
+function onOutputComboChange(event: Event) {
+  const outputName = (event as CustomEvent<{ value?: string } | undefined>).detail?.value ?? '';
   values.value.sourceOutput = outputName;
   if (!outputName) return;
   const match = availableOutputs.value.find(o => o.name === outputName);
@@ -169,12 +245,12 @@ function onOutputComboChange(event) {
 // save when the user didn't touch the value field. Without it the form
 // would silently rewrite `peildatum: 2024` to `peildatum: '2024'`.
 let nextRowId = 1;
-function makeParamRow(key = '', value = '', origValue = undefined) {
+function makeParamRow(key = '', value = '', origValue: unknown = undefined): ParamRow {
   return { _rowId: nextRowId++, key, value, _origValue: origValue };
 }
 
 // Type inference for controls
-function inferControlType(value, unit) {
+function inferControlType(value: unknown, unit: string | undefined): ControlType {
   if (typeof value === 'boolean') return 'boolean';
   if (unit === 'eurocent') return 'currency';
   if (typeof value === 'number' && value > 0 && value < 1 && !unit) return 'percentage';
@@ -182,13 +258,14 @@ function inferControlType(value, unit) {
   return 'text';
 }
 
-function toDisplay(value, controlType) {
+function toDisplay(value: unknown, controlType: ControlType) {
   if (controlType === 'currency') return centsToEuros(value);
-  if (controlType === 'percentage') return +(value * 100).toFixed(6);
+  // inferControlType gives 'percentage' only for a number.
+  if (controlType === 'percentage') return +((value as number) * 100).toFixed(6);
   return value;
 }
 
-function fromDisplay(value, controlType) {
+function fromDisplay(value: number, controlType: ControlType | undefined) {
   if (controlType === 'currency') return eurosToCents(value);
   if (controlType === 'percentage') return parseFloat((value / 100).toPrecision(15));
   return value;
@@ -202,8 +279,11 @@ watch(() => props.item, async (item) => {
 
   const s = item.section;
   if (s === 'definition' || s === 'add-definition') {
-    const val = item.rawDef != null ? (typeof item.rawDef === 'object' ? item.rawDef.value : item.rawDef) : 0;
-    const unit = item.rawDef != null && typeof item.rawDef === 'object' ? item.rawDef.type_spec?.unit : undefined;
+    // A list definition takes the object branch below and so has no `value`
+    // or `type_spec`, as before; the cast keeps that behavior visible.
+    const rawDef = item.rawDef as Exclude<RawDefinition, unknown[]> | null | undefined;
+    const val = rawDef != null ? (typeof rawDef === 'object' ? rawDef.value : rawDef) : 0;
+    const unit = rawDef != null && typeof rawDef === 'object' ? rawDef.type_spec?.unit : undefined;
     const ct = item.isNew ? 'number' : inferControlType(val, unit);
     values.value = {
       name: item.key ?? '',
@@ -237,8 +317,8 @@ watch(() => props.item, async (item) => {
     //     survive untouched - the user can only edit those via the YAML
     //     pane.
     const params = item.data?.source?.parameters;
-    const paramList = [];
-    const overflowParams = {};
+    const paramList: ParamRow[] = [];
+    const overflowParams: Record<string, unknown> = {};
     if (params && typeof params === 'object') {
       for (const [k, v] of Object.entries(params)) {
         if (v == null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
@@ -288,7 +368,8 @@ function save() {
   const s = item.section;
 
   if (s === 'definition' || s === 'add-definition') {
-    const { name, displayValue, controlType, rawDef } = values.value;
+    // The watch on `item` filled values for this same section.
+    const { name, displayValue, controlType, rawDef } = values.value as FormValues & { name: string };
     if (!name.trim()) return;
     const stored = controlType === 'boolean' ? displayValue : fromDisplay(Number(displayValue), controlType);
     const data = typeof rawDef === 'object' ? { ...rawDef, value: stored } : stored;
@@ -298,7 +379,7 @@ function save() {
       emit('save', { section: 'add-definition', key: name.trim(), data });
     }
   } else if (s === 'parameter' || s === 'add-parameter') {
-    const { name, type, required } = values.value;
+    const { name, type, required } = values.value as FormValues & { name: string };
     if (!name.trim()) return;
     if (s === 'parameter') {
       emit('save', { section: 'parameter', index: item.index, data: { name: name.trim(), type, required } });
@@ -306,13 +387,14 @@ function save() {
       emit('save', { section: 'add-parameter', data: { name: name.trim(), type, required } });
     }
   } else if (s === 'input' || s === 'add-input') {
-    const { name, type, sourceRegulation, sourceOutput, sourceParameters, sourceParametersOverflow } = values.value;
+    const { name, type, sourceRegulation, sourceOutput, sourceParameters, sourceParametersOverflow } =
+      values.value as FormValues & { name: string };
     if (!name.trim()) return;
     // Keys of the input this form does not edit (`nullable`, `description`,
     // ...) are kept as they were; `source` and `type_spec` are rebuilt below.
-    const { name: _n, type: _t, source: _s, type_spec: _ts, ...keptInput } =
+    const { name: _n, type: _t, source: _s, type_spec: _ts, ...keptInput }: Partial<ExecutionField> =
       s === 'input' ? item.data || {} : {};
-    const data = { ...keptInput, name: name.trim(), type };
+    const data: ExecutionField = { ...keptInput, name: name.trim(), type };
     // Reduce the form's parameter rows back into a plain object. Skip
     // rows with an empty key - they're either still being typed or were
     // added and abandoned. Duplicate keys: last write wins (matches what
@@ -327,7 +409,7 @@ function save() {
     //      doesn't render) get merged back BEFORE the user-edited rows
     //      so the user can override them by adding a row with the same
     //      key, but un-overridden overflow keys survive.
-    const paramObj = { ...(sourceParametersOverflow || {}) };
+    const paramObj: Record<string, unknown> = { ...(sourceParametersOverflow || {}) };
     for (const row of sourceParameters || []) {
       const k = (row.key || '').trim();
       if (!k) continue;
@@ -340,7 +422,7 @@ function save() {
     }
     // The keys of `source` this form does not edit (`article`,
     // `parameters_from`, `decisions`, ...) are kept as they were.
-    const { regulation: _r, output: _o, parameters: _p, ...kept } = item.data?.source || {};
+    const { regulation: _r, output: _o, parameters: _p, ...kept }: InputSource = item.data?.source || {};
     const keptTarget = ['article', 'decisions', 'facts', 'endpoint'].some((k) => k in kept);
     // Emit `source` only when at least regulation OR output is set, or a
     // kept key names what it calls. Parameters alone don't make a valid
@@ -350,10 +432,11 @@ function save() {
     // binding") and avoids producing a malformed source: { parameters:
     // {...} } that would fail schema validation.
     if (sourceRegulation || sourceOutput || keptTarget) {
-      data.source = { ...kept };
-      if (sourceRegulation) data.source.regulation = sourceRegulation;
-      if (sourceOutput) data.source.output = sourceOutput;
-      if (Object.keys(paramObj).length > 0) data.source.parameters = paramObj;
+      const source: InputSource = { ...kept };
+      if (sourceRegulation) source.regulation = sourceRegulation;
+      if (sourceOutput) source.output = sourceOutput;
+      if (Object.keys(paramObj).length > 0) source.parameters = paramObj;
+      data.source = source;
     }
     if (type === 'amount' && item.data?.type_spec) data.type_spec = item.data.type_spec;
     if (s === 'input') {
@@ -362,9 +445,9 @@ function save() {
       emit('save', { section: 'add-input', data });
     }
   } else if (s === 'output' || s === 'add-output') {
-    const { name, type } = values.value;
+    const { name, type } = values.value as FormValues & { name: string };
     if (!name.trim()) return;
-    const data = { name: name.trim(), type };
+    const data: ExecutionField = { name: name.trim(), type };
     if (type === 'amount' && item.data?.type_spec) data.type_spec = item.data.type_spec;
     if (s === 'output') {
       emit('save', { section: 'output', index: item.index, data });
@@ -376,7 +459,7 @@ function save() {
   emit('close');
 }
 
-const sectionLabels = {
+const sectionLabels: Record<string, string> = {
   'definition': 'Definitie',
   'add-definition': 'Definitie toevoegen',
   'parameter': 'Parameter',
@@ -471,7 +554,7 @@ const sectionLabels = {
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-cell>
                   <nldd-dropdown size="md">
-                    <select :value="values.type" @change="values.type = $event.target.value" aria-label="Type">
+                    <select :value="values.type" @change="values.type = ($event.target as HTMLSelectElement).value" aria-label="Type">
                       <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
                     </select>
                   </nldd-dropdown>
@@ -502,7 +585,7 @@ const sectionLabels = {
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-cell>
                   <nldd-dropdown size="md">
-                    <select :value="values.type" @change="values.type = $event.target.value" aria-label="Type">
+                    <select :value="values.type" @change="values.type = ($event.target as HTMLSelectElement).value" aria-label="Type">
                       <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
                     </select>
                   </nldd-dropdown>
@@ -582,7 +665,7 @@ const sectionLabels = {
                   <nldd-spacer-cell size="8"></nldd-spacer-cell>
                   <nldd-cell>
                     <nldd-dropdown size="md" :data-testid="`source-param-value-${param._rowId}`">
-                      <select :value="param.value" :aria-label="`Waarde voor ${param.key}`" @change="param.value = $event.target.value">
+                      <select :value="param.value" :aria-label="`Waarde voor ${param.key}`" @change="param.value = ($event.target as HTMLSelectElement).value">
                         <option value="">Selecteer...</option>
                         <option v-if="param.value && !param.value.startsWith('$')" :value="param.value" :selected="true">{{ param.value }}</option>
                         <optgroup v-for="[category, opts] in paramValueGroups" :key="category" :label="category">
@@ -611,7 +694,7 @@ const sectionLabels = {
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-cell>
                   <nldd-dropdown size="md">
-                    <select :value="values.type" @change="values.type = $event.target.value" aria-label="Type">
+                    <select :value="values.type" @change="values.type = ($event.target as HTMLSelectElement).value" aria-label="Type">
                       <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
                     </select>
                   </nldd-dropdown>

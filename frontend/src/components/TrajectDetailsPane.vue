@@ -1,36 +1,43 @@
-<script setup>
+<script setup lang="ts">
 // Traject-details as a Home main-pane view (was TrajectInfoDialog's content).
 // Renders the detail list + owner-delete / contributor-leave, each behind a
 // confirmation modal. Loads on mount and whenever the traject changes.
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import type { NLDDModalDialog } from '@nldd/design-system/modal-dialog';
 import {
   useTrajectDetail,
   writableSource,
   branchTreeUrl,
   isCentralSource,
-} from '../composables/useTrajectDetail.js';
+} from '../composables/useTrajectDetail';
 import {
   deleteTraject,
   leaveTraject,
   moveTrajectRepo,
   updateTraject,
-} from '../composables/useTrajects.js';
-import { hasRole } from '../composables/useAuth.js';
-import { paneChromeVisible } from '../constants.js';
+} from '../composables/useTrajects';
+import { hasRole } from '../composables/useAuth';
+import { paneChromeVisible } from '../constants';
 
 const router = useRouter();
 
-const props = defineProps({
-  /** Traject to show (UUID id). */
-  trajectId: { type: String, default: null },
-});
+const props = withDefaults(
+  defineProps<{
+    /** Traject to show (UUID id). */
+    trajectId?: string | null;
+  }>(),
+  { trajectId: null },
+);
 
-const emit = defineEmits(['deleted', 'left']);
+const emit = defineEmits<{
+  deleted: [trajectId: string | null];
+  left: [trajectId: string | null];
+}>();
 
 const { detail, loading, error: loadError, load } = useTrajectDetail();
 
-function reload() {
+function reload(): void {
   if (props.trajectId) load(props.trajectId);
 }
 onMounted(reload);
@@ -65,7 +72,7 @@ const canEditSubpath = computed(
 
 const subpathDraft = ref('');
 const subpathSaving = ref(false);
-const subpathError = ref(null);
+const subpathError = ref<string | null>(null);
 
 // Het veld volgt de geladen bron: bij openen, bij wisselen van traject en na de
 // herlaad die op een geslaagde opslag volgt. Leeg veld = repo-root, dezelfde
@@ -79,7 +86,7 @@ watch(
   { immediate: true },
 );
 
-function onSubpathInput(event) {
+function onSubpathInput(event: Event): void {
   // nldd-text-field dispatcht een CustomEvent met de nieuwe waarde in
   // event.detail.value. De host zet z'n eigen `value` vóór het dispatchen,
   // dus event.target.value klopt ook, maar detail eerst lezen houdt het
@@ -87,14 +94,16 @@ function onSubpathInput(event) {
   // nldd-invoerhandlers. `??` laat een bewust lege waarde (veld gewist =
   // repo-root) door.
   subpathDraft.value =
-    event.detail?.value ?? event.target?.value ?? subpathDraft.value;
+    (event as CustomEvent<{ value?: string } | null>).detail?.value ??
+    (event.target as HTMLInputElement | null)?.value ??
+    subpathDraft.value;
   // De melding van de vorige poging gaat weg zodra de gebruiker begint te
   // corrigeren - anders staat een afgekeurd pad nog rood onder een veld
   // waar inmiddels iets anders staat (zelfde afspraak als InviteMembersSheet).
   if (subpathError.value) subpathError.value = null;
 }
 
-async function saveSubpath() {
+async function saveSubpath(): Promise<void> {
   if (subpathSaving.value || !props.trajectId) return;
   subpathSaving.value = true;
   subpathError.value = null;
@@ -104,7 +113,7 @@ async function saveSubpath() {
     // (leeg/spaties wordt repo-root), dus dit toont wat er echt is opgeslagen.
     reload();
   } catch (e) {
-    subpathError.value = e.message || 'Opslaan mislukt';
+    subpathError.value = (e as Error).message || 'Opslaan mislukt';
   } finally {
     subpathSaving.value = false;
   }
@@ -127,7 +136,7 @@ const canEditRepo = computed(
 
 const repoDraft = ref('');
 const repoSaving = ref(false);
-const repoError = ref(null);
+const repoError = ref<string | null>(null);
 
 watch(
   repoLabel,
@@ -138,31 +147,35 @@ watch(
   { immediate: true },
 );
 
-function onRepoInput(event) {
-  repoDraft.value = event.detail?.value ?? event.target?.value ?? repoDraft.value;
+function onRepoInput(event: Event): void {
+  repoDraft.value =
+    (event as CustomEvent<{ value?: string } | null>).detail?.value ??
+    (event.target as HTMLInputElement | null)?.value ??
+    repoDraft.value;
   if (repoError.value) repoError.value = null;
 }
 
-async function saveRepo() {
+async function saveRepo(): Promise<void> {
   if (repoSaving.value || !props.trajectId) return;
   const parts = repoDraft.value.trim().split('/');
-  if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+  // parts[0] and parts[1] exist once the length check has passed.
+  if (parts.length !== 2 || !parts[0]!.trim() || !parts[1]!.trim()) {
     repoError.value = 'Schrijf de repo als eigenaar/naam, bijvoorbeeld example-org/regelrecht-corpus.';
     return;
   }
   repoSaving.value = true;
   repoError.value = null;
   try {
-    await moveTrajectRepo(props.trajectId, parts[0].trim(), parts[1].trim());
+    await moveTrajectRepo(props.trajectId, parts[0]!.trim(), parts[1]!.trim());
     reload();
   } catch (e) {
-    repoError.value = e.message || 'Opslaan mislukt';
+    repoError.value = (e as Error).message || 'Opslaan mislukt';
   } finally {
     repoSaving.value = false;
   }
 }
 
-function orDash(v) {
+function orDash(v: string | null | undefined): string {
   return v && String(v).trim() ? v : '—';
 }
 
@@ -170,7 +183,7 @@ function orDash(v) {
 // niet aan de UUID die deze pane verder gebruikt; `detail.ref` draagt die.
 // Pushen en niet lokaal openen: het adres is de open-stand van de sheet, dus
 // Terug sluit hem en een gedeelde link opent hem.
-function openStructureCheck() {
+function openStructureCheck(): void {
   if (!detail.value?.ref) return;
   router.push({
     name: 'traject-structuur-controle',
@@ -179,10 +192,10 @@ function openStructureCheck() {
 }
 
 // --- Verwijderen (owner-only) ---
-const deleteModalEl = ref(null);
+const deleteModalEl = ref<NLDDModalDialog | null>(null);
 const confirmingDelete = ref(false);
 const deleteBusy = ref(false);
-const deleteError = ref(null);
+const deleteError = ref<string | null>(null);
 watch(confirmingDelete, async (open) => {
   await nextTick();
   const el = deleteModalEl.value;
@@ -190,34 +203,36 @@ watch(confirmingDelete, async (open) => {
   if (open) el.show?.();
   else el.hide?.();
 });
-function askDelete() {
+function askDelete(): void {
   deleteError.value = null;
   confirmingDelete.value = true;
 }
-function cancelDelete() {
+function cancelDelete(): void {
   if (!confirmingDelete.value || deleteBusy.value) return;
   confirmingDelete.value = false;
 }
-async function confirmDelete() {
+async function confirmDelete(): Promise<void> {
   if (deleteBusy.value) return;
   deleteBusy.value = true;
   deleteError.value = null;
   try {
-    await deleteTraject(props.trajectId);
+    // The delete control only renders once this traject's detail has loaded, so
+    // trajectId was set then; it is not re-checked here.
+    await deleteTraject(props.trajectId as string);
     confirmingDelete.value = false;
     emit('deleted', props.trajectId);
   } catch (e) {
-    deleteError.value = e.message || 'Verwijderen mislukt';
+    deleteError.value = (e as Error).message || 'Verwijderen mislukt';
   } finally {
     deleteBusy.value = false;
   }
 }
 
 // --- Verlaten (bijdrager) ---
-const leaveModalEl = ref(null);
+const leaveModalEl = ref<NLDDModalDialog | null>(null);
 const confirmingLeave = ref(false);
 const leaveBusy = ref(false);
-const leaveError = ref(null);
+const leaveError = ref<string | null>(null);
 watch(confirmingLeave, async (open) => {
   await nextTick();
   const el = leaveModalEl.value;
@@ -225,27 +240,33 @@ watch(confirmingLeave, async (open) => {
   if (open) el.show?.();
   else el.hide?.();
 });
-function askLeave() {
+function askLeave(): void {
   leaveError.value = null;
   confirmingLeave.value = true;
 }
-function cancelLeave() {
+function cancelLeave(): void {
   if (!confirmingLeave.value || leaveBusy.value) return;
   confirmingLeave.value = false;
 }
-async function confirmLeave() {
+async function confirmLeave(): Promise<void> {
   if (leaveBusy.value) return;
   leaveBusy.value = true;
   leaveError.value = null;
   try {
-    await leaveTraject(props.trajectId);
+    // Same as confirmDelete: the leave control needs the loaded detail.
+    await leaveTraject(props.trajectId as string);
     confirmingLeave.value = false;
     emit('left', props.trajectId);
   } catch (e) {
-    leaveError.value = e.message || 'Verlaten mislukt';
+    leaveError.value = (e as Error).message || 'Verlaten mislukt';
   } finally {
     leaveBusy.value = false;
   }
+}
+
+// `loadError` holds whatever load() caught; read its message the way the template did.
+function errorMessage(e: unknown): string | undefined {
+  return (e as { message?: string } | null)?.message;
 }
 </script>
 
@@ -255,7 +276,7 @@ async function confirmLeave() {
     <nldd-spacer v-if="paneChromeVisible(loading)" size="16"></nldd-spacer>
 
     <nldd-activity-indicator v-if="loading" text="Trajectgegevens laden" show-text></nldd-activity-indicator>
-    <nldd-inline-dialog v-else-if="loadError" variant="alert" :text="loadError.message || 'Fout bij laden'"></nldd-inline-dialog>
+    <nldd-inline-dialog v-else-if="loadError" variant="alert" :text="errorMessage(loadError) || 'Fout bij laden'"></nldd-inline-dialog>
     <template v-else-if="detail">
     <nldd-list appearance="box-tinted">
       <nldd-list-item size="md">

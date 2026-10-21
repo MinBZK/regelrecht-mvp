@@ -1,16 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import StatusBadge from './StatusBadge.vue';
-import { formatDate } from '../formatters.js';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import { formatDate } from '../formatters';
+import type { DetailJob } from '../composables/useJobDetail';
 
-const props = defineProps({
-  job: { type: Object, default: null },
-  isOpen: { type: Boolean, default: false },
-});
+const props = withDefaults(
+  defineProps<{
+    job?: DetailJob | null;
+    isOpen?: boolean;
+  }>(),
+  {
+    job: null,
+    isOpen: false,
+  },
+);
 
-const emit = defineEmits(['close']);
+const emit = defineEmits<{
+  close: [];
+}>();
 
-const sheetRef = ref(null);
+/** A code block in the sheet: the error, the result or the payload. */
+interface CodeSection {
+  title: string;
+  code: string;
+  wrap?: boolean;
+  language?: string;
+}
+
+const sheetRef = ref<NLDDSheet | null>(null);
 
 watch(() => props.isOpen, (open) => {
   if (open) sheetRef.value?.show();
@@ -19,7 +37,7 @@ watch(() => props.isOpen, (open) => {
 
 const infoFields = computed(() => {
   if (!props.job) return [];
-  return [
+  return ([
     ['Job ID', props.job.id],
     ['Law ID', props.job.law_id],
     ['Type', props.job.job_type],
@@ -29,7 +47,7 @@ const infoFields = computed(() => {
     ['Created', formatDate(props.job.created_at)],
     ['Started', formatDate(props.job.started_at)],
     ['Completed', formatDate(props.job.completed_at)],
-  ].filter(([, value]) => value != null);
+  ] satisfies [string, string | number | null | undefined][]).filter(([, value]) => value != null);
 });
 
 const resultJson = computed(() =>
@@ -43,7 +61,7 @@ const payloadJson = computed(() =>
 const codeSections = computed(() => {
   const j = props.job;
   if (!j) return [];
-  const out = [];
+  const out: CodeSection[] = [];
   if (j.status === 'failed' && j.result?.error) {
     out.push({ title: 'Error', code: j.result.error, wrap: true });
   }
@@ -86,7 +104,7 @@ function onSheetClose() {
                 width="full"
                 style="align-items: flex-end"
               >
-                <StatusBadge :status="value" size="md" />
+                <StatusBadge :status="String(value)" size="md" />
               </nldd-cell>
               <nldd-text-cell v-else :text="String(value)" horizontal-alignment="right" />
             </nldd-list-item>

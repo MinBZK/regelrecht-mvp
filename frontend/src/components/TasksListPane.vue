@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * TasksListPane - de takenlijst zelf, in de main-pane van Home. Toont de
  * categorie die in het panel (TasksCategoriesPane) gekozen is; de route draagt
@@ -23,11 +23,13 @@
  */
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useTasks } from '../composables/useTasks.js';
-import { useCorpusLaws } from '../composables/useCorpusLaws.js';
-import { homeTarget } from '../composables/useLastVisitedRoute.js';
-import { reviewTarget } from '../lib/taskReview.js';
-import { taskTitle, runningTitle } from '../lib/taskTitle.js';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import { useTasks } from '../composables/useTasks';
+import type { RunningTaskJob, TaskRecord, TaskRecordPayload } from '../composables/useTasks';
+import { useCorpusLaws } from '../composables/useCorpusLaws';
+import { homeTarget } from '../composables/useLastVisitedRoute';
+import { reviewTarget } from '../lib/taskReview';
+import { taskTitle, runningTitle } from '../lib/taskTitle';
 import {
   filterTasks,
   filterRunning,
@@ -38,22 +40,40 @@ import {
   jobLawId,
   WACHTEN,
   WERKDOCUMENTEN,
-} from '../lib/taskCategories.js';
+} from '../lib/taskCategories';
 
-const props = defineProps({
-  trajectRef: { type: String, default: null },
-  categorie: { type: String, default: null },
-  lawId: { type: String, default: null },
-});
+const props = withDefaults(
+  defineProps<{
+    trajectRef?: string | null;
+    categorie?: string | null;
+    lawId?: string | null;
+  }>(),
+  { trajectRef: null, categorie: null, lawId: null },
+);
 
 // `upload` opent de bestandskiezer, `cancel-job` annuleert een lopende
 // conversie, `view-job` opent de job-weergave van een lopende conversie -
 // alle drie van LibraryView, die viewingJobPath + de foutmodals bezit.
-const emit = defineEmits(['upload', 'cancel-job', 'view-job']);
+const emit = defineEmits<{
+  upload: [];
+  'cancel-job': [job: RunningTaskJob];
+  'view-job': [path: string];
+}>();
+
+// A failed job's task carries the raw error in its (free-form) payload.
+interface TaskWithError extends TaskRecord {
+  payload: (TaskRecordPayload & { error?: string | null }) | null;
+}
 
 const router = useRouter();
 const { tasks, running, resolveTask, requestEnrich, refresh } = useTasks();
 const { displayName } = useCorpusLaws(toRef(props, 'trajectRef'));
+
+// runningTitle may pass a job without a law_id; displayName (via humanizeLawId)
+// renders a missing id as '' either way, so '' stands in for it here.
+function jobLawName(lawId: string | null | undefined): string {
+  return displayName(lawId ?? '');
+}
 
 // De gedeelde lijst loopt al op zijn 30s-poll, maar die is elders gestart en zit
 // midden in een interval zodra jij hier binnenkomt. Wie een lijst opent, wil hem
@@ -77,7 +97,7 @@ const isEmpty = computed(() => shownTasks.value.length === 0 && shownRunning.val
 // ongeldige CSS-selector oplevert voor de anchor-lookup. Het prefix houdt 'm
 // geldig.
 
-function dismiss(task) {
+function dismiss(task: TaskRecord): void {
   resolveTask(task.id, 'dismissed');
 }
 
@@ -91,17 +111,17 @@ function dismiss(task) {
 // Eén sheet voor de hele lijst, niet één per rij; `detailTask` bepaalt de
 // inhoud. nldd-sheet heeft imperatieve show()/hide(), dus die spiegelen we
 // vanuit een watcher (zelfde patroon als TrajectMenu).
-const detailSheetEl = ref(null);
-const detailTask = ref(null);
+const detailSheetEl = ref<NLDDSheet | null>(null);
+const detailTask = ref<TaskWithError | null>(null);
 watch(detailTask, async (task) => {
   await nextTick();
   if (task) detailSheetEl.value?.show();
   else detailSheetEl.value?.hide();
 });
-function showDetails(task) {
+function showDetails(task: TaskRecord): void {
   detailTask.value = task;
 }
-function closeDetails() {
+function closeDetails(): void {
   detailTask.value = null;
 }
 
@@ -109,7 +129,7 @@ function closeDetails() {
 // bedoeling: een conversie kan alleen opnieuw via een nieuwe upload (de job
 // draait met max_attempts=1, bewust - zie corpus_handlers.rs), een verrijking
 // vraag je gewoon opnieuw aan.
-async function retry(task) {
+async function retry(task: TaskRecord): Promise<void> {
   if (taskContext(task) === WERKDOCUMENTEN) {
     emit('upload');
     return;
@@ -125,7 +145,7 @@ async function retry(task) {
 // 'eyeglasses' = hier moet jij naar kijken en beoordelen. Het onderwerp
 // (werkdocument vs wet) zegt de rij zelf al - via de titel en via de context
 // waar hij onder staat - dus het icoon hoeft dat niet te herhalen.
-function taskIcon(task) {
+function taskIcon(task: TaskRecord): string {
   return task.task_type === 'job_failed' ? 'exclamation-circle-filled' : 'eyeglasses';
 }
 
@@ -133,7 +153,7 @@ function taskIcon(task) {
 // query). Taken zonder traject_ref/law_id in de payload tonen een disabled
 // menu-item (zie :disabled hieronder) in plaats van te crashen op een
 // onvolledige route.
-function review(task) {
+function review(task: TaskRecord): void {
   const target = reviewTarget(task);
   if (!target) return;
   router.push(target);
@@ -149,7 +169,7 @@ function review(task) {
 // houdt het item dan op de <button>-tak, dus er is geen kapotte link.
 // `router.resolve` bouwt de url, zodat de route-definitie de enige bron van
 // waarheid blijft (geen handgemaakte url-strings).
-function reviewHref(task) {
+function reviewHref(task: TaskRecord): string | undefined {
   const target = reviewTarget(task);
   return target ? router.resolve(target).href : undefined;
 }
@@ -172,8 +192,8 @@ function reviewHref(task) {
 // handler an event reaches is exempt from that check. A click in the same
 // millisecond as the render left the flag set, and every later select stopped
 // navigating. The dispatch state of the event itself depends on no clock.
-let pendingClick = null;
-function onReviewClickCapture(event, task) {
+let pendingClick: MouseEvent | null = null;
+function onReviewClickCapture(event: MouseEvent, task: TaskRecord): void {
   pendingClick = event;
   if (event.defaultPrevented || event.button !== 0) return;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -191,7 +211,7 @@ function onReviewClickCapture(event, task) {
 // bij het ontwerpsysteem (het rendert de href-tak), niet bij dit component -
 // hier het gedrag van één item nabouwen zou het juist uit de pas laten lopen
 // met elk ander link-menu-item.
-function onReviewSelect(task) {
+function onReviewSelect(task: TaskRecord): void {
   if (pendingClick && pendingClick.eventPhase !== Event.NONE) return;
   pendingClick = null;
   review(task);
@@ -203,7 +223,7 @@ function onReviewSelect(task) {
 // zet - anders opent hij het pad eerst als gewoon document (de jobs-lijst is
 // bij binnenkomst nog niet gepolld) en flitst de 404/‘mislukt’-staat op. Zo
 // landt het deterministisch op de job-weergave, net als de zijbalk.
-function viewDocument(job) {
+function viewDocument(job: RunningTaskJob): void {
   if (!job.target_path) return;
   emit('view-job', job.target_path);
 }
@@ -212,7 +232,7 @@ function viewDocument(job) {
 // bestaat alleen voor conversies), maar de wet zelf bestaat wel - dus open 'm
 // in de bibliotheek. Zonder dit zou een lopende verrijking een leeg menu
 // hebben.
-function viewLaw(job) {
+function viewLaw(job: RunningTaskJob): void {
   const lawId = jobLawId(job);
   if (!lawId) return;
   router.push(homeTarget({ trajectRef: props.trajectRef || undefined, lawId }));
@@ -280,11 +300,11 @@ function viewLaw(job) {
         <nldd-activity-indicator
           size="20"
           timing="instant"
-          :text="runningTitle(job, displayName)"
+          :text="runningTitle(job, jobLawName)"
         ></nldd-activity-indicator>
       </nldd-cell>
       <nldd-spacer-cell size="8"></nldd-spacer-cell>
-      <nldd-text-cell :text="runningTitle(job, displayName)"></nldd-text-cell>
+      <nldd-text-cell :text="runningTitle(job, jobLawName)"></nldd-text-cell>
       <nldd-spacer-cell size="8"></nldd-spacer-cell>
       <nldd-cell>
         <nldd-icon-button size="sm" icon="more" text="Acties" tooltip-timing="never">

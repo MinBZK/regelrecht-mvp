@@ -1,19 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch.js';
-import { useBwbHarvest } from '../composables/useBwbHarvest.js';
-import { useAuth } from '../composables/useAuth.js';
-import { useTrajects } from '../composables/useTrajects.js';
-import { lawsListUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
-import { useLatest } from '../lib/useLatest.js';
-import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from '../constants.js';
+import type { NLDDPopover } from '@nldd/design-system/popover';
+import { useBwbSearch, MIN_QUERY_LENGTH } from '../composables/useBwbSearch';
+import type { BwbSearchResult } from '../composables/useBwbSearch';
+import type { CorpusLaw } from '../composables/useCorpusLaws';
+import { useBwbHarvest } from '../composables/useBwbHarvest';
+import { useAuth } from '../composables/useAuth';
+import { useTrajects } from '../composables/useTrajects';
+import { lawsListUrl } from '../composables/corpusUrls';
+import { apiFetchJson } from '../lib/apiFetch';
+import { useLatest } from '../lib/useLatest';
+import { SEARCH_PLACEHOLDER, SEARCH_ACCESSIBLE_LABEL } from '../constants';
 
 // Override the list's built-in search-field placeholder (i18n default "Zoeken")
 // so this popover stays in sync with the main search-field in AppShell.
 const listTranslations = { 'components.list.search-placeholder-label': SEARCH_PLACEHOLDER };
 
-const emit = defineEmits(['select-law', 'harvest-available']);
+const emit = defineEmits<{
+  'select-law': [lawId: string];
+  'harvest-available': [slug: string];
+}>();
+
+/** The listbox's own `input` event: the search value on `detail`. */
+type ValueEvent = Event & { detail?: { value?: string } | null };
 
 const { activeTrajectRef } = useTrajects();
 
@@ -32,7 +41,7 @@ const search = ref('');
 // against MIN_QUERY_LENGTH, so the hints in the template have to compare the
 // same thing, or "ab " says "no results" instead of "type more".
 const searchTerm = computed(() => search.value.trim());
-const popoverRef = ref(null);
+const popoverRef = ref<NLDDPopover | null>(null);
 const useCenteredPosition = ref(true);
 // md only: popover anchors below the trigger button - clicking outside closes
 // it, so an explicit Sluit button is just clutter. On sm (full-height sheet)
@@ -54,7 +63,7 @@ const pendingSearch = ref('');
 const BREAKPOINT_MD_MIN = 641;
 const BREAKPOINT_LG_MIN = 1008;
 
-function displayName(law) {
+function displayName(law: CorpusLaw) {
   // Prefer the API's resolved `display_name`: laws can have a dynamic
   // `name: "#output_ref"` in YAML that the backend resolves via the
   // matching action output. Without this check we'd render the raw
@@ -69,7 +78,7 @@ function displayName(law) {
 // filtering a preloaded client-side list - that's the only way the search
 // can reach every law, not just the first page. Ordered private-repo-first
 // by the backend; `sortedLaws` keeps that order as a flat option list.
-const serverLaws = ref([]);
+const serverLaws = ref<CorpusLaw[]>([]);
 // True while a corpus query is in flight, so the UI shows a spinner instead
 // of briefly flashing "no results" (which would wrongly trigger the external
 // fallback) before the response lands.
@@ -99,7 +108,7 @@ const sortedLaws = computed(() =>
 // Debounce the corpus query so we don't fire a request per keystroke, and
 // guard against out-of-order responses with a latest-claim.
 const claimSearch = useLatest();
-let debounceTimer = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 watch(search, (q) => {
   clearBwb();
@@ -120,11 +129,11 @@ watch(search, (q) => {
   debounceTimer = setTimeout(() => runCorpusSearch(term), 200);
 });
 
-async function runCorpusSearch(term) {
+async function runCorpusSearch(term: string) {
   const isCurrent = claimSearch();
   try {
     const url = lawsListUrl(activeTrajectRef.value, `q=${encodeURIComponent(term)}&limit=60`);
-    const laws = await apiFetchJson(url);
+    const laws = await apiFetchJson<CorpusLaw[]>(url);
     if (!isCurrent()) return; // a newer query superseded this one
     serverLaws.value = laws;
     searchFailed.value = false;
@@ -144,7 +153,7 @@ async function runCorpusSearch(term) {
   }
 }
 
-function bwbItemClick(result) {
+function bwbItemClick(result: BwbSearchResult) {
   if (needsLogin.value) {
     login();
     return;
@@ -171,8 +180,8 @@ function close() {
  * filter internally, so we drive the corpus query straight off it. The watch
  * on `search` debounces and runs the backend query.
  */
-function onListInput(e) {
-  search.value = e.detail?.value ?? '';
+function onListInput(e: Event) {
+  search.value = (e as ValueEvent).detail?.value ?? '';
 }
 
 /**
@@ -183,7 +192,7 @@ function onListInput(e) {
  * synchronous `input` event the clear path emits. Mirrors how Safari/Spotlight
  * handle Esc in search inputs.
  */
-function onListKeydown(e) {
+function onListKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && !e.defaultPrevented) close();
 }
 
@@ -205,9 +214,9 @@ function onPopoverClose() {
 // dispatches 'close'. By emitting after that, the parent's "focus the opened
 // law" (scheduled on its own nextTick) runs last and wins - so focus lands on
 // the law instead of snapping back to the search trigger.
-let pendingSelectLawId = null;
+let pendingSelectLawId: string | null = null;
 
-function selectLaw(lawId) {
+function selectLaw(lawId: string) {
   pendingSelectLawId = lawId;
   close();
 }
@@ -314,7 +323,7 @@ onBeforeUnmount(() => {
  * initial query in the popover. Stashed in `pendingSearch` and applied by
  * onPopoverOpen (the listbox's input only exists once it's rendered).
  */
-async function show(anchorEl, initialSearch = '', event) {
+async function show(anchorEl?: EventTarget | null, initialSearch = '', event?: Event) {
   if (!popoverRef.value) return;
   // A second click on the trigger closes again. The triggers live in the app
   // shell and this popover in the routed view, so the button is not the
@@ -329,7 +338,8 @@ async function show(anchorEl, initialSearch = '', event) {
   //
   // Only for a plain re-trigger: type-to-open passes a character and should
   // keep the popover open and seed it.
-  const pointerDriven = (event?.detail ?? 0) > 0;
+  // A click or key event (UIEvent) carries `detail`: the click count, 0 for a keyboard activation.
+  const pointerDriven = ((event as UIEvent | undefined)?.detail ?? 0) > 0;
   const wasOpen = pointerDriven
     ? wasOpenOnPointerdown
     : (popoverRef.value.matches?.(':popover-open') ?? false);
@@ -337,7 +347,8 @@ async function show(anchorEl, initialSearch = '', event) {
     close();
     return;
   }
-  if (anchorEl) popoverRef.value.anchorElement = anchorEl;
+  // Callers pass the trigger element (the event's currentTarget).
+  if (anchorEl) popoverRef.value.anchorElement = anchorEl as Element;
   pendingSearch.value = initialSearch;
   applyBreakpointLayout();
   // Wait for Vue to propagate the new `centered` / `top` / `width` props
@@ -369,7 +380,7 @@ async function show(anchorEl, initialSearch = '', event) {
  */
 function onPopoverOpen() {
   const list = popoverRef.value?.querySelector('nldd-list');
-  const input = list?.shadowRoot?.querySelector('.list__search-field-input');
+  const input = list?.shadowRoot?.querySelector<HTMLInputElement>('.list__search-field-input');
   if (input) {
     input.value = pendingSearch.value;
     input.dispatchEvent(new Event('input', { bubbles: true }));

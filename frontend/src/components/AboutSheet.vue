@@ -1,15 +1,16 @@
-<script setup>
+<script setup lang="ts">
 // "Over RegelRecht" — a short about sheet opened from the account menu. Static
 // content plus a link to the public site. Exposes show()/hide() so the shell
 // can drive it from the menu item.
 import { ref } from 'vue';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
 
-const sheetEl = ref(null);
+const sheetEl = ref<NLDDSheet | null>(null);
 
-function show() {
+function show(): void {
   sheetEl.value?.show?.();
 }
-function hide() {
+function hide(): void {
   sheetEl.value?.hide?.();
 }
 
