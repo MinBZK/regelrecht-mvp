@@ -26,13 +26,15 @@ default:
 
 # --- WASM ---
 
-# Build WASM module for browser use
-wasm-build:
+# The wasm-bindgen CLI that matches packages/Cargo.lock, as a path on stdout
+#
+# Checked BEFORE the minutes-long cargo build of a recipe that uses it.
+[private]
+wasm-bindgen-cli:
     #!/usr/bin/env bash
     set -euo pipefail
-    # Find wasm-bindgen and check its version BEFORE the minutes-long cargo
-    # build. `cargo install` puts it in $CARGO_HOME/bin, which is not always on
-    # the PATH a recipe gets (cargo itself may be reachable through a symlink
+    # `cargo install` puts it in $CARGO_HOME/bin, which is not always on the
+    # PATH a recipe gets (cargo itself may be reachable through a symlink
     # elsewhere). The CLI must match the wasm-bindgen crate in Cargo.lock
     # exactly; the Docker build and CI enforce the same pin.
     locked=$(grep -A1 '^name = "wasm-bindgen"$' packages/Cargo.lock \
@@ -56,6 +58,13 @@ wasm-build:
       echo "  cargo install wasm-bindgen-cli --version $locked --locked --force" >&2
       exit 1
     fi
+    echo "$bindgen"
+
+# Build WASM module for browser use
+wasm-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bindgen=$({{just_executable()}} wasm-bindgen-cli)
     # Pin the target dir explicitly. A CLI --target-dir overrides any shared
     # [build] target-dir from `just dev-setup` (root .cargo/config.toml), so the
     # artifact always lands at packages/target — no metadata lookup (and no jq/
@@ -81,12 +90,13 @@ landing-laws:
 format:
     cd packages && cargo fmt --check --all
 
-# The features a deployed artefact or a `just` recipe actually turns on.
+# The features a deployed artefact or a `just` recipe actually turns on
+# (`poc-chronolexografie/wasm` is the browser build of that poc).
 # Deliberately not --all-features: that also builds `engine/wasm` and the two
 # `test-utils` features. Those still get compiled by `just test`, which does run
 # --all-features, so leaving them out here costs clippy coverage on that code
 # and nothing else.
-check_features := "regelrecht-engine/validate,regelrecht-corpus/annotation-validation"
+check_features := "regelrecht-engine/validate,regelrecht-corpus/annotation-validation,regelrecht-poc-chronolexografie/wasm"
 
 # Run clippy lints
 lint:
@@ -960,9 +970,10 @@ poc-assets:
 
 # Bouw elke statische poc met zijn eigen basis, en zet alles klaar in .poc-static/
 #
-# De WASM-engine komt uit `just wasm-build`; copy-assets.js van elke poc stopt
-# met een duidelijke melding als die er niet is.
-poc-build: wasm-build poc-assets
+# De WASM-engine komt uit `just wasm-build`, chronolexografie uit `just
+# poc-chronolexografie-wasm`; copy-assets.js van elke poc stopt met een
+# duidelijke melding als die er niet is.
+poc-build: wasm-build poc-chronolexografie-wasm poc-assets
     #!/usr/bin/env bash
     set -euo pipefail
     rm -rf .poc-static
@@ -974,6 +985,9 @@ poc-build: wasm-build poc-assets
     POC_BASE=/nieuwkomersbekostiging/ npm run build -w poc-nieuwkomersbekostiging
     mkdir -p .poc-static/nieuwkomersbekostiging
     cp -R frontend-poc-nieuwkomersbekostiging/dist/. .poc-static/nieuwkomersbekostiging/
+    POC_BASE=/chronolexografie/ npm run build -w poc-chronolexografie
+    mkdir -p .poc-static/chronolexografie
+    cp -R packages/poc-chronolexografie/frontend/dist/. .poc-static/chronolexografie/
 
 # Start het poc-portaal op http://localhost:8611
 #
@@ -998,19 +1012,25 @@ poc: poc-build
     POC_PORT=8611 \
     cargo run --manifest-path packages/Cargo.toml --package regelrecht-poc-portal
 
-# Start de chronolexografie-poc los, op http://localhost:8410/chronolexografie/
+# Bouw de chronolexografie-poc als WASM, naar packages/poc-chronolexografie/frontend/public/wasm/pkg
 #
-# Bouwt de frontend met hetzelfde voorvoegsel als achter het portaal, zodat
-# `POC_UPSTREAM_CHRONOLEXOGRAFIE=http://127.0.0.1:8410 just poc` hem ook via de
-# poort laat zien. De kroniek staat in het geheugen: een herstart is een lege.
-poc-chronolexografie port="8410":
+# De cel, de engine en het spel draaien in de browser van de bezoeker
+# (packages/poc-chronolexografie, feature `wasm`). copy-assets.js van de app
+# stopt met een duidelijke melding als dit er niet is.
+poc-chronolexografie-wasm:
     #!/usr/bin/env bash
     set -euo pipefail
-    POC_BASE=/chronolexografie/ npm run build -w poc-chronolexografie
-    echo "chronolexografie → http://localhost:{{port}}/chronolexografie/"
-    CHRONO_PORT={{port}} \
-    CHRONO_BASE_PATH=/chronolexografie/ \
-    cargo run --manifest-path packages/Cargo.toml --package regelrecht-poc-chronolexografie
+    bindgen=$({{just_executable()}} wasm-bindgen-cli)
+    # Zelfde vaste target-map als wasm-build, om dezelfde reden.
+    cargo build --manifest-path packages/Cargo.toml --package regelrecht-poc-chronolexografie --features wasm --target wasm32-unknown-unknown --release --target-dir packages/target
+    "$bindgen" --target web --out-dir packages/poc-chronolexografie/frontend/public/wasm/pkg packages/target/wasm32-unknown-unknown/release/regelrecht_poc_chronolexografie.wasm
+
+# Start de chronolexografie-poc los, op de vite-dev-server (http://localhost:5410)
+#
+# Alles draait in de browser: elk tabblad speelt zijn eigen casus. Achter het
+# portaal komt hij uit `just poc`.
+poc-chronolexografie: poc-chronolexografie-wasm
+    npm run dev -w poc-chronolexografie
 
 # Start de beleidsassistent van één casus, naast `just poc` in een tweede terminal
 #
