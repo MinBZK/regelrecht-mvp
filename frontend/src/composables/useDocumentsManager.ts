@@ -222,7 +222,9 @@ export function useDocumentsManager(
   }
 
   async function handleSave(): Promise<boolean> {
-    if (saving.value) return false;
+    // Without an open document there is nothing to save, and a rename would
+    // end in a DELETE of the null path.
+    if (saving.value || !currentPath.value) return false;
     titleError.value = null;
 
     // Auto-name (Apple Notes-style): while the name is still auto-managed and the
@@ -277,9 +279,7 @@ export function useDocumentsManager(
     // The rename committed: re-derive the auto/manual state from the saved
     // content, so name==first-line re-links and a manual name locks.
     reconcileAutoBaseline();
-    // oldPath is null only when no document was open; handleSave is not offered
-    // then. The cast keeps the old call unchanged.
-    const deleted = await deleteDocument(oldPath as string);
+    const deleted = await deleteDocument(oldPath);
     if (!deleted?.ok) {
       // The new name is saved, so content is never lost, but the old path
       // could not be removed and lingers on the server as an orphan copy.

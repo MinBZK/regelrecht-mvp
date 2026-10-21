@@ -26,6 +26,21 @@ beforeEach(() => {
 });
 
 describe('useCorpusLaws', () => {
+  it('warns instead of throwing when given a plain string', async () => {
+    const useCorpusLaws = await freshUseCorpusLaws();
+    apiFetchJson.mockResolvedValue([{ law_id: 'wet_a', name: 'Wet A' }]);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // A JS caller (or a cast) can still pass a bare string.
+    const { displayName } = useCorpusLaws('tr-1' as unknown as Parameters<typeof useCorpusLaws>[0]);
+    await flush();
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('should be a Ref'), 'tr-1');
+    expect(apiFetchJson).toHaveBeenCalledWith(expect.stringContaining('tr-1'));
+    expect(displayName('wet_a')).toBe('Wet A');
+    warn.mockRestore();
+  });
+
   it('shares one fetch between consumers of the same scope', async () => {
     const useCorpusLaws = await freshUseCorpusLaws();
     apiFetchJson.mockResolvedValue([{ law_id: 'wet_a', name: 'Wet A' }]);

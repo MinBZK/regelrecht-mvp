@@ -43,7 +43,7 @@ const infoFields = computed(() => {
     ['Type', props.job.job_type],
     ['Status', props.job.status],
     ['Priority', props.job.priority],
-    ['Attempts', `${props.job.attempts} / ${props.job.max_attempts}`],
+    ['Attempts', props.job.attempts == null ? null : `${props.job.attempts} / ${props.job.max_attempts}`],
     ['Created', formatDate(props.job.created_at)],
     ['Started', formatDate(props.job.started_at)],
     ['Completed', formatDate(props.job.completed_at)],

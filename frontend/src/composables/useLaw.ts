@@ -54,9 +54,9 @@ export function resolveLawName(law: LawDocument | null | undefined): string {
       const actions = article.machine_readable?.execution?.actions;
       if (!actions) continue;
       for (const action of actions) {
-        // The schema allows any operation value here; a name reference is
-        // expected to point at a literal string.
-        if (action.output === outputName) return action.value as string;
+        // The schema allows any operation value here; only a literal string
+        // is a name.
+        if (action.output === outputName && typeof action.value === 'string') return action.value;
       }
     }
   }

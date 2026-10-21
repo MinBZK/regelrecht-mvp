@@ -67,7 +67,7 @@ export function taskTitle(
  */
 export function runningTitle(
   job: RunningJob | null | undefined,
-  // Unlike taskTitle, a job may reach lawName without a law_id.
+  // Called only with a law_id; a job without one leaves the law out.
   lawName: (lawId: string | null | undefined) => string = (id) => String(id),
 ): string {
   if (job?.job_type === 'document_convert') {
@@ -78,10 +78,14 @@ export function runningTitle(
   if (job?.job_type === 'law_convert') {
     return `Wachten op conversie van ${fileName(job.target_path, 'document')} naar een regelwerk`;
   }
+  // Without a law_id (or a name for it) the title leaves the law out rather
+  // than print "undefined" or end on a dangling "van".
+  const naam = job?.law_id ? lawName(job.law_id) : '';
+  const van = naam ? ` van ${naam}` : '';
   // Een wet ophalen in een traject: law_id draagt het BWB-id van de op te halen
   // wet, die nog niet in het corpus staat, dus lawName valt hier meestal terug.
   if (job?.job_type === 'traject_harvest') {
-    return `Wachten op wet ophalen van ${lawName(job.law_id)}`;
+    return `Wachten op wet ophalen${van}`;
   }
-  return `Wachten op verrijking van ${lawName(job?.law_id)}`;
+  return `Wachten op verrijking${van}`;
 }

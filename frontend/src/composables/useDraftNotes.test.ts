@@ -255,6 +255,15 @@ describe('useDraftNotes.saveToRepo', () => {
     expect(drafts.value).toHaveLength(1);
   });
 
+  it('refuses to save when no law is open, without a request', async () => {
+    stubSave({ ok: true, json: async () => ({ pr: null }) });
+    const { saveToRepo, publishNote } = useDraftNotes(ref(null), ref(TRAJECT_REF));
+
+    await expect(saveToRepo()).rejects.toThrow(/open law/);
+    await expect(publishNote({ ...NOTE, __draft: true })).rejects.toThrow(/open law/);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it('keeps the existing PR badge on a NoChange re-save', async () => {
     // Regression for hostile-review #4: a PR-less 200 (every note already
     // committed) must NOT null an existing badge and must report noChange

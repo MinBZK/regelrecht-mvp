@@ -258,6 +258,31 @@ describe('useTaskReview', () => {
     expect(applyEnrichment).not.toHaveBeenCalled();
   });
 
+  it('does not post an apply for a task without a job, and keeps its verdict', async () => {
+    fetchTask.mockResolvedValue(openTask({ job_id: null }));
+    const { loadReview, decide, processEnrichment, reviewTask, undecidedParts } = useTaskReview();
+    await loadReview('t1');
+    decide('approved', 'number: "1"\n');
+
+    await expect(processEnrichment('"etag-1"')).rejects.toThrow(/geen verrijking/);
+    expect(applyEnrichment).not.toHaveBeenCalled();
+    // Nothing was written, so the review stays open with its recorded verdict.
+    expect(reviewTask.value?.id).toBe('t1');
+    expect(undecidedParts.value).toEqual([]);
+  });
+
+  it('releases a task without a job when it is rejected, without posting an apply', async () => {
+    fetchTask.mockResolvedValue(openTask({ job_id: null }));
+    const { loadReview, decide, processEnrichment, reviewTask } = useTaskReview();
+    await loadReview('t1');
+    decide('rejected', null);
+
+    await expect(processEnrichment('"etag-1"')).resolves.toBeNull();
+    expect(applyEnrichment).not.toHaveBeenCalled();
+    expect(resolveTask).toHaveBeenCalledWith('t1', 'rejected');
+    expect(reviewTask.value).toBeNull();
+  });
+
   it('reset ruimt ook loadError op, niet alleen de taak', async () => {
     fetchTask.mockResolvedValue(openTask());
     fetchJobTasks.mockResolvedValue(twoParts());

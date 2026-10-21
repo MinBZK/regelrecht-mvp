@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useLaw, fetchLaw } from './useLaw';
+import { useLaw, fetchLaw, resolveLawName } from './useLaw';
+import type { LawDocument } from '../lib/lawFormat';
 
 // Helper: shape a Response-like object with headers + body + status.
 // Mirrors the harness in useTrajectDocuments.test.js.
@@ -442,5 +443,28 @@ describe('useLaw lawTrajectRef (which traject the open law belongs to)', () => {
     // A same-traject switch (newTrajectRef omitted) leaves it untouched.
     await law.switchLaw('wet_x', '1');
     expect(law.lawTrajectRef.value).toBe('tr-beta');
+  });
+});
+
+describe('resolveLawName', () => {
+  it('returns the action value a #name reference points at', () => {
+    const law = {
+      $id: 'wet_x',
+      name: '#naam',
+      articles: [{ number: '1', machine_readable: { execution: { actions: [{ output: 'naam', value: 'Wet X' }] } } }],
+    } as unknown as LawDocument;
+    expect(resolveLawName(law)).toBe('Wet X');
+  });
+
+  it('never returns a non-string action value as the name', () => {
+    const law = {
+      $id: 'wet_x',
+      name: '#naam',
+      articles: [
+        { number: '1', machine_readable: { execution: { actions: [{ output: 'naam', value: { operation: 'ADD' } }] } } },
+      ],
+    } as unknown as LawDocument;
+    expect(typeof resolveLawName(law)).toBe('string');
+    expect(resolveLawName(law)).toBe('#naam');
   });
 });

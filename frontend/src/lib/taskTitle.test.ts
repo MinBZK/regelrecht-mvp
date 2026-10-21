@@ -114,6 +114,13 @@ describe('runningTitle', () => {
     expect(runningTitle(job, lawName)).toBe('Wachten op conversie van zorgtoeslag.pdf naar een regelwerk');
   });
 
+  it('leaves the law out of the title when the job carries no law_id', () => {
+    expect(runningTitle({ job_id: 'j6', job_type: 'enrich' })).toBe('Wachten op verrijking');
+    expect(runningTitle({ job_id: 'j7', job_type: 'traject_harvest' }, () => '')).toBe(
+      'Wachten op wet ophalen',
+    );
+  });
+
   it('schrijft een lopende traject-harvest als wachten, met het BWB-id', () => {
     const job = { job_id: 'j5', job_type: 'traject_harvest', law_id: 'BWBR0002399' };
     expect(runningTitle(job, lawName)).toBe('Wachten op wet ophalen van BWBR0002399');

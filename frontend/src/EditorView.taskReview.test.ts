@@ -449,16 +449,10 @@ describe('EditorView review-modus', () => {
     await internals(wrapper).rejectReview();
     await settle();
 
-    // Een taak zonder job_id is in haar eentje de verrijking: "Verwerpen"
-    // legt het oordeel vast en verwerkt meteen - dat schrijft niet meer via
-    // een losse `resolveTask` per taak, maar via `applyEnrichment` op de
-    // verrijking (hier: alleen deze taak).
-    expect(resolveTask).not.toHaveBeenCalled();
-    expect(applyEnrichment).toHaveBeenCalledWith(
-      'taak-1',
-      [{ task_id: 'taak-1', action: 'rejected' }],
-      'etag-1',
-    );
+    // A task without a job_id (its job was deleted) has no enrichment the
+    // apply endpoint can find, so rejecting it releases the task itself.
+    expect(applyEnrichment).not.toHaveBeenCalled();
+    expect(resolveTask).toHaveBeenCalledWith('taak-1', 'rejected');
     // De enige route die de taak bewust NIET meeneemt.
     const lastReplace = replaceMock.mock.calls.at(-1);
     if (!lastReplace) throw new Error('router.replace was not called');
