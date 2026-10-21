@@ -9,7 +9,7 @@
  * `uitkomst` (een uitvoer van het artikel) of `begrip` (een open begrip, met
  * wie het invulde).
  */
-import { bezwaarGrondslag, hoofdletter, kort, leesbaar, spel, toegewezen, waarde } from './spel.js';
+import { bezwaarGrondslag, hoofdletter, kort, leesbaar, state, toegewezen, waarde } from './state.js';
 
 // Regelwerken die overal bij hun afkorting heten.
 const AFKORTINGEN = {
@@ -23,7 +23,7 @@ const AFKORTINGEN = {
  */
 export function wetNaam(wet) {
   if (AFKORTINGEN[wet]) return AFKORTINGEN[wet];
-  const naam = spel.casus?.regelwerken?.find((r) => r.id === wet)?.naam;
+  const naam = state.casus?.regelwerken?.find((r) => r.id === wet)?.naam;
   if (naam) return naam;
   return hoofdletter(leesbaar(wet));
 }
@@ -61,8 +61,8 @@ export const gelezen = (p, grammen) =>
  * haar id.
  */
 export const celNaam = (cel) =>
-  (cel === spel.casus?.cel && spel.casus?.cel_naam) ||
-  spel.casus?.andere_cellen?.find((a) => a.cel === cel)?.cel_naam ||
+  (cel === state.casus?.cel && state.casus?.cel_naam) ||
+  state.casus?.andere_cellen?.find((a) => a.cel === cel)?.cel_naam ||
   `cel ${cel}`;
 
 /**
@@ -71,7 +71,7 @@ export const celNaam = (cel) =>
  * vinden.
  */
 export const grammenVan = (cel, grammen) =>
-  cel === spel.casus?.cel ? grammen : (spel.andere?.find((a) => a.cel === cel)?.grammen ?? grammen);
+  cel === state.casus?.cel ? grammen : (state.andere?.find((a) => a.cel === cel)?.grammen ?? grammen);
 
 /** Namen als Nederlandse opsomming: "A", "A en B", "A, B en C". */
 export function opsomming(namen) {

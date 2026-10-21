@@ -16,16 +16,16 @@ import {
   kort,
   leesbaar,
   samenvatting,
-  spel,
+  state,
   stap,
   toegewezen,
-} from '../spel.js';
+} from '../state.js';
 import VeldInvoer from './VeldInvoer.vue';
 
-const aanvraag = reactive({ ...spel.casus.voorbeeld.aanvraag });
+const aanvraag = reactive({ ...state.casus.voorbeeld.aanvraag });
 
 const artikel = computed(() => {
-  const [wet, nummer] = spel.casus.besluit.split('#');
+  const [wet, nummer] = state.casus.besluit.split('#');
   return artikelNaam(wet, nummer);
 });
 
@@ -33,7 +33,7 @@ const zonderLeeg = (velden) =>
   Object.fromEntries(Object.entries(velden).filter(([, v]) => v !== undefined));
 
 async function indienen() {
-  await stap(() => api.aanvragen(zonderLeeg(aanvraag), spel.datum));
+  await stap(() => api.aanvragen(zonderLeeg(aanvraag), state.datum));
 }
 
 // Het bezwaar tegen één besluit tegelijk.
@@ -42,10 +42,10 @@ const bezwaar = reactive({});
 
 const bezwaarVelden = computed(() => {
   const besluit = bezwaarTegen.value;
-  if (!besluit || !spel.vormen) return [];
+  if (!besluit || !state.vormen) return [];
   // Het bestreden besluit en wat het al bevat (de bezwaartermijn, Awb 6:8)
   // vult de cel zelf.
-  return spel.vormen.bezwaar.velden.filter(
+  return state.vormen.bezwaar.velden.filter(
     (v) => !(v.naam in (besluit.outputs ?? {})) && !(v.naam in (besluit.fields ?? {})),
   );
 });
@@ -53,8 +53,8 @@ const bezwaarVelden = computed(() => {
 function startBezwaar(besluit) {
   bezwaarTegen.value = besluit;
   for (const k of Object.keys(bezwaar)) delete bezwaar[k];
-  Object.assign(bezwaar, spel.casus.voorbeeld.bezwaar, {
-    dagtekening_bezwaarschrift: spel.datum,
+  Object.assign(bezwaar, state.casus.voorbeeld.bezwaar, {
+    dagtekening_bezwaarschrift: state.datum,
   });
 }
 
@@ -67,7 +67,7 @@ function stand(a) {
 
 async function bezwaarIndienen() {
   const besluit = bezwaarTegen.value;
-  const ok = await stap(() => api.bezwaren(besluit.id, zonderLeeg(bezwaar), spel.datum));
+  const ok = await stap(() => api.bezwaren(besluit.id, zonderLeeg(bezwaar), state.datum));
   if (ok) bezwaarTegen.value = null;
 }
 
@@ -75,7 +75,7 @@ async function bezwaarIndienen() {
 
 <template>
   <nldd-simple-section>
-    <nldd-title slot="header" size="3" :text="`Aanvraag: ${spel.casus.titel.toLowerCase()}`">
+    <nldd-title slot="header" size="3" :text="`Aanvraag: ${state.casus.titel.toLowerCase()}`">
       <nldd-text slot="supporting-text">
         {{ artikel }}. De velden komen uit de wet: wat het artikel vraagt en wat de Algemene wet
         bestuursrecht erbij eist (artikel 4:2). Een leeg veld laat je weg; de cel legt de
@@ -85,7 +85,7 @@ async function bezwaarIndienen() {
     </nldd-title>
     <nldd-container gap="16" max-width="560px">
       <VeldInvoer
-        v-for="veld in spel.vormen.aanvraag.velden"
+        v-for="veld in state.vormen.aanvraag.velden"
         :key="veld.naam"
         v-model="aanvraag[veld.naam]"
         :veld="veld"
@@ -141,7 +141,7 @@ async function bezwaarIndienen() {
       <nldd-text slot="supporting-text">
         De velden komen uit de Awb (artikel 6:5, via 7:11). Het bestreden besluit en de
         bezwaartermijn neemt de cel uit het besluit. Het bezwaar wijzigt de aanvraag niet:
-        {{ spel.casus.rol }} heroverweegt het besluit op grond van wat je aanvoert. Wil je iets
+        {{ state.casus.rol }} heroverweegt het besluit op grond van wat je aanvoert. Wil je iets
         anders vragen, dan doe je een nieuwe aanvraag.
       </nldd-text>
     </nldd-title>

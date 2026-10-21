@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { artikelNaam, genomenBij, genummerd, opsomming, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
-import { rol, spel } from '../src/spel.js';
+import { rol, state } from '../src/state.js';
 
 // De casus zoals `api.casus` haar geeft, voor zover het logboek haar leest.
 beforeEach(() => {
-  spel.casus = {
+  state.casus = {
     besluit: 'leerplichtwet_1969#13a',
     beslissing_op_bezwaar: 'algemene_wet_bestuursrecht#7:11',
     uitkomst: 'verlof_verleend',
@@ -132,7 +132,7 @@ describe('uitslag', () => {
     expect(uitslag({ kind: 'AANVRAAG', outputs: {} }).tekst).toBe('ontvangen');
     expect(uitslag({ kind: 'BESCHIKKING', grondslag: 'leerplichtwet_1969#13a', outputs: { verlof_verleend: false } })).toEqual({ tekst: 'afgewezen', kleur: 'critical' });
     // De uitvoer die toewijst, noemt de casus.
-    spel.casus.uitkomst = 'gehandicaptenparkeerkaart_verstrekt';
+    state.casus.uitkomst = 'gehandicaptenparkeerkaart_verstrekt';
     expect(uitslag({ kind: 'BESCHIKKING', outputs: { gehandicaptenparkeerkaart_verstrekt: true } }).tekst).toBe('toegewezen');
     const op = (o) => uitslag({ kind: 'BESCHIKKING', grondslag: 'algemene_wet_bestuursrecht#7:11', outputs: o }).tekst;
     expect(op({ bezwaar_ontvankelijk: false })).toBe('niet-ontvankelijk');
@@ -171,15 +171,15 @@ describe('toon en artikelNaam', () => {
 
 describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
   beforeEach(() => {
-    spel.casus.andere_cellen = [
+    state.casus.andere_cellen = [
       { cel: 'gemeente_oostmeer', cel_naam: 'gemeente Oostmeer' },
       { cel: 'cbr', cel_naam: 'CBR' },
     ];
-    spel.andere = [{ cel: 'gemeente_oostmeer', grammen: [{ id: '019a0000-0000-7000-8000-00000000cccc', kind: 'BESCHIKKING' }] }];
+    state.andere = [{ cel: 'gemeente_oostmeer', grammen: [{ id: '019a0000-0000-7000-8000-00000000cccc', kind: 'BESCHIKKING' }] }];
   });
   afterEach(() => {
-    delete spel.casus.andere_cellen;
-    spel.andere = [];
+    delete state.casus.andere_cellen;
+    state.andere = [];
   });
 
   it('leest het laatste chronolexogram in de kroniek van de andere cel', () => {

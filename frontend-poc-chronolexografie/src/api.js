@@ -45,7 +45,7 @@ function poc() {
  * Een stap van het spel; het antwoord is JSON. Een panic in de cel breekt de
  * WASM-instantie af (een `WebAssembly.RuntimeError`), en daarna weigert elke
  * stap: dat zegt de melding, en een herlaad gaat verder bij de laatste stap
- * die wel lukte (spel.js bewaart het spel na elke stap).
+ * die wel lukte (state.js bewaart het spel na elke stap).
  */
 let gestopt = null;
 async function roep(stap) {

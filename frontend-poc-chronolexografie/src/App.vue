@@ -12,7 +12,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
 import { artikelNaam } from './logboek.js';
 import { melding } from './melding.js';
-import { hervatten, naarKeuze, spel, stap, verversen } from './spel.js';
+import { hervatten, naarKeuze, state, stap, verversen } from './state.js';
 import AanvragerTab from './components/AanvragerTab.vue';
 import AndereCellenTab from './components/AndereCellenTab.vue';
 import BestuursorgaanTab from './components/BestuursorgaanTab.vue';
@@ -28,26 +28,26 @@ const tabs = computed(() => [
   { id: 'scenarios', tekst: "Scenario's" },
   { id: 'aanvrager', tekst: 'Aanvrager' },
   { id: 'bestuursorgaan', tekst: 'Bestuursorgaan' },
-  ...(spel.casus?.andere_cellen?.length ? [{ id: 'andere', tekst: 'Andere cellen' }] : []),
+  ...(state.casus?.andere_cellen?.length ? [{ id: 'andere', tekst: 'Andere cellen' }] : []),
   { id: 'kroniek', tekst: 'Kroniek' },
   { id: 'reductie', tekst: 'Reductie' },
   { id: 'logboek', tekst: 'Logboek' },
 ]);
 const tab = ref('scenarios');
 const details = ref(false);
-watch(() => spel.fout, () => (details.value = false));
+watch(() => state.fout, () => (details.value = false));
 
 onMounted(hervatten);
-watch(() => spel.datum, verversen);
+watch(() => state.datum, verversen);
 
 const artikel = computed(() => {
-  const [wet, nummer] = (spel.casus?.besluit ?? '#').split('#');
+  const [wet, nummer] = (state.casus?.besluit ?? '#').split('#');
   return artikelNaam(wet, nummer);
 });
 
 // Een link in het logboek naar een chronolexogram opent het in de kroniek.
 function naarKroniek(id) {
-  spel.inKroniek = id;
+  state.inKroniek = id;
   tab.value = 'kroniek';
 }
 
@@ -61,10 +61,10 @@ async function opnieuw() {
     <nldd-page sticky-header>
       <nldd-container slot="header" padding="16" gap="12">
         <nldd-top-title-bar
-          :text="spel.casus ? `${spel.casus.titel} naspelen` : 'Een uitvoeringsproces naspelen'"
-          :supporting-text="spel.casus ? `De cel van ${spel.casus.cel_naam} · ${artikel} · bestuursorgaan: ${spel.casus.rol}` : 'Kies een casus om te beginnen'"
+          :text="state.casus ? `${state.casus.titel} naspelen` : 'Een uitvoeringsproces naspelen'"
+          :supporting-text="state.casus ? `De cel van ${state.casus.cel_naam} · ${artikel} · bestuursorgaan: ${state.casus.rol}` : 'Kies een casus om te beginnen'"
         >
-          <template v-if="spel.casus">
+          <template v-if="state.casus">
             <nldd-button
               slot="toolbar"
               appearance="neutral-tinted"
@@ -81,7 +81,7 @@ async function opnieuw() {
             ></nldd-button>
           </template>
         </nldd-top-title-bar>
-        <template v-if="spel.casus">
+        <template v-if="state.casus">
           <nldd-tab-bar accessible-label="Rol">
             <nldd-tab-bar-item
               v-for="t in tabs"
@@ -96,20 +96,20 @@ async function opnieuw() {
             label-alignment="left"
             supporting-label="De dag van elke stap; de kroniek loopt alleen vooruit."
           >
-            <nldd-date-field :value="spel.datum" @change="$event.detail.value && (spel.datum = $event.detail.value)"></nldd-date-field>
+            <nldd-date-field :value="state.datum" @change="$event.detail.value && (state.datum = $event.detail.value)"></nldd-date-field>
           </nldd-form-field>
         </template>
       </nldd-container>
 
-      <nldd-simple-section v-if="spel.fout" padding-block="16">
+      <nldd-simple-section v-if="state.fout" padding-block="16">
         <nldd-banner
           variant="critical"
           text="Deze stap lukt niet"
-          :supporting-text="melding(spel.fout)"
+          :supporting-text="melding(state.fout)"
           dismissible
-          @dismiss="spel.fout = ''"
+          @dismiss="state.fout = ''"
         >
-          <nldd-text v-if="details" size="sm" color="secondary" lang="en">{{ spel.fout }}</nldd-text>
+          <nldd-text v-if="details" size="sm" color="secondary" lang="en">{{ state.fout }}</nldd-text>
           <nldd-button
             slot="actions"
             appearance="neutral-tinted"
@@ -122,8 +122,8 @@ async function opnieuw() {
         </nldd-banner>
       </nldd-simple-section>
 
-      <CasusKeuze v-if="!spel.casus" @gekozen="tab = 'scenarios'" />
-      <template v-else-if="spel.vormen">
+      <CasusKeuze v-if="!state.casus" @gekozen="tab = 'scenarios'" />
+      <template v-else-if="state.vormen">
         <ScenarioTab v-if="tab === 'scenarios'" @start="tab = 'aanvrager'" />
         <AanvragerTab v-else-if="tab === 'aanvrager'" />
         <BestuursorgaanTab v-else-if="tab === 'bestuursorgaan'" />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { melding } from '../src/melding.js';
-import { spel } from '../src/spel.js';
+import { state } from '../src/state.js';
 
 // De meldingen zoals de cel ze geeft (packages/cel: cell.rs, chronicle.rs),
 // met verzonnen ids. Elk patroon in melding.js heeft hier een geval.
@@ -34,7 +34,7 @@ describe('melding', () => {
     const engine =
       "engine: Resolution error: Required open term 'verlof_valt_buiten_schoolvakanties' on leerplichtwet_1969#13a " +
       'is decided per case by het hoofd (artikel 13a, eerste lid), and no judgement was given for this case';
-    spel.casus = { cel_naam: 'OBS De Klimop', rol: 'het hoofd' };
+    state.casus = { cel_naam: 'OBS De Klimop', rol: 'het hoofd' };
     // Zo zegt de voorvertoning het (kern::voorvertonen).
     expect(
       melding(`the cell is silent on 'verlof_valt_buiten_schoolvakanties' for this case: ${engine}`),
@@ -45,7 +45,7 @@ describe('melding', () => {
     expect(melding(engine)).toBe(
       'Het hoofd heeft "verlof valt buiten schoolvakanties" nog niet beoordeeld, en het besluit heeft die bevinding nodig.',
     );
-    spel.casus = null;
+    state.casus = null;
   });
 
   it('zegt dat de reductie van de cel op die dag nog niet geldt', () => {

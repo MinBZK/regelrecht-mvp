@@ -5,7 +5,7 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api.js';
 import { artikelNaam } from '../logboek.js';
-import { hoofdletter, kiezen, spel } from '../spel.js';
+import { hoofdletter, kiezen, state } from '../state.js';
 
 const emit = defineEmits(['gekozen']);
 const casussen = ref([]);
@@ -14,7 +14,7 @@ onMounted(async () => {
   try {
     casussen.value = (await api.casussen()).casussen;
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
   }
 });
 

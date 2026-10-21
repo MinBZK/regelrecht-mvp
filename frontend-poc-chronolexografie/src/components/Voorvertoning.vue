@@ -15,7 +15,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { genummerd, toon, uitslag } from '../logboek.js';
 import { vertaling } from '../melding.js';
-import { hoofdletter, leesbaar, spel, toegewezen } from '../spel.js';
+import { hoofdletter, leesbaar, state, toegewezen } from '../state.js';
 import { volger } from '../voorvertoning.js';
 import KetenStap from './KetenStap.vue';
 
@@ -34,7 +34,7 @@ const vraag = () =>
   (props.soort === 'bezwaar' ? api.voorvertoningOpBezwaar : api.voorvertoningBesluit)(
     props.op,
     { ...props.bevindingen },
-    spel.datum,
+    state.datum,
   );
 const emit = defineEmits(['stil']);
 const volg = volger(vraag, (uit) => {
@@ -43,7 +43,7 @@ const volg = volger(vraag, (uit) => {
   if (uit.antwoord?.stil?.length) emit('stil', uit.antwoord.stil);
 });
 watch(
-  () => [props.op, JSON.stringify(props.bevindingen), spel.datum, spel.grammen.length],
+  () => [props.op, JSON.stringify(props.bevindingen), state.datum, state.grammen.length],
   () => {
     bezig.value = true;
     volg.plan();
@@ -68,7 +68,7 @@ const keten = computed(() => genummerd(voorlopig.value?.waarom?.keten ?? []));
 function badge(b) {
   const t = toegewezen(b);
   return {
-    tekst: `${hoofdletter(leesbaar(spel.casus.uitkomst))}: ${toon(t)}`,
+    tekst: `${hoofdletter(leesbaar(state.casus.uitkomst))}: ${toon(t)}`,
     kleur: t === true ? 'success' : t === false ? 'critical' : 'neutral',
   };
 }

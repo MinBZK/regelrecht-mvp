@@ -8,7 +8,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { genomenBij, genummerd, toon, uitslag } from '../logboek.js';
-import { herroepen, kort, leesbaar, rol, spel } from '../spel.js';
+import { herroepen, kort, leesbaar, rol, state } from '../state.js';
 import HoeBeantwoord from './HoeBeantwoord.vue';
 import KetenStap from './KetenStap.vue';
 
@@ -31,7 +31,7 @@ async function laden() {
   } catch (e) {
     if (dit !== verzoek) return;
     // De banner zegt wat er misging; het logboek toont dan niets.
-    spel.fout = e.message;
+    state.fout = e.message;
     handelingen.value = [];
     mislukt.value = true;
     return;
@@ -42,12 +42,12 @@ async function laden() {
     gekozen.value = handelingen.value[0]?.gram.id ?? null;
   }
 }
-watch(() => spel.grammen, laden, { immediate: true });
+watch(() => state.grammen, laden, { immediate: true });
 watch(gekozen, () => (spoor.value = false));
 
 const handeling = computed(() => handelingen.value.find((h) => h.gram.id === gekozen.value) ?? null);
 const keten = computed(() => genummerd(handeling.value?.waarom?.keten ?? []));
-const gram = (id) => spel.grammen.find((g) => g.id === id);
+const gram = (id) => state.grammen.find((g) => g.id === id);
 const naam = (id) => {
   const g = gram(id);
   return g ? `${rol(g).toLowerCase()} ${kort(id)}` : kort(id);
@@ -59,7 +59,7 @@ const bevindingen = computed(() =>
     waarde: handeling.value.gram.fields[f],
   })),
 );
-const bij = computed(() => (handeling.value ? genomenBij(handeling.value.gram.id, spel.grammen) : null));
+const bij = computed(() => (handeling.value ? genomenBij(handeling.value.gram.id, state.grammen) : null));
 
 // De uitleg van de cel bij een begrip, in een sheet.
 const sheet = reactive({ open: false, knoop: null, uitleg: null, besluit: null });
@@ -73,7 +73,7 @@ async function uitleg(knoop) {
       sheet.uitleg = antwoord.antwoorden[knoop.stap.keer] ?? null;
     }
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
     sheet.open = false;
   }
 }

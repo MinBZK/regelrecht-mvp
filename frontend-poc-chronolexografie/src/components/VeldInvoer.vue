@@ -2,7 +2,7 @@
 // Eén veld zoals de wet het vraagt: het type bepaalt het invoerelement, de
 // grondslag staat eronder. Een leeg tekst- of datumveld is `undefined`: dan
 // laat de aanvraag het weg, en de cel noemt het in `missing` (Awb 4:5).
-import { leesbaar } from '../spel.js';
+import { leesbaar } from '../state.js';
 
 const props = defineProps({
   veld: { type: Object, required: true },

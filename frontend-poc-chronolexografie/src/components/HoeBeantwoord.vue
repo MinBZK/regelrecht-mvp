@@ -9,7 +9,7 @@
 // Gedeeld door de uitleg bij een besluit (Waarom) en het logboek.
 import { reactive } from 'vue';
 import { api } from '../api.js';
-import { kort, leesbaar, rol, spel } from '../spel.js';
+import { kort, leesbaar, rol, state } from '../state.js';
 import { toon } from '../logboek.js';
 
 const props = defineProps({
@@ -22,7 +22,7 @@ const props = defineProps({
 
 /** Een rij uit de kroniek (met haar `id`) als het chronolexogram: `executogram 8f958fef`. */
 const rij = (v) => {
-  const g = spel.grammen.find((x) => x.id === v.id);
+  const g = state.grammen.find((x) => x.id === v.id);
   return `${g ? rol(g).toLowerCase() : 'chronolexogram'} ${kort(v.id)}`;
 };
 
@@ -50,7 +50,7 @@ async function uitklappen(a, i) {
     if (!uitleg) throw new Error(`De cel gaf geen uitleg bij ${leesbaar(a.begrip)}.`);
     genest[i] = uitleg;
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
     open[i] = false;
   }
 }

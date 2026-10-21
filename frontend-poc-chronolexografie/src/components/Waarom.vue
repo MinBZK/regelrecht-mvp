@@ -9,7 +9,7 @@
 import { reactive } from 'vue';
 import { api } from '../api.js';
 import { celNaam, gelezen, grammenVan, ingevuldDoor } from '../logboek.js';
-import { leesbaar, spel, waarde } from '../spel.js';
+import { leesbaar, state, waarde } from '../state.js';
 import HoeBeantwoord from './HoeBeantwoord.vue';
 
 const props = defineProps({
@@ -28,7 +28,7 @@ const jaNee = (v) =>
 /** De herkomst van het antwoord van de cel, leesbaar. */
 const herkomst = (a) =>
   `Ingevuld door ${celNaam(a.door)} met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). Gelezen: ` +
-  gelezen({ records_read: a.gelezen, last_record: a.tot_en_met }, grammenVan(a.door, spel.grammen)) +
+  gelezen({ records_read: a.gelezen, last_record: a.tot_en_met }, grammenVan(a.door, state.grammen)) +
   '.';
 
 // Per begrip de uitleg van de cel, als die gevraagd is. Vroeg het besluit
@@ -44,7 +44,7 @@ async function toon(i) {
   try {
     hoe[begrip] = await api.hoeBeantwoord(props.besluit, begrip);
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
     open[i] = false;
   }
 }
@@ -63,7 +63,7 @@ const uitlegBij = (i) => {
       <nldd-list-item v-for="f in waarom.ingevuld" :key="`${f.law_id}#${f.article}#${f.term}`" size="sm">
         <nldd-text-cell
           :text="leesbaar(f.term)"
-          :supporting-text="`${f.law_id} artikel ${f.article} · ${ingevuldDoor(f.filled_by, spel.grammen)}`"
+          :supporting-text="`${f.law_id} artikel ${f.article} · ${ingevuldDoor(f.filled_by, state.grammen)}`"
         ></nldd-text-cell>
       </nldd-list-item>
     </nldd-list>

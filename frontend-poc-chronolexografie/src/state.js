@@ -1,8 +1,11 @@
 /**
- * De stand van het spel: de gekozen casus, de kroniek van haar cel, wat de
- * wet vraagt en de speeldatum. Eén speeldatum voor alle stappen, omdat de kroniek één klok
- * heeft die alleen vooruit loopt: een stap op een eerdere dag dan de vorige
- * weigert de cel.
+ * De stand van het spel zoals de app hem toont: de gekozen casus, de
+ * speeldatum, de chronolexogrammen van de kroniek van haar cel, de kronieken
+ * van de andere cellen en wat de wet in de formulieren vraagt. De kroniek zelf
+ * leeft in de cel van dit tabblad, als WASM (api.js); `state` is de kopie die
+ * de app na elke stap ophaalt. Eén speeldatum voor alle stappen, omdat de
+ * kroniek één klok heeft die alleen vooruit loopt: een stap op een eerdere dag
+ * dan de vorige weigert de cel.
  *
  * Wat in welke stap zit (aanvraag, besluit, bezwaar, beslissing op bezwaar)
  * leest dit bestand uit de kroniek af aan `kind`, `grondslag` en `refers_to`,
@@ -13,7 +16,7 @@
 import { reactive } from 'vue';
 import { api } from './api.js';
 
-export const spel = reactive({
+export const state = reactive({
   // De gekozen casus, zoals `api.casus` haar geeft; null op het keuzescherm.
   casus: null,
   datum: '',
@@ -28,13 +31,13 @@ export const spel = reactive({
 });
 
 /** Het artikel waaronder de casus op een aanvraag besluit, `<wet>#<artikel>`. */
-export const besluitGrondslag = () => spel.casus?.besluit;
+export const besluitGrondslag = () => state.casus?.besluit;
 
 /** Het artikel van de beslissing op bezwaar (Awb 7:11). */
-export const bezwaarGrondslag = () => spel.casus?.beslissing_op_bezwaar;
+export const bezwaarGrondslag = () => state.casus?.beslissing_op_bezwaar;
 
 /** Of een besluit het gevraagde toewijst, volgens de uitvoer die de casus noemt. */
-export const toegewezen = (g) => g?.outputs?.[spel.casus?.uitkomst];
+export const toegewezen = (g) => g?.outputs?.[state.casus?.uitkomst];
 
 // Het spel van dit tabblad, bewaard zodat een herladen tabblad verder gaat
 // waar het was. Elk tabblad speelt zijn eigen spel, in het geheugen van de
@@ -48,7 +51,7 @@ async function bewaar() {
   try {
     // Met de speeldatum: de kroniek loopt alleen vooruit, dus een herlaad
     // die terugzet naar de eerste dag van de casus zou elke stap weigeren.
-    sessionStorage.setItem(SLEUTEL, JSON.stringify({ spel: bewaard, datum: spel.datum }));
+    sessionStorage.setItem(SLEUTEL, JSON.stringify({ spel: bewaard, datum: state.datum }));
   } catch {
     // Geen opslag of een volle: dan ook geen ouder spel laten staan, anders
     // gaat een herlaad stil verder bij een eerdere stap.
@@ -86,72 +89,72 @@ export async function hervatten() {
     // bewaard voor de volgende herlaad; alleen een spel dat de cel weigert,
     // gaat weg.
     if (!/the cell did not load/.test(e.message)) vergeet();
-    spel.casus = null;
-    spel.fout = e.message;
+    state.casus = null;
+    state.fout = e.message;
   }
 }
 
 /** Kies een casus: het spel begint haar cel opnieuw. */
 export async function kiezen(id) {
-  spel.fout = '';
+  state.fout = '';
   try {
     await openen(await api.kies(id));
     return true;
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
     return false;
   }
 }
 
 async function openen(casus, datum = casus.speeldatum) {
-  spel.vormen = null;
-  spel.grammen = [];
-  spel.casus = casus;
-  spel.datum = datum;
+  state.vormen = null;
+  state.grammen = [];
+  state.casus = casus;
+  state.datum = datum;
   await verversen();
 }
 
 /** Terug naar het keuzescherm; een herlaad begint daar dan ook. */
 export function naarKeuze() {
   vergeet();
-  spel.casus = null;
-  spel.fout = '';
+  state.casus = null;
+  state.fout = '';
 }
 
 /** Haal de kroniek en de vormen op, voor de speeldatum, en bewaar het spel. */
 export async function verversen() {
-  if (!spel.casus) return;
+  if (!state.casus) return;
   try {
-    const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(spel.datum)]);
-    spel.grammen = kroniek.grammen;
-    spel.andere = kroniek.andere ?? [];
-    spel.vormen = vormen;
+    const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(state.datum)]);
+    state.grammen = kroniek.grammen;
+    state.andere = kroniek.andere ?? [];
+    state.vormen = vormen;
     await bewaar();
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
   }
 }
 
 /**
  * Doe een stap: `actie` is een functie die de API aanroept. Een weigering
- * van de cel komt in `spel.fout`; daarna is de kroniek vers. Geeft het
+ * van de cel komt in `state.fout`; daarna is de kroniek vers. Geeft het
  * antwoord terug, of `null` bij een fout.
  */
 export async function stap(actie) {
-  spel.fout = '';
+  state.fout = '';
   try {
     const antwoord = await actie();
     await verversen();
     return antwoord;
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
     return null;
   }
 }
 
-export const verwijstNaar = (id) => spel.grammen.filter((g) => g.refers_to === id);
+export const verwijstNaar = (id) => state.grammen.filter((g) => g.refers_to === id);
 
-export const aanvragen = () => spel.grammen.filter((g) => g.kind === 'AANVRAAG');
+export const aanvragen = () => state.grammen.filter((g) => g.kind === 'AANVRAAG');
 
 /** Het besluit op een aanvraag of een bezwaar, als het er is. */
 export const besluitOp = (id) =>
@@ -174,7 +177,7 @@ export function rol(g) {
   if (g.kind === 'EXECUTOGRAM') return 'Executogram';
   if (g.kind === 'BEZWAAR') return 'Bezwaar';
   if (g.grondslag === bezwaarGrondslag()) return 'Beslissing op bezwaar';
-  const op = spel.grammen.find((x) => x.id === g.refers_to);
+  const op = state.grammen.find((x) => x.id === g.refers_to);
   return op?.kind === 'BEZWAAR' ? 'Nieuw besluit' : 'Besluit';
 }
 
@@ -222,7 +225,7 @@ export const kort = (id) => String(id).slice(-8);
  * vraagt (niet die van de Awb), en de dag van ontvangst.
  */
 export function samenvatting(aanvraag) {
-  const eigen = (spel.vormen?.aanvraag.velden ?? []).filter(
+  const eigen = (state.vormen?.aanvraag.velden ?? []).filter(
     (v) => v.grondslag === besluitGrondslag() && v.naam in (aanvraag.fields ?? {}),
   );
   const delen = eigen.map((v) => `${leesbaar(v.naam)}: ${toonVeld(aanvraag.fields[v.naam])}`);

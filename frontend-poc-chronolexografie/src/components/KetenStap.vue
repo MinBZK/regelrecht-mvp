@@ -5,7 +5,7 @@
 // vraagt. Bij een begrip dat de cel beantwoordde staat een knop die haar
 // eigen uitleg opent.
 import { computed, ref } from 'vue';
-import { spel } from '../spel.js';
+import { state } from '../state.js';
 import { stapTekst } from '../logboek.js';
 
 defineOptions({ name: 'KetenStap' });
@@ -24,7 +24,7 @@ const emit = defineEmits(['uitleg']);
 
 const open = ref(true);
 const tak = computed(() => props.knoop.kinderen.length > 0);
-const tekst = computed(() => stapTekst(props.knoop.stap, spel.grammen));
+const tekst = computed(() => stapTekst(props.knoop.stap, state.grammen));
 const cel = computed(() =>
   props.metUitleg && props.knoop.stap.keer != null ? (props.knoop.stap.ingevuld_door?.answer ?? null) : null,
 );

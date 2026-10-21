@@ -3,7 +3,7 @@
 // gegeven: ja, nee of leeg. Bij een heroverweging is leeg "laat staan wat
 // het eerder vond"; bij een begrip dat de cel voor deze aanvraag niet weet,
 // is leeg "nog niet beoordeeld". De waarde is true, false of undefined.
-import { leesbaar } from '../spel.js';
+import { leesbaar } from '../state.js';
 
 defineProps({
   veld: { type: Object, required: true },

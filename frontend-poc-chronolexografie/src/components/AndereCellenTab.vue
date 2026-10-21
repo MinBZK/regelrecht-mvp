@@ -9,7 +9,7 @@
 import { reactive } from 'vue';
 import { api } from '../api.js';
 import { artikelNaam } from '../logboek.js';
-import { hoofdletter, leesbaar, spel, stap } from '../spel.js';
+import { hoofdletter, leesbaar, state, stap } from '../state.js';
 import VeldInvoer from './VeldInvoer.vue';
 
 // Per cel en handeling de ingevulde velden.
@@ -23,19 +23,19 @@ const naam = (feit) => {
   return `${hoofdletter(leesbaar(wat))} (${artikelNaam(wet, artikel)})`;
 };
 
-const kroniek = (cel) => spel.andere.find((a) => a.cel === cel)?.grammen ?? [];
+const kroniek = (cel) => state.andere.find((a) => a.cel === cel)?.grammen ?? [];
 
 async function vastleggen(cel, grondslag) {
   const gegeven = Object.fromEntries(
     Object.entries(velden(cel, grondslag)).filter(([, v]) => v !== undefined),
   );
-  const ok = await stap(() => api.vastleggen(cel, grondslag, gegeven, spel.datum));
+  const ok = await stap(() => api.vastleggen(cel, grondslag, gegeven, state.datum));
   if (ok) invoer[sleutel(cel, grondslag)] = {};
 }
 </script>
 
 <template>
-  <nldd-simple-section v-for="c in spel.vormen.andere_cellen" :key="c.cel">
+  <nldd-simple-section v-for="c in state.vormen.andere_cellen" :key="c.cel">
     <nldd-title slot="header" size="3" :text="c.cel_naam">
       <nldd-text slot="supporting-text">
         Een andere cel van de sfeer. De engine vraagt haar alleen naar een waarde waarvoor de wet

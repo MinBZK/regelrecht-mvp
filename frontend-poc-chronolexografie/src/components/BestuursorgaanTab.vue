@@ -24,17 +24,17 @@ import {
   hoofdletter,
   kort,
   samenvatting,
-  spel,
+  state,
   stap,
-} from '../spel.js';
+} from '../state.js';
 import Uitkomst from './Uitkomst.vue';
 import OordeelKeuze from './OordeelKeuze.vue';
 import Voorvertoning from './Voorvertoning.vue';
 import Waarom from './Waarom.vue';
 import VeldInvoer from './VeldInvoer.vue';
 
-const oordelen = () => spel.vormen?.besluit.bevindingen ?? [];
-const voorbeeld = (naam) => spel.casus.voorbeeld.bevindingen[naam] ?? true;
+const oordelen = () => state.vormen?.besluit.bevindingen ?? [];
+const voorbeeld = (naam) => state.casus.voorbeeld.bevindingen[naam] ?? true;
 const standaard = () => Object.fromEntries(oordelen().map((o) => [o.naam, voorbeeld(o.naam)]));
 
 const artikel = computed(() => {
@@ -44,10 +44,10 @@ const artikel = computed(() => {
 
 const open = computed(() => aanvragen().filter((a) => !besluitOp(a.id)));
 const besluiten = computed(() =>
-  spel.grammen.filter((g) => g.grondslag === besluitGrondslag() && g.kind !== 'AANVRAAG'),
+  state.grammen.filter((g) => g.grondslag === besluitGrondslag() && g.kind !== 'AANVRAAG'),
 );
 const openBezwaren = computed(() =>
-  spel.grammen.filter((g) => g.kind === 'BEZWAAR' && !beslissingOp(g.id)),
+  state.grammen.filter((g) => g.kind === 'BEZWAAR' && !beslissingOp(g.id)),
 );
 
 // Per aanvraag de oordelen van het bestuursorgaan.
@@ -65,7 +65,7 @@ const oordeelVoor = (id) => (oordeel[id] ??= standaard());
 // weg in plaats van onzichtbaar mee te gaan.
 const stil = reactive({});
 watch(
-  () => [spel.datum, spel.grammen.length],
+  () => [state.datum, state.grammen.length],
   () => {
     for (const [id, velden] of Object.entries(stil)) {
       for (const v of velden) {
@@ -81,7 +81,7 @@ function meldStil(id, velden) {
   for (const v of velden) if (!lijst.some((x) => x.naam === v.naam)) lijst.push(v);
 }
 const nietGeweten = (v) =>
-  `${v.grondslag} · ${hoofdletter(spel.casus.cel_naam)} weet dit niet voor deze aanvraag; ${spel.casus.rol} oordeelt.`;
+  `${v.grondslag} · ${hoofdletter(state.casus.cel_naam)} weet dit niet voor deze aanvraag; ${state.casus.rol} oordeelt.`;
 // Een oordeel op een begrip dat de cel niet weet: leeg is nog niet gegeven.
 function zetOordeel(id, naam, waarde) {
   if (waarde === undefined) delete oordeelVoor(id)[naam];
@@ -91,7 +91,7 @@ function zetOordeel(id, naam, waarde) {
 const uitkomsten = reactive({});
 
 async function besluit(a) {
-  const antwoord = await stap(() => api.besluiten(a.id, oordeelVoor(a.id), spel.datum));
+  const antwoord = await stap(() => api.besluiten(a.id, oordeelVoor(a.id), state.datum));
   if (antwoord) uitkomsten[antwoord.besluit.id] = antwoord;
 }
 
@@ -111,7 +111,7 @@ const opnieuw = reactive({});
 const beslissingen = reactive({});
 
 async function toets(bz) {
-  const antwoord = await stap(() => api.heroverweging(bz.id, spel.datum));
+  const antwoord = await stap(() => api.heroverweging(bz.id, state.datum));
   if (antwoord) {
     toetsen[bz.id] = antwoord;
     opnieuw[bz.id] = {};
@@ -135,7 +135,7 @@ const stilBijBezwaar = (bz) =>
 
 async function beslisOpBezwaar(bz) {
   const gegeven = gegevenOpBezwaar(bz);
-  const antwoord = await stap(() => api.beslissenOpBezwaar(bz.id, gegeven, spel.datum));
+  const antwoord = await stap(() => api.beslissenOpBezwaar(bz.id, gegeven, state.datum));
   if (antwoord) {
     beslissingen[bz.id] = antwoord;
     delete toetsen[bz.id];
@@ -154,7 +154,7 @@ const uitkomstOpBezwaar = (uit) =>
   <nldd-simple-section>
     <nldd-title slot="header" size="3" text="Open aanvragen">
       <nldd-text slot="supporting-text">
-        Het bestuursorgaan is hier {{ spel.casus.rol }} ({{ artikel }}). Het beslist met de
+        Het bestuursorgaan is hier {{ state.casus.rol }} ({{ artikel }}). Het beslist met de
         aanvraag, het beleid en de bevindingen hieronder. Wat de cel zelf uit haar
         kroniek beantwoordt, vraagt deze pagina niet.
       </nldd-text>

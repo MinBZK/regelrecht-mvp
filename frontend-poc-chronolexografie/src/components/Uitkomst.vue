@@ -4,7 +4,7 @@
 // desgewenst waaróm (Waarom.vue). `waaromVan` is het besluit waarvan die
 // uitleg is: het besluit zelf, of de beslissing op bezwaar die het nam.
 import { computed } from 'vue';
-import { leesbaar, toegewezen, waarde } from '../spel.js';
+import { leesbaar, toegewezen, waarde } from '../state.js';
 import Waarom from './Waarom.vue';
 
 const props = defineProps({

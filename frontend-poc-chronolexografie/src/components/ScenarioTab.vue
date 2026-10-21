@@ -7,20 +7,20 @@
 // naar het tabblad Aanvrager.
 import { computed } from 'vue';
 import { api } from '../api.js';
-import { spel, stap } from '../spel.js';
+import { state, stap } from '../state.js';
 
 const emit = defineEmits(['start']);
 
-const scenarios = computed(() => spel.casus.scenarios);
+const scenarios = computed(() => state.casus.scenarios);
 // Hoeveel chronolexogrammen de cel vooraf vastlegt (RFC-051).
 const vooraf = computed(() => {
-  const b = spel.casus.begin;
+  const b = state.casus.begin;
   return b?.executogrammen?.length ?? 0;
 });
 const eerste = computed(() =>
   // Een datum zonder tijd is middernacht UTC; in UTC tonen, anders wordt
   // het ten westen van Greenwich de dag ervoor.
-  new Date(spel.casus.speeldatum).toLocaleDateString('nl-NL', {
+  new Date(state.casus.speeldatum).toLocaleDateString('nl-NL', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -31,7 +31,7 @@ const eerste = computed(() =>
 async function begin() {
   const ok = await stap(() => api.reset());
   if (ok) {
-    spel.datum = spel.casus.speeldatum;
+    state.datum = state.casus.speeldatum;
     emit('start');
   }
 }

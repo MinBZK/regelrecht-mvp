@@ -10,23 +10,23 @@
 // in.
 import { computed, ref, watch } from 'vue';
 import { api } from '../api.js';
-import { alsJson, isBesluit, kort, leesbaar, spel, waarde } from '../spel.js';
+import { alsJson, isBesluit, kort, leesbaar, state, waarde } from '../state.js';
 
-const gekozen = ref(spel.inKroniek);
-spel.inKroniek = null;
+const gekozen = ref(state.inKroniek);
+state.inKroniek = null;
 const bevindingen = ref([]);
 watch(gekozen, async (id) => {
   bevindingen.value = [];
-  const g = spel.grammen.find((x) => x.id === id);
+  const g = state.grammen.find((x) => x.id === id);
   if (!g || !isBesluit(g)) return;
   try {
     const antwoord = await api.waarom(id);
     if (gekozen.value === id) bevindingen.value = antwoord.bevindingen;
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
   }
 }, { immediate: true });
-const alle = computed(() => [...spel.grammen, ...spel.andere.flatMap((a) => a.grammen)]);
+const alle = computed(() => [...state.grammen, ...state.andere.flatMap((a) => a.grammen)]);
 const gram = computed(() => alle.value.find((g) => g.id === gekozen.value) ?? null);
 const verwijzing = (g) => (g.refers_to ? ` · verwijst naar ${kort(g.refers_to)}` : '');
 const naar = computed(() => alle.value.find((g) => g.id === gram.value?.refers_to) ?? null);
@@ -34,24 +34,24 @@ const naar = computed(() => alle.value.find((g) => g.id === gram.value?.refers_t
 
 <template>
   <nldd-simple-section>
-    <nldd-title slot="header" size="3" :text="`Kroniek van ${spel.casus.cel_naam}`">
+    <nldd-title slot="header" size="3" :text="`Kroniek van ${state.casus.cel_naam}`">
       <nldd-text slot="supporting-text">
         Eén kroniek, van de cel van de uitvoerder. Elke stap in het proces legt er één
         chronolexogram in vast (een beslissing op bezwaar die herroept, legt er twee vast); er wordt
-        nooit iets in gewijzigd of uit verwijderd.<template v-if="spel.casus?.begin"> Bovenaan
+        nooit iets in gewijzigd of uit verwijderd.<template v-if="state.casus?.begin"> Bovenaan
         staat wat de cel vóór het eerste scenario vastlegde, zoals de vestiging van een school
         (RFC-051).</template>
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog
-      v-if="spel.grammen.length === 0"
+      v-if="state.grammen.length === 0"
       icon="info"
       text="De kroniek is leeg"
       supporting-text="Dien als aanvrager een aanvraag in om het eerste chronolexogram te maken."
     ></nldd-inline-dialog>
     <nldd-list v-else appearance="box-base" accessible-label="Chronolexogrammen">
       <nldd-list-item
-        v-for="(g, i) in spel.grammen"
+        v-for="(g, i) in state.grammen"
         :key="g.id"
         button
         :selected="g.id === gekozen"
@@ -65,7 +65,7 @@ const naar = computed(() => alle.value.find((g) => g.id === gram.value?.refers_t
       </nldd-list-item>
     </nldd-list>
   </nldd-simple-section>
-  <nldd-simple-section v-for="a in spel.andere" :key="a.cel">
+  <nldd-simple-section v-for="a in state.andere" :key="a.cel">
     <nldd-title slot="header" size="4" :text="`Kroniek van ${a.cel_naam}`">
       <nldd-text slot="supporting-text">Een andere cel van de sfeer, met haar eigen kroniek.</nldd-text>
     </nldd-title>

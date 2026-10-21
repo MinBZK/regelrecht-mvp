@@ -10,27 +10,27 @@
 // Bestuursorgaan).
 import { onMounted, ref, watch } from 'vue';
 import { api } from '../api.js';
-import { alsJson, leesbaar, spel } from '../spel.js';
+import { alsJson, leesbaar, state } from '../state.js';
 
 const stand = ref(null);
 
 // Alleen ophalen, geen stap: een fout van de vorige stap blijft dan staan.
 async function laden() {
   try {
-    stand.value = await api.reducties(spel.datum);
+    stand.value = await api.reducties(state.datum);
   } catch (e) {
-    spel.fout = e.message;
+    state.fout = e.message;
   }
 }
 
 onMounted(laden);
-watch(() => [spel.grammen.length, spel.datum], laden);
+watch(() => [state.grammen.length, state.datum], laden);
 </script>
 
 <template>
   <template v-if="stand">
     <nldd-simple-section>
-      <nldd-title slot="header" size="3" :text="`Wat de cel van ${spel.casus.cel_naam} uit haar kroniek beantwoordt`">
+      <nldd-title slot="header" size="3" :text="`Wat de cel van ${state.casus.cel_naam} uit haar kroniek beantwoordt`">
         <nldd-text slot="supporting-text">
           Een open begrip dat een reductie van de cel vult, vraagt de engine aan de cel. Het
           bestuursorgaan krijgt die vraag niet; bij elk besluit staat wat de cel antwoordde.
@@ -50,7 +50,7 @@ watch(() => [spel.grammen.length, spel.datum], laden);
         <nldd-title slot="header" size="3" :text="r.id">
           <nldd-text slot="supporting-text">
             Geen regelgeving: een regelwerk van de soort REDUCTIE dat bij de cel hoort
-            (corpus/cells/{{ spel.casus.cel }}/reducties/{{ r.id }}/{{ r.geldig_vanaf }}.yaml).
+            (corpus/cells/{{ state.casus.cel }}/reducties/{{ r.id }}/{{ r.geldig_vanaf }}.yaml).
             Waar de engine het begrip leest, ook als Awb 7:11 het artikel van de casus opnieuw
             toepast, draait de cel haar op de kroniek.
           </nldd-text>

@@ -6,7 +6,7 @@
  * tests/melding.test.js zijn kopieën van de meldingen in packages/cel
  * (cell.rs, chronicle.rs): wie daar een melding herschrijft, past ze mee aan.
  */
-import { hoofdletter, kort, leesbaar, spel } from './spel.js';
+import { hoofdletter, kort, leesbaar, state } from './state.js';
 
 const vertalingen = [
   // Een besluit wordt maar één keer vervangen (de cel, bij een tweede
@@ -41,14 +41,14 @@ const vertalingen = [
   [
     /the cell is silent on '([^']+)' for this case/,
     (begrip) =>
-      `${hoofdletter(spel.casus?.cel_naam ?? 'de cel')} weet "${leesbaar(begrip)}" niet voor deze aanvraag, dus ${spel.casus?.rol ?? 'het bestuursorgaan'} oordeelt. Geef die bevinding.`,
+      `${hoofdletter(state.casus?.cel_naam ?? 'de cel')} weet "${leesbaar(begrip)}" niet voor deze aanvraag, dus ${state.casus?.rol ?? 'het bestuursorgaan'} oordeelt. Geef die bevinding.`,
   ],
   // Een bevinding die de wet per geval aan het bestuursorgaan laat, en die
   // het nog niet gaf (de engine).
   [
     /Required open term '([^']+)' on \S+ is decided per case by .*no judgement was given/,
     (begrip) =>
-      `${hoofdletter(spel.casus?.rol ?? 'het bestuursorgaan')} heeft "${leesbaar(begrip)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
+      `${hoofdletter(state.casus?.rol ?? 'het bestuursorgaan')} heeft "${leesbaar(begrip)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
   ],
   [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
   // Een stap voordat er een casus gekozen is.
