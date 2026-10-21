@@ -5,6 +5,7 @@ import type {
   RouteRecordNameGeneric,
   Router,
 } from 'vue-router';
+import { singleQuery } from '../lib/routeParams';
 
 /**
  * The stored map: section key ('home', 'editor', or a route name) to the
@@ -195,9 +196,10 @@ export function sectionTarget(
       }
       params.trajectRef = activeRef;
       // A stored chooser path carries the intended law as query.
-      // A query value can be an array (`?law=a&law=b`); it is copied as is.
-      if (loc.query?.law) params.lawId = loc.query.law as ParamValue;
-      if (loc.query?.article) params.articleNumber = loc.query.article as ParamValue;
+      const lawId = singleQuery(loc.query?.law);
+      const articleNumber = singleQuery(loc.query?.article);
+      if (lawId) params.lawId = lawId;
+      if (articleNumber) params.articleNumber = articleNumber;
       return { name: 'editor-traject', params };
     }
     // The editor requires a traject: without one the Editor tab goes to the

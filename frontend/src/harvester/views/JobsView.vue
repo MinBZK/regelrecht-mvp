@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { singleQuery } from '../../lib/routeParams';
 import { useJobs, type Job, type JobSummary } from '../composables/useJobs';
 import { useJobDetail } from '../composables/useJobDetail';
 import { useNewHarvestJob } from '../composables/useNewHarvestJob';
@@ -46,12 +47,10 @@ watch(lawJobsSheetOpen, (open) => {
 });
 
 // Handle incoming law_id query param (runs synchronously during setup)
-if (route.query.law_id) {
-  // Cast: a repeated `?law_id=` would arrive as an array; passed on unchanged,
-  // as before.
-  const lawId = route.query.law_id as string;
-  setLawIdFilter(lawId);
-  openLawJobs(lawId);
+const initialLawId = singleQuery(route.query.law_id);
+if (initialLawId) {
+  setLawIdFilter(initialLawId);
+  openLawJobs(initialLawId);
 }
 
 const { lastJobCreated, open: openNewHarvestJob } = useNewHarvestJob();

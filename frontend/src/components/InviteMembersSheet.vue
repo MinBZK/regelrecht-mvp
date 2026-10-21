@@ -104,6 +104,9 @@ function onEmailsInput(e: Event): void {
 }
 
 async function submitInvite(): Promise<void> {
+  // The traject can disappear while the sheet is open; then there is nothing to invite into.
+  const trajectId = props.trajectId;
+  if (!trajectId) return;
   inviteError.value = null;
   inviteResult.value = null;
   // Include the current (uncommitted) input text alongside the committed tokens,
@@ -120,8 +123,7 @@ async function submitInvite(): Promise<void> {
   }
   inviteBusy.value = true;
   try {
-    // Not guarded: a sheet opened without a traject id posts to it as-is.
-    const { succeeded, failed } = await inviteMany(props.trajectId as string, emails, inviteRole.value);
+    const { succeeded, failed } = await inviteMany(trajectId, emails, inviteRole.value);
     inviteResult.value = { succeeded, failed };
     // Elke geslaagde invite maakt een openstaande uitnodiging aan; sein de
     // ledenlijst (andere instance, in de pane) dat er iets veranderd is.

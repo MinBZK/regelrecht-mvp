@@ -204,11 +204,10 @@ export function useDraftNotes(
     notesToSend: Note[],
   ): Promise<NotesSaveResult & { id: string | null | undefined }> {
     const id = lawId.value;
+    if (!id) throw new Error('Cannot perform notes save without an open law');
     const tr = trajectRef?.value ?? null;
     requireTraject(tr, 'notes save');
-    // String(): `id` is not checked for null here; encodeURIComponent in the
-    // URL builder stringifies it the same way.
-    const url = annotationsUrl(tr, String(id));
+    const url = annotationsUrl(tr, id);
     const res = await apiFetch(url, {
       method: 'PUT',
       headers: {

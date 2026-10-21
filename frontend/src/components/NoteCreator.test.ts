@@ -195,6 +195,23 @@ describe('NoteCreator', () => {
     expect(w.emitted('create')).toBeUndefined();
   });
 
+  it('does not search the law or warn about the selection without an article', async () => {
+    // Without an article there is no article number to check a match
+    // against, so every resolver match would read as a mis-anchor.
+    const resolveNote = vi.fn(() => ({
+      status: 'found',
+      matches: [{ article_number: '1', start: 10, end: 20 }],
+    }));
+    const w = mountCreator({ article: null, engine: { resolveNote } });
+    await nextTick();
+    expect(resolveNote).not.toHaveBeenCalled();
+    expect(w.find('[data-testid="note-creator-status"]').exists()).toBe(false);
+    vmOf(w).commentText = 'iets';
+    await nextTick();
+    vmOf(w).save();
+    expect(w.emitted('create')).toBeUndefined();
+  });
+
   it('hides the whole form when the selection is unusable', async () => {
     const w = mountCreator({
       engine: {

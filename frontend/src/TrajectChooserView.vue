@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { singleQuery } from './lib/routeParams';
 import { useTrajects, refreshTrajects } from './composables/useTrajects';
 import type { TrajectSummary } from './composables/useTrajects';
 import { lastHomePath, homeTarget } from './composables/useLastVisitedRoute';
@@ -45,10 +46,8 @@ function goBack() {
 // library or editor traject-scoped route, carrying the law/article the user was
 // heading for so they land on their intended destination.
 function trajectTarget(trajectRef: string) {
-  // A query value can be an array (repeated `?law=`); like before, it is
-  // passed on as is, the cast only states the single-value case assumed here.
-  const lawId = (route.query.law || undefined) as string | undefined;
-  const articleNumber = (route.query.article || undefined) as string | undefined;
+  const lawId = singleQuery(route.query.law) || undefined;
+  const articleNumber = singleQuery(route.query.article) || undefined;
   // `sectie=library` came from the Home section; editor otherwise. Home splits
   // into traject-home / library-traject on whether a law is carried.
   return route.query.sectie === 'library'

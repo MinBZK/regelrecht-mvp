@@ -228,7 +228,22 @@ export function useTaskReview() {
         return rejectRemaining ? { task_id: part.id, action: 'rejected' } : null;
       })
       .filter((d): d is EnrichDecision => Boolean(d));
-    const result = await applyEnrichment(key, decisions, etag);
+    // A task whose job is gone (tasks.job_id is set to NULL when the job is
+    // deleted) has nothing the apply endpoint can find: it looks tasks up by
+    // job id and would answer 404. Rejecting it still releases the task;
+    // approving it cannot write anything, so it fails like a failed apply,
+    // before anything is cleared, so the recorded verdict survives.
+    if (!jobId.value) {
+      const onlyRejected = decisions.length > 0 && decisions.every((d) => d.action === 'rejected');
+      if (!onlyRejected) {
+        throw new Error('Deze taak hoort bij geen verrijking meer en kan niet worden overgenomen. Verwerp haar om haar af te sluiten.');
+      }
+      await resolveTask(task.id, 'rejected');
+      clearVerdicts(key);
+      reset();
+      return null;
+    }
+    const result = await applyEnrichment(jobId.value, decisions, etag);
     clearVerdicts(key);
     reset();
     return result;

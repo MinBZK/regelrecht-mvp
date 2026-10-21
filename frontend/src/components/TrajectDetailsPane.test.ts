@@ -325,3 +325,68 @@ describe('TrajectDetailsPane repo', () => {
     expect(repoField(w).attributes('unmet')).toBe('repo-error');
   });
 });
+
+// The pane stays mounted when the active traject disappears (its id prop goes
+// to null), and so does a confirmation modal that was open. Confirming it then
+// has no traject to act on: it must not send a request to `/api/trajects/null`.
+// Earlier tests leave their panes (and teleported modals) in the body, so take
+// the last match: the modal of the pane mounted most recently.
+function modalButton(text: string): HTMLElement {
+  const button = [...document.body.querySelectorAll('nldd-button')]
+    .filter((b) => b.getAttribute('text') === text)
+    .at(-1);
+  if (!button) throw new Error(`no button "${text}"`);
+  return button as HTMLElement;
+}
+
+describe('TrajectDetailsPane without a traject id', () => {
+  it('does not delete when the traject is gone by the time delete is confirmed', async () => {
+    const w = await mountPane(detail());
+    await found(w.findAll('nldd-button').find((b) => b.attributes('text') === 'Traject verwijderen')).trigger('click');
+    await w.setProps({ trajectId: null });
+
+    modalButton('Verwijder traject').click();
+    await flush(w);
+
+    expect(apiFetch).not.toHaveBeenCalled();
+    expect(w.emitted('deleted')).toBeUndefined();
+    expect(paneState(w).confirmingDelete).toBe(false);
+    w.unmount();
+  });
+
+  it('does not leave when the traject is gone by the time leave is confirmed', async () => {
+    const w = await mountPane(detail({ role: 'contributor' }));
+    await found(w.findAll('nldd-button').find((b) => b.attributes('text') === 'Traject verlaten')).trigger('click');
+    await w.setProps({ trajectId: null });
+
+    modalButton('Verlaat traject').click();
+    await flush(w);
+
+    expect(apiFetch).not.toHaveBeenCalled();
+    expect(w.emitted('left')).toBeUndefined();
+    expect(paneState(w).confirmingLeave).toBe(false);
+    w.unmount();
+  });
+
+  it('reports the deleted traject by the id the request was for', async () => {
+    const w = await mountPane(detail());
+    let finish: () => void = () => {};
+    apiFetch.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    await found(w.findAll('nldd-button').find((b) => b.attributes('text') === 'Traject verwijderen')).trigger('click');
+    modalButton('Verwijder traject').click();
+    await flush(w);
+
+    // The pane moves on to another traject while the DELETE is still running.
+    await w.setProps({ trajectId: 'ander-traject' });
+    finish();
+    await flush(w);
+
+    expect(w.emitted('deleted')).toEqual([[TRAJECT_ID]]);
+    w.unmount();
+  });
+});
+
+/** The modal flags in the pane's setup scope (script setup exposes them on `vm` in tests). */
+function paneState(w: VueWrapper): { confirmingDelete: boolean; confirmingLeave: boolean } {
+  return w.vm as unknown as { confirmingDelete: boolean; confirmingLeave: boolean };
+}

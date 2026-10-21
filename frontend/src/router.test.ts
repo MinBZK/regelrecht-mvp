@@ -309,3 +309,26 @@ describe('homeTabTarget - Home tab carries the active traject', () => {
     expect(t.params.tab).toBe('details');
   });
 });
+
+describe('repeated query values take the first value', () => {
+  // `?law=a&law=b` makes vue-router give the query value as an array. Passed
+  // into a route param as is, resolving the location throws ("Provided param
+  // "lawId" is an array but it is not repeatable").
+  it('upgrades a stored chooser path with a repeated law to a resolvable editor location', () => {
+    const t = sectionTarget(router, '/editor?law=foo&law=bar&article=3&article=4', REF);
+    expect(t.params.lawId).toBe('foo');
+    expect(t.params.articleNumber).toBe('3');
+    expect(() => router.resolve(t)).not.toThrow();
+    expect(router.resolve(t).path).toBe(`/trajecten/${REF}/editor/foo/3`);
+  });
+
+  it('redirects /editor.html with a repeated or valueless law to a single law', () => {
+    const matched = router.resolve('/editor.html').matched;
+    const redirect = lastRedirect(matched) as unknown as (to: {
+      query: Record<string, string | null | (string | null)[]>;
+    }) => { query: Record<string, unknown> };
+    expect(redirect({ query: { law: ['foo', 'bar'], article: ['3', '4'] } }).query)
+      .toEqual({ sectie: 'editor', law: 'foo', article: '3' });
+    expect(redirect({ query: { law: null } }).query.law).toBeUndefined();
+  });
+});

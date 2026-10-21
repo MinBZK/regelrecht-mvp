@@ -283,6 +283,7 @@ interface EditorViewInternals {
   editorRouteFor(lawId: string | null, articleNumber: string | null): { query?: unknown };
   handleLawSave(): Promise<void>;
   rejectReview(): Promise<void>;
+  editedText: string;
 }
 const internals = (wrapper: VueWrapper) => wrapper.vm as unknown as EditorViewInternals;
 
@@ -449,22 +450,40 @@ describe('EditorView review-modus', () => {
     await internals(wrapper).rejectReview();
     await settle();
 
-    // Een taak zonder job_id is in haar eentje de verrijking: "Verwerpen"
-    // legt het oordeel vast en verwerkt meteen - dat schrijft niet meer via
-    // een losse `resolveTask` per taak, maar via `applyEnrichment` op de
-    // verrijking (hier: alleen deze taak).
-    expect(resolveTask).not.toHaveBeenCalled();
-    expect(applyEnrichment).toHaveBeenCalledWith(
-      'taak-1',
-      [{ task_id: 'taak-1', action: 'rejected' }],
-      'etag-1',
-    );
+    // A task without a job_id (its job was deleted) has no enrichment the
+    // apply endpoint can find, so rejecting it releases the task itself.
+    expect(applyEnrichment).not.toHaveBeenCalled();
+    expect(resolveTask).toHaveBeenCalledWith('taak-1', 'rejected');
     // De enige route die de taak bewust NIET meeneemt.
     const lastReplace = replaceMock.mock.calls.at(-1);
     if (!lastReplace) throw new Error('router.replace was not called');
     const target = lastReplace[0];
     expect(target.query).toBeUndefined();
     expect(target.params).toMatchObject({ lawId: 'kieswet' });
+  });
+
+  // The reject-confirmation dialog can stay open while the review ends (the
+  // task leaves the URL). Confirming it then has no task to decide on: it must
+  // do nothing, rather than discard the panes and throw building the next route.
+  it('does nothing when a reject is confirmed after the review has ended', async () => {
+    routeState.query = { task: 'taak-1' };
+    const wrapper = mountEditor();
+    await settle();
+    expect(changes().review).toBe(true);
+
+    routeState.query = {};
+    await settle();
+    expect(changes().review).toBe(false);
+    replaceMock.mockReset();
+    internals(wrapper).editedText = 'een onopgeslagen wijziging';
+
+    await expect(internals(wrapper).rejectReview()).resolves.toBeUndefined();
+    await settle();
+
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(applyEnrichment).not.toHaveBeenCalled();
+    // The panes keep what the user typed.
+    expect(internals(wrapper).editedText).toBe('een onopgeslagen wijziging');
   });
 
   // Tweede helft van dezelfde bug: terug op het artikel van de taak was de

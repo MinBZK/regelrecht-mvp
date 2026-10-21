@@ -144,9 +144,10 @@ const definitions = computed(() => {
   const defs = mr.value?.definitions;
   if (!defs) return [];
   return Object.entries(defs).map(([name, def]) => {
-    // typeof null is 'object' as well, so a null definition throws here.
-    const val = typeof def === 'object' ? (def as DefinitionObject).value : def;
-    const unit = typeof def === 'object' ? (def as DefinitionObject).type_spec?.unit : undefined;
+    // A YAML-null definition (`foo: ~`) is a bare null value, not an object.
+    const isObject = def !== null && typeof def === 'object';
+    const val = isObject ? (def as DefinitionObject).value : def;
+    const unit = isObject ? (def as DefinitionObject).type_spec?.unit : undefined;
     // Per-token parts for read-only display: a list keeps its raw items
     // (each wrapped in <wbr>-breakable tokens), a scalar is the formatted
     // single value. Lets long underscore identifiers wrap instead of
@@ -245,6 +246,8 @@ function formatValue(val: unknown, unit: string | undefined): string {
   // joins with a bare comma ("a,b,c") which has no break opportunity and
   // pushes the column width. Use comma + space so it can wrap.
   if (Array.isArray(val)) return val.join(', ');
+  // A YAML-null value renders as empty, not as the word "null".
+  if (val == null) return '';
   return String(val);
 }
 

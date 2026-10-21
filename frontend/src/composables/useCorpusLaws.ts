@@ -1,4 +1,4 @@
-import { ref, computed, watch, type Ref } from 'vue';
+import { ref, computed, watch, isRef, type Ref } from 'vue';
 import { lawsListUrl } from './corpusUrls';
 import { apiFetchJson } from '../lib/apiFetch';
 import { createLruMap } from '../lib/lruMap';
@@ -104,13 +104,13 @@ export function useCorpusLaws(trajectRef?: Readonly<Ref<TrajectRef>> | null) {
   // error. All current callers pass a `Ref` (via `toRef(props, ...)`
   // or `computed`); a dev-mode warning catches future misuses before
   // they ship as a silent regression.
-  if (trajectRef !== undefined && trajectRef !== null && !('value' in trajectRef)) {
+  if (trajectRef !== undefined && trajectRef !== null && !isRef(trajectRef)) {
     console.warn(
       'useCorpusLaws: trajectRef should be a Ref, got plain value - list will not react to scope changes',
       trajectRef,
     );
   }
-  const refSource = trajectRef && 'value' in trajectRef
+  const refSource = isRef(trajectRef)
     ? trajectRef
     : ref(trajectRef ?? null);
   const laws = ref<CorpusLaw[]>([]);

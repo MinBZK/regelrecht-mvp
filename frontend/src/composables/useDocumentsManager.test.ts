@@ -131,6 +131,16 @@ describe('useDocumentsManager', () => {
     expect(h.api.deleteDocument).not.toHaveBeenCalled();
   });
 
+  it('handleSave does nothing when no document is open', async () => {
+    // A name typed while nothing is open must not create a document and then
+    // DELETE the null path.
+    m.titleDraft.value = 'nieuw';
+    const ok = await m.handleSave();
+    expect(ok).toBe(false);
+    expect(h.api.saveCurrent).not.toHaveBeenCalled();
+    expect(h.api.deleteDocument).not.toHaveBeenCalled();
+  });
+
   it('handleSave with a rename writes the new path then deletes the old one', async () => {
     h.api.currentPath.value = 'oud.md';
     await nextTick();
