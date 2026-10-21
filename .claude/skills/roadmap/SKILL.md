@@ -479,7 +479,7 @@ invullen laat de build vallen. Verzin geen score om het vak te vullen.
 `randvoorwaarde` (geldt voor elk project, die bewaken we). `clusters` zijn
 de groepen pre-mortem-kaartjes waar de aanname uit kwam, met het aantal
 kaartjes; leeg laten mag voor een aanname die niet uit een pre-mortem komt.
-`onderbouwing` verschijnt alleen als hij is ingevuld.
+`onderbouwing` en `toetsing` verschijnen alleen als ze zijn ingevuld.
 
 De eerste set komt uit de pre-mortem van RegelRecht (het is oktober 2028 en
 de verkenning is mislukt; wat staat er in het rapport?). De posities zijn die

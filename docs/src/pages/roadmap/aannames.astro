@@ -14,8 +14,7 @@
  * outside the grid, is a design-system component.
  *
  * Every aanname opens in an nldd-sheet with its scores, its kind, the
- * pre-mortem clusters it came from, a proposed test, and
- * the werkpakketten it rests on. The trigger is a link to `#<id>` rather than
+ * pre-mortem clusters it came from and the werkpakketten it rests on. The trigger is a link to `#<id>` rather than
  * a bare button, so an aanname has a URL: a werkpakket page links straight to
  * it, and so can anyone pasting it in a chat. The script below opens the sheet
  * that belongs to the hash and clears the hash again when it closes.
@@ -112,8 +111,7 @@ const pathname = AANNAMES_PAD;
           Elke aanname heeft twee scores van 1 tot 5: hoeveel er van afhangt,
           en hoeveel bewijs er voor is. Het gekleurde vlak linksboven is waar
           veel van afhangt en weinig bewijs voor is. Klik op een aanname voor
-          de clusters eronder, een voorstel voor een toets en de werkpakketten
-          die erop rusten.
+          de clusters eronder en de werkpakketten die erop rusten.
         </nldd-text>
         <nldd-text size="sm" color="secondary">
           De aannames komen uit een pre-mortem: het is oktober 2028 en de
@@ -464,18 +462,15 @@ const pathname = AANNAMES_PAD;
                 </nldd-container>
               )}
 
-              <nldd-container gap="8">
-                <nldd-title size="5"><h3>Toetsing</h3></nldd-title>
-                {toetsing ? (
+              {/* Like the onderbouwing: only once a test has been decided on. */}
+              {toetsing && (
+                <nldd-container gap="8">
+                  <nldd-title size="5"><h3>Toetsing</h3></nldd-title>
                   <nldd-rich-text>
                     <Fragment set:html={toetsing} />
                   </nldd-rich-text>
-                ) : (
-                  <nldd-text size="sm" color="secondary">
-                    Nog niet bepaald.
-                  </nldd-text>
-                )}
-              </nldd-container>
+                </nldd-container>
+              )}
 
               <nldd-container gap="8">
                 <nldd-title size="5"><h3>Werkpakketten</h3></nldd-title>

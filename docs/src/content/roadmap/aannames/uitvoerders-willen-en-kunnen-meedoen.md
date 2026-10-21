@@ -8,12 +8,10 @@ aanname: |-
 soort: hypothese
 impact: 3
 zekerheid: 2
-toetsing: |-
-  Vraag twee uitvoeringsorganisaties om een concrete toezegging: één casus,
-  één naam en een vast aantal uren per week voor de komende drie maanden. Drie
-  weken.
 clusters:
   - naam: Adoptie door uitvoering
     kaartjes: 5
-werkpakketIds: []
+werkpakketIds:
+  - referentie-casus-i
+  - referentie-casus-ii
 ---

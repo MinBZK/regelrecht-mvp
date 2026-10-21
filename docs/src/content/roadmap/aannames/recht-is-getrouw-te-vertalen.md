@@ -7,14 +7,10 @@ aanname: |-
 soort: hypothese
 impact: 5
 zekerheid: 4
-toetsing: |-
-  Leesexperiment: vier tot zes juristen beoordelen het regelwerk van één
-  bestaande wet, waarin bewust een tiental fouten van bekende soort zit. We
-  tellen per soort fout hoeveel ze vinden. Daarnaast tellen we per artikel
-  welk deel het formaat kan uitdrukken, gewogen naar het aantal beslissingen.
-  Vier tot zes weken.
 clusters:
   - naam: Vertaalbaarheid van recht
     kaartjes: 5
-werkpakketIds: []
+werkpakketIds:
+  - onderzoeken-juridisch-toetsingskader-voor-validatie
+  - lakmoesproef-valideren-en-vaststellen
 ---
