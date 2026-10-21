@@ -264,10 +264,11 @@ impl Bron {
         }
     }
 
-    /// The source now, or why not.
+    /// The source now, or why not. `github` is needed only for a source on
+    /// GitHub; without a client such a source answers as a failed fetch.
     pub async fn geef(
         &self,
-        github: &regelrecht_github::GithubClient,
+        github: Option<&regelrecht_github::GithubClient>,
     ) -> Result<Arc<Opgehaald>, BronFout> {
         match &self.herkomst {
             Herkomst::Geen(waarom) => Err(BronFout::NietBeschikbaar(waarom.clone())),
@@ -292,6 +293,7 @@ impl Bron {
             } => self
                 .cache
                 .geef(Instant::now(), || async {
+                    let github = github.ok_or("no GitHub client in this process")?;
                     let bytes = github
                         .fetch_tarball(repo, branch, Some(token))
                         .await
@@ -580,7 +582,7 @@ mod tests {
     async fn a_source_without_a_token_is_not_available() {
         let bron = Bron::new(&source(), |_| None);
         let github = regelrecht_github::GithubClient::new().unwrap();
-        let e = bron.geef(&github).await.unwrap_err();
+        let e = bron.geef(Some(&github)).await.unwrap_err();
         assert!(matches!(e, BronFout::NietBeschikbaar(_)), "{e}");
         assert!(e.to_string().starts_with("bron niet beschikbaar"), "{e}");
     }
@@ -608,10 +610,10 @@ mod tests {
         let bron = Bron::new(&source(), |k| {
             (k == "EXAMPLE_TOKEN").then(|| "geheim".into())
         });
-        let o = bron.geef(&github).await.unwrap();
+        let o = bron.geef(Some(&github)).await.unwrap();
         assert_eq!(o.versie.as_deref(), Some("def5678"));
         assert_eq!(o.bestanden["casussen/c.yaml"], "cel: c");
         // Within the TTL the second visitor gets the same copy (`expect(1)`).
-        bron.geef(&github).await.unwrap();
+        bron.geef(Some(&github)).await.unwrap();
     }
 }

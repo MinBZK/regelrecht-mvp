@@ -252,10 +252,7 @@ fn heeft_toegang(state: &AppState, poc: &Poc, request: &Request) -> bool {
 /// ([`crate::bron::Cache`]). Not configured here is 503, a failed fetch
 /// without a copy 502, each with the reason as text.
 async fn serveer_bron(state: &AppState, bron: &Bron) -> Response {
-    let uitkomst = match &state.github {
-        Some(github) => bron.geef(github).await,
-        None => Err(BronFout::Ophalen("no GitHub client".into())),
-    };
+    let uitkomst = bron.geef(state.github.as_deref()).await;
     let no_store = [(header::CACHE_CONTROL, "no-store")];
     match uitkomst {
         Ok(o) => (no_store, axum::Json(&*o)).into_response(),
