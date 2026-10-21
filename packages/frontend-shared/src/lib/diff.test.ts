@@ -53,24 +53,24 @@ describe('compactDiff', () => {
 describe('articleTextDiff', () => {
   const doc = (text: unknown) => ({ articles: [{ number: '6.10', text }] });
 
-  it('meldt een gewijzigde wettekst met het artikelnummer', () => {
+  it('reports a changed law text with its article number', () => {
     expect(articleTextDiff(doc('Vier procent.'), doc('Vijf procent.'))).toEqual([
-      { article: '6.10', oud: 'Vier procent.', nieuw: 'Vijf procent.' },
+      { article: '6.10', before: 'Vier procent.', after: 'Vijf procent.' },
     ]);
   });
 
-  it('meldt niets als de tekst gelijk blijft', () => {
+  it('reports nothing when the text stays the same', () => {
     expect(articleTextDiff(doc('Vier procent.'), doc('Vier procent.'))).toEqual([]);
   });
 
-  // Een artikel zonder wettekst is niet hetzelfde als een lege wettekst; daar
-  // valt niets over te zeggen, dus zegt de diff er niets over.
-  it('slaat een artikel zonder wettekst over', () => {
+  // An article without law text is not the same as an empty law text; there
+  // is nothing to say about it, so the diff says nothing.
+  it('skips an article without law text', () => {
     expect(articleTextDiff(doc(undefined), doc('Nu wel tekst.'))).toEqual([]);
     expect(articleTextDiff(doc('Was er tekst.'), doc(undefined))).toEqual([]);
   });
 
-  it('slaat een artikel over dat in de werkversie niet meer bestaat', () => {
+  it('skips an article that no longer exists in the working version', () => {
     expect(articleTextDiff(doc('Tekst.'), { articles: [] })).toEqual([]);
   });
 });
@@ -82,7 +82,7 @@ describe('definitionDiff', () => {
 
   it('reports a changed definition value with article and name', () => {
     expect(definitionDiff(doc(0.84), doc(0.9))).toEqual([
-      { article: '6.10', name: 'voet_ratio', oud: 0.84, nieuw: 0.9 },
+      { article: '6.10', name: 'voet_ratio', before: 0.84, after: 0.9 },
     ]);
   });
 
@@ -105,12 +105,12 @@ describe('definitionDiff', () => {
     };
 
     expect(definitionDiff(base, current)).toEqual([
-      { article: '2.2', name: 'b', oud: 2, nieuw: 99 },
+      { article: '2.2', name: 'b', before: 2, after: 99 },
     ]);
   });
 
   // The sheet shows value changes, not structural ones: a definition the
-  // werkversie dropped has no new value to put next to the old one, so it is
+  // working version dropped has no new value to put next to the old one, so it is
   // deliberately absent here rather than rendered as a change to undefined.
   it('ignores a definition that the current document no longer has', () => {
     const current = { articles: [{ number: '6.10', machine_readable: { definitions: {} } }] };

@@ -24,9 +24,9 @@
               <li v-for="(c, i) in defChanges" :key="i">
                 <span class="ds-art">artikel {{ c.article }}</span>
                 <code>{{ c.name }}</code>:
-                <span class="ds-old">{{ c.oud }}</span>
+                <span class="ds-old">{{ c.before }}</span>
                 <nldd-icon icon="arrow-right" size="16"></nldd-icon>
-                <span class="ds-new">{{ c.nieuw }}</span>
+                <span class="ds-new">{{ c.after }}</span>
               </li>
             </ul>
           </section>
@@ -35,8 +35,8 @@
             <nldd-title :size="5"><span>Gewijzigde wettekst</span></nldd-title>
             <div v-for="(c, i) in tekstChanges" :key="i" class="ds-tekst">
               <span class="ds-art">artikel {{ c.article }}</span>
-              <p class="ds-tekst-oud">{{ c.oud }}</p>
-              <p class="ds-tekst-nieuw">{{ c.nieuw }}</p>
+              <p class="ds-tekst-oud">{{ c.before }}</p>
+              <p class="ds-tekst-nieuw">{{ c.after }}</p>
             </div>
           </section>
 

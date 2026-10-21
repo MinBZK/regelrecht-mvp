@@ -201,7 +201,7 @@ import InkomenWatAls from '../components/burger/InkomenWatAls.vue';
 import ToeslagenSignaal from '../components/burger/ToeslagenSignaal.vue';
 import RegimeTabel from '../components/burger/RegimeTabel.vue';
 import { euro } from '../lib/format.js';
-import { bewaarStand, leesStand } from '../composables/useBewaardeStand.js';
+import { writePersisted, readPersisted } from '../composables/useBewaardeStand.js';
 import { heroOnderregel } from '../lib/burgerTekst.js';
 
 const { ready, initError, lawIndex, initEngine } = useEngine();
@@ -223,7 +223,7 @@ onMounted(async () => {
     // Was je vorige keer iemand anders, dan kom je daar weer terug, inclusief
     // de keuzes die je toen had aangezet.
     if (!selected.value && personas.value.length) {
-      const bewaardBsn = leesStand('burger.bsn', null);
+      const bewaardBsn = readPersisted('burger.bsn', null);
       const eerder = bewaardBsn && personas.value.find((p) => p.bsn === bewaardBsn);
       selectPersona(eerder ?? personas.value[0]);
     }
@@ -240,10 +240,10 @@ function selectPersona(persona) {
   if (selected.value?.bsn === persona.bsn) return;
 
   selected.value = persona;
-  bewaarStand('burger.bsn', persona.bsn ?? null);
+  writePersisted('burger.bsn', persona.bsn ?? null);
   // Keuzes die je eerder bij deze persoon aanzette komen terug; bij iemand
   // anders begin je met diens eigen uitgangspunt.
-  const bewaard = leesStand(`burger.keuzes.${persona.bsn}`, null);
+  const bewaard = readPersisted(`burger.keuzes.${persona.bsn}`, null);
   choices.value = { ...defaultChoices(persona), ...(bewaard ?? {}) };
 }
 
@@ -390,7 +390,7 @@ const verstuurTekst = computed(() => {
 
 function onChoiceUpdate(newChoices) {
   choices.value = newChoices;
-  if (selected.value) bewaarStand(`burger.keuzes.${selected.value.bsn}`, newChoices);
+  if (selected.value) writePersisted(`burger.keuzes.${selected.value.bsn}`, newChoices);
   aanvraagOpen.value = false; // een nieuwe keuze vraagt om een nieuwe bevestiging
 }
 

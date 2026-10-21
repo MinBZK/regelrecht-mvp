@@ -4,10 +4,10 @@
 // (frontend-demo/) and the OCW-pocs (frontend-poc-*). The editor is the
 // canonical source for what lives here; other apps conform to it.
 //
-// Niet alles hier hangt aan deze index. De Gherkin-runner, de losse
-// lib-modules en de gedeelde componenten hebben hun eigen subpad in
-// `exports` (./gherkin, ./lib/*, ./components/*, ./useBewaardeStand),
-// zodat een app alleen binnenhaalt wat hij gebruikt.
+// Not everything hangs off this index. The Gherkin runner, the separate lib
+// modules and the shared components have their own subpath in `exports`
+// (./gherkin, ./lib/*, ./components/*, ./usePersistedState), so an app pulls
+// in only what it uses.
 export { apiFetch, apiFetchJson, apiFetchText, ApiError } from './apiFetch';
 export type { ApiFetchInit } from './apiFetch';
 export { useAuth, ensureAuthReady, hasRole, hasAnyRole } from './useAuth';
