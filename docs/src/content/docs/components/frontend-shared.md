@@ -7,10 +7,11 @@ description: "The npm workspace package with the code the Vue frontends share: A
 
 ## Overview
 
-- **Language**: JavaScript and Vue 3 single-file components
+- **Language**: TypeScript and Vue 3 single-file components with `<script setup lang="ts">`; only the generated Gherkin grammar is JavaScript
 - **Location**: `packages/frontend-shared/`
 - **Type**: npm workspace package (`private`, not published)
 - **Tests**: Vitest with happy-dom, `npm test -w packages/frontend-shared`
+- **Type check**: `vue-tsc`, `npm run typecheck -w packages/frontend-shared`
 
 ## What it does
 
@@ -25,17 +26,26 @@ The editor is the reference for what lives here, and the other apps conform to i
 
 ## Architecture
 
-The package root (`src/index.js`) exports only the small primitives. Everything else has its own subpath in the `exports` map of `package.json`, so an app pulls in only what it imports: `./gherkin`, `./lib/*`, `./components/*` and the individual `./*.js` modules.
+The package root (`src/index.ts`) exports only the small primitives. Everything else has its own subpath in the `exports` map of `package.json`, so an app pulls in only what it imports: `./gherkin`, `./lib/*`, `./components/*` and the individual modules as `./*`, without an extension. The one JavaScript file, `./gherkin/grammar.generated.js`, keeps its extension.
 
 ### Exported from the root
 
 | Module | Purpose |
 |--------|---------|
-| `apiFetch.js` | A thin wrapper around `fetch`. A non-ok response throws an `ApiError` carrying the status, the body text and the content type. It deliberately has no retries, timeouts or auth handling; `apiFetch` returns the raw `Response` so callers keep the headers the ETag/If-Match handling relies on |
-| `useAuth.js` | Sign-in state from `/auth/status`, the realm roles of the current user, and `hasRole` / `hasAnyRole` for showing role-specific UI. The backend still enforces every route |
-| `useGithubAuth.js` | Whether the user has linked a GitHub account, from the editor API's `/auth/github/status`. When the endpoint is missing or fails, the controls are hidden |
-| `useColorScheme.js` | The light/dark/auto picker. It sets `data-scheme` on `<html>`, which the design system keys its dark tokens on, and leaves it off for `auto`. Persistence is injected: the editor stores the choice server-side, other apps use `localStorage` |
-| `values.js` | `isUnknown` and `missingFacts`: one definition of how the engine's Unknown value ([RFC-036](/rfcs/rfc-036)) arrives in JavaScript |
+| `apiFetch.ts` | A thin wrapper around `fetch`. A non-ok response throws an `ApiError` carrying the status, the body text and the content type. It deliberately has no retries, timeouts or auth handling; `apiFetch` returns the raw `Response` so callers keep the headers the ETag/If-Match handling relies on |
+| `useAuth.ts` | Sign-in state from `/auth/status`, the realm roles of the current user, and `hasRole` / `hasAnyRole` for showing role-specific UI. The backend still enforces every route |
+| `useGithubAuth.ts` | Whether the user has linked a GitHub account, from the editor API's `/auth/github/status`. When the endpoint is missing or fails, the controls are hidden |
+| `useColorScheme.ts` | The light/dark/auto picker. It sets `data-scheme` on `<html>`, which the design system keys its dark tokens on, and leaves it off for `auto`. Persistence is injected: the editor stores the choice server-side, other apps use `localStorage` |
+| `values.ts` | `isUnknown` and `missingFacts`: one definition of how the engine's Unknown value ([RFC-036](/rfcs/rfc-036)) arrives in JavaScript |
+
+### TypeScript
+
+The package is written in TypeScript. `tsconfig.json` extends `@vue/tsconfig/tsconfig.dom.json` (strict mode) and sets `allowJs`, which lets the TypeScript modules import `grammar.generated.js`; that file stays JavaScript because `bdd/codegen/gen-js.mjs` writes it and `docs/scripts/check-gherkin-steps.mjs` loads it with plain Node. `steps.ts` checks its entries against the `GrammarEntry` type.
+
+- Nothing is compiled ahead of time. The apps' Vite builds and Vitest strip the types when they bundle or test the source, as they do for the JavaScript.
+- An import of a TypeScript module leaves out the extension (`'./values'`), also from a JavaScript file in an app. Vite and Vitest resolve it, and the code only runs through them. Plain Node does not resolve an import without an extension, so a script run with `node` cannot load these modules.
+- The Gherkin runner names the engine methods it calls in a small `GherkinEngine` interface. The engine's own generated `.d.ts` is part of each app's WASM build output, which this package cannot reach.
+- The check runs `vue-tsc`, not `tsc`, because only `vue-tsc` reads the script blocks in `.vue` files. The workspace pins TypeScript 6 through an `overrides` entry in the root `package.json`: `vue-tsc` builds on the JavaScript compiler API that TypeScript 7 no longer ships. The docs site has its own lockfile and stays on TypeScript 7.
 
 ### The Gherkin runner (`./gherkin`)
 
@@ -43,26 +53,26 @@ A JavaScript runner for the canonical scenario language in `bdd/grammar.yaml`, r
 
 | Module | Purpose |
 |--------|---------|
-| `parser.js` | Wraps `@cucumber/gherkin` into a small AST of scenarios, steps and data tables |
+| `parser.ts` | Wraps `@cucumber/gherkin` into a small AST of scenarios, steps and data tables |
 | `grammar.generated.js` | The step patterns, generated from `bdd/grammar.yaml` by `just bdd-codegen`. Never edit it by hand; CI regenerates it and fails when the committed file differs |
-| `steps.js` | Turns the generated grammar into step definitions and matches step text against them |
-| `actions.js` | The one dispatch that gives each grammar action its behavior, the JavaScript counterpart of the Rust BDD dispatch |
-| `context.js` | `ExecutionContext`, the state of one scenario run |
+| `steps.ts` | Turns the generated grammar into step definitions and matches step text against them |
+| `actions.ts` | The one dispatch that gives each grammar action its behavior, the JavaScript counterpart of the Rust BDD dispatch |
+| `context.ts` | `ExecutionContext`, the state of one scenario run |
 
 The runner supports only the `core` tier. A step from another tier throws instead of doing nothing, so a scenario that needs more than the WASM engine offers fails visibly.
 
 ### Modules for the PoCs
 
-These came in with the proof-of-concepts behind the [PoC Portal](./poc-portal). Their comments and identifiers are partly Dutch, like the apps that use them.
+These came in with the proof-of-concepts behind the [PoC Portal](./poc-portal). Their code is in English; the text they show to users is Dutch.
 
 | Module | Purpose |
 |--------|---------|
-| `useBewaardeStand.js` | Keeps choices and settings across a page reload in `localStorage`, under a prefix per case. Two PoCs share one origin behind the portal, and without the prefix they would read each other's state. An edited rulework is deliberately not stored here |
-| `browserVarianten.js` | Variants a user saves in their own browser, in the same shape as the variants checked into the case. Each file keeps a fingerprint of the law text it started from, so the app can say when the corpus has changed underneath it |
-| `reloadOnStaleBundle.js` | Reloads the page when a lazily loaded view no longer exists after a deploy, at most once per ten seconds |
-| `formatToolCall.js` | Renders a tool call in the policy assistant's feed as one readable line, whatever shape the model's arguments take. Used by `AssistentPanel.vue` in both static PoCs |
-| `lib/diff.js` | A line diff (longest common subsequence) for showing a change to a law's YAML, with no dependency |
-| `components/` | `Paneel.vue` (a collapsible section), `KolommenMenu.vue` (a menu to pick variants as columns), `AssistentMeldingen.vue` (notices from the policy assistant) and `OptimalisatiepadChart.vue` (the path the assistant takes toward a target, which needs the optional `echarts` peer dependency) |
+| `usePersistedState.ts` | Keeps choices and settings across a page reload in `localStorage`, under a prefix per case. Two PoCs share one origin behind the portal, and without the prefix they would read each other's state. An edited rulework is deliberately not stored here |
+| `browserVariants.ts` | Variants a user saves in their own browser, in the same shape as the variants checked into the case. Each file keeps a fingerprint of the law text it started from, so the app can say when the corpus has changed underneath it. Variants saved before the code was translated carry Dutch field names; they are read under both names and written back in the new format |
+| `reloadOnStaleBundle.ts` | Reloads the page when a lazily loaded view no longer exists after a deploy, at most once per ten seconds |
+| `formatToolCall.ts` | Renders a tool call in the policy assistant's feed as one readable line, whatever shape the model's arguments take. Used by `AssistentPanel.vue` in both static PoCs |
+| `lib/diff.ts` | A line diff (longest common subsequence) for showing a change to a law's YAML, with no dependency |
+| `components/` | `Panel.vue` (a collapsible section), `ColumnMenu.vue` (a menu to pick variants as columns), `AssistantNotices.vue` (notices from the policy assistant) and `OptimizationPathChart.vue` (the path the assistant takes toward a target, which needs the optional `echarts` peer dependency) |
 
 ## Further reading
 

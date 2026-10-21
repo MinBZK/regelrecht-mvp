@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { artikelNaam, genomenBij, genummerd, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
-import { spel } from '../src/spel.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { artikelNaam, genomenBij, genummerd, opsomming, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
+import { rol, spel } from '../src/spel.js';
 
 // De casus zoals GET /api/casus haar geeft, voor zover het logboek haar leest.
 beforeEach(() => {
@@ -8,6 +8,8 @@ beforeEach(() => {
     besluit: 'leerplichtwet_1969#13a',
     beslissing_op_bezwaar: 'algemene_wet_bestuursrecht#7:11',
     uitkomst: 'verlof_verleend',
+    cel: 'obs_de_klimop',
+    cel_naam: 'OBS De Klimop',
     regelwerken: [
       { id: 'leerplichtwet_1969', naam: null },
       { id: 'algemene_wet_bestuursrecht', naam: 'Algemene wet bestuursrecht' },
@@ -84,7 +86,7 @@ describe('stapTekst', () => {
     expect(stapTekst(celAntwoord, grammen)).toEqual({
       tekst: 'verlof al verleend in schooljaar: nee',
       toelichting:
-        'cel obs_de_klimop antwoordt nee (reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
+        'ingevuld door OBS De Klimop uit haar kroniek (reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
     });
   });
 
@@ -139,6 +141,14 @@ describe('uitslag', () => {
   });
 });
 
+describe('wat de cel uit zichzelf vastlegde', () => {
+  const vestiging = { kind: 'EXECUTOGRAM', grondslag: 'regeling_vaststelling_schoolvakanties_20252030#2', stream: 'vestiging', outputs: {} };
+  it('noemt de vestiging een executogram, vastgelegd', () => {
+    expect(rol(vestiging)).toBe('Executogram');
+    expect(uitslag(vestiging)).toEqual({ tekst: 'vastgelegd', kleur: 'neutral' });
+  });
+});
+
 describe('genomenBij', () => {
   it('vindt de beslissing op bezwaar die een besluit als nieuw besluit nam', () => {
     const nieuw = '019a0000-0000-7000-8000-00000000dddd';
@@ -156,5 +166,62 @@ describe('toon en artikelNaam', () => {
     expect(artikelNaam('fictief_beleid', '2')).toBe('Fictief beleid artikel 2');
     expect(wetNaam('fictief_beleid_met_naam')).toBe('Beleid van de gemeente');
     expect(wetNaam('besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw')).toBe('BABW');
+  });
+});
+
+describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
+  beforeEach(() => {
+    spel.casus.andere_cellen = [
+      { cel: 'gemeente_oostmeer', cel_naam: 'gemeente Oostmeer' },
+      { cel: 'cbr', cel_naam: 'CBR' },
+    ];
+    spel.andere = [{ cel: 'gemeente_oostmeer', grammen: [{ id: '019a0000-0000-7000-8000-00000000cccc', kind: 'BESCHIKKING' }] }];
+  });
+  afterEach(() => {
+    delete spel.casus.andere_cellen;
+    spel.andere = [];
+  });
+
+  it('leest het laatste chronolexogram in de kroniek van de andere cel', () => {
+    const t = stapTekst(
+      eerder({ answer: { ...bron('gemeente_oostmeer'), last_record: '019a0000-0000-7000-8000-00000000cccc' } }),
+      [],
+    );
+    expect(t.toelichting).toContain('beschikking 0000cccc');
+  });
+  const eerder = (ingevuld_door) => ({
+    soort: 'begrip',
+    naam: 'aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt',
+    wet: 'besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw',
+    artikel: '51',
+    waarde: true,
+    ontbreekt: [],
+    keer: null,
+    ingevuld_door,
+  });
+  const bron = (answerer) => ({
+    answerer,
+    law_id: `reductie_${answerer}`,
+    valid_from: '2026-01-01',
+    records_read: 1,
+    last_record: null,
+  });
+
+  it('noemt de andere cel bij haar naam', () => {
+    const t = stapTekst(eerder({ answer: bron('gemeente_oostmeer') }), []);
+    expect(t.toelichting).toContain('gemeente Oostmeer');
+  });
+
+  it('noemt elke cel waarvan het antwoord meetelde', () => {
+    const t = stapTekst(eerder({ answers: [bron('cbr'), bron('gemeente_oostmeer')] }), []);
+    expect(t.toelichting).toBe('samengevoegd uit de antwoorden van CBR en gemeente Oostmeer');
+  });
+});
+
+describe('opsomming', () => {
+  it('zet een komma tussen de eerste namen en "en" voor de laatste', () => {
+    expect(opsomming(['A'])).toBe('A');
+    expect(opsomming(['A', 'B'])).toBe('A en B');
+    expect(opsomming(['A', 'B', 'C'])).toBe('A, B en C');
   });
 });

@@ -18,6 +18,9 @@ export const spel = reactive({
   casus: null,
   datum: '',
   grammen: [],
+  // De kronieken van de andere cellen van de sfeer (RFC-052), elk met
+  // `cel`, `cel_naam` en `grammen`; leeg bij een casus zonder.
+  andere: [],
   vormen: null,
   fout: '',
   // Het chronolexogram dat de kroniek bij openen kiest (een link uit het logboek).
@@ -109,6 +112,7 @@ export async function verversen() {
   try {
     const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(spel.datum)]);
     spel.grammen = kroniek.grammen;
+    spel.andere = kroniek.andere ?? [];
     spel.vormen = vormen;
   } catch (e) {
     spel.fout = e.message;
@@ -154,6 +158,7 @@ export const herroepen = (besluit) =>
 /** Wat een chronolexogram is in het proces, zoals het dossier en het logboek het noemen. */
 export function rol(g) {
   if (g.kind === 'AANVRAAG') return 'Aanvraag';
+  if (g.kind === 'EXECUTOGRAM') return 'Executogram';
   if (g.kind === 'BEZWAAR') return 'Bezwaar';
   if (g.grondslag === bezwaarGrondslag()) return 'Beslissing op bezwaar';
   const op = spel.grammen.find((x) => x.id === g.refers_to);
@@ -193,6 +198,9 @@ export function geldendBesluit(aanvraag) {
 
 /** Een naam uit de wet leesbaar: `laatste_verlofdag` → `laatste verlofdag`. */
 export const leesbaar = (naam) => String(naam).replaceAll('_', ' ');
+
+/** `verlof verleend` → `Verlof verleend`. */
+export const hoofdletter = (tekst) => tekst.charAt(0).toUpperCase() + tekst.slice(1);
 
 export const kort = (id) => String(id).slice(-8);
 

@@ -1,9 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from 'vue';
+import type { Annotation, NLDDTextEditor, TextEditorState } from '@nldd/design-system/text-editor';
 
-const props = defineProps({
-  article: { type: Object, default: null },
-  editable: { type: Boolean, default: false },
+/** Detail of `nldd-text-editor-annotation-click` (not typed by the design system). */
+interface AnnotationClickDetail {
+  ids: string[];
+  rect: DOMRect;
+}
+
+const props = withDefaults(defineProps<{
+  // Only its presence is read.
+  article?: object | null;
+  editable?: boolean;
   /**
    * Markdown source, v-model-bound to the parent editor state. The
    * nldd-text-editor works in Markdown directly: its `value` is the Markdown
@@ -11,18 +19,27 @@ const props = defineProps({
    * Markdown ↔ Markdown with no HTML intermediate - unlike the previous
    * Tiptap editor, raw HTML in the source is preserved as literal text.
    */
-  modelValue: { type: String, default: '' },
+  modelValue?: string;
   /**
    * Annotations to overlay, in the DS shape { id, start, end, quote } with
    * UTF-16 offsets into the (clean) Markdown. The editor maps them through
    * edits; read them back with getAnnotations() on save.
    */
-  annotations: { type: Array, default: () => [] },
+  annotations?: Annotation[];
+}>(), {
+  article: null,
+  editable: false,
+  modelValue: '',
+  annotations: () => [],
 });
 
-const emit = defineEmits(['update:modelValue', 'focus', 'annotation-click']);
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+  focus: [];
+  'annotation-click': [ids: string[], rect: DOMRect];
+}>();
 
-const editorRef = ref(null);
+const editorRef = ref<NLDDTextEditor | null>(null);
 
 // Reactive mirror of the editor's toolbar state, fed by the
 // `nldd-text-editor-state` event. The parent's header toolbar reads
@@ -43,8 +60,8 @@ const canRedo = ref(false);
 // Drives the toolbar "comment" button: authoring needs a non-empty selection.
 const selectionEmpty = ref(true);
 
-function onState(e) {
-  const s = e.detail;
+function onState(e: Event) {
+  const s = (e as CustomEvent<TextEditorState>).detail;
   activeFormats.bold = s.active.bold;
   activeFormats.italic = s.active.italic;
   activeFormats.bulletList = s.active.bulletList;
@@ -56,8 +73,9 @@ function onState(e) {
   selectionEmpty.value = s.empty;
 }
 
-function onAnnotationClick(e) {
-  emit('annotation-click', e.detail.ids, e.detail.rect);
+function onAnnotationClick(e: Event) {
+  const detail = (e as CustomEvent<AnnotationClickDetail>).detail;
+  emit('annotation-click', detail.ids, detail.rect);
 }
 
 // The current selection as { start, end, quote, empty } in clean UTF-16 offsets
@@ -73,8 +91,8 @@ function getAnnotations() {
 // the fresh (sentinel-stripped) Markdown. The DS editor guards a value that
 // merely mirrors its own document, so binding `:value="modelValue"` back in
 // doesn't churn the cursor on each keystroke.
-function onInput(e) {
-  emit('update:modelValue', e.target.value);
+function onInput(e: Event) {
+  emit('update:modelValue', (e.target as NLDDTextEditor).value);
 }
 
 // focusin bubbles and is composed, so it crosses the shadow boundary; the

@@ -2,12 +2,13 @@
 //!
 //! The app plays one case at a time (a casus: a cell and the article that
 //! establishes the application). `GET /api/casussen` lists them, `POST
-//! /api/casus` chooses one and starts its cell with an empty chronicle, and
-//! every other endpoint works on the chosen case; without a choice it says
-//! so (409). The state is in memory and shared by every visitor; `POST
-//! /api/reset` empties the chronicle of the chosen case. That is enough for a
-//! PoC that plays the process through and loses nothing worth keeping on a
-//! restart.
+//! /api/casus` chooses one and starts its cell ([`Corpus::cell`]: an empty
+//! chronicle, or what the case's cell recorded before the first scenario),
+//! and every other endpoint works on the chosen case; without a choice it
+//! says so (409). The state is in memory and shared by every visitor; `POST
+//! /api/reset` starts the chronicle of the chosen case anew. That is enough
+//! for a PoC that plays the process through and loses nothing worth keeping
+//! on a restart.
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -18,16 +19,16 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::NaiveDate;
-use regelrecht_cel::{Cell, Error};
+use regelrecht_cel::Error;
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
 
-use crate::kern::{self, Corpus};
+use crate::kern::{self, Cellen, Corpus};
 
-/// The chosen case and its cell.
+/// The chosen case, its cell and the other cells of its sphere.
 struct Spel {
     casus: usize,
-    cell: Cell,
+    cell: Cellen,
 }
 
 #[derive(Clone)]
@@ -57,7 +58,7 @@ impl AppState {
     fn met<T>(
         &self,
         verwacht: &Verwacht,
-        stap: impl FnOnce(&Corpus, &mut Cell) -> kern::Result<T>,
+        stap: impl FnOnce(&Corpus, &mut Cellen) -> kern::Result<T>,
     ) -> Result<T, Fout> {
         let mut spel = self.spel();
         let spel = spel.as_mut().ok_or(Fout::GeenCasus)?;
@@ -100,12 +101,18 @@ pub fn routes() -> Router<AppState> {
         .route("/api/vormen", get(vormen))
         .route("/api/kroniek", get(kroniek))
         .route("/api/aanvragen", post(aanvragen))
+        .route("/api/executogrammen", post(executogrammen))
         .route("/api/besluiten", post(besluiten))
+        .route("/api/besluiten/voorvertoning", post(voorvertoning_besluit))
         .route("/api/besluiten/{id}/waarom", get(waarom))
         .route("/api/besluiten/{id}/antwoord/{begrip}", get(hoe_beantwoord))
         .route("/api/bezwaren", post(bezwaren))
         .route("/api/bezwaren/{id}/heroverweging", get(heroverweging))
         .route("/api/beslissingen-op-bezwaar", post(beslissen_op_bezwaar))
+        .route(
+            "/api/beslissingen-op-bezwaar/voorvertoning",
+            post(voorvertoning_op_bezwaar),
+        )
         .route("/api/reducties", get(reducties))
         .route("/api/logboek", get(logboek))
         .route("/api/reset", post(reset))
@@ -189,7 +196,7 @@ struct Keuze {
     casus: String,
 }
 
-/// Choose a case: its cell starts with an empty chronicle.
+/// Choose a case: its cell starts anew ([`Corpus::cell`]).
 async fn kiezen(State(s): State<AppState>, Json(k): Json<Keuze>) -> Antwoord {
     let i = s
         .casussen
@@ -207,8 +214,26 @@ async fn vormen(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) ->
 }
 
 async fn kroniek(State(s): State<AppState>, v: Verwacht) -> Antwoord {
-    ok(s.met(&v, |_, cell| {
-        Ok(json!({ "cel": cell.recording_actor(), "grammen": cell.grams() }))
+    ok(s.met(&v, |c, cell| {
+        // The other cells of the sphere, each with its own chronicle
+        // (RFC-052), under the names the case file gives them.
+        let andere: Vec<Value> = cell
+            .andere
+            .iter()
+            .zip(&c.casus.andere_cellen)
+            .map(|(andere, a)| {
+                json!({
+                    "cel": andere.recording_actor(),
+                    "cel_naam": a.cel_naam,
+                    "grammen": andere.grams(),
+                })
+            })
+            .collect();
+        Ok(json!({
+            "cel": cell.recording_actor(),
+            "grammen": cell.grams(),
+            "andere": andere,
+        }))
     })?)
 }
 
@@ -221,6 +246,27 @@ struct Indiening {
 
 async fn aanvragen(State(s): State<AppState>, v: Verwacht, Json(b): Json<Indiening>) -> Antwoord {
     ok(s.met(&v, |c, cell| kern::aanvragen(c, cell, &b.velden, b.datum))?)
+}
+
+#[derive(Deserialize)]
+struct Vastlegging {
+    /// The other cell of the sphere that records it.
+    cel: String,
+    /// The fact, `<regulation>#<article>#<fact>`.
+    feit: String,
+    #[serde(default)]
+    velden: Map<String, Value>,
+    datum: NaiveDate,
+}
+
+async fn executogrammen(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Vastlegging>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::vastleggen(c, cell, &b.cel, &b.feit, &b.velden, b.datum)
+    })?)
 }
 
 #[derive(Deserialize)]
@@ -284,6 +330,30 @@ async fn beslissen_op_bezwaar(
     })?)
 }
 
+/// A preview ([`kern::voorvertoning_besluit`]): `{ voorlopig }` or, when
+/// the cell refuses (a finding not given yet), `{ geweigerd }` with 200, and
+/// in both the terms the authority judges because the cell is silent
+/// (`stil`). Any other error fails as in any step.
+async fn voorvertoning_besluit(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::voorvertoning_besluit(c, cell, &b.op, &b.bevindingen, b.datum)
+    })?)
+}
+
+async fn voorvertoning_op_bezwaar(
+    State(s): State<AppState>,
+    v: Verwacht,
+    Json(b): Json<Beslissing>,
+) -> Antwoord {
+    ok(s.met(&v, |c, cell| {
+        kern::voorvertoning_op_bezwaar(c, cell, &b.op, &b.bevindingen, b.datum)
+    })?)
+}
+
 async fn reducties(State(s): State<AppState>, v: Verwacht, Query(q): Query<Dag>) -> Antwoord {
     ok(s.met(&v, |c, cell| kern::reducties(c, cell, q.datum))?)
 }
@@ -295,9 +365,9 @@ async fn logboek(State(s): State<AppState>, v: Verwacht) -> Antwoord {
 }
 
 async fn reset(State(s): State<AppState>, v: Verwacht) -> Antwoord {
-    s.met(&v, |c, cell| {
+    let grammen = s.met(&v, |c, cell| {
         *cell = c.cell()?;
-        Ok(())
+        Ok(cell.grams().to_vec())
     })?;
-    ok(json!({ "grammen": [] }))
+    ok(json!({ "grammen": grammen }))
 }

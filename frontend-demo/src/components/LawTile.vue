@@ -12,7 +12,7 @@ import { dateInputFor, phraseOutcome, phrasingFor } from '../data/outcomePhrasin
 import { driftSentence } from '../data/caseDrift.js';
 import { useDemo } from '../store/demoStore.js';
 import { canBeApplied, objectionOpen, statusOf } from '../data/lifecycle.js';
-import { decisionOf } from '@regelrecht/frontend-shared/produces.js';
+import { decisionOf } from '@regelrecht/frontend-shared/produces';
 import { useLocalePath } from '../i18n/useLocalePath.js';
 import { activeLocale, useI18n } from '../i18n/index.js';
 

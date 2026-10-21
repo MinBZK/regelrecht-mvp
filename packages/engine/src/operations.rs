@@ -1558,12 +1558,22 @@ pub fn execute_foreach(
     }
 
     match combine {
-        Some(CombineOp::Add) => combine_add(&results),
-        Some(CombineOp::Or) => combine_or(&results),
-        Some(CombineOp::And) => combine_and(&results),
-        Some(CombineOp::Min) => combine_min_max(&results, true),
-        Some(CombineOp::Max) => combine_min_max(&results, false),
+        Some(op) => combine_with(*op, results),
         None => Ok(Value::Array(results)),
+    }
+}
+
+/// Combine `results` with `op`: the per-element results of a FOREACH
+/// (RFC-016), or the answers of several competent answerers to one open
+/// term (RFC-052).
+pub(crate) fn combine_with(op: CombineOp, results: Vec<Value>) -> Result<Value> {
+    match op {
+        CombineOp::Add => combine_add(&results),
+        CombineOp::Or => combine_or(&results),
+        CombineOp::And => combine_and(&results),
+        CombineOp::Min => combine_min_max(&results, true),
+        CombineOp::Max => combine_min_max(&results, false),
+        CombineOp::Only => combine_only(results),
     }
 }
 
@@ -1710,6 +1720,23 @@ fn combine_and(results: &[Value]) -> Result<Value> {
         }
     }
     Ok(Value::merge_unknown(&unknowns).unwrap_or(Value::Bool(true)))
+}
+
+/// Combine FOREACH results with ONLY: the one result, whatever it is.
+///
+/// Empty is `Null`, as for MIN and MAX: there is no element, and the caller
+/// has to handle that. More than one is an error: the law asked for the one
+/// element the filter selects, and two are not one. The engine does not pick
+/// the first, because the order of a collection is not something a law can
+/// rely on.
+fn combine_only(mut results: Vec<Value>) -> Result<Value> {
+    match results.len() {
+        0 => Ok(Value::Null),
+        1 => Ok(results.remove(0)),
+        n => Err(EngineError::InvalidOperation(format!(
+            "FOREACH combine ONLY: the filter left {n} elements, and ONLY takes at most one"
+        ))),
+    }
 }
 
 /// Combine FOREACH results with MIN or MAX.
@@ -3676,6 +3703,38 @@ mod tests {
 
         fn obj(pairs: Vec<(&str, Value)>) -> Value {
             Value::Object(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
+        }
+
+        #[test]
+        fn test_foreach_combine_only_gives_the_one_element() {
+            let row = obj(vec![("gemeente", Value::String("Utrecht".to_string()))]);
+            assert_eq!(
+                sum_of(vec![row.clone()], Some(CombineOp::Only)).unwrap(),
+                row
+            );
+            assert_eq!(
+                sum_of(
+                    vec![Value::String("Zuid".to_string())],
+                    Some(CombineOp::Only)
+                )
+                .unwrap(),
+                Value::String("Zuid".to_string())
+            );
+        }
+
+        #[test]
+        fn test_foreach_combine_only_of_nothing_is_absent() {
+            assert_eq!(sum_of(vec![], Some(CombineOp::Only)).unwrap(), Value::Null);
+        }
+
+        #[test]
+        fn test_foreach_combine_only_refuses_two_elements() {
+            let two = vec![Value::Int(1), Value::Int(2)];
+            let e = sum_of(two, Some(CombineOp::Only)).unwrap_err();
+            assert!(
+                matches!(&e, EngineError::InvalidOperation(m) if m.contains("left 2 elements")),
+                "{e}"
+            );
         }
 
         #[test]

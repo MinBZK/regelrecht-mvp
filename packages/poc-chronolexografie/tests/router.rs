@@ -83,7 +83,7 @@ async fn the_api_answers_under_the_prefix() {
 }
 
 #[tokio::test]
-async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
+async fn a_refusal_is_a_422_with_the_reason_and_reset_starts_from_the_school() {
     let app = app_met("vakantieverlof").await;
     let (status, body) = send(
         &app,
@@ -118,14 +118,20 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
         .await
         .1
     };
-    assert_eq!(
-        kroniek(app.clone()).await["grammen"]
+    // The school's vestiging, and the application.
+    let soorten = |k: Value| -> Vec<String> {
+        k["grammen"]
             .as_array()
             .unwrap()
-            .len(),
-        1
+            .iter()
+            .map(|g| g["kind"].as_str().unwrap().to_string())
+            .collect()
+    };
+    assert_eq!(
+        soorten(kroniek(app.clone()).await),
+        ["EXECUTOGRAM", "AANVRAAG"]
     );
-    // The log has the application as its one action; it is no decision.
+    // The log has the application on top; it is no decision.
     let (status, logboek) = send(
         &app,
         Request::get("/chronolexografie/api/logboek")
@@ -135,14 +141,15 @@ async fn a_refusal_is_a_422_with_the_reason_and_reset_empties_the_chronicle() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let handelingen = logboek["handelingen"].as_array().unwrap();
-    assert_eq!(handelingen.len(), 1);
+    assert_eq!(handelingen.len(), 2);
     assert_eq!(handelingen[0]["gram"]["kind"], json!("AANVRAAG"));
     assert!(handelingen[0]["waarom"].is_null());
-    send(&app, post("/chronolexografie/api/reset", json!({}))).await;
-    assert!(kroniek(app.clone()).await["grammen"]
-        .as_array()
-        .unwrap()
-        .is_empty());
+    // A reset starts from what the school recorded before the scenarios.
+    let (status, terug) = send(&app, post("/chronolexografie/api/reset", json!({}))).await;
+    assert_eq!(status, StatusCode::OK);
+    let vooraf = ["EXECUTOGRAM"];
+    assert_eq!(soorten(terug), vooraf);
+    assert_eq!(soorten(kroniek(app.clone()).await), vooraf);
 }
 
 #[tokio::test]
@@ -226,6 +233,14 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
         casus["rol"],
         json!("het college van burgemeester en wethouders")
     );
+    // The other cells of the sphere (RFC-052), from the case file.
+    let andere: Vec<&str> = casus["andere_cellen"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["cel"].as_str().unwrap())
+        .collect();
+    assert_eq!(andere, ["ggd_wilgendaal", "gemeente_oostmeer", "cbr"]);
     let aanvraag = casus["voorbeeld"]["aanvraag"].clone();
     let bevindingen = casus["voorbeeld"]["bevindingen"].clone();
     let uitkomst = casus["uitkomst"].as_str().unwrap().to_string();
@@ -275,4 +290,122 @@ async fn parkeerkaart_a_second_card_next_to_a_valid_one_through_the_api() {
         .as_str()
         .unwrap()
         .contains(eerste));
+}
+
+#[tokio::test]
+async fn the_preview_answers_a_refusal_as_a_state_and_records_nothing() {
+    // The app asks for a preview after every change to a finding, also
+    // before the authority has given each one: the cell's refusal is then
+    // the preview's answer, not an error.
+    let app = app_met("gehandicaptenparkeerkaart").await;
+    let (_, casus) = send(&app, get("/chronolexografie/api/casus")).await;
+    let datum = "2026-10-20";
+    let (_, aanvraag) = send(
+        &app,
+        post(
+            "/chronolexografie/api/aanvragen",
+            json!({ "velden": casus["voorbeeld"]["aanvraag"], "datum": datum }),
+        ),
+    )
+    .await;
+    let voorvertoning = |bevindingen: Value| {
+        post(
+            "/chronolexografie/api/besluiten/voorvertoning",
+            json!({ "op": aanvraag["id"], "bevindingen": bevindingen, "datum": datum }),
+        )
+    };
+    let (status, voorlopig) = send(
+        &app,
+        voorvertoning(casus["voorbeeld"]["bevindingen"].clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{voorlopig}");
+    let uitkomst = casus["uitkomst"].as_str().unwrap();
+    assert_eq!(
+        voorlopig["voorlopig"]["besluit"]["outputs"][uitkomst],
+        json!(true)
+    );
+    assert!(voorlopig["voorlopig"]["waarom"]["keten"].is_array());
+
+    assert_eq!(voorlopig["stil"], json!([]));
+
+    let (status, geweigerd) = send(&app, voorvertoning(json!({}))).await;
+    assert_eq!(status, StatusCode::OK, "{geweigerd}");
+    assert!(geweigerd["geweigerd"].as_str().unwrap().contains("refused"));
+    assert!(geweigerd.get("voorlopig").is_none());
+
+    let (_, kroniek) = send(&app, get("/chronolexografie/api/kroniek")).await;
+    let kinds: Vec<&str> = kroniek["grammen"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|g| g["kind"].as_str().unwrap())
+        .collect();
+    // The application; the GGD's examination from the case file is in the
+    // GGD's own chronicle (RFC-052).
+    assert_eq!(kinds, ["AANVRAAG"]);
+    let ggd = &kroniek["andere"][0];
+    assert_eq!(ggd["cel"], json!("ggd_wilgendaal"));
+    assert_eq!(ggd["grammen"][0]["kind"], json!("EXECUTOGRAM"));
+}
+
+#[tokio::test]
+async fn the_ggd_records_an_examination_and_the_card_follows() {
+    // Scenario "zonder onderzoek", continued: the GGD records the
+    // examination in its own cell (POST /api/executogrammen), and then the
+    // college can issue the card (RFC-052).
+    let app = app_met("gehandicaptenparkeerkaart").await;
+    let (_, casus) = send(&app, get("/chronolexografie/api/casus")).await;
+    let mut aanvraag = casus["voorbeeld"]["aanvraag"].clone();
+    aanvraag["bsn_aanvrager"] = json!("999990032");
+    let bevindingen = casus["voorbeeld"]["bevindingen"].clone();
+    let (status, ingediend) = send(
+        &app,
+        post(
+            "/chronolexografie/api/aanvragen",
+            json!({ "velden": aanvraag, "datum": "2026-10-13" }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{ingediend}");
+    let besluit =
+        json!({ "op": ingediend["id"], "bevindingen": bevindingen, "datum": "2026-10-20" });
+    let (status, _) = send(
+        &app,
+        post("/chronolexografie/api/besluiten", besluit.clone()),
+    )
+    .await;
+    assert_ne!(status, StatusCode::OK);
+
+    let (_, vormen) = send(&app, get("/chronolexografie/api/vormen?datum=2026-10-16")).await;
+    let ggd = &vormen["andere_cellen"][0];
+    assert_eq!(ggd["cel"], json!("ggd_wilgendaal"));
+    assert_eq!(
+        ggd["handelingen"][0]["feit"],
+        json!("regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht")
+    );
+    let (status, gram) = send(
+        &app,
+        post(
+            "/chronolexografie/api/executogrammen",
+            json!({
+                "cel": "ggd_wilgendaal",
+                "feit": "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht",
+                "velden": {
+                    "bsn_aanvrager": "999990032",
+                    "datum_onderzoek": "2026-10-16",
+                    "verricht_door": "Gemeentelijke Gezondheidsdienst",
+                },
+                "datum": "2026-10-16",
+            }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{gram}");
+    let (status, genomen) = send(&app, post("/chronolexografie/api/besluiten", besluit)).await;
+    assert_eq!(status, StatusCode::OK, "{genomen}");
+    assert_eq!(
+        genomen["besluit"]["outputs"]["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
 }

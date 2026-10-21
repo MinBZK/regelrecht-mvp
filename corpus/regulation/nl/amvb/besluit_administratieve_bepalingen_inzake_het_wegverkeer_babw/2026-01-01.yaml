@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
 $id: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
 regulatory_layer: AMVB
 publication_date: '2025-10-10'
@@ -949,6 +949,13 @@ articles:
       [ref2]: https://wetten.overheid.nl/BWBR0035917#Artikel3.1.1
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
+      # Bevoegd gezag (RFC-002), wie op de aanvraag beslist: het college
+      # (lid 1). Eigen keuze: alleen de categorie is gemodelleerd; welk
+      # college, zegt lid 1 (de gemeente van inschrijving), en dat is open
+      # (RFC-052). Het CBR (lid 3) is niet gemodelleerd.
+      competent_authority:
+        name: college van burgemeester en wethouders
+        type: CATEGORY
       # Lid 1: het college verstrekt de kaart aan een gehandicapte "overeenkomstig
       # de bij ministeriële regeling gestelde criteria". Die criteria staan in
       # artikel 1 van de Regeling gehandicaptenparkeerkaart. Lid 2 (de
@@ -1009,6 +1016,51 @@ articles:
             Of de aanvrager ten gevolge van een aandoening of gebrek aantoonbare
             ernstige beperkingen heeft, andere dan loopbeperkingen (Regeling
             gehandicaptenparkeerkaart, artikel 1, eerste lid, onder d).
+        # Artikel 2, tweede lid, van de regeling: het geneeskundig onderzoek
+        # "kan achterwege worden gelaten" bij wie eerder een kaart kreeg, als
+        # aan de verstrekkende instantie "bekend is" dat hij nog steeds
+        # voldoet (onder a), of als de keurende instantie "van oordeel is" dat
+        # hij nog steeds voldoet (onder b). Een bevoegdheid en twee oordelen.
+        # Ze staan hier en niet bij de regeling, om dezelfde reden als de
+        # oordelen hierboven; de regeling krijgt ze als parameters. Niet
+        # verplicht: wie ze niet geeft, laat het onderzoek niet achterwege,
+        # en lid 1 geldt.
+        - id: geneeskundig_onderzoek_achterwege_gelaten
+          type: boolean
+          required: false
+          decided_per_case_by: >-
+            het college van burgemeester en wethouders (Regeling
+            gehandicaptenparkeerkaart, artikel 2, tweede lid)
+          description: >-
+            Of het college het geneeskundig onderzoek achterwege laat
+            (Regeling gehandicaptenparkeerkaart, artikel 2, tweede lid, aanhef).
+        - id: bekend_dat_aanvrager_nog_steeds_voldoet
+          type: boolean
+          required: false
+          decided_per_case_by: >-
+            het college van burgemeester en wethouders, als verstrekkende
+            instantie (Regeling gehandicaptenparkeerkaart, artikel 2, tweede
+            lid, onder a)
+          description: >-
+            Of aan het college bekend is dat de aanvrager, die eerder een kaart
+            kreeg, nog steeds voldoet aan de criteria van artikel 1 van de
+            regeling (artikel 2, tweede lid, onder a).
+        # Onder b is het oordeel van de keurende instantie (artikel 3, eerste
+        # lid: de GGD of de aangewezen deskundige). Het college geeft het
+        # door zoals het dat oordeel ontving; een cel van de keurende
+        # instantie is niet gebouwd.
+        - id: keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet
+          type: boolean
+          required: false
+          decided_per_case_by: >-
+            de keurende instantie: de Gemeentelijke Gezondheidsdienst of de
+            door het college aangewezen deskundige (Regeling
+            gehandicaptenparkeerkaart, artikelen 2, tweede lid, onder b, en 3,
+            eerste lid)
+          description: >-
+            Of de keurende instantie van oordeel is dat de aanvrager, die
+            eerder een kaart kreeg, nog steeds voldoet aan de criteria van
+            artikel 1 van de regeling (artikel 2, tweede lid, onder b).
         # Lid 1: de kaart "kan" worden verstrekt; het college heeft een
         # bevoegdheid, geen plicht. Hoe het die gebruikt, zegt dit besluit
         # niet. Het beleid van de gemeente vult dit in, hier het fictieve
@@ -1072,6 +1124,13 @@ articles:
           - name: besluit_datum
             type: date
             description: De dag waarop het college op de aanvraag besluit.
+          # De dagtekening van de aanvraag (Awb 4:2, eerste lid, onder b).
+          # Eigen keuze: een geneeskundig onderzoek telt voor deze aanvraag
+          # als het op of na die dag plaatsvond (artikel 2 van de regeling).
+          - name: dagtekening
+            type: date
+            nullable: true
+            description: De dagtekening van de aanvraag.
         input:
           - name: komt_in_aanmerking_als_bestuurder
             type: boolean
@@ -1093,6 +1152,20 @@ articles:
                 continu_afhankelijk_van_hulp_bestuurder: $continu_afhankelijk_van_hulp_bestuurder
                 permanent_rolstoelgebonden: $permanent_rolstoelgebonden
                 ernstige_beperkingen_andere_dan_loopbeperkingen: $ernstige_beperkingen_andere_dan_loopbeperkingen
+          # Artikel 2 van de regeling: geen afgifte voordat het geneeskundig
+          # onderzoek heeft plaatsgehad, tenzij het achterwege blijft.
+          - name: gehandicaptenparkeerkaart_mag_worden_afgegeven
+            type: boolean
+            source:
+              regulation: regeling_gehandicaptenparkeerkaart
+              output: gehandicaptenparkeerkaart_mag_worden_afgegeven
+              parameters:
+                bsn_aanvrager: $bsn_aanvrager
+                dagtekening_aanvraag: $dagtekening
+                datum_afgifte: $besluit_datum
+                geneeskundig_onderzoek_achterwege_gelaten: $geneeskundig_onderzoek_achterwege_gelaten
+                bekend_dat_aanvrager_nog_steeds_voldoet: $bekend_dat_aanvrager_nog_steeds_voldoet
+                keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: $keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet
           - name: einde_geldigheidsduur_bij_afgifte
             type: date
             source:
@@ -1130,7 +1203,11 @@ articles:
           # als beide. Eigen keuze: wie als bestuurder en als passagier vraagt
           # en maar voor een van beide in aanmerking komt, krijgt een kaart met
           # alleen die letter. En het college gebruikt zijn bevoegdheid, zoals
-          # zijn beleid dat invult.
+          # zijn beleid dat invult. Pas dan vraagt het of de kaart al mag
+          # worden afgegeven (artikel 2 van de regeling): een weigering hangt
+          # niet af van het geneeskundig onderzoek, een afgifte wel. Zonder
+          # onderzoek dat iemand kent, faalt het besluit daar (AND stopt bij
+          # de eerste onwaar, dus een weigering vraagt het niet).
           - output: gehandicaptenparkeerkaart_verstrekt
             value:
               operation: AND
@@ -1146,6 +1223,7 @@ articles:
                         - $kaart_als_passagier
                         - $komt_in_aanmerking_als_passagier
                 - $bevoegdheid_tot_verstrekken_gebruikt
+                - $gehandicaptenparkeerkaart_mag_worden_afgegeven
           - output: kaart_vermeldt_bestuurder
             value:
               operation: AND

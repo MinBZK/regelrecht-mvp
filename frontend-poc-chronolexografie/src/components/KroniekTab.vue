@@ -5,6 +5,9 @@
 // besluit gebruikte en de rest als JSON, met decimalen als getal. Welke
 // bevindingen een besluit gebruikte, staat niet in de kroniek: de cel leidt
 // het af uit het besluit opnieuw genomen (Cell::findings, RFC-050).
+// Daaronder de kronieken van de andere cellen van de sfeer (RFC-052): elke
+// cel houdt de hare bij; het bestuursorgaan vraagt ze, maar schrijft er niet
+// in.
 import { computed, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { alsJson, isBesluit, kort, leesbaar, spel, waarde } from '../spel.js';
@@ -23,9 +26,10 @@ watch(gekozen, async (id) => {
     spel.fout = e.message;
   }
 }, { immediate: true });
-const gram = computed(() => spel.grammen.find((g) => g.id === gekozen.value) ?? null);
+const alle = computed(() => [...spel.grammen, ...spel.andere.flatMap((a) => a.grammen)]);
+const gram = computed(() => alle.value.find((g) => g.id === gekozen.value) ?? null);
 const verwijzing = (g) => (g.refers_to ? ` · verwijst naar ${kort(g.refers_to)}` : '');
-const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers_to) ?? null);
+const naar = computed(() => alle.value.find((g) => g.id === gram.value?.refers_to) ?? null);
 </script>
 
 <template>
@@ -34,7 +38,9 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
       <nldd-text slot="supporting-text">
         Eén kroniek, van de cel van de uitvoerder. Elke stap in het proces legt er één
         chronolexogram in vast (een beslissing op bezwaar die herroept, legt er twee vast); er wordt
-        nooit iets in gewijzigd of uit verwijderd.
+        nooit iets in gewijzigd of uit verwijderd.<template v-if="spel.casus?.begin"> Bovenaan
+        staat wat de cel vóór het eerste scenario vastlegde, zoals de vestiging van een school
+        (RFC-051).</template>
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog
@@ -46,6 +52,27 @@ const naar = computed(() => spel.grammen.find((g) => g.id === gram.value?.refers
     <nldd-list v-else appearance="box-base" accessible-label="Chronolexogrammen">
       <nldd-list-item
         v-for="(g, i) in spel.grammen"
+        :key="g.id"
+        button
+        :selected="g.id === gekozen"
+        @click="gekozen = g.id"
+      >
+        <nldd-text-cell
+          :overline="`${i + 1} · ${g.recorded_on}`"
+          :text="`${g.kind} · ${g.grondslag}`"
+          :supporting-text="`${kort(g.id)}${verwijzing(g)}`"
+        ></nldd-text-cell>
+      </nldd-list-item>
+    </nldd-list>
+  </nldd-simple-section>
+  <nldd-simple-section v-for="a in spel.andere" :key="a.cel">
+    <nldd-title slot="header" size="4" :text="`Kroniek van ${a.cel_naam}`">
+      <nldd-text slot="supporting-text">Een andere cel van de sfeer, met haar eigen kroniek.</nldd-text>
+    </nldd-title>
+    <nldd-inline-dialog v-if="a.grammen.length === 0" icon="info" text="De kroniek is leeg"></nldd-inline-dialog>
+    <nldd-list v-else appearance="box-base" :accessible-label="`Chronolexogrammen van ${a.cel_naam}`">
+      <nldd-list-item
+        v-for="(g, i) in a.grammen"
         :key="g.id"
         button
         :selected="g.id === gekozen"

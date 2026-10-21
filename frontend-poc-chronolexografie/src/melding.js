@@ -7,7 +7,7 @@
  * (cell.rs, chronicle.rs): wie daar een melding herschrijft, past ze mee aan.
  */
 import { GEEN_ANTWOORD } from './api.js';
-import { kort, leesbaar } from './spel.js';
+import { hoofdletter, kort, leesbaar, spel } from './spel.js';
 
 const vertalingen = [
   // Een besluit wordt maar één keer vervangen (de cel, bij een tweede
@@ -35,6 +35,21 @@ const vertalingen = [
     /the decision '([^']+)' did not ask the cell of '[^']+' for '([^']+)'/,
     (besluit, begrip) =>
       `Besluit ${kort(besluit)} vroeg de cel niet om "${leesbaar(begrip)}", dus er is geen antwoord om uit te leggen.`,
+  ],
+  // De cel beantwoordt het begrip, maar weet het voor deze aanvraag niet
+  // (haar reductie geeft null): dan oordeelt het bestuursorgaan zelf. Dit
+  // zegt de voorvertoning (kern::voorvertonen).
+  [
+    /the cell is silent on '([^']+)' for this case/,
+    (begrip) =>
+      `${hoofdletter(spel.casus?.cel_naam ?? 'de cel')} weet "${leesbaar(begrip)}" niet voor deze aanvraag, dus ${spel.casus?.rol ?? 'het bestuursorgaan'} oordeelt. Geef die bevinding.`,
+  ],
+  // Een bevinding die de wet per geval aan het bestuursorgaan laat, en die
+  // het nog niet gaf (de engine).
+  [
+    /Required open term '([^']+)' on \S+ is decided per case by .*no judgement was given/,
+    (begrip) =>
+      `${hoofdletter(spel.casus?.rol ?? 'het bestuursorgaan')} heeft "${leesbaar(begrip)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
   ],
   [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
   // Een andere bezoeker koos intussen een andere casus (X-Casus).
@@ -69,15 +84,20 @@ const vertalingen = [
   ],
 ];
 
-/** De Nederlandse zin bij de melding `fout` van de cel of de server. */
-export function melding(fout) {
+/** De Nederlandse zin bij `fout`, of null als er geen vertaling voor is. */
+export function vertaling(fout) {
   for (const [patroon, zin] of vertalingen) {
     const gevonden = String(fout).match(patroon);
     if (gevonden) return zin(...gevonden.slice(1));
   }
-  return isEngels(fout)
+  return null;
+}
+
+/** De Nederlandse zin bij de melding `fout` van de cel of de server. */
+export function melding(fout) {
+  return vertaling(fout) ?? (isEngels(fout)
     ? 'Wat er misging, staat onder Details, in het Engels.'
-    : 'Wat er misging, staat onder Details.';
+    : 'Wat er misging, staat onder Details.');
 }
 
 /**

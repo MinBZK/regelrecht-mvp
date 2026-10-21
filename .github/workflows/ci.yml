@@ -126,7 +126,7 @@ jobs:
               - bdd/**
               - schema/**
               - corpus/regulation/**
-              - justfile
+              - Justfile
               - .claude/skills/docs-writing/**
               - .github/workflows/ci.yml
             # Wat de bouw van een Rust-image kan breken. Smaller dan `ci`: een
@@ -267,7 +267,8 @@ jobs:
           # Every $schema URL in corpus YAML must reference a known schema version
           KNOWN_VERSIONS=$(ls -d schema/v*/ | xargs -n1 basename)
           FAILED=false
-          for file in $(find corpus/regulation corpus/cells -name "*.yaml"); do
+          # A cell holds rulework only under reducties (RFC-048).
+          for file in $(find corpus/regulation -name "*.yaml"; find corpus/cells -path "*/reducties/*" -name "*.yaml"); do
             SCHEMA_URL=$(grep '^\$schema:' "$file" | head -1 | sed 's/\$schema: *//')
             # Handle multi-line $schema with >-
             if [ -z "$SCHEMA_URL" ] || [ "$SCHEMA_URL" = ">-" ]; then
@@ -320,7 +321,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Check schema reference doc tracks schema/latest
         run: node docs/scripts/check-schema-version.mjs
@@ -440,7 +441,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Check deploy filters
         if: needs.changes.outputs.ci == 'true'
@@ -696,6 +697,15 @@ jobs:
           RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
         run: cargo test --test bdd -- --nocapture
 
+      # Zoals `just bdd-demo`: de Awb-levensloop over hetzelfde democorpus.
+      # De unit-baan draait deze test alleen tegen corpus/regulation.
+      - name: Run Awb lifecycle over demo corpus
+        working-directory: packages/engine
+        env:
+          REGULATION_PATH: ${{ github.workspace }}/corpus/demo/regulation
+          RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
+        run: cargo test --test awb_lifecycle
+
   nldd-imports:
     name: Ontwerpsysteem-imports
     needs: changes
@@ -713,7 +723,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: https://npm.pkg.github.com
           cache: 'npm'
           cache-dependency-path: package-lock.json
@@ -748,7 +758,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: https://npm.pkg.github.com
           cache: 'npm'
           cache-dependency-path: package-lock.json
@@ -770,13 +780,34 @@ jobs:
           git diff --exit-code packages/frontend-shared/src/gherkin/grammar.generated.js \
             || { echo "::error::grammar.generated.js is stale — run 'just bdd-codegen' and commit the result"; exit 1; }
 
+      # De pre-commit-baan draait de slot-guard ook, maar zonder `npm ci`: daar
+      # ontbreekt het ontwerpsysteem en slaan de guard en zijn ijktest zich
+      # over. Hier staat het er wel.
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3  # v4.0.0
+
+      # Zonder ontwerpsysteem slaan guard en ijktest zich groen over. Hier
+      # moet het er staan; verhuist de package, dan valt deze baan om.
+      - name: Design-system slot guard
+        run: |
+          test -d node_modules/@nldd/design-system/dist/components \
+            || { echo "::error::@nldd/design-system/dist/components ontbreekt; de slot-guard zou zich overslaan"; exit 1; }
+          just nldd-slots
+          just nldd-slots-test
+
       - name: Run frontend tests
         # Directory form (`-w frontend`) rather than the package name, so a
         # rename of the `name` field can't silently skip the tests.
         run: npm test -w frontend
 
+      - name: Type check editor
+        run: npm run typecheck -w frontend
+
       - name: Run lawmaking tests
         run: npm test -w frontend-lawmaking
+
+      - name: Type check lawmaking
+        run: npm run typecheck -w frontend-lawmaking
 
       - name: Run demo tests
         run: npm test -w frontend-demo
@@ -813,6 +844,12 @@ jobs:
 
       - name: Run shared-package tests
         run: npm test -w packages/frontend-shared
+
+      # vue-tsc, niet tsc: alleen vue-tsc leest de <script>-blokken in .vue.
+      # Gepind op TypeScript 6 (override in de root-package.json), omdat
+      # vue-tsc nog niet op TypeScript 7 draait.
+      - name: Type check shared package
+        run: npm run typecheck -w packages/frontend-shared
 
       # De productiebundel werd tot nu toe alleen in frontend/Dockerfile
       # gemaakt, en sinds de images uit de standaardloop van een PR zijn
@@ -1077,7 +1114,7 @@ jobs:
         if: needs.changes.outputs.ci == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: https://npm.pkg.github.com
           cache: 'npm'
           cache-dependency-path: package-lock.json
@@ -1194,7 +1231,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: https://npm.pkg.github.com
           cache: 'npm'
           cache-dependency-path: package-lock.json
@@ -1260,7 +1297,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: https://npm.pkg.github.com
           cache: 'npm'
           cache-dependency-path: package-lock.json
@@ -1302,7 +1339,7 @@ jobs:
         if: needs.changes.outputs.docs-source == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       # De controles gebruiken alleen de standaardbibliotheek van Node, dus
       # geen npm ci: dat zou een minuut kosten voor niets.
@@ -1331,7 +1368,7 @@ jobs:
         if: needs.changes.outputs.docs == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: docs/package-lock.json
 

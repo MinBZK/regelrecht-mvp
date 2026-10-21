@@ -12,6 +12,9 @@ use regelrecht_cel::{decision, Cell, Error, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
+mod common;
+use common::cell_tempdir;
+
 /// A procedure for a beschikking, with a stage for the application.
 const GENERAL_LAW: &str = r#"
 $id: wet_algemeen_fictief
@@ -116,7 +119,7 @@ fn service(laws: &[&str]) -> LawExecutionService {
 /// A cell whose directory holds no reductions: a term no regulation fills
 /// is then the deciding authority's finding.
 fn bare(actor: &str) -> Cell {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = cell_tempdir();
     Cell::in_memory(actor, dir.path()).unwrap()
 }
 
@@ -139,6 +142,7 @@ fn decide(
     let app = cell
         .record_submission(
             service,
+            &[],
             LAW,
             "1",
             None,
@@ -148,6 +152,7 @@ fn decide(
         .unwrap();
     cell.decide(
         service,
+        &[],
         LAW,
         "1",
         &app.id,
@@ -157,7 +162,7 @@ fn decide(
     )
     .map(|mut grams| grams.remove(0))
     .map(|gram| {
-        let findings = cell.findings(service, &gram.id).unwrap();
+        let findings = cell.findings(service, &[], &gram.id).unwrap();
         (gram, findings)
     })
 }
@@ -224,6 +229,7 @@ fn a_stage_of_the_application_that_requires_more_than_a_date_is_a_setup_error() 
     let e = cell
         .record_submission(
             &mut service,
+            &[],
             LAW,
             "1",
             None,
@@ -309,6 +315,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
     let app = cell
         .record_submission(
             &mut service,
+            &[],
             LAW,
             "2",
             None,
@@ -319,6 +326,7 @@ fn a_decision_is_taken_on_the_application_that_requests_it_from_another_article(
     let gram = cell
         .decide(
             &mut service,
+            &[],
             LAW,
             "1",
             &app.id,
@@ -344,6 +352,7 @@ fn an_application_for_a_decision_of_a_law_that_is_not_loaded_is_refused_when_rec
     let e = cell
         .record_submission(
             &mut service,
+            &[],
             LAW,
             "2",
             None,
@@ -385,6 +394,7 @@ fn an_application_whose_decision_cannot_be_derived_is_still_recorded() {
     let app = cell
         .record_submission(
             &mut service,
+            &[],
             LAW,
             "2",
             None,

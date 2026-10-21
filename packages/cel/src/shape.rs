@@ -14,8 +14,8 @@
 //! asks (RFC-050).
 
 use chrono::NaiveDate;
-use regelrecht_engine::{Article, LawExecutionService, ParameterType};
-use regelrecht_law_model::stored;
+use regelrecht_engine::{Article, Authority, LawExecutionService, ParameterType};
+use regelrecht_law_model::{stored, ArticleRequirement};
 use serde::Serialize;
 
 use crate::error::{refused, setup, Result};
@@ -243,6 +243,122 @@ pub(crate) fn add_field(fields: &mut Vec<Field>, field: Field, reference: &str) 
         }
     }
     Ok(())
+}
+
+/// The article and the fact name of a fact reference
+/// `<regulation>#<article>#<fact>` (schema v0.8.7, RFC-051).
+pub fn split_fact(fact: &str) -> Result<(&str, &str)> {
+    if !regelrecht_law_model::is_fact_reference(fact) {
+        return Err(refused(format!(
+            "'{fact}' is no <regulation>#<article>#<fact>"
+        )));
+    }
+    fact.rsplit_once('#')
+        .ok_or_else(|| refused(format!("'{fact}' is no <regulation>#<article>#<fact>")))
+}
+
+/// The fields of an executogram of the fact `fact`
+/// (`<regulation>#<article>#<fact>`, schema v0.8.7, RFC-051), in the law in
+/// force on `day`: the parameters the article's `requires` entry for that
+/// fact lists, with their types, as the fields of an application are the
+/// parameters its item lists. Refused when the article has no version in
+/// force on `day` or does not require that fact.
+///
+/// With `recorder`, the cell of that authority is about to record an
+/// instance: refused first when the fact names who establishes it
+/// (`competent_authority`, schema v0.8.8, RFC-052) and does not name this
+/// cell. A fact without one may be recorded by any cell.
+pub fn fact_fields(
+    service: &LawExecutionService,
+    fact: &str,
+    day: NaiveDate,
+    recorder: Option<&Authority>,
+) -> Result<Vec<Field>> {
+    let (grondslag, _) = split_fact(fact)?;
+    let (article, required) = required_fact(service, fact, day)?;
+    if let Some(authority) = recorder {
+        refuse_incompetent_fact(required, fact, authority)?;
+    }
+    required
+        .parameters
+        .iter()
+        .flatten()
+        .map(|field| {
+            if field == crate::reading::ROW_ID {
+                return Err(setup(format!(
+                    "{fact}: the fact holds a field '{field}'; its row gives the executogram's \
+                     own id under that name"
+                )));
+            }
+            let p = article
+                .get_parameters()
+                .iter()
+                .find(|p| &p.name == field)
+                .ok_or_else(|| {
+                    setup(format!(
+                        "{fact}: the fact holds '{field}', which is no parameter"
+                    ))
+                })?;
+            Ok(Field {
+                name: field.clone(),
+                type_: p.param_type,
+                nullable: p.is_nullable(),
+                declared_by: vec![grondslag.to_string()],
+            })
+        })
+        .collect()
+}
+
+/// The article of `fact` in force on `day` and its `requires` entry for
+/// that fact. Refused when the article has no version in force on `day` or
+/// does not require that fact.
+fn required_fact<'s>(
+    service: &'s LawExecutionService,
+    fact: &str,
+    day: NaiveDate,
+) -> Result<(&'s Article, &'s ArticleRequirement)> {
+    let (grondslag, name) = split_fact(fact)?;
+    let (law_id, number) = grondslag
+        .split_once('#')
+        .ok_or_else(|| refused(format!("'{grondslag}' is no <regulation>#<article>")))?;
+    let article = article_on(service, law_id, number, day)
+        .ok_or_else(|| refused(format!("{grondslag} has no version in force on {day}")))?;
+    let required = article.required_fact(name).ok_or_else(|| {
+        refused(format!(
+            "{grondslag} requires no fact '{name}' (requires, fact) on {day}"
+        ))
+    })?;
+    Ok((article, required))
+}
+
+/// Refuse to record `fact` in the cell of `authority` when its `requires`
+/// entry names who establishes it and does not name this cell.
+fn refuse_incompetent_fact(
+    required: &ArticleRequirement,
+    fact: &str,
+    authority: &Authority,
+) -> Result<()> {
+    let Some(named) = required
+        .competent_authority
+        .as_ref()
+        .and_then(|competent| competent.named())
+    else {
+        return Ok(());
+    };
+    if authority.is_named_by(named) {
+        return Ok(());
+    }
+    let names: Vec<String> = named.iter().map(|n| format!("'{}'", n.name)).collect();
+    Err(refused(format!(
+        "{fact} is established by {}, and the cell is '{}'{}",
+        names.join(" or "),
+        authority.name,
+        authority
+            .category
+            .as_deref()
+            .map(|c| format!(" ({c})"))
+            .unwrap_or_default()
+    )))
 }
 
 pub(crate) fn article_on<'s>(

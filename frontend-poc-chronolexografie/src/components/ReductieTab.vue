@@ -1,10 +1,13 @@
 <script setup>
-// De reducties van de cel (RFC-048): hoe de cel haar kroniek terugleest om
-// een open begrip te beantwoorden. Bovenaan wat de cel zo beantwoordt
-// (Cell::answers); dan elke reductie als geschreven, met per invoer de rijen
-// die zij uit de kroniek krijgt: de besluiten onder het artikel van de casus
-// en de beslissingen op bezwaar (Awb 7:11). Wat zij bij een besluit
-// antwoordde en waarom, staat bij dat besluit (tabblad Bestuursorgaan).
+// De reducties van de cel (RFC-048, RFC-051): hoe de cel haar kroniek
+// terugleest om een open begrip te beantwoorden. Bovenaan wat de cel zo
+// beantwoordt (Cell::answers); dan elke reductie als geschreven, met per
+// invoer de rijen die zij uit de kroniek krijgt: de besluiten onder een
+// artikel (zoals dat van de casus of Awb 7:11) of de
+// executogrammen van een feit dat een artikel vereist (zoals de vestiging van
+// een school). Wat zij
+// bij een besluit antwoordde en waarom, staat bij dat besluit (tabblad
+// Bestuursorgaan).
 import { onMounted, ref, watch } from 'vue';
 import { api } from '../api.js';
 import { alsJson, leesbaar, spel } from '../spel.js';
@@ -59,7 +62,9 @@ watch(() => [spel.grammen.length, spel.datum], laden);
           slot="header"
           size="4"
           :text="`Invoer ${i.naam}`"
-          :supporting-text="`${i.rijen.length} rij(en): één per besluit onder ${i.besluiten_onder} in de kroniek, met de gegevens en de uitvoer van dat besluit en zijn id.`"
+          :supporting-text="i.executogrammen_van
+            ? `${i.rijen.length} rij(en): één per executogram onder ${i.executogrammen_van} in de kroniek, met zijn gegevens en zijn id.`
+            : `${i.rijen.length} rij(en): één per besluit onder ${i.besluiten_onder} in de kroniek, met de gegevens en de uitvoer van dat besluit en zijn id.`"
         ></nldd-title>
         <nldd-code-viewer language="json" appearance="box-tinted">{{ alsJson(i.rijen) }}</nldd-code-viewer>
       </nldd-simple-section>

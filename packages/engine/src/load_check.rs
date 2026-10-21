@@ -32,11 +32,22 @@
 //! A call to an article (`source.article`, schema v0.8.4, RFC-050) stands
 //! apart from `regulation`, `decisions` and `endpoint`, and only such a call
 //! takes `parameters_from`.
+//!
+//! Who may answer an open term, or establish a fact, sits on that term or
+//! fact (`competent_authority`, schema v0.8.8, RFC-052); on an article the
+//! field keeps its meaning of RFC-002, who decides, and names one authority.
+//! The `combine` of an open term makes one value of the answers of several
+//! competent answerers. It has to fit the term's type, as the `combine` of a
+//! FOREACH has to fit its body: `OR` and `AND` a boolean, `ADD`, `MIN` and
+//! `MAX` a number or an amount. `ONLY` is no rule for answers: one answer
+//! needs none, and two without a rule are an error already. It sits only on
+//! a term that names its competent authorities.
 
 use crate::article::ArticleBasedLaw;
 use crate::error::{EngineError, Result};
 use regelrecht_law_model::{
-    parse_schema_version, ActionOperation, ActionValue, MachineReadable, RegulatoryLayer,
+    parse_schema_version, ActionOperation, ActionValue, CombineOp, CompetentAuthority,
+    MachineReadable, ParameterType, RegulatoryLayer,
 };
 
 /// The first schema version in which a `REDUCTIE` may have `implements`.
@@ -85,30 +96,49 @@ pub(crate) fn reject_misplaced_reduction(law: &ArticleBasedLaw) -> Result<()> {
             let Some(source) = input.source.as_ref() else {
                 continue;
             };
-            let Some(decisions) = &source.decisions else {
+            let Some(read) = chronicle_read(source) else {
                 continue;
             };
+            if source.decisions.is_some() && source.facts.is_some() {
+                return Err(EngineError::LoadError(format!(
+                    "law '{}' {where_}: input '{}' reads {read} and facts besides; \
+                     an input reads one of them",
+                    law.id, input.name
+                )));
+            }
             if source.regulation.is_some()
                 || source.output.is_some()
                 || source.parameters.is_some()
                 || source.endpoint.is_some()
             {
                 return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: input '{}' reads the decisions taken under {decisions}, \
-                     which no regulation, output, parameters or endpoint can narrow",
+                    "law '{}' {where_}: input '{}' reads {read}, which no regulation, output, \
+                     parameters or endpoint can narrow",
                     law.id, input.name
                 )));
             }
             if !reduction {
                 return Err(EngineError::LoadError(format!(
-                    "law '{}' {where_}: input '{}' reads the decisions taken under {decisions}; \
-                     only a REDUCTIE reads decisions (RFC-048)",
+                    "law '{}' {where_}: input '{}' reads {read}; only a REDUCTIE reads decisions \
+                     or facts (RFC-048, RFC-051)",
                     law.id, input.name
                 )));
             }
         }
     }
     Ok(())
+}
+
+/// What an input reads from the chronicle of a cell, in words: the
+/// decisions taken under an article (RFC-048) or the recorded instances of a
+/// fact an article requires (schema v0.8.7, RFC-051). `None` for an input
+/// that reads neither.
+pub(crate) fn chronicle_read(source: &regelrecht_law_model::Source) -> Option<String> {
+    match (&source.decisions, &source.facts) {
+        (Some(decisions), _) => Some(format!("the decisions taken under {decisions}")),
+        (None, Some(fact)) => Some(format!("the recorded facts {fact}")),
+        (None, None) => None,
+    }
 }
 
 /// Refuse a call to an article (`source.article`, schema v0.8.4, RFC-050)
@@ -133,6 +163,7 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
             let beside = [
                 ("regulation", source.regulation.is_some()),
                 ("decisions", source.decisions.is_some()),
+                ("facts", source.facts.is_some()),
                 ("endpoint", source.endpoint.is_some()),
             ];
             if let Some((key, _)) = beside.iter().find(|(_, present)| *present) {
@@ -141,6 +172,104 @@ pub(crate) fn reject_misplaced_article_call(law: &ArticleBasedLaw) -> Result<()>
                      can stand beside",
                     law.id, input.name
                 )));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Refuse competence and `combine` where they do not belong (RFC-052):
+///
+/// - an article names one competent authority (RFC-002), never a list;
+/// - an open term or a fact names its competent authorities by name, one or
+///   a list of at least one, never a `#` reference;
+/// - `competent_authority` on a `requires` entry only with `fact`;
+/// - `combine` only on a term that names its competent authorities, fitting
+///   the term's type, and never `ONLY`.
+pub(crate) fn reject_misplaced_competence(law: &ArticleBasedLaw) -> Result<()> {
+    for (where_, section) in sections(law) {
+        let refuse = |why: String| {
+            Err(EngineError::LoadError(format!(
+                "law '{}' {where_}: {why} (RFC-052)",
+                law.id
+            )))
+        };
+        if matches!(
+            section.competent_authority,
+            Some(CompetentAuthority::List(_))
+        ) {
+            return refuse(
+                "competent_authority on an article names who decides (RFC-002), one \
+                 authority; a list of those who may answer belongs on an open term or a fact"
+                    .to_string(),
+            );
+        }
+        let named = |authority: &Option<CompetentAuthority>, what: &str| -> Result<bool> {
+            match authority {
+                None => Ok(false),
+                Some(CompetentAuthority::String(reference)) => refuse(format!(
+                    "{what} names its competent_authority as '{reference}'; name the \
+                     authorities themselves"
+                ))
+                .map(|()| false),
+                Some(CompetentAuthority::List(all)) if all.is_empty() => {
+                    refuse(format!("{what} has an empty competent_authority list")).map(|()| false)
+                }
+                Some(_) => Ok(true),
+            }
+        };
+        for requirement in section.requires.iter().flatten() {
+            match &requirement.fact {
+                Some(fact) => {
+                    named(&requirement.competent_authority, &format!("fact '{fact}'"))?;
+                }
+                None if requirement.competent_authority.is_some() => {
+                    return refuse(
+                        "a requires entry has a competent_authority but no fact".to_string(),
+                    )
+                }
+                None => {}
+            }
+        }
+        for term in section.open_terms.iter().flatten() {
+            let competent = named(
+                &term.competent_authority,
+                &format!("open term '{}'", term.id),
+            )?;
+            let Some(op) = term.combine else {
+                continue;
+            };
+            let combines = |why: &str| {
+                refuse(format!(
+                    "open term '{}' combines its answers with {} (combine), {why}",
+                    term.id,
+                    op.as_str()
+                ))
+            };
+            if !competent {
+                return combines(
+                    "but names no competent authorities, so no more than one answerer can \
+                     answer it",
+                );
+            }
+            let fits = match op {
+                CombineOp::Or | CombineOp::And => term.term_type == ParameterType::Boolean,
+                CombineOp::Add | CombineOp::Min | CombineOp::Max => matches!(
+                    term.term_type,
+                    ParameterType::Number | ParameterType::Amount
+                ),
+                CombineOp::Only => {
+                    return combines(
+                        "which is no rule for answers: one needs none, and two without one \
+                         are an error",
+                    )
+                }
+            };
+            if !fits {
+                return combines(&format!(
+                    "which does not fit its type {}",
+                    format!("{:?}", term.term_type).to_lowercase()
+                ));
             }
         }
     }
@@ -209,9 +338,63 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
     Ok(())
 }
 
+/// Refuse a fact an article requires (`requires` with `fact`, schema v0.8.7,
+/// RFC-051) that names a provision besides, holds no parameter or one the
+/// article does not declare, or whose name another fact of the article has.
+/// The law says what the fact holds; a reduction reads it by that shape.
+pub(crate) fn reject_malformed_facts(law: &ArticleBasedLaw) -> Result<()> {
+    for article in &law.articles {
+        let refuse = |why: String| {
+            Err(EngineError::LoadError(format!(
+                "law '{}': article {} {why} (RFC-051)",
+                law.id, article.number
+            )))
+        };
+        let mut names: Vec<&str> = Vec::new();
+        for requirement in article.get_requires() {
+            let Some(fact) = requirement.fact.as_deref() else {
+                if requirement.parameters.is_some() {
+                    return refuse(
+                        "lists parameters on a requirement that names no fact".to_string(),
+                    );
+                }
+                continue;
+            };
+            if requirement.article.is_some()
+                || requirement.law.is_some()
+                || requirement.regeling.is_some()
+                || requirement.koninklijk_besluit.is_some()
+                || requirement.values.is_some()
+            {
+                return refuse(format!(
+                    "requires the fact '{fact}' and names another provision in the same entry"
+                ));
+            }
+            if names.contains(&fact) {
+                return refuse(format!("requires the fact '{fact}' twice"));
+            }
+            names.push(fact);
+            let parameters = requirement.parameters.as_deref().unwrap_or_default();
+            if parameters.is_empty() {
+                return refuse(format!(
+                    "requires the fact '{fact}', which holds no parameters"
+                ));
+            }
+            for name in parameters {
+                if !article.get_parameters().iter().any(|p| &p.name == name) {
+                    return refuse(format!(
+                        "requires the fact '{fact}' holding '{name}', but declares no such parameter"
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Refuse an article whose `produces` list (schema v0.8.1, RFC-047) has two
-/// items of one type, does not give each output to exactly one item (as one
-/// of its `outputs`, or as data `derived` for the decision, RFC-050), lists
+/// items of one type, gives an output to two items (as one of its
+/// `outputs`, or as data `derived` for the decision, RFC-050), lists
 /// `derived` on an item that is no decision, names a
 /// parameter or output the article lacks, or has a submission that requests
 /// a decision this law does not take. One item per type makes article and
@@ -220,6 +403,11 @@ pub(crate) fn reject_unknown_literals(law: &ArticleBasedLaw) -> Result<()> {
 /// submission, every other stage the decision). A submission that requests a
 /// decision of another law is checked when it is used, since that law may be
 /// loaded later.
+///
+/// An output that no item lists, beside a decision that lists its own,
+/// belongs to no item: it is an output of the article that another article
+/// may read, not part of the decision, and only computed when read
+/// (RFC-052).
 pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
     for article in law.articles.iter().filter(|a| a.produces_list()) {
         let produced = article.get_produced();
@@ -289,6 +477,27 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 item.submission_kind().unwrap_or("item")
             ));
         }
+        // Without a decision, an output no submission lists would be read by
+        // nothing the article produces: refused, so a forgotten or misspelt
+        // output fails. Beside a decision that lists its outputs, it belongs
+        // to no item (RFC-052).
+        if article.get_decision().is_none() {
+            if let Some(name) = article
+                .get_outputs()
+                .iter()
+                .map(|o| o.name.as_str())
+                .find(|name| {
+                    !produced
+                        .iter()
+                        .any(|&p| article.outputs_of(p).contains(name))
+                })
+            {
+                return refuse(format!(
+                    "declares output '{name}', but nothing it produces yields it; \
+                     a submission yields only the outputs it lists"
+                ));
+            }
+        }
         let mut listed: Vec<&str> = Vec::new();
         let named = produced
             .iter()
@@ -305,24 +514,6 @@ pub(crate) fn reject_ambiguous_produces(law: &ArticleBasedLaw) -> Result<()> {
                 return refuse(format!("gives output '{name}' to two things it produces"));
             }
             listed.push(name);
-        }
-        let derived = article.derived_outputs();
-        if let Some(name) = article
-            .get_outputs()
-            .iter()
-            .map(|o| o.name.as_str())
-            .find(|name| {
-                !derived.contains(name)
-                    && !produced
-                        .iter()
-                        .any(|&p| article.outputs_of(p).contains(name))
-            })
-        {
-            return refuse(format!(
-                "declares output '{name}', but nothing it produces yields it; \
-                 a submission yields only the outputs it lists, and data derived \
-                 for the decision is listed under its derived"
-            ));
         }
         for &item in &produced {
             for name in article.parameters_of(item) {
@@ -543,6 +734,75 @@ articles:
         )
     }
 
+    /// `law_producing` with the decision only and `requires` spliced in.
+    fn law_requiring(requires: &str) -> String {
+        law_producing("          - type: BESCHIKKING").replace(
+            "    machine_readable:\n      execution:\n",
+            &format!("    machine_readable:\n      requires:\n{requires}\n      execution:\n"),
+        )
+    }
+
+    /// A fact the article requires (schema v0.8.7, RFC-051) holds parameters
+    /// the article declares, has a name of its own within the article, and
+    /// names no other provision in the same entry.
+    #[test]
+    fn a_required_fact_holds_parameters_of_the_article() {
+        let yaml = law_requiring("        - fact: onderzoek\n          parameters: [p]");
+        let mut service = LawExecutionService::new();
+        service.load_law(&yaml).expect("a well-formed fact loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let fact = law.articles[0]
+            .required_fact("onderzoek")
+            .expect("the fact");
+        assert_eq!(fact.parameters.as_deref(), Some(&["p".to_string()][..]));
+        assert!(law.articles[0].required_fact("ander").is_none());
+
+        for (requires, why) in [
+            (
+                "        - fact: onderzoek\n          parameters: [q]",
+                "holding 'q', but declares no such parameter",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n        - fact: onderzoek\n          parameters: [p]",
+                "requires the fact 'onderzoek' twice",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          law: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          article: '2'",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          regeling: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          koninklijk_besluit: ander",
+                "names another provision in the same entry",
+            ),
+            (
+                "        - fact: onderzoek\n          parameters: [p]\n          values: [x]",
+                "names another provision in the same entry",
+            ),
+            ("        - fact: onderzoek", "which holds no parameters"),
+            (
+                "        - article: '2'\n          parameters: [p]",
+                "lists parameters on a requirement that names no fact",
+            ),
+        ] {
+            let mut service = LawExecutionService::new();
+            let err = service
+                .load_law(&law_requiring(requires))
+                .expect_err("a malformed fact must not load");
+            assert!(
+                matches!(err, EngineError::LoadError(_)) && err.to_string().contains(why),
+                "{why}: got {err:?}"
+            );
+        }
+    }
+
     #[test]
     fn a_produces_list_that_divides_the_outputs_loads() {
         let yaml = law_producing(
@@ -606,17 +866,30 @@ articles:
         }
     }
 
-    /// Derived data is listed, never inferred: an output no item lists in
-    /// `outputs` or `derived` is refused, also beside a decision, so a
-    /// forgotten or misspelt output fails instead of turning into derived
-    /// data. `derived` names an output, and only a decision has it.
+    /// An output beside a decision that lists its own outputs belongs to no
+    /// item (RFC-052): the article loads, and the output is neither an
+    /// output of the decision nor derived data for it.
+    #[test]
+    fn an_output_beside_the_decision_belongs_to_no_item() {
+        let yaml = law_with_two_outputs(
+            "          - type: AANVRAAG\n            parameters: [p]\n          - type: BESCHIKKING\n            outputs: [x]",
+        );
+        let mut service = LawExecutionService::new();
+        service
+            .load_law(&yaml)
+            .expect("an output beside the decision loads");
+        let law: ArticleBasedLaw = serde_yaml_ng::from_str(&yaml).expect("parses");
+        let article = &law.articles[0];
+        let decision = article.get_decision().expect("a decision");
+        assert_eq!(article.outputs_of(decision), ["x"]);
+        assert!(article.derived_outputs().is_empty());
+    }
+
+    /// Derived data is listed, never inferred: `derived` names an output,
+    /// and only a decision has it.
     #[test]
     fn derived_data_is_listed_on_the_decision() {
         for (items, why) in [
-            (
-                "          - type: AANVRAAG\n            parameters: [p]\n          - type: BESCHIKKING\n            outputs: [x]",
-                "declares output 'afgeleid', but nothing it produces yields it",
-            ),
             (
                 "          - type: BESCHIKKING\n            outputs: [x]\n            derived: [afgeleidd]",
                 "lists output 'afgeleidd' under produces",

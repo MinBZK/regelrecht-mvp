@@ -1,14 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { RE_HARVESTABLE_STATUSES, ENRICHABLE_STATUSES } from '../constants.js';
+import { RE_HARVESTABLE_STATUSES, ENRICHABLE_STATUSES } from '../constants';
 import { apiFetch } from '@regelrecht/frontend-shared';
+import type { LawEntry } from '../composables/useLawEntries';
 
-const props = defineProps({
-  row: { type: Object, required: true },
-});
+const props = defineProps<{
+  row: LawEntry;
+}>();
 
-const emit = defineEmits(['action-complete']);
+const emit = defineEmits<{
+  'action-complete': [];
+}>();
+
+/** The response of POST /harvest-jobs (`CreateJobResponse` in packages/admin/src/handlers.rs). */
+interface HarvestJobCreated {
+  job_id: string;
+}
+
+/** The response of POST /enrich-jobs (`CreateEnrichResponse` in packages/admin/src/handlers.rs). */
+interface EnrichJobsCreated {
+  job_ids: string[];
+  providers: string[];
+}
 
 const router = useRouter();
 
@@ -37,11 +51,11 @@ async function onHarvest() {
       alert(text || 'A harvest job for this law is already pending or processing.');
       return;
     }
-    const result = await response.json();
+    const result = (await response.json()) as HarvestJobCreated;
     alert(`Created harvest job: ${result.job_id}`);
     emit('action-complete');
   } catch (err) {
-    alert('Harvest failed: ' + err.message);
+    alert('Harvest failed: ' + (err as Error).message);
   }
 }
 
@@ -59,11 +73,11 @@ async function onEnrich() {
       alert(text || 'Enrich jobs for this law are already pending or processing.');
       return;
     }
-    const result = await response.json();
+    const result = (await response.json()) as EnrichJobsCreated;
     alert(`Created ${result.job_ids.length} enrich job(s) for ${result.providers.join(', ')}`);
     emit('action-complete');
   } catch (err) {
-    alert('Enrich failed: ' + err.message);
+    alert('Enrich failed: ' + (err as Error).message);
   }
 }
 
@@ -76,7 +90,7 @@ async function onResetExhausted() {
     if (response.status === 401) return;
     emit('action-complete');
   } catch (err) {
-    alert('Reset failed: ' + err.message);
+    alert('Reset failed: ' + (err as Error).message);
   }
 }
 </script>

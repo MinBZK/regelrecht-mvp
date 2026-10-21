@@ -11,9 +11,10 @@ The running example is vakantieverlof: a parent asks the head of a school for le
 
 | Part | What it is | Where |
 |---|---|---|
-| Law | Art. 13a (the application, the decision and its test); Awb 4:2, 4:13, 3:46, 6:7 and 6:8 as hooks; Awb 7:11 (the objection and the decision on it) with 6:5, 6:9 and 7:10 | `corpus/regulation/` |
-| Policy | Fictitious school policy: the first school day (`implements`) and the bounds of a school year | `corpus/regulation/nl/uitvoeringsbeleid/` |
-| Reduction | "Did the head already grant leave this school year?", over the school's own decisions | `corpus/cells/obs_de_klimop/reducties/` |
+| Law | Art. 13a (the application, the decision and its test); Awb 4:2, 4:13, 3:46, 6:7 and 6:8 as hooks; Awb 7:11 (the objection and the decision on it) with 6:5, 6:9 and 7:10; the Regeling vaststelling schoolvakanties 2025–2030 | `corpus/regulation/` |
+| Policy | Fictitious school policy: the first school day (`implements`), the bounds of a school year, and the school's own autumn and spring holidays | `corpus/regulation/nl/uitvoeringsbeleid/` |
+| Reduction | "Did the head already grant leave this school year?", "Does the leave fall outside the school holidays?" and "Where is the school established?", over the school's own chronicle | `corpus/cells/obs_de_klimop/reducties/` |
+| Required fact | What an executogram holds, as the article that requires the fact says it (`requires` with `fact`, schema v0.8.7): where the school is established and since when, or the GGD's examination | the rulework of that article |
 | Engine | Executes articles: hooks per stage, cross-law sources, open terms, data sources. Stores nothing | `packages/engine` |
 | Cell | The school: keeps the chronicle, derives what it records, executes through the engine | `packages/cel` |
 
@@ -38,6 +39,8 @@ A submission may refer to a decision in the chronicle (`refers_to`, RFC-050). Th
 
 `decide` returns a list of chronolexograms (`Vec<Gram>`). The decision comes first. After it comes each decision that the deciding article takes in turn: every output of type `decision` that is not null. They land in the chronicle together, or none do.
 
+**Recording without a submission** ([RFC-051](/rfcs/rfc-051)): `Cell::record_executogram` records an instance of a fact an article requires, such as where the school is established. The article's `requires` entry for that fact says what it holds. It refers to nothing, and records nothing when a value is missing or malformed.
+
 **Objecting**: the same two steps under Awb 7:11, with `record_submission` and `decide`. The objection refers to the contested decision. The decision on it calls art. 13a anew. On revocation 7:11 gives the new decision, and the cell records that in the same append.
 
 Law and policy say what is needed and how to compute it; they know no chronicle. A reduction is the only place that reads decisions, and it computes through law and policy again. Reduction takes place in the cell, as the [position paper](https://chronolexografie.nl/position-paper/) has it ("Reductie vindt altijd plaats ín de cel waar de betreffende chronolexogrammen zijn vastgelegd"). How the cell and the engine divide that work is in [RFC-048](/rfcs/rfc-048) §3.
@@ -52,6 +55,7 @@ Law and policy say what is needed and how to compute it; they know no chronicle.
 | [Once per school year](#once-per-school-year) | Leerplichtwet 1969 art. 13a lid 2, fictitious school policy, the school's reduction | [RFC-048](/rfcs/rfc-048) |
 | [The objection](#the-objection) | Awb 6:5, 6:9, 7:10 and 7:11, Leerplichtwet 1969 art. 13a, the school's reduction | [RFC-050](/rfcs/rfc-050) |
 | [A second case: the parking card](#a-second-case-the-parking-card) | BABW art. 49 and 51, Regeling gehandicaptenparkeerkaart art. 1, the Awb, fictitious municipal policy, the municipality's reduction | [RFC-045](/rfcs/rfc-045) to [RFC-050](/rfcs/rfc-050) |
+| [Outside the school holidays](#outside-the-school-holidays) | Leerplichtwet 1969 art. 11 onder f and 13a, the Regeling vaststelling schoolvakanties 2025–2030, the school's holiday and vestiging policies, two reductions | [RFC-051](/rfcs/rfc-051) |
 
 ## The application, with the Awb on it
 
@@ -189,6 +193,8 @@ output:
 - The policy says only that a school year runs from 1 August to 31 July. It reads no decisions.
 - The engine asks the cell for the term, and the cell runs its reduction with the parameters it declares, taken from art. 13a by name. The answer wins over a finding of the head, as an implementation would. The engine never runs a reduction by itself. Outside a cell nothing fills the term, so a scenario gives the head's finding; without one the execution fails.
 - A cell opens with its directory (`Cell::open`, `Cell::in_memory`) and loads its reductions from `reducties/` there, so it cannot be without them. A term that a reduction in that directory implements is the cell's. On a day on which no reduction in force fills it, the cell refuses the decision. A school without reductions opens with a directory that has none.
+- The directory also says who the cell is, in `cel.yaml`: a `name` and, where it has one, the `category` of authorities it belongs to (`college van burgemeester en wethouders`, `het hoofd`). A cell without it does not open. The law names who may answer an open term in the term's own `competent_authority`, and the cell refuses to decide while one of its reductions fills a term that names other authorities ([RFC-052](/rfcs/rfc-052)). It checks the cells of the sphere the same way. A fact that names who establishes it is recorded only by a cell it names.
+- A decision may take other cells along, its sphere (`Cell::decide(service, sphere, ...)`). For an open term of an article that the decision reads through `source.regulation`, every competent cell of the sphere answers from what it recorded up to the day of the decision. The decision keeps only that day, and a replay asks them as of the same day. A record they make later with a date up to that day enters the replay: it fails where an outcome changes, and passes where only the one who filled a term changes ([RFC-052](/rfcs/rfc-052)).
 - `Cell::answers` lists what the cell can answer: per version of each reduction, the open term it fills, the reduction's `$id` and its `valid_from`. This list is a RegelRecht addition. In the [Chronolexografie position paper](https://chronolexografie.nl/position-paper/) a cell reduces its chronicle on request into a lexostatus, the answer that the cell's facts give. The paper does not have a cell declare which lexostatussen it can answer; that idea comes from [RFC-022](/rfcs/rfc-022) §4.1.
 - Only a reduction reads `decisions`. Since schema v0.8.5 it may fill an open term (`implements`); it still has no `hooks`, `overrides`, `execution.produces` or `open_terms`. The corpus loaders leave it out; `just validate` checks it.
 - The decision records the answer in `fields`. It is not a finding of the head, so a decision value leaves it out.
@@ -248,7 +254,7 @@ The cell contains no Awb article. [RFC-050](/rfcs/rfc-050) describes the design 
 
 ## A second case: the parking card
 
-The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`, without a change to the engine or the cell code. Only rulework and tests change.
+The college of a municipality grants a gehandicaptenparkeerkaart on application (Besluit administratieve bepalingen inzake het wegverkeer, BABW, art. 49). The case runs on a cell of its own, built from the same `packages/cel`. The case itself needs rulework, the cell's reductions, the PoC case file and tests, and no code of its own.
 
 ```yaml
 # BABW, art. 49
@@ -278,11 +284,42 @@ What differs:
 
 An applicant who fails the criteria is refused before art. 49 reads the college's power, so the engine does not ask the cell. Asked to explain its answer for such a decision (`Cell::explain_answer`), the cell says it was not asked.
 
-Not modeled: competence by place of residence (lid 1) and the CBR (lid 3), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and the medical examination itself (Regeling art. 2). The judgements rest on that examination, but no rule checks that it took place or when it may be left out (Regeling art. 2 lid 2).
+The card is not issued before a medical examination (Regeling art. 2 lid 1). The GGD examines (art. 3 lid 1) and records the examination in a cell of its own, `ggd_wilgendaal`, as an executogram of the fact `geneeskundig_onderzoek_verricht`, which art. 3 names and describes ([RFC-051](/rfcs/rfc-051) §3). Art. 3 names the GGD and the designated expert in the `competent_authority` of the fact and of the open term `geneeskundig_onderzoek_heeft_plaatsgehad`, through which it gives the fact as an output; art. 2 reads that through `source.regulation`. Only a cell the fact names records it. The municipality's decision takes the GGD's cell along as its sphere, and only that cell answers ([RFC-052](/rfcs/rfc-052)). An examination counts from the date of the application up to the day of issue. Without a recorded examination and without a finding of the college, the decision fails, because lid 1 makes the college wait and gives no ground to refuse. A finding `false` of the college refuses the card: that is a decision of the college, not of lid 1 (own choice, RFC-051 §3). A refusal on another ground does not wait. Under lid 2 onder a and b the college may leave the examination out for someone who had a card before. The power and the two judgements are open terms on art. 49. Whether a card was issued before is an open term on Regeling art. 2 lid 2 itself, which asks it of "de verstrekkende instantie". The term names those in its `competent_authority`: every college and the CBR, the bodies art. 49 lets issue a card. Art. 49 names only the college that decides. Each issuing cell of the sphere answers from its own decisions (the fictitious `gemeente_oostmeer`, `cbr` and Wilgendaal itself), and `combine: OR` makes one value of their answers.
+
+Not modeled: competence by place of residence (lid 1), the CBR's own grounds (lid 3: the CBR and the fictitious Oostmeer decide on the model of lid 1, with Wilgendaal's policy, which is unscoped), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and Regeling art. 2 lid 2 onder c and lid 3, which belong to the CBR and the institution.
 
 What the cell cannot do yet:
 
-- The medical judgements belong with the criteria in the Regeling (art. 1, after the examination of art. 2 and 3). The engine applies a finding to every article in the decision. The cell, however, derives the inputs of a decision only from the deciding article, and a decision value carries only that article's findings. At a heroverweging the college would have to give judgements on the Regeling anew. So they sit on art. 49 and go to the Regeling as parameters.
+- The medical judgements belong in the Regeling with the criteria of art. 1, and those of lid 2 in its art. 2. The engine applies a finding to every article in the decision. The cell, however, derives the inputs of a decision only from the deciding article, and a decision value carries only that article's findings. At a heroverweging the college would have to give judgements on the Regeling anew. So they sit on art. 49 and go to the Regeling as parameters.
 - The cell does not pass its own identity to the law. Competence by place of residence cannot be checked, and a policy scoped by `gemeente_code` is not found, so the municipality's policy is unscoped.
 
 **Try it:** `just bdd`, which runs the scenarios next to the BABW and the Regeling, or `cargo test --manifest-path packages/cel/Cargo.toml --test parkeerkaart`, or play it in the PoC app, where the visitor picks this case or vakantieverlof at the start ([PoC portal](/components/poc-portal))
+
+## Outside the school holidays
+
+Art. 11, onder f, exempts a child whose parent, by the specific nature of their profession, can go on holiday with the child "slechts buiten de schoolvakanties". Art. 13a reads that as the open term `verlof_valt_buiten_schoolvakanties`, which the head decides per case. In the school's cell no one has to: a reduction answers it from the law and from what the school recorded.
+
+- The Regeling vaststelling schoolvakanties 2025–2030 fixes the Christmas and May holidays of every school (art. 5) and the summer holiday per region (art. 6). The region follows from the place of establishment (art. 2), divided by province and municipality (art. 3). The regeling does not say where a school is, so art. 2 declares that as open terms.
+- The school has been established in Utrecht since 1 August 2020. That is an executogram in its chronicle. No article in the corpus requires that fact, so a fictitious policy of the school does (`fictief_beleid_vestiging_obs_de_klimop`, art. 1). A move is a new executogram, and the region changes from its day.
+- The autumn and spring holidays are a rule of the school, set out per school year in its fictitious policy, much as a school guide would. Each school year gets a version from 1 August; the one in the corpus holds 2026–2027.
+
+```json
+{
+  "kind": "EXECUTOGRAM",
+  "grondslag": "fictief_beleid_vestiging_obs_de_klimop#1",
+  "fact": "vestiging",
+  "recorded_on": "2026-08-01",
+  "fields": { "gemeente": "Utrecht", "provincie": "Utrecht", "deel_van_gemeente": null, "sinds": "2020-08-01" },
+  "outputs": {}
+}
+```
+
+`reductie_plaats_van_vestiging` reads those executograms (`source: {facts: fictief_beleid_vestiging_obs_de_klimop#1#vestiging}`) and fills the open terms of art. 2 with the establishment in force on the leave days. It picks that one with `combine: ONLY`, which refuses two, so leave during which the school moves fails the decision. Art. 2 names no day; the cell passes on the leave days of art. 13a. `reductie_verlof_valt_buiten_schoolvakanties` asks the regeling for the region and the periods, asks the school's policy for its own holidays (`source: {regulation: ...}`), and answers whether a leave day falls in any of the six holidays. When the regeling calls for the place of establishment inside that reduction, the cell answers there too.
+
+- Leave from 21 to 23 December 2026 is refused. The trace of the decision shows the term as one node, answered by obs_de_klimop, and `Cell::explain_answer` shows the Christmas holiday the reduction read.
+- From 12 to 16 July 2027 a school in regio Noord is on summer holiday and one in regio Zuid is not.
+- When the cell does not know a holiday, because the regeling fixes none for the year or the school's policy in force does not hold that school year, it is silent, and the head judges as before.
+
+Not modeled: art. 7 and 8 of the regeling (the school's extension of the summer by up to two days, the Wadden islands, the exemption by the minister) and a school with establishments in several regions.
+
+**Try it:** `just bdd`, which runs `regio_en_vakanties.feature` next to the regeling and `vakantierooster.feature` next to the policy, or `cargo test --manifest-path packages/cel/Cargo.toml --test schoolvakanties`

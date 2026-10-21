@@ -32,6 +32,27 @@ machine_readable:
 
 The `#` form points at an output computed elsewhere in the same law. The Wet langdurige zorg uses this: which body is competent (`2_1_3_bevoegd_gezag`) is itself a rule, so the article references the output rather than hard-coding a name.
 
+On the article, the field names who decides. It is one authority, in either form.
+
+## Who answers an open term
+
+Since schema v0.8.8 an open term and a required fact (`requires` with `fact`) may carry a `competent_authority` of their own. It takes the named form, or a list of named authorities. On a term it says who may answer it, on a fact who establishes it. An article that establishes several terms can give each its own actors.
+
+BABW art. 49 lets the college issue a parking card under lid 1 and 2, and the CBR under lid 3. Whether an applicant had a card before is something any college or the CBR may answer:
+
+```yaml
+open_terms:
+  - id: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+    type: boolean
+    competent_authority:
+      - name: college van burgemeester en wethouders
+        type: CATEGORY
+      - name: CBR
+    combine: OR
+```
+
+Where one law reads such a term, it reads the output of the establishing article with `source.regulation`. The engine then asks only the answerers the term names, and combines their answers with the term's `combine` ([RFC-052](/rfcs/rfc-052)). A cell the term does not name is not asked. For a term without `competent_authority`, only the cell that runs the decision is asked, as before. The article's own `competent_authority` routes nothing.
+
 ## One law, several authorities
 
 A single law can name a different authority per article, because different articles describe different acts. In the Wet langdurige zorg the indication decision is the CIZ's, while later articles assign other steps to the Zorgkantoor (3.3.3, 4.2.4). Each article that grants a power has its own `competent_authority`. An article that establishes a body (Wlz 6.1.1 for the CAK, 7.1.1 for the CIZ) or imposes a duty (the *zorgplicht* of 4.2.1) grants no power, and carries none. The authority is a property of the act described in the article. A law as a whole has no single competent authority.
@@ -41,5 +62,6 @@ A single law can name a different authority per article, because different artic
 - [Multi-Org Execution](./multi-org-execution) - how the competent authority decides execute-vs-accept
 - [Notes and Annotations](./notes-and-annotations) - how note authority is derived from the competent authority
 - [RFC-002: Bevoegdheid](/rfcs/rfc-002) - full specification
+- [RFC-052: Synthesis](/rfcs/rfc-052) - asking the competent cells for a value of another actor
 - [Rules as Executed, section 4.3](/research/rules-as-executed#sec:whochooses) - the position paper on which authority chooses and publishes an encoding
 - [Rules as Executed, section 4.6](/research/rules-as-executed#sec:overrides) - the position paper on overrides and discretion

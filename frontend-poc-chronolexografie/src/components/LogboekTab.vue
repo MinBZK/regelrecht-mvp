@@ -62,11 +62,11 @@ const bevindingen = computed(() =>
 const bij = computed(() => (handeling.value ? genomenBij(handeling.value.gram.id, spel.grammen) : null));
 
 // De uitleg van de cel bij een begrip, in een sheet.
-const sheet = reactive({ open: false, knoop: null, uitleg: null });
+const sheet = reactive({ open: false, knoop: null, uitleg: null, besluit: null });
 async function uitleg(knoop) {
-  Object.assign(sheet, { open: true, knoop, uitleg: null });
+  const besluit = gekozen.value;
+  Object.assign(sheet, { open: true, knoop, uitleg: null, besluit });
   try {
-    const besluit = gekozen.value;
     const antwoord = await api.hoeBeantwoord(besluit, knoop.stap.naam);
     // Alleen als intussen niet een ander begrip of besluit gekozen is.
     if (sheet.knoop?.nummer === knoop.nummer && gekozen.value === besluit) {
@@ -153,6 +153,7 @@ async function uitleg(knoop) {
                 :text="naam(handeling.gram.refers_to)"
                 @click.prevent="gekozen = handeling.gram.refers_to"
               ></nldd-link>
+              <template v-else-if="handeling.gram.kind === 'EXECUTOGRAM'">geen; de cel legde dit uit zichzelf vast.</template>
               <template v-else>geen; dit is het begin van een dossier.</template>
             </nldd-text>
             <nldd-text v-if="bij" size="sm">
@@ -215,6 +216,12 @@ async function uitleg(knoop) {
             ></nldd-button>
             <nldd-code-viewer v-if="spoor" appearance="box-tinted">{{ handeling.waarom.spoor }}</nldd-code-viewer>
           </template>
+          <nldd-text v-else-if="handeling.gram.kind === 'EXECUTOGRAM'" size="sm" color="secondary">
+            Geen besluit. De cel legde het feit {{ handeling.gram.fact }} vast, dat
+            {{ handeling.gram.grondslag }} vereist (een executogram, RFC-051). Een reductie van de cel
+            leest het terug, zoals de vestiging van een school waaruit de regeling de regio
+            afleidt.
+          </nldd-text>
           <nldd-text v-else size="sm" color="secondary">
             Geen besluit. De cel legde vast wat de aanvrager indiende. Wat het artikel daarbij
             uitrekende, zoals de laatste dag van de termijn, staat in de kroniek.
@@ -236,7 +243,7 @@ async function uitleg(knoop) {
           ></nldd-top-title-bar>
         </nldd-container>
         <nldd-simple-section>
-          <HoeBeantwoord v-if="sheet.uitleg" :uitleg="sheet.uitleg" />
+          <HoeBeantwoord v-if="sheet.uitleg" :uitleg="sheet.uitleg" :besluit="sheet.besluit" />
           <nldd-text v-else size="sm" color="secondary">Even geduld…</nldd-text>
         </nldd-simple-section>
       </nldd-page>

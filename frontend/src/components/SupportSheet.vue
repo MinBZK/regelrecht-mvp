@@ -1,16 +1,17 @@
-<script setup>
+<script setup lang="ts">
 // "Help" — a short support sheet opened from the account menu. Points
 // users at the support inbox when they run into something. Exposes show()/hide()
 // so the shell can drive it from the menu item.
 import { ref } from 'vue';
-import { SUPPORT_EMAIL } from '../constants.js';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import { SUPPORT_EMAIL } from '../constants';
 
-const sheetEl = ref(null);
+const sheetEl = ref<NLDDSheet | null>(null);
 
-function show() {
+function show(): void {
   sheetEl.value?.show?.();
 }
-function hide() {
+function hide(): void {
   sheetEl.value?.hide?.();
 }
 

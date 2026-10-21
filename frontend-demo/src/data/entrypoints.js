@@ -18,7 +18,7 @@
  * een BSN. Ook dat staat al in de wet en hoeft niet apart verklaard te worden.
  */
 
-import { legalCharacterOf, producedItems } from '@regelrecht/frontend-shared/produces.js';
+import { legalCharacterOf, producedItems } from '@regelrecht/frontend-shared/produces';
 
 /**
  * De uitkomsten die een burger aangaan.

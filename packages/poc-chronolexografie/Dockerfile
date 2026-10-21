@@ -91,11 +91,17 @@ COPY corpus/regulation/nl/wet/leerplichtwet_1969/ /app/corpus/regulation/nl/wet/
 COPY corpus/regulation/nl/wet/algemene_wet_bestuursrecht/ /app/corpus/regulation/nl/wet/algemene_wet_bestuursrecht/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop/
+COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vakantierooster_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vakantierooster_obs_de_klimop/
+COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vestiging_obs_de_klimop/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vestiging_obs_de_klimop/
+COPY corpus/regulation/nl/ministeriele_regeling/regeling_vaststelling_schoolvakanties_20252030/ /app/corpus/regulation/nl/ministeriele_regeling/regeling_vaststelling_schoolvakanties_20252030/
 COPY corpus/cells/obs_de_klimop/ /app/corpus/cells/obs_de_klimop/
 COPY corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/ /app/corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/
 COPY corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/ /app/corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart/
 COPY corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/ /app/corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal/
 COPY corpus/cells/gemeente_wilgendaal/ /app/corpus/cells/gemeente_wilgendaal/
+COPY corpus/cells/ggd_wilgendaal/ /app/corpus/cells/ggd_wilgendaal/
+COPY corpus/cells/gemeente_oostmeer/ /app/corpus/cells/gemeente_oostmeer/
+COPY corpus/cells/cbr/ /app/corpus/cells/cbr/
 
 WORKDIR /app
 ENV CHRONO_CORPUS_DIR=/app/corpus \

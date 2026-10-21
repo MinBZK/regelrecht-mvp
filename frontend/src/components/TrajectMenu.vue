@@ -1,19 +1,24 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useTrajects } from '../composables/useTrajects.js';
-import { useAuth } from '../composables/useAuth.js';
-import { useLoginToChooser } from '../composables/useLoginToChooser.js';
-import { homeTarget, trajectSwitchTarget } from '../composables/useLastVisitedRoute.js';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import { useTrajects } from '../composables/useTrajects';
+import type { TrajectSummary } from '../composables/useTrajects';
+import { useAuth } from '../composables/useAuth';
+import { useLoginToChooser } from '../composables/useLoginToChooser';
+import { homeTarget, trajectSwitchTarget } from '../composables/useLastVisitedRoute';
 import TrajectCreateForm from './TrajectCreateForm.vue';
 
-const props = defineProps({
-  // Mobile presentation: stretch the trigger button to the full toolbar
-  // width with left-aligned content.
-  fullWidth: { type: Boolean, default: false },
-});
+const props = withDefaults(
+  defineProps<{
+    // Mobile presentation: stretch the trigger button to the full toolbar
+    // width with left-aligned content.
+    fullWidth?: boolean;
+  }>(),
+  { fullWidth: false },
+);
 
-const emit = defineEmits(['switched']);
+const emit = defineEmits<{ switched: [trajectRef: string] }>();
 
 const {
   trajects,
@@ -36,19 +41,19 @@ const loginToChooser = useLoginToChooser();
 // login-popover): naar de publieke aanvraagpagina. /account-aanvragen is een
 // top-level route, dus de popover verdwijnt met de shell.
 const accountRequestHref = computed(() => router.resolve({ name: 'account-aanvragen' }).href);
-function goToAccountRequest() {
+function goToAccountRequest(): void {
   router.push({ name: 'account-aanvragen' });
 }
 
 // Open the active traject's werkdocumenten (now folded into Home, not a sheet).
-function goToWerkdocumenten() {
+function goToWerkdocumenten(): void {
   if (!activeTrajectRef.value) return;
   router.push({ name: 'werkdocumenten-traject', params: { trajectRef: activeTrajectRef.value } });
 }
 
 // Open the active traject's taken - the same Home panel the sidebar's
 // Taken item opens, reachable without going back to Home first.
-function goToTaken() {
+function goToTaken(): void {
   if (!activeTrajectRef.value) return;
   router.push({ name: 'taken-traject', params: { trajectRef: activeTrajectRef.value } });
 }
@@ -57,7 +62,7 @@ function goToTaken() {
 // but mutually exclusive with them, so it lives in the same switcher. Carries
 // the open law so you land on the same law, globally (homeTarget's no-traject
 // shapes). Editing from here still routes through the chooser (editorRouteFor).
-function goToCorpusJuris() {
+function goToCorpusJuris(): void {
   router.push(homeTarget({
     lawId: route.params.lawId || undefined,
     articleNumber: route.params.articleNumber || undefined,
@@ -73,7 +78,7 @@ function goToCorpusJuris() {
  * shows the new traject's own saved tabs in the bar without auto-opening one.
  * Per-tab state: a switch here only affects this tab, never other open tabs.
  */
-async function goToTraject(trajectRef) {
+async function goToTraject(trajectRef: string): Promise<void> {
   await router.push(trajectSwitchTarget(route.name, trajectRef));
 }
 
@@ -97,12 +102,12 @@ const activeLabel = computed(() => {
 // Veldenstate en validatie leven in het gedeelde TrajectCreateForm
 // (zelfde formulier als de /editor/nieuw-traject-pagina); de sheet bezit
 // alleen submit, busy-state en navigatie.
-const sheetEl = ref(null);
-const createFormEl = ref(null);
+const sheetEl = ref<NLDDSheet | null>(null);
+const createFormEl = ref<InstanceType<typeof TrajectCreateForm> | null>(null);
 const showCreate = ref(false);
 
 const createBusy = ref(false);
-const createError = ref(null);
+const createError = ref<string | null>(null);
 
 // nldd-sheet exposes imperative show()/hide(); mirror showCreate into those
 // calls so the sheet animates instead of mounting/unmounting (matches the
@@ -118,24 +123,24 @@ watch(showCreate, async (v) => {
   }
 });
 
-function openCreate() {
+function openCreate(): void {
   createError.value = null;
   createFormEl.value?.reset();
   showCreate.value = true;
 }
 
 // Open the active traject's settings (details / leden) in Home.
-function goToInstellingen(tab) {
+function goToInstellingen(tab: string): void {
   if (!activeTrajectRef.value) return;
   router.push({ name: 'instellingen-traject', params: { trajectRef: activeTrajectRef.value, tab } });
 }
 
-function closeCreate() {
+function closeCreate(): void {
   if (createBusy.value) return;
   showCreate.value = false;
 }
 
-async function selectTraject(t) {
+async function selectTraject(t: TrajectSummary): Promise<void> {
   // `t.ref` is a server-supplied `Option<String>` and serialises to
   // `null` when a `TrajectSummary` is built without calling
   // `fill_ref()`. Refuse to navigate - silently routing to
@@ -151,10 +156,11 @@ async function selectTraject(t) {
   emit('switched', t.ref);
 }
 
-async function submitCreate() {
+async function submitCreate(): Promise<void> {
   createError.value = null;
   // Validatie en request-body komen uit het gedeelde formulier.
-  const { payload, error } = createFormEl.value.buildPayload();
+  // The form emits `submit` itself, so it is mounted.
+  const { payload, error } = createFormEl.value!.buildPayload();
   if (error) {
     createError.value = error;
     return;
@@ -162,7 +168,8 @@ async function submitCreate() {
 
   createBusy.value = true;
   try {
-    const created = await createTraject(payload);
+    // buildPayload returns a payload whenever it returns no error.
+    const created = await createTraject(payload!);
     showCreate.value = false;
     // Jump straight into the new traject - same per-tab navigation as
     // selecting from the dropdown. Mirror the `selectTraject` guard:
@@ -177,7 +184,7 @@ async function submitCreate() {
     await goToTraject(created.ref);
     emit('switched', created.ref);
   } catch (e) {
-    createError.value = e.message || 'Aanmaken mislukt';
+    createError.value = (e as Error).message || 'Aanmaken mislukt';
   } finally {
     createBusy.value = false;
   }

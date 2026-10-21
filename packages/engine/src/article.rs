@@ -24,7 +24,7 @@ pub use regelrecht_law_model::{
     ArticleReference, ArticleRequirement, AuthorityType, Case, CombineOp, CompetentAuthority,
     Declaration, DeclaredProperty, Definition, Execution, HookDeclaration, HookFilter, HookPoint,
     ImplementsDeclaration, Input, LegalBasis, MachineReadable, Marking, MarkingResolution,
-    OpenTerm, OpenTermDefault, Output, OverrideDeclaration, Parameter, Placement,
+    NamedAuthority, OpenTerm, OpenTermDefault, Output, OverrideDeclaration, Parameter, Placement,
     PlacementContainer, Preamble, ProcedureAppliesTo, ProcedureDefinition, Produced, ProducedItem,
     Produces, ProducesList, ProvisionReference, ResolveSpec, Source, Stage, StageRequirement,
     Temporal, TypeSpec, UntranslatableEntry, DEFAULT_FOREACH_AS,
@@ -121,6 +121,7 @@ impl LawLoad for ArticleBasedLaw {
         reject_literal_operations(&law)?;
         crate::load_check::reject_misplaced_reduction(&law)?;
         crate::load_check::reject_misplaced_article_call(&law)?;
+        crate::load_check::reject_misplaced_competence(&law)?;
 
         // Validate schema version is supported (RFC-013)
         if let Some(version) = law.schema_version() {
@@ -1136,7 +1137,7 @@ articles: []
 "#;
         let law = ArticleBasedLaw::from_yaml_str(yaml).unwrap();
         match law.competent_authority {
-            Some(CompetentAuthority::Structured { name, .. }) => {
+            Some(CompetentAuthority::Structured(NamedAuthority { name, .. })) => {
                 assert_eq!(name, "Minister van Test")
             }
             _ => panic!("Expected structured authority"),

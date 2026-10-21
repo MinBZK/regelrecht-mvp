@@ -37,6 +37,16 @@ articles:
           - name: einde_schooljaar
             type: date
             description: De laatste dag van het schooljaar waarin de datum valt.
+          - name: eerste_jaar_schooljaar
+            type: number
+            description: >-
+              Het jaar waarin het schooljaar van de datum begint: 2026 voor het
+              schooljaar 2026–2027.
+          - name: laatste_jaar_schooljaar
+            type: number
+            description: >-
+              Het jaar waarin het schooljaar van de datum eindigt: 2027 voor
+              het schooljaar 2026–2027.
         actions:
           # Vanaf 1 augustus begint het schooljaar van dat jaar, daarvóór loopt
           # het schooljaar dat het jaar ervoor begon. Dezelfde periode noemt
@@ -81,3 +91,18 @@ articles:
                   - 1
               month: 7
               day: 31
+          # De jaren van het schooljaar, zoals de Regeling vaststelling
+          # schoolvakanties 2025–2030 haar tabellen noemt ("Schooljaar
+          # 2026–2027") en haar zomervakanties telt ("voor de jaren 2026,
+          # 2027, ..."). De reductie van de school vraagt ze voor de eerste
+          # verlofdag (RFC-051).
+          - output: eerste_jaar_schooljaar
+            value:
+              operation: DATE_PART
+              date: $begin_schooljaar
+              in: year
+          - output: laatste_jaar_schooljaar
+            value:
+              operation: DATE_PART
+              date: $einde_schooljaar
+              in: year

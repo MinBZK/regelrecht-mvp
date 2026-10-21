@@ -1,4 +1,7 @@
-<script>
+<script lang="ts">
+import type { ExecutionData } from './ScenarioForm.vue';
+import type { Expectation } from '../utils/outputFormat';
+
 // Parsed-version cache, MODULE-scoped (shared across all ScenarioBuilder
 // instances) so it survives remounts - switching the panel view away and back,
 // or opening another article, remounts this component. The data-source column
@@ -10,48 +13,87 @@
 // `fetchLawVersions`. Assumes at most one ScenarioBuilder is mounted at a time
 // (the scenario panel): `versionsCacheTrajectRef` is shared, so two concurrent
 // instances with different trajectRefs would invalidate each other's cache.
-const versionsCache = {};
-let versionsCacheTrajectRef = null;
+const versionsCache: Record<string, string[]> = {};
+let versionsCacheTrajectRef: string | null = null;
+
+/** Which sheet the parent opens for a scenario's result. */
+type DetailsView = 'trace' | 'graph';
+
+/** What `executed` hands the parent: a scenario's last run and how to re-run it. */
+export interface ScenarioExecutedPayload {
+  result: ExecutionData['result'];
+  traceText: unknown;
+  error: unknown;
+  running: boolean;
+  expectations: Record<string, Expectation>;
+  scenarioName: string;
+  outputName: string | null;
+  index: number;
+  reload: () => void;
+  view: DetailsView;
+}
 </script>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
-import { useDependencies } from '../composables/useDependencies.js';
-import { loadLawVersions } from '../composables/useEngine.js';
-import { useScenarios, isScenarioMismatch } from '../composables/useScenarios.js';
-import { lawVersionsUrl } from '../composables/corpusUrls.js';
-import { apiFetchJson } from '../lib/apiFetch.js';
-import { useLatest } from '../lib/useLatest.js';
-import { parseFeature } from '../gherkin/parser.js';
-import { mapFeatureToForm, getEffectiveSetup, formStateToGherkin, syncEditedValues } from '../gherkin/formMapper.js';
-import { matchStatus, humanize, formatOutputValue, normalizeForCompare, expectationsFromAssertions } from '../utils/outputFormat.js';
+import { useDependencies } from '../composables/useDependencies';
+import { loadLawVersions } from '../composables/useEngine';
+import { useScenarios, isScenarioMismatch } from '../composables/useScenarios';
+import { lawVersionsUrl } from '../composables/corpusUrls';
+import { apiFetchJson } from '../lib/apiFetch';
+import { useLatest } from '../lib/useLatest';
+import { parseFeature } from '../gherkin/parser';
+import { mapFeatureToForm, getEffectiveSetup, formStateToGherkin, syncEditedValues } from '../gherkin/formMapper';
+import { matchStatus, humanize, formatOutputValue, normalizeForCompare, expectationsFromAssertions } from '../utils/outputFormat';
 import * as yaml from 'js-yaml';
-import { buildArticleMap, buildTypeMap, buildExternalFieldTypeMap } from '../utils/articleMapping.js';
+import { buildArticleMap, buildTypeMap, buildExternalFieldTypeMap } from '../utils/articleMapping';
 import ScenarioForm from './ScenarioForm.vue';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import type { FormState } from '../gherkin/formMapper';
+import type { EditorEngine } from '../composables/useEngine';
+import type { FieldMeta } from '../utils/articleMapping';
 
-const props = defineProps({
-  lawId: { type: String, required: true },
-  lawYaml: { type: String, default: null },
-  engine: { type: Object, default: null },
-  ready: { type: Boolean, default: false },
+/** An article as the article/type maps read it (the maps' own parameter type). */
+type MappedArticle = NonNullable<Parameters<typeof buildArticleMap>[0]>[number];
+
+/** A law document as buildExternalFieldTypeMap reads it. */
+type MappedLawDoc = { articles?: readonly MappedArticle[] | null };
+
+type ScenarioFormInstance = InstanceType<typeof ScenarioForm>;
+
+const props = withDefaults(defineProps<{
+  lawId: string;
+  lawYaml?: string | null;
+  engine?: EditorEngine | null;
+  ready?: boolean;
   /** The shared article/law load is still in flight. The pane renders us during
    *  that load (no `lawYaml` yet) so our indicator can span BOTH phases as one
    *  mounted element: article -> scenario files -> dependency laws. Two separate
    *  indicators handing off would each restart the DS anti-flash timer on mount,
    *  giving spinner -> 1s blank -> spinner. */
-  articleLoading: { type: Boolean, default: false },
+  articleLoading?: boolean;
   /** Articles array from useLaw() for article mapping */
-  articles: { type: Array, default: () => [] },
+  articles?: MappedArticle[];
   /** Active traject ref. Required for scenario writes; reads route
    *  through the matching traject's backend so a save is visible
    *  without a corpus reload. */
   // Single-instance assumption: the module-scoped versionsCache keys on this
   // trajectRef (see the <script> block at the top), so at most one
   // ScenarioBuilder may be mounted at a time.
-  trajectRef: { type: String, default: null },
+  trajectRef?: string | null;
+}>(), {
+  lawYaml: null,
+  engine: null,
+  ready: false,
+  articleLoading: false,
+  articles: () => [],
+  trajectRef: null,
 });
 
-const emit = defineEmits(['executed', 'dirty-change']);
+const emit = defineEmits<{
+  executed: [payload: ScenarioExecutedPayload];
+  'dirty-change': [dirty: boolean];
+}>();
 
 // --- Article mapping ---
 const articleMap = computed(() => buildArticleMap(props.articles));
@@ -60,7 +102,7 @@ const articleMap = computed(() => buildArticleMap(props.articles));
 const typeMap = computed(() => buildTypeMap(props.articles));
 // External data-source column types, collected from the current law + the
 // already-fetched dependency YAMLs. Rebuilt when the dependency load settles.
-const externalFieldTypeMap = ref(new Map());
+const externalFieldTypeMap = ref(new Map<string, FieldMeta>());
 
 // --- Dependencies ---
 const {
@@ -103,17 +145,17 @@ const mismatchSupportingText = computed(() =>
     : '',
 );
 
-const formState = ref(null);
+const formState = ref<FormState | null>(null);
 const saveSuccess = ref(false);
 const isDirty = ref(false);
-const selectedScenarioIndex = ref(null);
-const scenarioSheetEl = ref(null);
+const selectedScenarioIndex = ref<number | null>(null);
+const scenarioSheetEl = ref<NLDDSheet | null>(null);
 
 // Name of the data source or collection parameter the active ScenarioForm
 // is drilled into (null = scenario overview). Reported by ScenarioForm via
 // @drill-change; the top-title-bar back button uses it to pop one level
 // back out.
-const drilledSourceName = ref(null);
+const drilledSourceName = ref<string | null>(null);
 
 watch(selectedScenarioIndex, async (idx) => {
   // Opening / switching a scenario always lands on its overview, so reset
@@ -166,7 +208,7 @@ function markDirty() {
 // The same map the result views compare against, rendered the way they
 // render an outcome, so the card says `geen` / `onbekend` where the sheet
 // does (RFC-036).
-function scenarioExpectations(index) {
+function scenarioExpectations(index: number) {
   const assertions = formState.value?.scenarios?.[index]?.assertions || [];
   return Object.entries(expectationsFromAssertions(assertions)).map(([name, expected]) => ({
     name: humanize(name),
@@ -194,7 +236,7 @@ watch(featureText, (text) => {
 // traject switch doesn't return the previous traject's bodies. The dependency
 // loader needs *every* version of a law (not just today's-best) so the engine
 // can pick the one in force on the scenario's calculation date.
-async function fetchLawVersions(lawId) {
+async function fetchLawVersions(lawId: string): Promise<string[]> {
   if (versionsCacheTrajectRef !== props.trajectRef) {
     Object.keys(versionsCache).forEach((k) => delete versionsCache[k]);
     versionsCacheTrajectRef = props.trajectRef;
@@ -203,7 +245,8 @@ async function fetchLawVersions(lawId) {
   const yamls = await apiFetchJson(lawVersionsUrl(props.trajectRef, lawId), {
     errorMessage: (status) => `Failed to fetch versions of law '${lawId}': ${status}`,
   });
-  const list = Array.isArray(yamls) ? yamls : [];
+  // The endpoint returns every version's YAML text.
+  const list: string[] = Array.isArray(yamls) ? yamls : [];
   // Only cache a non-empty result. An empty array (unknown/not-yet-harvested
   // law) must stay uncached so a retry after harvest re-fetches rather than
   // returning the stale `[]` - `[]` is truthy, so caching it would short-
@@ -225,7 +268,7 @@ const claimDependencyLoad = useLatest();
 // the cascade below fire ~300ms after the last edit. Same setTimeout debounce
 // pattern as ScenarioForm.vue's execute.
 const debouncedLawYaml = ref(props.lawYaml);
-let lawYamlDebounce = null;
+let lawYamlDebounce: ReturnType<typeof setTimeout> | undefined;
 
 watch(() => props.lawYaml, (val, prev) => {
   // First population or cleared→set (no prior law loaded): apply immediately so
@@ -249,12 +292,13 @@ onBeforeUnmount(() => clearTimeout(lawYamlDebounce));
 // Called once the dependency load settles so the data-source tables can render
 // typed cells. Tolerates unparseable/text-only versions.
 function rebuildExternalFieldTypeMap() {
-  const docs = [{ articles: props.articles || [] }];
+  const docs: MappedLawDoc[] = [{ articles: props.articles || [] }];
   for (const [lawId, versions] of Object.entries(versionsCache)) {
     for (const v of Array.isArray(versions) ? versions : []) {
       try {
         const doc = yaml.load(v);
-        if (doc && typeof doc === 'object') docs.push(doc);
+        // The cached YAML is not schema-checked; the map reads it defensively.
+        if (doc && typeof doc === 'object') docs.push(doc as MappedLawDoc);
       } catch (e) {
         console.warn(`Skipped an unparseable cached version of '${lawId}' while building the type map:`, e);
       }
@@ -277,7 +321,7 @@ async function runDependencyLoad() {
 
   // Also load dependencies from scenario background + per-scenario steps
   if (formState.value) {
-    const allDeps = new Set();
+    const allDeps = new Set<string>();
     for (const dep of formState.value.background?.dependencies || []) allDeps.add(dep);
     for (const sc of formState.value.scenarios || []) {
       for (const dep of sc.setup?.dependencies || []) allDeps.add(dep);
@@ -329,7 +373,7 @@ async function runDependencyLoad() {
 // and starts (then abandons, via the latest-guard) a full dependency scan - up
 // to four overlapping corpus-wide reloads per open. A short debounce collapses
 // the burst into a single run after the inputs have settled.
-let depsScheduleTimer = null;
+let depsScheduleTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleDependencyLoad() {
   clearTimeout(depsScheduleTimer);
   depsScheduleTimer = setTimeout(runDependencyLoad, 30);
@@ -343,18 +387,18 @@ watch(
 );
 
 // --- Template refs for ScenarioForm instances ---
-const scenarioRefs = ref([]);
+const scenarioRefs = ref<(ScenarioFormInstance | null)[]>([]);
 
 // --- Per-scenario result tracking ---
-const scenarioResults = ref(new Map());
+const scenarioResults = ref(new Map<number, ExecutionData>());
 
-function onScenarioResult(index, data) {
+function onScenarioResult(index: number, data: ExecutionData) {
   const updated = new Map(scenarioResults.value);
   updated.set(index, data);
   scenarioResults.value = updated;
 }
 
-function scenarioStatus(index) {
+function scenarioStatus(index: number) {
   const data = scenarioResults.value.get(index);
   if (!data) return null;
   if (data.error) return 'failed';
@@ -408,7 +452,7 @@ watch(
 // --- Details handler: emit to right panel ---
 // `view` indicates which sheet the parent should open: 'trace' for
 // the execution-trace sheet (default), 'graph' for the law-graph sheet.
-function onShowDetails(index, view = 'trace') {
+function onShowDetails(index: number, view: DetailsView = 'trace') {
   // Prefer fresh data from the form ref, but its state may have been reset
   // after a save/reload - fall back to the cached result in that case.
   const formRef = scenarioRefs.value[index];
@@ -459,7 +503,7 @@ function onShowDetails(index, view = 'trace') {
 // in-process and synchronously (no API call, no await; `running` is reset in
 // its finally before it returns), so the result/error is already set by the
 // time onShowDetails reads it back via getExecutionData().
-function reExecute(index) {
+function reExecute(index: number) {
   const formRef = scenarioRefs.value[index];
   if (formRef?.execute) formRef.execute();
   onShowDetails(index);
@@ -467,12 +511,13 @@ function reExecute(index) {
 
 // Memoized setup per scenario (avoids new object on every render)
 const scenarioSetups = computed(() => {
-  if (!formState.value) return [];
-  return formState.value.scenarios.map((_, i) => getEffectiveSetup(formState.value, i));
+  const state = formState.value;
+  if (!state) return [];
+  return state.scenarios.map((_, i) => getEffectiveSetup(state, i));
 });
 
-function onScenarioFileSelect(event) {
-  const filename = event.target.value;
+function onScenarioFileSelect(event: Event) {
+  const filename = (event.target as HTMLSelectElement).value;
   if (filename) selectScenarioFile(filename);
 }
 
@@ -509,7 +554,8 @@ async function onSave() {
     // The composable sets saveError on its own failures. For sync/serialise
     // errors that happen before saveScenario, set it manually so the user
     // still sees the banner instead of an unexplained no-op.
-    if (!saveError.value) saveError.value = e;
+    // Whatever was thrown; the banner falls back to String() for a non-Error.
+    if (!saveError.value) saveError.value = e as Error;
   }
 }
 
@@ -693,13 +739,15 @@ defineExpose({ save: onSave });
             <nldd-title id="scenario-title-anchor" size="3"><h2>{{ currentScenarioName }}</h2></nldd-title>
             <nldd-spacer size="16"></nldd-spacer>
           </template>
+          <!-- scenarioSetups maps formState.scenarios one to one, so entry i
+               exists and is non-null for every scenario i. -->
           <ScenarioForm
             v-for="(scenario, i) in formState.scenarios"
             v-show="selectedScenarioIndex === i"
             :key="i"
-            :ref="(el) => { scenarioRefs[i] = el; }"
+            :ref="(el) => { scenarioRefs[i] = el as ScenarioFormInstance | null; }"
             :scenario="scenario"
-            :setup="scenarioSetups[i]"
+            :setup="scenarioSetups[i]!"
             :engine="engine"
             :ready="ready"
             :law-id="lawId"

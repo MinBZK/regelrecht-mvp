@@ -1,10 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { apiFetch } from '@regelrecht/frontend-shared';
-import { useDashboardStats } from '../composables/useDashboardStats.js';
-import { useJobDetail } from '../composables/useJobDetail.js';
-import { JOB_STATUSES } from '../constants.js';
-import { formatNumber, formatStatus } from '../formatters.js';
+import {
+  useDashboardStats,
+  type DailyCounts,
+  type RecentFailure,
+} from '../composables/useDashboardStats';
+import { useJobDetail } from '../composables/useJobDetail';
+import { JOB_STATUSES, type TableColumn } from '../constants';
+import { formatNumber, formatStatus } from '../formatters';
 import DataTable from '../components/DataTable.vue';
 import DailyJobsChart from '../components/DailyJobsChart.vue';
 import DetailPanel from '../components/DetailPanel.vue';
@@ -16,7 +20,7 @@ const { job: detailJob, isOpen: detailOpen, open: openDetail, close: closeDetail
 
 // Columns for the recent-failures list. No `sortable`/`filter` on any column
 // (and no sortOptions passed to DataTable) so the table toolbar renders empty.
-const FAILED_COLUMNS = [
+const FAILED_COLUMNS: TableColumn<RecentFailure>[] = [
   { key: 'law_id', label: 'Law ID', minWidth: '160px' },
   { key: 'job_type', label: 'Type', width: 'fit-content', text: (row) => formatStatus(row.job_type) },
   { key: 'failed_at', label: 'Wanneer', width: 'fit-content' },
@@ -54,14 +58,16 @@ const typePanels = computed(() => {
     })),
     today: s.executed.today[key] ?? 0,
     last7d: s.executed.last_7d[key] ?? 0,
-    chartEntries: daily.map((d) => ({ date: d.date, ...d[key] })),
+    // Cast: `key` comes from `by_type`, so it names a type's counts, never
+    // `date`, and the API puts every type's counts on every day.
+    chartEntries: daily.map((d) => ({ date: d.date, ...(d[key] as DailyCounts) })),
   }));
 });
 
 // Failed rows only carry a subset of the job; fetch the full job so the detail
 // sheet shows the complete info. Fall back to the summary row (with the reason)
 // if the fetch fails.
-async function onFailureClick(row) {
+async function onFailureClick(row: RecentFailure) {
   try {
     const resp = await apiFetch(`/api/harvest-admin/jobs/${encodeURIComponent(row.id)}`);
     openDetail(await resp.json());

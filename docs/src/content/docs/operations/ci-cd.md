@@ -43,7 +43,9 @@ speaks the whole feature language and depends on nothing outside the repo.
 
 The **BDD demo** job validates every law in `corpus/demo/regulation` against the
 schema and then runs bucket A over that corpus, with `REGULATION_PATH` pointing
-at it (the same run as the first half of `just bdd-demo`). The demo corpus and
+at it, once more with the actions in reverse order, and finally the Awb lifecycle
+test over the same corpus. Apart from the reversed run, that is what `just bdd-demo`
+does locally. The demo corpus and
 its synthetic persona data live entirely in the repository, so this job also
 hangs on the `Test` gate and blocks a merge.
 
@@ -88,18 +90,18 @@ Neither scans for known vulnerabilities. That is `just audit-advisories` (RustSe
 
 ### Schema protection (on PRs)
 
-Released schema versions in `schema/v*.*.*` are immutable. CI fails if a PR tries to modify or delete a released schema. `schema/latest` is a symlink to the highest released version (currently `v0.8.5`), not a directory to edit; a schema change goes into a new version directory.
+Released schema versions in `schema/v*.*.*` are immutable. CI fails if a PR tries to modify or delete a released schema. `schema/latest` is a symlink to the highest released version (currently `v0.8.8`), not a directory to edit; a schema change goes into a new version directory.
 
 ### Provenance checks (on corpus/engine changes)
 
-Among other checks, the `provenance-checks` job verifies that every `$schema` URL in `corpus/regulation` and `corpus/cells` names a schema version that exists under `schema/`, that every version directory under `schema/` is registered in `packages/engine/src/schema.rs`, and that `schema/latest` points at the highest version (currently `v0.8.5`). It does not check the form of the URL: a tag-based `refs/tags/schema-vX.Y.Z` reference is the convention, but a branch-based URL that names a known version passes. On a pull request that changes engine source it also compares the version in `packages/engine/Cargo.toml` with `main`; an unchanged version only prints a warning. See [RFC-013](/rfcs/rfc-013) for context.
+Among other checks, the `provenance-checks` job verifies that every `$schema` URL in `corpus/regulation` and in the reductions under `corpus/cells` names a schema version that exists under `schema/`, that every version directory under `schema/` is registered in `packages/engine/src/schema.rs`, and that `schema/latest` points at the highest version (currently `v0.8.8`). It does not check the form of the URL: a tag-based `refs/tags/schema-vX.Y.Z` reference is the convention, but a branch-based URL that names a known version passes. On a pull request that changes engine source it also compares the version in `packages/engine/Cargo.toml` with `main`; an unchanged version only prints a warning. See [RFC-013](/rfcs/rfc-013) for context.
 
 ### Other jobs behind the `Test` check
 
 The required `Test` check is a gate job that fails when any job it depends on fails. Besides the Rust tests, the BDD jobs, the provenance checks and the docs accessibility gate, it waits for:
 
 - **Cross-law integrity** - `script/cross-law-integriteit.py` over the corpus: misplaced, dangling or plain-param source bindings and broken `implements` declarations
-- **Frontend tests** - unit tests for the editor, lawmaking, demo, arch-explorer and shared packages, bundle builds for the editor, lawmaking and demo, plus a check that the BDD grammar codegen is in sync
+- **Frontend tests** - unit tests for the editor, lawmaking, demo, arch-explorer and shared packages, type checks of the shared package, lawmaking and the editor, bundle builds for the editor, lawmaking and demo, a check that the BDD grammar codegen is in sync, and the design-system slot guard (`just nldd-slots`), which fails the job when the design system is missing instead of skipping
 - **Ontwerpsysteem-imports** - checks that the design-system imports match the tags in use
 - **E2E (mocked)** - `just test-e2e`, the Playwright suite against mocked backends
 - **Rust image build** - builds the `pipeline-api` image to catch Dockerfile breakage

@@ -9,20 +9,50 @@ use crate::{Operation, ParameterType, RegulatoryLayer, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
-/// Represents a competent authority - can be a simple string or a structured object
+/// Represents a competent authority: a reference or one named authority on an
+/// article (RFC-002), or, on an open term or a fact (schema v0.8.8, RFC-052),
+/// one named authority or a list of them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CompetentAuthority {
     /// Simple string reference (e.g., "#bevoegd_gezag")
     String(String),
-    /// Structured authority with name field
-    Structured {
-        name: String,
-        /// `INSTANCE` (a named organisation, the schema default) or `CATEGORY`
-        /// (must be resolved per context)
-        #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
-        authority_type: Option<AuthorityType>,
-    },
+    /// One named authority
+    Structured(NamedAuthority),
+    /// Several named authorities, each competent, on an open term or a
+    /// fact: whether a parking card was issued before is for any college
+    /// and for the CBR (BABW art. 49 lid 1 and 3).
+    List(Vec<NamedAuthority>),
+}
+
+/// An authority the law names: an organisation or a category of them.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NamedAuthority {
+    pub name: String,
+    /// `INSTANCE` (a named organisation, the schema default) or `CATEGORY`
+    /// (must be resolved per context)
+    #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
+    pub authority_type: Option<AuthorityType>,
+}
+
+impl NamedAuthority {
+    /// The type, `INSTANCE` when the law leaves it out (the schema default).
+    pub fn kind(&self) -> AuthorityType {
+        self.authority_type.unwrap_or(AuthorityType::Instance)
+    }
+}
+
+impl CompetentAuthority {
+    /// The authorities this names, in the law's order. `None` for a
+    /// reference to an output (`#...`) or a bare name, which name no
+    /// authority with a type.
+    pub fn named(&self) -> Option<&[NamedAuthority]> {
+        match self {
+            CompetentAuthority::String(_) => None,
+            CompetentAuthority::Structured(one) => Some(std::slice::from_ref(one)),
+            CompetentAuthority::List(all) => Some(all),
+        }
+    }
 }
 
 /// Whether a competent authority names one organisation or a category of them
@@ -132,6 +162,9 @@ pub struct TypeSpec {
 /// - Same-law reference: `output: "field_name"` (resolved within the same law)
 /// - The decisions taken under an article: `decisions: "<regulation>#<article>"`
 ///   (schema v0.8.2, RFC-048), only in a `REDUCTIE`
+/// - The recorded instances of a fact an article requires: `facts:
+///   "<regulation>#<article>#<fact>"` (schema v0.8.7, RFC-051), only in a
+///   `REDUCTIE`
 /// - The decision of an article: `article: "<regulation>#<article>"` or a
 ///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
 ///   RFC-050)
@@ -165,6 +198,20 @@ pub struct Source {
         deserialize_with = "optional_article_reference"
     )]
     pub decisions: Option<String>,
+    /// The recorded instances of a fact an article requires,
+    /// `<regulation>#<article>#<fact>` (schema v0.8.7, RFC-051; v0.8.6
+    /// named a stream of the cell under `executograms`): a list with one row
+    /// per instance, as `decisions` gives one per decision. The article's
+    /// `requires` entry with that `fact` says what each holds. Only a data
+    /// source answers it, such as the cell that records the facts, or the
+    /// caller with a parameter of that name; no regulation is executed for
+    /// it. Only a rulework with `regulatory_layer: REDUCTIE` may read it.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_fact_reference"
+    )]
+    pub facts: Option<String>,
     /// The article whose decision this input takes (schema v0.8.4, RFC-050):
     /// an article reference `<regulation>#<article>`, or a `$`-reference to
     /// a value that holds one, such as the `grondslag` of a `decision`
@@ -774,6 +821,25 @@ pub enum CombineOp {
     And,
     Min,
     Max,
+    /// The one result: null when the filter left none, an error when it
+    /// left more than one (schema v0.8.6). It picks a single element, such
+    /// as the record in force on a day, where a lowest or highest of a
+    /// string or a date is not defined.
+    Only,
+}
+
+impl CombineOp {
+    /// The name as the law writes it (`ADD`, `OR`, ...).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CombineOp::Add => "ADD",
+            CombineOp::Or => "OR",
+            CombineOp::And => "AND",
+            CombineOp::Min => "MIN",
+            CombineOp::Max => "MAX",
+            CombineOp::Only => "ONLY",
+        }
+    }
 }
 
 /// Default name for the FOREACH element binding when `as` is omitted.
@@ -1063,6 +1129,17 @@ pub struct OpenTerm {
     /// Default execution if no implementing regulation exists
     #[serde(default)]
     pub default: Option<OpenTermDefault>,
+    /// Who may answer this term for a reader that reaches the article
+    /// through `source.regulation` (schema v0.8.8, RFC-052): one named
+    /// authority or a list. The article's own `competent_authority` says
+    /// who decides (RFC-002), which is another question.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub competent_authority: Option<CompetentAuthority>,
+    /// How the answers of several competent answerers make one value, with
+    /// the aggregations of FOREACH (schema v0.8.8, RFC-052). Without it, two
+    /// answers are an error.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combine: Option<CombineOp>,
 }
 
 fn default_true() -> bool {
@@ -1074,7 +1151,9 @@ fn default_true() -> bool {
 ///
 /// Every field is optional in the schema (`machineReadableSection.requires`),
 /// so an entry only names the dimensions it needs: an intra-law dependency
-/// carries just `article`, a cross-law dependency `law` + `values`.
+/// carries just `article`, a cross-law dependency `law` + `values`. Since
+/// schema v0.8.7 an entry may instead name a fact the article requires to
+/// exist (`fact`), with the parameters it holds (RFC-051).
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ArticleRequirement {
     /// Article number within this law
@@ -1092,6 +1171,21 @@ pub struct ArticleRequirement {
     /// Values/outputs required from the dependency
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub values: Option<Vec<String>>,
+    /// A fact the article requires to exist (schema v0.8.7, RFC-051), by a
+    /// name unique within the article. The law says what it holds, not when
+    /// it arises.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fact: Option<String>,
+    /// With `fact`: the article's parameters the fact holds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<Vec<String>>,
+    /// With `fact`: what the fact is, in words.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// With `fact`: who establishes it (schema v0.8.8, RFC-052), one named
+    /// authority or a list, such as the GGD for a medical examination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub competent_authority: Option<CompetentAuthority>,
 }
 
 /// Declares that this article fills an open term from a higher-level law.
@@ -1181,6 +1275,40 @@ pub fn is_article_reference(s: &str) -> bool {
             .chars()
             .all(|c| alnum(c) || matches!(c, ':' | '.' | '_' | ' ' | '-'))
         && !names_paragraph
+}
+
+/// Whether `s` names a fact an article requires, `<regulation>#<article>#<fact>`
+/// (schema v0.8.7): an article reference, `#`, and a fact name in lowercase
+/// letters, digits and underscores. An article number holds no `#`, so the
+/// last one separates the fact.
+pub fn is_fact_reference(s: &str) -> bool {
+    let Some((article, fact)) = s.rsplit_once('#') else {
+        return false;
+    };
+    is_article_reference(article)
+        && fact.starts_with(|c: char| c.is_ascii_lowercase())
+        && fact
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
+/// Deserialize an optional string that, when present, must be a fact
+/// reference ([`is_fact_reference`]).
+fn optional_fact_reference<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| {
+            if is_fact_reference(&s) {
+                Ok(s)
+            } else {
+                Err(serde::de::Error::custom(format!(
+                    "'{s}' is not <regulation>#<article>#<fact>"
+                )))
+            }
+        })
+        .transpose()
 }
 
 /// Deserialize an optional string that, when present, must be an
@@ -1653,6 +1781,14 @@ impl Article {
             .and_then(|exec| exec.output.as_ref())
             .map(|outputs| outputs.iter().map(|o| o.name.as_str()).collect())
             .unwrap_or_default()
+    }
+
+    /// The fact named `fact` this article requires to exist (schema v0.8.7,
+    /// RFC-051), as its `requires` entry.
+    pub fn required_fact(&self, fact: &str) -> Option<&ArticleRequirement> {
+        self.get_requires()
+            .iter()
+            .find(|r| r.fact.as_deref() == Some(fact))
     }
 
     /// Check if this article produces a specific output (allocation-free).

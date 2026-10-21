@@ -16,6 +16,9 @@ const props = defineProps({
   // haar dit begrip vroeg.
   knoop: { type: Object, required: true },
   diepte: { type: Number, default: 0 },
+  // Of de knop naar de uitleg van de cel er staat. Bij een voorvertoning
+  // niet: die uitleg leest een vastgelegd besluit, en dat is er nog niet.
+  metUitleg: { type: Boolean, default: true },
 });
 const emit = defineEmits(['uitleg']);
 
@@ -23,7 +26,7 @@ const open = ref(true);
 const tak = computed(() => props.knoop.kinderen.length > 0);
 const tekst = computed(() => stapTekst(props.knoop.stap, spel.grammen));
 const cel = computed(() =>
-  props.knoop.stap.keer != null ? (props.knoop.stap.ingevuld_door?.answer ?? null) : null,
+  props.metUitleg && props.knoop.stap.keer != null ? (props.knoop.stap.ingevuld_door?.answer ?? null) : null,
 );
 </script>
 
@@ -50,6 +53,7 @@ const cel = computed(() =>
       slot="children"
       :knoop="k"
       :diepte="diepte + 1"
+      :met-uitleg="metUitleg"
       @uitleg="emit('uitleg', $event)"
     />
   </nldd-list-item>

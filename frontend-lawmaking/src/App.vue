@@ -122,34 +122,37 @@
   </nldd-shell>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue';
 import {
   stages as simpleStages,
   branches as simpleBranches,
   connections as simpleConnections,
-} from './data/flowDataSimple.js';
+} from './data/flowDataSimple';
 import {
   stages as advancedStages,
   branches as advancedBranches,
   connections as advancedConnections,
   phases as advancedPhases,
-} from './data/flowDataAdvanced.js';
+} from './data/flowDataAdvanced';
 import {
   stages as wooStages,
   branches as wooBranches,
   connections as wooConnections,
   phases as wooPhases,
   timelineMarkers as wooTimeline,
-} from './data/flowDataWoo.js';
+} from './data/flowDataWoo';
 import FlowDiagram from './components/FlowDiagram.vue';
 import FlowLegend from './components/FlowLegend.vue';
 import StageDetail from './components/StageDetail.vue';
+import type { FlowDataset } from './data/types';
 
-const viewMode = ref('simple');
-const diagramRef = ref(null);
+type ViewMode = 'simple' | 'advanced' | 'woo';
 
-const datasets = {
+const viewMode = ref<ViewMode>('simple');
+const diagramRef = ref<InstanceType<typeof FlowDiagram> | null>(null);
+
+const datasets: Record<ViewMode, FlowDataset> = {
   simple: { stages: simpleStages, branches: simpleBranches, connections: simpleConnections, phases: null, timeline: null },
   advanced: { stages: advancedStages, branches: advancedBranches, connections: advancedConnections, phases: advancedPhases, timeline: null },
   woo: { stages: wooStages, branches: wooBranches, connections: wooConnections, phases: wooPhases, timeline: wooTimeline },
@@ -164,11 +167,15 @@ const currentTimeline = computed(() => currentData.value.timeline);
 
 const maxStep = computed(() => Math.max(0, ...currentStages.value.map((s) => s.step)));
 const activeStep = ref(0);
-const selectedStageId = ref(null);
+const selectedStageId = ref<string | null>(null);
 const isPlaying = ref(false);
-let playInterval = null;
+let playInterval: ReturnType<typeof setInterval> | null = null;
 
-function setViewMode(mode) {
+function isViewMode(value: unknown): value is ViewMode {
+  return typeof value === 'string' && Object.hasOwn(datasets, value);
+}
+
+function setViewMode(mode: ViewMode) {
   stopPlay();
   viewMode.value = mode;
   activeStep.value = 0;
@@ -177,9 +184,9 @@ function setViewMode(mode) {
 
 // nldd-segmented-control emits a `change` CustomEvent carrying the selected
 // item value in `detail.value`.
-function onViewModeChange(e) {
-  const mode = e.detail?.value;
-  if (mode && mode !== viewMode.value) setViewMode(mode);
+function onViewModeChange(e: Event) {
+  const mode = (e as CustomEvent<{ value?: unknown } | undefined>).detail?.value;
+  if (isViewMode(mode) && mode !== viewMode.value) setViewMode(mode);
 }
 
 const selectedStage = computed(() => {
@@ -243,7 +250,7 @@ function stopPlay() {
   }
 }
 
-function onSelectStage(id) {
+function onSelectStage(id: string) {
   selectedStageId.value = selectedStageId.value === id ? null : id;
   stopPlay();
 }

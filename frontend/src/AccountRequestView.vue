@@ -1,7 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
-import { SUPPORT_EMAIL } from './constants.js';
+import { SUPPORT_EMAIL } from './constants';
 
 // Account-aanvraagpagina — bereikbaar vanaf de login-warning-popover (de
 // "Account aanvragen"-knop). Legt uit wie nu een account kan krijgen en hoe.

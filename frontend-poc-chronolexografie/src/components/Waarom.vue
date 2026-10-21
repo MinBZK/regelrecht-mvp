@@ -8,7 +8,7 @@
 // meetelden en welke niet. Daaronder het spoor van de engine.
 import { reactive } from 'vue';
 import { api } from '../api.js';
-import { gelezen, ingevuldDoor } from '../logboek.js';
+import { celNaam, gelezen, grammenVan, ingevuldDoor } from '../logboek.js';
 import { leesbaar, spel, waarde } from '../spel.js';
 import HoeBeantwoord from './HoeBeantwoord.vue';
 
@@ -27,8 +27,8 @@ const jaNee = (v) =>
 
 /** De herkomst van het antwoord van de cel, leesbaar. */
 const herkomst = (a) =>
-  `Ingevuld door de cel met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). Gelezen: ` +
-  gelezen({ records_read: a.gelezen, last_record: a.tot_en_met }, spel.grammen) +
+  `Ingevuld door ${celNaam(a.door)} met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). Gelezen: ` +
+  gelezen({ records_read: a.gelezen, last_record: a.tot_en_met }, grammenVan(a.door, spel.grammen)) +
   '.';
 
 // Per begrip de uitleg van de cel, als die gevraagd is. Vroeg het besluit
@@ -83,7 +83,7 @@ const uitlegBij = (i) => {
         @click="toon(i)"
       ></nldd-button>
       <nldd-container v-if="open[i]" gap="8">
-        <HoeBeantwoord v-for="h in uitlegBij(i)" :key="h.spoor" :uitleg="h" />
+        <HoeBeantwoord v-for="h in uitlegBij(i)" :key="h.spoor" :uitleg="h" :besluit="besluit" />
       </nldd-container>
     </nldd-container>
 
