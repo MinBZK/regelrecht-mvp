@@ -15,6 +15,7 @@ import { ref, watch, type Ref } from 'vue';
 import { lastSavedPr, sanitizeSavedPr } from './useSavedPr';
 import { requireTraject, scenarioFileUrl, scenariosListUrl } from './corpusUrls';
 import { apiFetch } from '../lib/apiFetch';
+import type { RequestError } from '../lib/apiFetch';
 
 /** `ScenarioEntry` in packages/editor-api/src/corpus_handlers.rs. */
 export interface ScenarioEntry {
@@ -47,8 +48,8 @@ export function useScenarios(
   const saving = ref(false);
   // apiFetch rejects with an ApiError and the 412 path throws an Error, so
   // the caught values stored here are Errors.
-  const error = ref<Error | null>(null);
-  const saveError = ref<Error | null>(null);
+  const error = ref<RequestError | null>(null);
+  const saveError = ref<RequestError | null>(null);
   // ETag per scenario filename, captured on read and echoed back as
   // `If-Match` on save so a concurrent edit by another traject member
   // surfaces as a 412 instead of a silent overwrite. A filename without
@@ -118,7 +119,7 @@ export function useScenarios(
       }
     } catch (e) {
       if (!isLatest()) return;
-      error.value = e as Error;
+      error.value = e as RequestError;
       scenarios.value = [];
     } finally {
       if (isLatest()) loading.value = false;
@@ -141,7 +142,7 @@ export function useScenarios(
       if (etag) scenarioEtags.set(filename, etag);
       else scenarioEtags.delete(filename);
     } catch (e) {
-      error.value = e as Error;
+      error.value = e as RequestError;
       featureText.value = '';
       selectedScenario.value = null;
     }
@@ -217,7 +218,7 @@ export function useScenarios(
       featureText.value = content;
     } catch (e) {
       if (lawId.value === savedLawId && trajectRef.value === savedTrajectRef) {
-        saveError.value = e as Error;
+        saveError.value = e as RequestError;
       }
       throw e;
     } finally {

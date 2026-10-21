@@ -3,6 +3,7 @@ import * as yaml from 'js-yaml';
 import { lastSavedPr, sanitizeSavedPr } from './useSavedPr';
 import { lawCreateUrl, lawUrl } from './corpusUrls';
 import { apiFetch } from '../lib/apiFetch';
+import type { RequestError } from '../lib/apiFetch';
 import { createLruMap } from '../lib/lruMap';
 import { useLatest } from '../lib/useLatest';
 import { humanizeLawId } from '../lib/lawName';
@@ -195,9 +196,9 @@ export function useLaw(
   const loading = ref(true);
   // apiFetch rejects with an ApiError and the 412 path throws an Error, so
   // the caught values stored here are Errors.
-  const error = ref<Error | null>(null);
+  const error = ref<RequestError | null>(null);
   const saving = ref(false);
-  const saveError = ref<Error | null>(null);
+  const saveError = ref<RequestError | null>(null);
   // ETag of the last loaded/saved law content; sent as `If-Match` on
   // save so the backend can 412 when someone else edited in between.
   const currentEtag = ref<string | null>(null);
@@ -263,7 +264,7 @@ export function useLaw(
       }
     } catch (e) {
       if (!isCurrent()) return;
-      error.value = e as Error;
+      error.value = e as RequestError;
     } finally {
       if (isCurrent()) {
         loading.value = false;
@@ -331,7 +332,7 @@ export function useLaw(
     } catch (e) {
       if (!isCurrent()) return false;
       failed = true;
-      error.value = e as Error;
+      error.value = e as RequestError;
     } finally {
       if (isCurrent()) {
         // On a failed retry, hold the spinner briefly so the click reads as
@@ -460,7 +461,7 @@ export function useLaw(
       lawCache.set(savedKey, makeEntry(parsed, yamlText, newEtag));
     } catch (e) {
       if (lawId.value === savedLawId && currentTrajectRef === savedTrajectRef) {
-        saveError.value = e as Error;
+        saveError.value = e as RequestError;
       }
       throw e;
     } finally {
@@ -573,7 +574,7 @@ export function useLaw(
         );
       }
     } catch (e) {
-      saveError.value = e as Error;
+      saveError.value = e as RequestError;
       throw e;
     } finally {
       saving.value = false;
