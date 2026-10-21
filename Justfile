@@ -263,6 +263,24 @@ db_crates := "-p regelrecht-pipeline -p regelrecht-editor-api -p regelrecht-admi
 test:
     cd packages && {{ci_flags}} cargo test --workspace --all-features
 
+# The frontend unit tests and type checks, as the "Frontend tests" job in CI
+# runs them. Not part of `check`, which needs no npm dependencies; this one
+# installs the npm workspace on first use.
+[doc("Run the frontend unit tests and type checks")]
+frontend-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source script/dev-lib.sh
+    dev_ensure_deps . "frontend tests"
+    npm test -w packages/frontend-shared
+    npm run typecheck -w packages/frontend-shared
+    npm test -w frontend
+    npm run typecheck -w frontend
+    npm test -w frontend-lawmaking
+    npm run typecheck -w frontend-lawmaking
+    npm test -w frontend-demo
+    npm test -w frontend-poc-chronolexografie
+
 # Every test that needs no external services: the workspace minus the
 # container-backed crates. For a machine without a Docker daemon, and the
 # `unit` leg of the CI matrix.

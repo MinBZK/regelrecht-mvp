@@ -89,6 +89,15 @@ in parentheses beside the new word.
 Code identifiers keep `law` (`law_id`, `ArticleBasedLaw`, the API routes, the
 WASM API, the Gherkin steps); werkpakket slugs keep their old words.
 
+## Code is English
+
+Identifiers, comments, test names and messages meant for developers are in
+English. Dutch belongs in text a user reads and where this file or a skill asks
+for it, such as commit subjects and PR descriptions. Dutch values in the data
+(schema values, law ids, YAML keys) stay as they are, and so do Dutch legal
+terms and names of concepts (`toeslagpartner`, `regelwerk`) unless a clear,
+unambiguous English equivalent exists.
+
 ## Development Setup
 
 Prerequisites are in `docs/src/content/docs/guide/getting-started.md`; the local
@@ -337,6 +346,24 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
   een andere vraag en dit is het antwoord daarop. Het bedrag blijft in beide
   talen in euro's; alleen de scheidingstekens en de plaats van het symbool
   verschillen.
+
+## Frontend code
+
+Frontends are Vue applications that follow Vue's own conventions: Vite to build,
+Vitest to test, single-file components, and composables for shared state. The
+aim is TypeScript for code that runs in the browser (`.ts`,
+`<script setup lang="ts">`). The editor, lawmaking and `frontend-shared` are
+there; the demo and the PoC frontends are still JavaScript and will be migrated
+later, so keep new code in those in JavaScript until then. Scripts that run in
+plain Node, the modules they load, and generated files stay JavaScript. The
+setup is in `docs/src/content/docs/guide/frontend-code.md`.
+
+- Import a TypeScript module without its extension (`'./values'`). Plain Node
+  cannot resolve that, so a module that Node loads keeps its `.js`.
+- Prefer `unknown` and narrowing over `any`. An `any` or a non-null `!` gets a
+  comment saying why it is safe.
+- After moving or renaming a module, check the `vi.mock` paths that name it. A
+  stale path stops mocking without an error.
 
 ## Frontend / UI Components
 

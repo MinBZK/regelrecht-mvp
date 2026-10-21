@@ -41,6 +41,7 @@ export const sidebar: Record<string, SidebarGroup[]> = {
       items: [
         { text: 'Development Environment', link: '/guide/dev-environment' },
         { text: 'Testing', link: '/guide/testing' },
+        { text: 'Frontend Code', link: '/guide/frontend-code' },
       ],
     },
   ],
