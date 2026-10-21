@@ -122,9 +122,11 @@ export const COMPONENTS = {
     ],
   },
   // De wetsgeschiedenis draait als eigen, niet-gepubliceerd component: een
-  // Python-dienst met de afspeelketen ernaast (afspeler/), geen crate.
+  // Rust-dienst, met de afspeelketen in Python ernaast (werker.py, afspeler/).
+  // De crate-kant volgt uit de graaf; de werker en de afspeler staan in
+  // dezelfde map, maar zijn geen Rust.
   'poc-wetsgeschiedenis': {
-    crate: null,
+    crate: 'regelrecht-poc-wetsgeschiedenis',
     paths: [
       'pocs/',
       'corpus-poc/wetsgeschiedenis/',

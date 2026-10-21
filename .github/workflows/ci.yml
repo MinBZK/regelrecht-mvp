@@ -785,12 +785,10 @@ jobs:
         run: npm test -w frontend-poc-chronolexografie
 
       # De wetsgeschiedenis: de frontend (geen inline script, de gegevens onder
-      # de basis) en de Python-dienst, zonder netwerk.
+      # de basis, het venster, de bekijker in Vue). De dienst is Rust; haar
+      # tests draaien met de workspace, tegen een nagebootste werker.
       - name: Run wetsgeschiedenis poc tests
-        run: |
-          npm test -w frontend-poc-wetsgeschiedenis
-          python3 -m pip install --quiet pyyaml==6.0.2
-          python3 -m unittest discover packages/poc-wetsgeschiedenis/tests
+        run: npm test -w frontend-poc-wetsgeschiedenis
 
       # De rekenkunde van de opgenomen rondleiding (knippen, hoofdstukken,
       # ondertitels): pure Python zonder ffmpeg, dus hier in een paar seconden.

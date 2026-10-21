@@ -218,8 +218,16 @@ def in_poc(i):
     return afspelen.lees_dossier(os.path.dirname(pad)).get("poc", True) not in (False, "nee")
 
 
-def poc(doel, index, gegevens_):
-    """Schrijf de poc in een checkout van de monorepo (`doel`)."""
+def poc(doel, index, gegevens_, vorm="html"):
+    """Schrijf de poc in een checkout van de monorepo (`doel`).
+
+    vorm "html": de pagina zoals het sjabloon haar maakt (src/index.html).
+    vorm "vue": een proef (21-10-2026) met Vue als schil van de app. Dan
+    schrijft dit script alleen wat uit het sjabloon komt: src/Bekijker.vue
+    (de opmaak van de pagina als template, zonder het venster 'Wet ophalen',
+    dat een eigen component is), src/pagina.js, src/stijl.css, de afspeler en
+    de gegevens. De vaste bestanden van die vorm (App.vue, het venster, main.js,
+    package.json) staan in de checkout zelf."""
     index = [d for d in index if in_poc(d["dossier"])]
     gegevens_ = {i: t for i, t in gegevens_.items() if in_poc(i)}
     if not os.path.exists(os.path.join(doel, "pocs", "registry.yaml")):
@@ -243,11 +251,25 @@ def poc(doel, index, gegevens_):
     app = os.path.join(doel, POC_APP)
     kop = ("/* Gemaakt door werkbank/generatoren/bouw-wetsgeschiedenis.py --poc uit\n"
            "   wetsgeschiedenis-sjabloon.html in het Wpp-dossier; wijzig het daar. */\n")
-    schrijf(os.path.join(app, "src", "index.html"), html)
+    if vorm == "vue":
+        lijf = re.search(r"<body>\n?(.*?)</body>", html, re.S)[1]
+        lijf = re.sub(r'<dialog class="ophaal".*?</dialog>\n?', "", lijf, count=1, flags=re.S)
+        lijf = re.sub(r'<script type="module" src="\./main\.js"></script>\n?', "", lijf)
+        if "<script" in lijf or "{{" in lijf:
+            sys.exit("sjabloon: de opmaak van de pagina past niet in een Vue-template")
+        schrijf(os.path.join(app, "src", "Bekijker.vue"),
+                "<!-- Gemaakt door werkbank/generatoren/bouw-wetsgeschiedenis.py --poc --vue uit\n"
+                "     wetsgeschiedenis-sjabloon.html in het Wpp-dossier; wijzig het daar. -->\n"
+                "<template>\n  <div class=\"bekijker\">\n" + lijf.rstrip() + "\n  </div>\n</template>\n\n"
+                "<script setup>\n// De bekijker is de pagina van het sjabloon; pagina.js tekent erin zodra\n"
+                "// deze opmaak in het document staat. Vue raakt haar daarna niet meer aan.\n"
+                "import { onMounted } from 'vue';\n\nonMounted(() => import('./pagina.js'));\n</script>\n")
+    else:
+        schrijf(os.path.join(app, "src", "index.html"), html)
     schrijf(os.path.join(app, "src", "stijl.css"), kop + css)
     schrijf(os.path.join(app, "src", "pagina.js"), kop + js)
     # De vaste bestanden: package.json, vite.config.js, de tests, de LEESMIJ.
-    for wortel, mappen, namen in os.walk(POC):
+    for wortel, mappen, namen in (os.walk(POC) if vorm == "html" else ()):
         mappen[:] = [m for m in mappen if m not in ("__pycache__", "data", "node_modules", "dist")]
         for naam in namen:
             bron = os.path.join(wortel, naam)
@@ -277,17 +299,19 @@ def poc(doel, index, gegevens_):
 def main():
     args = sys.argv[1:]
     doel = None
+    vorm = "vue" if "--vue" in args else "html"
+    args = [a for a in args if a != "--vue"]
     if args[:1] == ["--poc"] and len(args) == 2:
         doel = os.path.abspath(args[1])
     elif args:
-        sys.exit("gebruik: bouw-wetsgeschiedenis.py [--poc <checkout van NederlandseDigitaleDienst/regelrecht>]")
+        sys.exit("gebruik: bouw-wetsgeschiedenis.py [--poc <checkout van NederlandseDigitaleDienst/regelrecht> [--vue]]")
     index, gegevens_, regels = verzamel()
     uit = los(index, gegevens_)
     print(f"wetsgeschiedenis: {len(index)} dossiers, {os.path.getsize(uit) // 1024} kB")
     print("\n".join(regels))
     print(f"  -> {os.path.relpath(uit, BASIS)}")
     if doel:
-        app = poc(doel, index, gegevens_)
+        app = poc(doel, index, gegevens_, vorm)
         omvang = sum(os.path.getsize(os.path.join(doel, POC_GEGEVENS, f)) for f in os.listdir(os.path.join(doel, POC_GEGEVENS)))
         print(f"  -> poc in {app} en {POC_GEGEVENS} ({omvang // 1024} kB gegevens)")
 

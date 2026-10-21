@@ -929,6 +929,8 @@ zetModus(Z.modus);
 (async () => {
   // Het losse bestand draagt zijn gegevens zelf en vraagt niets van buiten.
   if (document.getElementById("dossiers")) return;
+  // In de Vue-vorm is het venster een eigen component (OphaalVenster.vue).
+  if (!document.getElementById("ophaal-uit")) return;
   let st = null;
   try { const r = await fetch(BASIS + "api/status"); if (r.ok) st = await r.json(); } catch (e) { return; }
   if (!st || !st.ophalen) return;

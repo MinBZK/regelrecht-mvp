@@ -993,7 +993,7 @@ poc-wetsgeschiedenis port="8420":
     POC_BASE=/wetsgeschiedenis/ npm run build -w poc-wetsgeschiedenis
     echo "wetsgeschiedenis → http://localhost:{{port}}/wetsgeschiedenis/"
     WG_PORT={{port}} WG_BASE_PATH=/wetsgeschiedenis/ \
-    python3 packages/poc-wetsgeschiedenis/dienst.py
+    cargo run --manifest-path packages/Cargo.toml -p regelrecht-poc-wetsgeschiedenis
 
 # Start de chronolexografie-poc los, op http://localhost:8410/chronolexografie/
 #

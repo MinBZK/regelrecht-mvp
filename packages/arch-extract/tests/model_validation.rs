@@ -108,6 +108,7 @@ fn product_crates_present() {
         "poc-chronolexografie",
         "poc-napp",
         "poc-portal",
+        "poc-wetsgeschiedenis",
         "shared",
         "tui",
     ]

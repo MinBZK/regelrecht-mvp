@@ -16,9 +16,12 @@
     "nldd:check": "node ../script/check-nldd-imports.mjs src src/nldd-components.js"
   },
   "dependencies": {
-    "@nldd/design-system": "^0.9.0"
+    "@nldd/design-system": "^0.9.0",
+    "vue": "^3.5.43"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/test-utils": "^2.5.1",
     "happy-dom": "^20.14.6",
     "vite": "^8.3.4",
     "vitest": "^5.0.3"
