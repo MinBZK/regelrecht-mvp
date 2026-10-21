@@ -2,11 +2,11 @@
  * Simple view: Dutch law-making process as GitFlow.
  *
  * Branch model:
- *   col 0 - main (Corpus Juris, geldend recht)
- *   col 1 - develop (Wetgevingskalender, voorstellen in procedure)
+ *   col 0 - main (Corpus Juris, the law in force)
+ *   col 1 - develop (Wetgevingskalender, proposals in procedure)
  *   col 2 - fork: wetsvoorstel (ministry / fraction workspace)
  *   col 3 - topic branch within the wetsvoorstel fork
- *   col 4 - fork: advisory (Raad van State / toetsende organen)
+ *   col 4 - fork: advisory (Raad van State / assessing bodies)
  */
 
 import type { Branch, Stage, Connection } from './types';

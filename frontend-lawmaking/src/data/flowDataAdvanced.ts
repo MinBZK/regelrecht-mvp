@@ -2,13 +2,13 @@
  * Advanced flow data: the full Dutch legislative process.
  *
  * Branch model (GitFlow):
- *   col 0: main (Corpus Juris - geldend recht)
- *   col 1: develop (Wetgevingskalender - voorstellen in procedure)
- *   col 2: ministry fork (wetsvoorstel - eigen omgeving ministerie)
- *   col 3: internal sub-branch (beleid + juridisch team)
- *   col 4-8: parallel advisory/check forks (toetsen, consultatie)
- *   col 3-7: amendment branches (elk amendement eigen branch)
- *   col 3: novelle (reparatie-fork)
+ *   col 0: main (Corpus Juris - the law in force)
+ *   col 1: develop (Wetgevingskalender - proposals in procedure)
+ *   col 2: ministry fork (wetsvoorstel - the ministry's own workspace)
+ *   col 3: internal sub-branch (policy + legal team)
+ *   col 4-8: parallel advisory/check forks (assessments, consultation)
+ *   col 3-7: amendment branches (each amendment its own branch)
+ *   col 3: novelle (repair fork)
  */
 
 import type { Branch, Phase, Stage, Connection } from './types';
@@ -457,7 +457,7 @@ export const stages: Stage[] = [
     col: 1, step: 22,
   },
 
-  // === Koninklijke Boodschap - indiening bij TK ===
+  // === Koninklijke Boodschap - submission to the TK ===
   {
     id: 'koninklijke-boodschap',
     branch: 'develop',
@@ -615,7 +615,7 @@ export const stages: Stage[] = [
     col: 7, step: 31,
   },
 
-  // === Stemmingslijst + stemming ===
+  // === Voting list + vote ===
   {
     id: 'stemmingslijst',
     branch: 'develop',
@@ -711,7 +711,7 @@ export const stages: Stage[] = [
     col: 3, step: 38,
   },
 
-  // EK stemt over beide
+  // EK votes on both
   {
     id: 'ek-final',
     branch: 'develop',
@@ -815,7 +815,7 @@ export const connections: Connection[] = [
   { from: 'nvw-1', to: 'wetgevingsoverleg', type: 'straight' },
   { from: 'wetgevingsoverleg', to: 'plenair-debat', type: 'straight' },
 
-  // Amendments fan out from plenair debat
+  // Amendments fan out from the plenary debate
   { from: 'plenair-debat', to: 'amendement-a', type: 'branch-off' },
   { from: 'plenair-debat', to: 'amendement-b', type: 'branch-off' },
   { from: 'plenair-debat', to: 'amendement-c', type: 'branch-off' },
