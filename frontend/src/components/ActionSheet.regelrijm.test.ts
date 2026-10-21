@@ -2,11 +2,11 @@
 // as RegelRijm text, and opens at the part a reading in the Machine pane
 // pointed at.
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { mount, flushPromises } from '@vue/test-utils';
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { reactive } from 'vue';
 
-vi.mock('../composables/useFeatureFlags.js', () => ({ useFeatureFlags: () => ({ isEnabled: () => true }) }));
-vi.mock('../composables/useLaw.js', () => ({ fetchLaw: vi.fn(async () => null) }));
+vi.mock('../composables/useFeatureFlags', () => ({ useFeatureFlags: () => ({ isEnabled: () => true }) }));
+vi.mock('../composables/useLaw', () => ({ fetchLaw: vi.fn(async () => null) }));
 const { default: ActionSheet } = await import('./ActionSheet.vue');
 
 const ACTION = { output: 'hoogte', value: { operation: 'MAX', values: [0, { operation: 'MULTIPLY', values: ['$inkomen', '$percentage'] }] } };
@@ -14,11 +14,12 @@ const ARTICLE = { number: '2', machine_readable: { execution: { actions: [ACTION
 
 beforeAll(() => {
   // jsdom does not know nldd-sheet's show() and hide().
-  HTMLElement.prototype.show ??= () => {};
-  HTMLElement.prototype.hide ??= () => {};
+  const proto = HTMLElement.prototype as HTMLElement & { show?: () => void; hide?: () => void };
+  proto.show ??= () => {};
+  proto.hide ??= () => {};
 });
 
-const reading = (wrapper) => wrapper.find('[data-testid="action-sheet-regelrijm"] [data-testid="regelrijm-text"]').text();
+const reading = (wrapper: VueWrapper) => wrapper.find('[data-testid="action-sheet-regelrijm"] [data-testid="regelrijm-text"]').text();
 
 describe('ActionSheet with RegelRijm', () => {
   it('reads the whole action when it opens at the top', async () => {
@@ -43,8 +44,8 @@ describe('ActionSheet with RegelRijm', () => {
 
   describe('following a name to the rule that computes it', () => {
     const total = () => reactive({ output: 'totaal', value: { operation: 'ADD', values: ['$deel', 1] } });
-    const article = (a) => ({ number: '2', machine_readable: { execution: { actions: [a, { output: 'deel', value: 5 }] } } });
-    const follow = (wrapper) => wrapper.find('[data-testid^="regelrijm-follow-"]');
+    const article = (a: object) => ({ number: '2', machine_readable: { execution: { actions: [a, { output: 'deel', value: 5 }] } } });
+    const follow = (wrapper: VueWrapper) => wrapper.find('[data-testid^="regelrijm-follow-"]');
 
     it('opens that rule when the sheet has no unsaved edit', async () => {
       const a = total();

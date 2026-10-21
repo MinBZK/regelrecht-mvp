@@ -1,11 +1,11 @@
 // Fragments of the article text tied to a rule by a linking note, on a small
 // fictional article.
 import { describe, it, expect } from 'vitest';
-import { linkedOutput, linksByOutput } from './regelrijmLinks.js';
+import { linkedOutput, linksByOutput } from './regelrijmLinks';
 
 const TEXT = 'De aanvrager heeft recht op een toeslag. De toeslag bedraagt het verschil.';
-const link = (output, law = 'wet_a') => ({ motivation: 'linking', body: { type: 'SpecificResource', source: `regelrecht://${law}/${output}`, purpose: 'linking' } });
-const span = (quote, from = 0) => {
+const link = (output: string, law = 'wet_a') => ({ motivation: 'linking', body: { type: 'SpecificResource', source: `regelrecht://${law}/${output}`, purpose: 'linking' } });
+const span = (quote: string, from = 0) => {
   const start = TEXT.indexOf(quote, from);
   return { start, end: start + quote.length };
 };
@@ -52,8 +52,8 @@ describe('linksByOutput', () => {
     ];
     const links = linksByOutput(entries, { lawId: 'wet_a', text: TEXT });
     expect([...links.keys()]).toEqual(['hoogte', 'recht']);
-    expect(links.get('hoogte').map((f) => f.quote)).toEqual(['toeslag', 'het verschil']);
-    expect(links.get('recht')[0].quote).toBe('recht op een toeslag');
+    expect(links.get('hoogte')?.map((f) => f.quote)).toEqual(['toeslag', 'het verschil']);
+    expect(links.get('recht')?.[0]?.quote).toBe('recht op een toeslag');
   });
 
   it('is empty without notes', () => {

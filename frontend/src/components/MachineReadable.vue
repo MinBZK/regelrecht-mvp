@@ -9,6 +9,8 @@ import BreakableName from './BreakableName.vue';
 import RowActionsMenu from './RowActionsMenu.vue';
 import MachineEmptyState from './MachineEmptyState.vue';
 import RegelRijmPane from '../regelrijm/RegelRijmPane.vue';
+import type { LinkedFragment } from '../regelrijm/regelrijmLinks';
+import type { Path } from '@regelrecht/frontend-shared/regelrijm/index';
 import { useFeatureFlags } from '../composables/useFeatureFlags';
 
 // Law-format shapes (schema/latest/schema.json), only the fields read here.
@@ -87,7 +89,7 @@ const props = withDefaults(defineProps<{
   law?: Record<string, unknown> | null;
   lawId?: string | null;
   /** Output → fragments of the article text that linking notes tie to it. */
-  links?: Map<string, unknown[]>;
+  links?: ReadonlyMap<string, LinkedFragment[]>;
 }>(), {
   article: null,
   editable: false,
@@ -115,7 +117,7 @@ const onLoginTriggerPointerdown = inject('onLoginTriggerPointerdown', () => {});
 
 const emit = defineEmits<{
   /** `path` selects a part of the action in the sheet. */
-  'open-action': [action: ExecutionAction, path?: string[]];
+  'open-action': [action: ExecutionAction, path?: Path];
   /** RegelRijm: a name leads to the article that computes it. */
   'navigate': [target: { lawId: string; articleNumber: string }];
   'open-edit': [payload: OpenEditPayload];
@@ -419,10 +421,10 @@ function addOutput() {
   <div v-else data-testid="machine-readable">
     <template v-if="regelrijm && (actions.length || editable)">
       <RegelRijmPane
-        :article="article ?? undefined"
-        :law="law ?? undefined"
-        :law-id="lawId ?? undefined"
-        :traject-ref="trajectRef ?? undefined"
+        :article="article"
+        :law="law"
+        :law-id="lawId"
+        :traject-ref="trajectRef"
         :editable="editable"
         :links="links"
         @open-action="(action, path) => emit('open-action', action, path)"

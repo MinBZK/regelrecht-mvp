@@ -2,14 +2,14 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { OPERATIONS, renderAction, renderFocus, makeVocabulary, normalise } from './index.js';
+import { OPERATIONS, renderAction, renderFocus, makeVocabulary, normalise, type ArticleContext, type Operation, type Unit } from './index';
 
 const schemaPath = fileURLToPath(new URL('../../../../schema/latest/schema.json', import.meta.url));
 const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
 
 // One complete example per operation. A new operation in the schema fails the
 // first test until it has a form here and in the renderer.
-const SAMPLES = {
+const SAMPLES: Record<string, Operation> = {
   ADD: { operation: 'ADD', values: ['$a', '$b'] },
   SUBTRACT: { operation: 'SUBTRACT', values: ['$a', '$b'] },
   MULTIPLY: { operation: 'MULTIPLY', values: ['$a', 0.5] },
@@ -40,7 +40,7 @@ const SAMPLES = {
   FLOOR: { operation: 'FLOOR', value: '$a', precision: -2 },
 };
 
-const EXPECTED = {
+const EXPECTED: Record<string, string> = {
   ADD: '[a] plus [b]',
   SUBTRACT: '[a] min [b]',
   MULTIPLY: '[a] maal 0,5',
@@ -71,7 +71,7 @@ const EXPECTED = {
   FLOOR: 'naar beneden afgerond op veelvouden van 100 ( [a] )',
 };
 
-const ctx = { declared: new Map(), vocab: makeVocabulary() };
+const ctx: ArticleContext = { declared: new Map(), vocab: makeVocabulary() };
 
 describe('RegelRijm covers the schema', () => {
   it('has a form for exactly the operations of the latest schema', () => {
@@ -127,8 +127,9 @@ describe('RegelRijm covers the schema', () => {
   });
 
   it('does not flatten away an empty inner sum, which the engine rejects', () => {
-    expect(normalise({ operation: 'ADD', values: ['$x', { operation: 'ADD', values: [] }] }).values).toHaveLength(2);
-    expect(normalise({ operation: 'ADD', values: ['$x', { operation: 'ADD', values: ['$y'] }] }).values).toEqual(['$x', '$y']);
+    const valuesOf = (v: unknown) => (v as Operation).values;
+    expect(valuesOf(normalise({ operation: 'ADD', values: ['$x', { operation: 'ADD', values: [] }] }))).toHaveLength(2);
+    expect(valuesOf(normalise({ operation: 'ADD', values: ['$x', { operation: 'ADD', values: ['$y'] }] }))).toEqual(['$x', '$y']);
   });
 
   it('reads three or more conditions as an enumeration', () => {
@@ -167,9 +168,9 @@ describe('RegelRijm covers the schema', () => {
   });
 
   it('rounds money to whole euros or cents by the unit of the value', () => {
-    const declared = new Map([['e', 'euro'], ['c', 'eurocent']]);
-    const c = { declared, vocab: makeVocabulary() };
-    const read = (value, precision) => renderAction({ output: 'u', value: { operation: 'ROUND', value, precision } }, { ctx: c }).text;
+    const declared = new Map<string, Unit>([['e', 'euro'], ['c', 'eurocent']]);
+    const c: ArticleContext = { declared, vocab: makeVocabulary() };
+    const read = (value: unknown, precision: number) => renderAction({ output: 'u', value: { operation: 'ROUND', value, precision } }, { ctx: c }).text;
     expect(read('$e', 0)).toBe("[u] wordt: afgerond op hele euro's ( [e] )");
     expect(read('$c', -2)).toBe("[u] wordt: afgerond op hele euro's ( [c] )");
     expect(read('$c', 0)).toBe('[u] wordt: afgerond op hele centen ( [c] )');
@@ -177,7 +178,7 @@ describe('RegelRijm covers the schema', () => {
   });
 
   it('folds a part into its signature: what it gives and what it reads', () => {
-    const c = { declared: new Map([['premie', 'eurocent'], ['inkomen', 'eurocent']]), vocab: makeVocabulary(), constants: new Set(['drempel']) };
+    const c: ArticleContext = { declared: new Map([['premie', 'eurocent'], ['inkomen', 'eurocent']]), vocab: makeVocabulary(), constants: new Set(['drempel']) };
     const premie = { operation: 'IF', cases: [{ when: { operation: 'EQUALS', subject: '$heeft_partner', value: true }, then: { operation: 'MULTIPLY', values: [2, '$premie'] } }], default: '$premie' };
     const bijdrage = { operation: 'MULTIPLY', values: [{ operation: 'SUBTRACT', values: ['$inkomen', '$drempel'] }, '$percentage_inkomen'] };
     const action = { output: 'hoogte', value: { operation: 'MAX', values: [0, { operation: 'SUBTRACT', values: [premie, bijdrage] }] } };
@@ -189,7 +190,7 @@ describe('RegelRijm covers the schema', () => {
   });
 
   it('names only free inputs in a signature, and counts what it does not show', () => {
-    const c = { declared: new Map(), vocab: makeVocabulary(), constants: new Set() };
+    const c: ArticleContext = { declared: new Map(), vocab: makeVocabulary(), constants: new Set() };
     const foreach = {
       operation: 'FOREACH', collection: '$kinderen', as: 'kind',
       filter: { operation: 'GREATER_THAN', subject: '$kind.leeftijd', value: '$grens' },
@@ -203,10 +204,10 @@ describe('RegelRijm covers the schema', () => {
   });
 
   it('opens a folded part one level at a time', () => {
-    const c = { declared: new Map([['inkomen', 'eurocent'], ['hoogte', 'eurocent']]), vocab: makeVocabulary(), constants: new Set(['drempel']) };
+    const c: ArticleContext = { declared: new Map([['inkomen', 'eurocent'], ['hoogte', 'eurocent']]), vocab: makeVocabulary(), constants: new Set(['drempel']) };
     const bijdrage = { operation: 'MULTIPLY', values: [{ operation: 'SUBTRACT', values: ['$inkomen', '$drempel', '$korting'] }, '$percentage_inkomen'] };
     const action = { output: 'hoogte', value: { operation: 'MAX', values: [0, bijdrage] } };
-    const read = (...open) => renderFocus(action, ['value'], { ctx: c, depth: 1, open: new Set(open) });
+    const read = (...open: string[]) => renderFocus(action, ['value'], { ctx: c, depth: 1, open: new Set(open) });
     expect(read().text).toBe('[hoogte] wordt: de grootste van ( € 0,00; ⟨bedrag uit [inkomen], [korting] en [percentage inkomen]⟩ )');
     // Opened, the part shows its own parts folded, numbered as in the full reading.
     const once = read('value/values/1');
@@ -218,12 +219,12 @@ describe('RegelRijm covers the schema', () => {
   });
 
   it('keeps a part in full when that reads shorter than its signature, numbering in reading order', () => {
-    const sum = (a) => ({ operation: 'ADD', values: [a, 1] });
+    const sum = (a: unknown) => ({ operation: 'ADD', values: [a, 1] });
     const foreach = { operation: 'FOREACH', collection: sum('$m'), as: 'x', filter: { operation: 'EQUALS', subject: '$x', value: 1 }, body: sum('$x'), combine: 'ADD' };
     const f = renderFocus({ output: 'u', value: foreach }, ['value'], { ctx, depth: 1 });
     expect(f.text).toBe('[u] wordt: de som van ( [x] plus 1 ) over elke [x] in ( [m] plus 1 ) waarvoor ( [x] is 1 )');
     expect(f.folds).toEqual([]);
-    const long = (a) => ({ operation: 'ADD', values: [a, '$b', '$c', '$e', '$f'] });
+    const long = (a: unknown) => ({ operation: 'ADD', values: [a, '$b', '$c', '$e', '$f'] });
     const g = renderFocus({ output: 'u', value: { operation: 'DATE_ADD', date: long('$d'), years: long('$n') } }, ['value'], { ctx, depth: 1 });
     expect(g.folds.map((x) => x.number)).toEqual(['1.1', '1.2']);
   });

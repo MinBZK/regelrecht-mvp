@@ -1,8 +1,9 @@
 // Seeded random action trees over every operation, for the property test.
 // Deterministic (mulberry32), so a failing seed reproduces.
-import { OPERATIONS } from '../normalise.js';
+import { OPERATIONS } from '../normalise';
+import type { Glossary, Operation, Unit } from '../types';
 
-export function rng(seed) {
+export function rng(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -17,7 +18,7 @@ const NAMES = ['a', 'b', 'inkomen', 'heeft_partner', 'PERCENTAGE_LID_5', 'percen
 const STRINGS = ['HUWELIJK', 'Dienst Toeslagen', 'een “quote” en \\slash', '2025-01-01', '2025-02-30', 'geen', 'waar', '', '[x]', '‹t›', 'a; b', '1,5'];
 const NUMBERS = [0, 1, 2, -3, 0.5, 12.25, 1500, 1500.5, 100000, 1e21, 1e-7, 0.1, 2025, 31, 12];
 
-export const UNIT_DECLARATIONS = new Map([
+export const UNIT_DECLARATIONS = new Map<string, Unit>([
   ['bedrag_cent', 'eurocent'],
   ['bedrag_euro', 'euro'],
   ['pct', 'percentage'],
@@ -30,12 +31,13 @@ export const UNIT_DECLARATIONS = new Map([
 ]);
 
 // A glossary that deliberately uses keywords inside terms.
-export const GLOSSARY = { heeft_partner: 'de aanvrager heeft een partner én is gehuwd', inkomen: 'het inkomen van de aanvrager', van: 'van' };
+export const GLOSSARY: Glossary = { heeft_partner: 'de aanvrager heeft een partner én is gehuwd', inkomen: 'het inkomen van de aanvrager', van: 'van' };
 
-export function generateAction(rand, maxDepth = 4) {
-  const pick = (xs) => xs[Math.floor(rand() * xs.length)];
+export function generateAction(rand: () => number, maxDepth = 4): { output: string; value: unknown } {
+  // `rand()` is in [0, 1), so the index is always within the list.
+  const pick = <T>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)]!;
   const ref = () => (rand() < 0.15 ? `$${pick(NAMES)}.${pick(NAMES)}` : `$${pick(NAMES)}`);
-  const literal = () => {
+  const literal = (): unknown => {
     const r = rand();
     if (r < 0.15) return null;
     if (r < 0.25) return rand() < 0.5;
@@ -43,18 +45,18 @@ export function generateAction(rand, maxDepth = 4) {
     return pick(NUMBERS);
   };
   const leaf = () => (rand() < 0.55 ? ref() : literal());
-  const many = (d, lo, hi) => Array.from({ length: lo + Math.floor(rand() * (hi - lo + 1)) }, () => value(d));
+  const many = (d: number, lo: number, hi: number): unknown[] => Array.from({ length: lo + Math.floor(rand() * (hi - lo + 1)) }, () => value(d));
   // Earlier operations come back now and then, so a tree has repeated parts
   // and the reading a legend.
-  const pool = [];
-  const value = (d) => {
+  const pool: Operation[] = [];
+  const value = (d: number): unknown => {
     if (pool.length && rand() < 0.12) return structuredClone(pick(pool));
     if (d <= 0 || rand() < 0.3) return leaf();
     const o = op(d - 1);
     pool.push(o);
     return o;
   };
-  const op = (d) => {
+  const op = (d: number): Operation => {
     const o = pick(OPERATIONS);
     switch (o) {
       case 'ADD': case 'SUBTRACT': case 'MULTIPLY': case 'DIVIDE': case 'MIN': case 'MAX':
@@ -67,7 +69,7 @@ export function generateAction(rand, maxDepth = 4) {
       case 'EQUALS': case 'GREATER_THAN': case 'LESS_THAN': case 'GREATER_THAN_OR_EQUAL': case 'LESS_THAN_OR_EQUAL':
         return { operation: o, subject: value(d), value: value(d) };
       case 'IF': {
-        const n = { operation: 'IF', cases: Array.from({ length: Math.floor(rand() * 3) }, () => ({ when: value(d), then: value(d) })) };
+        const n: Operation = { operation: 'IF', cases: Array.from({ length: Math.floor(rand() * 3) }, () => ({ when: value(d), then: value(d) })) };
         if (rand() < 0.7) n.default = value(d);
         return n;
       }
@@ -76,7 +78,7 @@ export function generateAction(rand, maxDepth = 4) {
       case 'LIST':
         return { operation: 'LIST', items: many(d, 0, 3) };
       case 'FOREACH': {
-        const n = { operation: 'FOREACH', collection: value(d), as: pick(['item', 'rij', 'van', 'x1']), body: value(d) };
+        const n: Operation = { operation: 'FOREACH', collection: value(d), as: pick(['item', 'rij', 'van', 'x1']), body: value(d) };
         if (rand() < 0.5) n.filter = value(d);
         const c = pick(['ADD', 'OR', 'AND', 'MIN', 'MAX', undefined]);
         if (c) n.combine = c;
@@ -85,7 +87,7 @@ export function generateAction(rand, maxDepth = 4) {
       case 'AGE':
         return { operation: 'AGE', date_of_birth: value(d), reference_date: value(d) };
       case 'DATE_ADD': {
-        const n = { operation: 'DATE_ADD', date: value(d) };
+        const n: Operation = { operation: 'DATE_ADD', date: value(d) };
         for (const k of ['years', 'months', 'weeks', 'days']) if (rand() < 0.4) n[k] = rand() < 0.5 ? pick([1, 2, 30]) : value(d);
         return n;
       }
@@ -104,7 +106,7 @@ export function generateAction(rand, maxDepth = 4) {
       case 'ROUND': case 'CEIL': case 'FLOOR':
         return { operation: o, value: value(d), precision: pick([0, 1, 2, -2, 5]) };
       default:
-        throw new Error(`generator kent ${o} niet`);
+        throw new Error(`generator does not know ${o}`);
     }
   };
   return { output: pick(NAMES), value: value(maxDepth) };

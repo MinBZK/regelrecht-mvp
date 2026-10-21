@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { renderAction } from '@regelrecht/frontend-shared/regelrijm/index.js';
-import { findOutput, isNavigable, rawAt, resolveReference } from './regelrijmNav.js';
+import { renderAction } from '@regelrecht/frontend-shared/regelrijm/index';
+import { findOutput, isNavigable, rawAt, resolveReference } from './regelrijmNav';
 
 const law = {
   $id: 'voorbeeldwet',
@@ -43,7 +43,7 @@ describe('resolveReference', () => {
 
 describe('findOutput', () => {
   it('finds the article that computes an output', () => {
-    expect(findOutput(law, 'leeftijd').article.number).toBe('2');
+    expect(findOutput(law, 'leeftijd')?.article.number).toBe('2');
     expect(findOutput(law, 'bestaat_niet')).toBeNull();
   });
 });

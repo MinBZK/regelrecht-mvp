@@ -2,11 +2,16 @@
 // (RFC-054, "Literals"). The rule depends only on the shape of the tree and
 // on what the article declares, never on the literal itself, so the renderer
 // and the test parser compute the same unit for the same position.
-import { ifCases, isOperation, isReference } from './normalise.js';
+import { ifCases, isOperation, isReference } from './normalise';
+import { isRecord, type Path, type PathStep, type Unit } from './types';
 
-export const UNITS = Object.freeze(['euro', 'eurocent', 'ratio', 'percentage', 'years', 'weeks', 'months', 'days']);
+export const UNITS: readonly Unit[] = Object.freeze(['euro', 'eurocent', 'ratio', 'percentage', 'years', 'weeks', 'months', 'days'] as const);
 
-export function pathKey(path) {
+function isUnit(u: unknown): u is Unit {
+  return (UNITS as readonly unknown[]).includes(u);
+}
+
+export function pathKey(path: Path): string {
   return path.join('/');
 }
 
@@ -14,28 +19,29 @@ export function pathKey(path) {
  * The declared `type_spec.unit` of every name an article can read:
  * parameters, inputs, outputs and structured definitions.
  */
-export function declaredUnits(article) {
-  const units = new Map();
-  const mr = article?.machine_readable ?? {};
-  const ex = mr.execution ?? {};
+export function declaredUnits(article: unknown): Map<string, Unit> {
+  const units = new Map<string, Unit>();
+  const mr = isRecord(article) && isRecord(article.machine_readable) ? article.machine_readable : {};
+  const ex = isRecord(mr.execution) ? mr.execution : {};
   for (const list of [ex.parameters, ex.input, ex.output]) {
     // Mid-edit a list can be anything; only a list declares units.
     if (!Array.isArray(list)) continue;
-    for (const f of list) {
-      const u = f?.type_spec?.unit;
-      if (f?.name && UNITS.includes(u)) units.set(f.name, u);
+    for (const f of list as unknown[]) {
+      if (!isRecord(f)) continue;
+      const u = isRecord(f.type_spec) ? f.type_spec.unit : undefined;
+      if (typeof f.name === 'string' && f.name && isUnit(u)) units.set(f.name, u);
     }
   }
-  const defs = mr.definitions && typeof mr.definitions === 'object' && !Array.isArray(mr.definitions) ? mr.definitions : {};
+  const defs = isRecord(mr.definitions) ? mr.definitions : {};
   for (const [name, def] of Object.entries(defs)) {
-    const u = def && typeof def === 'object' && !Array.isArray(def) ? def.type_spec?.unit : undefined;
-    if (UNITS.includes(u)) units.set(name, u);
+    const u = isRecord(def) && isRecord(def.type_spec) ? def.type_spec.unit : undefined;
+    if (isUnit(u)) units.set(name, u);
   }
   return units;
 }
 
 /** The unit of an expression, when its shape says: a reference with a declared unit, or a sum, extreme, choice or rounding of one. */
-export function exprUnit(node, declared) {
+export function exprUnit(node: unknown, declared: ReadonlyMap<string, Unit>): Unit | null {
   if (isReference(node)) {
     const name = node.slice(1);
     return name.includes('.') ? null : (declared.get(name) ?? null);
@@ -53,17 +59,17 @@ export function exprUnit(node, declared) {
   }
 }
 
-function firstUnit(list, declared) {
-  for (const v of Array.isArray(list) ? list : []) {
+function firstUnit(list: unknown, declared: ReadonlyMap<string, Unit>): Unit | null {
+  for (const v of Array.isArray(list) ? (list as unknown[]) : []) {
     const u = exprUnit(v, declared);
     if (u) return u;
   }
   return null;
 }
 
-function isLiteral(node) {
+function isLiteral(node: unknown): boolean {
   if (isReference(node)) return false;
-  return node === null || typeof node !== 'object' || node instanceof Date || node.__lit !== undefined;
+  return node === null || typeof node !== 'object' || node instanceof Date || (node as { __lit?: unknown }).__lit !== undefined;
 }
 
 /**
@@ -72,20 +78,27 @@ function isLiteral(node) {
  * `opUnits`, when given, receives the unit of the position of every
  * operation as well (the signature of a folded part reads it).
  */
-export function literalUnits(root, rootUnit, declared, rootPath = [], opUnits = null) {
-  const out = new Map();
-  const visit = (node, unit, path) => {
+export function literalUnits(
+  root: unknown,
+  rootUnit: Unit | null,
+  declared: ReadonlyMap<string, Unit>,
+  rootPath: Path = [],
+  opUnits: Map<string, Unit | null> | null = null,
+): Map<string, Unit> {
+  const out = new Map<string, Unit>();
+  const visit = (node: unknown, unit: Unit | null, path: Path): void => {
     if (isLiteral(node)) {
       if (unit) out.set(pathKey(path), unit);
       return;
     }
     if (!isOperation(node)) return;
     if (opUnits) opUnits.set(pathKey(path), unit);
-    const at = (key, u) => {
+    const at = (key: string, u: Unit | null) => {
       if (node[key] !== undefined) visit(node[key], u, [...path, key]);
     };
-    const each = (key, u) => {
-      if (Array.isArray(node[key])) node[key].forEach((v, i) => visit(v, u, [...path, key, i]));
+    const each = (key: string, u: Unit | null) => {
+      const list = node[key];
+      if (Array.isArray(list)) list.forEach((v: unknown, i) => visit(v, u, [...path, key, i]));
     };
     switch (node.operation) {
       case 'ADD': case 'SUBTRACT': case 'MIN': case 'MAX':
@@ -124,7 +137,7 @@ export function literalUnits(root, rootUnit, declared, rootPath = [], opUnits = 
       case 'FOREACH':
         at('collection', null);
         at('filter', null);
-        at('body', ['ADD', 'MIN', 'MAX', undefined].includes(node.combine) ? unit : null);
+        at('body', ['ADD', 'MIN', 'MAX', undefined].includes(node.combine as string | undefined) ? unit : null);
         return;
       case 'ROUND': case 'CEIL': case 'FLOOR':
         at('value', unit);
@@ -133,8 +146,9 @@ export function literalUnits(root, rootUnit, declared, rootPath = [], opUnits = 
         // Date operations and anything unknown: arguments carry no unit.
         for (const k of Object.keys(node)) {
           if (k === 'operation') continue;
-          if (Array.isArray(node[k])) node[k].forEach((v, i) => visit(v, null, [...path, k, i]));
-          else visit(node[k], null, [...path, k]);
+          const v = node[k];
+          if (Array.isArray(v)) v.forEach((x: unknown, i) => visit(x, null, [...path, k, i] as PathStep[]));
+          else visit(v, null, [...path, k]);
         }
     }
   };

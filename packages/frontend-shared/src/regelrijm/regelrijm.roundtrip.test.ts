@@ -1,17 +1,18 @@
 // @vitest-environment node
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { articleContext, makeVocabulary, normaliseAction, renderAction } from './index.js';
-import { corpusActions } from './test-support/corpus.js';
-import { GLOSSARY, UNIT_DECLARATIONS, generateAction, rng } from './test-support/generate.js';
-import { parseActionAll } from './test-support/parse.js';
+import { articleContext, makeVocabulary, normaliseAction, renderAction, type ArticleContext } from './index';
+import { isRecord } from './types';
+import { corpusActions } from './test-support/corpus';
+import { GLOSSARY, UNIT_DECLARATIONS, generateAction, rng } from './test-support/generate';
+import { parseActionAll } from './test-support/parse';
 
-const repo = (p) => fileURLToPath(new URL(`../../../../${p}`, import.meta.url));
+const repo = (p: string) => fileURLToPath(new URL(`../../../../${p}`, import.meta.url));
 
 // JSON drops what YAML never has (undefined) and fixes nothing else.
-const plain = (v) => JSON.parse(JSON.stringify(v));
+const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v));
 
-function expected(action) {
+function expected(action: unknown): unknown {
   const n = normaliseAction(action);
   delete n.resolve;
   return plain(n);
@@ -25,19 +26,20 @@ describe.each(['corpus/regulation'])('round trip over %s', (dir) => {
   });
 
   it('reads every action back to its normalised tree, with exactly one reading', () => {
-    const failures = [];
+    const failures: string[] = [];
     for (const { file, article, action } of actions) {
+      const output = isRecord(action) ? action.output : undefined;
       const ctx = articleContext(article);
       const { text } = renderAction(action, { article, ctx });
       const parses = parseActionAll(text, ctx);
       if (parses.length !== 1) {
-        failures.push(`${file} ${action.output}: ${parses.length} lezingen`);
+        failures.push(`${file} ${output}: ${parses.length} readings`);
         continue;
       }
       try {
         expect(plain(parses[0])).toEqual(expected(action));
       } catch {
-        failures.push(`${file} ${action.output}: andere boom`);
+        failures.push(`${file} ${output}: different tree`);
       }
     }
     expect(failures).toEqual([]);
@@ -45,31 +47,31 @@ describe.each(['corpus/regulation'])('round trip over %s', (dir) => {
 });
 
 describe('generated trees', () => {
-  const ctx = { declared: UNIT_DECLARATIONS, vocab: makeVocabulary(GLOSSARY) };
+  const ctx: ArticleContext = { declared: UNIT_DECLARATIONS, vocab: makeVocabulary(GLOSSARY) };
   const SEEDS = 3000;
 
   it('round-trip, with exactly one reading each', () => {
-    const failures = [];
+    const failures: string[] = [];
     for (let seed = 1; seed <= SEEDS; seed++) {
       const action = generateAction(rng(seed), 4);
       const { text } = renderAction(action, { ctx });
       const parses = parseActionAll(text, ctx);
       if (parses.length !== 1) {
-        failures.push(`seed ${seed}: ${parses.length} lezingen`);
+        failures.push(`seed ${seed}: ${parses.length} readings`);
         continue;
       }
       try {
         expect(plain(parses[0])).toEqual(expected(action));
       } catch {
-        failures.push(`seed ${seed}: andere boom`);
+        failures.push(`seed ${seed}: different tree`);
       }
     }
     expect(failures).toEqual([]);
   });
 
   it('never give two different normalised trees the same text', () => {
-    const byText = new Map();
-    const collisions = [];
+    const byText = new Map<string, string>();
+    const collisions: number[] = [];
     for (let seed = 1; seed <= SEEDS; seed++) {
       const action = generateAction(rng(seed), 3);
       const { text } = renderAction(action, { ctx });
@@ -83,14 +85,15 @@ describe('generated trees', () => {
 });
 
 describe('determinism', () => {
-  const ctx = { declared: UNIT_DECLARATIONS, vocab: makeVocabulary(GLOSSARY) };
+  const ctx: ArticleContext = { declared: UNIT_DECLARATIONS, vocab: makeVocabulary(GLOSSARY) };
 
   // Reverses the key order of every object, recursively.
-  const shuffle = (v) => {
+  const shuffle = (v: unknown): unknown => {
     if (Array.isArray(v)) return v.map(shuffle);
     if (v === null || typeof v !== 'object') return v;
-    const out = {};
-    for (const k of Object.keys(v).reverse()) out[k] = shuffle(v[k]);
+    const src = v as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(src).reverse()) out[k] = shuffle(src[k]);
     return out;
   };
 

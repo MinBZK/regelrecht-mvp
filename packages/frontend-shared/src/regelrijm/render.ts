@@ -2,46 +2,90 @@
 // document and the level it reads at; an operand that must be tighter than
 // what it got is parenthesised. That rule, and nothing in the layout, is what
 // makes two different trees never read alike.
-import { group, nest, line, hardline, tok, layout, segmentsToText } from './doc.js';
-import { formatLiteral, formatNumber, MONTHS, PERIOD_WORDS } from './literals.js';
-import { humanizeName, referenceSegments } from './names.js';
-import { isOperation, isReference, OPERATION_FIELDS } from './normalise.js';
-import { exprUnit, pathKey } from './units.js';
-import { valueKind, freeInputs, SIGNATURE_MAX_INPUTS } from './signature.js';
+import { group, nest, line, hardline, tok, layout, segmentsToText } from './doc';
+import { formatLiteral, formatNumber, MONTHS, PERIOD_WORDS } from './literals';
+import { humanizeName, referenceSegments } from './names';
+import { isOperation, isReference, OPERATION_FIELDS } from './normalise';
+import { exprUnit, pathKey } from './units';
+import { valueKind, freeInputs, SIGNATURE_MAX_INPUTS } from './signature';
+import type { Doc, FoldInput, Segment, Operation, Path, Unit, Vocabulary } from './types';
+
+/** A rendered part: its document and the level it reads at. */
+export interface Rendered {
+  doc: Doc;
+  level: number;
+}
+
+/** One operation as `record` collects it, for chooseLegend. */
+export interface PartRecord {
+  path: Path;
+  v: Operation;
+  num: string;
+  depth: number;
+  order: number;
+  /** The one-line reading, set once the part is rendered. */
+  key?: string;
+}
+
+export interface FoldOptions {
+  depth: number;
+  open?: ReadonlySet<string>;
+}
+
+/** A folded part, for the reader to open. */
+export interface Fold {
+  number: string;
+  path: Path;
+  operation: string;
+  label: string;
+  inputs: FoldInput[];
+}
+
+export interface RendererContext {
+  vocab: Vocabulary;
+  units?: Map<string, Unit>;
+  declared?: ReadonlyMap<string, Unit>;
+  opUnits?: Map<string, Unit | null>;
+  constants?: ReadonlySet<string>;
+  fold?: FoldOptions | null;
+  record?: boolean;
+  hoist?: Map<string, string> | null;
+  reps?: Map<string, PartRecord> | null;
+}
 
 // Levels, loosest first. An operand needs at least the level its position
 // asks for, or it gets parentheses.
 export const LEVEL = Object.freeze({ CHOICE: 1, LOGIC: 2, NOT: 3, CMP: 4, ARITH: 5, CLOSED: 6 });
 
-const ARITH_WORDS = { ADD: 'plus', SUBTRACT: 'min', MULTIPLY: 'maal', DIVIDE: 'gedeeld door' };
-const LOGIC_WORDS = { AND: 'én', OR: 'óf' };
-const CMP_WORDS = {
+const ARITH_WORDS: Record<string, string> = { ADD: 'plus', SUBTRACT: 'min', MULTIPLY: 'maal', DIVIDE: 'gedeeld door' };
+const LOGIC_WORDS: Record<string, string> = { AND: 'én', OR: 'óf' };
+const CMP_WORDS: Record<string, string> = {
   EQUALS: 'is',
   GREATER_THAN: 'is meer dan',
   LESS_THAN: 'is minder dan',
   GREATER_THAN_OR_EQUAL: 'is ten minste',
   LESS_THAN_OR_EQUAL: 'is ten hoogste',
 };
-const ROUND_WORDS = { ROUND: 'afgerond', CEIL: 'naar boven afgerond', FLOOR: 'naar beneden afgerond' };
-const AGGREGATE_WORDS = { ADD: 'de som van', MIN: 'de kleinste waarde van', MAX: 'de grootste waarde van' };
-const DIFF_WORDS = { days: 'dagen', months: 'maanden', years: 'jaren' };
-const PART_WORDS = { year: 'het jaartal van', month: 'het maandnummer van', day: 'het dagnummer van' };
-const START_WORDS = { year: 'de eerste dag van het jaar waarin', month: 'de eerste dag van de maand waarin' };
+const ROUND_WORDS: Record<string, string> = { ROUND: 'afgerond', CEIL: 'naar boven afgerond', FLOOR: 'naar beneden afgerond' };
+const AGGREGATE_WORDS: Record<string, string> = { ADD: 'de som van', MIN: 'de kleinste waarde van', MAX: 'de grootste waarde van' };
+const DIFF_WORDS: Record<string, string> = { days: 'dagen', months: 'maanden', years: 'jaren' };
+const PART_WORDS: Record<string, string> = { year: 'het jaartal van', month: 'het maandnummer van', day: 'het dagnummer van' };
+const START_WORDS: Record<string, string> = { year: 'de eerste dag van het jaar waarin', month: 'de eerste dag van de maand waarin' };
 const DATE_ADD_KEYS = ['years', 'months', 'weeks', 'days'];
 
-const kw = (text, path) => tok('keyword', text, path ? { path } : {});
+const kw = (text: string, path?: Path) => tok('keyword', text, path ? { path } : {});
 
 // The opening parenthesis stays on the line of what it opens; the inside
 // breaks, if it must, one level deeper.
-function wrap(doc) {
+function wrap(doc: Doc): Doc {
   return group(kw('('), ' ', nest(doc), ' ', kw(')'));
 }
 
 /** True when a document always breaks (it holds an enumeration or legend). */
-function hasHardline(doc) {
+function hasHardline(doc: Doc): boolean {
   if (doc === hardline) return true;
   if (Array.isArray(doc)) return doc.some(hasHardline);
-  return doc !== null && typeof doc === 'object' && doc.kind !== 'tok' && doc.doc !== undefined && hasHardline(doc.doc);
+  return typeof doc === 'object' && 'doc' in doc && hasHardline(doc.doc);
 }
 
 // Enumerations (RFC-054, "Enumerations"): an én/óf of this many conditions or
@@ -49,24 +93,24 @@ function hasHardline(doc) {
 // says how deep the list is (`•`, `••`, …), so the next bullet of the same
 // depth or shallower ends an item: no parentheses, no closing word.
 export const ENUMERATION_MIN = 3;
-const ENUMERATION_HEADS = {
+const ENUMERATION_HEADS: Record<string, string> = {
   AND: 'aan alle volgende voorwaarden is voldaan:',
   OR: 'aan ten minste één van de volgende voorwaarden is voldaan:',
 };
 
 /** A, B, …, Z, AA, BB, …: the letters of a legend. */
-export function legendLetter(i) {
+export function legendLetter(i: number): string {
   return String.fromCharCode(65 + (i % 26)).repeat(1 + Math.floor(i / 26));
 }
 
-function at(min, r) {
+function at(min: number, r: Rendered): Doc {
   return r.level >= min ? r.doc : wrap(r.doc);
 }
 
 /** `( a; b; c )`, the delimited list of MIN, MAX, LIST, IN and the short n-ary forms. */
-function listDoc(items) {
+function listDoc(items: Doc[]): Doc {
   if (items.length === 0) return [kw('('), ' ', kw(')')];
-  const body = [];
+  const body: Doc[] = [];
   items.forEach((it, i) => {
     if (i > 0) body.push(kw(';'), line);
     body.push(it);
@@ -75,16 +119,31 @@ function listDoc(items) {
 }
 
 /** Joins parts with single spaces. */
-function sp(...parts) {
-  const out = [];
+function sp(...parts: (Doc | null | undefined)[]): Doc[] {
+  const out: Doc[] = [];
   parts.filter((p) => p !== null && p !== undefined).forEach((p, i) => {
     if (i > 0) out.push(' ');
-    out.push(p);
+    out.push(p as Doc);
   });
   return out;
 }
 
 export class Renderer {
+  vocab: Vocabulary;
+  units: Map<string, Unit>;
+  fold: FoldOptions | null;
+  enumDepth: number;
+  declared: ReadonlyMap<string, Unit>;
+  opUnits: Map<string, Unit | null>;
+  constants: ReadonlySet<string>;
+  record: PartRecord[] | null;
+  hoist: Map<string, string> | null;
+  reps: Map<string, PartRecord> | null;
+  letters: Map<string, string>;
+  legend: { letter: string; rep: PartRecord }[];
+  numbers: Map<string, string>;
+  folds: Fold[];
+
   /**
    * @param {object} ctx
    *   vocab: from makeVocabulary
@@ -96,7 +155,7 @@ export class Renderer {
    *   opUnits: Map pathKey → unit of the position of each operation
    *   constants: names of the article's definitions, not inputs
    */
-  constructor(ctx) {
+  constructor(ctx: RendererContext) {
     this.vocab = ctx.vocab;
     this.units = ctx.units ?? new Map();
     this.fold = ctx.fold ?? null;
@@ -116,9 +175,9 @@ export class Renderer {
     this.folds = [];
   }
 
-  name(ref, path) {
+  name(ref: string, path: Path): Rendered & { doc: Doc[] } {
     const segs = referenceSegments(ref);
-    const parts = [];
+    const parts: Doc[] = [];
     segs.forEach((seg, i) => {
       if (i > 0) parts.push(' ', kw('van'), ' ');
       const term = this.vocab.termOf(seg);
@@ -129,23 +188,23 @@ export class Renderer {
     return { doc: parts, level: LEVEL.CLOSED };
   }
 
-  localName(name, path) {
+  localName(name: string, path: Path): Doc {
     return this.name(`$${name}`, path).doc;
   }
 
-  literal(v, path) {
+  literal(v: unknown, path: Path): Rendered {
     const text = formatLiteral(v, this.units.get(pathKey(path)) ?? null);
     if (text === null) return { doc: tok('error', `⟨geen geldige waarde: ${JSON.stringify(v)}⟩`, { path }), level: LEVEL.CLOSED };
     return { doc: tok('literal', text, { path }), level: LEVEL.CLOSED };
   }
 
-  hole(field, path) {
+  hole(field: string, path: Path): Rendered {
     return { doc: tok('hole', `⟨ontbreekt: ${field}⟩`, { path }), level: LEVEL.CLOSED };
   }
 
   /** Renders a value at `path`; `num` is the number of the nearest operation. */
-  node(v, path, num, depth) {
-    if (v === undefined) return this.hole(path[path.length - 1], path);
+  node(v: unknown, path: Path, num: string, depth: number): Rendered {
+    if (v === undefined) return this.hole(String(path[path.length - 1]), path);
     if (isReference(v)) return this.name(v, path);
     if (!isOperation(v)) {
       if (v !== null && typeof v === 'object' && !(v instanceof Date)) {
@@ -156,12 +215,14 @@ export class Renderer {
     const pk = pathKey(path);
     this.numbers.set(pk, num);
     if (this.hoist?.has(pk)) {
-      const key = this.hoist.get(pk);
+      // `has` was checked just above.
+      const key = this.hoist.get(pk)!;
       let letter = this.letters.get(key);
       if (!letter) {
         letter = legendLetter(this.letters.size);
         this.letters.set(key, letter);
-        this.legend.push({ letter, rep: this.reps.get(key) });
+        // chooseLegend puts every hoisted text in `reps`.
+        this.legend.push({ letter, rep: this.reps!.get(key)! });
       }
       return { doc: tok('letter', letter, { path, letter }), level: LEVEL.CLOSED };
     }
@@ -187,7 +248,7 @@ export class Renderer {
       return { doc: tok('fold', `⟨${label}⟩`, { path, number: num, inputs }), level: LEVEL.CLOSED };
     }
     if (!this.record) return this.operation(v, path, num, depth);
-    const rec = { path, v, num, depth, order: this.record.length };
+    const rec: PartRecord = { path, v, num, depth, order: this.record.length };
     this.record.push(rec);
     const res = this.operation(v, path, num, depth);
     rec.key = segmentsToText(layout(res.doc, Infinity)).replace(/\s+/g, ' ');
@@ -199,17 +260,18 @@ export class Renderer {
    * of a call: `bedrag uit [a] en [b]`. Derived from the tree and the article
    * only; the number of the part stays in the fold's metadata.
    */
-  signature(v, path) {
+  signature(v: Operation, path: Path): string {
     return this.signatureOf(v, path).label;
   }
 
   /** The signature with the inputs it reads, each as `{ ref, tk, text }`. */
-  signatureOf(v, path) {
+  signatureOf(v: Operation, path: Path): { label: string; inputs: FoldInput[] } {
     const kind = valueKind(v, this.opUnits.get(pathKey(path)) ?? null, this.declared);
     const prep = kind === 'voorwaarde' ? 'over' : 'uit';
     const inputs = freeInputs(v, this.constants).map((ref) => {
       const doc = this.name(ref, path).doc;
-      const tk = doc.length === 1 ? doc[0].tk : 'name';
+      const only = doc.length === 1 ? doc[0] : undefined;
+      const tk = only && typeof only === 'object' && 'tk' in only ? only.tk : 'name';
       return { ref, tk, text: segmentsToText(layout(doc, Infinity)) };
     });
     if (!inputs.length) return { label: `${kind} ${prep} vaste waarden`, inputs };
@@ -217,19 +279,20 @@ export class Renderer {
     const rest = inputs.length - shown.length;
     const list = rest > 0
       ? `${shown.join(', ')} en nog ${rest}`
-      : shown.length === 1 ? shown[0] : `${shown.slice(0, -1).join(', ')} en ${shown[shown.length - 1]}`;
+      // With one input shown, `shown[0]` is that input.
+      : shown.length === 1 ? shown[0]! : `${shown.slice(0, -1).join(', ')} en ${shown[shown.length - 1]}`;
     return { label: `${kind} ${prep} ${list}`, inputs };
   }
 
   /** The reading of a legend letter's definition: its occurrence, read in place. */
-  definition(rep) {
+  definition(rep: PartRecord): Rendered {
     return this.operation(rep.v, rep.path, rep.num, rep.depth);
   }
 
-  operation(n, path, num, depth) {
+  operation(n: Operation, path: Path, num: string, depth: number): Rendered {
     let k = 0;
     // Children are numbered in reading order; only operations take a number.
-    const child = (v, sub) => {
+    const child = (v: unknown, sub: Path): Rendered => {
       const p = [...path, ...sub];
       if (isOperation(v)) {
         k += 1;
@@ -237,10 +300,13 @@ export class Renderer {
       }
       return this.node(v, p, num, depth + 1);
     };
-    const field = (key) => child(n[key], [key]);
+    const field = (key: string) => child(n[key], [key]);
     const op = n.operation;
-    const K = (text) => kw(text, path);
-    const list = (key, min = LEVEL.CHOICE) => (Array.isArray(n[key]) ? n[key] : []).map((v, i) => at(min, child(v, [key, i])));
+    const K = (text: string) => kw(text, path);
+    const list = (key: string, min: number = LEVEL.CHOICE) => {
+      const items = n[key];
+      return (Array.isArray(items) ? (items as unknown[]) : []).map((v, i) => at(min, child(v, [key, i])));
+    };
 
     if (!OPERATION_FIELDS[op]) {
       return { doc: tok('error', `⟨onbekende operatie ${op}⟩`, { path }), level: LEVEL.CLOSED };
@@ -250,7 +316,8 @@ export class Renderer {
       case 'ADD': case 'SUBTRACT': case 'MULTIPLY': case 'DIVIDE':
       case 'AND': case 'OR': {
         const key = op === 'AND' || op === 'OR' ? 'conditions' : 'values';
-        const word = ARITH_WORDS[op] ?? LOGIC_WORDS[op];
+        // The cases above are exactly the keys of these two tables.
+        const word = (ARITH_WORDS[op] ?? LOGIC_WORDS[op])!;
         if (!Array.isArray(n[key])) return { doc: sp(K(word), this.hole(key, [...path, key]).doc), level: LEVEL.CLOSED };
         const logic = key === 'conditions';
         if (n[key].length < 2) return { doc: sp(K(word), listDoc(list(key))), level: LEVEL.CLOSED };
@@ -261,10 +328,12 @@ export class Renderer {
           // be an én/óf; only a choice (IF) still needs parentheses.
           const body = list(key, LEVEL.LOGIC).flatMap((it) => [hardline, K(bullet), ' ', it]);
           this.enumDepth -= 1;
-          return { doc: [K(ENUMERATION_HEADS[op]), nest(body)], level: LEVEL.LOGIC };
+          // `logic` means AND or OR, the keys of ENUMERATION_HEADS.
+          return { doc: [K(ENUMERATION_HEADS[op]!), nest(body)], level: LEVEL.LOGIC };
         }
         const items = list(key, logic ? LEVEL.NOT : LEVEL.CLOSED);
-        const doc = [items[0]];
+        // At least two items here (the length check above).
+        const doc: Doc[] = [items[0]!];
         for (const it of items.slice(1)) doc.push(line, K(word), ' ', it);
         return { doc: group(doc), level: logic ? LEVEL.LOGIC : LEVEL.ARITH };
       }
@@ -290,7 +359,7 @@ export class Renderer {
           const inum = `${num}.${k}`;
           this.numbers.set(pathKey(ip), inum);
           let k2 = 0;
-          const ichild = (v, key) => {
+          const ichild = (v: unknown, key: string): Rendered => {
             if (isOperation(v)) {
               k2 += 1;
               return this.node(v, [...ip, key], `${inum}.${k2}`, depth + 2);
@@ -308,7 +377,8 @@ export class Renderer {
         const s = at(LEVEL.ARITH, field('subject'));
         if (op === 'EQUALS' && n.value === null) return { doc: group(s, ' ', K('ontbreekt')), level: LEVEL.CMP };
         const o = at(LEVEL.ARITH, field('value'));
-        return { doc: group(s, ' ', K(CMP_WORDS[op]), ' ', o), level: LEVEL.CMP };
+        // The case lists exactly the keys of CMP_WORDS.
+        return { doc: group(s, ' ', K(CMP_WORDS[op]!), ' ', o), level: LEVEL.CMP };
       }
       case 'IN': {
         const s = at(LEVEL.ARITH, field('subject'));
@@ -337,18 +407,19 @@ export class Renderer {
         return { doc: sp(K('de lijst'), listDoc(list('items'))), level: LEVEL.CLOSED };
       case 'FOREACH': {
         // Operands are rendered in reading order, so fold numbers follow the text.
-        const x = this.localName(n.as ?? 'item', [...path, 'as']);
+        const x = this.localName(String(n.as ?? 'item'), [...path, 'as']);
         const quantor = n.combine === 'AND' || n.combine === 'OR';
         const b0 = quantor ? null : at(LEVEL.CLOSED, field('body'));
         const c = at(LEVEL.CLOSED, field('collection'));
-        const f = 'filter' in n ? [line, K('waarvoor'), ' ', at(LEVEL.CLOSED, field('filter'))] : [];
-        const b = quantor ? at(LEVEL.CLOSED, field('body')) : b0;
+        const f: Doc[] = 'filter' in n ? [line, K('waarvoor'), ' ', at(LEVEL.CLOSED, field('filter'))] : [];
+        // Exactly one of the two is rendered, so `b` is always set.
+        const b = (quantor ? at(LEVEL.CLOSED, field('body')) : b0)!;
         if (quantor) {
           const head = n.combine === 'AND' ? 'voor elke' : 'voor ten minste één';
           return { doc: group(K(head), ' ', x, ' ', K('in'), ' ', c, nest(...f, line, K('geldt'), ' ', b)), level: LEVEL.CLOSED };
         }
-        const known = n.combine === undefined ? 'de lijst van' : AGGREGATE_WORDS[n.combine];
-        const head = known ? K(known) : [tok('error', `⟨onbekende combine ${n.combine}⟩`, { path }), ' ', K('van')];
+        const known = n.combine === undefined ? 'de lijst van' : AGGREGATE_WORDS[String(n.combine)];
+        const head: Doc = known ? K(known) : [tok('error', `⟨onbekende combine ${n.combine}⟩`, { path }), ' ', K('van')];
         // Not closed: an optional `waarvoor` ends it, which would dangle when
         // it stood as the collection of another FOREACH.
         return { doc: group(head, ' ', b, nest(line, K('over elke'), ' ', x, ' ', K('in'), ' ', c, ...f)), level: LEVEL.ARITH };
@@ -361,10 +432,11 @@ export class Renderer {
       case 'DATE_ADD': {
         const keys = DATE_ADD_KEYS.filter((key) => key in n);
         if (keys.length === 0) return { doc: sp(K('geen termijn na'), at(LEVEL.CLOSED, field('date'))), level: LEVEL.CLOSED };
-        const offsets = [];
+        const offsets: Doc[] = [];
         keys.forEach((key, i) => {
           if (i > 0) offsets.push(i === keys.length - 1 ? ' ' : '', i === keys.length - 1 ? K('en') : K(','), ' ');
-          const [one, many] = PERIOD_WORDS[key];
+          // `key` comes from DATE_ADD_KEYS, which are all keys of PERIOD_WORDS.
+          const [one, many] = PERIOD_WORDS[key]!;
           offsets.push(at(LEVEL.CLOSED, child(n[key], [key])), ' ', K(n[key] === 1 ? one : many));
         });
         const d = at(LEVEL.CLOSED, field('date'));
@@ -372,8 +444,11 @@ export class Renderer {
       }
       case 'DATE': {
         const y = at(LEVEL.CLOSED, field('year'));
-        if (Number.isInteger(n.month) && n.month >= 1 && n.month <= 12 && Number.isInteger(n.day) && n.day >= 1 && n.day <= 31) {
-          return { doc: sp(tok('literal', String(n.day), { path: [...path, 'day'] }), K(MONTHS[n.month - 1]), K('van'), y), level: LEVEL.CLOSED };
+        const { month, day } = n;
+        if (typeof month === 'number' && Number.isInteger(month) && month >= 1 && month <= 12
+          && typeof day === 'number' && Number.isInteger(day) && day >= 1 && day <= 31) {
+          // `month` is checked to be 1 to 12 just above.
+          return { doc: sp(tok('literal', String(day), { path: [...path, 'day'] }), K(MONTHS[month - 1]!), K('van'), y), level: LEVEL.CLOSED };
         }
         const m = at(LEVEL.CLOSED, field('month'));
         const d = at(LEVEL.CLOSED, field('day'));
@@ -384,20 +459,22 @@ export class Renderer {
       case 'DATE_DIFF': {
         const a = at(LEVEL.CLOSED, field('from'));
         const b = at(LEVEL.CLOSED, field('to'));
-        if (DIFF_WORDS[n.in]) return { doc: group(K(`het aantal ${DIFF_WORDS[n.in]} van`), ' ', a, ' ', K('tot'), ' ', b), level: LEVEL.CLOSED };
+        const diff = DIFF_WORDS[String(n.in)];
+        if (diff) return { doc: group(K(`het aantal ${diff} van`), ' ', a, ' ', K('tot'), ' ', b), level: LEVEL.CLOSED };
         if (isReference(n.in)) return { doc: group(K('het verschil van'), ' ', a, ' ', K('tot'), ' ', b, ' ', K('in'), ' ', this.name(n.in, [...path, 'in']).doc), level: LEVEL.CLOSED };
         return { doc: group(K('het verschil van'), ' ', a, ' ', K('tot'), ' ', b, ' ', K('in'), ' ', tok('error', `⟨onbekende eenheid ${JSON.stringify(n.in)}⟩`, { path: [...path, 'in'] })), level: LEVEL.CLOSED };
       }
       case 'DATE_PART': case 'START_OF': {
         const words = op === 'DATE_PART' ? PART_WORDS : START_WORDS;
-        if (!words[n.in]) return { doc: tok('error', `⟨onbekend onderdeel ${n.in}⟩`, { path }), level: LEVEL.CLOSED };
+        const word = words[String(n.in)];
+        if (!word) return { doc: tok('error', `⟨onbekend onderdeel ${n.in}⟩`, { path }), level: LEVEL.CLOSED };
         const d = at(LEVEL.CLOSED, field('date'));
-        return { doc: op === 'DATE_PART' ? sp(K(words[n.in]), d) : sp(K(words[n.in]), d, K('valt')), level: LEVEL.CLOSED };
+        return { doc: op === 'DATE_PART' ? sp(K(word), d) : sp(K(word), d, K('valt')), level: LEVEL.CLOSED };
       }
       case 'ROUND': case 'CEIL': case 'FLOOR': {
         const p = n.precision;
         let how;
-        if (!Number.isInteger(p)) {
+        if (typeof p !== 'number' || !Number.isInteger(p)) {
           const v = at(LEVEL.CHOICE, field('value'));
           return { doc: group(K(`${ROUND_WORDS[op]} op`), ' ', this.hole('precision', [...path, 'precision']).doc, ' ', K('('), nest(line, v), ' ', K(')')), level: LEVEL.CLOSED };
         }
@@ -422,7 +499,7 @@ export class Renderer {
 // its one-line reading); shorter ones read faster in place.
 export const LEGEND_MIN = 40;
 
-function isStrictAncestor(a, b) {
+function isStrictAncestor(a: Path, b: Path): boolean {
   return a.length < b.length && a.every((s, i) => s === b[i]);
 }
 
@@ -433,32 +510,35 @@ function isStrictAncestor(a, b) {
  * occurrence that is read, its definition, it still counts). Returns
  * `{ hoist: Map pathKey → text, reps: Map text → occurrence }`.
  */
-export function chooseLegend(records, min = LEGEND_MIN) {
-  const byKey = new Map();
+export function chooseLegend(records: readonly PartRecord[], min = LEGEND_MIN): { hoist: Map<string, string>; reps: Map<string, PartRecord> } {
+  // Every record has its key once rendering is done.
+  const byKey = new Map<string, PartRecord[]>();
   for (const r of records) {
-    if (!byKey.has(r.key)) byKey.set(r.key, []);
-    byKey.get(r.key).push(r);
+    const list = byKey.get(r.key!) ?? [];
+    list.push(r);
+    byKey.set(r.key!, list);
   }
   const keys = [...byKey.keys()]
-    .filter((k) => k.length >= min && byKey.get(k).length >= 2)
-    .sort((a, b) => b.length - a.length || byKey.get(a)[0].order - byKey.get(b)[0].order);
-  const taken = [];
-  const visible = (r) => taken.every((t) => !t.slice(1).some((o) => isStrictAncestor(o.path, r.path)));
+    .filter((k) => k.length >= min && byKey.get(k)!.length >= 2)
+    .sort((a, b) => b.length - a.length || byKey.get(a)![0]!.order - byKey.get(b)![0]!.order);
+  const taken: PartRecord[][] = [];
+  const visible = (r: PartRecord) => taken.every((t) => !t.slice(1).some((o) => isStrictAncestor(o.path, r.path)));
   for (const k of keys) {
-    const occ = byKey.get(k).filter(visible);
+    const occ = byKey.get(k)!.filter(visible);
     if (occ.length >= 2) taken.push(occ);
   }
   const hoist = new Map();
   const reps = new Map();
   for (const occ of taken) {
-    reps.set(occ[0].key, occ[0]);
-    for (const o of occ) hoist.set(pathKey(o.path), o.key);
+    // `taken` holds only lists of two or more keyed records.
+    reps.set(occ[0]!.key!, occ[0]!);
+    for (const o of occ) hoist.set(pathKey(o.path), o.key!);
   }
   return { hoist, reps };
 }
 
 /** Lays out a document into `{ segments, text }`. */
-export function finish(doc) {
+export function finish(doc: Doc): { segments: Segment[]; text: string } {
   const segments = layout(doc);
   return { segments, text: segmentsToText(segments) };
 }

@@ -27,7 +27,8 @@ import { apiFetch, apiFetchJson } from './lib/apiFetch';
 import { RETRY_MIN_SPINNER_MS } from './lib/retryFeedback';
 import { humanizeLawId } from './lib/lawName';
 import { quoteContext } from './lib/quoteContext';
-import { linkedOutput, linksByOutput } from './regelrijm/regelrijmLinks.js';
+import { linkedOutput, linksByOutput, type LinkedFragment } from './regelrijm/regelrijmLinks';
+import type { Path } from '@regelrecht/frontend-shared/regelrijm/index';
 import { humanize } from './utils/outputFormat';
 import { useLatest } from './lib/useLatest';
 import { useOpenTabs } from './composables/useOpenTabs';
@@ -521,7 +522,7 @@ const editorAnnotations = computed(() => {
 // article text that a linking note ties to that rule, for the Machine pane.
 // Same resolved notes as the highlights, so both show the same fragments.
 const regelrijmLinks = computed(() => {
-  if (!isEnabled('panel.regelrijm')) return new Map<string, unknown[]>();
+  if (!isEnabled('panel.regelrijm')) return new Map<string, LinkedFragment[]>();
   return linksByOutput(notesForArticle.value, {
     lawId: [law.value?.$id, lawId.value],
     text: selectedArticle.value?.text || '',
@@ -1390,7 +1391,7 @@ watch(lawId, () => {
 // --- Editor state ---
 const activeAction = ref<ExecutionAction | null>(null);
 // From a RegelRijm reading: the path of the part of the action to open at.
-const activeActionPath = ref<string[] | null>(null);
+const activeActionPath = ref<Path | null>(null);
 // True while the open action sheet is for a freshly added action, so its
 // Save button is always offered (no edit required to create it).
 const activeActionIsNew = ref(false);
@@ -2588,7 +2589,7 @@ function handleSheetOpenOutput(output: string) {
 }
 
 // `path`: from a RegelRijm reading, the part of the action to open at.
-function handleOpenAction(action: ExecutionAction, path: string[] | null = null) {
+function handleOpenAction(action: ExecutionAction, path: Path | null = null) {
   actionSnapshot = JSON.stringify(machineReadable.value);
   activeActionIsNew.value = false;
   activeActionPath.value = Array.isArray(path) ? path : null;

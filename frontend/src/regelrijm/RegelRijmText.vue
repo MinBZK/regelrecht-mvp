@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // Shows a RegelRijm reading. The segments come from frontend-shared's
 // renderer; this only gives each token a class. The text itself, including
 // its line breaks and tab indentation, is the renderer's.
@@ -14,90 +14,112 @@
 // without a term keeps its brackets, a computed name is a token, and an
 // operation word that can be clicked shows an underline on hover or focus.
 import { computed } from 'vue';
-import { pathKey } from '@regelrecht/frontend-shared/regelrijm/index.js';
+import { pathKey } from '@regelrecht/frontend-shared/regelrijm/index';
+import type { Path, Segment, Token } from '@regelrecht/frontend-shared/regelrijm/index';
 
-const props = defineProps({
-  segments: { type: Array, required: true },
-  interactive: { type: Boolean, default: false },
-  navigable: { type: Set, default: () => new Set() },
-  blocks: { type: Set, default: () => new Set() },
-  selectable: { type: Set, default: () => new Set() },
-  hints: { type: Map, default: () => new Map() },
+const props = withDefaults(defineProps<{
+  segments: readonly Segment[];
+  interactive?: boolean;
+  navigable?: ReadonlySet<string>;
+  blocks?: ReadonlySet<string>;
+  selectable?: ReadonlySet<string>;
+  hints?: ReadonlyMap<string, string>;
+}>(), {
+  interactive: false,
+  navigable: () => new Set(),
+  blocks: () => new Set(),
+  selectable: () => new Set(),
+  hints: () => new Map(),
 });
-const emit = defineEmits(['open', 'follow', 'select']);
+const emit = defineEmits<{
+  open: [seg: Token];
+  follow: [seg: Token];
+  select: [path: Path];
+}>();
+
+/** One line of the reading: its depth and the pieces on it. */
+interface Line {
+  depth: number;
+  items: Segment[];
+}
 
 // The renderer's lines, each with its depth (the leading tabs). A line is its
 // own block with a hanging indent, so in a narrow pane a line that wraps
 // stays under its own depth instead of starting at the left edge again.
 const lines = computed(() => {
-  const out = [{ depth: 0, items: [] }];
+  let last: Line = { depth: 0, items: [] };
+  const out: Line[] = [last];
   for (const seg of props.segments) {
     if (typeof seg !== 'string') {
-      out.at(-1).items.push(seg);
+      last.items.push(seg);
       continue;
     }
     seg.split('\n').forEach((part, i) => {
       let text = part;
       if (i > 0) {
-        const depth = text.match(/^\t*/)[0].length;
+        // /^\t*/ matches every string, if only with nothing.
+        const depth = text.match(/^\t*/)![0].length;
         text = text.slice(depth);
-        out.push({ depth, items: [] });
+        last = { depth, items: [] };
+        out.push(last);
       }
-      if (text) out.at(-1).items.push(text);
+      if (text) last.items.push(text);
     });
   }
   return out;
 });
 
-const isName = (seg) => seg.tk === 'name' || seg.tk === 'term';
+const isName = (seg: Token) => seg.tk === 'name' || seg.tk === 'term';
 
-function action(seg) {
+function action(seg: Segment): (() => void) | null {
   if (!props.interactive || typeof seg === 'string') return null;
   if (seg.tk === 'fold') return () => emit('open', seg);
-  if (isName(seg) && seg.path?.[0] !== 'output' && props.navigable.has(seg.ref)) return () => emit('follow', seg);
-  if (seg.tk === 'keyword' && seg.path && props.selectable.has(pathKey(seg.path))) return () => emit('select', seg.path);
+  if (isName(seg) && seg.path?.[0] !== 'output' && seg.ref !== undefined && props.navigable.has(seg.ref)) return () => emit('follow', seg);
+  const path = seg.path;
+  if (seg.tk === 'keyword' && path && props.selectable.has(pathKey(path))) return () => emit('select', path);
   return null;
 }
 
-function isBlock(seg) {
-  return typeof seg !== 'string' && isName(seg) && seg.path?.[0] !== 'output' && props.blocks.has(seg.ref);
+function isBlock(seg: Segment): boolean {
+  return typeof seg !== 'string' && isName(seg) && seg.path?.[0] !== 'output' && seg.ref !== undefined && props.blocks.has(seg.ref);
 }
 
-function hint(seg) {
-  return typeof seg !== 'string' && isName(seg) && seg.path?.[0] !== 'output' ? props.hints.get(seg.ref) : undefined;
+function hint(seg: Segment): string | undefined {
+  return typeof seg !== 'string' && isName(seg) && seg.path?.[0] !== 'output' && seg.ref !== undefined ? props.hints.get(seg.ref) : undefined;
 }
 
-function activate(e, seg) {
+function activate(e: Event, seg: Segment) {
   const run = action(seg);
   if (!run) return;
   e.preventDefault();
   run();
 }
 
-function label(seg) {
+function label(seg: Token): string {
   return seg.tk === 'term' ? seg.text.slice(1, -1) : seg.text;
 }
 
 // In a token the block is the boundary, so the brackets go.
-function blockText(seg) {
+function blockText(seg: Token): string {
   return label(seg).replace(/^\[(.*)\]$/s, '$1');
 }
 
 // An operation word that opens its part reads as text, not as a link: only on
 // hover or focus does it show it can be clicked. A link is for going elsewhere.
-function actionClass(seg) {
+function actionClass(seg: Token): string | null {
   if (!action(seg)) return null;
   return seg.tk === 'keyword' ? 'rr-select' : 'rr-action';
 }
 
-function testid(seg) {
+function testid(seg: Token): string | undefined {
   if (!action(seg)) return isBlock(seg) ? `regelrijm-block-${seg.ref}` : undefined;
   if (seg.tk === 'fold') return `regelrijm-open-${seg.number}`;
-  if (seg.tk === 'keyword') return `regelrijm-select-${pathKey(seg.path)}`;
+  // A keyword only has an action when it has a path (see action()).
+  if (seg.tk === 'keyword') return `regelrijm-select-${pathKey(seg.path!)}`;
   return `regelrijm-follow-${seg.ref}`;
 }
 
-const CLASSES = {
+const CLASSES: Partial<Record<Token['tk'], string>> = {
   keyword: 'rr-keyword',
   term: 'rr-term',
   name: 'rr-untranslated',
@@ -109,7 +131,7 @@ const CLASSES = {
 };
 
 // A name with a hint has a tooltip instead; a title would show it twice.
-function title(seg) {
+function title(seg: Token): string | undefined {
   if (hint(seg)) return undefined;
   if (seg.tk === 'name') return `${seg.ref} — nog geen term`;
   if (seg.tk === 'term') return seg.ref;

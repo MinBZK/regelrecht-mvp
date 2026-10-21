@@ -3,15 +3,13 @@ import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import type { NLDDSheet } from '@nldd/design-system/sheet';
 import { buildOperationTree, type OperationNode, type OperationTreeRow } from '../utils/operationTree';
 import OperationSettings, { type OperationSettingsArticle } from './OperationSettings.vue';
-import { articleContext, formatLiteral, pathKey, renderAction, renderFocus } from '@regelrecht/frontend-shared/regelrijm/index.js';
+import { articleContext, formatLiteral, pathKey, renderAction, renderFocus } from '@regelrecht/frontend-shared/regelrijm/index';
+import type { Path, Segment, Token } from '@regelrecht/frontend-shared/regelrijm/index';
 import { useFeatureFlags } from '../composables/useFeatureFlags';
 import { fetchLaw } from '../composables/useLaw';
 import { humanize } from '../utils/outputFormat';
 import RegelRijmText from '../regelrijm/RegelRijmText.vue';
-import { followReference, isNavigable, originHint, rawAt, resolveReference } from '../regelrijm/regelrijmNav.js';
-
-/** A piece of a RegelRijm reading: plain text, or a token with its kind. */
-type RegelRijmSegment = string | { tk: string; ref: string; path?: string[] };
+import { followReference, isNavigable, originHint, rawAt, resolveReference, type NavigableTarget } from '../regelrijm/regelrijmNav';
 
 /** An execution action: an operation node (or a `value`) plus its output name. */
 interface SheetAction extends Partial<OperationNode> {
@@ -35,7 +33,7 @@ const props = withDefaults(defineProps<{
   trajectRef?: string | null;
   /** The path of the part to open at, from a click on an operation word in a
    *  RegelRijm reading. Null opens at the top of the action. */
-  focusPath?: string[] | null;
+  focusPath?: Path | null;
 }>(), {
   action: null,
   article: null,
@@ -154,7 +152,7 @@ watch(() => props.action, () => { navError.value = null; });
 /** The reading shown above the settings; `error` when it cannot be read. */
 interface Reading {
   error: string | null;
-  segments: RegelRijmSegment[];
+  segments: Segment[];
   selectable: Set<string>;
   navigable: Set<string>;
   hints: Map<string, string>;
@@ -167,14 +165,14 @@ const reading = computed((): Reading | null => {
     // An action without an operation (a value or a single name) reads whole.
     if (!selectedOperation.value) return { error: null, segments: full.segments, selectable: new Set<string>(), ...namesIn(full.segments) };
     // Every operation of the reading, by its node in the action as written.
-    const pathOf = new Map<OperationNode, string[]>();
+    const pathOf = new Map<object, string[]>();
     for (const key of full.numbers.keys()) {
-      const node = rawAt(props.action, String(key).split('/'));
-      if (node && typeof node === 'object' && !pathOf.has(node as OperationNode)) pathOf.set(node as OperationNode, String(key).split('/'));
+      const node = rawAt(props.action, key.split('/'));
+      if (node && typeof node === 'object' && !pathOf.has(node)) pathOf.set(node, key.split('/'));
     }
     const path = pathOf.get(selectedOperation.value.node) ?? ['value'];
     const focus = renderFocus(props.action, path, { article: props.article, depth: Infinity });
-    const inTree = new Set(operationTree.value.map((op) => op.node));
+    const inTree = new Set<object>(operationTree.value.map((op) => op.node));
     const selectable = new Set<string>();
     for (const [node, p] of pathOf) if (inTree.has(node) && node !== selectedOperation.value.node) selectable.add(pathKey(p));
     return { error: null, segments: focus.segments, selectable, ...namesIn(focus.segments) };
@@ -185,7 +183,7 @@ const reading = computed((): Reading | null => {
 
 // The names in a reading: which lead to the rule computing them, and the
 // tooltip of each, saying where its value comes from.
-function namesIn(segments: RegelRijmSegment[]) {
+function namesIn(segments: readonly Segment[]) {
   let declared;
   try {
     declared = articleContext(props.article)?.declared;
@@ -196,7 +194,7 @@ function namesIn(segments: RegelRijmSegment[]) {
   const navigable = new Set<string>();
   const hints = new Map<string, string>();
   for (const seg of segments) {
-    if (typeof seg === 'string' || (seg.tk !== 'name' && seg.tk !== 'term') || seg.path?.[0] === 'output') continue;
+    if (typeof seg === 'string' || (seg.tk !== 'name' && seg.tk !== 'term') || seg.path?.[0] === 'output' || seg.ref === undefined) continue;
     const target = resolveReference(seg.ref, props.law, props.article);
     if (isNavigable(target)) navigable.add(seg.ref);
     const text = originHint(seg.ref, target, { destination: destinationOf, format, label: humanize });
@@ -207,20 +205,22 @@ function namesIn(segments: RegelRijmSegment[]) {
 
 // Where a computed name is computed, for its tooltip. Another regelwerk is
 // named by its id; which article computes it there is only known on a click.
-function destinationOf(target: { kind: string; lawId: string; articleNumber?: string | number }) {
+function destinationOf(target: NavigableTarget) {
   if (target.kind !== 'action') return humanize(target.lawId);
   const sameLaw = target.lawId === (props.law?.$id ?? props.lawId);
   if (sameLaw && String(target.articleNumber) === String((props.article as { number?: string | number } | null)?.number)) return 'dit artikel';
   return `${humanize(target.lawId)}, artikel ${target.articleNumber}`;
 }
 
-function selectPath(path: string[]) {
+function selectPath(path: Path) {
   const node = rawAt(props.action, path);
   if (node) selectOperationByNode(node as OperationNode);
 }
 
-async function followName(seg: { ref: string }) {
+async function followName(seg: Token) {
   navError.value = null;
+  // Only a name with a reference can be followed (RegelRijmText's `navigable`).
+  if (seg.ref === undefined) return;
   // Following a name closes the sheet; unsaved edits would go with it.
   if (isDirty.value) {
     navError.value = 'Sla je wijziging eerst op of annuleer hem; daarna kun je naar die rekenregel.';
@@ -233,9 +233,9 @@ async function followName(seg: { ref: string }) {
   });
   // The sheet may have closed or moved on while another law loaded.
   if (!to || props.action !== from) return;
-  if (to.kind === 'error') navError.value = to.message ?? null;
-  else if (to.kind === 'navigate') emit('navigate', { lawId: String(to.lawId), articleNumber: String(to.articleNumber) });
-  else emit('open-output', String(to.output));
+  if (to.kind === 'error') navError.value = to.message;
+  else if (to.kind === 'navigate') emit('navigate', { lawId: to.lawId, articleNumber: to.articleNumber });
+  else emit('open-output', to.output);
 }
 
 function handleKeydown(e: KeyboardEvent) {

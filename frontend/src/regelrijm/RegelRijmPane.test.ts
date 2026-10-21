@@ -3,7 +3,7 @@
 // name saying where it comes from, and following a name to the article or
 // regelwerk that computes it.
 import { describe, it, expect, vi } from 'vitest';
-import { mount, flushPromises } from '@vue/test-utils';
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 
 const WET_B = {
   $id: 'wet_b',
@@ -28,8 +28,8 @@ const ARTIKEL = {
 };
 const WET_A = { $id: 'wet_a', articles: [ARTIKEL, { number: '3', machine_readable: { execution: { actions: [{ output: 'korting', value: 5 }] } } }] };
 
-vi.mock('../composables/useLaw.js', () => ({
-  fetchLaw: vi.fn(async (_traject, id) => {
+vi.mock('../composables/useLaw', () => ({
+  fetchLaw: vi.fn(async (_traject: string | null, id: string) => {
     if (id === 'wet_c') return { law: { $id: 'wet_c', articles: [] }, lawName: 'Wet C' };
     if (id !== 'wet_b') throw new Error('404');
     return { law: WET_B, lawName: 'Wet B' };
@@ -44,13 +44,20 @@ async function pane(props = {}) {
   return wrapper;
 }
 
+/** The `n`th emit of `event` (the first by default); throws when it is missing. */
+function firstEmit(wrapper: VueWrapper, event: string, n = 0): unknown[] {
+  const args = wrapper.emitted(event)?.[n];
+  if (!args) throw new Error(`expected ${event} to have been emitted`);
+  return args;
+}
+
 // The reading as a reader sees it: a token shows its text attribute.
-function ruleText(wrapper, output) {
+function ruleText(wrapper: VueWrapper, output: string) {
   const el = wrapper.find(`[data-testid="regelrijm-pane-rule-${output}"] [data-testid="regelrijm-text"]`).element.cloneNode(true);
-  for (const token of el.querySelectorAll('nldd-token')) token.replaceWith(token.getAttribute('text'));
+  for (const token of (el as Element).querySelectorAll('nldd-token')) token.replaceWith(token.getAttribute('text') ?? '');
   return el.textContent;
 }
-const hint = (wrapper, output, ref) => wrapper.find(`[data-testid="regelrijm-pane-rule-${output}"] [data-testid="regelrijm-hint-${ref}"]`).attributes('text');
+const hint = (wrapper: VueWrapper, output: string, ref: string) => wrapper.find(`[data-testid="regelrijm-pane-rule-${output}"] [data-testid="regelrijm-hint-${ref}"]`).attributes('text');
 
 describe('RegelRijmPane', () => {
   it('reads every rule of the article in full', async () => {
@@ -70,13 +77,13 @@ describe('RegelRijmPane', () => {
   it('opens the action at the top from its row', async () => {
     const wrapper = await pane();
     await wrapper.find('[data-testid="regelrijm-pane-open-dubbel"]').trigger('click');
-    expect(wrapper.emitted('open-action')[0]).toEqual([ARTIKEL.machine_readable.execution.actions[1]]);
+    expect(firstEmit(wrapper, 'open-action')).toEqual([ARTIKEL.machine_readable.execution.actions[1]]);
   });
 
   it('opens the action at the part whose operation word is clicked', async () => {
     const wrapper = await pane();
     await wrapper.find('[data-testid="regelrijm-pane-rule-hoogte"] [data-testid="regelrijm-select-value/values/1"]').trigger('click');
-    const [action, path] = wrapper.emitted('open-action')[0];
+    const [action, path] = firstEmit(wrapper, 'open-action');
     expect(action).toEqual(ARTIKEL.machine_readable.execution.actions[0]);
     expect(path).toEqual(['value', 'values', 1]);
   });
@@ -84,7 +91,7 @@ describe('RegelRijmPane', () => {
   it('deletes through the row menu when editable, without opening the row', async () => {
     const wrapper = await pane({ editable: true });
     await wrapper.find('[data-testid="action-dubbel-delete-btn"]').trigger('click');
-    expect(wrapper.emitted('delete-action')[0]).toEqual([1]);
+    expect(firstEmit(wrapper, 'delete-action')).toEqual([1]);
     expect(wrapper.emitted('open-action')).toBeUndefined();
   });
 
@@ -106,7 +113,8 @@ describe('RegelRijmPane', () => {
   });
 
   it('reads a half-edited article rule by rule instead of failing as a whole', async () => {
-    const article = structuredClone(ARTIKEL);
+    // Half-edited on purpose: shapes the fixture's own type does not allow.
+    const article = structuredClone(ARTIKEL) as { machine_readable: { execution: Record<string, unknown> & { actions: unknown[] } } };
     article.machine_readable.execution.actions = [null, { output: 'k', value: { operation: 'IF', cases: 'foo', default: 1 } }, ...article.machine_readable.execution.actions];
     article.machine_readable.execution.parameters = {};
     const wrapper = await pane({ article });
@@ -122,11 +130,11 @@ describe('RegelRijmPane', () => {
     expect(wrapper.emitted('navigate')).toBeUndefined();
     await wrapper.find('[data-testid="regelrijm-follow-$korting"]').trigger('click');
     await flushPromises();
-    expect(wrapper.emitted('navigate')[0][0]).toEqual({ lawId: 'wet-a-in-de-route', articleNumber: '3' });
+    expect(firstEmit(wrapper, 'navigate')[0]).toEqual({ lawId: 'wet-a-in-de-route', articleNumber: '3' });
   });
 
   it('says why a name in another regelwerk cannot be followed', async () => {
-    const article = structuredClone(ARTIKEL);
+    const article = structuredClone(ARTIKEL) as { machine_readable: { execution: { input: unknown[]; actions: unknown[] } } };
     article.machine_readable.execution.input.push(
       { name: 'weg', source: { regulation: 'wet_c', output: 'weg' } },
       { name: 'kwijt', source: { regulation: 'wet_x', output: 'kwijt' } },
@@ -146,9 +154,9 @@ describe('RegelRijmPane', () => {
     const wrapper = await pane();
     await wrapper.find('[data-testid="regelrijm-follow-$korting"]').trigger('click');
     await flushPromises();
-    expect(wrapper.emitted('navigate')[0][0]).toEqual({ lawId: 'wet_a', articleNumber: '3' });
+    expect(firstEmit(wrapper, 'navigate')[0]).toEqual({ lawId: 'wet_a', articleNumber: '3' });
     await wrapper.find('[data-testid="regelrijm-follow-$inkomen"]').trigger('click');
     await flushPromises();
-    expect(wrapper.emitted('navigate')[1][0]).toEqual({ lawId: 'wet_b', articleNumber: '8' });
+    expect(firstEmit(wrapper, 'navigate', 1)[0]).toEqual({ lawId: 'wet_b', articleNumber: '8' });
   });
 });

@@ -2,12 +2,47 @@
 // unambiguous: it returns EVERY parse of a text, and the round-trip test
 // demands exactly one, equal to the normalised tree. It is not exported from
 // the package and must never become an input channel (RFC-054).
-import { MONTHS, PERIOD_WORDS } from '../literals.js';
-import { isReference } from '../normalise.js';
-import { exprUnit, literalUnits, pathKey } from '../units.js';
+import { MONTHS, PERIOD_WORDS } from '../literals';
+import { isReference } from '../normalise';
+import { exprUnit, literalUnits, pathKey } from '../units';
+import { isRecord, type Operation, type Path, type Unit, type Vocabulary } from '../types';
+
+type TokenType = 'term' | 'name' | 'str' | 'money' | 'date' | 'num' | 'p' | 'w';
+
+interface LexToken {
+  t: TokenType;
+  m: RegExpExecArray;
+}
+
+/** One way to read from a position: the value and the position after it. */
+type Result<T = unknown> = [T, number];
+/** A grammar rule: every way to read from `pos`. */
+type Rule<T = unknown> = (pos: number) => Result<T>[];
+
+/** A number whose unit is not known yet (see `lit`). */
+interface LitPlaceholder {
+  __lit: 'money' | 'pct' | 'num' | 'qty';
+  text: string;
+  key?: string;
+  plural?: boolean;
+}
+
+/** A precision that follows from the unit of the value (`hele euro's`). */
+type PrecisionOf = (unit: Unit | null) => number | undefined;
+
+/** A parsed action. */
+export interface ParsedAction {
+  output: string;
+  value: unknown;
+}
+
+/** The capture groups of a token; the lexer only emits tokens whose regex has them. */
+function group(tk: LexToken, i: number): string {
+  return tk.m[i] ?? '';
+}
 
 const MONTH_RE = MONTHS.join('|');
-const LEX = [
+const LEX: [TokenType, RegExp][] = [
   ['term', /‹([^›]*)›/y],
   ['name', /\[([^\]]*)\]/y],
   ['str', /“((?:\\.|[^”\\])*)”/y],
@@ -18,11 +53,12 @@ const LEX = [
   ['w', /([^\s()[\]‹›“”;,]+)/y],
 ];
 
-export function lex(text) {
-  const out = [];
+export function lex(text: string): LexToken[] {
+  const out: LexToken[] = [];
   let i = 0;
   while (i < text.length) {
-    if (/\s/.test(text[i])) { i += 1; continue; }
+    // `i` stays below `text.length`.
+    if (/\s/.test(text[i]!)) { i += 1; continue; }
     let hit = false;
     for (const [t, re] of LEX) {
       re.lastIndex = i;
@@ -33,17 +69,22 @@ export function lex(text) {
       hit = true;
       break;
     }
-    if (!hit) throw new Error(`lex: onverwacht teken '${text[i]}' op ${i}`);
+    if (!hit) throw new Error(`lex: unexpected character '${text[i]}' at ${i}`);
   }
   return out;
 }
 
 // A placeholder for a number whose unit the parser cannot know yet; it is
 // resolved once the whole tree stands, with the same unit rule as the renderer.
-const lit = (kind, text, extra = {}) => ({ __lit: kind, text, ...extra });
+const lit = (kind: LitPlaceholder['__lit'], text: string, extra: Partial<LitPlaceholder> = {}): LitPlaceholder => ({ __lit: kind, text, ...extra });
 
 class Parser {
-  constructor(tokens, vocab, declared) {
+  t: LexToken[];
+  vocab: Vocabulary;
+  declared: ReadonlyMap<string, Unit>;
+  memo: Map<string, Result[]>;
+
+  constructor(tokens: LexToken[], vocab: Vocabulary, declared: ReadonlyMap<string, Unit>) {
     this.t = tokens;
     this.vocab = vocab;
     this.declared = declared;
@@ -51,16 +92,18 @@ class Parser {
   }
 
   // Every rule: (pos) → array of [value, nextPos]. Memoised per rule and position.
-  rule(name, pos, fn) {
+  rule<T>(name: string, pos: number, fn: () => Result<T>[]): Result<T>[] {
     const key = `${name}@${pos}`;
-    if (this.memo.has(key)) return this.memo.get(key);
+    // A memo entry for this rule and position always holds this rule's results.
+    const hit = this.memo.get(key) as Result<T>[] | undefined;
+    if (hit) return hit;
     this.memo.set(key, []);
     const r = fn();
     this.memo.set(key, r);
     return r;
   }
 
-  word(pos, phrase) {
+  word(pos: number, phrase: string): number {
     const ws = phrase.split(' ');
     for (let i = 0; i < ws.length; i++) {
       const tk = this.t[pos + i];
@@ -72,10 +115,10 @@ class Parser {
   }
 
   // seq helper: runs a sequence of steps, each step a function (pos) → [[v, pos]...] or a phrase.
-  seq(pos, steps, build) {
-    let states = [[[], pos]];
+  seq<T>(pos: number, steps: (string | Rule)[], build: (...vals: unknown[]) => T): Result<T>[] {
+    let states: Result<unknown[]>[] = [[[], pos]];
     for (const step of steps) {
-      const next = [];
+      const next: Result<unknown[]>[] = [];
       for (const [vals, p] of states) {
         if (typeof step === 'string') {
           const q = this.word(p, step);
@@ -90,17 +133,17 @@ class Parser {
     return states.map(([vals, p]) => [build(...vals), p]);
   }
 
-  alt(...lists) {
+  alt(...lists: Result[][]): Result[] {
     return lists.flat();
   }
 
   // Repetition `first (sep item)*` with at least `min` items in total.
-  sepBy(pos, item, sep, min) {
-    const out = [];
-    let states = item(pos).map(([v, p]) => [[v], p]);
+  sepBy(pos: number, item: Rule, sep: string, min: number): Result<unknown[]>[] {
+    const out: Result<unknown[]>[] = [];
+    let states = item(pos).map(([v, p]): Result<unknown[]> => [[v], p]);
     while (states.length) {
       for (const [vals, p] of states) if (vals.length >= min) out.push([vals, p]);
-      const next = [];
+      const next: Result<unknown[]>[] = [];
       for (const [vals, p] of states) {
         const q = this.word(p, sep);
         if (q < 0) continue;
@@ -111,17 +154,17 @@ class Parser {
     return out;
   }
 
-  expr = (pos) => this.rule('expr', pos, () => this.alt(this.choice(pos), this.logic(pos)));
+  expr: Rule = (pos) => this.rule('expr', pos, () => this.alt(this.choice(pos), this.logic(pos)));
 
-  choice = (pos) => this.rule('choice', pos, () => {
-    const out = [];
-    const anders = (p, cases) => {
-      const res = [[{ operation: 'IF', cases }, p]];
+  choice: Rule = (pos) => this.rule('choice', pos, () => {
+    const out: Result[] = [];
+    const anders = (p: number, cases: unknown[]): Result[] => {
+      const res: Result[] = [[{ operation: 'IF', cases }, p]];
       const q = this.word(p, 'anders');
       if (q >= 0) for (const [d, r] of this.logic(q)) res.push([{ operation: 'IF', cases, default: d }, r]);
       return res;
     };
-    const more = (p, cases) => {
+    const more = (p: number, cases: unknown[]): Result[] => {
       const res = anders(p, cases);
       const q = this.word(p, 'anders als');
       if (q >= 0) {
@@ -139,8 +182,8 @@ class Parser {
     return out;
   });
 
-  logic = (pos) => this.rule('logic', pos, () => {
-    const out = [...this.operand(pos)];
+  logic: Rule = (pos) => this.rule('logic', pos, () => {
+    const out: Result[] = [...this.operand(pos)];
     for (const [w, op] of [['én', 'AND'], ['óf', 'OR']]) {
       for (const [vals, p] of this.sepBy(pos, this.operand, w, 2)) out.push([{ operation: op, conditions: vals }, p]);
     }
@@ -151,15 +194,15 @@ class Parser {
       const q = this.word(pos, head);
       if (q < 0) continue;
       const tk = this.t[q];
-      if (!tk || tk.t !== 'w' || !/^•+$/.test(tk.m[1])) continue;
-      const bullet = tk.m[1];
-      const item = (p) => {
+      if (!tk || tk.t !== 'w' || !/^•+$/.test(group(tk, 1))) continue;
+      const bullet = group(tk, 1);
+      const item: Rule = (p) => {
         const r = this.word(p, bullet);
         return r < 0 ? [] : this.logic(r);
       };
-      let states = item(q).map(([v, p]) => [[v], p]);
+      let states = item(q).map(([v, p]): Result<unknown[]> => [[v], p]);
       while (states.length) {
-        const next = [];
+        const next: Result<unknown[]>[] = [];
         for (const [vals, p] of states) {
           if (vals.length >= 3) out.push([{ operation: op, conditions: vals }, p]);
           for (const [v, r] of item(p)) next.push([[...vals, v], r]);
@@ -170,14 +213,14 @@ class Parser {
     return out;
   });
 
-  operand = (pos) => this.rule('operand', pos, () => this.alt(
+  operand: Rule = (pos) => this.rule('operand', pos, () => this.alt(
     this.seq(pos, ['niet', this.closed], (v) => ({ operation: 'NOT', value: v })),
     this.comparison(pos),
     this.arith(pos),
   ));
 
-  comparison = (pos) => this.rule('comparison', pos, () => {
-    const out = [];
+  comparison: Rule = (pos) => this.rule('comparison', pos, () => {
+    const out: Result[] = [];
     const cmps = [['is meer dan', 'GREATER_THAN'], ['is minder dan', 'LESS_THAN'], ['is ten minste', 'GREATER_THAN_OR_EQUAL'], ['is ten hoogste', 'LESS_THAN_OR_EQUAL'], ['is', 'EQUALS']];
     for (const [s, p] of this.arith(pos)) {
       for (const [w, op] of cmps) {
@@ -199,8 +242,8 @@ class Parser {
     return out;
   });
 
-  arith = (pos) => this.rule('arith', pos, () => {
-    const out = [...this.closed(pos)];
+  arith: Rule = (pos) => this.rule('arith', pos, () => {
+    const out: Result[] = [...this.closed(pos)];
     for (const [w, op] of [['plus', 'ADD'], ['min', 'SUBTRACT'], ['maal', 'MULTIPLY'], ['gedeeld door', 'DIVIDE']]) {
       for (const [vals, p] of this.sepBy(pos, this.closed, w, 2)) out.push([{ operation: op, values: vals }, p]);
     }
@@ -211,14 +254,15 @@ class Parser {
 
   // FOREACH with ADD/MIN/MAX/no combine: arithmetic level, because its
   // optional trailing `waarvoor` keeps it from being closed.
-  aggregate = (pos) => {
+  aggregate: Rule = (pos) => {
     const C = this.closed;
-    const local = (p) => this.name(p).filter(([n]) => !n.includes('.')).map(([n, r]) => [n.slice(1), r]);
-    const filter = (p) => [[undefined, p], ...this.seq(p, ['waarvoor', C], (f) => f)];
-    const out = [];
-    for (const [w, combine] of [['de som van', 'ADD'], ['de kleinste waarde van', 'MIN'], ['de grootste waarde van', 'MAX'], ['de lijst van', undefined]]) {
+    const local = this.localName;
+    const filter: Rule = (p) => [[undefined, p], ...this.seq(p, ['waarvoor', C], (f) => f)];
+    const out: Result[] = [];
+    const forms: [string, string | undefined][] = [['de som van', 'ADD'], ['de kleinste waarde van', 'MIN'], ['de grootste waarde van', 'MAX'], ['de lijst van', undefined]];
+    for (const [w, combine] of forms) {
       out.push(...this.seq(pos, [w, C, 'over elke', local, 'in', C, filter], (b, x, c, f) => {
-        const n = { operation: 'FOREACH', collection: c, as: x, body: b };
+        const n: Operation = { operation: 'FOREACH', collection: c, as: x, body: b };
         if (f !== undefined) n.filter = f;
         if (combine) n.combine = combine;
         return n;
@@ -227,10 +271,10 @@ class Parser {
     return out;
   };
 
-  dateAdd = (pos) => {
-    const out = [];
-    const unitAt = (p) => {
-      const res = [];
+  dateAdd: Rule = (pos) => {
+    const out: Result[] = [];
+    const unitAt = (p: number): Result<string>[] => {
+      const res: Result<string>[] = [];
       for (const [key, words] of Object.entries(PERIOD_WORDS)) {
         for (const w of words) {
           const q = this.word(p, w);
@@ -239,18 +283,18 @@ class Parser {
       }
       return res;
     };
-    const offset = (p) => {
-      const res = [];
+    const offset = (p: number): Result<[string, unknown]>[] => {
+      const res: Result<[string, unknown]>[] = [];
       for (const [v, q] of this.closed(p)) for (const [key, r] of unitAt(q)) res.push([[key, v], r]);
       return res;
     };
     // offsets: o | o en o | o , o , … en o
-    const lists = [];
+    const lists: Result<[string, unknown][]>[] = [];
     for (const [o, p] of offset(pos)) {
       lists.push([[o], p]);
-      let states = [[[o], p]];
+      let states: Result<[string, unknown][]>[] = [[[o], p]];
       while (states.length) {
-        const next = [];
+        const next: Result<[string, unknown][]>[] = [];
         for (const [os, q] of states) {
           const e = this.word(q, 'en');
           if (e >= 0) for (const [o2, r] of offset(e)) lists.push([[...os, o2], r]);
@@ -264,7 +308,7 @@ class Parser {
       const q = this.word(p, 'na');
       if (q < 0) continue;
       for (const [d, r] of this.closed(q)) {
-        const node = { operation: 'DATE_ADD', date: d };
+        const node: Operation = { operation: 'DATE_ADD', date: d };
         for (const [key, v] of os) node[key] = v;
         out.push([node, r]);
       }
@@ -272,8 +316,8 @@ class Parser {
     return out;
   };
 
-  parenList = (pos) => {
-    const out = [];
+  parenList: Rule<unknown[]> = (pos) => {
+    const out: Result<unknown[]>[] = [];
     const open = this.word(pos, '(');
     if (open < 0) return out;
     const close = this.word(open, ')');
@@ -285,29 +329,29 @@ class Parser {
     return out;
   };
 
-  closed = (pos) => this.rule('closed', pos, () => {
-    const out = [...this.atom(pos)];
+  closed: Rule = (pos) => this.rule('closed', pos, () => {
+    const out: Result[] = [...this.atom(pos)];
     out.push(...this.seq(pos, ['(', this.expr, ')'], (v) => v));
     out.push(...this.func(pos));
     return out;
   });
 
-  segment(pos) {
+  segment(pos: number): string | null {
     const tk = this.t[pos];
     if (!tk) return null;
-    if (tk.t === 'name') return tk.m[1].replace(/ /g, '_');
+    if (tk.t === 'name') return group(tk, 1).replace(/ /g, '_');
     if (tk.t === 'term') {
-      const n = this.vocab.nameOf(tk.m[1]);
-      if (n === null) throw new Error(`parse: onbekende term ‹${tk.m[1]}›`);
+      const n = this.vocab.nameOf(group(tk, 1));
+      if (n === null) throw new Error(`parse: unknown term ‹${group(tk, 1)}›`);
       return n;
     }
     return null;
   }
 
-  name = (pos) => this.rule('name', pos, () => {
+  name: Rule<string> = (pos) => this.rule('name', pos, () => {
     const first = this.segment(pos);
     if (first === null) return [];
-    const out = [];
+    const out: Result<string>[] = [];
     let segs = [first];
     let p = pos + 1;
     out.push([`$${segs.slice().reverse().join('.')}`, p]);
@@ -323,41 +367,46 @@ class Parser {
     return out;
   });
 
-  atom = (pos) => this.rule('atom', pos, () => {
-    const out = [...this.name(pos)];
+  // A name of one segment, without its `$`: a FOREACH variable.
+  localName: Rule<string> = (p) => this.name(p).filter(([n]) => !n.includes('.')).map(([n, r]): Result<string> => [n.slice(1), r]);
+
+  atom: Rule = (pos) => this.rule('atom', pos, () => {
+    const out: Result[] = [...this.name(pos)];
     const tk = this.t[pos];
     if (!tk) return out;
-    if (tk.t === 'str') out.push([tk.m[1].replace(/\\(.)/g, '$1'), pos + 1]);
+    if (tk.t === 'str') out.push([group(tk, 1).replace(/\\(.)/g, '$1'), pos + 1]);
     if (tk.t === 'date') {
-      const mo = MONTHS.indexOf(tk.m[2]) + 1;
-      out.push([`${tk.m[3]}-${String(mo).padStart(2, '0')}-${tk.m[1].padStart(2, '0')}`, pos + 1]);
+      const mo = MONTHS.indexOf(group(tk, 2)) + 1;
+      out.push([`${group(tk, 3)}-${String(mo).padStart(2, '0')}-${group(tk, 1).padStart(2, '0')}`, pos + 1]);
     }
-    if (tk.t === 'money') out.push([lit('money', tk.m[1]), pos + 1]);
+    if (tk.t === 'money') out.push([lit('money', group(tk, 1)), pos + 1]);
     if (tk.t === 'num') {
-      if (tk.m[2] === '%') out.push([lit('pct', tk.m[1]), pos + 1]);
+      if (group(tk, 2) === '%') out.push([lit('pct', group(tk, 1)), pos + 1]);
       else {
-        out.push([lit('num', tk.m[1]), pos + 1]);
+        out.push([lit('num', group(tk, 1)), pos + 1]);
         for (const [key, words] of Object.entries(PERIOD_WORDS)) {
           words.forEach((w, i) => {
-            if (this.word(pos + 1, w) >= 0) out.push([lit('qty', tk.m[1], { key, plural: i === 1 }), pos + 2]);
+            if (this.word(pos + 1, w) >= 0) out.push([lit('qty', group(tk, 1), { key, plural: i === 1 }), pos + 2]);
           });
         }
       }
     }
     if (tk.t === 'w') {
-      if (/^[A-Z]+$/.test(tk.m[1])) out.push([{ __letter: tk.m[1] }, pos + 1]);
-      if (tk.m[1] === 'waar') out.push([true, pos + 1]);
-      if (tk.m[1] === 'onwaar') out.push([false, pos + 1]);
-      if (tk.m[1] === 'geen' && this.word(pos, 'geen geval') < 0 && this.word(pos, 'geen termijn') < 0) out.push([null, pos + 1]);
+      const w = group(tk, 1);
+      if (/^[A-Z]+$/.test(w)) out.push([{ __letter: w }, pos + 1]);
+      if (w === 'waar') out.push([true, pos + 1]);
+      if (w === 'onwaar') out.push([false, pos + 1]);
+      if (w === 'geen' && this.word(pos, 'geen geval') < 0 && this.word(pos, 'geen termijn') < 0) out.push([null, pos + 1]);
     }
     return out;
   });
 
-  func = (pos) => this.rule('func', pos, () => {
+  func: Rule = (pos) => this.rule('func', pos, () => {
     const C = this.closed;
-    const out = [];
+    const out: Result[] = [];
     // Short n-ary forms: `én ( … )`, `plus ( … )`.
-    for (const [w, op, key] of [['én', 'AND', 'conditions'], ['óf', 'OR', 'conditions'], ['plus', 'ADD', 'values'], ['min', 'SUBTRACT', 'values'], ['maal', 'MULTIPLY', 'values'], ['gedeeld door', 'DIVIDE', 'values']]) {
+    const shortForms: [string, string, string][] = [['én', 'AND', 'conditions'], ['óf', 'OR', 'conditions'], ['plus', 'ADD', 'values'], ['min', 'SUBTRACT', 'values'], ['maal', 'MULTIPLY', 'values'], ['gedeeld door', 'DIVIDE', 'values']];
+    for (const [w, op, key] of shortForms) {
       const q = this.word(pos, w);
       if (q < 0) continue;
       for (const [vals, r] of this.parenList(q)) if (vals.length < 2) out.push([{ operation: op, [key]: vals }, r]);
@@ -370,10 +419,10 @@ class Parser {
     let q = this.word(pos, 'de lijst');
     if (q >= 0 && this.word(q, 'van') < 0) for (const [vals, r] of this.parenList(q)) out.push([{ operation: 'LIST', items: vals }, r]);
     // FOREACH
-    const local = (p) => this.name(p).filter(([n]) => !n.includes('.')).map(([n, r]) => [n.slice(1), r]);
-    const filter = (p) => [[undefined, p], ...this.seq(p, ['waarvoor', C], (f) => f)];
-    const build = (combine, b, x, c, f) => {
-      const n = { operation: 'FOREACH', collection: c, as: x, body: b };
+    const local = this.localName;
+    const filter: Rule = (p) => [[undefined, p], ...this.seq(p, ['waarvoor', C], (f) => f)];
+    const build = (combine: string, b: unknown, x: unknown, c: unknown, f: unknown): Operation => {
+      const n: Operation = { operation: 'FOREACH', collection: c, as: x, body: b };
       if (f !== undefined) n.filter = f;
       if (combine) n.combine = combine;
       return n;
@@ -385,10 +434,10 @@ class Parser {
     out.push(...this.seq(pos, ['geen termijn na', C], (d) => ({ operation: 'DATE_ADD', date: d })));
     // DATE: `1 januari van Y`
     const tk = this.t[pos];
-    if (tk && tk.t === 'num' && tk.m[2] === '' && /^\d+$/.test(tk.m[1])) {
+    if (tk && tk.t === 'num' && group(tk, 2) === '' && /^\d+$/.test(group(tk, 1))) {
       MONTHS.forEach((m, i) => {
         const r = this.word(pos + 1, `${m} van`);
-        if (r >= 0) for (const [y, s] of C(r)) out.push([{ operation: 'DATE', year: y, month: i + 1, day: Number(tk.m[1]) }, s]);
+        if (r >= 0) for (const [y, s] of C(r)) out.push([{ operation: 'DATE', year: y, month: i + 1, day: Number(group(tk, 1)) }, s]);
       });
     }
     out.push(...this.seq(pos, ['de datum met jaar', C, ',', 'maand', C, 'en dag', C], (y, m, d) => ({ operation: 'DATE', year: y, month: m, day: d })));
@@ -406,21 +455,21 @@ class Parser {
     for (const [w, op] of [['naar boven afgerond', 'CEIL'], ['naar beneden afgerond', 'FLOOR'], ['afgerond', 'ROUND']]) {
       q = this.word(pos, `${w} op`);
       if (q < 0) continue;
-      const precs = [];
+      const precs: Result<number | PrecisionOf>[] = [];
       let r = this.word(q, 'hele eenheden');
       if (r >= 0) precs.push([0, r]);
       // Whole euros and cents: the precision follows from the unit of the value.
       r = this.word(q, "hele euro's");
-      if (r >= 0) precs.push([(u) => ({ euro: 0, eurocent: -2 })[u], r]);
+      if (r >= 0) precs.push([(u) => (u === 'euro' ? 0 : u === 'eurocent' ? -2 : undefined), r]);
       r = this.word(q, 'hele centen');
       if (r >= 0) precs.push([(u) => (u === 'eurocent' ? 0 : undefined), r]);
       r = this.word(q, '1 decimaal');
       if (r >= 0) precs.push([1, r]);
       const t1 = this.t[q];
-      if (t1 && t1.t === 'num' && /^\d+$/.test(t1.m[1]) && t1.m[2] === '' && this.word(q + 1, 'decimalen') >= 0) precs.push([Number(t1.m[1]), q + 2]);
+      if (t1 && t1.t === 'num' && /^\d+$/.test(group(t1, 1)) && group(t1, 2) === '' && this.word(q + 1, 'decimalen') >= 0) precs.push([Number(group(t1, 1)), q + 2]);
       r = this.word(q, 'veelvouden van');
       const t2 = this.t[r];
-      if (r >= 0 && t2 && t2.t === 'num' && /^10+$/.test(t2.m[1])) precs.push([-(t2.m[1].length - 1), r + 1]);
+      if (r >= 0 && t2 && t2.t === 'num' && /^10+$/.test(group(t2, 1))) precs.push([-(group(t2, 1).length - 1), r + 1]);
       for (const [p, s] of precs) {
         for (const [v, e] of this.seq(s, ['(', this.expr, ')'], (x) => x)) {
           // A letter's unit is known only once the legend stands; precision too.
@@ -433,13 +482,13 @@ class Parser {
   });
 }
 
-function toNumber(text) {
+function toNumber(text: string): number {
   return Number(text.replace(',', '.'));
 }
 
-function moneyValue(text, unit) {
+function moneyValue(text: string, unit: Unit | null): number {
   const neg = text.startsWith('-');
-  const [int, frac] = text.replace('-', '').replace(/\./g, '').split(',');
+  const [int = '', frac = ''] = text.replace('-', '').replace(/\./g, '').split(',');
   let digits = int + frac;
   let point = int.length;
   if (unit === 'eurocent') point += 2;
@@ -449,14 +498,18 @@ function moneyValue(text, unit) {
 }
 
 /** Replaces the number placeholders now that every literal's unit is known. */
-function resolveLiterals(node, units, path) {
-  if (Array.isArray(node)) return node.map((v, i) => resolveLiterals(v, units, [...path, i]));
+function isLit(node: unknown): node is LitPlaceholder {
+  return isRecord(node) && typeof node.__lit === 'string';
+}
+
+function resolveLiterals(node: unknown, units: ReadonlyMap<string, Unit>, path: Path): unknown {
+  if (Array.isArray(node)) return node.map((v: unknown, i) => resolveLiterals(v, units, [...path, i]));
   if (node === null || typeof node !== 'object') return node;
-  if (node.__lit) {
+  if (isLit(node)) {
     const u = units.get(pathKey(path)) ?? null;
     const money = u === 'euro' || u === 'eurocent';
-    const period = PERIOD_WORDS[u] ? u : null;
-    const fail = () => { throw new Error(`parse: ${node.__lit} '${node.text}' past niet bij eenheid ${u} op ${pathKey(path)}`); };
+    const period = u && PERIOD_WORDS[u] ? u : null;
+    const fail = (): never => { throw new Error(`parse: ${node.__lit} '${node.text}' does not fit unit ${u} at ${pathKey(path)}`); };
     switch (node.__lit) {
       case 'money': if (!money) fail(); return moneyValue(node.text, u);
       case 'pct': if (u !== 'percentage') fail(); return toNumber(node.text);
@@ -467,81 +520,86 @@ function resolveLiterals(node, units, path) {
         return v;
       }
       case 'num': if (money || u === 'percentage' || period) fail(); return toNumber(node.text);
-      default: fail();
+      default: return fail();
     }
   }
-  const out = {};
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(node)) {
-    if (k === 'cases') out.cases = v.map((c, i) => ({ ...(('when' in c) ? { when: resolveLiterals(c.when, units, [...path, 'cases', i, 'when']) } : {}), ...(('then' in c) ? { then: resolveLiterals(c.then, units, [...path, 'cases', i, 'then']) } : {}) }));
+    // The parser only builds `cases` as a list of `{ when, then }` objects.
+    if (k === 'cases') out.cases = (v as Record<string, unknown>[]).map((c, i) => ({ ...(('when' in c) ? { when: resolveLiterals(c.when, units, [...path, 'cases', i, 'when']) } : {}), ...(('then' in c) ? { then: resolveLiterals(c.then, units, [...path, 'cases', i, 'then']) } : {}) }));
     else out[k] = resolveLiterals(v, units, [...path, k]);
   }
   return out;
 }
 
 /** Every way to read `A = … B = …` from `pos` to the end, as `[[letter, tree]…]`. */
-function legends(p, pos) {
+type Definitions = [string, unknown][];
+
+function legends(p: Parser, pos: number): Definitions[] {
   if (pos === p.t.length) return [[]];
   const tk = p.t[pos];
-  if (!tk || tk.t !== 'w' || !/^[A-Z]+$/.test(tk.m[1])) return [];
+  if (!tk || tk.t !== 'w' || !/^[A-Z]+$/.test(group(tk, 1))) return [];
   const q = p.word(pos + 1, '=');
   if (q < 0) return [];
-  const out = [];
-  for (const [v, r] of p.expr(q)) for (const rest of legends(p, r)) out.push([[tk.m[1], v], ...rest]);
+  const out: Definitions[] = [];
+  for (const [v, r] of p.expr(q)) for (const rest of legends(p, r)) out.push([[group(tk, 1), v], ...rest]);
   return out;
 }
 
 /** The tree with every letter replaced by its definition; throws on a letter that is undefined, unused or defined twice, or on a cycle. */
-function expandLegend(tree, defs) {
-  const table = new Map();
+function expandLegend(tree: unknown, defs: Definitions): unknown {
+  const table = new Map<string, unknown>();
   for (const [l, v] of defs) {
-    if (table.has(l)) throw new Error(`parse: letter ${l} twee keer`);
+    if (table.has(l)) throw new Error(`parse: letter ${l} defined twice`);
     table.set(l, v);
   }
-  const used = new Set();
-  const expand = (node, stack) => {
-    if (Array.isArray(node)) return node.map((x) => expand(x, stack));
+  const used = new Set<string>();
+  const expand = (node: unknown, stack: string[]): unknown => {
+    if (Array.isArray(node)) return node.map((x: unknown) => expand(x, stack));
     if (node === null || typeof node !== 'object') return node;
-    if (node.__letter) {
-      const l = node.__letter;
-      if (!table.has(l)) throw new Error(`parse: letter ${l} niet gedefinieerd`);
-      if (stack.includes(l)) throw new Error(`parse: letter ${l} verwijst naar zichzelf`);
+    const letter = (node as { __letter?: unknown }).__letter;
+    if (typeof letter === 'string' && letter) {
+      const l = letter;
+      if (!table.has(l)) throw new Error(`parse: letter ${l} not defined`);
+      if (stack.includes(l)) throw new Error(`parse: letter ${l} refers to itself`);
       used.add(l);
       return expand(table.get(l), [...stack, l]);
     }
-    const out = {};
+    const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(node)) out[k] = expand(v, stack);
     return out;
   };
   const out = expand(tree, []);
-  for (const l of table.keys()) if (!used.has(l)) throw new Error(`parse: letter ${l} ongebruikt`);
+  for (const l of table.keys()) if (!used.has(l)) throw new Error(`parse: letter ${l} unused`);
   return out;
 }
 
 /** Fixes the precision of `hele euro's` and `hele centen` now that the letters are expanded. */
-function resolvePrecision(node, declared) {
-  if (Array.isArray(node)) return node.map((x) => resolvePrecision(x, declared));
-  if (node === null || typeof node !== 'object' || node.__lit) return node;
-  const out = {};
+function resolvePrecision(node: unknown, declared: ReadonlyMap<string, Unit>): unknown {
+  if (Array.isArray(node)) return node.map((x: unknown) => resolvePrecision(x, declared));
+  if (node === null || typeof node !== 'object' || isLit(node)) return node;
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(node)) out[k] = resolvePrecision(v, declared);
-  if (out.precision && out.precision.__prec) {
-    const p = out.precision.__prec(exprUnit(out.value, declared));
-    if (p === undefined) throw new Error('parse: afronding past niet bij de eenheid');
+  const prec = isRecord(out.precision) ? out.precision.__prec : undefined;
+  if (typeof prec === 'function') {
+    const p = (prec as PrecisionOf)(exprUnit(out.value, declared));
+    if (p === undefined) throw new Error('parse: rounding does not fit the unit');
     out.precision = p;
   }
   return out;
 }
 
 /** All complete parses of an action reading: `[uitkomst] wordt: …`, optionally followed by `waarbij: A = …`. */
-export function parseActionAll(text, { vocab, declared }) {
+export function parseActionAll(text: string, { vocab, declared }: { vocab: Vocabulary; declared: ReadonlyMap<string, Unit> }): ParsedAction[] {
   const tokens = lex(text);
   const p = new Parser(tokens, vocab, declared);
   const outName = p.name(0).filter(([n]) => !n.includes('.'));
-  const results = [];
+  const results: ParsedAction[] = [];
   for (const [n, q] of outName) {
     const w = p.word(q, 'wordt:');
     if (w < 0) continue;
     for (const [v0, r] of p.expr(w)) {
-      let defsList;
+      let defsList: Definitions[];
       if (r === tokens.length) defsList = [[]];
       else {
         const wb = p.word(r, 'waarbij:');
@@ -554,20 +612,21 @@ export function parseActionAll(text, { vocab, declared }) {
         const units = literalUnits(v, declared.get(output) ?? null, declared, ['value']);
         results.push({ output, value: resolveLiterals(v, units, ['value']) });
       } catch (e) {
-        if (!String(e.message).startsWith('parse:')) throw e;
+        if (!(e instanceof Error && e.message.startsWith('parse:'))) throw e;
       }
     }
   }
   // The same tree reached along two grammar paths is one parse.
-  const seen = new Map();
+  const seen = new Map<string, ParsedAction>();
   for (const r of results) seen.set(JSON.stringify(r), r);
   return [...seen.values()];
 }
 
-export function parseAction(text, ctx) {
+export function parseAction(text: string, ctx: Parameters<typeof parseActionAll>[1]): ParsedAction {
   const all = parseActionAll(text, ctx);
-  if (all.length !== 1) throw new Error(`parse: ${all.length} lezingen voor:\n${text}`);
-  return all[0];
+  if (all.length !== 1) throw new Error(`parse: ${all.length} readings of:\n${text}`);
+  // Exactly one parse, checked above.
+  return all[0]!;
 }
 
 export { isReference };
