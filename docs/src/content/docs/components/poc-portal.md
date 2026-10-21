@@ -88,7 +88,7 @@ The chronicle of every cell lives in memory. After each step `packages/poc-chron
 
 #### Sources
 
-A source is a corpus that a static PoC loads while it runs rather than at build time. The register lists it under `sources` for the PoC, with a GitHub repository, a branch, a folder on that branch and the name of the environment variable that holds the token. For chronolexografie that is `napp`: the folder `chronolexografie/` of branch `poc/chronolexografie` in the private NAPP corpus, read with `NAPP_CORPUS_TOKEN`. A push to that branch reaches the PoC within a minute and needs no build of regelrecht.
+A source is a corpus that a static PoC loads while it runs rather than at build time. The register lists it under `sources` for the PoC, with a GitHub repository, a branch, a folder on that branch and the name of the environment variable that holds the token. For chronolexografie that is `napp`: the folder `chronolexografie/` of the branch poc/chronolexografie in the private NAPP corpus, read with `NAPP_CORPUS_TOKEN`. A push to that branch reaches the PoC within a minute and needs no build of regelrecht.
 
 The portal serves each source at `/<slug>/bron/<name>`, behind the PoC's own password (`packages/poc-portal/src/bron.rs`). It fetches the branch as a tarball from the GitHub API and keeps the YAML files under the folder. The answer is one JSON object with the files by their path under that folder, plus the short sha of the commit. The token stays in the portal and never reaches the browser. A fetch is kept for 60 seconds. When GitHub fails after that, the portal serves the last good copy with a message saying so. Without a copy it answers `502`, and without a token `503`, each with the reason as text.
 
@@ -96,7 +96,7 @@ The app reads the list of sources from `bronnen.json`, which `copy-assets.js` wr
 
 Two rules decide what happens when an id occurs twice. Two directories in one source with the same `$id` are an error. Between a source and the regelrecht corpus, regelrecht wins, and the app shows that it set the source's copy aside. A case id that is already taken is set aside the same way.
 
-A source that is not available never stops the app. The choice screen shows a banner, "Bron napp niet beschikbaar", with the reason, and the other cases play as before. A file in a source that does not parse makes the whole source unavailable, and the banner names the file. A single case that does not load only drops that case. These errors appear when the page loads, not in the CI of regelrecht, which never sees the source.
+A source that is not available never stops the app. That covers a missing token as well as a failed fetch. The choice screen shows a banner, "Bron napp niet beschikbaar", with the reason, and the other cases play as before. A file in a source that does not parse drops the whole source. The banner then turns red, reads "Bron napp laadt niet" and names the file. A single case that does not load only drops that case. These errors appear when the page loads, not in the CI of regelrecht, which never sees the source.
 
 When this page was written (October 2026), the WASM file was about 3.1 MB (0.9 MB gzipped) and the bundle about 380 kB. The portal serves both uncompressed, as it does the engine of the other static PoCs.
 
@@ -136,7 +136,7 @@ To work on a source without a token, point `POC_BRON_<NAME>` at a local folder t
 POC_BRON_NAPP=<checkout-of-the-source>/chronolexografie just poc-chronolexografie
 ```
 
-The Vite dev server then answers `bron/napp` from that folder (`frontend/scripts/bron-dev.js`), and so does the portal under `just poc`. The folder is read again on every request, so an edit shows after a reload. With the same variable, `cargo test -p regelrecht-poc-chronolexografie` loads every case in the folder and plays its example to a decision. Without it, the NAPP case shows "bron niet beschikbaar" and the test skips the folder.
+The Vite dev server then answers the route of the source from that folder (`frontend/scripts/bron-dev.js`), and so does the portal under `just poc`. The folder is read again on every request, so an edit shows after a reload. With the same variable, `cargo test -p regelrecht-poc-chronolexografie` loads every case in the folder and plays its example to a decision. Without it, the NAPP case shows "bron niet beschikbaar" and the test skips the folder.
 
 `just poc` does not start napp or an assistant. The napp card then answers `503` until `POC_UPSTREAM_NAPP` points at a running napp backend. For the assistant, run `just poc-assistent <case>` in a second terminal (it needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`) and start the portal with the matching variable, for example `POC_ASSISTENT_TERUGBETAALREGIMES=http://127.0.0.1:3600 just poc`.
 

@@ -21,13 +21,13 @@ articles:
     url: https://example.invalid/voorbeeld_bron_subsidie#1
     machine_readable:
       open_terms:
-        # Of de partij geregistreerd is, beoordeelt de autoriteit per
+        # Of de vereniging geregistreerd is, beoordeelt de autoriteit per
         # aanvraag; het is geen veld van de aanvraag.
         - id: partij_geregistreerd
           type: boolean
           required: true
           decided_per_case_by: de Voorbeeldautoriteit (artikel 1)
-          description: Of de aanvragende partij geregistreerd is.
+          description: Of de aanvragende vereniging geregistreerd is.
       execution:
         produces:
           - type: AANVRAAG
@@ -42,7 +42,7 @@ articles:
         parameters:
           - name: naam_partij
             type: string
-            description: De naam van de politieke partij die subsidie aanvraagt.
+            description: De naam van de vereniging die subsidie aanvraagt.
           - name: subsidiejaar
             type: number
             description: Het jaar waarvoor subsidie wordt gevraagd.

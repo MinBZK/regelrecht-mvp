@@ -57,7 +57,10 @@ export function bronMeldingen(bronnen = []) {
   const uit = [];
   for (const b of bronnen) {
     if (b.fout) {
-      const weg = b.fout.startsWith('bron niet beschikbaar');
+      // Niet beschikbaar: geen token of map, of het portaal kon de branch
+      // niet ophalen (GitHub plat, een verlopen token). Anders laadt de bron
+      // wel, maar een bestand erin niet.
+      const weg = /^bron (niet beschikbaar|kon niet worden opgehaald)/.test(b.fout);
       uit.push({
         naam: b.naam,
         variant: weg ? 'warning' : 'critical',

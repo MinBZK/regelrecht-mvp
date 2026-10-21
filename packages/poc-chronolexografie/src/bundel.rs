@@ -131,7 +131,13 @@ fn uit_bron(
     stand: &mut BronStand,
 ) -> Result<Vec<Corpus>> {
     let wortel = Path::new(BRONNEN).join(&bron.naam);
-    if bron.naam.is_empty() || wortel.components().count() != 2 {
+    // A name is one path component of a-z, 0-9 and '-', so it stays under
+    // `bron/`.
+    let geldig = bron
+        .naam
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+    if bron.naam.is_empty() || !geldig {
         return Err(Error::Setup(format!(
             "'{}' is no name of a source",
             bron.naam
@@ -377,10 +383,12 @@ mod tests {
         let Some(dir) = std::env::var_os("POC_BRON_NAPP") else {
             return;
         };
+        // A relative path counts from the repository root, as for `just`.
+        let dir = repo().join(dir);
         let bron = Bron {
             naam: "napp".into(),
             versie: Some("lokaal".into()),
-            bestanden: uit_map(Path::new(&dir)),
+            bestanden: uit_map(&dir),
             ..Bron::default()
         };
         let (alle, standen) = met_bronnen(gebundeld(), vec![bron]).unwrap();

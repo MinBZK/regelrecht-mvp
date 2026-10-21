@@ -306,18 +306,21 @@ pub fn each_yaml_in_tar_gz(
     for entry in entries {
         let mut entry =
             entry.map_err(|e| CorpusError::Git(format!("failed to read archive entry: {e}")))?;
+        let kind = entry.header().entry_type();
+        // GitHub's archive opens with a `pax_global_header` entry (the commit
+        // sha as a pax comment), which is not the top-level directory.
+        if !(kind.is_dir() || kind == tar::EntryType::Regular) {
+            continue;
+        }
         let path = entry
             .path()
             .map_err(|e| CorpusError::Git(format!("archive entry has no path: {e}")))?
             .to_string_lossy()
             .replace('\\', "/");
-        let kind = entry.header().entry_type();
-        // GitHub's archive opens with a `pax_global_header` entry (the commit
-        // sha as a pax comment), which is not the top-level directory.
-        if top.is_none() && (kind.is_dir() || kind == tar::EntryType::Regular) {
+        if top.is_none() {
             top = path.split('/').next().map(str::to_string);
         }
-        if kind != tar::EntryType::Regular {
+        if kind.is_dir() {
             continue;
         }
         // Strip the archive's single top-level directory component.

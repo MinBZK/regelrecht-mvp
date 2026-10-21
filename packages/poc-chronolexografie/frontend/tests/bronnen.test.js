@@ -59,11 +59,13 @@ describe('bronMeldingen', () => {
     const m = bronMeldingen([
       { naam: 'napp', fout: 'bron niet beschikbaar: geen token' },
       { naam: 'x', fout: 'bron/x/regulation/nl/w/2026.yaml: expected a mapping' },
+      { naam: 'gh', fout: 'bron kon niet worden opgehaald: GitHub: 502' },
       { naam: 'stil', versie: 'v', fouten: [], meldingen: [] },
     ]);
     expect(m.map((x) => [x.naam, x.variant, x.tekst])).toEqual([
       ['napp', 'warning', 'Bron napp niet beschikbaar'],
       ['x', 'critical', 'Bron x laadt niet'],
+      ['gh', 'warning', 'Bron gh niet beschikbaar'],
     ]);
     expect(m[1].regels[0]).toContain('bron/x/regulation/nl/w/2026.yaml');
   });
