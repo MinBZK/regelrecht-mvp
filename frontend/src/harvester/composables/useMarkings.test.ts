@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useMarkings } from './useMarkings.js';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
+import { useMarkings } from './useMarkings';
 
 // Minimal Response-like stub for a paginated JSON body.
-function res({ data = [], total = data.length } = {}) {
+function res({ data = [], total = data.length }: { data?: unknown[]; total?: number } = {}) {
   return {
     ok: true,
     status: 200,
@@ -15,7 +15,7 @@ function res({ data = [], total = data.length } = {}) {
 
 // The composable fires an initial fetch + starts a 20s poll on creation. Fake
 // timers keep the poll from firing during the test; we stop it in afterEach.
-let stop = null;
+let stop: (() => void) | null = null;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -29,8 +29,9 @@ afterEach(() => {
 });
 
 /** Create the composable, wait for its initial fetch to settle. */
-async function create(fetchSpy) {
-  globalThis.fetch = fetchSpy;
+async function create(fetchSpy: Mock) {
+  // The spy stands in for fetch; its stub responses carry only what apiFetch reads.
+  globalThis.fetch = fetchSpy as unknown as typeof fetch;
   const comp = useMarkings();
   stop = comp.stopPolling;
   await comp.refresh();
@@ -38,8 +39,10 @@ async function create(fetchSpy) {
 }
 
 /** URL string of the most recent fetch call. */
-function lastUrl(fetchSpy) {
-  return fetchSpy.mock.calls.at(-1)[0];
+function lastUrl(fetchSpy: Mock): string {
+  const call = fetchSpy.mock.calls.at(-1);
+  if (!call) throw new Error('fetch was not called');
+  return call[0] as string;
 }
 
 describe('useMarkings', () => {

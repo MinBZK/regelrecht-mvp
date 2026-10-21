@@ -5,7 +5,13 @@ import MarkingsView from './MarkingsView.vue';
 import DataTable from '../components/DataTable.vue';
 import MarkingDetailPanel from '../components/MarkingDetailPanel.vue';
 import MarkingClusters from '../components/MarkingClusters.vue';
-import { MARKING_COLUMNS, MARKING_SORT_OPTIONS } from '../constants.js';
+import { MARKING_COLUMNS, MARKING_SORT_OPTIONS } from '../constants';
+
+// DataTable is a generic component (`<script setup generic>`), whose props
+// test-utils cannot type; read them as a plain record.
+function tableProps(table: { props(): unknown }): Record<string, unknown> {
+  return table.props() as Record<string, unknown>;
+}
 
 const setSort = vi.fn();
 const setFilter = vi.fn();
@@ -14,7 +20,7 @@ const filterParams = vi.fn(() => new URLSearchParams());
 const refreshClusters = vi.fn();
 const setFilters = vi.fn();
 
-vi.mock('../composables/useMarkings.js', () => ({
+vi.mock('../composables/useMarkings', () => ({
   useMarkings: () => ({
     data: ref([
       {
@@ -43,7 +49,7 @@ vi.mock('../composables/useMarkings.js', () => ({
   }),
 }));
 
-vi.mock('../composables/useMarkingClusters.js', () => ({
+vi.mock('../composables/useMarkingClusters', () => ({
   useMarkingClusters: () => ({
     refresh: refreshClusters,
     data: ref([
@@ -66,9 +72,9 @@ describe('MarkingsView', () => {
   it('wires the DataTable with the marking columns and clickable rows', () => {
     const w = shallowMount(MarkingsView);
     const table = w.findComponent(DataTable);
-    expect(table.props('columns')).toBe(MARKING_COLUMNS);
-    expect(table.props('sortOptions')).toBe(MARKING_SORT_OPTIONS);
-    expect(table.props('clickableRows')).toBe(true);
+    expect(tableProps(table).columns).toBe(MARKING_COLUMNS);
+    expect(tableProps(table).sortOptions).toBe(MARKING_SORT_OPTIONS);
+    expect(tableProps(table).clickableRows).toBe(true);
   });
 
   it('forwards sort and filter events to the composable', () => {

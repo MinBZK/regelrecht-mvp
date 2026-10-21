@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveChartColors } from './chartColors.js';
+import { resolveChartColors, type ChartColors } from './chartColors';
 
 // happy-dom has no real canvas 2D context and no NLDD stylesheet, so this
 // exercises the fallback path: every token resolves to its computed-style
@@ -9,7 +9,8 @@ import { resolveChartColors } from './chartColors.js';
 describe('resolveChartColors', () => {
   it('returns a string for every chart slot', () => {
     const colors = resolveChartColors();
-    for (const key of [
+    expect(colors).not.toBeNull();
+    const keys: (keyof ChartColors)[] = [
       'succeeded',
       'failed',
       'added',
@@ -17,8 +18,9 @@ describe('resolveChartColors', () => {
       'textSecondary',
       'grid',
       'surface',
-    ]) {
-      expect(colors[key], key).toBeTypeOf('string');
+    ];
+    for (const key of keys) {
+      expect(colors?.[key], key).toBeTypeOf('string');
     }
   });
 

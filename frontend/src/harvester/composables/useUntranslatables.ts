@@ -1,16 +1,33 @@
 import { ref, reactive, computed } from 'vue';
-import { usePollingFetch } from './usePollingFetch.js';
-import { UNTRANSLATABLE_SORT_KEYS } from '../constants.js';
+import { usePollingFetch } from './usePollingFetch';
+import { UNTRANSLATABLE_SORT_KEYS, type SortOrder } from '../constants';
+
+/** An untranslatable as the API returns it (`Untranslatable` in packages/admin/src/models.rs). */
+export type Untranslatable = {
+  id: string;
+  law_id: string;
+  /** From a LEFT JOIN on `law_entries`, so it may be missing. */
+  law_name: string | null;
+  enrich_job_id: string;
+  provider: string;
+  article: string;
+  construct: string;
+  reason: string;
+  suggestion: string | null;
+  legal_text_excerpt: string | null;
+  accepted: boolean;
+  created_at: string;
+};
 
 // Mirrors useLawEntries: server-side paginated/sorted/filtered list, polled.
 // Reads GET /api/harvest-admin/untranslatables (editor-api proxies to the
 // harvester-admin service).
 export function useUntranslatables() {
-  const sort = ref('created_at');
-  const order = ref('desc');
+  const sort = ref<string>('created_at');
+  const order = ref<SortOrder>('desc');
   const limit = ref(50);
   const offset = ref(0);
-  const filters = reactive({});
+  const filters = reactive<Record<string, string>>({});
 
   function buildUrl() {
     const params = new URLSearchParams();
@@ -27,9 +44,9 @@ export function useUntranslatables() {
   }
 
   const { data, totalCount, loading, error, refresh, startPolling, stopPolling } =
-    usePollingFetch(buildUrl);
+    usePollingFetch<Untranslatable>(buildUrl);
 
-  function setSort(key, newOrder) {
+  function setSort(key: string, newOrder?: string) {
     if (!UNTRANSLATABLE_SORT_KEYS.has(key)) return;
     if (newOrder === 'asc' || newOrder === 'desc') {
       sort.value = key;
@@ -44,7 +61,7 @@ export function useUntranslatables() {
     refresh();
   }
 
-  function setFilter(key, value) {
+  function setFilter(key: string, value: string) {
     if (value) {
       filters[key] = value;
     } else {
@@ -54,7 +71,7 @@ export function useUntranslatables() {
     refresh();
   }
 
-  function goToPage(page) {
+  function goToPage(page: number) {
     const maxPage = Math.max(1, Math.ceil(totalCount.value / limit.value));
     const clamped = Math.max(1, Math.min(page, maxPage));
     offset.value = (clamped - 1) * limit.value;

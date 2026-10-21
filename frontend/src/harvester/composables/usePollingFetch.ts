@@ -1,15 +1,31 @@
-import { ref, onUnmounted } from 'vue';
+import { ref, onUnmounted, type Ref } from 'vue';
 import { apiFetch } from '@regelrecht/frontend-shared';
 
-export function usePollingFetch(buildUrl, options = {}) {
+/** The paginated list envelope (`PaginatedResponse<T>` in packages/admin/src/models.rs). */
+export type PaginatedResponse<T> = {
+  data: T[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export interface PollingFetchOptions {
+  interval?: number;
+}
+
+/** Builds the URL to fetch; a falsy result skips the fetch. */
+export type UrlBuilder = () => string | null | undefined;
+
+export function usePollingFetch<T>(buildUrl: UrlBuilder, options: PollingFetchOptions = {}) {
   const { interval = 20_000 } = options;
 
-  const data = ref([]);
+  // Cast: `ref<T[]>` would unwrap T into `UnwrapRef<T>`; rows are plain API data.
+  const data = ref([]) as Ref<T[]>;
   const totalCount = ref(0);
   const loading = ref(true);
-  const error = ref(null);
+  const error = ref<string | null>(null);
 
-  let timer = null;
+  let timer: ReturnType<typeof setInterval> | null = null;
   let initialLoad = true;
 
   async function fetchData() {
@@ -26,7 +42,7 @@ export function usePollingFetch(buildUrl, options = {}) {
       // throws ApiError on other non-ok statuses, caught below.
       const response = await apiFetch(url, { allowStatuses: [401] });
       if (response.status === 401) return;
-      const json = await response.json();
+      const json: Partial<PaginatedResponse<T>> = await response.json();
       data.value = json.data || [];
       totalCount.value = json.total ?? data.value.length;
       error.value = null;
@@ -37,7 +53,7 @@ export function usePollingFetch(buildUrl, options = {}) {
         data.value = [];
         totalCount.value = 0;
       }
-      error.value = err.message;
+      error.value = (err as Error).message;
     } finally {
       loading.value = false;
       initialLoad = false;

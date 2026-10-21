@@ -1,8 +1,9 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi } from 'vitest';
 import MarkingClusters from './MarkingClusters.vue';
+import type { MarkingCluster } from '../composables/useMarkingClusters';
 
-function cluster(overrides = {}) {
+function cluster(overrides: Partial<MarkingCluster> = {}): MarkingCluster {
   return {
     resolution: 'operation',
     resolved_by: 'een WORKING_DAY-bewerking',
@@ -19,7 +20,7 @@ function cluster(overrides = {}) {
 // Web components are not defined in jsdom; mounting is enough to read the
 // rendered attributes off them.
 const global = {
-  config: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('nldd-') } },
+  config: { compilerOptions: { isCustomElement: (tag: string) => tag.startsWith('nldd-') } },
 };
 
 describe('MarkingClusters', () => {
@@ -124,7 +125,9 @@ describe('MarkingClusters', () => {
     const c = cluster();
     const w = mount(MarkingClusters, { props: { clusters: [c] }, global });
     await w.find('nldd-list-item').trigger('click');
-    expect(w.emitted('select')[0]).toEqual([c]);
+    const emitted = w.emitted('select');
+    expect(emitted).toBeDefined();
+    expect(emitted?.[0]).toEqual([c]);
   });
 
   it('says so when a cluster names no change', () => {

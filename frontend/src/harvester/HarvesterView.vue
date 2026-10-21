@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * HarvesterView - the harvester-admin "Corpusinwinning" section, merged into the editor.
  *
@@ -17,8 +17,8 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { useColorScheme } from '../composables/useColorScheme';
-import { usePlatformInfo } from './composables/usePlatformInfo.js';
-import { useNewHarvestJob } from './composables/useNewHarvestJob.js';
+import { usePlatformInfo } from './composables/usePlatformInfo';
+import { useNewHarvestJob } from './composables/useNewHarvestJob';
 import { harvesterReturnPath } from '../composables/useLastVisitedRoute';
 import NewHarvestJobSheet from './components/NewHarvestJobSheet.vue';
 import './harvester.css';
@@ -30,7 +30,7 @@ const { colorScheme, setColorScheme } = useColorScheme();
 const { info } = usePlatformInfo();
 const { open: openNewHarvestJob } = useNewHarvestJob();
 
-const colorSchemeOptions = [
+const colorSchemeOptions: [value: string, label: string][] = [
   ['auto', 'Systeem'],
   ['light', 'Licht'],
   ['dark', 'Donker'],

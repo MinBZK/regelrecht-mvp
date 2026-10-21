@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * UntranslatableDetailPanel - right-side sheet showing one untranslatable
  * (RFC-012) in full. DetailPanel.vue is job-shaped (hardcoded job fields), so
@@ -7,16 +7,32 @@
  */
 import { computed, ref, watch } from 'vue';
 import StatusBadge from './StatusBadge.vue';
-import { formatDate } from '../formatters.js';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import { formatDate } from '../formatters';
+import type { Untranslatable } from '../composables/useUntranslatables';
 
-const props = defineProps({
-  row: { type: Object, default: null },
-  isOpen: { type: Boolean, default: false },
-});
+const props = withDefaults(
+  defineProps<{
+    row?: Untranslatable | null;
+    isOpen?: boolean;
+  }>(),
+  {
+    row: null,
+    isOpen: false,
+  },
+);
 
-const emit = defineEmits(['close']);
+const emit = defineEmits<{
+  close: [];
+}>();
 
-const sheetRef = ref(null);
+/** A long free-text field, shown as its own section. */
+interface TextSection {
+  title: string;
+  code: string;
+}
+
+const sheetRef = ref<NLDDSheet | null>(null);
 
 watch(() => props.isOpen, (open) => {
   if (open) sheetRef.value?.show();
@@ -25,7 +41,7 @@ watch(() => props.isOpen, (open) => {
 
 const infoFields = computed(() => {
   if (!props.row) return [];
-  return [
+  return ([
     ['Law', props.row.law_name || props.row.law_id],
     ['Law ID', props.row.law_id],
     ['Article', props.row.article],
@@ -33,14 +49,14 @@ const infoFields = computed(() => {
     ['Provider', props.row.provider],
     ['Enrich job', props.row.enrich_job_id],
     ['Captured', formatDate(props.row.created_at)],
-  ].filter(([, value]) => value != null);
+  ] satisfies [string, string | null | undefined][]).filter(([, value]) => value != null);
 });
 
 // Long free-text sections, each shown only when present.
 const textSections = computed(() => {
   const r = props.row;
   if (!r) return [];
-  const out = [];
+  const out: TextSection[] = [];
   if (r.reason) out.push({ title: 'Reason', code: r.reason });
   if (r.suggestion) out.push({ title: 'Suggestion', code: r.suggestion });
   if (r.legal_text_excerpt) {

@@ -3,7 +3,7 @@ import {
   buildDailyJobsOption,
   formatAxisDate,
   SERIES_LABELS,
-} from './dailyJobsChart.js';
+} from './dailyJobsChart';
 
 const COLORS = {
   succeeded: '#0a0',
@@ -31,7 +31,7 @@ describe('buildDailyJobsOption', () => {
     // Same stack → the bars stack; added is a line, not stacked.
     expect(succeeded.stack).toBe(failed.stack);
     expect(added.type).toBe('line');
-    expect(added.stack).toBeUndefined();
+    expect(added).not.toHaveProperty('stack');
 
     expect(succeeded.data).toEqual([2, 0]);
     expect(failed.data).toEqual([1, 0]);
@@ -53,7 +53,7 @@ describe('buildDailyJobsOption', () => {
 
 describe('formatAxisNumber', () => {
   it('formats with nl-NL grouping', async () => {
-    const { formatAxisNumber } = await import('./dailyJobsChart.js');
+    const { formatAxisNumber } = await import('./dailyJobsChart');
     expect(formatAxisNumber(1500)).toBe('1.500');
     expect(formatAxisNumber(0)).toBe('0');
   });

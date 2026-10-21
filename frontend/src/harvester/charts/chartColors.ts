@@ -31,11 +31,16 @@ const TOKEN_EXPRESSIONS = {
   grid: 'light-dark(var(--primitives-color-neutral-150), var(--primitives-color-neutral-250))',
 };
 
+type ChartToken = keyof typeof TOKEN_EXPRESSIONS;
+
+/** Concrete rgb() (or computed-style fallback) strings, one per chart slot. */
+export type ChartColors = Record<ChartToken | 'surface', string>;
+
 /**
  * @returns {object|null} The resolved colors, or null when the page's color
  *   scheme isn't established yet (caller should retry on a later frame).
  */
-export function resolveChartColors() {
+export function resolveChartColors(): ChartColors | null {
   const probe = document.createElement('span');
   probe.style.display = 'none';
   document.body.appendChild(probe);
@@ -45,7 +50,7 @@ export function resolveChartColors() {
   canvas.height = 1;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-  const colors = {};
+  const colors: Partial<ChartColors> = {};
   try {
     if (ctx && getComputedStyle(document.body).colorScheme === 'normal') {
       // light-dark() is invalid under color-scheme: normal - the design
@@ -53,7 +58,7 @@ export function resolveChartColors() {
       return null;
     }
 
-    const toRgb = (resolved) => {
+    const toRgb = (resolved: string): string => {
       if (!ctx) {
         // No 2D context (test environments): fall back to the computed string.
         return resolved;
@@ -72,7 +77,10 @@ export function resolveChartColors() {
       return `rgb(${r}, ${g}, ${b})`;
     };
 
-    for (const [key, expression] of Object.entries(TOKEN_EXPRESSIONS)) {
+    for (const [key, expression] of Object.entries(TOKEN_EXPRESSIONS) as [
+      ChartToken,
+      string,
+    ][]) {
       probe.style.color = expression;
       colors[key] = toRgb(getComputedStyle(probe).color);
     }
@@ -83,5 +91,6 @@ export function resolveChartColors() {
   } finally {
     probe.remove();
   }
-  return colors;
+  // Every token key plus surface was assigned above.
+  return colors as ChartColors;
 }

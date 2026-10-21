@@ -8,10 +8,13 @@ import { computed } from 'vue';
  * apart from a *no-results* state (filters excluded everything → keep the
  * toolbar so the user can clear or change the search).
  *
- * @param {() => object} getFilters - returns the current filters object
- * @param {(event: string, ...args: unknown[]) => void} emit - component emit
+ * @param getFilters - returns the current filters object
+ * @param emit - component emit
  */
-export function useTableFilters(getFilters, emit) {
+export function useTableFilters(
+  getFilters: () => Record<string, unknown> | null | undefined,
+  emit: (event: 'filter-change', key: string, value: string) => void,
+) {
   const hasActiveFilters = computed(() =>
     Object.values(getFilters() || {}).some((v) => v !== '' && v != null),
   );

@@ -1,15 +1,62 @@
 import { ref, reactive, computed } from 'vue';
-import { usePollingFetch } from './usePollingFetch.js';
-import { JOB_SORT_KEYS, GROUPED_SORT_KEYS } from '../constants.js';
+import { usePollingFetch } from './usePollingFetch';
+import { JOB_SORT_KEYS, GROUPED_SORT_KEYS, type JobStatus, type SortOrder } from '../constants';
 
-export function useJobs(options = {}) {
-  const initialView = options.initialViewMode === 'flat' ? 'flat' : 'grouped';
-  const sort = ref(initialView === 'flat' ? 'created_at' : 'latest_created_at');
-  const order = ref('desc');
+/** A job row (`Job` in packages/pipeline/src/models.rs). */
+export type Job = {
+  id: string;
+  /** The `job_type` enum's wire name (see `JOB_TYPES`). */
+  job_type: string;
+  law_id: string;
+  status: JobStatus;
+  priority: number;
+  /** Free-form JSON (`serde_json::Value`). */
+  payload: unknown;
+  /** Free-form JSON (`serde_json::Value`); a failed job carries its `error`. */
+  result: JobResult | null;
+  /** Free-form JSON (`serde_json::Value`). */
+  progress: unknown;
+  attempts: number;
+  max_attempts: number;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  scheduled_at: string | null;
+};
+
+/** The fields the dashboard reads from a job's free-form `result`. */
+export type JobResult = {
+  error?: string;
+  [key: string]: unknown;
+};
+
+/** One row of the law-grouped view (`JobSummary` in packages/admin/src/handlers.rs). */
+export type JobSummary = {
+  law_id: string;
+  total_jobs: number;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  latest_created_at: string;
+};
+
+export type JobsViewMode = 'flat' | 'grouped';
+
+export interface JobsOptions {
+  /** Taken from the URL as is; anything other than 'flat' means grouped. */
+  initialViewMode?: unknown;
+}
+
+export function useJobs(options: JobsOptions = {}) {
+  const initialView: JobsViewMode = options.initialViewMode === 'flat' ? 'flat' : 'grouped';
+  const sort = ref<string>(initialView === 'flat' ? 'created_at' : 'latest_created_at');
+  const order = ref<SortOrder>('desc');
   const limit = ref(50);
   const offset = ref(0);
-  const filters = reactive({});
-  const viewMode = ref(initialView);
+  const filters = reactive<Record<string, string>>({});
+  const viewMode = ref<JobsViewMode>(initialView);
 
   function buildUrl() {
     const allowedKeys = viewMode.value === 'grouped' ? GROUPED_SORT_KEYS : JOB_SORT_KEYS;
@@ -31,7 +78,8 @@ export function useJobs(options = {}) {
   }
 
   const { data, totalCount, loading, error, refresh: rawRefresh, startPolling, stopPolling, reset } =
-    usePollingFetch(buildUrl);
+    // Flat rows are jobs, grouped rows are per-law summaries.
+    usePollingFetch<Job | JobSummary>(buildUrl);
 
   async function refresh() {
     await rawRefresh();
@@ -49,7 +97,7 @@ export function useJobs(options = {}) {
     await refresh();
   }
 
-  function setSort(key, newOrder) {
+  function setSort(key: string, newOrder?: string) {
     const allowedKeys = viewMode.value === 'grouped' ? GROUPED_SORT_KEYS : JOB_SORT_KEYS;
     if (!allowedKeys.has(key)) return;
     if (newOrder === 'asc' || newOrder === 'desc') {
@@ -65,7 +113,7 @@ export function useJobs(options = {}) {
     refresh();
   }
 
-  function setFilter(key, value) {
+  function setFilter(key: string, value: string) {
     if (value) {
       filters[key] = value;
     } else {
@@ -75,14 +123,14 @@ export function useJobs(options = {}) {
     refresh();
   }
 
-  function goToPage(page) {
+  function goToPage(page: number) {
     const maxPage = Math.max(1, Math.ceil(totalCount.value / limit.value));
     const clamped = Math.max(1, Math.min(page, maxPage));
     offset.value = (clamped - 1) * limit.value;
     refresh();
   }
 
-  function setLawIdFilter(lawId) {
+  function setLawIdFilter(lawId: string) {
     for (const key of Object.keys(filters)) delete filters[key];
     if (viewMode.value === 'flat') {
       filters.law_id = lawId;

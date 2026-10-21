@@ -4,13 +4,19 @@ import { ref, reactive } from 'vue';
 import UntranslatablesView from './UntranslatablesView.vue';
 import DataTable from '../components/DataTable.vue';
 import UntranslatableDetailPanel from '../components/UntranslatableDetailPanel.vue';
-import { UNTRANSLATABLE_COLUMNS, UNTRANSLATABLE_SORT_OPTIONS } from '../constants.js';
+import { UNTRANSLATABLE_COLUMNS, UNTRANSLATABLE_SORT_OPTIONS } from '../constants';
+
+// DataTable is a generic component (`<script setup generic>`), whose props
+// test-utils cannot type; read them as a plain record.
+function tableProps(table: { props(): unknown }): Record<string, unknown> {
+  return table.props() as Record<string, unknown>;
+}
 
 const setSort = vi.fn();
 const setFilter = vi.fn();
 const goToPage = vi.fn();
 
-vi.mock('../composables/useUntranslatables.js', () => ({
+vi.mock('../composables/useUntranslatables', () => ({
   useUntranslatables: () => ({
     data: ref([{ id: '1', law_id: 'test_law', construct: 'rounding', accepted: false }]),
     loading: ref(false),
@@ -30,9 +36,9 @@ describe('UntranslatablesView', () => {
   it('wires the DataTable with the untranslatable columns and clickable rows', () => {
     const w = shallowMount(UntranslatablesView);
     const table = w.findComponent(DataTable);
-    expect(table.props('columns')).toBe(UNTRANSLATABLE_COLUMNS);
-    expect(table.props('sortOptions')).toBe(UNTRANSLATABLE_SORT_OPTIONS);
-    expect(table.props('clickableRows')).toBe(true);
+    expect(tableProps(table).columns).toBe(UNTRANSLATABLE_COLUMNS);
+    expect(tableProps(table).sortOptions).toBe(UNTRANSLATABLE_SORT_OPTIONS);
+    expect(tableProps(table).clickableRows).toBe(true);
   });
 
   it('forwards sort/filter/page events to the composable', () => {

@@ -1,13 +1,29 @@
 import { ref, reactive, computed } from 'vue';
-import { usePollingFetch } from './usePollingFetch.js';
-import { LAW_ENTRY_SORT_KEYS } from '../constants.js';
+import { usePollingFetch } from './usePollingFetch';
+import { LAW_ENTRY_SORT_KEYS, type LawStatus, type SortOrder } from '../constants';
+
+/** A law row (`LawEntry` in packages/pipeline/src/models.rs). */
+export type LawEntry = {
+  law_id: string;
+  law_name: string | null;
+  slug: string | null;
+  status: LawStatus;
+  harvest_job_id: string | null;
+  enrich_job_id: string | null;
+  /** Fraction (0-1) of articles that received a `machine_readable` section. */
+  coverage_score: number | null;
+  harvest_fail_count: number;
+  enrich_fail_count: number;
+  created_at: string;
+  updated_at: string;
+};
 
 export function useLawEntries() {
-  const sort = ref('updated_at');
-  const order = ref('desc');
+  const sort = ref<string>('updated_at');
+  const order = ref<SortOrder>('desc');
   const limit = ref(50);
   const offset = ref(0);
-  const filters = reactive({});
+  const filters = reactive<Record<string, string>>({});
 
   function buildUrl() {
     const params = new URLSearchParams();
@@ -24,9 +40,9 @@ export function useLawEntries() {
   }
 
   const { data, totalCount, loading, error, refresh, startPolling, stopPolling } =
-    usePollingFetch(buildUrl);
+    usePollingFetch<LawEntry>(buildUrl);
 
-  function setSort(key, newOrder) {
+  function setSort(key: string, newOrder?: string) {
     if (!LAW_ENTRY_SORT_KEYS.has(key)) return;
     if (newOrder === 'asc' || newOrder === 'desc') {
       sort.value = key;
@@ -41,7 +57,7 @@ export function useLawEntries() {
     refresh();
   }
 
-  function setFilter(key, value) {
+  function setFilter(key: string, value: string) {
     if (value) {
       filters[key] = value;
     } else {
@@ -51,7 +67,7 @@ export function useLawEntries() {
     refresh();
   }
 
-  function goToPage(page) {
+  function goToPage(page: number) {
     const maxPage = Math.max(1, Math.ceil(totalCount.value / limit.value));
     const clamped = Math.max(1, Math.min(page, maxPage));
     offset.value = (clamped - 1) * limit.value;

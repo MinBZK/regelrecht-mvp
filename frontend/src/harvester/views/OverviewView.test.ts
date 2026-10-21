@@ -4,10 +4,17 @@ import { ref } from 'vue';
 import OverviewView from './OverviewView.vue';
 import DataTable from '../components/DataTable.vue';
 import DailyJobsChart from '../components/DailyJobsChart.vue';
+import type { DashboardStats } from '../composables/useDashboardStats';
+
+// DataTable is a generic component (`<script setup generic>`), whose props
+// test-utils cannot type; read them as a plain record.
+function tableProps(table: { props(): unknown }): Record<string, unknown> {
+  return table.props() as Record<string, unknown>;
+}
 
 // One bucket per job_type, as the API serves them. `document_convert` is in
 // here on purpose: the page used to hardcode harvest/enrich and drop the rest.
-const STATS = {
+const STATS: DashboardStats = {
   jobs: {
     total: 1211,
     by_type: { document_convert: 7, enrich: 362, harvest: 842 },
@@ -54,7 +61,7 @@ const closeDetail = vi.fn();
 // Per-mount stats value - tests can swap it to mount with a variant payload.
 let currentStats = STATS;
 
-vi.mock('../composables/useDashboardStats.js', () => ({
+vi.mock('../composables/useDashboardStats', () => ({
   useDashboardStats: () => ({
     stats: ref(currentStats),
     loading: ref(false),
@@ -62,7 +69,7 @@ vi.mock('../composables/useDashboardStats.js', () => ({
   }),
 }));
 
-vi.mock('../composables/useJobDetail.js', () => ({
+vi.mock('../composables/useJobDetail', () => ({
   useJobDetail: () => ({
     job: ref(null),
     isOpen: ref(false),
@@ -116,17 +123,18 @@ describe('OverviewView', () => {
 
     // Charts sit in the right column of their type's half/half section, in the
     // key order the API used (document_convert, enrich, harvest).
-    expect(charts[0].attributes('slot')).toBe('right');
-    expect(charts[0].props('entries')).toEqual([
+    // Non-null: the length was just asserted.
+    expect(charts[0]!.attributes('slot')).toBe('right');
+    expect(charts[0]!.props('entries')).toEqual([
       { date: '2026-07-06', added: 1, succeeded: 1, failed: 0 },
       { date: '2026-07-07', added: 0, succeeded: 0, failed: 0 },
     ]);
-    expect(charts[2].props('entries')).toEqual([
+    expect(charts[2]!.props('entries')).toEqual([
       { date: '2026-07-06', added: 4, succeeded: 3, failed: 1 },
       { date: '2026-07-07', added: 1, succeeded: 0, failed: 0 },
     ]);
 
-    expect(charts[1].props('entries')).toEqual([
+    expect(charts[1]!.props('entries')).toEqual([
       { date: '2026-07-06', added: 2, succeeded: 2, failed: 0 },
       { date: '2026-07-07', added: 0, succeeded: 1, failed: 1 },
     ]);
@@ -148,10 +156,10 @@ describe('OverviewView', () => {
   it('wires the failures DataTable with the recent_failures data', () => {
     const w = shallowMount(OverviewView);
     const table = w.findComponent(DataTable);
-    expect(table.props('data')).toEqual(STATS.recent_failures);
-    expect(table.props('clickableRows')).toBe(true);
+    expect(tableProps(table).data).toEqual(STATS.recent_failures);
+    expect(tableProps(table).clickableRows).toBe(true);
     // No sortOptions passed → the table toolbar stays empty.
-    expect(table.props('sortOptions')).toBeNull();
+    expect(tableProps(table).sortOptions).toBeNull();
   });
 
   it('fetches the full job and opens the detail panel on row click', async () => {

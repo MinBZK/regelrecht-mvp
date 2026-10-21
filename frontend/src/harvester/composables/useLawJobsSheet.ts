@@ -7,7 +7,7 @@ export function useLawJobsSheet() {
   return {
     isOpen,
     lawId,
-    open: (id) => { lawId.value = id; isOpen.value = true; },
+    open: (id: string) => { lawId.value = id; isOpen.value = true; },
     close: () => { isOpen.value = false; },
   };
 }

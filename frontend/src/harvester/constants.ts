@@ -1,12 +1,64 @@
-import { formatCoverageScore, formatDate, jobSubtitle } from './formatters.js';
+import { formatCoverageScore, formatDate, jobSubtitle } from './formatters';
+import type { Job, JobSummary } from './composables/useJobs';
+import type { LawEntry } from './composables/useLawEntries';
+import type { Untranslatable } from './composables/useUntranslatables';
+import type { Marking } from './composables/useMarkings';
+
+/** A column of the harvester's DataTable/GroupedTable, over rows of type `Row`. */
+export interface TableColumn<Row = unknown> {
+  key: string;
+  label: string;
+  sortable?: boolean;
+  filter?: ColumnFilter;
+  width?: number | string;
+  minWidth?: string;
+  align?: 'right';
+  hideBelow?: string;
+  /** Shows `row[supportingKey]` under the value. */
+  supportingKey?: string;
+  // Method syntax on purpose: it makes a `TableColumn<LawEntry>` usable where a
+  // table takes columns over any row.
+  overline?(row: Row): string | undefined;
+  text?(row: Row): string;
+  supportingText?(row: Row): string | undefined;
+}
+
+/** A column's toolbar filter: a dropdown over `options`, or free text. */
+export interface ColumnFilter {
+  /** The filter key, when it differs from the column key. */
+  key?: string;
+  type?: 'text';
+  label?: string;
+  options?: readonly string[];
+}
+
+/** Labels for the sort directions a sort-menu item offers. */
+export interface DirectionLabels {
+  asc?: string;
+  desc?: string;
+}
+
+export interface SortOption {
+  key: string;
+  label: string;
+  directionLabels?: DirectionLabels;
+}
+
+export type SortOrder = 'asc' | 'desc';
 
 export const LAW_STATUSES = [
   'unknown', 'queued', 'harvesting', 'harvested', 'harvest_failed', 'harvest_exhausted',
   'enriching', 'enriched', 'enrich_failed', 'enrich_exhausted',
   'not_harvestable',
-];
+] as const;
 
-export const JOB_STATUSES = ['pending', 'processing', 'completed', 'failed'];
+/** The `law_status` enum (`LawStatusValue` in packages/pipeline/src/models.rs). */
+export type LawStatus = (typeof LAW_STATUSES)[number];
+
+export const JOB_STATUSES = ['pending', 'processing', 'completed', 'failed'] as const;
+
+/** The `job_status` enum (`JobStatus` in packages/pipeline/src/models.rs). */
+export type JobStatus = (typeof JOB_STATUSES)[number];
 
 // Mirrors the `job_type` database enum (packages/pipeline/src/models.rs).
 // The dashboard no longer reads this list; it takes the buckets the API returns.
@@ -20,10 +72,10 @@ export const JOB_TYPES = [
 // there is a dropdown option that always returns nothing.
 export const LAW_SCOPED_JOB_TYPES = ['harvest', 'enrich', 'traject_harvest'];
 
-export const ENRICHABLE_STATUSES = ['harvested', 'enriched', 'enrich_failed'];
-export const RE_HARVESTABLE_STATUSES = ['unknown', 'queued', 'harvest_failed', 'harvested', 'enriched', 'enrich_failed', 'not_harvestable'];
+export const ENRICHABLE_STATUSES: LawStatus[] = ['harvested', 'enriched', 'enrich_failed'];
+export const RE_HARVESTABLE_STATUSES: LawStatus[] = ['unknown', 'queued', 'harvest_failed', 'harvested', 'enriched', 'enrich_failed', 'not_harvestable'];
 
-export const LAW_ENTRY_COLUMNS = [
+export const LAW_ENTRY_COLUMNS: TableColumn<LawEntry>[] = [
   {
     key: 'law_name',
     label: 'Name',
@@ -47,7 +99,7 @@ export const LAW_ENTRY_COLUMNS = [
   { key: '_actions', label: 'Actions', sortable: false, width: 60 },
 ];
 
-export const JOB_COLUMNS = [
+export const JOB_COLUMNS: TableColumn<Job>[] = [
   {
     key: 'id',
     label: 'Job',
@@ -72,7 +124,7 @@ export const JOB_COLUMNS = [
   },
 ];
 
-export const GROUPED_COLUMNS = [
+export const GROUPED_COLUMNS: TableColumn<JobSummary>[] = [
   {
     key: 'law_id',
     label: 'Law ID',
@@ -93,7 +145,7 @@ export const GROUPED_COLUMNS = [
 // provider added there but not here still displays, only its filter option is missing.
 export const UNTRANSLATABLE_PROVIDERS = ['opencode', 'claude'];
 
-export const UNTRANSLATABLE_COLUMNS = [
+export const UNTRANSLATABLE_COLUMNS: TableColumn<Untranslatable>[] = [
   {
     key: 'law_name',
     label: 'Law',
@@ -153,7 +205,7 @@ export const MARKING_PROVIDERS = UNTRANSLATABLE_PROVIDERS;
 // dropdown rather than the free-text search the other fields use.
 export const MARKING_RESOLUTIONS = ['operation', 'model'];
 
-export const MARKING_COLUMNS = [
+export const MARKING_COLUMNS: TableColumn<Marking>[] = [
   {
     key: 'law_name',
     label: 'Wet',
@@ -216,12 +268,12 @@ export const MARKING_COLUMNS = [
 //  - omitted   → single item, no direction shown (backend decides order)
 // Within a single field, the first listed direction is the more useful one
 // (most-recent / highest / a-z first) so the menu reads top-down by relevance.
-const DIR_DATE    = { desc: 'new - old', asc: 'old - new' };
-const DIR_NUMERIC = { desc: 'high - low', asc: 'low - high' };
-const DIR_TEXT    = { asc: 'a - z', desc: 'z - a' };
+const DIR_DATE: DirectionLabels    = { desc: 'new - old', asc: 'old - new' };
+const DIR_NUMERIC: DirectionLabels = { desc: 'high - low', asc: 'low - high' };
+const DIR_TEXT: DirectionLabels    = { asc: 'a - z', desc: 'z - a' };
 
 // Sort options are ordered by relevance - most useful pivots first.
-export const JOB_SORT_OPTIONS = [
+export const JOB_SORT_OPTIONS: SortOption[] = [
   { key: 'created_at', label: 'Recent changes' },
   { key: 'status', label: 'Status' },
   { key: 'priority', label: 'Priority', directionLabels: DIR_NUMERIC },
@@ -231,14 +283,14 @@ export const JOB_SORT_OPTIONS = [
   { key: 'id', label: 'Job ID', directionLabels: DIR_TEXT },
 ];
 
-export const GROUPED_SORT_OPTIONS = [
+export const GROUPED_SORT_OPTIONS: SortOption[] = [
   { key: 'latest_created_at', label: 'Recent changes' },
   { key: 'status', label: 'Status' },
   { key: 'total_jobs', label: 'Jobs', directionLabels: DIR_NUMERIC },
   { key: 'law_id', label: 'Law ID', directionLabels: DIR_TEXT },
 ];
 
-export const LAW_ENTRY_SORT_OPTIONS = [
+export const LAW_ENTRY_SORT_OPTIONS: SortOption[] = [
   { key: 'updated_at', label: 'Recent changes' },
   { key: 'status', label: 'Status' },
   { key: 'coverage_score', label: 'Coverage', directionLabels: DIR_NUMERIC },
@@ -248,7 +300,7 @@ export const LAW_ENTRY_SORT_OPTIONS = [
 // Keys must match the backend sort allowlist (ALLOWED_SORT_COLUMNS_UNTRANSLATABLE):
 // all real untranslatables columns. The "Law" pivot sorts by law_id (a real
 // column), not the joined law_name.
-export const UNTRANSLATABLE_SORT_OPTIONS = [
+export const UNTRANSLATABLE_SORT_OPTIONS: SortOption[] = [
   { key: 'created_at', label: 'Recent changes' },
   { key: 'law_id', label: 'Law', directionLabels: DIR_TEXT },
   { key: 'construct', label: 'Construct', directionLabels: DIR_TEXT },
@@ -263,7 +315,7 @@ export const JOB_SORT_KEYS = new Set(JOB_SORT_OPTIONS.map((o) => o.key));
 export const GROUPED_SORT_KEYS = new Set(GROUPED_SORT_OPTIONS.map((o) => o.key));
 // Keys must match the backend allowlist (ALLOWED_SORT_COLUMNS_MARKING): real
 // columns on `markings` only. `law_name` is joined, so it is not sortable.
-export const MARKING_SORT_OPTIONS = [
+export const MARKING_SORT_OPTIONS: SortOption[] = [
   { key: 'created_at', label: 'Recent gevonden' },
   { key: 'law_id', label: 'Wet', directionLabels: DIR_TEXT },
   { key: 'about', label: 'Constructie', directionLabels: DIR_TEXT },
@@ -278,7 +330,10 @@ export const MARKING_SORT_KEYS = new Set(MARKING_SORT_OPTIONS.map((o) => o.key))
 
 export const UNTRANSLATABLE_SORT_KEYS = new Set(UNTRANSLATABLE_SORT_OPTIONS.map((o) => o.key));
 
-export const STATUS_BADGE_MAP = {
+/** The badge colors a status maps to. */
+export type StatusBadgeColor = 'success' | 'critical' | 'accent' | 'neutral';
+
+export const STATUS_BADGE_MAP: Record<string, StatusBadgeColor> = {
   completed: 'success',
   harvested: 'success',
   enriched: 'success',
@@ -311,7 +366,7 @@ export const DATE_FORMATTER = new Intl.DateTimeFormat('nl-NL', {
   minute: '2-digit',
 });
 
-export const PHASE_LABELS = {
+export const PHASE_LABELS: Record<string, string> = {
   mvt_research: 'MvT Research',
   generating: 'Generating',
   validating: 'Validating',

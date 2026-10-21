@@ -1,13 +1,21 @@
 import { ref, onUnmounted } from 'vue';
 import { apiFetch } from '@regelrecht/frontend-shared';
+import type { Job } from './useJobs';
+
+/**
+ * A job as the detail sheet holds it: normally a full `Job`, but the overview
+ * falls back to the fields a recent-failure row carries when fetching the full
+ * job fails, so only `id` and `status` are guaranteed.
+ */
+export type DetailJob = Pick<Job, 'id' | 'status'> & Partial<Job>;
 
 export function useJobDetail() {
-  const job = ref(null);
+  const job = ref<DetailJob | null>(null);
   const isOpen = ref(false);
 
-  let progressTimer = null;
+  let progressTimer: ReturnType<typeof setInterval> | null = null;
 
-  function open(initialJob) {
+  function open(initialJob: DetailJob) {
     job.value = { ...initialJob };
     isOpen.value = true;
     stopProgressPoll();
@@ -32,7 +40,7 @@ export function useJobDetail() {
         const resp = await apiFetch(
           `/api/harvest-admin/jobs/${encodeURIComponent(job.value.id)}`,
         );
-        const updated = await resp.json();
+        const updated: Job = await resp.json();
         job.value = updated;
         if (updated.status !== 'processing') {
           stopProgressPoll();

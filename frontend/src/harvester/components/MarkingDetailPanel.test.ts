@@ -1,12 +1,13 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect } from 'vitest';
 import MarkingDetailPanel from './MarkingDetailPanel.vue';
+import type { Marking } from '../composables/useMarkings';
 
 // The untranslatable panel it is modelled on has no test, because it only maps
 // fields onto rows. This one carries decisions worth pinning: an empty
 // `target` means something, and a marking is read beside the words it hangs
 // on.
-function marking(overrides = {}) {
+function marking(overrides: Partial<Marking> = {}): Marking {
   return {
     id: '1',
     law_id: 'wet_a',
@@ -26,7 +27,7 @@ function marking(overrides = {}) {
 }
 
 const global = {
-  config: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('nldd-') } },
+  config: { compilerOptions: { isCustomElement: (tag: string) => tag.startsWith('nldd-') } },
   stubs: { Teleport: true },
 };
 
