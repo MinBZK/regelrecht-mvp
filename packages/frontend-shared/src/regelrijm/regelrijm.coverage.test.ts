@@ -213,7 +213,14 @@ describe('RegelRijm covers the schema', () => {
     const once = read('value/values/1');
     expect(once.text).toBe('[hoogte] wordt: de grootste van ( € 0,00; ⟨bedrag uit [inkomen] en [korting]⟩ maal [percentage inkomen] )');
     expect(once.folds.map((x) => x.number)).toEqual(['1.1.1']);
-    expect(read('value/values/1', 'value/values/1/values/0').text).toBe('[hoogte] wordt: de grootste van ( € 0,00; ( [inkomen] min [drempel] min [korting] ) maal [percentage inkomen] )');
+    // A bracket inside a bracket breaks, one operand per line.
+    expect(read('value/values/1', 'value/values/1/values/0').text).toBe([
+      '[hoogte] wordt:',
+      '\tde grootste van (',
+      '\t\t€ 0,00;',
+      '\t\t( [inkomen] min [drempel] min [korting] ) maal [percentage inkomen]',
+      '\t)',
+    ].join('\n'));
     // A part opened under one that is still folded stays folded.
     expect(read('value/values/1/values/0').text).toBe(read().text);
   });
@@ -222,7 +229,7 @@ describe('RegelRijm covers the schema', () => {
     const sum = (a: unknown) => ({ operation: 'ADD', values: [a, 1] });
     const foreach = { operation: 'FOREACH', collection: sum('$m'), as: 'x', filter: { operation: 'EQUALS', subject: '$x', value: 1 }, body: sum('$x'), combine: 'ADD' };
     const f = renderFocus({ output: 'u', value: foreach }, ['value'], { ctx, depth: 1 });
-    expect(f.text).toBe('[u] wordt: de som van ( [x] plus 1 ) over elke [x] in ( [m] plus 1 ) waarvoor ( [x] is 1 )');
+    expect(f.text).toBe('[u] wordt: de som van ( [x] plus 1 ) over elke [x] in ( [m] plus 1 ) waarvoor ( [x] 1 is )');
     expect(f.folds).toEqual([]);
     const long = (a: unknown) => ({ operation: 'ADD', values: [a, '$b', '$c', '$e', '$f'] });
     const g = renderFocus({ output: 'u', value: { operation: 'DATE_ADD', date: long('$d'), years: long('$n') } }, ['value'], { ctx, depth: 1 });

@@ -55,14 +55,21 @@ function firstEmit(wrapper: VueWrapper, event: string, n = 0): unknown[] {
 function ruleText(wrapper: VueWrapper, output: string) {
   const el = wrapper.find(`[data-testid="regelrijm-pane-rule-${output}"] [data-testid="regelrijm-text"]`).element.cloneNode(true);
   for (const token of (el as Element).querySelectorAll('nldd-token')) token.replaceWith(token.getAttribute('text') ?? '');
-  return el.textContent;
+  // One element per line of the reading; its depth is in a style, not in the text.
+  return [...(el as Element).querySelectorAll('.rr-line')].map((l) => l.textContent).join('\n');
 }
 const hint = (wrapper: VueWrapper, output: string, ref: string) => wrapper.find(`[data-testid="regelrijm-pane-rule-${output}"] [data-testid="regelrijm-hint-${ref}"]`).attributes('text');
 
 describe('RegelRijmPane', () => {
   it('reads every rule of the article in full', async () => {
     const wrapper = await pane();
-    expect(ruleText(wrapper, 'hoogte')).toBe('[hoogte] wordt: de grootste van ( € 0,00; ( inkomen min [drempel] min korting ) maal [percentage] )');
+    expect(ruleText(wrapper, 'hoogte')).toBe([
+      '[hoogte] wordt:',
+      'de grootste van (',
+      '€ 0,00;',
+      '( inkomen min [drempel] min korting ) maal [percentage]',
+      ')',
+    ].join('\n'));
     expect(ruleText(wrapper, 'dubbel')).toBe('[dubbel] wordt: hoogte maal 2');
     expect(wrapper.text()).not.toContain('⟨');
   });

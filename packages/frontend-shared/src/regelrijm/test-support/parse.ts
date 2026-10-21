@@ -238,9 +238,58 @@ class Parser {
       if (q >= 0) for (const [vals, r] of this.parenList(q)) out.push([{ operation: 'IN', subject: s, values: vals }, r]);
       q = this.word(p, 'staat in');
       if (q >= 0) for (const [v, r] of this.closed(q)) out.push([{ operation: 'IN', subject: s, value: v }, r]);
+      out.push(...this.subordinate(s, p));
     }
     return out;
   });
+
+  // The same comparisons in a subordinate clause (after `als` and `waarvoor`),
+  // with the verb at the end: `[a] waar is`, `[a] meer is dan [b]`. The parser
+  // accepts them anywhere; the round trip still demands exactly one reading.
+  subordinate(s: unknown, p: number): Result[] {
+    const out: Result[] = [];
+    const around: [string, string, string][] = [['ten minste', 'is', 'GREATER_THAN_OR_EQUAL'], ['ten hoogste', 'is', 'LESS_THAN_OR_EQUAL']];
+    for (const [w, op] of [['meer is dan', 'GREATER_THAN'], ['minder is dan', 'LESS_THAN']]) {
+      const q = this.word(p, w);
+      if (q >= 0) for (const [v, r] of this.arith(q)) out.push([{ operation: op, subject: s, value: v }, r]);
+    }
+    for (const [w, end, op] of around) {
+      const q = this.word(p, w);
+      if (q < 0) continue;
+      for (const [v, r] of this.arith(q)) {
+        const e = this.word(r, end);
+        if (e >= 0) out.push([{ operation: op, subject: s, value: v }, e]);
+      }
+    }
+    for (const [v, r] of this.arith(p)) {
+      const e = this.word(r, 'is');
+      if (e >= 0) out.push([{ operation: 'EQUALS', subject: s, value: v }, e]);
+    }
+    let q = this.word(p, 'niet');
+    if (q >= 0) {
+      for (const [v, r] of this.arith(q)) {
+        const e = this.word(r, 'is');
+        if (e >= 0) out.push([{ operation: 'NOT', value: { operation: 'EQUALS', subject: s, value: v } }, e]);
+      }
+    }
+    q = this.word(p, 'bekend is');
+    if (q >= 0) out.push([{ operation: 'NOT', value: { operation: 'EQUALS', subject: s, value: null } }, q]);
+    q = this.word(p, 'een van');
+    if (q >= 0) {
+      for (const [vals, r] of this.parenList(q)) {
+        const e = this.word(r, 'is');
+        if (e >= 0) out.push([{ operation: 'IN', subject: s, values: vals }, e]);
+      }
+    }
+    q = this.word(p, 'in');
+    if (q >= 0) {
+      for (const [v, r] of this.closed(q)) {
+        const e = this.word(r, 'staat');
+        if (e >= 0) out.push([{ operation: 'IN', subject: s, value: v }, e]);
+      }
+    }
+    return out;
+  }
 
   arith: Rule = (pos) => this.rule('arith', pos, () => {
     const out: Result[] = [...this.closed(pos)];

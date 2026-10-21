@@ -14,6 +14,8 @@ export const line = Object.freeze({ kind: 'line' } as const);
 export const hardline = Object.freeze({ kind: 'hardline' } as const);
 export const group = (...doc: Doc[]): Doc => ({ kind: 'group', doc });
 export const nest = (...doc: Doc[]): Doc => ({ kind: 'nest', doc });
+// A group that always breaks, whatever the width; it breaks the groups around it too.
+export const brokenGroup = (...doc: Doc[]): Doc => ({ kind: 'group', doc, force: true });
 
 /** A token: `tk` is keyword, term, name, literal, punct, fold, hole or error. */
 export const tok = (tk: TokenKind, text: string, extra: Partial<Omit<Token, 'kind' | 'tk' | 'text'>> = {}): Token => ({ kind: 'tok', tk, text, ...extra });
@@ -24,6 +26,7 @@ function flatWidth(doc: Doc): number {
   if (doc.kind === 'tok') return [...doc.text].length;
   if (doc.kind === 'line') return 1;
   if (doc.kind === 'hardline') return Infinity;
+  if (doc.kind === 'group' && doc.force) return Infinity;
   return flatWidth(doc.doc);
 }
 
@@ -71,7 +74,9 @@ export function layout(doc: Doc, width = WIDTH): Segment[] {
     } else if (d.kind === 'nest') {
       stack.push([ind + 1, flat, d.doc]);
     } else if (d.kind === 'group') {
-      if (flat) {
+      if (d.force) {
+        stack.push([ind, false, d.doc]);
+      } else if (flat) {
         stack.push([ind, true, d.doc]);
       } else {
         const fits = col + flatWidth(d.doc) + rest() <= width;
@@ -96,7 +101,7 @@ function untilBreak(doc: Doc, flat: boolean): { n: number; stop: boolean } {
   if (doc.kind === 'tok') return { n: [...doc.text].length, stop: false };
   if (doc.kind === 'line') return flat ? { n: 1, stop: false } : { n: 0, stop: true };
   if (doc.kind === 'hardline') return { n: 0, stop: true };
-  if (doc.kind === 'group') return untilBreak(doc.doc, true);
+  if (doc.kind === 'group') return untilBreak(doc.doc, !doc.force);
   return untilBreak(doc.doc, flat);
 }
 

@@ -49,7 +49,7 @@ export type Doc =
   | Token
   | { readonly kind: 'line' }
   | { readonly kind: 'hardline' }
-  | { kind: 'group' | 'nest'; doc: Doc[] }
+  | { kind: 'group' | 'nest'; doc: Doc[]; force?: boolean }
   | Doc[];
 
 /** A name → term map that makes a reading use a corpus's own words. */

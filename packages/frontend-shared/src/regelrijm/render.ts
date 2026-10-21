@@ -2,7 +2,7 @@
 // document and the level it reads at; an operand that must be tighter than
 // what it got is parenthesised. That rule, and nothing in the layout, is what
 // makes two different trees never read alike.
-import { group, nest, line, hardline, tok, layout, segmentsToText } from './doc';
+import { brokenGroup, group, nest, line, hardline, tok, layout, segmentsToText } from './doc';
 import { formatLiteral, formatNumber, MONTHS, PERIOD_WORDS } from './literals';
 import { humanizeName, referenceSegments } from './names';
 import { isOperation, isReference, OPERATION_FIELDS } from './normalise';
@@ -55,6 +55,22 @@ export interface RendererContext {
 
 // Levels, loosest first. An operand needs at least the level its position
 // asks for, or it gets parentheses.
+/**
+ * Where a comparison stands. After `als` and `waarvoor` Dutch has a
+ * subordinate clause, with the verb at the end: `als [a] waar is`, against
+ * `[a] is waar` in a main clause.
+ */
+export type Clause = 'main' | 'sub';
+
+/** Comparison words in a main clause and in a subordinate one (before and after the value). */
+const CMP_SUB_WORDS: Record<string, [string | null, string | null]> = {
+  EQUALS: [null, 'is'],
+  GREATER_THAN: ['meer is dan', null],
+  LESS_THAN: ['minder is dan', null],
+  GREATER_THAN_OR_EQUAL: ['ten minste', 'is'],
+  LESS_THAN_OR_EQUAL: ['ten hoogste', 'is'],
+};
+
 export const LEVEL = Object.freeze({ CHOICE: 1, LOGIC: 2, NOT: 3, CMP: 4, ARITH: 5, CLOSED: 6 });
 
 const ARITH_WORDS: Record<string, string> = { ADD: 'plus', SUBTRACT: 'min', MULTIPLY: 'maal', DIVIDE: 'gedeeld door' };
@@ -77,8 +93,31 @@ const kw = (text: string, path?: Path) => tok('keyword', text, path ? { path } :
 
 // The opening parenthesis stays on the line of what it opens; the inside
 // breaks, if it must, one level deeper.
+/** True when a document contains a parenthesis. */
+function hasBracket(doc: Doc): boolean {
+  if (typeof doc === 'string') return false;
+  if (Array.isArray(doc)) return doc.some(hasBracket);
+  if (doc.kind === 'tok') return doc.tk === 'keyword' && doc.text === '(';
+  return 'doc' in doc && hasBracket(doc.doc);
+}
+
+/** The parts of a document's outer group, so they break with the group around them. */
+function ungroup(doc: Doc): Doc {
+  return typeof doc === 'object' && !Array.isArray(doc) && doc.kind === 'group' ? doc.doc : doc;
+}
+
+// Parentheses around `inside`. When the group does not fit, the inside goes
+// on its own lines one level deeper and the closing parenthesis returns to
+// the margin of the opening one. Parentheses inside parentheses always break
+// that way, and then each operand of the operation directly inside stands on
+// a line of its own: nested brackets on one line are hard to follow.
+function brackets(open: Doc, inside: Doc): Doc {
+  if (hasBracket(inside)) return brokenGroup(open, nest(line, ungroup(inside)), line, kw(')'));
+  return group(open, nest(line, inside), line, kw(')'));
+}
+
 function wrap(doc: Doc): Doc {
-  return group(kw('('), ' ', nest(doc), ' ', kw(')'));
+  return brackets(kw('('), doc);
 }
 
 /** True when a document always breaks (it holds an enumeration or legend). */
@@ -115,7 +154,7 @@ function listDoc(items: Doc[]): Doc {
     if (i > 0) body.push(kw(';'), line);
     body.push(it);
   });
-  return group(kw('('), nest(line, body), ' ', kw(')'));
+  return brackets(kw('('), body);
 }
 
 /** Joins parts with single spaces. */
@@ -143,6 +182,7 @@ export class Renderer {
   legend: { letter: string; rep: PartRecord }[];
   numbers: Map<string, string>;
   folds: Fold[];
+  clause: Clause;
 
   /**
    * @param {object} ctx
@@ -160,6 +200,7 @@ export class Renderer {
     this.units = ctx.units ?? new Map();
     this.fold = ctx.fold ?? null;
     this.enumDepth = 0; // enumerations around the part being read
+    this.clause = 'main';
     this.declared = ctx.declared ?? new Map();
     this.opUnits = ctx.opUnits ?? new Map();
     this.constants = ctx.constants ?? new Set();
@@ -301,6 +342,20 @@ export class Renderer {
       return this.node(v, p, num, depth + 1);
     };
     const field = (key: string) => child(n[key], [key]);
+    // Renders `fn` with the comparisons in it in clause `c`.
+    const inClause = <T>(c: Clause, fn: () => T): T => {
+      const prev = this.clause;
+      this.clause = c;
+      try {
+        return fn();
+      } finally {
+        this.clause = prev;
+      }
+    };
+    const sub = this.clause === 'sub';
+    // `[s] woord [o] woord`, leaving out a word that is null.
+    const cmp = (s: Doc, before: string | null, o: Doc, after: string | null): Doc =>
+      group(...sp(s, before === null ? null : K(before), o, after === null ? null : K(after)));
     const op = n.operation;
     const K = (text: string) => kw(text, path);
     const list = (key: string, min: number = LEVEL.CHOICE) => {
@@ -326,7 +381,8 @@ export class Renderer {
           const bullet = '•'.repeat(this.enumDepth);
           // An item is delimited by the bullets around it, so it may itself
           // be an én/óf; only a choice (IF) still needs parentheses.
-          const body = list(key, LEVEL.LOGIC).flatMap((it) => [hardline, K(bullet), ' ', it]);
+          // Each item is a sentence of its own: main clause order, also after `als`.
+          const body = inClause('main', () => list(key, LEVEL.LOGIC)).flatMap((it) => [hardline, K(bullet), ' ', it]);
           this.enumDepth -= 1;
           // `logic` means AND or OR, the keys of ENUMERATION_HEADS.
           return { doc: [K(ENUMERATION_HEADS[op]!), nest(body)], level: LEVEL.LOGIC };
@@ -345,7 +401,8 @@ export class Renderer {
           const sub = v[1].values;
           const a = at(LEVEL.CLOSED, child(sub[0], ['values', 1, 'values', 0]));
           const b = at(LEVEL.CLOSED, child(sub[1], ['values', 1, 'values', 1]));
-          return { doc: group(K('het deel van'), ' ', a, nest(line, K('boven'), ' ', b)), level: LEVEL.CLOSED };
+          // Broken, both parts stand one level deeper, at the same indentation.
+          return { doc: group(K('het deel van'), nest(line, a, line, K('boven'), ' ', b)), level: LEVEL.CLOSED };
         }
         const word = op === 'MIN' ? 'de kleinste van' : 'de grootste van';
         if (!Array.isArray(v)) return { doc: sp(K(word), this.hole('values', [...path, 'values']).doc), level: LEVEL.CLOSED };
@@ -367,9 +424,9 @@ export class Renderer {
             return this.node(v, [...ip, key], inum, depth + 2);
           };
           const s = at(LEVEL.ARITH, ichild(inner.subject, 'subject'));
-          if (inner.value === null) return { doc: group(s, ' ', K('is bekend')), level: LEVEL.CMP };
+          if (inner.value === null) return { doc: group(s, ' ', K(sub ? 'bekend is' : 'is bekend')), level: LEVEL.CMP };
           const o = at(LEVEL.ARITH, ichild(inner.value, 'value'));
-          return { doc: group(s, ' ', K('is niet'), ' ', o), level: LEVEL.CMP };
+          return { doc: sub ? cmp(s, 'niet', o, 'is') : cmp(s, 'is niet', o, null), level: LEVEL.CMP };
         }
         return { doc: sp(K('niet'), at(LEVEL.CLOSED, field('value'))), level: LEVEL.NOT };
       }
@@ -377,13 +434,18 @@ export class Renderer {
         const s = at(LEVEL.ARITH, field('subject'));
         if (op === 'EQUALS' && n.value === null) return { doc: group(s, ' ', K('ontbreekt')), level: LEVEL.CMP };
         const o = at(LEVEL.ARITH, field('value'));
-        // The case lists exactly the keys of CMP_WORDS.
-        return { doc: group(s, ' ', K(CMP_WORDS[op]!), ' ', o), level: LEVEL.CMP };
+        // The case lists exactly the keys of CMP_WORDS and CMP_SUB_WORDS.
+        const [before, after] = sub ? CMP_SUB_WORDS[op]! : [CMP_WORDS[op]!, null];
+        return { doc: cmp(s, before, o, after), level: LEVEL.CMP };
       }
       case 'IN': {
         const s = at(LEVEL.ARITH, field('subject'));
-        if (Array.isArray(n.values)) return { doc: group(s, ' ', K('is een van'), ' ', listDoc(list('values'))), level: LEVEL.CMP };
-        return { doc: group(s, ' ', K('staat in'), ' ', at(LEVEL.CLOSED, field('value'))), level: LEVEL.CMP };
+        if (Array.isArray(n.values)) {
+          const vs = listDoc(list('values'));
+          return { doc: sub ? cmp(s, 'een van', vs, 'is') : cmp(s, 'is een van', vs, null), level: LEVEL.CMP };
+        }
+        const v = at(LEVEL.CLOSED, field('value'));
+        return { doc: sub ? cmp(s, 'in', v, 'staat') : cmp(s, 'staat in', v, null), level: LEVEL.CMP };
       }
       case 'IF': {
         if (!Array.isArray(n.cases)) return { doc: sp(K('als'), this.hole('cases', [...path, 'cases']).doc), level: LEVEL.CHOICE };
@@ -391,7 +453,9 @@ export class Renderer {
         const parts = [];
         if (cases.length === 0) parts.push(K('geen geval'));
         cases.forEach((c, i) => {
-          const w = at(LEVEL.LOGIC, c && typeof c === 'object' && 'when' in c ? child(c.when, ['cases', i, 'when']) : this.hole('when', [...path, 'cases', i, 'when']));
+          const w = at(LEVEL.LOGIC, c && typeof c === 'object' && 'when' in c
+            ? inClause('sub', () => child(c.when, ['cases', i, 'when']))
+            : this.hole('when', [...path, 'cases', i, 'when']));
           const t = at(LEVEL.LOGIC, c && typeof c === 'object' && 'then' in c ? child(c.then, ['cases', i, 'then']) : this.hole('then', [...path, 'cases', i, 'then']));
           if (i > 0) parts.push(line);
           // After an enumeration `dan` returns to the margin of `als`, so it
@@ -411,7 +475,7 @@ export class Renderer {
         const quantor = n.combine === 'AND' || n.combine === 'OR';
         const b0 = quantor ? null : at(LEVEL.CLOSED, field('body'));
         const c = at(LEVEL.CLOSED, field('collection'));
-        const f: Doc[] = 'filter' in n ? [line, K('waarvoor'), ' ', at(LEVEL.CLOSED, field('filter'))] : [];
+        const f: Doc[] = 'filter' in n ? [line, K('waarvoor'), ' ', at(LEVEL.CLOSED, inClause('sub', () => field('filter')))] : [];
         // Exactly one of the two is rendered, so `b` is always set.
         const b = (quantor ? at(LEVEL.CLOSED, field('body')) : b0)!;
         if (quantor) {
@@ -476,7 +540,7 @@ export class Renderer {
         let how;
         if (typeof p !== 'number' || !Number.isInteger(p)) {
           const v = at(LEVEL.CHOICE, field('value'));
-          return { doc: group(K(`${ROUND_WORDS[op]} op`), ' ', this.hole('precision', [...path, 'precision']).doc, ' ', K('('), nest(line, v), ' ', K(')')), level: LEVEL.CLOSED };
+          return { doc: group(K(`${ROUND_WORDS[op]} op`), ' ', this.hole('precision', [...path, 'precision']).doc, ' ', brackets(K('('), v)), level: LEVEL.CLOSED };
         }
         const unit = exprUnit(n.value, this.declared);
         if (p === 0 && unit === 'euro') how = "hele euro's";
@@ -487,7 +551,7 @@ export class Renderer {
         else if (p > 1) how = `${formatNumber(p)} decimalen`;
         else how = `veelvouden van 1${'0'.repeat(-p)}`;
         const v = at(LEVEL.CHOICE, field('value'));
-        return { doc: group(K(`${ROUND_WORDS[op]} op ${how}`), ' ', K('('), nest(line, v), ' ', K(')')), level: LEVEL.CLOSED };
+        return { doc: group(K(`${ROUND_WORDS[op]} op ${how}`), ' ', brackets(K('('), v)), level: LEVEL.CLOSED };
       }
       default:
         return { doc: tok('error', `⟨geen vorm voor ${op}⟩`, { path }), level: LEVEL.CLOSED };
