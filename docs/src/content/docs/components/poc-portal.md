@@ -32,6 +32,7 @@ Every HTML page served from inside a PoC gets a strip at the top that the portal
 | `gate.rs` | Password check and the signed cookie |
 | `app.rs` | The router: index, password form, static PoCs, proxied PoCs, the strip |
 | `proxy.rs` | Reverse proxy to a PoC that runs as its own component |
+| `bron.rs` | Fetches and caches the sources a static PoC loads while it runs |
 | `pagina.rs` | The index and the password screen, rendered as HTML with `nldd-*` components |
 
 ### The register
@@ -40,7 +41,7 @@ Every HTML page served from inside a PoC gets a strip at the top that the portal
 
 Each entry has a public half and an internal half. `titel` and `samenvatting` appear on the index and on the password screen, both of which anyone can reach, the latter by guessing a slug. `titel_intern`, `samenvatting_intern`, `tags` and the status are shown only behind the password.
 
-The portal refuses a register with an invalid or duplicate slug, a `voorbehoud` shorter than 30 characters, a static PoC without a `bron`, a proxied PoC without an `upstream`, or a proxied PoC with the assistant switched on. `status` has no default: it is one of `verkenning`, `in-ontwikkeling` or `gevalideerd`, and there is deliberately no value for production.
+The portal refuses a register with an invalid or duplicate slug, a source on a proxied PoC or a source name used twice, a `voorbehoud` shorter than 30 characters, a static PoC without a `bron`, a proxied PoC without an `upstream`, or a proxied PoC with the assistant switched on. `status` has no default: it is one of `verkenning`, `in-ontwikkeling` or `gevalideerd`, and there is deliberately no value for production.
 
 ### Two kinds of PoC
 
@@ -73,6 +74,8 @@ Beside the findings it gives, or below them on a narrow screen, the deciding aut
 
 The preview also tells the form which terms to ask. A reduction can be silent for a case and answer null. The school's holiday policy (`fictief_beleid_vakantierooster_obs_de_klimop`) does that for leave in school year 2027–2028, which it does not cover yet. The engine then wants the head's judgement (RFC-051), so the form cannot simply hide every term the cell implements. To find the silent ones, the app first takes the decision on the copy without a finding for any of the cell's terms. A term of the cell that the engine then reports as missing is silent for this case. The engine names one term per run, so the app runs again with the head's finding on it to find the next, and stops at the first one the head has not judged. Until then the answer is `{ "geweigerd": ... }` with that missing judgement. The answer lists the silent terms in `stil`, and the form shows each as a finding with the note that the school does not know it for this application. A term the cell does answer stays off the form and appears in the trace as filled in by the school. The objection form works the same way.
 
+A third case, a fictional subsidy at the Nederlandse autoriteit politieke partijen, does not live in this repository. Its case file, its regulation and its cell are on a branch of the private NAPP corpus, and the app loads them through the portal when the page opens. The next section describes how.
+
 #### In the browser
 
 Everything runs in the visitor's browser. The cell, the engine and the app's core (`kern.rs`, `casus.rs`) compile to WebAssembly in one crate, `packages/poc-chronolexografie` with the feature `wasm`. No server holds state. Every browser tab holds its own game, so two visitors play their own case at the same time and a reset in one tab leaves the other alone.
@@ -82,6 +85,18 @@ Everything runs in the visitor's browser. The cell, the engine and the app's cor
 The cell reads its directory through the trait `Files` in `packages/cel/src/files.rs`. `Disk` reads the file system, for the tests and the tools; `Bundle` holds the files in memory. The browser gets the bundle as `bundel.json`: every file the cases need, by its path in the repository, without the scenarios. Which directories that takes is listed under `corpus` for `chronolexografie` in `pocs/registry.yaml`, and `packages/poc-chronolexografie/frontend/scripts/copy-assets.js` builds the bundle from that list. `packages/poc-chronolexografie/src/bundel.rs` derives the same list from the case files and the law. Its tests check that the register lists exactly that, that the bundle plays every case as the whole corpus does, and that `script/deploy-filters.mjs` watches each directory. A new regelwerk that implements an open term of the Awb, or hooks on every decision, joins every case, and those tests say which list to extend.
 
 The chronicle of every cell lives in memory. After each step `packages/poc-chronolexografie/frontend/src/state.js` saves the chosen case, the chronicles and the play date in `sessionStorage`. A reload of the tab then goes on where it was. `Cell::restore` checks the saved chronicles as `Cell::open` checks a chronicle file. That storage belongs to the tab, so two tabs never overwrite each other's game. Without storage, in a private window or with a full quota, the game plays on and a reload starts at the choice of case. A saved game the cell refuses, for instance after the law changed, is dropped with a message.
+
+#### Sources
+
+A source is a corpus that a static PoC loads while it runs rather than at build time. The register lists it under `sources` for the PoC, with a GitHub repository, a branch, a folder on that branch and the name of the environment variable that holds the token. For chronolexografie that is `napp`: the folder `chronolexografie/` of the branch poc/chronolexografie in the private NAPP corpus, read with `NAPP_CORPUS_TOKEN`. A push to that branch reaches the PoC within a minute and needs no build of regelrecht.
+
+The portal serves each source at `/<slug>/bron/<name>`, behind the PoC's own password (`packages/poc-portal/src/bron.rs`). It fetches the branch as a tarball from the GitHub API and keeps the YAML files under the folder. The answer is one JSON object with the files by their path under that folder, plus the short sha of the commit. The token stays in the portal and never reaches the browser. A fetch is kept for 60 seconds. When GitHub fails after that, the portal serves the last good copy with a message saying so. Without a copy it answers `502`, and without a token `503`, each with the reason as text.
+
+The app reads the list of sources from `bronnen.json`, which `copy-assets.js` writes from the register, and fetches each one next to `bundel.json` (`frontend/src/bronnen.js`). A source holds the same three directories as the corpus: `casussen/`, `regulation/nl/` and `cells/`. A case from a source runs on that source and on the regelrecht corpus in the bundle, so the NAPP case takes Awb 7:11 for its objection from regelrecht. The existing cases never see a source, which keeps a hook in a NAPP regulation out of vakantieverlof (`met_bronnen` in `src/bundel.rs`).
+
+Two rules decide what happens when an id occurs twice. Two directories in one source with the same `$id` are an error. Between a source and the regelrecht corpus, regelrecht wins, and the app shows that it set the source's copy aside. A case id that is already taken is set aside the same way.
+
+A source that is not available never stops the app. That covers a missing token as well as a failed fetch. The choice screen shows a banner, "Bron napp niet beschikbaar", with the reason, and the other cases play as before. A file in a source that does not parse drops the whole source. The banner then turns red, reads "Bron napp laadt niet" and names the file. A single case that does not load only drops that case. These errors appear when the page loads, not in the CI of regelrecht, which never sees the source.
 
 When this page was written (October 2026), the WASM file was about 3.1 MB (0.9 MB gzipped) and the bundle about 380 kB. The portal serves both uncompressed, as it does the engine of the other static PoCs.
 
@@ -115,6 +130,14 @@ This builds the engine and chronolexografie to WASM, the design-system bundle an
 
 `just poc-chronolexografie` builds chronolexografie as WASM and starts its own Vite dev server, without the portal.
 
+To work on a source without a token, point `POC_BRON_<NAME>` at a local folder that has the layout of the source. A relative path counts from the repository root, where `just` starts:
+
+```bash
+POC_BRON_NAPP=<checkout-of-the-source>/chronolexografie just poc-chronolexografie
+```
+
+The Vite dev server then answers the route of the source from that folder (`frontend/scripts/bron-dev.js`), and so does the portal under `just poc`. The folder is read again on every request, so an edit shows after a reload. With the same variable, `cargo test -p regelrecht-poc-chronolexografie` loads every case in the folder and plays its example to a decision. Without it, the NAPP case shows "bron niet beschikbaar" and the test skips the folder.
+
 `just poc` does not start napp or an assistant. The napp card then answers `503` until `POC_UPSTREAM_NAPP` points at a running napp backend. For the assistant, run `just poc-assistent <case>` in a second terminal (it needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`) and start the portal with the matching variable, for example `POC_ASSISTENT_TERUGBETAALREGIMES=http://127.0.0.1:3600 just poc`.
 
 ## Configuration
@@ -133,6 +156,8 @@ This builds the engine and chronolexografie to WASM, the design-system bundle an
 | `CLAUDE_CODE_OAUTH_TOKEN` | none | Token for the Claude Code CLI the assistant runs on; without it (and without `ANTHROPIC_API_KEY`) no assistant starts |
 | `ANTHROPIC_API_KEY` | none | Alternative to the OAuth token |
 | `POC_ASSISTENT_CASUSSEN` | both assistant cases | Space-separated list of cases `start.sh` starts an assistant for |
+| `NAPP_CORPUS_TOKEN` | none | Token for the `napp` source of chronolexografie: a fine-grained token with only Contents read on the NAPP corpus. The name comes from `token_env` in the register. Without it the NAPP case is unavailable |
+| `POC_BRON_<NAME>` | none | A local folder that replaces the source `<name>`, without a token; for local development |
 
 Passwords and tokens live only in the platform's environment, never in the repository.
 

@@ -7,6 +7,9 @@
  *    packages/poc-chronolexografie (src/bundel.rs) houdt die lijst gelijk met
  *    wat de app per casus uit de casussen en de wet afleidt. Elk bestand
  *    eronder gaat mee, behalve de scenario's.
+ *  - public/bronnen.json: de namen van de bronnen bij `sources` van
+ *    chronolexografie. De app haalt elke bron op bron/<naam> wanneer zij
+ *    laadt (src/bronnen.js); het portaal serveert haar, niet de build.
  *  - public/wasm/pkg/: de cel en het spel als WASM, uit `just
  *    poc-chronolexografie-wasm` (of de wasm-builder in het poc-image).
  *
@@ -58,6 +61,9 @@ for (const map of poc.corpus) {
 mkdirSync(resolve(appRoot, 'public'), { recursive: true });
 writeFileSync(resolve(appRoot, 'public', 'bundel.json'), JSON.stringify(bundel));
 console.log(`bundel: ${Object.keys(bundel).length} bestand(en) uit ${poc.corpus.length} map(pen)`);
+const bronnen = (poc.sources ?? []).map((s) => s.name);
+writeFileSync(resolve(appRoot, 'public', 'bronnen.json'), JSON.stringify(bronnen));
+console.log(`bronnen: ${bronnen.join(', ') || 'geen'}`);
 
 const wasm = resolve(appRoot, 'public', 'wasm', 'pkg', 'regelrecht_poc_chronolexografie_bg.wasm');
 if (!existsSync(wasm)) {

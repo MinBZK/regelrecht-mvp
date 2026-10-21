@@ -7,11 +7,17 @@
  * toen de app nog een server had, en een weigering van de cel is een fout met
  * de melding van de cel.
  *
+ * Naast de bundel krijgt de cel de bronnen die de pagina bij het laden
+ * ophaalt (src/bronnen.js): een casus uit een bron draait op die bron en het
+ * regelrecht-corpus. Een bron die er niet is, houdt de app niet tegen.
+ *
  * Elk pad gaat langs `b()`: achter het poc-portaal staat de app onder
  * /chronolexografie/. De JS-lijm van wasm-bindgen komt via een blob-URL
  * binnen, omdat Vite geen imports uit public/ toestaat (zoals useEngine.js in
  * frontend-poc-terugbetaalregimes).
  */
+import { haalBronnen } from './bronnen.js';
+
 const b = (pad) => import.meta.env.BASE_URL + String(pad).replace(/^\//, '');
 
 async function tekst(url) {
@@ -31,7 +37,11 @@ function poc() {
       const wasm = await import(/* @vite-ignore */ url);
       URL.revokeObjectURL(url);
       await wasm.default({ module_or_path: b('/wasm/pkg/regelrecht_poc_chronolexografie_bg.wasm') });
-      return new wasm.Poc(await tekst(b('/bundel.json')));
+      const [bundel, bronnen] = await Promise.all([
+        tekst(b('/bundel.json')),
+        haalBronnen(b('/bronnen.json'), (naam) => b(`/bron/${encodeURIComponent(naam)}`)),
+      ]);
+      return new wasm.Poc(bundel, JSON.stringify(bronnen));
     } catch (e) {
       // Een volgende stap probeert het opnieuw.
       laden = null;

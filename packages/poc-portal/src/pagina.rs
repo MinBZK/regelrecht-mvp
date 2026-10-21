@@ -583,6 +583,7 @@ mod tests {
             corpus: vec![],
             assistent: false,
             tags: vec!["<script>".into()],
+            sources: vec![],
         };
         let html = kaart(&poc);
         assert!(!html.contains("<b>title</b>"));
