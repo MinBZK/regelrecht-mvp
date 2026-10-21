@@ -118,6 +118,19 @@ describe('browser variants', () => {
     expect(() => saveVariant({ title: 'Leeg', files: [] })).toThrow(/niets bewerkt/i);
   });
 
+  // A file's path must be a non-empty string. It used to be enough for it to be
+  // truthy, which let a number or an object through into storage.
+  it('refuses a file whose path is not a non-empty string, and stores nothing', async () => {
+    const { saveVariant, browserVariants } = await load();
+
+    for (const path of [42, { pad: 'laws/a.yaml' }, '', null, undefined]) {
+      const files = [{ ...file(), path }] as unknown as Parameters<typeof saveVariant>[0]['files'];
+      expect(() => saveVariant({ title: 'Raar pad', files })).toThrow(/Onbruikbaar bestand/);
+    }
+    expect(browserVariants()).toHaveLength(0);
+    expect(storage.getItem('testcase:v1:varianten')).toBe(null);
+  });
+
   it('deletes a variant', async () => {
     const { saveVariant, deleteVariant, browserVariants } = await load();
     const v = saveVariant({ title: 'Weg ermee', files: [file()] });
@@ -248,6 +261,17 @@ describe('browser variants', () => {
       const v = saveVariant({ title: 'Leeg', files: [file()] });
 
       expect(() => updateVariant(v.id, { files: [] })).toThrow(/niets bewerkt/);
+    });
+
+    it('refuses a file whose path is not a string and keeps the stored content', async () => {
+      const { saveVariant, updateVariant, browserVariantYaml } = await load();
+      const v = saveVariant({ title: 'Blijft staan', files: [file('value: 2')] });
+
+      for (const path of [42, { pad: 'laws/a.yaml' }, '']) {
+        const files = [{ ...file('value: 9'), path }] as unknown as NonNullable<Parameters<typeof updateVariant>[1]>['files'];
+        expect(() => updateVariant(v.id, { files })).toThrow(/Onbruikbaar bestand/);
+      }
+      expect(browserVariantYaml(v.id, 'laws/wet/2025-01-01.yaml')).toBe('value: 2');
     });
   });
 
