@@ -9,9 +9,6 @@ import type { NLDDSheet } from '@nldd/design-system/sheet';
 import type { NLDDComboBox } from '@nldd/design-system/combo-box';
 import type { OperationSettingsArticle } from './OperationSettings.vue';
 
-
-
-
 /** The entry the sheet edits, as the editor view hands it in. */
 export interface EditSheetItem {
   section: string;

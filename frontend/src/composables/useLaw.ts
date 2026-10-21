@@ -11,22 +11,6 @@ import { holdRetryFloor } from '../lib/retryFeedback';
 import type { LawArticle, LawDocument } from '../lib/lawFormat';
 export type { LawArticle, LawDocument } from '../lib/lawFormat';
 
-// Shared law cache, keyed by `${trajectRef || ''}::${lawId}` so a law
-// opened in traject A and in traject B (or globally) returns the
-// per-traject view rather than whichever was fetched first. The
-// trajectRef is part of the URL, so per-tab navigation never silently
-// mixes content across trajects.
-//
-// LRU-capped so a long session that hops across many trajects doesn't
-// grow the cache without bound. 50 entries comfortably covers global +
-// a handful of trajects × the laws a session realistically opens;
-// evictions are cheap (the next fetch re-populates from the API).
-/**
- * One article of a parsed law (schema/latest/schema.json): the fields read
- * here are typed, the rest is open for callers to narrow.
- */
-
-
 /** A cached law: the parsed body, its source text and its ETag. */
 export interface LawCacheEntry {
   law: LawDocument | null;
@@ -45,6 +29,16 @@ function parseLaw(text: string): LawDocument | null {
   return yaml.load(text) as LawDocument | null;
 }
 
+// Shared law cache, keyed by `${trajectRef || ''}::${lawId}` so a law
+// opened in traject A and in traject B (or globally) returns the
+// per-traject view rather than whichever was fetched first. The
+// trajectRef is part of the URL, so per-tab navigation never silently
+// mixes content across trajects.
+//
+// LRU-capped so a long session that hops across many trajects doesn't
+// grow the cache without bound. 50 entries comfortably covers global +
+// a handful of trajects × the laws a session realistically opens;
+// evictions are cheap (the next fetch re-populates from the API).
 const lawCache = createLruMap<string, LawCacheEntry>(50);
 
 function lawCacheKey(trajectRef: TrajectRef, lawId: string): string {
