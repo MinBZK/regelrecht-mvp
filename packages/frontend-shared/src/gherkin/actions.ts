@@ -90,7 +90,7 @@ export function parseValue(str: unknown): unknown {
  * bdd/grammar.yaml and reach both dispatchers through codegen, so neither
  * engine can hold its own opinion about what a quote means.
  */
-export function quotedValue(raw: string): unknown {
+export function quotedValue(raw: unknown): unknown {
   switch (TYPING.quoted) {
     case 'literal': return raw;
     case 'inferred': return parseValue(raw);
