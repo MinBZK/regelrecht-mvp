@@ -4,6 +4,16 @@ import LibraryView from './LibraryView.vue';
 import { ensureAuthReady, useAuth } from './composables/useAuth';
 import { recordLastVisited } from './composables/useLastVisitedRoute';
 
+// The meta fields the routes below set and the guards read. `meta` is merged
+// across matched records, so a child sees its parent's fields.
+declare module 'vue-router' {
+  interface RouteMeta {
+    title?: string;
+    requiresAuth?: boolean;
+    requiresRole?: readonly string[];
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [

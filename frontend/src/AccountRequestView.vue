@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import { SUPPORT_EMAIL } from './constants';

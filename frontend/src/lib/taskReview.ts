@@ -17,7 +17,7 @@ export interface ReviewTarget {
 /**
  * reviewTarget - de router-target voor de "Beoordelen"-knop van een
  * job_review-taak. Vertakt op `payload.kind`:
- *  - `kind === 'document'`: de werkdocumenten-route (router.js, route
+ *  - `kind === 'document'`: de werkdocumenten-route (router.ts, route
  *    `werkdocumenten-traject`: `trajecten/:trajectRef([a-z0-9-]+-[0-9a-f]{8})/
  *    werkdocumenten/:docPath(.*)?`), met `docPath` op `payload.target_path` -
  *    het werkdocument bestaat op de branch meestal nog niet, dus deze route

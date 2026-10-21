@@ -2,7 +2,7 @@ import './nldd-components.js';
 import '@nldd/design-system/styles';
 import { createApp } from 'vue';
 import App from './App.vue';
-import router from './router.js';
+import router from './router';
 import { installApiAuthGuard } from './lib/apiAuthGuard';
 import { installDevSlowMode } from './lib/devSlowMode';
 

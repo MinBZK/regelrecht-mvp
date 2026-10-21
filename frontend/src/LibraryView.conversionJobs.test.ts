@@ -11,6 +11,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
 import { ref, nextTick } from 'vue';
+import type { DocumentEntry } from './composables/useTrajectDocuments';
+import type { DocumentJob } from './composables/useTrajectDocumentJobs';
+
+/** The job fields these tests set; the view reads no others. */
+type JobStub = Pick<DocumentJob, 'id' | 'target_path' | 'status'>;
+type UploadedCallback = (...args: unknown[]) => void;
 
 const routeState = {
   name: 'werkdocumenten-traject',
@@ -52,7 +58,7 @@ vi.mock('./composables/useFeatureFlags', () => ({
 }));
 
 // Module-level so each test can drive the exact state the watcher reacts to.
-const documents = ref([]);
+const documents = ref<DocumentEntry[]>([]);
 const openDoc = vi.fn().mockResolvedValue(undefined);
 const closeDoc = vi.fn();
 const refreshList = vi.fn().mockResolvedValue(undefined);
@@ -71,13 +77,13 @@ vi.mock('./composables/useDocumentsManager', () => ({
     startNew: vi.fn(),
     close: closeDoc,
     uploadDocument: vi.fn(),
-    displayTitle: (p) => String(p ?? '').replace(/\.md$/, ''),
+    displayTitle: (p: string | null | undefined) => String(p ?? '').replace(/\.md$/, ''),
     dropDraft: vi.fn(),
     refreshList,
   }),
 }));
 
-const jobs = ref([]);
+const jobs = ref<JobStub[]>([]);
 const cancelJob = vi.fn();
 vi.mock('./composables/useTrajectDocumentJobs', () => ({
   useTrajectDocumentJobs: () => ({
@@ -93,10 +99,10 @@ vi.mock('./composables/useTrajectDocumentJobs', () => ({
 // one with an upload result the way a real successful upload would.
 // LibraryView wires useDocumentUpload twice (werkdocument-upload eerst, dan
 // de wet-upload), dus per aanroep vastleggen; `onUploaded` = de werkdoc-cb.
-let onUploadedCbs = [];
-const onUploaded = (...args) => onUploadedCbs[0]?.(...args);
+let onUploadedCbs: (UploadedCallback | null | undefined)[] = [];
+const onUploaded = (...args: unknown[]) => onUploadedCbs[0]?.(...args);
 vi.mock('./composables/useDocumentUpload', () => ({
-  useDocumentUpload: (_uploadFn, uploadedCb) => {
+  useDocumentUpload: (_uploadFn: unknown, uploadedCb?: UploadedCallback | null) => {
     onUploadedCbs.push(uploadedCb);
     return {
       fileInput: ref(null),

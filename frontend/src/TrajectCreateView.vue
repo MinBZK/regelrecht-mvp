@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import TrajectCreateForm from './components/TrajectCreateForm.vue';
@@ -15,9 +15,9 @@ import { homeTarget } from './composables/useLastVisitedRoute';
 const route = useRoute();
 const router = useRouter();
 
-const formEl = ref(null);
+const formEl = ref<InstanceType<typeof TrajectCreateForm> | null>(null);
 const createBusy = ref(false);
-const createError = ref(null);
+const createError = ref<string | null>(null);
 
 watchEffect(() => {
   document.title = 'Nieuw traject · RegelRecht';
@@ -30,14 +30,17 @@ function goBack() {
 
 async function submitCreate() {
   createError.value = null;
-  const { payload, error } = formEl.value.buildPayload();
+  // The form is rendered unconditionally and fires the submit that calls this,
+  // so the template ref is set.
+  const { payload, error } = formEl.value!.buildPayload();
   if (error) {
     createError.value = error;
     return;
   }
   createBusy.value = true;
   try {
-    const created = await createTraject(payload);
+    // buildPayload returns a payload whenever it returns no error.
+    const created = await createTraject(payload!);
     // Mirror the TrajectMenu guard: the backend's `create` handler always
     // calls `fill_ref()`, but a half-filled TrajectSummary would otherwise
     // navigate to `/editor/undefined/...` and silently no-op.
@@ -47,15 +50,18 @@ async function submitCreate() {
         'Traject aangemaakt maar kon niet worden geopend. Ga terug en selecteer het.';
       return;
     }
-    const lawId = route.query.law || undefined;
-    const articleNumber = route.query.article || undefined;
+    // A query value can be an array (repeated `?law=`); like before, it is
+    // passed on as is, the cast only states the single-value case assumed here.
+    const lawId = (route.query.law || undefined) as string | undefined;
+    const articleNumber = (route.query.article || undefined) as string | undefined;
     await router.push(
       route.query.sectie === 'library'
         ? homeTarget({ trajectRef: created.ref, lawId, articleNumber })
         : { name: 'editor-traject', params: { trajectRef: created.ref, lawId, articleNumber } },
     );
   } catch (e) {
-    createError.value = e.message || 'Aanmaken mislukt';
+    // Same property read as before; createTraject rejects with a RequestError.
+    createError.value = (e as { message?: string }).message || 'Aanmaken mislukt';
   } finally {
     createBusy.value = false;
   }

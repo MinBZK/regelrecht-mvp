@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import router from '../router.js';
+import router from '../router';
 import { reviewTarget, sameTraject, proposalDivergence } from './taskReview';
 import type { ReviewTarget } from './taskReview';
 

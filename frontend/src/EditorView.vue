@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, reactive, watch, watchEffect, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import * as yaml from 'js-yaml';
@@ -47,6 +47,72 @@ import ScenarioBuilder from './components/ScenarioBuilder.vue';
 import ExecutionTraceView from './components/ExecutionTraceView.vue';
 import { buildOutputTypeMap } from './utils/articleMapping';
 import LawGraphView from './components/LawGraphView.vue';
+import { singleParam } from './lib/routeParams';
+import type { ComponentPublicInstance } from 'vue';
+import type { NLDDSheet } from '@nldd/design-system/sheet';
+import type { NLDDModalDialog } from '@nldd/design-system/modal-dialog';
+import type { NLDDPopover } from '@nldd/design-system/popover';
+import type { Annotation } from '@nldd/design-system/text-editor';
+import type { Note } from './composables/useNotes';
+import type { EditorEngine } from './composables/useEngine';
+import type { Verdict } from './composables/useTaskReview';
+import type { JobTaskSummary } from './composables/useTasks';
+import type { OpenTab } from './lib/openTabsStorage';
+import type { RequestError } from './lib/apiFetch';
+import type { ExecutionAction, LawArticle, LawDocument, MachineReadableSection } from './lib/lawFormat';
+import type { ScenarioExecutedPayload } from './components/ScenarioBuilder.vue';
+import type { EditSheetItem, EditSheetSave } from './components/EditSheet.vue';
+
+/** A pane's position target in the pane menu. */
+type PaneMoveTarget = 'left' | 'right' | 'start' | 'end';
+
+/** A [start, end) code-point range into the article text. */
+interface CodePointRange {
+  start: number;
+  end: number;
+}
+
+/** The fields of a note body the look-ahead popover reads (W3C TextualBody or SpecificResource). */
+interface NoteBody {
+  value?: string;
+  source?: string;
+}
+
+/** Notes sharing one quoted fragment, with that fragment's quoteContext() parts. */
+interface NoteGroup {
+  start: number;
+  end: number | null;
+  quote: string;
+  before: string;
+  after: string;
+  ellipsisBefore: string;
+  ellipsisAfter: string;
+  notes: Note[];
+}
+
+/** What a mounted ArticleTextEditor exposes (its defineExpose). */
+type TextEditorInstance = InstanceType<typeof ArticleTextEditor>;
+
+/** A save from EditSheet, or a field patch from MachineReadable (`section: 'produces'`). */
+type MrSavePayload = EditSheetSave | { section: 'produces'; key: string; data: string | null };
+
+/** A delete from MachineReadable: a definition by name, or a row by index. */
+type MrDeletePayload =
+  | { section: 'definition'; key: string }
+  | { section: 'parameter' | 'input' | 'output' | 'action'; index: number };
+
+/** The operation-node slots findIncompleteOperation walks; the tree comes from unchecked YAML. */
+interface OperationLike {
+  operation?: string;
+  values?: unknown;
+  conditions?: unknown;
+  cases?: unknown;
+  subject?: unknown;
+  value?: unknown;
+  default?: unknown;
+  date_of_birth?: unknown;
+  reference_date?: unknown;
+}
 
 const { authenticated, oidcConfigured } = useAuth();
 const { isEnabled } = useFeatureFlags();
@@ -68,14 +134,14 @@ const VIEW_DEFINITIONS = [
 
 const availableViews = computed(() => VIEW_DEFINITIONS.filter(v => isEnabled(v.flag)));
 
-function viewLabel(viewId) {
+function viewLabel(viewId: string) {
   return VIEW_DEFINITIONS.find(v => v.id === viewId)?.label ?? viewId;
 }
 
 const PANE_VIEWS_KEY = 'regelrecht-pane-views';
-const paneViews = ref(loadPaneViews());
+const paneViews = ref<string[]>(loadPaneViews());
 
-function loadPaneViews() {
+function loadPaneViews(): string[] {
   try {
     const stored = JSON.parse(localStorage.getItem(PANE_VIEWS_KEY) ?? 'null');
     // Only accept entries we still recognise - a stale value left over
@@ -139,7 +205,7 @@ watch(availableViews, (views, oldViews) => {
   }
 }, { immediate: true });
 
-function setPaneView(idx, viewId) {
+function setPaneView(idx: number, viewId: string) {
   const next = [...paneViews.value];
   next[idx] = viewId;
   paneViews.value = next;
@@ -148,7 +214,7 @@ function setPaneView(idx, viewId) {
 // Reorder this pane within the left→right pane order. `target`:
 // 'left' | 'right' | 'start' | 'end'. Persists (paneViews → localStorage) and
 // survives flag flips (the availableViews sync filter preserves order).
-function movePane(idx, target) {
+function movePane(idx: number, target: PaneMoveTarget) {
   const next = [...paneViews.value];
   const [moved] = next.splice(idx, 1);
   const to =
@@ -156,7 +222,8 @@ function movePane(idx, target) {
       : target === 'right' ? idx + 1
         : target === 'start' ? 0
           : next.length; // 'end'
-  next.splice(Math.max(0, Math.min(next.length, to)), 0, moved);
+  // idx is a rendered pane's index, so the splice above removed one entry.
+  next.splice(Math.max(0, Math.min(next.length, to)), 0, moved!);
   paneViews.value = next;
 }
 
@@ -217,7 +284,11 @@ const {
   createLaw,
   currentEtag,
   lastSavedPr,
-} = useLaw(route.params.lawId, route.params.articleNumber, route.params.trajectRef);
+} = useLaw(
+  singleParam(route.params.lawId),
+  singleParam(route.params.articleNumber),
+  singleParam(route.params.trajectRef),
+);
 
 // --- Multi-law tab state (persisted per traject in localStorage) ---
 // Tab state is DERIVED from the active traject rather than a single ref that a
@@ -289,7 +360,8 @@ watch(activeTrajectRef, async (next) => {
   // so there is nothing to swap here. Resolve the swapped-in tabs' labels
   // through the new traject.
   backfillTabLabels(next);
-  if (route.params.lawId) {
+  const urlLawId = singleParam(route.params.lawId);
+  if (urlLawId) {
     // A URL that still names a law in the new traject can only come from a deep
     // link or browser back/forward now (the traject switcher navigates to the
     // bare root - see trajectSwitchTarget). Make sure that law is loaded THROUGH
@@ -304,8 +376,8 @@ watch(activeTrajectRef, async (next) => {
     // content - and so a later save PUTs to the right traject. When the id and
     // traject already match (the lawId-changed deep link, loaded by
     // onBeforeRouteUpdate), this is skipped - no duplicate fetch.
-    if (lawTrajectRef.value !== next || lawId.value !== route.params.lawId) {
-      await switchLaw(route.params.lawId, route.params.articleNumber, next);
+    if (lawTrajectRef.value !== next || lawId.value !== urlLawId) {
+      await switchLaw(urlLawId, singleParam(route.params.articleNumber), next);
       // A newer switch superseded us mid-load: drop our writes so we don't
       // reconcile the bar against a traject the route already left.
       if (!isCurrent()) return;
@@ -321,11 +393,13 @@ watch(activeTrajectRef, async (next) => {
     const loaded =
       !error.value &&
       lawTrajectRef.value === next &&
-      lawId.value === route.params.lawId &&
+      lawId.value === singleParam(route.params.lawId) &&
       selectedArticleNumber.value != null;
     if (loaded) {
       // openTab de-dups, caps at MAX_TABS and marks it active - all under `next`.
-      openTab(next, { lawId: lawId.value, articleNumber: String(selectedArticleNumber.value) });
+      // `loaded` checked that lawId equals the URL's law id: a string, unless
+      // the route left the law during the await above.
+      openTab(next, { lawId: lawId.value as string, articleNumber: String(selectedArticleNumber.value) });
     } else {
       // Failed cross-traject deep link: don't leave the previous traject's law
       // marked active in this traject's bar (it isn't in this bucket here).
@@ -376,7 +450,7 @@ const {
 // is handed to NoteCreator for selector-uniqueness checks; useNotes already
 // initialises it, this just exposes the instance once ready (null until then,
 // NoteCreator guards on it).
-const noteEngine = ref(null);
+const noteEngine = ref<EditorEngine | null>(null);
 useEngine()
   .initEngine()
   .then((e) => {
@@ -414,11 +488,12 @@ const notesForArticle = computed(() => [
 
 // A stable id per note so an annotation-click maps back to it. Committed notes
 // carry a W3C id; a draft may not, so fall back to its position.
-function noteKey(note, i) {
-  return note?.id || `note-${i}`;
+function noteKey(note: Note | null | undefined, i: number): string {
+  // A W3C annotation id is an IRI string; notes are not validated (see Note).
+  return (note?.id as string | undefined) || `note-${i}`;
 }
 const noteById = computed(() => {
-  const m = new Map();
+  const m = new Map<string, Note>();
   notesForArticle.value.forEach((entry, i) => m.set(noteKey(entry.note, i), entry.note));
   return m;
 });
@@ -428,7 +503,7 @@ const noteById = computed(() => {
 // itself. Recomputes on article switch / save, when the notes re-resolve.
 const editorAnnotations = computed(() => {
   const text = selectedArticle.value?.text || '';
-  const out = [];
+  const out: Annotation[] = [];
   notesForArticle.value.forEach((entry, i) => {
     const id = noteKey(entry.note, i);
     for (const span of entry.spans) {
@@ -442,7 +517,12 @@ const editorAnnotations = computed(() => {
 
 // NoteCreator (authoring popover) state, opened by the toolbar comment button
 // on the current editor selection.
-const noteCreator = reactive({ open: false, range: null, editing: null, initialNote: null });
+const noteCreator = reactive<{
+  open: boolean;
+  range: CodePointRange | null;
+  editing: Note | null;
+  initialNote: Note | null;
+}>({ open: false, range: null, editing: null, initialNote: null });
 
 // - Note sheet (a right sheet hosting the badge note list and the editor) ------
 // The editor (NoteCreator) is rendered as sheet content. Two entry points:
@@ -450,11 +530,16 @@ const noteCreator = reactive({ open: false, range: null, editing: null, initialN
 //   from which editing/adding pushes the 'edit' view with a back button;
 // - notities pane → open directly at 'edit' (the pane is already the list), whose
 //   top bar shows a close button, not a back button.
-const noteSheetEl = ref(null);
-const noteSheetView = ref('list'); // 'list' | 'edit'
+const noteSheetEl = ref<NLDDSheet | null>(null);
+const noteSheetView = ref<'list' | 'edit'>('list'); // 'list' | 'edit'
 const noteEditFromList = ref(false); // edit entered from the in-sheet list
 
-function openNoteEditor({ range, editing, initialNote, fromList }) {
+function openNoteEditor({ range, editing, initialNote, fromList }: {
+  range: CodePointRange | null;
+  editing: Note | null;
+  initialNote: Note | null;
+  fromList: boolean;
+}) {
   noteCreator.range = range;
   noteCreator.editing = editing;
   noteCreator.initialNote = initialNote;
@@ -487,13 +572,13 @@ function onNoteSheetClose() {
 }
 // After a create/edit, re-read the badge list's notes for the group so a new or
 // edited note shows immediately.
-function refreshActiveNotes(span) {
+function refreshActiveNotes(span: CodePointRange | null) {
   if (!span) return;
   const g = noteGroups.value.find((gr) => gr.start === span.start && gr.end === span.end);
   if (g) activeNotes.value = [...g.notes];
 }
 
-function startNoteFromSelection(idx) {
+function startNoteFromSelection(idx: number) {
   const refs = textEditorRefs[idx];
   if (!refs) return;
   const sel = refs.getSelection();
@@ -506,15 +591,15 @@ function startNoteFromSelection(idx) {
     fromList: false,
   });
 }
-function onNoteCreated(note, share) {
+function onNoteCreated(note: Note, share: boolean) {
   const span = noteCreator.range;
   const backToList = noteEditFromList.value;
-  let stored;
+  let stored: Note;
   if (noteCreator.editing) {
     // Edit: replace the draft in place. Keep the original authorship/timestamp
     // (and id, if any); take the freshly built body/target/workflow.
     const orig = noteCreator.editing;
-    const merged = { ...note, __draft: true };
+    const merged: Note = { ...note, __draft: true };
     if (orig.creator) merged.creator = orig.creator;
     if (orig.created) merged.created = orig.created;
     if (orig.id) merged.id = orig.id;
@@ -543,7 +628,7 @@ function onNoteCreated(note, share) {
 // existing fragment (its span, already in codepoint offsets), so the new note
 // targets the same quoted text without re-selecting. `fromList` marks the
 // in-sheet badge list as the origin (back returns there).
-function startNoteForGroup(group, fromList = false) {
+function startNoteForGroup(group: NoteGroup | null | undefined, fromList = false) {
   if (group?.start == null || group?.end == null) return; // unanchored group
   openNoteEditor({
     range: { start: group.start, end: group.end },
@@ -553,7 +638,7 @@ function startNoteForGroup(group, fromList = false) {
   });
 }
 // Edit an existing draft note: open the editor pre-filled, anchored to its span.
-function startEditNote(group, note, fromList = false) {
+function startEditNote(group: NoteGroup | null | undefined, note: Note, fromList = false) {
   if (group?.start == null || group?.end == null) return;
   openNoteEditor({
     range: { start: group.start, end: group.end },
@@ -563,14 +648,14 @@ function startEditNote(group, note, fromList = false) {
   });
 }
 
-const activeNotes = ref([]);
+const activeNotes = ref<Note[]>([]);
 // Notes grouped by the fragment they annotate (their primary span), so every
 // comment on the same quote sits together under one quote header. Groups are
 // ordered by where the fragment starts in the article text; a note without a
 // resolvable span falls into a trailing "unanchored" group.
 const noteGroups = computed(() => {
   const text = selectedArticle.value?.text || '';
-  const groups = new Map();
+  const groups = new Map<string, NoteGroup>();
   for (const entry of notesForArticle.value) {
     const span = entry?.spans?.[0];
     const key = span ? `${span.start}-${span.end}` : 'unanchored';
@@ -588,7 +673,8 @@ const noteGroups = computed(() => {
         notes: [],
       });
     }
-    groups.get(key).notes.push(entry.note);
+    // Set just above when the key was new.
+    groups.get(key)!.notes.push(entry.note);
   }
   return [...groups.values()].sort((a, b) => a.start - b.start);
 });
@@ -598,24 +684,24 @@ const noteGroups = computed(() => {
 // per-note delete for pre-login drafts (no creator) and legacy drafts (whose
 // creator.id was stored undefined by an earlier bug), leaving only the bulk
 // wipe. Committed notes are not __draft, so they still have no delete path.
-function canDeleteNote(note) {
+function canDeleteNote(note: Note | null | undefined) {
   return !!note?.__draft;
 }
-function deleteNote(note) {
+function deleteNote(note: Note) {
   const i = draftNotes.value.indexOf(note);
   if (i >= 0) removeDraft(i);
 }
 // Deleting a draft is irreversible (it is the only copy), so confirm first. Same
 // pending-ref + show()/hide() pattern as the share modal.
-const deleteModalEl = ref(null);
-const deletePending = ref(null);
+const deleteModalEl = ref<NLDDModalDialog | null>(null);
+const deletePending = ref<Note | null>(null);
 watch(deletePending, (note) => {
   const el = deleteModalEl.value;
   if (!el) return;
   if (note && typeof el.show === 'function') el.show();
   else if (!note && typeof el.hide === 'function') el.hide();
 });
-function askDeleteNote(note) {
+function askDeleteNote(note: Note) {
   deletePending.value = note;
 }
 function cancelDelete() {
@@ -629,32 +715,33 @@ function confirmDelete() {
 }
 // The note group (with its span) a given note belongs to, so the badge popover
 // can drive an edit's re-anchoring the same way the Notities pane does.
-function groupForNote(note) {
+function groupForNote(note: Note) {
   return noteGroups.value.find((g) => g.notes.includes(note)) ?? null;
 }
 // The group the open badge sheet shows (all its notes share one span), so the
 // sheet can offer "Notitie toevoegen" on that same fragment.
 const activeGroup = computed(() =>
-  activeNotes.value.length ? groupForNote(activeNotes.value[0]) : null,
+  // The length check guarantees a first note.
+  activeNotes.value.length ? groupForNote(activeNotes.value[0]!) : null,
 );
 // Sharing ("Delen") applies to your still-local drafts (a committed note is
 // already on the traject branch) and needs a traject to write to.
-function canPublishNote(note) {
+function canPublishNote(note: Note | null | undefined) {
   return !!note?.__draft && canEdit.value;
 }
 // Publishing writes the note to the repo (Git) and can't be undone - it can't
 // be made private again - so it goes through a confirm modal. Same show()/hide()
 // pattern as other DS modal dialogs: a pending ref (the note to publish) drives
 // the open/close via a watch, and @close just clears it.
-const publishModalEl = ref(null);
-const publishPending = ref(null);
+const publishModalEl = ref<NLDDModalDialog | null>(null);
+const publishPending = ref<Note | null>(null);
 watch(publishPending, (note) => {
   const el = publishModalEl.value;
   if (!el) return;
   if (note && typeof el.show === 'function') el.show();
   else if (!note && typeof el.hide === 'function') el.hide();
 });
-function askPublishNote(note) {
+function askPublishNote(note: Note) {
   publishPending.value = note;
 }
 function cancelPublish() {
@@ -666,7 +753,7 @@ function confirmPublish() {
   publishPending.value = null;
   if (note) publishOneNote(note);
 }
-async function publishOneNote(note) {
+async function publishOneNote(note: Note) {
   if (savingNotes.value) return;
   savingNotes.value = true;
   notesSaveError.value = null;
@@ -680,7 +767,8 @@ async function publishOneNote(note) {
         : 'Notitie gedeeld.';
     await reloadNotes();
   } catch (e) {
-    notesSaveError.value = e?.message || 'Delen mislukt';
+    // Reads `.message` off whatever was thrown, as before.
+    notesSaveError.value = (e as { message?: string } | null)?.message || 'Delen mislukt';
   } finally {
     savingNotes.value = false;
   }
@@ -688,22 +776,26 @@ async function publishOneNote(note) {
 // Look-ahead popover shown on a badge click: a flat preview of the comments with
 // a CTA into the full sheet. The DS popover positions against a real element, so
 // we anchor it to the badge's viewport rect via one reused invisible element.
-const annotationPopEl = ref(null);
-let annotationAnchorEl = null;
+const annotationPopEl = ref<NLDDPopover | null>(null);
+let annotationAnchorEl: HTMLDivElement | null = null;
 // A note's comment text and author, mirroring NoteCard, for the preview.
-function noteText(note) {
-  const body = Array.isArray(note?.body) ? note.body[0] : note?.body;
+function noteText(note: Note) {
+  // Notes are not validated (see Note), so the body shape is assumed here.
+  const noteBody = note?.body as NoteBody | NoteBody[] | null | undefined;
+  const body = Array.isArray(noteBody) ? noteBody[0] : noteBody;
   return body?.value || body?.source || '';
 }
-function noteAuthor(note) {
-  return note?.creator?.name ?? note?.creator ?? '';
+function noteAuthor(note: Note) {
+  // The { id, name } shape or a legacy plain string, as in NoteCard; not validated.
+  const creator = note?.creator as { name?: string } | string | null | undefined;
+  return (creator as { name?: string } | null | undefined)?.name ?? creator ?? '';
 }
 // Clicking an annotation's badge opens the look-ahead popover anchored to the
 // badge; its CTA then opens the full sheet at the list view. A merged badge can
 // carry several ids.
-function onEditorAnnotationClick(ids, rect) {
+function onEditorAnnotationClick(ids: string | string[], rect?: DOMRect | null) {
   const idList = [...new Set(Array.isArray(ids) ? ids : [ids])];
-  activeNotes.value = idList.map((id) => noteById.value.get(id)).filter(Boolean);
+  activeNotes.value = idList.map((id) => noteById.value.get(id)).filter((n): n is Note => Boolean(n));
   if (!activeNotes.value.length) return;
   if (!rect) {
     // No rect to anchor to (e.g. keyboard activation) - skip the popover.
@@ -746,7 +838,7 @@ const exporting = ref(false);
 // an earlier export from the same article.
 function fileTimestamp() {
   const d = new Date();
-  const p = (n) => String(n).padStart(2, '0');
+  const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
 }
 
@@ -759,7 +851,7 @@ function lawSlug() {
 // a programmatic anchor download starts asynchronously, and revoking
 // synchronously after click() races the browser fetching the blob (unreliable
 // in Safari/Firefox).
-function downloadYaml(text, filename) {
+function downloadYaml(text: string, filename: string) {
   const blob = new Blob([text], { type: 'text/yaml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -801,10 +893,10 @@ function exportArticleNotes() {
 // by the shared lastSavedPr ref, so a save that produced a PR lights it up
 // with no extra wiring here.
 const savingNotes = ref(false);
-const notesSaveError = ref(null);
+const notesSaveError = ref<string | null>(null);
 // Explicit success signal: a PR-less / NoChange save must not look like
 // the work vanished (the drafts get cleared either way).
-const notesSaveStatus = ref(null);
+const notesSaveStatus = ref<string | null>(null);
 // The save status/error describe the LAST publish. A NEW draft appearing
 // afterwards makes the confirmation stale ("Notitie gedeeld" next to a fresh
 // unsaved draft is contradictory), so clear it then. Sharing itself removes the
@@ -860,14 +952,14 @@ function retryLoadLaw() {
   switchLaw(lawId.value, selectedArticleNumber.value, undefined, { minLoadingMs: RETRY_MIN_SPINNER_MS });
 }
 
-function onSearchSelectLaw(lawIdVal) {
+function onSearchSelectLaw(lawIdVal: string) {
   // Open in the library - search currently only matches law names. As
   // soon as article-level search lands, we can route directly into the
   // editor (with the chosen article as the active tab).
   router.push(libraryRouteFor(lawIdVal));
 }
 
-async function onSearchHarvestAvailable(slug) {
+async function onSearchHarvestAvailable(slug: string) {
   // Best-effort reload - a failure just means the list below may not
   // include the fresh law yet.
   await apiFetch('/api/corpus/reload', {
@@ -880,13 +972,13 @@ async function onSearchHarvestAvailable(slug) {
   await refreshCorpusLaws();
   router.push(libraryRouteFor(slug));
 }
-const resultSheetEl = ref(null);
+const resultSheetEl = ref<NLDDSheet | null>(null);
 watch(resultSheetOpen, async (open) => {
   await nextTick();
   if (open) resultSheetEl.value?.show();
   else resultSheetEl.value?.hide();
 });
-const graphSheetEl = ref(null);
+const graphSheetEl = ref<NLDDSheet | null>(null);
 watch(graphSheetOpen, async (open) => {
   await nextTick();
   if (open) graphSheetEl.value?.show();
@@ -907,8 +999,12 @@ watch(graphSheetOpen, async (open) => {
  * fire here - but for safety it routes to the chooser with the law as
  * query rather than the (now removed) no-traject editor.
  */
-function editorRouteFor(lawIdVal, articleNumber, { keepReviewTask = true } = {}) {
-  const trajectRef = route.params.trajectRef;
+function editorRouteFor(
+  lawIdVal: string | null | undefined,
+  articleNumber: string | null | undefined,
+  { keepReviewTask = true }: { keepReviewTask?: boolean } = {},
+) {
+  const trajectRef = singleParam(route.params.trajectRef);
   // Een lopende beoordeling reist mee met de navigatie: `?task=` blijft op elke
   // editor-URL staan tot de taak is afgehandeld (`clearReviewQuery` bouwt de
   // enige route zonder). Zo overleeft de beoordeling een uitstapje naar een
@@ -934,7 +1030,7 @@ function editorRouteFor(lawIdVal, articleNumber, { keepReviewTask = true } = {})
  * for the library (e.g. opening a search result) so the active traject
  * follows the user instead of being dropped.
  */
-function libraryRouteFor(lawIdVal) {
+function libraryRouteFor(lawIdVal: string) {
   return homeTarget({ trajectRef: route.params.trajectRef, lawId: lawIdVal });
 }
 
@@ -942,8 +1038,8 @@ function libraryRouteFor(lawIdVal) {
 // (not by lawId alone) because a concept edit can give the same law a different
 // name per traject, so a bare-lawId cache would show the wrong label after a
 // switch.
-const lawNames = ref({});
-function lawNameKey(trajectRef, lawIdVal) {
+const lawNames = ref<Record<string, string>>({});
+function lawNameKey(trajectRef: string | null | undefined, lawIdVal: string) {
   return `${trajectRef || ''}::${lawIdVal}`;
 }
 
@@ -952,13 +1048,13 @@ function lawNameKey(trajectRef, lawIdVal) {
 // is enough: the switch sets it before mutating and clears it after nextTick.
 let suppressTabAutoOpen = false;
 
-function tabKey(tab) {
+function tabKey(tab: OpenTab) {
   return `${tab.lawId}:${tab.articleNumber}`;
 }
 
 // Same-shape wrapper over the store's explicit-ref lookup, scoped to the active
 // traject (the only traject EditorView's watches ever add to).
-function findTab(lawIdVal, articleNumber) {
+function findTab(lawIdVal: string, articleNumber: string | number) {
   return findTabIn(activeTrajectRef.value, lawIdVal, articleNumber);
 }
 
@@ -996,7 +1092,7 @@ watch(lawName, (name) => {
 // URL-driven switch supersede each other.
 const claimTabSwitch = useLatest();
 
-async function selectTab(tab) {
+async function selectTab(tab: OpenTab) {
   const isCurrent = claimTabSwitch();
   setActiveTab(activeTrajectRef.value, tab);
   // Restore snapshot if the user is mid-edit, otherwise the partial mutations
@@ -1012,7 +1108,7 @@ async function selectTab(tab) {
     // right after a traject switch with no law in the URL: `switchLaw`'s
     // internal traject is still the previous one, so without this the law
     // would be read through the old traject's scope.
-    await switchLaw(tab.lawId, tab.articleNumber, route.params.trajectRef || null);
+    await switchLaw(tab.lawId, tab.articleNumber, singleParam(route.params.trajectRef) || null);
     if (!isCurrent()) return; // stale, another switch started
     lawNames.value = {
       ...lawNames.value,
@@ -1048,7 +1144,8 @@ watch([activeTab, openTabs], ([tab, tabs]) => {
   if (route.params.articleNumber) return;
   // A traject switch reconciles the bar via restore; don't race it here.
   if (suppressTabAutoOpen) return;
-  if (!tab && tabs.length > 0) selectTab(tabs[0]).catch(console.warn);
+  // tabs.length > 0 guarantees a first tab.
+  if (!tab && tabs.length > 0) selectTab(tabs[0]!).catch(console.warn);
 });
 
 // A URL naming a traject the user has no access to (deleted, never existed, or
@@ -1071,8 +1168,8 @@ watch(trajectMissing, (missing) => {
 // useLaw's stale-switch race, but still hits the network). This guard
 // handles the law / article portion only.
 onBeforeRouteUpdate(async (to) => {
-  const newLawId = to.params.lawId;
-  const newArticle = to.params.articleNumber;
+  const newLawId = singleParam(to.params.lawId);
+  const newArticle = singleParam(to.params.articleNumber);
   if (!newLawId) {
     // Back/forward (or the Home/Editor tab) to the bare editor root WITHIN the
     // same traject: the watch(activeTrajectRef) won't fire (ref unchanged), so
@@ -1084,18 +1181,18 @@ onBeforeRouteUpdate(async (to) => {
       (to.params.trajectRef || null) !== (route.params.trajectRef || null);
     if (!trajectChanged) {
       tabRestore
-        .restoreForTraject(to.params.trajectRef || null, { hasLawInUrl: false })
+        .restoreForTraject(singleParam(to.params.trajectRef) || null, { hasLawInUrl: false })
         .catch(console.warn);
     }
     return;
   }
   if (newLawId !== lawId.value) {
     const isCurrent = claimTabSwitch();
-    await switchLaw(newLawId, newArticle, to.params.trajectRef || null);
+    await switchLaw(newLawId, newArticle, singleParam(to.params.trajectRef) || null);
     if (!isCurrent()) return;
     lawNames.value = {
       ...lawNames.value,
-      [lawNameKey(to.params.trajectRef || null, newLawId)]: lawName.value,
+      [lawNameKey(singleParam(to.params.trajectRef) || null, newLawId)]: lawName.value,
     };
   } else if (newArticle && String(newArticle) !== String(selectedArticleNumber.value)) {
     selectedArticleNumber.value = String(newArticle);
@@ -1107,7 +1204,7 @@ onBeforeRouteUpdate(async (to) => {
 // that item selected, so choosing differently here leaves both lit. Callers
 // without a bar (no pick to follow) get the same rule the bar applies: the
 // neighbour to the right, else the one to the left.
-function closeTab(tab, next = null) {
+function closeTab(tab: OpenTab, next: OpenTab | null = null) {
   const wasActive = !!activeTab.value && tabKey(activeTab.value) === tabKey(tab);
   // The store removes the tab, promotes the replacement (the bar's `next` pick,
   // else right-then-left) and persists both keys - closing the active tab and
@@ -1123,7 +1220,7 @@ function closeTab(tab, next = null) {
   }
 }
 
-function tabDisplayName(tab) {
+function tabDisplayName(tab: OpenTab) {
   return lawNames.value[lawNameKey(activeTrajectRef.value, tab.lawId)] || humanizeLawId(tab.lawId);
 }
 
@@ -1134,7 +1231,7 @@ function tabDisplayName(tab) {
 // Drag/keyboard reorder from the mobile tabs sheet. The nldd-list dispatches
 // nldd-reorder with array indices; mirror the move into openTabs so the new
 // order persists (and the md+ document-tab-bar follows it).
-function reorderTabs(fromIndex, toIndex) {
+function reorderTabs(fromIndex: number, toIndex: number) {
   reorderTabsIn(activeTrajectRef.value, fromIndex, toIndex);
 }
 
@@ -1163,7 +1260,7 @@ onBeforeUnmount(clearEditorChrome);
 // the given traject so tab labels match what the editor pane shows after a
 // save. Runs on startup and again after a traject switch, since a switch swaps
 // in that traject's own tab set whose labels still need resolving.
-function backfillTabLabels(trajectRef) {
+function backfillTabLabels(trajectRef: string | null | undefined) {
   const uniqueLawIds = [...new Set(tabsFor(trajectRef).map(t => t.lawId))];
   Promise.all(uniqueLawIds.map(async (id) => {
     try {
@@ -1193,14 +1290,14 @@ initEngine().catch(() => {});
 // observes in-memory edits rather than only the persisted `rawYaml`.
 
 // --- Trace state (receives trace from last executed scenario) ---
-const lastTraceText = ref(null);
-const lastResult = ref(null);
-const lastError = ref(null);
-const lastExpectations = ref({});
+const lastTraceText = ref<string | null>(null);
+const lastResult = ref<ScenarioExecutedPayload['result']>(null);
+const lastError = ref<string | null>(null);
+const lastExpectations = ref<ScenarioExecutedPayload['expectations']>({});
 const lastScenarioName = ref('');
 // The scenario's entry output (e.g. "is_rechthebbende"). The graph view
 // uses this to pin its "▶ start" marker to the right leaf.
-const lastOutputName = ref(null);
+const lastOutputName = ref<string | null>(null);
 // Declared units of the opened law's outputs, so the result sheet renders a
 // value as money only when its type_spec says so. Scenarios execute the opened
 // law, so its articles carry the outputs the trace reports.
@@ -1208,12 +1305,14 @@ const outputTypeMap = computed(() => buildOutputTypeMap(articles.value));
 // Loading state of the last scenario and a bound re-run callback, so the
 // result sheet can show "running…" / an error with a reload action.
 const lastRunning = ref(false);
-const lastReload = ref(null);
+const lastReload = ref<(() => void) | null>(null);
 
-function handleScenarioExecuted({ result, traceText, error, running, expectations, scenarioName, outputName, reload, view }) {
+function handleScenarioExecuted({ result, traceText, error, running, expectations, scenarioName, outputName, reload, view }: ScenarioExecutedPayload) {
   lastResult.value = result;
-  lastTraceText.value = traceText;
-  lastError.value = error || null;
+  // The engine hands trace text and errors back untyped; ExecutionTraceView
+  // renders them as text, so they are passed on as they are.
+  lastTraceText.value = traceText as string | null;
+  lastError.value = (error || null) as string | null;
   lastRunning.value = !!running;
   lastReload.value = typeof reload === 'function' ? reload : null;
   lastExpectations.value = expectations || {};
@@ -1252,14 +1351,14 @@ watch(lawId, () => {
 });
 
 // --- Editor state ---
-const activeAction = ref(null);
+const activeAction = ref<ExecutionAction | null>(null);
 // True while the open action sheet is for a freshly added action, so its
 // Save button is always offered (no edit required to create it).
 const activeActionIsNew = ref(false);
-const activeEditItem = ref(null);
-const parseError = ref(null);
+const activeEditItem = ref<EditSheetItem | null>(null);
+const parseError = ref<string | null>(null);
 
-const machineReadable = ref(null);
+const machineReadable = ref<MachineReadableSection | null>(null);
 
 // The YAML pane edits the machine-readable as text. There is something to edit
 // when the article carries machine_readable, or one was created/edited this
@@ -1281,11 +1380,12 @@ const editedText = ref('');
 // pane-view dropdown rather than the editor drawing its own duplicate
 // label dropdown inside the body. Functional ref keeps the map in sync as
 // panes mount/unmount.
-const textEditorRefs = reactive({});
-function setTextEditorRef(idx) {
-  return (el) => {
+const textEditorRefs = reactive<Record<string, TextEditorInstance>>({});
+function setTextEditorRef(idx: number) {
+  return (el: Element | ComponentPublicInstance | null) => {
     if (el) {
-      textEditorRefs[idx] = el;
+      // The ref sits on an ArticleTextEditor, so the instance is one.
+      textEditorRefs[idx] = el as TextEditorInstance;
     } else {
       delete textEditorRefs[idx];
     }
@@ -1300,7 +1400,7 @@ function setTextEditorRef(idx) {
 
 // Vet/Schuin: checkbox-control - de geselecteerde waardes zijn de actieve
 // inline-formats (beide kunnen tegelijk aan staan).
-function boldItalicValues(idx) {
+function boldItalicValues(idx: number) {
   const refs = textEditorRefs[idx];
   if (!refs) return [];
   const values = [];
@@ -1308,24 +1408,26 @@ function boldItalicValues(idx) {
   if (refs.activeFormats.italic) values.push('italic');
   return values;
 }
-function onInlineFormatChange(idx, e) {
+function onInlineFormatChange(idx: number, e: Event) {
   const refs = textEditorRefs[idx];
   if (!refs) return;
-  if (e.detail.value === 'bold') refs.toggleBold();
-  else if (e.detail.value === 'italic') refs.toggleItalic();
+  // nldd-segmented-control `item-change`: detail { value, checked }.
+  const { value } = (e as CustomEvent<{ value: string; checked: boolean }>).detail;
+  if (value === 'bold') refs.toggleBold();
+  else if (value === 'italic') refs.toggleItalic();
 }
 
 // Lijst: radio-control met none/bullet/ordered. Tiptap's toggle-commando's
 // converteren tussen lijsttypes en heffen de actieve lijst op, dus elke
 // overgang is met één toggle te maken.
-function listValue(idx) {
+function listValue(idx: number) {
   const refs = textEditorRefs[idx];
   if (!refs) return 'none';
   if (refs.activeFormats.bulletList) return 'bullet';
   if (refs.activeFormats.orderedList) return 'ordered';
   return 'none';
 }
-function setList(idx, target) {
+function setList(idx: number, target: string) {
   const refs = textEditorRefs[idx];
   if (!refs) return;
   const current = listValue(idx);
@@ -1335,8 +1437,9 @@ function setList(idx, target) {
   else if (refs.activeFormats.bulletList) refs.toggleBulletList();
   else if (refs.activeFormats.orderedList) refs.toggleOrderedList();
 }
-function onListChange(idx, e) {
-  setList(idx, e.detail.value);
+function onListChange(idx: number, e: Event) {
+  // nldd-segmented-control `change` for a radio control: detail { value }.
+  setList(idx, (e as CustomEvent<{ value: string }>).detail.value);
 }
 
 const dumpOpts = { lineWidth: 80, noRefs: true };
@@ -1369,7 +1472,8 @@ const editedArticle = computed(() => {
 const parsedRawLaw = computed(() => {
   if (!rawYaml.value) return null;
   try {
-    return yaml.load(rawYaml.value);
+    // Unchecked YAML: a law body is a mapping, the code below guards the rest.
+    return yaml.load(rawYaml.value) as LawDocument | null;
   } catch {
     return null;
   }
@@ -1415,7 +1519,8 @@ const currentLawYaml = computed(() => {
     // string quoting), and `handleActionSave` calls `saveLaw(currentLawYaml)`
     // without checking dirty flags, so a no-op action-modal save on a
     // pristine article would otherwise produce a reformat-only commit.
-    const baseArticle = docArticles[idx];
+    // idx >= 0 was checked above.
+    const baseArticle = docArticles[idx]!;
     const textPristine = editedText.value === (baseArticle.text ?? '');
     const baselineMr = baseArticle.machine_readable ?? null;
     const currentMr = machineReadable.value ?? null;
@@ -1458,7 +1563,7 @@ const currentLawYaml = computed(() => {
 // last edit; keep the first load (no previous yaml) synchronous so the initial
 // load isn't delayed. Subsequent transitions from an existing yaml - keystroke
 // edits, article switches, traject switches - debounce.
-let engineLoadDebounce = null;
+let engineLoadDebounce: ReturnType<typeof setTimeout> | undefined;
 
 // The engine's verdict on the current YAML, shown to the author as a
 // page-wide banner. `loadLaw` rejects a law that fails its type check
@@ -1466,15 +1571,16 @@ let engineLoadDebounce = null;
 // rejects an unparseable one, and it has already dropped the previous copy
 // by then, so every scenario would otherwise fail with "Law not found"
 // without saying why. The WASM binding throws a plain string.
-const engineLoadError = ref(null);
+const engineLoadError = ref<string | null>(null);
 
-async function reloadEngineLaw(lawYaml, isReady) {
+async function reloadEngineLaw(lawYaml: string | null, isReady: boolean) {
   if (!isReady || !lawYaml) return;
   try {
     await loadLawYaml(lawYaml, lawId.value, activeTrajectRef.value);
     engineLoadError.value = null;
   } catch (e) {
-    engineLoadError.value = typeof e === 'string' ? e : (e?.message || String(e));
+    // Reads `.message` off whatever was thrown, as before.
+    engineLoadError.value = typeof e === 'string' ? e : ((e as { message?: string } | null)?.message || String(e));
     // Plain first argument: the law id is user text, not a format string.
     console.warn('Failed to load law into engine:', lawId.value, e);
   }
@@ -1613,7 +1719,7 @@ const reviewSavesWholeLaw = computed(() => reviewActive.value && !reviewArticleN
 // approve/reject null out `reviewTask`, which would otherwise look
 // indistinguishable from "not loaded yet" and re-trigger against the
 // task we just resolved.
-let reviewAttemptedForTaskId = null;
+let reviewAttemptedForTaskId: string | null = null;
 
 // Drop `?task=` from the URL once the review is resolved (approved or
 // rejected) so a refresh/back-navigation doesn't re-open review mode.
@@ -1645,15 +1751,15 @@ const reviewHasHiddenChanges = ref(false);
 // zodra je naar een ander artikel kijkt: `watch(selectedArticle)` zet de panes
 // dan terug naar de opgeslagen wet. Het verschil is precies het signaal om bij
 // terugkomst opnieuw te seeden.
-const reviewSeedTarget = ref(null);
+const reviewSeedTarget = ref<string | null>(null);
 // Waar het voorstel op dit moment daadwerkelijk in de panes staat, als
 // `wet::artikel`. De wet hoort in die sleutel: twee wetten in hetzelfde traject
 // kunnen dezelfde artikelnummers hebben ("B 5", "1", "2" zijn niet uniek), en
 // bij een wetwissel verandert `selectedArticleNumber` dan niet terwijl
 // `watch(selectedArticle)` de panes wél heeft teruggezet naar de opgeslagen wet.
 // Op het nummer alleen zou het voorstel er bij terugkomst niet opnieuw in gaan.
-const reviewSeededAt = ref(null);
-function reviewSeedKey(number) {
+const reviewSeededAt = ref<string | null>(null);
+function reviewSeedKey(number: string | null | undefined) {
   return `${lawId.value ?? ''}::${number ?? ''}`;
 }
 watch([lawId, selectedArticleNumber], ([, nr]) => {
@@ -1662,16 +1768,17 @@ watch([lawId, selectedArticleNumber], ([, nr]) => {
   }
 });
 
-function applyProposedContent(proposedYaml) {
+function applyProposedContent(proposedYaml: string) {
   reviewSeeded.value = false;
   reviewHasHiddenChanges.value = false;
-  let proposed;
+  let proposed: LawDocument | null;
   try {
-    proposed = yaml.load(proposedYaml);
+    // Unchecked YAML; `articles` is checked with Array.isArray below.
+    proposed = yaml.load(proposedYaml) as LawDocument | null;
   } catch {
     return; // malformed proposal - leave the saved content in place
   }
-  const proposedArticles = Array.isArray(proposed?.articles) ? proposed.articles : [];
+  const proposedArticles: LawArticle[] = Array.isArray(proposed?.articles) ? proposed.articles : [];
   // v1 can only seed an EXISTING article as an unsaved edit (same
   // single-article model as `currentLawYaml`'s KNOWN LIMITATION below,
   // which has no way to splice in an article the saved law doesn't have),
@@ -1956,7 +2063,7 @@ function acceptedReviewContent() {
 // Eén oordeel over het onderdeel dat nu open staat. Is het het laatste, dan
 // wordt de verrijking meteen verwerkt; anders schuift de editor door naar het
 // volgende onbeoordeelde onderdeel.
-async function decideReview(action) {
+async function decideReview(action: Verdict['action']) {
   const { done, next } = decideReviewPart(
     action,
     action === 'approved' ? acceptedReviewContent() : null,
@@ -1968,12 +2075,14 @@ async function decideReview(action) {
   // De geseede wijziging is vastgelegd in het oordeel; de panes gaan terug
   // naar de opgeslagen wet voordat het volgende onderdeel eroverheen komt.
   discardArticle();
-  router.replace(reviewRouteForPart(next));
+  // `next` is null with `done` false only when no review task is loaded; the
+  // route builder then throws on it, as it did before.
+  router.replace(reviewRouteForPart(next as JobTaskSummary));
 }
 
 // De editor-route van een ander onderdeel van dezelfde verrijking, met de
 // taak-id als `?task=` zodat de bestemming hem oppakt.
-function reviewRouteForPart(part) {
+function reviewRouteForPart(part: JobTaskSummary) {
   const target = editorRouteFor(lawId.value, part.article ?? selectedArticleNumber.value);
   return { ...target, query: { ...(target.query ?? {}), task: part.id } };
 }
@@ -1982,8 +2091,8 @@ function reviewRouteForPart(part) {
 // backend stelt de eindstand samen, dus de wet wordt daarna opnieuw geladen -
 // de client kent de uitkomst niet.
 const reviewProcessing = ref(false);
-const reviewProcessError = ref(null);
-async function processReview(options = {}) {
+const reviewProcessError = ref<RequestError | null>(null);
+async function processReview(options: { rejectRemaining?: boolean } = {}) {
   reviewProcessing.value = true;
   reviewProcessError.value = null;
   try {
@@ -1994,7 +2103,8 @@ async function processReview(options = {}) {
     void reloadNotes();
     clearReviewQuery();
   } catch (e) {
-    reviewProcessError.value = e;
+    // processEnrichment and reloadLaw reject with an Error (an ApiError for HTTP failures).
+    reviewProcessError.value = e as RequestError;
   } finally {
     reviewProcessing.value = false;
   }
@@ -2022,7 +2132,7 @@ const {
   // beoordelen bent.
   reviewActive,
 });
-const enrichFeedback = ref(null); // { variant, text } | null
+const enrichFeedback = ref<{ variant: string; text: string } | null>(null); // { variant, text } | null
 // An actual traject open (write access implies a traject, see `canEdit`
 // above) and a law loaded - mirrors the gates other write actions in this
 // view use.
@@ -2035,7 +2145,7 @@ const canEnrichLaw = computed(
 // de tekstverwerker (waar hij stond omdat die toevallig pane 0 is). In elke
 // Machine- en YAML-pane, niet één keer: die twee staan niet altijd allebei
 // open, en de pane die je wél ziet moet je verder kunnen helpen.
-const isEnrichPane = (view) => view === 'machine' || view === 'yaml';
+const isEnrichPane = (view: string) => view === 'machine' || view === 'yaml';
 
 async function enrichLaw() {
   if (!activeTrajectRef.value || !lawId.value) return;
@@ -2141,7 +2251,7 @@ const saveFailure = computed(() => reviewProcessError.value ?? lawSaveError.valu
 const saveErrorText = computed(() =>
   saveFailure.value ? saveFailure.value.message || String(saveFailure.value) : '',
 );
-const saveErrorModalEl = ref(null);
+const saveErrorModalEl = ref<NLDDModalDialog | null>(null);
 watch(saveFailure, (err) => {
   const el = saveErrorModalEl.value;
   if (!el) return;
@@ -2185,8 +2295,8 @@ function discardArticle() {
 // Undo/redo route to the last-focused Tekst editor (falling back to the first
 // mounted one). Tiptap owns the history; the Machine/YAML panes have none, so
 // the buttons simply stay disabled when no text editor can undo.
-const activeTextEditorIdx = ref(null);
-function onTextEditorFocus(idx) { activeTextEditorIdx.value = idx; }
+const activeTextEditorIdx = ref<number | null>(null);
+function onTextEditorFocus(idx: number) { activeTextEditorIdx.value = idx; }
 const targetTextEditor = computed(() => {
   const active = activeTextEditorIdx.value != null
     ? textEditorRefs[activeTextEditorIdx.value]
@@ -2249,7 +2359,7 @@ watchEffect(() => {
   document.title = articleDirty.value ? `● ${base}` : base;
 });
 
-function onYamlInput(event) {
+function onYamlInput(event: Event) {
   // nldd-code-editor dispatches a CustomEvent with the new value in
   // event.detail.value (see the design-system 0.8.41 component). The
   // host's `value` property is updated before dispatch so
@@ -2257,7 +2367,9 @@ function onYamlInput(event) {
   // the contract explicit and matches how the storybook docs the API.
   // `??` skips only null/undefined - a deliberate empty string passes
   // through as a valid "user cleared the editor" input.
-  const text = event.detail?.value ?? event.target?.value;
+  const text =
+    (event as CustomEvent<{ value?: string } | null>).detail?.value ??
+    (event.target as { value?: string } | null)?.value;
   if (text == null) {
     // Structurally broken event (no detail, no value on target). Don't
     // touch yamlSource - silently overwriting with the previous value
@@ -2270,19 +2382,23 @@ function onYamlInput(event) {
   yamlSource.value = text;
   try {
     const parsed = yaml.load(text);
-    machineReadable.value = parsed != null && typeof parsed === 'object' ? parsed : null;
+    // Unchecked YAML, like every machine_readable the editor reads.
+    machineReadable.value = parsed != null && typeof parsed === 'object' ? (parsed as MachineReadableSection) : null;
     parseError.value = null;
   } catch (e) {
-    parseError.value = e.message;
+    // js-yaml throws a YAMLException.
+    parseError.value = (e as Error).message;
   }
 }
 
-function handleSave({ section, key, newKey, index, data }) {
+// The payload is read field by field (not destructured) so each branch sees
+// its own section's fields.
+function handleSave(payload: MrSavePayload) {
   // JSON round-trip clone: Vue reactive proxies aren't structuredClone-able
   // in all envs. Safe because law YAML is JSON-plain - but Date/undefined
   // are NOT preserved, which only matters if a future field becomes
   // date-typed (use an explicit serialiser then).
-  const mr = machineReadable.value
+  const mr: MachineReadableSection = machineReadable.value
     ? JSON.parse(JSON.stringify(machineReadable.value))
     : {};
 
@@ -2292,25 +2408,28 @@ function handleSave({ section, key, newKey, index, data }) {
   if (!mr.execution.input) mr.execution.input = [];
   if (!mr.execution.output) mr.execution.output = [];
 
-  if (section === 'definition') {
-    if (newKey && newKey !== key) delete mr.definitions[key];
-    mr.definitions[newKey || key] = data;
-  } else if (section === 'add-definition') {
-    mr.definitions[key] = data;
-  } else if (section === 'parameter') {
-    mr.execution.parameters[index] = data;
-  } else if (section === 'add-parameter') {
-    mr.execution.parameters.push(data);
-  } else if (section === 'input') {
-    mr.execution.input[index] = data;
-  } else if (section === 'add-input') {
-    mr.execution.input.push(data);
-  } else if (section === 'output') {
-    mr.execution.output[index] = data;
-  } else if (section === 'add-output') {
-    mr.execution.output.push(data);
-  } else if (section === 'produces') {
-    const produces = withDecisionField(mr.execution.produces, key, data);
+  // EditSheet types `key` and `index` as optional because its item type is
+  // shared by every section; an existing definition or row always arrives with
+  // them (MachineReadable's open-edit payload), hence the casts below.
+  if (payload.section === 'definition') {
+    if (payload.newKey && payload.newKey !== payload.key) delete mr.definitions[payload.key as string];
+    mr.definitions[(payload.newKey || payload.key) as string] = payload.data;
+  } else if (payload.section === 'add-definition') {
+    mr.definitions[payload.key] = payload.data;
+  } else if (payload.section === 'parameter') {
+    mr.execution.parameters[payload.index as number] = payload.data;
+  } else if (payload.section === 'add-parameter') {
+    mr.execution.parameters.push(payload.data);
+  } else if (payload.section === 'input') {
+    mr.execution.input[payload.index as number] = payload.data;
+  } else if (payload.section === 'add-input') {
+    mr.execution.input.push(payload.data);
+  } else if (payload.section === 'output') {
+    mr.execution.output[payload.index as number] = payload.data;
+  } else if (payload.section === 'add-output') {
+    mr.execution.output.push(payload.data);
+  } else if (payload.section === 'produces') {
+    const produces = withDecisionField(mr.execution.produces, payload.key, payload.data);
     if (produces === undefined) delete mr.execution.produces;
     else mr.execution.produces = produces;
   }
@@ -2325,33 +2444,34 @@ function handleSave({ section, key, newKey, index, data }) {
 // keyed by name; parameters / inputs / outputs / actions are keyed by
 // array index. Out-of-range indices and missing keys are no-ops so a
 // stale event from the UI can never crash.
-function handleDelete({ section, key, index }) {
+// Read field by field, like handleSave, so each branch sees its own fields.
+function handleDelete(payload: MrDeletePayload) {
   // JSON clone - see handleSave: Date/undefined not preserved (fine for
   // JSON-plain law data).
-  const mr = machineReadable.value
+  const mr: MachineReadableSection | null = machineReadable.value
     ? JSON.parse(JSON.stringify(machineReadable.value))
     : null;
   if (!mr) return;
 
-  if (section === 'definition') {
-    if (mr.definitions && key != null && key in mr.definitions) {
-      delete mr.definitions[key];
+  if (payload.section === 'definition') {
+    if (mr.definitions && payload.key != null && payload.key in mr.definitions) {
+      delete mr.definitions[payload.key];
     }
-  } else if (section === 'parameter') {
-    if (mr.execution?.parameters && index >= 0 && index < mr.execution.parameters.length) {
-      mr.execution.parameters.splice(index, 1);
+  } else if (payload.section === 'parameter') {
+    if (mr.execution?.parameters && payload.index >= 0 && payload.index < mr.execution.parameters.length) {
+      mr.execution.parameters.splice(payload.index, 1);
     }
-  } else if (section === 'input') {
-    if (mr.execution?.input && index >= 0 && index < mr.execution.input.length) {
-      mr.execution.input.splice(index, 1);
+  } else if (payload.section === 'input') {
+    if (mr.execution?.input && payload.index >= 0 && payload.index < mr.execution.input.length) {
+      mr.execution.input.splice(payload.index, 1);
     }
-  } else if (section === 'output') {
-    if (mr.execution?.output && index >= 0 && index < mr.execution.output.length) {
-      mr.execution.output.splice(index, 1);
+  } else if (payload.section === 'output') {
+    if (mr.execution?.output && payload.index >= 0 && payload.index < mr.execution.output.length) {
+      mr.execution.output.splice(payload.index, 1);
     }
-  } else if (section === 'action') {
-    if (mr.execution?.actions && index >= 0 && index < mr.execution.actions.length) {
-      mr.execution.actions.splice(index, 1);
+  } else if (payload.section === 'action') {
+    if (mr.execution?.actions && payload.index >= 0 && payload.index < mr.execution.actions.length) {
+      mr.execution.actions.splice(payload.index, 1);
     }
   }
 
@@ -2376,12 +2496,12 @@ function handleInitMr() {
 }
 
 // Add a new action and open ActionSheet
-let actionSnapshot = null;
+let actionSnapshot: string | null = null;
 
 function handleAddAction() {
   // Snapshot BEFORE any mutations so cancel restores the exact original state
   actionSnapshot = JSON.stringify(machineReadable.value);
-  const mr = machineReadable.value || {};
+  const mr: MachineReadableSection = machineReadable.value || {};
   if (!mr.execution) mr.execution = {};
   if (!mr.execution.actions) mr.execution.actions = [];
   // Seed the new action with an EQUALS stub instead of an empty literal so
@@ -2401,7 +2521,7 @@ function handleAddAction() {
   activeAction.value = newAction;
 }
 
-function handleOpenAction(action) {
+function handleOpenAction(action: ExecutionAction) {
   actionSnapshot = JSON.stringify(machineReadable.value);
   activeActionIsNew.value = false;
   activeAction.value = action;
@@ -2429,8 +2549,10 @@ const COMPARISON_OPS_SET = new Set([
 // Walk a value tree and report the first incomplete operation (e.g. a stub
 // `{ operation: 'ADD', values: [] }` that the user inserted via "Voeg operatie
 // toe" but never filled in). Returns null when the tree is structurally valid.
-function findIncompleteOperation(value) {
-  if (value == null || typeof value !== 'object') return null;
+function findIncompleteOperation(raw: unknown): string | null {
+  if (raw == null || typeof raw !== 'object') return null;
+  // An operation node from unchecked YAML; only the slots below are read.
+  const value = raw as OperationLike;
   if (!value.operation) return null;
   const op = value.operation;
   // Arithmetic / logical ops need a non-empty values or conditions array
@@ -3002,7 +3124,7 @@ async function handleActionSave() {
                      editor view (with a back button) or, from the notities pane,
                      opens it as the root (with a close button). -->
                 <nldd-sheet
-                  :ref="(el) => (noteSheetEl = el)"
+                  :ref="(el: Element | ComponentPublicInstance | null) => (noteSheetEl = el as NLDDSheet | null)"
                   placement="right"
                   width="480px"
                   accessible-label="Notities"
@@ -3063,11 +3185,13 @@ async function handleActionSave() {
                         @back="noteEditorBack"
                         @dismiss="noteSheetEl?.hide?.()"
                       ></nldd-top-title-bar>
+                      <!-- Only in the Tekst pane, which renders once an article
+                           (and so a law) is loaded: lawId is a string here. -->
                       <NoteCreator
                         v-if="noteCreator.open"
                         :range="noteCreator.range"
                         :raw-text="editedText"
-                        :law-id="lawId"
+                        :law-id="(lawId as string)"
                         :article="selectedArticle"
                         :engine="noteEngine"
                         :valid-from="lawValidFrom || ''"
@@ -3083,7 +3207,7 @@ async function handleActionSave() {
                 <!-- Look-ahead popover on a badge click: a flat preview of the
                      comments (no referenced text) with a CTA into the sheet. -->
                 <nldd-popover
-                  :ref="(el) => (annotationPopEl = el)"
+                  :ref="(el: Element | ComponentPublicInstance | null) => (annotationPopEl = el as NLDDPopover | null)"
                   accessible-label="Notities"
                   placement="bottom-start"
                 >
@@ -3145,9 +3269,11 @@ async function handleActionSave() {
                     :supporting-text="`${engineInitError.message} - voer 'just wasm-build' uit om de WASM module te bouwen.`"
                   ></nldd-inline-dialog>
                 </nldd-simple-section>
+                <!-- Rendered with a law id or a loaded article, and a loaded
+                     article means a loaded law: lawId is a string here. -->
                 <ScenarioBuilder
                   v-else
-                  :law-id="lawId"
+                  :law-id="(lawId as string)"
                   :law-yaml="currentLawYaml"
                   :engine="getEngine()"
                   :ready="engineReady"
@@ -3192,7 +3318,9 @@ async function handleActionSave() {
                      Shown to every viewer, not only note authors: without it
                      the pane falls through to "Geen notities", which reads as
                      an empty sidecar instead of a failure. -->
-                <NotesLoadError :error="notesLoadError" />
+                <!-- useNotes keeps whatever it caught (`unknown`): an Error or the
+                     bare string a WASM call throws, which is what this prop takes. -->
+                <NotesLoadError :error="notesLoadError as { message?: string } | string | null" />
                 <template v-if="canCreateNotes">
                   <nldd-inline-dialog
                     v-if="noteIssues.length"

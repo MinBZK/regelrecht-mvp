@@ -9,10 +9,38 @@
 // Harnas overgenomen van LibraryView.indexErrorTakeover.repro.test.js:
 // shallow-mount met elke composable gestubd, bewust smal op dit ene oppervlak.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { shallowMount } from '@vue/test-utils';
-import { ref, nextTick } from 'vue';
+import { shallowMount, type VueWrapper } from '@vue/test-utils';
+import { ref, nextTick, type Ref } from 'vue';
 
-const routeState = {
+/** The route fields LibraryView reads; tests reassign params freely. */
+interface RouteStub {
+  name: string;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  fullPath: string;
+}
+
+/** A corpus-law row as the `?ids=` route returns it (the fields these tests set). */
+interface LawRow {
+  law_id: string;
+  display_name: string;
+  source_id?: string;
+  source_name: string;
+  source_priority: number;
+}
+
+/** The fake backend's answer book. */
+interface FakeServer {
+  sourceLaws: LawRow[];
+  favorites: string[];
+  changed: string[];
+  changedFails: boolean;
+  favoritesFails: boolean;
+  holdFavoritesFor: { ref: string; promise: Promise<unknown>; value: string[] } | null;
+  holdChanged: Promise<unknown> | null;
+}
+
+const routeState: RouteStub = {
   name: 'library-traject',
   params: { trajectRef: 'traject-abcd1234' },
   query: {},
@@ -36,7 +64,9 @@ vi.mock('./composables/useAuth', () => ({
 // In een hoisted box zodat een test in-place van traject kan wisselen: de
 // traject-switcher laat LibraryView gemonteerd en verandert alleen de
 // route-param, waar `watch(activeTrajectRef)` op reageert.
-const { trajectScope } = vi.hoisted(() => ({ trajectScope: {} }));
+// `activeTrajectRef` is set in the useTrajects mock factory, which runs when
+// LibraryView is imported - before any test.
+const { trajectScope } = vi.hoisted(() => ({ trajectScope: {} as { activeTrajectRef: Ref<string> } }));
 
 vi.mock('./composables/useTrajects', () => {
   trajectScope.activeTrajectRef = ref('traject-abcd1234');
@@ -53,14 +83,16 @@ vi.mock('./composables/useTrajects', () => {
 // de wetten van de eigen bron, de favorieten en de bewerkte wetten.
 const { server, ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
   class ApiErrorStub extends Error {
-    constructor(message, { status, body = '' } = {}) {
+    status: number | undefined;
+    body: string;
+    constructor(message: string, { status, body = '' }: { status?: number; body?: string } = {}) {
       super(message);
       this.name = 'ApiError';
       this.status = status;
       this.body = body;
     }
   }
-  const server = {
+  const server: FakeServer = {
     // De catalogus waaruit `?ids=` zijn metadata haalt.
     sourceLaws: [],
     favorites: [],
@@ -78,18 +110,19 @@ const { server, ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
   };
   // Metadata voor `?ids=`: de sidebar resolvet favorieten + aangeraakte wetten
   // via die route, dus die moeten uit dezelfde catalogus komen.
-  const byId = (id) =>
+  const byId = (id: string): LawRow =>
     server.sourceLaws.find((l) => l.law_id === id) || {
       law_id: id,
       display_name: id,
       source_name: 'Onbekend',
       source_priority: 0,
     };
-  const idsFrom = (url) => {
+  const idsFrom = (url: unknown): string[] => {
     const match = /[?&]ids=([^&]*)/.exec(String(url));
-    return match ? decodeURIComponent(match[1]).split(',').filter(Boolean) : [];
+    // The pattern has one group, so a match always carries match[1].
+    return match ? decodeURIComponent(match[1]!).split(',').filter(Boolean) : [];
   };
-  const answer = (url) => {
+  const answer = (url: unknown): unknown => {
     const u = String(url);
     if (u.includes('/changed-laws')) {
       if (server.changedFails) {
@@ -112,12 +145,12 @@ const { server, ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
   return {
     server,
     ApiErrorStub,
-    apiFetch: vi.fn(async (url) => ({
+    apiFetch: vi.fn(async (url: unknown, _init?: unknown) => ({
       ok: true,
       status: 200,
       json: async () => answer(url),
     })),
-    apiFetchJson: vi.fn(async (url) => {
+    apiFetchJson: vi.fn(async (url: unknown, _init?: unknown) => {
       if (server.holdChanged && String(url).includes('/changed-laws')) await server.holdChanged;
       if (server.holdFavoritesFor && String(url).includes(server.holdFavoritesFor.ref)) {
         const held = server.holdFavoritesFor;
@@ -133,8 +166,8 @@ const { server, ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
 });
 
 vi.mock('./lib/apiFetch', () => ({
-  apiFetch: (...a) => apiFetch(...a),
-  apiFetchJson: (...a) => apiFetchJson(...a),
+  apiFetch: (...a: Parameters<typeof apiFetch>) => apiFetch(...a),
+  apiFetchJson: (...a: Parameters<typeof apiFetchJson>) => apiFetchJson(...a),
   ApiError: ApiErrorStub,
 }));
 
@@ -157,7 +190,7 @@ vi.mock('./composables/useDocumentsManager', () => ({
     startNew: vi.fn(),
     close: vi.fn(),
     uploadDocument: vi.fn(),
-    displayTitle: (p) => String(p ?? '').replace(/\.md$/, ''),
+    displayTitle: (p: string | null | undefined) => String(p ?? '').replace(/\.md$/, ''),
     dropDraft: vi.fn(),
     refreshList: vi.fn().mockResolvedValue(undefined),
   }),
@@ -200,7 +233,7 @@ const OWN_SOURCE = 'traject-eigen';
 
 /// Zeven wetten, met weergavenamen die bewust NIET in law_id-volgorde staan:
 /// de backend sorteert op law_id, de gebruiker leest de weergavenaam.
-const SEVEN_LAWS = [
+const SEVEN_LAWS: LawRow[] = ([
   ['wet_a', 'Zorgverzekeringswet'],
   ['wet_b', 'Algemene wet bestuursrecht'],
   ['wet_c', 'Wet langdurige zorg'],
@@ -208,7 +241,7 @@ const SEVEN_LAWS = [
   ['wet_e', 'Regeling langdurige zorg'],
   ['wet_f', 'Kieswet'],
   ['wet_g', 'Participatiewet'],
-].map(([law_id, display_name]) => ({
+] as const).map(([law_id, display_name]) => ({
   law_id,
   display_name,
   source_id: OWN_SOURCE,
@@ -219,7 +252,7 @@ const SEVEN_LAWS = [
 /// `n` wetten met oplopende weergavenamen (`Wet 001` … `Wet 0nn`), zodat de
 /// alfabetische volgorde gelijkloopt met de nummering en een test aan de eerste
 /// en laatste regel kan zien hoeveel er zijn uitgeklapt.
-function manyLaws(n) {
+function manyLaws(n: number): LawRow[] {
   return Array.from({ length: n }, (_, i) => ({
     law_id: `wet_${String(i + 1).padStart(3, '0')}`,
     display_name: `Wet ${String(i + 1).padStart(3, '0')}`,
@@ -236,15 +269,15 @@ async function mountLibrary() {
 }
 
 // De weergavenamen van één sidebar-sectie, in renderorde.
-function sectionLaws(wrapper, key) {
+function sectionLaws(wrapper: VueWrapper, key: string) {
   return wrapper
     .findAll(`nldd-list-item[data-section="${key}"]`)
     .map((item) => item.find('nldd-text-cell').attributes('text'));
 }
 
 // De sleutels van de secties met wetten, in renderorde, ontdubbeld.
-function sectionOrder(wrapper) {
-  const seen = [];
+function sectionOrder(wrapper: VueWrapper) {
+  const seen: (string | undefined)[] = [];
   for (const item of wrapper.findAll('nldd-list-item[data-section]')) {
     const key = item.attributes('data-section');
     if (!seen.includes(key)) seen.push(key);
@@ -253,7 +286,7 @@ function sectionOrder(wrapper) {
 }
 
 // De uitklapknop onder "In dit traject" ('Toon alle 21' / 'Toon minder').
-function expander(wrapper) {
+function expander(wrapper: VueWrapper) {
   return wrapper.find('nldd-button[data-testid="traject-laws-expander"]');
 }
 
@@ -263,12 +296,12 @@ const TRAJECT_SECTION_TITLE = 'In dit traject';
 // `wrapper.html()`: die bevat ook de HTML-comments uit het template, dus een
 // comment die de sectie bij naam noemt zou zo'n assertie laten slagen of falen
 // om de verkeerde reden.
-function sectionTitles(wrapper) {
+function sectionTitles(wrapper: VueWrapper) {
   return wrapper.findAll('nldd-title h4').map((h) => h.text());
 }
 
 // De lege staat onder de kop: "nog niets, en dit kun je eraan doen".
-function noLawsText(wrapper) {
+function noLawsText(wrapper: VueWrapper) {
   return wrapper.find('nldd-rich-text[data-testid="traject-no-laws"]');
 }
 
@@ -368,7 +401,7 @@ describe('LibraryView - wat dit traject heeft aangeraakt, in het linkermenu', ()
     // Favorieten zijn per traject, dus twee antwoorden kunnen het oneens zijn.
     // Landt dat van het vórige traject later, dan mag het het huidige niet
     // omverduwen: de toewijzing hoort achter de staleness-check van loadIndex.
-    let releaseOld;
+    let releaseOld: ((value?: unknown) => void) | undefined;
     server.holdFavoritesFor = {
       ref: 'traject-abcd1234',
       promise: new Promise((resolve) => { releaseOld = resolve; }),
@@ -391,7 +424,8 @@ describe('LibraryView - wat dit traject heeft aangeraakt, in het linkermenu', ()
     // En nu komt het trage antwoord van het eerste traject alsnog binnen, met
     // alleen wet_a erin. Zonder de staleness-check zou de sectie daarop
     // terugvallen en Kieswet kwijtraken.
-    releaseOld();
+    // The Promise executor ran synchronously when the hold was set up.
+    releaseOld!();
     for (let i = 0; i < 8; i++) await nextTick();
 
     expect(sectionLaws(wrapper, 'favorites')).toEqual(['Zorgverzekeringswet', 'Kieswet']);
@@ -463,7 +497,7 @@ describe('LibraryView - wat dit traject heeft aangeraakt, in het linkermenu', ()
     // changed-laws-aanroep hangen. Het venster tussen de wissel en het antwoord
     // is precies waar de reset voor is: zonder die reset staan de zeven wetten
     // van het vorige traject hier nog in het menu van het nieuwe.
-    let releaseChanged;
+    let releaseChanged: ((value?: unknown) => void) | undefined;
     server.holdChanged = new Promise((resolve) => {
       releaseChanged = resolve;
     });
@@ -478,7 +512,8 @@ describe('LibraryView - wat dit traject heeft aangeraakt, in het linkermenu', ()
     // En na het antwoord staat er de lege staat: het nieuwe traject raakte niets
     // aan. De favoriet ernaast doet daar niets aan af, want die zegt niets over
     // wat dit traject heeft gedaan.
-    releaseChanged();
+    // The Promise executor ran synchronously when the hold was set up.
+    releaseChanged!();
     for (let i = 0; i < 8; i++) await nextTick();
 
     expect(sectionLaws(wrapper, 'traject')).toEqual([]);

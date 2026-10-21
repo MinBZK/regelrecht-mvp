@@ -4,10 +4,30 @@
 // LibraryView.docReview.test.js uses - deliberately narrow, this file only
 // exercises the recent-laws surface.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { shallowMount } from '@vue/test-utils';
+import { shallowMount, type VueWrapper } from '@vue/test-utils';
 import { ref } from 'vue';
 
-const routeState = {
+/** A "Recent bekeken" entry as LibraryView stores it. */
+interface RecentLawEntry {
+  law_id: string;
+  name: string;
+}
+
+/**
+ * Setup state the tests reach through `wrapper.vm`. LibraryView exposes
+ * nothing, but test-utils proxies the setup state onto `vm` (refs unwrapped,
+ * and writable).
+ */
+interface LibraryViewInternals {
+  recordRecentLaw(lawId: string, name: string): void;
+  clearRecent(): void;
+  recentLaws: RecentLawEntry[];
+  laws: { law_id: string; name?: string | null }[];
+  selectedLawId: string | null;
+}
+type LibraryWrapper = Omit<VueWrapper, 'vm'> & { vm: VueWrapper['vm'] & LibraryViewInternals };
+
+const routeState: { name: string; params: Record<string, string>; query: Record<string, string>; fullPath: string; hash: string } = {
   name: 'library-traject',
   params: { trajectRef: 'traject-aaaa1111', docPath: '' },
   query: {},
@@ -27,7 +47,7 @@ vi.mock('./composables/useAuth', () => ({
 
 // The ref the view watches: switching traject keeps the view mounted, so the
 // test drives the switch by writing to this exact ref.
-const activeTrajectRef = ref('traject-aaaa1111');
+const activeTrajectRef = ref<string | null>('traject-aaaa1111');
 vi.mock('./composables/useTrajects', () => ({
   useTrajects: () => ({
     activeTrajectRef,
@@ -61,7 +81,7 @@ vi.mock('./composables/useDocumentsManager', () => ({
     startNew: vi.fn(),
     close: vi.fn(),
     uploadDocument: vi.fn(),
-    displayTitle: (p) => p,
+    displayTitle: (p: string | null | undefined) => p,
     dropDraft: vi.fn(),
   }),
 }));
@@ -99,8 +119,9 @@ vi.mock('./composables/useDocumentTaskReview', () => ({
 import LibraryView from './LibraryView.vue';
 
 const KEY = 'regelrecht-recent-laws';
-const mountLibrary = () => shallowMount(LibraryView, { global: { stubs: { teleport: true } } });
-const stored = (trajectRef) => JSON.parse(localStorage.getItem(`${KEY}:${trajectRef}`) || '[]');
+const mountLibrary = () =>
+  shallowMount(LibraryView, { global: { stubs: { teleport: true } } }) as unknown as LibraryWrapper;
+const stored = (trajectRef: string): RecentLawEntry[] => JSON.parse(localStorage.getItem(`${KEY}:${trajectRef}`) || '[]');
 
 beforeEach(() => {
   localStorage.clear();

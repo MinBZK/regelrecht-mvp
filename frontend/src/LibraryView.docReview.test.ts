@@ -7,15 +7,41 @@
 // review-flow surface, not the rest of the view (laws browsing, search,
 // traject panes, ...), which stay in their default/empty state.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { shallowMount } from '@vue/test-utils';
+import { shallowMount, type VueWrapper } from '@vue/test-utils';
 import { ref } from 'vue';
+import type { DocError } from './composables/useTrajectDocuments';
+
+/** The route fields LibraryView reads; tests reassign params and query freely. */
+interface RouteStub {
+  name: string;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  fullPath: string;
+}
+
+/** The review-task fields LibraryView reads. */
+interface ReviewTaskStub {
+  id: string;
+  payload: { target_path: string; traject_ref: string };
+}
+
+/**
+ * Setup state the tests call through `wrapper.vm`. LibraryView exposes
+ * nothing, but test-utils proxies the setup state onto `vm`.
+ */
+interface LibraryViewInternals {
+  onViewTaskJob(path: string): void;
+  rejectDocReview(): Promise<void>;
+  onDocSaved(savedPath?: string | null): Promise<void>;
+}
+const internals = (wrapper: VueWrapper) => wrapper.vm as unknown as LibraryViewInternals;
 
 // --- vue-router: no real router install. `onBeforeRouteUpdate`/
 // `onBeforeRouteLeave` are just named exports LibraryView calls once at
 // setup to register a callback - stubbing them as no-ops absorbs that
 // registration without needing real guard machinery (same technique
 // TasksListPane.test.js / MobileTrajectSheet.test.js use for useRoute/useRouter).
-const routeState = {
+const routeState: RouteStub = {
   name: 'werkdocumenten-traject',
   params: { trajectRef: 'traject-abcd1234', docPath: '' },
   query: {},
@@ -58,10 +84,10 @@ vi.mock('./composables/useFeatureFlags', () => ({
 // `openDoc` in LibraryView) being called (or not).
 const openDoc = vi.fn().mockResolvedValue(undefined);
 const dropDraft = vi.fn();
-const currentPath = ref('report.md');
+const currentPath = ref<string | null>('report.md');
 const currentBody = ref('');
 const docLoading = ref(false);
-const docError = ref(null);
+const docError = ref<DocError | null>(null);
 vi.mock('./composables/useDocumentsManager', () => ({
   useDocumentsManager: () => ({
     documents: ref([]),
@@ -77,7 +103,7 @@ vi.mock('./composables/useDocumentsManager', () => ({
     startNew: vi.fn(),
     close: vi.fn(),
     uploadDocument: vi.fn(),
-    displayTitle: (p) => p,
+    displayTitle: (p: string | null | undefined) => p,
     dropDraft,
   }),
 }));
@@ -108,9 +134,9 @@ vi.mock('./composables/useDocumentUpload', () => ({
 // module-level refs (identity-equal to what LibraryView destructures) so
 // tests can set `reviewTask.value` / `proposedContent.value` directly and
 // assert on `loadError.value` after a failed resolve.
-const reviewTask = ref(null);
-const proposedContent = ref(null);
-const loadError = ref(null);
+const reviewTask = ref<ReviewTaskStub | null>(null);
+const proposedContent = ref<string | null>(null);
+const loadError = ref<string | null>(null);
 const loadReview = vi.fn();
 const approveAfterSave = vi.fn();
 const rejectTask = vi.fn();
@@ -151,7 +177,7 @@ beforeEach(() => {
   routeState.query = {};
 });
 
-function openReview(overrides = {}) {
+function openReview(overrides: Partial<ReviewTaskStub['payload']> = {}) {
   reviewTask.value = {
     id: 't1',
     payload: { target_path: 'report.md', traject_ref: 'traject-abcd1234', ...overrides },
@@ -163,7 +189,7 @@ function openReview(overrides = {}) {
 // eigen centrale melding (niet de kale editor of "Geen document open"), en de
 // URL is leidend - een adresseerd-maar-niet-open document wordt heropend.
 describe('LibraryView werkdocument not-found', () => {
-  function showsEmptyState(wrapper) {
+  function showsEmptyState(wrapper: VueWrapper) {
     // "Geen document open" staat als attribuut op nldd-inline-dialog (text="…").
     return wrapper.html().includes('Geen document open');
   }
@@ -204,7 +230,7 @@ describe('LibraryView werkdocument not-found', () => {
     openDoc.mockClear();
     pushMock.mockClear();
 
-    wrapper.vm.onViewTaskJob('nota.md');
+    internals(wrapper).onViewTaskJob('nota.md');
     await wrapper.vm.$nextTick();
 
     expect(pushMock).toHaveBeenCalledWith({
@@ -229,14 +255,14 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    const order = [];
+    const order: string[] = [];
     dropDraft.mockImplementation(() => order.push('dropDraft'));
     openDoc.mockImplementation(() => {
       order.push('openDoc');
       return Promise.resolve();
     });
 
-    await wrapper.vm.rejectDocReview();
+    await internals(wrapper).rejectDocReview();
 
     expect(rejectTask).toHaveBeenCalled();
     expect(order).toEqual(['dropDraft', 'openDoc']);
@@ -255,7 +281,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await wrapper.vm.rejectDocReview();
+    await internals(wrapper).rejectDocReview();
 
     expect(dropDraft).not.toHaveBeenCalled();
     expect(openDoc).not.toHaveBeenCalled();
@@ -272,7 +298,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await wrapper.vm.rejectDocReview();
+    await internals(wrapper).rejectDocReview();
 
     expect(rejectTask).toHaveBeenCalled();
     expect(loadError.value).toBeNull();
@@ -287,7 +313,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await wrapper.vm.onDocSaved('report.md');
+    await internals(wrapper).onDocSaved('report.md');
 
     expect(approveAfterSave).toHaveBeenCalled();
     expect(loadError.value).toBeNull();
@@ -301,7 +327,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await wrapper.vm.onDocSaved('report.md');
+    await internals(wrapper).onDocSaved('report.md');
 
     expect(approveAfterSave).toHaveBeenCalled();
     expect(replaceMock).toHaveBeenCalledWith(
@@ -314,7 +340,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await wrapper.vm.onDocSaved('other.md');
+    await internals(wrapper).onDocSaved('other.md');
 
     expect(approveAfterSave).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
@@ -325,7 +351,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await wrapper.vm.onDocSaved('report.md');
+    await internals(wrapper).onDocSaved('report.md');
 
     expect(approveAfterSave).not.toHaveBeenCalled();
   });
@@ -338,7 +364,7 @@ describe('LibraryView document-review flow', () => {
     const wrapper = mountLibrary();
     await wrapper.vm.$nextTick();
 
-    await expect(wrapper.vm.onDocSaved('report.md')).resolves.toBeUndefined();
+    await expect(internals(wrapper).onDocSaved('report.md')).resolves.toBeUndefined();
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
@@ -352,7 +378,7 @@ describe('LibraryView document-review flow', () => {
     await wrapper.vm.$nextTick();
 
     routeState.name = 'library-traject';
-    await wrapper.vm.onDocSaved('report.md');
+    await internals(wrapper).onDocSaved('report.md');
 
     expect(approveAfterSave).toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
@@ -379,7 +405,7 @@ describe('LibraryView document-review flow', () => {
 
   it('skips seeding when the open document changed while the task fetch was in flight', async () => {
     openReview();
-    let resolveLoad;
+    let resolveLoad: ((value?: unknown) => void) | undefined;
     loadReview.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -394,7 +420,8 @@ describe('LibraryView document-review flow', () => {
     // The user navigated to a different document before the fetch resolved.
     currentPath.value = 'other.md';
     proposedContent.value = '# Voorstel';
-    resolveLoad();
+    // Assigned by the mockImplementation, which the mount just called.
+    resolveLoad!();
     await wrapper.vm.$nextTick();
     await wrapper.vm.$nextTick();
 

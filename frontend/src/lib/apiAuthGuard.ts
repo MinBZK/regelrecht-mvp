@@ -10,7 +10,7 @@ import { useGithubAuth } from '../composables/useGithubAuth';
 // `/auth/login?return_url=<current path>` so they re-authenticate (silently if
 // the Keycloak SSO session is still alive) and land back where they were.
 //
-// The router already does this for *navigation* (router.js `beforeEach`); this
+// The router already does this for *navigation* (router.ts `beforeEach`); this
 // closes the gap for fetch calls fired while a page is open. We reuse the same
 // `useAuth().login()` redirect so there is one auth path, not two.
 //

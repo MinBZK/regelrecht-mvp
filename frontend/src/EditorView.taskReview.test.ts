@@ -7,7 +7,9 @@
 // view (panes, notities, scenario's, graaf) blijft in zijn lege standaardstaat.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
+import type { VueWrapper } from '@vue/test-utils';
 import { ref, computed, reactive, nextTick } from 'vue';
+import type { EditorChanges } from './composables/useAppChrome';
 
 // --- vue-router: geen echte router. `route` is reactief, want de hele bug
 // hangt aan een watch op `route.query.task`: die moet in een test net zo
@@ -23,8 +25,8 @@ const pushMock = vi.fn();
 vi.mock('vue-router', () => ({
   useRoute: () => routeState,
   useRouter: () => ({
-    replace: (...a) => replaceMock(...a),
-    push: (...a) => pushMock(...a),
+    replace: (...a: unknown[]) => replaceMock(...a),
+    push: (...a: unknown[]) => pushMock(...a),
     resolve: () => ({ href: '#' }),
   }),
   onBeforeRouteUpdate: vi.fn(),
@@ -75,7 +77,7 @@ const articles = ref(SAVED_ARTICLES);
 const lawId = ref('kieswet');
 // Wissel van wet zoals `switchLaw` dat doet: de wet eronder verandert, het
 // artikelnummer in de URL kan hetzelfde blijven.
-function switchToLaw(id, lawArticles) {
+function switchToLaw(id: string, lawArticles: typeof SAVED_ARTICLES) {
   lawId.value = id;
   articles.value = lawArticles;
 }
@@ -105,8 +107,8 @@ vi.mock('./composables/useLaw', () => ({
     error: lawError,
     saving: ref(false),
     saveError: ref(null),
-    saveLaw: (...a) => saveLaw(...a),
-    reloadLaw: (...a) => reloadLaw(...a),
+    saveLaw: (...a: unknown[]) => saveLaw(...a),
+    reloadLaw: (...a: unknown[]) => reloadLaw(...a),
     seedFromYaml,
     createLaw: vi.fn().mockResolvedValue(undefined),
     currentEtag,
@@ -116,7 +118,7 @@ vi.mock('./composables/useLaw', () => ({
 }));
 
 vi.mock('./composables/useCorpusLaws', () => ({
-  useCorpusLaws: () => ({ displayName: (id) => id, refresh: vi.fn() }),
+  useCorpusLaws: () => ({ displayName: (id: string) => id, refresh: vi.fn() }),
 }));
 
 vi.mock('./composables/useEngine', () => ({
@@ -197,12 +199,12 @@ vi.mock('./lib/apiFetch', () => ({
 // De app-shell rendert de review-balk en de Wijzigingenbalk; EditorView
 // publiceert er alleen naartoe. `editorChanges` is dus precies wat de
 // gebruiker ziet: `review: true` = de beoordeel-weergave staat op het scherm.
-let editorChanges = null;
+let editorChanges: EditorChanges | null = null;
 vi.mock('./composables/useAppChrome', () => ({
   registerSearchPopover: vi.fn(),
   setEditorChrome: vi.fn(),
   registerTabActions: vi.fn(),
-  setEditorChanges: (state) => {
+  setEditorChanges: (state: EditorChanges | null) => {
     editorChanges = state;
   },
   registerEditorActions: vi.fn(),
@@ -217,10 +219,10 @@ const fetchJobTasks = vi.fn();
 const applyEnrichment = vi.fn();
 vi.mock('./composables/useTasks', () => ({
   useTaskActions: () => ({
-    fetchTask: (...a) => fetchTask(...a),
-    resolveTask: (...a) => resolveTask(...a),
-    fetchJobTasks: (...a) => fetchJobTasks(...a),
-    applyEnrichment: (...a) => applyEnrichment(...a),
+    fetchTask: (...a: unknown[]) => fetchTask(...a),
+    resolveTask: (...a: unknown[]) => resolveTask(...a),
+    fetchJobTasks: (...a: unknown[]) => fetchJobTasks(...a),
+    applyEnrichment: (...a: unknown[]) => applyEnrichment(...a),
     refresh: vi.fn(),
     requestEnrich: vi.fn(),
     running: ref([]),
@@ -270,7 +272,21 @@ const ArticleTextEditorStub = {
   },
 };
 
-let mounted = null;
+/** The state EditorView last published to the changes bar; fails the test when it published none. */
+function changes(): EditorChanges {
+  if (!editorChanges) throw new Error('EditorView published no editor changes');
+  return editorChanges;
+}
+
+/** The setup-scope functions these tests call on the mounted view (script setup exposes them on `vm` in tests). */
+interface EditorViewInternals {
+  editorRouteFor(lawId: string | null, articleNumber: string | null): { query?: unknown };
+  handleLawSave(): Promise<void>;
+  rejectReview(): Promise<void>;
+}
+const internals = (wrapper: VueWrapper) => wrapper.vm as unknown as EditorViewInternals;
+
+let mounted: VueWrapper | null = null;
 function mountEditor() {
   mounted = shallowMount(EditorView, {
     global: { stubs: { teleport: true, ArticleTextEditor: ArticleTextEditorStub } },
@@ -316,10 +332,10 @@ describe('EditorView review-modus', () => {
     await settle();
 
     expect(fetchTask).toHaveBeenCalledWith('taak-1');
-    expect(editorChanges.review).toBe(true);
-    expect(editorChanges.reviewStatus).toContain('gegenereerd voorstel');
+    expect(changes().review).toBe(true);
+    expect(changes().reviewStatus).toContain('gegenereerd voorstel');
     // Het voorstel staat als niet-opgeslagen wijziging in de panes.
-    expect(editorChanges.dirty).toBe(true);
+    expect(changes().dirty).toBe(true);
   });
 
   // De bug: een artikelwissel (tabwissel in de editor) doet
@@ -331,7 +347,7 @@ describe('EditorView review-modus', () => {
     routeState.query = { task: 'taak-1' };
     mountEditor();
     await settle();
-    expect(editorChanges.review).toBe(true);
+    expect(changes().review).toBe(true);
 
     // Tabwissel naar een ander artikel: de URL houdt geen taak meer vast.
     routeState.params = { ...routeState.params, articleNumber: 'B 1' };
@@ -339,8 +355,8 @@ describe('EditorView review-modus', () => {
     selectedArticleNumber.value = 'B 1';
     await settle();
 
-    expect(editorChanges.review).toBe(false);
-    expect(editorChanges.reviewStatus).toBeNull();
+    expect(changes().review).toBe(false);
+    expect(changes().reviewStatus).toBeNull();
   });
 
   // De taak reist mee met de navigatie: elke editor-route die de view bouwt
@@ -351,13 +367,13 @@ describe('EditorView review-modus', () => {
     const wrapper = mountEditor();
     await settle();
 
-    expect(wrapper.vm.editorRouteFor('kieswet', 'B 1')).toMatchObject({
+    expect(internals(wrapper).editorRouteFor('kieswet', 'B 1')).toMatchObject({
       name: 'editor-traject',
       params: { lawId: 'kieswet', articleNumber: 'B 1' },
       query: { task: 'taak-1' },
     });
     // Zonder wet is er niets om bij te horen.
-    expect(wrapper.vm.editorRouteFor(null, null).query).toBeUndefined();
+    expect(internals(wrapper).editorRouteFor(null, null).query).toBeUndefined();
   });
 
   // Het gevaarlijke geval: de balk hing over een ander artikel én "Sla voorstel
@@ -366,18 +382,18 @@ describe('EditorView review-modus', () => {
     routeState.query = { task: 'taak-1' };
     const wrapper = mountEditor();
     await settle();
-    expect(editorChanges.review).toBe(true);
+    expect(changes().review).toBe(true);
 
     // Tabwissel: de taak blijft in de URL staan, het zicht verschuift.
     routeState.params = { ...routeState.params, articleNumber: 'B 1' };
     selectedArticleNumber.value = 'B 1';
     await settle();
 
-    expect(editorChanges.review).toBe(false);
-    expect(editorChanges.reviewStatus).toBeNull();
+    expect(changes().review).toBe(false);
+    expect(changes().reviewStatus).toBeNull();
 
     // Opslaan is hier een gewone artikel-save, geen goedkeuring.
-    await wrapper.vm.handleLawSave();
+    await internals(wrapper).handleLawSave();
     await settle();
     expect(saveLaw).toHaveBeenCalled(); // de save gebeurt wel...
     expect(resolveTask).not.toHaveBeenCalled(); // ...maar keurt niets goed.
@@ -391,15 +407,15 @@ describe('EditorView review-modus', () => {
     routeState.params = { ...routeState.params, articleNumber: 'B 1' };
     selectedArticleNumber.value = 'B 1';
     await settle();
-    expect(editorChanges.review).toBe(false);
+    expect(changes().review).toBe(false);
 
     routeState.params = { ...routeState.params, articleNumber: 'B 5' };
     selectedArticleNumber.value = 'B 5';
     await settle();
 
-    expect(editorChanges.review).toBe(true);
+    expect(changes().review).toBe(true);
     // Het voorstel staat er weer als niet-opgeslagen wijziging...
-    expect(editorChanges.dirty).toBe(true);
+    expect(changes().dirty).toBe(true);
     // ...zonder de taak opnieuw op te halen: die was nooit weg.
     expect(fetchTask).toHaveBeenCalledTimes(1);
   });
@@ -414,15 +430,15 @@ describe('EditorView review-modus', () => {
     await settle();
 
     expect(selectedArticleNumber.value).toBe('B 1');
-    expect(editorChanges.review).toBe(false);
+    expect(changes().review).toBe(false);
 
     // En zodra je naar het artikel van de taak gaat, staat het voorstel er.
     routeState.params = { ...routeState.params, articleNumber: 'B 5' };
     selectedArticleNumber.value = 'B 5';
     await settle();
 
-    expect(editorChanges.review).toBe(true);
-    expect(editorChanges.dirty).toBe(true);
+    expect(changes().review).toBe(true);
+    expect(changes().dirty).toBe(true);
   });
 
   it('laat de taak wel los bij verwerpen', async () => {
@@ -430,7 +446,7 @@ describe('EditorView review-modus', () => {
     const wrapper = mountEditor();
     await settle();
 
-    await wrapper.vm.rejectReview();
+    await internals(wrapper).rejectReview();
     await settle();
 
     // Een taak zonder job_id is in haar eentje de verrijking: "Verwerpen"
@@ -444,7 +460,9 @@ describe('EditorView review-modus', () => {
       'etag-1',
     );
     // De enige route die de taak bewust NIET meeneemt.
-    const target = replaceMock.mock.calls.at(-1)[0];
+    const lastReplace = replaceMock.mock.calls.at(-1);
+    if (!lastReplace) throw new Error('router.replace was not called');
+    const target = lastReplace[0];
     expect(target.query).toBeUndefined();
     expect(target.params).toMatchObject({ lawId: 'kieswet' });
   });
@@ -463,7 +481,7 @@ describe('EditorView review-modus', () => {
     routeState.query = {};
     selectedArticleNumber.value = 'B 1';
     await settle();
-    expect(editorChanges.review).toBe(false);
+    expect(changes().review).toBe(false);
 
     // Terug naar het artikel van de taak, via "Beoordeel voorstel" - dat is
     // een route mét ?task=.
@@ -473,8 +491,8 @@ describe('EditorView review-modus', () => {
     await settle();
 
     expect(fetchTask).toHaveBeenCalledTimes(2);
-    expect(editorChanges.review).toBe(true);
-    expect(editorChanges.dirty).toBe(true);
+    expect(changes().review).toBe(true);
+    expect(changes().dirty).toBe(true);
   });
 
   // De taak reist mee met de navigatie, dus `?task=` staat ook in de URL van een
@@ -487,9 +505,9 @@ describe('EditorView review-modus', () => {
     mountEditor();
     await settle();
 
-    expect(editorChanges.review).toBe(false);
+    expect(changes().review).toBe(false);
     // Niets geseed: de panes staan nog op de opgeslagen tekst van de andere wet.
-    expect(editorChanges.dirty).toBe(false);
+    expect(changes().dirty).toBe(false);
   });
 
   // Dezelfde valkuil bij terugkeren. Wissel je naar een wet die hetzelfde
@@ -500,19 +518,19 @@ describe('EditorView review-modus', () => {
     routeState.query = { task: 'taak-1' };
     mountEditor();
     await settle();
-    expect(editorChanges.review).toBe(true);
-    expect(editorChanges.dirty).toBe(true);
+    expect(changes().review).toBe(true);
+    expect(changes().dirty).toBe(true);
 
     // Wetwissel, zelfde artikelnummer: de beoordeling hoort uit beeld.
     switchToLaw('andere-wet', OTHER_LAW_ARTICLES);
     await settle();
-    expect(editorChanges.review).toBe(false);
-    expect(editorChanges.dirty).toBe(false);
+    expect(changes().review).toBe(false);
+    expect(changes().dirty).toBe(false);
 
     // Terug op de wet van de taak: balk én voorstel horen er weer te staan.
     switchToLaw('kieswet', SAVED_ARTICLES);
     await settle();
-    expect(editorChanges.review).toBe(true);
-    expect(editorChanges.dirty).toBe(true);
+    expect(changes().review).toBe(true);
+    expect(changes().dirty).toBe(true);
   });
 });

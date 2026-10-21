@@ -1,6 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import router from './router.js';
+import type { RouteLocationMatched } from 'vue-router';
+import router from './router';
 import { sectionTarget, homeTabTarget } from './composables/useLastVisitedRoute';
+import type { NamedLocation } from './composables/useLastVisitedRoute';
+
+// The tests call a redirect function with only the parts of the target
+// location it reads (params, optionally query), not a full RouteLocation.
+type RedirectFn = (to: { params: Record<string, string> }) => unknown;
+
+// The redirect of the last matched record, which must be a function: the
+// redirects under test all compute their target from the matched params.
+function lastRedirect(matched: RouteLocationMatched[]): RedirectFn {
+  const redirect = matched[matched.length - 1]?.redirect;
+  if (typeof redirect !== 'function') {
+    throw new Error(`expected a redirect function, got ${String(redirect)}`);
+  }
+  // A partial `to` is enough for these redirects; see RedirectFn.
+  return redirect as unknown as RedirectFn;
+}
+
+// homeTabTarget returns either a stored path verbatim or a named location;
+// the tests that inspect name/params need the latter.
+function expectNamed(t: string | NamedLocation): NamedLocation {
+  if (typeof t === 'string') throw new Error(`expected a named location, got the path ${t}`);
+  return t;
+}
 
 // A valid traject ref is `{slug}-{8hex}` (see the route regex). A plain
 // law `$id` uses underscores and must NOT match the traject route.
@@ -31,7 +55,7 @@ describe('route disambiguation (traject vs no-traject)', () => {
 
   it('redirects the old standalone werkdocumenten URL into Home', () => {
     const matched = router.resolve(`/werkdocumenten/${REF}/besluit.md`).matched;
-    const redirect = matched[matched.length - 1].redirect;
+    const redirect = lastRedirect(matched);
     expect(redirect).toBeTruthy();
     expect(redirect({ params: { trajectRef: REF, docPath: 'besluit.md' } })).toMatchObject({
       name: 'werkdocumenten-traject',
@@ -86,7 +110,7 @@ describe('route disambiguation (traject vs no-traject)', () => {
   it('serves Home at the clean root and redirects the old public library URLs', () => {
     expect(router.resolve('/').name).toBe('home');
     const matched = router.resolve('/library/wet_op_de_zorgtoeslag').matched;
-    const redirect = matched[matched.length - 1].redirect;
+    const redirect = lastRedirect(matched);
     expect(redirect).toBeTruthy();
     expect(redirect({ params: { lawId: 'wet_op_de_zorgtoeslag' } })).toMatchObject({
       name: 'corpus-juris',
@@ -97,7 +121,7 @@ describe('route disambiguation (traject vs no-traject)', () => {
   it('redirects the old traject library URLs onto /trajecten/{ref}', () => {
     // Bare old traject library -> traject-home.
     let matched = router.resolve(`/library/${REF}`).matched;
-    let redirect = matched[matched.length - 1].redirect;
+    let redirect = lastRedirect(matched);
     expect(redirect).toBeTruthy();
     expect(redirect({ params: { trajectRef: REF } })).toMatchObject({
       name: 'traject-home',
@@ -105,7 +129,7 @@ describe('route disambiguation (traject vs no-traject)', () => {
     });
     // With a law -> library-traject (the /corpus/{law} segment).
     matched = router.resolve(`/library/${REF}/zorgtoeslagwet/3`).matched;
-    redirect = matched[matched.length - 1].redirect;
+    redirect = lastRedirect(matched);
     expect(redirect).toBeTruthy();
     expect(
       redirect({ params: { trajectRef: REF, lawId: 'zorgtoeslagwet', articleNumber: '3' } }),
@@ -126,7 +150,7 @@ describe('route disambiguation (traject vs no-traject)', () => {
     // redirect record without following it). Assert it redirects onto the
     // chooser, carrying the section + law as query.
     const matched = router.resolve('/editor/wet_op_de_zorgtoeslag').matched;
-    const redirect = matched[matched.length - 1].redirect;
+    const redirect = lastRedirect(matched);
     expect(redirect).toBeTruthy();
     expect(redirect({ params: { lawId: 'wet_op_de_zorgtoeslag' } })).toMatchObject({
       name: 'trajecten',
@@ -136,7 +160,7 @@ describe('route disambiguation (traject vs no-traject)', () => {
 
   it('redirects the old traject editor URLs onto /trajecten/{ref}/editor', () => {
     const matched = router.resolve(`/editor/${REF}/foo`).matched;
-    const redirect = matched[matched.length - 1].redirect;
+    const redirect = lastRedirect(matched);
     expect(redirect).toBeTruthy();
     expect(redirect({ params: { trajectRef: REF, lawId: 'foo' } })).toMatchObject({
       name: 'editor-traject',
@@ -257,7 +281,7 @@ describe('homeTabTarget - Home tab carries the active traject', () => {
   });
 
   it('re-stamps the active traject onto a stored public law path', () => {
-    const t = homeTabTarget(router, '/corpus-juris/foo/3', REF);
+    const t = expectNamed(homeTabTarget(router, '/corpus-juris/foo/3', REF));
     expect(t.name).toBe('library-traject');
     expect(t.params.trajectRef).toBe(REF);
     expect(t.params.lawId).toBe('foo');
@@ -265,21 +289,21 @@ describe('homeTabTarget - Home tab carries the active traject', () => {
   });
 
   it('re-stamps the active traject over a stale stored traject', () => {
-    const t = homeTabTarget(router, '/trajecten/old-deadbeef/corpus/foo', REF);
+    const t = expectNamed(homeTabTarget(router, '/trajecten/old-deadbeef/corpus/foo', REF));
     expect(t.name).toBe('library-traject');
     expect(t.params.trajectRef).toBe(REF);
     expect(t.params.lawId).toBe('foo');
   });
 
   it('drops the stored traject when none is active', () => {
-    const t = homeTabTarget(router, `/trajecten/${REF}/corpus/foo`, null);
+    const t = expectNamed(homeTabTarget(router, `/trajecten/${REF}/corpus/foo`, null));
     expect(t.name).toBe('corpus-juris');
     expect(t.params.trajectRef).toBeUndefined();
     expect(t.params.lawId).toBe('foo');
   });
 
   it('keeps the instellingen sub-mode when re-stamping onto another traject', () => {
-    const t = homeTabTarget(router, '/trajecten/old-deadbeef/instellingen/details', REF);
+    const t = expectNamed(homeTabTarget(router, '/trajecten/old-deadbeef/instellingen/details', REF));
     expect(t.name).toBe('instellingen-traject');
     expect(t.params.trajectRef).toBe(REF);
     expect(t.params.tab).toBe('details');

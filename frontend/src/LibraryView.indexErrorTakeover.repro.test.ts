@@ -11,9 +11,17 @@
 // every composable stubbed, deliberately narrow to this one surface.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, type Ref } from 'vue';
 
-const routeState = {
+/** The route fields LibraryView reads; tests reassign params freely. */
+interface RouteStub {
+  name: string;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  fullPath: string;
+}
+
+const routeState: RouteStub = {
   name: 'taken-traject',
   params: { trajectRef: 'traject-abcd1234', categorie: 'alle' },
   query: {},
@@ -38,7 +46,9 @@ vi.mock('./composables/useAuth', () => ({
 // switcher leaves LibraryView mounted and only swaps the route param, which is
 // what LibraryView's `watch(activeTrajectRef)` reacts to. (`vi.mock` factories
 // are hoisted above module-level consts, hence `vi.hoisted`.)
-const { trajectScope } = vi.hoisted(() => ({ trajectScope: {} }));
+// `activeTrajectRef` is set in the useTrajects mock factory, which runs when
+// LibraryView is imported - before any test.
+const { trajectScope } = vi.hoisted(() => ({ trajectScope: {} as { activeTrajectRef: Ref<string> } }));
 
 vi.mock('./composables/useTrajects', () => {
   trajectScope.activeTrajectRef = ref('traject-abcd1234');
@@ -59,7 +69,9 @@ vi.mock('./composables/useTrajects', () => {
 // stubs have to be hoisted too.
 const { ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
   class ApiErrorStub extends Error {
-    constructor(message, { status, body = '' } = {}) {
+    status: number | undefined;
+    body: string;
+    constructor(message: string, { status, body = '' }: { status?: number; body?: string } = {}) {
       super(message);
       this.name = 'ApiError';
       this.status = status;
@@ -77,11 +89,11 @@ const { ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
   // about the takeover).
   return {
     ApiErrorStub,
-    apiFetch: vi.fn(async (url) => {
+    apiFetch: vi.fn(async (url: unknown, _init?: unknown) => {
       if (String(url).includes('/corpus/laws')) fail();
       return { ok: true, status: 200, json: async () => [] };
     }),
-    apiFetchJson: vi.fn(async (url) => {
+    apiFetchJson: vi.fn(async (url: unknown, _init?: unknown) => {
       if (String(url).includes('/corpus/laws')) fail();
       return [];
     }),
@@ -89,8 +101,8 @@ const { ApiErrorStub, apiFetch, apiFetchJson } = vi.hoisted(() => {
 });
 
 vi.mock('./lib/apiFetch', () => ({
-  apiFetch: (...a) => apiFetch(...a),
-  apiFetchJson: (...a) => apiFetchJson(...a),
+  apiFetch: (...a: Parameters<typeof apiFetch>) => apiFetch(...a),
+  apiFetchJson: (...a: Parameters<typeof apiFetchJson>) => apiFetchJson(...a),
   ApiError: ApiErrorStub,
 }));
 
@@ -113,7 +125,7 @@ vi.mock('./composables/useDocumentsManager', () => ({
     startNew: vi.fn(),
     close: vi.fn(),
     uploadDocument: vi.fn(),
-    displayTitle: (p) => String(p ?? '').replace(/\.md$/, ''),
+    displayTitle: (p: string | null | undefined) => String(p ?? '').replace(/\.md$/, ''),
     dropDraft: vi.fn(),
     refreshList: vi.fn().mockResolvedValue(undefined),
   }),
@@ -160,7 +172,8 @@ async function mountAfterFailedIndex() {
   return wrapper;
 }
 
-const defaultApiFetch = apiFetch.getMockImplementation();
+// vi.fn(impl) always has an implementation.
+const defaultApiFetch = apiFetch.getMockImplementation()!;
 
 beforeEach(() => {
   apiFetch.mockClear().mockImplementation(defaultApiFetch);
@@ -205,8 +218,8 @@ describe('LibraryView index-error scoping', () => {
   });
 
   it('keeps the taken panes even when the corpus call fails mid-flight (no flash)', async () => {
-    let rejectCorpus;
-    apiFetch.mockImplementation(async (url) => {
+    let rejectCorpus: (() => void) | undefined;
+    apiFetch.mockImplementation(async (url: unknown) => {
       if (String(url).includes('/corpus/laws')) {
         return new Promise((_, rej) => {
           rejectCorpus = () =>
@@ -220,7 +233,8 @@ describe('LibraryView index-error scoping', () => {
     await nextTick();
     // The task list is on screen while the corpus probe is still in flight...
     expect(wrapper.findComponent({ name: 'TasksCategoriesPane' }).exists()).toBe(true);
-    rejectCorpus();
+    // Assigned once the mount reached the corpus probe, two ticks ago.
+    rejectCorpus!();
     for (let i = 0; i < 5; i++) await nextTick();
     // ...and it stays put once the unrelated corpus call fails - only the
     // warning banner appears on top.
@@ -317,7 +331,7 @@ describe('LibraryView index-error scoping', () => {
       'De bibliotheek van dit traject is niet beschikbaar: de traject-repo kon niet ' +
       `worden gescand (GitHub API error 409: Trees API for example-org/regelrecht-corpus-example@main: ${githubBody})`;
     expect(long.length).toBeGreaterThan(300);
-    apiFetch.mockImplementation(async (url) => {
+    apiFetch.mockImplementation(async (url: unknown) => {
       if (String(url).includes('/corpus/laws')) {
         throw new ApiErrorStub('Failed to load corpus: 502', { status: 502, body: long });
       }

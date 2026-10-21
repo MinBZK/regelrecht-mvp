@@ -1,6 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, nextTick, onMounted, onBeforeUnmount, provide } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import type { NLDDModalDialog } from '@nldd/design-system/modal-dialog';
+import type { NLDDPopover } from '@nldd/design-system/popover';
 import TrajectMenu from './components/TrajectMenu.vue';
 import MobileTrajectSheet from './components/MobileTrajectSheet.vue';
 import AboutSheet from './components/AboutSheet.vue';
@@ -76,8 +78,8 @@ const colorSchemeOptions = [
   ['dark', 'Donker', 'dark-mode'],
 ];
 // `select` draagt geen payload; de gekozen waarde staat op het item zelf.
-function onColorSchemeSelect(e) {
-  const value = e.target?.getAttribute?.('value');
+function onColorSchemeSelect(e: Event) {
+  const value = (e.target as Element | null)?.getAttribute?.('value');
   if (value) setColorScheme(value);
 }
 
@@ -90,14 +92,14 @@ const { hasContent: settingsHasContent } = useSettingsSections();
 const { triggerAddLaw, triggerNewWerkdoc, triggerUploadWerkdoc, triggerInviteMembers } = useAddActions();
 
 // "Over RegelRecht" about sheet, opened from the account menu.
-const aboutSheet = ref(null);
+const aboutSheet = ref<InstanceType<typeof AboutSheet> | null>(null);
 function openAbout() {
   // Let the account menu popover close first, then raise the sheet.
   nextTick(() => aboutSheet.value?.show?.());
 }
 
 // "Help" sheet, opened from the account menu.
-const supportSheet = ref(null);
+const supportSheet = ref<InstanceType<typeof SupportSheet> | null>(null);
 function openSupport() {
   // Let the account menu popover close first, then raise the sheet.
   nextTick(() => supportSheet.value?.show?.());
@@ -106,7 +108,7 @@ function openSupport() {
 // Rejecting a proposal throws the seeded edit away, so it asks first. Owned
 // here because the Verwerp button lives in the changes bar; EditorView keeps
 // the actual reject logic.
-const rejectConfirm = ref(null);
+const rejectConfirm = ref<NLDDModalDialog | null>(null);
 function confirmReject() {
   rejectConfirm.value?.hide();
   editorActions.value?.reject?.();
@@ -115,7 +117,7 @@ function confirmReject() {
 // "Rond af, neem de rest niet over" sluit de hele verrijking af zonder de
 // resterende onderdelen te bekijken - destructiever dan één verwerping, dus
 // die vraagt het ook eerst.
-const rejectRestConfirm = ref(null);
+const rejectRestConfirm = ref<NLDDModalDialog | null>(null);
 function confirmRejectRest() {
   rejectRestConfirm.value?.hide();
   editorActions.value?.rejectRest?.();
@@ -140,7 +142,7 @@ const reviewNotice = computed(() => editorChanges.value?.reviewStatus ?? null);
 
 // "Instellingen" sheet, opened from the account menu. Owns Weergave, the panel
 // flags and the GitHub link — all of which used to hang off this menu directly.
-const settingsSheet = ref(null);
+const settingsSheet = ref<InstanceType<typeof SettingsSheet> | null>(null);
 function openSettings() {
   // Let the account menu popover close first, then raise the sheet.
   nextTick(() => settingsSheet.value?.show?.());
@@ -176,11 +178,11 @@ const editorTabHref = computed(() => router.resolve(editorTabTarget.value).href)
 // unauthenticated user straight to the SSO screen (an unannounced surprise),
 // intercept the Editor tab and first show a small login-warning popover anchored
 // to the clicked tab. Authenticated users navigate as before.
-const loginWarning = ref(null);
+const loginWarning = ref<NLDDPopover | null>(null);
 // Where the "Inloggen" button returns after SSO. Defaults to the editor tab;
 // callers (e.g. the Bibliotheek "Bewerken" button) point it at a specific
 // article so login lands straight on the page being edited.
-const loginRedirect = ref(null);
+const loginRedirect = ref<string | null>(null);
 
 // The login-warning popover is popover=auto: a re-tap on the trigger that opened
 // it light-dismisses it on pointerdown, but showLoginWarning would then reopen
@@ -196,7 +198,7 @@ provide('onLoginTriggerPointerdown', onLoginTriggerPointerdown);
 // Show the login-warning popover anchored to `anchorEl`. Provided to the nested
 // views so every editor entry point (the Editor tab, the Bibliotheek
 // "Bewerken" button) shows the same heads-up instead of bouncing to SSO.
-function showLoginWarning(anchorEl, redirectHref) {
+function showLoginWarning(anchorEl: EventTarget | null | undefined, redirectHref?: string | null) {
   if (!loginWarning.value) return;
   // Consume the pointerdown snapshot so a later programmatic call (no pointerdown,
   // e.g. gating on navigation) still shows instead of inheriting a stale flag.
@@ -209,7 +211,8 @@ function showLoginWarning(anchorEl, redirectHref) {
     return;
   }
   loginRedirect.value = redirectHref ?? editorTabHref.value;
-  loginWarning.value.anchorElement = anchorEl;
+  // Callers pass the clicked element (an event's currentTarget); assigned as is.
+  loginWarning.value.anchorElement = anchorEl as Element | null;
   loginWarning.value.show();
 }
 provide('showLoginWarning', showLoginWarning);
@@ -222,7 +225,7 @@ function goToAccountRequest() {
   router.push({ name: 'account-aanvragen' });
 }
 
-function onEditorTab(e) {
+function onEditorTab(e: Event) {
   if (!authenticated.value) {
     showLoginWarning(e.currentTarget);
     return;
@@ -242,8 +245,8 @@ const { lastSavedPr, documentTabs, activeDocumentTab, documentTabsTrajectRef, ta
 // resolve the active breakpoint and activate only the coach-mark whose control
 // is actually visible, never anchoring a popover to a hidden control.
 const viewport = ref('lg'); // 'sm' | 'md' | 'lg', aligned with the DS bar breakpoints
-let mdQuery = null;
-let lgQuery = null;
+let mdQuery: MediaQueryList | null = null;
+let lgQuery: MediaQueryList | null = null;
 // DS bar breakpoints, mirrored here for matchMedia. Keep in sync with
 // @nldd/design-system (src/assets/styles/breakpoints.ts): md >= 641px, lg >= 1008px.
 // If the DS shifts these thresholds, update them here too - otherwise the
@@ -281,9 +284,9 @@ const searchHintActive = computed(
 const showSearchHintSm = computed(() => searchHintActive.value && viewport.value === 'sm');
 const showSearchHintMd = computed(() => searchHintActive.value && viewport.value === 'md');
 const showSearchHintLg = computed(() => searchHintActive.value && viewport.value === 'lg');
-function onSearchHintClose(e) {
+function onSearchHintClose(e: Event) {
   jitHiddenSession.value = true;
-  if (e?.detail?.reason === 'dismissed') {
+  if ((e as CustomEvent<{ reason?: string } | null> | undefined)?.detail?.reason === 'dismissed') {
     jitDismissed.value = true;
     try { localStorage.setItem(JIT_DISMISS_KEY, '1'); } catch { /* ignore */ }
   }
@@ -306,13 +309,20 @@ const hasDocumentTabs = computed(
 //
 // Map elements back to tabs by data-tab-key rather than by index - the bar
 // reorders its own DOM to keep the selected tab visible when tabs overflow.
-function onTabDismiss(e) {
+// The bar's `tabdismiss` detail: the dismissed item and the one it selected.
+interface TabDismissDetail {
+  item?: HTMLElement | null;
+  nextItem?: HTMLElement | null;
+}
+
+function onTabDismiss(e: Event) {
   const actions = tabActions.value;
   if (!actions) return;
-  const toTab = (el) =>
+  const detail = (e as CustomEvent<TabDismissDetail | null | undefined>).detail;
+  const toTab = (el: HTMLElement | null | undefined) =>
     documentTabs.value.find((t) => actions.key(t) === el?.dataset?.tabKey) ?? null;
-  const dismissed = toTab(e.detail?.item);
-  if (dismissed) actions.close(dismissed, toTab(e.detail?.nextItem));
+  const dismissed = toTab(detail?.item);
+  if (dismissed) actions.close(dismissed, toTab(detail?.nextItem));
 }
 </script>
 
@@ -395,7 +405,7 @@ function onTabDismiss(e) {
                       <span v-if="person?.name || showGithubLine" slot="supporting-text">
                         <template v-if="person?.name">{{ person?.email }}</template>
                         <br v-if="person?.name && showGithubLine">
-                        <template v-if="showGithubLine">GitHub: {{ githubStatus.github_login }}</template>
+                        <template v-if="showGithubLine">GitHub: {{ githubStatus?.github_login }}</template>
                       </span>
                     </nldd-identity>
                   </nldd-container>
@@ -503,7 +513,7 @@ function onTabDismiss(e) {
                       <span v-if="person?.name || showGithubLine" slot="supporting-text">
                         <template v-if="person?.name">{{ person?.email }}</template>
                         <br v-if="person?.name && showGithubLine">
-                        <template v-if="showGithubLine">GitHub: {{ githubStatus.github_login }}</template>
+                        <template v-if="showGithubLine">GitHub: {{ githubStatus?.github_login }}</template>
                       </span>
                     </nldd-identity>
                   </nldd-container>
@@ -565,19 +575,19 @@ function onTabDismiss(e) {
           <nldd-document-tab-bar
             :key="documentTabsTrajectRef ?? ''"
             accessible-label="Open artikelen"
-            @nldd-reorder="tabActions.reorder($event.detail.fromIndex, $event.detail.toIndex)"
+            @nldd-reorder="tabActions?.reorder($event.detail.fromIndex, $event.detail.toIndex)"
             @tabdismiss="onTabDismiss"
           >
             <nldd-document-tab-bar-item
               v-for="tab in documentTabs"
-              :key="`${documentTabsTrajectRef ?? ''}:${tabActions.key(tab)}`"
-              :data-tab-key="tabActions.key(tab)"
+              :key="`${documentTabsTrajectRef ?? ''}:${tabActions?.key(tab)}`"
+              :data-tab-key="tabActions?.key(tab)"
               :text="`Artikel ${tab.articleNumber}`"
-              :supporting-text="tabActions.displayName(tab)"
+              :supporting-text="tabActions?.displayName(tab)"
               :short-text="`Art. ${tab.articleNumber}`"
-              :short-supporting-text="tabActions.displayName(tab)"
-              :selected="activeDocumentTab && tabActions.key(activeDocumentTab) === tabActions.key(tab) || undefined"
-              @click="tabActions.select(tab)"
+              :short-supporting-text="tabActions?.displayName(tab)"
+              :selected="activeDocumentTab && tabActions?.key(activeDocumentTab) === tabActions?.key(tab) || undefined"
+              @click="tabActions?.select(tab)"
             >
             </nldd-document-tab-bar-item>
           </nldd-document-tab-bar>
@@ -800,7 +810,7 @@ function onTabDismiss(e) {
                       <span v-if="person?.name || showGithubLine" slot="supporting-text">
                         <template v-if="person?.name">{{ person?.email }}</template>
                         <br v-if="person?.name && showGithubLine">
-                        <template v-if="showGithubLine">GitHub: {{ githubStatus.github_login }}</template>
+                        <template v-if="showGithubLine">GitHub: {{ githubStatus?.github_login }}</template>
                       </span>
                     </nldd-identity>
                   </nldd-container>

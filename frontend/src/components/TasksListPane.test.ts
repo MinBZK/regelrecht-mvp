@@ -5,7 +5,7 @@ import type { RouteLocationRaw } from 'vue-router';
 // De echte app-router, alleen voor `resolve` in de router-stub verderop: de
 // href van het Beoordelen-item hoort uit de route-definities van de app te
 // komen, niet uit een handgemaakte url.
-import appRouter from '../router.js';
+import appRouter from '../router';
 
 // nldd-sheet compileert tot een kaal custom element; de details-sheet stuurt
 // het imperatief aan met show()/hide(). Zelfde stub als MobileTrajectSheet.test.js.
