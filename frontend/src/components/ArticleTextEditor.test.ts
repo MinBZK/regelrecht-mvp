@@ -1,11 +1,49 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import ArticleTextEditor from './ArticleTextEditor.vue';
 
 // Vite is configured with `isCustomElement: tag => tag.startsWith('nldd-')`
-// (vite.config.js), so Vue treats <nldd-*> tags as raw HTML elements. No
-// stubs are needed; happy-dom is happy to render unknown HTML.
+// (vite.config.js), so Vue treats <nldd-*> tags as raw HTML elements. The
+// real nldd-text-editor does not construct under happy-dom, so a minimal
+// stand-in carries the parts of its API this component touches: a `value`
+// property (Vue binds `:value` as a property once the element has one) and
+// `clearHistory()`, which records that it was called.
+class TextEditorStub extends HTMLElement {
+  value = '';
+  historyCleared = 0;
+  clearHistory() {
+    this.historyCleared += 1;
+  }
+}
+
+beforeAll(() => {
+  if (!customElements.get('nldd-text-editor')) {
+    customElements.define('nldd-text-editor', TextEditorStub);
+  }
+});
+
+/** The stand-in nldd-text-editor the component rendered. */
+function editorElement(wrapper: ReturnType<typeof mountEditor>): TextEditorStub {
+  const el = wrapper.element.querySelector('nldd-text-editor');
+  if (!(el instanceof TextEditorStub)) throw new Error('no nldd-text-editor rendered');
+  return el;
+}
+
+/** A state event as nldd-text-editor dispatches it, with every flag off except those given. */
+function stateEvent(overrides: { canUndo?: boolean } = {}) {
+  return new CustomEvent('nldd-text-editor-state', {
+    detail: {
+      active: { bold: false, italic: false, bulletList: false, orderedList: false },
+      canIndent: false,
+      canOutdent: false,
+      canUndo: false,
+      canRedo: false,
+      empty: true,
+      ...overrides,
+    },
+  });
+}
 
 function mountEditor(props = {}) {
   return mount(ArticleTextEditor, {
@@ -46,85 +84,43 @@ describe('ArticleTextEditor', () => {
     expect(empty.attributes('text')).toContain('Geen artikel geselecteerd');
   });
 
-  // Save failures no longer render inline here; EditorView surfaces lawSaveError
-  // as a single modal over the whole editor.
-
-  // The remaining tests exercise tiptap under happy-dom. If the editor instance
-  // doesn't initialise (e.g. because happy-dom lacks a DOM API tiptap depends
-  // on), we skip the assertion rather than fail - the toolbar/empty-state
-  // coverage above is the load-bearing part.
   it('emits update:modelValue with markdown when editor content changes', async () => {
     const wrapper = mountEditor({ modelValue: 'start' });
-    // Wait for the editor instance to be created (async via useEditor).
-    await nextTick();
-    await nextTick();
+    const el = editorElement(wrapper);
 
-    // Reach into the internal editor via the editor-content child if needed.
-    // tiptap-vue-3 doesn't auto-expose the editor on wrapper.vm, but we can
-    // dig it out of the EditorContent child component's props.
-    const editorContent = wrapper.findComponent({ name: 'EditorContent' });
-    if (!editorContent.exists() || !editorContent.props('editor')) {
-      // Editor failed to mount under happy-dom - skip without failing the suite.
-      return;
-    }
-    const editor = editorContent.props('editor');
-
-    // Replace content with new markdown by issuing a tiptap command.
-    editor.commands.setContent('hello');
-    // setContent with default options doesn't fire onUpdate; explicitly insert
-    // text to trigger an update event.
-    editor.commands.insertContent(' world');
+    // The element sets `value` to the new Markdown before dispatching `input`.
+    el.value = 'start **world**';
+    el.dispatchEvent(new Event('input'));
     await nextTick();
 
-    const events = wrapper.emitted('update:modelValue');
-    expect(events).toBeDefined();
-    // The toBeDefined assertion above guarantees events.
-    expect(events!.length).toBeGreaterThan(0);
-    // The last emission should be a string containing the inserted text.
-    const last = events![events!.length - 1]![0]; // length > 0 asserted above
-    expect(typeof last).toBe('string');
-    expect(last).toContain('world');
+    expect(wrapper.emitted('update:modelValue')).toEqual([['start **world**']]);
   });
 
   it('updates the editor content when modelValue changes externally', async () => {
     const wrapper = mountEditor({ modelValue: 'first' });
-    await nextTick();
-    await nextTick();
-
-    const editorContent = wrapper.findComponent({ name: 'EditorContent' });
-    if (!editorContent.exists() || !editorContent.props('editor')) {
-      return; // tiptap not available under happy-dom; skip.
-    }
-    const editor = editorContent.props('editor');
+    const el = editorElement(wrapper);
+    expect(el.value).toBe('first');
 
     await wrapper.setProps({ modelValue: 'second paragraph' });
-    await nextTick();
 
-    const md = editor.storage.markdown.getMarkdown();
-    expect(md).toContain('second paragraph');
+    expect(el.value).toBe('second paragraph');
   });
 
   it('clearHistory empties the undo stack so a discard cannot be stepped back into', async () => {
     const wrapper = mountEditor({ modelValue: 'start' });
-    await nextTick();
-    await nextTick();
+    const el = editorElement(wrapper);
 
-    const editorContent = wrapper.findComponent({ name: 'EditorContent' });
-    if (!editorContent.exists() || !editorContent.props('editor')) {
-      return; // tiptap not available under happy-dom; skip.
-    }
-    const editor = editorContent.props('editor');
-
-    // An edit makes the history non-empty (undo available).
-    editor.commands.insertContent(' more');
+    // An edit makes the history non-empty: the editor reports undo available.
+    el.dispatchEvent(stateEvent({ canUndo: true }));
     await nextTick();
-    expect(editor.can().undo()).toBe(true);
+    expect(wrapper.vm.canUndo).toBe(true);
 
-    // clearHistory rebuilds the state with a fresh (empty) history plugin, so a
-    // post-discard Ctrl+Z has nothing to step back into.
+    // clearHistory hands the reset to the editor, which empties its history
+    // and reports that nothing is left to undo.
     wrapper.vm.clearHistory();
+    expect(el.historyCleared).toBe(1);
+    el.dispatchEvent(stateEvent({ canUndo: false }));
     await nextTick();
-    expect(editor.can().undo()).toBe(false);
     expect(wrapper.vm.canUndo).toBe(false);
   });
 });

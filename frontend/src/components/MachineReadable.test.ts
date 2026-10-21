@@ -215,6 +215,18 @@ describe('MachineReadable', () => {
       expect(cells.some(t => t.includes('3971900'))).toBe(true);
     });
 
+    it('renders a YAML-null definition as an empty value', () => {
+      // `definitions: { leeg: ~ }` parses to null.
+      for (const editable of [true, false]) {
+        const wrapper = mount(MachineReadable, {
+          props: { article: createArticle({ definitions: { leeg: null } }), editable },
+        });
+        const cells = wrapper.findAll('nldd-text-cell').map(c => `${c.attributes('text') || ''} ${c.text()}`);
+        expect(cells.some(t => t.includes('leeg'))).toBe(true);
+        expect(cells.some(t => t.includes('null'))).toBe(false);
+      }
+    });
+
     it('shows Bewerk buttons for each editable item', () => {
       const wrapper = mountEditable();
       const buttons = findBewerkButtons(wrapper);

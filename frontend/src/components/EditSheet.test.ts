@@ -662,6 +662,25 @@ describe('EditSheet', () => {
       expect(wrapper.vm.values.sourceParameters.map(p => p.key)).toEqual(['bsn']);
     });
 
+    it('shows the display names of an existing input in the combo-boxes once laws and outputs load', async () => {
+      // The combo-box only derives its shown text when `value` changes, and
+      // the menu items arrive later from the fetch, so the sheet sets `text`
+      // itself.
+      const wrapper = mountSheet();
+      await setItem(wrapper, {
+        section: 'input',
+        key: 'leeftijd',
+        data: { name: 'leeftijd', type: 'number', source: { regulation: 'wet_basisregistratie_personen', output: 'leeftijd' } },
+      });
+      await vi.waitFor(() => expect(wrapper.vm.availableOutputs.length).toBeGreaterThan(0));
+      await nextTick();
+
+      const lawBox = wrapper.find('[data-testid="law-combo-box"]').element as HTMLElement & { text?: string };
+      const outputBox = wrapper.find('[data-testid="output-combo-box"]').element as HTMLElement & { text?: string };
+      expect(lawBox.text).toBe('Wet basisregistratie personen');
+      expect(outputBox.text).toBe('leeftijd (number)');
+    });
+
     it('allLaws is exposed for the combo-box menu', async () => {
       // The nldd-combo-box does its own search/filter via menu-item aliases;
       // this component just needs to expose the full law list and a stable

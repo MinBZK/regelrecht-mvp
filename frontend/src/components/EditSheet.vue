@@ -69,10 +69,6 @@ interface LawOutput {
   parameters?: { name: string }[] | null;
 }
 
-// `_displayValue` is not part of NLDDComboBox's declared API; the watchEffects
-// below write it anyway.
-type ComboBoxElement = NLDDComboBox & { _displayValue?: string };
-
 const props = withDefaults(defineProps<{
   item?: EditSheetItem | null;
   article?: OperationSettingsArticle | null;
@@ -92,8 +88,8 @@ const emit = defineEmits<{
 }>();
 
 const sheetEl = ref<NLDDSheet | null>(null);
-const lawComboBoxEl = ref<ComboBoxElement | null>(null);
-const outputComboBoxEl = ref<ComboBoxElement | null>(null);
+const lawComboBoxEl = ref<NLDDComboBox | null>(null);
+const outputComboBoxEl = ref<NLDDComboBox | null>(null);
 const values = ref<FormValues>({});
 
 // Snapshot of the form taken when an item opens. For a NEW item the Save
@@ -186,23 +182,23 @@ async function fetchOutputsForLaw(lawId: string | undefined) {
   }
 }
 
-// Combo-box has no value→displayValue sync (display is internal @state, only
-// updated by user actions). Keep them aligned manually whenever the form's
-// sourceRegulation changes OR allLaws finishes loading. Without this, an
-// existing input opened in the sheet would show an empty input until the
-// user typed.
+// The combo-box derives its shown `text` from the matching menu item only when
+// `value` changes, but the menu items arrive later, from the fetch. Set `text`
+// whenever the form's sourceRegulation changes OR allLaws finishes loading.
+// Without this, an existing input opened in the sheet would show an empty
+// input until the user typed.
 watchEffect(() => {
   const lawId = values.value?.sourceRegulation;
   if (!lawComboBoxEl.value) return;
   const match = allLaws.value.find(l => l.law_id === lawId);
-  lawComboBoxEl.value._displayValue = match ? displayName(match) : (lawId || '');
+  lawComboBoxEl.value.text = match ? displayName(match) : (lawId || '');
 });
 
 watchEffect(() => {
   const outName = values.value?.sourceOutput;
   if (!outputComboBoxEl.value) return;
   const match = availableOutputs.value.find(o => o.name === outName);
-  outputComboBoxEl.value._displayValue = match ? outputDisplayName(match) : (outName || '');
+  outputComboBoxEl.value.text = match ? outputDisplayName(match) : (outName || '');
 });
 
 async function onLawComboChange(event: Event) {

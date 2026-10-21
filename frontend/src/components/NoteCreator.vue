@@ -199,8 +199,11 @@ function onLinksChange(e: Event) {
 // Selector for the current selection, recomputed when the range changes.
 // buildSelector grows prefix/suffix until the resolver finds it uniquely;
 // `status` drives the warning shown below the quote.
+// Without an article number a match cannot be checked against the selected
+// article, so there is no selector (and nothing to save) until there is one.
 const selectorResult = computed(() => {
-  if (!props.range || !props.rawText || !props.engine || !props.lawId) {
+  const articleNumber = props.article?.number;
+  if (!props.range || !props.rawText || !props.engine || !props.lawId || articleNumber == null) {
     return null;
   }
   return buildSelector(
@@ -208,8 +211,7 @@ const selectorResult = computed(() => {
     props.range,
     props.lawId,
     props.engine,
-    // buildSelector wants a number; with no article this passes undefined, as before.
-    props.article?.number as string | number,
+    articleNumber,
     props.validFrom || null,
   );
 });

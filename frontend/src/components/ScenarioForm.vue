@@ -364,9 +364,9 @@ function execute() {
       error.value = e.error;
       errorTraceText.value = ('trace_text' in e && e.trace_text) || null;
     } else {
-      // Reads `.message` off whatever was thrown, as before: a thrown
-      // null or undefined makes this line throw.
-      const msg = typeof e === 'string' ? e : ((e as { message?: unknown }).message || String(e));
+      // The WASM boundary can throw any value, null and undefined included.
+      const message = e && typeof e === 'object' && 'message' in e ? e.message : undefined;
+      const msg = typeof e === 'string' ? e : (message || String(e));
       error.value = msg;
     }
   } finally {
