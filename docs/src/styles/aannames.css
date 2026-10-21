@@ -1,0 +1,96 @@
+/*
+ * /roadmap/aannames. Imported by that page only, scoped under .rr-aannames.
+ *
+ * The design system has no chart or scatter component, so the impact x
+ * zekerheid grid is laid out here. That is all this file does: what sits in a
+ * cell (nldd-button), the sheet that opens from it and everything around the
+ * grid are design-system components with their own spacing.
+ *
+ * The page sits in RoadmapSectie, so roadmap.css applies too; the
+ * visually-hidden caption uses its `.rr-sr-only`.
+ *
+ * The grid is a real <table>, laid out as one CSS grid through
+ * `display: contents` on the table internals, the same technique as the
+ * matrix on /roadmap (see roadmap.css for the long version). Colours, spacing
+ * and radii are NLDD tokens, so the grid follows the theme toggle.
+ */
+
+.rr-aannames .rr-raster-scroll {
+  overflow-x: auto;
+}
+
+/*
+ * Four kinds of track: the axis name (rotated), the level headers, and one
+ * column per zekerheid level. The level columns have a floor so a cell keeps
+ * room for a button label of a few words; below that the region scrolls
+ * sideways instead of squeezing the labels into one word per line.
+ */
+.rr-aannames .rr-raster {
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(7rem, auto)
+    repeat(var(--rr-score-count, 5), minmax(9rem, 1fr));
+  gap: var(--primitives-space-4, 0.25rem);
+  border-collapse: separate;
+  min-width: 52rem;
+}
+
+.rr-aannames .rr-raster thead,
+.rr-aannames .rr-raster tbody,
+.rr-aannames .rr-raster tr {
+  display: contents;
+}
+
+.rr-aannames .rr-raster th,
+.rr-aannames .rr-raster td {
+  padding: var(--primitives-space-8, 0.5rem);
+  text-align: start;
+  font-weight: inherit;
+}
+
+.rr-aannames .rr-raster__kop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitives-space-2, 0.125rem);
+}
+
+.rr-aannames .rr-raster__kop--kolom {
+  align-items: center;
+  text-align: center;
+}
+
+.rr-aannames .rr-raster__kop--rij {
+  justify-content: center;
+}
+
+.rr-aannames .rr-raster__as--x {
+  text-align: center;
+}
+
+/*
+ * The impact axis reads bottom to top, the way a y-axis does: vertical
+ * writing turned half a turn, so the arrow in the label points up.
+ */
+.rr-aannames .rr-raster__as--y {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/*
+ * A cell is a square-ish field so the grid reads as a plane even where it is
+ * empty; an empty grid of zero-height rows would read as a list.
+ */
+.rr-aannames .rr-raster__cel {
+  min-height: 6rem;
+  border-radius: var(--semantics-surfaces-corner-radius, 8px);
+  background: var(--semantics-surfaces-tinted-background-color);
+}
+
+/* The corner the method is named after: much impact, little evidence. */
+.rr-aannames .rr-raster__cel--eerst {
+  background: var(--semantics-categories-critical-tinted-background-color);
+}

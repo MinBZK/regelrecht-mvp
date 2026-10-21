@@ -1,0 +1,515 @@
+---
+/*
+ * /roadmap/aannames — the aannames behind the roadmap, on an impact x
+ * zekerheid grid ("riskiest assumption first").
+ *
+ * The content lives in src/content/roadmap/aannames/, one file per aanname;
+ * the scales and the ordering in lib/aannames.ts. Like the matrix this page is
+ * read-only, and editing goes through a pull request.
+ *
+ * The grid is a real <table>: zekerheid levels are columns, impact levels are
+ * rows, and a screen reader needs that relationship to place an aanname. The
+ * design system has no chart or scatter component, so the grid's layout is
+ * page CSS (styles/aannames.css); everything inside a cell, and everything
+ * outside the grid, is a design-system component.
+ *
+ * Every aanname opens in an nldd-sheet with its scores, its onderbouwing and
+ * the werkpakketten it rests on. The trigger is a link to `#<id>` rather than
+ * a bare button, so an aanname has a URL: a werkpakket page links straight to
+ * it, and so can anyone pasting it in a chat. The script below opens the sheet
+ * that belongs to the hash and clears the hash again when it closes.
+ *
+ * Under the grid the same aannames stand in order of risk. That list is the
+ * reading order for someone who does not see the grid, and on a phone it is
+ * the view that fits; the grid itself scrolls sideways there.
+ */
+import { getCollection } from 'astro:content';
+import Base from '~/layouts/Base.astro';
+import EditLink from '~/components/EditLink.astro';
+import RoadmapSectie from '~/components/RoadmapSectie.astro';
+import RoadmapKop from '~/components/RoadmapKop.astro';
+import {
+  IMPACT_NIVEAUS,
+  ZEKERHEID_NIVEAUS,
+  SCORE_MIN,
+  SCORE_MAX,
+  getImpact,
+  getZekerheid,
+  eerstToetsen,
+  risico,
+  opRisico,
+  aannamesInCel,
+  scoreTekst,
+  assertAannameReferences,
+  AANNAMES_PAD,
+} from '~/lib/aannames';
+import { getFase, getDiscipline } from '~/lib/roadmap';
+import { renderMarkdown } from '~/lib/roadmap-markdown';
+import '~/styles/roadmap.css';
+import '~/styles/aannames.css';
+
+const aannames = await getCollection('aannames');
+const werkpakketten = await getCollection('werkpakketten');
+// Fails the build on an aanname pointing at a werkpakket that does not exist.
+// check-links.mjs would not catch it: the list in the sheet is built from the
+// werkpakketten that resolve, so a typo would simply drop out of it.
+assertAannameReferences(
+  aannames,
+  new Set(werkpakketten.map((w) => w.data.id)),
+);
+
+const werkpakket = (id: string) => werkpakketten.find((w) => w.data.id === id);
+
+// Highest impact on top, least evidence on the left: the corner the method
+// is about sits where a reader starts, top left.
+const rijen = [...IMPACT_NIVEAUS].reverse();
+const kolommen = ZEKERHEID_NIVEAUS;
+
+const MAX_RISICO = risico({ impact: SCORE_MAX, zekerheid: SCORE_MIN });
+const gesorteerd = opRisico(aannames);
+
+// Header ids for the `headers` attribute on every cell. Two levels of header
+// on each axis (the axis name and the level) is the case pa11y's htmlcs runner
+// flags when a cell relies on `scope` alone; the matrix on /roadmap names its
+// headers explicitly for the same reason.
+const kolomId = (score: number) => `rr-zekerheid-${score}`;
+const rijId = (score: number) => `rr-impact-${score}`;
+
+const pathname = AANNAMES_PAD;
+---
+
+<Base
+  lang="nl"
+  kind="docs"
+  pathname={pathname}
+  noSearchIndex
+  title="Aannames · Roadmap · RegelRecht"
+  description="De aannames onder de RegelRecht-roadmap, uitgezet op impact en zekerheid."
+>
+  {/*
+    The shared roadmap heading, with the tab bar between the views. No search
+    field and no filters: a handful of aannames on a grid is read at a glance,
+    and the categorie and belegging filters describe werkpakketten, not
+    aannames.
+  */}
+  <RoadmapSectie>
+    <RoadmapKop
+      huidig="aannames"
+      ondertitel="De aannames waar de werkpakketten op rusten. De aannames met veel impact en weinig bewijs toetsen we eerst."
+    />
+
+    <nldd-container class="rr-aannames" gap="40">
+
+      <nldd-container gap="16">
+        <nldd-title size="3"><h2>Impact en zekerheid</h2></nldd-title>
+        <nldd-text>
+          Elke aanname heeft twee scores van 1 tot 5: hoeveel er van afhangt,
+          en hoeveel bewijs er voor is. Het gekleurde vlak linksboven is waar
+          veel van afhangt en weinig bewijs voor is. Klik op een aanname voor
+          de onderbouwing en de werkpakketten die erop rusten.
+        </nldd-text>
+
+        {/* tabindex + role make the sideways-scrolling grid reachable by
+            keyboard on a narrow screen; without it axe flags
+            scrollable-region-focusable. */}
+        <div
+          class="rr-raster-scroll"
+          tabindex="0"
+          role="region"
+          aria-label="Aannames op impact en zekerheid, horizontaal scrollbaar"
+        >
+          <table class="rr-raster" style={`--rr-score-count: ${kolommen.length}`}>
+            <caption class="rr-sr-only">
+              Aannames per impact (rijen, hoog bovenaan) en zekerheid (kolommen,
+              weinig bewijs links).
+            </caption>
+            <thead>
+              <tr>
+                <td class="rr-raster__hoek" colspan={2} style="grid-column: span 2"></td>
+                <th
+                  id="rr-as-zekerheid"
+                  scope="colgroup"
+                  colspan={kolommen.length}
+                  style={`grid-column: span ${kolommen.length}`}
+                  class="rr-raster__as rr-raster__as--x"
+                >
+                  <nldd-text size="sm" weight="bold">
+                    Zekerheid · mate van bewijs →
+                  </nldd-text>
+                </th>
+              </tr>
+              <tr>
+                <td class="rr-raster__hoek" colspan={2} style="grid-column: span 2"></td>
+                {
+                  kolommen.map((niveau) => (
+                    <th
+                      id={kolomId(niveau.score)}
+                      scope="col"
+                      class="rr-raster__kop rr-raster__kop--kolom"
+                    >
+                      <nldd-text size="sm" weight="bold">{niveau.score}</nldd-text>
+                      <nldd-text size="xs" color="secondary">{niveau.label}</nldd-text>
+                    </th>
+                  ))
+                }
+              </tr>
+            </thead>
+            <tbody>
+              {
+                rijen.map((rij, index) => (
+                  <tr>
+                    {index === 0 && (
+                      <th
+                        id="rr-as-impact"
+                        scope="rowgroup"
+                        rowspan={rijen.length}
+                        style={`grid-row: span ${rijen.length}`}
+                        class="rr-raster__as rr-raster__as--y"
+                      >
+                        <nldd-text size="sm" weight="bold">
+                          Impact · belang →
+                        </nldd-text>
+                      </th>
+                    )}
+                    <th
+                      id={rijId(rij.score)}
+                      scope="row"
+                      class="rr-raster__kop rr-raster__kop--rij"
+                    >
+                      <nldd-text size="sm" weight="bold">{rij.score}</nldd-text>
+                      <nldd-text size="xs" color="secondary">{rij.label}</nldd-text>
+                    </th>
+                    {kolommen.map((kolom) => {
+                      const inCel = aannamesInCel(aannames, rij.score, kolom.score);
+                      return (
+                        <td
+                          headers={`rr-as-impact ${rijId(rij.score)} rr-as-zekerheid ${kolomId(kolom.score)}`}
+                          class:list={[
+                            'rr-raster__cel',
+                            eerstToetsen(rij.score, kolom.score) &&
+                              'rr-raster__cel--eerst',
+                          ]}
+                        >
+                          {inCel.length > 0 && (
+                            <nldd-container gap="8">
+                              {inCel.map((a) => (
+                                <nldd-button
+                                  href={`#${a.data.id}`}
+                                  appearance="secondary"
+                                  size="sm"
+                                  width="full"
+                                  horizontal-alignment="left"
+                                  text={a.data.titel}
+                                  accessible-label={`${a.data.titel}, ${scoreTekst(a.data)}`}
+                                />
+                              ))}
+                            </nldd-container>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </nldd-container>
+
+      <nldd-container gap="16">
+        <nldd-title size="3"><h2>Op volgorde van risico</h2></nldd-title>
+        <nldd-text>
+          Risico is impact maal het gebrek aan bewijs: een aanname met impact 5
+          en zekerheid 1 scoort {MAX_RISICO}, de hoogste waarde. Bij gelijke
+          stand gaat de aanname met de meeste impact voor.
+        </nldd-text>
+        {
+          gesorteerd.length ? (
+            <nldd-list type="navigation" appearance="box-tinted">
+              {gesorteerd.map((a) => (
+                <nldd-list-item href={`#${a.data.id}`}>
+                  <nldd-text-cell
+                    overline={`Risico ${risico(a.data)} van ${MAX_RISICO}`}
+                    text={a.data.titel}
+                    supporting-text={scoreTekst(a.data)}
+                    width="full"
+                  >
+                    {eerstToetsen(a.data.impact, a.data.zekerheid) && (
+                      <nldd-container slot="supporting-text" layout="wrap" gap="4">
+                        <nldd-tag color="critical" size="sm" text="Eerst toetsen" />
+                      </nldd-container>
+                    )}
+                  </nldd-text-cell>
+                  <nldd-spacer-cell />
+                  <nldd-icon-cell size="20" icon="chevron-right" />
+                </nldd-list-item>
+              ))}
+            </nldd-list>
+          ) : (
+            <nldd-text size="sm" color="secondary">
+              Nog geen aannames geregistreerd.
+            </nldd-text>
+          )
+        }
+      </nldd-container>
+
+      <nldd-container gap="16">
+        <nldd-title size="3"><h2>Wat de scores betekenen</h2></nldd-title>
+        <nldd-container layout="columns" column-count="2" sm-column-count="1" gap="24">
+          {
+            [
+              { naam: 'Impact', niveaus: IMPACT_NIVEAUS },
+              { naam: 'Zekerheid', niveaus: ZEKERHEID_NIVEAUS },
+            ].map((schaal) => (
+              <nldd-container gap="8">
+                <nldd-title size="5"><h3>{schaal.naam}</h3></nldd-title>
+                <nldd-list appearance="box-tinted" dividers="always">
+                  {schaal.niveaus.map((niveau) => (
+                    <nldd-list-item>
+                      <nldd-text-cell
+                        overline={String(niveau.score)}
+                        text={niveau.label}
+                        supporting-text={niveau.omschrijving}
+                        width="full"
+                      />
+                    </nldd-list-item>
+                  ))}
+                </nldd-list>
+              </nldd-container>
+            ))
+          }
+        </nldd-container>
+      </nldd-container>
+    </nldd-container>
+  </RoadmapSectie>
+
+  {/*
+    One sheet per aanname, rendered up front. There are a handful, and a
+    static page has no server to ask for one on demand. They stay closed (and
+    out of the accessibility tree) until the script opens one.
+
+    The sheet carries the aanname's id, so `#<id>` names a real element and
+    check-links.mjs can verify every link to it. A closed sheet is not
+    rendered, so a deep link gives the browser nothing to scroll to.
+
+    The title bar carries the dismiss button; the sheet catches its `dismiss`
+    itself and closes. Its title is only the short label, which it may cut off
+    on a narrow screen; the full title is the nldd-title below it, which the
+    bar hands its title over to through `collapse-anchor`.
+  */}
+  {
+    aannames.map((a) => {
+      const impact = getImpact(a.data.impact)!;
+      const zekerheid = getZekerheid(a.data.zekerheid)!;
+      const titelId = `rr-aanname-titel-${a.data.id}`;
+      const gekoppeld = a.data.werkpakketIds
+        .map(werkpakket)
+        .filter(Boolean);
+      const onderbouwing = renderMarkdown(a.data.onderbouwing);
+      const toetsing = renderMarkdown(a.data.toetsing);
+      return (
+        <nldd-sheet
+          placement="right"
+          width="520px"
+          accessible-label={a.data.titel}
+          id={a.data.id}
+          data-aanname={a.data.id}
+        >
+          <nldd-page sticky-header>
+            <nldd-container slot="header" padding="16">
+              <nldd-top-title-bar
+                text={a.data.titel}
+                heading-level="2"
+                dismiss-text="Sluiten"
+                collapse-anchor={titelId}
+              />
+            </nldd-container>
+            <nldd-container padding="24" gap="24">
+              <nldd-title size="3" id={titelId}>
+                <h2>{a.data.titel}</h2>
+                <p slot="supporting-text">{a.data.aanname}</p>
+              </nldd-title>
+
+              <nldd-container layout="columns" column-count="2" sm-column-count="1" gap="16">
+                {[
+                  { naam: 'Impact', niveau: impact },
+                  { naam: 'Zekerheid', niveau: zekerheid },
+                ].map((score) => (
+                  <nldd-box>
+                    <nldd-container padding="16" gap="4">
+                      <nldd-text size="xs" weight="medium" color="secondary">
+                        {score.naam}
+                      </nldd-text>
+                      <nldd-text size="lg" weight="bold">
+                        {score.niveau.score} · {score.niveau.label}
+                      </nldd-text>
+                      <nldd-text size="sm" color="secondary">
+                        {score.niveau.omschrijving}
+                      </nldd-text>
+                    </nldd-container>
+                  </nldd-box>
+                ))}
+              </nldd-container>
+
+              <nldd-container layout="wrap" gap="8">
+                <nldd-tag
+                  color="neutral"
+                  size="md"
+                  text={`Risico ${risico(a.data)} van ${MAX_RISICO}`}
+                />
+                {eerstToetsen(a.data.impact, a.data.zekerheid) && (
+                  <nldd-tag color="critical" size="md" text="Eerst toetsen" />
+                )}
+              </nldd-container>
+
+              <nldd-container gap="8">
+                <nldd-title size="5"><h3>Onderbouwing</h3></nldd-title>
+                {onderbouwing ? (
+                  <nldd-rich-text>
+                    <Fragment set:html={onderbouwing} />
+                  </nldd-rich-text>
+                ) : (
+                  <nldd-text size="sm" color="secondary">
+                    Nog geen onderbouwing toegevoegd.
+                  </nldd-text>
+                )}
+              </nldd-container>
+
+              <nldd-container gap="8">
+                <nldd-title size="5"><h3>Zo toetsen we het</h3></nldd-title>
+                {toetsing ? (
+                  <nldd-rich-text>
+                    <Fragment set:html={toetsing} />
+                  </nldd-rich-text>
+                ) : (
+                  <nldd-text size="sm" color="secondary">
+                    Nog niet bepaald.
+                  </nldd-text>
+                )}
+              </nldd-container>
+
+              <nldd-container gap="8">
+                <nldd-title size="5"><h3>Werkpakketten</h3></nldd-title>
+                {gekoppeld.length ? (
+                  <nldd-list type="navigation" appearance="box-tinted">
+                    {gekoppeld.map((wp) => (
+                      <nldd-list-item href={`/roadmap/werkpakket/${wp!.data.id}`}>
+                        <nldd-text-cell
+                          text={wp!.data.titel}
+                          supporting-text={[
+                            getFase(wp!.data.faseId)?.naam,
+                            getDiscipline(wp!.data.disciplineId)?.naam,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                          width="full"
+                        />
+                        <nldd-spacer-cell />
+                        <nldd-icon-cell size="20" icon="chevron-right" />
+                      </nldd-list-item>
+                    ))}
+                  </nldd-list>
+                ) : (
+                  <nldd-text size="sm" color="secondary">
+                    Nog aan geen werkpakket gekoppeld.
+                  </nldd-text>
+                )}
+              </nldd-container>
+
+              <nldd-divider />
+              <EditLink filePath={a.filePath} text="Bewerk op GitHub" />
+            </nldd-container>
+          </nldd-page>
+        </nldd-sheet>
+      );
+    })
+  }
+</Base>
+
+{/*
+  Opens the sheet that belongs to the hash.
+
+  The hash names the open aanname, so a link from a werkpakket page, or one
+  pasted in a chat, lands with the right sheet open.
+
+  A click on a `#<id>` link is caught here and not left to the browser.
+  Base.astro renders <ClientRouter />, which takes over same-page hash links
+  with pushState, and pushState fires no hashchange: the URL changed and the
+  sheet stayed shut.
+
+  Opening and closing rewrite the current history entry instead of adding
+  one. A pushed entry would carry the router's own state (its `index`), and
+  the router reads Back and Forward by comparing that index: a copied one
+  turns Forward into "back", and a fresh one is an index the router never
+  handed out. Either way it fetches and swaps the whole page. So the back
+  button leaves the page rather than closing a sheet; Escape and "Sluiten"
+  close it.
+
+  Wired on astro:page-load, like the zoekfilter on /roadmap: a module script
+  runs once per document, and a ClientRouter navigation to this page swaps in
+  fresh sheets that a top-level binding would never see. The window listeners
+  outlive a swap, so they are bound once and look the sheets up on each call.
+*/}
+<script>
+  type Sheet = HTMLElement & { show(): void; hide(): void };
+
+  const sheets = () =>
+    new Map(
+      Array.from(document.querySelectorAll<Sheet>('nldd-sheet[data-aanname]')).map(
+        (sheet) => [sheet.dataset.aanname!, sheet],
+      ),
+    );
+
+  // Ids are slugs, so the raw hash compares as is. Decoding it would throw a
+  // URIError on a malformed escape such as `#%E0`.
+  const hashId = () => location.hash.slice(1);
+
+  function openVoorHash() {
+    const id = hashId();
+    for (const [sheetId, sheet] of sheets()) {
+      if (sheetId === id) {
+        if (!sheet.hasAttribute('open')) sheet.show();
+      } else if (sheet.hasAttribute('open')) {
+        sheet.hide();
+      }
+    }
+  }
+
+  function wireAannames() {
+    const alle = sheets();
+    if (!alle.size) return;
+    for (const [id, sheet] of alle) {
+      // `close` does not bubble, so every sheet gets its own listener.
+      sheet.addEventListener('close', () => {
+        if (hashId() === id) {
+          history.replaceState(history.state, '', location.pathname + location.search);
+        }
+      });
+    }
+    customElements.whenDefined('nldd-sheet').then(openVoorHash);
+  }
+
+  document.addEventListener(
+    'click',
+    (event) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      // The anchor of an nldd-button or nldd-list-item sits in its shadow
+      // root, so look along the composed path rather than at the target.
+      const link = event
+        .composedPath()
+        .find((el): el is HTMLAnchorElement => el instanceof HTMLAnchorElement);
+      const href = link?.getAttribute('href');
+      if (!href?.startsWith('#')) return;
+      const id = href.slice(1);
+      if (!sheets().has(id)) return;
+      event.preventDefault();
+      if (hashId() !== id) history.replaceState(history.state, '', `#${id}`);
+      openVoorHash();
+    },
+    { capture: true },
+  );
+  window.addEventListener('hashchange', openVoorHash);
+  window.addEventListener('popstate', openVoorHash);
+  document.addEventListener('astro:page-load', wireAannames);
+</script>

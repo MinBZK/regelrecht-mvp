@@ -10,6 +10,7 @@ import {
   CAPABILITY_IDS,
 } from '~/lib/roadmap';
 import { RFC_TOPIC_IDS } from '~/lib/rfc-topics';
+import { SCORE_MIN, SCORE_MAX } from '~/lib/aannames';
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: 'src/content/docs' }),
@@ -342,4 +343,36 @@ const werkpakketten = defineCollection({
   }),
 });
 
-export const collections = { docs, rfcs, werkpakketten };
+/*
+ * Aannames on /roadmap/aannames, one markdown file per aanname, frontmatter
+ * only. The scales and what each level means live in lib/aannames.ts; the
+ * schema only bounds the numbers. `werkpakketIds` is checked against the
+ * werkpakketten by assertAannameReferences(), which a per-entry schema
+ * cannot do.
+ *
+ * `titel` is the short label on the grid, `aanname` the full statement. They
+ * are two fields because the grid has room for five words and the statement
+ * needs a sentence: one field would either crowd the grid or say too little.
+ */
+const score = () => z.number().int().min(SCORE_MIN).max(SCORE_MAX);
+
+const aannames = defineCollection({
+  loader: glob({
+    pattern: '*.md',
+    base: 'src/content/roadmap/aannames',
+  }),
+  schema: z.object({
+    id: slug(),
+    titel: z.string(),
+    aanname: z.string(),
+    impact: score(),
+    zekerheid: score(),
+    // Why these two scores: the evidence there is, or the lack of it.
+    onderbouwing: z.string().default(''),
+    // How the aanname gets tested: the experiment, the interview, the casus.
+    toetsing: z.string().default(''),
+    werkpakketIds: z.array(slug()).default([]),
+  }),
+});
+
+export const collections = { docs, rfcs, werkpakketten, aannames };
