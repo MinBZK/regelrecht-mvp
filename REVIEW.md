@@ -84,6 +84,9 @@ When `machine_readable` sections are added or changed:
 - A new `any` or non-null `!` without a comment saying why it is safe.
 - A `vi.mock` path that no longer names the module it is meant to mock: the mock
   silently stops applying and the test runs against the real module.
+
+### Any code change
+
 - Dutch identifiers, comments or test names in new code (Minor), unless they are
   legal terms or names of concepts without a clear English equivalent.
 

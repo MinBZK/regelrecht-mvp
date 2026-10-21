@@ -240,7 +240,7 @@ preview-environments-test:
 # container-backed suites; on a machine without a daemon, swap `test` for
 # `test-no-docker`.
 [doc("Run all quality checks, exactly what CI runs (needs Docker)")]
-check: format lint build-check validate validate-annotations deploy-filters-test ghcr-cleanup-test precompress-test security-headers-test first-load-test ci-gate-test merge-queue-checks-test nldd-imports-test nldd-slots nldd-slots-test dockerfile-consistency-test deploy-gate-test deployed-urls-test preview-environments-test advisories-report-test dev-preflight-test frontend-test test
+check: format lint build-check validate validate-annotations deploy-filters-test ghcr-cleanup-test precompress-test security-headers-test first-load-test ci-gate-test merge-queue-checks-test nldd-imports-test nldd-slots nldd-slots-test dockerfile-consistency-test deploy-gate-test deployed-urls-test preview-environments-test advisories-report-test dev-preflight-test test
 
 # --- Tests ---
 
@@ -264,9 +264,14 @@ test:
     cd packages && {{ci_flags}} cargo test --workspace --all-features
 
 # The frontend unit tests and type checks, as the "Frontend tests" job in CI
-# runs them. Needs `npm ci` at the repository root.
+# runs them. Not part of `check`, which needs no npm dependencies; this one
+# installs the npm workspace on first use.
 [doc("Run the frontend unit tests and type checks")]
 frontend-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source script/dev-lib.sh
+    dev_ensure_deps . "frontend tests"
     npm test -w packages/frontend-shared
     npm run typecheck -w packages/frontend-shared
     npm test -w frontend
