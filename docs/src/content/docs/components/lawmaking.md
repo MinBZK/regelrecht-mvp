@@ -7,7 +7,7 @@ The lawmaking frontend visualizes the Dutch legislative process as an interactiv
 
 ## Overview
 
-- **Language**: Vue 3 / Vite
+- **Language**: TypeScript, Vue 3 / Vite
 - **Location**: `frontend-lawmaking/`
 - **Production URL**: `lawmaking.regelrecht.rijks.app`
 
@@ -33,8 +33,9 @@ Three datasets use this model, chosen with the segmented control in the header:
 - **Uitgebreid** - the full process, with parallel advisory and consultation forks, amendment branches and a novelle
 - **Wet open overheid** - the real history of the Woo (kamerstuk 33328 and novelle 35112), with phases and a year timeline
 
-The data is static JavaScript in `src/data/` (`flowDataSimple.js`,
-`flowDataAdvanced.js`, `flowDataWoo.js`). There is no backend.
+The data is static TypeScript in `src/data/` (`flowDataSimple.ts`,
+`flowDataAdvanced.ts`, `flowDataWoo.ts`), typed by `src/data/types.ts`. There
+is no backend.
 
 ## Toolbar
 
@@ -66,9 +67,21 @@ just dev lawmaking
 
 This starts Vite on port 7500 (override with `LAWMAKING_PORT`), without
 database or backend. Running `npm run dev` inside `frontend-lawmaking/` also
-works; Vite then uses the port from `vite.config.js`, 3000.
+works; Vite then uses the port from `vite.config.ts`, 3000.
 
-`npm test` runs `src/data/flow-data.test.mjs`, which fails when a connection or stage points at a stage or branch that does not exist.
+`npm test` runs `src/data/flow-data.test.ts` with Vitest, which fails when a connection or stage points at a stage or branch that does not exist.
+
+## TypeScript setup
+
+The layout follows what `create-vue` generates for a TypeScript project. `tsconfig.json` references three programs, one per environment:
+
+| Config | Checks | Environment |
+|--------|--------|-------------|
+| `tsconfig.app.json` | `src/` without the tests, and `env.d.ts` | the browser, through `@vue/tsconfig/tsconfig.dom.json` |
+| `tsconfig.node.json` | `vite.config.ts`, `vitest.config.ts` | Node, through `@tsconfig/node24` |
+| `tsconfig.vitest.json` | `src/**/*.test.ts` | Vitest |
+
+`npm run typecheck` runs `vue-tsc --build` over all three, and CI runs it in the frontend job. The app config sets `noUncheckedIndexedAccess`, so an `arr[i]` lookup is typed as possibly `undefined`. `vitest.config.ts` builds on `vite.config.ts`, so a test that imports a component gets the same template compiler options as the app. The tests run in Node; a test that mounts a component will need a DOM environment such as happy-dom. The [Shared Frontend Package](/components/frontend-shared#typescript) page explains the conventions all frontends share: TypeScript 6, imports without an extension, and no compile step.
 
 ## Further reading
 

@@ -433,8 +433,8 @@ fn app_source_files(app_dir: &Path) -> Vec<PathBuf> {
         collect_source_files(&src, &mut files);
     }
 
-    // Top-level entry modules that live outside `src/` (e.g. lawmaking's
-    // `main.js`), so an app whose bootstrap sits at its root is still covered.
+    // Top-level entry modules that live outside `src/` (a `main.js` next to
+    // `index.html`), so an app whose bootstrap sits at its root is still covered.
     for name in ["main", "index"] {
         for ext in JS_EXTS {
             let candidate = app_dir.join(format!("{name}.{ext}"));

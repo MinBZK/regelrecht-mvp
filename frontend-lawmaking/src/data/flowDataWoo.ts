@@ -14,7 +14,9 @@
  *   col 6: amendments on novelle (35112)
  */
 
-export const branches = [
+import type { Branch, Phase, TimelineMarker, Stage, Connection } from './types';
+
+export const branches: Branch[] = [
   {
     id: 'main',
     label: 'Corpus Juris',
@@ -100,7 +102,7 @@ export const branches = [
   },
 ];
 
-export const phases = [
+export const phases: Phase[] = [
   { id: 'init', label: 'Indiening & voorbereiding', startRow: 1, endRow: 6, color: 'var(--color-branch-feature)' },
   { id: 'rvs', label: 'Raad van State', startRow: 7, endRow: 9, color: 'var(--color-ci)' },
   { id: 'committee', label: 'Commissiebehandeling', startRow: 10, endRow: 12, color: 'var(--color-review)' },
@@ -112,7 +114,7 @@ export const phases = [
 ];
 
 /** Timeline markers shown on the left axis */
-export const timelineMarkers = [
+export const timelineMarkers: TimelineMarker[] = [
   { label: '2012' },
   { label: '2013' },
   { label: '2014' },
@@ -128,7 +130,7 @@ export const timelineMarkers = [
   { label: '2022' },
 ];
 
-export const stages = [
+export const stages: Stage[] = [
   // === Corpus Juris (Wob is current law) ===
   {
     id: 'wob',
@@ -696,7 +698,7 @@ export const stages = [
   },
 ];
 
-export const connections = [
+export const connections: Connection[] = [
   // Branch off from main
   { from: 'wob', to: 'peters-submit', type: 'branch-off' },
 

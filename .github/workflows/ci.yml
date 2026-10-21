@@ -801,6 +801,9 @@ jobs:
       - name: Run lawmaking tests
         run: npm test -w frontend-lawmaking
 
+      - name: Type check lawmaking
+        run: npm run typecheck -w frontend-lawmaking
+
       - name: Run demo tests
         run: npm test -w frontend-demo
 
