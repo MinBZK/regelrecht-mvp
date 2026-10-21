@@ -79,7 +79,7 @@ mod tests {
     }
 
     /// Every file under `dir` except the scenarios, as the build bundles
-    /// them (frontend-poc-chronolexografie/scripts/copy-assets.js).
+    /// them (frontend/scripts/copy-assets.js).
     fn verzamel(dir: &Path, uit: &mut BTreeMap<String, String>) {
         for entry in std::fs::read_dir(repo().join(dir)).unwrap() {
             let path = entry.unwrap().path();

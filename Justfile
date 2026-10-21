@@ -969,7 +969,7 @@ poc-build: wasm-build poc-chronolexografie-wasm poc-assets
     cp -R frontend-poc-nieuwkomersbekostiging/dist/. .poc-static/nieuwkomersbekostiging/
     POC_BASE=/chronolexografie/ npm run build -w poc-chronolexografie
     mkdir -p .poc-static/chronolexografie
-    cp -R frontend-poc-chronolexografie/dist/. .poc-static/chronolexografie/
+    cp -R packages/poc-chronolexografie/frontend/dist/. .poc-static/chronolexografie/
 
 # Start het poc-portaal op http://localhost:8611
 #
@@ -994,7 +994,7 @@ poc: poc-build
     POC_PORT=8611 \
     cargo run --manifest-path packages/Cargo.toml --package regelrecht-poc-portal
 
-# Bouw de chronolexografie-poc als WASM, naar frontend-poc-chronolexografie/public/wasm/pkg
+# Bouw de chronolexografie-poc als WASM, naar packages/poc-chronolexografie/frontend/public/wasm/pkg
 #
 # De cel, de engine en het spel draaien in de browser van de bezoeker
 # (packages/poc-chronolexografie, feature `wasm`). copy-assets.js van de app
@@ -1005,7 +1005,7 @@ poc-chronolexografie-wasm:
     bindgen=$({{just_executable()}} wasm-bindgen-cli)
     # Zelfde vaste target-map als wasm-build, om dezelfde reden.
     cargo build --manifest-path packages/Cargo.toml --package regelrecht-poc-chronolexografie --features wasm --target wasm32-unknown-unknown --release --target-dir packages/target
-    "$bindgen" --target web --out-dir frontend-poc-chronolexografie/public/wasm/pkg packages/target/wasm32-unknown-unknown/release/regelrecht_poc_chronolexografie.wasm
+    "$bindgen" --target web --out-dir packages/poc-chronolexografie/frontend/public/wasm/pkg packages/target/wasm32-unknown-unknown/release/regelrecht_poc_chronolexografie.wasm
 
 # Start de chronolexografie-poc los, op de vite-dev-server (http://localhost:5410)
 #

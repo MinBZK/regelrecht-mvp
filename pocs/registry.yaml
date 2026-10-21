@@ -42,7 +42,9 @@
 #                het echte onderwerp, achter het wachtwoord. Optioneel.
 #   soort        `statisch` (uit dit image geserveerd) of `proxy` (doorgestuurd
 #                naar een ander ZAD-component).
-#   bron         bij `statisch`: de npm-workspace die de dist bouwt.
+#   bron         bij `statisch`: de npm-workspace die de dist bouwt. Meestal
+#                in frontend-poc-<slug>/; een poc met een eigen WASM-crate
+#                heeft zijn app in packages/poc-<slug>/frontend/.
 #   upstream     bij `proxy`: de ZAD-componentnaam, bereikt op
 #                http://{deployment}-{upstream}:8000
 #   corpus       de mappen met casus-regelgeving die dit image meeneemt.

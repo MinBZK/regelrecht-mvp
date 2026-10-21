@@ -72,7 +72,7 @@ COPY frontend-lawmaking/package.json frontend-lawmaking/
 COPY frontend-poc-portal/package.json frontend-poc-portal/
 COPY frontend-poc-terugbetaalregimes/package.json frontend-poc-terugbetaalregimes/
 COPY frontend-poc-nieuwkomersbekostiging/package.json frontend-poc-nieuwkomersbekostiging/
-COPY frontend-poc-chronolexografie/package.json frontend-poc-chronolexografie/
+COPY packages/poc-chronolexografie/frontend/package.json packages/poc-chronolexografie/frontend/
 RUN npm ci --ignore-scripts
 
 # De bron van het gedeelde pakket. npm ci hierboven legt alleen de symlink in
@@ -102,8 +102,8 @@ COPY pocs/ pocs/
 COPY corpus/regulation/ corpus/regulation/
 COPY corpus/cells/ corpus/cells/
 COPY packages/poc-chronolexografie/casussen/ packages/poc-chronolexografie/casussen/
-COPY frontend-poc-chronolexografie/ frontend-poc-chronolexografie/
-COPY --from=wasm-builder /wasm-chronolexografie/ frontend-poc-chronolexografie/public/wasm/pkg/
+COPY packages/poc-chronolexografie/frontend/ packages/poc-chronolexografie/frontend/
+COPY --from=wasm-builder /wasm-chronolexografie/ packages/poc-chronolexografie/frontend/public/wasm/pkg/
 RUN POC_BASE=/chronolexografie/ npm run build -w poc-chronolexografie
 
 # De enige runtime-dependency van de beleidsassistent. Los geïnstalleerd en niet
@@ -217,7 +217,7 @@ COPY --from=frontend-builder /app/frontend-poc-portal/dist /app/static/_assets
 # vite uitspuugt.
 COPY --from=frontend-builder /app/frontend-poc-terugbetaalregimes/dist /app/static/terugbetaalregimes
 COPY --from=frontend-builder /app/frontend-poc-nieuwkomersbekostiging/dist /app/static/nieuwkomersbekostiging
-COPY --from=frontend-builder /app/frontend-poc-chronolexografie/dist /app/static/chronolexografie
+COPY --from=frontend-builder /app/packages/poc-chronolexografie/frontend/dist /app/static/chronolexografie
 
 # De beleidsassistent: één server, per casus zijn eigen MCP-tools en prompt.
 COPY packages/poc-assistent/ /app/assistent/

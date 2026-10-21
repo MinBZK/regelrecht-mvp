@@ -20,7 +20,8 @@ import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = resolve(appRoot, '..');
+// De app staat in packages/poc-chronolexografie/frontend, naast de crate.
+const repoRoot = resolve(appRoot, '..', '..', '..');
 
 const register = yaml.load(readFileSync(resolve(repoRoot, 'pocs', 'registry.yaml'), 'utf8'));
 const poc = register.pocs.find((p) => p.slug === 'chronolexografie');

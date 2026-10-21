@@ -64,7 +64,6 @@ jobs:
               - frontend-poc-terugbetaalregimes/**
               - frontend-poc-nieuwkomersbekostiging/**
               - frontend-poc-napp/**
-              - frontend-poc-chronolexografie/**
               - corpus-poc/**
               - pocs/**
               - packages/frontend-shared/**
@@ -811,7 +810,7 @@ jobs:
         run: npm test -w frontend-demo
 
       - name: Run chronolexografie poc tests
-        run: npm test -w frontend-poc-chronolexografie
+        run: npm test -w packages/poc-chronolexografie/frontend
 
       # De rekenkunde van de opgenomen rondleiding (knippen, hoofdstukken,
       # ondertitels): pure Python zonder ffmpeg, dus hier in een paar seconden.

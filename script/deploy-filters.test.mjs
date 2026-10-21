@@ -190,7 +190,7 @@ test('chronolexografie volgt zijn cellen, hun regelwerken, de casussen en zijn f
     'corpus/cells/cbr/cel.yaml',
     'corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw/2026-01-01.yaml',
     'packages/poc-chronolexografie/casussen/gehandicaptenparkeerkaart.yaml',
-    'frontend-poc-chronolexografie/src/App.vue',
+    'packages/poc-chronolexografie/frontend/src/App.vue',
   ]) {
     const geraakt = namesOf([pad]);
     assert.equal(geraakt.poc, true, pad);

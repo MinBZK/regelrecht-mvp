@@ -376,6 +376,11 @@ corpus-poc/<slug>/          casus-regelgeving, data, varianten
 frontend-poc-<slug>/        de app
 ```
 
+Een poc waarvan de kern een Rust-crate is die als WASM in de browser draait,
+staat in één map: `packages/poc-<slug>/` met de app in `frontend/` ernaast
+(zo chronolexografie). Dat is een toegestane indeling naast de gewone, geen
+vervanging ervan.
+
 Een poc toevoegen of zijn status wijzigen: gebruik de **`poc-add`**-skill. Die
 kent de subpad-aanpassingen die een losse app nodig heeft en de plekken in de
 deploy die met de hand bij moeten.
