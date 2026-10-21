@@ -60,14 +60,24 @@ impl Poc {
     /// The game on `bundel`, the JSON object `{ "<path>": "<text>" }` the
     /// page was built with. A bundle that misses a file a case needs, or a
     /// case the law does not support, fails here, before anything is shown.
+    ///
+    /// `bronnen`, if given, is the JSON list of the sources the page fetched
+    /// ([`crate::bundel::Bron`]). A source that is unavailable or broken
+    /// does not fail here: `casussen` says what became of it.
     #[wasm_bindgen(constructor)]
-    pub fn new(bundel: &str) -> Result<Poc, JsError> {
+    pub fn new(bundel: &str, bronnen: Option<String>) -> Result<Poc, JsError> {
         meld_panics();
         let files: BTreeMap<String, String> =
             serde_json::from_str(bundel).map_err(|e| fout(format!("the bundle: {e}")))?;
-        let casussen = crate::bundel::casussen(files).map_err(fout)?;
+        let bronnen: Vec<crate::bundel::Bron> = match bronnen.as_deref() {
+            Some(json) => {
+                serde_json::from_str(json).map_err(|e| fout(format!("the sources: {e}")))?
+            }
+            None => Vec::new(),
+        };
+        let (casussen, standen) = crate::bundel::met_bronnen(files, bronnen).map_err(fout)?;
         Ok(Poc {
-            spel: Spel::new(casussen),
+            spel: Spel::met_bronnen(casussen, standen),
         })
     }
 

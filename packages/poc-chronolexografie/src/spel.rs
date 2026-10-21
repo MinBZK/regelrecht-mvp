@@ -16,6 +16,7 @@ use regelrecht_cel::{Error, Gram};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 
+use crate::bundel::BronStand;
 use crate::kern::{self, Cellen, Corpus};
 
 /// The chosen case, its cell and the other cells of its sphere.
@@ -27,6 +28,8 @@ struct Gekozen {
 /// The cases to choose from, and the one chosen with its cells.
 pub struct Spel {
     casussen: Vec<Corpus>,
+    /// What became of each source the page gave ([`crate::bundel::met_bronnen`]).
+    bronnen: Vec<BronStand>,
     gekozen: Option<Gekozen>,
 }
 
@@ -79,8 +82,15 @@ struct Bewaard {
 impl Spel {
     /// The app with `casussen` to choose from, and none chosen yet.
     pub fn new(casussen: Vec<Corpus>) -> Self {
+        Self::met_bronnen(casussen, Vec::new())
+    }
+
+    /// The app with `casussen`, some of them from sources, and what became
+    /// of each source, to show next to the cases.
+    pub fn met_bronnen(casussen: Vec<Corpus>, bronnen: Vec<BronStand>) -> Self {
         Self {
             casussen,
+            bronnen,
             gekozen: None,
         }
     }
@@ -102,14 +112,15 @@ impl Spel {
             .ok_or_else(|| Fout::OnbekendeCasus(id.to_string()))
     }
 
-    /// The cases to choose from, and which is chosen.
+    /// The cases to choose from, which is chosen, and what became of each
+    /// source.
     pub fn casussen(&self) -> Antwoord {
         let gekozen = self
             .gekozen
             .as_ref()
             .map(|g| self.casussen[g.casus].casus.id.clone());
         let kaarten: Vec<Value> = self.casussen.iter().map(Corpus::kaart).collect();
-        ok(json!({ "casussen": kaarten, "gekozen": gekozen }))
+        ok(json!({ "casussen": kaarten, "gekozen": gekozen, "bronnen": self.bronnen }))
     }
 
     /// The chosen case, as the app shows it.

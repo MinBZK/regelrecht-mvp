@@ -1,18 +1,23 @@
 <script setup>
 // Het keuzescherm: per casus een kaart met wat er gebeurt, bij welke
 // (fictieve) uitvoerder en onder welk artikel. Kiezen begint de cel van die
-// casus met een lege kroniek.
+// casus met een lege kroniek. Daarboven staat per bron (src/bronnen.js) wat
+// er niet lukte: een bron die er niet is, of een bestand dat niet laadt.
 import { onMounted, ref } from 'vue';
 import { api } from '../api.js';
+import { bronMeldingen, herkomst } from '../bronnen.js';
 import { artikelNaam } from '../logboek.js';
 import { hoofdletter, kiezen, state } from '../state.js';
 
 const emit = defineEmits(['gekozen']);
 const casussen = ref([]);
+const bronnen = ref([]);
 
 onMounted(async () => {
   try {
-    casussen.value = (await api.casussen()).casussen;
+    const lijst = await api.casussen();
+    casussen.value = lijst.casussen;
+    bronnen.value = lijst.bronnen ?? [];
   } catch (e) {
     state.fout = e.message;
   }
@@ -37,6 +42,17 @@ async function kies(c) {
         besluit. Welke regels meelopen, volgt uit het artikel van de casus.
       </nldd-text>
     </nldd-title>
+    <nldd-container v-if="bronMeldingen(bronnen).length" gap="12" padding-bottom="16">
+      <nldd-banner
+        v-for="m in bronMeldingen(bronnen)"
+        :key="m.naam"
+        :variant="m.variant"
+        :text="m.tekst"
+        supporting-text="De andere casussen werken gewoon."
+      >
+        <nldd-text v-for="r in m.regels" :key="r" size="sm" color="secondary" lang="en">{{ r }}</nldd-text>
+      </nldd-banner>
+    </nldd-container>
     <nldd-collection layout="grid" item-width="320px">
       <nldd-card v-for="c in casussen" :key="c.id">
         <nldd-container slot="header" padding="16">
@@ -45,7 +61,7 @@ async function kies(c) {
             heading-level="2"
             :overline="`${hoofdletter(c.cel_naam)} (fictief)`"
             :text="c.titel"
-            :supporting-text="`${artikel(c)} · beslist door ${c.rol}`"
+            :supporting-text="`${artikel(c)} · beslist door ${c.rol}${herkomst(c, bronnen)}`"
           ></nldd-title>
         </nldd-container>
         <nldd-container padding="16">

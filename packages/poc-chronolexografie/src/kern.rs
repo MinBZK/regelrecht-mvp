@@ -98,21 +98,23 @@ impl std::ops::Deref for Cellen {
 }
 
 impl Corpus {
-    /// The case `casus` on the corpus at `root` (the repository's
-    /// `corpus/`) in `files`, whose regelwerken are `regelwerken`: its cell
-    /// at `root/cells/<cel>`, and what follows from the law ([`afleiden`]).
+    /// The case `casus` on the corpus at `roots` (the repository's
+    /// `corpus/`, and for a case from a source that source too) in `files`,
+    /// whose regelwerken are `regelwerken`: its cell at `<root>/cells/<cel>`
+    /// of the first root that has it, and what follows from the law
+    /// ([`afleiden`]).
     pub fn load(
         files: Arc<dyn Files>,
-        root: &Path,
+        roots: &[PathBuf],
         regelwerken: &Regelwerken,
         casus: Casus,
     ) -> Result<Self> {
-        let cell_dir = root.join("cells").join(&casus.cel);
+        let cell_dir = cel_dir(&*files, roots, &casus.cel);
         let cell = Cell::in_memory_from(&*files, &casus.cel, &cell_dir)?;
         let andere_dirs: Vec<PathBuf> = casus
             .andere_cellen
             .iter()
-            .map(|a| root.join("cells").join(&a.cel))
+            .map(|a| cel_dir(&*files, roots, &a.cel))
             .collect();
         let andere = casus
             .andere_cellen
@@ -145,15 +147,19 @@ impl Corpus {
 
     /// Every case in `casus_dir` on the corpus at `root`, on disk.
     pub fn alle(root: &Path, casus_dir: &Path) -> Result<Vec<Self>> {
-        Self::alle_in(Arc::new(Disk), root, casus_dir)
+        Self::alle_in(Arc::new(Disk), &[root.to_path_buf()], casus_dir)
     }
 
-    /// Every case in `casus_dir` on the corpus at `root`, both in `files`.
-    pub fn alle_in(files: Arc<dyn Files>, root: &Path, casus_dir: &Path) -> Result<Vec<Self>> {
-        let regelwerken = Regelwerken::load(&*files, root)?;
+    /// Every case in `casus_dir` on the corpus at `roots`, all in `files`.
+    pub fn alle_in(
+        files: Arc<dyn Files>,
+        roots: &[PathBuf],
+        casus_dir: &Path,
+    ) -> Result<Vec<Self>> {
+        let regelwerken = Regelwerken::load(&*files, roots)?;
         casussen(&*files, casus_dir)?
             .into_iter()
-            .map(|c| Self::load(files.clone(), root, &regelwerken, c))
+            .map(|c| Self::load(files.clone(), roots, &regelwerken, c))
             .collect()
     }
 
@@ -288,6 +294,7 @@ impl Corpus {
         let a = &self.afleiding;
         json!({
             "id": c.id,
+            "bron": c.bron,
             "titel": c.titel,
             "omschrijving": c.omschrijving,
             "cel": c.cel,
@@ -314,6 +321,7 @@ impl Corpus {
         let c = &self.casus;
         json!({
             "id": c.id,
+            "bron": c.bron,
             "titel": c.titel,
             "omschrijving": c.omschrijving,
             "cel_naam": c.cel_naam,
@@ -321,6 +329,19 @@ impl Corpus {
             "rol": self.afleiding.rol,
         })
     }
+}
+
+/// The directory of the cell `cel`: under `cells` of the first of `roots`
+/// that has it, or else of the first root, where loading it says it is
+/// missing.
+fn cel_dir(files: &dyn Files, roots: &[PathBuf], cel: &str) -> PathBuf {
+    let onder = |root: &PathBuf| root.join("cells").join(cel);
+    roots
+        .iter()
+        .map(onder)
+        .find(|dir| files.is_dir(dir))
+        .or_else(|| roots.first().map(onder))
+        .unwrap_or_else(|| Path::new("cells").join(cel))
 }
 
 /// The object `v` as a map; a value that is no object is an error.
