@@ -34,21 +34,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         (tijdelijk, Some(reden))
     };
     let inst = Instellingen {
-        vast: env("WG_VAST_DIR").map_or_else(|| hier.join("../../corpus-poc/wetsgeschiedenis/gegevens"), PathBuf::from),
+        vast: env("WG_VAST_DIR").map_or_else(
+            || hier.join("../../corpus-poc/wetsgeschiedenis/gegevens"),
+            PathBuf::from,
+        ),
         data,
         // Een wet met haar Kamerdossiers telt al snel twintig (de Archiefwet 1995: 24).
         max: env("WG_MAX").and_then(|m| m.parse().ok()).unwrap_or(150),
         python: env("WG_PYTHON").unwrap_or_else(|| "python3".into()),
         werker: env("WG_WERKER").map_or_else(|| hier.join("werker.py"), PathBuf::from),
-        verbinden: env("WG_CONNECT_TIMEOUT").and_then(|t| t.parse().ok()).unwrap_or(15),
+        verbinden: env("WG_CONNECT_TIMEOUT")
+            .and_then(|t| t.parse().ok())
+            .unwrap_or(15),
         uitgeweken,
     };
     let state = AppState::new(inst);
     state.start();
 
     let base = env("WG_BASE_PATH").unwrap_or_else(|| "/wetsgeschiedenis/".into());
-    let static_dir = env("WG_STATIC_DIR")
-        .unwrap_or_else(|| hier.join("../../frontend-poc-wetsgeschiedenis/dist").to_string_lossy().into());
+    let static_dir = env("WG_STATIC_DIR").unwrap_or_else(|| {
+        hier.join("../../frontend-poc-wetsgeschiedenis/dist")
+            .to_string_lossy()
+            .into()
+    });
     let app = router(state, &base, &static_dir).layer(TraceLayer::new_for_http());
 
     let port: u16 = env("WG_PORT").and_then(|p| p.parse().ok()).unwrap_or(8420);

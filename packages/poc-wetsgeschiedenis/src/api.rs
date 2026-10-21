@@ -36,7 +36,10 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/status", get(status))
         .route("/api/taak", get(taak))
-        .route("/api/log", get(|State(s): State<AppState>| async move { Json(s.logboek.alles()) }))
+        .route(
+            "/api/log",
+            get(|State(s): State<AppState>| async move { Json(s.logboek.alles()) }),
+        )
         .route("/api/diagnose", get(diagnose))
         .route("/api/regeling/{bwb}", get(regeling))
         .route("/api/haal", post(haal))
@@ -59,7 +62,11 @@ struct TaakVraag {
 
 async fn taak(State(s): State<AppState>, Query(q): Query<TaakVraag>) -> Result<Response, Fout> {
     match q.id {
-        Some(id) => s.rij.taak(&id).map(vers).ok_or(Fout(StatusCode::NOT_FOUND, format!("geen opdracht {id}"))),
+        Some(id) => s
+            .rij
+            .taak(&id)
+            .map(vers)
+            .ok_or(Fout(StatusCode::NOT_FOUND, format!("geen opdracht {id}"))),
         None => Ok(vers(s.rij.huidig().unwrap_or(Value::Null))),
     }
 }
@@ -69,8 +76,14 @@ struct DiagnoseVraag {
     bwb: Option<String>,
 }
 
-async fn diagnose(State(s): State<AppState>, Query(q): Query<DiagnoseVraag>) -> Result<Response, Fout> {
-    let bwb = q.bwb.map(|b| b.trim().to_uppercase()).filter(|b| !b.is_empty());
+async fn diagnose(
+    State(s): State<AppState>,
+    Query(q): Query<DiagnoseVraag>,
+) -> Result<Response, Fout> {
+    let bwb = q
+        .bwb
+        .map(|b| b.trim().to_uppercase())
+        .filter(|b| !b.is_empty());
     if bwb.as_deref().is_some_and(|b| !id::is_bwb(b)) {
         return Err(Fout(StatusCode::BAD_REQUEST, BWB_UITLEG.into()));
     }
@@ -85,9 +98,19 @@ async fn regeling(State(s): State<AppState>, Path(bwb): Path<String>) -> Result<
     }
     let t0 = std::time::Instant::now();
     let reg = werker::regeling(&s, &bwb).await.map_err(|e| {
-        s.logboek.schrijf("fout", json!({ "bij": format!("api/regeling/{bwb}"), "fout": e }));
-        let status = if e.contains("kent") { StatusCode::NOT_FOUND } else { StatusCode::BAD_GATEWAY };
-        Fout(status, format!("De opzoeking van {bwb} op wetten.overheid.nl mislukte. {e}"))
+        s.logboek.schrijf(
+            "fout",
+            json!({ "bij": format!("api/regeling/{bwb}"), "fout": e }),
+        );
+        let status = if e.contains("kent") {
+            StatusCode::NOT_FOUND
+        } else {
+            StatusCode::BAD_GATEWAY
+        };
+        Fout(
+            status,
+            format!("De opzoeking van {bwb} op wetten.overheid.nl mislukte. {e}"),
+        )
     })?;
     let mislukt = s.opslag.mislukt();
     let versies: Vec<Value> = reg["versies"]
@@ -119,8 +142,17 @@ async fn regeling(State(s): State<AppState>, Path(bwb): Path<String>) -> Result<
         json!({ "bwb": bwb, "versies": reg["versies"].as_array().map_or(0, Vec::len), "met_dossier": versies.len(),
                 "s": (t0.elapsed().as_secs_f64() * 10.0).round() / 10.0 }),
     );
-    let titel = reg["titel"].as_str().unwrap_or_default().split('|').next().unwrap_or_default().trim().to_string();
-    Ok(vers(json!({ "bwb": bwb, "titel": titel, "afkorting": reg["afkorting"], "keten": s.opslag.heeft(&bwb), "versies": versies })))
+    let titel = reg["titel"]
+        .as_str()
+        .unwrap_or_default()
+        .split('|')
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    Ok(vers(
+        json!({ "bwb": bwb, "titel": titel, "afkorting": reg["afkorting"], "keten": s.opslag.heeft(&bwb), "versies": versies }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -136,30 +168,51 @@ struct HaalVraag {
 /// without a content type, or sent in chunks by the portal, works the same.
 async fn haal(State(s): State<AppState>, body: Bytes) -> Result<Response, Fout> {
     if body.is_empty() {
-        s.logboek.schrijf("fout", json!({ "bij": "api/haal", "fout": "lege body" }));
+        s.logboek
+            .schrijf("fout", json!({ "bij": "api/haal", "fout": "lege body" }));
     }
     let v: HaalVraag = serde_json::from_slice(if body.is_empty() { b"{}" } else { &body })
         .map_err(|e| Fout(StatusCode::BAD_REQUEST, format!("geen JSON ({e})")))?;
     if !id::is_bwb(&v.bwb) {
         return Err(Fout(StatusCode::BAD_REQUEST, BWB_UITLEG.into()));
     }
-    let nr = v.dossier.as_ref().map(|d| d.as_str().map(String::from).unwrap_or_else(|| d.to_string()));
+    let nr = v.dossier.as_ref().map(|d| {
+        d.as_str()
+            .map(String::from)
+            .unwrap_or_else(|| d.to_string())
+    });
     let taak = if v.keten {
         s.rij.voeg(Wat::Keten, &v.bwb, None, None, false)
     } else if let Some(nr) = nr.filter(|n| id::is_dossier(n)) {
         s.rij.voeg(Wat::Dossier, &v.bwb, Some(&nr), None, false)
     } else {
-        return Err(Fout(StatusCode::BAD_REQUEST, "kies een dossier (5 cijfers) of de hele wet".into()));
+        return Err(Fout(
+            StatusCode::BAD_REQUEST,
+            "kies een dossier (5 cijfers) of de hele wet".into(),
+        ));
     };
     Ok((StatusCode::ACCEPTED, Json(taak)).into_response())
 }
 
-async fn gegevens(State(s): State<AppState>, Path(bestand): Path<String>) -> Result<Response, Fout> {
+async fn gegevens(
+    State(s): State<AppState>,
+    Path(bestand): Path<String>,
+) -> Result<Response, Fout> {
     let niet = || Fout(StatusCode::NOT_FOUND, "onbekend".into());
     let id = bestand.strip_suffix(".json").ok_or_else(niet)?;
     if id == "dossiers" {
         return Ok(vers(Value::Array(s.opslag.index())));
     }
-    let t = s.opslag.tijdlijn(id).ok_or_else(|| Fout(StatusCode::NOT_FOUND, format!("{id} is er niet")))?;
-    Ok(([(header::CONTENT_TYPE, "application/json; charset=utf-8"), (header::CACHE_CONTROL, "no-store")], t).into_response())
+    let t = s
+        .opslag
+        .tijdlijn(id)
+        .ok_or_else(|| Fout(StatusCode::NOT_FOUND, format!("{id} is er niet")))?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/json; charset=utf-8"),
+            (header::CACHE_CONTROL, "no-store"),
+        ],
+        t,
+    )
+        .into_response())
 }

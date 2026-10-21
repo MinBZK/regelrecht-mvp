@@ -73,7 +73,8 @@ impl AppState {
         tokio::spawn(rij::werk(self.clone()));
         let n = rij::herstel(self);
         if n > 0 {
-            self.logboek.schrijf("rij", serde_json::json!({ "herstel": n }));
+            self.logboek
+                .schrijf("rij", serde_json::json!({ "herstel": n }));
         }
     }
 }
@@ -104,7 +105,10 @@ pub fn router(state: AppState, base: &str, static_dir: &str) -> Router {
     let prefix = format!("/{prefix}");
     let naar = prefix.clone();
     health
-        .route(&format!("{prefix}/"), get(move || async move { Redirect::permanent(&naar) }))
+        .route(
+            &format!("{prefix}/"),
+            get(move || async move { Redirect::permanent(&naar) }),
+        )
         .nest(&prefix, inner)
 }
 
@@ -115,7 +119,11 @@ async fn verzoek(State(state): State<AppState>, req: Request, next: Next) -> Res
     let methode = req.method().to_string();
     // Inside the prefix the router sees the path without it; the log shows
     // the path the visitor asked for.
-    let pad = req.extensions().get::<OriginalUri>().map_or_else(|| req.uri().path(), |o| o.0.path()).to_string();
+    let pad = req
+        .extensions()
+        .get::<OriginalUri>()
+        .map_or_else(|| req.uri().path(), |o| o.0.path())
+        .to_string();
     let t0 = std::time::Instant::now();
     let res = next.run(req).await;
     let status = res.status().as_u16();

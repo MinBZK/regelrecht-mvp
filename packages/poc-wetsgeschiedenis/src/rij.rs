@@ -80,7 +80,14 @@ impl Rij {
     }
 
     /// Add a task, or return the one that is already waiting or running.
-    pub fn voeg(&self, wat: Wat, bwb: &str, dossier: Option<&str>, voor: Option<&str>, achtergrond: bool) -> Value {
+    pub fn voeg(
+        &self,
+        wat: Wat,
+        bwb: &str,
+        dossier: Option<&str>,
+        voor: Option<&str>,
+        achtergrond: bool,
+    ) -> Value {
         let n = self.teller.fetch_add(1, Ordering::Relaxed) + 1;
         let taak = Taak {
             id: format!("{}-{n}", chrono::Utc::now().timestamp()),
@@ -115,14 +122,21 @@ impl Rij {
             b.wachtend.push_back(id.clone());
         } else {
             // Before the background, behind what other visitors asked for.
-            let i = b.wachtend.iter().position(|x| b.taken[x].voor.is_some()).unwrap_or(b.wachtend.len());
+            let i = b
+                .wachtend
+                .iter()
+                .position(|x| b.taken[x].voor.is_some())
+                .unwrap_or(b.wachtend.len());
             b.wachtend.insert(i, id.clone());
         }
         b.taken.insert(id.clone(), taak);
         b.volgorde.push_back(id.clone());
         while b.volgorde.len() > 100 {
             let oud = b.volgorde.pop_front().unwrap_or_default();
-            if b.taken.get(&oud).is_some_and(|t| matches!(t.status, Status::Klaar | Status::Fout)) {
+            if b.taken
+                .get(&oud)
+                .is_some_and(|t| matches!(t.status, Status::Klaar | Status::Fout))
+            {
                 b.taken.remove(&oud);
             }
         }
@@ -135,7 +149,12 @@ impl Rij {
     fn json(b: &Binnen, id: &str) -> Value {
         let t = &b.taken[id];
         let mut v = serde_json::to_value(t).unwrap_or_default();
-        v["plaats"] = b.wachtend.iter().position(|x| x == id).map(|i| i + 1).into();
+        v["plaats"] = b
+            .wachtend
+            .iter()
+            .position(|x| x == id)
+            .map(|i| i + 1)
+            .into();
         let log: Vec<&String> = t.log.iter().filter(|r| !r.trim().is_empty()).collect();
         v["log"] = json!(log[log.len().saturating_sub(40)..]);
         v
@@ -206,7 +225,9 @@ impl Rij {
 pub async fn werk(state: AppState) {
     loop {
         let id = state.rij.volgende().await;
-        let Some(taak) = state.rij.get(&id) else { continue };
+        let Some(taak) = state.rij.get(&id) else {
+            continue;
+        };
         let t0 = std::time::Instant::now();
         state.logboek.schrijf("taak", json!({ "id": id, "wat": taak.wat, "bwb": taak.bwb, "dossier": taak.dossier, "voor": taak.voor, "status": "bezig" }));
         let uitkomst = draai(&state, &taak).await;
@@ -252,22 +273,71 @@ async fn draai(state: &AppState, taak: &Taak) -> Result<String, String> {
     match taak.wat {
         Wat::Keten => {
             let status = schrijf_status(state, &id)?;
-            werker::draai(state, &["keten", &taak.bwb, "--uit", werker::pad(&uit), "--gegevens", &mappen, "--status", werker::pad(&status)], None, regel).await?;
+            werker::draai(
+                state,
+                &[
+                    "keten",
+                    &taak.bwb,
+                    "--uit",
+                    werker::pad(&uit),
+                    "--gegevens",
+                    &mappen,
+                    "--status",
+                    werker::pad(&status),
+                ],
+                None,
+                regel,
+            )
+            .await?;
             let naam = bewaar(state, &uit, None)?;
             let n = verdiep(state, &taak.bwb);
-            log(&format!("Klaar: {naam}{}", if n > 0 { format!("; de rij haalt nog {n} Kamerdossier(s) op") } else { String::new() }));
+            log(&format!(
+                "Klaar: {naam}{}",
+                if n > 0 {
+                    format!("; de rij haalt nog {n} Kamerdossier(s) op")
+                } else {
+                    String::new()
+                }
+            ));
             Ok(taak.bwb.clone())
         }
         Wat::Dossier => {
             let nr = taak.dossier.as_deref().unwrap_or_default();
-            werker::draai(state, &["dossier", &taak.bwb, nr, "--uit", werker::pad(&uit)], None, regel).await?;
+            werker::draai(
+                state,
+                &["dossier", &taak.bwb, nr, "--uit", werker::pad(&uit)],
+                None,
+                regel,
+            )
+            .await?;
             let naam = bewaar(state, &uit, taak.voor.as_deref())?;
             state.opslag.wis_mislukt(nr);
             log(&format!("Klaar: {naam}"));
-            if let Some(voor) = taak.voor.as_deref().filter(|v| state.opslag.keten(v).is_some()) {
-                log(&format!("{voor} opnieuw opbouwen, met de toelichting van dossier {nr}"));
+            if let Some(voor) = taak
+                .voor
+                .as_deref()
+                .filter(|v| state.opslag.keten(v).is_some())
+            {
+                log(&format!(
+                    "{voor} opnieuw opbouwen, met de toelichting van dossier {nr}"
+                ));
                 let status = schrijf_status(state, &id)?;
-                werker::draai(state, &["opbouw", voor, "--uit", werker::pad(&uit), "--gegevens", &mappen, "--status", werker::pad(&status)], None, regel).await?;
+                werker::draai(
+                    state,
+                    &[
+                        "opbouw",
+                        voor,
+                        "--uit",
+                        werker::pad(&uit),
+                        "--gegevens",
+                        &mappen,
+                        "--status",
+                        werker::pad(&status),
+                    ],
+                    None,
+                    regel,
+                )
+                .await?;
                 bewaar(state, &uit, None)?;
             }
             Ok(nr.to_string())
@@ -276,8 +346,12 @@ async fn draai(state: &AppState, taak: &Taak) -> Result<String, String> {
 }
 
 fn bewaar(state: &AppState, uit: &std::path::Path, bij: Option<&str>) -> Result<String, String> {
-    let id = state.opslag.bewaar(uit, bij).map_err(|e| format!("bewaren mislukte: {e}"))?;
-    let t: Value = serde_json::from_slice(&state.opslag.tijdlijn(&id).unwrap_or_default()).unwrap_or_default();
+    let id = state
+        .opslag
+        .bewaar(uit, bij)
+        .map_err(|e| format!("bewaren mislukte: {e}"))?;
+    let t: Value =
+        serde_json::from_slice(&state.opslag.tijdlijn(&id).unwrap_or_default()).unwrap_or_default();
     Ok(t["naam"].as_str().unwrap_or(&id).to_string())
 }
 
@@ -288,26 +362,41 @@ fn schrijf_status(state: &AppState, id: &str) -> Result<std::path::PathBuf, Stri
     for (nr, m) in state.opslag.mislukt() {
         status.insert(nr, json!({ "status": "mislukt", "reden": m["reden"] }));
     }
-    for t in state.rij.overzicht()["wachtend"].as_array().into_iter().flatten() {
+    for t in state.rij.overzicht()["wachtend"]
+        .as_array()
+        .into_iter()
+        .flatten()
+    {
         if let Some(nr) = t["dossier"].as_str() {
             status.insert(nr.into(), json!({ "status": "in de rij" }));
         }
     }
     let pad = state.opslag.tijdelijk().join(format!("{id}-status.json"));
-    std::fs::write(&pad, serde_json::to_vec(&status).unwrap_or_default()).map_err(|e| e.to_string())?;
+    std::fs::write(&pad, serde_json::to_vec(&status).unwrap_or_default())
+        .map_err(|e| e.to_string())?;
     Ok(pad)
 }
 
 /// Put every dossier of this law that is not there yet in the queue, newest
 /// first: those most often have XML and are the richest. Returns how many.
 pub fn verdiep(state: &AppState, bwb: &str) -> usize {
-    let Some(k) = state.opslag.keten(bwb) else { return 0 };
+    let Some(k) = state.opslag.keten(bwb) else {
+        return 0;
+    };
     let mut overgangen: Vec<&Value> = k["overgangen"].as_array().into_iter().flatten().collect();
     overgangen.sort_by(|a, b| b["tot"].as_str().cmp(&a["tot"].as_str()));
     let mislukt = state.opslag.mislukt();
     let mut gezien = Vec::new();
-    for nr in overgangen.iter().flat_map(|o| o["dossiers"].as_array().into_iter().flatten()).filter_map(Value::as_str) {
-        if gezien.iter().any(|g| g == nr) || !crate::id::is_dossier(nr) || state.opslag.heeft(nr) || mislukt.contains_key(nr) {
+    for nr in overgangen
+        .iter()
+        .flat_map(|o| o["dossiers"].as_array().into_iter().flatten())
+        .filter_map(Value::as_str)
+    {
+        if gezien.iter().any(|g| g == nr)
+            || !crate::id::is_dossier(nr)
+            || state.opslag.heeft(nr)
+            || mislukt.contains_key(nr)
+        {
             continue;
         }
         gezien.push(nr.to_string());

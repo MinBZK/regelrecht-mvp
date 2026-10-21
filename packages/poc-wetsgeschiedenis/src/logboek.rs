@@ -15,13 +15,22 @@ pub struct Logboek {
 
 impl Logboek {
     pub fn new(max: usize) -> Self {
-        Self { regels: Mutex::new(VecDeque::with_capacity(max)), max }
+        Self {
+            regels: Mutex::new(VecDeque::with_capacity(max)),
+            max,
+        }
     }
 
     /// One line: `soort` and the fields of `velden` (an object), with the time.
     pub fn schrijf(&self, soort: &str, velden: Value) {
         let mut regel = Map::new();
-        regel.insert("t".into(), chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string().into());
+        regel.insert(
+            "t".into(),
+            chrono::Local::now()
+                .format("%Y-%m-%dT%H:%M:%S")
+                .to_string()
+                .into(),
+        );
         regel.insert("soort".into(), soort.into());
         if let Value::Object(v) = velden {
             regel.extend(v.into_iter().filter(|(_, x)| !x.is_null()));
@@ -36,6 +45,11 @@ impl Logboek {
     }
 
     pub fn alles(&self) -> Vec<Value> {
-        self.regels.lock().unwrap_or_else(|e| e.into_inner()).iter().cloned().collect()
+        self.regels
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .iter()
+            .cloned()
+            .collect()
     }
 }
