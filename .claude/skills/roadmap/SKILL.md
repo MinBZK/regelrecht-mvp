@@ -1,6 +1,6 @@
 ---
 name: roadmap
-description: Onderhoudt de inhoud van de roadmap op /roadmap — werkpakketten toevoegen, wijzigen, verplaatsen of verwijderen, onderzoeksvragen schrijven en aan een sectie van het position paper koppelen, en RFC's koppelen die het ontwerp beschrijven. Gebruik dit bij "voeg een werkpakket toe", "verplaats X naar de Hoe-fase", "zet er een onderzoeksvraag bij", of het bijwerken van fases, disciplines en swimlanes.
+description: Onderhoudt de inhoud van de roadmap op /roadmap — werkpakketten en aannames toevoegen, wijzigen, verplaatsen of verwijderen, onderzoeksvragen schrijven en aan een sectie van het position paper koppelen, en RFC's koppelen die het ontwerp beschrijven. Gebruik dit bij "voeg een werkpakket toe", "verplaats X naar de Hoe-fase", "zet er een onderzoeksvraag bij", of het bijwerken van fases, disciplines en swimlanes.
 user-invocable: true
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write
 ---
@@ -246,9 +246,9 @@ het zoekveld en het categoriefilter op dat moment laten staan. Filter je een
 kaart weg, dan schuift de rest aan in plaats van een gat te laten, en een keten
 loopt niet door over een kaart die niet op het scherm staat.
 
-### De drie weergaven
+### De vier weergaven
 
-De roadmap heeft drie weergaven, elk met een eigen adres en een tab-bar onder
+De roadmap heeft vier weergaven, elk met een eigen adres en een tab-bar onder
 de titel om ertussen te wisselen:
 
 - `/roadmap`, de **matrix**: fase × discipline, met zoeken, het categorie- en
@@ -272,6 +272,8 @@ de titel om ertussen te wisselen:
   verwante vragen en een mini-bord met de deelvragen in dezelfde drie lanes
   (ook als dat nog leeg is); een deelvraag zonder eigen status volgt zijn
   vraag.
+- `/roadmap/aannames`, de **aannames**: een raster van impact tegen
+  zekerheid, zonder zoeken of filters. Zie "Aannames" verderop.
 
 Een werkpakket opent op beide pagina's in een paneel over de helft van het
 scherm, zonder paginawissel: op het bord via een vraagticket in het
@@ -426,6 +428,73 @@ die daarop blokkeert zet de roadmap in de weg van het werk dat hij beschrijft.
 Niet elke RFC hoort trouwens bij een werkpakket — RFC-000 gaat over het
 RFC-proces zelf.
 
+## Aannames
+
+De weergave `/roadmap/aannames` is voor de methode *riskiest assumption
+first*: elke aanname krijgt een score voor impact en een voor zekerheid, en
+wat veel impact heeft en weinig bewijs, toetsen we eerst. Een aanname opent
+in een paneel met zijn scores, onderbouwing en werkpakketten, en heeft een
+eigen adres (`/roadmap/aannames#<slug>`). De pagina gebruikt `RoadmapKop`
+zonder `zoek` en `filters`; die twee zijn daarvoor optioneel.
+
+```
+docs/src/content/roadmap/aannames/<slug>.md   één bestand per aanname
+docs/src/lib/aannames.ts                      de schalen, de volgorde, de controles
+```
+
+Ook hier alleen frontmatter, en ook hier is de bestandsnaam het `id`:
+
+```yaml
+---
+id: <slug>
+titel: Korte titel, past op het raster
+aanname: |-
+  De volledige bewering, als zin. Die staat in het detailpaneel.
+soort: hypothese
+impact: 4
+zekerheid: 2
+onderbouwing: |-
+  Waarom deze twee scores: welk bewijs er is, of welk niet.
+toetsing: |-
+  Hoe we de aanname toetsen.
+clusters:
+  - naam: Adoptie door uitvoering
+    kaartjes: 5
+werkpakketIds:
+  - <slug van een werkpakket>
+---
+```
+
+`impact` en `zekerheid` zijn gehele getallen van 1 tot 5. Elk niveau heeft
+een vaste omschrijving in `IMPACT_NIVEAUS` en `ZEKERHEID_NIVEAUS`, en die
+staat ook onderaan de pagina. Score tegen die omschrijving en niet op gevoel:
+"zekerheid 3" betekent dat een verkenning, prototype of reeks interviews de
+aanname ondersteunt.
+
+Een aanname zonder score mag: laat `impact` en `zekerheid` dan allebei weg.
+Hij staat dan onder het raster bij "Nog niet op het raster". Eén van de twee
+invullen laat de build vallen. Verzin geen score om het vak te vullen.
+
+`soort` is `hypothese` (specifiek voor RegelRecht, die toetsen we) of
+`randvoorwaarde` (geldt voor elk project, die bewaken we). `clusters` zijn
+de groepen pre-mortem-kaartjes waar de aanname uit kwam, met het aantal
+kaartjes; leeg laten mag voor een aanname die niet uit een pre-mortem komt.
+`onderbouwing` en `toetsing` verschijnen alleen als ze zijn ingevuld.
+
+De eerste set komt uit de pre-mortem van RegelRecht (het is oktober 2028 en
+de verkenning is mislukt; wat staat er in het rapport?). De posities zijn die
+van de wand aan het eind van de sessie.
+
+`werkpakketIds` koppelt de aanname aan werkpakketten. Je schrijft de koppeling
+alleen hier; de werkpakketpagina leidt zijn lijst "Aannames" er zelf uit af.
+Zet dus niets in het werkpakketbestand. De build valt op een slug die niet
+bestaat en op een slug die twee keer in één lijst staat.
+
+Verandert er bewijs, pas dan de score aan in hetzelfde pull request dat het
+bewijs levert, en schrijf in `onderbouwing` wat er veranderd is. Een aanname
+die onderuit is gegaan haal je weg; wat dat voor de werkpakketten betekent,
+hoort in die werkpakketten.
+
 ## Een werkpakket oppakken
 
 Eén pull request, één bestand, twee regels:
@@ -562,7 +631,7 @@ aan zodra je `/roadmap` echt opvraagt. Vertrouw op `docs-build`.
 - een ontbrekende of foute waarde volgens het zod-schema
 
 Raak je ook de pagina's aan, draai dan `just docs-a11y` (duurt ~10 minuten en
-draait ook in CI); die loopt over alle drie de weergaven en elke
+draait ook in CI); die loopt over alle vier de weergaven en elke
 werkpakketpagina.
 
 ### Wat de build níét controleert, met opzet

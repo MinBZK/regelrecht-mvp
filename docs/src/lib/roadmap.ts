@@ -340,6 +340,7 @@ export const WEERGAVEN = [
     label: 'Onderzoeksvragen',
     href: '/roadmap/onderzoeksvragen',
   },
+  { id: 'aannames', label: 'Aannames', href: '/roadmap/aannames' },
 ] as const;
 
 export type WeergaveId = (typeof WEERGAVEN)[number]['id'];

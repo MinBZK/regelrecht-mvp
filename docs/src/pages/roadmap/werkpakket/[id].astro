@@ -49,6 +49,11 @@ import {
   NIET_GESPECIFICEERD,
 } from '~/lib/roadmap';
 import {
+  scoreTekst,
+  inLeesvolgorde,
+  aannameHref,
+} from '~/lib/aannames';
+import {
   renderMarkdown,
   yamlSequenceItemLines,
 } from '~/lib/roadmap-markdown';
@@ -68,13 +73,14 @@ export async function getStaticPaths() {
   // De verwante vragen, beide kanten gelezen, één keer voor alle pagina's:
   // de index loopt over alle werkpakketten en is per pagina dezelfde.
   const verwanten = verwantIndex(werkpakketten);
+  const aannames = await getCollection('aannames');
   return werkpakketten.map((entry) => ({
     params: { id: entry.data.id },
-    props: { entry, all: werkpakketten, verwanten },
+    props: { entry, all: werkpakketten, verwanten, aannames },
   }));
 }
 
-const { entry, all, verwanten } = Astro.props;
+const { entry, all, verwanten, aannames } = Astro.props;
 const wp = entry.data;
 
 const fase = getFase(wp.faseId);
@@ -95,6 +101,13 @@ const wachtOp = wp.afhankelijkVan
   .map((id: string) => all.find((w) => w.data.id === id))
   .filter(Boolean);
 const blokkeert = all.filter((w) => w.data.afhankelijkVan.includes(wp.id));
+
+// The aannames this werkpakket rests on. Written down on the aanname, read
+// here the other way round, like `blokkeert` above; the build check on those
+// pointers lives with the aannames page (assertAannameReferences).
+const aannamesHier = inLeesvolgorde(
+  aannames.filter((a) => a.data.werkpakketIds.includes(wp.id)),
+);
 
 // The absolute path of the source file, so the toelichting's markdown can be
 // stamped with the line numbers the select-to-edit affordance reads.
@@ -354,6 +367,27 @@ const kerngegevens = [
                       </nldd-tag>
                     </nldd-container>
                   </nldd-text-cell>
+                  <nldd-spacer-cell />
+                  <nldd-icon-cell size="20" icon="chevron-right" />
+                </nldd-list-item>
+              ))}
+            </nldd-list>
+          </nldd-container>
+        )
+      }
+
+      {
+        aannamesHier.length > 0 && (
+          <nldd-container gap="12">
+            <nldd-title size="4"><h2>Aannames</h2></nldd-title>
+            <nldd-list type="navigation" appearance="box-tinted">
+              {aannamesHier.map((a) => (
+                <nldd-list-item href={aannameHref(a.data.id)}>
+                  <nldd-text-cell
+                    text={a.data.titel}
+                    supporting-text={scoreTekst(a.data)}
+                    width="full"
+                  />
                   <nldd-spacer-cell />
                   <nldd-icon-cell size="20" icon="chevron-right" />
                 </nldd-list-item>
