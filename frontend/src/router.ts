@@ -3,6 +3,7 @@ import AppShell from './AppShell.vue';
 import LibraryView from './LibraryView.vue';
 import { ensureAuthReady, useAuth } from './composables/useAuth';
 import { recordLastVisited } from './composables/useLastVisitedRoute';
+import { singleQuery } from './lib/routeParams';
 
 // The meta fields the routes below set and the guards read. `meta` is merged
 // across matched records, so a child sees its parent's fields.
@@ -311,8 +312,8 @@ const router = createRouter({
         name: 'trajecten',
         query: {
           sectie: 'editor',
-          law: to.query.law || undefined,
-          article: to.query.article || undefined,
+          law: singleQuery(to.query.law) || undefined,
+          article: singleQuery(to.query.article) || undefined,
         },
       }),
     },

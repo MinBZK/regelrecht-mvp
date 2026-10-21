@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { singleQuery } from './lib/routeParams';
 import TrajectCreateForm from './components/TrajectCreateForm.vue';
 import { createTraject } from './composables/useTrajects';
 import { homeTarget } from './composables/useLastVisitedRoute';
@@ -50,10 +51,8 @@ async function submitCreate() {
         'Traject aangemaakt maar kon niet worden geopend. Ga terug en selecteer het.';
       return;
     }
-    // A query value can be an array (repeated `?law=`); like before, it is
-    // passed on as is, the cast only states the single-value case assumed here.
-    const lawId = (route.query.law || undefined) as string | undefined;
-    const articleNumber = (route.query.article || undefined) as string | undefined;
+    const lawId = singleQuery(route.query.law) || undefined;
+    const articleNumber = singleQuery(route.query.article) || undefined;
     await router.push(
       route.query.sectie === 'library'
         ? homeTarget({ trajectRef: created.ref, lawId, articleNumber })
