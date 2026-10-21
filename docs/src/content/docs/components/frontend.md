@@ -16,7 +16,7 @@ The editor is a Vue 3 single-page app in `frontend/`. It browses the corpus, hol
 
 ## Routes and pages
 
-`src/router.js` is the map. `App.vue` is only a `<router-view>`; the real structure is one persistent shell, `AppShell.vue`, with the Home and Editor sections as its children, plus a handful of top-level pages that carry their own title bar instead of the app chrome.
+`src/router.ts` is the map. `App.vue` is only a `<router-view>`; the real structure is one persistent shell, `AppShell.vue`, with the Home and Editor sections as its children, plus a handful of top-level pages that carry their own title bar instead of the app chrome.
 
 ### The shell
 
@@ -90,7 +90,7 @@ The settings sheet (`SettingsSheet.vue`, from the account menu) has two sections
 
 ## Feature flags
 
-Flags are deployment-wide, stored in the `feature_flags` table and served by `GET /api/feature-flags`. `PUT /api/feature-flags/{key}` is behind the `editor-admin` role. The frontend keeps its own defaults in `src/composables/useFeatureFlags.js` so it can render before the API answers.
+Flags are deployment-wide, stored in the `feature_flags` table and served by `GET /api/feature-flags`. `PUT /api/feature-flags/{key}` is behind the `editor-admin` role. The frontend keeps its own defaults in `src/composables/useFeatureFlags.ts` so it can render before the API answers.
 
 The list in `packages/editor-api/src/feature_flags.rs` is also the allow-list: the backend rejects a PUT for a key it does not know with 400, and the frontend then reverts the switch. The two lists therefore have to name the same keys.
 
@@ -109,15 +109,15 @@ When the backend has no database, the PUT returns 503 and the frontend keeps the
 
 ## Data loading
 
-Law content comes from the editor-api. `src/composables/corpusUrls.js` builds every corpus URL in one of two shapes: `/api/corpus/...` for the public corpus (read-only) and `/api/trajects/{ref}/corpus/...` inside a traject (read and write). `useLaw.js` loads a law with a `GET` on that URL and saves it with a `PUT`. A save in a traject is written back to the traject's repository; the response carries the pull request it went to, which is where the "PR #N" link comes from.
+Law content comes from the editor-api. `src/composables/corpusUrls.ts` builds every corpus URL in one of two shapes: `/api/corpus/...` for the public corpus (read-only) and `/api/trajects/{ref}/corpus/...` inside a traject (read and write). `useLaw.ts` loads a law with a `GET` on that URL and saves it with a `PUT`. A save in a traject is written back to the traject's repository; the response carries the pull request it went to, which is where the "PR #N" link comes from.
 
-Scenarios run on the engine compiled to WASM, loaded by `useEngine.js` from the WASM package that `just wasm-build` writes into the app's public directory.
+Scenarios run on the engine compiled to WASM, loaded by `useEngine.ts` from the WASM package that `just wasm-build` writes into the app's public directory.
 
 The `scripts/copy-laws.js` step still runs before `dev` and `build`. It copies local corpus files and the note vocabulary into a `data` folder in the app's public directory; the app reads only the ambiguity vocabulary from there at runtime.
 
 ## Design system
 
-The UI is built from `@nldd/design-system` web components (element prefix `nldd-`). `src/main.js` imports `src/nldd-components.js`, a generated list with one entry point per component the app renders, plus the design system's styles. `script/check-nldd-imports.mjs` keeps that list in step with the tags in the source, so a newly used component fails the build rather than silently missing. A representative slice:
+The UI is built from `@nldd/design-system` web components (element prefix `nldd-`). `src/main.ts` imports `src/nldd-components.js`, a generated list with one entry point per component the app renders, plus the design system's styles. `script/check-nldd-imports.mjs` keeps that list in step with the tags in the source, so a newly used component fails the build rather than silently missing. A representative slice:
 
 | Category | Components used |
 |----------|----------------|
@@ -147,7 +147,7 @@ Besides the views in `src/` (`AppShell.vue`, `LibraryView.vue`, `EditorView.vue`
 | `TrajectDetailsPane.vue` / `TrajectMembersPane.vue` / `TrajectIntegrityPane.vue` | Traject settings and the structure report |
 | `SearchPopover.vue` / `AddLawSheet.vue` | Finding a law, and adding one to a traject: copied from the central corpus, harvested by BWB id, or converted from an uploaded PDF or DOCX |
 
-Shared state and API calls live in composables under `src/composables/`, most of them module-level singletons (`useTrajects.js`, `useTasks.js`, `useFeatureFlags.js` and others).
+Shared state and API calls live in composables under `src/composables/`, most of them module-level singletons (`useTrajects.ts`, `useTasks.ts`, `useFeatureFlags.ts` and others).
 
 ## Corpusinwinning (harvester dashboard)
 
