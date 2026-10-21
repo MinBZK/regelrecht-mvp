@@ -45,7 +45,7 @@ function formatCellValue(value: unknown, key: string): string | null {
   if (key === 'id') return truncateUuid(value);
   if (key === 'coverage_score') return formatCoverageScore(value);
   // `*_at` columns hold API timestamps (ISO strings).
-  if (key.endsWith('_at')) return formatDate(value as string);
+  if (key.endsWith('_at')) return formatDate(value as string | number | Date | null | undefined);
   return String(value);
 }
 </script>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { isRawDefinition, type ExecutionAction, type ExecutionField, type MachineReadableSection, type RawDefinition } from '../lib/lawFormat';
 import { computed, inject, ref, toRef, watch, nextTick } from 'vue';
 import { humanize } from '../utils/outputFormat';
 import { decisionOf } from '@regelrecht/frontend-shared/produces';
-import type { Decision, ProducedItem, Produces } from '@regelrecht/frontend-shared/produces';
+import type { Decision, ProducedItem } from '@regelrecht/frontend-shared/produces';
 import { useCorpusLaws } from '../composables/useCorpusLaws';
 import BreakableName from './BreakableName.vue';
 import RowActionsMenu from './RowActionsMenu.vue';
@@ -16,44 +17,9 @@ interface DefinitionObject {
   type_spec?: { unit?: string } | null;
 }
 
-interface ExecutionParameter {
-  name: string;
-  type?: string;
-  required?: boolean;
-}
-
-interface ExecutionInput {
-  name: string;
-  type?: string;
-  source?: { regulation?: string } | null;
-}
-
-interface ExecutionOutput {
-  name: string;
-  type?: string;
-}
-
-interface ExecutionAction {
-  output?: string;
-  value?: unknown;
-}
-
-/** An article's `machine_readable` section. */
-interface MachineReadableSection {
-  /** Each definition is a scalar, a list, or a DefinitionObject. */
-  definitions?: Record<string, unknown> | null;
-  execution?: {
-    produces?: Produces;
-    parameters?: ExecutionParameter[] | null;
-    input?: ExecutionInput[] | null;
-    output?: ExecutionOutput[] | null;
-    actions?: ExecutionAction[] | null;
-  } | null;
-}
-
 /** The article prop: only the fields this component reads. */
 interface MachineReadableArticle {
-  number?: string;
+  number?: string | number;
   machine_readable?: MachineReadableSection | null;
 }
 
@@ -61,8 +27,8 @@ type ItemSection = 'parameter' | 'input' | 'output' | 'action';
 
 /** Payload of `open-edit`: an existing item to edit, or a new one to add. */
 type OpenEditPayload =
-  | { section: 'definition'; key: string; rawDef: unknown }
-  | { section: 'parameter' | 'input' | 'output'; index: number; data: unknown }
+  | { section: 'definition'; key: string; rawDef: RawDefinition }
+  | { section: 'parameter' | 'input' | 'output'; index: number; data: ExecutionField }
   | { section: 'add-definition' | 'add-parameter' | 'add-input' | 'add-output'; isNew: true };
 
 /** Payload of `delete`: the section plus the identity of the row. */
@@ -290,7 +256,8 @@ function snapshot<T>(value: T): T {
 // Open edit sheet for existing items
 function editDef(name: string) {
   const rawDef = mr.value?.definitions?.[name];
-  if (rawDef == null) return;
+  // `== null` is the old check; the guard only tells the type what is left.
+  if (rawDef == null || !isRawDefinition(rawDef)) return;
   emit('open-edit', { section: 'definition', key: name, rawDef: snapshot(rawDef) });
 }
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ExecutionField, InputSource, RawDefinition } from '../lib/lawFormat';
 import { ref, computed, watch, watchEffect, nextTick } from 'vue';
 import { collectAvailableVariables } from '../utils/operationTree';
 import { centsToEuros, eurosToCents } from '../utils/currency';
@@ -8,30 +9,8 @@ import type { NLDDSheet } from '@nldd/design-system/sheet';
 import type { NLDDComboBox } from '@nldd/design-system/combo-box';
 import type { OperationSettingsArticle } from './OperationSettings.vue';
 
-/** An input's `source` block in the law format; keys the form does not edit pass through. */
-interface InputSource {
-  regulation?: string;
-  output?: string;
-  parameters?: Record<string, unknown> | null;
-  [key: string]: unknown;
-}
 
-/** A parameter, input or output entry of machine_readable.execution, as the sheet reads it. */
-interface ExecutionField {
-  name?: string;
-  type?: string;
-  required?: boolean;
-  source?: InputSource | null;
-  type_spec?: unknown;
-  [key: string]: unknown;
-}
 
-/** A definition as written in machine_readable.definitions: a bare value or `{ value, type_spec }`. */
-type RawDefinition =
-  | string
-  | number
-  | boolean
-  | { value?: unknown; type_spec?: { unit?: string } | null; [key: string]: unknown };
 
 /** The entry the sheet edits, as the editor view hands it in. */
 export interface EditSheetItem {
@@ -303,8 +282,11 @@ watch(() => props.item, async (item) => {
 
   const s = item.section;
   if (s === 'definition' || s === 'add-definition') {
-    const val = item.rawDef != null ? (typeof item.rawDef === 'object' ? item.rawDef.value : item.rawDef) : 0;
-    const unit = item.rawDef != null && typeof item.rawDef === 'object' ? item.rawDef.type_spec?.unit : undefined;
+    // A list definition takes the object branch below and so has no `value`
+    // or `type_spec`, as before; the cast keeps that behavior visible.
+    const rawDef = item.rawDef as Exclude<RawDefinition, unknown[]> | null | undefined;
+    const val = rawDef != null ? (typeof rawDef === 'object' ? rawDef.value : rawDef) : 0;
+    const unit = rawDef != null && typeof rawDef === 'object' ? rawDef.type_spec?.unit : undefined;
     const ct = item.isNew ? 'number' : inferControlType(val, unit);
     values.value = {
       name: item.key ?? '',
@@ -413,7 +395,7 @@ function save() {
     if (!name.trim()) return;
     // Keys of the input this form does not edit (`nullable`, `description`,
     // ...) are kept as they were; `source` and `type_spec` are rebuilt below.
-    const { name: _n, type: _t, source: _s, type_spec: _ts, ...keptInput }: ExecutionField =
+    const { name: _n, type: _t, source: _s, type_spec: _ts, ...keptInput }: Partial<ExecutionField> =
       s === 'input' ? item.data || {} : {};
     const data: ExecutionField = { ...keptInput, name: name.trim(), type };
     // Reduce the form's parameter rows back into a plain object. Skip
@@ -453,10 +435,11 @@ function save() {
     // binding") and avoids producing a malformed source: { parameters:
     // {...} } that would fail schema validation.
     if (sourceRegulation || sourceOutput || keptTarget) {
-      data.source = { ...kept };
-      if (sourceRegulation) data.source.regulation = sourceRegulation;
-      if (sourceOutput) data.source.output = sourceOutput;
-      if (Object.keys(paramObj).length > 0) data.source.parameters = paramObj;
+      const source: InputSource = { ...kept };
+      if (sourceRegulation) source.regulation = sourceRegulation;
+      if (sourceOutput) source.output = sourceOutput;
+      if (Object.keys(paramObj).length > 0) source.parameters = paramObj;
+      data.source = source;
     }
     if (type === 'amount' && item.data?.type_spec) data.type_spec = item.data.type_spec;
     if (s === 'input') {

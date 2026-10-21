@@ -8,6 +8,8 @@ import { createLruMap } from '../lib/lruMap';
 import { useLatest } from '../lib/useLatest';
 import { humanizeLawId } from '../lib/lawName';
 import { holdRetryFloor } from '../lib/retryFeedback';
+import type { LawArticle, LawDocument } from '../lib/lawFormat';
+export type { LawArticle, LawDocument } from '../lib/lawFormat';
 
 // Shared law cache, keyed by `${trajectRef || ''}::${lawId}` so a law
 // opened in traject A and in traject B (or globally) returns the
@@ -23,23 +25,7 @@ import { holdRetryFloor } from '../lib/retryFeedback';
  * One article of a parsed law (schema/latest/schema.json): the fields read
  * here are typed, the rest is open for callers to narrow.
  */
-export interface LawArticle {
-  number: string;
-  machine_readable?: {
-    execution?: {
-      actions?: { output?: string; value?: unknown }[] | null;
-    } | null;
-  } | null;
-  [key: string]: unknown;
-}
 
-/** A parsed law YAML document; only the fields read here are typed. */
-export interface LawDocument {
-  $id?: string;
-  name?: string;
-  articles?: LawArticle[];
-  [key: string]: unknown;
-}
 
 /** A cached law: the parsed body, its source text and its ETag. */
 export interface LawCacheEntry {
