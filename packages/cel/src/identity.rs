@@ -18,6 +18,7 @@ use regelrecht_engine::Authority;
 use serde::Deserialize;
 
 use crate::error::{setup, Result};
+use crate::files::Files;
 
 /// The file in a cell directory that holds its identity.
 pub const FILE: &str = "cel.yaml";
@@ -30,11 +31,12 @@ struct Identity {
     category: Option<String>,
 }
 
-/// The identity of the cell in `dir`. A cell without `cel.yaml`, with an
-/// unknown key, or with an empty `name` or `category`, is an error.
-pub fn read(dir: &Path) -> Result<Authority> {
+/// The identity of the cell in `dir`, read through `files`. A cell without
+/// `cel.yaml`, with an unknown key, or with an empty `name` or `category`,
+/// is an error.
+pub fn read(files: &dyn Files, dir: &Path) -> Result<Authority> {
     let path = dir.join(FILE);
-    let text = std::fs::read_to_string(&path).map_err(|e| {
+    let text = files.read(&path).map_err(|e| {
         setup(format!(
             "{}: a cell names who it is in {FILE} (name, category): {e}",
             path.display()

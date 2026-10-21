@@ -13,7 +13,7 @@ import { kort, leesbaar, rol, spel } from '../spel.js';
 import { toon } from '../logboek.js';
 
 const props = defineProps({
-  // Eén antwoord uit GET /api/besluiten/{id}/antwoord/{begrip}.
+  // Eén antwoord uit `api.hoeBeantwoord`.
   uitleg: { type: Object, required: true },
   // Het besluit waarin de cel antwoordde; nodig om een begrip binnen de
   // reductie uit te leggen.

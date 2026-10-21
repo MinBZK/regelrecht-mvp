@@ -1,7 +1,7 @@
 /**
  * Het logboek leesbaar: per handeling wat er gebeurde en met welke uitslag,
- * en de keten van een besluit als genummerde stappen. De backend leidt alles
- * af uit de kroniek en het besluit opnieuw genomen (GET /api/logboek); dit
+ * en de keten van een besluit als genummerde stappen. Het spel leidt alles
+ * af uit de kroniek en het besluit opnieuw genomen (`api.logboek`); dit
  * bestand zet het alleen in woorden.
  *
  * Een stap uit de keten heeft een `soort`: `artikel` (een artikel wordt
@@ -19,7 +19,7 @@ const AFKORTINGEN = {
 
 /**
  * De naam van een regelwerk: zijn afkorting, de naam die het zelf draagt
- * (GET /api/casus), of zijn `$id` leesbaar met een hoofdletter.
+ * (`api.casus`), of zijn `$id` leesbaar met een hoofdletter.
  */
 export function wetNaam(wet) {
   if (AFKORTINGEN[wet]) return AFKORTINGEN[wet];

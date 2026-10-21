@@ -971,6 +971,13 @@ jobs:
         if: needs.changes.outputs.ci == 'true'
         run: cd packages/engine && cargo build --target wasm32-unknown-unknown --features wasm
 
+      # The chronolexografie poc runs the cel and the engine in the visitor's
+      # browser (packages/poc-chronolexografie); a dependency that does not
+      # build for wasm32 would otherwise only show in the poc image on main.
+      - name: Build chronolexografie for WASM
+        if: needs.changes.outputs.ci == 'true'
+        run: cargo build --manifest-path packages/Cargo.toml -p regelrecht-poc-chronolexografie --target wasm32-unknown-unknown --features wasm
+
       - name: Skip (no relevant changes)
         if: needs.changes.outputs.ci != 'true'
         run: echo "No relevant changes, skipping WASM build"

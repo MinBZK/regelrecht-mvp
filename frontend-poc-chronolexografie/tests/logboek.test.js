@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { artikelNaam, genomenBij, genummerd, opsomming, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
 import { rol, spel } from '../src/spel.js';
 
-// De casus zoals GET /api/casus haar geeft, voor zover het logboek haar leest.
+// De casus zoals `api.casus` haar geeft, voor zover het logboek haar leest.
 beforeEach(() => {
   spel.casus = {
     besluit: 'leerplichtwet_1969#13a',
@@ -18,7 +18,7 @@ beforeEach(() => {
   };
 });
 
-// Ids verzonnen; de vormen zoals GET /api/logboek ze geeft (kern::Stap).
+// Ids verzonnen; de vormen zoals `api.logboek` ze geeft (kern::Stap).
 const bezwaar = { id: '019a0000-0000-7000-8000-00000000bbbb', kind: 'BEZWAAR' };
 const grammen = [bezwaar];
 

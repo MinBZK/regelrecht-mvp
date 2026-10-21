@@ -56,9 +56,9 @@ describe('volger', () => {
     const v = volger(vraag, toon);
     v.plan();
     await vi.advanceTimersByTimeAsync(300);
-    open[0].fout(new Error('De server gaf geen antwoord.'));
+    open[0].fout(new Error('the cell did not load: Failed to fetch'));
     await vi.runAllTimersAsync();
-    expect(toon).toHaveBeenCalledWith({ fout: 'De server gaf geen antwoord.' });
+    expect(toon).toHaveBeenCalledWith({ fout: 'the cell did not load: Failed to fetch' });
 
     v.plan();
     await vi.advanceTimersByTimeAsync(300);

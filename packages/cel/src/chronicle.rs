@@ -147,6 +147,19 @@ impl Chronicle {
         Ok(chronicle)
     }
 
+    /// A chronicle in memory that holds `grams`, in order. They must keep
+    /// the rules of [`Chronicle::append`], and their values read back as
+    /// [`Chronicle::open`] reads them.
+    pub fn in_memory_with(grams: Vec<Gram>) -> Result<Self> {
+        let mut chronicle = Self::in_memory();
+        for gram in grams {
+            readable(&gram)?;
+            chronicle.check(&gram)?;
+            chronicle.grams.push(gram);
+        }
+        Ok(chronicle)
+    }
+
     pub fn grams(&self) -> &[Gram] {
         &self.grams
     }

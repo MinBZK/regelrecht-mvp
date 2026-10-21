@@ -7,11 +7,11 @@
 // (meestal niets) en een knop terug naar de keuze. Een weigering van de cel
 // staat in een banner, in het Nederlands; de melding van de cel zelf onder
 // Details. Wat bij de casus hoort (de wet, de cel, wie beslist), komt uit
-// GET /api/casus.
+// `api.casus`.
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from './api.js';
 import { artikelNaam } from './logboek.js';
-import { isEngels, melding } from './melding.js';
+import { melding } from './melding.js';
 import { hervatten, naarKeuze, spel, stap, verversen } from './spel.js';
 import AanvragerTab from './components/AanvragerTab.vue';
 import AndereCellenTab from './components/AndereCellenTab.vue';
@@ -109,7 +109,7 @@ async function opnieuw() {
           dismissible
           @dismiss="spel.fout = ''"
         >
-          <nldd-text v-if="details" size="sm" color="secondary" :lang="isEngels(spel.fout) ? 'en' : null">{{ spel.fout }}</nldd-text>
+          <nldd-text v-if="details" size="sm" color="secondary" lang="en">{{ spel.fout }}</nldd-text>
           <nldd-button
             slot="actions"
             appearance="neutral-tinted"

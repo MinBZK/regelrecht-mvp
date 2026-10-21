@@ -3,8 +3,8 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   // Achter het poc-portaal staat deze app onder /chronolexografie/; los draait
-  // hij op /. De backend serveert zichzelf onder hetzelfde voorvoegsel
-  // (CHRONO_BASE_PATH), zodat het portaal het pad ongewijzigd doorstuurt.
+  // hij op /. Er is geen backend: het spel draait als WASM in de browser
+  // (src/api.js).
   base: process.env.POC_BASE ?? '/',
   plugins: [
     vue({
@@ -17,9 +17,5 @@ export default defineConfig({
   ],
   server: {
     port: 5410,
-    proxy: {
-      // packages/poc-chronolexografie, standaard op 8410.
-      '/api': 'http://localhost:8410',
-    },
   },
 });

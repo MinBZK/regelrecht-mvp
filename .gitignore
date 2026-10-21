@@ -43,6 +43,7 @@ frontend-poc-*/dist/
 frontend-poc-*/public/laws/
 frontend-poc-*/public/data/
 frontend-poc-*/public/wasm/
+frontend-poc-chronolexografie/public/bundel.json
 
 # De opgenomen rondleiding: ruwe opnames en tussenbestanden blijven lokaal,
 # de video's gaan via een GitHub-release (zie script/walkthrough/).

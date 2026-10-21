@@ -6,7 +6,6 @@
  * tests/melding.test.js zijn kopieën van de meldingen in packages/cel
  * (cell.rs, chronicle.rs): wie daar een melding herschrijft, past ze mee aan.
  */
-import { GEEN_ANTWOORD } from './api.js';
 import { hoofdletter, kort, leesbaar, spel } from './spel.js';
 
 const vertalingen = [
@@ -52,16 +51,19 @@ const vertalingen = [
       `${hoofdletter(spel.casus?.rol ?? 'het bestuursorgaan')} heeft "${leesbaar(begrip)}" nog niet beoordeeld, en het besluit heeft die bevinding nodig.`,
   ],
   [/the application '[^']+' is already decided on/, () => 'Hierop is al besloten.'],
-  // Een andere bezoeker koos intussen een andere casus (X-Casus).
+  // Een stap voordat er een casus gekozen is.
+  [/no case is chosen/, () => 'Er is geen casus gekozen. Kies een casus.'],
+  // De cel laadt niet in deze browser (api.js): de WASM of de bundel kwam
+  // niet binnen, of de bundel mist wat een casus nodig heeft.
   [
-    /the chosen case is now '[^']+'/,
-    () => 'Iemand anders koos intussen een andere casus. Kies er opnieuw een.',
+    /the cell did not load/,
+    () => 'De cel kon in deze browser niet laden. Herlaad de pagina; wat er misging, staat onder Details, in het Engels.',
   ],
-  // Een stap voordat er een casus gekozen is, bijvoorbeeld na een herstart
-  // van de server.
+  // De cel liep vast (een panic in de WASM, api.js); daarna lukt geen stap
+  // meer tot een herlaad.
   [
-    /no case is chosen/,
-    () => 'Er is geen casus gekozen; misschien is de server herstart. Kies een casus.',
+    /the cell stopped/,
+    () => 'De cel is vastgelopen. Herlaad de pagina: je gaat verder na de laatste stap die lukte.',
   ],
   [
     /lacks '([^']+)', which the decision of \S+ needs \(Awb 4:5\)/,
@@ -93,16 +95,10 @@ export function vertaling(fout) {
   return null;
 }
 
-/** De Nederlandse zin bij de melding `fout` van de cel of de server. */
-export function melding(fout) {
-  return vertaling(fout) ?? (isEngels(fout)
-    ? 'Wat er misging, staat onder Details, in het Engels.'
-    : 'Wat er misging, staat onder Details.');
-}
-
 /**
- * Of de melding Engels is: alles behalve de Nederlandse zin die api.js zelf
- * geeft als de server geen antwoord gaf. De cel, de engine, axum en de
- * browser melden in het Engels.
+ * De Nederlandse zin bij de melding `fout` van de cel, de engine of de
+ * browser. Die melden allemaal in het Engels.
  */
-export const isEngels = (fout) => String(fout) !== GEEN_ANTWOORD;
+export function melding(fout) {
+  return vertaling(fout) ?? 'Wat er misging, staat onder Details, in het Engels.';
+}

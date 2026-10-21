@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isEngels, melding } from '../src/melding.js';
+import { melding } from '../src/melding.js';
 import { spel } from '../src/spel.js';
 
 // De meldingen zoals de cel ze geeft (packages/cel: cell.rs, chronicle.rs),
@@ -94,28 +94,19 @@ describe('melding', () => {
   });
 
   it('zegt dat er eerst een casus gekozen moet worden', () => {
-    expect(melding('no case is chosen: choose one with POST /api/casus')).toContain('Kies een casus');
+    expect(melding('no case is chosen: choose one first')).toBe('Er is geen casus gekozen. Kies een casus.');
+  });
+
+  it('zegt dat de cel in deze browser niet laadt', () => {
+    expect(melding('the cell did not load: Failed to fetch')).toContain('De cel kon in deze browser niet laden.');
+  });
+
+  it('zegt dat de cel vastliep, en dat een herlaad verder gaat', () => {
+    expect(melding('the cell stopped: unreachable')).toContain('De cel is vastgelopen.');
   });
 
   it('valt terug op een algemene zin', () => {
     expect(melding('engine: something else')).toBe(algemeen);
-    expect(melding('De server gaf geen antwoord.')).toBe('Wat er misging, staat onder Details.');
-  });
-});
-
-describe('isEngels', () => {
-  it('herkent een melding van de cel of de engine', () => {
-    expect(isEngels('refused: x')).toBe(true);
-    expect(isEngels('engine: x')).toBe(true);
-    expect(isEngels('Failed to fetch')).toBe(true);
-    expect(isEngels('De server gaf geen antwoord.')).toBe(false);
-  });
-});
-
-describe('een andere casus gekozen', () => {
-  it('zegt dat iemand anders intussen een andere casus koos', () => {
-    expect(melding("the chosen case is now 'vakantieverlof', not 'gehandicaptenparkeerkaart'")).toContain(
-      'Kies er opnieuw een',
-    );
+    expect(melding('Failed to fetch')).toBe(algemeen);
   });
 });

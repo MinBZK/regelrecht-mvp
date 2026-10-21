@@ -174,8 +174,10 @@ test('het poc-portaal volgt zijn register, zijn corpus en zijn frontends', () =>
 });
 
 test('chronolexografie volgt zijn cellen, hun regelwerken, de casussen en zijn frontend', () => {
-  // De cellen van de casussen en de regelwerken die zij draaien, zitten
-  // alleen in het chronolexografie-image, niet in het portaal.
+  // chronolexografie draait als WASM in de browser en zit in het poc-image:
+  // de cellen van de casussen en de regelwerken die zij draaien raken dat
+  // image, en er is geen eigen component meer.
+  assert.equal('poc-chronolexografie' in COMPONENTS, false);
   for (const pad of [
     'corpus/cells/obs_de_klimop/reducties/reductie_verlof_al_verleend_in_schooljaar/2026-08-01.yaml',
     'corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vestiging_obs_de_klimop/2026-08-01.yaml',
@@ -191,18 +193,16 @@ test('chronolexografie volgt zijn cellen, hun regelwerken, de casussen en zijn f
     'frontend-poc-chronolexografie/src/App.vue',
   ]) {
     const geraakt = namesOf([pad]);
-    assert.equal(geraakt['poc-chronolexografie'], true, pad);
-    assert.equal(geraakt.poc, false, pad);
+    assert.equal(geraakt.poc, true, pad);
+    assert.equal(geraakt['poc-napp'], false, pad);
   }
 
-  // De crate van de cel volgt uit de graaf.
-  assert.equal(namesOf(['packages/cel/src/cell.rs'])['poc-chronolexografie'], true);
+  // De crate en de cel volgen uit de graaf.
+  assert.equal(namesOf(['packages/poc-chronolexografie/src/kern.rs']).poc, true);
+  assert.equal(namesOf(['packages/cel/src/cell.rs']).poc, true);
 
   // Een wet die de cel niet draait, raakt het niet.
-  assert.equal(
-    namesOf(['corpus/regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml'])['poc-chronolexografie'],
-    false,
-  );
+  assert.equal(namesOf(['corpus/regulation/nl/wet/wet_op_de_zorgtoeslag/2025-01-01.yaml']).poc, false);
 });
 
 test('een engine-wijziging bouwt het poc-image, want dat bakt de engine als WASM', () => {

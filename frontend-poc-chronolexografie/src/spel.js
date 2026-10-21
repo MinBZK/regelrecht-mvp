@@ -8,13 +8,13 @@
  * leest dit bestand uit de kroniek af aan `kind`, `grondslag` en `refers_to`,
  * zoals de cel ze vastlegt (RFC-046, RFC-047, RFC-050). Onder welk artikel
  * het besluit valt en onder welk de beslissing op bezwaar, zegt de casus
- * (GET /api/casus); de backend leidt het af uit de wet.
+ * (`api.casus`); het spel leidt het af uit de wet.
  */
 import { reactive } from 'vue';
-import { api, speelt } from './api.js';
+import { api } from './api.js';
 
 export const spel = reactive({
-  // De gekozen casus, zoals GET /api/casus haar geeft; null op het keuzescherm.
+  // De gekozen casus, zoals `api.casus` haar geeft; null op het keuzescherm.
   casus: null,
   datum: '',
   grammen: [],
@@ -36,20 +36,29 @@ export const bezwaarGrondslag = () => spel.casus?.beslissing_op_bezwaar;
 /** Of een besluit het gevraagde toewijst, volgens de uitvoer die de casus noemt. */
 export const toegewezen = (g) => g?.outputs?.[spel.casus?.uitkomst];
 
-// Of dit tabblad de casus koos. De keuze en de kroniek zijn van alle
-// bezoekers samen; een nieuw tabblad begint daarom op het keuzescherm, en een
-// herladen tabblad gaat verder waar het was. Zonder sessionStorage begint elk
-// laden op het keuzescherm.
-const SLEUTEL = 'poc-casus';
-const onthoud = (id) => {
+// Het spel van dit tabblad, bewaard zodat een herladen tabblad verder gaat
+// waar het was. Elk tabblad speelt zijn eigen spel, in het geheugen van de
+// browser; sessionStorage hoort bij het tabblad en overleeft een herlaad,
+// zodat twee tabbladen elkaars spel niet overschrijven. Het bewaren is een
+// gemak: zonder opslag (een privévenster, een volle opslag) speel je gewoon
+// door en begint een herlaad op het keuzescherm.
+const SLEUTEL = 'poc-spel';
+async function bewaar() {
+  const bewaard = await api.bewaren();
   try {
-    if (id) sessionStorage.setItem(SLEUTEL, id);
-    else sessionStorage.removeItem(SLEUTEL);
+    sessionStorage.setItem(SLEUTEL, JSON.stringify(bewaard));
   } catch {
-    // Geen opslag: dan niets onthouden.
+    // Geen opslag: dan niets bewaren.
+  }
+}
+const vergeet = () => {
+  try {
+    sessionStorage.removeItem(SLEUTEL);
+  } catch {
+    // Geen opslag: dan is er ook niets te vergeten.
   }
 };
-const onthouden = () => {
+const bewaard = () => {
   try {
     return sessionStorage.getItem(SLEUTEL);
   } catch {
@@ -58,30 +67,27 @@ const onthouden = () => {
 };
 
 /**
- * Bij het openen: ga verder met de casus die dit tabblad koos, als de server
- * die nog speelt. Anders blijft het keuzescherm staan.
+ * Bij het openen: ga verder met het spel dat dit tabblad bewaarde. Neemt de
+ * cel het niet terug (de wet of de casus veranderde sinds), dan staat dat in
+ * de banner en blijft het keuzescherm staan.
  */
 export async function hervatten() {
+  const spelTotNu = bewaard();
+  if (!spelTotNu) return;
   try {
-    const { gekozen } = await api.casussen();
-    if (gekozen && gekozen === onthouden()) {
-      // Met X-Casus: koos iemand intussen een andere casus, dan weigert de
-      // server dit verzoek (409) in plaats van die casus te openen.
-      speelt(gekozen);
-      await openen(await api.casus());
-    }
+    await openen(await api.herstellen(JSON.parse(spelTotNu)));
   } catch (e) {
-    speelt(null);
+    vergeet();
+    spel.casus = null;
     spel.fout = e.message;
   }
 }
 
-/** Kies een casus: de server begint haar cel met een lege kroniek. */
+/** Kies een casus: het spel begint haar cel opnieuw. */
 export async function kiezen(id) {
   spel.fout = '';
   try {
     await openen(await api.kies(id));
-    onthoud(id);
     return true;
   } catch (e) {
     spel.fout = e.message;
@@ -93,20 +99,18 @@ async function openen(casus) {
   spel.vormen = null;
   spel.grammen = [];
   spel.casus = casus;
-  speelt(casus.id);
   spel.datum = casus.speeldatum;
   await verversen();
 }
 
-/** Terug naar het keuzescherm; de server speelt de casus door tot een nieuwe keuze. */
+/** Terug naar het keuzescherm; een herlaad begint daar dan ook. */
 export function naarKeuze() {
-  onthoud(null);
-  speelt(null);
+  vergeet();
   spel.casus = null;
   spel.fout = '';
 }
 
-/** Haal de kroniek en de vormen op, voor de speeldatum. */
+/** Haal de kroniek en de vormen op, voor de speeldatum, en bewaar het spel. */
 export async function verversen() {
   if (!spel.casus) return;
   try {
@@ -114,6 +118,7 @@ export async function verversen() {
     spel.grammen = kroniek.grammen;
     spel.andere = kroniek.andere ?? [];
     spel.vormen = vormen;
+    await bewaar();
   } catch (e) {
     spel.fout = e.message;
   }

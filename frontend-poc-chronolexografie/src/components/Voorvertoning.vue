@@ -1,6 +1,6 @@
 <script setup>
-// Wat het besluit zou worden, voordat het bestuursorgaan het neemt. De
-// backend neemt het besluit op een kopie van de cel (Cell::sandbox) en
+// Wat het besluit zou worden, voordat het bestuursorgaan het neemt. Het
+// spel neemt het besluit op een kopie van de cel (Cell::sandbox) en
 // legt niets vast; de uitkomst en de keten zijn die van het echte besluit.
 // Na elke wijziging van een bevinding vraagt het paneel opnieuw, 300 ms na
 // de laatste (voorvertoning.js). Weigert de cel, bijvoorbeeld omdat een

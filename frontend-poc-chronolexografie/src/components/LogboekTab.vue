@@ -3,7 +3,7 @@
 // gekozen handeling waarom zij er is en wat er gebeurde. Niets hiervan is
 // apart opgeslagen. De handelingen zijn de chronolexogrammen; de reden is
 // waarnaar een chronolexogram verwijst (`refers_to`); de keten van een
-// besluit komt uit het besluit opnieuw genomen (GET /api/logboek). Een stap
+// besluit komt uit het besluit opnieuw genomen (`api.logboek`). Een stap
 // die de cel weigerde, legde niets vast en staat er dus niet in.
 import { computed, reactive, ref, watch } from 'vue';
 import { api } from '../api.js';
