@@ -156,27 +156,23 @@ class Parser {
 
   expr: Rule = (pos) => this.rule('expr', pos, () => this.alt(this.choice(pos), this.logic(pos)));
 
+  // `waarde als voorwaarde, waarde als voorwaarde, anders waarde`.
   choice: Rule = (pos) => this.rule('choice', pos, () => {
     const out: Result[] = [];
+    const caseAt = (p: number) => this.seq(p, [this.logic, 'als', this.logic], (t, w) => ({ when: w, then: t }));
     const anders = (p: number, cases: unknown[]): Result[] => {
       const res: Result[] = [[{ operation: 'IF', cases }, p]];
-      const q = this.word(p, 'anders');
+      const q = this.word(p, ', anders');
       if (q >= 0) for (const [d, r] of this.logic(q)) res.push([{ operation: 'IF', cases, default: d }, r]);
       return res;
     };
     const more = (p: number, cases: unknown[]): Result[] => {
       const res = anders(p, cases);
-      const q = this.word(p, 'anders als');
-      if (q >= 0) {
-        for (const [c, r] of this.seq(q, [this.logic, 'dan', this.logic], (w, t) => ({ when: w, then: t }))) {
-          res.push(...more(r, [...cases, c]));
-        }
-      }
+      const q = this.word(p, ',');
+      if (q >= 0) for (const [c, r] of caseAt(q)) res.push(...more(r, [...cases, c]));
       return res;
     };
-    for (const [c, p] of this.seq(pos, ['als', this.logic, 'dan', this.logic], (w, t) => ({ when: w, then: t }))) {
-      out.push(...more(p, [c]));
-    }
+    for (const [c, p] of caseAt(pos)) out.push(...more(p, [c]));
     const g = this.word(pos, 'geen geval');
     if (g >= 0) out.push(...anders(g, []));
     return out;

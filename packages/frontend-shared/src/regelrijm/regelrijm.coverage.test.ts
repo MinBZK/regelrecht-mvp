@@ -55,7 +55,7 @@ const EXPECTED: Record<string, string> = {
   LESS_THAN: '[a] is minder dan 5',
   GREATER_THAN_OR_EQUAL: '[leeftijd] is ten minste 18',
   LESS_THAN_OR_EQUAL: '[a] is ten hoogste 5',
-  IF: 'als [a] dan 1 anders 0',
+  IF: '1 als [a], anders 0',
   IN: '[a] is een van ( 1; 2 )',
   LIST: 'de lijst ( [a]; [b] )',
   FOREACH: 'de som van [b] van [x] over elke [x] in [m]',
@@ -109,8 +109,8 @@ describe('RegelRijm covers the schema', () => {
   it.each([
     ['foo', '[u] wordt: als ⟨ontbreekt: cases⟩'],
     [{ when: true }, '[u] wordt: als ⟨ontbreekt: cases⟩'],
-    [['foo'], '[u] wordt: als ⟨ontbreekt: when⟩ dan ⟨ontbreekt: then⟩ anders 2'],
-    [[null, { when: '$a', then: 1 }], '[u] wordt: als ⟨ontbreekt: when⟩ dan ⟨ontbreekt: then⟩ anders als [a] dan 1 anders 2'],
+    [['foo'], '[u] wordt: ⟨ontbreekt: then⟩ als ⟨ontbreekt: when⟩, anders 2'],
+    [[null, { when: '$a', then: 1 }], '[u] wordt: ⟨ontbreekt: then⟩ als ⟨ontbreekt: when⟩, 1 als [a], anders 2'],
   ])('reads wrong-typed cases mid-edit as holes, not as a crash: %j', (cases, text) => {
     const action = { output: 'u', value: { operation: 'IF', cases, default: 2 } };
     expect(renderAction(action, { ctx }).text).toBe(text);
@@ -145,15 +145,14 @@ describe('RegelRijm covers the schema', () => {
     const or = { operation: 'IF', cases: [{ when: { operation: 'OR', conditions: ['$a', { operation: 'AND', conditions: ['$b', '$c'] }, inner] }, then: 1 }], default: 0 };
     expect(renderAction({ output: 'u', value: or }, { ctx }).text).toBe([
       '[u] wordt:',
-      '\tals aan ten minste één van de volgende voorwaarden is voldaan:',
+      '\t1 als aan ten minste één van de volgende voorwaarden is voldaan:',
       '\t\t• [a]',
       '\t\t• [b] én [c]',
       '\t\t• aan alle volgende voorwaarden is voldaan:',
       '\t\t\t•• [d]',
       '\t\t\t•• [e]',
       '\t\t\t•• [f]',
-      '\tdan 1',
-      '\tanders 0',
+      '\t, anders 0',
     ].join('\n'));
   });
 
@@ -163,7 +162,7 @@ describe('RegelRijm covers the schema', () => {
     expect(renderAction({ output: 'u', value }, { ctx }).text).toBe([
       '[u] wordt: [inkomen] min ( A maal 2 ) min A',
       'waarbij:',
-      '\tA = als [heeft partner] dan [drempel met partner] anders [drempel alleen]',
+      '\tA = [drempel met partner] als [heeft partner], anders [drempel alleen]',
     ].join('\n'));
   });
 

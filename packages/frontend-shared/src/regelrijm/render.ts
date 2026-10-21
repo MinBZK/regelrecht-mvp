@@ -449,21 +449,35 @@ export class Renderer {
       }
       case 'IF': {
         if (!Array.isArray(n.cases)) return { doc: sp(K('als'), this.hole('cases', [...path, 'cases']).doc), level: LEVEL.CHOICE };
+        // `waarde als voorwaarde, waarde als voorwaarde, anders waarde`: the
+        // value first, then the condition it holds under, as a subordinate
+        // clause. Broken, every case stands on a line of its own.
         const cases = n.cases;
-        const parts = [];
+        const parts: Doc[] = [];
+        // After a bulleted condition the comma opens the next line, at the
+        // margin of the value, so it does not read as one more item.
+        let afterList = false;
+        const separate = () => {
+          if (afterList) parts.push(line, K(','), ' ');
+          else parts.push(K(','), line);
+        };
         if (cases.length === 0) parts.push(K('geen geval'));
         cases.forEach((c, i) => {
+          // Rendered in reading order, so the numbers follow the text.
+          const t = at(LEVEL.LOGIC, c && typeof c === 'object' && 'then' in c ? child(c.then, ['cases', i, 'then']) : this.hole('then', [...path, 'cases', i, 'then']));
           const w = at(LEVEL.LOGIC, c && typeof c === 'object' && 'when' in c
             ? inClause('sub', () => child(c.when, ['cases', i, 'when']))
             : this.hole('when', [...path, 'cases', i, 'when']));
-          const t = at(LEVEL.LOGIC, c && typeof c === 'object' && 'then' in c ? child(c.then, ['cases', i, 'then']) : this.hole('then', [...path, 'cases', i, 'then']));
-          if (i > 0) parts.push(line);
-          // After an enumeration `dan` returns to the margin of `als`, so it
-          // does not read as one more item.
-          const dan = hasHardline(w) ? [line, K('dan'), ' ', t] : [nest(line, K('dan'), ' ', t)];
-          parts.push(group(K(i === 0 ? 'als' : 'anders als'), ' ', w, ...dan));
+          if (i > 0) separate();
+          afterList = hasHardline(w);
+          // A bulleted condition breaks anyway; `als` stays on the line of the value.
+          parts.push(afterList ? [t, ' ', K('als'), ' ', w] : group(t, nest(line, K('als'), ' ', w)));
         });
-        if ('default' in n) parts.push(line, K('anders'), ' ', at(LEVEL.LOGIC, field('default')));
+        if ('default' in n) {
+          if (cases.length) separate();
+          else parts.push(K(','), ' ');
+          parts.push(K('anders'), ' ', at(LEVEL.LOGIC, field('default')));
+        }
         return { doc: group(parts), level: LEVEL.CHOICE };
       }
       case 'LIST':
