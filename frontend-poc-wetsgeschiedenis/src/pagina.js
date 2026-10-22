@@ -15,7 +15,9 @@ async function gegevens(naam) {
   }
   return r.json();
 }
-const DOSSIERS = await gegevens("dossiers");
+// Een oud dossier (een scan uit Staten-Generaal Digitaal) speelt niet af; zijn
+// toelichting staat bij de wet die het maakte.
+const DOSSIERS = (await gegevens("dossiers")).filter((d) => d.soort !== "oud dossier");
 const KEUZE = (() => {
   const h = (location.hash.match(/d=([0-9A-Za-z]+)/) || [])[1];
   if (h && DOSSIERS.some((d) => d.dossier === h)) return h;
@@ -605,8 +607,10 @@ function bronTekst(b) {
   const x = b.bron;
   if (!x) return "";
   if (x.soort === "nota van toelichting") return `nota van toelichting, ${bekendmaking(x.publicatie)}`;
-  return `Kamerstuk ${x.stuk.replace(/^kst-/, "")}, ${SOORTNAAM[b.soort] || b.soort}${x.datum ? ", " + datumTekst(x.datum) : ""}`;
+  return `Kamerstuk ${x.stuk.replace(/^kst-/, "")}, ${SOORTNAAM[b.soort] || b.soort}${x.datum ? ", " + datumTekst(x.datum) : ""}${x.oud ? `; in het voorstel artikel ${x.oud}` : ""}`;
 }
+// Een stuk van vóór 1995 is een scan met OCR: de link gaat naar het origineel.
+const scanLink = (x) => x && /^https:\/\/zoek\.officielebekendmakingen\.nl\//.test(x.url || "") ? ` <a href="${esc(x.url)}" target="_blank" rel="noopener">scan</a>` : "";
 const dossierKnop = (nr) => DOSSIERS.some((d) => d.dossier === nr) ? ` <button class="klein" data-dossier="${esc(nr)}">speel dossier ${esc(nr)} af</button>` : "";
 function bronnenHtml(stuk, bronnen) {
   const alle = PERSTUK.get(stuk) || [];
@@ -619,7 +623,7 @@ function bronnenHtml(stuk, bronnen) {
   const ids = [...new Set(perArt.flatMap((x) => x.ids || []).filter(Boolean))];
   return `${pub.length || dos.length ? `<p class="klein">Waar de toelichting vandaan komt:</p><ul class="bronnen">${pub.join("")}${dos.join("")}</ul>` : ""}
     ${ids.length ? `<p class="klein">Toelichting bij ${ids.length} ${ids.length === 1 ? "artikel" : "artikelen"}:</p><div class="links">${ids.slice(0, 60).map((a) => `<button data-art="${esc(a)}">art. ${esc(nrVanId(a))}</button>`).join("")}</div>` : ""}
-    ${algemeen.map((x) => `<details class="meer"><summary>${esc(x.titel || x.kop || "Toelichting")} <span class="zacht">· ${esc(bronTekst(x))}</span></summary>${alineas(x.tekst, null, 99)}</details>`).join("")}`;
+    ${algemeen.map((x) => `<details class="meer"><summary>${esc(x.titel || x.kop || "Toelichting")} <span class="zacht">· ${esc(bronTekst(x))}</span>${scanLink(x.bron)}</summary>${alineas(x.tekst, null, 99)}</details>`).join("")}`;
 }
 function brokKaart(b, nr) {
   const leden = (b.leden[nr] || []).map((l) => `<nldd-tag size="sm" color="neutral" text="lid ${l}"></nldd-tag>`).join("");
@@ -634,7 +638,7 @@ function brokKaart(b, nr) {
   const titel = b.rol === "artikelsgewijs" ? (b.titel || `Artikel ${nr}`) : b.kop || "Elders in het stuk";
   const label = b.rol === "artikelsgewijs" ? "artikelsgewijs" : "noemt dit artikel";
   const doel = (b.doelartikelen || []).length ? `<nldd-tag size="sm" color="neutral" text="wijzigt art. ${esc(b.doelartikelen.join(", "))}"></nldd-tag>` : "";
-  const bron = b.bron ? `<p class="klein zacht">${esc(bronTekst(b))}${b.bron.dossier ? dossierKnop(b.bron.dossier) : ""}</p>` : "";
+  const bron = b.bron ? `<p class="klein zacht">${esc(bronTekst(b))}${scanLink(b.bron)}${b.bron.dossier ? dossierKnop(b.bron.dossier) : ""}</p>` : "";
   return `<div class="kaart"><h4>${esc(titel)}</h4><div class="tags"><nldd-tag size="sm" color="neutral" text="${label}"></nldd-tag>${leden}${doel}</div>${bron}${alineas(b.tekst, b.rol === "vermelding" ? nr : null, b.rol === "artikelsgewijs" ? 2 : 1)}</div>`;
 }
 function wijzigingKaart(id, stappen) {

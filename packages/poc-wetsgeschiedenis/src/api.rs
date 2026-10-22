@@ -19,7 +19,7 @@ use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::rij::Wat;
+use crate::rij::{Plek, Wat};
 use crate::{diagnose, id, werker, AppState};
 
 pub struct Fout(StatusCode, String);
@@ -182,9 +182,10 @@ async fn haal(State(s): State<AppState>, body: Bytes) -> Result<Response, Fout> 
             .unwrap_or_else(|| d.to_string())
     });
     let taak = if v.keten {
-        s.rij.voeg(Wat::Keten, &v.bwb, None, None, false)
+        s.rij.voeg(Wat::Keten, &v.bwb, None, None, Plek::Bezoeker)
     } else if let Some(nr) = nr.filter(|n| id::is_dossier(n)) {
-        s.rij.voeg(Wat::Dossier, &v.bwb, Some(&nr), None, false)
+        s.rij
+            .voeg(Wat::Dossier, &v.bwb, Some(&nr), None, Plek::Bezoeker)
     } else {
         return Err(Fout(
             StatusCode::BAD_REQUEST,

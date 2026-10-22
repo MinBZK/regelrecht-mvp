@@ -153,7 +153,8 @@ const achter = computed(() => [rij.value.huidig, ...rij.value.wachtend]
   .filter((x) => x && x.voor && x.voor === wet.value && x.id !== taak.value?.id));
 const proxy = computed(() => Object.entries(diag.value?.proxy ?? {}).map(([k, v]) => `${k}=${v}`).join(', ') || 'geen');
 
-const naam = (x) => (x.wat === 'keten' ? `${x.bwb} door de tijd` : `dossier ${x.dossier}`);
+const naam = (x) =>
+  x.wat === 'keten' ? `${x.bwb} door de tijd` : x.wat === 'geschiedenis' ? `${x.bwb}, alle versies` : `dossier ${x.dossier}`;
 const stand = (d) => (d.beschikbaar ? '' : d.rij === 'bezig' ? ' (wordt nu opgehaald)'
   : d.rij ? ' (in de rij)' : d.mislukt ? ' (eerder mislukt)' : '');
 const regel = (r) => [r.t?.slice(11), r.soort, r.methode, r.wat && `${r.wat} ${r.bwb}${r.dossier ? ' ' + r.dossier : ''}`,

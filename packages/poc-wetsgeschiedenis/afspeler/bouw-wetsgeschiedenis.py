@@ -197,7 +197,7 @@ POC_GEGEVENS = os.path.join("corpus-poc", "wetsgeschiedenis", "gegevens")
 POC_DIENST = os.path.join("packages", "poc-wetsgeschiedenis")
 # Wat de dienst draait: de keten van BWB-id tot tijdlijn, ongewijzigd.
 AFSPELER = ("kamerdossier.py", "haal-kamerstukken.py", "handelingen.py", "afspelen.py", "kamertoelichting.py",
-            "keten.py", "wetten_html.py", "bouw-wetsgeschiedenis.py")
+            "keten.py", "wetten_html.py", "oude_kamerstukken.py", "bouw-wetsgeschiedenis.py")
 STIJL = re.compile(r"<style>\n(.*?)</style>\n", re.S)
 SCRIPT = re.compile(r'<script type="module">\n(.*?)</script>\n', re.S)
 

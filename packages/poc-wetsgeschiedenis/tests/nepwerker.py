@@ -41,10 +41,18 @@ elif wat in ("keten", "opbouw"):
     if wat == "keten":
         k = bron / "regelingen" / args[1]
         k.mkdir(parents=True, exist_ok=True)
-        (k / "keten.json").write_text(json.dumps({"overgangen": [
+        keten = {"overgangen": [
             {"tot": "2001-01-01", "dossiers": ["10101"]},
             {"tot": "2020-01-01", "dossiers": ["30303", "35968"]},   # 35968 zit in het image
-            {"tot": "2010-01-01", "dossiers": ["20202", "40404"]}]}))
+            {"tot": "2010-01-01", "dossiers": ["20202", "40404"]}], "afgekapt": None, "ontstaan": []}
+        # Een grote wet: eerst de jongste versies; met --alles de hele
+        # geschiedenis, met de dossiers van vóór 1995 die haar maakten.
+        if args[1] == "BWBR0005537" and "--alles" not in args:
+            keten["afgekapt"] = {"versies": 218, "sinds": "1994-01-01"}
+        elif args[1] == "BWBR0005537":
+            keten["ontstaan"] = ["21221", "22495"]
+            keten["overgangen"].insert(0, {"tot": "1994-01-01", "dossiers": ["21221", "22495"]})
+        (k / "keten.json").write_text(json.dumps(keten))
         print("versies opgehaald")
     status = json.loads(Path(optie("--status")).read_text()) if optie("--status") else {}
     schrijf({"dossier": args[1], "naam": f"{args[1]} door de tijd", "soort": "keten",

@@ -658,7 +658,9 @@ def uit_dossier(t, bwb, titels):
             elif b["rol"] == "vermelding" and b["doelartikelen"] and over_haar:
                 uit.append((b, b["doelartikelen"], "vermelding"))
         return uit, r
-    if t.get("soort") == "nieuwe wet" or any(n in (t.get("naam") or "") for n in titels):
+    # Een oud dossier (oude_kamerstukken.py) heeft zijn brokken al aan de
+    # nummers van deze wet gehaakt.
+    if t.get("soort") in ("nieuwe wet", "oud dossier") or any(n in (t.get("naam") or "") for n in titels):
         for b in c:
             if b["rol"] in ("artikelsgewijs", "vermelding") and b["artikelen"]:
                 uit.append((b, b["artikelen"], b["rol"]))

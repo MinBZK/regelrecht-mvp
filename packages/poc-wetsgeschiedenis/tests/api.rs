@@ -393,6 +393,39 @@ async fn een_wet_zet_haar_dossiers_op_de_achtergrond_de_jongste_eerst() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn een_grote_wet_haalt_eerst_haar_hele_geschiedenis_en_dan_de_dossiers_die_haar_maakten() {
+    let p = proef(10);
+    p.poort(true);
+    let (_, t) = p.haal(json!({"bwb": "BWBR0005537", "keten": true})).await;
+    assert_eq!(
+        p.wacht_op(t["id"].as_str().unwrap()).await["status"],
+        "klaar"
+    );
+    let mut nrs: Vec<String> = Vec::new();
+    for _ in 0..300 {
+        let rij = p.get("/wetsgeschiedenis/api/status").await.1["rij"].clone();
+        nrs = rij["huidig"]
+            .as_object()
+            .map(|_| &rij["huidig"])
+            .into_iter()
+            .chain(rij["wachtend"].as_array().unwrap())
+            .filter(|t| t["wat"] == "dossier")
+            .filter_map(|t| t["dossier"].as_str().map(String::from))
+            .collect();
+        if nrs.first().is_some_and(|n| n == "21221") {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    // Eerst de hele geschiedenis (niet meer afgekapt), dan de dossiers die de
+    // wet maakten, de oudste eerst, en dan de rest, de jongste eerst.
+    assert!(p.state.opslag.keten("BWBR0005537").unwrap()["afgekapt"].is_null());
+    assert_eq!(nrs, ["21221", "22495", "30303", "20202", "40404", "10101"]);
+    p.poort(false);
+    p.rij_leeg().await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn een_mislukt_dossier_wordt_onthouden_en_een_bezoeker_mag_het_opnieuw() {
     let p = proef(10);
     let (_, t) = p

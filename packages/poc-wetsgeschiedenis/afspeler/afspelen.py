@@ -569,6 +569,17 @@ def aanhalingstekens_kloppen(t):
 
 
 def speel(wet, h, herkomst):
+    """Speel één handeling af op `wet`. Een opdracht waarvan het adres mist
+    wat zij nodig heeft (een Staatsblad van 1998 adresseert 'na afdeling 3.4',
+    geen artikel; gemeten 22-10-2026 in de hele Awb) speelt niet af, met die
+    reden, in plaats van dat de hele opbouw stopt."""
+    try:
+        return _speel(wet, h, herkomst)
+    except KeyError as e:
+        raise Fout(f"het adres van de opdracht noemt geen {e.args[0]}") from None
+
+
+def _speel(wet, h, herkomst):
     soort, adres, opdracht = h["soort"], h["adres"] or {}, h["opdracht"]
     if not aanhalingstekens_kloppen(opdracht):
         # nr. 20, UU en CCC: een openend teken waar een sluitend hoort. Wat

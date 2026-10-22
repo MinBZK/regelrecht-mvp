@@ -4,13 +4,16 @@ eigen proces. De dienst (src/, Rust) start hem per opdracht en leest wat hij
 zegt.
 
     python3 werker.py regeling BWBR0007376 --uit regeling.json
-    python3 werker.py keten    BWBR0007376 --uit t.json --gegevens a:b --status s.json
+    python3 werker.py keten    BWBR0007376 --uit t.json --gegevens a:b --status s.json [--alles]
     python3 werker.py dossier  BWBR0007376 36889 --uit t.json
     python3 werker.py opbouw   BWBR0007376 --uit t.json --gegevens a:b --status s.json
 
 regeling  wat wetten.overheid.nl over de regeling weet (de versies en hun dossiers)
-keten     de versies en bekendmakingen ophalen en de wet door de tijd opbouwen
-dossier   een Kamerdossier ophalen en afspelen
+keten     de versies en bekendmakingen ophalen en de wet door de tijd opbouwen;
+          zonder --alles alleen de jongste (WETSGESCHIEDENIS_KETEN_MAX)
+dossier   een Kamerdossier ophalen en afspelen; een dossier van vóór 1995
+          (alleen een scan in Staten-Generaal Digitaal) wordt gelezen, niet
+          afgespeeld
 opbouw    de wet door de tijd opnieuw opbouwen uit wat er al is (na een dossier)
 
 De uitkomst gaat als JSON naar --uit; de rest is log. Stdout en stderr zijn
@@ -153,6 +156,11 @@ def keten_modules():
     return kamerdossier, bouw, keten
 
 
+def oude_kamerstukken():
+    import oude_kamerstukken
+    return oude_kamerstukken
+
+
 def tijdlijn_van(mappen):
     def van(nr):
         for m in mappen:
@@ -184,16 +192,26 @@ def schrijf(pad, x):
 def main(args):
     wat, uit = args[0], optie(args, "--uit")
     mappen = [m for m in (optie(args, "--gegevens") or "").split(":") if m]
+    if "--alles" in args:
+        # kamerdossier leest de grens bij het laden.
+        os.environ["WETSGESCHIEDENIS_KETEN_MAX"] = "100000"
     kamerdossier, bouw, keten = keten_modules()
     if wat == "regeling":
         schrijf(uit, kamerdossier.regeling(args[1]))
     elif wat == "keten":
-        print(f"De versies van {args[1]} en de bekendmakingen ertussen ophalen", flush=True)
+        print(f"{'Alle' if '--alles' in args else 'De jongste'} versies van {args[1]} en de bekendmakingen ertussen ophalen",
+              flush=True)
         kamerdossier.main([args[1], "--keten"])
         print("Elke overgang afspelen, met de toelichting die er al is", flush=True)
         schrijf(uit, keten.bouw(args[1], tijdlijn_van=tijdlijn_van(mappen), status_van=status_van(optie(args, "--status"))))
     elif wat == "opbouw":
         schrijf(uit, keten.bouw(args[1], tijdlijn_van=tijdlijn_van(mappen), status_van=status_van(optie(args, "--status"))))
+    elif wat == "dossier" and oude_kamerstukken().is_oud(args[2]):
+        print(f"Dossier {args[2]} is van vóór 1995: de scans uit Staten-Generaal Digitaal lezen", flush=True)
+        log = []
+        t = oude_kamerstukken().tijdlijn(args[1], args[2], kamerdossier.REGELINGEN, kamerdossier.KAMERDOSSIERS, log)
+        print("\n".join(log), flush=True)
+        schrijf(uit, t)
     elif wat == "dossier":
         print(f"Dossier {args[2]} ophalen", flush=True)
         kamerdossier.main([args[1], "--dossier", args[2]])

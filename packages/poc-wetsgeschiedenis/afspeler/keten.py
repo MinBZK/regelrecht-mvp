@@ -176,7 +176,8 @@ def uit_dossiers(stuk, datum, nrs, tijdlijn_van, status_van, bwb, titels):
                             "titel": b.get("titel"), "artikelen": list(arts),
                             "leden": {a: b["leden"][a] for a in arts if (b.get("leden") or {}).get(a)},
                             "tekst": b["tekst"],
-                            "bron": {"soort": "Kamerstuk", "stuk": b["stuk"], "datum": b["datum"], "dossier": nr}})
+                            "bron": {"soort": "Kamerstuk", "stuk": b["stuk"], "datum": b["datum"], "dossier": nr,
+                                     **({"url": b["url"], "oud": b["oud"]} if b.get("url") else {})}})
         status.append({"nr": nr, "status": "opgehaald", "naam": t.get("naam"), "artikel": artikel,
                        "brokken": len(gevonden)})
     return brokken, status
@@ -223,8 +224,11 @@ def bouw(bwb, tijdlijn_van=None, status_van=None):
     begin = {"volgorde": v0, "blokken": dict(huidig)}
     volgorde = v0
 
+    afgekapt = k.get("afgekapt")
     stukken = [{"ondernummer": "–", "volgorde": 0, "stuk": stuk_van(begin_d), "soort": "Versie van de wet",
-                "titel": f"{titel}, zoals de wet gold op {begin_d} (de oudste versie op wetten.overheid.nl)",
+                "titel": f"{titel}, zoals de wet gold op {begin_d} " + (
+                    f"(de oudste versie die nu is opgehaald; de {afgekapt['versies']} versies sinds {afgekapt['sinds']} volgen)"
+                    if afgekapt else "(de oudste versie op wetten.overheid.nl)"),
                 "datum": begin_d, "kamer": "", "speelt_mee": True, "uitslag": None, "niet_mee": None}]
     momenten = [{"soort": "stuk", "stuk": stuk_van(begin_d), "datum": begin_d}]
     stappen, doorwerking, tel = [], [], {"afgespeeld": 0, "aanname": 0, "niet": 0}
@@ -260,6 +264,14 @@ def bouw(bwb, tijdlijn_van=None, status_van=None):
                               "geen tekst van deze versie op wetten.overheid.nl")
             if o["tot"] != begin_d and o["tot"] < begin_d:
                 momenten.insert(0, {"soort": "stuk", "stuk": stuk, "datum": o["tot"]})
+            if o["tot"] != begin_d:
+                # Geen tekst om af te spelen, wel een dossier dat erover spreekt
+                # (de Awb van 1994: haar Kamerstukken uit Staten-Generaal
+                # Digitaal). Het hangt aan de artikelen van de oudste versie.
+                dd, ds = uit_dossiers(stuk, o["tot"], o["dossiers"], tijdlijn_van, status_van, bwb, titels)
+                brokken += dd
+                gelezen += [d["nr"] for d in ds if d["status"] == "opgehaald"]
+                st["bronnen"] = {"dossiers": ds, "publicaties": o["staatsbladen"], "nota": {}}
             continue
         wet = lees(o["tot"])
         nb, nv = blokken(wet)
@@ -352,7 +364,7 @@ def bouw(bwb, tijdlijn_van=None, status_van=None):
     # Het ijkpunt is de laatste versie zoals zij is, zonder de normalisering van de toets.
     eind = {k["nr"]: A.artikeltekst(k) for k in vorige_wet if k["soort"] == "artikel"}
     return {
-        "dossier": bwb, "naam": f"{titel} door de tijd", "soort": "keten", "deze_wet": titels,
+        "dossier": bwb, "naam": f"{titel} door de tijd", "soort": "keten", "deze_wet": titels, "afgekapt": afgekapt,
         "voorstel": stuk_van(begin_d), "stukken": stukken, "momenten": momenten, "refs": refs, "begin": begin,
         "stappen": stappen, "identiteit": {}, "toelichtingen": {}, "groepen": A.GROEPEN, "bron": {},
         "ijkpunten": [{"naam": f"De geldende tekst ({data[-1]})", "soort": "bwb",

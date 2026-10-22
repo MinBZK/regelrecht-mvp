@@ -65,6 +65,7 @@ CURL = ["curl", "-sfL", "--http1.1", "--retry", "3", "--retry-all-errors", "-A",
 # Een regeling met honderden versies (diezelfde regeling: 718) speelt de keten
 # niet helemaal af: alleen de jongste.
 KETEN_MAX = int(os.environ.get("WETSGESCHIEDENIS_KETEN_MAX") or 40)
+CURL_BEKENDMAKING = ["curl", "-sfL", "--http1.1", "--retry", "3", "-A", "Mozilla/5.0 (regelrecht-werkbank)"]
 # Een bekendmaking: het Staatsblad (wet, besluit) of de Staatscourant
 # (ministeriële regeling).
 BEKENDMAKING = r"(?:stb|stcrt)-\d{4}-\d+"
@@ -115,12 +116,15 @@ def keten(reg, log):
         if d:
             per_datum.setdefault(d, []).append(v)
     data = sorted(per_datum)
+    afgekapt = None
     if len(data) > KETEN_MAX:
         log.append(f"keten: {len(data)} versies; alleen de jongste {KETEN_MAX} (WETSGESCHIEDENIS_KETEN_MAX)")
+        afgekapt = {"versies": len(data), "sinds": data[0]}
         data = data[-KETEN_MAX:]
         per_datum = {d: per_datum[d] for d in data}
     stb_map = REGELINGEN / bwb / "stb"
-    uit = {"bwb": bwb, "titel": reg["titel"], "afkorting": reg.get("afkorting"), "versies": [], "overgangen": []}
+    uit = {"bwb": bwb, "titel": reg["titel"], "afkorting": reg.get("afkorting"), "versies": [], "overgangen": [],
+           "afgekapt": afgekapt, "ontstaan": []}
     beschikbaar = set(reg.get("beschikbaar") or data)
     for d in data:
         pad = wetten_versie(bwb, d, log) if d in beschikbaar else None
@@ -133,11 +137,17 @@ def keten(reg, log):
         for s in stbs:
             doel = stb_map / f"{s}.xml"
             if not doel.exists():
-                try:
-                    stb_map.mkdir(parents=True, exist_ok=True)
-                    doel.write_bytes(haal(f"https://zoek.officielebekendmakingen.nl/{s}.xml"))
-                except Exception as e:  # noqa: BLE001 -- het falen hoort in het log
-                    log.append(f"{s}: NIET opgehaald ({e})")
+                # Met curl: urllib haalde de 375 Staatsbladen van de Awb via de
+                # proxy in een uur binnen, curl in een halve minuut (22-10-2026).
+                # Gewoon --retry herhaalt een 429, maar geen 404 (een Staatsblad
+                # van vóór 1995 is er niet als XML).
+                stb_map.mkdir(parents=True, exist_ok=True)
+                r = subprocess.run(CURL_BEKENDMAKING + [f"https://zoek.officielebekendmakingen.nl/{s}.xml"],
+                                   capture_output=True)
+                if r.returncode:
+                    log.append(f"{s}: NIET opgehaald (curl {r.returncode})")
+                else:
+                    doel.write_bytes(r.stdout)
         uit["overgangen"].append({
             "van": data[i - 1] if i else None, "tot": d,
             "betreft": sorted({r["betreft"] for r in rijen}),
@@ -145,6 +155,20 @@ def keten(reg, log):
             "staatsbladen": stbs,
             "ondertekening": min((r["ondertekening"] for r in rijen if r["ondertekening"]), default=None),
         })
+    # De oudste versie zonder dossier, van vóór 1996: wetten.overheid.nl koppelt
+    # pas vanaf 1995. De dossiers die haar maakten staan dan in Staten-Generaal
+    # Digitaal (oude_kamerstukken.py); alleen als de hele geschiedenis er is,
+    # want anders is de oudste overgang een latere.
+    eerste = uit["overgangen"][0] if uit["overgangen"] else None
+    if eerste and not afgekapt and not eerste["dossiers"] and eerste["tot"] < "1996":
+        sys.path.insert(0, str(HIER))
+        import oude_kamerstukken
+        try:
+            uit["ontstaan"] = oude_kamerstukken.ontstaan(reg["titel"].split("|")[0].strip(), eerste["tot"])
+            eerste["dossiers"] = list(uit["ontstaan"])
+            log.append(f"ontstaan: {', '.join(uit['ontstaan']) or 'geen dossier gevonden'} (Staten-Generaal Digitaal)")
+        except Exception as e:  # noqa: BLE001 -- het falen hoort in het log
+            log.append(f"ontstaan: NIET gezocht ({e})")
     uit["aanhangig"] = [v for v in reg["versies"] if v["betreft"] == "Aanhangig"]
     uit["ingetrokken"] = [v for v in reg["versies"] if v["betreft"].startswith("Intrekking")]
     (REGELINGEN / bwb / "keten.json").write_text(json.dumps(uit, ensure_ascii=False, indent=1), encoding="utf-8")

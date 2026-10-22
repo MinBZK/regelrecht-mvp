@@ -1,7 +1,10 @@
-//! The queue: one task at a time. A task is a law through time (`keten`) or
-//! one Kamerdossier. What a visitor asks for goes before what the queue
-//! fetches in the background; the same task is never in it twice. After a
-//! law, the queue fetches its dossiers in the background, newest first, and
+//! The queue: one task at a time. A task is a law through time (`keten`), its
+//! whole history (`geschiedenis`) or one Kamerdossier. What a visitor asks
+//! for goes before what the queue fetches in the background; the same task is
+//! never in it twice. A law with many versions comes in two steps: first the
+//! newest (`keten`, quick), then in the background all of them. After either,
+//! the queue fetches the law's dossiers in the background: first the old ones
+//! that made it (scans from before 1995), then the rest newest first; it
 //! rebuilds the law after each one, so that the dossier's toelichting hangs
 //! at its transition. A dossier that fails is remembered and not retried by
 //! itself.
@@ -21,7 +24,19 @@ use crate::AppState;
 #[serde(rename_all = "lowercase")]
 pub enum Wat {
     Keten,
+    Geschiedenis,
     Dossier,
+}
+
+/// Where a new task goes in the queue.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Plek {
+    /// Before the background, behind what other visitors asked for.
+    Bezoeker,
+    /// First of the background.
+    Vooraan,
+    /// Last of the background.
+    Achteraan,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -50,7 +65,7 @@ pub struct Taak {
 
 impl Taak {
     fn sleutel(&self) -> (Wat, Option<&str>, Option<&str>) {
-        let bwb = (self.wat == Wat::Keten).then_some(self.bwb.as_str());
+        let bwb = (self.wat != Wat::Dossier).then_some(self.bwb.as_str());
         (self.wat, bwb, self.dossier.as_deref())
     }
     fn kort(&self) -> Value {
@@ -86,7 +101,7 @@ impl Rij {
         bwb: &str,
         dossier: Option<&str>,
         voor: Option<&str>,
-        achtergrond: bool,
+        plek: Plek,
     ) -> Value {
         let n = self.teller.fetch_add(1, Ordering::Relaxed) + 1;
         let taak = Taak {
@@ -108,26 +123,32 @@ impl Rij {
             .find(|id| b.taken[*id].sleutel() == taak.sleutel())
             .cloned();
         if let Some(id) = bestaand {
-            // What a visitor asks for now goes before the background.
-            if !achtergrond && b.taken[&id].voor.is_some() {
+            // What a visitor asks for now goes before the background; what
+            // the background wants first, goes to its front.
+            let opschuiven = match plek {
+                Plek::Bezoeker => b.taken[&id].voor.is_some(),
+                Plek::Vooraan => true,
+                Plek::Achteraan => false,
+            };
+            if opschuiven {
                 if let Some(i) = b.wachtend.iter().position(|x| *x == id) {
                     b.wachtend.remove(i);
-                    b.wachtend.push_front(id.clone());
+                    let j = match plek {
+                        Plek::Bezoeker => 0,
+                        _ => Self::begin_achtergrond(&b),
+                    };
+                    b.wachtend.insert(j, id.clone());
                 }
             }
             return Self::json(&b, &id);
         }
         let id = taak.id.clone();
-        if achtergrond {
-            b.wachtend.push_back(id.clone());
-        } else {
-            // Before the background, behind what other visitors asked for.
-            let i = b
-                .wachtend
-                .iter()
-                .position(|x| b.taken[x].voor.is_some())
-                .unwrap_or(b.wachtend.len());
-            b.wachtend.insert(i, id.clone());
+        match plek {
+            Plek::Achteraan => b.wachtend.push_back(id.clone()),
+            Plek::Bezoeker | Plek::Vooraan => {
+                let i = Self::begin_achtergrond(&b);
+                b.wachtend.insert(i, id.clone());
+            }
         }
         b.taken.insert(id.clone(), taak);
         b.volgorde.push_back(id.clone());
@@ -144,6 +165,14 @@ impl Rij {
         drop(b);
         self.wekker.notify_one();
         antwoord
+    }
+
+    /// Where the background starts: after what visitors asked for.
+    fn begin_achtergrond(b: &Binnen) -> usize {
+        b.wachtend
+            .iter()
+            .position(|x| b.taken[x].voor.is_some())
+            .unwrap_or(b.wachtend.len())
     }
 
     fn json(b: &Binnen, id: &str) -> Value {
@@ -271,25 +300,40 @@ async fn draai(state: &AppState, taak: &Taak) -> Result<String, String> {
         }
     };
     match taak.wat {
-        Wat::Keten => {
+        Wat::Keten | Wat::Geschiedenis => {
             let status = schrijf_status(state, &id)?;
-            werker::draai(
-                state,
-                &[
-                    "keten",
-                    &taak.bwb,
-                    "--uit",
-                    werker::pad(&uit),
-                    "--gegevens",
-                    &mappen,
-                    "--status",
-                    werker::pad(&status),
-                ],
-                None,
-                regel,
-            )
-            .await?;
+            let mut args: Vec<&str> = vec![
+                "keten",
+                &taak.bwb,
+                "--uit",
+                werker::pad(&uit),
+                "--gegevens",
+                &mappen,
+                "--status",
+                werker::pad(&status),
+            ];
+            if taak.wat == Wat::Geschiedenis {
+                args.push("--alles");
+            }
+            werker::draai(state, &args, None, regel).await?;
             let naam = bewaar(state, &uit, None)?;
+            // Only the newest versions: the rest comes first in the background.
+            let rest = state
+                .opslag
+                .keten(&taak.bwb)
+                .and_then(|k| k["afgekapt"]["versies"].as_u64());
+            if let Some(n) = rest.filter(|_| taak.wat == Wat::Keten) {
+                state.rij.voeg(
+                    Wat::Geschiedenis,
+                    &taak.bwb,
+                    None,
+                    Some(&taak.bwb),
+                    Plek::Vooraan,
+                );
+                log(&format!(
+                    "De rij haalt op de achtergrond alle {n} versies op, en dan de oudste dossiers"
+                ));
+            }
             let n = verdiep(state, &taak.bwb);
             log(&format!(
                 "Klaar: {naam}{}",
@@ -377,8 +421,10 @@ fn schrijf_status(state: &AppState, id: &str) -> Result<std::path::PathBuf, Stri
     Ok(pad)
 }
 
-/// Put every dossier of this law that is not there yet in the queue, newest
-/// first: those most often have XML and are the richest. Returns how many.
+/// Put every dossier of this law that is not there yet in the queue. First
+/// the ones that made the law (`ontstaan`: its first toelichting, from before
+/// 1995), then the rest newest first: those most often have XML and are the
+/// richest. Returns how many.
 pub fn verdiep(state: &AppState, bwb: &str) -> usize {
     let Some(k) = state.opslag.keten(bwb) else {
         return 0;
@@ -386,12 +432,22 @@ pub fn verdiep(state: &AppState, bwb: &str) -> usize {
     let mut overgangen: Vec<&Value> = k["overgangen"].as_array().into_iter().flatten().collect();
     overgangen.sort_by(|a, b| b["tot"].as_str().cmp(&a["tot"].as_str()));
     let mislukt = state.opslag.mislukt();
-    let mut gezien = Vec::new();
-    for nr in overgangen
-        .iter()
-        .flat_map(|o| o["dossiers"].as_array().into_iter().flatten())
+    let ontstaan: Vec<&str> = k["ontstaan"]
+        .as_array()
+        .into_iter()
+        .flatten()
         .filter_map(Value::as_str)
-    {
+        .collect();
+    let mut gezien = Vec::new();
+    // The oldest goes in last, so that it ends up first.
+    let reeks = ontstaan.iter().rev().map(|nr| (*nr, Plek::Vooraan)).chain(
+        overgangen
+            .iter()
+            .flat_map(|o| o["dossiers"].as_array().into_iter().flatten())
+            .filter_map(Value::as_str)
+            .map(|nr| (nr, Plek::Achteraan)),
+    );
+    for (nr, plek) in reeks {
         if gezien.iter().any(|g| g == nr)
             || !crate::id::is_dossier(nr)
             || state.opslag.heeft(nr)
@@ -400,7 +456,7 @@ pub fn verdiep(state: &AppState, bwb: &str) -> usize {
             continue;
         }
         gezien.push(nr.to_string());
-        state.rij.voeg(Wat::Dossier, bwb, Some(nr), Some(bwb), true);
+        state.rij.voeg(Wat::Dossier, bwb, Some(nr), Some(bwb), plek);
     }
     gezien.len()
 }
