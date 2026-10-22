@@ -25,6 +25,7 @@ use crate::chronicle::EXECUTOGRAM;
 use crate::chronicle::{Chronicle, Gram, GramMoment};
 use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
+use crate::files::{Disk, Files};
 use crate::identity;
 use crate::reading::{self, Answer, Asked, Loaded, Reader, Reduction, Term};
 use crate::shape::{self, Field, Shape};
@@ -62,9 +63,9 @@ impl Reductions {
     /// directory's name, or whose file is not named after its `valid_from`
     /// is an error. So is any other entry under `reducties` that is not
     /// hidden (a name starting with `.`), and a `dir` that is no directory. Without a `reducties` directory the cell has
-    /// none.
-    fn load(recording_actor: &str, dir: &Path) -> Result<Self> {
-        if !dir.is_dir() {
+    /// none. Everything is read through `files`.
+    fn load(files: &dyn Files, recording_actor: &str, dir: &Path) -> Result<Self> {
+        if !files.is_dir(dir) {
             return Err(setup(format!(
                 "{}: no directory of the cell of '{recording_actor}'",
                 dir.display()
@@ -72,10 +73,10 @@ impl Reductions {
         }
         let mut versions = Vec::new();
         let root = dir.join("reducties");
-        if root.exists() && !root.is_dir() {
+        if files.exists(&root) && !files.is_dir(&root) {
             return Err(setup(format!("{}: no directory", root.display())));
         }
-        if !root.is_dir() {
+        if !files.is_dir(&root) {
             return Ok(Self {
                 dir: root,
                 versions,
@@ -87,24 +88,22 @@ impl Reductions {
             path.file_name()
                 .is_some_and(|name| name.to_string_lossy().starts_with('.'))
         };
-        for entry in std::fs::read_dir(&root)? {
-            let id_dir = entry?.path();
+        for id_dir in files.entries(&root)? {
             if hidden(&id_dir) {
                 continue;
             }
-            if !id_dir.is_dir() {
+            if !files.is_dir(&id_dir) {
                 return Err(setup(format!(
                     "{}: not a directory of a reduction; a version belongs at \
                      reducties/<id>/<valid_from>.yaml",
                     id_dir.display()
                 )));
             }
-            for version in std::fs::read_dir(&id_dir)? {
-                let path = version?.path();
+            for path in files.entries(&id_dir)? {
                 if hidden(&path) {
                     continue;
                 }
-                if !path.is_file() || path.extension().is_none_or(|x| x != "yaml") {
+                if !files.is_file(&path) || path.extension().is_none_or(|x| x != "yaml") {
                     return Err(setup(format!(
                         "{}: not a version of a reduction; a version is a file \
                          <valid_from>.yaml",
@@ -116,7 +115,7 @@ impl Reductions {
         }
         paths.sort();
         for path in paths {
-            let reduction = Reduction::parse(std::fs::read_to_string(&path)?)
+            let reduction = Reduction::parse(files.read(&path)?)
                 .map_err(|e| setup(format!("{}: {e}", path.display())))?;
             let named = path
                 .parent()
@@ -161,10 +160,68 @@ impl Cell {
         path: impl AsRef<Path>,
         cell_dir: impl AsRef<Path>,
     ) -> Result<Self> {
-        let recording_actor = recording_actor.into();
-        let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
-        let authority = identity::read(cell_dir.as_ref())?;
-        let chronicle = Chronicle::open(path)?;
+        Self::with_chronicle(
+            &Disk,
+            recording_actor.into(),
+            cell_dir.as_ref(),
+            Chronicle::open(path)?,
+        )
+    }
+
+    /// The cell of `recording_actor`, with an empty chronicle in memory and
+    /// its reductions in its directory `cell_dir`, loaded as [`Cell::open`]
+    /// loads them.
+    pub fn in_memory(
+        recording_actor: impl Into<String>,
+        cell_dir: impl AsRef<Path>,
+    ) -> Result<Self> {
+        Self::in_memory_from(&Disk, recording_actor, cell_dir)
+    }
+
+    /// [`Cell::in_memory`], with the cell directory read through `files`,
+    /// such as a [`crate::Bundle`] a browser holds.
+    pub fn in_memory_from(
+        files: &dyn Files,
+        recording_actor: impl Into<String>,
+        cell_dir: impl AsRef<Path>,
+    ) -> Result<Self> {
+        Self::with_chronicle(
+            files,
+            recording_actor.into(),
+            cell_dir.as_ref(),
+            Chronicle::in_memory(),
+        )
+    }
+
+    /// The cell as [`Cell::in_memory_from`] opens it, with `grams` in its
+    /// chronicle in memory: a chronicle kept elsewhere and read back, such
+    /// as a browser keeps it across a reload. The chronolexograms are
+    /// checked as [`Cell::open`] checks the lines of its file.
+    pub fn restore(
+        files: &dyn Files,
+        recording_actor: impl Into<String>,
+        cell_dir: impl AsRef<Path>,
+        grams: Vec<Gram>,
+    ) -> Result<Self> {
+        Self::with_chronicle(
+            files,
+            recording_actor.into(),
+            cell_dir.as_ref(),
+            Chronicle::in_memory_with(grams)?,
+        )
+    }
+
+    /// The cell with `chronicle`, its reductions and its identity read from
+    /// `cell_dir` through `files`, after the checks of [`Cell::open`] on the
+    /// chronicle.
+    fn with_chronicle(
+        files: &dyn Files,
+        recording_actor: String,
+        cell_dir: &Path,
+        chronicle: Chronicle,
+    ) -> Result<Self> {
+        let reductions = Reductions::load(files, &recording_actor, cell_dir)?;
+        let authority = identity::read(files, cell_dir)?;
         if let Some(g) = chronicle
             .grams()
             .iter()
@@ -182,24 +239,6 @@ impl Cell {
             recording_actor,
             authority,
             chronicle,
-            reductions,
-        })
-    }
-
-    /// The cell of `recording_actor`, with an empty chronicle in memory and
-    /// its reductions in its directory `cell_dir`, loaded as [`Cell::open`]
-    /// loads them.
-    pub fn in_memory(
-        recording_actor: impl Into<String>,
-        cell_dir: impl AsRef<Path>,
-    ) -> Result<Self> {
-        let recording_actor = recording_actor.into();
-        let reductions = Reductions::load(&recording_actor, cell_dir.as_ref())?;
-        let authority = identity::read(cell_dir.as_ref())?;
-        Ok(Self {
-            recording_actor,
-            authority,
-            chronicle: Chronicle::in_memory(),
             reductions,
         })
     }

@@ -13,7 +13,7 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
-use regelrecht_cel::{Cell, Error};
+use regelrecht_cel::{Cell, Error, Files};
 use regelrecht_engine::LawLoad;
 use regelrecht_law_model::{
     Article, ArticleBasedLaw, AuthorityType, CompetentAuthority, HookFilter, ProcedureDefinition,
@@ -31,6 +31,11 @@ pub struct Casus {
     /// From the file name, never from the file.
     #[serde(skip_deserializing)]
     pub id: String,
+    /// The source the case file came from (`pocs/registry.yaml`, `sources`
+    /// of chronolexografie), or none for a case of this crate. From where the
+    /// file is, never from the file.
+    #[serde(skip_deserializing)]
+    pub bron: Option<String>,
     /// The cell that plays the case: its directory under `corpus/cells`, and
     /// the actor it records as.
     pub cel: String,
@@ -132,16 +137,18 @@ pub struct Scenario {
     pub eind: String,
 }
 
-/// The cases in `dir`, one per `<id>.yaml`, in the order of their ids.
-pub fn casussen(dir: &Path) -> Result<Vec<Casus>> {
-    let mut paths: Vec<PathBuf> = std::fs::read_dir(dir)?
-        .filter_map(|e| e.ok().map(|e| e.path()))
+/// The cases in `dir`, one per `<id>.yaml`, in the order of their ids, read
+/// through `files`.
+pub fn casussen(files: &dyn Files, dir: &Path) -> Result<Vec<Casus>> {
+    let mut paths: Vec<PathBuf> = files
+        .entries(dir)?
+        .into_iter()
         .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
         .collect();
     paths.sort();
     let mut uit = Vec::new();
     for path in paths {
-        let mut casus: Casus = serde_yaml_ng::from_str(&std::fs::read_to_string(&path)?)
+        let mut casus: Casus = serde_yaml_ng::from_str(&files.read(&path)?)
             .map_err(|e| Error::Setup(format!("{}: {e}", path.display())))?;
         casus.id = path
             .file_stem()
@@ -160,9 +167,11 @@ pub fn casussen(dir: &Path) -> Result<Vec<Casus>> {
 /// YAML and parsed.
 #[derive(Debug, Clone)]
 pub struct Regelwerk {
-    /// Its directory under `corpus/regulation/nl`, such as
+    /// Its directory under `regulation/nl` of its root, such as
     /// `wet/leerplichtwet_1969`.
     pub map: String,
+    /// The root it was read from: the repository's `corpus`, or a source.
+    pub wortel: PathBuf,
     pub versies: Vec<(String, ArticleBasedLaw)>,
 }
 
@@ -180,28 +189,78 @@ impl Regelwerk {
     fn nieuwste(&self) -> &ArticleBasedLaw {
         &self.versies[self.versies.len() - 1].1
     }
+
+    /// Where it is, for a message: `<root>/regulation/nl/<map>`.
+    fn pad(&self) -> String {
+        format!("{}/regulation/nl/{}", self.wortel.display(), self.map)
+    }
 }
 
-/// Every regelwerk under `root/regulation/nl`, read once at startup. The
-/// derivation looks across all of them for what acts on a case's
+/// Every regelwerk under `regulation/nl` of each root, read once at the
+/// start. The derivation looks across all of them for what acts on a case's
 /// regelwerken, so the whole corpus has to parse, and a new regelwerk that
 /// implements an open term of the Awb, or hooks on every decision, joins
 /// every case, and the tests on the derivation and on the image fail.
-#[derive(Debug, Clone)]
-pub struct Regelwerken(Vec<Regelwerk>);
+#[derive(Debug, Clone, Default)]
+pub struct Regelwerken {
+    werken: Vec<Regelwerk>,
+    /// What loading set aside: a `$id` of a later root that an earlier one
+    /// already holds.
+    pub meldingen: Vec<String>,
+}
 
 impl Regelwerken {
-    /// Read every directory under `root/regulation/nl` that holds versions
-    /// (`<date>.yaml`); its `scenarios` are no versions.
-    pub fn load(root: &Path) -> Result<Self> {
-        let basis = root.join("regulation/nl");
+    /// Read every directory under `regulation/nl` of each of `roots` that
+    /// holds versions (`<date>.yaml`), through `files`; its `scenarios` are
+    /// no versions. A root without `regulation/nl` adds nothing. Two
+    /// directories of one root with the same `$id` are an error: neither is
+    /// the one the corpus means. Across roots the first wins, such as the
+    /// regelrecht corpus over a source, and [`Regelwerken::meldingen`] says
+    /// which it set aside.
+    pub fn load(files: &dyn Files, roots: &[PathBuf]) -> Result<Self> {
+        let mut uit = Self::default();
+        for root in roots {
+            let basis = root.join("regulation/nl");
+            if !files.is_dir(&basis) {
+                continue;
+            }
+            let mut eigen: Vec<Regelwerk> = Vec::new();
+            for werk in Self::uit_wortel(files, root, &basis)? {
+                if let Some(ander) = eigen.iter().find(|w| w.id() == werk.id()) {
+                    return Err(Error::Setup(format!(
+                        "'{}' is in both {} and {}",
+                        werk.id(),
+                        ander.pad(),
+                        werk.pad()
+                    )));
+                }
+                eigen.push(werk);
+            }
+            for werk in eigen {
+                if let Some(ander) = uit.get(werk.id()) {
+                    uit.meldingen.push(format!(
+                        "'{}' in {} is also in {}; the app runs the latter",
+                        werk.id(),
+                        werk.pad(),
+                        ander.pad()
+                    ));
+                    continue;
+                }
+                uit.werken.push(werk);
+            }
+        }
+        Ok(uit)
+    }
+
+    fn uit_wortel(files: &dyn Files, root: &Path, basis: &Path) -> Result<Vec<Regelwerk>> {
         let mut mappen = Vec::new();
-        verzamel(&basis, &mut mappen)?;
+        verzamel(files, basis, &mut mappen)?;
         mappen.sort();
-        let mut uit: Vec<Regelwerk> = Vec::new();
+        let mut uit = Vec::new();
         for map in mappen {
-            let mut paths: Vec<PathBuf> = std::fs::read_dir(&map)?
-                .filter_map(|e| e.ok().map(|e| e.path()))
+            let mut paths: Vec<PathBuf> = files
+                .entries(&map)?
+                .into_iter()
                 .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
                 .collect();
             if paths.is_empty() {
@@ -210,33 +269,36 @@ impl Regelwerken {
             paths.sort();
             let mut versies = Vec::new();
             for path in paths {
-                let yaml = std::fs::read_to_string(&path)?;
-                // Parsed here, so a broken version names its file at startup.
+                let yaml = files.read(&path)?;
+                // Parsed here, so a broken version names its file at the start.
                 let law = ArticleBasedLaw::from_yaml_str(&yaml)
                     .map_err(|e| Error::Setup(format!("{}: {e}", path.display())))?;
                 versies.push((yaml, law));
             }
             let map = map
-                .strip_prefix(&basis)
+                .strip_prefix(basis)
                 .map_err(|e| Error::Setup(e.to_string()))?
                 .to_string_lossy()
                 .replace('\\', "/");
-            uit.push(Regelwerk { map, versies });
+            uit.push(Regelwerk {
+                map,
+                wortel: root.to_path_buf(),
+                versies,
+            });
         }
-        Ok(Self(uit))
+        Ok(uit)
     }
 
     pub fn get(&self, id: &str) -> Option<&Regelwerk> {
-        self.0.iter().find(|r| r.id() == id)
+        self.werken.iter().find(|r| r.id() == id)
     }
 }
 
-fn verzamel(dir: &Path, uit: &mut Vec<PathBuf>) -> Result<()> {
-    for entry in std::fs::read_dir(dir)? {
-        let path = entry?.path();
-        if path.is_dir() && path.file_name().is_none_or(|n| n != "scenarios") {
+fn verzamel(files: &dyn Files, dir: &Path, uit: &mut Vec<PathBuf>) -> Result<()> {
+    for path in files.entries(dir)? {
+        if files.is_dir(&path) && path.file_name().is_none_or(|n| n != "scenarios") {
             uit.push(path.clone());
-            verzamel(&path, uit)?;
+            verzamel(files, &path, uit)?;
         }
     }
     Ok(())
@@ -309,7 +371,7 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cells: &[&Cell]) -> Re
             ))
         })?;
         let mut erbij: Vec<String> = leest(werk.artikelen()).into_iter().collect();
-        for ander in &regelwerken.0 {
+        for ander in &regelwerken.werken {
             if handelt_op(ander, werk) {
                 erbij.push(ander.id().to_string());
             }

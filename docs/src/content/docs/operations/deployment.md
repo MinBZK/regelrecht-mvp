@@ -83,7 +83,6 @@ One failure is harmless: `Could not extract URL from result` with `"status": "su
 | Docs | `regelrecht-docs` | `docs.regelrecht.rijks.app` + `regelrecht.rijks.app` (landing) |
 | PoC portal | `regelrecht-poc` | `poc.regelrecht.rijks.app` |
 | PoC napp | `regelrecht-poc-napp` | (internal; reached through the portal at `/napp/`) |
-| PoC chronolexografie | `regelrecht-poc-chronolexografie` | (internal; reached through the portal at `/chronolexografie/`) |
 | PoC wetsgeschiedenis | `regelrecht-poc-wetsgeschiedenis` | (internal; reached through the portal at `/wetsgeschiedenis/`) |
 | Grafana | `regelrecht-grafana` | `grafana.regelrecht.rijks.app` (built on `main` only; not part of a preview) |
 

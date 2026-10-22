@@ -7,9 +7,10 @@
 //! and nothing of that may reach the next step.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{decision, reading, shape, Cell, Error, Gram, Source};
+use regelrecht_cel::{decision, reading, shape, Cell, Disk, Error, Files, Gram, Source};
 use regelrecht_engine::{
     ArticleResult, FilledBy, LawExecutionService, OpenTermFilled, ParameterType, PathNode,
     PathNodeType,
@@ -22,8 +23,8 @@ use crate::casus::{afleiden, casussen, Afleiding, Casus, Regelwerken};
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// A case with what follows for it from the law ([`Afleiding`]): the
-/// versions of the regelwerken its cell runs, read once at startup, and the
-/// cell's directory.
+/// versions of the regelwerken its cell runs, read once at the start, and the
+/// cell's directory, with the files it is read from.
 #[derive(Debug, Clone)]
 pub struct Corpus {
     pub casus: Casus,
@@ -36,6 +37,9 @@ pub struct Corpus {
     /// The directories of the other cells of the sphere, in the order of
     /// the case file.
     andere_dirs: Vec<PathBuf>,
+    /// Where the cell directories are read from: the disk, or the bundle a
+    /// browser holds.
+    files: Arc<dyn Files>,
 }
 
 /// The cell of the case and the other cells of its sphere (RFC-052). It
@@ -67,6 +71,15 @@ impl Cellen {
         (&mut self.eigen, self.andere.iter().collect())
     }
 
+    /// The chronicle of every cell, the case's cell first, as
+    /// [`Corpus::herstellen`] takes them back.
+    pub fn kronieken(&self) -> Vec<Vec<Gram>> {
+        std::iter::once(&self.eigen)
+            .chain(&self.andere)
+            .map(|c| c.grams().to_vec())
+            .collect()
+    }
+
     /// Copies of every cell with the chronicle in memory, to try a decision
     /// on ([`Cell::sandbox`]).
     pub fn sandbox(&self) -> Self {
@@ -85,22 +98,29 @@ impl std::ops::Deref for Cellen {
 }
 
 impl Corpus {
-    /// The case `casus` on the corpus at `root` (the repository's
-    /// `corpus/`), whose regelwerken are `regelwerken`: its cell at
-    /// `root/cells/<cel>`, and what follows from the law ([`afleiden`]).
-    pub fn load(root: &Path, regelwerken: &Regelwerken, casus: Casus) -> Result<Self> {
-        let cell_dir = root.join("cells").join(&casus.cel);
-        let cell = Cell::in_memory(&casus.cel, &cell_dir)?;
+    /// The case `casus` on the corpus at `roots` (the repository's
+    /// `corpus/`, and for a case from a source that source too) in `files`,
+    /// whose regelwerken are `regelwerken`: its cell at `<root>/cells/<cel>`
+    /// of the first root that has it, and what follows from the law
+    /// ([`afleiden`]).
+    pub fn load(
+        files: Arc<dyn Files>,
+        roots: &[PathBuf],
+        regelwerken: &Regelwerken,
+        casus: Casus,
+    ) -> Result<Self> {
+        let cell_dir = cel_dir(&*files, roots, &casus.cel);
+        let cell = Cell::in_memory_from(&*files, &casus.cel, &cell_dir)?;
         let andere_dirs: Vec<PathBuf> = casus
             .andere_cellen
             .iter()
-            .map(|a| root.join("cells").join(&a.cel))
+            .map(|a| cel_dir(&*files, roots, &a.cel))
             .collect();
         let andere = casus
             .andere_cellen
             .iter()
             .zip(&andere_dirs)
-            .map(|(a, dir)| Cell::in_memory(&a.cel, dir))
+            .map(|(a, dir)| Cell::in_memory_from(&*files, &a.cel, dir))
             .collect::<Result<Vec<_>>>()?;
         let cells: Vec<&Cell> = std::iter::once(&cell).chain(&andere).collect();
         let afleiding = afleiden(regelwerken, &casus, &cells)?;
@@ -121,15 +141,25 @@ impl Corpus {
             versies,
             cell_dir,
             andere_dirs,
+            files,
         })
     }
 
-    /// Every case in `casus_dir` on the corpus at `root`.
+    /// Every case in `casus_dir` on the corpus at `root`, on disk.
     pub fn alle(root: &Path, casus_dir: &Path) -> Result<Vec<Self>> {
-        let regelwerken = Regelwerken::load(root)?;
-        casussen(casus_dir)?
+        Self::alle_in(Arc::new(Disk), &[root.to_path_buf()], casus_dir)
+    }
+
+    /// Every case in `casus_dir` on the corpus at `roots`, all in `files`.
+    pub fn alle_in(
+        files: Arc<dyn Files>,
+        roots: &[PathBuf],
+        casus_dir: &Path,
+    ) -> Result<Vec<Self>> {
+        let regelwerken = Regelwerken::load(&*files, roots)?;
+        casussen(&*files, casus_dir)?
             .into_iter()
-            .map(|c| Self::load(root, &regelwerken, c))
+            .map(|c| Self::load(files.clone(), roots, &regelwerken, c))
             .collect()
     }
 
@@ -153,9 +183,48 @@ impl Corpus {
         Ok(Cellen { eigen, andere })
     }
 
+    /// The case's cell and the other cells of its sphere with the
+    /// chronicles `kronieken` held before, in the order of [`Corpus::cell`]
+    /// and of [`Cellen::kronieken`]: a game kept across a reload. Each is
+    /// checked as a chronicle read from a file ([`Cell::restore`]), and a
+    /// count that does not match the case's cells is an error.
+    pub fn herstellen(&self, kronieken: Vec<Vec<Gram>>) -> Result<Cellen> {
+        let cellen: Vec<(&str, &Path)> =
+            std::iter::once((self.casus.cel.as_str(), self.cell_dir.as_path()))
+                .chain(
+                    self.casus
+                        .andere_cellen
+                        .iter()
+                        .zip(&self.andere_dirs)
+                        .map(|(a, dir)| (a.cel.as_str(), dir.as_path())),
+                )
+                .collect();
+        if kronieken.len() != cellen.len() {
+            return Err(Error::Setup(format!(
+                "case '{}' has {} cells, not {}",
+                self.casus.id,
+                cellen.len(),
+                kronieken.len()
+            )));
+        }
+        let mut cells = cellen
+            .into_iter()
+            .zip(kronieken)
+            .map(|((cel, dir), grams)| Cell::restore(&*self.files, cel, dir, grams))
+            .collect::<Result<Vec<_>>>()?
+            .into_iter();
+        let eigen = cells
+            .next()
+            .ok_or_else(|| Error::Setup("a case has its own cell".into()))?;
+        Ok(Cellen {
+            eigen,
+            andere: cells.collect(),
+        })
+    }
+
     /// The cell `cel` in `dir`, with what `begin` records.
     fn begonnen(&self, cel: &str, dir: &Path, begin: Option<&crate::casus::Begin>) -> Result<Cell> {
-        let mut cell = Cell::in_memory(cel, dir)?;
+        let mut cell = Cell::in_memory_from(&*self.files, cel, dir)?;
         let Some(begin) = begin else {
             return Ok(cell);
         };
@@ -225,6 +294,7 @@ impl Corpus {
         let a = &self.afleiding;
         json!({
             "id": c.id,
+            "bron": c.bron,
             "titel": c.titel,
             "omschrijving": c.omschrijving,
             "cel": c.cel,
@@ -251,6 +321,7 @@ impl Corpus {
         let c = &self.casus;
         json!({
             "id": c.id,
+            "bron": c.bron,
             "titel": c.titel,
             "omschrijving": c.omschrijving,
             "cel_naam": c.cel_naam,
@@ -258,6 +329,19 @@ impl Corpus {
             "rol": self.afleiding.rol,
         })
     }
+}
+
+/// The directory of the cell `cel`: under `cells` of the first of `roots`
+/// that has it, or else of the first root, where loading it says it is
+/// missing.
+fn cel_dir(files: &dyn Files, roots: &[PathBuf], cel: &str) -> PathBuf {
+    let onder = |root: &PathBuf| root.join("cells").join(cel);
+    roots
+        .iter()
+        .map(onder)
+        .find(|dir| files.is_dir(dir))
+        .or_else(|| roots.first().map(onder))
+        .unwrap_or_else(|| Path::new("cells").join(cel))
 }
 
 /// The object `v` as a map; a value that is no object is an error.
@@ -2318,33 +2402,6 @@ mod tests {
                 "regeling_gehandicaptenparkeerkaart",
             ]
         );
-    }
-
-    #[test]
-    fn the_image_and_its_deploy_filter_hold_what_every_case_runs() {
-        // The Dockerfile copies the regelwerken and the cell of each case,
-        // and a change to one of them rebuilds the image.
-        let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let dockerfile = std::fs::read_to_string(dir.join("Dockerfile")).unwrap();
-        let filters = std::fs::read_to_string(dir.join("../../script/deploy-filters.mjs")).unwrap();
-        let alle = Corpus::alle(&dir.join("../../corpus"), &dir.join("casussen")).unwrap();
-        for c in &alle {
-            // Its own cell and the other cells of its sphere (RFC-052).
-            let cellen = std::iter::once(&c.casus.cel)
-                .chain(c.casus.andere_cellen.iter().map(|a| &a.cel))
-                .map(|cel| format!("corpus/cells/{cel}/"));
-            let mappen = c.mappen().map(|m| format!("corpus/regulation/nl/{m}/"));
-            for pad in mappen.chain(cellen) {
-                assert!(
-                    dockerfile.contains(&format!("COPY {pad} /app/{pad}")),
-                    "{pad} not in the Dockerfile"
-                );
-                assert!(
-                    filters.contains(&format!("'{pad}'")),
-                    "{pad} not in deploy-filters.mjs"
-                );
-            }
-        }
     }
 
     #[test]

@@ -1052,11 +1052,16 @@ impl Default for TraceBuilder {
 
 impl TraceBuilder {
     /// Create a new TraceBuilder with tracing enabled and timing.
+    ///
+    /// Under WebAssembly it times nothing, as [`TraceBuilder::new_untimed`]:
+    /// `Instant::now()` panics on `wasm32-unknown-unknown`, which has no
+    /// clock, so a traced evaluation there would abort. `duration_us` is
+    /// absent under WebAssembly either way (RFC-039).
     pub fn new() -> Self {
         Self {
             stack: Vec::new(),
             enabled: true,
-            timed: true,
+            timed: !cfg!(target_arch = "wasm32"),
         }
     }
 

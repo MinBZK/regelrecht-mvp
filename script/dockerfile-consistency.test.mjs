@@ -25,7 +25,6 @@ const DOCKERFILES = [
   'frontend-demo/Dockerfile',
   'packages/poc-portal/Dockerfile',
   'packages/poc-napp/Dockerfile',
-  'packages/poc-chronolexografie/Dockerfile',
   'packages/poc-wetsgeschiedenis/Dockerfile',
 ];
 
