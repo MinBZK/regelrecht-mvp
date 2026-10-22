@@ -52,14 +52,14 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-040 | The schema documents itself | [Schema](./schema) |
 | RFC-041 | A void is not scoped like a replacement | [Voiding an output](../concepts/hooks-and-reactive-execution#voiding-an-output) |
 | RFC-044 | Rulework (regelwerk) as the name for a regulation in YAML (partially applied) | [Glossary](./glossary#regelrecht-specific-terms) |
-| RFC-045 | The application as something the Awb hooks onto (`submission`, `moment`) | [Chronolexography](../concepts/chronolexography#the-application-with-the-awb-on-it), [Schema](./schema) |
-| RFC-046 | Chronolexography is an optional layer on RegelRecht (`packages/cel`) | [Chronolexography](../concepts/chronolexography#the-application-in-the-chronicle), [Architecture](../guide/architecture) |
-| RFC-047 | The decision on the application (stages, `decided_per_case_by`, `Cell::decide`) | [Chronolexography](../concepts/chronolexography#the-decision-on-the-application), [Schema](./schema) |
-| RFC-048 | A cell reads its chronicle back through a reduction (`REDUCTIE`, `source: {decisions}`, `reading`) that fills an open term (`implements`, `Cell::explain`) | [Chronolexography](../concepts/chronolexography#once-per-school-year), [Inversion of Control](../concepts/inversion-of-control#a-reduction-that-fills-an-open-term) |
+| RFC-045 | Submissions and decisions in the law format (`produces` as a list, hooks on a submission, `moment`, stages, the type `decision`, `source.article`, the objection) | [Chronolexography](../concepts/chronolexography#vakantieverlof), [Law Format](../concepts/law-format#what-the-article-produces), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article), [Schema](./schema) |
+| RFC-046 | What a cell records (`packages/cel`, `cel.yaml`, submissions, decisions and executograms, replay) | [Chronolexography](../concepts/chronolexography), [Architecture](../guide/architecture) |
+| RFC-047 | Superseded: merged into RFC-045 and RFC-046 | [Chronolexography](../concepts/chronolexography#the-decision) |
+| RFC-048 | Reduction and synthesis (`REDUCTIE`, `source.decisions`, `source.facts`, `combine: ONLY`, the answerer, the sphere, `FilledBy::Answers`) | [Chronolexography](../concepts/chronolexography#once-per-school-year), [Inversion of Control](../concepts/inversion-of-control#a-reduction-that-fills-an-open-term) |
 | RFC-049 | FOREACH with `as` binds only its name | [Collections](../concepts/collections#the-element-binding) |
-| RFC-050 | The objection is a second submission (`BEZWAAR`, Awb 7:11 reconsiders the contested decision by calling its article); calling the decision of an article (`source.article`, `parameters_from`, type `decision`, findings, `derived`) | [Chronolexography](../concepts/chronolexography#the-objection), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article), [Schema](./schema) |
-| RFC-051 | What a cell records without a submission (`Cell::record_executogram`, a fact in `requires`, `source.facts`, `combine: ONLY`) | [Chronolexography](../concepts/chronolexography#outside-the-school-holidays), [Schema](./schema) |
-| RFC-052 | Synthesis: values of other actors by competence (`competent_authority` on an open term and a fact, `combine` on an open term, `Call::sphere`, `FilledBy::Answers`) | [Competent Authority](../concepts/competent-authority#who-answers-an-open-term), [Schema](./schema) |
+| RFC-050 | Superseded: merged into RFC-045, RFC-046 and RFC-048 | [Chronolexography](../concepts/chronolexography#the-objection), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article) |
+| RFC-051 | Facts and competence in the law format (a fact in `requires`, `competent_authority` and `combine` on an open term) | [Competent Authority](../concepts/competent-authority#who-answers-an-open-term), [Schema](./schema) |
+| RFC-052 | Superseded: merged into RFC-046, RFC-048 and RFC-051 | [Competent Authority](../concepts/competent-authority#who-answers-an-open-term) |
 
 ## Backlog
 

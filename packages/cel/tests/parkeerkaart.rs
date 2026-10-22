@@ -721,7 +721,7 @@ fn an_unfounded_objection_against_a_grant_leaves_the_decision_standing() {
 }
 
 // ---------------------------------------------------------------------------
-// The cell's answer in the trace (RFC-048 §3)
+// The cell's answer in the trace (RFC-048 §5)
 // ---------------------------------------------------------------------------
 
 /// The nodes of `node` and below where the cell answered an open term.

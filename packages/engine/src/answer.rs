@@ -1,4 +1,4 @@
-//! An answerer for open terms that the caller supplies (RFC-048 §3).
+//! An answerer for open terms that the caller supplies (RFC-048 §2).
 //!
 //! Who runs an execution may know the answer to an open term that the
 //! engine does not: a keeper of records that reads them back with rulework

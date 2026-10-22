@@ -51,7 +51,7 @@ open_terms:
     combine: OR
 ```
 
-Where one law reads such a term, it reads the output of the establishing article with `source.regulation`. The engine then asks only the answerers the term names, and combines their answers with the term's `combine` ([RFC-052](/rfcs/rfc-052)). A cell the term does not name is not asked. For a term without `competent_authority`, only the cell that runs the decision is asked, as before. The article's own `competent_authority` routes nothing.
+Where one law reads such a term, it reads the output of the establishing article with `source.regulation`. The engine then asks only the answerers the term names, and combines their answers with the term's `combine` ([RFC-048](/rfcs/rfc-048)). A cell the term does not name is not asked. For a term without `competent_authority`, only the cell that runs the decision is asked, as before. The article's own `competent_authority` routes nothing.
 
 ## One law, several authorities
 
@@ -62,6 +62,7 @@ A single law can name a different authority per article, because different artic
 - [Multi-Org Execution](./multi-org-execution) - how the competent authority decides execute-vs-accept
 - [Notes and Annotations](./notes-and-annotations) - how note authority is derived from the competent authority
 - [RFC-002: Bevoegdheid](/rfcs/rfc-002) - full specification
-- [RFC-052: Synthesis](/rfcs/rfc-052) - asking the competent cells for a value of another actor
+- [RFC-051: Facts and Competence](/rfcs/rfc-051) - competence on an open term and a fact
+- [RFC-048: Reduction and Synthesis](/rfcs/rfc-048) - asking the competent cells for a value of another actor
 - [Rules as Executed, section 4.3](/research/rules-as-executed#sec:whochooses) - the position paper on which authority chooses and publishes an encoding
 - [Rules as Executed, section 4.6](/research/rules-as-executed#sec:overrides) - the position paper on overrides and discretion
