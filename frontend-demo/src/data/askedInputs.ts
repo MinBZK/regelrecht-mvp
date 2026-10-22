@@ -143,7 +143,7 @@ export function parseAnswer(kind: string, raw: unknown): unknown {
  */
 export function claimKeyFor<V>(
   law: Pick<AskedLaw, 'doc'>,
-  params: Readonly<Record<string, V>>,
+  params: Readonly<{ bsn?: V; kvk_nummer?: V }>,
 ): { keyField: 'kvk_nummer' | 'bsn'; keyValue: V | undefined } {
   const declared = new Set((law.doc?.articles ?? []).flatMap((a) => (a.machine_readable?.execution?.parameters ?? []).map((p) => p.name)));
   if (declared.has('kvk_nummer') && params.kvk_nummer) return { keyField: 'kvk_nummer', keyValue: params.kvk_nummer };

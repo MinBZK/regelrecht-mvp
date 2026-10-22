@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * The walkthrough's controls, in the deck's footer while a replay runs.
  *
@@ -20,7 +20,7 @@ const { t, locale } = useViewerI18n();
 const router = useRouter();
 
 const SPEEDS = [1, 1.25, 1.5];
-function speedText(s) {
+function speedText(s: number) {
   return `${new Intl.NumberFormat(intlLocale()).format(s)}×`;
 }
 
@@ -39,7 +39,7 @@ function nextChapter() {
 }
 /** A sentence again, or past one: ten seconds back or forward. */
 const STEP = 10;
-function skip(by) {
+function skip(by: number) {
   const end = track.value?.duration ?? 0;
   seek(Math.max(0, Math.min(end - 0.5, replay.now + by)));
 }
@@ -66,8 +66,8 @@ async function leave() {
   stopReplay();
 }
 
-const backButton = ref(null);
-const playButton = ref(null);
+const backButton = ref<HTMLElement | null>(null);
+const playButton = ref<HTMLElement | null>(null);
 // When a question opens, the question that had focus is gone from the rail;
 // hand focus to the way back, and to play on return.
 watch(

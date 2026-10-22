@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { usePresentation } from './usePresentation';
 import { useDemo } from '../store/demoStore';
@@ -30,13 +30,16 @@ const isLast = computed(() => p.index.value === p.total.value - 1);
 const hints = computed(() => HINTS.map((id) => ({ id, segments: hintSegments(t(id)) })));
 
 /** `**bold**` in a statement line → <strong>, everything else escaped. */
-function emphasize(line) {
+function emphasize(line: string): string {
   const escaped = String(line).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
-function saveName(e) {
-  state.presenterName = e.target?.value ?? state.presenterName;
+function saveName(e: Event) {
+  state.presenterName = (e.target as HTMLInputElement | null)?.value ?? state.presenterName;
 }
+// SlideConfig has no `note` field and no slide in demo-config.yaml sets one,
+// so this is always undefined and the note never renders (kept as it was).
+const note = computed(() => (p.current.value as { note?: string } | null)?.note);
 </script>
 
 <template>
@@ -88,8 +91,8 @@ function saveName(e) {
             </ul>
           </template>
         </div>
-        <div v-if="p.current.value.note" class="content-foot">
-          <p class="note">{{ p.current.value.note }}</p>
+        <div v-if="note" class="content-foot">
+          <p class="note">{{ note }}</p>
         </div>
       </div>
       </div>

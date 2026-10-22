@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * Under the slide in the rail, while a walkthrough runs: the spot for the
  * presenter's bubble and the questions offered so far.
@@ -13,7 +13,7 @@ import { camSlot } from './chrome';
 const { t, locale } = useViewerI18n();
 const { timeline } = useWalkthrough();
 
-const slot = ref(null);
+const slot = ref<HTMLElement | null>(null);
 watch(slot, (el) => (camSlot.value = el), { immediate: true });
 onUnmounted(() => (camSlot.value = null));
 

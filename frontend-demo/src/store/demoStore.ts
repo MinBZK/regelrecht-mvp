@@ -132,7 +132,8 @@ export interface ClaimEvidence {
   name: string;
   type: string;
   size: number;
-  dataUrl?: string;
+  // null for a file too large to inline (EditValueSheet).
+  dataUrl?: string | null;
 }
 
 /** Who submitted a claim: the citizen from the portal, or the caseworker. */

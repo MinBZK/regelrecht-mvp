@@ -19,12 +19,17 @@
 
 import type { Ref } from 'vue';
 
-/** Where the graph looks: the middle of the pane in graph coordinates, and the zoom. */
-export interface GraphViewPoint {
+/**
+ * Where the graph looks: the middle of the pane in graph coordinates, and the zoom.
+ *
+ * A type alias rather than an interface, so a viewport action stays assignable
+ * to the recorder's `LoggedEvent`, which has an index signature.
+ */
+export type GraphViewPoint = {
   cx: number;
   cy: number;
   zoom: number;
-}
+};
 
 /** A dragged node: its offset from where the layout put it, and how long the drag took (ms). */
 export interface NodeMove {

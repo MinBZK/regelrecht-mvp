@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * Where the recorded walkthrough starts.
  *
@@ -49,7 +49,9 @@ async function maybeStart() {
   // this page, and starting again would fetch the missing file in a loop.
   if (!timeline.value || narrow.value || replay.active || replay.failed) return;
   if (!here || route.meta?.page !== 'rondleiding') return;
-  await startReplay(timeline.value, { router, demo, presentation }, { at: savedPosition(), faqId: route.params.faqId ?? null });
+  // `:faqId?` is an optional, non-repeatable param: a string or absent, never an array.
+  const faqId = route.params.faqId as string | undefined;
+  await startReplay(timeline.value, { router, demo, presentation }, { at: savedPosition(), faqId: faqId ?? null });
 }
 
 onMounted(maybeStart);
