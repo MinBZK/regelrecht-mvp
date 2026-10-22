@@ -3,9 +3,9 @@ title: "Applications, Decisions and Objections"
 description: "How the law format models an Awb procedure: what an article establishes, the hooks on an application, the stages of a decision, and an objection that takes a decision again."
 ---
 
-A specific law says someone may apply. The Algemene wet bestuursrecht (Awb) says what every application contains, how the decision is taken and made known, and how an objection is decided. The specific law never names the Awb, and neither does its rulework. Design and reasons: [RFC-045](/rfcs/rfc-045).
+A specific law says someone may apply. The procedure around it comes from the Algemene wet bestuursrecht (Awb), from the application to the objection. The rulework of the specific law need not name the Awb, because Awb articles hook onto every application.
 
-How a cell records the procedure: [Chronolexography](/concepts/chronolexography).
+[RFC-045](/rfcs/rfc-045) gives the design and its reasons. [Chronolexography](/concepts/chronolexography) shows how a cell records the procedure.
 
 ## What an article establishes
 
@@ -24,7 +24,7 @@ produces:
 
 - The application lists what it contains and names the decision it asks for (Awb 4:2 lid 1 onder c).
 - The decision lists its `outputs`. `derived` holds what follows from it without being part of it.
-- Rules for the list: [Law Format](/concepts/law-format#what-the-article-produces). An article that produces one thing keeps the object form.
+- [Law Format](/concepts/law-format#what-the-article-produces) gives the rules for the list. An article that produces one thing keeps the object form.
 
 ## The Awb hooks onto every application
 
@@ -40,7 +40,7 @@ hooks:
 - `established_by` narrows a hook to one article's application.
 - Awb 4:13 marks the day of receipt as the moment that counts (`produces.moment`).
 
-Hooks in general: [Hooks and Reactive Execution](/concepts/hooks-and-reactive-execution).
+[Hooks and Reactive Execution](/concepts/hooks-and-reactive-execution) covers hooks in general.
 
 ## Stages
 
@@ -48,7 +48,7 @@ Run at one stage of its procedure ([RFC-008](/rfcs/rfc-008)), an article compute
 
 | Stage | What runs |
 |---|---|
-| AANVRAAG | The hooks on the application (Awb 4:2, 4:13). No decision output |
+| AANVRAAG, BEZWAAR | The hooks on the submission of that kind (Awb 4:2 and 4:13; 6:5, 6:9 and 7:10). No decision output |
 | BESLUIT | The decision, with Awb 3:46 and 6:7 |
 | BEKENDMAKING | Awb 6:8: the objection period starts |
 
@@ -56,13 +56,13 @@ Without a procedure (a scenario, the editor) every hook fires at once.
 
 ## What the decision needs
 
-The law says what is needed. The process supplies it, in this order:
+The law says what is needed. The process supplies it from:
 
-1. the application, by field name;
-2. policy, through `implements` ([Inversion of Control](/concepts/inversion-of-control));
-3. the authority, for a term with `decided_per_case_by`, as a finding keyed by the term's id.
+- the application, by field name;
+- policy, through `implements` ([Inversion of Control](/concepts/inversion-of-control));
+- the authority, for a term with `decided_per_case_by`, as a finding keyed by the term's id.
 
-Which one wins, and when a finding is refused: [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article).
+Which of these wins on an open term follows the [order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term). [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article) says when a finding is refused.
 
 ## Objection
 
@@ -85,7 +85,7 @@ input:
       article: $bestreden_besluit
 ```
 
-The call runs on the day of the decision on the objection, with the contested decision's fields and findings plus what the authority finds anew. Decision values: [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article).
+The call runs on the day of the decision on the objection, with the contested decision's fields and findings plus what the authority finds anew. [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article) describes the decision value.
 
 | Situation | Result |
 |---|---|
@@ -98,15 +98,17 @@ Only `outputs` count. A `derived` end date that moves with the day gives no caus
 
 ## Open points
 
+Kinds: **Not built** (the design allows it), **Assumption** (no provision says it), **Limitation** (a consequence of a choice), **Question** (undecided), **Not modeled** (the Awb says it; the rulework leaves it out).
+
 | Point | Kind |
 |---|---|
-| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kind (`AANVRAAG`) as stages. Stages may stay, as a free field filled by the law that defines the procedure. | Question |
-| A hook on an application cannot filter on the requested decision. Awb 4:2 also fires on an application for something that is no beschikking. | Not built |
+| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages. Open: should stages stay, as a free field that the law defining the procedure fills? | Question |
+| A hook on an application cannot filter on the requested decision. Awb 4:2 also fires on an application for something that is not a beschikking. | Not built |
 | `gevraagde_beschikking` (Awb 4:2 lid 1 onder c) is filled by the applicant, though `requests` already names the decision. | Limitation |
 | Submission kinds beyond `AANVRAAG` and `BEZWAAR`, such as beroep. | Not built |
 | The edge from 7:11 to the article it calls is known only at run time. The dependency graph, the editor and the type checker do not see it. | Limitation |
-| A call passes a decision held in a field as an id, and passes only the parameters the called article declares. A value that only a hook or stage asks does not arrive. | Limitation |
-| A finding given in a call anew is not passed on when the decision on objection is itself called anew. Nothing does that yet. | Limitation |
+| A decision value holds any decision among its fields as an id, so a call that merges those fields passes an id where the article expects a decision. A call passes only the parameters the called article declares; a value that only a hook or a stage asks for does not arrive. | Limitation |
+| When a decision on objection is itself called anew, the findings given for its own reconsideration are not passed on. Nothing calls it anew yet. | Limitation |
 | "Aanleiding" means "an output differs". Refusing again on another ground gives no cause, since outputs do not name the ground. | Assumption |
-| On a decision on objection, `bezwaartermijn_einddatum` is really the period for appeal (Awb 7:1 lid 1 onder a). | Limitation |
-| Not modeled: Awb 6:6, 6:11, 6:9 lid 2, the hearing (7:2), 7:10 lid 2–4, 7:12 lid 2–4, third parties, partial revocation, beroep. | Not modeled |
+| On a decision on objection, `bezwaartermijn_einddatum` is the period for appeal (Awb 7:1 lid 1 onder a). | Limitation |
+| Awb 6:6, 6:11, 6:9 lid 2, the hearing (7:2), 7:10 lid 2–4, 7:12 lid 2–4, third parties, partial revocation. | Not modeled |

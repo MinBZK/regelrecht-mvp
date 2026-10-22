@@ -18,8 +18,8 @@ valid_from: '2026-08-01'
 # wordt gevraagd (de reductie voor artikel 11, onder f). Buiten zo'n vraag
 # ontbreken ze en geeft deze reductie geen vestiging.
 # Later kan een cel van DUO, met het register van instellingen, deze vraag
-# beantwoorden in plaats van de school (open punten van chronolexografie); dat is hier
-# niet gebouwd.
+# beantwoorden in plaats van de school; dat is hier niet gebouwd (zie
+# docs/src/content/docs/concepts/chronolexography-open-points.md).
 url: https://wetten.overheid.nl/BWBR0049811/2025-08-01#Artikel2
 name: Plaats van vestiging van OBS De Klimop (reductie)
 competent_authority:

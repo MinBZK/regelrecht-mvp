@@ -3,11 +3,11 @@ title: "Chronolexography"
 description: "How RegelRecht records legal facts as dated entries in the chronicle of the organization that establishes them, and answers later questions from that chronicle."
 ---
 
-A cell is an organization that records each legal fact it establishes as a dated entry, a chronolexogram, in its own chronicle (*kroniek*). Later questions are answered from that chronicle. The vocabulary comes from the [Chronolexografie position paper](https://chronolexografie.nl/position-paper/) and [RFC-022](/rfcs/rfc-022).
+A cell is an organization that records each legal fact it establishes as a dated entry, a chronolexogram, in its own chronicle (*kroniek*). The cell answers later questions from that chronicle. The vocabulary comes from the [Chronolexografie position paper](https://chronolexografie.nl/position-paper/) and [RFC-022](/rfcs/rfc-022).
 
-This page shows how RegelRecht implements it. Design: [RFC-046](/rfcs/rfc-046) and [RFC-048](/rfcs/rfc-048). Still open: [Open Points](/concepts/chronolexography-open-points).
+This page shows how RegelRecht implements it. The design is in [RFC-046](/rfcs/rfc-046) and [RFC-048](/rfcs/rfc-048); what is still open is in [Open Points in Chronolexography](/concepts/chronolexography-open-points).
 
-Recording is an optional layer. It uses the law and the engine, and nothing uses it. The procedure a cell plays is modeled in the law itself ([Applications, Decisions and Objections](/concepts/administrative-procedures)).
+Recording is an optional layer ([RFC-046](/rfcs/rfc-046)). The procedure a cell plays is modeled in the law itself ([Applications, Decisions and Objections](/concepts/administrative-procedures)).
 
 | Part | Role | Where |
 |---|---|---|
@@ -17,7 +17,7 @@ Recording is an optional layer. It uses the law and the engine, and nothing uses
 
 ## A cell
 
-A directory with `cel.yaml` and `reducties/`, opened with `Cell::open` or `Cell::in_memory`.
+A cell is a directory with `cel.yaml` and `reducties/`. `Cell::open` opens it with its chronicle on file, `Cell::in_memory` with an empty chronicle.
 
 ```yaml
 # corpus/cells/<cell>/cel.yaml
@@ -48,21 +48,25 @@ The law names a role ([Competent Authority](/concepts/competent-authority)). The
 }
 ```
 
-A chronolexogram repeats nothing the law says. Sources, bases and which field is a finding follow from the law in force on `recorded_on`. The chronicle is append-only, in date order.
+A chronolexogram repeats nothing the law says. The law in force on `recorded_on` gives each field's sources and basis; a replay shows which fields held a finding. The chronicle is append-only, in date order.
 
 ## Recording and deciding
 
-- **Submission.** Runs the establishing article at the stage named after its kind, so the hooks on it run. A missing required field goes under `missing`: an incomplete application is still one (Awb 4:5). The moment the law counts from is the day of recording. A submission may refer to a decision (`refers_to`), as an objection does.
-- **Decision.** Finds the submission that asks for it (`requests`) and runs the later stages. Findings travel apart from the parameters. Each non-null output of type `decision`, such as a new decision on objection, becomes its own chronolexogram in the same append.
-- **Fact.** Recorded whole or not at all. It refers to nothing. A change is a new executogram; the old one stays.
+- `Cell::record_submission` runs the establishing article at the stage named after the submission's kind, so the hooks on it run. A missing required field goes under `missing`: an incomplete application is still one (Awb 4:5). The moment the law counts from is the day of recording. A submission may refer to a decision (`refers_to`), as an objection does.
+- `Cell::decide` takes the id of a submission in the chronicle that requests this decision, and runs the later stages. Findings travel apart from the parameters. Each non-null output of type `decision`, such as a new decision on objection, becomes its own chronolexogram in the same append.
+- `Cell::record_executogram` records a fact whole or not at all. The fact refers to nothing. A change is a new executogram; the old one stays.
 
-The cell contains no article of any law. It refuses:
+The cell's code names no article of any law; everything it checks comes from the law. It refuses:
 
 - any field the law does not give, and a wrong type;
 - a `moment` supplied by the submitter;
-- a decision no submission requests, a second decision on one submission, and replacing a decision twice;
-- in a decision, a value from the caller that comes from elsewhere, and a finding no article asks for or of the wrong type;
-- a fact the article does not require, under an article not in force that day, with a parameter `id`, or whose `competent_authority` does not name the cell.
+- a decision on an id that is not a submission requesting it, a second decision on one submission, and replacing a decision twice;
+- in a decision, a value from the caller that comes from elsewhere, and a finding of the wrong type on a term of the deciding article;
+- a fact the article does not require, or under an article not in force that day;
+- a fact with a field named `id` (rows use `id` for the executogram itself);
+- a fact whose `competent_authority` does not name the cell.
+
+The engine refuses a finding that no article in the decision asks for, or one of the wrong type.
 
 ## Answering from the chronicle
 
@@ -80,8 +84,7 @@ input:
 ```
 
 - A reduction is rulework of its own kind (`REDUCTIE`). It reads decisions (`source.decisions`) or facts (`source.facts`), and may ask law and policy.
-- The cell answers only terms its reductions fill. The engine asks it before policy and the authority's finding ([order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term)).
-- Null on a term the authority decides per case is silence: the authority judges.
+- The cell answers only terms its reductions fill, and the engine asks it first ([order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term)). Null on a term with a default or `decided_per_case_by` is silence, and the term falls back.
 
 ## Answers of other cells
 

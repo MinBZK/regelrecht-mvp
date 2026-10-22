@@ -231,14 +231,15 @@ produces:
 
 The difference matters when a decision is compared with another, as on objection (Awb 7:11). The validity of the card runs from the day of issue. If the college takes the decision anew on another day, the end date differs, although the college decides the same thing. Only the outputs count.
 
-Every output of an article belongs to exactly one item, under `outputs` or `derived`. Beside a decision that lists its own outputs, an output may belong to no item; it is then not part of the decision, and another article reads it through `source.regulation`. The loader refuses an output no item lists where there is no such decision, a name under `derived` that is no output of the article, and `derived` on a submission. So a forgotten or misspelled output fails instead of quietly becoming derived data ([RFC-045](/rfcs/rfc-045)).
+Every output of an article belongs to at most one item, under `outputs` or `derived`. A submission without `outputs` yields none; a decision without `outputs` yields every output no other item lists. An output that belongs to no item is not part of the decision; another article reads it through `source.regulation` ([RFC-045](/rfcs/rfc-045)).
 
 #### What the loader checks
 
 - One item per `type`, and at most one decision.
-- A parameter or output that the article does not have is refused, and so is an output given to two items.
-- `requests` belongs on a submission only. Within the same law it must name an article that takes a decision; one to another law is checked when it is used, since that law may load later.
-- A submission without `outputs` yields none. A decision without `outputs` yields every output no other item lists.
+- No parameter or output the article does not have, and no output given to two items.
+- No output that belongs to no item, unless a decision beside it lists its own outputs. A forgotten or misspelled output fails instead of quietly becoming derived data.
+- `derived` names outputs of the article, and never sits on a submission.
+- `requests` sits on a submission only. Within the same law it must name an article that takes a decision; one to another law is checked when it is used, since that law may load later.
 
 ## Type Specifications
 
