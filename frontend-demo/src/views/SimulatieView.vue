@@ -11,10 +11,10 @@ import { runSimulation, simulationLaws, supportingLaws } from '../simulation/run
 import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, dimensionLabel, flattenResults, toCsv } from '../simulation/stats';
 import { disposableIncomeBreakdown, summariseDisposableIncome } from '../simulation/income';
 import { describeModel, featureLabel, featuresFor, taxLawIds, trainBracketModel, trainingData } from '../simulation/harmonize';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import { useNarrow } from '../useNarrow';
 import { useI18n } from '../i18n/index.js';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { useLocalePath } from '../i18n/useLocalePath';
 
 const { t } = useI18n();
 

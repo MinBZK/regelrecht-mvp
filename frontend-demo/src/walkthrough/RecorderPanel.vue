@@ -11,13 +11,13 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useDemo } from '../store/demoStore.js';
-import { usePresentation } from '../presentation/usePresentation.js';
+import { useDemo } from '../store/demoStore';
+import { usePresentation } from '../presentation/usePresentation';
 import { adoptLocale, currentLocale, useI18n } from '../i18n/index.js';
-import { captureActions } from './capture.js';
-import { levelPercent, levelVerdict, listInputs, mic, startTest, stopTest } from './micCheck.js';
-import { cam, lightVerdict, listCameras, startCamTest, stopCamTest } from './camCheck.js';
-import { hasSnapshots, logEvent, markFlub, recorder, rememberSnapshot, snapshotFor, startRecording, stopRecording } from './recorder.js';
+import { captureActions } from './capture';
+import { levelPercent, levelVerdict, listInputs, mic, startTest, stopTest } from './micCheck';
+import { cam, lightVerdict, listCameras, startCamTest, stopCamTest } from './camCheck';
+import { hasSnapshots, logEvent, markFlub, recorder, rememberSnapshot, snapshotFor, startRecording, stopRecording } from './recorder';
 
 const { t } = useI18n();
 const router = useRouter();

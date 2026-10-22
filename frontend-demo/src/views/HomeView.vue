@@ -1,11 +1,11 @@
 <script setup>
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import QrCode from '../components/QrCode.vue';
 import { useI18n } from '../i18n/index.js';
-import { localeRouteName } from '../router.js';
-import { useWalkthrough } from '../walkthrough/useWalkthrough.js';
+import { localeRouteName } from '../router';
+import { useWalkthrough } from '../walkthrough/useWalkthrough';
 
 // De landingspagina op `/`. Wie de demo opent zonder te weten wat het is, leest
 // hier in een paar regels wat er te zien valt, start de presentatie met één

@@ -11,10 +11,10 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { DEFAULT_LOCALE, useViewerI18n } from '../i18n/index.js';
 import { intlLocale } from '../data/format';
-import { localeRouteName } from '../router.js';
-import { backToMain, chapterSlide, currentTrack, replay, seek, setSpeed, stopReplay, takeOver, togglePlay } from './replay.js';
-import { chapterAt, formatTime, nextChapterStart, previousChapterStart } from './timeline.js';
-import { openTranscript } from './chrome.js';
+import { localeRouteName } from '../router';
+import { backToMain, chapterSlide, currentTrack, replay, seek, setSpeed, stopReplay, takeOver, togglePlay } from './replay';
+import { chapterAt, formatTime, nextChapterStart, previousChapterStart } from './timeline';
+import { openTranscript } from './chrome';
 
 const { t, locale } = useViewerI18n();
 const router = useRouter();

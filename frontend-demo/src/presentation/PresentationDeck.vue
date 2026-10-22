@@ -1,11 +1,11 @@
 <script setup>
 import { computed } from 'vue';
-import { usePresentation } from './usePresentation.js';
-import { useDemo } from '../store/demoStore.js';
+import { usePresentation } from './usePresentation';
+import { useDemo } from '../store/demoStore';
 import { intlLocale } from '../data/format';
 import { useI18n } from '../i18n/index.js';
-import { HINTS, hintSegments } from './keyHints.js';
-import { clockEpoch } from '../walkthrough/clock.js';
+import { HINTS, hintSegments } from './keyHints';
+import { clockEpoch } from '../walkthrough/clock';
 
 // The deck: a Rijkshuisstijl-blue panel, full-screen for the intro and the
 // closing, a left rail while the live demo runs on the right. Slides are data

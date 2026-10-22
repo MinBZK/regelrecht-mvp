@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { CHANGE_TYPES, claimsFromAnswers, eventLabel, eventUnsupported, fieldLabel, groupLabel, typeDescription, typeLabel } from '../data/changeWizard';
 import { formatValue } from '../data/format';
 import { useI18n } from '../i18n/index.js';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 
 // Wijziging doorgeven: iemand meldt een verandering in zijn leven (verhuisd,
 // ander inkomen, uit elkaar) in plaats van per regeling een waarde te

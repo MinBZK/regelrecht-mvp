@@ -4,7 +4,7 @@ import OrgLogo from './OrgLogo.vue';
 import { fieldSpec, formatValue, humanize, isUnknown } from '../data/format';
 import { columnKind as columnKindOf, decimalsFor, editKind, emptyRow, parseCell, parseDutchNumber, stepFor, tableColumns, unitLabel, valueKind } from '../data/editKinds';
 import { useI18n } from '../i18n/index.js';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 
 // The citizen corrects one register value. The correction becomes a claim on
 // the law that owns the input; once approved (by the caseworker, or at once

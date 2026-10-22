@@ -1,12 +1,12 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { useLocalePath } from '../i18n/useLocalePath';
 import { useI18n } from '../i18n/index.js';
 import YamlNode from '../components/YamlNode.vue';
 import OrgLogo from '../components/OrgLogo.vue';
 import LawGroupTree from '../components/LawGroupTree.vue';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import { serviceInfo } from '../data/loadCorpus';
 
 // The law browser: every demo law in the sidebar, grouped by the organisation

@@ -4,7 +4,7 @@ import DataLineage from './DataLineage.vue';
 import { fieldSpec, formatDateTime, formatMissing, formatValue, humanize, verdictOf } from '../data/format';
 import { lineageFromTrace, leafValues } from '../data/lineage';
 import { askedInputsFor, claimKeyFor, evaluationParamsFor, inputKind, nextQuestions, parseAnswer } from '../data/askedInputs';
-import { caseReason, eventText, useDemo } from '../store/demoStore.js';
+import { caseReason, eventText, useDemo } from '../store/demoStore';
 import { t } from '../i18n/index.js';
 import { awbOutcomes, canBeApplied, objectionOpen, statusOf } from '../data/lifecycle';
 import { driftRows, driftSentence } from '../data/caseDrift';

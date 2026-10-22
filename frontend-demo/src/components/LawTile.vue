@@ -10,10 +10,10 @@ import { lineageFromTrace, leafValues } from '../data/lineage';
 import { askedInputsFor, claimKeyFor, evaluationParamsFor, nextQuestions } from '../data/askedInputs';
 import { dateInputFor, phraseOutcome, phrasingFor } from '../data/outcomePhrasing';
 import { driftSentence } from '../data/caseDrift';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import { canBeApplied, objectionOpen, statusOf } from '../data/lifecycle';
 import { decisionOf } from '@regelrecht/frontend-shared/produces';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { useLocalePath } from '../i18n/useLocalePath';
 import { activeLocale, useI18n } from '../i18n/index.js';
 
 // Naar een ander tabblad op naam, niet op pad: onder `/en/` leidt een

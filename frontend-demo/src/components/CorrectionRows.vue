@@ -1,7 +1,7 @@
 <script setup>
 import { fieldSpec, formatValue, humanize } from '../data/format';
 import { useI18n } from '../i18n/index.js';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 
 // The rows of a corrections list in the case system: what the citizen (or the
 // caseworker) changed, why, with what evidence, and the decision or the buttons

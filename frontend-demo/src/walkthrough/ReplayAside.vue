@@ -5,10 +5,10 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useViewerI18n } from '../i18n/index.js';
-import { useWalkthrough } from './useWalkthrough.js';
-import { currentTrack, openFaq, questionLang, questionOf, replay } from './replay.js';
-import { camVisible, offeredFaq } from './timeline.js';
-import { camSlot } from './chrome.js';
+import { useWalkthrough } from './useWalkthrough';
+import { currentTrack, openFaq, questionLang, questionOf, replay } from './replay';
+import { camVisible, offeredFaq } from './timeline';
+import { camSlot } from './chrome';
 
 const { t, locale } = useViewerI18n();
 const { timeline } = useWalkthrough();

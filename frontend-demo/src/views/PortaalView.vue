@@ -7,7 +7,7 @@ import ChangeWizardSheet from '../components/ChangeWizardSheet.vue';
 import { fieldSpec, numericImpact } from '../data/format';
 import { loadFailures } from '../engine/useDemoEngine';
 import { delegationLabel, permissionLabel } from '../data/delegation';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import { useI18n } from '../i18n/index.js';
 import { useNarrow } from '../useNarrow';
 

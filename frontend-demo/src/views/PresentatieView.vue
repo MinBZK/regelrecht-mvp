@@ -1,11 +1,11 @@
 <script setup>
 import { computed, onActivated, onMounted, watch } from 'vue';
-import { deckFor, usePresentation } from '../presentation/usePresentation.js';
-import { useDemo } from '../store/demoStore.js';
+import { deckFor, usePresentation } from '../presentation/usePresentation';
+import { useDemo } from '../store/demoStore';
 import { useI18n } from '../i18n/index.js';
 import { useRouter } from 'vue-router';
-import { localeRouteName } from '../router.js';
-import { useWalkthrough } from '../walkthrough/useWalkthrough.js';
+import { localeRouteName } from '../router';
+import { useWalkthrough } from '../walkthrough/useWalkthrough';
 
 // The Presentatie tab starts the deck. The deck itself is an overlay
 // (PresentationDeck.vue, mounted by App.vue) that covers the screen for the

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue';
 import { VueFlow, useVueFlow } from '@vue-flow/core';
-import { centerOf, graphView } from '../walkthrough/graphBridge.js';
+import { centerOf, graphView } from '../walkthrough/graphBridge';
 import { Background } from '@vue-flow/background';
 import '@vue-flow/core/dist/style.css';
 import '@vue-flow/core/dist/theme-default.css';
@@ -14,8 +14,8 @@ import { buildGraph, lawShape, neighbourhood } from '../graph/lawGraph';
 import { fieldSpec, formatValue } from '../data/format';
 import { lineageFromTrace } from '../data/lineage';
 import { serviceInfo } from '../data/loadCorpus';
-import { useDemo } from '../store/demoStore.js';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { useDemo } from '../store/demoStore';
+import { useLocalePath } from '../i18n/useLocalePath';
 import { useI18n } from '../i18n/index.js';
 
 // Naar een ander tabblad op naam, niet op pad: onder `/en/` leidt een

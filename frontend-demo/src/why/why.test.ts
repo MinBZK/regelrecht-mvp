@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import storeSource from '../store/demoStore.js?raw';
+import storeSource from '../store/demoStore.ts?raw';
 import { explainWhy, lockWhy, toBlocks, PASSWORD_KEY, probeWhy, unlockWhy, whyAvailable, whyUnlocked, WhyError } from './why';
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });

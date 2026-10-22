@@ -2,7 +2,7 @@
 import { computed, reactive } from 'vue';
 import OrgLogo from './OrgLogo.vue';
 import { fieldSpec, formatMissing, formatValue, humanize, isUnknown } from '../data/format';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import { useI18n } from '../i18n/index.js';
 
 const { t } = useI18n();

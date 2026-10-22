@@ -5,8 +5,8 @@ import { parseFeature, dispatch, quotedValue, bareValue, traceRoot, ExecutionCon
 import { matchStep, featureKeywords, scenarioTitle } from '../data/gherkinNl';
 import { serviceInfo } from '../data/loadCorpus';
 import { loadFailureFor, loadFailures, prepareScenarioEngine } from '../engine/useDemoEngine';
-import { useDemo } from '../store/demoStore.js';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { useDemo } from '../store/demoStore';
+import { useLocalePath } from '../i18n/useLocalePath';
 import { useI18n } from '../i18n/index.js';
 import TraceView from '../components/TraceView.vue';
 import ScenarioSteps from '../components/ScenarioSteps.vue';

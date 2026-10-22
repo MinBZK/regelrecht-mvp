@@ -1,6 +1,6 @@
 <script setup>
 import OrgLogo from '../OrgLogo.vue';
-import { useDemo } from '../../store/demoStore.js';
+import { useDemo } from '../../store/demoStore';
 
 // The frame of one law in the graph: organisation mark, name and executing
 // organisation. The boxes with sources, inputs and outputs are child nodes.

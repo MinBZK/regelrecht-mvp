@@ -13,12 +13,12 @@
  */
 import { computed, onActivated, onDeactivated, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useDemo } from '../store/demoStore.js';
-import { usePresentation } from '../presentation/usePresentation.js';
+import { useDemo } from '../store/demoStore';
+import { usePresentation } from '../presentation/usePresentation';
 import { useI18n } from '../i18n/index.js';
-import { localeRouteName } from '../router.js';
-import { useWalkthrough } from './useWalkthrough.js';
-import { replay, savedPosition, startReplay } from './replay.js';
+import { localeRouteName } from '../router';
+import { useWalkthrough } from './useWalkthrough';
+import { replay, savedPosition, startReplay } from './replay';
 
 /** Below this the demo and the rail do not fit side by side (the deck's own breakpoint). */
 const WIDE = 1024;

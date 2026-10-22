@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { traceLaws } from '../data/traceLaws';
 import { paletteColor } from '../data/palette';
-import { useDemo } from '../store/demoStore.js';
+import { useDemo } from '../store/demoStore';
 import { useI18n } from '../i18n/index.js';
 
 // The engine's text trace, with each law in its own colour and a bar to step

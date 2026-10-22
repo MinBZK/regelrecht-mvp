@@ -6,11 +6,11 @@ import DataLineage from '../components/DataLineage.vue';
 import EditValueSheet from '../components/EditValueSheet.vue';
 import { fieldSpec, formatDateTime, formatValue, humanize } from '../data/format';
 import { lineageFromTrace } from '../data/lineage';
-import { caseReason, eventText, useDemo } from '../store/demoStore.js';
+import { caseReason, eventText, useDemo } from '../store/demoStore';
 import { isDelegationProvider, producesBeschikking, subjectOf } from '../data/entrypoints';
 import { awbOutcomes, statusOf } from '../data/lifecycle';
 import { useI18n } from '../i18n/index.js';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { useLocalePath } from '../i18n/useLocalePath';
 
 // Naar een ander tabblad op naam, niet op pad: onder `/en/` leidt een
 // letterlijk Nederlands pad de bezoeker ongemerkt het Nederlandse tabblad in.
