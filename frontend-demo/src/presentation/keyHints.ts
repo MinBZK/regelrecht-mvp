@@ -47,7 +47,7 @@ export function hintSegments(sentence: unknown): HintSegment[] {
   for (const m of text.matchAll(/\{(\w+)\}/g)) {
     // `!`: the pattern has one capture group, and it always takes part.
     const name = m[1]!;
-    if (!(name in HINT_KEYS)) continue;
+    if (!Object.hasOwn(HINT_KEYS, name)) continue;
     if (m.index > last) segments.push({ text: text.slice(last, m.index) });
     segments.push({ key: HINT_KEYS[name as HintKeyName] });
     last = m.index + m[0].length;
