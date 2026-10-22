@@ -29,7 +29,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const MAANDEN = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 const datumTekst = (d) => { if (!d) return ""; const [j, m, g] = d.split("-"); return `${+g} ${MAANDEN[+m - 1]} ${j}`; };
-$("dossierkeuze").innerHTML = DOSSIERS.map((d) => `<option value="${d.dossier}"${d.dossier === KEUZE ? " selected" : ""}>${esc(d.naam)}${d.soort === "keten" ? "" : ` (${d.dossier.replace(/(\d{2})(\d{3})/, "$1 $2")})`}${d.opgehaald ? ", opgehaald" : ""}</option>`).join("");
+$("dossierkeuze").innerHTML = DOSSIERS.map((d) => `<option value="${esc(d.dossier)}"${d.dossier === KEUZE ? " selected" : ""}>${esc(d.naam)}${d.soort === "keten" ? "" : ` (${d.dossier.replace(/(\d{2})(\d{3})/, "$1 $2")})`}${d.opgehaald ? ", opgehaald" : ""}</option>`).join("");
 $("dossierkeuze").addEventListener("change", (e) => {
   try { localStorage.setItem("wg-dossier", e.target.value); } catch (x) {}
   location.hash = "d=" + e.target.value;

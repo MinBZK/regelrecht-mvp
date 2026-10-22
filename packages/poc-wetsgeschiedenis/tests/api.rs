@@ -426,6 +426,42 @@ async fn een_grote_wet_haalt_eerst_haar_hele_geschiedenis_en_dan_de_dossiers_die
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn een_wet_van_voor_de_twee_stappen_krijgt_na_een_herstart_alsnog_haar_hele_geschiedenis() {
+    let p = proef(10);
+    // Zo stond de Awb er na de vorige versie van de dienst: 40 versies, zonder
+    // `afgekapt`.
+    let k = p.state.opslag.bron().join("regelingen").join("BWBR0005537");
+    std::fs::create_dir_all(&k).unwrap();
+    let versies: Vec<Value> = (0..40)
+        .map(|i| json!({"datum": format!("20{:02}-01-01", i)}))
+        .collect();
+    std::fs::write(
+        k.join("keten.json"),
+        json!({"versies": versies, "overgangen": []}).to_string(),
+    )
+    .unwrap();
+    let g = p.state.opslag.opgehaald();
+    std::fs::create_dir_all(&g).unwrap();
+    std::fs::write(
+        g.join("dossiers.json"),
+        json!([{"dossier": "BWBR0005537", "soort": "keten"}]).to_string(),
+    )
+    .unwrap();
+    assert!(regelrecht_poc_wetsgeschiedenis::rij::herstel(&p.state) >= 1);
+    for _ in 0..300 {
+        if p.state
+            .opslag
+            .keten("BWBR0005537")
+            .is_some_and(|k| k["ontstaan"][0] == "21221")
+        {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    panic!("de hele geschiedenis werd na de herstart niet opgehaald");
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn een_mislukt_dossier_wordt_onthouden_en_een_bezoeker_mag_het_opnieuw() {
     let p = proef(10);
     let (_, t) = p

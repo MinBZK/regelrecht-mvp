@@ -102,12 +102,18 @@ async fn host(host: &'static str, verbinden: u64) -> Value {
             "uitleg": curl_fout(rc), "fout": (!fout.is_empty()).then_some(fout) })
 }
 
-/// A proxy URL without its password.
+/// A proxy URL without its password; curl also takes one without a scheme
+/// (`user:pass@proxy:3128`).
 fn zonder_wachtwoord(url: &str) -> String {
-    match (url.find("//"), url.rfind('@')) {
-        (Some(a), Some(b)) if b > a => format!("{}***@{}", &url[..a + 2], &url[b + 1..]),
-        _ => url.into(),
-    }
+    let Some(b) = url.rfind('@') else {
+        return url.into();
+    };
+    let a = url
+        .find("//")
+        .map(|a| a + 2)
+        .filter(|a| *a <= b)
+        .unwrap_or(0);
+    format!("{}***@{}", &url[..a], &url[b + 1..])
 }
 
 pub async fn diagnose(state: &AppState, bwb: Option<&str>) -> Value {
@@ -257,5 +263,6 @@ mod tests {
             "http://***@proxy:3128"
         );
         assert_eq!(zonder_wachtwoord("http://proxy:3128"), "http://proxy:3128");
+        assert_eq!(zonder_wachtwoord("jan:geheim@proxy:3128"), "***@proxy:3128");
     }
 }

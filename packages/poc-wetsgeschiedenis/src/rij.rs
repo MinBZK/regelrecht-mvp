@@ -461,14 +461,35 @@ pub fn verdiep(state: &AppState, bwb: &str) -> usize {
     gezien.len()
 }
 
-/// After a restart: queue again what the fetched laws still miss.
+/// Whether a law has only its newest versions. A chain from before the
+/// two steps has no `afgekapt` at all; with as many versions as the old limit,
+/// it was cut too.
+pub fn onvolledig(k: &Value) -> bool {
+    match k.get("afgekapt") {
+        Some(a) => !a.is_null(),
+        None => k["versies"].as_array().is_some_and(|v| v.len() >= 40),
+    }
+}
+
+/// After a restart: queue again what the fetched laws still miss, the whole
+/// history first.
 pub fn herstel(state: &AppState) -> usize {
-    state
+    let wetten: Vec<String> = state
         .opslag
         .index()
         .iter()
         .filter(|d| d["soort"] == "keten" && d["opgehaald"] == true)
-        .filter_map(|d| d["dossier"].as_str())
-        .map(|bwb| verdiep(state, bwb))
-        .sum()
+        .filter_map(|d| d["dossier"].as_str().map(String::from))
+        .collect();
+    let mut n = 0;
+    for bwb in &wetten {
+        if state.opslag.keten(bwb).is_some_and(|k| onvolledig(&k)) {
+            state
+                .rij
+                .voeg(Wat::Geschiedenis, bwb, None, Some(bwb), Plek::Vooraan);
+            n += 1;
+        }
+        n += verdiep(state, bwb);
+    }
+    n
 }

@@ -33,6 +33,7 @@ en curl.
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -163,6 +164,10 @@ def oude_kamerstukken():
 
 def tijdlijn_van(mappen):
     def van(nr):
+        # Het nummer komt uit een antwoord van buiten (wetten.overheid.nl, SRU);
+        # alleen een dossiernummer wordt een bestandsnaam.
+        if not re.fullmatch(r"\d{5}(?:-[A-Z0-9]{1,6})?", str(nr)):
+            return None
         for m in mappen:
             p = Path(m) / f"{nr}.json"
             if p.is_file():

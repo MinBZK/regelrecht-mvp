@@ -154,7 +154,8 @@ def ontstaan(titel, voor):
     for r, g in _records(_sru(f'c.product-area==sgd and dt.title="{titel}"')):
         nr = g("overheidwetgeving:dossiernummer")
         t = g("dcterms:title")
-        if not nr or re.search(r"\baanpassing\b.*\baan de\b", t, re.I) or titel.lower() not in t.lower():
+        if not re.fullmatch(r"\d{5}", nr) or re.search(r"\baanpassing\b.*\baan de\b", t, re.I) \
+                or titel.lower() not in t.lower():
             continue
         d = g("dcterms:temporal")
         per[nr] = max(per.get(nr, ""), d)
