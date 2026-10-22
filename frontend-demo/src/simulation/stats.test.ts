@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, describePopulation, flattenResults, mean, median, summariseLaw, toCsv } from './stats';
+import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, describePopulation, flattenResults, groupLabel, mean, median, summariseLaw, toCsv } from './stats';
+import { setLocale } from '../i18n/index.js';
 import type { BusinessFacts, CitizenFacts, Dimension, SimulationResult } from './stats';
 
 /** The dimension with this id; throws so a missing one fails the test. */
@@ -82,5 +83,19 @@ describe('describePopulation / export', () => {
     expect(rows[3]).toMatchObject({ a__voldoet: null, a__fout: 'boem' });
     const csv = toCsv([{ x: 1, y: 'a;b' }, { x: null, y: 'q"r' }]);
     expect(csv.split('\n')).toEqual(['x;y', '1;"a;b"', ';"q""r"']);
+  });
+});
+
+describe('groupLabel', () => {
+  it('shows a group key in the active language, and leaves ranges as they are', () => {
+    setLocale('en');
+    try {
+      expect(groupLabel('Met partner')).toBe('With partner');
+      expect(groupLabel('horecabedrijf')).toBe('Hospitality');
+      expect(groupLabel('18-30')).toBe('18-30');
+    } finally {
+      setLocale('nl');
+    }
+    expect(groupLabel('Met partner')).toBe('Met partner');
   });
 });

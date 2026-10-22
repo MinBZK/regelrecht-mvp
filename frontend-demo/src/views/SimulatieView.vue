@@ -8,7 +8,7 @@ import { BUSINESS_DEFAULTS, CITIZEN_DEFAULTS, MAX_POPULATION } from '../simulati
 import { definitionKind, overridableDefinitions } from '../simulation/lawParameters';
 import { NEUTRAL, paletteColor } from '../data/palette';
 import { runSimulation, simulationLaws, supportingLaws } from '../simulation/runner';
-import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, dimensionLabel, flattenResults, toCsv } from '../simulation/stats';
+import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, dimensionLabel, flattenResults, groupLabel, toCsv } from '../simulation/stats';
 import { disposableIncomeBreakdown, summariseDisposableIncome } from '../simulation/income';
 import { describeModel, featureLabel, featuresFor, taxLawIds, trainBracketModel, trainingData } from '../simulation/harmonize';
 import { useDemo } from '../store/demoStore';
@@ -802,7 +802,7 @@ function exportJson() {
                       <nldd-text-cell size="sm" :text="t('sim.breakdown.after_housing')" horizontal-alignment="right"></nldd-text-cell>
                     </nldd-table-row>
                     <nldd-table-row v-for="row in disposableRows" :key="row.group">
-                      <nldd-text-cell size="sm" :text="humanize(row.group)"></nldd-text-cell>
+                      <nldd-text-cell size="sm" :text="groupLabel(row.group)"></nldd-text-cell>
                       <nldd-text-cell size="sm" :text="num(row.count)" horizontal-alignment="right"></nldd-text-cell>
                       <nldd-text-cell size="sm" :text="money(row.avgDisposable)" horizontal-alignment="right"></nldd-text-cell>
                       <nldd-text-cell size="sm" :text="money(row.medianDisposable)" horizontal-alignment="right"></nldd-text-cell>
@@ -825,7 +825,7 @@ function exportJson() {
                     <nldd-text-cell size="sm" :text="amountLabel(activeRun, law.id)" horizontal-alignment="right"></nldd-text-cell>
                   </nldd-table-row>
                   <nldd-table-row v-for="row in breakdownFor(law.id)" :key="row.group">
-                    <nldd-text-cell size="sm" :text="humanize(row.group)"></nldd-text-cell>
+                    <nldd-text-cell size="sm" :text="groupLabel(row.group)"></nldd-text-cell>
                     <nldd-text-cell size="sm" :text="`${row.eligible} / ${row.evaluated}`" horizontal-alignment="right"></nldd-text-cell>
                     <nldd-text-cell size="sm" :text="pct(row.eligiblePct)" horizontal-alignment="right"></nldd-text-cell>
                     <nldd-text-cell size="sm" :text="row.withAmount ? fmtAmount(activeRun, law.id, row.avgAmount) : '–'" horizontal-alignment="right"></nldd-text-cell>
@@ -1036,7 +1036,7 @@ function exportJson() {
               </select>
             </nldd-dropdown>
           </nldd-form-field>
-          <SimBarChart :categories="breakdownFor(inspector.lawId).map((r) => humanize(r.group))" :series="[{ name: t('sim.inspector.meets'), values: breakdownFor(inspector.lawId).map((r) => r.eligiblePct) }]" unit="percent" height="220px" />
+          <SimBarChart :categories="breakdownFor(inspector.lawId).map((r) => groupLabel(r.group))" :series="[{ name: t('sim.inspector.meets'), values: breakdownFor(inspector.lawId).map((r) => r.eligiblePct) }]" unit="percent" height="220px" />
           <nldd-button appearance="secondary" start-icon="book" :text="t('sim.inspector.law_text')" @click="goTo('wetten', { lawId: inspector.lawId })"></nldd-button>
         </nldd-container>
       </nldd-page>

@@ -844,6 +844,10 @@ export default {
   'harm.feature.is_hospitality': 'Is horeca',
   'harm.feature.prepares_food': 'Bereidt voedsel',
   'harm.feature.has_terrace': 'Heeft terras',
+  'harm.group.yes': 'ja',
+  'harm.group.no': 'nee',
+  'harm.group.rest': 'Overige combinaties',
+  'harm.group.everyone': 'Iedereen',
   'harm.error.too_little_data': 'Te weinig gegevens om een model te leren; draai een grotere simulatie.',
   'harm.error.no_numeric_feature': 'Geen numeriek kenmerk om op te staffelen.',
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setLocale } from '../i18n/index.js';
 import {
   CITIZEN_FEATURES,
   describeModel,
@@ -276,6 +277,25 @@ describe('trainBracketModel', () => {
     // Eén groep zonder kenmerken is gewoon iedereen.
     const alleen = { ...metRest, groups: [{ filter: {}, keys: [], steps: [stap(500)], count: 220 }] };
     expect(describeModel(alleen).map((r) => r.group)).toEqual(['Iedereen']);
+  });
+
+  it('names the groups in the active language', () => {
+    const step = (a: number) => ({ lower: 0, upper: 100000, amountAtLower: a, amountAtUpper: a, count: 10 });
+    const model: TestModel = {
+      primary: { key: 'inkomen', labelKey: 'harm.feature.income' },
+      groupKeys: [{ key: 'heeft_partner', labelKey: 'harm.feature.has_partner', kind: 'boolean' }],
+      groups: [
+        { filter: { heeft_partner: 0 }, keys: ['heeft_partner'], steps: [step(900)], count: 200 },
+        { filter: {}, keys: [], steps: [step(500)], count: 20 },
+      ],
+    };
+    setLocale('en');
+    try {
+      expect(describeModel(model).map((r) => r.group)).toEqual(['Has a partner: no', 'Other combinations']);
+      expect(describeModel({ ...model, groups: [model.groups[1]!] }).map((r) => r.group)).toEqual(['Everyone']);
+    } finally {
+      setLocale('nl');
+    }
   });
 
   it('weigert te leren van te weinig gegevens', () => {
