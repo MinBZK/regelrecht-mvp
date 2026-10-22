@@ -96,6 +96,27 @@ Released schema versions in `schema/v*.*.*` are immutable. CI fails if a PR trie
 
 Among other checks, the `provenance-checks` job verifies that every `$schema` URL in `corpus/regulation` and in the reductions under `corpus/cells` names a schema version that exists under `schema/`, that every version directory under `schema/` is registered in `packages/engine/src/schema.rs`, and that `schema/latest` points at the highest version (currently `v0.8.8`). It does not check the form of the URL: a tag-based `refs/tags/schema-vX.Y.Z` reference is the convention, but a branch-based URL that names a known version passes. On a pull request that changes engine source it also compares the version in `packages/engine/Cargo.toml` with `main`; an unchanged version only prints a warning. See [RFC-013](/rfcs/rfc-013) for context.
 
+### Docs accessibility gate (on docs changes)
+
+The **Docs accessibility gate** builds the docs site and runs pa11y-ci, with
+HTML_CodeSniffer and axe-core, over the pages it produced (`just docs-a11y`). At
+about 2.5 seconds a page the full site takes several minutes on one runner, so
+the job is a matrix of three shards, each on its own runner with its own
+Chromium. `scripts/gen-pa11yci.mjs` reads `A11Y_SHARD=K/N` and keeps every
+N-th page starting at the K-th. Running the pages in parallel inside one job
+was tried and dropped: pa11y-ci then shares one Chromium, and most pages failed
+on a protocol error instead of on a finding.
+
+On a pull request and in the merge queue the gate checks only the pages a
+change touches, plus the index pages above them. That holds only while every
+changed file is a page under `docs/src/content/docs/` or
+`docs/src/content/rfcs/`. Any other file in the diff, a layout or a workflow file
+for instance, sends the gate over the whole site, because it may change every
+page. A push to `main` always checks the whole site. Each shard builds
+the site and runs the source checks in `npm run a11y` again; only the pa11y
+run is split across the shards. The check that no published URL disappeared runs in the first
+shard only.
+
 ### Other jobs behind the `Test` check
 
 The required `Test` check is a gate job that fails when any job it depends on fails. Besides the Rust tests, the BDD jobs, the provenance checks and the docs accessibility gate, it waits for:
