@@ -1085,6 +1085,11 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf
       options: --ipc=host
+    # In a container job the default shell is `sh -e`, without pipefail;
+    # this restores the `bash -e -o pipefail` the steps were written for.
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: read
       # Parity met de andere npm-jobs: de workspace kan @nldd-pakketten van
@@ -1202,6 +1207,10 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf
       options: --ipc=host
+    # Same shell as on the runner; see the e2e job.
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: read
       packages: read
@@ -1359,6 +1368,10 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf
       options: --ipc=host
+    # Same shell as on the runner; see the e2e job.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

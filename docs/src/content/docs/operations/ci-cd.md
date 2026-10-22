@@ -103,7 +103,9 @@ curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
 
 Without that `Accept` header the registry answers 404.
 
-The container runs as root. git refuses a checkout owned by another user, so
+A step in a container job runs under `sh` unless told otherwise, without
+`pipefail`, so the three jobs set `bash` as their default shell, as on the
+runner. The container runs as root. git refuses a checkout owned by another user, so
 the accessibility gate marks the workspace as a safe directory before its
 `git diff`. That gate also installs two packages the image lacks: `unzip`, for
 the Puppeteer download of pa11y's Chrome, and the DejaVu fonts. Without them
