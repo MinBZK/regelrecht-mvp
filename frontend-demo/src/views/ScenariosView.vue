@@ -195,11 +195,12 @@ async function run(index: number) {
       try {
         if (entry.action === 'evaluate_outputs') {
           const outputs = String(typed[0]).split(',').map((s) => s.trim());
-          // The law id and output names are quoted captures; the engine gets
-          // them as captured, as it did before.
-          evaluateWithTrace(ctx, e, typed[1] as string, outputs, state);
+          // Quoted captures are typed by value_typing (inferred), so a law id
+          // or output name that reads as a number arrives as one; the engine
+          // takes text, as the shared dispatcher's `text()` hands it over.
+          evaluateWithTrace(ctx, e, String(typed[1]), outputs, state);
         } else if (entry.action === 'evaluate') {
-          evaluateWithTrace(ctx, e, typed[1] as string, [typed[0] as string], state);
+          evaluateWithTrace(ctx, e, String(typed[1]), [String(typed[0])], state);
         } else {
           await dispatch(ctx, e, entry.action, [...typed, ...entry.literals], table, { loadDependency: async () => {} });
         }
