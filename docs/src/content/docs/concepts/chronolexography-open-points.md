@@ -3,13 +3,13 @@ title: "Open Points in Chronolexography"
 description: "The one list of what the chronolexography implementation does not do yet: not built, assumed, limited, or undecided."
 ---
 
-The one list of what is open in [chronolexography](/concepts/chronolexography). RFCs link here instead of keeping their own. Close a point: remove its row. Find one: add it.
+The one list of what is open in [chronolexography](/concepts/chronolexography). RFCs link here instead of keeping their own; a closed point loses its row.
 
 Elsewhere:
 
 - the Awb procedure in the law format: [Applications, Decisions and Objections](/concepts/administrative-procedures#open-points);
 - what the cases leave out of their law: [PoC portal](/components/poc-portal#chronolexografie);
-- RFC-022, still being worked on by its authors: cell roles, security-context binding, update cadence, and whether Blauwe Knop and FSC are one mechanism. See [RFC-022](/rfcs/rfc-022#open-questions).
+- the [open questions of RFC-022](/rfcs/rfc-022#open-questions), still with its authors: cell roles, security-context binding, update cadence, and whether Blauwe Knop and FSC are one mechanism.
 
 Kinds: **Not built** (the design allows it), **Assumption** (no provision says it), **Limitation** (a consequence of a choice), **Question** (undecided).
 
@@ -32,7 +32,7 @@ Kinds: **Not built** (the design allows it), **Assumption** (no provision says i
 | A decision is made known (Awb 6:8) on the day it is taken. | Assumption | [046](/rfcs/rfc-046) |
 | The cell refuses to replace a decision twice. Awb 7:11 should declare such an objection not admissible instead, once a decision value says the decision was replaced (cf. Awb 6:19). | Limitation | [046](/rfcs/rfc-046) |
 | A replay assumes every source knows what it knew on a given day. A source without history needs a facade that stores each value with its moment. | Not built | [046](/rfcs/rfc-046) |
-| No provenance is stored with a decision. Opened from the wrong directory, a replay reports a reduction's answer as a finding. A later record of another cell can change who filled a term without failing the replay. | Limitation | [046](/rfcs/rfc-046), [048](/rfcs/rfc-048) |
+| No provenance is stored with a decision. Opened from the wrong directory, a replay reports a reduction's answer as a finding. | Limitation | [046](/rfcs/rfc-046), [048](/rfcs/rfc-048) |
 | The cell takes a decision's inputs only from the deciding article. Judgements that belong in another regulation must sit on the deciding article and be passed on as parameters. | Limitation | [046](/rfcs/rfc-046) |
 | The cell does not pass its identity to the law. A policy scoped by `gemeente_code` is not found, so cell policies are unscoped; competence by place of residence cannot be checked. | Limitation | [046](/rfcs/rfc-046) |
 | An executogram read back from file is checked only for form. A hand-edited chronicle can hold fields the article does not list. | Limitation | [046](/rfcs/rfc-046) |
@@ -51,4 +51,4 @@ Kinds: **Not built** (the design allows it), **Assumption** (no provision says i
 | A reduction that asks its own answer again is refused (`CircularReference`), even for another day or other parameters. | Limitation | [048](/rfcs/rfc-048) |
 | A failure inside a reduction surfaces as an error of the cell, not of the asking article. | Limitation | [048](/rfcs/rfc-048) |
 | Which instance a category means. The law names a category and points at the instance through a fact another cell holds. Here a category matches every cell of it. See also [#1029](https://github.com/NederlandseDigitaleDienst/regelrecht/issues/1029). | Question | [048](/rfcs/rfc-048) |
-| A replay asks other cells as of the decision's day. A record they back-date to that day, or a change in the sphere, enters the replay. | Limitation | [048](/rfcs/rfc-048) |
+| A replay asks other cells as of the decision's day. A record they back-date to that day, or a change in the sphere, enters the replay. If the outcome holds, the replay passes even when someone else now filled a term. | Limitation | [048](/rfcs/rfc-048) |

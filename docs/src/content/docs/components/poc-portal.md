@@ -83,12 +83,12 @@ The cases model part of their law. What they leave out or assume, apart from the
 | Case | Point | Kind |
 |---|---|---|
 | Vakantieverlof | Lid 2, second sentence of art. 13a: the proportional share for a young person who is kwalificatieplichtig. | Not modeled |
-| Vakantieverlof | The policy version in force on the day of the decision gives the first lesdag and the autumn and spring holidays. For leave in the next school year, decided before 1 August, the first lesdag is that of the current year, with no fallback to the head; the holiday policy holds no such year and is silent, so the head judges whether the leave falls outside the holidays. | Limitation |
-| Vakantieverlof | Leave during which the school moves cannot be decided: the vestiging reduction refuses two records (`combine: ONLY`), and the cell's error ends the decision. | Limitation |
+| Vakantieverlof | The policy version in force on the day of the decision gives the first lesdag and the autumn and spring holidays. For leave in the next school year, decided before 1 August, the first lesdag is that of the current year; the head is not asked. The holiday policy holds no such year and is silent, so the head judges whether the leave falls outside the holidays. | Limitation |
+| Vakantieverlof | Leave during which the school moves cannot be decided. The vestiging reduction refuses two records (`combine: ONLY`), and the cell's error ends the decision. | Limitation |
 | Vakantieverlof | The vestiging reduction needs the leave days from the question around it. Asked outside such a question it gives no vestiging, so the regeling gives no region. | Limitation |
 | Vakantieverlof | Regeling vaststelling schoolvakanties art. 7 (the school's extension of the summer by up to two days, other deviations, the Wadden islands) and art. 8 (exemption by the minister), free days that are no holiday, and a school with establishments in several regions (art. 2, third sentence). | Not modeled |
 | Parking card | Competence by place of residence (BABW art. 49 lid 1), the CBR's own grounds (lid 3), the institution (lid 2), the shorter validity of art. 51 lid 2 and 3, and Regeling art. 2 lid 2 onder c and lid 3. | Not modeled |
-| Parking card | An examination counts from the date the applicant wrote on the application, which stands in for the day of receipt. An examination after that date counts even when it took place before the municipality received the application. | Assumption |
+| Parking card | The date the applicant wrote on the application stands in for the day of receipt. An examination after that date counts, even one before the municipality received the application. | Assumption |
 | Parking card | The judgement under Regeling art. 2 lid 2 onder b belongs to the examining body; here the college passes it on as received. The issuing body of lid 2 onder a is the college that decides now. | Assumption |
 
 #### In the browser

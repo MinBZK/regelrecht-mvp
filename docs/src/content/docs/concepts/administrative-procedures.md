@@ -5,7 +5,7 @@ description: "How the law format models an Awb procedure: what an article establ
 
 A specific law says someone may apply. The Algemene wet bestuursrecht (Awb) says what every application contains, how the decision is taken and made known, and how an objection is decided. The specific law never names the Awb, and neither does its rulework. Design and reasons: [RFC-045](/rfcs/rfc-045).
 
-This is about the law, not about recording it. Recording is [Chronolexography](/concepts/chronolexography).
+How a cell records the procedure: [Chronolexography](/concepts/chronolexography).
 
 ## What an article establishes
 
@@ -62,11 +62,11 @@ The law says what is needed. The process supplies it, in this order:
 2. policy, through `implements` ([Inversion of Control](/concepts/inversion-of-control));
 3. the authority, for a term with `decided_per_case_by`, as a finding keyed by the term's id.
 
-Policy wins over a finding, and the trace says so. A finding no article asks for is an error.
+Which one wins, and when a finding is refused: [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article).
 
 ## Objection
 
-An objection is a second submission. Awb 7:11 establishes it and decides on it. The objection holds the contested decision; the decision on it calls that decision anew:
+An objection is a second submission. Awb 7:11 establishes it and decides on it. The objection holds the contested decision. The decision on the objection calls that decision anew:
 
 ```yaml
 # Awb 7:11
@@ -100,7 +100,7 @@ Only `outputs` count. A `derived` end date that moves with the day gives no caus
 
 | Point | Kind |
 |---|---|
-| Stages are an Awb detail built into the format: the schema calls `procedure` Awb-defined, a hook's `stage` defaults to `BESLUIT`, the engine uses `BESLUIT` and the submission kind (`AANVRAAG`) as stages, and the cell runs `BESLUIT` and `BEKENDMAKING` by name. Stages may stay, but as a free field filled by the law that defines the procedure. | Question |
+| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kind (`AANVRAAG`) as stages. Stages may stay, as a free field filled by the law that defines the procedure. | Question |
 | A hook on an application cannot filter on the requested decision. Awb 4:2 also fires on an application for something that is no beschikking. | Not built |
 | `gevraagde_beschikking` (Awb 4:2 lid 1 onder c) is filled by the applicant, though `requests` already names the decision. | Limitation |
 | Submission kinds beyond `AANVRAAG` and `BEZWAAR`, such as beroep. | Not built |

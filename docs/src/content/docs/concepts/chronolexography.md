@@ -7,7 +7,7 @@ A cell is an organization that records each legal fact it establishes as a dated
 
 This page shows how RegelRecht implements it. Design: [RFC-046](/rfcs/rfc-046) and [RFC-048](/rfcs/rfc-048). Still open: [Open Points](/concepts/chronolexography-open-points).
 
-Chronolexography is an optional layer: the law format, the engine and the corpus do not know it. The procedure a cell plays is modeled in the law itself ([Applications, Decisions and Objections](/concepts/administrative-procedures)).
+Recording is an optional layer. It uses the law and the engine, and nothing uses it. The procedure a cell plays is modeled in the law itself ([Applications, Decisions and Objections](/concepts/administrative-procedures)).
 
 | Part | Role | Where |
 |---|---|---|
@@ -25,7 +25,7 @@ name: Het college van burgemeester en wethouders van Voorbeeldstad
 category: college van burgemeester en wethouders
 ```
 
-The law names a role ([Competent Authority](/concepts/competent-authority)). The engine matches an `INSTANCE` to `name` and a `CATEGORY` to `category`. This is the only cell configuration, because identity cannot come from the law.
+The law names a role ([Competent Authority](/concepts/competent-authority)). The engine matches an `INSTANCE` to `name` and a `CATEGORY` to `category`. Nothing else about a cell is configured.
 
 ## What a chronicle holds
 
@@ -48,17 +48,21 @@ The law names a role ([Competent Authority](/concepts/competent-authority)). The
 }
 ```
 
-- The law gives the shape. The cell refuses an unknown field or a wrong type.
-- A chronolexogram repeats nothing the law says. Sources, bases and which field is a finding follow from the law in force on `recorded_on`.
-- The chronicle is append-only and refuses an entry dated before the last one.
+A chronolexogram repeats nothing the law says. Sources, bases and which field is a finding follow from the law in force on `recorded_on`. The chronicle is append-only, in date order.
 
 ## Recording and deciding
 
 - **Submission.** Runs the establishing article at the stage named after its kind, so the hooks on it run. A missing required field goes under `missing`: an incomplete application is still one (Awb 4:5). The moment the law counts from is the day of recording. A submission may refer to a decision (`refers_to`), as an objection does.
-- **Decision.** Finds the submission that asks for it (`requests`), passes the findings apart from the parameters, and runs the later stages. Each non-null output of type `decision`, such as a new decision on objection, becomes its own chronolexogram in the same append.
-- **Fact.** Recorded whole or not at all, refers to nothing. A change is a new executogram; the old one stays.
+- **Decision.** Finds the submission that asks for it (`requests`) and runs the later stages. Findings travel apart from the parameters. Each non-null output of type `decision`, such as a new decision on objection, becomes its own chronolexogram in the same append.
+- **Fact.** Recorded whole or not at all. It refers to nothing. A change is a new executogram; the old one stays.
 
-The cell refuses a second decision on one submission and replacing a decision twice. It contains no article of any law.
+The cell contains no article of any law. It refuses:
+
+- any field the law does not give, and a wrong type;
+- a `moment` supplied by the submitter;
+- a decision no submission requests, a second decision on one submission, and replacing a decision twice;
+- in a decision, a value from the caller that comes from elsewhere, and a finding no article asks for or of the wrong type;
+- a fact the article does not require, under an article not in force that day, with a parameter `id`, or whose `competent_authority` does not name the cell.
 
 ## Answering from the chronicle
 
@@ -75,21 +79,19 @@ input:
       decisions: wet_voorbeeld#3     # one row per decision under art. 3
 ```
 
-- Rulework of its own kind (`REDUCTIE`). Reads decisions (`source.decisions`) or facts (`source.facts`), and may ask law and policy.
-- The engine asks the cell first; the cell answers only terms its reductions fill.
-- The answer wins over policy and over the authority's finding.
+- A reduction is rulework of its own kind (`REDUCTIE`). It reads decisions (`source.decisions`) or facts (`source.facts`), and may ask law and policy.
+- The cell answers only terms its reductions fill. The engine asks it before policy and the authority's finding ([order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term)).
 - Null on a term the authority decides per case is silence: the authority judges.
-- Outside a cell nothing answers; a scenario gives the finding instead.
 
 ## Answers of other cells
 
-A decision may take other cells along: its sphere. For an open term with `competent_authority`, the engine asks every competent cell in the sphere and merges the answers with the term's `combine`. This is the paper's synthesis. It happens in the asking process; each cell reduces only its own chronicle.
+A decision may take other cells along: its sphere. For an open term with `competent_authority`, the engine asks every competent cell in the sphere and merges their answers with the term's `combine` ([Competent Authority](/concepts/competent-authority#who-answers-an-open-term)). This is the paper's synthesis. It happens in the asking process, and each cell reduces only its own chronicle.
 
 ## Explaining a decision
 
 The cell stores no reasons. It replays.
 
-- `Cell::explain` retakes the decision on its own day, with the law and chronicle of that moment, and fails if the outcome differs.
+- `Cell::explain` retakes the decision on its own day, with the law and chronicle of that moment. It fails if the outcome differs.
 - `Cell::findings` reads from the replay which findings counted.
 - `Cell::explain_answer` reruns a reduction to show its reasoning. In the decision's trace the answer is one step.
 
