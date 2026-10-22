@@ -63,12 +63,13 @@ jobs:
         # x86_64-linux builds use the mold linker from packages/.cargo/config.toml.
         # The macOS targets fall outside that target-scoped config, so no mold there.
         if: runner.os == 'Linux'
-        run: |
-          # De runner-image draagt een Google Chrome-apt-bron mee die geregeld een
-          # kapotte index geeft ("Hash Sum mismatch") en dan elke apt-get update laat
-          # falen; wij gebruiken die bron niet, dus weg ermee vóór apt-get update.
-          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list
-          sudo apt-get update && sudo apt-get install -y mold
+        # The release binary from GitHub, not apt: `apt-get update` alone took
+        # 30 to 110 s on the runners. make-default stays off, so /usr/bin/ld is
+        # untouched and only the -fuse-ld=mold link-arg picks mold.
+        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038  # v1
+        with:
+          mold-version: 2.42.1
+          make-default: false
 
       - name: Cache cargo registry
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
