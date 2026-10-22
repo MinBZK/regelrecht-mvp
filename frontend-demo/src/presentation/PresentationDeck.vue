@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
-import { usePresentation } from './usePresentation.js';
-import { useDemo } from '../store/demoStore.js';
-import { intlLocale } from '../data/format.js';
+import { usePresentation } from './usePresentation';
+import { useDemo } from '../store/demoStore';
+import { intlLocale } from '../data/format';
 import { useI18n } from '../i18n/index.js';
-import { HINTS, hintSegments } from './keyHints.js';
-import { clockEpoch } from '../walkthrough/clock.js';
+import { HINTS, hintSegments } from './keyHints';
+import { clockEpoch } from '../walkthrough/clock';
 
 // The deck: a Rijkshuisstijl-blue panel, full-screen for the intro and the
 // closing, a left rail while the live demo runs on the right. Slides are data
@@ -30,13 +30,16 @@ const isLast = computed(() => p.index.value === p.total.value - 1);
 const hints = computed(() => HINTS.map((id) => ({ id, segments: hintSegments(t(id)) })));
 
 /** `**bold**` in a statement line → <strong>, everything else escaped. */
-function emphasize(line) {
+function emphasize(line: string): string {
   const escaped = String(line).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
-function saveName(e) {
-  state.presenterName = e.target?.value ?? state.presenterName;
+function saveName(e: Event) {
+  state.presenterName = (e.target as HTMLInputElement | null)?.value ?? state.presenterName;
 }
+// SlideConfig has no `note` field and no slide in demo-config.yaml sets one,
+// so this is always undefined and the note never renders (kept as it was).
+const note = computed(() => (p.current.value as { note?: string } | null)?.note);
 </script>
 
 <template>
@@ -88,8 +91,8 @@ function saveName(e) {
             </ul>
           </template>
         </div>
-        <div v-if="p.current.value.note" class="content-foot">
-          <p class="note">{{ p.current.value.note }}</p>
+        <div v-if="note" class="content-foot">
+          <p class="note">{{ note }}</p>
         </div>
       </div>
       </div>
@@ -114,7 +117,7 @@ function saveName(e) {
             <!-- Elke pijl apart, niet `←+→`: dat zet er een plusteken tussen en
                  leest als 'allebei tegelijk', terwijl het hier om de een of de
                  ander gaat. De zinnen komen uit het woordenboek met een
-                 `{placeholder}` per toets (keyHints.js); stonden ze hier als
+                 `{placeholder}` per toets (keyHints.ts); stonden ze hier als
                  tekst, dan bleven ze Nederlands in elke taal. -->
             <span v-for="hint in hints" :key="hint.id" class="hint">
               <template v-for="(seg, j) in hint.segments" :key="j">

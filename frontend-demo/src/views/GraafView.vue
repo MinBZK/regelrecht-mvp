@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue';
-import { VueFlow, useVueFlow } from '@vue-flow/core';
-import { centerOf, graphView } from '../walkthrough/graphBridge.js';
+import { VueFlow, useVueFlow, type NodeDragEvent, type NodeMouseEvent, type ViewportTransform } from '@vue-flow/core';
+import type { NLDDNavigationSplitView } from '@nldd/design-system/navigation-split-view';
+import { centerOf, graphView } from '../walkthrough/graphBridge';
 import { Background } from '@vue-flow/background';
 import '@vue-flow/core/dist/style.css';
 import '@vue-flow/core/dist/theme-default.css';
@@ -10,12 +11,12 @@ import GraphBoxNode from '../components/graph/GraphBoxNode.vue';
 import GraphItemNode from '../components/graph/GraphItemNode.vue';
 import OrgLogo from '../components/OrgLogo.vue';
 import LawGroupTree from '../components/LawGroupTree.vue';
-import { buildGraph, lawShape, neighbourhood } from '../graph/lawGraph.js';
-import { fieldSpec, formatValue } from '../data/format.js';
-import { lineageFromTrace } from '../data/lineage.js';
-import { serviceInfo } from '../data/loadCorpus.js';
-import { useDemo } from '../store/demoStore.js';
-import { useLocalePath } from '../i18n/useLocalePath.js';
+import { buildGraph, lawShape, neighbourhood } from '../graph/lawGraph';
+import { fieldSpec, formatValue } from '../data/format';
+import { lineageFromTrace, type LineageNode } from '../data/lineage';
+import { serviceInfo, type LawEntry } from '../data/loadCorpus';
+import { useDemo } from '../store/demoStore';
+import { useLocalePath } from '../i18n/useLocalePath';
 import { useI18n } from '../i18n/index.js';
 
 // Naar een ander tabblad op naam, niet op pad: onder `/en/` leidt een
@@ -39,7 +40,7 @@ const { corpus, profile, portalLaws, dataVersion } = demo;
 const { fitView, zoomIn, zoomOut, setCenter, getViewport, dimensions, findNode } = useVueFlow({ id: 'demo-graph' });
 
 // The recorded walkthrough follows and steers the graph's camera through this
-// bridge (walkthrough/graphBridge.js): panning and zooming leave no clicked
+// bridge (walkthrough/graphBridge.ts): panning and zooming leave no clicked
 // element behind for it to replay.
 onMounted(() => {
   graphView.api = { setCenter, getViewport, dimensions, moveNode };
@@ -47,18 +48,18 @@ onMounted(() => {
 onUnmounted(() => {
   if (graphView.api?.setCenter === setCenter) graphView.api = null;
 });
-function onViewportChange(viewport) {
+function onViewportChange(viewport: ViewportTransform) {
   graphView.onView?.(centerOf(viewport, dimensions.value));
 }
 /** Where the layout puts a node; a drag is recorded and replayed relative to it. */
-function laidOut(id) {
+function laidOut(id: string) {
   return graph.value.nodes.find((n) => n.id === id)?.position ?? null;
 }
 let dragStarted = 0;
 function onNodeDragStart() {
   dragStarted = performance.now();
 }
-function onNodeDragStop({ nodes, node }) {
+function onNodeDragStop({ nodes, node }: NodeDragEvent) {
   const ms = Math.round(performance.now() - dragStarted);
   for (const n of nodes?.length ? nodes : [node]) {
     const base = laidOut(n.id);
@@ -66,7 +67,7 @@ function onNodeDragStop({ nodes, node }) {
   }
 }
 /** Put a node `dx, dy` away from its place in the layout, gliding over `duration` ms. */
-function moveNode(id, dx, dy, duration = 0) {
+function moveNode(id: string, dx: number, dy: number, duration = 0) {
   const node = findNode(id);
   const base = laidOut(id);
   if (!node || !base) return false;
@@ -84,36 +85,41 @@ function moveNode(id, dx, dy, duration = 0) {
   return true;
 }
 // The law list is a sheet, closed until asked for; the presets live in the toolbar.
-const splitView = ref(null);
+const splitView = ref<NLDDNavigationSplitView | null>(null);
 
 const allLaws = computed(() => (corpus.value ? [...corpus.value.latestById.values()].sort((a, b) => a.name.localeCompare(b.name)) : []));
 const groups = computed(() => {
-  const byService = new Map();
+  const byService = new Map<string, LawEntry[]>();
   for (const law of allLaws.value) {
-    if (!byService.has(law.service)) byService.set(law.service, []);
-    byService.get(law.service).push(law);
+    // Every demo law names its service; a null one would break the sort below.
+    const service = law.service as string;
+    if (!byService.has(service)) byService.set(service, []);
+    byService.get(service)!.push(law); // set on the line above
   }
-  return [...byService.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([service, laws]) => ({ service, info: serviceInfo(corpus.value, service), laws }));
+  // `allLaws` is empty without a corpus, so there is one here.
+  return [...byService.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([service, laws]) => ({ service, info: serviceInfo(corpus.value!, service), laws }));
 });
 
-function referencesOf(law) {
-  return lawShape(law).inputs.map((i) => i.ref.regulation).filter((id) => corpus.value.latestById.has(id));
+// Only called with a corpus loaded (see applyPreset).
+function referencesOf(law: LawEntry) {
+  return lawShape(law).inputs.map((i) => i.ref.regulation).filter((id) => corpus.value!.latestById.has(id));
 }
 /** A set of laws plus everything they read from, transitively. */
-function withDependencies(laws) {
-  const wanted = new Set();
+function withDependencies(laws: LawEntry[]) {
+  const wanted = new Set<string>();
   const queue = [...laws];
   while (queue.length) {
-    const law = queue.shift();
+    const law = queue.shift()!; // the queue is not empty
     if (wanted.has(law.id)) continue;
     wanted.add(law.id);
-    for (const ref of referencesOf(law)) queue.push(corpus.value.lawById(ref));
+    // `referencesOf` keeps only ids the corpus holds.
+    for (const ref of referencesOf(law)) queue.push(corpus.value!.lawById(ref)!);
   }
   return wanted;
 }
 
 // ---- selection ----------------------------------------------------------------
-const focus = ref(null);
+const focus = ref<string | null>(null);
 // Staat de focus er omdat het profiel hem koos (`graph_focus`), dan zoomt de
 // graaf op die wet in plaats van op het hele verhaal:
 // Claudia's verhaal telt zeventien wetten, en uitgezoomd daarop is de
@@ -128,10 +134,10 @@ function focusProfileLaw() {
   focusFromProfile.value = !!law;
 }
 
-const selected = ref(new Set());
+const selected = ref(new Set<string>());
 const preset = ref('verhaal'); // 'verhaal' | 'portaal' | 'alles' | '' (hand-picked)
 
-function applyPreset(name) {
+function applyPreset(name: string) {
   if (!corpus.value || !profile.value) return;
   // Bij een profielwissel zet focusProfileLaw hem direct daarna weer aan.
   focusFromProfile.value = false;
@@ -141,12 +147,12 @@ function applyPreset(name) {
   } else if (name === 'portaal') {
     selected.value = withDependencies(portalLaws.value);
   } else {
-    const story = (profile.value.graph_laws ?? []).filter((id) => corpus.value.latestById.has(id));
+    const story = (profile.value.graph_laws ?? []).filter((id) => corpus.value!.latestById.has(id)); // checked at the top
     if (story.length) selected.value = new Set(story);
     else {
       const d = profile.value.default_law;
-      const law = d ? corpus.value.lawByPath(d.law_path, d.service) : null;
-      selected.value = law ? withDependencies([law]) : new Set();
+      const law = d ? corpus.value!.lawByPath(d.law_path, d.service) : null;
+      selected.value = law ? withDependencies([law]) : new Set<string>();
     }
   }
 }
@@ -176,7 +182,7 @@ onDeactivated(() => {
 
 // Wie zelf wetten kiest, neemt het beeld over van de profielfocus: anders zoomt
 // elke herberekening van de graaf terug naar die ene wet (zie refit).
-function toggle(lawId) {
+function toggle(lawId: string) {
   focusFromProfile.value = false;
   const next = new Set(selected.value);
   if (next.has(lawId)) next.delete(lawId);
@@ -184,7 +190,7 @@ function toggle(lawId) {
   selected.value = next;
   preset.value = '';
 }
-function only(lawId) {
+function only(lawId: string) {
   focusFromProfile.value = false;
   selected.value = new Set([lawId]);
   preset.value = '';
@@ -199,10 +205,11 @@ const shownLaws = computed(() => allLaws.value.filter((l) => shownIds.value.has(
 // and an input shows the value of the output it reads.
 const values = computed(() => {
   void dataVersion.value;
-  const outputs = {};
-  const sources = {};
-  const refs = new Map(); // `${law}#${output}` -> raw value, from cross-law references in traces
-  const fmt = (lawId, name, v) => formatValue(v, fieldSpec(corpus.value.lawById(lawId)?.doc, name));
+  const outputs: Record<string, Record<string, string>> = {};
+  const sources: Record<string, Record<string, string>> = {};
+  const refs = new Map<string, unknown>(); // `${law}#${output}` -> raw value, from cross-law references in traces
+  // Only reached for shown laws, and there are none without a corpus.
+  const fmt = (lawId: string, name: string, v: unknown) => formatValue(v, fieldSpec(corpus.value!.lawById(lawId)?.doc, name));
   for (const law of shownLaws.value) {
     let evaluation;
     try {
@@ -212,11 +219,11 @@ const values = computed(() => {
     }
     if (!evaluation?.ok) continue;
     outputs[law.id] = Object.fromEntries(Object.entries(evaluation.outputs ?? {}).map(([k, v]) => [k, fmt(law.id, k, v)]));
-    const walk = (nodes) => {
+    const walk = (nodes: LineageNode[]) => {
       for (const n of nodes) {
         if (n.kind === 'value') {
           sources[n.law] ??= {};
-          sources[n.law][n.name] = fmt(n.law, n.name, n.value);
+          sources[n.law]![n.name] = fmt(n.law, n.name, n.value); // set on the line above
         } else {
           refs.set(`${n.law}#${n.name}`, n.value);
           walk(n.children ?? []);
@@ -225,18 +232,20 @@ const values = computed(() => {
     };
     if (evaluation.trace) walk(lineageFromTrace(evaluation.trace, law.id, demo.personaParams()));
   }
-  const inputs = {};
+  const inputs: Record<string, Record<string, string>> = {};
   for (const law of shownLaws.value) {
     for (const input of lawShape(law).inputs) {
       const key = `${input.ref.regulation}#${input.ref.output}`;
       // Leest de wet dit uit een besloten zaak (caseRefs), dan telt wat zij
       // daar las: een losse run van de andere wet kent de aanvraag niet.
       const viaCase = (law.caseRefs ?? []).some((r) => r.name === input.name) ? sources[law.id]?.[input.name] : undefined;
-      const fromOutputs = outputs[input.ref.regulation]?.[input.ref.output];
-      const v = viaCase ?? fromOutputs ?? (refs.has(key) ? fmt(input.ref.regulation, input.ref.output, refs.get(key)) : undefined);
+      // A reference without an output indexes and formats as 'undefined', as before.
+      const output = input.ref.output as string;
+      const fromOutputs = outputs[input.ref.regulation]?.[output];
+      const v = viaCase ?? fromOutputs ?? (refs.has(key) ? fmt(input.ref.regulation, output, refs.get(key)) : undefined);
       if (v !== undefined) {
         inputs[law.id] ??= {};
-        inputs[law.id][input.name] = v;
+        inputs[law.id]![input.name] = v; // set on the line above
       }
     }
   }
@@ -248,12 +257,12 @@ const values = computed(() => {
 // only the neighbourhood of the selection is visible.
 const graph = computed(() => buildGraph(allLaws.value, values.value, focus.value, shownIds.value));
 
-function onNodeClick({ node }) {
+function onNodeClick({ node }: NodeMouseEvent) {
   focusFromProfile.value = false;
   if (node.type === 'law') focus.value = focus.value === node.id ? null : node.id;
   else if (node.type === 'item' && node.data.ref && selected.value.has(node.data.ref.regulation)) focus.value = node.data.ref.regulation;
 }
-function onNodeDoubleClick({ node }) {
+function onNodeDoubleClick({ node }: NodeMouseEvent) {
   if (node.type === 'law') goTo('wetten', { lawId: node.id });
 }
 function onPaneClick() {
@@ -268,7 +277,8 @@ function onPaneClick() {
  */
 function refit() {
   const onFocus = focusFromProfile.value && focus.value && shownIds.value.has(focus.value);
-  const options = onFocus ? { padding: 0.2, maxZoom: 1, nodes: [focus.value] } : { padding: 0.1, nodes: [...shownIds.value] };
+  // `onFocus` implies a focus law.
+  const options = onFocus ? { padding: 0.2, maxZoom: 1, nodes: [focus.value!] } : { padding: 0.1, nodes: [...shownIds.value] };
   setTimeout(() => fitView(options), 50);
 }
 /** "Passend maken": always the whole picture. */
@@ -290,9 +300,10 @@ watch(
 );
 
 const focusLaw = computed(() => (focus.value ? corpus.value?.lawById(focus.value) : null));
-const uses = computed(() => (focus.value ? graph.value.edges.filter((e) => e.data.from === focus.value).map((e) => corpus.value.lawById(e.data.to)) : []));
-const usedBy = computed(() => (focus.value ? graph.value.edges.filter((e) => e.data.to === focus.value).map((e) => corpus.value.lawById(e.data.from)) : []));
-function unique(laws) {
+// The graph's edges connect laws of the corpus, so the corpus is loaded and holds both ends.
+const uses = computed(() => (focus.value ? graph.value.edges.filter((e) => e.data.from === focus.value).map((e) => corpus.value!.lawById(e.data.to)!) : []));
+const usedBy = computed(() => (focus.value ? graph.value.edges.filter((e) => e.data.to === focus.value).map((e) => corpus.value!.lawById(e.data.from)!) : []));
+function unique(laws: LawEntry[]) {
   return [...new Map(laws.map((l) => [l.id, l])).values()];
 }
 </script>
@@ -389,10 +400,11 @@ function unique(laws) {
       </nldd-page>
     </nldd-split-view-pane>
 
+    <!-- A focus law means the corpus is loaded. -->
     <nldd-split-view-pane v-if="focusLaw" slot="inspector" has-content background="tinted">
       <nldd-page background="inherit">
         <nldd-container slot="header" padding="12">
-          <nldd-top-title-bar :text="focusLaw.name" :supporting-text="serviceInfo(corpus, focusLaw.service).name" :dismiss-text="t('wet.graph.close')" @dismiss="focus = null"></nldd-top-title-bar>
+          <nldd-top-title-bar :text="focusLaw.name" :supporting-text="serviceInfo(corpus!, focusLaw.service).name" :dismiss-text="t('wet.graph.close')" @dismiss="focus = null"></nldd-top-title-bar>
         </nldd-container>
         <nldd-container padding="12" gap="12">
           <nldd-button-group orientation="horizontal" size="sm">
@@ -404,7 +416,7 @@ function unique(laws) {
             <nldd-list appearance="box-base" :accessible-label="t('wet.graph.reads_from')">
               <nldd-list-item v-if="uses.length === 0" size="sm"><nldd-text-cell size="sm" color="secondary" :text="t('wet.graph.no_law_in_view')"></nldd-text-cell></nldd-list-item>
               <nldd-list-item v-for="l in unique(uses)" :key="l.id" size="sm" button @click="focus = l.id">
-                <nldd-text-cell size="sm" :text="l.name" :supporting-text="serviceInfo(corpus, l.service).name"></nldd-text-cell>
+                <nldd-text-cell size="sm" :text="l.name" :supporting-text="serviceInfo(corpus!, l.service).name"></nldd-text-cell>
               </nldd-list-item>
             </nldd-list>
           </nldd-container>
@@ -413,7 +425,7 @@ function unique(laws) {
             <nldd-list appearance="box-base" :accessible-label="t('wet.graph.read_by')">
               <nldd-list-item v-if="usedBy.length === 0" size="sm"><nldd-text-cell size="sm" color="secondary" :text="t('wet.graph.no_law_in_view')"></nldd-text-cell></nldd-list-item>
               <nldd-list-item v-for="l in unique(usedBy)" :key="l.id" size="sm" button @click="focus = l.id">
-                <nldd-text-cell size="sm" :text="l.name" :supporting-text="serviceInfo(corpus, l.service).name"></nldd-text-cell>
+                <nldd-text-cell size="sm" :text="l.name" :supporting-text="serviceInfo(corpus!, l.service).name"></nldd-text-cell>
               </nldd-list-item>
             </nldd-list>
           </nldd-container>

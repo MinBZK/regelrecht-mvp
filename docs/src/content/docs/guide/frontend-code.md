@@ -3,7 +3,7 @@ title: "Frontend Code"
 description: "How the Vue frontends are set up for TypeScript: the three tsconfigs, the type check, and what stays JavaScript."
 ---
 
-The frontends are Vue 3 applications built with Vite and tested with Vitest. The aim is TypeScript for code that runs in the browser. The editor, lawmaking and `frontend-shared` use the setup on this page; the demo and the PoC frontends are still JavaScript and will be migrated later. Three kinds of file stay JavaScript in any case: scripts that run in plain Node, the modules those scripts load, and generated files such as `grammar.generated.js` and `nldd-components.js`.
+The frontends are Vue 3 applications built with Vite and tested with Vitest. The aim is TypeScript for code that runs in the browser. The editor, lawmaking, the demo and `frontend-shared` use the setup on this page; the PoC frontends are still JavaScript and will be migrated later. Three kinds of file stay JavaScript in any case: scripts that run in plain Node, the modules those scripts load, and generated files such as `grammar.generated.js` and `nldd-components.js`. In the demo, the first two are the modules in `src/i18n/` (the dictionaries, the language table and `hash.js`) and `src/data/materialize.js`, which the scripts in `scripts/` and `corpus/demo/tools/` load.
 
 ## The tsconfigs
 
