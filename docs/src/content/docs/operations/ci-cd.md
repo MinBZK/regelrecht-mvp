@@ -107,7 +107,10 @@ The container runs as root. git refuses a checkout owned by another user, so
 the accessibility gate marks the workspace as a safe directory before its
 `git diff`. That gate also installs `unzip`, which the image lacks and the
 Puppeteer download of pa11y's Chrome needs, and pa11y starts that Chrome with
-`--no-sandbox`.
+`--no-sandbox`. The preview server that pa11y reads from binds to `127.0.0.1`
+explicitly (`npm run a11y` in `docs/package.json`). Left at `localhost`, it
+listened on `::1` in the container while `wait-on` knocked on `127.0.0.1`, and
+the gate timed out before checking a page.
 
 ### WASM build (on engine changes)
 
