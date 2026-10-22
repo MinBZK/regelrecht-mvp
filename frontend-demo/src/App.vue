@@ -3,7 +3,7 @@ import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, 
 import { useRoute, useRouter } from 'vue-router';
 import { useColorScheme } from '@regelrecht/frontend-shared';
 import { FEATURES, useDemo } from './store/demoStore.js';
-import { delegationLabel } from './data/delegation.js';
+import { delegationLabel } from './data/delegation';
 import { LOCALES, useI18n } from './i18n/index.js';
 import { localeRouteName } from './router.js';
 import PresentationDeck from './presentation/PresentationDeck.vue';
@@ -13,7 +13,7 @@ import { viewEpoch } from './walkthrough/viewEpoch.js';
 import ReplayAside from './walkthrough/ReplayAside.vue';
 import ReplayControls from './walkthrough/ReplayControls.vue';
 import ReplayOverlay from './walkthrough/ReplayOverlay.vue';
-import { lockWhy, probeWhy, unlockWhy, whyAvailable, whyUnlocked } from './why/why.js';
+import { lockWhy, probeWhy, unlockWhy, whyAvailable, whyUnlocked } from './why/why';
 
 // The workspace shell: one bar with the tab bar and the presenter menu, and
 // the active tab below it. Every tab is a route; <keep-alive> keeps the tabs

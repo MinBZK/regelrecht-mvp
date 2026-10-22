@@ -2,17 +2,17 @@
 import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import OrgLogo from '../components/OrgLogo.vue';
 import SimBarChart from '../components/SimBarChart.vue';
-import { fieldSpec, formatValue, humanize, intlLocale } from '../data/format.js';
-import { serviceInfo } from '../data/loadCorpus.js';
-import { BUSINESS_DEFAULTS, CITIZEN_DEFAULTS, MAX_POPULATION } from '../simulation/population.js';
-import { definitionKind, overridableDefinitions } from '../simulation/lawParameters.js';
-import { NEUTRAL, paletteColor } from '../data/palette.js';
-import { runSimulation, simulationLaws, supportingLaws } from '../simulation/runner.js';
-import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, dimensionLabel, flattenResults, toCsv } from '../simulation/stats.js';
-import { disposableIncomeBreakdown, summariseDisposableIncome } from '../simulation/income.js';
-import { describeModel, featureLabel, featuresFor, taxLawIds, trainBracketModel, trainingData } from '../simulation/harmonize.js';
+import { fieldSpec, formatValue, humanize, intlLocale } from '../data/format';
+import { serviceInfo } from '../data/loadCorpus';
+import { BUSINESS_DEFAULTS, CITIZEN_DEFAULTS, MAX_POPULATION } from '../simulation/population';
+import { definitionKind, overridableDefinitions } from '../simulation/lawParameters';
+import { NEUTRAL, paletteColor } from '../data/palette';
+import { runSimulation, simulationLaws, supportingLaws } from '../simulation/runner';
+import { BUSINESS_DIMENSIONS, CITIZEN_DIMENSIONS, breakdown, dimensionLabel, flattenResults, toCsv } from '../simulation/stats';
+import { disposableIncomeBreakdown, summariseDisposableIncome } from '../simulation/income';
+import { describeModel, featureLabel, featuresFor, taxLawIds, trainBracketModel, trainingData } from '../simulation/harmonize';
 import { useDemo } from '../store/demoStore.js';
-import { useNarrow } from '../useNarrow.js';
+import { useNarrow } from '../useNarrow';
 import { useI18n } from '../i18n/index.js';
 import { useLocalePath } from '../i18n/useLocalePath.js';
 

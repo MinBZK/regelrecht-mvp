@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive } from 'vue';
 import OrgLogo from './OrgLogo.vue';
-import { fieldSpec, formatMissing, formatValue, humanize, isUnknown } from '../data/format.js';
+import { fieldSpec, formatMissing, formatValue, humanize, isUnknown } from '../data/format';
 import { useDemo } from '../store/demoStore.js';
 import { useI18n } from '../i18n/index.js';
 

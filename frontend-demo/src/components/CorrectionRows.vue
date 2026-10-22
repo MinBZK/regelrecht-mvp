@@ -1,5 +1,5 @@
 <script setup>
-import { fieldSpec, formatValue, humanize } from '../data/format.js';
+import { fieldSpec, formatValue, humanize } from '../data/format';
 import { useI18n } from '../i18n/index.js';
 import { useDemo } from '../store/demoStore.js';
 

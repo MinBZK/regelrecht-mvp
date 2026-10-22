@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { serviceInfo } from '../data/loadCorpus.js';
+import { serviceInfo } from '../data/loadCorpus';
 import { useDemo } from '../store/demoStore.js';
 
 // The mark of an organisation: its logo in a padded tile when the demo ships

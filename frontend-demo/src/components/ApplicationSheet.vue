@@ -1,13 +1,13 @@
 <script setup>
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import DataLineage from './DataLineage.vue';
-import { fieldSpec, formatDateTime, formatMissing, formatValue, humanize, verdictOf } from '../data/format.js';
-import { lineageFromTrace, leafValues } from '../data/lineage.js';
-import { askedInputsFor, claimKeyFor, evaluationParamsFor, inputKind, nextQuestions, parseAnswer } from '../data/askedInputs.js';
+import { fieldSpec, formatDateTime, formatMissing, formatValue, humanize, verdictOf } from '../data/format';
+import { lineageFromTrace, leafValues } from '../data/lineage';
+import { askedInputsFor, claimKeyFor, evaluationParamsFor, inputKind, nextQuestions, parseAnswer } from '../data/askedInputs';
 import { caseReason, eventText, useDemo } from '../store/demoStore.js';
 import { t } from '../i18n/index.js';
-import { awbOutcomes, canBeApplied, objectionOpen, statusOf } from '../data/lifecycle.js';
-import { driftRows, driftSentence } from '../data/caseDrift.js';
+import { awbOutcomes, canBeApplied, objectionOpen, statusOf } from '../data/lifecycle';
+import { driftRows, driftSentence } from '../data/caseDrift';
 
 // The citizen's side of an application, inside the portal. The flow the POC
 // generated per regeling: first the questions only the citizen can answer

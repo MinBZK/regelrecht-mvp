@@ -4,12 +4,12 @@ import LawTile from '../components/LawTile.vue';
 import EditValueSheet from '../components/EditValueSheet.vue';
 import ApplicationSheet from '../components/ApplicationSheet.vue';
 import ChangeWizardSheet from '../components/ChangeWizardSheet.vue';
-import { fieldSpec, numericImpact } from '../data/format.js';
-import { loadFailures } from '../engine/useDemoEngine.js';
-import { delegationLabel, permissionLabel } from '../data/delegation.js';
+import { fieldSpec, numericImpact } from '../data/format';
+import { loadFailures } from '../engine/useDemoEngine';
+import { delegationLabel, permissionLabel } from '../data/delegation';
 import { useDemo } from '../store/demoStore.js';
 import { useI18n } from '../i18n/index.js';
-import { useNarrow } from '../useNarrow.js';
+import { useNarrow } from '../useNarrow';
 
 // The citizen's (or entrepreneur's) portal: every regeling the persona can
 // discover, evaluated live, ordered by financial impact. This is where the

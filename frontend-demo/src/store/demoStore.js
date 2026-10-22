@@ -9,21 +9,21 @@
  * evaluate laws and to mutate cases/claims (which re-register the claim source).
  */
 import { computed, markRaw, reactive, ref, shallowRef, watch } from 'vue';
-import { loadCorpus } from '../data/loadCorpus.js';
+import { loadCorpus } from '../data/loadCorpus';
 import {
   evaluateLaw as engineEvaluate,
   executeStage as engineExecuteStage,
   prepareEngine,
   registerClaims,
   registerPersonaData,
-} from '../engine/useDemoEngine.js';
-import { reviewedByCaseworker, statusOf } from '../data/lifecycle.js';
-import { declaredClaim } from '../data/declarations.js';
-import { delegationKey, delegationTypeLabel, delegationsFor, maySubmitClaims, startDelegationKey } from '../data/delegation.js';
-import { verdictOf } from '../data/format.js';
-import { driftOf } from '../data/caseDrift.js';
-import { isEntrypointFor, subjectOf } from '../data/entrypoints.js';
-import { assignClaimOwnership } from '../data/claimOwnership.js';
+} from '../engine/useDemoEngine';
+import { reviewedByCaseworker, statusOf } from '../data/lifecycle';
+import { declaredClaim } from '../data/declarations';
+import { delegationKey, delegationTypeLabel, delegationsFor, maySubmitClaims, startDelegationKey } from '../data/delegation';
+import { verdictOf } from '../data/format';
+import { driftOf } from '../data/caseDrift';
+import { isEntrypointFor, subjectOf } from '../data/entrypoints';
+import { assignClaimOwnership } from '../data/claimOwnership';
 import { activeLocale, t } from '../i18n/index.js';
 
 const STORAGE_KEY = 'rr-demo-state-v1';

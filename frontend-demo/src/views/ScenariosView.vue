@@ -2,15 +2,15 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { parseFeature, dispatch, quotedValue, bareValue, traceRoot, ExecutionContext } from '@regelrecht/frontend-shared/gherkin';
-import { matchStep, featureKeywords, scenarioTitle } from '../data/gherkinNl.js';
-import { serviceInfo } from '../data/loadCorpus.js';
-import { loadFailureFor, loadFailures, prepareScenarioEngine } from '../engine/useDemoEngine.js';
+import { matchStep, featureKeywords, scenarioTitle } from '../data/gherkinNl';
+import { serviceInfo } from '../data/loadCorpus';
+import { loadFailureFor, loadFailures, prepareScenarioEngine } from '../engine/useDemoEngine';
 import { useDemo } from '../store/demoStore.js';
 import { useLocalePath } from '../i18n/useLocalePath.js';
 import { useI18n } from '../i18n/index.js';
 import TraceView from '../components/TraceView.vue';
 import ScenarioSteps from '../components/ScenarioSteps.vue';
-import { splitRunResults } from '../data/scenarioSteps.js';
+import { splitRunResults } from '../data/scenarioSteps';
 
 // Naar een ander tabblad op naam, niet op pad: onder `/en/` leidt een
 // letterlijk Nederlands pad de bezoeker ongemerkt het Nederlandse tabblad in.

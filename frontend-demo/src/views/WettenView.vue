@@ -7,7 +7,7 @@ import YamlNode from '../components/YamlNode.vue';
 import OrgLogo from '../components/OrgLogo.vue';
 import LawGroupTree from '../components/LawGroupTree.vue';
 import { useDemo } from '../store/demoStore.js';
-import { serviceInfo } from '../data/loadCorpus.js';
+import { serviceInfo } from '../data/loadCorpus';
 
 // The law browser: every demo law in the sidebar, grouped by the organisation
 // that executes it; the selected law as a collapsible YAML tree in which every

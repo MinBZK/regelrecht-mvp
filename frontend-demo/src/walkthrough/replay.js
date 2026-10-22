@@ -21,10 +21,10 @@
 import { nextTick, reactive, watch } from 'vue';
 import { adoptLocale, currentLocale, localeDef, setViewerLocale, t } from '../i18n/index.js';
 import scenarioTitles from '../i18n/scenarioTitles.generated.js';
-import { humanize } from '../data/format.js';
-import { loadCorpus } from '../data/loadCorpus.js';
-import { stepTemplatePairs } from '../data/gherkinNl.js';
-import { emphasiseArguments } from '../data/scenarioSteps.js';
+import { humanize } from '../data/format';
+import { loadCorpus } from '../data/loadCorpus';
+import { stepTemplatePairs } from '../data/gherkinNl';
+import { emphasiseArguments } from '../data/scenarioSteps';
 import { setPersistence } from '../store/demoStore.js';
 import { localeRouteName, pageForConfigPath, splitConfigPath } from '../router.js';
 import { click, setChecked, setValue, key as pressKey, scrollTo } from './actions.js';

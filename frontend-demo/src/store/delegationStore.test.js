@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { computed, ref } from 'vue';
-import { delegationKey, delegationsFor, maySubmitClaims, startDelegationKey } from '../data/delegation.js';
+import { delegationKey, delegationsFor, maySubmitClaims, startDelegationKey } from '../data/delegation';
 
 /**
  * Dezelfde afleidingen als in demoStore.js, met de invoer als losse refs. Wat

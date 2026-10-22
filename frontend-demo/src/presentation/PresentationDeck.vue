@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { usePresentation } from './usePresentation.js';
 import { useDemo } from '../store/demoStore.js';
-import { intlLocale } from '../data/format.js';
+import { intlLocale } from '../data/format';
 import { useI18n } from '../i18n/index.js';
 import { HINTS, hintSegments } from './keyHints.js';
 import { clockEpoch } from '../walkthrough/clock.js';

@@ -11,8 +11,8 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart } from 'echarts/charts';
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
-import { resolveChartColors, resolveCssColor, SERIES_KEYS } from '../simulation/chartColors.js';
-import { intlLocale } from '../data/format.js';
+import { resolveChartColors, resolveCssColor, SERIES_KEYS } from '../simulation/chartColors';
+import { intlLocale } from '../data/format';
 
 use([CanvasRenderer, BarChart, GridComponent, LegendComponent, TooltipComponent]);
 

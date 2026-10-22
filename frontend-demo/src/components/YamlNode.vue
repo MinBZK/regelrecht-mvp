@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { childPath as pathOf, initiallyOpen, scalarHint } from './yamlExpand.js';
+import { childPath as pathOf, initiallyOpen, scalarHint } from './yamlExpand';
 
 // One node of a parsed YAML document rendered as a collapsible tree. Mappings
 // and sequences fold; scalars show typed. A `source.regulation: <law>` value

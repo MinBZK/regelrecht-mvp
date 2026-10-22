@@ -16,7 +16,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
-import { MAX_POPULATION } from '../simulation/population.js';
+import { MAX_POPULATION } from '../simulation/population';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = resolve(here, '..');

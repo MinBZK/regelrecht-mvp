@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
-import { explainWhy, toBlocks } from '../why/why.js';
+import { explainWhy, toBlocks } from '../why/why';
 import { useI18n } from '../i18n/index.js';
 
 // The explanation of one outcome in plain language, written by a language

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
-import { traceLaws } from '../data/traceLaws.js';
-import { paletteColor } from '../data/palette.js';
+import { traceLaws } from '../data/traceLaws';
+import { paletteColor } from '../data/palette';
 import { useDemo } from '../store/demoStore.js';
 import { useI18n } from '../i18n/index.js';
 

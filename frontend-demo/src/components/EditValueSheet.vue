@@ -1,8 +1,8 @@
 <script setup>
 import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 import OrgLogo from './OrgLogo.vue';
-import { fieldSpec, formatValue, humanize, isUnknown } from '../data/format.js';
-import { columnKind as columnKindOf, decimalsFor, editKind, emptyRow, parseCell, parseDutchNumber, stepFor, tableColumns, unitLabel, valueKind } from '../data/editKinds.js';
+import { fieldSpec, formatValue, humanize, isUnknown } from '../data/format';
+import { columnKind as columnKindOf, decimalsFor, editKind, emptyRow, parseCell, parseDutchNumber, stepFor, tableColumns, unitLabel, valueKind } from '../data/editKinds';
 import { useI18n } from '../i18n/index.js';
 import { useDemo } from '../store/demoStore.js';
 

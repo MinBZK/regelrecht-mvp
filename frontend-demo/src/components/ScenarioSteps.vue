@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
-import { renderStep, stepKeywords } from '../data/gherkinNl.js';
-import { displayCell, emphasiseArguments, hasHeaderRow, isExpectation, keywordColumnWidth, stepMark } from '../data/scenarioSteps.js';
+import { renderStep, stepKeywords } from '../data/gherkinNl';
+import { displayCell, emphasiseArguments, hasHeaderRow, isExpectation, keywordColumnWidth, stepMark } from '../data/scenarioSteps';
 import { activeLocale, useI18n } from '../i18n/index.js';
 
 // The steps of a scenario (or of the background) as Gherkin: in order, keyword

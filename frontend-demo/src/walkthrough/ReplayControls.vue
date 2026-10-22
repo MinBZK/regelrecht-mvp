@@ -10,7 +10,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { DEFAULT_LOCALE, useViewerI18n } from '../i18n/index.js';
-import { intlLocale } from '../data/format.js';
+import { intlLocale } from '../data/format';
 import { localeRouteName } from '../router.js';
 import { backToMain, chapterSlide, currentTrack, replay, seek, setSpeed, stopReplay, takeOver, togglePlay } from './replay.js';
 import { chapterAt, formatTime, nextChapterStart, previousChapterStart } from './timeline.js';

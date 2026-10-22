@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
-import { CHANGE_TYPES, claimsFromAnswers, eventLabel, eventUnsupported, fieldLabel, groupLabel, typeDescription, typeLabel } from '../data/changeWizard.js';
-import { formatValue } from '../data/format.js';
+import { CHANGE_TYPES, claimsFromAnswers, eventLabel, eventUnsupported, fieldLabel, groupLabel, typeDescription, typeLabel } from '../data/changeWizard';
+import { formatValue } from '../data/format';
 import { useI18n } from '../i18n/index.js';
 import { useDemo } from '../store/demoStore.js';
 
