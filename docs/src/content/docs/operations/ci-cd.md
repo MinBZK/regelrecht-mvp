@@ -41,13 +41,17 @@ the synthetic `test_*` laws) as `BDD_BUCKET=conformance cargo test --test bdd`.
 It hangs on the `Test` gate, so it blocks a merge. That bucket proves the engine
 speaks the whole feature language and depends on nothing outside the repo.
 
-The **BDD demo** job validates every law in `corpus/demo/regulation` against the
-schema and then runs bucket A over that corpus, with `REGULATION_PATH` pointing
-at it, once more with the actions in reverse order, and finally the Awb lifecycle
-test over the same corpus. Apart from the reversed run, that is what `just bdd-demo`
-does locally. The demo corpus and
-its synthetic persona data live entirely in the repository, so this job also
-hangs on the `Test` gate and blocks a merge.
+The **BDD demo** job runs bucket A over `corpus/demo/regulation`, with
+`REGULATION_PATH` pointing at it, as a matrix of two legs on separate runners.
+The `forward` leg validates every law in that corpus against the schema, runs
+the scenarios with the actions in file order and then runs the Awb lifecycle test
+over the same corpus. The `reversed` leg runs the same scenarios with the actions
+of every article in reverse order (`BDD_REVERSE_ACTIONS=1`), since the order in
+the file must not change an outcome. The two orders used to run one after the
+other in a single job. Locally, `just validate-demo` and `just bdd-demo` do what
+the `forward` leg does, and `just bdd-reversed` covers the `reversed` leg. The demo corpus and its synthetic persona data live
+entirely in the repository, so this job also hangs on the `Test` gate and blocks
+a merge when either leg fails.
 
 Bucket A over the live corpus (`corpus/regulation/**/scenarios/*.feature`) stays out of CI. It asserts
 what the live laws currently produce, so a failure there means a law changed or a

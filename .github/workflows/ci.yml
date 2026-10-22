@@ -634,11 +634,24 @@ jobs:
   # is een echte fout (een wet, een binding of de engine) en geen oordeel van
   # een mens.
   bdd-demo:
-    name: BDD demo
+    name: BDD demo (${{ matrix.leg }})
     needs: changes
     if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The two orders of the demo bucket ran one after the other in a
+        # single job (about 100 s and 200 s). Each leg now builds and runs one
+        # of them on its own runner; the cheap demo-law validation and the Awb
+        # lifecycle ride along with the shorter forward leg. The `Test` gate
+        # reads `needs.bdd-demo.result`, which fails when either leg fails.
+        include:
+          - leg: forward
+            reverse: ''
+          - leg: reversed
+            reverse: '1'
     env:
       RUSTC_WRAPPER: sccache
       SCCACHE_GHA_ENABLED: "true"
@@ -672,25 +685,20 @@ jobs:
       # De pre-commit-hook valideert corpus/demo ook, maar alleen de bestanden
       # in de commit; hier het hele demo-corpus tegen schema/latest.
       - name: Validate demo laws
+        if: matrix.leg == 'forward'
         env:
           RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
         run: |
           find corpus/demo/regulation -name '*.yaml' ! -name '.*' -print0 | sort -z \
             | xargs -0 script/validate.sh
 
-      - name: Run demo bucket
+      # An empty BDD_REVERSE_ACTIONS keeps the file order; "1" reverses the
+      # actions of every article (packages/engine/tests/common/reverse_actions.rs).
+      - name: Run demo bucket (${{ matrix.leg }} actions)
         working-directory: packages/engine
         env:
           BDD_BUCKET: corpus
-          REGULATION_PATH: ${{ github.workspace }}/corpus/demo/regulation
-          RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
-        run: cargo test --test bdd -- --nocapture
-
-      - name: Run demo bucket with reversed actions
-        working-directory: packages/engine
-        env:
-          BDD_BUCKET: corpus
-          BDD_REVERSE_ACTIONS: "1"
+          BDD_REVERSE_ACTIONS: ${{ matrix.reverse }}
           REGULATION_PATH: ${{ github.workspace }}/corpus/demo/regulation
           RUSTFLAGS: -Dwarnings -C link-arg=-fuse-ld=mold
         run: cargo test --test bdd -- --nocapture
@@ -698,6 +706,7 @@ jobs:
       # Zoals `just bdd-demo`: de Awb-levensloop over hetzelfde democorpus.
       # De unit-baan draait deze test alleen tegen corpus/regulation.
       - name: Run Awb lifecycle over demo corpus
+        if: matrix.leg == 'forward'
         working-directory: packages/engine
         env:
           REGULATION_PATH: ${{ github.workspace }}/corpus/demo/regulation
