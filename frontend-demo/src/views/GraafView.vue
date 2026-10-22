@@ -91,8 +91,7 @@ const allLaws = computed(() => (corpus.value ? [...corpus.value.latestById.value
 const groups = computed(() => {
   const byService = new Map<string, LawEntry[]>();
   for (const law of allLaws.value) {
-    // Every demo law names its service; a null one would break the sort below.
-    const service = law.service as string;
+    const service = law.service;
     if (!byService.has(service)) byService.set(service, []);
     byService.get(service)!.push(law); // set on the line above
   }

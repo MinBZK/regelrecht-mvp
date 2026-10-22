@@ -67,7 +67,7 @@ const error = ref('');
 const objectionReason = ref('');
 const justSubmitted = ref(false);
 
-const service = computed(() => (props.law ? corpus.value?.services?.[props.law.service ?? '']?.name ?? props.law.service : ''));
+const service = computed(() => (props.law ? corpus.value?.services?.[props.law.service]?.name ?? props.law.service : ''));
 const asked = computed((): Question[] => {
   void dataVersion.value;
   return props.law && corpus.value ? askedInputsFor(corpus.value, props.law, claimFor) : [];

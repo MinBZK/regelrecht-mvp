@@ -58,8 +58,7 @@ const overrides = reactive<Record<string, Record<string, number>>>({});
 // a profile's own `disabled_laws` (what Merijn's portal hides) does not apply.
 function notHidden(law: LawEntry) {
   const hidden = corpus.value?.config?.hidden_laws ?? {};
-  // A null service looks up the key 'null', as JavaScript indexes with `String(key)`.
-  return !(hidden[String(law.service)] ?? []).some((p) => law.law_path === p || law.law_path.startsWith(`${p}/`));
+  return !(hidden[law.service] ?? []).some((p) => law.law_path === p || law.law_path.startsWith(`${p}/`));
 }
 const lawSet = computed(() => (corpus.value ? simulationLaws(corpus.value, kind.value, notHidden) : { runnable: [], skipped: [] }));
 // The regelingen those laws lean on and whose constants can be changed too:
@@ -605,12 +604,10 @@ function exportJson() {
 
           <nldd-button width="full" appearance="neutral-transparent" horizontal-alignment="left" :end-icon="open.wetgeving ? 'chevron-up' : 'chevron-down'" :text="totalOverrides ? t('sim.params.title_changed', { n: totalOverrides }) : t('sim.params.title')" :expanded="open.wetgeving || undefined" @click="open.wetgeving = !open.wetgeving"></nldd-button>
           <!-- `definitionsByLaw` has an entry for every law in `lawSet.runnable`
-               and `supporting` (they make up `tunable`), hence the `!`. A law
-               without a service would pass null to OrgLogo, which requires a
-               string; the cast keeps what was passed. -->
+               and `supporting` (they make up `tunable`), hence the `!`. -->
           <nldd-list v-if="open.wetgeving" appearance="box-tinted" :accessible-label="t('sim.params.list_label')">
             <nldd-list-item v-for="law in lawSet.runnable" :key="law.id" size="sm" button :disabled="definitionsByLaw[law.id]!.length === 0 || undefined" @click="editParameters(law)">
-              <nldd-cell><OrgLogo :service="law.service as string" size="sm" /></nldd-cell>
+              <nldd-cell><OrgLogo :service="law.service" size="sm" /></nldd-cell>
               <nldd-spacer-cell size="8"></nldd-spacer-cell>
               <nldd-text-cell size="sm" :text="law.name" :supporting-text="t('sim.params.count', { n: definitionsByLaw[law.id]!.length })"></nldd-text-cell>
               <nldd-cell v-if="overrideCount(law.id)"><nldd-tag size="sm" color="warning" :text="t('sim.params.changed', { n: overrideCount(law.id) })"></nldd-tag></nldd-cell>
@@ -623,7 +620,7 @@ function exportJson() {
             <nldd-container padding-inline="12"><nldd-text size="sm" weight="medium" color="secondary">{{ t('sim.params.supporting') }}</nldd-text></nldd-container>
             <nldd-list appearance="box-tinted" :accessible-label="t('sim.params.supporting')">
               <nldd-list-item v-for="law in supporting" :key="law.id" size="sm" button @click="editParameters(law)">
-                <nldd-cell><OrgLogo :service="law.service as string" size="sm" /></nldd-cell>
+                <nldd-cell><OrgLogo :service="law.service" size="sm" /></nldd-cell>
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-text-cell size="sm" :text="law.name" :supporting-text="t('sim.params.count', { n: definitionsByLaw[law.id]!.length })"></nldd-text-cell>
                 <nldd-cell v-if="overrideCount(law.id)"><nldd-tag size="sm" color="warning" :text="t('sim.params.changed', { n: overrideCount(law.id) })"></nldd-tag></nldd-cell>
@@ -769,7 +766,7 @@ function exportJson() {
 
               <nldd-list appearance="box-tinted" :accessible-label="t('sim.laws.label')">
                 <nldd-list-item v-for="law in lawRows" :key="law.id" size="md" button @click="showLaw(law.id)">
-                  <nldd-cell><OrgLogo :service="law.service as string" /></nldd-cell>
+                  <nldd-cell><OrgLogo :service="law.service" /></nldd-cell>
                   <nldd-spacer-cell size="12"></nldd-spacer-cell>
                   <nldd-text-cell :text="law.name" :supporting-text="outcomeLine(activeRun, law)"></nldd-text-cell>
                   <nldd-cell v-if="law.s.hasEligibility"><nldd-tag size="sm" :color="law.s.eligiblePct >= 50 ? 'success' : law.s.eligiblePct > 0 ? 'neutral' : 'critical'" :text="pct(law.s.eligiblePct)"></nldd-tag></nldd-cell>
@@ -813,7 +810,7 @@ function exportJson() {
               </nldd-card>
               <nldd-card v-for="law in lawRows" :key="law.id" :accessible-label="law.name">
                 <nldd-container slot="header" padding="12" layout="row" gap="12" vertical-alignment="top">
-                  <OrgLogo :service="law.service as string" size="sm" />
+                  <OrgLogo :service="law.service" size="sm" />
                   <nldd-title-cell size="5" :text="law.name" :supporting-text="t('sim.breakdown.law_meta', { outcome: law.s.hasEligibility ? t('sim.breakdown.law_eligible', { pct: pct(law.s.eligiblePct) }) : t('sim.breakdown.law_all'), dimension: dimensionLabel(dimension).toLowerCase() })"></nldd-title-cell>
                 </nldd-container>
                 <nldd-container padding-inline="12" padding-bottom="12">

@@ -42,9 +42,8 @@ interface TileEvaluation {
   evaluation: EvaluateResult | null;
 }
 
-// In the template: `law.service!`, because every demo law has a service
-// (scripts/check-service-map.mjs refuses one without), and `corpus!`, because
-// the portal renders tiles from the loaded corpus only.
+// In the template: `corpus!`, because the portal renders tiles from the loaded
+// corpus only.
 const props = defineProps<{
   law: LawEntry;
 }>();
@@ -254,7 +253,7 @@ const whyPayload = computed(() => {
   const all = evaluation.value.outputs ?? {};
   return {
     locale: activeLocale.value,
-    law: { id: props.law.id, name: props.law.name, service: corpus.value?.services[String(props.law.service)]?.name ?? props.law.service },
+    law: { id: props.law.id, name: props.law.name, service: corpus.value?.services[props.law.service]?.name ?? props.law.service },
     reference_date: demo.state.referenceDate,
     headline: phrased.value ? [phrased.value.lead, phrased.value.headline, phrased.value.unit].filter(Boolean).join(' ') : null,
     outcome: Object.entries(all).map(([name, value]) => ({ label: humanize(name), value: formatValue(value, fieldSpec(doc.value, name)) })),
@@ -283,8 +282,8 @@ const statusTag = computed(() => {
 <template>
   <nldd-card :accessible-label="law.name">
     <nldd-container slot="header" padding="20" layout="row" gap="12" vertical-alignment="top">
-      <OrgLogo :service="law.service!" />
-      <nldd-title-cell size="5" :text="law.name" :supporting-text="corpus!.services[String(law.service)]?.name ?? law.service"></nldd-title-cell>
+      <OrgLogo :service="law.service" />
+      <nldd-title-cell size="5" :text="law.name" :supporting-text="corpus!.services[law.service]?.name ?? law.service"></nldd-title-cell>
       <nldd-tag v-if="statusTag" :color="statusTag.color" :text="statusTag.text" :icon="statusTag.icon" size="sm"></nldd-tag>
     </nldd-container>
 

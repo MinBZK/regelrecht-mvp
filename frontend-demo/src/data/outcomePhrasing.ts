@@ -48,7 +48,7 @@ export interface PhrasedOutcome {
 /** The phrasing for one law, or null when it has none. */
 export function phrasingFor(
   config: { outcome_phrasing?: Record<string, OutcomePhrasing | undefined> | null } | null | undefined,
-  service: string | null,
+  service: string,
   lawPath: string,
 ): OutcomePhrasing | null {
   return config?.outcome_phrasing?.[`${service}/${lawPath}`] ?? null;

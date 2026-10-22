@@ -51,7 +51,7 @@ const sidebarLaws = computed(() => {
 const groups = computed(() => {
   const byService = new Map<string, LawEntry[]>();
   for (const law of sidebarLaws.value) {
-    const key = law.service ?? 'Overig';
+    const key = law.service;
     if (!byService.has(key)) byService.set(key, []);
     byService.get(key)!.push(law); // set on the line above
   }
@@ -261,9 +261,8 @@ const referencedBy = computed(() => {
         <nldd-container padding="12" gap="16">
           <nldd-list appearance="box-base" :accessible-label="t('wet.executed_by')">
             <nldd-list-item size="md">
-              <!-- An active law means the corpus is loaded. OrgLogo requires a
-                   string; a law without a service passed null before too. -->
-              <nldd-cell><OrgLogo :service="activeLaw.service as string" /></nldd-cell>
+              <!-- An active law means the corpus is loaded. -->
+              <nldd-cell><OrgLogo :service="activeLaw.service" /></nldd-cell>
               <nldd-spacer-cell size="12"></nldd-spacer-cell>
               <nldd-text-cell :overline="t('wet.executed_by')" :text="serviceInfo(corpus!, activeLaw.service).name"></nldd-text-cell>
             </nldd-list-item>
@@ -273,8 +272,7 @@ const referencedBy = computed(() => {
             <nldd-list appearance="box-base" :accessible-label="t('wet.uses_data_from')">
               <nldd-list-item v-if="references.length === 0" size="sm"><nldd-text-cell size="sm" color="secondary" :text="t('wet.no_other_laws')"></nldd-text-cell></nldd-list-item>
               <nldd-list-item v-for="ref in references" :key="ref.id" size="sm" button @click="openLaw(ref.id)">
-                <!-- OrgLogo requires a string; a law without a service passed null before too. -->
-                <nldd-cell><OrgLogo :service="ref.service as string" size="sm" /></nldd-cell>
+                <nldd-cell><OrgLogo :service="ref.service" size="sm" /></nldd-cell>
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-text-cell size="sm" :text="ref.name" :supporting-text="ref.id"></nldd-text-cell>
                 <nldd-icon-cell icon="chevron-right" size="16"></nldd-icon-cell>
@@ -286,8 +284,7 @@ const referencedBy = computed(() => {
             <nldd-list appearance="box-base" :accessible-label="t('wet.used_by')">
               <nldd-list-item v-if="referencedBy.length === 0" size="sm"><nldd-text-cell size="sm" color="secondary" :text="t('wet.no_other_laws')"></nldd-text-cell></nldd-list-item>
               <nldd-list-item v-for="ref in referencedBy" :key="ref.id" size="sm" button @click="openLaw(ref.id)">
-                <!-- OrgLogo requires a string; a law without a service passed null before too. -->
-                <nldd-cell><OrgLogo :service="ref.service as string" size="sm" /></nldd-cell>
+                <nldd-cell><OrgLogo :service="ref.service" size="sm" /></nldd-cell>
                 <nldd-spacer-cell size="8"></nldd-spacer-cell>
                 <nldd-text-cell size="sm" :text="ref.name" :supporting-text="ref.id"></nldd-text-cell>
                 <nldd-icon-cell icon="chevron-right" size="16"></nldd-icon-cell>

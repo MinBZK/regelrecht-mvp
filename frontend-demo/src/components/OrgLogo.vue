@@ -14,10 +14,7 @@ const props = withDefaults(defineProps<{
   size: 'md',
 });
 const { corpus } = useDemo();
-// `serviceInfo` returns the code it is given as `code`, and falls back to it
-// for `name`; with the required string `service` neither is null.
-type KnownServiceInfo = ServiceInfo & { code: string; name: string };
-const info = computed((): KnownServiceInfo => (corpus.value ? (serviceInfo(corpus.value, props.service) as KnownServiceInfo) : { code: props.service, name: props.service, logo: null }));
+const info = computed((): ServiceInfo => (corpus.value ? serviceInfo(corpus.value, props.service) : { code: props.service, name: props.service, logo: null }));
 const initials = computed(() => (info.value.code.length <= 3 ? info.value.code : undefined));
 const px = computed(() => (props.size === 'sm' ? '24' : '40'));
 </script>

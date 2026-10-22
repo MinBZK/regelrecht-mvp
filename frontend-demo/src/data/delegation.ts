@@ -33,7 +33,7 @@ import type { DemoProfileConfig } from './loadCorpus';
 export interface ProviderLaw {
   id: string;
   name: string;
-  service: string | null;
+  service: string;
   doc?: LawDocLike | null;
 }
 

@@ -53,7 +53,7 @@ export type ApplicationForm = Partial<BusinessFormValues> & Record<string, unkno
 export interface SimulatedLaw {
   id: string;
   name: string;
-  service: string | null;
+  service: string;
   law_path: string;
   primaryName: string | null | undefined;
 }
@@ -219,7 +219,7 @@ export function caseSourceLaws(bindings: Record<string, Record<string, CaseBindi
   return out;
 }
 
-function primaryOutputName(corpus: Pick<Corpus, 'config'>, law: { service: string | null; law_path: string }): string | null {
+function primaryOutputName(corpus: Pick<Corpus, 'config'>, law: { service: string; law_path: string }): string | null {
   const cfg = corpus.config?.dashboard_outputs ?? {};
   return cfg[`${law.service}/${law.law_path}`] ?? null;
 }

@@ -72,11 +72,10 @@ export function canBeApplied(produces: Produces): boolean {
  * `hidden_laws`.
  */
 export function reviewedByCaseworker(
-  lawEntry: { service: string | null; law_path: string },
+  lawEntry: { service: string; law_path: string },
   config: { review_laws?: Record<string, string[] | undefined> | null } | null | undefined,
 ): boolean {
-  // A null service indexes as "null", as it did in JavaScript: no service has that name.
-  return (config?.review_laws?.[String(lawEntry.service)] ?? []).some(
+  return (config?.review_laws?.[lawEntry.service] ?? []).some(
     (p) => lawEntry.law_path === p || lawEntry.law_path.startsWith(`${p}/`),
   );
 }

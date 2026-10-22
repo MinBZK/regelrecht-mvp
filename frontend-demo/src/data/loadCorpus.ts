@@ -93,7 +93,8 @@ export interface LawDocument {
 export interface LawIndexEntry {
   id: string;
   name: string;
-  service: string | null;
+  /** The executing organisation; copy-demo-corpus.mjs refuses a law without one. */
+  service: string;
   regulatory_layer?: string;
   valid_from: string;
   uuid?: string | null;
@@ -388,15 +389,14 @@ export function loadCorpus(): Promise<Corpus> {
 
 /** Organisation display data for a service code. */
 export interface ServiceInfo {
-  code: string | null;
-  name: string | null;
+  code: string;
+  name: string;
   logo: string | null;
 }
 
 /** Organisation display data for a service code. */
-export function serviceInfo(corpus: Pick<Corpus, 'services'>, code: string | null): ServiceInfo {
-  // `String(code)` is the key JavaScript indexes with anyway (a null code looks up 'null').
-  const entry: ServiceEntry = corpus.services[String(code)] ?? {};
+export function serviceInfo(corpus: Pick<Corpus, 'services'>, code: string): ServiceInfo {
+  const entry: ServiceEntry = corpus.services[code] ?? {};
   return {
     code,
     name: entry.name ?? code,
