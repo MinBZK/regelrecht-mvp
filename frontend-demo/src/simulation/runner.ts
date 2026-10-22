@@ -317,8 +317,7 @@ export async function runSimulation({ engine, corpus, kind, params, overrides = 
     const parameterNames = new Set<string>();
     for (const doc of Object.values(lawsById)) for (const p of lawShape(doc).parameters) parameterNames.add(p);
     const allTables = [shared, population.tables].flatMap((set) => Object.values(set).flatMap((byTable) => Object.values(byTable)));
-    // materialize.js has no types for collectKeyValues; it returns column -> distinct values as strings.
-    const keyValues = collectKeyValues(allTables, [...parameterNames]) as Record<string, string[]>;
+    const keyValues = collectKeyValues(allTables, [...parameterNames]);
     for (const [key, values] of Object.entries(population.keyValues)) {
       keyValues[key] = [...new Set([...(keyValues[key] ?? []), ...values])];
     }
@@ -330,8 +329,7 @@ export async function runSimulation({ engine, corpus, kind, params, overrides = 
       const register = (sources: ReturnType<typeof materialiseAll>) => {
         for (const { law, service, keyField, records } of sources) {
           try {
-            // materialize.js types the records as `object[]`; they are plain records.
-            engine.registerDataSourceForLaw(law, service, keyField, records as Record<string, unknown>[], REGISTER_PRIORITY);
+            engine.registerDataSourceForLaw(law, service, keyField, records, REGISTER_PRIORITY);
           } catch (e) {
             console.warn(`Simulatie: databron ${service} voor ${law} niet geregistreerd:`, e);
           }

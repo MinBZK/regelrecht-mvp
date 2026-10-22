@@ -9,9 +9,6 @@ import {
 } from './materialize.js';
 import type { Binding, LawShape } from './materialize.js';
 
-// `lawShape` is inferred from the JavaScript, where `inputTypes` starts as `{}`;
-// what it returns is the module's own `LawShape`.
-const shapeOf = (doc: unknown): LawShape => lawShape(doc) as LawShape;
 
 /**
  * Bindings for one test, written with only the fields that test needs (so
@@ -121,7 +118,7 @@ const rowsFor = (service: string, table: string) => TABLES[`${service} ${table}`
 
 describe('lawShape', () => {
   it('reads parameters and input types across articles', () => {
-    const shape = shapeOf(LAW);
+    const shape = lawShape(LAW);
     expect(shape.id).toBe('test_wet');
     expect(shape.parameters).toEqual(['bsn', 'aanvraag_bedrag']);
     expect(shape.inputTypes.inkomen).toBe('amount');
@@ -131,11 +128,11 @@ describe('lawShape', () => {
 
 describe('keyFieldsFor', () => {
   it('keys on the parameter the bindings select on', () => {
-    expect(keyFieldsFor(shapeOf(LAW), BINDINGS)).toEqual(['bsn']);
+    expect(keyFieldsFor(lawShape(LAW), BINDINGS)).toEqual(['bsn']);
   });
 
   it('falls back to the first parameter without any selecting binding', () => {
-    expect(keyFieldsFor(shapeOf(LAW), { eigen_verklaring: BINDINGS.eigen_verklaring })).toEqual(['bsn']);
+    expect(keyFieldsFor(lawShape(LAW), { eigen_verklaring: BINDINGS.eigen_verklaring })).toEqual(['bsn']);
   });
 
   it('keys on the identity only, never on a form parameter a binding selects on', () => {
@@ -161,7 +158,7 @@ describe('keyFieldsFor', () => {
 });
 
 describe('materialiseRecord', () => {
-  const shape = shapeOf(LAW);
+  const shape = lawShape(LAW);
 
   it('projects the selected row per input and remembers the owning service', () => {
     const { record, sources } = materialiseRecord(shape, BINDINGS, { bsn: '100000001' }, rowsFor);
@@ -317,8 +314,7 @@ describe('materialiseAll', () => {
     // Without the form answer no row matches and the space is unknown: nothing is registered.
     expect(materialiseAll({ terras: law }, bindings, rows, { kvk_nummer: ['1'] })).toEqual([]);
     const withForm = materialiseAll({ terras: law }, bindings, rows, { kvk_nummer: ['1'] }, { paramsFor: () => ({ terras_locatie: 'zij' }) });
-    // `records` is `object[]` in the module's JSDoc; a record is keyed by input name.
-    expect((withForm[0]?.records[0] as Record<string, unknown> | undefined)?.beschikbaar).toBe(12);
+    expect(withForm[0]?.records[0]?.beschikbaar).toBe(12);
   });
 
   it('skips laws that are not loaded and keys without values', () => {

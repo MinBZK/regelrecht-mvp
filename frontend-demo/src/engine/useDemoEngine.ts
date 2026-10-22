@@ -321,7 +321,7 @@ export function registerPersonaData(
 
   // materialize.js builds the result from `{}`, so its inferred type is `{}`;
   // it holds one array of string values per requested column.
-  const keyValues = collectKeyValues(allTables, allParameterNames(corpus)) as Record<string, string[]>;
+  const keyValues = collectKeyValues(allTables, allParameterNames(corpus));
   for (const bsn of Object.keys(corpus.profiles.profiles ?? {})) {
     // `bsn` is there when some demo law declares a `bsn` parameter; the
     // persona laws all do. Without one this throws, as it always did.
@@ -332,8 +332,7 @@ export function registerPersonaData(
   const register = (sources: PersonaSource[]) => {
     for (const { law, service, keyField, records } of sources) {
       try {
-        // materialize.js declares the records as `object[]`; each is a flat field map.
-        engine.registerDataSourceForLaw(law, service, keyField, records as Record<string, unknown>[], REGISTER_PRIORITY);
+        engine.registerDataSourceForLaw(law, service, keyField, records, REGISTER_PRIORITY);
       } catch (e) {
         console.warn(`Databron ${service} voor ${law} niet geregistreerd:`, e);
       }
