@@ -809,6 +809,9 @@ jobs:
       - name: Run demo tests
         run: npm test -w frontend-demo
 
+      - name: Type check demo
+        run: npm run typecheck -w frontend-demo
+
       - name: Run chronolexografie poc tests
         run: npm test -w packages/poc-chronolexografie/frontend
 

@@ -1,11 +1,11 @@
 import '@nldd/design-system';
 import '@nldd/design-system/styles';
-import './src/presentation/presentation.css';
-import { installSheetOffset } from './src/presentation/sheetOffset.js';
+import './presentation/presentation.css';
+import { installSheetOffset } from './presentation/sheetOffset.js';
 import { createApp } from 'vue';
 import { useColorScheme } from '@regelrecht/frontend-shared';
-import App from './src/App.vue';
-import router from './src/router.js';
+import App from './App.vue';
+import router from './router.js';
 
 const app = createApp(App);
 // Shared colour-scheme primitive (localStorage-backed, follows the OS by

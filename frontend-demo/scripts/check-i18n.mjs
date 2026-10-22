@@ -36,7 +36,7 @@ const lawsDir = resolve(here, '..', '..', 'corpus', 'demo', 'regulation', 'nl');
 const corpusI18nDir = resolve(here, '..', '..', 'corpus', 'demo', 'i18n');
 const translatedLocales = LOCALE_CODES.filter((c) => c !== DEFAULT_LOCALE);
 
-function walk(dir, out = [], match = (f) => /\.(vue|js)$/.test(f) && !f.endsWith('.test.js')) {
+function walk(dir, out = [], match = (f) => /\.(vue|js|ts)$/.test(f) && !/\.test\.(js|ts)$/.test(f)) {
   if (!existsSync(dir)) return out;
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -84,7 +84,7 @@ for (const file of walk(srcDir)) {
   if (file.startsWith(i18nDir)) continue;
   const rel = relative(srcDir, file);
   // The router legitimately branches on locale: it is what builds the paths.
-  if (rel === 'router.js') continue;
+  if (/^router\.(js|ts)$/.test(rel)) continue;
   const text = readFileSync(file, 'utf8');
   const lines = text.split('\n');
   for (const [i, line] of lines.entries()) {

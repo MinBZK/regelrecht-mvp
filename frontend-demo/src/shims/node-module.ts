@@ -13,7 +13,7 @@
 //
 // We never use that version string, so provide a minimal `createRequire` whose
 // returned require() yields an object with a `version` field. This alias is
-// applied to the browser build only (see vite.config.js); Node-based vitest
+// applied to the browser build only (see vite.config.ts); Node-based vitest
 // keeps the real `node:module`.
 export function createRequire() {
   return () => ({ version: '0.0.0' });

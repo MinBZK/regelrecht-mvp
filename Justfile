@@ -289,6 +289,7 @@ frontend-test:
     npm test -w frontend-lawmaking
     npm run typecheck -w frontend-lawmaking
     npm test -w frontend-demo
+    npm run typecheck -w frontend-demo
     npm test -w frontend-poc-chronolexografie
 
 # Every test that needs no external services: the workspace minus the

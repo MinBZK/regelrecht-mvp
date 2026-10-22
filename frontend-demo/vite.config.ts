@@ -8,7 +8,7 @@ import { walkthroughDevServer } from './scripts/walkthrough-dev-server.mjs';
 // aliases `node:module` to a harmless shim (same trick as the editor). Under
 // vitest the real module works, so the alias is skipped there.
 const isVitest = !!process.env.VITEST;
-const nodeModuleShim = fileURLToPath(new URL('./src/shims/node-module.js', import.meta.url));
+const nodeModuleShim = fileURLToPath(new URL('./src/shims/node-module.ts', import.meta.url));
 
 export default defineConfig({
   root: '.',
@@ -16,7 +16,7 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-          isCustomElement: (tag) => tag.startsWith('nldd-'),
+          isCustomElement: (tag: string) => tag.startsWith('nldd-'),
         },
       },
     }),
@@ -27,22 +27,13 @@ export default defineConfig({
   resolve: {
     alias: isVitest ? {} : { 'node:module': nodeModuleShim },
   },
-  test: {
-    environment: 'happy-dom',
-    include: ['src/**/*.test.js', 'server/**/*.test.js'],
-    server: {
-      deps: {
-        inline: [/@cucumber\//, /@regelrecht\//],
-      },
-    },
-  },
   build: {
     cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari18'],
     outDir: 'dist',
     rolldownOptions: {
       output: {
         // Group echarts into its own chunk, as the editor does (see
-        // frontend/vite.config.js).
+        // frontend/vite.config.ts).
         //
         // Deliberately WITHOUT the editor's `includeDependenciesRecursively:
         // false`. That option keeps the chunk out of the entry graph entirely,
