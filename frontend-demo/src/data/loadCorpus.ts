@@ -12,6 +12,7 @@ import { DEFAULT_LOCALE, LOCALES } from '../i18n/index.js';
 import { caseRefsFor } from './caseRefs';
 import type { CaseRef } from './caseRefs';
 import type { OutcomePhrasing } from './outcomePhrasing';
+import type { IncomeComponent } from '../simulation/income';
 import type { Binding } from './materialize.js';
 
 export type { Binding };
@@ -212,15 +213,6 @@ export interface DemoProfileConfig {
   disabled_laws?: Record<string, string[]>;
 }
 
-/** One line of the disposable-income simulation. */
-export interface SimulationIncomeLine {
-  law: string;
-  output: string;
-  period: string;
-  kind: string;
-  label: string;
-}
-
 /** One slide of the presentation (`slides`). */
 export interface SlideConfig {
   kind: string;
@@ -252,7 +244,7 @@ export interface DemoConfig {
   tile_details?: Record<string, string[]>;
   /** `<service>/<law>` -> phrasing */
   outcome_phrasing?: Record<string, OutcomePhrasing>;
-  simulation?: { disposable_income?: SimulationIncomeLine[] };
+  simulation?: { disposable_income?: IncomeComponent[] };
   /** law id -> YAML paths */
   expanded_paths?: Record<string, string[]>;
   /** law id -> YAML paths */
@@ -336,7 +328,7 @@ export function loadCorpus(): Promise<Corpus> {
       if (!cur || law.valid_from > cur.valid_from) latestById.set(law.id, law);
     }
     // Wat een wet uit de besloten zaken van een andere wet leest, zodat de
-    // graaf die samenhang toont (data/caseRefs.js, graph/lawGraph.js).
+    // graaf die samenhang toont (data/caseRefs.ts, graph/lawGraph.ts).
     const latestByPath = (lawPath: string, service?: string | null) =>
       [...latestById.values()].find((l) => l.law_path === lawPath && (!service || l.service === service)) ?? null;
     for (const law of laws) law.caseRefs = caseRefsFor(law, bindings, latestByPath);

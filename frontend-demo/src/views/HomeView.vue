@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDemo } from '../store/demoStore';
@@ -18,7 +18,7 @@ const router = useRouter();
 const { t, locale } = useI18n();
 
 /** Het pad van een tabblad in de taal die aan staat. */
-function pathFor(page) {
+function pathFor(page: string) {
   return router.resolve({ name: localeRouteName(page, locale.value) }).path;
 }
 const { ready } = useDemo();
@@ -100,7 +100,7 @@ const ways = computed(() => [
 // De scrollpositie van een keep-alive-view blijft staan. Voor een pagina waar
 // iemand op landt is dat verkeerd: wie via het tabblad terugkomt hoort weer
 // bovenaan te beginnen.
-const page = ref(null);
+const page = ref<HTMLElement | null>(null);
 onActivated(() => {
   page.value?.scrollTo?.({ top: 0 });
 });

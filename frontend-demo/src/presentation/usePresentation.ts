@@ -13,7 +13,7 @@ import { computed, nextTick, ref } from 'vue';
 import type { RouteRecordNameGeneric } from 'vue-router';
 import { currentLocale } from '../i18n/index.js';
 import { localeRouteName, pageForConfigPath, splitConfigPath } from '../router';
-import type { Corpus, DemoProfileConfig, SlideConfig } from '../data/loadCorpus';
+import type { DemoProfileConfig, SlideConfig } from '../data/loadCorpus';
 import type { PresentationMode } from '../store/demoStore';
 
 export type { SlideConfig };
