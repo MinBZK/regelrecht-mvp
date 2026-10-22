@@ -558,7 +558,9 @@ export function generateCitizens(userParams: Partial<CitizenParams> | null | und
     T('IND', 'residence_permit_type', { bsn: p.bsn, type: p.dutch ? 'NEDERLANDS' : 'PERMANENT' });
     T('IND', 'vreemdelingenwet', { bsn: p.bsn, verblijfsvergunning_type: p.dutch ? null : 'PERMANENT' });
     if (p.selfEmployed) {
-      const kvk = `7${String(bsnCounter).padStart(7, '0')}`;
+      // Derived from the citizen's own BSN, so every self-employed citizen has
+      // their own registration (the BSN is unique, `9995` plus five digits).
+      const kvk = `7${p.bsn.slice(-7)}`;
       T('KVK', 'inschrijvingen', { bsn: p.bsn, kvk_nummer: kvk, handelsnaam: `Bedrijf ${p.bsn}`, rechtsvorm: 'EENMANSZAAK', status: 'ACTIEF', activiteit: rng.pick(['Thuiszorg', 'Webdesign', 'Consultancy', 'Bouw']) });
       T('KVK', 'functionarissen', { bsn: p.bsn, kvk_nummer: kvk, handelsnaam: `Bedrijf ${p.bsn}`, rechtsvorm: 'EENMANSZAAK', status: 'ACTIEF', functie: 'EIGENAAR', bevoegdheid: 'VOLLEDIG' });
       T('KVK', 'is_entrepreneur', { bsn: p.bsn, waarde: true });

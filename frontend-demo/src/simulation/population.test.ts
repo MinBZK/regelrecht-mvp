@@ -74,6 +74,15 @@ describe('generateCitizens', () => {
     expect(pop.keyValues.bsn).toEqual(pop.subjects.map((s) => s.bsn));
   });
 
+  it('gives every self-employed citizen their own KVK registration', () => {
+    const rows = rowsOf(pop, 'KVK', 'inschrijvingen');
+    // 40 adults at a 12% chance: the seed has to produce several to prove anything.
+    expect(rows.length).toBeGreaterThan(1);
+    const numbers = rows.map((r) => r.kvk_nummer);
+    expect(new Set(numbers).size).toBe(rows.length);
+    for (const r of rows) expect(r.kvk_nummer).toMatch(/^7\d{7}$/);
+  });
+
   it('pairs partners symmetrically and lists children on both sides', () => {
     const relaties = rowsOf(pop, 'RvIG', 'relaties');
     for (const r of relaties) {
