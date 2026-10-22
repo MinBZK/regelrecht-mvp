@@ -90,7 +90,7 @@ export default {
   'format.missing_from_law': 'details from {law}',
 
   // ---- simulation: dimensions and groups ----------------------------------
-  // The group names themselves are keys in stats.js and stay Dutch; this is
+  // The group names themselves are keys in stats.ts and stay Dutch; this is
   // only what they are called on screen.
   'sim.dimension.age': 'Age',
   'sim.dimension.income': 'Income',
@@ -572,7 +572,7 @@ export default {
   'sheet.change.done.to_portal': 'To my schemes',
   'sheet.change.done.another': 'Report another change',
 
-  // the kinds of change and their fields (data/changeWizard.js)
+  // the kinds of change and their fields (data/changeWizard.ts)
   'sheet.change.type.inkomen': 'My income or assets',
   'sheet.change.type.inkomen.description': 'Pay, profit, benefit, savings or debts',
   'sheet.change.group.box1': 'Box 1 — work and home',

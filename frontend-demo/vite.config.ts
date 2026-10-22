@@ -21,7 +21,7 @@ export default defineConfig({
       },
     }),
     // Receives recorder takes, only under `just walkthrough-record`
-    // (src/walkthrough/recorder.js); returns null otherwise, which Vite skips.
+    // (src/walkthrough/recorder.ts); returns null otherwise, which Vite skips.
     walkthroughDevServer(),
   ],
   resolve: {

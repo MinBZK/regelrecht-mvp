@@ -2,7 +2,7 @@
 /**
  * Where the recorded walkthrough starts.
  *
- * On a wide screen this page hands over to the replay (replay.js): the deck
+ * On a wide screen this page hands over to the replay (replay.ts): the deck
  * comes up with the presenter's voice and from then on the walkthrough moves
  * through the tabs itself, in the live demo. The page has nothing to show of
  * its own; the first slide covers it.

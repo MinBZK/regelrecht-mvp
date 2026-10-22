@@ -84,7 +84,7 @@ export function subjectOf(lawDoc: LawDocLike | null | undefined): Subject | null
  * portaal: je vraagt ze niet aan en er valt niets te ontvangen.
  *
  * Herkend aan wat ze leveren en niet aan een label op de wet: elke
- * machtigingswet vervult hetzelfde uitvoercontract (`delegation.js`), en dat
+ * machtigingswet vervult hetzelfde uitvoercontract (`delegation.ts`), en dat
  * contract is wat haar tot machtigingswet maakt.
  */
 const DELEGATION_OUTPUTS = ['heeft_delegaties', 'subject_ids', 'delegation_types'];

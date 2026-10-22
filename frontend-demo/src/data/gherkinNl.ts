@@ -141,7 +141,7 @@ export const renderStepNl = renderStep;
  * Every step as a pair of templates: how `from` shows it and how `to` does,
  * with `{0}`, `{1}` where the arguments go. A language without templates shows
  * the canonical step. The recorded walkthrough uses these to find a step it
- * clicked in one language on a screen in another (walkthrough/translateText.js).
+ * clicked in one language on a screen in another (walkthrough/translateText.ts).
  */
 export function stepTemplatePairs(from: string, to: string): [string, string][] {
   const render = (code: string, entry: GrammarEntry, args: string[]): string => (TEMPLATES[code]?.[entry.id] ?? entry.template)(args);

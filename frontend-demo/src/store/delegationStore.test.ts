@@ -1,7 +1,7 @@
 /**
  * Wat machtigen doet met de rest van de demo: over wie de wet rekent, welke
  * regelingen er staan, en wat er wel en niet mag. Dit is de integratie tussen
- * `data/delegation.js` en de rest van de store, dus die logica staat hier los
+ * `data/delegation.ts` en de rest van de store, dus die logica staat hier los
  * getest — de store zelf trekt een corpus en een engine binnen, en die zijn er
  * in een unittest niet.
  */

@@ -107,7 +107,7 @@ if (existsSync(join(walkthroughDir, 'timeline.json'))) {
 }
 
 // De woordenlijst voor veldnamen wordt een JS-module en geen asset:
-// `format.js` leest hem synchroon en wordt zelf door zijn eigen tests
+// `format.ts` leest hem synchroon en wordt zelf door zijn eigen tests
 // geimporteerd, dus een fetch erin zou die tests van een netwerkaanroep
 // afhankelijk maken. Ontbreekt de lijst, dan is hij leeg en valt elk label
 // terug op het Nederlands: dat is het gedrag van voor de woordenlijst.
@@ -191,7 +191,7 @@ for (const code of translatedLocales) {
 }
 
 // De vertaalde titels van de features en scenario's, en de woordenlijst voor
-// veldnamen. Allebei een JS-module en geen asset: `format.js` en `gherkinNl.js`
+// veldnamen. Allebei een JS-module en geen asset: `format.ts` en `gherkinNl.ts`
 // lezen ze synchroon en worden zelf door hun eigen tests geïmporteerd, dus een
 // fetch erin zou die tests van een netwerkaanroep afhankelijk maken.
 //

@@ -15,7 +15,7 @@ import { adoptLocale } from '../i18n/index.js';
 /**
  * Een router-dubbel met alleen wat de presentatie ervan leest en gebruikt.
  * De tabbladen dragen een naam en sommige een optionele parameter, net als in
- * router.js: `/regelwerken/:lawId?` houdt dezelfde naam als de presentator een wet
+ * router.ts: `/regelwerken/:lawId?` houdt dezelfde naam als de presentator een wet
  * opent.
  */
 const ROUTES: { name: string; path: string }[] = [

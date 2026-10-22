@@ -15,7 +15,7 @@
  * Fries. De vertaling hoort van een vertaler te komen (Afûk of de Fryske
  * Akademy doen dit voor overheden); tot die er is blijft dit staan.
  *
- * `i18n.test.js` telt hoeveel sleutels nog gelijk zijn aan het Nederlands en
+ * `i18n.test.ts` telt hoeveel sleutels nog gelijk zijn aan het Nederlands en
  * bewaakt dat dat aandeel daalt en niet stijgt.
  */
 export default {

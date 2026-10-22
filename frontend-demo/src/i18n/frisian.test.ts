@@ -57,7 +57,7 @@ describe('het Fries', () => {
   });
 
   it('draagt elke sleutel die het Nederlands heeft', () => {
-    // Staat ook in i18n.test.js, maar daar over elke taal tegelijk. Hier apart,
+    // Staat ook in i18n.test.ts, maar daar over elke taal tegelijk. Hier apart,
     // zodat een Friese regressie zich als Fries meldt en niet als "een van de
     // talen".
     expect(Object.keys(nl).filter((k) => !(k in fy))).toEqual([]);

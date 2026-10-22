@@ -253,7 +253,7 @@ const statusView = computed((): StatusView | null => {
   const c = currentCase.value;
   if (!c) return null;
   if (c.objection?.status === 'PENDING') return { variant: 'warning', icon: 'flag', text: t('sheet.application.status.objection'), supporting: t('sheet.application.status.objection.supporting') };
-  // Uit de fase, niet uit het opgeslagen veld (zie lifecycle.js).
+  // Uit de fase, niet uit het opgeslagen veld (zie lifecycle.ts).
   const status = statusOf(c);
   if (status === 'DECIDED') {
     if (c.objection) return c.approved ? { variant: 'success', icon: 'check-mark-circle', text: t('sheet.application.status.granted_after_objection'), supporting: caseReason(c) } : { variant: 'critical', icon: 'dismiss-circle', text: t('sheet.application.status.refused_objection_dismissed'), supporting: caseReason(c) };

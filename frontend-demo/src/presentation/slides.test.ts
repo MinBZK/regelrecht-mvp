@@ -8,7 +8,7 @@
  * Frisian). The simulation slide asked what a law does to fifty thousand
  * people, while a run stops at two thousand.
  *
- * Reads the corpus, not `public/data/`, for the reason `profilesOverlay.test.js`
+ * Reads the corpus, not `public/data/`, for the reason `profilesOverlay.test.ts`
  * gives: CI runs the tests without the build that copies it there.
  */
 import { readFileSync, readdirSync } from 'node:fs';

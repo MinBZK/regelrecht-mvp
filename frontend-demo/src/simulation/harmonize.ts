@@ -18,13 +18,13 @@
  * (DecisionTreeRegressor, differential_evolution) en zijn hier niet
  * overgenomen.
  *
- * De invoer is een gewone simulatierun (`simulation/runner.js`): dezelfde
+ * De invoer is een gewone simulatierun (`simulation/runner.ts`): dezelfde
  * gegenereerde bevolking, dezelfde echte wetten, dezelfde engine. Er wordt
  * hier dus niets nagebootst — het model leert van wat de wet werkelijk deed.
  *
  * **Bedragen in dit bestand staan in hele euro's, niet in eurocent.** Dat wijkt
  * af van de rest van de corpus, waar geld altijd in centen staat, en het is
- * geen slordigheid: `runner.js` deelt een uitvoer met een `amount`-spec al door
+ * geen slordigheid: `runner.ts` deelt een uitvoer met een `amount`-spec al door
  * honderd (zie `reduceOutcome`), dus wat hier binnenkomt is al euro. Daarom
  * rondt `roundAmount: 1` af op hele euro's en niet op hele centen.
  *
@@ -221,7 +221,7 @@ function sumSquares(values: readonly number[], m: number): number {
 /**
  * De kenmerken waarop geharmoniseerd kan worden, per publiek. Dit zijn de
  * eigenschappen die de bevolkingsgenerator van elk subject vastlegt
- * (`simulation/population.js`), vertaald naar de vorm die het model gebruikt:
+ * (`simulation/population.ts`), vertaald naar de vorm die het model gebruikt:
  * een getal om op te staffelen, of een ja/nee om op te groeperen.
  */
 export const CITIZEN_FEATURES: HarmonizeFeature[] = [
@@ -246,7 +246,7 @@ export const BUSINESS_FEATURES: HarmonizeFeature[] = [
 /**
  * Hoe een kenmerk heet op het scherm, in de taal die aan staat.
  *
- * Het kenmerk draagt een sleutel en geen zin, net als de dimensies in stats.js:
+ * Het kenmerk draagt een sleutel en geen zin, net als de dimensies in stats.ts:
  * `key` is waar de code op werkt en blijft zoals hij is.
  */
 export function featureLabel(feature: { labelKey?: string } | null | undefined): string {

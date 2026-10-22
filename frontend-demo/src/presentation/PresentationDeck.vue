@@ -117,7 +117,7 @@ const note = computed(() => (p.current.value as { note?: string } | null)?.note)
             <!-- Elke pijl apart, niet `←+→`: dat zet er een plusteken tussen en
                  leest als 'allebei tegelijk', terwijl het hier om de een of de
                  ander gaat. De zinnen komen uit het woordenboek met een
-                 `{placeholder}` per toets (keyHints.js); stonden ze hier als
+                 `{placeholder}` per toets (keyHints.ts); stonden ze hier als
                  tekst, dan bleven ze Nederlands in elke taal. -->
             <span v-for="hint in hints" :key="hint.id" class="hint">
               <template v-for="(seg, j) in hint.segments" :key="j">

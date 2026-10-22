@@ -1,7 +1,7 @@
 /**
  * Wat een wet uit de besloten zaken van een andere wet leest.
  *
- * Los van graph/lawGraph.js en zonder afhankelijkheden: de corpuslader zet dit
+ * Los van graph/lawGraph.ts en zonder afhankelijkheden: de corpuslader zet dit
  * bij elke wet, en zou anders de graafbibliotheek in de hoofdbundel trekken.
  */
 

@@ -4,7 +4,7 @@
  *
  * A take is recorded the way it is played back: in Dutch, with the deck as a
  * rail next to the demo (zelfstandig). The player replays the actions in the
- * live demo, so what matters most is the action log (capture.js); the video
+ * live demo, so what matters most is the action log (capture.ts); the video
  * of the window is kept for the phone and for a shareable MP4. The panel
  * leaves the screen while a take runs: the tab title shows that it records,
  * Shift+X marks a slip and Shift+R stops.

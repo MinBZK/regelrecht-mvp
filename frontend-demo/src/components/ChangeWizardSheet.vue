@@ -9,7 +9,7 @@ import { useDemo } from '../store/demoStore';
 // Wijziging doorgeven: iemand meldt een verandering in zijn leven (verhuisd,
 // ander inkomen, uit elkaar) in plaats van per regeling een waarde te
 // corrigeren. Elke melding wordt vertaald naar correcties op de wet die het
-// gegeven bezit (zie data/changeWizard.js), en daarna rekent elke regeling die
+// gegeven bezit (zie data/changeWizard.ts), en daarna rekent elke regeling die
 // ervan afhangt opnieuw.
 //
 // Drie stappen: wat wil je doorgeven, wat verandert er, en een bevestiging die

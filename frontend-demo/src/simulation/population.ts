@@ -204,7 +204,7 @@ interface PersonIds {
  *
  * Every subject goes through every law in the browser, so this is a ceiling on
  * waiting time, not on realism. The count field in SimulatieView and the
- * simulation slide in demo-config.yaml both follow it; `slides.test.js` fails
+ * simulation slide in demo-config.yaml both follow it; `slides.test.ts` fails
  * when the slide names another number.
  */
 export const MAX_POPULATION = 2000;

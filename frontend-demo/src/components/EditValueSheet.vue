@@ -103,7 +103,7 @@ const caseworker = computed(() => props.claimant === 'BEHANDELAAR');
 const spec = computed((): (DeclaredField & { description?: string }) | null => (props.node ? fieldSpec(corpus.value?.lawById(props.node.law)?.doc, props.node.name) : null));
 const law = computed(() => (props.node ? corpus.value?.lawById(props.node.law) : null));
 // One definition of which editor a value deserves, shared with the tests
-// (src/data/editKinds.js): the declared type decides, the value fills in.
+// (src/data/editKinds.ts): the declared type decides, the value fills in.
 // `editKind` never returns 'json'; the type keeps the 'json' branches below
 // (unreachable) type-checking unchanged.
 const kind = computed((): EditKind | 'json' => editKind(props.node?.value, spec.value));

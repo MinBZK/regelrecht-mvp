@@ -5,7 +5,7 @@ import { explainWhy, toBlocks, type WhyErrorKind } from '../why/why';
 import { useI18n } from '../i18n/index.js';
 
 // The explanation of one outcome in plain language, written by a language
-// model from the calculation (see why/why.js and server/why.mjs). It streams
+// model from the calculation (see why/why.ts and server/why.mjs). It streams
 // in while it is written, so the reader sees the first sentence in a second or
 // two instead of a spinner for twenty.
 //

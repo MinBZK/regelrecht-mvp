@@ -273,7 +273,7 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
 - **De talentabel in `src/i18n/index.js` is de enige bron.** Daar staat per taal
   zijn prefix, zijn `Intl`-tag, zijn naam in de eigen taal en zijn woordenboek.
   Een taal toevoegen is een regel in die tabel plus een pad per pagina in
-  `router.js`; zet nooit een taalcode los in een `===` of een objectsleutel,
+  `router.ts`; zet nooit een taalcode los in een `===` of een objectsleutel,
   want dat is precies wat een vierde taal stil Nederlands laat worden.
 - **Het Fries is vertaald maar nog niet nagekeken.** De vertaling komt van
   taalmodellen, niet van een vertaler. Wat een Friestalige revisor moet
@@ -281,21 +281,21 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
   vertalers zelf zeiden dat ze het niet zeker wisten, met per geval wat er vast
   staat en wat niet. Vul die lijst aan wanneer je op zo'n plek stuit, in plaats
   van de twijfel in een commit-bericht te laten zitten.
-  `MAX_IDENTICAL_SHARE` in `i18n.test.js` bewaakt dat het aandeel sleutels dat
+  `MAX_IDENTICAL_SHARE` in `i18n.test.ts` bewaakt dat het aandeel sleutels dat
   nog letterlijk het Nederlands is daalt en niet stijgt; dat getal gaat met de
   hand omlaag, met de reden in de commit.
 - **Een Fries woord houdt zijn diakriet, ook vooraan een zin.** `Ôfwiisd`, niet
   `Ofwiisd`. Zo'n fout haalt élke andere controle, want de tekst verschilt nog
   steeds van het Nederlands, en hij is toch fout. Alle vier de vertalers
-  maakten hem. `frisian.test.js` vangt hem nu; breid de stammenlijst daar uit
+  maakten hem. `frisian.test.ts` vangt hem nu; breid de stammenlijst daar uit
   als er een woord bijkomt.
 - **Paden bevatten geen teken dat gecodeerd moet worden.** Slugs worden vertaald
   (`/en/ruleworks`, `/fy/senarios`), maar een apostrof wordt `%27` en dat is het
   adres dat tijdens een presentatie op het scherm komt. Het Nederlands doet het
   al zo: het tabblad heet "Scenario's" en het pad is `/scenarios`.
-  `router.test.js` weigert een pad met zo'n teken.
+  `router.test.ts` weigert een pad met zo'n teken.
 - **Gherkin-stappen zijn de uitzondering op "een taal is een tabelregel".** De
-  sjablonen in `gherkinNl.js` zijn geschreven zinnen, geen tabelwaarde. Een taal
+  sjablonen in `gherkinNl.ts` zijn geschreven zinnen, geen tabelwaarde. Een taal
   zonder sjablonen toont de canonieke Engelse stap, mét Engelse sleutelwoorden:
   `Functionaliteit` boven een Engelse stap zou een taal suggereren die er niet
   is.
@@ -310,10 +310,10 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
   `node scripts/i18n-bless.mjs`.** `en.sources.js` houdt per sleutel de
   vingerafdruk bij van het Nederlands waaruit vertaald is, zodat een vertaling
   die is blijven staan terwijl het origineel veranderde, opvalt. Zonder die
-  stap faalt `i18n.test.js`, mét de sleutelnamen en het commando erbij.
+  stap faalt `i18n.test.ts`, mét de sleutelnamen en het commando erbij.
 - **Adressen**: Nederlandse paden blijven zoals ze zijn, Engels staat onder
   `/en/` met vertaalde slugs (`/regelwerken` ↔ `/en/ruleworks`). De tabel staat in
-  `src/router.js`; een pagina spreek je aan op naam (`localeRouteName`), nooit
+  `src/router.ts`; een pagina spreek je aan op naam (`localeRouteName`), nooit
   op een letterlijk pad, anders belandt een Engelse bezoeker op een Nederlands
   tabblad.
 - **Wetteksten worden niet vertaald.** `article.text` is de geldende wettekst;
@@ -334,7 +334,7 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
 - **Eigennamen blijven staan.** `Belastingdienst` is de naam van een orgaan,
   geen omschrijving; wie op "Tax Administration" zoekt vindt niets. Een
   Engelse toelichting tussen haakjes mag, vertalen niet.
-- **Opmaak loopt via `intlLocale()` in `src/data/format.js`**, nooit via een
+- **Opmaak loopt via `intlLocale()` in `src/data/format.ts`**, nooit via een
   hardgecodeerde taalcode. Een `Intl`-formatter legt zijn taal vast op het
   moment dat je hem maakt, dus eentje op moduleniveau blijft na een taalwissel
   in de oude taal formatteren.
@@ -352,11 +352,11 @@ een sleutel die maar in één bestand landt is een bug, geen halve klus.
 Frontends are Vue applications that follow Vue's own conventions: Vite to build,
 Vitest to test, single-file components, and composables for shared state. The
 aim is TypeScript for code that runs in the browser (`.ts`,
-`<script setup lang="ts">`). The editor, lawmaking and `frontend-shared` are
-there; the demo and the PoC frontends are still JavaScript and will be migrated
-later, so keep new code in those in JavaScript until then. Scripts that run in
-plain Node, the modules they load, and generated files stay JavaScript. The
-setup is in `docs/src/content/docs/guide/frontend-code.md`.
+`<script setup lang="ts">`). The editor, lawmaking, the demo and
+`frontend-shared` are there; the PoC frontends are still JavaScript and will be
+migrated later, so keep new code in those in JavaScript until then. Scripts
+that run in plain Node, the modules they load, and generated files stay
+JavaScript. The setup is in `docs/src/content/docs/guide/frontend-code.md`.
 
 - Import a TypeScript module without its extension (`'./values'`). Plain Node
   cannot resolve that, so a module that Node loads keeps its `.js`.

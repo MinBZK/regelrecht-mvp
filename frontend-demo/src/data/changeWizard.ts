@@ -18,7 +18,7 @@
  * Alles wat op het scherm komt staat hier als sleutel, niet als zin: de
  * structuur is in beide talen dezelfde en `typeLabel()`, `fieldLabel()` en
  * hun buren zijn de enige plek die er een taal aan geeft. Hetzelfde patroon
- * als `simulation/stats.js` volgt voor zijn dimensies.
+ * als `simulation/stats.ts` volgt voor zijn dimensies.
  */
 import { t } from '../i18n/index.js';
 

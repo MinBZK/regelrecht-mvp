@@ -3,8 +3,8 @@
  *
  * Dit is de test die ertoe doet, en niet de vraag of er Engels staat.
  * `profiles.yaml` is niet alleen schermtekst: het is de invoer van de wet. De
- * engine leest er zijn tabellen uit (`useDemoEngine.js`), de simulatie bouwt er
- * zijn populatie mee (`population.js`), en de materialisatie registreert de
+ * engine leest er zijn tabellen uit (`useDemoEngine.ts`), de simulatie bouwt er
+ * zijn populatie mee (`population.ts`), en de materialisatie registreert de
  * brongegevens eruit (`materialize.js`). Een overlay die per ongeluk een
  * geboortedatum, een inkomen of een BSN raakt, laat de demo in het Engels iets
  * anders uitrekenen dan in het Nederlands.

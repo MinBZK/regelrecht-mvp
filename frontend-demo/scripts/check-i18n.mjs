@@ -125,7 +125,7 @@ function readGlossaryBlock(text, block) {
   return out;
 }
 
-// Dezelfde afkortingen die format.js kent; die horen bewust niet in de lijst.
+// Dezelfde afkortingen die format.ts kent; die horen bewust niet in de lijst.
 const ABBREVIATIONS = new Set(['agp', 'aow', 'bsn', 'bbz', 'brp', 'cbs', 'haccp', 'kvk', 'nvwa', 'sbi', 'svh', 'vog', 'wia', 'ww', 'zvw']);
 
 // De veldnamen uit het corpus, met hoe vaak ze voorkomen. Eenmaal gelezen; elke
@@ -183,7 +183,7 @@ if (problems.length) {
 // is precies de taal die er nu in zit.
 const glossarySummary = [...glossaryWordCount].map(([code, n]) => `${code}: ${n} woorden`).join(', ');
 // Pariteit tussen de woordenboeken is niet wat dit getal bewaakt; dat doet
-// `i18n.test.js`. Hier staat het om te zien of het aantal klopt met wat je net
+// `i18n.test.ts`. Hier staat het om te zien of het aantal klopt met wat je net
 // hebt toegevoegd.
 console.log(
   `i18n: ${Object.keys(nl).length} sleutels in nl, ${Object.keys(en).length} in en, ${used.size} gebruikt in de app` +

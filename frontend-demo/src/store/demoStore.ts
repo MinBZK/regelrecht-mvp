@@ -1023,7 +1023,7 @@ function decideObjection(caseId: string, upheld: boolean, reason: string): void 
 
 /**
  * Wat een lopende aanvraag nog waard is, gegeven wat er ná het indienen is
- * gewijzigd. De vergelijking zelf staat in `data/caseDrift.js`; hier wordt
+ * gewijzigd. De vergelijking zelf staat in `data/caseDrift.ts`; hier wordt
  * alleen de zaak erbij gezocht.
  */
 function caseDrift(

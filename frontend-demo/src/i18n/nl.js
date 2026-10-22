@@ -91,7 +91,7 @@ export default {
   'format.missing_from_law': 'gegevens uit {law}',
 
   // ---- simulatie: dimensies en groepen ------------------------------------
-  // De groepsnamen zelf zijn sleutels in stats.js en blijven Nederlands; dit
+  // De groepsnamen zelf zijn sleutels in stats.ts en blijven Nederlands; dit
   // is alleen hoe ze op het scherm heten.
   'sim.dimension.age': 'Leeftijd',
   'sim.dimension.income': 'Inkomen',
@@ -575,7 +575,7 @@ export default {
   'sheet.change.done.to_portal': 'Naar mijn regelingen',
   'sheet.change.done.another': 'Nog een wijziging',
 
-  // de soorten wijziging en hun velden (data/changeWizard.js)
+  // de soorten wijziging en hun velden (data/changeWizard.ts)
   'sheet.change.type.inkomen': 'Mijn inkomen of vermogen',
   'sheet.change.type.inkomen.description': 'Loon, winst, uitkering, spaargeld of schulden',
   'sheet.change.group.box1': 'Box 1 — werk en woning',
@@ -877,7 +877,7 @@ export default {
   'deck.close': 'Sluiten',
   // De toetsen staan als `{prev}`, `{esc}` enzovoort in de zin en worden in het
   // dek tot `nldd-keyboard-shortcut` gevuld, zodat een taal ze elders in de zin
-  // kan zetten (zie `keyHints.js`).
+  // kan zetten (zie `keyHints.ts`).
   'deck.hint.browse': '{prev} {next} of {space} bladeren',
   'deck.hint.close': '{esc} sluit',
   'deck.hint.fullscreen': '{f} volledig scherm',

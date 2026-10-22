@@ -9,7 +9,7 @@
  *
  * Whole sentences rather than the words between the keys: a language that puts
  * the verb first ("to browse, press ...") can then do so, and the placeholder
- * check in `i18n.test.js` guards that no translation drops a key.
+ * check in `i18n.test.ts` guards that no translation drops a key.
  */
 
 /** Which key each placeholder stands for, as `nldd-keyboard-shortcut` spells it. */
