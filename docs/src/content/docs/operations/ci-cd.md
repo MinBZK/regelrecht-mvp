@@ -76,8 +76,9 @@ the demo, or by recording that chapter again.
 ### The browser jobs run in the Playwright image
 
 **E2E (mocked)**, **Rondleiding speelt terug** and the **Docs accessibility
-gate** run inside the official Playwright image
-(`mcr.microsoft.com/playwright`), not directly on the runner. The image ships
+gate** run inside the
+[official Playwright image](https://mcr.microsoft.com/en-us/artifact/mar/playwright),
+not directly on the runner. The image ships
 Chromium with every system library it needs, so these jobs no longer run
 `playwright install --with-deps`. That step spent its time in `apt-get update`
 on the runner and varied from ten seconds to more than nine minutes. The two
@@ -104,7 +105,9 @@ Without that `Accept` header the registry answers 404.
 
 The container runs as root. git refuses a checkout owned by another user, so
 the accessibility gate marks the workspace as a safe directory before its
-`git diff`, and pa11y starts its Chrome with `--no-sandbox`.
+`git diff`. That gate also installs `unzip`, which the image lacks and the
+Puppeteer download of pa11y's Chrome needs, and pa11y starts that Chrome with
+`--no-sandbox`.
 
 ### WASM build (on engine changes)
 

@@ -1408,7 +1408,10 @@ jobs:
       - name: Install Puppeteer Chrome
         if: needs.changes.outputs.docs == 'true'
         working-directory: docs
-        run: npx --no puppeteer browsers install chrome
+        # Puppeteer unpacks the download with `unzip`, which the image lacks.
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends unzip
+          npx --no puppeteer browsers install chrome
 
       # Op een pull request en in de rij: de lijst gewijzigde bestanden, waarmee
       # gen-pa11yci.mjs de gate tot de geraakte pagina's beperkt. Raakt de
