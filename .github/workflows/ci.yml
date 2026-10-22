@@ -1405,13 +1405,19 @@ jobs:
       # die vlag zou npx bij een resolutiewijziging stilletjes puppeteer@latest
       # van de registry halen — inclusief de postinstall die we hierboven net
       # hebben uitgezet.
+      # Two packages the image lacks. Puppeteer unpacks its Chrome download
+      # with `unzip`. Without DejaVu, fontconfig resolves `monospace` to a CJK
+      # font (WenQuanYi Zen Hei Mono) whose wider glyphs make code blocks
+      # overflow, and axe then reports them as scrollable regions without
+      # keyboard access; the runner image renders them in DejaVu Sans Mono.
+      - name: Install unzip and fonts
+        if: needs.changes.outputs.docs == 'true'
+        run: apt-get update && apt-get install -y --no-install-recommends unzip fonts-dejavu-core
+
       - name: Install Puppeteer Chrome
         if: needs.changes.outputs.docs == 'true'
         working-directory: docs
-        # Puppeteer unpacks the download with `unzip`, which the image lacks.
-        run: |
-          apt-get update && apt-get install -y --no-install-recommends unzip
-          npx --no puppeteer browsers install chrome
+        run: npx --no puppeteer browsers install chrome
 
       # Op een pull request en in de rij: de lijst gewijzigde bestanden, waarmee
       # gen-pa11yci.mjs de gate tot de geraakte pagina's beperkt. Raakt de

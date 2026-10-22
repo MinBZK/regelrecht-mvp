@@ -105,9 +105,11 @@ Without that `Accept` header the registry answers 404.
 
 The container runs as root. git refuses a checkout owned by another user, so
 the accessibility gate marks the workspace as a safe directory before its
-`git diff`. That gate also installs `unzip`, which the image lacks and the
-Puppeteer download of pa11y's Chrome needs, and pa11y starts that Chrome with
-`--no-sandbox`. The preview server that pa11y reads from binds to `127.0.0.1`
+`git diff`. That gate also installs two packages the image lacks: `unzip`, for
+the Puppeteer download of pa11y's Chrome, and the DejaVu fonts. Without them
+`monospace` resolves to a CJK font with wider glyphs, a code block on the demo
+page overflows, and axe reports it as a scrollable region without keyboard
+access. pa11y starts its Chrome with `--no-sandbox`. The preview server that pa11y reads from binds to `127.0.0.1`
 explicitly (`npm run a11y` in `docs/package.json`). Left at `localhost`, it
 listened on `::1` in the container while `wait-on` knocked on `127.0.0.1`, and
 the gate timed out before checking a page.
