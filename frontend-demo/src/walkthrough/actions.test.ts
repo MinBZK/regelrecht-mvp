@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { key } from './actions';
+import { key, setValue } from './actions';
 
 /** A host element standing in for a design-system sheet, with its `hide()`. */
 function makeSheet(): HTMLElement & { hide: ReturnType<typeof vi.fn> } {
@@ -33,5 +33,33 @@ describe('a replayed Escape', () => {
     dialog.addEventListener('keydown', (e) => e.preventDefault());
     key(dialog, 'Escape');
     expect(sheet.hide).not.toHaveBeenCalled();
+  });
+});
+
+describe('a replayed value', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('goes into the field inside a design-system element', () => {
+    const host = document.createElement('rr-test-field');
+    const input = document.createElement('input');
+    host.attachShadow({ mode: 'open' }).appendChild(input);
+    document.body.appendChild(host);
+    const seen = vi.fn();
+    input.addEventListener('input', seen);
+    setValue(host, 'abc');
+    expect(input.value).toBe('abc');
+    expect(seen).toHaveBeenCalledOnce();
+  });
+
+  it('is set as a plain property on an element without a field', () => {
+    const host = document.createElement('rr-test-plain') as HTMLElement & { value?: string };
+    document.body.appendChild(host);
+    const seen = vi.fn();
+    host.addEventListener('input', seen);
+    setValue(host, 'abc');
+    expect(host.value).toBe('abc');
+    expect(seen).toHaveBeenCalledOnce();
   });
 });

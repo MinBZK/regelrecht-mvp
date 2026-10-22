@@ -23,9 +23,6 @@ import type { Binding, BindingsDocument } from './loadCorpus';
 const root = path.resolve(import.meta.dirname, '../../..');
 const bindings = yaml.load(fs.readFileSync(path.join(root, 'corpus/demo/bindings.yaml'), 'utf8')) as BindingsDocument;
 
-/** Keys every law is handed as a parameter rather than materialising itself. */
-const PARAMETERS = new Set(['bsn', 'kvk_nummer']);
-
 describe('select_on keys', () => {
   /** [lawId, inputName, key] for every selector that names another input. */
   const selectors = Object.entries(bindings).flatMap(([lawId, inputs]) =>

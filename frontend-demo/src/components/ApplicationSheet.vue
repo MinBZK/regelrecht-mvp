@@ -57,7 +57,7 @@ interface StatusView {
   supporting: string | null;
 }
 const demo = useDemo();
-const { corpus, profile, personaParams, claimFor, findCase, caseDrift, dataVersion } = demo;
+const { corpus, personaParams, claimFor, findCase, caseDrift, dataVersion } = demo;
 
 const sheet = ref<NLDDSheet | null>(null);
 const step = ref<'gegevens' | 'controleren' | 'status'>('gegevens'); // gegevens | controleren | status
@@ -67,7 +67,7 @@ const error = ref('');
 const objectionReason = ref('');
 const justSubmitted = ref(false);
 
-const service = computed(() => (props.law ? corpus.value?.services?.[props.law.service ?? '']?.name ?? props.law.service : ''));
+const service = computed(() => (props.law ? corpus.value?.services?.[props.law.service]?.name ?? props.law.service : ''));
 const asked = computed((): Question[] => {
   void dataVersion.value;
   return props.law && corpus.value ? askedInputsFor(corpus.value, props.law, claimFor) : [];

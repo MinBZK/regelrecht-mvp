@@ -8,7 +8,7 @@
  * veldnaam die verandert van `pending_inputs` naar iets anders, of een zaak
  * zonder verleden die als `undefined` in plaats van `null` naar binnen gaat.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { executeStage, type DemoEngine, type RawStageResult } from './useDemoEngine';
 
 const law = { id: 'wet_op_de_huurtoeslag' };

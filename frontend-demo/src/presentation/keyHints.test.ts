@@ -21,6 +21,10 @@ describe('hintSegments', () => {
   it('leaves an unknown placeholder visible instead of dropping it', () => {
     expect(hintSegments('{typo} sluit')).toEqual([{ text: '{typo} sluit' }]);
   });
+
+  it('does not take a name off the object prototype for a key', () => {
+    expect(hintSegments('{toString} {constructor}')).toEqual([{ text: '{toString} {constructor}' }]);
+  });
 });
 
 describe('the hints under the slides', () => {

@@ -63,8 +63,14 @@ export function fieldOf(el: Element): FormField {
  */
 export function setValue(el: Element, value: string, { change = false }: { change?: boolean } = {}): void {
   const field = fieldOf(el);
-  const proto = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : field instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+  // An element that is no form field gets a plain property (see fieldOf): the
+  // <input> setter would throw "Illegal invocation" on it.
+  const proto =
+    field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype
+    : field instanceof HTMLSelectElement ? HTMLSelectElement.prototype
+    : field instanceof HTMLInputElement ? HTMLInputElement.prototype
+    : null;
+  const setter = proto ? Object.getOwnPropertyDescriptor(proto, 'value')?.set : undefined;
   if (setter) setter.call(field, value);
   else field.value = value;
   field.dispatchEvent(new Event('input', { bubbles: true, composed: true }));

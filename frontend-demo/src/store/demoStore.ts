@@ -104,7 +104,7 @@ export interface DemoCase {
   lawId: string;
   lawPath: string;
   lawName: string;
-  service: string | null;
+  service: string;
   parameters: SubjectParams;
   claimedResult: Record<string, unknown>;
   verifiedResult: Record<string, unknown> | null;
@@ -634,8 +634,7 @@ function setReferenceDate(date: string): void {
  */
 function isLawEnabled(lawEntry: Pick<LawEntry, 'service' | 'law_path'>): boolean {
   const cfg: DemoConfig = corpus.value?.config ?? {};
-  // A null service indexes as "null", as it did in JavaScript: no service has that name.
-  const inList = (map: Record<string, string[] | undefined> | undefined) => (map?.[String(lawEntry.service)] ?? []).some((p) => lawEntry.law_path === p || lawEntry.law_path.startsWith(`${p}/`));
+  const inList = (map: Record<string, string[] | undefined> | undefined) => (map?.[lawEntry.service] ?? []).some((p) => lawEntry.law_path === p || lawEntry.law_path.startsWith(`${p}/`));
   if (inList(cfg.hidden_laws)) return false;
   if (!activeDelegation.value && inList(profile.value?.disabled_laws)) return false;
   return true;

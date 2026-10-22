@@ -543,7 +543,6 @@ export default {
   'sheet.edit.error.amount': 'Vul een bedrag in, bijvoorbeeld 1.250,00.',
   'sheet.edit.error.number': 'Vul een getal in.',
   'sheet.edit.error.date': 'Vul een datum in als JJJJ-MM-DD.',
-  'sheet.edit.error.json': 'Dit is geen geldige JSON.',
   'sheet.edit.error.reason.officer': 'Geef een reden op; die komt in het dossier van de zaak.',
   'sheet.edit.error.reason.citizen': 'Geef een reden op; die ziet de behandelaar.',
 
@@ -844,6 +843,10 @@ export default {
   'harm.feature.is_hospitality': 'Is horeca',
   'harm.feature.prepares_food': 'Bereidt voedsel',
   'harm.feature.has_terrace': 'Heeft terras',
+  'harm.group.yes': 'ja',
+  'harm.group.no': 'nee',
+  'harm.group.rest': 'Overige combinaties',
+  'harm.group.everyone': 'Iedereen',
   'harm.error.too_little_data': 'Te weinig gegevens om een model te leren; draai een grotere simulatie.',
   'harm.error.no_numeric_feature': 'Geen numeriek kenmerk om op te staffelen.',
 

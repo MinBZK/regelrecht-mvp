@@ -454,7 +454,6 @@ export function trainBracketModel(data: TrainingData<unknown>, options: BracketM
   // gezocht, voor een ja/nee is de deling al gegeven.
   const influence: FeatureInfluence[] = [];
   for (const f of features) {
-    const values = rows.map((r) => r.values[f.key]);
     if (f.kind === 'boolean') {
       const yes = rows.filter((r) => r.values[f.key] === 1).map((r) => r.amount);
       const no = rows.filter((r) => r.values[f.key] !== 1).map((r) => r.amount);
@@ -642,10 +641,10 @@ export function describeModel(model: DescribableModel, formatAmount: (v: number)
     // klein was voor een eigen staffel. Staat er maar één groep, dan is dat
     // gewoon iedereen.
     const label = group.keys.length
-      ? group.keys.map((k) => `${labelOf(model, k)}: ${group.filter[k] ? 'ja' : 'nee'}`).join(', ')
+      ? group.keys.map((k) => `${labelOf(model, k)}: ${t(group.filter[k] ? 'harm.group.yes' : 'harm.group.no')}`).join(', ')
       : model.groups.length > 1
-        ? 'Overige combinaties'
-        : 'Iedereen';
+        ? t('harm.group.rest')
+        : t('harm.group.everyone');
     lines.push({
       group: label,
       count: group.count,
