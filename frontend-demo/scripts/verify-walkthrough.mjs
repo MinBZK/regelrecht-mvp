@@ -83,7 +83,7 @@ async function launch() {
   const { chromium } = await import('playwright');
   // Muted: a voice out of nowhere in someone's meeting is not a test result.
   const opts = { headless: true, args: ['--mute-audio'] };
-  // On a laptop the installed Chrome is there already; CI installs Chromium.
+  // On a laptop the installed Chrome is there already; CI runs in the Playwright image, which carries Chromium.
   if (!process.env.CI) {
     try {
       return await chromium.launch({ ...opts, channel: 'chrome' });

@@ -73,6 +73,39 @@ warning, since it may now point at something else. It runs when `frontend-demo/`
 is the same command as locally: `just walkthrough verify`. A failure is fixed in
 the demo, or by recording that chapter again.
 
+### The browser jobs run in the Playwright image
+
+**E2E (mocked)**, **Rondleiding speelt terug** and the **Docs accessibility
+gate** run inside the official Playwright image
+(`mcr.microsoft.com/playwright`), not directly on the runner. The image ships
+Chromium with every system library it needs, so these jobs no longer run
+`playwright install --with-deps`. That step spent its time in `apt-get update`
+on the runner and varied from ten seconds to more than nine minutes. The two
+jobs that build the engine for the browser still run apt, but only to install
+`gcc` from the image's mirror: the WASM build compiles build scripts for the
+host, and the image has no C compiler.
+
+The image is pinned by tag and digest in `ci.yml`. A Playwright release looks
+for exactly the browser build it shipped with, so the tag must equal the
+Playwright version that both `package-lock.json` and `docs/package-lock.json`
+resolve. Dependabot bumps the lockfiles and not the image, so after a
+Playwright bump the `playwright-image` pre-commit hook
+(`script/playwright-image.test.mjs`) turns the **Pre-commit** check red until
+someone moves the tag and the digest along. The digest is the
+`Docker-Content-Digest` header of the image index:
+
+```bash
+curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
+  https://mcr.microsoft.com/v2/playwright/manifests/v<version>-noble \
+  | grep -i docker-content-digest
+```
+
+Without that `Accept` header the registry answers 404.
+
+The container runs as root. git refuses a checkout owned by another user, so
+the accessibility gate marks the workspace as a safe directory before its
+`git diff`, and pa11y starts its Chrome with `--no-sandbox`.
+
 ### WASM build (on engine changes)
 
 Builds the engine for the WebAssembly target to catch compilation issues early.
