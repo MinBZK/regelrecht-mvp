@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute, useRouter, type NavigationHookAfter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import type { NLDDModalDialog } from '@nldd/design-system/modal-dialog';
 import { useColorScheme } from '@regelrecht/frontend-shared';
 import { FEATURES, useDemo } from './store/demoStore';
@@ -63,10 +63,9 @@ onMounted(() => {
   probeWhy();
   refreshScrollMode();
 });
-// afterEach calls this with the route as `attempt`, so `attempt < 6` is false
-// and a route change never retries (reported as a bug candidate). The cast
-// keeps that behavior.
-router.afterEach(refreshScrollMode as unknown as NavigationHookAfter);
+// Not `afterEach(refreshScrollMode)`: the hook passes the route, which would
+// land in `attempt` and stop the retries after a tab switch.
+router.afterEach(() => refreshScrollMode());
 
 // The presentation deck drives the tabs; it needs the router, the store (to
 // switch persona) and the slides from the demo config once that has loaded.
