@@ -9,7 +9,6 @@ import '@vue-flow/core/dist/theme-default.css';
 import GraphLawNode from '../components/graph/GraphLawNode.vue';
 import GraphBoxNode from '../components/graph/GraphBoxNode.vue';
 import GraphItemNode from '../components/graph/GraphItemNode.vue';
-import OrgLogo from '../components/OrgLogo.vue';
 import LawGroupTree from '../components/LawGroupTree.vue';
 import { buildGraph, lawShape, neighbourhood } from '../graph/lawGraph';
 import { fieldSpec, formatValue } from '../data/format';

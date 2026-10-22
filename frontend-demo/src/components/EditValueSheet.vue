@@ -104,9 +104,7 @@ const spec = computed((): (DeclaredField & { description?: string }) | null => (
 const law = computed(() => (props.node ? corpus.value?.lawById(props.node.law) : null));
 // One definition of which editor a value deserves, shared with the tests
 // (src/data/editKinds.ts): the declared type decides, the value fills in.
-// `editKind` never returns 'json'; the type keeps the 'json' branches below
-// (unreachable) type-checking unchanged.
-const kind = computed((): EditKind | 'json' => editKind(props.node?.value, spec.value));
+const kind = computed((): EditKind => editKind(props.node?.value, spec.value));
 // What the law says about this number: how it is counted, and how precise.
 const unit = computed(() => unitLabel(spec.value));
 const step = computed(() => stepFor(spec.value));
@@ -172,7 +170,6 @@ watch(
     else if (kind.value === 'rows') rows.value = ((v as TableRow[] | null | undefined) ?? []).map((r) => ({ ...r }));
     else if (kind.value === 'list') list.value = [...((v as unknown[] | null | undefined) ?? [])];
     else if (kind.value === 'record') record.value = { ...((v as Record<string, unknown> | null | undefined) ?? {}) };
-    else if (kind.value === 'json') newValue.value = JSON.stringify(v ?? null, null, 2);
     else newValue.value = v === null || v === undefined ? '' : String(v);
     await nextTick();
     sheet.value?.show?.();
@@ -209,12 +206,6 @@ function parse() {
       return list.value;
     case 'record':
       return record.value;
-    case 'json':
-      try {
-        return JSON.parse(raw);
-      } catch {
-        throw new Error(t('sheet.edit.error.json'));
-      }
     default:
       return raw === '' ? null : raw;
   }
@@ -246,10 +237,6 @@ function selectValue(e: Event): string {
 /** What an nldd field's event carries: the value in `detail`, or on the field itself. */
 function inputValue(e: Event): string {
   return (e as CustomEvent<{ value?: string } | null | undefined>).detail?.value ?? (e.target as EventTarget & { value: string }).value;
-}
-/** The `value` of the element that fired the event. */
-function targetValue(e: Event): string {
-  return (e.target as EventTarget & { value: string }).value;
 }
 /** The value in an nldd field's `detail`, if any. */
 function detailValue(e: Event): unknown {
@@ -392,7 +379,6 @@ function submit() {
                 </nldd-list-item>
               </nldd-list>
             </template>
-            <nldd-code-editor v-else-if="kind === 'json'" :value="newValue" rows="6" @input="newValue = targetValue($event)"></nldd-code-editor>
             <!-- Typed input, as the POC had it: a date gets a date picker and a
                  number a number field, so the value a citizen enters is of the
                  kind the law expects. An amount stays a text field: the number

@@ -474,7 +474,6 @@ export default {
   "sheet.edit.error.amount": "Folje in bedrach yn, bygelyks 1.250,00.",
   "sheet.edit.error.number": "Folje in getal yn.",
   "sheet.edit.error.date": "Folje in datum yn as JJJJ-MM-DD.",
-  "sheet.edit.error.json": "Dit is gjin jildige JSON.",
   "sheet.edit.error.reason.officer": "Jou in reden op; dy komt yn it dossier fan de saak.",
   "sheet.edit.error.reason.citizen": "Jou in reden op; dy sjocht de behanneler.",
   "sheet.change.label": "Wiziging trochjaan",

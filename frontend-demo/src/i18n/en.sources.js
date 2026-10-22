@@ -412,7 +412,6 @@ export default {
   "sheet.edit.current": "8af9",
   "sheet.edit.error.amount": "57a0",
   "sheet.edit.error.date": "6efd",
-  "sheet.edit.error.json": "938a",
   "sheet.edit.error.number": "e7f0",
   "sheet.edit.error.reason.citizen": "6627",
   "sheet.edit.error.reason.officer": "4f09",

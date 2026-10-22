@@ -53,7 +53,7 @@ const emit = defineEmits<{
   apply: [result: TileEvaluation];
 }>();
 const demo = useDemo();
-const { corpus, dataVersion, profile, personaParams, findCase, caseDrift, canSubmitClaims, activeDelegation } = demo;
+const { corpus, dataVersion, profile, personaParams, findCase, caseDrift, canSubmitClaims } = demo;
 
 const evaluation = ref<EvaluateResult | null>(null);
 const showData = ref(false);

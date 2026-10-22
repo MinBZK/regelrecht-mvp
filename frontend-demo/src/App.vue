@@ -258,10 +258,6 @@ function switchLocale(next: string) {
     hash: route.hash,
   });
 }
-function onColorSchemeSelect(e: Event) {
-  const value = (e.target as Element | null)?.getAttribute?.('value');
-  if (value) setColorScheme(value);
-}
 
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen?.();

@@ -25,7 +25,7 @@ const emit = defineEmits<{
   submitted: [payload: { type: string; claims: ChangeClaim[] }];
 }>();
 const { t } = useI18n();
-const { corpus, submitClaim, profile, subjectBsn, features } = useDemo();
+const { corpus, submitClaim, subjectBsn, features } = useDemo();
 
 const sheet = ref<NLDDSheet | null>(null);
 const step = ref(0);

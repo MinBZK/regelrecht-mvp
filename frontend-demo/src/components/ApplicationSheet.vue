@@ -57,7 +57,7 @@ interface StatusView {
   supporting: string | null;
 }
 const demo = useDemo();
-const { corpus, profile, personaParams, claimFor, findCase, caseDrift, dataVersion } = demo;
+const { corpus, personaParams, claimFor, findCase, caseDrift, dataVersion } = demo;
 
 const sheet = ref<NLDDSheet | null>(null);
 const step = ref<'gegevens' | 'controleren' | 'status'>('gegevens'); // gegevens | controleren | status

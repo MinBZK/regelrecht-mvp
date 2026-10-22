@@ -454,7 +454,6 @@ export function trainBracketModel(data: TrainingData<unknown>, options: BracketM
   // gezocht, voor een ja/nee is de deling al gegeven.
   const influence: FeatureInfluence[] = [];
   for (const f of features) {
-    const values = rows.map((r) => r.values[f.key]);
     if (f.kind === 'boolean') {
       const yes = rows.filter((r) => r.values[f.key] === 1).map((r) => r.amount);
       const no = rows.filter((r) => r.values[f.key] !== 1).map((r) => r.amount);

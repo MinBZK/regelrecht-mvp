@@ -37,9 +37,6 @@ function emphasize(line: string): string {
 function saveName(e: Event) {
   state.presenterName = (e.target as HTMLInputElement | null)?.value ?? state.presenterName;
 }
-// SlideConfig has no `note` field and no slide in demo-config.yaml sets one,
-// so this is always undefined and the note never renders (kept as it was).
-const note = computed(() => (p.current.value as { note?: string } | null)?.note);
 </script>
 
 <template>
@@ -90,9 +87,6 @@ const note = computed(() => (p.current.value as { note?: string } | null)?.note)
               <li v-for="(b, j) in p.current.value.bullets" :key="j" v-html="emphasize(b)"></li>
             </ul>
           </template>
-        </div>
-        <div v-if="note" class="content-foot">
-          <p class="note">{{ note }}</p>
         </div>
       </div>
       </div>
@@ -303,12 +297,6 @@ const note = computed(() => (p.current.value as { note?: string } | null)?.note)
   justify-content: center;
   gap: max(0.5rem, calc(1.6 * var(--slide-unit)));
 }
-.content-foot {
-  flex: 0 0 auto;
-  padding-top: 1.25rem;
-  margin-top: 1.5rem;
-  border-top: 1px solid var(--ink-18);
-}
 
 /* Eén typografische ladder, in stappen van `--slide-unit` (een percentage van
    de podiumbreedte maal `--scale`). Geen `clamp()`-plafonds meer: die kapten
@@ -418,12 +406,6 @@ const note = computed(() => (p.current.value as { note?: string } | null)?.note)
   color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-.note {
-  margin: 0;
-  font-size: max(0.85rem, calc(1.6 * var(--slide-unit)));
-  color: color-mix(in srgb, var(--ink) 80%, transparent);
-  line-height: 1.45;
 }
 
 .footer {
