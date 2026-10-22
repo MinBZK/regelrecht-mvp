@@ -36,7 +36,7 @@ vi.mock('vue-router', () => ({
 }));
 
 vi.mock('./composables/useAuth', () => ({
-  useAuth: () => ({ authenticated: ref(true), login: vi.fn() }),
+  useAuth: () => ({ authenticated: ref(true), loading: ref(false), login: vi.fn() }),
 }));
 
 vi.mock('./composables/useTrajects', () => ({
