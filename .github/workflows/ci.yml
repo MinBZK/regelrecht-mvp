@@ -1359,7 +1359,7 @@ jobs:
         run: npm run check:source
 
   docs-a11y:
-    name: Docs accessibility gate
+    name: Docs accessibility gate (${{ matrix.shard }})
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1372,6 +1372,16 @@ jobs:
     defaults:
       run:
         shell: bash
+    # pa11y checks about 2.5 s per page and the full site has some 200, so
+    # the pages are split over three runners, each with its own Chromium.
+    # gen-pa11yci.mjs takes every third page for its shard. Without docs
+    # changes there is nothing to split and one shard reports the skip. Not a
+    # required check by name: the `Test` gate reads `needs.docs-a11y.result`,
+    # which fails when any shard fails.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.changes.outputs.docs == 'true' && '[1, 2, 3]' || '[1]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -1402,6 +1412,15 @@ jobs:
         working-directory: docs
         run: npm ci --ignore-scripts
 
+      # Two packages the image lacks. Puppeteer unpacks its Chrome download
+      # with `unzip`. Without DejaVu, fontconfig resolves `monospace` to a CJK
+      # font (WenQuanYi Zen Hei Mono) whose wider glyphs make code blocks
+      # overflow, and axe then reports them as scrollable regions without
+      # keyboard access; the runner image renders them in DejaVu Sans Mono.
+      - name: Install unzip and fonts
+        if: needs.changes.outputs.docs == 'true'
+        run: apt-get update && apt-get install -y --no-install-recommends unzip fonts-dejavu-core
+
       # pa11y draait niet op playwright maar op puppeteer, met een eigen
       # browsercache (~/.cache/puppeteer). Die download zat in puppeteers
       # postinstall en verdween met --ignore-scripts hierboven; hij hoort
@@ -1418,15 +1437,6 @@ jobs:
       # die vlag zou npx bij een resolutiewijziging stilletjes puppeteer@latest
       # van de registry halen — inclusief de postinstall die we hierboven net
       # hebben uitgezet.
-      # Two packages the image lacks. Puppeteer unpacks its Chrome download
-      # with `unzip`. Without DejaVu, fontconfig resolves `monospace` to a CJK
-      # font (WenQuanYi Zen Hei Mono) whose wider glyphs make code blocks
-      # overflow, and axe then reports them as scrollable regions without
-      # keyboard access; the runner image renders them in DejaVu Sans Mono.
-      - name: Install unzip and fonts
-        if: needs.changes.outputs.docs == 'true'
-        run: apt-get update && apt-get install -y --no-install-recommends unzip fonts-dejavu-core
-
       - name: Install Puppeteer Chrome
         if: needs.changes.outputs.docs == 'true'
         working-directory: docs
@@ -1471,6 +1481,8 @@ jobs:
         if: needs.changes.outputs.docs == 'true'
         env:
           A11Y_CHANGED_FILES: ${{ steps.changed.outputs.files }}
+          # Expressions have no arithmetic, so N comes from the matrix itself.
+          A11Y_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
         run: just docs-a11y
 
       # Een gepubliceerd adres blijft bereikbaar. Een documentatiepagina wordt
@@ -1485,8 +1497,10 @@ jobs:
       #
       # Alleen op een pull request: bij een push naar main is er geen "ervoor"
       # om tegen te vergelijken.
+      #
+      # It compares whole builds, not pages, so one shard is enough.
       - name: Check no published URL disappeared
-        if: needs.changes.outputs.docs == 'true' && github.event_name == 'pull_request'
+        if: needs.changes.outputs.docs == 'true' && github.event_name == 'pull_request' && matrix.shard == 1
         run: |
           set -euo pipefail
           base="$(mktemp -d)"
