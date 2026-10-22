@@ -280,7 +280,10 @@ function refit() {
   const options = onFocus ? { padding: 0.2, maxZoom: 1, nodes: [focus.value!] } : { padding: 0.1, nodes: [...shownIds.value] };
   setTimeout(() => fitView(options), 50);
 }
-/** "Passend maken": always the whole picture. */
+/**
+ * "Passend maken" in the toolbar and "Alles in beeld" by the zoom buttons:
+ * always the whole picture, also after a profile put one law in focus.
+ */
 function fitAll() {
   focusFromProfile.value = false;
   refit();
@@ -336,7 +339,7 @@ function unique(laws: LawEntry[]) {
               </nldd-segmented-control>
             </nldd-toolbar-item>
             <nldd-toolbar-item slot="end">
-              <nldd-button size="sm" appearance="neutral-tinted" start-icon="binoculars" :text="t('wet.graph.fit')" @click="refit"></nldd-button>
+              <nldd-button size="sm" appearance="neutral-tinted" start-icon="binoculars" :text="t('wet.graph.fit')" @click="fitAll()"></nldd-button>
             </nldd-toolbar-item>
           </nldd-toolbar>
         </nldd-container>
@@ -388,12 +391,12 @@ function unique(laws: LawEntry[]) {
             <nldd-icon-button icon="add" :text="t('wet.graph.zoom_in')" @click="zoomIn()"></nldd-icon-button>
             <nldd-icon-button icon="remove" :text="t('wet.graph.zoom_out')" @click="zoomOut()"></nldd-icon-button>
             <nldd-button-bar-divider></nldd-button-bar-divider>
-            <!-- `refit()`, niet een kale `fitView()`: die laatste past ook de
-                 verborgen wetten in beeld en zoomde dus verder uit dan nodig.
-                 Doet nu hetzelfde als "Passend maken" in de werkbalk; die staat
-                 er voor wie de balk leest, deze voor wie in het canvas bezig is
-                 en zijn hand bij de zoomknoppen heeft. -->
-            <nldd-icon-button icon="fit-to-view" :text="t('wet.graph.fit_all')" @click="refit()"></nldd-icon-button>
+            <!-- `fitAll()`, not a bare `fitView()`: that one also fits the
+                 hidden laws and zoomed out further than needed. Does the same
+                 as "Passend maken" in the toolbar; that one is there for whoever
+                 reads the bar, this one for whoever is working in the canvas
+                 with a hand on the zoom buttons. -->
+            <nldd-icon-button icon="fit-to-view" :text="t('wet.graph.fit_all')" @click="fitAll()"></nldd-icon-button>
           </nldd-button-bar>
         </div>
       </nldd-page>
