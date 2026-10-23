@@ -12,20 +12,23 @@ Recording is an optional layer ([RFC-046](/rfcs/rfc-046)). The procedure a cell 
 | Part | Role | Where |
 |---|---|---|
 | Cell | Keeps its chronicle; records and decides through the engine | `corpus/cells/<cell>/`, `packages/cel` |
-| Reduction | Answers an open term from the chronicle | `corpus/cells/<cell>/reducties/` |
+| Reduction | Gives a named answer from the chronicle | `corpus/regulation/nl/reducties/` |
+| Policy | Binds an open term of the law to a cell's answer | `corpus/regulation/nl/uitvoeringsbeleid/` |
 | Engine | Executes the law, asks the cells, combines their answers. Stores nothing | `packages/engine` |
 
 ## A cell
 
-A cell is a directory with `cel.yaml` and `reducties/`. `Cell::open` opens it with its chronicle on file, `Cell::in_memory` with an empty chronicle.
+A cell is a directory with `cel.yaml`. `Cell::open` opens it with its chronicle on file, `Cell::in_memory` with an empty chronicle.
 
 ```yaml
 # corpus/cells/<cell>/cel.yaml
 name: Het college van burgemeester en wethouders van Voorbeeldstad
 category: college van burgemeester en wethouders
+answers:
+  eerder_vergunning_verleend: reductie_eerder_vergunning_verleend
 ```
 
-The law names a role ([Competent Authority](/concepts/competent-authority)). The engine matches an `INSTANCE` to `name` and a `CATEGORY` to `category`. Nothing else about a cell is configured.
+The law names a role ([Competent Authority](/concepts/competent-authority)). The engine matches an `INSTANCE` to `name` and a `CATEGORY` to `category`. `answers` is the cell's catalogue: which answers it gives, and from which reduction. It holds no logic, and nothing else about a cell is configured.
 
 ## What a chronicle holds
 
@@ -70,25 +73,44 @@ The engine refuses a finding that no article in the decision asks for, or one of
 
 ## Answering from the chronicle
 
-A reduction answers an open term from what the cell recorded earlier, such as "was this permit granted before?".
+A reduction gives a named answer from what the cell recorded earlier, such as "was this permit granted before?". It is the only rulework that reads a chronicle.
 
 ```yaml
-# corpus/cells/<cell>/reducties/<id>/<valid_from>.yaml
-implements:
-  - {law: wet_voorbeeld, article: '3', open_term: eerder_vergunning_verleend}
+# corpus/regulation/nl/reducties/reductie_eerder_vergunning_verleend/<valid_from>.yaml
+regulatory_layer: REDUCTIE
+competent_authority:
+  name: Het college van burgemeester en wethouders van Voorbeeldstad
+parameters: [bsn_aanvrager]
 input:
   - name: besluiten
     type: array
     source:
       decisions: wet_voorbeeld#3     # one row per decision under art. 3
+output:
+  - name: eerder_vergunning_verleend
 ```
 
-- How a cell reduces is up to the cell; the engine only asks it for an answer. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`). It reads decisions (`source.decisions`) or facts (`source.facts`), and may ask law and policy.
-- The cell answers only terms its reductions fill, and the engine asks it first ([order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term)). Null on a term with a default or `decided_per_case_by` is silence, and the term falls back.
+The law does not ask the cell. The policy of the authority that decides binds the open term to the answer:
+
+```yaml
+# beleid_vergunningen_voorbeeldstad, art. 1 (UITVOERINGSBELEID)
+implements:
+  - {law: wet_voorbeeld, article: '3', open_term: eerder_vergunning_verleend}
+input:
+  - name: antwoord
+    nullable: true
+    source:
+      reduction: eerder_vergunning_verleend
+      parameters: {bsn_aanvrager: $bsn_aanvrager}
+```
+
+- How a cell reduces is up to the cell; the engine only asks it for an answer by name. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`) in the corpus, under the holder it names. It reads decisions (`source.decisions`) or facts (`source.facts`), and may call policy for a norm.
+- Wherever the binding runs, the engine asks the cell, which runs the reduction its catalogue names. The binding is policy, so the answer sets a finding aside ([order of precedence](/concepts/inversion-of-control#policy-that-fills-an-open-term-with-a-cells-answer)). Without an answer the binding is silent and the term falls back on the finding or the default.
+- The loader refuses `source.decisions` and `source.facts` outside a `REDUCTIE`, and `source.reduction` outside such a binding.
 
 ## Answers of other cells
 
-A decision may take other cells along: its sphere. For an open term with `competent_authority`, the engine asks every competent cell in the sphere and merges their answers with the term's `combine` ([Competent Authority](/concepts/competent-authority#who-answers-an-open-term)). This is the paper's synthesis. It happens in the asking process, and each cell reduces only its own chronicle.
+A decision may take other cells along: its sphere. When a binding fills an open term with `competent_authority`, the engine asks every competent cell in the sphere for the answer and merges their answers with the term's `combine`, or else the binding's ([Competent Authority](/concepts/competent-authority#who-answers-an-open-term)). A cell without that answer in its catalogue is silent. Without competence on the term, the engine asks the cell of the policy's holder. This is the paper's synthesis. It happens in the asking process, and each cell reduces only its own chronicle.
 
 ## Explaining a decision
 

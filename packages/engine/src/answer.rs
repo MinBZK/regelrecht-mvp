@@ -1,4 +1,4 @@
-//! The answers of cells that the caller supplies (RFC-048).
+//! The answers of cells that the caller supplies (RFC-048 §2).
 //!
 //! Who runs an execution may know a value the engine does not: a keeper of
 //! records that reads them back with rulework of its own, a cell with its
@@ -13,7 +13,7 @@
 //! engine resolves that input by asking the answerers of the call for the
 //! answer by its name ([`OpenTermAnswerer::answer`]), with the parameters the
 //! binding passes. It asks those the filled term names in its
-//! `competent_authority` (RFC-052), and else those the policy names as its
+//! `competent_authority` (RFC-048 §4), and else those the policy names as its
 //! holder. It compares names; what an answerer is, it does not know.
 //! Several answers that are not null make one value with the `combine` of
 //! the term, or else that of the binding; an answerer that gives no answer
@@ -95,7 +95,7 @@ impl std::fmt::Display for AnswerProvenance {
     }
 }
 
-/// Who an answerer is, as the law can name it (RFC-052): its name, and the
+/// Who an answerer is, as the law can name it (RFC-051): its name, and the
 /// category of authorities it belongs to, if any. The engine matches this
 /// against a `competent_authority`: an `INSTANCE` by `name`, a `CATEGORY`
 /// by `category`, as exact text.
@@ -136,8 +136,8 @@ pub trait OpenTermAnswerer {
 }
 
 /// What a caller gives an execution apart from its parameters: the
-/// findings for the case (RFC-050), the answerer of the call and the other
-/// answerers of the sphere (RFC-052).
+/// findings for the case (RFC-045), the answerer of the call and the other
+/// answerers of the sphere (RFC-048 §4).
 #[derive(Default)]
 pub struct Call<'a> {
     pub findings: BTreeMap<String, Value>,
@@ -146,7 +146,7 @@ pub struct Call<'a> {
     pub answerer: Option<&'a dyn OpenTermAnswerer>,
     /// The other cells of the sphere, asked with [`Self::answerer`] where a
     /// binding fills a term that names them in `competent_authority`
-    /// (RFC-052), or where the binding's policy names them as its holder.
+    /// (RFC-048 §4), or where the binding's policy names them as its holder.
     pub sphere: Vec<&'a dyn OpenTermAnswerer>,
 }
 
