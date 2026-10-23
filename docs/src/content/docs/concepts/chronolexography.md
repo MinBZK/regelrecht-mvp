@@ -83,7 +83,7 @@ input:
       decisions: wet_voorbeeld#3     # one row per decision under art. 3
 ```
 
-- A reduction is rulework of its own kind (`REDUCTIE`). It reads decisions (`source.decisions`) or facts (`source.facts`), and may ask law and policy.
+- How a cell reduces is up to the cell; the engine only asks it for an answer. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`). It reads decisions (`source.decisions`) or facts (`source.facts`), and may ask law and policy.
 - The cell answers only terms its reductions fill, and the engine asks it first ([order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term)). Null on a term with a default or `decided_per_case_by` is silence, and the term falls back.
 
 ## Answers of other cells

@@ -97,7 +97,7 @@ Only `outputs` count. A `derived` end date that moves with the day gives no caus
 
 ## Open points
 
-Listed only when a choice is still to be made, when it is unclear whether it can be done, or when it needs a large refactor or a breaking change to the schema. [Open Points in Chronolexography](/concepts/chronolexography-open-points) gives the rule.
+Listed only when a choice is still to be made, when it needs investigation first, or when it needs a large refactor or a breaking change to the schema. [Open Points in Chronolexography](/concepts/chronolexography-open-points) gives the rule.
 
 | Point | Why open |
 |---|---|
