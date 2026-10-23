@@ -25,9 +25,15 @@ const naam = (feit) => {
 
 const kroniek = (cel) => state.andere.find((a) => a.cel === cel)?.grammen ?? [];
 
-async function vastleggen(cel, grondslag) {
+// Een schakelaar die uit staat, zegt nee: een feit met ja/nee-velden (zoals
+// het advies van de GGD per criterium) is anders nooit heel.
+async function vastleggen(cel, handeling) {
+  const grondslag = handeling.feit;
+  const ingevuld = velden(cel, grondslag);
   const gegeven = Object.fromEntries(
-    Object.entries(velden(cel, grondslag)).filter(([, v]) => v !== undefined),
+    handeling.velden
+      .map((v) => [v.naam, ingevuld[v.naam] ?? (v.type === 'boolean' && !v.mag_leeg ? false : undefined)])
+      .filter(([, v]) => v !== undefined),
   );
   const ok = await stap(() => api.vastleggen(cel, grondslag, gegeven, state.datum));
   if (ok) invoer[sleutel(cel, grondslag)] = {};
@@ -52,7 +58,7 @@ async function vastleggen(cel, grondslag) {
             v-model="velden(c.cel, h.feit)[veld.naam]"
             :veld="veld"
           />
-          <nldd-button appearance="primary" text="Vastleggen" @click="vastleggen(c.cel, h.feit)"></nldd-button>
+          <nldd-button appearance="primary" text="Vastleggen" @click="vastleggen(c.cel, h)"></nldd-button>
         </nldd-container>
       </nldd-card>
       <nldd-text size="sm" color="secondary">

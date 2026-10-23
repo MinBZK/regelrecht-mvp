@@ -225,11 +225,12 @@ fn parkeerkaart_a_second_card_next_to_a_valid_one() {
     }
     assert_eq!(besluiten[0]["besluit"]["outputs"][&uitkomst], json!(true));
     assert_eq!(besluiten[1]["besluit"]["outputs"][&uitkomst], json!(false));
-    let antwoord = &besluiten[1]["waarom"]["antwoorden"][0];
-    assert_eq!(
-        antwoord["begrip"],
-        json!("aanvrager_heeft_geldige_gehandicaptenparkeerkaart")
-    );
+    let antwoord = besluiten[1]["waarom"]["antwoorden"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["begrip"] == json!("aanvrager_heeft_geldige_gehandicaptenparkeerkaart"))
+        .unwrap();
     assert_eq!(antwoord["waarde"], json!(true));
 
     let id = besluiten[1]["besluit"]["id"].as_str().unwrap();
@@ -246,8 +247,9 @@ fn parkeerkaart_a_second_card_next_to_a_valid_one() {
 #[test]
 fn the_preview_answers_a_refusal_as_a_state_and_records_nothing() {
     // The app asks for a preview after every change to a finding, also
-    // before the authority has given each one: the cell's refusal is then
-    // the preview's answer, not an error.
+    // while a finding is still wrong: the cell's refusal is then the
+    // preview's answer, not an error. (For the example applicant the GGD's
+    // advice fills every criterion, so no finding is missing.)
     let mut spel = spel_met("gehandicaptenparkeerkaart");
     let casus = spel.casus().unwrap();
     let datum = dag("2026-10-20");
@@ -266,7 +268,14 @@ fn the_preview_answers_a_refusal_as_a_state_and_records_nothing() {
     assert!(voorlopig["voorlopig"]["waarom"]["keten"].is_array());
     assert_eq!(voorlopig["stil"], json!([]));
 
-    let geweigerd = spel.voorvertoning_besluit(op, &Map::new(), datum).unwrap();
+    // A finding of the wrong type: the cell refuses it.
+    let geweigerd = spel
+        .voorvertoning_besluit(
+            op,
+            &map(&json!({ "geneeskundig_onderzoek_achterwege_gelaten": "ja" })),
+            datum,
+        )
+        .unwrap();
     assert!(geweigerd["geweigerd"].as_str().unwrap().contains("refused"));
     assert!(geweigerd.get("voorlopig").is_none());
 
@@ -298,8 +307,16 @@ fn the_ggd_records_an_examination_and_the_card_follows() {
     let vormen = spel.vormen(dag("2026-10-16")).unwrap();
     let ggd = &vormen["andere_cellen"][0];
     assert_eq!(ggd["cel"], json!("ggd_wilgendaal"));
+    // The GGD records the examination (Regeling art. 3) and its advice
+    // (the municipality's fictitious policy, art. 2).
     let feit = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht";
-    assert_eq!(ggd["handelingen"][0]["feit"], json!(feit));
+    let feiten: Vec<&Value> = ggd["handelingen"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|h| &h["feit"])
+        .collect();
+    assert!(feiten.contains(&&json!(feit)), "{feiten:?}");
     spel.vastleggen(
         "ggd_wilgendaal",
         feit,

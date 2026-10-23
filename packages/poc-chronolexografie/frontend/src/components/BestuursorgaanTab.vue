@@ -80,8 +80,12 @@ function meldStil(id, velden) {
   const lijst = (stil[id] ??= []);
   for (const v of velden) if (!lijst.some((x) => x.naam === v.naam)) lijst.push(v);
 }
+// Wie zwijgt: de cel uit haar kroniek, of een beleid dat het oordeel eerst
+// invult (`beleid`), zoals het advies van de GGD bij de parkeerkaart.
 const nietGeweten = (v) =>
-  `${v.grondslag} · ${hoofdletter(state.casus.cel_naam)} weet dit niet voor deze aanvraag; ${state.casus.rol} oordeelt.`;
+  v.beleid
+    ? `${v.grondslag} · Het beleid vult dit voor deze aanvraag niet in; ${state.casus.rol} oordeelt.`
+    : `${v.grondslag} · ${hoofdletter(state.casus.cel_naam)} weet dit niet voor deze aanvraag; ${state.casus.rol} oordeelt.`;
 // Een oordeel op een begrip dat de cel niet weet: leeg is nog niet gegeven.
 function zetOordeel(id, naam, waarde) {
   if (waarde === undefined) delete oordeelVoor(id)[naam];

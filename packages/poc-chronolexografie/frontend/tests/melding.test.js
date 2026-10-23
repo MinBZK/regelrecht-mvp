@@ -48,6 +48,19 @@ describe('melding', () => {
     state.casus = null;
   });
 
+  it('zegt dat het beleid een oordeel voor deze aanvraag niet invult, en wie dan oordeelt', () => {
+    // De parkeerkaart zonder advies van de GGD: het beleid zwijgt.
+    const engine =
+      "engine: Resolution error: Required open term 'langdurige_loopbeperking' on " +
+      'besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw#49 is decided per case by het college ' +
+      'van burgemeester en wethouders, na geneeskundig onderzoek, and no judgement was given for this case';
+    state.casus = { cel_naam: 'gemeente Wilgendaal', rol: 'het college van burgemeester en wethouders' };
+    expect(melding(`the policy is silent on 'langdurige_loopbeperking' for this case: ${engine}`)).toBe(
+      'Het beleid vult "langdurige loopbeperking" voor deze aanvraag niet in, dus het college van burgemeester en wethouders oordeelt. Geef die bevinding.',
+    );
+    state.casus = null;
+  });
+
   it('zegt dat de reductie van de cel op die dag nog niet geldt', () => {
     const fout =
       "setup: open term 'verlof_al_verleend_in_schooljaar' of leerplichtwet_1969#13a is filled by a reduction in " +
