@@ -642,10 +642,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The two orders of the demo bucket ran one after the other in a
-        # single job (about 100 s and 200 s). Each leg now builds and runs one
-        # of them on its own runner; the cheap demo-law validation and the Awb
-        # lifecycle ride along with the shorter forward leg. The `Test` gate
+        # Each leg runs one action order of the demo bucket on its own runner.
+        # The demo-law validation and the Awb lifecycle run only in the
+        # `forward` leg, which is the shorter of the two. The `Test` gate
         # reads `needs.bdd-demo.result`, which fails when either leg fails.
         include:
           - leg: forward
