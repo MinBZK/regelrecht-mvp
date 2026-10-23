@@ -157,7 +157,8 @@ jobs:
         # Required by packages/.cargo/config.toml (mold linker on x86_64-linux).
         # The release binary from GitHub, not apt: `apt-get update` alone took
         # 30 to 110 s on the runners. make-default stays off, so /usr/bin/ld is
-        # untouched and only the -fuse-ld=mold link-arg picks mold.
+        # untouched and only the -fuse-ld=mold link-arg picks mold. 2.42.1 is
+        # the last C++ release; 3.0 is a rewrite in Rust and gets its own bump.
         uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038  # v1
         with:
           mold-version: 2.42.1
