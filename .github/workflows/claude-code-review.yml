@@ -11,7 +11,7 @@ run-name: >-
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
-  # Handmatig opnieuw reviewen: `gh workflow run "Claude Code Review" -f pr=<n>`.
+  # Re-review by hand: `gh workflow run "Claude Code Review" -f pr=<n>`.
   # The run executes this file from the default branch and reviews the PR's
   # current head, resolved through the API. A rerun of a pull_request run
   # cannot do that: it keeps the original payload, and with it the old commit.

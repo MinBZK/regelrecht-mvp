@@ -75,8 +75,20 @@ case "$url" in
   echo 'dispatch-jobs' >>"$STUB_CALLS"
   sequence "$STUB_DISPATCH_JOBS" "$STUB_DISPATCH_JOBS_COUNTER"
   ;;
+*/actions/runs/88/jobs*)
+  # The jobs of another pull_request run on the same commit.
+  echo 'sibling-jobs' >>"$STUB_CALLS"
+  sequence "$STUB_SIBLING_JOBS" "$STUB_SIBLING_JOBS_COUNTER"
+  ;;
 */actions/runs/*/jobs*)
   sequence "$STUB_JOBS" "$STUB_COUNTER"
+  ;;
+*/actions/workflows/claude-code-review.yml/runs\?event=pull_request\&head_sha=c0ffee0000000000000000000000000000000000*)
+  echo 'sibling-runs' >>"$STUB_CALLS"
+  fixture "$STUB_SIBLING_RUNS"
+  ;;
+*/compare/main...c0ffee0000000000000000000000000000000000\?per_page=1)
+  fixture "$STUB_COMPARE"
   ;;
 */actions/workflows/claude-code-review.yml/runs\?event=workflow_dispatch\&branch=main*)
   echo 'dispatch-runs' >>"$STUB_CALLS"
@@ -110,6 +122,8 @@ case "$url" in
   *ref=main) body=$(cat "$STUB_WORKFLOW_BASE") ;;
   *ref=refs/pull/1/merge) body=$(cat "$STUB_WORKFLOW_RUN") ;;
   *ref=d15a7c4000000000000000000000000000000000) body=$(cat "$STUB_WORKFLOW_DISPATCH") ;;
+  *ref=c0ffee0000000000000000000000000000000000) body=$(cat "$STUB_WORKFLOW_HEAD") ;;
+  *ref=ba5e000000000000000000000000000000000000) body=$(cat "$STUB_WORKFLOW_MERGE_BASE") ;;
   *)
     echo "gh: HTTP 404: onverwachte ref in ${url}" >&2
     exit 1
@@ -173,6 +187,12 @@ export STUB_DISPATCH_RUNS_COUNTER="${WORK}/dispatch-runs-counter"
 export STUB_DISPATCH_JOBS="${WORK}/dispatch-jobs"
 export STUB_DISPATCH_JOBS_COUNTER="${WORK}/dispatch-jobs-counter"
 export STUB_WORKFLOW_DISPATCH="${WORK}/workflow-dispatch"
+export STUB_WORKFLOW_HEAD="${WORK}/workflow-head"
+export STUB_WORKFLOW_MERGE_BASE="${WORK}/workflow-merge-base"
+export STUB_COMPARE="${WORK}/compare"
+export STUB_SIBLING_RUNS="${WORK}/sibling-runs"
+export STUB_SIBLING_JOBS="${WORK}/sibling-jobs"
+export STUB_SIBLING_JOBS_COUNTER="${WORK}/sibling-jobs-counter"
 
 PROOF='Record that the review ran'
 CRITICAL='🔴 **Critical**'
@@ -181,8 +201,8 @@ HEAD_SHA='c0ffee0000000000000000000000000000000000'
 
 # pull_request <full_name van de head-repo> <draft> <auteur>
 pull_request() {
-  printf '{"draft":%s,"user":{"login":"%s"},"head":{"sha":"%s","repo":{"full_name":"%s"}},"base":{"repo":{"default_branch":"main"}}}' \
-    "${2:-false}" "${3:-iemand}" "$HEAD_SHA" "${1:-example-org/example-repo}"
+  printf '{"draft":%s,"user":{"login":"%s"},"head":{"sha":"%s","repo":{"full_name":"%s"}},"base":{"ref":"%s","repo":{"default_branch":"main"}}}' \
+    "${2:-false}" "${3:-iemand}" "$HEAD_SHA" "${1:-example-org/example-repo}" "${4:-main}"
 }
 
 PR_NORMAAL=$(pull_request)
@@ -359,6 +379,12 @@ reset_fixtures() {
   printf '%s\n' 'blob-van-main' >"$STUB_WORKFLOW_DISPATCH"
   echo 0 >"$STUB_DISPATCH_RUNS_COUNTER"
   echo 0 >"$STUB_DISPATCH_JOBS_COUNTER"
+  printf '%s\n' 'blob-van-main' >"$STUB_WORKFLOW_HEAD"
+  printf '%s\n' 'blob-van-main' >"$STUB_WORKFLOW_MERGE_BASE"
+  printf '%s\n' '{"merge_base_commit":{"sha":"ba5e000000000000000000000000000000000000"}}' >"$STUB_COMPARE"
+  printf '%s\n' '{"workflow_runs":[]}' >"$STUB_SIBLING_RUNS"
+  printf '%s\n' "$DONE_OK" >"$STUB_SIBLING_JOBS"
+  echo 0 >"$STUB_SIBLING_JOBS_COUNTER"
   : >"$STUB_REFS"
   : >"$STUB_CALLS"
   : >"${WORK}/summary.md"
@@ -684,7 +710,7 @@ echo "== de review moet iets hebben achtergelaten =="
 # er geen review om op af te gaan.
 reset_fixtures
 sticky_is "$GEEN_COMMENTS"
-check "review gedraaid, maar niets gepost: rood" 1 "niets op pull request 1" "gh run rerun 42" -- MAX_WAIT_SECONDS=0
+check "review gedraaid, maar niets gepost: rood, met de hele run opnieuw" 1 "niets op pull request 1" "Draai de hele run opnieuw met \`gh run rerun 42\`" -- MAX_WAIT_SECONDS=0
 reset_fixtures
 sticky_is "$(comment 'claude[bot]' 'No issues found.' "$TOEN")"
 check "alleen een samenvatting van een vorige run: rood" 1 "niets op pull request 1" "telt niet" -- MAX_WAIT_SECONDS=0
@@ -789,6 +815,102 @@ else
   passed=$((passed + 1))
 fi
 
+echo "== een andere run op dezelfde commit neemt het over =="
+# Het gewone geval: push op een draft, seconden later "ready for review". De
+# push-run sloeg zijn review over; de ready_for_review-run reviewt dezelfde
+# commit. De poort van de push-run wacht daarop in plaats van rood te worden.
+SIBLING='{"workflow_runs":[{"id":88,"event":"pull_request","path":".github/workflows/claude-code-review.yml","head_sha":"c0ffee0000000000000000000000000000000000","head_repository":{"full_name":"example-org/example-repo"},"html_url":"http://example.invalid/run/88"}]}'
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+printf '%s\n' "$RUNNING" "$DONE_OK" >"$STUB_SIBLING_JOBS"
+check "andere run reviewt dezelfde commit: de poort wacht erop en neemt hem over" 0 "review afgerond (success)" "run http://example.invalid/run/88 op dezelfde commit" \
+  -- MAX_WAIT_SECONDS=60 NO_REVIEW_GRACE_SECONDS=0
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+inline_is "$COMMENT_CRITICAL"
+check "andere run met een kritieke bevinding: rood" 1 "heeft op commit" "Repareer wat er staat" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+printf '%s\n' "$DONE_SKIPPED" >"$STUB_SIBLING_JOBS"
+check "andere run sloeg ook over: rood met wat te doen" 1 "geen andere run" "gh workflow run" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+# Alleen als de PR het workflowbestand niet wijzigt: dan draaide elke testmerge
+# met de default branch een versie van main.
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+printf '%s\n' 'blob-van-de-pr' >"$STUB_WORKFLOW_HEAD"
+check "PR wijzigt het workflowbestand: een andere run telt niet" 1 "geen andere run" "gh workflow run" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+if grep -qxF 'sibling-runs' "$STUB_CALLS"; then
+  echo "FAIL de poort zocht andere runs terwijl de PR het workflowbestand wijzigt"
+  failed=$((failed + 1))
+else
+  echo "ok   wijzigt de PR het workflowbestand, dan blijven andere runs ongelezen"
+  passed=$((passed + 1))
+fi
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+pr_is "$(pull_request 'example-org/example-repo' false iemand 'release')"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+check "PR met een andere base dan de default branch: een andere run telt niet" 1 "geen andere run" "gh workflow run" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" | sed 's/"event":"pull_request"/"event":"push"/' >"$STUB_SIBLING_RUNS"
+check "run van een ander event telt niet als andere run" 1 "geen andere run" "gh workflow run" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' ERROR >"$STUB_COMPARE"
+check "niet vast te stellen of de PR het workflowbestand wijzigt: geen andere run, wel snel rood" 1 "geen andere run" "gh workflow run" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+
+# Een overgenomen review die niets postte: opnieuw draaien van deze run helpt
+# dan niet, een nieuwe review starten wel.
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+sticky_is "$GEEN_COMMENTS"
+check "overgenomen review postte niets: rood, met een nieuwe review starten" 1 "niets op pull request 1" "gh workflow run" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+if grep -qF "hele run opnieuw" "${WORK}/summary.md"; then
+  echo "FAIL bij een overgenomen review raadt de poort aan deze run opnieuw te draaien"
+  failed=$((failed + 1))
+else
+  echo "ok   bij een overgenomen review raadt de poort niet aan deze run opnieuw te draaien"
+  passed=$((passed + 1))
+fi
+# Alleen een pull_request-run van dit workflowbestand, op deze commit, in deze
+# repository, en niet deze run zelf.
+for variant in 's/"head_repository":{"full_name":"example-org\/example-repo"}/"head_repository":{"full_name":"iemand-anders\/example-repo"}/' \
+  's/claude-code-review.yml"/iets-anders.yml"/' \
+  's/"head_sha":"c0ffee0000000000000000000000000000000000"/"head_sha":"beefbeef000000000000000000000000000000ff"/' \
+  's/"id":88/"id":42/'; do
+  reset_fixtures
+  jobs_are "$OWN_SKIPPED"
+  printf '%s\n' "$SIBLING" | sed "$variant" >"$STUB_SIBLING_RUNS"
+  check "andere run met ${variant%%/*/*}… telt niet" 1 "geen andere run" "gh workflow run" \
+    -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+  if grep -qxF 'sibling-jobs' "$STUB_CALLS"; then
+    echo "FAIL bij variant ${variant} las de poort toch de jobs van de andere run"
+    failed=$((failed + 1))
+  else
+    echo "ok   bij variant ${variant} blijven de jobs van de andere run ongelezen"
+    passed=$((passed + 1))
+  fi
+done
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+printf '%s\n' "$SIBLING" >"$STUB_SIBLING_RUNS"
+printf '%s\n' ERROR >"$STUB_SIBLING_JOBS"
+check "jobs van de andere run niet op te halen: geen snel oordeel" 1 "niet op te halen" "draai deze job opnieuw" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+
 echo "== een handmatig gestarte review neemt het over =="
 reset_fixtures
 jobs_are "$OWN_SKIPPED"
@@ -841,6 +963,15 @@ dispatch_jobs_are "$DISPATCH_RUNNING"
 check "twee handmatige runs: de nieuwste telt" 1 "nog niet klaar" "handmatige run http://example.invalid/run/77" \
   -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
 
+# Zijn de jobs van de nieuwste niet te lezen, dan valt de poort niet terug op
+# een oudere groene.
+reset_fixtures
+jobs_are "$OWN_SKIPPED"
+dispatch_runs_are '{"workflow_runs":[{"id":76,"event":"workflow_dispatch","path":".github/workflows/claude-code-review.yml","head_branch":"main","head_sha":"d15a7c4000000000000000000000000000000000","head_repository":{"full_name":"example-org/example-repo"},"display_title":"Claude Code Review: PR #1","html_url":"http://example.invalid/run/76"},{"id":77,"event":"workflow_dispatch","path":".github/workflows/claude-code-review.yml","head_branch":"main","head_sha":"d15a7c4000000000000000000000000000000000","head_repository":{"full_name":"example-org/example-repo"},"display_title":"Claude Code Review: PR #1","html_url":"http://example.invalid/run/77"}]}'
+dispatch_jobs_are ERROR
+check "jobs van de nieuwste handmatige run onleesbaar: geen terugval op een oudere" 1 "niet op te halen" "draai deze job opnieuw" \
+  -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
+
 echo "== wat een handmatige run niet overneemt =="
 # De naam van de review-job is het enige vastgelegde bewijs van wat de run
 # reviewde; een andere commit of een andere PR telt niet.
@@ -848,13 +979,13 @@ reset_fixtures
 jobs_are "$OWN_SKIPPED"
 dispatch_runs_are "$DISPATCH"
 dispatch_jobs_are "$DISPATCH_OLD_COMMIT"
-check "handmatige review van een eerdere commit: rood" 1 "geen handmatig gestarte review" "gh workflow run" \
+check "handmatige review van een eerdere commit: rood" 1 "geen handmatig gestarte run" "gh workflow run" \
   -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
 reset_fixtures
 jobs_are "$OWN_SKIPPED"
 dispatch_runs_are "$DISPATCH"
 dispatch_jobs_are "$DISPATCH_OTHER_PR"
-check "handmatige review van een andere PR op dezelfde commit: rood" 1 "geen handmatig gestarte review" "gh workflow run" \
+check "handmatige review van een andere PR op dezelfde commit: rood" 1 "geen handmatig gestarte run" "gh workflow run" \
   -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
 # Alleen een run van dit workflowbestand, gestart op de default branch van deze
 # repository: daar draait de code die de naam schrijft.
@@ -862,7 +993,7 @@ for variant in OTHER_BRANCH OTHER_EVENT OTHER_PATH OTHER_REPO; do
   reset_fixtures
   jobs_are "$OWN_SKIPPED"
   eval "dispatch_runs_are \"\$DISPATCH_${variant}\""
-  check "run met ${variant} telt niet als handmatige review" 1 "geen handmatig gestarte review" "gh workflow run" \
+  check "run met ${variant} telt niet als handmatige review" 1 "geen handmatig gestarte run" "gh workflow run" \
     -- MAX_WAIT_SECONDS=0 NO_REVIEW_GRACE_SECONDS=0
   if grep -qxF 'dispatch-jobs' "$STUB_CALLS"; then
     echo "FAIL bij ${variant} las de poort toch de jobs van de run"
