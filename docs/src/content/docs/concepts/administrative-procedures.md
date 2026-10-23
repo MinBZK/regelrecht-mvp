@@ -17,7 +17,6 @@ produces:
     requests: wet_voorbeeld#3          # the decision this application asks for
     parameters: [bsn_aanvrager, gevraagde_datum]
   - type: BESCHIKKING
-    decision_type: TOEKENNING
     outputs: [vergunning_verleend]
     derived: [vergunning_geldig_tot]
 ```
@@ -98,17 +97,10 @@ Only `outputs` count. A `derived` end date that moves with the day gives no caus
 
 ## Open points
 
-Kinds: **Not built** (the design allows it), **Assumption** (no provision says it), **Limitation** (a consequence of a choice), **Question** (undecided), **Not modeled** (the Awb says it; the rulework leaves it out).
+Listed only when a choice is still to be made, when it is unclear whether it can be done, or when it needs a large refactor or a breaking change to the schema. [Open Points in Chronolexography](/concepts/chronolexography-open-points) gives the rule.
 
-| Point | Kind |
+| Point | Why open |
 |---|---|
-| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages. Open: should stages stay, as a free field that the law defining the procedure fills? | Question |
-| A hook on an application cannot filter on the requested decision. Awb 4:2 also fires on an application for something that is not a beschikking. | Not built |
-| `gevraagde_beschikking` (Awb 4:2 lid 1 onder c) is filled by the applicant, though `requests` already names the decision. | Limitation |
-| Submission kinds beyond `AANVRAAG` and `BEZWAAR`, such as beroep. | Not built |
-| The edge from 7:11 to the article it calls is known only at run time. The dependency graph, the editor and the type checker do not see it. | Limitation |
-| A decision value holds any decision among its fields as an id, so a call that merges those fields passes an id where the article expects a decision. A call passes only the parameters the called article declares; a value that only a hook or a stage asks for does not arrive. | Limitation |
-| When a decision on objection is itself called anew, the findings given for its own reconsideration are not passed on. Nothing calls it anew yet. | Limitation |
-| "Aanleiding" means "an output differs". Refusing again on another ground gives no cause, since outputs do not name the ground. | Assumption |
-| On a decision on objection, `bezwaartermijn_einddatum` is the period for appeal (Awb 7:1 lid 1 onder a). | Limitation |
-| Awb 6:6, 6:11, 6:9 lid 2, the hearing (7:2), 7:10 lid 2–4, 7:12 lid 2–4, third parties, partial revocation. | Not modeled |
+| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages, and the cell runs `BESLUIT` and `BEKENDMAKING` by name. Should stages stay, as a free field that the law defining the procedure fills? | Choice; breaking schema change |
+| `decision_type` is fixed per article, while one article grants or refuses. The value says nothing about the outcome, and no hook in the corpus filters on it. [RFC-022](/rfcs/rfc-022) proposes an open vocabulary. Drop it, derive it from the outcome, or keep it as a free field? | Choice; breaking schema change |
+| The edge from 7:11 to the article it calls is known only at run time. The dependency graph, the editor and the type checker do not see it. | Large refactor |
