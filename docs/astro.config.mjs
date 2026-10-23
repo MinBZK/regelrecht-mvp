@@ -39,6 +39,14 @@ export default defineConfig({
     // erin stond (chronolexogram-types, de afleiding van de rechtsmiddel-route,
     // het `blauwe_knop`-blok) staat in RFC-022 en blijft daar staan.
     '/concepts/cjib-blauwe-knop-source-proposal': '/rfcs/rfc-022',
+    // De kaart van de concepten heette "How RegelRecht Works"; ze is opgegaan
+    // in de overzichtspagina RegelRecht. De twee methodepagina's zijn één
+    // pagina geworden, en Multi-Org Execution beschreef alleen een voorstel
+    // (RFC-009) dat niet gebouwd is; wat ervan klopt staat nu bij Competent
+    // Authority.
+    '/concepts/how-it-works': '/concepts/regelrecht',
+    '/concepts/validation-methodology': '/concepts/methodology',
+    '/concepts/multi-org-execution': '/concepts/competent-authority',
   },
   integrations: [
     mdx(),
