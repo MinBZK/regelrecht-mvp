@@ -1096,7 +1096,9 @@ jobs:
           # om het artefact. Ook geen cache-to, want alleen main schrijft cache.
           push: false
           load: false
-          cache-from: type=registry,ref=ghcr.io/${{ steps.ns.outputs.owner }}/regelrecht-buildcache:pipeline-api
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ steps.ns.outputs.owner }}/regelrecht-buildcache:pipeline-api
+            type=registry,ref=ghcr.io/${{ steps.ns.outputs.owner }}/regelrecht-buildcache:pipeline-deps
 
       - name: Skip (no relevant changes)
         if: needs.changes.outputs.rust-image != 'true'
@@ -1211,13 +1213,23 @@ jobs:
   # (een hernoemde knop, een verplaatst paneel, een wet die weg is), en dan
   # laat de rondleiding iets anders zien dan de stem zegt. Deze baan speelt
   # elk hoofdstuk terug in twee vensterformaten en faalt op elke handeling
-  # die zijn element niet meer vindt. Hetzelfde commando als lokaal:
-  # `just walkthrough verify`. Zonder timeline.json slaagt hij meteen.
+  # die zijn element niet meer vindt. Hetzelfde commando als lokaal, met
+  # `--shard` erbij: `just walkthrough verify`. Zonder timeline.json slaagt
+  # hij meteen.
+  #
+  # With the runs one after another, the replay took over ten minutes, longer
+  # than any other job in CI. The matrix spreads the (window size, language)
+  # runs over three runners with `--shard`; the script counts the runs itself,
+  # so a new language lands in one of the three without a change here.
   walkthrough-replay:
-    name: Rondleiding speelt terug
+    name: Rondleiding speelt terug (${{ matrix.shard }})
     # The engine comes from the wasm job; see e2e.
     needs: [changes, wasm]
     if: needs.changes.outputs.walkthrough == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # See the e2e job for the image and why its tag is pinned to the lockfiles.
@@ -1257,7 +1269,7 @@ jobs:
       # Start zelf een dev-server (de testhaak van de replay bestaat alleen in
       # een dev-build) en haalt alleen de stem uit de release.
       - name: Replay every chapter
-        run: just walkthrough verify
+        run: just walkthrough verify --shard ${{ matrix.shard }}/${{ strategy.job-total }}
 
   # Security audit
   audit:
