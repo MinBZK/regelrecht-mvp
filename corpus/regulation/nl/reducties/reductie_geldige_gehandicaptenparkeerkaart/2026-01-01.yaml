@@ -1,22 +1,25 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: reductie_geldige_gehandicaptenparkeerkaart
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
 valid_from: '2026-01-01'
-# Geen regelgeving: een reductie van de cel van de (fictieve) gemeente
-# Wilgendaal over haar eigen kroniek (RFC-022 §4.1, RFC-048). Ze staat bij de
-# cel en niet in corpus/regulation; alleen de cel laadt haar. Ze zoekt de
+# Geen regelgeving: een reductie van het college van de (fictieve) gemeente
+# Wilgendaal over zijn eigen kroniek (RFC-022 §4.1, RFC-048). Ze zoekt de
 # besluiten die ertoe doen; de geldigheidsduur staat al in elk besluit (artikel
-# 51 van het BABW). Haar antwoord vult het open begrip van het fictieve beleid
-# van de gemeente (implements, schema v0.8.5): waar de engine dat begrip leest,
-# ook als Awb 7:11 artikel 49 opnieuw aanroept, vraagt hij het de cel, en de
-# cel draait haar. Uit dezelfde besluiten vult zij ook het open begrip van
-# artikel 2, tweede lid, onder a en b, van de Regeling
-# gehandicaptenparkeerkaart: of de aanvrager eerder een kaart kreeg.
-# Daarvoor is elk college bevoegd (competent_authority van dat begrip,
-# RFC-052), dus ook de colleges van andere gemeenten antwoorden. Er is geen
-# bekendmaking; de url wijst naar artikel 49.
+# 51 van het BABW). De cel van de gemeente geeft haar uitvoer als twee
+# antwoorden (cel.yaml, answers): of de aanvrager een geldige kaart heeft
+# (artikel 1), en of hij eerder een kaart van het college kreeg (artikel 2).
+# Het beleid van het college
+# (fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal) koppelt het
+# eerste aan zijn eigen open begrip, ook als Awb 7:11 artikel 49 opnieuw
+# aanroept, en het tweede aan het open begrip van artikel 2, tweede lid, onder
+# a en b, van de Regeling gehandicaptenparkeerkaart. Voor dat laatste is elke
+# verstrekkende instantie bevoegd (competent_authority van dat begrip,
+# RFC-052), dus ook de colleges van andere gemeenten en het CBR antwoorden.
+# Twee artikelen, omdat het tweede antwoord de dag van het besluit niet kent:
+# artikel 2 van de regeling geeft die niet mee. Er is geen bekendmaking; de
+# url wijst naar artikel 49.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Geldige gehandicaptenparkeerkaart bij de gemeente Wilgendaal (reductie)
 competent_authority:
@@ -24,27 +27,18 @@ competent_authority:
 articles:
   - number: '1'
     text: >-
-      Geen regelgeving: een reductie van de cel over haar eigen kroniek. De
-      aanvrager heeft een geldige gehandicaptenparkeerkaart als het college hem
-      in een besluit op een aanvraag (artikel 49 van het BABW) een kaart
-      verstrekte die op de dag van het besluit nog geldig is. Hij kreeg eerder
-      een kaart als het college hem in zo'n besluit een kaart verstrekte,
-      geldig of niet; anders zegt de cel niets.
+      Geen regelgeving. Het systeem van het college van de gemeente Wilgendaal
+      kijkt door middel van een chronolexografische reductie op zijn eigen
+      kroniek of er een niet-herroepen besluit is waarin het de aanvrager een
+      kaart verstrekte. De aanvrager heeft een geldige
+      gehandicaptenparkeerkaart als het college hem in een besluit op een
+      aanvraag (artikel 49 van het BABW) een kaart verstrekte die op de dag van
+      het besluit nog geldig is.
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
-      # Het open begrip van het beleid, dat het college anders per geval
-      # vaststelt.
-      implements:
-        - law: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
-          article: '1'
-          open_term: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
-        # Of de aanvrager eerder een kaart kreeg (Regeling
-        # gehandicaptenparkeerkaart, artikel 2, tweede lid, onder a en b).
-        - law: regeling_gehandicaptenparkeerkaart
-          article: '2'
-          open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
       execution:
-        # Parameters van het beleid; de cel geeft ze op naam door.
+        # Wat het antwoord vraagt; het beleid dat het koppelt, geeft ze op
+        # naam mee.
         parameters:
           - name: bsn_aanvrager
             type: string
@@ -82,12 +76,6 @@ articles:
             description: >-
               Of het college de aanvrager een kaart verstrekte die op de dag van
               het besluit nog geldig is.
-          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
-            type: boolean
-            nullable: true
-            description: >-
-              Waar, als het college de aanvrager eerder een kaart verstrekte;
-              anders afwezig.
         actions:
           # Een besluit dat een beslissing op bezwaar herriep, is er niet meer
           # (Awb 7:11, tweede lid). De koppeling loopt via een lijst ids:
@@ -143,10 +131,59 @@ articles:
                     value: 0
               body: true
               combine: OR
+  - number: '2'
+    text: >-
+      Geen regelgeving. Het systeem van het college van de gemeente Wilgendaal
+      kijkt door middel van een chronolexografische reductie op zijn eigen
+      kroniek of het de aanvrager eerder een kaart verstrekte. Hij kreeg
+      eerder een kaart als het college hem in een besluit op een aanvraag
+      (artikel 49 van het BABW) een kaart verstrekte die niet op bezwaar is
+      herroepen, geldig of niet; anders zegt het systeem niets.
+    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
+    machine_readable:
+      execution:
+        # Artikel 2 van de regeling kent de dag van het besluit niet; dit
+        # antwoord heeft hem ook niet nodig.
+        parameters:
+          - name: bsn_aanvrager
+            type: string
+            description: Burgerservicenummer van de gehandicapte die de kaart aanvraagt.
+        input:
+          - name: besluiten
+            type: array
+            source:
+              decisions: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw#49
+          - name: beslissingen_op_bezwaar
+            type: array
+            source:
+              decisions: algemene_wet_bestuursrecht#7:11
+        output:
+          - name: eerder_herroepen_besluiten
+            type: array
+            description: >-
+              De ids van de besluiten die een beslissing op bezwaar herriep
+              (Awb 7:11, tweede lid).
+          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            type: boolean
+            nullable: true
+            description: >-
+              Waar, als het college de aanvrager eerder een kaart verstrekte;
+              anders afwezig.
+        actions:
+          - output: eerder_herroepen_besluiten
+            value:
+              operation: FOREACH
+              collection: $beslissingen_op_bezwaar
+              as: beslissing
+              filter:
+                operation: EQUALS
+                subject: $beslissing.bestreden_besluit_herroepen
+                value: true
+              body: $beslissing.bestreden_besluit
           # Een besluit dat dezelfde aanvrager eerder een kaart verstrekte,
-          # geldig of niet, en niet herroepen. Vindt de cel er geen, dan zwijgt
-          # zij (null): een kaart van een andere gemeente of van het CBR kent
-          # zij niet; die cel antwoordt zelf (RFC-052).
+          # geldig of niet, en niet herroepen. Vindt het systeem er geen, dan
+          # zwijgt het (null): een kaart van een andere gemeente of van het
+          # CBR kent het niet; die cel antwoordt zelf (RFC-052).
           - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
             value:
               operation: IF
@@ -165,7 +202,7 @@ articles:
                           value:
                             operation: IN
                             subject: $besluit.id
-                            value: $herroepen_besluiten
+                            value: $eerder_herroepen_besluiten
                         - operation: EQUALS
                           subject: $besluit.bsn_aanvrager
                           value: $bsn_aanvrager

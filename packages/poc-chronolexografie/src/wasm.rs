@@ -149,8 +149,8 @@ impl Poc {
     }
 
     #[wasm_bindgen(js_name = hoeBeantwoord)]
-    pub fn hoe_beantwoord(&mut self, id: &str, begrip: &str) -> Result<String, JsError> {
-        antwoord(self.spel.hoe_beantwoord(id, begrip))
+    pub fn hoe_beantwoord(&mut self, id: &str, naam: &str) -> Result<String, JsError> {
+        antwoord(self.spel.hoe_beantwoord(id, naam))
     }
 
     pub fn bezwaren(

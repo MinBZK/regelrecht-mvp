@@ -1,50 +1,47 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: reductie_plaats_van_vestiging
 regulatory_layer: REDUCTIE
 publication_date: '2026-07-01'
 valid_from: '2026-08-01'
-# Geen regelgeving: een reductie van de cel van OBS De Klimop over haar eigen
-# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen van
-# het feit vestiging, dat het fictieve beleid
+# Geen regelgeving: een reductie van het hoofd van OBS De Klimop over zijn
+# eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen
+# van het feit vestiging, dat het fictieve beleid
 # fictief_beleid_vestiging_obs_de_klimop (artikel 1) vereist, en geeft de
-# vestiging die
-# op de verlofdagen geldt. Haar antwoord vult de open begrippen van artikel 2
-# van de Regeling vaststelling schoolvakanties 2025–2030 ("De plaats van
-# vestiging is bepalend voor de regio"). Er is geen bekendmaking; de url wijst
-# naar dat artikel.
-# De verlofdagen zijn parameters van artikel 13a. Artikel 2 van de regeling
-# vraagt ze niet; de cel geeft ze door uit de vraag waarbinnen de regeling
-# wordt gevraagd (de reductie voor artikel 11, onder f). Buiten zo'n vraag
-# ontbreken ze en geeft deze reductie geen vestiging.
-# Later kan een cel van DUO, met het register van instellingen, deze vraag
-# beantwoorden in plaats van de school; dat is hier niet gebouwd (zie
+# vestiging die op de verlofdagen geldt. De cel van de school geeft haar
+# uitvoer als de antwoorden gemeente_van_vestiging, provincie_van_vestiging en
+# deel_van_gemeente_van_vestiging (cel.yaml, answers). Het beleid van het hoofd
+# (fictief_beleid_vakantieverlof_obs_de_klimop) koppelt ze aan de open
+# begrippen van artikel 2 van de Regeling vaststelling schoolvakanties
+# 2025–2030 ("De plaats van vestiging is bepalend voor de regio"). Er is geen
+# bekendmaking; de url wijst naar dat artikel.
+# De houder is het hoofd en niet het bevoegd gezag, dat de vestiging vastlegt:
+# het hoofd beslist op het verlof en de vestiging staat in zijn kroniek (eigen
+# keuze). De verlofdagen zijn parameters van artikel 13a. Artikel 2 van de
+# regeling vraagt ze niet; wie de regio vraagt voor een verlof, geeft ze daar
+# mee, en het beleid dat koppelt, geeft ze door (de reductie voor artikel 11,
+# onder f). In de cel faalt een vraag naar de regio zonder verlofdagen;
+# buiten de cel geeft niemand dit antwoord.
+# Later kan een cel van DUO, met het register van instellingen, dit antwoord
+# geven in plaats van de school; dat is hier niet gebouwd (zie
 # docs/src/content/docs/concepts/chronolexography-open-points.md).
 url: https://wetten.overheid.nl/BWBR0049811/2025-08-01#Artikel2
 name: Plaats van vestiging van OBS De Klimop (reductie)
 competent_authority:
-  name: Het bevoegd gezag van OBS De Klimop
+  name: Het hoofd van OBS De Klimop
 articles:
   - number: '1'
     text: >-
-      Geen regelgeving: een reductie van de cel over haar eigen kroniek. De
-      plaats van vestiging van de school is die van het executogram van haar
-      vestiging dat op de eerste en op de laatste verlofdag geldt: het
-      executogram met de laatste dag "sinds" op of vóór die dag. Verhuist de
-      school binnen het verlof, dan zijn dat twee vestigingen en geeft de
-      reductie geen antwoord maar een fout.
+      Geen regelgeving. Het systeem van het hoofd van OBS De Klimop kijkt door
+      middel van een chronolexografische reductie op zijn eigen kroniek welke
+      vastgelegde vestiging op de verlofdagen geldt. De plaats van vestiging
+      van de school is die van het executogram van haar vestiging dat op de
+      eerste en op de laatste verlofdag geldt: het executogram met de laatste
+      dag "sinds" op of vóór die dag. Verhuist de school binnen het verlof, dan
+      zijn dat twee vestigingen en geeft het systeem geen antwoord maar een
+      fout.
     url: https://wetten.overheid.nl/BWBR0049811/2025-08-01#Artikel2
     machine_readable:
-      implements:
-        - law: regeling_vaststelling_schoolvakanties_20252030
-          article: '2'
-          open_term: gemeente_van_vestiging
-        - law: regeling_vaststelling_schoolvakanties_20252030
-          article: '2'
-          open_term: provincie_van_vestiging
-        - law: regeling_vaststelling_schoolvakanties_20252030
-          article: '2'
-          open_term: deel_van_gemeente_van_vestiging
       execution:
         parameters:
           - name: eerste_verlofdag

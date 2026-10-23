@@ -22,11 +22,11 @@ Note that *verordening* names four different things in this list. An EU-verorden
 | `EU_VERORDENING` | EU-verordening | EU Regulation | Directly applicable in every member state, without transposition |
 | `EU_RICHTLIJN` | EU-richtlijn | EU Directive | Binding as to the result, transposed into national law by the member state |
 | `VERDRAG` | Verdrag | Treaty | International agreement binding on the Netherlands |
-| `UITVOERINGSBELEID` | Uitvoeringsbeleid | Implementation policy | Published practice of an executing body, below the level of a beleidsregel |
+| `UITVOERINGSBELEID` | Uitvoeringsbeleid | Implementation policy | Published practice of an executing body, below the level of a beleidsregel. Since schema v0.8.9 it may bind an open term to the named answer of a cell (`source.reduction`); it then names its holder in `competent_authority` ([RFC-048](/rfcs/rfc-048)) |
 | `GEMEENTELIJKE_VERORDENING` | Gemeentelijke verordening | Municipal ordinance | Local regulation by a municipality |
 | `PROVINCIALE_VERORDENING` | Provinciale verordening | Provincial ordinance | Regional regulation by a province |
 | `WATERSCHAPS_VERORDENING` | Waterschapsverordening | Water authority ordinance | Regulation by a waterschap, the regional water authority |
-| `REDUCTIE` | Reductie | Reduction | No regulation: a cell's reduction over its own chronicle (RFC-022 §4). Kept with the cell, it alone reads the cell's chronicle: decisions (`source.decisions`) and the facts it recorded (`source.facts`, [RFC-051](/rfcs/rfc-051)). It may fill an open term (`implements`), and does not act on law otherwise (no `hooks`, `overrides`, `execution.produces` or `open_terms`) ([RFC-048](/rfcs/rfc-048)) |
+| `REDUCTIE` | Reductie | Reduction | No regulation: a cell's reduction over its own chronicle (RFC-022 §4), in the corpus under its holder. It alone reads a chronicle: decisions (`source.decisions`) and the facts the cell recorded (`source.facts`, [RFC-051](/rfcs/rfc-051)). Its cell gives it as a named answer (`cel.yaml`), which policy binds to an open term. It does not act on law (no `implements` since schema v0.8.9, no `hooks`, `overrides`, `execution.produces` or `open_terms`) ([RFC-048](/rfcs/rfc-048)) |
 
 ## Administrative Law (Bestuursrecht)
 

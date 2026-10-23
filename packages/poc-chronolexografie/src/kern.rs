@@ -3,9 +3,10 @@
 //!
 //! Every step builds a fresh engine service from the regelwerken in the
 //! corpus. That costs a few milliseconds and keeps the steps independent:
-//! the cell loads its reductions into the service it gets for a decision,
+//! the cell runs its reductions in the service it gets for a decision,
 //! and nothing of that may reach the next step.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -33,6 +34,9 @@ pub struct Corpus {
     /// under `corpus/regulation/nl`.
     regelwerken: Vec<(String, Option<String>, String)>,
     versies: Vec<String>,
+    /// Per `$id` and `valid_from` of a regelwerk the cell runs, that
+    /// version as written.
+    geschreven: BTreeMap<(String, Option<String>), String>,
     cell_dir: PathBuf,
     /// The directories of the other cells of the sphere, in the order of
     /// the case file.
@@ -56,14 +60,19 @@ impl Cellen {
         self.andere.iter().collect()
     }
 
-    /// The open terms the reductions of every cell fill on `on`: of the
-    /// case's cell and of the sphere (RFC-052). A term one of them answers
-    /// is no judgement the form asks first.
-    pub fn terms_on(&self, on: NaiveDate) -> Vec<reading::Term> {
-        std::iter::once(&self.eigen)
-            .chain(&self.andere)
-            .flat_map(|cell| reading::terms_on(cell.reductions(), on))
-            .collect()
+    /// The open terms a policy in force on `on` binds to an answer of one
+    /// of the cells: of the case's cell or of the sphere (RFC-048, RFC-052).
+    /// A term one of them answers is no judgement the form asks first.
+    pub fn terms_on(&self, service: &LawExecutionService, on: NaiveDate) -> Vec<reading::Term> {
+        let mut terms: Vec<reading::Term> = Vec::new();
+        for cell in std::iter::once(&self.eigen).chain(&self.andere) {
+            for term in cell.bound_terms(service, on) {
+                if !terms.contains(&term) {
+                    terms.push(term);
+                }
+            }
+        }
+        terms
     }
 
     /// The case's cell to record in, and the others to ask.
@@ -125,12 +134,16 @@ impl Corpus {
         let cells: Vec<&Cell> = std::iter::once(&cell).chain(&andere).collect();
         let afleiding = afleiden(regelwerken, &casus, &cells)?;
         let mut versies = Vec::new();
+        let mut geschreven = BTreeMap::new();
         let mut gelezen = Vec::new();
         for id in &afleiding.regelwerken {
             let werk = regelwerken
                 .get(id)
                 .ok_or_else(|| Error::Setup(format!("'{id}' is not in the corpus")))?;
             versies.extend(werk.versies.iter().map(|(yaml, _)| yaml.clone()));
+            for (yaml, law) in &werk.versies {
+                geschreven.insert((law.id.clone(), law.valid_from.clone()), yaml.clone());
+            }
             let naam = werk.versies.last().and_then(|(_, law)| law.name.clone());
             gelezen.push((id.clone(), naam, werk.map.clone()));
         }
@@ -139,6 +152,7 @@ impl Corpus {
             afleiding,
             regelwerken: gelezen,
             versies,
+            geschreven,
             cell_dir,
             andere_dirs,
             files,
@@ -164,7 +178,7 @@ impl Corpus {
     }
 
     /// The case's cell and the other cells of its sphere ([`Cellen`]), each
-    /// with the reductions in its directory and a chronicle that holds what
+    /// with the catalogue in its directory and a chronicle that holds what
     /// it knew before the first scenario (its `begin`), recorded through the
     /// cell as any step: an executogram per fact
     /// (`Cell::record_executogram`), then an application decided on its day.
@@ -254,6 +268,14 @@ impl Corpus {
             )?;
         }
         Ok(cell)
+    }
+
+    /// The version of the regelwerk `id` the cell runs that is valid from
+    /// `valid_from`, as written.
+    fn yaml_van(&self, id: &str, valid_from: &Option<String>) -> Option<&str> {
+        self.geschreven
+            .get(&(id.to_string(), valid_from.clone()))
+            .map(String::as_str)
     }
 
     /// A service with every regelwerk the cell runs.
@@ -382,9 +404,9 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
 /// the contested decision ([`heroverweging`]).
 pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
-    let beantwoord = cell.terms_on(on);
+    let beantwoord = cell.terms_on(&service, on);
     let aanvraag = shape::derive(&service, corpus.law(), corpus.article(), on)?;
-    let besluit = decision::derive_with(&service, corpus.law(), corpus.article(), on, &beantwoord)?;
+    let besluit = decision::derive(&service, corpus.law(), corpus.article(), on)?;
     let bezwaar = shape::derive(&service, corpus.awb(), corpus.objection(), on)?;
     let op_bezwaar = decision::derive(&service, corpus.awb(), corpus.objection(), on)?;
     let moment = |s: &shape::Shape| {
@@ -456,13 +478,14 @@ fn handelingen(
 ) -> Result<Vec<Value>> {
     let mut uit = Vec::new();
     for (cell, andere) in cellen.andere.iter().zip(&corpus.casus.andere_cellen) {
-        let mut feiten: Vec<&str> = Vec::new();
-        for reduction in cell.reductions() {
-            for article in &reduction.law().articles {
+        let mut feiten: Vec<String> = Vec::new();
+        // Only a reduction reads a chronicle (RFC-048).
+        for (_, reduction) in reducties_in(&|id: &str| service.resolver().get_law(id), &[cell]) {
+            for article in &reduction.articles {
                 for input in article.get_inputs() {
-                    if let Some(f) = input.source.as_ref().and_then(|s| s.facts.as_deref()) {
-                        if !feiten.contains(&f) {
-                            feiten.push(f);
+                    if let Some(f) = input.source.as_ref().and_then(|s| s.facts.as_ref()) {
+                        if !feiten.contains(f) {
+                            feiten.push(f.clone());
                         }
                     }
                 }
@@ -470,7 +493,7 @@ fn handelingen(
         }
         let mut acts = Vec::new();
         for feit in feiten {
-            let velden: Vec<Value> = shape::fact_fields(service, feit, on, None)?
+            let velden: Vec<Value> = shape::fact_fields(service, &feit, on, None)?
                 .iter()
                 .map(veld)
                 .collect();
@@ -569,6 +592,29 @@ fn beantwoord(node: &PathNode) -> Vec<&PathNode> {
     gevonden
 }
 
+/// The nodes of `node` and below where a cell gave an answer, as
+/// [`beantwoord`], each with the open term its binding filled: the nearest
+/// term above it. The answer has its own name, which need not be the
+/// term's (RFC-048).
+fn beantwoord_per_begrip(node: &PathNode) -> Vec<(&PathNode, &str)> {
+    fn onder<'n>(node: &'n PathNode, begrip: &'n str, uit: &mut Vec<(&'n PathNode, &'n str)>) {
+        let begrip = if node.node_type == PathNodeType::OpenTermResolution {
+            node.name.as_str()
+        } else {
+            begrip
+        };
+        if node.answer.is_some() {
+            uit.push((node, begrip));
+        }
+        for child in &node.children {
+            onder(child, begrip, uit);
+        }
+    }
+    let mut uit = Vec::new();
+    onder(node, node.name.as_str(), &mut uit);
+    uit
+}
+
 /// How many times before `node` the decision asked the same cell the same
 /// term, in trace order: the index of its explanation among those
 /// [`hoe_beantwoord`] gives. `None` when no cell answered at `node`.
@@ -583,13 +629,22 @@ fn keer(beantwoord: &[&PathNode], node: &PathNode) -> Option<usize> {
     )
 }
 
-/// Whether `child` is the node of one answerer under the node of the term
-/// `node` (RFC-052): the engine asked several competent cells, and each
-/// answer has its own node, named after the term.
-fn is_antwoord_onder(node: &PathNode, child: &PathNode) -> bool {
-    child.name == node.name
-        && child.node_type == PathNodeType::OpenTermResolution
-        && child.answer.is_some()
+/// The nodes under the open term `node` where a cell gave the answer its
+/// binding took (RFC-048): one per answer, under the binding's input. Not
+/// those of a term below it, which have their own node.
+fn antwoorden_van(node: &PathNode) -> Vec<&PathNode> {
+    fn onder<'n>(node: &'n PathNode, uit: &mut Vec<&'n PathNode>) {
+        for child in &node.children {
+            if child.answer.is_some() {
+                uit.push(child);
+            } else if child.node_type != PathNodeType::OpenTermResolution {
+                onder(child, uit);
+            }
+        }
+    }
+    let mut uit = Vec::new();
+    onder(node, &mut uit);
+    uit
 }
 
 /// Why the decision `id` came out as it did ([`Waarom`]).
@@ -599,7 +654,7 @@ pub fn waarom(corpus: &Corpus, cell: &Cellen, id: &str) -> Result<Waarom> {
     let mut antwoorden = Vec::new();
     if let Some(root) = &result.trace {
         let gevraagd = beantwoord(root);
-        for node in gevraagd.iter().copied() {
+        for (node, begrip) in beantwoord_per_begrip(root) {
             let Some(answer) = &node.answer else {
                 continue;
             };
@@ -608,7 +663,8 @@ pub fn waarom(corpus: &Corpus, cell: &Cellen, id: &str) -> Result<Waarom> {
             // reasoning is its own (RFC-048).
             let keer = keer(&gevraagd, node).filter(|_| answer.answerer == cell.recording_actor());
             antwoorden.push(json!({
-                "begrip": node.name,
+                "begrip": begrip,
+                "antwoord": answer.answer,
                 "keer": keer,
                 "waarde": waarde,
                 "door": answer.answerer,
@@ -798,25 +854,20 @@ fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
                 .ingevuld
                 .iter()
                 .find(|f| f.term == node.name && f.law_id == wet && f.article == artikel)
-                .map(|f| f.filled_by.clone())
-                .or_else(|| node.answer.clone().map(FilledBy::Answer));
-            // Several competent cells answered (RFC-052): each has a node
-            // below this one. The explanation is of the case's own cell, and
-            // only where its answer counted (not silent).
-            let eigen_antwoord = node.children.iter().find(|c| {
-                is_antwoord_onder(node, c)
-                    && c.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen)
+                .map(|f| f.filled_by.clone());
+            // The policy bound the term to the answer of one or more cells
+            // (RFC-048, RFC-052): each answer has a node below this one. The
+            // explanation is of the case's own cell, and only where its
+            // answer counted (not silent).
+            let antwoorden = antwoorden_van(node);
+            let eigen_antwoord = antwoorden.iter().copied().find(|c| {
+                c.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen)
                     && c.result.as_ref().is_some_and(|r| !r.is_null())
             });
-            let n = eigen_antwoord.unwrap_or(node);
-            let keer = keer(&spoor.beantwoord, n)
-                .filter(|_| n.answer.as_ref().is_some_and(|a| a.answerer == spoor.eigen));
+            let keer = eigen_antwoord.and_then(|n| keer(&spoor.beantwoord, n));
             // The cell answered a term below this one, in the regulation that
             // filled it: the steps there lead to that answer.
-            let onder = node
-                .children
-                .iter()
-                .any(|c| !is_antwoord_onder(node, c) && !beantwoord(c).is_empty());
+            let onder = beantwoord(node).len() > antwoorden.len();
             let stappen = if onder {
                 stappen_onder(node, spoor)?
             } else {
@@ -927,23 +978,88 @@ fn is_besluit(service: &LawExecutionService, gram: &Gram) -> Result<bool> {
     Ok(decision::derive(service, law_id, article, gram.recorded_on)?.kind == gram.kind)
 }
 
-/// The output names of the version of the reduction `id` of the cell that
-/// is valid from `valid_from`, as written.
-fn uitvoer_van(cell: &Cell, id: &str, valid_from: Option<&str>) -> Vec<String> {
-    let mut namen = Vec::new();
-    let versie = cell
-        .reductions()
+/// The reductions the catalogues of `cells` name, each once, as `law`
+/// finds them by `$id`: the corpus holds them under their holders
+/// (RFC-048). A reduction it does not find is left out.
+pub(crate) fn reducties_in<'l>(
+    law: &dyn Fn(&str) -> Option<&'l regelrecht_engine::ArticleBasedLaw>,
+    cells: &[&Cell],
+) -> Vec<(String, &'l regelrecht_engine::ArticleBasedLaw)> {
+    let mut uit: Vec<(String, &regelrecht_engine::ArticleBasedLaw)> = Vec::new();
+    for id in cells.iter().flat_map(|cell| cell.answers().values()) {
+        if uit.iter().any(|(gezien, _)| gezien == id) {
+            continue;
+        }
+        if let Some(found) = law(id) {
+            uit.push((id.clone(), found));
+        }
+    }
+    uit
+}
+
+/// What `reduction` reads from other rulework (`source.regulation` with
+/// `output`): per input the regelwerk and the output.
+fn leest_uit(reduction: &regelrecht_engine::ArticleBasedLaw) -> Vec<(String, String)> {
+    reduction
+        .articles
         .iter()
-        .filter(|r| r.id() == id)
-        .filter(|r| valid_from.is_none_or(|v| r.valid_from().to_string() == v));
-    for reduction in versie {
-        for article in &reduction.law().articles {
-            let outputs = article
-                .get_execution_spec()
-                .and_then(|e| e.output.as_ref())
-                .into_iter()
-                .flatten();
-            for output in outputs {
+        .flat_map(|a| a.get_inputs())
+        .filter_map(|i| i.source.as_ref())
+        .filter_map(|s| Some((s.regulation.clone()?, s.output.clone()?)))
+        .collect()
+}
+
+/// The articles of policy that `reduction` calls for a norm (RFC-048): per regelwerk of `UITVOERINGSBELEID` it reads with
+/// `source.regulation`, the article that gives the output it reads.
+pub(crate) fn beleid_van(
+    service: &LawExecutionService,
+    reduction: &regelrecht_engine::ArticleBasedLaw,
+) -> Vec<(String, regelrecht_engine::Article)> {
+    leest_uit(reduction)
+        .into_iter()
+        .filter_map(|(regelwerk, output)| {
+            let law = service.resolver().get_law(&regelwerk)?;
+            if law.regulatory_layer != regelrecht_engine::RegulatoryLayer::Uitvoeringsbeleid {
+                return None;
+            }
+            let article = law
+                .articles
+                .iter()
+                .find(|a| a.get_outputs().iter().any(|o| o.name == output))?;
+            Some((law.id.clone(), article.clone()))
+        })
+        .collect()
+}
+
+/// The version of the reduction `id` in `service` valid from `valid_from`,
+/// or its newest without one.
+fn versies_van<'s>(
+    service: &'s LawExecutionService,
+    id: &str,
+    valid_from: Option<&str>,
+) -> Vec<&'s regelrecht_engine::ArticleBasedLaw> {
+    let day = valid_from.and_then(|v| NaiveDate::parse_from_str(v, "%Y-%m-%d").ok());
+    let law = match day {
+        Some(day) => service.resolver().get_law_for_date(id, Some(day)),
+        None => service.resolver().get_law(id),
+    };
+    law.into_iter()
+        .filter(|l| valid_from.is_none_or(|v| l.valid_from.as_deref() == Some(v)))
+        .collect()
+}
+
+/// The output names of the version of the reduction `id` of the cell that
+/// is valid from `valid_from`, as written, and those of the articles of
+/// policy it calls for a norm (RFC-048).
+fn uitvoer_van(service: &LawExecutionService, id: &str, valid_from: Option<&str>) -> Vec<String> {
+    let mut namen = Vec::new();
+    for reduction in versies_van(service, id, valid_from) {
+        let beleid: Vec<regelrecht_engine::Article> = beleid_van(service, reduction)
+            .into_iter()
+            .map(|(_, a)| a)
+            .collect();
+        for article in reduction.articles.iter().chain(&beleid) {
+            for output in article.get_outputs() {
                 if !namen.contains(&output.name) {
                     namen.push(output.name.clone());
                 }
@@ -954,25 +1070,30 @@ fn uitvoer_van(cell: &Cell, id: &str, valid_from: Option<&str>) -> Vec<String> {
 }
 
 /// The inputs of the version of the reduction `id` valid from `valid_from`
-/// that come from other rulework (`source.regulation`): per input its name,
-/// the regelwerk and the output it reads.
+/// and of the articles of policy it calls for a norm, that come from other
+/// rulework (`source.regulation`): per input its name, the regelwerk and the
+/// output it reads. The reduction's own reading of the policy is left out:
+/// the policy is named apart ([`beleid_van`]).
 fn uit_regelgeving(
-    cell: &Cell,
+    service: &LawExecutionService,
     id: &str,
     valid_from: Option<&str>,
 ) -> Vec<(String, String, String)> {
-    let versie = cell
-        .reductions()
-        .iter()
-        .filter(|r| r.id() == id)
-        .filter(|r| valid_from.is_none_or(|v| r.valid_from().to_string() == v));
     let mut uit = Vec::new();
-    for reduction in versie {
-        for input in reduction.law().articles.iter().flat_map(|a| a.get_inputs()) {
+    for reduction in versies_van(service, id, valid_from) {
+        let beleid = beleid_van(service, reduction);
+        let articles = reduction
+            .articles
+            .iter()
+            .chain(beleid.iter().map(|(_, a)| a));
+        for input in articles.flat_map(|a| a.get_inputs()) {
             let Some(source) = input.source.as_ref() else {
                 continue;
             };
             if let (Some(regelwerk), Some(output)) = (&source.regulation, &source.output) {
+                if beleid.iter().any(|(b, _)| b == regelwerk) {
+                    continue;
+                }
                 uit.push((input.name.clone(), regelwerk.clone(), output.clone()));
             }
         }
@@ -1026,32 +1147,32 @@ fn eerste_waarden(node: &PathNode, namen: &[String], uit: &mut Map<String, Value
     Ok(())
 }
 
-/// How the cell came to its answer on the open term `begrip` in the
-/// decision `id` ([`Cell::explain_answer`]): per time the decision asked
-/// it, the reduction and its version, what its outputs came to (the
+/// How the cell came to its answer `antwoord` (its name in the catalogue,
+/// RFC-048) in the decision `id` ([`Cell::explain_answer`]): per time the
+/// decision asked it, the reduction and its version, what its outputs came to (the
 /// answer, and an output it computes on the way, such as the revoked
 /// decisions), what it read from other rulework (such as the region of the
-/// school from the regeling), the terms the cell answered within it (such
+/// school from the regeling), the answers the cell gave within it (such
 /// as where the school is established), and its own trace.
-pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cellen, id: &str, begrip: &str) -> Result<Value> {
+pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cellen, id: &str, antwoord: &str) -> Result<Value> {
     let mut service = corpus.service()?;
     let mut uit = Vec::new();
-    // Per nested term, how many times the explanations before this one
-    // asked it. `keer` indexes the cell's explanations of that term, which
-    // count every time the decision asked it; this assumes the term is asked
-    // only inside the reductions for `begrip`, as the regeling's terms on
-    // where the school is established are now.
-    let mut eerder: std::collections::BTreeMap<String, usize> = Default::default();
-    for result in cell.explain_answer(&mut service, &cell.sfeer(), id, begrip)? {
+    // Per nested answer, how many times the explanations before this one
+    // asked it. `keer` indexes the cell's explanations of that answer, which
+    // count every time the decision asked it; this assumes it is asked only
+    // inside the reductions for `antwoord`, as the answers on where the
+    // school is established are now.
+    let mut eerder: BTreeMap<String, usize> = Default::default();
+    for result in cell.explain_answer(&mut service, &cell.sfeer(), id, antwoord)? {
         let mut uitvoer = Map::new();
         let mut gelezen = Vec::new();
         if let Some(root) = &result.trace {
             let versie = result.regulation_valid_from.as_deref();
-            let namen = uitvoer_van(cell, &result.law_id, versie);
+            let namen = uitvoer_van(&service, &result.law_id, versie);
             eerste_waarden(root, &namen, &mut uitvoer)?;
             // What it read from other rulework, such as the region of the
             // school from the regeling: per input the value its call gave.
-            for (naam, regelwerk, output) in uit_regelgeving(cell, &result.law_id, versie) {
+            for (naam, regelwerk, output) in uit_regelgeving(&service, &result.law_id, versie) {
                 let aanroep = format!("{regelwerk}#{output}");
                 let waarde = invoerwaarde(root, &naam, &aanroep, &output)
                     .map(stored::to_stored)
@@ -1066,20 +1187,22 @@ pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cellen, id: &str, begrip: &str) ->
         for (naam, waarde) in &result.outputs {
             uitvoer.insert(naam.clone(), stored::to_stored(waarde)?);
         }
-        // Where the reduction called rulework whose open term the cell
-        // answers too, such as the regeling asking where the school is
-        // established: per answer the term, its value and the reduction,
-        // and `keer`, the index into the answers on that term.
+        // Where the reduction called rulework whose open term a policy binds
+        // to an answer of the cell, such as the regeling asking where the
+        // school is established: per answer the term, the answer, its value
+        // and the reduction, and `keer`, the index into the explanations of
+        // that answer.
         let mut genest = Vec::new();
         if let Some(root) = &result.trace {
             let gevraagd = beantwoord(root);
-            for node in gevraagd.iter().copied() {
+            for (node, begrip_daar) in beantwoord_per_begrip(root) {
                 let Some(answer) = &node.answer else {
                     continue;
                 };
                 let vooraf = eerder.get(&node.name).copied().unwrap_or(0);
                 genest.push(json!({
-                    "begrip": node.name,
+                    "begrip": begrip_daar,
+                    "antwoord": answer.answer,
                     "keer": keer(&gevraagd, node).map(|k| k + vooraf),
                     "waarde": node.result.as_ref().map(stored::to_stored).transpose()?,
                     "reductie": answer.law_id,
@@ -1103,7 +1226,7 @@ pub fn hoe_beantwoord(corpus: &Corpus, cell: &Cellen, id: &str, begrip: &str) ->
                 .unwrap_or_default(),
         }));
     }
-    Ok(json!({ "besluit": id, "begrip": begrip, "antwoorden": uit }))
+    Ok(json!({ "besluit": id, "antwoord": antwoord, "antwoorden": uit }))
 }
 
 /// A decision on an application, and why it came out so.
@@ -1320,7 +1443,7 @@ fn voorvertonen<T>(
     on: NaiveDate,
     neem: impl Fn(&mut Cellen, &Map<String, Value>) -> Result<T>,
 ) -> Result<Voorvertoning<T>> {
-    let beantwoord = cell.terms_on(on);
+    let beantwoord = cell.terms_on(&corpus.service()?, on);
     let van_cel = |naam: &str| beantwoord.iter().any(|t| t.open_term == naam);
     let van_cel_op = |naam: &str, waar: &str| {
         beantwoord
@@ -1456,16 +1579,23 @@ pub fn voorvertoning_op_bezwaar(
     })
 }
 
-/// The open terms the cell answers from its chronicle ([`Cell::answers`]),
-/// its reductions as written, and per reduction what it reads from the
-/// chronicle, as rows: the decisions under an article (`source.decisions`)
-/// or the executograms of a fact an article requires (`source.facts`).
+/// The bindings of policy in force on `on` that take an answer of the cell
+/// (`antwoorden`, RFC-048), and the reductions its catalogue names
+/// ([`Cell::answers`]): per reduction its text and as written, the answers
+/// the cell gives from it, the policy it calls for a norm, and what it
+/// reads from the chronicle, as rows: the decisions under an article
+/// (`source.decisions`) or the executograms of a fact an article requires
+/// (`source.facts`).
 pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     let service = corpus.service()?;
     let mut uit = Vec::new();
-    for reduction in cell.reductions() {
+    for (id, reduction) in reducties_in(
+        &|id: &str| service.resolver().get_law_for_date(id, Some(on)),
+        &[&cell.eigen],
+    ) {
         let mut invoer = Vec::new();
-        for input in reduction.law().articles.iter().flat_map(|a| a.get_inputs()) {
+        // Only a reduction reads a chronicle (RFC-048).
+        for input in reduction.articles.iter().flat_map(|a| a.get_inputs()) {
             let Some(source) = input.source.as_ref() else {
                 continue;
             };
@@ -1491,15 +1621,53 @@ pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value>
             );
             invoer.push(Value::Object(rij));
         }
+        // The articles of policy it calls for a norm (RFC-048), each once.
+        let mut normen: Vec<Value> = Vec::new();
+        for (beleid, article) in beleid_van(&service, reduction) {
+            let norm = json!({ "beleid": beleid, "artikel": article.number });
+            if !normen.contains(&norm) {
+                normen.push(norm);
+            }
+        }
         uit.push(json!({
-            "id": reduction.id(),
-            "geldig_vanaf": reduction.valid_from(),
-            "yaml": reduction.yaml(),
+            "id": id,
+            "geldig_vanaf": reduction.valid_from,
+            "yaml": corpus.yaml_van(&id, &reduction.valid_from),
+            "tekst": reduction.articles.iter().map(|a| json!({
+                "artikel": a.number,
+                "tekst": a.text,
+            })).collect::<Vec<_>>(),
+            // The answers the cell's catalogue gives from it (`cel.yaml`).
+            "antwoorden": cell
+                .answers()
+                .iter()
+                .filter(|(_, r)| **r == id)
+                .map(|(antwoord, _)| antwoord)
+                .collect::<Vec<_>>(),
+            "normen": normen,
             "invoer": invoer,
         }));
     }
-    let antwoorden =
-        serde_json::to_value(cell.answers()).map_err(|e| Error::Setup(e.to_string()))?;
+    // Per open term a policy binds to an answer of the cell: the term, the
+    // answer and its reduction, and the binding (RFC-048).
+    let mut antwoorden = Vec::new();
+    for binding in reading::bindings(&service, on) {
+        let Some(reductie) = cell.answers().get(&binding.answer) else {
+            continue;
+        };
+        let geldig_vanaf = service
+            .resolver()
+            .get_law_for_date(reductie, Some(on))
+            .and_then(|law| law.valid_from.clone());
+        antwoorden.push(json!({
+            "term": binding.term,
+            "antwoord": binding.answer,
+            "reduction": reductie,
+            "valid_from": geldig_vanaf,
+            "beleid": binding.law_id,
+            "artikel": binding.article,
+        }));
+    }
     Ok(json!({ "antwoorden": antwoorden, "reducties": uit }))
 }
 
@@ -1710,15 +1878,10 @@ mod tests {
                 )
             })
             .collect();
+        // In the order of the bindings in the head's policy (RFC-048).
         assert_eq!(
             beantwoord,
             [
-                ("gemeente_van_vestiging", "reductie_plaats_van_vestiging"),
-                ("provincie_van_vestiging", "reductie_plaats_van_vestiging"),
-                (
-                    "deel_van_gemeente_van_vestiging",
-                    "reductie_plaats_van_vestiging"
-                ),
                 (
                     "verlof_al_verleend_in_schooljaar",
                     "reductie_verlof_al_verleend_in_schooljaar"
@@ -1726,6 +1889,12 @@ mod tests {
                 (
                     "verlof_valt_buiten_schoolvakanties",
                     "reductie_verlof_valt_buiten_schoolvakanties"
+                ),
+                ("gemeente_van_vestiging", "reductie_plaats_van_vestiging"),
+                ("provincie_van_vestiging", "reductie_plaats_van_vestiging"),
+                (
+                    "deel_van_gemeente_van_vestiging",
+                    "reductie_plaats_van_vestiging"
                 ),
             ]
         );
@@ -1771,10 +1940,35 @@ mod tests {
                 .unwrap()
                 .is_empty()
         );
-        assert!(reductie(lid_2)["yaml"]
+        // The YAML is the version whose `valid_from` is `geldig_vanaf`.
+        let yaml = reductie(lid_2)["yaml"].as_str().unwrap().to_string();
+        assert!(yaml.contains("REDUCTIE"));
+        assert!(yaml.contains(&format!(
+            "valid_from: '{}'",
+            reductie(lid_2)["geldig_vanaf"].as_str().unwrap()
+        )));
+        // The answers the catalogue gives from a reduction, and the norms
+        // it calls in the head's policy.
+        assert_eq!(
+            reductie("reductie_plaats_van_vestiging")["antwoorden"],
+            json!([
+                "deel_van_gemeente_van_vestiging",
+                "gemeente_van_vestiging",
+                "provincie_van_vestiging"
+            ])
+        );
+        let beleid = "fictief_beleid_vakantieverlof_obs_de_klimop";
+        assert_eq!(
+            reductie(lid_2)["normen"],
+            json!([
+                { "beleid": beleid, "artikel": "1" },
+                { "beleid": beleid, "artikel": "2" }
+            ])
+        );
+        assert!(reductie(lid_2)["tekst"][0]["tekst"]
             .as_str()
             .unwrap()
-            .contains("REDUCTIE"));
+            .contains("chronolexografische reductie"));
         assert_eq!(cell.grams().len(), 6);
     }
 
@@ -2088,7 +2282,7 @@ mod tests {
             .unwrap()
             .iter()
             .any(|f| f["term"] == json!("verlof_al_verleend_in_schooljaar")
-                && f["filled_by"]["answer"]["law_id"]
+                && f["filled_by"]["answer"]["answers"][0]["law_id"]
                     == json!("reductie_verlof_al_verleend_in_schooljaar")));
 
         // How the school answered: A is among the revoked decisions, and
@@ -2157,8 +2351,19 @@ mod tests {
         .unwrap();
         assert_eq!(antwoord["soort"], json!("begrip"));
         assert_eq!(antwoord["waarde"], json!(false));
-        let door = &antwoord["ingevuld_door"]["answer"];
+        // The head's binding (art. 3 of his policy), with the school's
+        // answer (RFC-048).
+        let binding = &antwoord["ingevuld_door"]["answer"];
+        assert_eq!(
+            (&binding["law_id"], &binding["article"]),
+            (
+                &json!("fictief_beleid_vakantieverlof_obs_de_klimop"),
+                &json!("3")
+            )
+        );
+        let door = &binding["answers"][0];
         assert_eq!(door["answerer"], json!(SCHOOL));
+        assert_eq!(door["answer"], json!("verlof_al_verleend_in_schooljaar"));
         assert_eq!(
             door["law_id"],
             json!("reductie_verlof_al_verleend_in_schooljaar")
@@ -2238,7 +2443,15 @@ mod tests {
         .unwrap();
         assert_eq!(stap["soort"], json!("begrip"));
         assert_eq!(stap["waarde"], json!(false));
-        assert_eq!(stap["ingevuld_door"]["answer"]["answerer"], json!(SCHOOL));
+        // Filled by the head's binding, with the school's answer (RFC-048).
+        assert_eq!(
+            stap["ingevuld_door"]["answer"]["law_id"],
+            json!("fictief_beleid_vakantieverlof_obs_de_klimop")
+        );
+        assert_eq!(
+            stap["ingevuld_door"]["answer"]["answers"][0]["answerer"],
+            json!(SCHOOL)
+        );
         assert_eq!(stap["keer"], json!(0));
         // The school's own executogram is the oldest in the log, without a
         // chain.
@@ -2303,18 +2516,25 @@ mod tests {
             article: Some(artikel.into()),
             ..Default::default()
         };
+        // The term, filled by a binding whose input took the answer of the
+        // school: one node per answer, under the input (RFC-048).
         let antwoord = || {
-            let mut n = PathNode::new(PathNodeType::OpenTermResolution, "begrip")
+            let mut n = PathNode::new(PathNodeType::Resolve, "begrip")
                 .with_result(V::Bool(false))
                 .with_anchor(anker(ARTICLE));
             n.answer = Some(AnswerProvenance {
                 answerer: SCHOOL.into(),
+                answer: "begrip".into(),
                 law_id: "reductie".into(),
+                article: "1".into(),
                 valid_from: "2026-08-01".into(),
                 records_read: 1,
                 last_record: None,
             });
-            n
+            PathNode::new(PathNodeType::OpenTermResolution, "begrip")
+                .with_result(V::Bool(false))
+                .with_anchor(anker(ARTICLE))
+                .with_child(PathNode::new(PathNodeType::Resolve, "antwoord_begrip").with_child(n))
         };
         let actie = |naam: &str| {
             PathNode::new(PathNodeType::Action, naam)
@@ -2355,11 +2575,12 @@ mod tests {
     #[test]
     fn what_a_case_needs_follows_from_the_law() {
         // Vakantieverlof: the leave article, the policy that fills its open
-        // term, the Awb with its hooks, the policy the reduction for lid 2
-        // reads, and what the reductions on the holidays read: the
-        // regeling and the school's policy on its rooster, and the policy
-        // that requires the fact of its vestiging. The Wet op het
-        // primair onderwijs is only the regeling's legal basis.
+        // term, the Awb with its hooks, the reductions the school's
+        // catalogue names (RFC-048), what those read: the head's policy with
+        // its norms and its bindings, the regeling and the school's policy on
+        // its rooster, and the policy that requires the fact of its
+        // vestiging. The Wet op het primair onderwijs is only the regeling's
+        // legal basis.
         let verlof = corpus();
         let a = &verlof.afleiding;
         assert_eq!((a.law.as_str(), a.article.as_str()), (LAW, ARTICLE));
@@ -2378,14 +2599,19 @@ mod tests {
                 "fictief_beleid_schooljaar_obs_de_klimop",
                 "fictief_beleid_schooljaargrenzen_obs_de_klimop",
                 ROOSTER,
+                "fictief_beleid_vakantieverlof_obs_de_klimop",
                 "fictief_beleid_vestiging_obs_de_klimop",
                 LAW,
+                "reductie_plaats_van_vestiging",
+                "reductie_verlof_al_verleend_in_schooljaar",
+                "reductie_verlof_valt_buiten_schoolvakanties",
                 "regeling_vaststelling_schoolvakanties_20252030",
             ]
         );
 
         // The parkeerkaart: art. 49 reads the Regeling, the municipality's
-        // policy fills its open term, and the Awb.
+        // policy fills its open term and binds the terms to the answers of
+        // the cells, and the Awb; the reductions of the cells' catalogues.
         let kaart = casus("gehandicaptenparkeerkaart");
         let a = &kaart.afleiding;
         assert_eq!(a.objection, "7:11");
@@ -2399,6 +2625,10 @@ mod tests {
                 "algemene_wet_bestuursrecht",
                 "besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw",
                 "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal",
+                "reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr",
+                "reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer",
+                "reductie_geldige_gehandicaptenparkeerkaart",
+                "reductie_geneeskundig_onderzoek",
                 "regeling_gehandicaptenparkeerkaart",
             ]
         );
@@ -2658,8 +2888,11 @@ mod tests {
                 .map(|f| f.filled_by.clone())
                 .unwrap()
         };
-        let FilledBy::Answer(by) = ingevuld(&eerste.waarom) else {
+        let FilledBy::Answer { answers, .. } = ingevuld(&eerste.waarom) else {
             panic!("one answer")
+        };
+        let [by] = answers.as_slice() else {
+            panic!("one answer: {answers:?}")
         };
         assert_eq!(by.answerer, "gemeente_oostmeer");
 
@@ -2673,7 +2906,7 @@ mod tests {
             tweede.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
             json!(true)
         );
-        let FilledBy::Answers(alle) = ingevuld(&tweede.waarom) else {
+        let FilledBy::Answer { answers: alle, .. } = ingevuld(&tweede.waarom) else {
             panic!("two answers")
         };
         let namen: Vec<&str> = alle.iter().map(|p| p.answerer.as_str()).collect();
@@ -2731,7 +2964,7 @@ mod tests {
         let cel = vind(keten, &|s| s["naam"] == json!(begrip)).unwrap();
         assert_eq!(cel["soort"], json!("begrip"));
         assert_eq!(
-            cel["ingevuld_door"]["answer"]["law_id"],
+            cel["ingevuld_door"]["answer"]["answers"][0]["law_id"],
             json!("reductie_geldige_gehandicaptenparkeerkaart")
         );
     }

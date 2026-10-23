@@ -1,23 +1,26 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.6/schema/v0.8.6/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: reductie_verlof_valt_buiten_schoolvakanties
 regulatory_layer: REDUCTIE
 publication_date: '2026-07-01'
 valid_from: '2026-08-01'
-# Geen regelgeving: een reductie van de cel van OBS De Klimop over haar eigen
-# kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze vult het open begrip
-# verlof_valt_buiten_schoolvakanties van artikel 13a van de Leerplichtwet
-# 1969 (artikel 11, onder f: "slechts buiten de schoolvakanties"), dat het
-# hoofd anders per aanvraag oordeelt. De schoolvakanties komen uit twee
-# bronnen. De kerst-, mei- en zomervakantie stelt de Regeling vaststelling
+# Geen regelgeving: een reductie van het hoofd van OBS De Klimop
+# (RFC-022 §4.1, RFC-048, RFC-051). De cel van de school geeft haar uitvoer als
+# het antwoord verlof_valt_buiten_schoolvakanties (cel.yaml, answers); het
+# beleid van het hoofd (fictief_beleid_vakantieverlof_obs_de_klimop) koppelt
+# dat aan het open begrip van artikel 13a van de Leerplichtwet 1969 (artikel
+# 11, onder f: "slechts buiten de schoolvakanties"), dat het hoofd anders per
+# aanvraag oordeelt. Zelf leest zij geen kroniek: de schoolvakanties komen uit
+# twee bronnen. De kerst-, mei- en zomervakantie stelt de Regeling vaststelling
 # schoolvakanties 2025–2030 vast (op grond van artikel 15, tweede lid, van de
-# Wet op het primair onderwijs), de zomervakantie per regio; de regio volgt
-# uit de plaats van vestiging, die de cel uit haar executogrammen geeft
-# (reductie_plaats_van_vestiging). De herfst- en voorjaarsvakantie stelt het
-# bevoegd gezag zelf vast, als regel van de school in zijn beleid
+# Wet op het primair onderwijs), de zomervakantie per regio; de regio volgt uit
+# de plaats van vestiging, die de cel uit haar executogrammen geeft
+# (reductie_plaats_van_vestiging), met de verlofdagen die deze reductie de
+# regeling meegeeft. De herfst- en voorjaarsvakantie stelt het bevoegd gezag
+# zelf vast, als regel van de school in zijn beleid
 # (fictief_beleid_vakantierooster_obs_de_klimop).
-# Niet gemodelleerd: de verlenging van de zomervakantie door het bevoegd
-# gezag (artikel 7, eerste lid, van de regeling), de afwijkingen in artikel 7,
+# Niet gemodelleerd: de verlenging van de zomervakantie door het bevoegd gezag
+# (artikel 7, eerste lid, van de regeling), de afwijkingen in artikel 7,
 # tweede tot en met zesde lid, de ontheffing van artikel 8, en vrije dagen die
 # geen vakantie zijn. Er is geen bekendmaking; de url wijst naar artikel 11.
 # De regeling stelt geen zomervakantie van 2025 vast (artikel 6 begint bij
@@ -31,20 +34,20 @@ competent_authority:
 articles:
   - number: '1'
     text: >-
-      Geen regelgeving: een reductie van de cel over haar eigen kroniek. Het
-      gevraagde verlof valt buiten de schoolvakanties als geen dag ervan valt
-      in de kerst-, mei- of zomervakantie die de Regeling vaststelling
-      schoolvakanties 2025–2030 voor de regio van de school vaststelt, of in
-      de herfst- of voorjaarsvakantie die het beleid van het bevoegd gezag
-      vaststelt voor het schooljaar van de eerste verlofdag.
+      Geen regelgeving. Het systeem van het hoofd van OBS De Klimop bepaalt met
+      een chronolexografische reductie of het gevraagde verlof buiten de
+      schoolvakanties valt, met de regio die volgt uit de plaats van vestiging
+      in zijn eigen kroniek. Het gevraagde verlof valt buiten de
+      schoolvakanties als geen dag ervan valt in de kerst-, mei- of
+      zomervakantie die de Regeling vaststelling schoolvakanties 2025–2030 voor
+      de regio van de school vaststelt, of in de herfst- of voorjaarsvakantie
+      die het beleid van het bevoegd gezag vaststelt voor het schooljaar van de
+      eerste verlofdag.
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel11
     machine_readable:
-      implements:
-        - law: leerplichtwet_1969
-          article: 13a
-          open_term: verlof_valt_buiten_schoolvakanties
       execution:
-        # Parameters van artikel 13a; de cel geeft ze op naam door.
+        # Wat het antwoord vraagt; het beleid dat het koppelt, geeft ze op
+        # naam mee uit artikel 13a.
         parameters:
           - name: eerste_verlofdag
             type: date
@@ -70,13 +73,18 @@ articles:
               parameters:
                 datum: $eerste_verlofdag
           # De regio van de school (artikel 2 van de regeling). De plaats van
-          # vestiging vult de cel daar zelf in.
+          # vestiging koppelt het beleid van het hoofd daar aan het antwoord
+          # van de cel, voor de verlofdagen die deze reductie meegeeft;
+          # artikel 2 declareert ze niet, het beleid dat koppelt wel.
           - name: regio
             type: string
             nullable: true
             source:
               regulation: regeling_vaststelling_schoolvakanties_20252030
               output: regio_van_school
+              parameters:
+                eerste_verlofdag: $eerste_verlofdag
+                laatste_verlofdag: $laatste_verlofdag
           - name: kerstvakantie_eerste_dag
             type: date
             nullable: true

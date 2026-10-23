@@ -197,8 +197,8 @@ impl Spel {
         ok(self.met(|c, cell| kern::waarom(c, cell, id))?)
     }
 
-    pub fn hoe_beantwoord(&mut self, id: &str, begrip: &str) -> Antwoord {
-        ok(self.met(|c, cell| kern::hoe_beantwoord(c, cell, id, begrip))?)
+    pub fn hoe_beantwoord(&mut self, id: &str, naam: &str) -> Antwoord {
+        ok(self.met(|c, cell| kern::hoe_beantwoord(c, cell, id, naam))?)
     }
 
     pub fn bezwaren(

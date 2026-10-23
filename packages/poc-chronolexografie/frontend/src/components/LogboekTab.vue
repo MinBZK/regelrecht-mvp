@@ -7,7 +7,7 @@
 // die de cel weigerde, legde niets vast en staat er dus niet in.
 import { computed, reactive, ref, watch } from 'vue';
 import { api } from '../api.js';
-import { genomenBij, genummerd, toon, uitslag } from '../logboek.js';
+import { eigenAntwoord, genomenBij, genummerd, toon, uitslag } from '../logboek.js';
 import { herroepen, kort, leesbaar, rol, state } from '../state.js';
 import HoeBeantwoord from './HoeBeantwoord.vue';
 import KetenStap from './KetenStap.vue';
@@ -67,7 +67,7 @@ async function uitleg(knoop) {
   const besluit = gekozen.value;
   Object.assign(sheet, { open: true, knoop, uitleg: null, besluit });
   try {
-    const antwoord = await api.hoeBeantwoord(besluit, knoop.stap.naam);
+    const antwoord = await api.hoeBeantwoord(besluit, eigenAntwoord(knoop.stap));
     // Alleen als intussen niet een ander begrip of besluit gekozen is.
     if (sheet.knoop?.nummer === knoop.nummer && gekozen.value === besluit) {
       sheet.uitleg = antwoord.antwoorden[knoop.stap.keer] ?? null;

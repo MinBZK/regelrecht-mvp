@@ -5,3 +5,6 @@
 # kroniek en antwoordt of er een plaatsvond.
 name: GGD Wilgendaal
 category: Gemeentelijke Gezondheidsdienst
+# Welk antwoord de cel geeft, en uit welke reductie in de corpus (RFC-048).
+answers:
+  geneeskundig_onderzoek_heeft_plaatsgehad: reductie_geneeskundig_onderzoek

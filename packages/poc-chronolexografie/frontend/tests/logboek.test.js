@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { artikelNaam, genomenBij, genummerd, opsomming, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
+import { artikelNaam, eigenAntwoord, genomenBij, genummerd, opsomming, stapTekst, toon, uitslag, wetNaam } from '../src/logboek.js';
 import { rol, state } from '../src/state.js';
 
 // De casus zoals `api.casus` haar geeft, voor zover het logboek haar leest.
@@ -30,13 +30,23 @@ const celAntwoord = {
   waarde: false,
   ontbreekt: [],
   keer: 0,
+  // Het beleid van het hoofd koppelt het begrip aan het antwoord van de cel
+  // (FilledBy::Answer, RFC-048).
   ingevuld_door: {
     answer: {
-      answerer: 'obs_de_klimop',
-      law_id: 'reductie_verlof_al_verleend_in_schooljaar',
-      valid_from: '2026-08-01',
-      records_read: 5,
-      last_record: bezwaar.id,
+      law_id: 'fictief_beleid_vakantieverlof_obs_de_klimop',
+      article: '3',
+      answers: [
+        {
+          answerer: 'obs_de_klimop',
+          answer: 'verlof_al_verleend_in_schooljaar',
+          law_id: 'reductie_verlof_al_verleend_in_schooljaar',
+          article: '1',
+          valid_from: '2026-08-01',
+          records_read: 5,
+          last_record: bezwaar.id,
+        },
+      ],
     },
   },
 };
@@ -82,12 +92,24 @@ describe('genummerd', () => {
 });
 
 describe('stapTekst', () => {
-  it('zegt wat de cel antwoordde en hoe ver zij las', () => {
+  it('noemt het beleidsartikel, het antwoord, de cel en de reductie, en hoe ver zij las', () => {
     expect(stapTekst(celAntwoord, grammen)).toEqual({
       tekst: 'verlof al verleend in schooljaar: nee',
       toelichting:
-        'ingevuld door OBS De Klimop uit haar kroniek (reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
+        'ingevuld door beleid fictief_beleid_vakantieverlof_obs_de_klimop art. 3, antwoord verlof_al_verleend_in_schooljaar van OBS De Klimop (reductie reductie_verlof_al_verleend_in_schooljaar, 5 chronolexogrammen t/m bezwaar 0000bbbb)',
     });
+  });
+
+  it('noemt een koppeling waarop geen cel antwoordde', () => {
+    const stil = { ...celAntwoord, waarde: null, ingevuld_door: { answer: { ...celAntwoord.ingevuld_door.answer, answers: [] } } };
+    expect(stapTekst(stil, grammen).toelichting).toBe(
+      'ingevuld door beleid fictief_beleid_vakantieverlof_obs_de_klimop art. 3, geen antwoord van een cel',
+    );
+  });
+
+  it('vindt het antwoord van de eigen cel voor haar uitleg', () => {
+    expect(eigenAntwoord(celAntwoord)).toBe('verlof_al_verleend_in_schooljaar');
+    expect(eigenAntwoord({ ...celAntwoord, ingevuld_door: 'finding' })).toBeNull();
   });
 
   it('noemt een bevinding van het bestuursorgaan en een regeling', () => {
@@ -184,7 +206,7 @@ describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
 
   it('leest het laatste chronolexogram in de kroniek van de andere cel', () => {
     const t = stapTekst(
-      eerder({ answer: { ...bron('gemeente_oostmeer'), last_record: '019a0000-0000-7000-8000-00000000cccc' } }),
+      eerder(koppeling([{ ...bron('gemeente_oostmeer'), last_record: '019a0000-0000-7000-8000-00000000cccc' }])),
       [],
     );
     expect(t.toelichting).toContain('beschikking 0000cccc');
@@ -199,8 +221,13 @@ describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
     keer: null,
     ingevuld_door,
   });
-  const bron = (answerer) => ({
+  const koppeling = (answers) => ({
+    answer: { law_id: 'fictief_beleid_gemeente_wilgendaal', article: '3', answers },
+  });
+  const bron = (answerer, answer = 'aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt') => ({
     answerer,
+    answer,
+    article: '1',
     law_id: `reductie_${answerer}`,
     valid_from: '2026-01-01',
     records_read: 1,
@@ -208,13 +235,24 @@ describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
   });
 
   it('noemt de andere cel bij haar naam', () => {
-    const t = stapTekst(eerder({ answer: bron('gemeente_oostmeer') }), []);
-    expect(t.toelichting).toContain('gemeente Oostmeer');
+    const t = stapTekst(eerder(koppeling([bron('gemeente_oostmeer')])), []);
+    expect(t.toelichting).toBe(
+      'ingevuld door beleid fictief_beleid_gemeente_wilgendaal art. 3, antwoord aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt van gemeente Oostmeer (reductie reductie_gemeente_oostmeer, niets uit de kroniek gelezen)',
+    );
   });
 
-  it('noemt elke cel waarvan het antwoord meetelde', () => {
-    const t = stapTekst(eerder({ answers: [bron('cbr'), bron('gemeente_oostmeer')] }), []);
-    expect(t.toelichting).toBe('samengevoegd uit de antwoorden van CBR en gemeente Oostmeer');
+  it('noemt elke cel waarvan het antwoord meetelde, één keer het antwoord', () => {
+    const t = stapTekst(eerder(koppeling([bron('cbr'), bron('gemeente_oostmeer')])), []);
+    expect(t.toelichting).toBe(
+      'ingevuld door beleid fictief_beleid_gemeente_wilgendaal art. 3, antwoord aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt van CBR (reductie reductie_cbr, niets uit de kroniek gelezen) en gemeente Oostmeer (reductie reductie_gemeente_oostmeer, niets uit de kroniek gelezen)',
+    );
+  });
+
+  it('noemt per cel het antwoord als de namen verschillen', () => {
+    const t = stapTekst(eerder(koppeling([bron('cbr', 'a'), bron('gemeente_oostmeer', 'b')])), []);
+    expect(t.toelichting).toBe(
+      'ingevuld door beleid fictief_beleid_gemeente_wilgendaal art. 3, antwoord a van CBR (reductie reductie_cbr, niets uit de kroniek gelezen) en antwoord b van gemeente Oostmeer (reductie reductie_gemeente_oostmeer, niets uit de kroniek gelezen)',
+    );
   });
 });
 

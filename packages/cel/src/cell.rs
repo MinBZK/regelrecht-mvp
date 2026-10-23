@@ -12,7 +12,7 @@
 //! the type.
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use chrono::NaiveDate;
 use regelrecht_engine::{
@@ -27,134 +27,37 @@ use crate::decision::{self, DecisionShape, Source};
 use crate::error::{refused, setup, Result};
 use crate::files::{Disk, Files};
 use crate::identity;
-use crate::reading::{self, Answer, Asked, Loaded, Reader, Reduction, Term};
+use crate::reading::{self, Asked, Reader, Term};
 use crate::shape::{self, Field, Shape};
 use regelrecht_law_model::stored;
 
-/// A cell. It holds who it is, its chronicle and its reductions, not the
-/// law: every call that needs the law gets the service that executes it.
+/// A cell. It holds who it is, its catalogue of answers and its chronicle,
+/// not the law: every call that needs the law gets the service that
+/// executes it, and the reductions the catalogue names are rulework in that
+/// service, as the corpus holds them under the cell's holder (RFC-048).
 ///
-/// A cell is opened with its directory, and its reductions come from there
-/// ([`Cell::open`], [`Cell::in_memory`]), so a cell cannot be without them.
-/// Without its reductions a cell could not tell a term they fill from one the
-/// deciding authority finds, and a replay would pass a reduction's answer off
-/// as the authority's finding (RFC-048). A cell without reductions is opened
-/// with a directory that holds none.
+/// A cell is opened with its directory, which holds `cel.yaml`
+/// ([`crate::identity`]) and nothing else of the law.
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
     /// Who the cell is (`cel.yaml`, RFC-052).
     authority: Authority,
+    /// Per answer the cell gives, the `$id` of its reduction (`cel.yaml`,
+    /// `answers`, RFC-048).
+    answers: BTreeMap<String, String>,
     chronicle: Chronicle,
-    reductions: Reductions,
-}
-
-/// The reductions of a cell and the directory they came from.
-#[derive(Debug, Clone)]
-struct Reductions {
-    dir: PathBuf,
-    versions: Vec<Reduction>,
-}
-
-impl Reductions {
-    /// The reductions in the cell directory `dir` of `recording_actor`, one
-    /// version per file at `<dir>/reducties/<id>/<valid_from>.yaml`
-    /// (RFC-048). A version that is no `REDUCTIE`, whose `$id` is not its
-    /// directory's name, or whose file is not named after its `valid_from`
-    /// is an error. So is any other entry under `reducties` that is not
-    /// hidden (a name starting with `.`), and a `dir` that is no directory. Without a `reducties` directory the cell has
-    /// none. Everything is read through `files`.
-    fn load(files: &dyn Files, recording_actor: &str, dir: &Path) -> Result<Self> {
-        if !files.is_dir(dir) {
-            return Err(setup(format!(
-                "{}: no directory of the cell of '{recording_actor}'",
-                dir.display()
-            )));
-        }
-        let mut versions = Vec::new();
-        let root = dir.join("reducties");
-        if files.exists(&root) && !files.is_dir(&root) {
-            return Err(setup(format!("{}: no directory", root.display())));
-        }
-        if !files.is_dir(&root) {
-            return Ok(Self {
-                dir: root,
-                versions,
-            });
-        }
-        let mut paths = Vec::new();
-        // A hidden entry (`.gitkeep`, `.DS_Store`) is no misplaced version.
-        let hidden = |path: &Path| {
-            path.file_name()
-                .is_some_and(|name| name.to_string_lossy().starts_with('.'))
-        };
-        for id_dir in files.entries(&root)? {
-            if hidden(&id_dir) {
-                continue;
-            }
-            if !files.is_dir(&id_dir) {
-                return Err(setup(format!(
-                    "{}: not a directory of a reduction; a version belongs at \
-                     reducties/<id>/<valid_from>.yaml",
-                    id_dir.display()
-                )));
-            }
-            for path in files.entries(&id_dir)? {
-                if hidden(&path) {
-                    continue;
-                }
-                if !files.is_file(&path) || path.extension().is_none_or(|x| x != "yaml") {
-                    return Err(setup(format!(
-                        "{}: not a version of a reduction; a version is a file \
-                         <valid_from>.yaml",
-                        path.display()
-                    )));
-                }
-                paths.push(path);
-            }
-        }
-        paths.sort();
-        for path in paths {
-            let reduction = Reduction::parse(files.read(&path)?)
-                .map_err(|e| setup(format!("{}: {e}", path.display())))?;
-            let named = path
-                .parent()
-                .and_then(Path::file_name)
-                .is_some_and(|name| name == reduction.id());
-            if !named {
-                return Err(setup(format!(
-                    "{}: the reduction '{}' is not in a directory of that name",
-                    path.display(),
-                    reduction.id()
-                )));
-            }
-            let valid_from = reduction.valid_from().format("%Y-%m-%d").to_string();
-            if path.file_stem().is_none_or(|stem| *stem != *valid_from) {
-                return Err(setup(format!(
-                    "{}: the version is valid from {valid_from}, so its file is {valid_from}.yaml",
-                    path.display()
-                )));
-            }
-            versions.push(reduction);
-        }
-        Ok(Self {
-            dir: root,
-            versions,
-        })
-    }
 }
 
 impl Cell {
     /// The cell of `recording_actor`, with its chronicle in the JSON Lines file
-    /// at `path` and its reductions in its directory `cell_dir`, one version
-    /// per file at `<cell_dir>/reducties/<id>/<valid_from>.yaml` (RFC-048).
-    /// A `cell_dir` that is no directory is an error; one without
-    /// `reducties` gives a cell without reductions. A version that is no
-    /// `REDUCTIE`, whose `$id` is not its directory's name, or whose file is
-    /// not named after its `valid_from` is an error. So is any other entry
-    /// under `reducties`. A chronolexogram in the chronicle recorded by
-    /// another actor is an error, and so is an executogram that refers to a
-    /// chronolexogram or holds outputs (RFC-051).
+    /// at `path` and its identity and catalogue in its directory `cell_dir`
+    /// (`cel.yaml`). A `cell_dir` that is no directory, or that still holds
+    /// reductions of its own (`reducties`), is an error: a reduction sits in
+    /// the corpus under its holder (RFC-048). A chronolexogram in the
+    /// chronicle recorded by another actor is an error, and so is an
+    /// executogram that refers to a chronolexogram or holds outputs
+    /// (RFC-051).
     pub fn open(
         recording_actor: impl Into<String>,
         path: impl AsRef<Path>,
@@ -169,8 +72,8 @@ impl Cell {
     }
 
     /// The cell of `recording_actor`, with an empty chronicle in memory and
-    /// its reductions in its directory `cell_dir`, loaded as [`Cell::open`]
-    /// loads them.
+    /// its identity read from its directory `cell_dir`, as [`Cell::open`]
+    /// reads it.
     pub fn in_memory(
         recording_actor: impl Into<String>,
         cell_dir: impl AsRef<Path>,
@@ -211,17 +114,31 @@ impl Cell {
         )
     }
 
-    /// The cell with `chronicle`, its reductions and its identity read from
-    /// `cell_dir` through `files`, after the checks of [`Cell::open`] on the
-    /// chronicle.
+    /// The cell with `chronicle` and its identity read from `cell_dir`
+    /// through `files`, after the checks of [`Cell::open`] on the directory
+    /// and the chronicle.
     fn with_chronicle(
         files: &dyn Files,
         recording_actor: String,
         cell_dir: &Path,
         chronicle: Chronicle,
     ) -> Result<Self> {
-        let reductions = Reductions::load(files, &recording_actor, cell_dir)?;
-        let authority = identity::read(files, cell_dir)?;
+        if !files.is_dir(cell_dir) {
+            return Err(setup(format!(
+                "{}: no directory of the cell of '{recording_actor}'",
+                cell_dir.display()
+            )));
+        }
+        let own = cell_dir.join("reducties");
+        if files.exists(&own) {
+            return Err(setup(format!(
+                "{}: a cell keeps no reductions of its own; a reduction sits in the corpus \
+                 under its holder, and the cell names it in {} (answers, RFC-048)",
+                own.display(),
+                identity::FILE
+            )));
+        }
+        let identity::Identity { authority, answers } = identity::read(files, cell_dir)?;
         if let Some(g) = chronicle
             .grams()
             .iter()
@@ -238,69 +155,9 @@ impl Cell {
         Ok(Self {
             recording_actor,
             authority,
+            answers,
             chronicle,
-            reductions,
         })
-    }
-
-    /// Load the reductions of the cell and of the cells of `sphere` for a
-    /// decision on `on` ([`reading::load`]), so they can answer the engine
-    /// with them ([`Reader`]), after the checks of [`Cell::check`] on each.
-    fn load<'s>(
-        &self,
-        service: &'s mut LawExecutionService,
-        sphere: &[&Cell],
-        on: NaiveDate,
-    ) -> Result<Loaded<'s>> {
-        let cells: Vec<&Cell> = std::iter::once(self)
-            .chain(sphere.iter().copied())
-            .collect();
-        for cell in &cells {
-            cell.check(service, on)?;
-        }
-        let reductions: Vec<(&str, &[Reduction])> = cells
-            .iter()
-            .map(|cell| {
-                (
-                    cell.recording_actor.as_str(),
-                    cell.reductions.versions.as_slice(),
-                )
-            })
-            .collect();
-        reading::load(service, &reductions)
-    }
-
-    /// Whether the cell's reductions may answer on `on`. Refused when a term
-    /// one of them fills has no reduction in force on `on`: the term would
-    /// then be the deciding authority's finding, or its default, where the
-    /// cell's own reading is expected. A replay so fails too. So is a
-    /// reduction in force on `on` that fills a term its article does not
-    /// declare that day, and one that fills a term of an article that does
-    /// not make the cell competent (RFC-052).
-    fn check(&self, service: &LawExecutionService, on: NaiveDate) -> Result<()> {
-        let reductions = &self.reductions;
-        if let Some(term) = reading::unfilled(&reductions.versions, on) {
-            return Err(setup(format!(
-                "open term {term} is filled by a reduction in {}, but none is in force on {on}; \
-                 the cell does not take it as a finding of the deciding authority",
-                reductions.dir.display()
-            )));
-        }
-        if let Some(term) = reading::filled_twice(&reductions.versions, on) {
-            return Err(setup(format!(
-                "open term {term} is filled by two reductions in force on {on} in {}",
-                reductions.dir.display()
-            )));
-        }
-        reading::refuse_undeclared_terms(service, &reductions.versions, on)?;
-        reading::refuse_unrequired_facts(service, &reductions.versions, on)?;
-        reading::refuse_incompetent(
-            service,
-            &reductions.versions,
-            on,
-            &self.recording_actor,
-            &self.authority,
-        )
     }
 
     /// The cell as the engine's answerer for a decision that reads `grams`
@@ -309,28 +166,22 @@ impl Cell {
         Reader::new(
             &self.recording_actor,
             &self.authority,
-            &self.reductions.versions,
+            &self.answers,
             grams,
             explain,
         )
     }
 
-    /// The open terms the cell's reductions in force on `on` fill.
-    fn terms_on(&self, on: NaiveDate) -> Vec<Term> {
-        reading::terms_on(&self.reductions.versions, on)
+    /// The answers the cell gives: per answer the `$id` of the reduction
+    /// whose output it is (`cel.yaml`, `answers`, RFC-048).
+    pub fn answers(&self) -> &BTreeMap<String, String> {
+        &self.answers
     }
 
-    /// The lexostatussen the cell can answer: per version of each reduction
-    /// in its directory, the open term it fills (`implements`), with the
-    /// reduction's `$id` and the version's `valid_from`. Ordered by
-    /// reduction, then by `valid_from`. The list comes from the reductions
-    /// the cell loaded when it was opened.
-    pub fn answers(&self) -> Vec<Answer> {
-        self.reductions
-            .versions
-            .iter()
-            .flat_map(Reduction::answers)
-            .collect()
+    /// The open terms a policy in force on `on` in `service` binds to an
+    /// answer of this cell ([`reading::bound_terms`]).
+    pub fn bound_terms(&self, service: &LawExecutionService, on: NaiveDate) -> Vec<Term> {
+        reading::bound_terms(service, &self.authority, &self.answers, on)
     }
 
     pub fn recording_actor(&self) -> &str {
@@ -362,20 +213,14 @@ impl Cell {
         self.chronicle.grams()
     }
 
-    /// The cell's reductions (RFC-048), as [`Cell::open`] or
-    /// [`Cell::in_memory`] read them from its directory.
-    pub fn reductions(&self) -> &[Reduction] {
-        &self.reductions.versions
-    }
-
     /// A copy of this cell with its chronicle in memory, to try a decision
     /// on: what is recorded in the copy is not kept in this cell or its file.
     pub fn sandbox(&self) -> Self {
         Self {
             recording_actor: self.recording_actor.clone(),
             authority: self.authority.clone(),
+            answers: self.answers.clone(),
             chronicle: self.chronicle.in_memory_copy(),
-            reductions: self.reductions.clone(),
         }
     }
 
@@ -457,8 +302,7 @@ impl Cell {
         }
         // What the decision took and gave, in the law it was taken under.
         let taken_on = referred.recorded_on;
-        let referred_shape =
-            decision_shape_of(service, referred, taken_on, &self.terms_on(taken_on))?;
+        let referred_shape = decision_shape_of(service, referred, taken_on)?;
         let gives = gives(service, &referred_shape, taken_on);
         let mut from_referred = decisions.clone();
         for field in shape.fields.iter().filter(|f| !decisions.contains(&f.name)) {
@@ -672,12 +516,13 @@ impl Cell {
     /// recorded as chronolexogram `application`, on `on` (RFC-047).
     ///
     /// What the decision asks comes from the application, the holder's
-    /// policy and the cell ([`decision::derive_with`]). The cell answers the
-    /// engine for the whole decision ([`Reader`], RFC-048): where an article
-    /// reads an open term one of its reductions fills, also an article the
-    /// decision calls, the engine asks the cell, which runs that reduction on
-    /// its chronicle and gives the lexostatus; the service holds the
-    /// reductions during the decision only. `supplied`
+    /// policy and the cell ([`decision::derive`]). The cell answers the
+    /// engine for the whole decision ([`Reader`], RFC-048): where a policy
+    /// binds an open term to an answer of the cell, also in an article the
+    /// decision calls, the engine asks the cell, which runs the reduction its
+    /// catalogue names on its chronicle and gives the lexostatus. The
+    /// reductions are rulework in `service`, as the corpus holds them.
+    /// `supplied`
     /// holds what the deciding authority
     /// supplies itself, such as a parameter of a hook, and `findings` what it
     /// found for this case, by the id of the open term the law leaves to it
@@ -739,20 +584,14 @@ impl Cell {
             .find(|g| g.id == application)
             .and_then(|g| g.refers_to.clone())
             .filter(|_| !replaces.is_empty());
-        // The decision values it gets, from replays of those decisions
-        // (each loads the reductions itself), before the reductions are
-        // loaded for this one.
-        let answered = self.terms_on(on);
-        let unloaded = decision::derive_with(service, law_id, article, on, &answered)?;
-        let applied = self.application(&unloaded, application)?.clone();
-        let decisions = self.decision_values(service, sphere, &unloaded, &applied, on)?;
+        // The decision values it gets, from replays of those decisions.
+        let shape = decision::derive(service, law_id, article, on)?;
+        let applied = self.application(&shape, application)?.clone();
+        let decisions = self.decision_values(service, sphere, &shape, &applied, on)?;
         let grams = self.grams_but(except.as_deref());
-        let loaded = self.load(service, sphere, on)?;
         let reader = self.reader(grams, None);
         let others = known_on(sphere, on);
         let answerers = Answerers::new(&reader, &others);
-        // A term the cell answers is the policy's first.
-        let shape = unloaded;
         if let Some(name) = supplied.keys().find(|name| is_finding(&shape, name)) {
             return Err(refused(format!(
                 "'{name}' of the decision of {} is a finding of the deciding authority; it \
@@ -783,7 +622,7 @@ impl Cell {
         let given = &given;
         check_decision_supplied(&shape, given)?;
         let inputs = asked(&shape, &applied, &decisions, given, on)?;
-        let (mut fields, mut outputs) = take(&loaded, &shape, inputs, findings, &answerers, on)?;
+        let (mut fields, mut outputs) = take(service, &shape, inputs, findings, &answerers, on)?;
         for (name, (id, _)) in decisions {
             fields.insert(name, serde_json::Value::String(id));
         }
@@ -794,14 +633,13 @@ impl Cell {
             let Some(value) = outputs.get(&name).filter(|v| !v.is_null()) else {
                 continue;
             };
-            let gram = self.decided(&loaded, &shape, &name, value, &applied, &answerers, on)?;
+            let gram = self.decided(service, &shape, &name, value, &applied, &answerers, on)?;
             outputs.insert(name, serde_json::Value::String(gram.id.clone()));
             taken.push(gram);
         }
         // A decision is replaced once: the cell does not record a second
         // decision in the place of the same one.
         drop(reader);
-        drop(loaded);
         if let Some(contested) = except.as_deref().filter(|_| !taken.is_empty()) {
             if let Some((earlier, replacement)) = self.replacement_of(contested) {
                 return Err(refused(format!(
@@ -847,33 +685,32 @@ impl Cell {
         Ok(self.replay(service, sphere, id, None)?.result)
     }
 
-    /// How the cell came to its answer on the open term `term` (its id) in
-    /// the decision `id`: the decision taken again (`Cell::replay`), and the
-    /// cell's reduction for `term` run with tracing on the chronicle as the
-    /// decision read it, with the parameters the engine gave it then. One
-    /// result per time the decision asked the term, in that order, each
+    /// How the cell came to its answer `answer` (its name) in the decision
+    /// `id`: the decision taken again (`Cell::replay`), and the cell's
+    /// reduction for that answer run with tracing on the chronicle as the
+    /// decision read it, with the parameters the binding passed then. One
+    /// result per time the decision asked the answer, in that order, each
     /// with the reduction's own trace; it is no part of the decision's trace,
     /// and nothing of it is stored. A silent answer (null), which the engine
-    /// set aside for the finding, is explained too. The term is matched by
-    /// its id, as findings are, so two laws with a term of that id give
-    /// both. Refused when the decision did not ask the cell for `term`.
+    /// set aside for the finding, is explained too. Refused when the
+    /// decision did not ask the cell for `answer`.
     pub fn explain_answer(
         &self,
         service: &mut LawExecutionService,
         sphere: &[&Cell],
         id: &str,
-        term: &str,
+        answer: &str,
     ) -> Result<Vec<ArticleResult>> {
         let explained: Vec<ArticleResult> = self
-            .replay(service, sphere, id, Some(term))?
+            .replay(service, sphere, id, Some(answer))?
             .asked
             .into_iter()
-            .filter(|asked| asked.term.open_term == term)
+            .filter(|asked| asked.name == answer)
             .filter_map(|asked| asked.explained)
             .collect();
         if explained.is_empty() {
             return Err(refused(format!(
-                "the decision '{id}' did not ask the cell of '{}' for '{term}'",
+                "the decision '{id}' did not ask the cell of '{}' for '{answer}'",
                 self.recording_actor
             )));
         }
@@ -979,10 +816,8 @@ impl Cell {
             ))
         })?;
         let on = decision.recorded_on;
-        // The decision values first: each replays its own decision, which
-        // loads the reductions itself.
-        let answered = self.terms_on(on);
-        let shape = decision::derive_with(service, law_id, article, on, &answered)?;
+        // The decision values first: each replays its own decision.
+        let shape = decision::derive(service, law_id, article, on)?;
         let decisions = self.decision_values(service, sphere, &shape, &submission, on)?;
         let replaces = decision_outputs(service, law_id, article, on);
         let except = submission
@@ -994,7 +829,6 @@ impl Cell {
             .filter(|g| except != Some(g.id.as_str()))
             .cloned()
             .collect();
-        let loaded = self.load(service, sphere, on)?;
         let reader = self.reader(before, explain);
         let others = known_on(sphere, on);
         let given = candidates(&shape, &decision);
@@ -1018,7 +852,7 @@ impl Cell {
         let date = on.to_string();
         let call = Answerers::new(&reader, &others).call(findings);
         let result =
-            loaded.evaluate_law_with_trace_in(law_id, &outputs, parameters, call, &date)?;
+            service.evaluate_law_with_trace_in(law_id, &outputs, parameters, call, &date)?;
         for name in &shape.outputs {
             let recorded = decision.outputs.get(name);
             let again = result
@@ -1072,11 +906,9 @@ impl Cell {
         let shape = if target.id == decision.id {
             shape
         } else {
-            let answered = self.terms_on(target.recorded_on);
-            decision_shape_of(&loaded, &target, target.recorded_on, &answered)?
+            decision_shape_of(service, &target, target.recorded_on)?
         };
         let asked = reader.asked();
-        drop(loaded);
         Ok(Replayed {
             result,
             shape,
@@ -1106,7 +938,7 @@ impl Cell {
             };
             let gram = self.decision_gram(service, id)?.clone();
             let mut value = self.decision_value(service, sphere, &gram)?;
-            refresh(service, &gram, &mut value, on, &self.terms_on(on))?;
+            refresh(service, &gram, &mut value, on)?;
             values.insert(input.field.name.clone(), (id.clone(), value));
         }
         Ok(values)
@@ -1299,7 +1131,7 @@ impl Cell {
         let (given_fields, given_findings) = (part("fields")?, part("findings")?);
         let expected = part("outputs")?;
         let (law_id, article) = grondslag.split_once('#').ok_or_else(not_a_decision)?;
-        let shape = decision::derive_with(service, law_id, article, on, &self.terms_on(on))?;
+        let shape = decision::derive(service, law_id, article, on)?;
         let mut fields = Values::new();
         for input in &shape.inputs {
             let name = &input.field.name;
@@ -1578,9 +1410,8 @@ fn refresh(
     gram: &Gram,
     value: &mut serde_json::Value,
     on: NaiveDate,
-    answered: &[Term],
 ) -> Result<()> {
-    let shape = decision_shape_of(service, gram, on, answered)?;
+    let shape = decision_shape_of(service, gram, on)?;
     let fields = value
         .get_mut("fields")
         .and_then(serde_json::Value::as_object_mut)
@@ -1725,7 +1556,6 @@ fn decision_shape_of(
     service: &LawExecutionService,
     decision: &Gram,
     on: NaiveDate,
-    answered: &[Term],
 ) -> Result<DecisionShape> {
     let (law_id, article) = decision.grondslag.split_once('#').ok_or_else(|| {
         setup(format!(
@@ -1733,7 +1563,7 @@ fn decision_shape_of(
             decision.id, decision.grondslag
         ))
     })?;
-    decision::derive_with(service, law_id, article, on, answered)
+    decision::derive(service, law_id, article, on)
 }
 
 /// The outputs of the articles that take part in the decision of `shape`:

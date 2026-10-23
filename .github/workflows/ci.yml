@@ -69,7 +69,7 @@ jobs:
               - packages/frontend-shared/**
               - bdd/**
               - corpus/regulation/**
-              # De reducties van de cellen (RFC-048): gevalideerd en gelezen door de celtests.
+              # De catalogi van de cellen (cel.yaml, RFC-048): gelezen door de celtests.
               - corpus/cells/**
               # De demo-wetten en -scenario's: gevalideerd en gedraaid als bucket demo.
               - corpus/demo/**
@@ -269,8 +269,8 @@ jobs:
           # Every $schema URL in corpus YAML must reference a known schema version
           KNOWN_VERSIONS=$(ls -d schema/v*/ | xargs -n1 basename)
           FAILED=false
-          # A cell holds rulework only under reducties (RFC-048).
-          for file in $(find corpus/regulation -name "*.yaml"; find corpus/cells -path "*/reducties/*" -name "*.yaml"); do
+          # A reduction sits in corpus/regulation under its holder (RFC-048).
+          for file in $(find corpus/regulation -name "*.yaml"); do
             SCHEMA_URL=$(grep '^\$schema:' "$file" | head -1 | sed 's/\$schema: *//')
             # Handle multi-line $schema with >-
             if [ -z "$SCHEMA_URL" ] || [ "$SCHEMA_URL" = ">-" ]; then

@@ -1,10 +1,13 @@
-//! A reduction (`regulatory_layer: REDUCTIE`, schema v0.8.2, RFC-048) reads
-//! the decisions taken under an article (`source.decisions`). Only a data
-//! source answers that input, and only a reduction may ask it. For the logic
-//! it calls policy like any rulework (`source.regulation`), and it names the
-//! open term it answers (`implements`, schema v0.8.5). The engine does not
-//! run it for that term: it asks the caller's answerer, at any depth, also
-//! where the article is called anew (RFC-050), and records who answered.
+//! A reduction reads the decisions taken under an article
+//! (`source.decisions`, schema v0.8.2, RFC-048); only a reduction does, and
+//! only a data source or the cell answers that input. For its norms it calls
+//! policy like any rulework (`source.regulation`), passing what it read as
+//! parameters. The school's reduction of its decisions on leave is such a
+//! reduction. It fills no open term: the head's policy binds the term to the
+//! answer of the cell (`source.reduction`, schema v0.8.9), and the engine
+//! asks the caller's answerer for it, at any depth, also where the article
+//! is called anew (RFC-050), and records who answered and through which
+//! binding.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -13,14 +16,17 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use regelrecht_engine::{
-    Answer, AnswerProvenance, ArticleBasedLaw, Authority, Call, DataSource, EngineError, FilledBy,
-    LawExecutionService, LawLoad, OpenTermAnswerer, Question, Value,
+    Answer, AnswerProvenance, AnswerRequest, ArticleBasedLaw, Authority, Call, DataSource,
+    EngineError, FilledBy, LawExecutionService, LawLoad, OpenTermAnswerer, Value,
 };
 use serde_json::json;
 
 const REDUCTION: &str = "reductie_verlof_al_verleend_in_schooljaar";
 const ONCE: &str = "verlof_al_verleend_in_schooljaar";
-/// The policy the reduction calls for the school year.
+/// The head's policy: the norms the reduction applies (art. 1 and 2) and
+/// the binding of the term of art. 13a to the cell's answer (art. 3).
+const POLICY: &str = "fictief_beleid_vakantieverlof_obs_de_klimop";
+/// The policy the head's policy calls for the school year.
 const SCHOOL_YEAR: &str = "fictief_beleid_schooljaargrenzen_obs_de_klimop";
 
 fn corpus(path: &str) -> String {
@@ -30,17 +36,26 @@ fn corpus(path: &str) -> String {
     std::fs::read_to_string(path).unwrap()
 }
 
-/// The reduction of the fictional school, from its cell directory.
+/// The reduction of the fictional school that reads its decisions, from
+/// the corpus.
 fn reduction_yaml() -> String {
     corpus(&format!(
-        "cells/obs_de_klimop/reducties/{REDUCTION}/2026-08-01.yaml"
+        "regulation/nl/reducties/{REDUCTION}/2026-08-01.yaml"
     ))
 }
 
-/// The reduction, and the school's policy it calls.
+/// The head's policy, from the corpus.
+fn policy_yaml() -> String {
+    corpus(&format!(
+        "regulation/nl/uitvoeringsbeleid/{POLICY}/2026-08-01.yaml"
+    ))
+}
+
+/// The reduction, and the school's policies it calls.
 fn service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
     service.load_law(&reduction_yaml()).unwrap();
+    service.load_law(&policy_yaml()).unwrap();
     service
         .load_law(&corpus(&format!(
             "regulation/nl/uitvoeringsbeleid/{SCHOOL_YEAR}/2026-08-01.yaml"
@@ -221,6 +236,7 @@ fn the_reduction_asks_the_policy_for_the_school_year_of_the_first_day() {
     // Without the policy the school year is not known, nor the answer.
     let mut alone = LawExecutionService::new();
     alone.load_law(&reduction_yaml()).unwrap();
+    alone.load_law(&policy_yaml()).unwrap();
     supply(
         &mut alone,
         json!([decision("999990019", "2027-07-31", true)]),
@@ -256,11 +272,15 @@ fn a_source_for_another_law_does_not_answer_the_decisions() {
     assert!(evaluate(&service, "999990019", "2027-05-10").is_err());
 }
 
-/// The reduction with its layer or its input changed.
-fn variant(from: &str, to: &str) -> String {
-    let yaml = reduction_yaml();
+/// `yaml` with `from` replaced by `to`.
+fn changed(yaml: &str, from: &str, to: &str) -> String {
     assert!(yaml.contains(from), "{from}");
     yaml.replace(from, to)
+}
+
+/// The reduction with its layer or its input changed.
+fn variant(from: &str, to: &str) -> String {
+    changed(&reduction_yaml(), from, to)
 }
 
 fn refused(yaml: &str, says: &str) {
@@ -272,13 +292,15 @@ fn refused(yaml: &str, says: &str) {
 
 #[test]
 fn only_a_reduction_reads_decisions() {
-    refused(
-        &variant(
-            "regulatory_layer: REDUCTIE",
-            "regulatory_layer: UITVOERINGSBELEID",
-        ),
-        "only a REDUCTIE reads decisions",
-    );
+    for layer in ["UITVOERINGSBELEID", "BELEIDSREGEL"] {
+        refused(
+            &variant(
+                "regulatory_layer: REDUCTIE",
+                &format!("regulatory_layer: {layer}"),
+            ),
+            "only a REDUCTIE reads decisions or facts",
+        );
+    }
 }
 
 #[test]
@@ -307,65 +329,188 @@ fn decisions_stand_alone_and_name_an_article() {
     );
 }
 
+/// The reduction with `key` before its execution.
+fn acting(key: &str) -> String {
+    variant(
+        "      execution:\n        # Wat het antwoord",
+        &format!("{key}      execution:\n        # Wat het antwoord"),
+    )
+}
+
 #[test]
 fn a_reduction_does_not_act_on_law() {
     refused(
-        &variant(
-            "      execution:\n        # Parameters",
+        &acting(
             "      hooks:\n        - hook_point: pre_actions\n          \
-             applies_to:\n            legal_character: BESCHIKKING\n      execution:\n        \
-             # Parameters",
+             applies_to:\n            legal_character: BESCHIKKING\n",
         ),
         "does not act on law (hooks)",
     );
     refused(
         &variant(
-            "      execution:\n        # Parameters",
+            "      execution:\n        # Wat het antwoord",
             "      execution:\n        produces:\n          legal_character: BESCHIKKING\n          \
-             decision_type: TOEKENNING\n        # Parameters",
+             decision_type: TOEKENNING\n        # Wat het antwoord",
         ),
         "does not act on law (produces)",
     );
     refused(
-        &variant(
-            "      execution:\n        # Parameters",
+        &acting(
             "      open_terms:\n        - id: verlof_grens\n          \
              description: De grens.\n          type: number\n          \
-             delegated_to: het hoofd\n          delegation_type: UITVOERINGSBELEID\n      \
-             execution:\n        # Parameters",
+             delegated_to: het hoofd\n          delegation_type: UITVOERINGSBELEID\n",
         ),
         "does not act on law (open_terms)",
     );
 }
 
 #[test]
-fn a_reduction_fills_an_open_term_only_from_schema_v0_8_5() {
-    ArticleBasedLaw::from_yaml_str(&reduction_yaml()).unwrap();
-    for older in ["v0.8.2", "v0.8.4"] {
-        refused(
-            &reduction_yaml().replace("v0.8.5", older),
-            &format!("implements) only from schema v0.8.5; this one names {older}"),
-        );
+fn a_reduction_fills_no_open_term() {
+    // Its cell gives it as a named answer, which a policy binds (RFC-048).
+    let implements = "      implements:\n        - law: leerplichtwet_1969\n          \
+                      article: 13a\n          open_term: verlof_al_verleend_in_schooljaar\n";
+    refused(
+        &acting(implements),
+        "a REDUCTIE fills no open term (implements)",
+    );
+    // Schema v0.8.5 to v0.8.8 allowed it, and a file that names one of them
+    // loads; the engine gives the declaration no meaning.
+    for allowed in ["v0.8.5", "v0.8.8"] {
+        ArticleBasedLaw::from_yaml_str(&acting(implements).replace("v0.8.9", allowed)).unwrap();
     }
-    // Without `$schema` there is no version to hold it to.
-    let yaml = reduction_yaml();
-    let unnamed: String = yaml
+    refused(
+        &acting(implements).replace("v0.8.9", "v0.8.4"),
+        "a REDUCTIE fills no open term (implements)",
+    );
+    // Without `$schema` the file is held to the current version.
+    let unnamed: String = acting(implements)
         .lines()
         .filter(|line| !line.starts_with("$schema:"))
         .collect::<Vec<_>>()
         .join("\n");
-    assert_ne!(unnamed, yaml);
+    refused(&unnamed, "a REDUCTIE fills no open term (implements)");
+}
+
+/// The head's policy with `from` replaced by `to` in its binding of art. 3.
+fn binding(from: &str, to: &str) -> String {
+    changed(&policy_yaml(), from, to)
+}
+
+/// The source of the binding of art. 3.
+const BINDS: &str = "              reduction: verlof_al_verleend_in_schooljaar\n";
+
+#[test]
+fn an_answer_stands_alone() {
+    ArticleBasedLaw::from_yaml_str(&policy_yaml()).unwrap();
+    for (key, line) in [
+        ("regulation", "regulation: leerplichtwet_1969"),
+        ("output", "output: verlof_verleend"),
+        ("endpoint", "endpoint: verlof"),
+        ("decisions", "decisions: leerplichtwet_1969#13a"),
+        ("facts", "facts: leerplichtwet_1969#13a#feit"),
+        ("article", "article: leerplichtwet_1969#13a"),
+    ] {
+        refused(
+            &binding(BINDS, &format!("{BINDS}              {line}\n")),
+            &format!(
+                "takes the answer 'verlof_al_verleend_in_schooljaar' of a cell, which no {key} \
+              can stand beside"
+            ),
+        );
+    }
+}
+
+#[test]
+fn only_the_policy_of_the_deciding_authority_binds_a_term_to_an_answer() {
+    for layer in ["WET", "BELEIDSREGEL"] {
+        refused(
+            &binding(
+                "regulatory_layer: UITVOERINGSBELEID",
+                &format!("regulatory_layer: {layer}"),
+            ),
+            "only the UITVOERINGSBELEID of the authority that decides binds a term",
+        );
+    }
+    // A reduction fills no term at all, so it binds none either.
+    refused(
+        &binding(
+            "regulatory_layer: UITVOERINGSBELEID",
+            "regulatory_layer: REDUCTIE",
+        ),
+        "a REDUCTIE fills no open term",
+    );
+}
+
+#[test]
+fn a_binding_fills_a_term_in_a_policy_that_names_its_holder() {
+    let yaml = policy_yaml();
+    let start = yaml.find("  - number: '3'").unwrap();
+    let implements = &yaml[start..][..yaml[start..].find("      execution:").unwrap()];
+    let without = yaml.replacen(
+        implements,
+        &implements[..implements.find("      implements:").unwrap()],
+        1,
+    );
+    refused(&without, "but the article fills no open term (implements)");
+    for holder in [
+        "",
+        "competent_authority: '#hoofd'\n",
+        "competent_authority:\n  - name: Het hoofd van OBS De Klimop\n",
+    ] {
+        refused(
+            &binding(
+                "competent_authority:\n  name: Het hoofd van OBS De Klimop\n",
+                holder,
+            ),
+            "names no holder by name (competent_authority, one authority)",
+        );
+    }
+}
+
+#[test]
+fn a_binding_takes_an_answer_only_from_schema_v0_8_9() {
+    for older in ["v0.8.2", "v0.8.8"] {
+        refused(
+            &policy_yaml().replace("v0.8.9", older),
+            "which a policy does only from schema v0.8.9",
+        );
+    }
+    // Without `$schema` the file is held to the current version.
+    let unnamed: String = policy_yaml()
+        .lines()
+        .filter(|line| !line.starts_with("$schema:"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_ne!(unnamed, policy_yaml());
     ArticleBasedLaw::from_yaml_str(&unnamed).unwrap();
 }
 
+#[test]
+fn only_an_answer_takes_a_combine_that_fits_its_type() {
+    let combined = |op: &str| binding(BINDS, &format!("{BINDS}              combine: {op}\n"));
+    ArticleBasedLaw::from_yaml_str(&combined("OR")).unwrap();
+    refused(&combined("ADD"), "which does not fit its type boolean");
+    refused(&combined("ONLY"), "which is no rule for answers");
+    // Beside another way to the value, combine has nothing to combine.
+    let schooljaar = "              output: begin_schooljaar\n";
+    refused(
+        &binding(
+            schooljaar,
+            &format!("{schooljaar}              combine: OR\n"),
+        ),
+        "has combine OR without the answer of a cell",
+    );
+}
+
 // ---------------------------------------------------------------------------
-// The reduction fills the open term of art. 13a (implements, schema v0.8.5)
+// The head's policy binds the open term of art. 13a to the cell's answer
+// (source.reduction, schema v0.8.9)
 // ---------------------------------------------------------------------------
 
 const AWB: &str = "algemene_wet_bestuursrecht";
 
 /// The Leerplichtwet, the Awb and the school's policies from the corpus,
-/// and the reduction if `with_reduction`.
+/// the head's binding among them, and the reduction if `with_reduction`.
 fn corpus_service(with_reduction: bool) -> LawExecutionService {
     let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
@@ -374,6 +519,7 @@ fn corpus_service(with_reduction: bool) -> LawExecutionService {
         "wet/algemene_wet_bestuursrecht",
         "uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop",
         "uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop",
+        "uitvoeringsbeleid/fictief_beleid_vakantieverlof_obs_de_klimop",
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -426,8 +572,9 @@ fn granted_13a(
     )
 }
 
-/// An answerer for the term of art. 13a, as a cell would be: it gives
-/// `value`, or nothing, and keeps what the engine asked.
+/// An answerer that gives the answer the head's policy binds the term of
+/// art. 13a to, as a cell would: `value`, or nothing, and keeps what the
+/// engine asked.
 struct Answerer {
     value: Option<Value>,
     asked: RefCell<Vec<(String, BTreeMap<String, Value>)>>,
@@ -446,13 +593,24 @@ impl Answerer {
             authority: cell_authority(),
         }
     }
+
+    /// The same answerer, as another authority.
+    fn of(self, name: &str) -> Self {
+        Self {
+            authority: Authority {
+                name: name.to_string(),
+                category: None,
+            },
+            ..self
+        }
+    }
 }
 
-/// Who the answerer of these tests is; no article it answers for routes on
-/// competence.
+/// Who the answerer of these tests is: the holder of the head's policy, so
+/// its binding asks it.
 fn cell_authority() -> Authority {
     Authority {
-        name: "een_cel".to_string(),
+        name: "Het hoofd van OBS De Klimop".to_string(),
         category: None,
     }
 }
@@ -460,7 +618,9 @@ fn cell_authority() -> Authority {
 fn provenance() -> AnswerProvenance {
     AnswerProvenance {
         answerer: "een_cel".to_string(),
+        answer: ONCE.to_string(),
         law_id: REDUCTION.to_string(),
+        article: "1".to_string(),
         valid_from: "2026-08-01".to_string(),
         records_read: 3,
         last_record: Some("gram-3".to_string()),
@@ -475,16 +635,14 @@ impl OpenTermAnswerer for Answerer {
     fn answer(
         &self,
         _service: &LawExecutionService,
-        question: &Question<'_>,
+        request: &AnswerRequest<'_>,
     ) -> regelrecht_engine::Result<Option<Answer>> {
-        if (question.law_id, question.article, question.term) != ("leerplichtwet_1969", "13a", ONCE)
-        {
+        if request.name != ONCE {
             return Ok(None);
         }
-        self.asked.borrow_mut().push((
-            format!("{}#{}", question.law_id, question.article),
-            question.parameters.clone(),
-        ));
+        self.asked
+            .borrow_mut()
+            .push((request.name.to_string(), request.parameters.clone()));
         Ok(self.value.clone().map(|value| Answer {
             value,
             provenance: provenance(),
@@ -511,7 +669,17 @@ fn granted_13a_with(
     )
 }
 
-/// The nodes of `node` and below where the answerer filled a term.
+/// What the report says filled the term: the head's binding, with the
+/// answer of the cell.
+fn bound() -> FilledBy {
+    FilledBy::Answer {
+        law_id: POLICY.to_string(),
+        article: "3".to_string(),
+        answers: vec![provenance()],
+    }
+}
+
+/// The nodes of `node` and below where an answerer gave an answer.
 fn answered(node: &regelrecht_engine::PathNode) -> Vec<&regelrecht_engine::PathNode> {
     let mut found: Vec<_> = node.children.iter().flat_map(answered).collect();
     if node.answer.is_some() {
@@ -523,7 +691,7 @@ fn answered(node: &regelrecht_engine::PathNode) -> Vec<&regelrecht_engine::PathN
 #[test]
 fn the_answerer_fills_the_term_of_13a_and_sets_the_heads_finding_aside() {
     // The reduction is loaded, but the engine does not run it: the answer
-    // is the answerer's.
+    // is the answerer's, which the head's binding takes.
     let service = corpus_service(true);
     let mut parameters = application();
     // The head finds otherwise; the answer is the general rule and wins.
@@ -531,13 +699,24 @@ fn the_answerer_fills_the_term_of_13a_and_sets_the_heads_finding_aside() {
     let answerer = Answerer::giving(Some(true));
     let result = granted_13a_with(&service, parameters, &answerer).unwrap();
     assert_eq!(result.outputs["verlof_verleend"], Value::Bool(false));
-    assert_eq!(answerer.asked.borrow().len(), 1);
+    // Asked by name, with the parameters the binding passes.
+    let asked = answerer.asked.borrow().clone();
+    assert_eq!(asked.len(), 1);
+    assert_eq!(asked[0].0, ONCE);
+    assert_eq!(
+        asked[0].1.keys().collect::<Vec<_>>(),
+        ["bsn_jongere", "eerste_verlofdag"]
+    );
+    assert_eq!(
+        asked[0].1["eerste_verlofdag"],
+        Value::String("2027-05-10".into())
+    );
     let filled = result
         .open_terms
         .iter()
         .find(|f| f.term == ONCE)
         .expect("the term is reported");
-    assert_eq!(filled.filled_by, FilledBy::Answer(provenance()));
+    assert_eq!(filled.filled_by, bound());
     let root = result.trace.unwrap();
     let nodes = answered(&root);
     assert_eq!(nodes.len(), 1);
@@ -546,8 +725,14 @@ fn the_answerer_fills_the_term_of_13a_and_sets_the_heads_finding_aside() {
     let trace = root.render_box_drawing();
     assert!(
         trace.contains(&format!(
-            "answered by een_cel with {REDUCTION} (valid from 2026-08-01), over 3 records up to \
-             'gram-3'"
+            "Answered by answer '{ONCE}' of een_cel with {REDUCTION} article 1 (valid from \
+             2026-08-01), over 3 records up to 'gram-3'"
+        )),
+        "{trace}"
+    );
+    assert!(
+        trace.contains(&format!(
+            "implemented by {POLICY} article 3, with the answer of een_cel"
         )),
         "{trace}"
     );
@@ -557,8 +742,8 @@ fn the_answerer_fills_the_term_of_13a_and_sets_the_heads_finding_aside() {
 
 #[test]
 fn a_loaded_reduction_fills_nothing_by_itself() {
-    // Its implements names the term its keeper answers; the engine does not
-    // run it, also with its decisions at hand.
+    // Without a cell the binding gets no answer; the engine does not run the
+    // reduction, also with its decisions at hand.
     let mut service = corpus_service(true);
     supply(
         &mut service,
@@ -619,7 +804,7 @@ fn an_answer_without_a_finding_sets_nothing_aside() {
     let result = granted_13a_with(&service, application(), &answerer).unwrap();
     assert_eq!(result.outputs["verlof_verleend"], Value::Bool(true));
     let trace = result.trace.unwrap().render_box_drawing();
-    assert!(trace.contains("answered by een_cel"), "{trace}");
+    assert!(trace.contains("with the answer of een_cel"), "{trace}");
     assert!(!trace.contains("set aside"), "{trace}");
 }
 
@@ -634,7 +819,7 @@ impl OpenTermAnswerer for Failing {
     fn answer(
         &self,
         _service: &LawExecutionService,
-        _question: &Question<'_>,
+        _request: &AnswerRequest<'_>,
     ) -> regelrecht_engine::Result<Option<Answer>> {
         Err(EngineError::ResolutionError(
             "the chronicle is damaged".to_string(),
@@ -662,6 +847,26 @@ fn an_answerer_that_fails_ends_the_execution() {
         )
         .unwrap_err();
     assert!(e.to_string().contains("the chronicle is damaged"), "{e}");
+}
+
+#[test]
+fn an_answerer_the_policy_does_not_name_is_not_asked() {
+    // The binding asks the cell of the policy's holder (RFC-048); another
+    // cell of the call is not asked, also when it has the answer.
+    let service = corpus_service(false);
+    let mut parameters = application();
+    parameters.insert(ONCE.to_string(), Value::Bool(true));
+    let answerer = Answerer::giving(Some(false)).of("Het hoofd van OBS Het Anker");
+    let result = granted_13a_with(&service, parameters, &answerer).unwrap();
+    assert!(answerer.asked.borrow().is_empty());
+    assert_eq!(result.outputs["verlof_verleend"], Value::Bool(false));
+    let trace = result.trace.unwrap().render_box_drawing();
+    assert!(
+        trace.contains(&format!(
+            "No cell of this execution gives the answer '{ONCE}' for 'Het hoofd van OBS De Klimop'"
+        )),
+        "{trace}"
+    );
 }
 
 #[test]
@@ -740,10 +945,10 @@ fn in_the_call_anew_the_engine_asks_the_answerer() {
         result.outputs["bestreden_besluit_herroepen"],
         Value::Bool(false)
     );
-    // The question comes from 13a within 7:11, with the parameters of the
+    // The binding of 13a within 7:11 asks it, with the parameters of the
     // decision called anew.
     let asked = answerer.asked.borrow();
-    assert_eq!(asked[0].0, "leerplichtwet_1969#13a");
+    assert_eq!(asked[0].0, ONCE);
     assert_eq!(asked[0].1["bsn_jongere"], Value::String("999990019".into()));
     drop(asked);
 
@@ -757,7 +962,7 @@ fn in_the_call_anew_the_engine_asks_the_answerer() {
     assert!(result
         .open_terms
         .iter()
-        .any(|f| f.term == ONCE && f.filled_by == FilledBy::Answer(provenance())));
+        .any(|f| f.term == ONCE && f.filled_by == bound()));
     let root = result.trace.unwrap();
     assert_eq!(answered(&root).len(), 1, "{}", root.render_box_drawing());
 }
