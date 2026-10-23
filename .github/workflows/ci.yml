@@ -98,6 +98,8 @@ jobs:
               - Justfile
               - .pre-commit-config.yaml
               - .yamllint
+              # The pinned mold version and sha256 that the Rust jobs install.
+              - .github/actions/setup-mold/**
               - .github/workflows/ci.yml
             docs:
               - docs/**
@@ -411,14 +413,9 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install mold linker
-        # The release binary from GitHub, not apt: `apt-get update` alone took
-        # 30 to 110 s on the runners. make-default stays off, so /usr/bin/ld is
-        # untouched and only the -fuse-ld=mold link-arg picks mold. 2.42.1 is
-        # the last C++ release; 3.0 is a rewrite in Rust and gets its own bump.
-        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038  # v1
-        with:
-          mold-version: 2.42.1
-          make-default: false
+        # Checksum-verified release binary, not apt; why, and how to bump the
+        # version and its sha256: .github/actions/setup-mold/action.yml.
+        uses: ./.github/actions/setup-mold
 
       - name: Run sccache
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
@@ -546,11 +543,7 @@ jobs:
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7  # stable
 
       - name: Install mold linker
-        # Why not apt, and why make-default is off: see the Pre-commit job.
-        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038  # v1
-        with:
-          mold-version: 2.42.1
-          make-default: false
+        uses: ./.github/actions/setup-mold
 
       - name: Run sccache
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
@@ -584,11 +577,7 @@ jobs:
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7  # stable
 
       - name: Install mold linker
-        # Why not apt, and why make-default is off: see the Pre-commit job.
-        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038  # v1
-        with:
-          mold-version: 2.42.1
-          make-default: false
+        uses: ./.github/actions/setup-mold
 
       - name: Run sccache
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
@@ -664,11 +653,7 @@ jobs:
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7  # stable
 
       - name: Install mold linker
-        # Why not apt, and why make-default is off: see the Pre-commit job.
-        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038  # v1
-        with:
-          mold-version: 2.42.1
-          make-default: false
+        uses: ./.github/actions/setup-mold
 
       - name: Run sccache
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
