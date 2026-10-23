@@ -579,6 +579,11 @@ against, is in `docs/src/content/docs/operations/ci-cd.md#the-claude-review-gate
   operates one as easily as a person, while it reads as a human judgement.
 - **Wait on the job's `status`, never on the number of review comments.** Zero
   comments means "still running" as often as "nothing to report".
+- **No review on the head commit? Start one by hand** with
+  `gh workflow run "Claude Code Review" -f pr=<n>`, then rerun the failed gate
+  (`gh run rerun <run id> --failed`); the gate takes that review over. Rerunning
+  an old `pull_request` run does not help, because it keeps the commit it was
+  started for. Toggling the PR to draft and back to ready also works.
 - **A PR that edits `.github/workflows/claude-code-review.yml` gets no automatic
   review**: the action skips itself when the file differs from the default
   branch, and the gate then blocks. Such a PR needs a human review and an admin
