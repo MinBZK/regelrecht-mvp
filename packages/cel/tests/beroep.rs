@@ -742,15 +742,14 @@ fn an_unfounded_appeal_is_received_too() {
 }
 
 #[test]
-fn a_grant_on_objection_the_court_annulled_still_counts_for_the_reduction() {
+fn a_grant_on_objection_the_court_annulled_no_longer_counts() {
     // The objection is well founded: the refusal is revoked and leave is
     // granted in its place. The court annuls that decision on the objection,
-    // with its legal effects. Decided again, the head grants again, but the
-    // school's reduction for lid 2 still counts the annulled grant: it does
-    // not read the judgments from its chronicle yet, so leave was "already
-    // granted" this school year and art. 13a refuses. The decision on the
-    // objection stands as it was. Reading the judgments is the next
-    // step.
+    // with its legal effects (Awb 8:72 lid 2), so the grant it took goes too
+    // and the refusal is no longer revoked. The school's reduction for lid 2
+    // reads, through the head's policy, the judgment the school received:
+    // decided again, the head grants again, and the annulled grant does not
+    // count as leave already granted.
     let mut school = school();
     let mut court = court();
     let refused = refused(&mut school);
@@ -784,9 +783,137 @@ fn a_grant_on_objection_the_court_annulled_still_counts_for_the_reduction() {
             day("2027-01-18"),
         )
         .unwrap();
-    assert_eq!(again.len(), 1);
+    // The replacement the annulled decision took does not count against
+    // this one: the cell lets it replace the refusal again.
+    assert_eq!(again.len(), 2);
     assert_eq!(
-        again[0].outputs["bestreden_besluit_herroepen"],
+        again[1].fields["verlof_al_verleend_in_schooljaar"],
+        json!(false)
+    );
+    assert_eq!(again[1].outputs["verlof_verleend"], json!(true));
+}
+
+#[test]
+fn a_grant_whose_legal_effects_the_court_kept_still_counts() {
+    // Annulled, but the legal effects stay (Awb 8:72 lid 3 onder a): the
+    // grant on objection still counts for a later application.
+    let mut school = school();
+    let mut court = court();
+    let refused = refused(&mut school);
+    let (_, decided) = objected(&mut school, &refused, json!({ PROFESSION: true }));
+    let copy = school
+        .afschrift(&mut service(), &[], &decided[0].id)
+        .unwrap();
+    let appeal = appealed(&mut court, &copy).unwrap();
+    let mut kept = well_founded();
+    kept.insert("rechtsgevolgen_in_stand".into(), json!(true));
+    kept.remove("termijn_nieuw_besluit");
+    let judgment = judged(&mut court, &appeal, &kept);
+    let copy = court.afschrift(&mut service(), &[], &judgment.id).unwrap();
+    school
+        .record_receipt(
+            &service(),
+            JUDGMENTS,
+            &copy,
+            &decided[0].id,
+            day("2027-01-12"),
+        )
+        .unwrap();
+    let application = map(json!({
+        "bsn_jongere": "999990019",
+        "eerste_verlofdag": "2027-05-10",
+        "laatste_verlofdag": "2027-05-14",
+        "aanvraag_ondertekend": true,
+        "naam_aanvrager": "J. Jansen",
+        "adres_aanvrager": "Voorbeeldstraat 1",
+        "dagtekening": "2027-02-01",
+        "gevraagde_beschikking": "vakantieverlof",
+    }));
+    let later = school
+        .record_submission(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            None,
+            &application,
+            day("2027-02-01"),
+        )
+        .unwrap();
+    let decided = school
+        .decide(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            &later.id,
+            &Map::new(),
+            &map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
+            day("2027-02-02"),
+        )
+        .unwrap();
+    assert_eq!(
+        decided[0].fields["verlof_al_verleend_in_schooljaar"],
+        json!(true)
+    );
+    assert_eq!(decided[0].outputs["verlof_verleend"], json!(false));
+}
+
+#[test]
+fn a_grant_on_objection_annulled_itself_no_longer_counts() {
+    // The appeal is against the new decision the decision on objection took
+    // (its `taken_on` is 7:11, so 8:70 finds it admissible). The court
+    // annuls that grant with its legal effects: the school's reduction
+    // leaves the grant itself out, by its own id.
+    let mut school = school();
+    let mut court = court();
+    let refused = refused(&mut school);
+    let (_, decided) = objected(&mut school, &refused, json!({ PROFESSION: true }));
+    let grant = &decided[1];
+    let copy = school.afschrift(&mut service(), &[], &grant.id).unwrap();
+    let appeal = appealed(&mut court, &copy).unwrap();
+    let judgment = judged(&mut court, &appeal, &well_founded());
+    assert_eq!(judgment.outputs["beroep_ontvankelijk"], json!(true));
+    assert_eq!(judgment.outputs["rechtsgevolgen_vernietigd"], json!(true));
+    let copy = court.afschrift(&mut service(), &[], &judgment.id).unwrap();
+    school
+        .record_receipt(&service(), JUDGMENTS, &copy, &grant.id, day("2027-01-12"))
+        .unwrap();
+    let application = map(json!({
+        "bsn_jongere": "999990019",
+        "eerste_verlofdag": "2027-05-10",
+        "laatste_verlofdag": "2027-05-14",
+        "aanvraag_ondertekend": true,
+        "naam_aanvrager": "J. Jansen",
+        "adres_aanvrager": "Voorbeeldstraat 1",
+        "dagtekening": "2027-02-01",
+        "gevraagde_beschikking": "vakantieverlof",
+    }));
+    let later = school
+        .record_submission(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            None,
+            &application,
+            day("2027-02-01"),
+        )
+        .unwrap();
+    let decided = school
+        .decide(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            &later.id,
+            &Map::new(),
+            &map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
+            day("2027-02-02"),
+        )
+        .unwrap();
+    assert_eq!(
+        decided[0].fields["verlof_al_verleend_in_schooljaar"],
         json!(false)
     );
 }

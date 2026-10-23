@@ -180,6 +180,7 @@ pocs:
       - corpus/cells/gemeente_wilgendaal
       - corpus/cells/ggd_wilgendaal
       - corpus/cells/obs_de_klimop
+      - corpus/cells/rechtbank_wilgendaal
       - corpus/regulation/nl/amvb/besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw
       - corpus/regulation/nl/ministeriele_regeling/regeling_gehandicaptenparkeerkaart
       - corpus/regulation/nl/ministeriele_regeling/regeling_vaststelling_schoolvakanties_20252030

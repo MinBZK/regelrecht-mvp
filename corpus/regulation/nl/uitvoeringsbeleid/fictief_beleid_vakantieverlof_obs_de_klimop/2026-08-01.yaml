@@ -26,7 +26,11 @@ articles:
     text: >-
       FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. Een
       besluit telt niet meer als verleend verlof als een beslissing op
-      bezwaar het herriep.
+      bezwaar het herriep, of als de bestuursrechter het met zijn
+      rechtsgevolgen vernietigde. Vernietigde de bestuursrechter een
+      beslissing op bezwaar met haar rechtsgevolgen, dan telt haar herroeping
+      niet, en ook niet het besluit dat zij in de plaats nam (Awb 8:72, eerste
+      tot en met derde lid).
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
     machine_readable:
       execution:
@@ -38,22 +42,76 @@ articles:
           - name: beslissingen_op_bezwaar
             type: array
             description: De beslissingen op bezwaar van het hoofd.
+          # De ontvangen afschriften van uitspraken van de bestuursrechter
+          # (Awb 8:79), zoals de reductie ze uit de kroniek haalt: per
+          # uitspraak wat zij inhoudt, en het besluit van het hoofd waarover
+          # zij gaat (refers_to, RFC-053).
+          - name: uitspraken
+            type: array
+            description: De ontvangen uitspraken van de bestuursrechter.
         output:
+          - name: vernietigde_besluiten
+            type: array
+            description: >-
+              De ids van de besluiten van het hoofd die de bestuursrechter met
+              hun rechtsgevolgen vernietigde (Awb 8:72, eerste en tweede lid,
+              niet in stand gelaten onder derde lid, onder a).
+          - name: besluiten_van_vernietigde_beslissingen
+            type: array
+            description: >-
+              De ids van de nieuwe besluiten die een vernietigde beslissing op
+              bezwaar in de plaats van een herroepen besluit nam.
           - name: herroepen_besluiten
             type: array
             description: >-
               De ids van de besluiten die een beslissing op bezwaar herriep
-              (Awb 7:11, tweede lid).
+              (Awb 7:11, tweede lid) en die niet herleefden doordat de
+              bestuursrechter die beslissing vernietigde.
         actions:
+          # De uitspraak noemt de vernietiging met de rechtsgevolgen samen in
+          # rechtsgevolgen_vernietigd. De koppeling loopt via een lijst ids:
+          # binnen een FOREACH is de binding van een buitenste FOREACH niet te
+          # lezen.
+          - output: vernietigde_besluiten
+            value:
+              operation: FOREACH
+              collection: $uitspraken
+              as: uitspraak
+              filter:
+                operation: EQUALS
+                subject: $uitspraak.rechtsgevolgen_vernietigd
+                value: true
+              body: $uitspraak.refers_to
+          # Wat een vernietigde beslissing op bezwaar in de plaats nam,
+          # vervalt met haar rechtsgevolgen (Awb 8:72, tweede lid).
+          - output: besluiten_van_vernietigde_beslissingen
+            value:
+              operation: FOREACH
+              collection: $beslissingen_op_bezwaar
+              as: beslissing
+              filter:
+                operation: IN
+                subject: $beslissing.id
+                value: $vernietigde_besluiten
+              body: $beslissing.nieuw_besluit
+          # Vernietigde de bestuursrechter de beslissing op bezwaar, dan
+          # herleeft het bezwaar en geldt de herroeping niet.
           - output: herroepen_besluiten
             value:
               operation: FOREACH
               collection: $beslissingen_op_bezwaar
               as: beslissing
               filter:
-                operation: EQUALS
-                subject: $beslissing.bestreden_besluit_herroepen
-                value: true
+                operation: AND
+                conditions:
+                  - operation: EQUALS
+                    subject: $beslissing.bestreden_besluit_herroepen
+                    value: true
+                  - operation: NOT
+                    value:
+                      operation: IN
+                      subject: $beslissing.id
+                      value: $vernietigde_besluiten
               body: $beslissing.bestreden_besluit
   - number: '2'
     text: >-

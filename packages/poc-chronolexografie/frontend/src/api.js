@@ -97,6 +97,21 @@ export const api = {
     roep((p) => p.beslissenOpBezwaar(op, json(bevindingen), datum)),
   voorvertoningOpBezwaar: (op, bevindingen, datum) =>
     roep((p) => p.voorvertoningOpBezwaar(op, json(bevindingen), datum)),
+  // Het beroep bij de bestuursrechter (RFC-053): de aanvrager stelt het in,
+  // de rechtbank doet uitspraak en zendt die toe, en het bestuursorgaan
+  // beslist opnieuw op het bezwaar.
+  beroepInstellen: (besluit, velden, datum) =>
+    roep((p) => p.beroepInstellen(besluit, json(velden), datum)),
+  uitspraakDoen: (op, bevindingen, datum) => roep((p) => p.uitspraakDoen(op, json(bevindingen), datum)),
+  voorvertoningUitspraak: (op, bevindingen, datum) =>
+    roep((p) => p.voorvertoningUitspraak(op, json(bevindingen), datum)),
+  toezenden: (uitspraak, datum) => roep((p) => p.toezenden(uitspraak, datum)),
+  waaromUitspraak: (uitspraak) => roep((p) => p.waaromUitspraak(uitspraak)),
+  heroverwegingNaUitspraak: (ontvangst) => roep((p) => p.heroverwegingNaUitspraak(ontvangst)),
+  opnieuwBeslissenOpBezwaar: (ontvangst, bevindingen, datum) =>
+    roep((p) => p.opnieuwBeslissenOpBezwaar(ontvangst, json(bevindingen), datum)),
+  voorvertoningNaUitspraak: (ontvangst, bevindingen, datum) =>
+    roep((p) => p.voorvertoningNaUitspraak(ontvangst, json(bevindingen), datum)),
   reducties: (datum) => roep((p) => p.reducties(datum)),
   logboek: () => roep((p) => p.logboek()),
   reset: () => roep((p) => p.reset()),

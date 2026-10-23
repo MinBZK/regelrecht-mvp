@@ -15,6 +15,7 @@
  */
 import { reactive } from 'vue';
 import { api } from './api.js';
+import { beroepenTegen, ontvangstenBij, uitspraakOp } from './beroep.js';
 
 export const state = reactive({
   // De gekozen casus, zoals `api.casus` haar geeft; null op het keuzescherm.
@@ -24,6 +25,9 @@ export const state = reactive({
   // De kronieken van de andere cellen van de sfeer (RFC-052), elk met
   // `cel`, `cel_naam` en `grammen`; leeg bij een casus zonder.
   andere: [],
+  // De kroniek van de rechtbank (RFC-053): die van de andere cel die
+  // `casus.rechter` noemt; leeg bij een casus zonder rechter.
+  rechter: [],
   vormen: null,
   fout: '',
   // Het chronolexogram dat de kroniek bij openen kiest (een link uit het logboek).
@@ -109,6 +113,7 @@ export async function kiezen(id) {
 async function openen(casus, datum = casus.speeldatum) {
   state.vormen = null;
   state.grammen = [];
+  state.rechter = [];
   state.casus = casus;
   state.datum = datum;
   await verversen();
@@ -128,6 +133,7 @@ export async function verversen() {
     const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(state.datum)]);
     state.grammen = kroniek.grammen;
     state.andere = kroniek.andere ?? [];
+    state.rechter = state.andere.find((a) => a.cel === state.casus.rechter?.cel)?.grammen ?? [];
     state.vormen = vormen;
     await bewaar();
   } catch (e) {
@@ -156,25 +162,49 @@ export const verwijstNaar = (id) => state.grammen.filter((g) => g.refers_to === 
 
 export const aanvragen = () => state.grammen.filter((g) => g.kind === 'AANVRAAG');
 
-/** Het besluit op een aanvraag of een bezwaar, als het er is. */
+/** Het besluit op een aanvraag, als het er is. */
 export const besluitOp = (id) =>
   verwijstNaar(id).find((g) => g.grondslag === besluitGrondslag() && g.kind !== 'BEZWAAR');
 
+/**
+ * Of beslissing `b` het besluit `id` nam: een beslissing op bezwaar noemt
+ * het besluit dat zij in de plaats nam bij id in haar uitvoer.
+ */
+export const neemt = (b, id) => Object.values(b.outputs ?? {}).includes(id);
+
+/** De besluiten die een beslissing op bezwaar nam. */
+export const genomenDoor = (beslissing) => state.grammen.filter((g) => neemt(beslissing, g.id));
+
 export const bezwarenTegen = (id) => verwijstNaar(id).filter((g) => g.kind === 'BEZWAAR');
 
-/** De beslissing op een bezwaar (Awb 7:11), als die er is. */
-export const beslissingOp = (bezwaar) =>
-  verwijstNaar(bezwaar).find((g) => g.grondslag === bezwaarGrondslag());
+/** Elke beslissing op een bezwaar (Awb 7:11): meer dan één na een uitspraak. */
+export const beslissingenOp = (bezwaar) =>
+  verwijstNaar(bezwaar).filter((g) => g.grondslag === bezwaarGrondslag());
+
+/** De laatste beslissing op een bezwaar, als die er is. */
+export const beslissingOp = (bezwaar) => beslissingenOp(bezwaar).at(-1);
+
+/**
+ * De laatste beslissing op een bezwaar die nog geldt: een die de rechter met
+ * haar rechtsgevolgen vernietigde (een ontvangen uitspraak zegt het), telt
+ * niet meer, en dan geldt het bestreden besluit weer.
+ */
+export const geldendeBeslissingOp = (bezwaar) =>
+  beslissingenOp(bezwaar)
+    .filter((b) => !ontvangstenBij(b.id).some((o) => o.fields?.rechtsgevolgen_vernietigd === true))
+    .at(-1);
 
 export const herroepen = (besluit) =>
   bezwarenTegen(besluit.id).some(
-    (bz) => beslissingOp(bz.id)?.outputs?.bestreden_besluit_herroepen === true,
+    (bz) => geldendeBeslissingOp(bz.id)?.outputs?.bestreden_besluit_herroepen === true,
   );
 
 /** Wat een chronolexogram is in het proces, zoals het dossier en het logboek het noemen. */
 export function rol(g) {
   if (g.kind === 'AANVRAAG') return 'Aanvraag';
-  if (g.kind === 'EXECUTOGRAM') return 'Executogram';
+  if (g.kind === 'EXECUTOGRAM') return g.received ? 'Ontvangst uitspraak' : 'Executogram';
+  if (g.kind === 'BEROEP') return 'Beroep';
+  if (g.kind === 'UITSPRAAK') return 'Uitspraak';
   if (g.kind === 'BEZWAAR') return 'Bezwaar';
   if (g.grondslag === bezwaarGrondslag()) return 'Beslissing op bezwaar';
   const op = state.grammen.find((x) => x.id === g.refers_to);
@@ -183,11 +213,13 @@ export function rol(g) {
 
 /**
  * Het dossier van een aanvraag, in de volgorde waarin het ontstond: de
- * aanvraag, het besluit erop, en per bezwaar de beslissing en het besluit
- * dat in de plaats van het herroepene kwam.
+ * aanvraag, het besluit erop, en per bezwaar elke beslissing en het besluit
+ * dat in de plaats van het herroepene kwam. Na een beslissing op bezwaar het
+ * beroep en de uitspraak uit de kroniek van de rechtbank (`rechter: true`)
+ * en de ontvangst van die uitspraak.
  */
 export function dossier(aanvraag) {
-  const stap = (gram) => ({ gram, rol: rol(gram) });
+  const stap = (gram, rechter = false) => ({ gram, rol: rol(gram), rechter });
   const stappen = [stap(aanvraag)];
   let besluit = besluitOp(aanvraag.id);
   while (besluit) {
@@ -195,9 +227,21 @@ export function dossier(aanvraag) {
     let volgende = null;
     for (const bezwaar of bezwarenTegen(besluit.id)) {
       stappen.push(stap(bezwaar));
-      const beslissing = beslissingOp(bezwaar.id);
-      if (beslissing) stappen.push(stap(beslissing));
-      volgende = besluitOp(bezwaar.id) ?? volgende;
+      for (const beslissing of beslissingenOp(bezwaar.id)) {
+        stappen.push(stap(beslissing));
+        for (const beroep of beroepenTegen(beslissing.id)) {
+          stappen.push(stap(beroep, true));
+          const uitspraak = uitspraakOp(beroep.id);
+          if (uitspraak) stappen.push(stap(uitspraak, true));
+        }
+        for (const ontvangst of ontvangstenBij(beslissing.id)) stappen.push(stap(ontvangst));
+      }
+      // Het dossier volgt het besluit dat de laatste beslissing op het
+      // bezwaar nam. Een besluit dat een eerdere, door de rechter
+      // vernietigde beslissing nam, geldt niet meer en staat alleen in de
+      // kroniek.
+      const laatste = geldendeBeslissingOp(bezwaar.id);
+      volgende = (laatste && genomenDoor(laatste)[0]) ?? volgende;
     }
     besluit = volgende;
   }
@@ -217,6 +261,12 @@ export const leesbaar = (naam) => String(naam).replaceAll('_', ' ');
 
 /** `verlof verleend` → `Verlof verleend`. */
 export const hoofdletter = (tekst) => tekst.charAt(0).toUpperCase() + tekst.slice(1);
+/** Een uitkomst van eerder leesbaar: `true` → `ja`, `false` → `nee`. */
+export const jaNee = (v) => (v === true ? 'ja' : v === false ? 'nee' : String(v));
+
+/** Velden zonder de lege (`undefined`): die laat een indiening weg. */
+export const zonderLeeg = (velden) =>
+  Object.fromEntries(Object.entries(velden).filter(([, v]) => v !== undefined));
 
 export const kort = (id) => String(id).slice(-8);
 
@@ -228,14 +278,17 @@ export function samenvatting(aanvraag) {
   const eigen = (state.vormen?.aanvraag.velden ?? []).filter(
     (v) => v.grondslag === besluitGrondslag() && v.naam in (aanvraag.fields ?? {}),
   );
-  const delen = eigen.map((v) => `${leesbaar(v.naam)}: ${toonVeld(aanvraag.fields[v.naam])}`);
+  const delen = eigen.map((v) => `${leesbaar(v.naam)}: ${jaNee(aanvraag.fields[v.naam])}`);
   return [...delen, `ontvangen ${aanvraag.recorded_on}`].join(' · ');
 }
 
-const toonVeld = (v) => (v === true ? 'ja' : v === false ? 'nee' : String(v));
-
-/** Een besluit (geen aanvraag of bezwaar): het verwijst naar waarop het is genomen. */
-export const isBesluit = (g) => g.refers_to && g.kind !== 'AANVRAAG' && g.kind !== 'BEZWAAR';
+/**
+ * Een besluit (geen aanvraag, bezwaar of executogram): het verwijst naar
+ * waarop het is genomen. Een ontvangst van een uitspraak verwijst ook, naar
+ * het besluit waarover die gaat, en is geen besluit.
+ */
+export const isBesluit = (g) =>
+  !!g.refers_to && !['AANVRAAG', 'BEZWAAR', 'EXECUTOGRAM'].includes(g.kind);
 
 /** Een decimaal staat in een chronolexogram als `{"__decimal": "…"}`. */
 const isDecimaal = (v) =>

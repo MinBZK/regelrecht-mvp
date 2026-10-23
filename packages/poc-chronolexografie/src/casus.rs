@@ -60,6 +60,8 @@ pub struct Casus {
     /// The other cells of the sphere (RFC-052): those the engine may ask
     /// for a value another actor establishes, where the law makes them
     /// competent. Each records what it knows before the first scenario.
+    /// The court is one of them, for a case that plays the appeal
+    /// ([`Beroep::rechter`]); without one the case ends at the objection.
     #[serde(default)]
     pub andere_cellen: Vec<AndereCel>,
     pub scenarios: Vec<Scenario>,
@@ -125,6 +127,12 @@ pub struct Voorbeeld {
     pub bevindingen: Map<String, Value>,
     #[serde(default)]
     pub bezwaar: Map<String, Value>,
+    /// The beroepschrift (Awb 6:5).
+    #[serde(default)]
+    pub beroep: Map<String, Value>,
+    /// The court's findings the form starts with.
+    #[serde(default)]
+    pub uitspraak: Map<String, Value>,
 }
 
 /// A scenario as instruction text: the steps in order, and what the visitor
@@ -314,6 +322,10 @@ pub struct Afleiding {
     /// decides on it: Awb 7:11 for both cases.
     pub objection_law: String,
     pub objection: String,
+    /// For a case with a court: the article that establishes the appeal
+    /// (`type: BEROEP`) and decides on it, Awb 8:70, and the fact in which
+    /// the cell records the receipt of a judgment ([`Beroep`]).
+    pub beroep: Option<Beroep>,
     /// Who decides: the competent authority of the article or its law, or
     /// else the law's own words in `decided_per_case_by` on the article's
     /// open terms ("het hoofd", "het college van burgemeester en
@@ -321,6 +333,21 @@ pub struct Afleiding {
     pub rol: String,
     /// The regelwerken the cell runs, by `$id`, the article's law first.
     pub regelwerken: Vec<String>,
+}
+
+/// What follows from the law and the cell for an appeal.
+#[derive(Debug, Clone, Serialize)]
+pub struct Beroep {
+    pub law: String,
+    pub article: String,
+    /// The fact the law requires whose parameters are all outputs of the
+    /// judgment, `<law>#<article>#<fact>`: what the cell records when it
+    /// receives a copy of one (`Cell::record_receipt`).
+    pub ontvangst: String,
+    /// The court: the other cell of the case whose name or category is who
+    /// decides on the appeal, as the law says it ("de bestuursrechter",
+    /// from `decided_per_case_by` on Awb 8:70, as [`Afleiding::rol`]).
+    pub rechter: String,
 }
 
 /// Derive from the law what `casus` needs, with its `cells`: its own and the
@@ -372,35 +399,13 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cells: &[&Cell]) -> Re
         i += 1;
     }
 
-    let mut bezwaren = BTreeSet::new();
-    for id in &gevonden {
-        if let Some(werk) = regelwerken.get(id) {
-            for a in werk.artikelen() {
-                if a.get_produced()
-                    .into_iter()
-                    .any(|p| p.submission_kind() == Some("BEZWAAR"))
-                {
-                    bezwaren.insert((id.clone(), a.number.clone()));
-                }
-            }
-        }
-    }
-    let mut bezwaren = bezwaren.into_iter();
-    let (objection_law, objection) = match (bezwaren.next(), bezwaren.next()) {
-        (Some(b), None) => b,
-        (None, _) => {
-            return Err(Error::Setup(format!(
-                "case '{}': no regelwerk it runs establishes an objection",
-                casus.id
-            )))
-        }
-        (Some(a), Some(b)) => {
-            return Err(Error::Setup(format!(
-                "case '{}': both {}#{} and {}#{} establish an objection",
-                casus.id, a.0, a.1, b.0, b.1
-            )))
-        }
-    };
+    let (objection_law, objection) = vestigt(regelwerken, &casus.id, &gevonden, "BEZWAAR")?;
+    let beroep = beroep(
+        regelwerken,
+        &casus.id,
+        &gevonden,
+        cells.get(1..).unwrap_or_default(),
+    )?;
 
     let werk = regelwerken
         .get(law)
@@ -417,9 +422,159 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cells: &[&Cell]) -> Re
         article: article.to_string(),
         objection_law,
         objection,
+        beroep,
         rol,
         regelwerken: gevonden,
     })
+}
+
+/// The appeal, for a case with a court among its `andere` cells: the
+/// article that establishes it, the fact of its receipt, and the court, the
+/// one cell whose name or category is who decides on the appeal. A case
+/// plays no appeal without other cells, without an article among its
+/// regelwerken that establishes an appeal (who the court is follows from
+/// that article), or when none of the other cells is the court.
+fn beroep(
+    regelwerken: &Regelwerken,
+    casus: &str,
+    gevonden: &[String],
+    andere: &[&Cell],
+) -> Result<Option<Beroep>> {
+    if andere.is_empty() {
+        return Ok(None);
+    }
+    // Without an article that establishes the appeal there is no appeal to
+    // play, whatever the other cells are.
+    let Some((law, article)) = vestigend(regelwerken, casus, gevonden, "BEROEP")? else {
+        return Ok(None);
+    };
+    let werk = regelwerken
+        .get(&law)
+        .ok_or_else(|| Error::Setup(format!("'{law}' is not in the corpus")))?;
+    let wie = rol(werk.nieuwste(), &article).ok_or_else(|| {
+        Error::Setup(format!(
+            "case '{casus}': {law}#{article} names no one who decides on the appeal"
+        ))
+    })?;
+    let mut rechters = andere.iter().filter(|c| {
+        let a = c.authority();
+        a.name == wie || a.category.as_deref() == Some(wie.as_str())
+    });
+    let rechter = match (rechters.next(), rechters.next()) {
+        (None, _) => return Ok(None),
+        (Some(r), None) => r.recording_actor().to_string(),
+        (Some(a), Some(b)) => {
+            return Err(Error::Setup(format!(
+                "case '{casus}': both '{}' and '{}' are {wie}",
+                a.recording_actor(),
+                b.recording_actor()
+            )))
+        }
+    };
+    let ontvangst = ontvangst(regelwerken, casus, gevonden, &law, &article)?;
+    Ok(Some(Beroep {
+        law,
+        article,
+        ontvangst,
+        rechter,
+    }))
+}
+
+/// The one article among the regelwerken `gevonden` whose `produces` lists a
+/// submission of the kind `soort`: the objection (`BEZWAAR`) or the appeal
+/// (`BEROEP`), each established by the article that decides on it.
+fn vestigt(
+    regelwerken: &Regelwerken,
+    casus: &str,
+    gevonden: &[String],
+    soort: &str,
+) -> Result<(String, String)> {
+    vestigend(regelwerken, casus, gevonden, soort)?.ok_or_else(|| {
+        Error::Setup(format!(
+            "case '{casus}': no regelwerk it runs establishes a submission {soort}"
+        ))
+    })
+}
+
+/// The one article among the regelwerken in `gevonden` that establishes a
+/// submission of the kind `soort`, if any; two are an error.
+fn vestigend(
+    regelwerken: &Regelwerken,
+    casus: &str,
+    gevonden: &[String],
+    soort: &str,
+) -> Result<Option<(String, String)>> {
+    let mut artikelen = BTreeSet::new();
+    for id in gevonden {
+        if let Some(werk) = regelwerken.get(id) {
+            for a in werk.artikelen() {
+                if a.get_produced()
+                    .into_iter()
+                    .any(|p| p.submission_kind() == Some(soort))
+                {
+                    artikelen.insert((id.clone(), a.number.clone()));
+                }
+            }
+        }
+    }
+    let mut artikelen = artikelen.into_iter();
+    match (artikelen.next(), artikelen.next()) {
+        (Some(b), None) => Ok(Some(b)),
+        (None, _) => Ok(None),
+        (Some(a), Some(b)) => Err(Error::Setup(format!(
+            "case '{casus}': both {}#{} and {}#{} establish a submission {soort}",
+            a.0, a.1, b.0, b.1
+        ))),
+    }
+}
+
+/// The fact in which a cell records the receipt of a judgment under
+/// `law#article`, as `<law>#<article>#<fact>`: the one fact an article of
+/// the regelwerken `gevonden` requires whose parameters are all outputs of
+/// that decision, so a copy of the judgment holds each by name (Awb 8:79,
+/// `afschrift_van_de_uitspraak`).
+fn ontvangst(
+    regelwerken: &Regelwerken,
+    casus: &str,
+    gevonden: &[String],
+    law: &str,
+    article: &str,
+) -> Result<String> {
+    let uitvoer: BTreeSet<&str> = regelwerken
+        .get(law)
+        .into_iter()
+        .flat_map(|w| w.artikelen())
+        .filter(|a| a.number == article)
+        .flat_map(|a| {
+            a.get_decision()
+                .map(|d| a.outputs_of(d))
+                .unwrap_or_default()
+        })
+        .collect();
+    let mut feiten = BTreeSet::new();
+    for id in gevonden {
+        for a in regelwerken.get(id).into_iter().flat_map(|w| w.artikelen()) {
+            for r in a.get_requires() {
+                let (Some(feit), Some(parameters)) = (&r.fact, &r.parameters) else {
+                    continue;
+                };
+                if !parameters.is_empty() && parameters.iter().all(|p| uitvoer.contains(p.as_str()))
+                {
+                    feiten.insert(format!("{id}#{}#{feit}", a.number));
+                }
+            }
+        }
+    }
+    let mut feiten = feiten.into_iter();
+    match (feiten.next(), feiten.next()) {
+        (Some(f), None) => Ok(f),
+        (None, _) => Err(Error::Setup(format!(
+            "case '{casus}': no regelwerk it runs requires a fact that holds the judgment of {law}#{article}"
+        ))),
+        (Some(a), Some(b)) => Err(Error::Setup(format!(
+            "case '{casus}': both {a} and {b} hold the judgment of {law}#{article}"
+        ))),
+    }
 }
 
 /// The regelwerken `artikelen` read from: `source.regulation`, and the law of

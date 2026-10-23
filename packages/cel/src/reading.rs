@@ -183,13 +183,33 @@ pub fn rows(grams: &[Gram], grondslag: &str, kind: &str) -> Result<Value> {
 
 /// The executograms in `grams` of the fact `fact`
 /// (`<regulation>#<article>#<fact>`, RFC-051), as rows ([`rows_of`]), in the
-/// order the cell recorded them.
+/// order the cell recorded them. The row of the receipt of a copy (RFC-053)
+/// also gives the decision of the cell it concerns, under
+/// [`ROW_REFERS_TO`]; another row holds null there.
 pub fn executogram_rows(grams: &[Gram], fact: &str) -> Result<Value> {
     let (grondslag, name) = crate::shape::split_fact(fact)?;
-    rows_of(grams.iter().filter(|g| {
-        g.kind == EXECUTOGRAM && g.grondslag == grondslag && g.fact.as_deref() == Some(name)
-    }))
+    let grams: Vec<Gram> = grams
+        .iter()
+        .filter(|g| {
+            g.kind == EXECUTOGRAM && g.grondslag == grondslag && g.fact.as_deref() == Some(name)
+        })
+        .map(|g| {
+            let mut row = g.clone();
+            row.fields.insert(
+                ROW_REFERS_TO.to_string(),
+                g.refers_to
+                    .clone()
+                    .map_or(serde_json::Value::Null, serde_json::Value::String),
+            );
+            row
+        })
+        .collect();
+    rows_of(grams.iter())
 }
+
+/// The name under which the row of an executogram gives the chronolexogram
+/// it refers to (RFC-053). A fact holds no parameter of this name.
+pub const ROW_REFERS_TO: &str = "refers_to";
 
 /// `grams` as rows: the fields, then the outputs, then the chronolexogram's
 /// `id`. A field or output named `id` is refused. A name that is both a
