@@ -897,6 +897,10 @@ jobs:
       - docs-source
       - rust-image
       - walkthrough-replay
+      # A required check of its own as well. It is listed here because e2e and
+      # walkthrough-replay need its artifact: when it fails they are skipped,
+      # and this gate would read those two as passed.
+      - wasm
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -939,8 +943,16 @@ jobs:
           check docs-source "${{ needs.docs-source.result }}"
           check rust-image "${{ needs.rust-image.result }}"
           check walkthrough-replay "${{ needs.walkthrough-replay.result }}"
+          check wasm "${{ needs.wasm.result }}"
           exit "$status"
 
+  # Besides proving that the engine builds for wasm32, this job builds the
+  # browser engine once for every job that runs it in Chromium: e2e and
+  # walkthrough-replay download the artifact instead of compiling it inside
+  # the Playwright image, which has no C compiler and would need apt for one.
+  # It builds whenever either of them runs; `walkthrough` is a subset of `ci`
+  # today, and BUILD names both so that narrowing `ci` cannot leave the
+  # replay without an engine.
   wasm:
     name: WASM Build
     needs: changes
@@ -950,22 +962,27 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_GHA_ENABLED: "true"
       CARGO_INCREMENTAL: "0"
+      BUILD: ${{ needs.changes.outputs.ci == 'true' || needs.changes.outputs.walkthrough == 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        if: needs.changes.outputs.ci == 'true'
+        if: env.BUILD == 'true'
+
+      - name: Install just
+        if: env.BUILD == 'true'
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3  # v4.0.0
 
       - name: Install Rust toolchain
-        if: needs.changes.outputs.ci == 'true'
+        if: env.BUILD == 'true'
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7  # stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Run sccache
-        if: needs.changes.outputs.ci == 'true'
+        if: env.BUILD == 'true'
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 
       - name: Cache cargo registry (shared)
-        if: needs.changes.outputs.ci == 'true'
+        if: env.BUILD == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: |
@@ -974,21 +991,45 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('packages/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-registry-
 
-      # wasm32 links with rust-lld, not mold — so no mold here; the default
-      # RUSTFLAGS (-Dwarnings, no mold link-arg) is correct for this target.
+      # `just wasm-build` expects `wasm-bindgen` on PATH; the script reads
+      # version and checksum from frontend/Dockerfile.
+      - name: Install wasm-bindgen-cli
+        if: env.BUILD == 'true'
+        run: script/install-wasm-bindgen.sh
+
+      # The same recipe the jobs below used to run themselves: a release build
+      # with the `wasm` feature, wasm-bindgen `--target web`, and the copies
+      # for the demo and the docs. wasm32 links with rust-lld, not mold, so
+      # the default RUSTFLAGS (-Dwarnings, no mold link-arg) is correct here.
       - name: Build for WASM
-        if: needs.changes.outputs.ci == 'true'
-        run: cd packages/engine && cargo build --target wasm32-unknown-unknown --features wasm
+        if: env.BUILD == 'true'
+        run: just wasm-build
+
+      # Every path `just wasm-build` writes, so a download at the repository
+      # root puts the engine exactly where a local build would. Only jobs in
+      # this run read it; a week leaves room for "Re-run failed jobs" on e2e
+      # or the replay without re-running this job.
+      - name: Upload WASM engine
+        if: env.BUILD == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
+        with:
+          name: wasm-engine
+          path: |
+            frontend/public/wasm/pkg
+            frontend-demo/public/wasm/pkg
+            docs/public/wasm/pkg
+          if-no-files-found: error
+          retention-days: 7
 
       # The chronolexografie poc runs the cel and the engine in the visitor's
       # browser (packages/poc-chronolexografie); a dependency that does not
       # build for wasm32 would otherwise only show in the poc image on main.
       - name: Build chronolexografie for WASM
-        if: needs.changes.outputs.ci == 'true'
+        if: env.BUILD == 'true'
         run: cargo build --manifest-path packages/Cargo.toml -p regelrecht-poc-chronolexografie --target wasm32-unknown-unknown --features wasm
 
       - name: Skip (no relevant changes)
-        if: needs.changes.outputs.ci != 'true'
+        if: env.BUILD != 'true'
         run: echo "No relevant changes, skipping WASM build"
 
   # Sinds de previews opt-in werden (#1204) bouwt een PR geen images meer, dus
@@ -1072,7 +1113,9 @@ jobs:
   # credentials en hoort niet in de PR-gate.
   e2e:
     name: E2E (mocked)
-    needs: changes
+    # The engine comes from the wasm job. If that job fails, this one is
+    # skipped, so the `Test` gate reads `wasm` too.
+    needs: [changes, wasm]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # The official Playwright image: Chromium and every system library it
@@ -1104,54 +1147,17 @@ jobs:
       # Parity met de andere npm-jobs: de workspace kan @nldd-pakketten van
       # npm.pkg.github.com halen.
       packages: read
-    env:
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
-      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         if: needs.changes.outputs.ci == 'true'
 
-      - name: Install just
+      # Built by the wasm job, on the runner. Building it here needs a C
+      # compiler the image lacks, and its apt install once took 22 minutes.
+      - name: Download WASM engine
         if: needs.changes.outputs.ci == 'true'
-        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3  # v4.0.0
-
-      # The image has no C compiler, and the WASM build compiles build scripts
-      # and proc macros for the host, which need `cc` to link. The image's apt
-      # sources are the Azure Ubuntu mirror plus NodeSource, fewer than the
-      # runner carries, and this is one small install, not the browser setup.
-      - name: Install C toolchain
-        if: needs.changes.outputs.ci == 'true'
-        run: apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
-
-      - name: Install Rust toolchain
-        if: needs.changes.outputs.ci == 'true'
-        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7  # stable
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
-          targets: wasm32-unknown-unknown
-
-      - name: Run sccache
-        if: needs.changes.outputs.ci == 'true'
-        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
-
-      - name: Cache cargo registry (shared)
-        if: needs.changes.outputs.ci == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          # Own prefix: inside the container ~ is /github/home, and actions/cache
-          # stores paths relative to the workspace, so an archive saved here
-          # would unpack in the wrong place on the runner jobs, and back.
-          key: ${{ runner.os }}-pwimage-cargo-registry-${{ hashFiles('packages/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-pwimage-cargo-registry-
-
-      # `just test-e2e` hangt aan `wasm-build`, dat `wasm-bindgen` op PATH
-      # verwacht; het script leest versie en checksum uit frontend/Dockerfile.
-      - name: Install wasm-bindgen-cli
-        if: needs.changes.outputs.ci == 'true'
-        run: script/install-wasm-bindgen.sh
+          name: wasm-engine
 
       - name: Setup Node.js
         if: needs.changes.outputs.ci == 'true'
@@ -1166,16 +1172,17 @@ jobs:
         if: needs.changes.outputs.ci == 'true'
         run: npm ci --ignore-scripts
 
-      # Bouwt eerst het WASM-artefact (frontend/public/wasm/pkg) en start dan de
-      # vite-dev-server via playwright's webServer-config.
+      # What `just test-e2e` runs after its `wasm-build` dependency, which the
+      # download above replaces. Playwright's webServer config starts the vite
+      # dev server.
       - name: Run mocked e2e suite
         if: needs.changes.outputs.ci == 'true'
-        run: just test-e2e
+        run: npm run test:e2e -w frontend
 
       # De poc-tests draaien de echte WASM-engine tegen het casus-corpus
       # (Gherkin-scenario's incluis), dus ze horen in deze baan en niet bij de
-      # gewone frontend-tests: daar is geen wasm-artefact. `just test-e2e`
-      # hierboven heeft het al gebouwd.
+      # gewone frontend-tests: daar is geen wasm-artefact. Hier staat het
+      # klaar uit de download hierboven.
       - name: Run poc tests
         if: needs.changes.outputs.ci == 'true'
         run: |
@@ -1208,7 +1215,8 @@ jobs:
   # `just walkthrough verify`. Zonder timeline.json slaagt hij meteen.
   walkthrough-replay:
     name: Rondleiding speelt terug
-    needs: changes
+    # The engine comes from the wasm job; see e2e.
+    needs: [changes, wasm]
     if: needs.changes.outputs.walkthrough == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -1223,42 +1231,17 @@ jobs:
     permissions:
       contents: read
       packages: read
-    env:
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
-      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3  # v4.0.0
 
-      # See the e2e job: the WASM build needs a host C compiler.
-      - name: Install C toolchain
-        run: apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7  # stable
+      # Built by the wasm job; see e2e.
+      - name: Download WASM engine
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
-          targets: wasm32-unknown-unknown
-
-      - name: Run sccache
-        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
-
-      - name: Cache cargo registry (shared)
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          # Own prefix: inside the container ~ is /github/home, and actions/cache
-          # stores paths relative to the workspace, so an archive saved here
-          # would unpack in the wrong place on the runner jobs, and back.
-          key: ${{ runner.os }}-pwimage-cargo-registry-${{ hashFiles('packages/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-pwimage-cargo-registry-
-
-      - name: Install wasm-bindgen-cli
-        run: script/install-wasm-bindgen.sh
+          name: wasm-engine
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v6
@@ -1270,9 +1253,6 @@ jobs:
 
       - name: Install workspace dependencies
         run: npm ci --ignore-scripts
-
-      - name: Build WASM engine
-        run: just wasm-build
 
       # Start zelf een dev-server (de testhaak van de replay bestaat alleen in
       # een dev-build) en haalt alleen de stem uit de release.
