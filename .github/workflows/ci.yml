@@ -111,6 +111,8 @@ jobs:
               - corpus/annotations/**
               - packages/frontend-shared/**
               - script/landing-laws.sh
+              # What the gate installs in the Playwright image.
+              - script/install-a11y-debs.sh
               - .github/workflows/ci.yml
             # De broncontroles op de documentatie (geciteerde paden, proza,
             # RFC-dekking, schemaversie) hebben geen astro-build nodig en

@@ -21,7 +21,8 @@
 # version that was ever published, so a URL keeps working after noble-updates
 # moves on; the archive pool drops superseded versions.
 #
-# The list is only right for the image ci.yml pins. To refresh it after
+# The list is only right for the image ci.yml pins, named on the line below;
+# script/playwright-image.test.mjs fails when the two differ. To refresh it after
 # moving to a newer Playwright image, run in that image:
 #   apt-get update
 #   apt-get install --no-install-recommends --print-uris -y unzip fonts-dejavu-core
@@ -30,6 +31,8 @@
 # prints for it (from the signed package index). Check it against the file at
 #   https://launchpad.net/ubuntu/+archive/primary/+files/<file>
 set -euo pipefail
+
+# Made for: mcr.microsoft.com/playwright:v1.64.1-noble
 
 DEBS="
 a505b9d491386167bd8e14e3383315a4a7d6539e4406745901ccf009a7988271  unzip_6.0-28ubuntu4.1_amd64.deb
