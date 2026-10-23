@@ -1389,7 +1389,7 @@ fn filled_by(cell: &Cell, id: &str, term: &str) -> regelrecht_engine::FilledBy {
 fn an_advice_with_a_long_term_walking_limitation_grants_the_card() {
     // The college finds no limitation, but the advice does. The policy
     // fills the four judgements from the advice and wins over the college
-    // (RFC-047): it cannot deviate (Awb 4:84 is open).
+    // (RFC-045): it cannot deviate (Awb 4:84 is open).
     let mut cell = cell();
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
     reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
@@ -1508,8 +1508,8 @@ fn an_advice_from_before_the_application_or_after_the_decision_does_not_count() 
 #[test]
 fn two_advices_from_the_same_day_are_an_error() {
     // Which of two advices of one examination day counts, the policy does
-    // not say: the reduction refuses to pick (FOREACH combine ONLY), and the
-    // decision is not taken.
+    // not say: the GGD's policy (art. 1) refuses to pick (FOREACH combine
+    // ONLY), and the decision is not taken.
     let mut cell = cell();
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
     reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
@@ -1587,6 +1587,7 @@ fn a_municipality_that_gives_the_advice_answer_is_not_asked_for_it() {
     )
     .unwrap();
     let mut cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
+    assert_eq!(cell.answers().len(), 3);
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
     let mut findings = examined(true);
     findings.insert(EXAMINED.into(), json!(true));
@@ -1609,4 +1610,13 @@ fn a_municipality_that_gives_the_advice_answer_is_not_asked_for_it() {
         .find(|f| f.term == WALKING && f.law_id == LAW)
         .unwrap();
     assert_eq!(walking.filled_by, regelrecht_engine::FilledBy::Finding);
+    // Nowhere in the trace did the municipality give the advice.
+    fn by_municipality(node: &regelrecht_engine::PathNode) -> bool {
+        node.answer
+            .as_ref()
+            .is_some_and(|a| a.answer == ADVICE[0] && a.answerer == RECORDING_ACTOR)
+            || node.children.iter().any(by_municipality)
+    }
+    let root = result.trace.as_ref().unwrap();
+    assert!(!by_municipality(root), "{}", root.render_box_drawing());
 }

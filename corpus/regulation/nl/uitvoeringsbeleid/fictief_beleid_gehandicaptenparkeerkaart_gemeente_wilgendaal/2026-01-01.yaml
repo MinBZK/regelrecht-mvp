@@ -239,7 +239,7 @@ articles:
       # bepaalt dus wie het vraagt. Een protocol van de GGD bindt het college
       # niet, en de GGD vult geen begrip van artikel 49 in.
       # Het advies is een feit (requires, fact), dat vastlegt wie het
-      # onderzoek verricht (competent_authority, RFC-052), zoals het feit van
+      # onderzoek verricht (competent_authority, RFC-051), zoals het feit van
       # het onderzoek zelf bij artikel 3 van de regeling. De parameters heten
       # naar de oordelen van artikel 49 van het BABW. De oordelen uit het
       # advies zijn open begrippen van dit artikel, met dezelfde bevoegden;
@@ -247,6 +247,12 @@ articles:
       # begrip niet zo mag heten als een parameter van hetzelfde artikel.
       # Niet verplicht: zonder advies is er geen oordeel uit het advies, en
       # oordeelt het college zelf (artikel 6).
+      # Eigen keuze: een advies telt niet als bewijs van het onderzoek zelf.
+      # Of het onderzoek plaatsvond, blijft het feit van artikel 3 van de
+      # regeling; de GGD legt beide vast.
+      # Welk advies telt (lid 3), voert de GGD uit met haar fictieve beleid
+      # fictief_beleid_geneeskundig_advies_ggd_wilgendaal, dat haar reductie
+      # aanroept. Dat beleid volgt lid 3 en stelt zelf geen norm.
       open_terms:
         - id: advies_langdurige_loopbeperking
           competent_authority:
@@ -414,15 +420,15 @@ articles:
     url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
     machine_readable:
       # Lid 1 vult de vier oordelen die artikel 49 van het BABW per geval aan
-      # het college laat (implements, RFC-047), uit het advies van artikel 5.
+      # het college laat (implements, RFC-045), uit het advies van artikel 5.
       # Dat advies leest dit artikel bij artikel 5 (source.regulation), zodat
       # de engine de begrippen daar vraagt aan wie ze mag beantwoorden: de
-      # GGD of de aangewezen deskundige (RFC-052).
+      # GGD of de aangewezen deskundige (RFC-051).
       # Lid 2: zonder advies geeft dit artikel niets (null). Dan zwijgt het
       # beleid, en geldt het oordeel van het college zelf, zoals artikel 49
       # het vraagt (decided_per_case_by). Is er een advies, dan wint dit
       # beleid van een oordeel van het college: een regeling die een begrip
-      # invult gaat voor (RFC-047). Afwijken van het advies kan het college
+      # invult gaat voor (RFC-045). Afwijken van het advies kan het college
       # dus niet. Artikel 4:84 van de Awb laat een bestuursorgaan per geval
       # afwijken van een beleidsregel bij onevenredige gevolgen; dat is niet
       # gebouwd en staat open.

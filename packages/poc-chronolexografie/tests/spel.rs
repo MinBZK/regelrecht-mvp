@@ -308,7 +308,7 @@ fn the_ggd_records_an_examination_and_the_card_follows() {
     let ggd = &vormen["andere_cellen"][0];
     assert_eq!(ggd["cel"], json!("ggd_wilgendaal"));
     // The GGD records the examination (Regeling art. 3) and its advice
-    // (the municipality's fictitious policy, art. 2).
+    // (the municipality's fictitious policy, art. 5).
     let feit = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_onderzoek_verricht";
     let feiten: Vec<&Value> = ggd["handelingen"]
         .as_array()

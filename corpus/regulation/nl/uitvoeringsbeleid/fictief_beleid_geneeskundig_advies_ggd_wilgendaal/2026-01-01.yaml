@@ -9,8 +9,8 @@ valid_from: '2026-01-01'
 # Het zegt welk advies de GGD voor een aanvraag laat tellen, zoals artikel 5,
 # derde lid, van het fictieve beleid
 # fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal het vraagt.
-# Het is een norm en leest geen kroniek: de adviezen krijgt het als
-# parameter. De reductie reductie_geneeskundig_advies van de GGD haalt ze uit
+# Het voert die regel van de gemeente uit en stelt zelf geen norm. Het leest
+# geen kroniek: de adviezen krijgt het als parameter. De reductie reductie_geneeskundig_advies van de GGD haalt ze uit
 # haar kroniek en past dit beleid toe (RFC-048). Er is geen bekendmaking; de
 # url wijst naar artikel 3 van de regeling, dat zegt wie onderzoekt.
 url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3

@@ -21,7 +21,7 @@ omschrijving: >-
   advies van de GGD per criterium zegt, vraagt de gemeente aan de GGD; of de
   aanvrager eerder een kaart kreeg, aan elke instantie die kaarten verstrekt:
   zijzelf, een andere gemeente en het CBR. Elke cel antwoordt uit haar eigen
-  kroniek (synthese, RFC-052). Het advies staat in fictief beleid van de
+  kroniek (synthese, RFC-048). Het advies staat in fictief beleid van de
   gemeente: het college oordeelt zoals het advies, en zonder advies zelf.
 cel_naam: gemeente Wilgendaal
 speeldatum: 2026-10-13
@@ -195,7 +195,7 @@ scenarios:
     eind: >-
       Afgewezen. Het college oordeelt zoals het advies (artikel 6 van het
       fictieve beleid), en kan daar niet van afwijken: een beleid dat een
-      begrip invult gaat voor een oordeel van het college (RFC-047). Of het
+      begrip invult gaat voor een oordeel van het college (RFC-045). Of het
       college per geval van zijn beleid mag afwijken (Awb 4:84), is niet
       gebouwd. Bij het besluit staat geen antwoord over een eerdere kaart:
       artikel 49 leest het beleid over een tweede kaart alleen voor een

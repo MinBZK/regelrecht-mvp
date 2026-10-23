@@ -65,7 +65,7 @@ Feature: Het college oordeelt zoals het geneeskundig advies
     Then output "medische_grond_voor_kaart" is true
 
   Scenario: Zonder advies zwijgt het beleid en oordeelt het college zelf
-    # Artikel 3, tweede lid: dan geldt het oordeel van het college bij
+    # Artikel 6, tweede lid: dan geldt het oordeel van het college bij
     # artikel 49 van het BABW.
     When I evaluate "langdurige_loopbeperking" of "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal"
     Then the execution succeeds
