@@ -198,3 +198,23 @@ test('een gevallen voorganger tussen overgeslagen banen valt niet weg', () => {
   const result = runGate({ ...withAll('skipped'), [first]: 'failure' });
   assert.equal(result.status, 1);
 });
+
+test('every job that downloads the WASM engine needs wasm, and so does the gate', () => {
+  // A job whose `needs` fails is skipped, and the gate reads skipped as
+  // passed. Without `wasm` in the gate, a broken engine build would leave e2e
+  // and walkthrough-replay skipped and the gate green.
+  const consumers = [...JOBS.keys()].filter(
+    (job) => job !== 'wasm' && jobBody(job).some((line) => /^\s+name: wasm-engine\s*$/.test(line)),
+  );
+  assert.ok(consumers.length > 0, 'no job downloads the wasm-engine artifact');
+  for (const job of consumers) {
+    const body = jobBody(job);
+    assert.ok(
+      body.some((line) => /actions\/download-artifact@/.test(line)),
+      `${job} names wasm-engine but does not download it`,
+    );
+    const needs = body.find((line) => /^ {4}needs:/.test(line)) ?? '';
+    assert.match(needs, /\bwasm\b/, `${job} downloads wasm-engine but does not need wasm`);
+  }
+  assert.ok(NEEDS.includes('wasm'), 'the gate does not need wasm');
+});

@@ -68,9 +68,9 @@ presenter clicked, typed and scrolled; a change to the demo can leave one of tho
 with nothing to act on (a renamed button, a moved panel, a law that is gone), and
 the walkthrough would then show something other than what the voice says.
 
-The job builds the engine for the browser, starts the demo's dev server, fetches
-only the voice from the walkthrough's release, and replays every chapter in a
-headless Chromium in two window sizes. An action whose element is not found
+The job downloads the browser engine from the **WASM Build** job, starts the
+demo's dev server, fetches only the voice from the walkthrough's release, and
+replays every chapter in a headless Chromium in two window sizes. An action whose element is not found
 fails the job, with an annotation naming the chapter; an action that only finds
 its element with the numbers in its description masked is reported as a
 warning, since it may now point at something else. It runs when `frontend-demo/`,
@@ -86,10 +86,15 @@ gate** run inside the
 not directly on the runner. The image ships
 Chromium with every system library it needs, so these jobs no longer run
 `playwright install --with-deps`. That step spent its time in `apt-get update`
-on the runner and varied from ten seconds to more than nine minutes. Each job
-still runs one small apt install from the image's mirror. The two jobs that
-build the engine for the browser install `gcc` and `libc6-dev`, because the
-WASM build compiles build scripts for the host and the image has no C compiler.
+on the runner and varied from ten seconds to more than nine minutes.
+
+The image's apt sources point at the same Azure Ubuntu mirror the runners use, and on a bad day that mirror serves
+packages at a few kilobytes a second: installing a C compiler once took
+22 minutes in the merge queue, past the queue's check timeout. The engine is
+therefore not built in the image at all. E2E and the walkthrough replay
+download it from the **WASM Build** job (see [below](#wasm-build-on-engine-changes)),
+so neither needs Rust or a C compiler. The accessibility gate still runs one
+small apt install, described below.
 
 The image is pinned by tag and digest in `ci.yml`. A Playwright release looks
 for exactly the browser build it shipped with, so the tag must equal the
@@ -129,7 +134,18 @@ polled `127.0.0.1`, and the gate timed out before it checked a page.
 
 ### WASM build (on engine changes)
 
-Builds the engine for the WebAssembly target to catch compilation issues early.
+The **WASM Build** job runs `just wasm-build` on the runner: a release build of
+the engine with the `wasm` feature, `wasm-bindgen --target web`, and the copies
+for the demo and the docs. It uploads the result as the `wasm-engine`
+artifact, with the same paths a local build writes. E2E and the walkthrough
+replay need this job and download the artifact into their checkout, so the
+engine they run is the one built here. The job also builds the chronolexografie
+poc for wasm32, without uploading it.
+
+It builds whenever `ci` or `walkthrough` matches. When it fails, the two jobs
+that need it are skipped rather than failed, and the `Test` gate would read
+that skip as a pass. The gate therefore waits for **WASM Build** as well, even
+though it is a required check of its own.
 
 ### Licence and supply-chain audit (always runs)
 
@@ -180,7 +196,7 @@ The required `Test` check is a gate job that fails when any job it depends on fa
 - **Cross-law integrity** - `script/cross-law-integriteit.py` over the corpus: misplaced, dangling or plain-param source bindings and broken `implements` declarations
 - **Frontend tests** - unit tests for the editor, lawmaking, demo, arch-explorer and shared packages, type checks of the shared package, lawmaking, the editor and the demo, bundle builds for the editor, lawmaking and demo, a check that the BDD grammar codegen is in sync, and the design-system slot guard (`just nldd-slots`), which fails the job when the design system is missing instead of skipping
 - **Ontwerpsysteem-imports** - checks that the design-system imports match the tags in use
-- **E2E (mocked)** - `just test-e2e`, the Playwright suite against mocked backends
+- **E2E (mocked)** - the Playwright suite against mocked backends (`npm run test:e2e -w frontend`, which is what `just test-e2e` runs after building the engine), plus the poc tests that run the engine
 - **Rust image build** - builds the `pipeline-api` image to catch Dockerfile breakage
 - **Docs source checks** - `npm run check:source` in `docs/`: cited paths, Gherkin steps, prose style, RFC coverage and numbering, the schema version and declared imports, without an Astro build
 
