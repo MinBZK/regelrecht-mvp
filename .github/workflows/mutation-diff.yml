@@ -28,6 +28,7 @@ on:
       - 'packages/engine/**'
       - 'packages/pipeline/**'
       - '.github/workflows/mutation-diff.yml'
+      - '.github/actions/setup-mold/**'
 
 permissions:
   contents: read

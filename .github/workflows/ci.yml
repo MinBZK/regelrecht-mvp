@@ -98,6 +98,8 @@ jobs:
               - Justfile
               - .pre-commit-config.yaml
               - .yamllint
+              # The pinned mold version and sha256 that the Rust jobs install.
+              - .github/actions/setup-mold/**
               - .github/workflows/ci.yml
             docs:
               - docs/**
