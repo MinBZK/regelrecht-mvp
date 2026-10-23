@@ -127,6 +127,16 @@ unpack pa11y's Chrome. Without the DejaVu fonts, `monospace` resolves to a CJK
 font with wider glyphs. Code blocks then overflow, and axe reports them as
 scrollable regions without keyboard access.
 
+It installs them without apt. The image's apt sources point at the Azure Ubuntu
+mirror the runners use, and that mirror is sometimes slow enough to stall a job
+for minutes. `script/install-a11y-debs.sh` downloads the three `.deb` files apt
+would pick (`unzip`, `fonts-dejavu-core` and its dependency
+`fonts-dejavu-mono`) from Launchpad, which keeps every published version. It
+checks each file against a SHA-256 in the script, stops on a mismatch, and
+installs them with `dpkg -i`. The result is the same files as `apt-get install`,
+fontconfig configuration included, in about two seconds. A newer Playwright
+image may need newer versions; the script says how to look them up.
+
 The preview server that pa11y reads from binds to `127.0.0.1` (`npm run a11y`
 in `docs/package.json`), and the gate's page list uses the same address. Left
 at `localhost`, the server listened on `::1` in the container while `wait-on`
