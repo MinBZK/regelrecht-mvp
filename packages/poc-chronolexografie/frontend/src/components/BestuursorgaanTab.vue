@@ -3,7 +3,7 @@
 // beslist op aanvragen en bezwaren, en ziet bij elk besluit waarom het zo
 // uitviel (Waarom.vue). De bevindingen die het per aanvraag geeft, komen uit
 // de wet: `decided_per_case_by` op de open begrippen van het artikel
-// (RFC-050), behalve wat de cel zelf uit haar kroniek beantwoordt. Naast de
+// (RFC-045), behalve wat de cel zelf uit haar kroniek beantwoordt. Naast de
 // bevindingen staat wat het besluit ermee zou worden (Voorvertoning.vue),
 // zonder dat er iets wordt vastgelegd; op een smal scherm eronder. Een
 // begrip dat de cel beantwoordt, vraagt het formulier niet, tenzij de cel

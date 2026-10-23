@@ -57,7 +57,7 @@ pub struct Casus {
     /// start and reset as the cell records anything ([`Begin`]).
     #[serde(default)]
     pub begin: Option<Begin>,
-    /// The other cells of the sphere (RFC-052): those the engine may ask
+    /// The other cells of the sphere (RFC-048): those the engine may ask
     /// for a value another actor establishes, where the law makes them
     /// competent. Each records what it knows before the first scenario.
     #[serde(default)]
@@ -88,7 +88,7 @@ pub struct Begin {
     #[serde(default)]
     pub executogrammen: Vec<BeginExecutogram>,
     /// Applications under the case's article, each decided on its day,
-    /// after the executograms: a card the cell issued before (RFC-052).
+    /// after the executograms: a card the cell issued before (RFC-048).
     #[serde(default)]
     pub aanvragen: Vec<BeginAanvraag>,
 }
@@ -511,7 +511,7 @@ fn rol(law: &ArticleBasedLaw, article: &str) -> Option<String> {
             Some(format!("het {}", one.name))
         }
         CompetentAuthority::Structured(one) => Some(one.name.clone()),
-        // On an article the loader refuses a list (RFC-052).
+        // On an article the loader refuses a list (RFC-051).
         CompetentAuthority::List(_) => None,
         // A reference (`#...`) names no one by itself.
         CompetentAuthority::String(s) if !s.starts_with('#') => Some(s.clone()),

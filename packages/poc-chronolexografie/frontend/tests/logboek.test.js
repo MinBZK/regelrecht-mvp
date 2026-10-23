@@ -191,7 +191,7 @@ describe('toon en artikelNaam', () => {
   });
 });
 
-describe('synthese: antwoorden van andere cellen (RFC-052)', () => {
+describe('synthese: antwoorden van andere cellen (RFC-048)', () => {
   beforeEach(() => {
     state.casus.andere_cellen = [
       { cel: 'gemeente_oostmeer', cel_naam: 'gemeente Oostmeer' },

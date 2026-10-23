@@ -1,4 +1,4 @@
-//! What a decision on an application asks, derived from the law (RFC-047).
+//! What a decision on an application asks, derived from the law (RFC-045 §5).
 //!
 //! An article that establishes an application and decides on it follows a
 //! procedure (RFC-008). The decision runs at the stage BESLUIT and is made
@@ -124,7 +124,7 @@ pub fn derive(
         .map(str::to_string)
         .ok_or_else(|| refused(format!("{reference} takes no decision (legal_character)")))?;
     // The application it decides on: the submission that asks for this
-    // decision with `requests` (RFC-047), in this article or another.
+    // decision with `requests` (RFC-045 §1), in this article or another.
     let date = day.to_string();
     let applications = service.applications_for(law_id, article, &date)?;
     let application_reference = match applications.as_slice() {
@@ -154,7 +154,7 @@ pub fn derive(
     // The decision's outputs: what it decides.
     let outputs: Vec<&str> = decision.map(|d| deciding.outputs_of(d)).unwrap_or_default();
     // What the execution supplies at every stage of the decision: those, and
-    // the data derived for it (RFC-050). A hook may read either as a
+    // the data derived for it (RFC-045 §1). A hook may read either as a
     // parameter; it is no field of the decision.
     let computed: Vec<&str> = outputs
         .iter()
@@ -225,7 +225,7 @@ pub fn derive(
     // law's own (a default, or absent) and asks nothing. A term the law
     // leaves to the authority stays the authority's to supply even when a
     // regulation fills it: the regulation may be silent for this case, and
-    // the engine's precedence decides (RFC-047).
+    // the engine's precedence decides (RFC-045 §5).
     let mut policy_first: Vec<String> = Vec::new();
     let mut judgements: Vec<String> = Vec::new();
     for term in deciding.get_open_terms().into_iter().flatten() {

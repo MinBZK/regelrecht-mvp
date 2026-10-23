@@ -7,7 +7,7 @@
 //!
 //! The medical examination is the GGD's (Regeling art. 3): a cell of its
 //! own records it, and the municipality's decisions take that cell along
-//! as their sphere (RFC-052). Each test has its own GGD ([`GGD`]).
+//! as their sphere (RFC-048). Each test has its own GGD ([`GGD`]).
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
@@ -276,7 +276,7 @@ fn an_application_is_recorded_with_the_awb_deadline() {
 fn the_decision_asks_from_the_application_the_college_the_policy_and_the_cell() {
     let shape = decision::derive(&service(), LAW, ARTICLE, day("2026-10-20")).unwrap();
     assert_eq!(shape.kind, "BESCHIKKING");
-    // The outcome; the last day of validity is derived, no outcome (RFC-050).
+    // The outcome; the last day of validity is derived, no outcome (RFC-045 §1).
     assert_eq!(
         shape.outputs,
         [
@@ -480,7 +480,7 @@ fn a_card_of_someone_else_does_not_count() {
 fn a_cell_lists_the_answers_it_gives_and_the_terms_they_fill() {
     // The answers of the municipality's reduction: whether the applicant
     // holds a valid card, and whether a card was issued before (Regeling
-    // art. 2 lid 2, RFC-052). The examination is the GGD's, in a cell of its
+    // art. 2 lid 2, RFC-048). The examination is the GGD's, in a cell of its
     // own.
     let cell = cell();
     let answers: Vec<(&str, &str)> = cell
@@ -511,7 +511,7 @@ fn a_cell_lists_the_answers_it_gives_and_the_terms_they_fill() {
 }
 
 // ---------------------------------------------------------------------------
-// The objection and the decision on it (Awb 7:11, RFC-050)
+// The objection and the decision on it (Awb 7:11, RFC-045 §7)
 // ---------------------------------------------------------------------------
 
 /// A complete objection on the ground `ground`, and `with`.
@@ -713,7 +713,7 @@ fn granted_and_objected(cell: &mut Cell) -> (Gram, Gram) {
 fn an_unfounded_objection_against_a_grant_leaves_the_decision_standing() {
     // The heroverweging runs art. 49 on the day of the decision on the
     // objection, a month after the grant, so it would issue a card valid a
-    // month longer. That end is derived data (`derived`, RFC-050), no
+    // month longer. That end is derived data (`derived`, RFC-045 §1), no
     // outcome, so it gives no cause: the outcome is the same, and the grant
     // stands with its own validity. During the heroverweging the cell reads
     // the chronicle without the contested grant, so the reduction does not
@@ -926,7 +926,7 @@ fn without_a_report_the_college_cannot_issue_the_card_yet() {
     assert_eq!(cell.grams().len(), 1);
 
     // Once the GGD has recorded the examination, the card is issued; the
-    // GGD's cell answered the term of art. 3 (RFC-052).
+    // GGD's cell answered the term of art. 3 (RFC-048).
     let report = reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
     assert_eq!(report.kind, "EXECUTOGRAM");
     assert_eq!(report.grondslag, format!("{REGELING}#3"));
@@ -1136,7 +1136,7 @@ fn without_a_report_the_college_may_establish_the_examination_itself() {
     assert!(found.contains(&EXAMINED.to_string()), "{found:?}");
 }
 
-// Synthesis (RFC-052): whether a card was issued before is a fact of every
+// Synthesis (RFC-048): whether a card was issued before is a fact of every
 // issuing body (Regeling art. 2 lid 2: "de verstrekkende instantie"), and
 // each answers from its own chronicle.
 
@@ -1290,7 +1290,7 @@ fn regeling_2_combines_the_answers_of_the_issuers_with_or() {
 fn a_municipality_that_gives_the_examination_answer_is_not_asked_for_it() {
     // The examination is the GGD's (Regeling art. 3): the term names who is
     // competent, so the binding asks the GGD and not the municipality, even
-    // where its catalogue gives the answer (RFC-052). Without the GGD the
+    // where its catalogue gives the answer (RFC-051). Without the GGD the
     // college finds it.
     let dir = tempfile::tempdir().unwrap();
     let identity = std::fs::read_to_string(cell_dir().join("cel.yaml")).unwrap();

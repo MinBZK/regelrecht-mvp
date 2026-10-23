@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
 /// Represents a competent authority: a reference or one named authority on an
-/// article (RFC-002), or, on an open term or a fact (schema v0.8.8, RFC-052),
+/// article (RFC-002), or, on an open term or a fact (schema v0.8.8, RFC-051),
 /// one named authority or a list of them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -170,7 +170,7 @@ pub struct TypeSpec {
 ///   term (`implements`)
 /// - The decision of an article: `article: "<regulation>#<article>"` or a
 ///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
-///   RFC-050)
+///   RFC-045)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
     /// Simple cross-law reference (law ID)
@@ -225,11 +225,11 @@ pub struct Source {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reduction: Option<String>,
     /// With `reduction`: how the answers of several cells make one value,
-    /// with the aggregations of FOREACH (schema v0.8.9, RFC-052), where the
+    /// with the aggregations of FOREACH (schema v0.8.9, RFC-048), where the
     /// filled term itself names no `combine`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub combine: Option<CombineOp>,
-    /// The article whose decision this input takes (schema v0.8.4, RFC-050):
+    /// The article whose decision this input takes (schema v0.8.4, RFC-045):
     /// an article reference `<regulation>#<article>`, or a `$`-reference to
     /// a value that holds one, such as the `grondslag` of a `decision`
     /// value. Without `output` the input is the decision value of that
@@ -243,7 +243,7 @@ pub struct Source {
     pub article: Option<String>,
     /// `$`-references to objects whose fields are passed to `article` as
     /// parameters, merged in order; `parameters` goes on top (schema v0.8.4,
-    /// RFC-050). Only with `article`.
+    /// RFC-045). Only with `article`.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -353,7 +353,7 @@ impl Output {
 
 /// What an article produces: one object, the form most laws write, or a
 /// list of produced things, such as an application and the decision on it
-/// (schema v0.8.1, RFC-047). Serializes back in the form it was written in.
+/// (schema v0.8.1, RFC-045). Serializes back in the form it was written in.
 ///
 /// Read it through [`Article::get_produced`], [`Article::get_decision`],
 /// [`Article::get_submission`], [`Article::outputs_of`] and
@@ -424,7 +424,7 @@ impl From<Produces> for ProducesList {
 /// other `type` is a legal character.
 pub const SUBMISSION_KINDS: &[&str] = &["AANVRAAG", "BEZWAAR"];
 
-/// One item of `produces` in the list form (schema v0.8.1, RFC-047): a
+/// One item of `produces` in the list form (schema v0.8.1, RFC-045): a
 /// submission, such as an application, or a decision, each with what it
 /// contains or yields.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -443,7 +443,7 @@ pub struct ProducedItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Vec<String>>,
     /// For a decision: the article's outputs that are data derived for it
-    /// (schema v0.8.4, RFC-050), computed at the decision's stages and
+    /// (schema v0.8.4, RFC-045 §1), computed at the decision's stages and
     /// recorded with it, but not among its outputs, so a call to the
     /// article leaves them out of the decision value.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -538,7 +538,7 @@ impl<'a> Produced<'a> {
     }
 
     /// The outputs the item lists as data derived for it (schema v0.8.4,
-    /// RFC-050); `None` when it lists none, and always for the object form.
+    /// RFC-045 §1); `None` when it lists none, and always for the object form.
     pub fn listed_derived(self) -> Option<&'a [String]> {
         match self {
             Self::Object(_) => None,
@@ -1153,13 +1153,13 @@ pub struct OpenTerm {
     #[serde(default)]
     pub default: Option<OpenTermDefault>,
     /// Who may answer this term for a reader that reaches the article
-    /// through `source.regulation` (schema v0.8.8, RFC-052): one named
+    /// through `source.regulation` (schema v0.8.8, RFC-051): one named
     /// authority or a list. The article's own `competent_authority` says
     /// who decides (RFC-002), which is another question.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub competent_authority: Option<CompetentAuthority>,
     /// How the answers of several competent answerers make one value, with
-    /// the aggregations of FOREACH (schema v0.8.8, RFC-052). Without it, two
+    /// the aggregations of FOREACH (schema v0.8.8, RFC-051). Without it, two
     /// answers are an error.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub combine: Option<CombineOp>,
@@ -1205,7 +1205,7 @@ pub struct ArticleRequirement {
     /// With `fact`: what the fact is, in words.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    /// With `fact`: who establishes it (schema v0.8.8, RFC-052), one named
+    /// With `fact`: who establishes it (schema v0.8.8, RFC-051), one named
     /// authority or a list, such as the GGD for a medical examination.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub competent_authority: Option<CompetentAuthority>,
@@ -1982,7 +1982,7 @@ impl Article {
     }
 
     /// The outputs the decision lists as data derived for it, `derived`
-    /// (schema v0.8.4, RFC-050): computed at the decision's stages and
+    /// (schema v0.8.4, RFC-045): computed at the decision's stages and
     /// recorded with it, but not among its outputs.
     pub fn derived_outputs(&self) -> Vec<&str> {
         self.get_decision()

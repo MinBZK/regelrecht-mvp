@@ -128,7 +128,7 @@ articles:
       en die van het CBR.
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
     machine_readable:
-      # Synthese bij de afnemer (RFC-052): het begrip noemt wie bevoegd is
+      # Synthese bij de afnemer (RFC-048): het begrip noemt wie bevoegd is
       # (competent_authority) en hoe hun antwoorden één waarde worden
       # (combine: OR). De engine vraagt elke bevoegde cel van de sfeer om dit
       # antwoord; een cel die het niet geeft, zwijgt.
@@ -169,7 +169,7 @@ articles:
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
     machine_readable:
       # Het begrip noemt wie bevoegd is: de GGD of de aangewezen deskundige
-      # (competent_authority, RFC-052). Zwijgt de GGD, dan stelt het college
+      # (competent_authority, RFC-051). Zwijgt de GGD, dan stelt het college
       # het vast op het rapport dat het kreeg.
       implements:
         - law: regeling_gehandicaptenparkeerkaart

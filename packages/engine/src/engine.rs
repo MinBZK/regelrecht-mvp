@@ -60,7 +60,7 @@ pub enum OutputProvenance {
 }
 
 /// Who filled an open term in an execution: a finding of the authority
-/// that decides it per case, a regulation that implements it (RFC-050), or
+/// that decides it per case, a regulation that implements it (RFC-045), or
 /// a policy article that binds it to the answer of one or more cells
 /// (RFC-048). A consumer reads here which the outcome rests on, instead of
 /// guessing from the value: a regulation can give what the authority found.
@@ -79,7 +79,7 @@ pub enum FilledBy {
     /// answer of a cell (`source.reduction`): the binding, and every answer
     /// it took that was not null, with what each cell says it answered
     /// from, in the order of the names of their cells; several were
-    /// combined (RFC-052). Where every cell was silent and nothing falls
+    /// combined (RFC-048). Where every cell was silent and nothing falls
     /// back, the null answers; where no cell answered, none.
     Answer {
         law_id: String,
@@ -415,7 +415,7 @@ impl<'a> ArticleEngine<'a> {
                     });
                 }
             }
-            // A call to an article (RFC-050) runs another article, which
+            // A call to an article (RFC-045) runs another article, which
             // only the service can do.
             if let Some(target) = &source.article {
                 if !parameters.contains_key(&input.name) {
@@ -1433,7 +1433,7 @@ articles:
 
     #[test]
     fn test_article_call_needs_the_service_unless_passed() {
-        // A call to an article (RFC-050) runs another article: this engine
+        // A call to an article (RFC-045) runs another article: this engine
         // cannot, so the input must be passed.
         let yaml = r#"
 $id: article_call_law

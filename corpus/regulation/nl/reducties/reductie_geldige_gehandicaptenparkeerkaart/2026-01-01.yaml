@@ -16,7 +16,7 @@ valid_from: '2026-01-01'
 # aanroept, en het tweede aan het open begrip van artikel 2, tweede lid, onder
 # a en b, van de Regeling gehandicaptenparkeerkaart. Voor dat laatste is elke
 # verstrekkende instantie bevoegd (competent_authority van dat begrip,
-# RFC-052), dus ook de colleges van andere gemeenten en het CBR antwoorden.
+# RFC-051), dus ook de colleges van andere gemeenten en het CBR antwoorden.
 # Twee artikelen, omdat het tweede antwoord de dag van het besluit niet kent:
 # artikel 2 van de regeling geeft die niet mee. Er is geen bekendmaking; de
 # url wijst naar artikel 49.
@@ -95,7 +95,7 @@ articles:
           # en met de dag van het besluit of later. Een weigering telt niet, en
           # een besluit dat op bezwaar is herroepen ook niet (Awb 7:11, tweede
           # lid); het besluit dat in zijn plaats kwam, telt als elk ander
-          # (RFC-050). Een kaart die haar geldigheid op een andere grond
+          # (RFC-048 §6). Een kaart die haar geldigheid op een andere grond
           # verloor (artikel 53, eerste lid, onder b tot en met e), en een kaart
           # van een andere gemeente, ziet deze reductie niet: die staan niet in
           # de kroniek. Met `as` is een besluit alleen als `$besluit.<veld>` te
@@ -183,7 +183,7 @@ articles:
           # Een besluit dat dezelfde aanvrager eerder een kaart verstrekte,
           # geldig of niet, en niet herroepen. Vindt het systeem er geen, dan
           # zwijgt het (null): een kaart van een andere gemeente of van het
-          # CBR kent het niet; die cel antwoordt zelf (RFC-052).
+          # CBR kent het niet; die cel antwoordt zelf (RFC-048).
           - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
             value:
               operation: IF

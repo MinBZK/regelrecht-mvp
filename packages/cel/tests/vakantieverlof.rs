@@ -1,6 +1,6 @@
 //! A cell records an application for vakantieverlof (Leerplichtwet 1969
 //! art. 13a) on the real corpus, with the Awb hooks on it (RFC-045, RFC-046),
-//! and the head of the school decides on it (RFC-047).
+//! and the head of the school decides on it (RFC-046).
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
@@ -371,7 +371,7 @@ fn a_left_out_field_that_cannot_be_absent_is_named_as_missing() {
 }
 
 // ---------------------------------------------------------------------------
-// The decision on the application (RFC-047)
+// The decision on the application (RFC-045)
 // ---------------------------------------------------------------------------
 
 /// The two facts of art. 11, onder f, both judged by the head.
@@ -866,7 +866,7 @@ fn the_school_year_ends_on_31_july_and_the_next_begins_on_1_august() {
 #[test]
 fn the_reduction_sets_a_finding_of_the_head_aside() {
     // The reduction fills the term (implements), so it wins over what the
-    // head finds (RFC-047): leave was granted already this school year.
+    // head finds (RFC-045 §5): leave was granted already this school year.
     let mut cell = cell();
     apply_and_decide(&mut cell, "2026-10-05", "2026-10-09", "2026-09-21");
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
@@ -1133,7 +1133,7 @@ fn an_answer_whose_reduction_the_service_does_not_hold_is_refused() {
 }
 
 // ---------------------------------------------------------------------------
-// The objection and the decision on it (RFC-050)
+// The objection and the decision on it (RFC-045 §7)
 // ---------------------------------------------------------------------------
 
 /// Awb 7:11 decides on the objection and establishes it.
@@ -1647,7 +1647,7 @@ fn a_revoked_grant_does_not_count_as_leave_granted() {
 
     // The revoked grant stays in the chronicle, and its row is as it was.
     // The row of the decision on the objection names it by id and says it
-    // revoked it; the reduction leaves it out (RFC-050).
+    // revoked it; the reduction leaves it out (RFC-048 §6).
     let rows = |grondslag: &str| {
         serde_json::to_value(
             regelrecht_cel::reading::rows(cell.grams(), grondslag, "BESCHIKKING").unwrap(),

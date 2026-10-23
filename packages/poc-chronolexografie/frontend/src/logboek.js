@@ -57,7 +57,7 @@ export const gelezen = (p, grammen) =>
 /**
  * De cel die een begrip beantwoordde, zoals de bezoeker haar kent: de naam
  * uit de casus (OBS De Klimop, gemeente Wilgendaal, GGD Wilgendaal) als zij
- * de cel van de casus of een andere cel van haar sfeer is (RFC-052), anders
+ * de cel van de casus of een andere cel van haar sfeer is (RFC-048), anders
  * haar id.
  */
 export const celNaam = (cel) =>
@@ -67,7 +67,7 @@ export const celNaam = (cel) =>
 
 /**
  * De kroniek van de cel `cel`: die van de casus, of die van een andere cel
- * van de sfeer (RFC-052), om daar het laatst gelezen chronolexogram te
+ * van de sfeer (RFC-048), om daar het laatst gelezen chronolexogram te
  * vinden.
  */
 export const grammenVan = (cel, grammen) =>
@@ -90,7 +90,7 @@ const vanCel = (a, grammen) =>
  * Een koppeling van beleid aan antwoorden van cellen (RFC-048) in woorden:
  * `beleid <id> art. <n>, antwoord <naam> van <cel> (reductie <id>, …)`. Gaven
  * meer cellen hetzelfde antwoord, dan staan zij achter elkaar; de wet of het
- * beleid zegt hoe hun antwoorden één waarde worden (combine, RFC-052).
+ * beleid zegt hoe hun antwoorden één waarde worden (combine, RFC-048).
  */
 export function koppeling(by, grammen) {
   const beleid = `beleid ${by.law_id} art. ${by.article}`;

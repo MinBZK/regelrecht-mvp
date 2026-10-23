@@ -34,7 +34,7 @@
 //! Each row carries the decision's `id`, and a field of type `decision`
 //! holds the id of the decision it names, as the chronolexogram keeps it.
 //! So a reduction can link a decision to another that refers to it, such as
-//! a decision on an objection to the decision it contests (RFC-050). A row
+//! a decision on an objection to the decision it contests (RFC-048 §6). A row
 //! holds only what its own chronolexogram holds: whether another decision
 //! revoked it, a reduction reads from the rows of that other decision.
 
@@ -123,7 +123,7 @@ pub fn bindings(service: &LawExecutionService, day: NaiveDate) -> Vec<Binding> {
 /// ([`bindings`]) and asks the cell `authority` for. As the engine routes
 /// the binding, that cell is one named by the first term the binding
 /// article fills that names its `competent_authority`, or else the
-/// policy's holder (RFC-048, RFC-052). Where the cell runs, its answer
+/// policy's holder (RFC-048, RFC-051). Where the cell runs, its answer
 /// fills such a term; elsewhere the term is what it is without one.
 /// Each term once, in the order of the laws and their articles.
 pub fn bound_terms(
@@ -285,7 +285,7 @@ pub struct Asked {
 /// silent. A reduction the service does not hold is an error.
 pub struct Reader<'c> {
     recording_actor: &'c str,
-    /// Who the cell is, for the engine's routing on competence (RFC-052).
+    /// Who the cell is, for the engine's routing on competence (RFC-048 §4).
     authority: &'c Authority,
     /// The catalogue: per answer, the `$id` of the reduction.
     answers: &'c BTreeMap<String, String>,
@@ -421,7 +421,7 @@ impl<'c> Reader<'c> {
         // The reduction may call rulework that binds a term to an answer of
         // this cell too, such as a regulation that asks where the school is
         // established (RFC-051): the cell answers it there as well. Inside a
-        // reduction the cell asks only itself (RFC-052): synthesis happens
+        // reduction the cell asks only itself (RFC-048 §4): synthesis happens
         // at the consumer, never in a cell.
         let call = Call {
             findings: BTreeMap::new(),
