@@ -1,4 +1,4 @@
-//! Synthesis (RFC-052) at the consumer (RFC-048): a value that another
+//! Synthesis (RFC-048) at the consumer (RFC-048): a value that another
 //! actor establishes is read with `source.regulation` from the article that
 //! establishes it, and the policy of the authority that decides binds its
 //! open term to a named answer (`source.reduction`). Where the term names
@@ -1244,7 +1244,7 @@ articles:
 
 /// A deciding article with one more output beside its decision: whether a
 /// card was issued before, for the college or the national issuer to say.
-/// The decision does not read it, so it belongs to no item (RFC-052).
+/// The decision does not read it, so it belongs to no item (RFC-045 §1).
 const DECIDING: &str = r#"
 $id: wet_beslissing
 regulatory_layer: WET

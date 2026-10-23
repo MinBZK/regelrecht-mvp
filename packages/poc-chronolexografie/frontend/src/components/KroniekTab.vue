@@ -4,8 +4,8 @@
 // waarnaar het verwijst (`refers_to`), welke bevindingen van het bestuursorgaan een
 // besluit gebruikte en de rest als JSON, met decimalen als getal. Welke
 // bevindingen een besluit gebruikte, staat niet in de kroniek: de cel leidt
-// het af uit het besluit opnieuw genomen (Cell::findings, RFC-050).
-// Daaronder de kronieken van de andere cellen van de sfeer (RFC-052): elke
+// het af uit het besluit opnieuw genomen (Cell::findings, RFC-045).
+// Daaronder de kronieken van de andere cellen van de sfeer (RFC-048): elke
 // cel houdt de hare bij; het bestuursorgaan vraagt ze, maar schrijft er niet
 // in.
 import { computed, ref, watch } from 'vue';
@@ -99,7 +99,7 @@ const naar = computed(() => alle.value.find((g) => g.id === gram.value?.refers_t
         <nldd-list-item size="sm">
           <nldd-text-cell
             text="Bevindingen van het bestuursorgaan"
-            :supporting-text="bevindingen.length ? 'die dit besluit gebruikte (RFC-050)' : 'geen'"
+            :supporting-text="bevindingen.length ? 'die dit besluit gebruikte (RFC-045)' : 'geen'"
           ></nldd-text-cell>
         </nldd-list-item>
         <nldd-list-item v-for="f in bevindingen" :key="f" size="sm">

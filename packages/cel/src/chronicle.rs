@@ -47,7 +47,7 @@ pub struct Gram {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fact: Option<String>,
     /// The chronolexogram it refers to: for a decision, the application or
-    /// objection it is taken on (RFC-047, RFC-050); for an objection, the
+    /// objection it is taken on (RFC-046); for an objection, the
     /// decision it contests. Absent for an executogram (RFC-051).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refers_to: Option<String>,
@@ -76,7 +76,7 @@ pub struct Gram {
 
 impl Gram {
     /// The value it holds under `name`: a field, or else an output (what a
-    /// hook on a submission gave, RFC-050).
+    /// hook on a submission gave, RFC-045).
     pub fn held(&self, name: &str) -> Option<&Value> {
         self.fields.get(name).or_else(|| self.outputs.get(name))
     }
@@ -185,7 +185,7 @@ impl Chronicle {
 
     /// Append `grams` together: all of them, or none. Such as the decision
     /// on an objection and the new decision that takes the place of the
-    /// revoked one (RFC-050), which half written would leave a revocation
+    /// revoked one (RFC-046), which half written would leave a revocation
     /// without its replacement.
     pub fn append_all(&mut self, grams: Vec<Gram>) -> Result<&[Gram]> {
         let before = self.grams.len();

@@ -1,6 +1,6 @@
 ---
 # A REDUCTIE is no regulation and delegates nothing (`open_terms`) (schema v0.8.2, RFC-048).
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.2/schema/v0.8.2/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: test_conformance_reduction_with_open_terms
 regulatory_layer: REDUCTIE
 publication_date: '2026-10-14'

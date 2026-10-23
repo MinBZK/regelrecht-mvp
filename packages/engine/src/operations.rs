@@ -1565,7 +1565,7 @@ pub fn execute_foreach(
 
 /// Combine `results` with `op`: the per-element results of a FOREACH
 /// (RFC-016), or the answers of several competent answerers to one open
-/// term (RFC-052).
+/// term (RFC-051 §3).
 pub(crate) fn combine_with(op: CombineOp, results: Vec<Value>) -> Result<Value> {
     match op {
         CombineOp::Add => combine_add(&results),

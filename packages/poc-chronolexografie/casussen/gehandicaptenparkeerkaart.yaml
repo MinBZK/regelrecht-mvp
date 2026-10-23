@@ -20,7 +20,7 @@ omschrijving: >-
   geneeskundig onderzoek door de GGD. Of het onderzoek plaatsvond, vraagt de
   gemeente aan de GGD; of de aanvrager eerder een kaart kreeg, aan elke
   instantie die kaarten verstrekt: zijzelf, een andere gemeente en het CBR.
-  Elke cel antwoordt uit haar eigen kroniek (synthese, RFC-052).
+  Elke cel antwoordt uit haar eigen kroniek (synthese, RFC-048).
 cel_naam: gemeente Wilgendaal
 speeldatum: 2026-10-13
 
@@ -54,7 +54,7 @@ voorbeeld:
     omschrijving_bestreden_besluit: besluit op de aanvraag om een gehandicaptenparkeerkaart
     gronden_bezwaar: ik kan niet verder lopen dan vijftig meter
 
-# De andere cellen van de sfeer (RFC-052). Het open begrip zegt wie bevoegd
+# De andere cellen van de sfeer (RFC-048). Het open begrip zegt wie bevoegd
 # is: de GGD of de aangewezen deskundige voor het onderzoek (Regeling
 # gehandicaptenparkeerkaart, artikel 3), het college van elke gemeente en het
 # CBR voor een eerdere kaart (artikel 2, tweede lid, van de regeling). De engine vraagt alleen een

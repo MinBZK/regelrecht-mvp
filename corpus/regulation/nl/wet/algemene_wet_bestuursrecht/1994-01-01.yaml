@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: algemene_wet_bestuursrecht
 regulatory_layer: WET
 publication_date: '2026-01-01'
@@ -102,7 +102,7 @@ articles:
             nullable: true
             required: false
             description: De dagtekening van de aanvraag (lid 1, onder b).
-          # Kan later volgen uit `requests` van het aanvraag-item (RFC-047).
+          # Kan later volgen uit `requests` van het aanvraag-item (RFC-045).
           - name: gevraagde_beschikking
             type: string
             nullable: true
@@ -195,7 +195,7 @@ articles:
     # Niet uitvoerbaar gemaakt. Lid 1 zegt bij wie het bezwaarschrift wordt
     # ingediend, zoals artikel 4:1 dat voor de aanvraag zegt. Het bezwaar zelf
     # ontstaat bij het artikel dat erop beslist (7:11), zoals de aanvraag om
-    # vakantieverlof bij artikel 13a van de Leerplichtwet 1969 (RFC-050).
+    # vakantieverlof bij artikel 13a van de Leerplichtwet 1969 (RFC-045 §7).
 
   - number: '6:5'
     text: |-
@@ -468,12 +468,12 @@ articles:
       # en wat het bestuursorgaan bij de heroverweging opnieuw oordeelt. Lid 2:
       # geeft dat een andere uitkomst, dan herroept het bestuursorgaan het
       # besluit en neemt het in zijn plaats het besluit dat de heroverweging
-      # gaf (RFC-050).
+      # gaf (RFC-045 §7).
       execution:
         # Lid 1: de heroverweging vindt plaats "op grondslag van" het bezwaar.
         # Dit artikel brengt twee dingen voort, zoals artikel 13a van de
-        # Leerplichtwet 1969 de aanvraag en het besluit erop (RFC-047,
-        # RFC-050). Het bezwaar, waar de Awb op haakt (6:5, 6:9, 7:10), met
+        # Leerplichtwet 1969 de aanvraag en het besluit erop (RFC-045 §1
+        # en §7). Het bezwaar, waar de Awb op haakt (6:5, 6:9, 7:10), met
         # het bestreden besluit. En de beslissing op het bezwaar, een besluit
         # dat de procedure van de Awb volgt, met de uitvoer die daarbij hoort.
         # Eigen keuze: de beslissing op bezwaar tegen een beschikking is zelf
@@ -507,7 +507,7 @@ articles:
           # Lid 1: de heroverweging. Het bestreden besluit opnieuw genomen,
           # op de dag van de beslissing op het bezwaar (ex nunc), met zijn
           # eigen gegevens en bevindingen; wat het bestuursorgaan opnieuw
-          # vaststelt, geeft de uitvoering mee (RFC-050). Alleen gelezen als
+          # vaststelt, geeft de uitvoering mee (RFC-045 §6). Alleen gelezen als
           # het bezwaar ontvankelijk is.
           - name: heroverweging
             type: decision
@@ -550,7 +550,7 @@ articles:
           # berust op het artikel van het herroepen besluit, maar is genomen
           # op het bezwaar. Een besluitwaarde uit de kroniek noemt in
           # taken_on het artikel van de indiening waarop het besluit is
-          # genomen (RFC-050). De overige vereisten (artikelen 1:2, 6:5 met
+          # genomen (RFC-045 §7). De overige vereisten (artikelen 1:2, 6:5 met
           # 6:6) en artikel 6:11 nog niet.
           - output: bezwaar_ontvankelijk
             value:
@@ -566,7 +566,7 @@ articles:
           # Eigen keuze: aanleiding is er als de heroverweging een andere
           # uitkomst geeft dan het bestreden besluit. Alleen wat het
           # besluit-item van dat artikel als uitkomst noemt telt; gegevens die
-          # voor het besluit worden afgeleid niet (RFC-050). Elke uitkomst van
+          # voor het besluit worden afgeleid niet (RFC-045 §7). Elke uitkomst van
           # dat besluit-item telt, niet alleen de beslissing zelf: geeft de
           # heroverweging bij artikel 13a een ander aantal verlofdagen en
           # weigert zij het verlof opnieuw, dan wordt de weigering herroepen

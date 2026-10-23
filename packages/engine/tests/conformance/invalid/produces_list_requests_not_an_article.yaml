@@ -1,6 +1,6 @@
 ---
 # `requests` is an article reference, `<regulation>#<article>` (schema v0.8.1).
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: test_conformance_produces_list_requests_not_an_article
 regulatory_layer: WET
 bwb_id: BWBR9999905

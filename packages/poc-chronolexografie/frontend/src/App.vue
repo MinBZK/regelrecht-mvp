@@ -1,7 +1,7 @@
 <script setup>
 // Eerst de keuze van een casus (CasusKeuze.vue). Daarna één pagina met zes
 // tabbladen: de scenario's, de aanvrager, het bestuursorgaan, de kroniek,
-// de reductie en het logboek, en bij een casus met andere cellen (RFC-052)
+// de reductie en het logboek, en bij een casus met andere cellen (RFC-048)
 // een zevende voor die cellen. Bovenaan de speeldatum, die voor elke stap
 // geldt, een knop die de kroniek terugzet op wat de cel vooraf vastlegde
 // (meestal niets) en een knop terug naar de keuze. Een weigering van de cel
@@ -23,7 +23,7 @@ import ReductieTab from './components/ReductieTab.vue';
 import ScenarioTab from './components/ScenarioTab.vue';
 
 // Het tabblad Andere cellen staat er alleen bij een casus met een sfeer
-// (RFC-052).
+// (RFC-048).
 const tabs = computed(() => [
   { id: 'scenarios', tekst: "Scenario's" },
   { id: 'aanvrager', tekst: 'Aanvrager' },

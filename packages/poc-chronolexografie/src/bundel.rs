@@ -192,7 +192,7 @@ fn uit_bron(
 /// The directories, under the repository root, that the bundle of `alle`
 /// holds: the case files, and per case the directories of the regelwerken
 /// its cell runs and of its own cell and the other cells of its sphere
-/// (RFC-052).
+/// (RFC-048).
 pub fn mappen(alle: &[Corpus]) -> BTreeSet<String> {
     let mut uit = BTreeSet::from([CASUSSEN.to_string()]);
     for c in alle {

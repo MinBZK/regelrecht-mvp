@@ -3,7 +3,7 @@
 //!
 //! A submission may refer to a decision in the chronicle (`refers_to`). A
 //! field of type `decision` then holds that decision, and a field that the
-//! decision holds by name comes from it too (RFC-050). The chronolexogram
+//! decision holds by name comes from it too (RFC-045 §6). The chronolexogram
 //! keeps a decision by its id; the engine gets its decision value
 //! `{grondslag, taken_on, fields, findings, outputs}`, where `taken_on`
 //! is the article of the submission it was taken on. A decision output of
@@ -41,7 +41,7 @@ use regelrecht_law_model::stored;
 #[derive(Debug)]
 pub struct Cell {
     recording_actor: String,
-    /// Who the cell is (`cel.yaml`, RFC-052).
+    /// Who the cell is (`cel.yaml`, RFC-046).
     authority: Authority,
     /// Per answer the cell gives, the `$id` of its reduction (`cel.yaml`,
     /// `answers`, RFC-048).
@@ -188,17 +188,17 @@ impl Cell {
         &self.recording_actor
     }
 
-    /// Who the cell is, from its `cel.yaml` (RFC-052).
+    /// Who the cell is, from its `cel.yaml` (RFC-046).
     pub fn authority(&self) -> &Authority {
         &self.authority
     }
 
     /// The cell as another cell of the sphere answers a decision on `on`
-    /// (RFC-052): from what it recorded up to and including that day. The
+    /// (RFC-048 §6): from what it recorded up to and including that day. The
     /// decision keeps only the day, not a position in the other cell's
-    /// chronicle; a replay asks it as of that day (RFC-050: a source says
+    /// chronicle; a replay asks it as of that day (RFC-046: a source says
     /// what it knew on a given day). A record it makes later, dated up to
-    /// that day, enters the replay; RFC-052 says when that fails it.
+    /// that day, enters the replay; RFC-048 §6 says when that fails it.
     fn known_on(&self, on: NaiveDate) -> Reader<'_> {
         let grams = self
             .grams()
@@ -430,7 +430,7 @@ impl Cell {
             // In a procedure, the application is recorded at its own stage,
             // with the outputs that belong to it and the hooks on it; the
             // decision's outputs wait for the stages of the decision
-            // (RFC-047). A date the stage requires is the day of recording.
+            // (RFC-045 §5). A date the stage requires is the day of recording.
             Some(stage) => {
                 let requires = service
                     .procedure_stage(law_id, article, stage, &date)?
@@ -483,7 +483,7 @@ impl Cell {
     /// cannot be absent and is left out: there is no submission whose
     /// incompleteness a law speaks of, so what is recorded is whole or not
     /// recorded. A field that can be absent and is left out is `null`. Where
-    /// the fact names who establishes it (`competent_authority`, RFC-052),
+    /// the fact names who establishes it (`competent_authority`, RFC-051),
     /// the cell records it only when that names the cell.
     pub fn record_executogram(
         &mut self,
@@ -513,7 +513,7 @@ impl Cell {
     }
 
     /// Take the decision of article `article` of `law_id` on the application
-    /// recorded as chronolexogram `application`, on `on` (RFC-047).
+    /// recorded as chronolexogram `application`, on `on` (RFC-046).
     ///
     /// What the decision asks comes from the application, the holder's
     /// policy and the cell ([`decision::derive`]). The cell answers the
@@ -526,7 +526,7 @@ impl Cell {
     /// holds what the deciding authority
     /// supplies itself, such as a parameter of a hook, and `findings` what it
     /// found for this case, by the id of the open term the law leaves to it
-    /// per case (`decided_per_case_by`, RFC-050). All findings reach the
+    /// per case (`decided_per_case_by`, RFC-045 §5). All findings reach the
     /// engine apart from the parameters, so each applies to every article in
     /// the decision that leaves the term to the authority: the deciding
     /// article, and an article it calls, such as a decision called anew. The
@@ -718,7 +718,7 @@ impl Cell {
     }
 
     /// The fields of the decision `id` that hold a finding of the deciding
-    /// authority it used (RFC-050), derived from a replay: the engine reports
+    /// authority it used (RFC-046), derived from a replay: the engine reports
     /// who filled each open term (`ArticleResult::open_terms`). A field on a
     /// term the law leaves to the authority is not one when the replay
     /// reports only a regulation filled it, a reduction of the cell among
@@ -771,7 +771,7 @@ impl Cell {
     /// outputs are the same at each stage.
     ///
     /// This assumes every source the decision read can say what it knew on
-    /// the day of the decision (RFC-050). The cell's own sources (the
+    /// the day of the decision (RFC-046). The cell's own sources (the
     /// chronicle and the law in force on a day) can.
     fn replay(
         &self,
@@ -984,7 +984,7 @@ impl Cell {
     }
 
     /// The decision value `{grondslag, taken_on, fields, findings,
-    /// outputs}` of the decision `gram`, as the engine builds one (RFC-050),
+    /// outputs}` of the decision `gram`, as the engine builds one (RFC-045 §6),
     /// in the law in force on the day it was recorded: of its outputs those
     /// its decision item names, and of its fields:
     ///
@@ -1261,7 +1261,7 @@ impl Cell {
     }
 }
 
-/// Who answers the engine in a decision of a cell (RFC-052): the cell itself,
+/// Who answers the engine in a decision of a cell (RFC-048 §4): the cell itself,
 /// and the other cells of the sphere, each as it knew things on the day.
 struct Answerers<'r> {
     own: &'r dyn OpenTermAnswerer,
@@ -1307,7 +1307,7 @@ type Values = BTreeMap<String, serde_json::Value>;
 /// ([`ArticleResult::open_terms`]), also where the regulation gives what
 /// the authority found. A finding the decision did not read is not set
 /// aside, so it stays a finding. A finding applies by the term's id to
-/// every article in the decision (RFC-050), so the report is read by id.
+/// every article in the decision (RFC-045 §5), so the report is read by id.
 /// A term listed as filled by both counts as used: the regulation that
 /// fills it read the finding in its place, so the finding was used.
 fn used(given: &Map<String, serde_json::Value>, filled: &[OpenTermFilled]) -> Vec<String> {
@@ -1344,7 +1344,7 @@ struct Filled {
 /// `answerer` for the terms its reductions fill ([`Reader`]). `fields` is what
 /// [`asked`] gathered, and `findings` every finding the authority gave, also
 /// for an article the decision calls. The engine gets the findings apart from
-/// the parameters (RFC-050), so one applies to every article in the decision
+/// the parameters (RFC-045 §5), so one applies to every article in the decision
 /// that leaves the term to the authority. Returns the fields, with what a
 /// policy or a finding filled, and the outputs.
 fn take(
@@ -1521,7 +1521,7 @@ fn run_stages(
                 }
                 // A judgement on a term a regulation also fills: the gram
                 // takes what the engine used, which is the regulation's
-                // value where it fills the term (RFC-047).
+                // value where it fills the term (RFC-045 §5).
                 Source::Caller if input.policy_first => {
                     fields.insert(name.clone(), value);
                 }

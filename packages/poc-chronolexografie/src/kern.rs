@@ -46,7 +46,7 @@ pub struct Corpus {
     files: Arc<dyn Files>,
 }
 
-/// The cell of the case and the other cells of its sphere (RFC-052). It
+/// The cell of the case and the other cells of its sphere (RFC-048). It
 /// reads as the case's cell; a step that decides passes the others along.
 #[derive(Debug)]
 pub struct Cellen {
@@ -61,7 +61,7 @@ impl Cellen {
     }
 
     /// The open terms a policy in force on `on` binds to an answer of one
-    /// of the cells: of the case's cell or of the sphere (RFC-048, RFC-052).
+    /// of the cells: of the case's cell or of the sphere (RFC-048).
     /// A term one of them answers is no judgement the form asks first.
     pub fn terms_on(&self, service: &LawExecutionService, on: NaiveDate) -> Vec<reading::Term> {
         let mut terms: Vec<reading::Term> = Vec::new();
@@ -466,7 +466,7 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     }))
 }
 
-/// What each other cell of the sphere records by hand (RFC-052): the facts
+/// What each other cell of the sphere records by hand (RFC-048): the facts
 /// whose executograms its reductions read (`source.facts`), each with the
 /// fields the article that requires it lists. For the parking card: the GGD
 /// records the medical examination (Regeling art. 3).
@@ -509,7 +509,7 @@ fn handelingen(
 }
 
 /// Another cell of the sphere records an executogram of the fact `feit`
-/// (`<regulation>#<article>#<fact>`) on `on` (RFC-051, RFC-052), such as the
+/// (`<regulation>#<article>#<fact>`) on `on` (RFC-051), such as the
 /// GGD recording that it examined the applicant. The case's own cell
 /// records nothing.
 pub fn vastleggen(
@@ -856,7 +856,7 @@ fn stappen_van(node: &PathNode, spoor: &Spoor<'_>) -> Result<Vec<Stap>> {
                 .find(|f| f.term == node.name && f.law_id == wet && f.article == artikel)
                 .map(|f| f.filled_by.clone());
             // The policy bound the term to the answer of one or more cells
-            // (RFC-048, RFC-052): each answer has a node below this one. The
+            // (RFC-048): each answer has a node below this one. The
             // explanation is of the case's own cell, and only where its
             // answer counted (not silent).
             let antwoorden = antwoorden_van(node);
@@ -1237,7 +1237,7 @@ pub struct Besluit {
 }
 
 /// Decide on the submission `op` under `law_id#article` with the deciding
-/// authority's `bevindingen` (RFC-050): the decision on it first, then a
+/// authority's `bevindingen` (RFC-045 §5): the decision on it first, then a
 /// decision it takes in turn.
 fn beslissen(
     corpus: &Corpus,
@@ -1285,7 +1285,7 @@ pub fn besluiten(
 }
 
 /// The applicant objects to the decision `besluit`: a submission under Awb
-/// 7:11 that refers to it (RFC-050).
+/// 7:11 that refers to it (RFC-045 §7).
 pub fn bezwaren(
     corpus: &Corpus,
     cell: &mut Cellen,
@@ -2839,7 +2839,7 @@ mod tests {
 
     #[test]
     fn parkeerkaart_synthesis_the_other_cells_answer() {
-        // Scenarios 1, 3 and 4 of the synthesis (RFC-052), through the app.
+        // Scenarios 1, 3 and 4 of the synthesis (RFC-048), through the app.
         let (corpus, mut cell) = kaart();
         assert_eq!(cell.andere.len(), 3);
         let voorbeeld = &corpus.casus.voorbeeld;

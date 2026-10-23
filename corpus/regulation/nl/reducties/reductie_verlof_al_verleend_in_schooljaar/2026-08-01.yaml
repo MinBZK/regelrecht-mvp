@@ -88,7 +88,7 @@ articles:
           # Een besluit dat dezelfde jongere verlof verleende, met een eerste
           # verlofdag in het schooljaar van het gevraagde verlof, en dat niet
           # herroepen is. Een weigering telt niet. Het besluit dat in de plaats
-          # van een herroepen besluit kwam, telt als elk ander (RFC-050). Met
+          # van een herroepen besluit kwam, telt als elk ander (RFC-048 §6). Met
           # `as` is een besluit alleen als `$besluit.<veld>` te lezen
           # (RFC-049); `$bsn_jongere` is de parameter.
           - output: verlof_al_verleend_in_schooljaar

@@ -1,6 +1,6 @@
 ---
 # Only a REDUCTIE reads the recorded facts (schema v0.8.7, RFC-051).
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: test_conformance_facts_outside_reduction
 regulatory_layer: UITVOERINGSBELEID
 publication_date: '2026-10-18'

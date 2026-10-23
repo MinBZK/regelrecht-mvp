@@ -1,5 +1,5 @@
 //! Who a cell is and what it answers: `<cell_dir>/cel.yaml`, with its
-//! `name`, the `category` of authorities it belongs to (RFC-052), and its
+//! `name`, the `category` of authorities it belongs to (RFC-046), and its
 //! catalogue of `answers` (RFC-048).
 //!
 //! The law names who is competent for an article (`competent_authority`,

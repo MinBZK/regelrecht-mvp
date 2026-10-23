@@ -135,12 +135,12 @@ struct ResolutionContext<'a> {
     /// The article executed at one stage of its procedure (RFC-008), as
     /// `(law_id, article_number)`, set by [`LawExecutionService::execute_stage`]
     /// and [`LawExecutionService::execute_stage_at`]. Only for that article do
-    /// the hooks on its submission wait for their own stage (RFC-047); an
+    /// the hooks on its submission wait for their own stage (RFC-045); an
     /// article run outside a procedure fires them on every run (RFC-045).
     staged_article: Option<(String, String)>,
     /// The findings the caller gave for this execution, keyed by the id of
     /// an open term an article leaves to an authority per case
-    /// (`decided_per_case_by`, RFC-050). Each applies to every
+    /// (`decided_per_case_by`, RFC-045 §5). Each applies to every
     /// article in the execution that has such a term.
     findings: BTreeMap<String, Value>,
     /// The ids of [`Self::findings`] that an article in the execution asked.
@@ -151,7 +151,7 @@ struct ResolutionContext<'a> {
     /// The cell that runs the execution, asked for the answers a binding
     /// takes (`source.reduction`, RFC-048).
     answerer: Option<&'a dyn OpenTermAnswerer>,
-    /// The other cells of the call (RFC-052), asked with [`Self::answerer`]
+    /// The other cells of the call (RFC-048), asked with [`Self::answerer`]
     /// where a binding names them.
     sphere: Vec<&'a dyn OpenTermAnswerer>,
     /// The answers each binding took, in the order the engine asked them
@@ -171,10 +171,10 @@ struct Bound {
 }
 
 /// The outputs `article` computes at stage `stage` of its procedure
-/// (RFC-047). For an article that produces several things, such as an
+/// (RFC-045). For an article that produces several things, such as an
 /// application and the decision on it: those of the submission whose kind
 /// names the stage, and at every other stage those of the decision with
-/// the data derived for it, the outputs it lists under `derived` (RFC-050). `None`,
+/// the data derived for it, the outputs it lists under `derived` (RFC-045 §1). `None`,
 /// every output, for an article that produces one thing.
 fn outputs_at_stage<'a>(article: &'a Article, stage: &str) -> Option<Vec<&'a str>> {
     if !article.produces_list() {
@@ -296,7 +296,7 @@ impl<'a> ResolutionContext<'a> {
         self.sphere = call.sphere;
     }
 
-    /// The caller's findings (RFC-050) that apply to `article` of `law`: one
+    /// The caller's findings (RFC-045 §5) that apply to `article` of `law`: one
     /// for each open term it leaves to an authority per case
     /// (`decided_per_case_by`). Each is marked asked. A finding that does
     /// not fit the type of its term is an error naming it; `null` fits only
@@ -341,7 +341,7 @@ impl<'a> ResolutionContext<'a> {
     }
 
     /// Every finding the caller gave was asked by an article in the
-    /// execution (RFC-050); otherwise an error naming those that were not.
+    /// execution (RFC-045 §5); otherwise an error naming those that were not.
     fn check_findings_asked(&self) -> Result<()> {
         let unasked: Vec<&str> = self
             .findings
@@ -654,12 +654,12 @@ fn required_parameter_for_nobody(
         })
 }
 
-/// The keys of a decision value (schema v0.8.4, RFC-050).
+/// The keys of a decision value (schema v0.8.4, RFC-045 §6).
 const DECISION_KEYS: [&str; 5] = ["grondslag", "taken_on", "fields", "findings", "outputs"];
 
 /// Every parameter of `article` of type `decision` that `parameters` carries
 /// is an object that holds the keys of a decision value `{grondslag,
-/// taken_on, fields, findings, outputs}`, and no other (RFC-050), and its
+/// taken_on, fields, findings, outputs}`, and no other (RFC-045 §6), and its
 /// `grondslag` and `taken_on` are article references (`<law>#<article>`).
 /// Otherwise an error naming the parameter and the key, or the type the
 /// value has instead. Null and unknown are left to
@@ -1217,7 +1217,7 @@ impl<'a, 'r, 'c> LazyArticleInputs<'a, 'r, 'c> {
                     .calls_other_law(self.law, input, self.parameters)
                 {
                     // A call to an article also reads the value that names
-                    // it and the objects it merges (RFC-050).
+                    // it and the objects it merges (RFC-045 §6).
                     let keys = input
                         .source
                         .iter()
@@ -1312,7 +1312,7 @@ impl LazyInputs for LazyArticleInputs<'_, '_, '_> {
 type Values = BTreeMap<String, Value>;
 
 /// The parts of the decision value `value` that `named_by` holds, for
-/// `caller` to call anew (RFC-050): its `grondslag`, an article reference,
+/// `caller` to call anew (RFC-045 §6): its `grondslag`, an article reference,
 /// and its `fields` and `findings`, two objects. Anything else is an error.
 fn decision_parts(
     mut value: BTreeMap<String, Value>,
@@ -1344,7 +1344,7 @@ fn decision_parts(
 }
 
 /// Whether `value` fits the type of the open term `term`, as a finding for
-/// it (RFC-050): a boolean, a number for a number, a whole number for an
+/// it (RFC-045 §6): a boolean, a number for a number, a whole number for an
 /// amount (in eurocent), a string for a string, a `YYYY-MM-DD` date for a
 /// date, a list, or an object for an object or a decision.
 /// `null` fits only a term that is not required.
@@ -1687,7 +1687,7 @@ pub struct Submission {
     pub articles: Vec<SubmissionArticle>,
     /// When the establishing article follows a procedure (RFC-008): the stage
     /// at which the hooks on the submission fire, named after its kind, such
-    /// as the Awb stage AANVRAAG (RFC-047). Execute that stage with
+    /// as the Awb stage AANVRAAG (RFC-045). Execute that stage with
     /// [`LawExecutionService::execute_stage_at`] to run them. `None` outside a
     /// procedure: every run of the article fires them.
     pub stage: Option<String>,
@@ -1696,7 +1696,7 @@ pub struct Submission {
 /// One stage of the procedure a decision article follows (RFC-008), as
 /// [`LawExecutionService::execute_stage_at`] runs it: what the stage requires
 /// to be entered, and the articles that take part. A runtime that takes the
-/// decision reads here what it must supply (RFC-047).
+/// decision reads here what it must supply (RFC-045).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProcedureStage {
     /// The procedure the article follows.
@@ -1923,7 +1923,7 @@ impl LawExecutionService {
 
     /// [`Self::evaluate_law`] with `findings`: what an authority found for
     /// this case, keyed by the id of an open term it decides per case
-    /// (`decided_per_case_by`), apart from the parameters (RFC-050). A
+    /// (`decided_per_case_by`), apart from the parameters (RFC-045 §5). A
     /// finding applies to every article in the execution that leaves that
     /// term to an authority per case, also one called anew through
     /// `source.article`, where it wins over the decision value's own; an
@@ -2269,7 +2269,7 @@ impl LawExecutionService {
     /// The decision the submission of article `article_number` of `law_id`
     /// asks for (Awb 1:3 lid 3), as `<regulation>#<article>`, in the version
     /// in force on `calculation_date`: the article its list item names with
-    /// `requests` (RFC-047), or the article itself in the object form when
+    /// `requests` (RFC-045), or the article itself in the object form when
     /// that also carries a `legal_character`. `None` when the article
     /// establishes no submission or its submission names no decision. An
     /// error when the requested article is not loaded, has no version in
@@ -2436,7 +2436,7 @@ impl LawExecutionService {
 
     /// Execute one stage of the procedure that article `article_number` of
     /// `law_id` follows, in the version in force on `calculation_date`, on a
-    /// fresh state (RFC-008, RFC-047): the article, with the hooks that fire
+    /// fresh state (RFC-008, RFC-045): the article, with the hooks that fire
     /// at that stage, and nothing carried over from an earlier stage.
     ///
     /// Where [`Self::execute_stage`] walks the procedure and carries what each
@@ -2450,7 +2450,7 @@ impl LawExecutionService {
     /// `None` computes what the stage is about: every output, or for an
     /// article that produces several things the outputs of the submission
     /// the stage is named after, and at any other stage those of the
-    /// decision (RFC-047). Fails when the article follows no
+    /// decision (RFC-045). Fails when the article follows no
     /// procedure, its procedure has no stage `stage_name`, or a value the
     /// stage requires is not among `parameters`.
     pub fn execute_stage_at(
@@ -2474,7 +2474,7 @@ impl LawExecutionService {
     }
 
     /// [`Self::execute_stage_at`] with `findings`, as for
-    /// [`Self::evaluate_law_with_findings`] (RFC-050).
+    /// [`Self::evaluate_law_with_findings`] (RFC-045 §5).
     #[allow(clippy::too_many_arguments)]
     pub fn execute_stage_at_with_findings(
         &self,
@@ -2781,7 +2781,7 @@ impl LawExecutionService {
 
         // A stage accumulates the outputs it computes for the stages after
         // it: every output, or for an article that produces several things
-        // those of the thing this stage is about (RFC-047).
+        // those of the thing this stage is about (RFC-045).
         let stage_outputs = outputs_at_stage(article, &stage.name);
 
         // Execute the article with stage-aware hook firing.
@@ -3124,7 +3124,7 @@ impl LawExecutionService {
     /// `staged` says the article runs at one stage of its procedure. The
     /// hooks on its submission then fire only at the stage named after the
     /// kind of submission, such as the Awb stage AANVRAAG, so recording the
-    /// application and taking the decision on it are two steps (RFC-047).
+    /// application and taking the decision on it are two steps (RFC-045).
     /// Outside a procedure they fire on every run.
     fn hooks_firing_on(
         &self,
@@ -4013,7 +4013,7 @@ impl LawExecutionService {
         };
 
         // The caller's findings on the terms this article leaves to an
-        // authority per case (RFC-050). Across laws one wins over what the
+        // authority per case (RFC-045 §5). Across laws one wins over what the
         // call passes for the term, such as the decision value's own
         // finding; at the top it may not also be a parameter.
         let mut parameters = parameters;
@@ -4290,7 +4290,7 @@ impl LawExecutionService {
     ///
     /// The binding is `article` of the policy `law`, which fills an open
     /// term (`implements`, the loader holds to that). Where a term it fills
-    /// names its competent authorities (RFC-052), every answerer of the call
+    /// names its competent authorities (RFC-051), every answerer of the call
     /// whose [`Authority`](crate::answer::Authority) they name is asked, in
     /// the order of their names, and none other; otherwise those the policy
     /// names as its holder. An answerer without an answer of that name, or
@@ -4450,7 +4450,7 @@ impl LawExecutionService {
                         res_ctx,
                         format!(
                             "input '{}' of {} has {} answers '{answer}', from {}, and no \
-                             combine to make one value of them (RFC-052)",
+                             combine to make one value of them (RFC-048)",
                             input.name,
                             law.id,
                             several.len(),
@@ -4725,12 +4725,12 @@ impl LawExecutionService {
                     // since a typo in the implementation looks the same.
                     // A norm the law leaves to an authority per case falls
                     // back to that authority's judgement the same way
-                    // (RFC-047).
+                    // (RFC-045).
                     silent.push(format!("{} article {}", impl_law.id, impl_article.number));
                 } else {
                     res_ctx.trace_set_result(value.clone());
                     // The implementation is the general specification and
-                    // wins over a judgement for this case (RFC-047). The
+                    // wins over a judgement for this case (RFC-045 §5). The
                     // judgement is set aside, and the trace says by what.
                     let set_aside = match &term.decided_per_case_by {
                         Some(by) if parameters.contains_key(&term.id) => format!(
@@ -4816,7 +4816,7 @@ impl LawExecutionService {
         // A norm the law leaves to an authority per case
         // (`decided_per_case_by`) and that no regulation fills: the
         // authority's judgement for this case comes from the caller, under the
-        // term's id (RFC-047). An implementation above wins, because it is
+        // term's id (RFC-045 §5). An implementation above wins, because it is
         // the general specification; the judgement wins over a default.
         if let Some(by) = &term.decided_per_case_by {
             if let Some(value) = parameters.get(&term.id) {
@@ -5012,7 +5012,7 @@ impl LawExecutionService {
     }
 
     /// Whether resolving `input` calls another law: it names a regulation or
-    /// an article (RFC-050) and no data source answers for it first, the
+    /// an article (RFC-045 §6) and no data source answers for it first, the
     /// order [`Self::resolve_input`] follows.
     fn calls_other_law(
         &self,
@@ -5126,7 +5126,7 @@ impl LawExecutionService {
             return self.resolve_answer(article, law, input, source, answer, context, res_ctx);
         }
 
-        // A call to an article, named in the law or in data (RFC-050).
+        // A call to an article, named in the law or in data (RFC-045 §6).
         if let Some(target) = &source.article {
             return self.resolve_article_call(law, input, source, target, context, res_ctx);
         }
@@ -5575,10 +5575,10 @@ impl LawExecutionService {
         })
     }
 
-    /// Resolve an input that calls the decision of an article (RFC-050).
+    /// Resolve an input that calls the decision of an article (RFC-045 §6).
     /// `target` is an article reference, or a `$`-reference to a value that
     /// holds one or that is a decision value. A decision value is called
-    /// anew (RFC-050): its `grondslag` with its own `fields` and `findings`.
+    /// anew (RFC-045 §6): its `grondslag` with its own `fields` and `findings`.
     ///
     /// The parameters are those `fields`, then the objects of
     /// `parameters_from`, merged in order, with `parameters` on top; a name
@@ -5589,7 +5589,7 @@ impl LawExecutionService {
     /// `findings`, apart from the parameters in `fields`. A finding in the
     /// decision value comes first, a name merged on top of it next, and a
     /// finding the caller of the engine gave for this execution wins over
-    /// both (RFC-050). The article runs in the version in force on the calculation
+    /// both (RFC-045 §6). The article runs in the version in force on the calculation
     /// date, at stage BESLUIT, as a cross-law call does, and computes the
     /// outputs of its decision item. Without `output` the input is the
     /// decision value `{grondslag, fields, findings, outputs}`; with it,
@@ -5736,7 +5736,7 @@ impl LawExecutionService {
         // Only what the article asks; the trace names what it does not. It
         // asks its parameters, and the judgement for this case on an open
         // term it leaves to an authority per case (`decided_per_case_by`),
-        // under the term's id, as a caller at the top gives one (RFC-047).
+        // under the term's id, as a caller at the top gives one (RFC-045 §5).
         // An implementation of that term still wins over the judgement, as
         // at the top (`resolve_open_term`).
         let declared = Self::filter_parameters_for_article(article, &passed);
@@ -5845,7 +5845,7 @@ impl LawExecutionService {
         }
         // The article runs at one stage of its procedure, as when a cell
         // takes the decision (`execute_stage_at`): the hooks on its
-        // submission wait for the stage named after it (RFC-047).
+        // submission wait for the stage named after it (RFC-045).
         let outer_staged = res_ctx
             .staged_article
             .replace((target_law.id.clone(), article.number.clone()));
@@ -6321,7 +6321,7 @@ mod tests {
     use super::*;
 
     /// The decision's stages compute the data derived for it too, the
-    /// outputs it lists under `derived` (RFC-050); the stage of the
+    /// outputs it lists under `derived` (RFC-045 §1); the stage of the
     /// submission only what the submission lists.
     #[test]
     fn the_decision_stages_compute_the_derived_outputs() {
@@ -13900,7 +13900,7 @@ articles:
     }
 
     /// The same renumbering, of a hook on a submission (RFC-045), with the
-    /// application taken in a procedure (RFC-047). Staged at AANVRAAG, the
+    /// application taken in a procedure (RFC-045). Staged at AANVRAAG, the
     /// hook on the application would fire, so the reason names the article
     /// that carries it. Staged at BESLUIT, the application's own hooks wait,
     /// but another article that establishes an AANVRAAG is not the staged
