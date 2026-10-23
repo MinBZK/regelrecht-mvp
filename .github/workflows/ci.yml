@@ -1006,8 +1006,9 @@ jobs:
         run: just wasm-build
 
       # Every path `just wasm-build` writes, so a download at the repository
-      # root puts the engine exactly where a local build would. One day is
-      # enough: only jobs in this run read it.
+      # root puts the engine exactly where a local build would. Only jobs in
+      # this run read it; a week leaves room for "Re-run failed jobs" on e2e
+      # or the replay without re-running this job.
       - name: Upload WASM engine
         if: env.BUILD == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
@@ -1018,7 +1019,7 @@ jobs:
             frontend-demo/public/wasm/pkg
             docs/public/wasm/pkg
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
       # The chronolexografie poc runs the cel and the engine in the visitor's
       # browser (packages/poc-chronolexografie); a dependency that does not

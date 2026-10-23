@@ -42,11 +42,14 @@ function jobBody(name) {
   return lines.slice(start + 1, next ?? lines.length);
 }
 
-/** De namen in `needs:` van de poort, in beide YAML-vormen. */
-function gateNeeds() {
-  const body = jobBody('test');
+/** The names in a job's `needs:`, in all three YAML forms. */
+function jobNeeds(job) {
+  const body = jobBody(job);
   const index = body.findIndex((line) => /^ {4}needs:/.test(line));
-  assert.ok(index !== -1, 'de poort heeft geen needs:');
+  assert.ok(index !== -1, `${job} has no needs:`);
+
+  const single = /^ {4}needs:\s*([A-Za-z0-9_-]+)\s*$/.exec(body[index]);
+  if (single) return [single[1]];
 
   const inline = /^ {4}needs:\s*\[(.+)\]\s*$/.exec(body[index]);
   if (inline) return inline[1].split(',').map((n) => n.trim());
@@ -75,7 +78,7 @@ function gateScript() {
   return script.join('\n');
 }
 
-const NEEDS = gateNeeds();
+const NEEDS = jobNeeds('test');
 const SCRIPT = gateScript();
 
 /**
@@ -203,18 +206,13 @@ test('every job that downloads the WASM engine needs wasm, and so does the gate'
   // A job whose `needs` fails is skipped, and the gate reads skipped as
   // passed. Without `wasm` in the gate, a broken engine build would leave e2e
   // and walkthrough-replay skipped and the gate green.
-  const consumers = [...JOBS.keys()].filter(
-    (job) => job !== 'wasm' && jobBody(job).some((line) => /^\s+name: wasm-engine\s*$/.test(line)),
-  );
+  const downloadsEngine = (body) =>
+    body.some((line, i) => /actions\/download-artifact@/.test(line)
+      && body.slice(i + 1, i + 4).some((next) => /^\s+name: wasm-engine\s*$/.test(next)));
+  const consumers = [...JOBS.keys()].filter((job) => downloadsEngine(jobBody(job)));
   assert.ok(consumers.length > 0, 'no job downloads the wasm-engine artifact');
   for (const job of consumers) {
-    const body = jobBody(job);
-    assert.ok(
-      body.some((line) => /actions\/download-artifact@/.test(line)),
-      `${job} names wasm-engine but does not download it`,
-    );
-    const needs = body.find((line) => /^ {4}needs:/.test(line)) ?? '';
-    assert.match(needs, /\bwasm\b/, `${job} downloads wasm-engine but does not need wasm`);
+    assert.ok(jobNeeds(job).includes('wasm'), `${job} downloads wasm-engine but does not need wasm`);
   }
   assert.ok(NEEDS.includes('wasm'), 'the gate does not need wasm');
 });

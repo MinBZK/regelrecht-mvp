@@ -70,13 +70,13 @@ the walkthrough would then show something other than what the voice says.
 
 The job downloads the browser engine from the **WASM Build** job, starts the
 demo's dev server, fetches only the voice from the walkthrough's release, and
-replays every chapter in a headless Chromium in two window sizes. An action whose element is not found
-fails the job, with an annotation naming the chapter; an action that only finds
-its element with the numbers in its description masked is reported as a
-warning, since it may now point at something else. It runs when `frontend-demo/`,
-`corpus/demo/`, the engine or the schema changes, hangs on the `Test` gate, and
-is the same command as locally: `just walkthrough verify`. A failure is fixed in
-the demo, or by recording that chapter again.
+replays every chapter in a headless Chromium in two window sizes. An action
+whose element is not found fails the job, with an annotation naming the chapter;
+an action that only finds its element with the numbers in its description masked
+is reported as a warning, since it may now point at something else. It runs when
+`frontend-demo/`, `corpus/demo/`, the engine or the schema changes, hangs on the
+`Test` gate, and is the same command as locally: `just walkthrough verify`. A
+failure is fixed in the demo, or by recording that chapter again.
 
 ### The browser jobs run in the Playwright image
 
@@ -88,13 +88,13 @@ Chromium with every system library it needs, so these jobs no longer run
 `playwright install --with-deps`. That step spent its time in `apt-get update`
 on the runner and varied from ten seconds to more than nine minutes.
 
-The image's apt sources point at the same Azure Ubuntu mirror the runners use, and on a bad day that mirror serves
-packages at a few kilobytes a second: installing a C compiler once took
-22 minutes in the merge queue, past the queue's check timeout. The engine is
-therefore not built in the image at all. E2E and the walkthrough replay
-download it from the **WASM Build** job (see [below](#wasm-build-on-engine-changes)),
-so neither needs Rust or a C compiler. The accessibility gate still runs one
-small apt install, described below.
+The image's apt sources point at the same Azure Ubuntu mirror the runners use.
+On a bad day that mirror serves packages at a few kilobytes a second, and
+installing a C compiler once took 22 minutes in the merge queue, past the
+queue's check timeout. The engine is therefore not built in the image at all.
+E2E and the walkthrough replay download it from the **WASM Build** job (see
+[below](#wasm-build-on-engine-changes)), so neither needs Rust or a C compiler.
+The accessibility gate still runs one small apt install, described below.
 
 The image is pinned by tag and digest in `ci.yml`. A Playwright release looks
 for exactly the browser build it shipped with, so the tag must equal the
@@ -142,10 +142,12 @@ replay need this job and download the artifact into their checkout, so the
 engine they run is the one built here. The job also builds the chronolexografie
 poc for wasm32, without uploading it.
 
-It builds whenever `ci` or `walkthrough` matches. When it fails, the two jobs
-that need it are skipped rather than failed, and the `Test` gate would read
-that skip as a pass. The gate therefore waits for **WASM Build** as well, even
-though it is a required check of its own.
+It builds whenever the `ci` or the `walkthrough` change group matches (see
+[change detection](#change-detection)); `walkthrough` covers the demo, its
+corpus, the engine, the schema and the shared frontend code. When it fails, the
+two jobs that need it are skipped rather than failed, and the `Test` gate would
+read that skip as a pass. The gate therefore waits for **WASM Build** as well,
+even though it is a required check of its own.
 
 ### Licence and supply-chain audit (always runs)
 
