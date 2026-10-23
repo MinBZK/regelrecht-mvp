@@ -302,9 +302,21 @@ mod tests {
         for dir in in_het_register() {
             verzamel(Path::new(&dir), &mut files);
         }
-        files.remove("corpus/cells/obs_de_klimop/cel.yaml");
+        // Without its catalogue the school has no cell.
+        let mut without_cell = files.clone();
+        without_cell.remove("corpus/cells/obs_de_klimop/cel.yaml");
+        let e = casussen(without_cell).unwrap_err().to_string();
+        assert!(e.contains("corpus/cells/obs_de_klimop"), "{e}");
+        // Without a reduction its catalogue names, the case cannot run.
+        files.remove(
+            "corpus/regulation/nl/reducties/reductie_verlof_al_verleend_in_schooljaar/2026-08-01.yaml",
+        );
         let e = casussen(files).unwrap_err().to_string();
-        assert!(e.contains("cel.yaml"), "{e}");
+        assert!(
+            e.contains("reductie_verlof_al_verleend_in_schooljaar")
+                && e.contains("not in the corpus"),
+            "{e}"
+        );
     }
 
     /// The regelrecht bundle as the build makes it.

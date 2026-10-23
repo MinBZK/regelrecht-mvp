@@ -58,10 +58,10 @@ Without a procedure (a scenario, the editor) every hook fires at once.
 The law says what is needed. The process supplies it from:
 
 - the application, by field name;
-- policy, through `implements` ([Inversion of Control](/concepts/inversion-of-control));
+- policy, through `implements` ([Inversion of Control](/concepts/inversion-of-control)), which may take the answer of a cell ([Chronolexography](/concepts/chronolexography#answering-from-the-chronicle));
 - the authority, for a term with `decided_per_case_by`, as a finding keyed by the term's id.
 
-Which of these wins on an open term follows the [order of precedence](/concepts/inversion-of-control#a-reduction-that-fills-an-open-term). [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article) says when a finding is refused.
+Which of these wins on an open term follows the [order of precedence](/concepts/inversion-of-control#policy-that-fills-an-open-term-with-a-cells-answer). [Cross-Law References](/concepts/cross-law-references#calling-the-decision-of-an-article) says when a finding is refused.
 
 ## Objection
 

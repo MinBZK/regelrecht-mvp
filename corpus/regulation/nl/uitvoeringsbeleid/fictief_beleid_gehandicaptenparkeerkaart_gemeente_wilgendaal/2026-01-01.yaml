@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.3/schema/v0.8.3/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
 regulatory_layer: UITVOERINGSBELEID
 publication_date: '2025-12-01'
@@ -7,6 +7,11 @@ valid_from: '2026-01-01'
 # FICTIEF. De gemeente Wilgendaal bestaat niet en dit is geen bekendgemaakt
 # beleid, maar een eigen keuze in de modellering. Er is geen bekendmaking; de
 # url wijst daarom naar het artikel dat dit beleid uitwerkt.
+# Artikel 2 tot en met 4 koppelen open begrippen aan de antwoorden van cellen
+# (source.reduction, RFC-048): het college ontleent wat het anders per
+# aanvraag vaststelt aan wat zijn eigen cel, de cellen van andere
+# verstrekkende instanties of de cel van de GGD uit hun kroniek halen. Buiten
+# de cellen geeft een koppeling niets en stelt het college het zelf vast.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Gehandicaptenparkeerkaart in de gemeente Wilgendaal (fictief beleid)
 competent_authority:
@@ -34,11 +39,12 @@ articles:
     machine_readable:
       # Of de aanvrager al een geldige kaart heeft, weet het college uit zijn
       # eigen besluiten; het stelt het per aanvraag vast. Hoe het die
-      # terugleest, zegt dit beleid niet, en het is geen veld van de aanvraag.
-      # In de cel van de gemeente vult haar reductie het begrip (implements,
-      # RFC-048), ook als Awb 7:11 artikel 49 opnieuw aanroept; zonder
-      # reductie geeft het college het als vaststelling. Geen default: een
-      # ontbrekend antwoord verstrekt geen kaart naast een geldige.
+      # terugleest, zegt dit artikel niet, en het is geen veld van de
+      # aanvraag. Artikel 2 koppelt het begrip aan het antwoord van de cel
+      # van de gemeente (RFC-048), ook als Awb 7:11 artikel 49 opnieuw
+      # aanroept; zonder antwoord geeft het college het als vaststelling.
+      # Geen default: een ontbrekend antwoord verstrekt geen kaart naast een
+      # geldige.
       open_terms:
         - id: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
           type: boolean
@@ -72,3 +78,132 @@ articles:
             value:
               operation: NOT
               value: $aanvrager_heeft_geldige_gehandicaptenparkeerkaart
+  - number: '2'
+    text: >-
+      FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. Of
+      de aanvrager al een geldige gehandicaptenparkeerkaart van het college
+      heeft (artikel 1), ontleent het college aan het antwoord van zijn eigen
+      cel over zijn eerdere besluiten.
+    url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
+    machine_readable:
+      implements:
+        - law: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
+          article: '1'
+          open_term: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
+      execution:
+        parameters:
+          - name: bsn_aanvrager
+            type: string
+            description: Burgerservicenummer van de gehandicapte die de kaart aanvraagt.
+          - name: besluit_datum
+            type: date
+            description: De dag waarop het college op de aanvraag besluit.
+        input:
+          - name: antwoord_geldige_kaart
+            type: boolean
+            nullable: true
+            source:
+              reduction: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
+              parameters:
+                bsn_aanvrager: $bsn_aanvrager
+                besluit_datum: $besluit_datum
+        output:
+          - name: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
+            type: boolean
+            nullable: true
+            description: >-
+              Of de aanvrager een geldige kaart van het college heeft; afwezig
+              zonder antwoord van de cel.
+        actions:
+          - output: aanvrager_heeft_geldige_gehandicaptenparkeerkaart
+            value: $antwoord_geldige_kaart
+  - number: '3'
+    text: >-
+      FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. Of
+      aan de aanvrager eerder een gehandicaptenparkeerkaart is verstrekt
+      (artikel 2, tweede lid, onder a en b, van de Regeling
+      gehandicaptenparkeerkaart), ontleent het college aan de antwoorden van
+      de cellen van de verstrekkende instanties die de regeling daarvoor
+      bevoegd maakt: zijn eigen cel, die van de colleges van andere gemeenten
+      en die van het CBR.
+    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
+    machine_readable:
+      # Synthese bij de afnemer (RFC-052): het begrip noemt wie bevoegd is
+      # (competent_authority) en hoe hun antwoorden één waarde worden
+      # (combine: OR). De engine vraagt elke bevoegde cel van de sfeer om dit
+      # antwoord; een cel die het niet geeft, zwijgt.
+      implements:
+        - law: regeling_gehandicaptenparkeerkaart
+          article: '2'
+          open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+      execution:
+        parameters:
+          - name: bsn_aanvrager
+            type: string
+            description: Burgerservicenummer van de aanvrager.
+        input:
+          - name: antwoord_eerder_verstrekt
+            type: boolean
+            nullable: true
+            source:
+              reduction: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+              parameters:
+                bsn_aanvrager: $bsn_aanvrager
+        output:
+          - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            type: boolean
+            nullable: true
+            description: >-
+              Waar, als een verstrekkende instantie de aanvrager eerder een
+              kaart verstrekte; afwezig zonder antwoord.
+        actions:
+          - output: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
+            value: $antwoord_eerder_verstrekt
+  - number: '4'
+    text: >-
+      FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. Of
+      voor de aanvraag een geneeskundig onderzoek heeft plaatsgehad (artikel
+      3, eerste lid, van de Regeling gehandicaptenparkeerkaart), ontleent het
+      college aan het antwoord van de cel van de GGD die het onderzoek
+      verricht.
+    url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
+    machine_readable:
+      # Het begrip noemt wie bevoegd is: de GGD of de aangewezen deskundige
+      # (competent_authority, RFC-052). Zwijgt de GGD, dan stelt het college
+      # het vast op het rapport dat het kreeg.
+      implements:
+        - law: regeling_gehandicaptenparkeerkaart
+          article: '3'
+          open_term: geneeskundig_onderzoek_heeft_plaatsgehad
+      execution:
+        parameters:
+          - name: bsn_aanvrager
+            type: string
+            description: Burgerservicenummer van de aanvrager.
+          - name: dagtekening_aanvraag
+            type: date
+            nullable: true
+            description: De dagtekening van de aanvraag.
+          - name: datum_afgifte
+            type: date
+            description: De dag waarop de kaart zou worden afgegeven.
+        input:
+          - name: antwoord_onderzoek
+            type: boolean
+            nullable: true
+            source:
+              reduction: geneeskundig_onderzoek_heeft_plaatsgehad
+              parameters:
+                bsn_aanvrager: $bsn_aanvrager
+                dagtekening_aanvraag: $dagtekening_aanvraag
+                datum_afgifte: $datum_afgifte
+        output:
+          - name: geneeskundig_onderzoek_heeft_plaatsgehad
+            type: boolean
+            nullable: true
+            description: >-
+              Of voor de aanvraag een geneeskundig onderzoek heeft
+              plaatsgehad; afwezig zonder antwoord van de GGD.
+        actions:
+          - output: geneeskundig_onderzoek_heeft_plaatsgehad
+            value: $antwoord_onderzoek

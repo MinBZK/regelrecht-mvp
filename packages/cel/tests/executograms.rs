@@ -8,8 +8,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use chrono::NaiveDate;
-use regelrecht_cel::{reading, Cell, Error, Reduction, EXECUTOGRAM};
-use regelrecht_engine::LawExecutionService;
+use regelrecht_cel::{reading, Cell, Error, EXECUTOGRAM};
+use regelrecht_engine::{AnswerRequest, Authority, LawExecutionService, OpenTermAnswerer};
 use serde_json::{json, Map, Value};
 
 mod common;
@@ -314,7 +314,7 @@ fn the_rows_are_the_executograms_of_that_fact() {
 }
 
 /// A reduction of the fictional school that reads the executograms of the
-/// fact `fact`.
+/// fact `fact`, and gives the answer `plaats`.
 fn reduction(fact: &str) -> String {
     format!(
         r#"
@@ -322,12 +322,12 @@ $id: reductie_plaats_fictief
 regulatory_layer: REDUCTIE
 publication_date: '2026-01-01'
 valid_from: '2026-01-01'
+competent_authority:
+  name: Testcel
 articles:
   - number: '1'
     text: De plaats is die van de stand.
     machine_readable:
-      implements:
-        - {{law: wet_vaststelling_fictief, article: '4', open_term: plaats}}
       execution:
         input:
           - name: standen
@@ -350,27 +350,35 @@ articles:
 
 #[test]
 fn a_reduction_reads_only_a_fact_its_article_requires() {
-    let service = service();
-    let on = day("2026-08-01");
-    let reads = |fact: &str| {
-        let r = Reduction::parse(reduction(fact)).unwrap();
-        reading::refuse_unrequired_facts(&service, &[r], on)
+    let authority = Authority {
+        name: "Testcel".into(),
+        category: None,
     };
-    assert!(reads(FACT).is_ok());
+    let answers = [("plaats".to_string(), "reductie_plaats_fictief".to_string())].into();
+    let reads = |fact: &str| {
+        let mut service = service();
+        service.load_law(&reduction(fact)).unwrap();
+        let reader = reading::Reader::new(ACTOR, &authority, &answers, Vec::new(), None);
+        let request = AnswerRequest {
+            name: "plaats",
+            parameters: &std::collections::BTreeMap::new(),
+            calculation_date: "2026-08-01",
+        };
+        reader.answer(&service, &request).map(|a| a.unwrap().value)
+    };
+    // No executogram yet: no plaats.
+    assert_eq!(reads(FACT).unwrap(), regelrecht_engine::Value::Null);
     let e = reads("wet_vaststelling_fictief#4#stand").unwrap_err();
-    assert!(
-        matches!(&e, Error::Setup(m) if m.contains("requires no fact 'stand'")),
-        "{e}"
-    );
+    assert!(e.to_string().contains("requires no fact 'stand'"), "{e}");
     // A stream id, as v0.8.6 had it, or an article alone is no fact
     // reference.
-    assert!(Reduction::parse(reduction("stand")).is_err());
-    assert!(Reduction::parse(reduction(GRONDSLAG)).is_err());
+    assert!(service().load_law(&reduction("stand")).is_err());
+    assert!(service().load_law(&reduction(GRONDSLAG)).is_err());
 }
 
 #[test]
 fn a_reduction_that_asks_its_own_answer_is_refused() {
-    // The reduction fills `x` of article 1 by asking article 1, which reads
+    // The answer x that fills `x` of article 1 asks article 1, which reads
     // `x` again: the cell refuses to answer itself.
     let law = r#"
 $id: wet_kring_fictief
@@ -400,18 +408,42 @@ articles:
           - {output: ontvangen, value: true}
           - {output: uit, value: $x}
 "#;
+    // The policy of the school binds x to the answer x of its cell.
+    let binding = r#"
+$id: beleid_kring_fictief
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2026-01-01'
+valid_from: '2026-01-01'
+competent_authority:
+  name: Testcel
+articles:
+  - number: '1'
+    text: x is het antwoord van de cel.
+    machine_readable:
+      implements:
+        - {law: wet_kring_fictief, article: '1', open_term: x}
+      execution:
+        input:
+          - name: antwoord
+            type: boolean
+            nullable: true
+            source: {reduction: x}
+        output:
+          - {name: x, type: boolean, nullable: true}
+        actions:
+          - {output: x, value: $antwoord}
+"#;
     let reduction = r#"
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
 $id: reductie_kring_fictief
 regulatory_layer: REDUCTIE
 publication_date: '2026-01-01'
 valid_from: '2026-01-01'
+competent_authority:
+  name: Testcel
 articles:
   - number: '1'
     text: x is wat artikel 1 zegt.
     machine_readable:
-      implements:
-        - {law: wet_kring_fictief, article: '1', open_term: x}
       execution:
         input:
           - name: weer
@@ -423,13 +455,17 @@ articles:
           - {output: x, value: $weer}
 "#;
     let dir = cell_tempdir();
-    let here = dir.path().join("reducties/reductie_kring_fictief");
-    std::fs::create_dir_all(&here).unwrap();
-    std::fs::write(here.join("2026-01-01.yaml"), reduction).unwrap();
+    std::fs::write(
+        dir.path().join("cel.yaml"),
+        "name: Testcel\nanswers:\n  x: reductie_kring_fictief\n",
+    )
+    .unwrap();
     let mut cell = Cell::in_memory(ACTOR, dir.path()).unwrap();
     let mut service = LawExecutionService::new();
     service.load_law(PROCEDURE_LAW).unwrap();
     service.load_law(law).unwrap();
+    service.load_law(binding).unwrap();
+    service.load_law(reduction).unwrap();
     let on = day("2026-08-01");
     let app = cell
         .record_submission(

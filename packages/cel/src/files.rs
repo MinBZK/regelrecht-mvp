@@ -1,8 +1,8 @@
 //! Where a cell reads its directory from: the file system ([`Disk`]), or a
 //! set of files held in memory ([`Bundle`]), such as a browser gets them
-//! with the page. A cell reads its identity (`cel.yaml`) and its reductions
-//! through [`Files`]; what it records goes to its chronicle, not through
-//! here.
+//! with the page. A cell reads its identity and catalogue (`cel.yaml`)
+//! through [`Files`]; its reductions are rulework of the corpus, and what it
+//! records goes to its chronicle, not through here.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io;

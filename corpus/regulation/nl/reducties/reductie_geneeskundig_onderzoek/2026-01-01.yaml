@@ -1,17 +1,19 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: reductie_geneeskundig_onderzoek
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
 valid_from: '2026-01-01'
-# Geen regelgeving: een reductie van de cel van de (fictieve) GGD Wilgendaal
-# over haar eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de
-# executogrammen van het feit dat artikel 3, eerste lid, van de Regeling
+# Geen regelgeving: een reductie van de (fictieve) GGD Wilgendaal over haar
+# eigen kroniek (RFC-022 §4.1, RFC-048, RFC-051). Ze leest de executogrammen
+# van het feit dat artikel 3, eerste lid, van de Regeling
 # gehandicaptenparkeerkaart omschrijft: de onderzoeken die de GGD verrichtte.
-# Wat elk executogram bevat, zegt dat artikel (requires, fact). Haar antwoord
-# vult het open begrip van dat artikel: of het onderzoek plaatsvond. Daarvoor
-# is de GGD bevoegd (competent_authority van dat begrip, RFC-052). Er is geen
-# bekendmaking; de url wijst naar dat artikel.
+# Wat elk executogram bevat, zegt dat artikel (requires, fact). De cel van de
+# GGD geeft haar uitvoer als het antwoord
+# geneeskundig_onderzoek_heeft_plaatsgehad (cel.yaml, answers). Het beleid van
+# de gemeente die beslist, koppelt dat antwoord aan het open begrip van dat
+# artikel; daarvoor is de GGD bevoegd (competent_authority van dat begrip,
+# RFC-052). Er is geen bekendmaking; de url wijst naar dat artikel.
 url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
 name: Geneeskundig onderzoek bij de GGD Wilgendaal (reductie)
 competent_authority:
@@ -19,20 +21,18 @@ competent_authority:
 articles:
   - number: '1'
     text: >-
-      Geen regelgeving: een reductie van de cel over haar eigen kroniek. Een
-      geneeskundig onderzoek heeft voor deze aanvraag plaatsgehad als de GGD
-      een onderzoek naar dezelfde aanvrager verrichtte op of na de
-      dagtekening van de aanvraag en uiterlijk op de dag van afgifte. Vindt
-      de cel er geen, dan zwijgt zij, en stelt het college het vast.
+      Geen regelgeving. Het systeem van de GGD kijkt door middel van een
+      chronolexografische reductie op zijn eigen kroniek of het voor deze
+      aanvraag een geneeskundig onderzoek verrichtte. Een geneeskundig
+      onderzoek heeft voor deze aanvraag plaatsgehad als de GGD een onderzoek
+      naar dezelfde aanvrager verrichtte op of na de dagtekening van de
+      aanvraag en uiterlijk op de dag van afgifte. Vindt het systeem er geen,
+      dan zwijgt het, en stelt het college het vast.
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
     machine_readable:
-      implements:
-        - law: regeling_gehandicaptenparkeerkaart
-          article: '3'
-          open_term: geneeskundig_onderzoek_heeft_plaatsgehad
       execution:
-        # Parameters van artikel 3 van de regeling, zoals artikel 2 ze
-        # meegeeft; de cel geeft ze op naam door.
+        # Wat het antwoord vraagt; het beleid dat het koppelt, geeft ze op
+        # naam mee.
         parameters:
           - name: bsn_aanvrager
             type: string

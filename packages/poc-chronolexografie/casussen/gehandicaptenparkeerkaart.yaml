@@ -176,7 +176,7 @@ scenarios:
         gemeente geeft geen tweede kaart naast een geldige.
     eind: >-
       Bij het besluit staat "aanvrager heeft geldige gehandicaptenparkeerkaart:
-      ja", ingevuld door de cel uit haar kroniek. Onder "Hoe de cel dit
+      ja", ingevuld door het beleid van Wilgendaal met het antwoord van de cel. Onder "Hoe de cel dit
       beantwoordde" staat het spoor van haar reductie, met het eerste besluit.
       In het Logboek staat bij het tweede besluit de keten: artikel 49, het
       beleid van Wilgendaal en het begrip dat de cel beantwoordde.
@@ -254,8 +254,8 @@ scenarios:
     eind: >-
       Toegewezen, zonder nieuw onderzoek (Regeling gehandicaptenparkeerkaart,
       artikel 2, tweede lid, onder a). Bij het besluit staat "aanvrager eerder
-      gehandicaptenparkeerkaart verstrekt: ja", ingevuld door de cel uit haar
-      kroniek. Laat je ze uit, dan volgt de melding van het vorige scenario.
+      gehandicaptenparkeerkaart verstrekt: ja", ingevuld door het beleid van
+      Wilgendaal met het antwoord van de cel. Laat je ze uit, dan volgt de melding van het vorige scenario.
   - naam: Een kaart van een andere gemeente telt mee
     stappen:
       - >-

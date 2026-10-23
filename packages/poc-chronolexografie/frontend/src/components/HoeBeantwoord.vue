@@ -1,10 +1,10 @@
 <script setup>
-// Hoe de cel tot haar antwoord op een open begrip kwam, één keer dat het
-// besluit het vroeg (Cell::explain_answer): de reductie opnieuw gedraaid op
+// Hoe de cel tot een antwoord kwam (RFC-048), één keer dat het besluit het
+// vroeg (Cell::explain_answer): de reductie opnieuw gedraaid op
 // de kroniek zoals het besluit haar las, wat haar uitvoer werd, wat zij uit
 // andere regelgeving las (zoals de regio van een school uit de regeling), en
-// haar eigen spoor, met welke besluiten meetelden en welke niet. Beantwoordde
-// de cel binnen die reductie zelf weer een begrip (zoals de plaats van
+// haar eigen spoor, met welke besluiten meetelden en welke niet. Gaf de cel
+// binnen die reductie zelf weer een antwoord (zoals de plaats van
 // vestiging), dan staat dat eronder, met op verzoek hoe zij dat deed.
 // Gedeeld door de uitleg bij een besluit (Waarom) en het logboek.
 import { reactive } from 'vue';
@@ -45,7 +45,7 @@ async function uitklappen(a, i) {
   open[i] = !open[i];
   if (!open[i] || genest[i]) return;
   try {
-    const antwoord = await api.hoeBeantwoord(props.besluit, a.begrip);
+    const antwoord = await api.hoeBeantwoord(props.besluit, a.antwoord);
     const uitleg = antwoord.antwoorden[a.keer];
     if (!uitleg) throw new Error(`De cel gaf geen uitleg bij ${leesbaar(a.begrip)}.`);
     genest[i] = uitleg;
@@ -59,8 +59,8 @@ async function uitklappen(a, i) {
 <template>
   <nldd-container gap="8">
     <nldd-text size="sm" color="secondary">
-      De reductie {{ uitleg.reductie }} (geldig vanaf {{ uitleg.geldig_vanaf }}) opnieuw gedraaid,
-      op de kroniek zoals het besluit haar las.
+      De reductie {{ uitleg.reductie }} (geldig vanaf {{ uitleg.geldig_vanaf }}) opnieuw
+      gedraaid, op de kroniek zoals het besluit haar las.
     </nldd-text>
     <nldd-list appearance="box-base" accessible-label="Uitkomst van de reductie">
       <nldd-list-item v-for="(v, naam) in uitleg.uitvoer" :key="naam" size="sm">
@@ -81,7 +81,7 @@ async function uitklappen(a, i) {
       <nldd-inline-dialog
         icon="info"
         :text="`${leesbaar(a.begrip)}: ${toon(a.waarde)}`"
-        :supporting-text="`Binnen deze reductie ingevuld door de cel met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}).`"
+        :supporting-text="`Binnen deze reductie ingevuld met antwoord ${a.antwoord} van de cel, uit reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}).`"
       ></nldd-inline-dialog>
       <template v-if="besluit">
         <nldd-button
@@ -96,8 +96,8 @@ async function uitklappen(a, i) {
       </template>
     </nldd-container>
     <nldd-text size="sm" color="secondary">
-      Het spoor van de reductie: bij FOREACH staat hoeveel besluiten meetelden en hoeveel het
-      filter oversloeg.
+      Het spoor van de reductie, met daarin het beleid en de regeling die zij aanroept: bij
+      FOREACH staat hoeveel besluiten meetelden en hoeveel het filter oversloeg.
     </nldd-text>
     <nldd-code-viewer appearance="box-tinted">{{ uitleg.spoor }}</nldd-code-viewer>
   </nldd-container>

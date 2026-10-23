@@ -28,12 +28,14 @@ const OBJECTION: &str = "7:11";
 const RECORDING_ACTOR: &str = "gemeente_wilgendaal";
 
 /// The municipality's fictitious policy, which fills the open term of art.
-/// 49 on how the college uses its power, and declares an open term of its
-/// own: whether the applicant already holds a valid card.
+/// 49 on how the college uses its power, declares an open term of its own
+/// (whether the applicant already holds a valid card), and binds that term
+/// and two of the Regeling to the answers of cells (RFC-048).
 const POLICY: &str = "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal";
 /// The open term of art. 49 the policy fills.
 const POWER: &str = "bevoegdheid_tot_verstrekken_gebruikt";
-/// The open term of the policy that the municipality's reduction fills.
+/// The open term of the policy that the policy binds to the answer of the
+/// municipality's cell, from its reduction.
 const VALID: &str = "aanvrager_heeft_geldige_gehandicaptenparkeerkaart";
 const REDUCTION: &str = "reductie_geldige_gehandicaptenparkeerkaart";
 
@@ -93,6 +95,13 @@ fn service() -> LawExecutionService {
         "ministeriele_regeling/regeling_gehandicaptenparkeerkaart".to_string(),
         format!("wet/{AWB}"),
         format!("uitvoeringsbeleid/{POLICY}"),
+        // The reductions of every issuing body and of the GGD, in the corpus
+        // under their holders (RFC-048).
+        format!("reducties/{REDUCTION}"),
+        "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer"
+            .to_string(),
+        "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr".to_string(),
+        format!("reducties/{REPORTS}"),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -106,12 +115,13 @@ fn service() -> LawExecutionService {
     service
 }
 
-/// The municipality's cell directory, with its reduction (RFC-048).
+/// The municipality's cell directory, with its catalogue of answers
+/// (RFC-048).
 fn cell_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{RECORDING_ACTOR}"))
 }
 
-/// The municipality's cell, with an empty chronicle and its reductions.
+/// The municipality's cell, with an empty chronicle.
 fn cell() -> Cell {
     Cell::in_memory(RECORDING_ACTOR, cell_dir()).unwrap()
 }
@@ -467,29 +477,37 @@ fn a_card_of_someone_else_does_not_count() {
 }
 
 #[test]
-fn a_cell_lists_the_lexostatus_it_answers() {
-    // The terms the municipality's reduction fills: the policy's, and
-    // whether a card was issued before (Regeling art. 2 lid 2, RFC-052). The
-    // examination is the GGD's, in a cell of its own.
-    let mut answers: Vec<(String, String, String, String)> = cell()
+fn a_cell_lists_the_answers_it_gives_and_the_terms_they_fill() {
+    // The answers of the municipality's reduction: whether the applicant
+    // holds a valid card, and whether a card was issued before (Regeling
+    // art. 2 lid 2, RFC-052). The examination is the GGD's, in a cell of its
+    // own.
+    let cell = cell();
+    let answers: Vec<(&str, &str)> = cell
         .answers()
-        .into_iter()
-        .map(|a| {
-            assert_eq!(a.valid_from, day("2026-01-01"));
-            (a.term.law, a.term.article, a.term.open_term, a.reduction)
-        })
+        .iter()
+        .map(|(answer, reduction)| (answer.as_str(), reduction.as_str()))
         .collect();
-    answers.sort();
-    let owned = |law: &str, article: &str, term: &str, reduction: &str| {
-        (law.into(), article.into(), term.into(), reduction.into())
-    };
+    assert_eq!(answers, [(EARLIER, REDUCTION), (VALID, REDUCTION)]);
+    let terms: Vec<(String, String)> = cell
+        .bound_terms(&service(), day("2026-10-20"))
+        .into_iter()
+        .map(|t| (t.law, t.open_term))
+        .collect();
     assert_eq!(
-        answers,
-        vec![
-            owned(POLICY, "1", VALID, REDUCTION),
-            owned(REGELING, "2", EARLIER, REDUCTION),
+        terms,
+        [
+            (POLICY.into(), VALID.into()),
+            (REGELING.into(), EARLIER.into())
         ]
     );
+    // The GGD's answer fills the examination; the policy binds it too.
+    let ggd: Vec<String> = ggd()
+        .bound_terms(&service(), day("2026-10-20"))
+        .into_iter()
+        .map(|t| t.open_term)
+        .collect();
+    assert_eq!(ggd, [EXAMINED]);
 }
 
 // ---------------------------------------------------------------------------
@@ -778,7 +796,8 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     assert!(
         result.open_terms.iter().any(|f| f.term == VALID
             && f.law_id == POLICY
-            && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer(by) if by == answer)),
+            && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer { law_id, article, answers }
+                if law_id == POLICY && article == "2" && answers == std::slice::from_ref(answer))),
         "{:?}",
         result.open_terms
     );
@@ -796,11 +815,12 @@ fn the_cell_answers_the_policy_and_explains_the_card_it_counted() {
     let why = explained[0].trace.as_ref().unwrap().render_box_drawing();
     assert!(why.contains(&first.id), "{why}");
 
-    // Nothing stays loaded.
+    // Nothing stays behind in the service.
     let mut kept = service();
+    let laws = kept.law_count();
     cell.explain_answer(&mut kept, &[&ggd()], &second.id, VALID)
         .unwrap();
-    assert!(!kept.has_law(REDUCTION));
+    assert_eq!(kept.law_count(), laws);
 }
 
 #[test]
@@ -1189,10 +1209,13 @@ fn a_card_of_another_municipality_counts() {
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let regelrecht_engine::FilledBy::Answer(by) =
+    let regelrecht_engine::FilledBy::Answer { answers, .. } =
         earlier_filled_by(&cell, &[&ggd(), &oostmeer], &gram.id)
     else {
         panic!("one answer")
+    };
+    let [by] = answers.as_slice() else {
+        panic!("one answer: {answers:?}")
     };
     assert_eq!(by.answerer, "gemeente_oostmeer");
 }
@@ -1208,10 +1231,13 @@ fn a_card_of_the_cbr_counts() {
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let regelrecht_engine::FilledBy::Answer(by) =
+    let regelrecht_engine::FilledBy::Answer { answers, .. } =
         earlier_filled_by(&cell, &[&ggd(), &cbr], &gram.id)
     else {
         panic!("one answer")
+    };
+    let [by] = answers.as_slice() else {
+        panic!("one answer: {answers:?}")
     };
     assert_eq!(by.answerer, "cbr");
 }
@@ -1233,7 +1259,7 @@ fn cards_of_two_issuers_combine_with_or() {
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
     );
-    let regelrecht_engine::FilledBy::Answers(all) =
+    let regelrecht_engine::FilledBy::Answer { answers: all, .. } =
         earlier_filled_by(&cell, &[&ggd(), &oostmeer], &gram.id)
     else {
         panic!("two answers")
@@ -1261,33 +1287,35 @@ fn regeling_2_combines_the_answers_of_the_issuers_with_or() {
 }
 
 #[test]
-fn a_municipality_that_reads_examinations_itself_is_refused() {
-    // The examination is the GGD's (Regeling art. 3): a municipality whose
-    // reduction would answer it is not competent, and the cell refuses to
-    // decide (RFC-052).
+fn a_municipality_that_gives_the_examination_answer_is_not_asked_for_it() {
+    // The examination is the GGD's (Regeling art. 3): the term names who is
+    // competent, so the binding asks the GGD and not the municipality, even
+    // where its catalogue gives the answer (RFC-052). Without the GGD the
+    // college finds it.
     let dir = tempfile::tempdir().unwrap();
-    let copy = |from: &Path, to: &Path| {
-        std::fs::create_dir_all(to).unwrap();
-        for entry in std::fs::read_dir(from).unwrap() {
-            let path = entry.unwrap().path();
-            std::fs::copy(&path, to.join(path.file_name().unwrap())).unwrap();
-        }
-    };
-    let corpus = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/cells");
-    std::fs::copy(cell_dir().join("cel.yaml"), dir.path().join("cel.yaml")).unwrap();
-    copy(
-        &cell_dir().join(format!("reducties/{REDUCTION}")),
-        &dir.path().join(format!("reducties/{REDUCTION}")),
-    );
-    copy(
-        &corpus.join(format!("{GGD_ACTOR}/reducties/{REPORTS}")),
-        &dir.path().join(format!("reducties/{REPORTS}")),
-    );
+    let identity = std::fs::read_to_string(cell_dir().join("cel.yaml")).unwrap();
+    std::fs::write(
+        dir.path().join("cel.yaml"),
+        format!("{identity}  {EXAMINED}: {REPORTS}\n"),
+    )
+    .unwrap();
     let mut cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
+    assert_eq!(cell.answers().len(), 3);
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
-    let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
+    let e = cell
+        .decide(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            &app.id,
+            &Map::new(),
+            &examined(true),
+            day("2026-10-20"),
+        )
+        .unwrap_err();
     assert!(
-        matches!(&e, Error::Refused(m) if m.contains(EXAMINED) && m.contains("Gemeentelijke Gezondheidsdienst")),
+        e.to_string().contains(EXAMINED) && e.to_string().contains("no judgement was given"),
         "{e}"
     );
 }

@@ -79,16 +79,41 @@ export function opsomming(namen) {
   return `${namen.slice(0, -1).join(', ')} en ${namen[namen.length - 1]}`;
 }
 
+/**
+ * Eén antwoord van een cel (`AnswerProvenance`): de cel, de reductie waaruit
+ * zij antwoordde en hoe ver zij haar kroniek las.
+ */
+const vanCel = (a, grammen) =>
+  `${celNaam(a.answerer)} (reductie ${a.law_id}, ${gelezen(a, grammenVan(a.answerer, grammen))})`;
+
+/**
+ * Een koppeling van beleid aan antwoorden van cellen (RFC-048) in woorden:
+ * `beleid <id> art. <n>, antwoord <naam> van <cel> (reductie <id>, …)`. Gaven
+ * meer cellen hetzelfde antwoord, dan staan zij achter elkaar; de wet of het
+ * beleid zegt hoe hun antwoorden één waarde worden (combine, RFC-052).
+ */
+export function koppeling(by, grammen) {
+  const beleid = `beleid ${by.law_id} art. ${by.article}`;
+  if (!by.answers.length) return `${beleid}, geen antwoord van een cel`;
+  const namen = [...new Set(by.answers.map((a) => a.answer))];
+  if (namen.length === 1) {
+    return `${beleid}, antwoord ${namen[0]} van ${opsomming(by.answers.map((a) => vanCel(a, grammen)))}`;
+  }
+  return `${beleid}, ${opsomming(by.answers.map((a) => `antwoord ${a.answer} van ${vanCel(a, grammen)}`))}`;
+}
+
+/**
+ * Het antwoord van de cel van de casus op een begrip uit de keten, als dat
+ * meetelde: de naam waaronder de cel haar uitleg geeft (`api.hoeBeantwoord`).
+ */
+export const eigenAntwoord = (stap) =>
+  stap.ingevuld_door?.answer?.answers.find((a) => a.answerer === state.casus?.cel)?.answer ?? null;
+
 /** Wie een open begrip invulde (`FilledBy`), in een zin. */
 export function ingevuldDoor(by, grammen) {
   if (by === 'finding') return 'bevinding van het bestuursorgaan';
   if (by?.regulation) return `ingevuld door ${artikelNaam(by.regulation.law_id, by.regulation.article)}`;
-  if (by?.answer) {
-    return `${celNaam(by.answer.answerer)} uit haar kroniek: reductie ${by.answer.law_id} (geldig vanaf ${by.answer.valid_from}), ${gelezen(by.answer, grammenVan(by.answer.answerer, grammen))}`;
-  }
-  // Meer bevoegde cellen antwoordden; de wet zegt hoe hun antwoorden één
-  // waarde worden (combine, RFC-052).
-  if (by?.answers) return `samengevoegd uit de antwoorden van ${opsomming(by.answers.map((a) => celNaam(a.answerer)))}`;
+  if (by?.answer) return `ingevuld door ${koppeling(by.answer, grammen)}`;
   return 'niet ingevuld';
 }
 
@@ -109,29 +134,16 @@ export function stapTekst(stap, grammen) {
           }
         : { tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}` };
     case 'begrip': {
-      const cel = stap.ingevuld_door?.answer;
-      if (stap.ingevuld_door?.answers) {
-        return {
-          tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: ingevuldDoor(stap.ingevuld_door, grammen),
-        };
-      }
-      if (cel) {
-        return {
-          tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-          toelichting: `ingevuld door ${celNaam(cel.answerer)} uit haar kroniek (${cel.law_id}, ${gelezen(cel, grammenVan(cel.answerer, grammen))})`,
-        };
-      }
+      const tekst = `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`;
+      // Beleid koppelde het begrip aan het antwoord van een of meer cellen.
+      if (stap.ingevuld_door?.answer) return { tekst, toelichting: ingevuldDoor(stap.ingevuld_door, grammen) };
       // Een begrip dat zijn standaardwaarde kreeg, noemt de engine niet bij
       // de ingevulde begrippen; het heeft dan wel een waarde.
       const door =
         stap.ingevuld_door == null && stap.waarde != null
           ? 'standaardwaarde'
           : ingevuldDoor(stap.ingevuld_door, grammen);
-      return {
-        tekst: `${leesbaar(stap.naam)}: ${toon(stap.waarde)}`,
-        toelichting: `open begrip, ${door}`,
-      };
+      return { tekst, toelichting: `open begrip, ${door}` };
     }
     default:
       return { tekst: stap.soort };

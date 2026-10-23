@@ -165,6 +165,9 @@ pub struct TypeSpec {
 /// - The recorded instances of a fact an article requires: `facts:
 ///   "<regulation>#<article>#<fact>"` (schema v0.8.7, RFC-051), only in a
 ///   `REDUCTIE`
+/// - The named answer of a cell: `reduction: "<answer>"` with `parameters`
+///   (schema v0.8.9, RFC-048), only in a policy article that fills an open
+///   term (`implements`)
 /// - The decision of an article: `article: "<regulation>#<article>"` or a
 ///   `$`-reference that holds one, with `parameters_from` (schema v0.8.4,
 ///   RFC-050)
@@ -190,8 +193,8 @@ pub struct Source {
     /// (schema v0.8.2, RFC-048): a list with one row per decision. Only a
     /// data source answers it, such as the cell that holds the decisions in
     /// its chronicle, or the caller with a parameter of that name; no
-    /// regulation is executed for it. Only a rulework
-    /// with `regulatory_layer: REDUCTIE` may read it.
+    /// regulation is executed for it. Only a rulework with
+    /// `regulatory_layer: REDUCTIE` may read it.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -212,6 +215,21 @@ pub struct Source {
         deserialize_with = "optional_fact_reference"
     )]
     pub facts: Option<String>,
+    /// The named answer of a cell this input takes (schema v0.8.9,
+    /// RFC-048): the name under which a cell gives it in its catalogue
+    /// (`cel.yaml`, `answers`), with `parameters` as the values the cell's
+    /// reduction gets under its own names. Only a policy article that fills
+    /// an open term (`implements`) takes one: it binds the term to the
+    /// answer. The engine asks the cells of the call for it: those the
+    /// filled term names in its `competent_authority`, or else the cell of
+    /// the policy's holder. Without a cell that answers, the value is null.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reduction: Option<String>,
+    /// With `reduction`: how the answers of several cells make one value,
+    /// with the aggregations of FOREACH (schema v0.8.9, RFC-052), where the
+    /// filled term itself names no `combine`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combine: Option<CombineOp>,
     /// The article whose decision this input takes (schema v0.8.4, RFC-050):
     /// an article reference `<regulation>#<article>`, or a `$`-reference to
     /// a value that holds one, such as the `grondslag` of a `decision`

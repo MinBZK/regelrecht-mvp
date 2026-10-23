@@ -8,8 +8,9 @@
 //! (`source.article`) with its fields and what the objector adds, and gives
 //! the outcome as an output of type `decision` when it differs. The cell
 //! records that outcome as a decision of its own, in the same append. The
-//! cell's reduction reads the chronicle by row id, and its answer reaches
-//! the called article through the fields of the decision value.
+//! cell's reduction reads the chronicle by row id, and its answer, which a
+//! policy binds to the term (RFC-048), reaches the called article through
+//! the fields of the decision value.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -172,6 +173,39 @@ articles:
               default: null
 "#;
 
+/// The policy of the cell's holder that binds the term to the answer of
+/// its cell (RFC-048).
+const BINDING: &str = r#"
+$id: beleid_al_verleend_fictief
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2026-01-01'
+valid_from: '2026-01-01'
+url: https://example.org/beleid
+competent_authority:
+  name: Testcel
+articles:
+  - number: '1'
+    text: Fictief.
+    url: https://example.org/beleid#1
+    machine_readable:
+      implements:
+        - {law: wet_verlof_fictief, article: '1', open_term: al_verleend}
+      execution:
+        parameters:
+          - {name: bsn, type: string}
+        input:
+          - name: antwoord
+            type: boolean
+            nullable: true
+            source:
+              reduction: al_verleend
+              parameters: {bsn: $bsn}
+        output:
+          - {name: al_verleend, type: boolean, nullable: true}
+        actions:
+          - {output: al_verleend, value: $antwoord}
+"#;
+
 /// The cell's reduction: a grant to the same person counts, unless a
 /// decision on objection against it found cause. It links the two by row
 /// id: `bestreden_besluit` holds the id of the contested decision.
@@ -181,13 +215,13 @@ regulatory_layer: REDUCTIE
 publication_date: '2026-01-01'
 valid_from: '2026-01-01'
 url: https://example.org/reductie
+competent_authority:
+  name: Testcel
 articles:
   - number: '1'
     text: Fictief.
     url: https://example.org/reductie#1
     machine_readable:
-      implements:
-        - {law: wet_verlof_fictief, article: '1', open_term: al_verleend}
       execution:
         parameters:
           - {name: bsn, type: string}
@@ -233,32 +267,28 @@ const BEZWAAR_LAW: &str = "wet_heroverweging_fictief";
 const BSN: &str = "999990019";
 
 fn service_with(heroverweging: &str) -> LawExecutionService {
-    let mut service = LawExecutionService::new();
-    for law in [PROCEDURE, VERLOF, heroverweging] {
-        service.load_law(law).unwrap();
-    }
-    service
+    service_of(&[PROCEDURE, VERLOF, heroverweging])
 }
 
 fn service() -> LawExecutionService {
     service_with(HEROVERWEGING)
 }
 
-/// A cell with the reduction, kept in its directory as `Cell::in_memory`
-/// reads it.
+/// A cell that gives the answer `al_verleend` from the reduction, as its
+/// catalogue says.
 fn cell() -> (Cell, tempfile::TempDir) {
     let dir = cell_tempdir();
-    let path = dir
-        .path()
-        .join("reducties/reductie_al_verleend_fictief/2026-01-01.yaml");
-    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-    std::fs::write(&path, REDUCTION).unwrap();
+    std::fs::write(
+        dir.path().join("cel.yaml"),
+        "name: Testcel\nanswers:\n  al_verleend: reductie_al_verleend_fictief\n",
+    )
+    .unwrap();
     let cell = Cell::in_memory(ACTOR, dir.path()).unwrap();
     (cell, dir)
 }
 
-/// A cell whose directory holds no reductions: a term no regulation fills
-/// is then the deciding authority's finding.
+/// A cell that gives no answers: the binding then fills nothing, and the
+/// term is the deciding authority's finding.
 fn bare(actor: &str) -> Cell {
     let dir = cell_tempdir();
     Cell::in_memory(actor, dir.path()).unwrap()
@@ -1001,9 +1031,10 @@ articles:
     )
 }
 
+/// `laws`, with the binding and the reduction of the cell.
 fn service_of(laws: &[&str]) -> LawExecutionService {
     let mut service = LawExecutionService::new();
-    for law in laws {
+    for law in laws.iter().chain([&BINDING, &REDUCTION]) {
         service.load_law(law).unwrap();
     }
     service
@@ -1621,7 +1652,23 @@ fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
 fn a_term_only_a_reduction_fills_is_no_finding_and_replays() {
     let policy_only = VERLOF.replace("          decided_per_case_by: het hoofd\n", "");
     assert_ne!(policy_only, VERLOF);
-    let mut service = service_of(&[PROCEDURE, &policy_only, HEROVERWEGING]);
+    // A required term without a default or a finding: the binding takes an
+    // answer that is never absent, so without the cell the decision fails.
+    let never_absent = BINDING.replace("            nullable: true\n", "").replace(
+        "{name: al_verleend, type: boolean, nullable: true}",
+        "{name: al_verleend, type: boolean}",
+    );
+    assert!(!never_absent.contains("nullable"));
+    let mut service = LawExecutionService::new();
+    for law in [
+        PROCEDURE,
+        &policy_only,
+        HEROVERWEGING,
+        &never_absent,
+        REDUCTION,
+    ] {
+        service.load_law(law).unwrap();
+    }
     let (mut cell, _dir) = cell();
     let application = apply(&mut cell, &mut service, 2, "2026-03-02");
     let granted = decide(
@@ -1640,8 +1687,8 @@ fn a_term_only_a_reduction_fills_is_no_finding_and_replays() {
         .is_empty());
     let result = cell.explain(&mut service, &[], &granted.id).unwrap();
     assert!(result.open_terms.iter().any(|f| f.term == "al_verleend"
-        && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer(answer)
-                if answer.law_id == "reductie_al_verleend_fictief")));
+        && matches!(&f.filled_by, regelrecht_engine::FilledBy::Answer { answers, .. }
+                if answers[0].law_id == "reductie_al_verleend_fictief")));
     let bezwaar = object_to(
         &mut cell,
         &mut service,

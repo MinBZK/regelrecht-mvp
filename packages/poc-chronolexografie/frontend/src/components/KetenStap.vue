@@ -6,7 +6,7 @@
 // eigen uitleg opent.
 import { computed, ref } from 'vue';
 import { state } from '../state.js';
-import { stapTekst } from '../logboek.js';
+import { eigenAntwoord, stapTekst } from '../logboek.js';
 
 defineOptions({ name: 'KetenStap' });
 
@@ -26,7 +26,7 @@ const open = ref(true);
 const tak = computed(() => props.knoop.kinderen.length > 0);
 const tekst = computed(() => stapTekst(props.knoop.stap, state.grammen));
 const cel = computed(() =>
-  props.metUitleg && props.knoop.stap.keer != null ? (props.knoop.stap.ingevuld_door?.answer ?? null) : null,
+  props.metUitleg && props.knoop.stap.keer != null ? eigenAntwoord(props.knoop.stap) : null,
 );
 </script>
 

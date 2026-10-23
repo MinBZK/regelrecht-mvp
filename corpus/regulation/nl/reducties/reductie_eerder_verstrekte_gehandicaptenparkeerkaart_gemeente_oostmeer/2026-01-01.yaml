@@ -1,17 +1,20 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.8/schema/v0.8.8/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
 valid_from: '2026-01-01'
-# Geen regelgeving: een reductie van de cel van gemeente Oostmeer (fictief) over
-# haar eigen kroniek (RFC-022 §4.1, RFC-048). Ze vult het open begrip van
-# artikel 2, tweede lid, van de Regeling gehandicaptenparkeerkaart: of de
-# aanvrager eerder een kaart kreeg, van deze
-# verstrekkende instantie (RFC-052). Een kopie van het filter van de reductie
-# van de gemeente Wilgendaal (reductie_geldige_gehandicaptenparkeerkaart);
-# het gaat op in een gedeelde reductie zodra een cel die kan laden. Er is
-# geen bekendmaking; de url wijst naar dat artikel.
+# Geen regelgeving: een reductie van het college van de (fictieve) gemeente Oostmeer over de eigen kroniek
+# (RFC-022 §4.1, RFC-048). De cel van gemeente Oostmeer geeft haar uitvoer als het
+# antwoord aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt (cel.yaml,
+# answers): of de aanvrager eerder een kaart van deze verstrekkende instantie
+# kreeg. Het beleid van de gemeente die beslist, koppelt dat antwoord aan het
+# open begrip van artikel 2, tweede lid, van de Regeling
+# gehandicaptenparkeerkaart; daarvoor is elke verstrekkende instantie bevoegd
+# (competent_authority van dat begrip, RFC-052). Een kopie van het filter van
+# de reductie van de gemeente Wilgendaal
+# (reductie_geldige_gehandicaptenparkeerkaart). Er is geen bekendmaking; de
+# url wijst naar dat artikel.
 url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
 name: Eerder verstrekte gehandicaptenparkeerkaart bij gemeente Oostmeer (reductie)
 competent_authority:
@@ -19,16 +22,14 @@ competent_authority:
 articles:
   - number: '1'
     text: >-
-      Geen regelgeving: een reductie van de cel over haar eigen kroniek. De
+      Geen regelgeving. Het systeem van het college van de (fictieve) gemeente
+      Oostmeer kijkt door middel van een chronolexografische reductie op zijn
+      eigen kroniek of het de aanvrager eerder een kaart verstrekte. De
       aanvrager kreeg eerder een kaart als deze instantie hem in een besluit op
       een aanvraag (artikel 49 van het BABW) een kaart verstrekte die niet op
-      bezwaar is herroepen; anders zegt de cel niets.
+      bezwaar is herroepen; anders zegt het systeem niets.
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel2
     machine_readable:
-      implements:
-        - law: regeling_gehandicaptenparkeerkaart
-          article: '2'
-          open_term: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
       execution:
         parameters:
           - name: bsn_aanvrager

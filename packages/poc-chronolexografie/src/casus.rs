@@ -327,13 +327,14 @@ pub struct Afleiding {
 /// other cells of its sphere, whose reductions read regelwerken of their
 /// own.
 ///
-/// The regelwerken are those the article's law reaches, and what the cell's
-/// reductions reach. A regelwerk reaches another when it reads from it
+/// The regelwerken are those the article's law reaches, and the reductions
+/// the catalogues of the cells name (`cel.yaml`, `answers`, RFC-048), with
+/// what they reach. A regelwerk reaches another when it reads from it
 /// (`source.regulation`, `source.article`, `source.decisions`), and when the
 /// other is in the corpus to act on it: it implements one of its open terms,
-/// or has a hook or a procedure that applies to what it produces (the Awb on
-/// every application and decision). A reduction
-/// reaches the regelwerk whose open term it fills, too.
+/// such as the policy that binds a term to an answer of a cell, or has a
+/// hook or a procedure that applies to what it produces (the Awb on every
+/// application and decision).
 pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cells: &[&Cell]) -> Result<Afleiding> {
     let (law, article) = casus.artikel.split_once('#').ok_or_else(|| {
         Error::Setup(format!(
@@ -343,22 +344,9 @@ pub fn afleiden(regelwerken: &Regelwerken, casus: &Casus, cells: &[&Cell]) -> Re
     })?;
 
     let mut gevonden: Vec<String> = vec![law.to_string()];
-    for reduction in cells.iter().flat_map(|cell| cell.reductions()) {
-        for id in leest(reduction.law().articles.iter()) {
-            if !gevonden.contains(&id) {
-                gevonden.push(id);
-            }
-        }
-        let gevuld = reduction
-            .law()
-            .articles
-            .iter()
-            .flat_map(|a| a.get_implements().into_iter().flatten())
-            .map(|i| i.law.clone());
-        for id in gevuld {
-            if !gevonden.contains(&id) {
-                gevonden.push(id);
-            }
+    for id in cells.iter().flat_map(|cell| cell.answers().values()) {
+        if !gevonden.contains(id) {
+            gevonden.push(id.clone());
         }
     }
 

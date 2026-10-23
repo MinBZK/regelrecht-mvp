@@ -90,7 +90,7 @@ export const api = {
   voorvertoningBesluit: (op, bevindingen, datum) =>
     roep((p) => p.voorvertoningBesluit(op, json(bevindingen), datum)),
   waarom: (id) => roep((p) => p.waarom(id)),
-  hoeBeantwoord: (id, begrip) => roep((p) => p.hoeBeantwoord(id, begrip)),
+  hoeBeantwoord: (id, antwoord) => roep((p) => p.hoeBeantwoord(id, antwoord)),
   bezwaren: (besluit, velden, datum) => roep((p) => p.bezwaren(besluit, json(velden), datum)),
   heroverweging: (bezwaar, datum) => roep((p) => p.heroverweging(bezwaar, datum)),
   beslissenOpBezwaar: (op, bevindingen, datum) =>

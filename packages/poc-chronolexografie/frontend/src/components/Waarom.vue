@@ -1,11 +1,11 @@
 <script setup>
 // Waarom een besluit zo uitviel, zoals de cel het uitlegt (Cell::explain).
 // Eerst wie elk open begrip invulde: het bestuursorgaan (een bevinding), een
-// regeling (beleid) of de cel zelf uit haar kroniek. Een begrip dat de cel
-// beantwoordde, staat in het spoor als één stap; hoe zij tot
-// dat antwoord kwam, is haar eigen verhaal en komt op verzoek
-// (Cell::explain_answer): het spoor van haar reductie, met welke besluiten
-// meetelden en welke niet. Daaronder het spoor van de engine.
+// regeling, of beleid dat het begrip koppelt aan het antwoord van een cel
+// (RFC-048). Zo'n antwoord staat in het spoor als één stap; hoe de cel ertoe
+// kwam, is haar eigen verhaal en komt op verzoek (Cell::explain_answer): het
+// spoor van haar reductie, met welke besluiten meetelden en welke niet.
+// Daaronder het spoor van de engine.
 import { reactive } from 'vue';
 import { api } from '../api.js';
 import { celNaam, gelezen, grammenVan, ingevuldDoor } from '../logboek.js';
@@ -27,22 +27,22 @@ const jaNee = (v) =>
 
 /** De herkomst van het antwoord van de cel, leesbaar. */
 const herkomst = (a) =>
-  `Ingevuld door ${celNaam(a.door)} met reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). Gelezen: ` +
+  `Antwoord ${a.antwoord} van ${celNaam(a.door)}, uit reductie ${a.reductie} (geldig vanaf ${a.geldig_vanaf}). Gelezen: ` +
   gelezen({ records_read: a.gelezen, last_record: a.tot_en_met }, grammenVan(a.door, state.grammen)) +
   '.';
 
-// Per begrip de uitleg van de cel, als die gevraagd is. Vroeg het besluit
-// een begrip vaker, dan geeft de cel per keer een uitleg, in de volgorde van
+// Per antwoord de uitleg van de cel, als die gevraagd is. Vroeg het besluit
+// een antwoord vaker, dan geeft de cel per keer een uitleg, in de volgorde van
 // het spoor; `keer` van een antwoord zegt welke.
 const hoe = reactive({});
 const open = reactive({});
 
 async function toon(i) {
-  const begrip = props.waarom.antwoorden[i].begrip;
+  const naam = props.waarom.antwoorden[i].antwoord;
   open[i] = !open[i];
-  if (!open[i] || hoe[begrip]) return;
+  if (!open[i] || hoe[naam]) return;
   try {
-    hoe[begrip] = await api.hoeBeantwoord(props.besluit, begrip);
+    hoe[naam] = await api.hoeBeantwoord(props.besluit, naam);
   } catch (e) {
     state.fout = e.message;
     open[i] = false;
@@ -50,7 +50,7 @@ async function toon(i) {
 }
 
 const uitlegBij = (i) => {
-  const h = hoe[props.waarom.antwoorden[i].begrip];
+  const h = hoe[props.waarom.antwoorden[i].antwoord];
   const k = props.waarom.antwoorden[i].keer;
   return h ? h.antwoorden.slice(k, k + 1) : [];
 };

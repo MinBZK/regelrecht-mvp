@@ -22,11 +22,11 @@ Note that *verordening* names four different things in this list. An EU-verorden
 | `EU_VERORDENING` | EU-verordening | EU Regulation | Directly applicable in every member state, without transposition |
 | `EU_RICHTLIJN` | EU-richtlijn | EU Directive | Binding as to the result, transposed into national law by the member state |
 | `VERDRAG` | Verdrag | Treaty | International agreement binding on the Netherlands |
-| `UITVOERINGSBELEID` | Uitvoeringsbeleid | Implementation policy | Published practice of an executing body, below the level of a beleidsregel |
+| `UITVOERINGSBELEID` | Uitvoeringsbeleid | Implementation policy | Published practice of an executing body, below the level of a beleidsregel. Since schema v0.8.9 it may bind an open term to the named answer of a cell (`source.reduction`); it then names its holder in `competent_authority` ([RFC-048](/rfcs/rfc-048)) |
 | `GEMEENTELIJKE_VERORDENING` | Gemeentelijke verordening | Municipal ordinance | Local regulation by a municipality |
 | `PROVINCIALE_VERORDENING` | Provinciale verordening | Provincial ordinance | Regional regulation by a province |
 | `WATERSCHAPS_VERORDENING` | Waterschapsverordening | Water authority ordinance | Regulation by a waterschap, the regional water authority |
-| `REDUCTIE` | Reductie | Reduction | No regulation: a cell's reduction over its own chronicle (RFC-022 §4). Kept with the cell, it alone reads the cell's chronicle: decisions (`source.decisions`) and the facts it recorded (`source.facts`, [RFC-051](/rfcs/rfc-051)). It may fill an open term (`implements`), and does not act on law otherwise (no `hooks`, `overrides`, `execution.produces` or `open_terms`) ([RFC-048](/rfcs/rfc-048)) |
+| `REDUCTIE` | Reductie | Reduction | No regulation: a cell's reduction over its own chronicle (RFC-022 §4), in the corpus under its holder. It alone reads a chronicle: decisions (`source.decisions`) and the facts the cell recorded (`source.facts`, [RFC-051](/rfcs/rfc-051)). Its cell gives it as a named answer (`cel.yaml`), which policy binds to an open term. It does not act on law (no `implements` since schema v0.8.9, no `hooks`, `overrides`, `execution.produces` or `open_terms`) ([RFC-048](/rfcs/rfc-048)) |
 
 ## Administrative Law (Bestuursrecht)
 
@@ -133,7 +133,7 @@ The values of `decision_type`, saying what kind of decision an output is within 
 | **Traject** | Traject | A working context in the editor, with its own members, roles and branch, optionally backed by its own repository |
 | **Chronolexogram** | Chronolexogram | A dated recording of a legal fact in the chronicle of the organization that establishes it: a submission, a decision or an executogram. The term comes from the [Chronolexografie position paper](https://chronolexografie.nl/position-paper/). See [Chronolexography](/concepts/chronolexography) |
 | **Chronicle** | Kroniek | The append-only, dated sequence of chronolexograms a cell keeps ([RFC-046](/rfcs/rfc-046)) |
-| **Cell** | Cel | An organization that keeps its own chronicle and answers from it, such as a school or a municipality. In RegelRecht a directory with `cel.yaml` and its reductions, run by `packages/cel` ([RFC-046](/rfcs/rfc-046)) |
+| **Cell** | Cel | An organization that keeps its own chronicle and answers from it, such as a school or a municipality. In RegelRecht a directory with `cel.yaml`, which says who it is and which answers it gives, run by `packages/cel` ([RFC-046](/rfcs/rfc-046)) |
 | **Executogram** | Executogram | A chronolexogram of a fact that is neither a submission nor a decision, such as where a school is established. Its shape is the fact an article `requires` ([RFC-051](/rfcs/rfc-051)) |
 | **Synthesis** | Synthese | Combining the answers of several cells for one open term, in the process that asks and never in a cell ([RFC-048](/rfcs/rfc-048)). The cells asked are the decision's sphere (*chronolexosfeer*) |
 | **Bevoegd gezag** | Bevoegd gezag | The body competent to take a decision under a given article. See [Competent Authority](/concepts/competent-authority) |
