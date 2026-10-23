@@ -747,9 +747,9 @@ fn a_grant_on_objection_the_court_annulled_no_longer_counts() {
     // granted in its place. The court annuls that decision on the objection,
     // with its legal effects (Awb 8:72 lid 2), so the grant it took goes too
     // and the refusal is no longer revoked. The school's reduction for lid 2
-    // reads, through the head's policy, the judgment the school received:
-    // decided again, the head grants again, and the annulled grant does not
-    // count as leave already granted.
+    // reads the judgment the school received and asks the head's policy what
+    // no longer counts: decided again, the head grants again, and the
+    // annulled grant does not count as leave already granted.
     let mut school = school();
     let mut court = court();
     let refused = refused(&mut school);
