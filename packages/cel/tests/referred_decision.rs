@@ -15,7 +15,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use chrono::NaiveDate;
-use regelrecht_cel::{reading, Cell, Error, Gram};
+use regelrecht_cel::{reading, Cell, Error, Gram, Reference};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
@@ -346,7 +346,7 @@ fn object_to(
         &[],
         BEZWAAR_LAW,
         "1",
-        Some(contested),
+        Some(Reference::Local(contested)),
         &object(supplied),
         day(on),
     )
@@ -1615,7 +1615,7 @@ fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
             &[],
             VERLOF_LAW,
             "1",
-            Some(&granted.id),
+            Some(Reference::Local(&granted.id)),
             &Map::new(),
             day("2026-03-10"),
         )
@@ -1631,7 +1631,7 @@ fn a_reference_without_a_decision_field_fills_what_the_decision_holds() {
             &[],
             VERLOF_LAW,
             "1",
-            Some(&granted.id),
+            Some(Reference::Local(&granted.id)),
             &object(json!({"dagen": 3})),
             day("2026-03-10"),
         )

@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{decision, reading, shape, Cell, Disk, Error, Files, Gram, Source};
+use regelrecht_cel::{decision, reading, shape, Cell, Disk, Error, Files, Gram, Reference, Source};
 use regelrecht_engine::{
     ArticleResult, FilledBy, LawExecutionService, OpenTermFilled, ParameterType, PathNode,
     PathNodeType,
@@ -1299,7 +1299,7 @@ pub fn bezwaren(
         &sfeer,
         corpus.awb(),
         corpus.objection(),
-        Some(besluit),
+        Some(Reference::Local(besluit)),
         velden,
         on,
     )

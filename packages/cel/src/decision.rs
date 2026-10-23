@@ -34,11 +34,14 @@ use std::collections::HashMap;
 use crate::error::{refused, setup, Result};
 use crate::shape::{self, add_field, article_on, Field};
 
-/// The stages a decision runs, in order: the decision itself (Awb 1:3), and
-/// the announcement without which it has no effect (Awb 3:40). Both are
-/// stages of the Awb procedure for a beschikking. The cell announces the
-/// decision on the day it takes it: that is its assumption, not the law's.
-pub const STAGES: [&str; 2] = ["BESLUIT", "BEKENDMAKING"];
+/// The stages a decision runs, in order: the first of these pairs that the
+/// procedure of its article holds. For a beschikking the decision itself
+/// (Awb 1:3) and the announcement without which it has no effect (Awb 3:40);
+/// for the judgment of an administrative court the judgment (Awb 8:70) and
+/// the copy that the clerk makes available to the parties (Awb 8:79, RFC-053).
+/// The cell announces or sends the decision on the day it takes it: that is
+/// its assumption, not the law's.
+pub const STAGES: [[&str; 2]; 2] = [["BESLUIT", "BEKENDMAKING"], ["UITSPRAAK", "TOEZENDING"]];
 
 /// Where the value of a field of a decision comes from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -85,7 +88,8 @@ pub struct DecisionShape {
     /// the one whose submission asks for this decision (`requests`), or this
     /// article in the object form.
     pub application: String,
-    /// The stages of [`STAGES`], as the engine names them.
+    /// The stages of [`STAGES`] that its procedure holds, as the engine names
+    /// them.
     pub stages: Vec<ProcedureStage>,
     /// Everything the stages ask, the deciding article first.
     pub inputs: Vec<Input>,
@@ -147,7 +151,15 @@ pub fn derive(
         .ok_or_else(|| setup(format!("'{application_reference}' is no article reference")))?;
     let application = shape::derive(service, application_law, application_article, day)?;
     let submission_kind = application.kind.clone();
-    let stages = STAGES
+    let held: Vec<&str> = service
+        .procedure_of(law_id, deciding)?
+        .map(|procedure| procedure.stages.iter().map(|s| s.name.as_str()).collect())
+        .unwrap_or_default();
+    let pair = STAGES
+        .iter()
+        .find(|pair| pair.iter().all(|stage| held.contains(stage)))
+        .unwrap_or(&STAGES[0]);
+    let stages = pair
         .iter()
         .map(|stage| service.procedure_stage(law_id, article, stage, &date))
         .collect::<std::result::Result<Vec<_>, _>>()?;
