@@ -70,13 +70,15 @@ the walkthrough would then show something other than what the voice says.
 
 The job downloads the browser engine from the **WASM Build** job, starts the
 demo's dev server, fetches only the voice from the walkthrough's release, and
-replays every chapter in a headless Chromium in two window sizes. An action
-whose element is not found fails the job, with an annotation naming the chapter;
-an action that only finds its element with the numbers in its description masked
-is reported as a warning, since it may now point at something else. It runs when
-`frontend-demo/`, `corpus/demo/`, the engine or the schema changes, hangs on the
-`Test` gate, and is the same command as locally: `just walkthrough verify`. A
-failure is fixed in the demo, or by recording that chapter again.
+replays every chapter in a headless Chromium in two window sizes. Dutch plays in
+both sizes, every other language only in the first. CI spreads these runs over
+three parallel jobs with `--shard K/3`. An action whose element is not found
+fails the job, with an annotation naming the chapter; an action that only finds
+its element with the numbers in its description masked is reported as a
+warning, since it may now point at something else. It runs when `frontend-demo/`,
+`corpus/demo/`, the engine or the schema changes, hangs on the `Test` gate, and
+is the command you run locally, `just walkthrough verify`, with `--shard` added.
+A failure is fixed in the demo, or by recording that chapter again.
 
 ### The browser jobs run in the Playwright image
 
