@@ -111,6 +111,8 @@ jobs:
               - corpus/annotations/**
               - packages/frontend-shared/**
               - script/landing-laws.sh
+              # What the gate installs in the Playwright image.
+              - script/install-a11y-debs.sh
               - .github/workflows/ci.yml
             # De broncontroles op de documentatie (geciteerde paden, proza,
             # RFC-dekking, schemaversie) hebben geen astro-build nodig en
@@ -1413,14 +1415,14 @@ jobs:
         working-directory: docs
         run: npm ci --ignore-scripts
 
-      # Two packages the image lacks. Puppeteer unpacks its Chrome download
-      # with `unzip`. Without DejaVu, fontconfig resolves `monospace` to a CJK
-      # font (WenQuanYi Zen Hei Mono) whose wider glyphs make code blocks
-      # overflow, and axe then reports them as scrollable regions without
-      # keyboard access; the runner image renders them in DejaVu Sans Mono.
+      # Two packages the image lacks: `unzip` for Puppeteer's Chrome download,
+      # and the DejaVu fonts the runner image renders code blocks in. The
+      # script installs the exact .debs apt would pick, pinned by checksum,
+      # without going through the image's apt mirror; why, and how to refresh
+      # them, is in the script.
       - name: Install unzip and fonts
         if: needs.changes.outputs.docs == 'true'
-        run: apt-get update && apt-get install -y --no-install-recommends unzip fonts-dejavu-core
+        run: script/install-a11y-debs.sh
 
       # pa11y draait niet op playwright maar op puppeteer, met een eigen
       # browsercache (~/.cache/puppeteer). Die download zat in puppeteers

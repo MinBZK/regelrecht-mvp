@@ -201,7 +201,7 @@ repos:
         entry: just playwright-image-test
         language: system
         pass_filenames: false
-        files: ^(\.github/workflows/ci\.yml|package-lock\.json|docs/package-lock\.json|script/playwright-image\.test\.mjs)$
+        files: ^(\.github/workflows/ci\.yml|package-lock\.json|docs/package-lock\.json|script/playwright-image\.test\.mjs|script/install-a11y-debs\.sh)$
 
       - id: deploy-gate-tests
         name: Deploy-poort op een groene CI doet wat hij belooft

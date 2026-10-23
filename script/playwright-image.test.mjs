@@ -83,3 +83,31 @@ test('no job in ci.yml downloads Playwright browsers itself', () => {
     .join('\n');
   assert.doesNotMatch(code, /playwright install/);
 });
+
+test('no job in ci.yml runs apt-get', () => {
+  // apt in the image goes through the Azure Ubuntu mirror, which once took 22
+  // minutes for a C compiler and pushed a merge-queue entry past its check
+  // timeout. The engine is built on the runner by the wasm job, and the docs
+  // accessibility gate installs its packages with script/install-a11y-debs.sh.
+  const code = read(WORKFLOW)
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+  assert.doesNotMatch(code, /apt-get/);
+});
+
+test('the .debs for the docs accessibility gate were picked in the pinned image', () => {
+  // script/install-a11y-debs.sh installs the exact packages apt chose in one
+  // image. After an image bump those may no longer be what apt would pick, and
+  // dpkg would install them anyway; this makes the bump look at the list.
+  const script = read('script/install-a11y-debs.sh');
+  const made = /^# Made for: mcr\.microsoft\.com\/playwright:(v\d+\.\d+\.\d+-noble)$/m.exec(script);
+  assert.ok(made, 'script/install-a11y-debs.sh does not name the image its .debs were picked in');
+  const images = new Set(imageRefs.map((ref) => ref.split('@')[0]));
+  assert.deepEqual(
+    [...images],
+    [made[1]],
+    `script/install-a11y-debs.sh lists .debs for ${made[1]}, ci.yml runs ${[...images].join(', ')}. ` +
+      'Refresh the list as its header describes, then update the "Made for" line.',
+  );
+});

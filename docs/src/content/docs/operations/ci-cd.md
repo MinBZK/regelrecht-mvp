@@ -96,7 +96,9 @@ installing a C compiler once took 22 minutes in the merge queue, past the
 queue's check timeout. The engine is therefore not built in the image at all.
 E2E and the walkthrough replay download it from the **WASM Build** job (see
 [below](#wasm-build-on-engine-changes)), so neither needs Rust or a C compiler.
-The accessibility gate still runs one small apt install, described below.
+The accessibility gate installs its two packages from pinned `.deb` files, as
+described below. No job in `ci.yml` runs `apt-get`, and the `playwright-image`
+pre-commit hook fails when one does.
 
 The image is pinned by tag and digest in `ci.yml`. A Playwright release looks
 for exactly the browser build it shipped with, so the tag must equal the
@@ -128,6 +130,15 @@ The gate installs two packages the image lacks. Puppeteer needs `unzip` to
 unpack pa11y's Chrome. Without the DejaVu fonts, `monospace` resolves to a CJK
 font with wider glyphs. Code blocks then overflow, and axe reports them as
 scrollable regions without keyboard access.
+
+It installs them without apt, to stay off the mirror described above.
+`script/install-a11y-debs.sh` downloads the three `.deb` files apt would pick
+(`unzip`, `fonts-dejavu-core` and its dependency `fonts-dejavu-mono`) from
+Launchpad, which keeps every published version. It checks each file against a
+SHA-256 in the script, stops on a mismatch, and installs them with `dpkg -i`.
+The result is the same files as `apt-get install`, fontconfig configuration
+included, in about two seconds. A newer Playwright image may need newer
+versions; the script says how to look them up.
 
 The preview server that pa11y reads from binds to `127.0.0.1` (`npm run a11y`
 in `docs/package.json`), and the gate's page list uses the same address. Left
