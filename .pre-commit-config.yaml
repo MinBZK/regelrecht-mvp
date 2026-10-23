@@ -196,6 +196,13 @@ repos:
         pass_filenames: false
         files: ^((frontend|frontend-demo)/Dockerfile|packages/(admin|pipeline|poc-portal|poc-napp)/Dockerfile|packages/Cargo\.toml|rust-toolchain\.toml|\.github/workflows/deploy\.yml|script/dockerfile-consistency\.test\.mjs)$
 
+      - id: playwright-image
+        name: Playwright-image in CI volgt de lockfiles
+        entry: just playwright-image-test
+        language: system
+        pass_filenames: false
+        files: ^(\.github/workflows/ci\.yml|package-lock\.json|docs/package-lock\.json|script/playwright-image\.test\.mjs)$
+
       - id: deploy-gate-tests
         name: Deploy-poort op een groene CI doet wat hij belooft
         entry: script/require-ci-green.test.sh

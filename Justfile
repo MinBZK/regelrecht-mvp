@@ -228,6 +228,13 @@ service-map-check:
 dockerfile-consistency-test:
     node --test script/dockerfile-consistency.test.mjs
 
+# The browser jobs in ci.yml run in the Playwright image, whose browsers
+# belong to one Playwright release. Its tag has to follow the version the
+# lockfiles resolve, and Dependabot only bumps the lockfiles.
+[doc("Check that the Playwright CI image matches the lockfiles")]
+playwright-image-test:
+    node --test script/playwright-image.test.mjs
+
 # De poort die productie op een groene CI laat wachten. Zonder deze test is een
 # poort die alles doorlaat niet te onderscheiden van een die werkt; `gh` staat
 # hier als stub op PATH, dus er gaat geen verkeer naar GitHub.

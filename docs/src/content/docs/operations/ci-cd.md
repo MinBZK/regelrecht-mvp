@@ -73,6 +73,55 @@ warning, since it may now point at something else. It runs when `frontend-demo/`
 is the same command as locally: `just walkthrough verify`. A failure is fixed in
 the demo, or by recording that chapter again.
 
+### The browser jobs run in the Playwright image
+
+**E2E (mocked)**, **Rondleiding speelt terug** and the **Docs accessibility
+gate** run inside the
+[official Playwright image](https://mcr.microsoft.com/en-us/artifact/mar/playwright),
+not directly on the runner. The image ships
+Chromium with every system library it needs, so these jobs no longer run
+`playwright install --with-deps`. That step spent its time in `apt-get update`
+on the runner and varied from ten seconds to more than nine minutes. Each job
+still runs one small apt install from the image's mirror. The two jobs that
+build the engine for the browser install `gcc` and `libc6-dev`, because the
+WASM build compiles build scripts for the host and the image has no C compiler.
+
+The image is pinned by tag and digest in `ci.yml`. A Playwright release looks
+for exactly the browser build it shipped with, so the tag must equal the
+Playwright version that both `package-lock.json` and `docs/package-lock.json`
+resolve. Dependabot bumps the lockfiles and not the image, so after a
+Playwright bump the `playwright-image` pre-commit hook
+(`script/playwright-image.test.mjs`) turns the **Pre-commit** check red until
+someone moves the tag and the digest along. The digest is the
+`Docker-Content-Digest` header of the image index:
+
+```bash
+curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
+  https://mcr.microsoft.com/v2/playwright/manifests/v<version>-noble \
+  | grep -i docker-content-digest
+```
+
+Without that `Accept` header the registry answers 404.
+
+A step without a `shell:` runs under `bash -e` on the runner, but under `sh -e`
+in a container. The three jobs set `shell: bash` as their default, which also
+turns on `pipefail`.
+
+The container runs as root, and Git refuses a checkout owned by another user.
+The accessibility gate marks the workspace as a safe directory before its
+`git diff`. pa11y starts its Chrome with `--no-sandbox`, which Chrome needs when
+it runs as root.
+
+The gate installs two packages the image lacks. Puppeteer needs `unzip` to
+unpack pa11y's Chrome. Without the DejaVu fonts, `monospace` resolves to a CJK
+font with wider glyphs. Code blocks then overflow, and axe reports them as
+scrollable regions without keyboard access.
+
+The preview server that pa11y reads from binds to `127.0.0.1` (`npm run a11y`
+in `docs/package.json`), and the gate's page list uses the same address. Left
+at `localhost`, the server listened on `::1` in the container while `wait-on`
+polled `127.0.0.1`, and the gate timed out before it checked a page.
+
 ### WASM build (on engine changes)
 
 Builds the engine for the WebAssembly target to catch compilation issues early.
@@ -95,6 +144,29 @@ Released schema versions in `schema/v*.*.*` are immutable. CI fails if a PR trie
 ### Provenance checks (on corpus/engine changes)
 
 Among other checks, the `provenance-checks` job verifies that every `$schema` URL in `corpus/regulation` and in the reductions under `corpus/cells` names a schema version that exists under `schema/`, that every version directory under `schema/` is registered in `packages/engine/src/schema.rs`, and that `schema/latest` points at the highest version (currently `v0.8.8`). It does not check the form of the URL: a tag-based `refs/tags/schema-vX.Y.Z` reference is the convention, but a branch-based URL that names a known version passes. On a pull request that changes engine source it also compares the version in `packages/engine/Cargo.toml` with `main`; an unchanged version only prints a warning. See [RFC-013](/rfcs/rfc-013) for context.
+
+### Docs accessibility gate (on docs changes)
+
+The **Docs accessibility gate** builds the docs site and runs pa11y-ci, with
+HTML_CodeSniffer and axe-core, over the pages it produced (`just docs-a11y`). At
+about 2.5 seconds a page the full site takes several minutes on one runner, so
+the job is a matrix of three shards. Each shard runs on its own runner, in the
+Playwright image described above, with its own Chromium.
+`scripts/gen-pa11yci.mjs` reads `A11Y_SHARD=K/N` and keeps every N-th page
+starting at the K-th. Running the pages in parallel inside one job was tried and
+dropped: pa11y-ci then shares one Chromium, and most pages failed on a protocol
+error instead of on a finding.
+
+On a pull request and in the merge queue the gate checks only the pages a
+change touches, plus the index pages above them. That holds only while every
+changed file is a page under `docs/src/content/docs/` or
+`docs/src/content/rfcs/`. Any other file in the diff, a layout or a workflow
+file for instance, sends the gate over the whole site, because it may change
+every page. A push to `main` always checks the whole site.
+
+Every shard builds the site and repeats the source checks in `npm run a11y`.
+Only the pa11y run is split. The check that no published URL disappeared runs
+in the first shard only.
 
 ### Other jobs behind the `Test` check
 
