@@ -47,7 +47,7 @@ Run at one stage of its procedure ([RFC-008](/rfcs/rfc-008)), an article compute
 
 | Stage | What runs |
 |---|---|
-| AANVRAAG, BEZWAAR, BEROEP | The hooks on the submission of that kind (Awb 4:2 and 4:13; 6:5, 6:9 and 7:10). No decision output |
+| AANVRAAG, BEZWAAR, BEROEP | The hooks on the submission of that kind (Awb 4:2 and 4:13 on an application; 6:5 and 6:9 on an objection and an appeal; 7:10 on an objection). No decision output |
 | BESLUIT | The decision, with Awb 3:46 and 6:7 |
 | BEKENDMAKING | Awb 6:8: the objection period starts |
 | UITSPRAAK, TOEZENDING | The judgment on an appeal, and handing over its copy (Awb 8:79); the procedure `beroep` |
