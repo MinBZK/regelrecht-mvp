@@ -1077,7 +1077,7 @@ articles:
       # onder de namen van die uitkomsten. Wie vastlegt dat een partij het
       # afschrift heeft, zegt de wet niet: het artikel laat de griffier het
       # ter beschikking stellen. Daarom noemt het feit geen
-      # competent_authority (RFC-052); de partij die het ontvangt, legt het
+      # competent_authority (RFC-051); de partij die het ontvangt, legt het
       # vast (eigen keuze). De termijn van twee weken is niet gemodelleerd.
       # Lid 2 en 3 (anderen dan partijen, de Europese Commissie) zijn hier
       # niet opgenomen.
