@@ -607,7 +607,7 @@ impl Cell {
         id: &str,
     ) -> Result<Afschrift> {
         let gram = self.decision_gram(service, id)?.clone();
-        let value = self.decision_value(service, sphere, &gram)?;
+        let value = self.nested_value(service, sphere, &gram)?;
         let about = gram
             .refers_to
             .as_deref()
@@ -619,6 +619,50 @@ impl Cell {
             value,
             about,
         })
+    }
+
+    /// The decision value of `gram` for a copy: as [`Cell::decision_value`],
+    /// with every decision a field of type `decision` holds by its id
+    /// replaced by that decision's value, nested in the same way (RFC-053).
+    /// Each replay asks the cells of `sphere`.
+    /// The receiving cell cannot look an id up, and a court that calls the
+    /// decision anew needs the decision it contested.
+    fn nested_value(
+        &self,
+        service: &mut LawExecutionService,
+        sphere: &[&Cell],
+        gram: &Gram,
+    ) -> Result<serde_json::Value> {
+        let mut value = self.decision_value(service, sphere, gram)?;
+        let typed: Vec<String> = gram
+            .grondslag
+            .split_once('#')
+            .and_then(|(law_id, article)| {
+                shape::article_on(service, law_id, article, gram.recorded_on)
+            })
+            .and_then(|article| article.get_execution_spec())
+            .and_then(|execution| execution.parameters.as_ref())
+            .into_iter()
+            .flatten()
+            .filter(|p| p.param_type == ParameterType::Decision)
+            .map(|p| p.name.clone())
+            .collect();
+        for name in typed {
+            let Some(serde_json::Value::String(id)) =
+                value.get("fields").and_then(|f| f.get(&name)).cloned()
+            else {
+                continue;
+            };
+            let held = self.decision_gram(service, &id)?.clone();
+            let nested = self.nested_value(service, sphere, &held)?;
+            if let Some(fields) = value
+                .get_mut("fields")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                fields.insert(name, nested);
+            }
+        }
+        Ok(value)
     }
 
     /// Record the receipt of `copy`, a copy of a decision of another cell
@@ -885,6 +929,14 @@ impl Cell {
             let Some(value) = outputs.get(&name).filter(|v| !v.is_null()) else {
                 continue;
             };
+            // A decision of another kind than the one the deciding article
+            // takes is no decision this cell takes in turn: a court's
+            // judgment may hold the decision it sets in the place of the
+            // annulled one, which is still the administrative body's kind of
+            // decision (RFC-053). The judgment holds it as its value.
+            if of_another_kind(service, value, &shape.kind, on) {
+                continue;
+            }
             let gram = self.decided(service, &shape, &name, value, &applied, &answerers, on)?;
             outputs.insert(name, serde_json::Value::String(gram.id.clone()));
             taken.push(gram);
@@ -1126,7 +1178,9 @@ impl Cell {
             // A decision it took is an id in the chronolexogram and a value
             // here: the value's outputs are those of the chronolexogram of
             // that id.
-            let same = if replaces.contains(name) {
+            let same = if replaces.contains(name)
+                && !recorded.is_some_and(serde_json::Value::is_object)
+            {
                 match (recorded.and_then(serde_json::Value::as_str), &again) {
                     (None, again) => {
                         recorded.is_none_or(serde_json::Value::is_null)
@@ -1844,6 +1898,26 @@ fn run_stages(
         }
     }
     Ok(outputs)
+}
+
+/// Whether `value` names an article whose decision, in the law in force on
+/// `on`, is of another legal character than `kind`. A value that names no
+/// such article is left to [`Cell::decided`], which refuses what is no
+/// decision value.
+fn of_another_kind(
+    service: &LawExecutionService,
+    value: &serde_json::Value,
+    kind: &str,
+    on: NaiveDate,
+) -> bool {
+    value
+        .get("grondslag")
+        .and_then(serde_json::Value::as_str)
+        .and_then(|g| g.split_once('#'))
+        .and_then(|(law_id, article)| shape::article_on(service, law_id, article, on))
+        .and_then(|article| article.get_decision())
+        .and_then(|decision| decision.legal_character())
+        .is_some_and(|character| character != kind)
 }
 
 /// The outputs of type `decision` of article `article` of `law_id`, in the

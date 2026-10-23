@@ -71,6 +71,8 @@ The cell's code names no article of any law; everything it checks comes from the
 
 The engine refuses a finding that no article in the decision asks for, or one of the wrong type.
 
+A decision output of another legal character than the deciding article's own stays a value of the decision: a judgment can hold the decision the court sets in the place of the annulled one, and the court's cell does not record it as a decision of its own.
+
 ## Answering from the chronicle
 
 A reduction gives a named answer from what the cell recorded earlier, such as "was this permit granted before?". It is the only rulework that reads a chronicle.
@@ -114,7 +116,7 @@ execution:
 
 Each actor keeps its own chronicle, and the law sends documents between them: the copy of the contested decision with the beroepschrift (Awb 6:5 lid 2), and the copy of the judgment to the parties (Awb 8:79 lid 1). A cell takes in another cell's document as a copy, never by reading that cell's chronicle.
 
-- `Cell::afschrift` makes a copy of one of the cell's own decisions: the chronolexogram, its decision value from a replay in that cell, and `about`, what the submission it was taken on had received. Only the cell that took the decision makes a copy.
+- `Cell::afschrift` makes a copy of one of the cell's own decisions: the chronolexogram, its decision value from a replay in that cell, and `about`, what the submission it was taken on had received. Where a field of type `decision` holds an id, the copy holds that decision's value instead, nested the same way. Only the cell that took the decision makes a copy.
 - `record_submission` with `Reference::Received(&copy)` records a submission on a decision of another cell. The chronolexogram holds `received: {from, id}` instead of `refers_to`, and its field of type `decision` holds the decision value itself, because this cell cannot replay it.
 - `Cell::record_receipt` records that the cell received a copy, as an executogram of the fact the law requires for it. The receipt is the one executogram that refers to a decision: the cell's own decision that the copy concerns.
 - `Cell::decide_after` decides on a submission again after a later chronolexogram that refers to the last decision on it, such as a receipt. The new decision holds that chronolexogram as `after`. The rule names no article; whether the earlier decision still counts is for whoever reads the chronicle.

@@ -294,8 +294,33 @@ export const isBesluit = (g) =>
 const isDecimaal = (v) =>
   v !== null && typeof v === 'object' && Object.keys(v).length === 1 && '__decimal' in v;
 
-/** Een waarde leesbaar: een decimaal als het getal, de rest als JSON. */
-export const waarde = (v) => (isDecimaal(v) ? v.__decimal : JSON.stringify(v));
+/**
+ * Een besluitwaarde (`{grondslag, fields, findings, outputs}`), zoals de
+ * uitspraak die houdt als de rechter zelf in de zaak voorziet (Awb 8:72,
+ * derde lid, onder b).
+ */
+export const isBesluitwaarde = (v) =>
+  v !== null &&
+  typeof v === 'object' &&
+  typeof v.grondslag === 'string' &&
+  ['fields', 'findings', 'outputs'].every((k) => v[k] !== null && typeof v[k] === 'object');
+
+/**
+ * Een waarde leesbaar: een decimaal als het getal, een besluitwaarde als
+ * haar grondslag met haar uitvoer (een besluit daarin net zo, tussen
+ * haakjes), de rest als JSON.
+ */
+export function waarde(v) {
+  if (isDecimaal(v)) return v.__decimal;
+  if (isBesluitwaarde(v)) {
+    const uitvoer = Object.entries(v.outputs).map(([naam, w]) => {
+      const tekst = waarde(w);
+      return `${leesbaar(naam)}: ${isBesluitwaarde(w) ? `(${tekst})` : tekst}`;
+    });
+    return [`besluit onder ${v.grondslag}`, ...uitvoer].join('; ');
+  }
+  return JSON.stringify(v);
+}
 
 /** JSON zoals de kroniek het bewaart, met elk decimaal als het getal zelf. */
 export function alsJson(v) {

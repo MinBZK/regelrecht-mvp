@@ -237,6 +237,7 @@ fn well_founded() -> Map<String, Value> {
         "rechtsregel_geschonden": true,
         "geschonden_rechtsregel": "artikel 7:12, eerste lid, van de Algemene wet bestuursrecht",
         "rechtsgevolgen_in_stand": false,
+        "uitspraak_treedt_in_de_plaats": false,
         "termijn_nieuw_besluit": "2027-01-25",
     }))
 }
@@ -1059,4 +1060,139 @@ fn a_chronicle_whose_decision_taken_again_or_receipt_is_out_of_place_does_not_op
     }
     std::fs::write(&path, &text).unwrap();
     school_at(&path).unwrap();
+}
+
+/// The court's judgement when it decides the case itself (Awb 8:72 lid 3
+/// onder b): the decision on the objection taken anew by the court, with
+/// its own judgement on the profession of the parent, and the fact the
+/// school's reduction would otherwise give (8:69 lid 3).
+fn decided_by_the_court() -> Map<String, Value> {
+    let mut findings = well_founded();
+    findings.remove("termijn_nieuw_besluit");
+    findings.insert("uitspraak_treedt_in_de_plaats".into(), json!(true));
+    findings.insert(PROFESSION.into(), json!(true));
+    findings.insert("verlof_al_verleend_in_schooljaar".into(), json!(false));
+    findings
+}
+
+#[test]
+fn the_copy_of_a_decision_on_objection_holds_the_contested_decision_as_a_value() {
+    let mut school = school();
+    let refused = refused(&mut school);
+    let (_, decided) = objected(&mut school, &refused, json!({}));
+    let copy = school
+        .afschrift(&mut service(), &[], &decided[0].id)
+        .unwrap();
+    let contested = &copy.value["fields"]["bestreden_besluit"];
+    assert_eq!(contested["grondslag"], json!("leerplichtwet_1969#13a"));
+    assert_eq!(contested["outputs"]["verlof_verleend"], json!(false));
+    // In the school's own chronicle the decision on the objection keeps it
+    // by its id.
+    assert_eq!(decided[0].fields["bestreden_besluit"], json!(refused.id));
+}
+
+#[test]
+fn the_court_decides_the_case_itself_and_the_school_counts_its_grant() {
+    let mut case = case(&decided_by_the_court());
+    let judgment = case.judgment.clone();
+    assert_eq!(
+        judgment.outputs["bestreden_besluit_vernietigd"],
+        json!(true)
+    );
+    assert_eq!(judgment.outputs["rechtsgevolgen_vernietigd"], json!(true));
+    assert_eq!(judgment.outputs["opdracht_nieuw_besluit"], json!(false));
+    let instead = judgment.outputs["uitspraak_in_de_plaats"].clone();
+    assert_eq!(
+        instead["grondslag"],
+        json!("algemene_wet_bestuursrecht#7:11")
+    );
+    assert_eq!(
+        instead["outputs"]["bestreden_besluit_herroepen"],
+        json!(true)
+    );
+    let grant = &instead["outputs"]["nieuw_besluit"];
+    assert_eq!(grant["grondslag"], json!("leerplichtwet_1969#13a"));
+    assert_eq!(grant["outputs"]["verlof_verleend"], json!(true));
+    // The court takes no decision of the school in its own chronicle: the
+    // judgment holds the decision it sets in place as its value.
+    assert_eq!(case.court.grams().len(), 2);
+    case.court
+        .explain(&mut service(), &[], &judgment.id)
+        .unwrap();
+
+    let receipt = received(&mut case).unwrap();
+    assert_eq!(receipt.fields["uitspraak_in_de_plaats"], instead);
+
+    // The grant counts: a second application in the school year is refused.
+    let application = map(json!({
+        "bsn_jongere": "999990019",
+        "eerste_verlofdag": "2027-05-10",
+        "laatste_verlofdag": "2027-05-14",
+        "aanvraag_ondertekend": true,
+        "naam_aanvrager": "J. Jansen",
+        "adres_aanvrager": "Voorbeeldstraat 1",
+        "dagtekening": "2027-02-01",
+        "gevraagde_beschikking": "vakantieverlof",
+    }));
+    let later = case
+        .school
+        .record_submission(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            None,
+            &application,
+            day("2027-02-01"),
+        )
+        .unwrap();
+    let decided = case
+        .school
+        .decide(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            &later.id,
+            &Map::new(),
+            &map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
+            day("2027-02-02"),
+        )
+        .unwrap();
+    assert_eq!(
+        decided[0].fields["verlof_al_verleend_in_schooljaar"],
+        json!(true)
+    );
+    assert_eq!(decided[0].outputs["verlof_verleend"], json!(false));
+}
+
+#[test]
+fn a_court_that_decides_itself_without_the_fact_the_school_would_give_fails() {
+    let mut school = school();
+    let mut court = court();
+    let refused = refused(&mut school);
+    let (_, decided) = objected(&mut school, &refused, json!({}));
+    let copy = school
+        .afschrift(&mut service(), &[], &decided[0].id)
+        .unwrap();
+    let appeal = appealed(&mut court, &copy).unwrap();
+    let mut findings = decided_by_the_court();
+    findings.remove("verlof_al_verleend_in_schooljaar");
+    let err = court
+        .decide(
+            &mut service(),
+            &[],
+            AWB,
+            APPEAL,
+            &appeal.id,
+            &Map::new(),
+            &findings,
+            day("2027-01-11"),
+        )
+        .unwrap_err();
+    assert!(
+        err.to_string().contains("verlof_al_verleend_in_schooljaar"),
+        "{err}"
+    );
+    assert_eq!(court.grams().len(), 1);
 }

@@ -29,7 +29,9 @@ articles:
       de bestuursrechter vernietigd. Welke besluiten herroepen of vernietigd
       zijn en welk schooljaar dat van het verlof is, zegt het beleid van het
       hoofd; de uitspraken leest het systeem uit de afschriften die het
-      ontving (Awb 8:79).
+      ontving (Awb 8:79). Verleende de bestuursrechter zelf verlof, doordat
+      zijn uitspraak in de plaats trad van de vernietigde beslissing op
+      bezwaar (Awb 8:72, derde lid, onder b), dan telt dat verlof ook.
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
     machine_readable:
       execution:
@@ -117,51 +119,95 @@ articles:
           # herroepen of vernietigd is. Een weigering telt niet. Het besluit dat
           # in de plaats van een herroepen besluit kwam, telt als elk ander
           # (RFC-045), behalve als de bestuursrechter de beslissing die het nam
-          # vernietigde (RFC-053). Met
-          # `as` is een besluit alleen als `$besluit.<veld>` te lezen
-          # (RFC-049); `$bsn_jongere` is de parameter.
+          # vernietigde (RFC-053). Daarnaast telt verlof dat de bestuursrechter
+          # zelf verleende. Met `as` is een besluit alleen als `$besluit.<veld>`
+          # te lezen (RFC-049); `$bsn_jongere` is de parameter.
           - output: verlof_al_verleend_in_schooljaar
             value:
-              operation: FOREACH
-              collection: $besluiten
-              as: besluit
-              filter:
-                operation: AND
-                conditions:
-                  - operation: EQUALS
-                    subject: $besluit.verlof_verleend
-                    value: true
-                  - operation: NOT
-                    value:
-                      operation: IN
-                      subject: $besluit.id
-                      value: $herroepen_besluiten
-                  - operation: NOT
-                    value:
-                      operation: IN
-                      subject: $besluit.id
-                      value: $vernietigde_besluiten
-                  - operation: NOT
-                    value:
-                      operation: IN
-                      subject: $besluit.id
-                      value: $besluiten_van_vernietigde_beslissingen
-                  - operation: EQUALS
-                    subject: $besluit.bsn_jongere
-                    value: $bsn_jongere
-                  - operation: GREATER_THAN_OR_EQUAL
-                    subject:
-                      operation: DATE_DIFF
-                      from: $begin_schooljaar
-                      to: $besluit.eerste_verlofdag
-                      in: days
-                    value: 0
-                  - operation: GREATER_THAN_OR_EQUAL
-                    subject:
-                      operation: DATE_DIFF
-                      from: $besluit.eerste_verlofdag
-                      to: $einde_schooljaar
-                      in: days
-                    value: 0
-              body: true
-              combine: OR
+              operation: OR
+              conditions:
+                - operation: FOREACH
+                  collection: $besluiten
+                  as: besluit
+                  filter:
+                    operation: AND
+                    conditions:
+                      - operation: EQUALS
+                        subject: $besluit.verlof_verleend
+                        value: true
+                      - operation: NOT
+                        value:
+                          operation: IN
+                          subject: $besluit.id
+                          value: $herroepen_besluiten
+                      - operation: NOT
+                        value:
+                          operation: IN
+                          subject: $besluit.id
+                          value: $vernietigde_besluiten
+                      - operation: NOT
+                        value:
+                          operation: IN
+                          subject: $besluit.id
+                          value: $besluiten_van_vernietigde_beslissingen
+                      - operation: EQUALS
+                        subject: $besluit.bsn_jongere
+                        value: $bsn_jongere
+                      - operation: GREATER_THAN_OR_EQUAL
+                        subject:
+                          operation: DATE_DIFF
+                          from: $begin_schooljaar
+                          to: $besluit.eerste_verlofdag
+                          in: days
+                        value: 0
+                      - operation: GREATER_THAN_OR_EQUAL
+                        subject:
+                          operation: DATE_DIFF
+                          from: $besluit.eerste_verlofdag
+                          to: $einde_schooljaar
+                          in: days
+                        value: 0
+                  body: true
+                  combine: OR
+                # Of de bestuursrechter de jongere zelf verlof verleende in dat
+                # schooljaar: het besluit in de plaats van de vernietigde
+                # beslissing op bezwaar (uitspraak_in_de_plaats), met het nieuwe
+                # besluit dat die beslissing nam (Awb 8:72, derde lid, onder b).
+                - operation: FOREACH
+                  collection: $uitspraken
+                  as: uitspraak
+                  filter:
+                    operation: AND
+                    conditions:
+                      - operation: NOT
+                        value:
+                          operation: EQUALS
+                          subject: $uitspraak.uitspraak_in_de_plaats
+                          value: null
+                      - operation: NOT
+                        value:
+                          operation: EQUALS
+                          subject: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit
+                          value: null
+                      - operation: EQUALS
+                        subject: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit.outputs.verlof_verleend
+                        value: true
+                      - operation: EQUALS
+                        subject: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit.fields.bsn_jongere
+                        value: $bsn_jongere
+                      - operation: GREATER_THAN_OR_EQUAL
+                        subject:
+                          operation: DATE_DIFF
+                          from: $begin_schooljaar
+                          to: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit.fields.eerste_verlofdag
+                          in: days
+                        value: 0
+                      - operation: GREATER_THAN_OR_EQUAL
+                        subject:
+                          operation: DATE_DIFF
+                          from: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit.fields.eerste_verlofdag
+                          to: $einde_schooljaar
+                          in: days
+                        value: 0
+                  body: true
+                  combine: OR

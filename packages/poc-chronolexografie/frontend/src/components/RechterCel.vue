@@ -14,7 +14,7 @@
 import { computed, reactive } from 'vue';
 import { beroepApi, ontvangstVan, uitspraakOp } from '../beroep.js';
 import { artikelNaam } from '../logboek.js';
-import { kort, leesbaar, state, stap, waarde, zonderLeeg } from '../state.js';
+import { isBesluitwaarde, kort, leesbaar, state, stap, waarde, zonderLeeg } from '../state.js';
 import VeldInvoer from './VeldInvoer.vue';
 import Voorvertoning from './Voorvertoning.vue';
 
@@ -57,9 +57,10 @@ const uitvoer = (g) => Object.entries(g.outputs ?? {}).map(([naam, w]) => ({ naa
     <nldd-title slot="header" size="3" :text="`Ingekomen beroepen bij ${state.casus.rechter.cel_naam}`">
       <nldd-text slot="supporting-text">
         De rechtbank beslist op een beroep onder {{ artikel }}, in haar eigen cel. Het beroep
-        draagt het afschrift van de beslissing op bezwaar dat {{ state.casus.cel_naam }} maakte:
-        de rechtbank oordeelt op de grondslag van de overgelegde stukken (Awb 8:69). Zelf in de
-        zaak voorzien (Awb 8:72 lid 3 onder b) kan zij hier nog niet. De bevindingen hieronder zijn haar oordeel.
+        draagt het afschrift van de beslissing op bezwaar dat {{ state.casus.cel_naam }} maakte.
+        De rechtbank oordeelt op de grondslag van de overgelegde stukken (Awb 8:69). Voorziet zij
+        zelf in de zaak (Awb 8:72, derde lid, onder b), dan neemt zij die beslissing opnieuw, met
+        haar eigen bevindingen. De bevindingen hieronder zijn haar oordeel.
       </nldd-text>
     </nldd-title>
     <nldd-inline-dialog
@@ -94,7 +95,8 @@ const uitvoer = (g) => Object.entries(g.outputs ?? {}).map(([naam, w]) => ({ naa
               <template v-if="gelezen.length">
                 <nldd-text size="sm" color="secondary">
                   Wat {{ gelezenArtikelen }} vraagt, telt alleen als de uitspraak dat artikel leest:
-                  bij een gegrond beroep.
+                  bij een gegrond beroep, en wat het bestreden besluit vraagt alleen als de rechtbank
+                  zelf in de zaak voorziet.
                 </nldd-text>
                 <VeldInvoer
                   v-for="o in gelezen"
@@ -139,7 +141,8 @@ const uitvoer = (g) => Object.entries(g.outputs ?? {}).map(([naam, w]) => ({ naa
           <nldd-list appearance="box-base">
             <nldd-list-item v-for="o in uitvoer(u)" :key="o.naam" size="sm">
               <nldd-text-cell :text="leesbaar(o.naam)"></nldd-text-cell>
-              <nldd-text-cell width="fit-content" :text="waarde(o.w)"></nldd-text-cell>
+              <!-- Een besluitwaarde is lang: zij krijgt de ruimte, niet de naam. -->
+              <nldd-text-cell :width="isBesluitwaarde(o.w) ? undefined : 'fit-content'" :text="waarde(o.w)"></nldd-text-cell>
             </nldd-list-item>
           </nldd-list>
           <nldd-text v-if="nietGevraagd[u.id]?.length" size="sm" color="secondary">

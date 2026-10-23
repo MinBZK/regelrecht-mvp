@@ -52,12 +52,14 @@ voorbeeld:
     omschrijving_bestreden_besluit: beslissing op bezwaar tegen de weigering van vakantieverlof
     gronden_bezwaar_of_beroep: de beslissing is niet deugdelijk gemotiveerd
   # Wat de rechter vindt (Awb 8:70 en 8:72): het beroep is gegrond, de
-  # rechtsgevolgen blijven niet in stand en de school krijgt twee weken.
+  # rechtsgevolgen blijven niet in stand, de rechter voorziet niet zelf in
+  # de zaak en de school krijgt twee weken.
   uitspraak:
     indiener_is_belanghebbende: true
     rechtsregel_geschonden: true
     geschonden_rechtsregel: artikel 7:12, eerste lid, van de Algemene wet bestuursrecht
     rechtsgevolgen_in_stand: false
+    uitspraak_treedt_in_de_plaats: false
     termijn_nieuw_besluit: '2027-01-25'
 
 # Wat de school vastlegde vóór het eerste scenario (RFC-051), bij elke start
