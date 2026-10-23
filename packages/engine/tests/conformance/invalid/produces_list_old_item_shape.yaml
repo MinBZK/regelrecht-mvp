@@ -1,6 +1,6 @@
 ---
 # A list item names what it is with `type`; `submission` and `legal_character` belong to the object form (schema v0.8.1).
-$schema: https://raw.githubusercontent.com/MinBZK/regelrecht/refs/tags/schema-v0.8.1/schema/v0.8.1/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: test_conformance_produces_list_old_item_shape
 regulatory_layer: WET
 bwb_id: BWBR9999905

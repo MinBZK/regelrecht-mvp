@@ -370,7 +370,7 @@ fn a_reduction_reads_only_a_fact_its_article_requires() {
     assert_eq!(reads(FACT).unwrap(), regelrecht_engine::Value::Null);
     let e = reads("wet_vaststelling_fictief#4#stand").unwrap_err();
     assert!(e.to_string().contains("requires no fact 'stand'"), "{e}");
-    // A stream id, as v0.8.6 had it, or an article alone is no fact
+    // A stream id or an article alone is no fact
     // reference.
     assert!(service().load_law(&reduction("stand")).is_err());
     assert!(service().load_law(&reduction(GRONDSLAG)).is_err());

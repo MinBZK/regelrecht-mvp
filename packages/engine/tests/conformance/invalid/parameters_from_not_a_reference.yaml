@@ -1,6 +1,6 @@
 ---
 # parameters_from lists $-references (schema v0.8.4, RFC-050).
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.4/schema/v0.8.4/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: test_conformance_parameters_from_not_a_reference
 regulatory_layer: WET
 publication_date: '2026-10-15'

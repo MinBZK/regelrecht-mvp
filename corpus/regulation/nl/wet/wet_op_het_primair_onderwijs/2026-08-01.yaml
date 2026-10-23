@@ -4,7 +4,7 @@
 # artikelen 1, 8, 9 en 10 noemen de Leerplichtwet 1969 en de regeling in hun
 # tekst. De tekst en de metadata zijn zoals geharvest; de overige artikelen
 # van de wet staan niet in dit regelwerk.
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.5/schema/v0.8.5/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: wet_op_het_primair_onderwijs
 regulatory_layer: WET
 publication_date: '2026-10-06'

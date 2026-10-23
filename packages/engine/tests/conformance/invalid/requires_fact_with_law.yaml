@@ -1,7 +1,7 @@
 ---
 # A fact the article requires names no other provision in the same entry
 # (schema v0.8.7, RFC-051).
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.7/schema/v0.8.7/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.9/schema/v0.8.9/schema.json
 $id: test_conformance_fact_with_law
 regulatory_layer: WET
 bwb_id: BWBR9999997
