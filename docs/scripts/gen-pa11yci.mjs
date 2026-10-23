@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const DOCS_DIR = fileURLToPath(new URL('..', import.meta.url));
 const DIST = join(DOCS_DIR, 'dist');
-const ORIGIN = 'http://localhost:4173';
+const ORIGIN = 'http://127.0.0.1:4173';
 
 // Walk dist for every index.html (→ a route) and every top-level *.html.
 function collectRoutes(dir) {

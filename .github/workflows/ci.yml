@@ -1071,22 +1071,24 @@ jobs:
     # The official Playwright image: Chromium and every system library it
     # needs are already in it (under /ms-playwright, PLAYWRIGHT_BROWSERS_PATH),
     # so the job skips `playwright install --with-deps`, whose apt round-trip
-    # on the runner took anywhere from 30 s to over 9 minutes. The tag has to
+    # on the runner took anywhere from 10 s to over 9 minutes. The tag has to
     # be the Playwright version both lockfiles resolve (package-lock.json and
     # docs/package-lock.json), or the package looks for a browser revision the
     # image does not have; script/playwright-image.test.mjs fails when they
     # drift. Pinned by the digest of the multi-arch index:
     #   curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
     #     https://mcr.microsoft.com/v2/playwright/manifests/v<version>-noble \
-    #     | grep -i docker-content-digest The same image
-    # runs walkthrough-replay and docs-a11y. It runs as root, without sudo.
+    #     | grep -i docker-content-digest
+    # The same image runs walkthrough-replay and docs-a11y. It runs as root, without sudo.
     # --ipc=host is what Playwright recommends for Chromium in Docker: the
     # default 64 MB /dev/shm makes it crash on large pages.
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf
       options: --ipc=host
-    # In a container job the default shell is `sh -e`, without pipefail;
-    # this restores the `bash -e -o pipefail` the steps were written for.
+    # A step without `shell:` runs under `bash -e` on the runner but under
+    # `sh -e` in a container job, and the steps are written for bash.
+    # `shell: bash` gives `bash -e -o pipefail`, which is also stricter than
+    # the runner's default.
     defaults:
       run:
         shell: bash
@@ -1207,7 +1209,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf
       options: --ipc=host
-    # Same shell as on the runner; see the e2e job.
+    # bash, not the container's `sh`; see the e2e job.
     defaults:
       run:
         shell: bash
@@ -1368,7 +1370,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf
       options: --ipc=host
-    # Same shell as on the runner; see the e2e job.
+    # bash, not the container's `sh`; see the e2e job.
     defaults:
       run:
         shell: bash

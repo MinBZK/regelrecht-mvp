@@ -81,10 +81,10 @@ gate** run inside the
 not directly on the runner. The image ships
 Chromium with every system library it needs, so these jobs no longer run
 `playwright install --with-deps`. That step spent its time in `apt-get update`
-on the runner and varied from ten seconds to more than nine minutes. The two
-jobs that build the engine for the browser still run apt, but only to install
-`gcc` from the image's mirror: the WASM build compiles build scripts for the
-host, and the image has no C compiler.
+on the runner and varied from ten seconds to more than nine minutes. Each job
+still runs one small apt install from the image's mirror. The two jobs that
+build the engine for the browser install `gcc` and `libc6-dev`, because the
+WASM build compiles build scripts for the host and the image has no C compiler.
 
 The image is pinned by tag and digest in `ci.yml`. A Playwright release looks
 for exactly the browser build it shipped with, so the tag must equal the
@@ -103,18 +103,24 @@ curl -sI -H 'Accept: application/vnd.oci.image.index.v1+json' \
 
 Without that `Accept` header the registry answers 404.
 
-A step in a container job runs under `sh` unless told otherwise, without
-`pipefail`, so the three jobs set `bash` as their default shell, as on the
-runner. The container runs as root. git refuses a checkout owned by another user, so
-the accessibility gate marks the workspace as a safe directory before its
-`git diff`. That gate also installs two packages the image lacks: `unzip`, for
-the Puppeteer download of pa11y's Chrome, and the DejaVu fonts. Without them
-`monospace` resolves to a CJK font with wider glyphs, a code block on the demo
-page overflows, and axe reports it as a scrollable region without keyboard
-access. pa11y starts its Chrome with `--no-sandbox`. The preview server that pa11y reads from binds to `127.0.0.1`
-explicitly (`npm run a11y` in `docs/package.json`). Left at `localhost`, it
-listened on `::1` in the container while `wait-on` knocked on `127.0.0.1`, and
-the gate timed out before checking a page.
+A step without a `shell:` runs under `bash -e` on the runner, but under `sh -e`
+in a container. The three jobs set `shell: bash` as their default, which also
+turns on `pipefail`.
+
+The container runs as root, and Git refuses a checkout owned by another user.
+The accessibility gate marks the workspace as a safe directory before its
+`git diff`. pa11y starts its Chrome with `--no-sandbox`, which Chrome needs when
+it runs as root.
+
+The gate installs two packages the image lacks. Puppeteer needs `unzip` to
+unpack pa11y's Chrome. Without the DejaVu fonts, `monospace` resolves to a CJK
+font with wider glyphs. Code blocks then overflow, and axe reports them as
+scrollable regions without keyboard access.
+
+The preview server that pa11y reads from binds to `127.0.0.1` (`npm run a11y`
+in `docs/package.json`), and the gate's page list uses the same address. Left
+at `localhost`, the server listened on `::1` in the container while `wait-on`
+polled `127.0.0.1`, and the gate timed out before it checked a page.
 
 ### WASM build (on engine changes)
 
@@ -158,8 +164,8 @@ changed file is a page under `docs/src/content/docs/` or
 file for instance, sends the gate over the whole site, because it may change
 every page. A push to `main` always checks the whole site.
 
-Each shard builds the site and runs the source checks in `npm run a11y` again;
-only the pa11y run is split. The check that no published URL disappeared runs
+Every shard builds the site and repeats the source checks in `npm run a11y`.
+Only the pa11y run is split. The check that no published URL disappeared runs
 in the first shard only.
 
 ### Other jobs behind the `Test` check
