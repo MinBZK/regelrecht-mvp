@@ -43,8 +43,8 @@ Feature: Het besluit op de aanvraag om een gehandicaptenparkeerkaart
     Then output "kaart_geldig_tot" equals "2031-10-19"
     Then output "motivering_vereist" is true
     Then output "motivering_vereist" has reactive provenance
-    Then output "bezwaartermijn_weken" equals 6
-    Then output "bezwaartermijn_weken" has reactive provenance
+    Then output "termijn_weken" equals 6
+    Then output "termijn_weken" has reactive provenance
 
   Scenario: Zonder loopbeperking of andere ernstige beperking wordt de kaart geweigerd
     # Het geneeskundig onderzoek toont geen beperking die artikel 1 van de

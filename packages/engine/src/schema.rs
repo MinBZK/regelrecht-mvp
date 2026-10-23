@@ -205,7 +205,8 @@ mod tests {
 
         // A two-digit patch is not read as the version it starts with.
         let two_digits = serde_json::json!({
-            "$schema": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/                        refs/tags/schema-v0.8.10/schema/v0.8.10/schema.json"
+            "$schema": "https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/\
+                        refs/tags/schema-v0.8.10/schema/v0.8.10/schema.json"
         });
         assert_eq!(detect_version(&two_digits), Some("v0.8.10"));
     }

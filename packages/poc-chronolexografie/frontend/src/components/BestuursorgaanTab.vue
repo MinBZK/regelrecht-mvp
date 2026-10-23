@@ -237,7 +237,7 @@ const uitkomstOpBezwaar = (uit) =>
         <nldd-title
           size="5"
           :text="`Bezwaar ${kort(bz.id)} tegen besluit ${kort(bz.refers_to)}`"
-          :supporting-text="`ontvangen ${bz.recorded_on} · ${bz.fields.gronden_bezwaar ?? ''}`"
+          :supporting-text="`ontvangen ${bz.recorded_on} · ${bz.fields.gronden_bezwaar_of_beroep ?? ''}`"
         ></nldd-title>
         <template v-if="!toetsen[bz.id]">
           <nldd-text size="sm" color="secondary">Stap 1: is het bezwaar ontvankelijk? Dat beslist Awb 7:11 op de speeldatum.</nldd-text>

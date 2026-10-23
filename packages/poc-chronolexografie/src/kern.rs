@@ -1362,7 +1362,7 @@ pub fn heroverweging(
         "bezwaar": bezwaar,
         "bestreden_besluit": bestreden.id,
         "ontvankelijk": ontvankelijk,
-        "tijdig": ingediend.outputs.get("bezwaarschrift_tijdig_ingediend"),
+        "tijdig": ingediend.outputs.get("bezwaar_of_beroepschrift_tijdig_ingediend"),
         "uitvoer": toets.outputs,
         "bevindingen": bevindingen,
     }))
@@ -1768,12 +1768,12 @@ mod tests {
 
     fn bezwaar_velden(dagtekening: &str) -> Map<String, Value> {
         map(json!({
-            "bezwaarschrift_ondertekend": true,
+            "bezwaar_of_beroepschrift_ondertekend": true,
             "naam_indiener": "J. Jansen",
             "adres_indiener": "Voorbeeldstraat 1",
-            "dagtekening_bezwaarschrift": dagtekening,
+            "dagtekening_bezwaar_of_beroepschrift": dagtekening,
             "omschrijving_bestreden_besluit": "weigering vakantieverlof",
-            "gronden_bezwaar": "verklaring van de werkgever: geen verlof in de schoolvakanties",
+            "gronden_bezwaar_of_beroep": "verklaring van de werkgever: geen verlof in de schoolvakanties",
         }))
     }
 
@@ -1819,7 +1819,7 @@ mod tests {
             assert!(invoer.contains(&json!({ "naam": begrip, "bron": "kroniek van de cel" })));
         }
         let bezwaar = namen("/bezwaar/velden");
-        assert!(bezwaar.contains(&"gronden_bezwaar".to_string()));
+        assert!(bezwaar.contains(&"gronden_bezwaar_of_beroep".to_string()));
         // The contested decision the cell fills from `refers_to`.
         assert!(!bezwaar.contains(&"bestreden_besluit".to_string()));
         assert!(vormen["beslissing_op_bezwaar"]["uitvoer"]
@@ -2425,7 +2425,7 @@ mod tests {
             s["soort"] == json!("hook") && s["artikel"] == json!("6:7")
         })
         .unwrap();
-        assert_eq!(hook["stappen"][0]["naam"], json!("bezwaartermijn_weken"));
+        assert_eq!(hook["stappen"][0]["naam"], json!("termijn_weken"));
         // Hook 6:9 reads the objection's own facts, which the decision is
         // not passed: it determines nothing there and leaves no step.
         assert!(vind(keten, &|s| s["artikel"] == json!("6:9")).is_none());
@@ -2879,7 +2879,7 @@ mod tests {
 
     fn kaart_bezwaar(corpus: &Corpus, cell: &mut Cellen, besluit: &str, op: &str) -> Gram {
         let mut velden = corpus.casus.voorbeeld.bezwaar.clone();
-        velden.insert("dagtekening_bezwaarschrift".into(), json!(op));
+        velden.insert("dagtekening_bezwaar_of_beroepschrift".into(), json!(op));
         bezwaren(corpus, cell, besluit, &velden, day(op)).unwrap()
     }
 

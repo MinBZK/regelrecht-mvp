@@ -52,11 +52,11 @@ voorbeeld:
     bekend_dat_aanvrager_nog_steeds_voldoet: false
     keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: false
   bezwaar:
-    bezwaarschrift_ondertekend: true
+    bezwaar_of_beroepschrift_ondertekend: true
     naam_indiener: A. de Vries
     adres_indiener: Voorbeeldlaan 2
     omschrijving_bestreden_besluit: besluit op de aanvraag om een gehandicaptenparkeerkaart
-    gronden_bezwaar: ik kan niet verder lopen dan vijftig meter
+    gronden_bezwaar_of_beroep: ik kan niet verder lopen dan vijftig meter
 
 # De andere cellen van de sfeer (RFC-052). Het open begrip zegt wie bevoegd
 # is: de GGD of de aangewezen deskundige voor het onderzoek (Regeling

@@ -39,7 +39,8 @@ Note that *verordening* names four different things in this list. An EU-verorden
 | **Bekendmaking** | Notification | Making a decision known to the addressee (Awb art. 3:41). The bezwaar period runs from this moment, not from the decision itself |
 | **Bezwaar** | Objection | First recourse, filed with the body that decided |
 | **Bezwaartermijn** | Objection period | Six weeks from bekendmaking (Awb art. 6:7 and 6:8) |
-| **Beroep** | Appeal | Court appeal against a decision on bezwaar |
+| **Beroep** | Appeal | Court appeal against a decision on bezwaar (Awb art. 8:1 with 7:1) |
+| **Uitspraak** | Judgment | What the administrative court decides on a beroep (Awb art. 8:70). No besluit: a court is not a bestuursorgaan (Awb art. 1:1 lid 2 onder c) |
 | **Belanghebbende** | Interested party | A person whose interest is directly affected by a besluit (Awb art. 1:2) |
 | **Motivering** | Statement of reasons | The obligation to state the grounds a decision rests on (Awb art. 3:46) |
 
@@ -55,6 +56,7 @@ The values of `legal_character`, the schema field saying what kind of thing an o
 | `TOETS` | An assessment against a norm that is not itself a decision |
 | `WAARDEBEPALING` | A determination of a value that other rules then use |
 | `INFORMATIEF` | Informative output, carrying no legal consequence of its own |
+| `UITSPRAAK` | The judgment of an administrative court on an appeal (Awb art. 8:70), which is not a besluit (schema v0.8.10) |
 
 ### Decision type
 

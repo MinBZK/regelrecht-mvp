@@ -285,7 +285,7 @@ jobs:
             fi
             FOUND=false
             for ver in $KNOWN_VERSIONS; do
-              if echo "$SCHEMA_URL" | grep -q "$ver"; then
+              if echo "$SCHEMA_URL" | grep -qF "/$ver/"; then
                 FOUND=true
                 break
               fi
