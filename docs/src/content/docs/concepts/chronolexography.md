@@ -80,14 +80,15 @@ A reduction gives a named answer from what the cell recorded earlier, such as "w
 regulatory_layer: REDUCTIE
 competent_authority:
   name: Het college van burgemeester en wethouders van Voorbeeldstad
-parameters: [bsn_aanvrager]
-input:
-  - name: besluiten
-    type: array
-    source:
-      decisions: wet_voorbeeld#3     # one row per decision under art. 3
-output:
-  - name: eerder_vergunning_verleend
+execution:                         # shortened
+  parameters: [bsn_aanvrager]
+  input:
+    - name: besluiten
+      type: array
+      source:
+        decisions: wet_voorbeeld#3      # one row per decision under art. 3
+  output:
+    - name: eerder_vergunning_verleend
 ```
 
 The law does not ask the cell. The policy of the authority that decides binds the open term to the answer:
@@ -96,21 +97,22 @@ The law does not ask the cell. The policy of the authority that decides binds th
 # beleid_vergunningen_voorbeeldstad, art. 1 (UITVOERINGSBELEID)
 implements:
   - {law: wet_voorbeeld, article: '3', open_term: eerder_vergunning_verleend}
-input:
-  - name: antwoord
-    nullable: true
-    source:
-      reduction: eerder_vergunning_verleend
-      parameters: {bsn_aanvrager: $bsn_aanvrager}
+execution:
+  input:
+    - name: antwoord
+      nullable: true
+      source:
+        reduction: eerder_vergunning_verleend
+        parameters: {bsn_aanvrager: $bsn_aanvrager}
 ```
 
 - How a cell reduces is up to the cell; the engine only asks it for an answer by name. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`) in the corpus, under the holder it names. It reads decisions (`source.decisions`) or facts (`source.facts`), and may call policy for a norm.
-- Wherever the binding runs, the engine asks the cell, which runs the reduction its catalogue names. The binding is policy, so the answer sets a finding aside ([order of precedence](/concepts/inversion-of-control#policy-that-fills-an-open-term-with-a-cells-answer)). Without an answer the binding is silent and the term falls back on the finding or the default.
+- Wherever the binding runs, the engine asks the cell, which runs the reduction its catalogue names. The binding is policy, so the answer sets a finding aside ([order of precedence](/concepts/inversion-of-control#policy-that-fills-an-open-term-with-a-cells-answer)). Null on a term with a default or `decided_per_case_by` is silence, and the term falls back; on any other term null is the value.
 - The loader refuses `source.decisions` and `source.facts` outside a `REDUCTIE`, and `source.reduction` outside such a binding.
 
 ## Answers of other cells
 
-A decision may take other cells along: its sphere. When a binding fills an open term with `competent_authority`, the engine asks every competent cell in the sphere for the answer and merges their answers with the term's `combine`, or else the binding's ([Competent Authority](/concepts/competent-authority#who-answers-an-open-term)). A cell without that answer in its catalogue is silent. Without competence on the term, the engine asks the cell of the policy's holder. This is the paper's synthesis. It happens in the asking process, and each cell reduces only its own chronicle.
+A decision may take other cells along: its sphere. When a binding fills an open term with `competent_authority`, the engine asks every competent cell of the call, the deciding cell and its sphere, for the answer and merges their answers with the term's `combine`, or else the binding's ([Competent Authority](/concepts/competent-authority#who-answers-an-open-term)). A cell without that answer in its catalogue is silent. Without competence on the term, the engine asks the cell of the policy's holder. This is the paper's synthesis. It happens in the asking process, and each cell reduces only its own chronicle.
 
 ## Explaining a decision
 
