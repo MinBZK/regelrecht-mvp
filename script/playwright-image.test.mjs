@@ -84,6 +84,18 @@ test('no job in ci.yml downloads Playwright browsers itself', () => {
   assert.doesNotMatch(code, /playwright install/);
 });
 
+test('no job in ci.yml runs apt-get', () => {
+  // apt in the image goes through the Azure Ubuntu mirror, which once took 22
+  // minutes for a C compiler and pushed a merge-queue entry past its check
+  // timeout. The engine is built on the runner by the wasm job, and the docs
+  // accessibility gate installs its packages with script/install-a11y-debs.sh.
+  const code = read(WORKFLOW)
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+  assert.doesNotMatch(code, /apt-get/);
+});
+
 test('the .debs for the docs accessibility gate were picked in the pinned image', () => {
   // script/install-a11y-debs.sh installs the exact packages apt chose in one
   // image. After an image bump those may no longer be what apt would pick, and
