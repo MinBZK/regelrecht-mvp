@@ -746,10 +746,10 @@ fn a_grant_on_objection_the_court_annulled_still_counts_for_the_reduction() {
     // The objection is well founded: the refusal is revoked and leave is
     // granted in its place. The court annuls that decision on the objection,
     // with its legal effects. Decided again, the head grants again, but the
-    // school's reduction for lid 2 still counts the annulled grant: the
-    // head's policy it reads does not read the judgments yet, so leave was
-    // "already granted" this school year and art. 13a refuses. The decision
-    // on the objection stands as it was. Reading the judgments is the next
+    // school's reduction for lid 2 still counts the annulled grant: it does
+    // not read the judgments from its chronicle yet, so leave was "already
+    // granted" this school year and art. 13a refuses. The decision on the
+    // objection stands as it was. Reading the judgments is the next
     // step.
     let mut school = school();
     let mut court = court();
