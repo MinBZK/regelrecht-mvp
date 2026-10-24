@@ -46,20 +46,18 @@ function icon(i) {
 </script>
 
 <template>
-  <nldd-page>
-    <nldd-container slot="header" padding="16" gap="12">
-      <nldd-top-title-bar
-        :text="`Scenario ${number}`"
-        :supporting-text="p.finished ? 'Scenario doorlopen' : `Stap ${p.current + 1} van ${total}`"
-      >
-        <nldd-button
-          slot="toolbar"
-          appearance="neutral-tinted"
-          size="sm"
-          text="Verbergen"
-          @click="emit('hide')"
-        ></nldd-button>
-      </nldd-top-title-bar>
+  <nldd-page sticky-header accessible-label="Uitleg bij het scenario">
+    <nldd-top-title-bar
+      slot="header"
+      heading-level="2"
+      :text="`Scenario ${number}`"
+      :supporting-text="p.finished ? 'Scenario doorlopen' : `Stap ${p.current + 1} van ${total}`"
+    >
+      <!-- Not dismiss-text: the split view hides that button while the guide stands beside the page. -->
+      <nldd-button slot="toolbar" appearance="neutral-tinted" size="sm" text="Verbergen" @click="emit('hide')"></nldd-button>
+    </nldd-top-title-bar>
+
+    <nldd-container padding-inline="16">
       <nldd-progress-bar
         :value="p.done.filter(Boolean).length"
         :max="total"
