@@ -140,6 +140,7 @@ describe('progress', () => {
     const upheld = { ...ongegrond, outputs: { bezwaar_ontvankelijk: true, bestreden_besluit_herroepen: true } };
     globalThis.chronicle = [aanvraag, grant, bezwaar, second, upheld, nieuw];
     state.grammen = globalThis.chronicle;
+    state.scenario = V5;
     expect(progress(guide(V5), counts()).current).toBe(5);
     await stap(async () => {
       throw new Error("in the place of 'x', which chronolexogram 'y' already replaces (taken by 'z')");

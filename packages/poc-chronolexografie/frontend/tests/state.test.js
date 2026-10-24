@@ -50,12 +50,20 @@ describe('saving the game of this tab', () => {
 
 describe('stap', () => {
   it('keeps a refusal of the cell, not a cell that did not load or stopped', async () => {
-    state.casus = casus;
+    Object.assign(state, { casus, scenario: 'A', refusals: [] });
     for (const message of ['the cell did not load: 404', 'the cell stopped: unreachable', 'already replaces']) {
       await stap(async () => {
         throw new Error(message);
       });
     }
     expect(state.refusals).toEqual(['already replaces']);
+  });
+
+  it('keeps no refusal in free play', async () => {
+    Object.assign(state, { casus, scenario: null, refusals: [] });
+    await stap(async () => {
+      throw new Error('already replaces');
+    });
+    expect(state.refusals).toEqual([]);
   });
 });

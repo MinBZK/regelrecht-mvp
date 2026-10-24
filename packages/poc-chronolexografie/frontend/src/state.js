@@ -192,10 +192,10 @@ export async function stap(actie) {
     return antwoord;
   } catch (e) {
     state.fout = e.message;
-    // A refusal of the cell is kept for the guide, and saved, so a reload
-    // still knows the step. A cell that did not load or stopped (api.js)
-    // refused nothing.
-    if (!CELL_DOWN.test(e.message)) state.refusals.push(e.message);
+    // In a scenario, a refusal of the cell is kept for the guide, and saved,
+    // so a reload still knows the step. Free play has no guide to keep it
+    // for. A cell that did not load or stopped (api.js) refused nothing.
+    if (state.scenario && !CELL_DOWN.test(e.message)) state.refusals.push(e.message);
     await bewaar().catch(() => {});
     return null;
   }
