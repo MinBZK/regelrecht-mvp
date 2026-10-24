@@ -2013,11 +2013,15 @@ fn refuse_finding_of_another(
     name: &str,
     authority: &Authority,
 ) -> Result<()> {
-    let Some(term) = shape
+    let asked: Vec<_> = shape
         .terms
         .iter()
-        .find(|t| t.id == name && t.asks_finding() && !t.answers(authority))
-    else {
+        .filter(|t| t.id == name && t.asks_finding())
+        .collect();
+    if asked.iter().any(|t| t.answers(authority)) {
+        return Ok(());
+    }
+    let Some(term) = asked.first() else {
         return Ok(());
     };
     let names: Vec<String> = term

@@ -1730,14 +1730,13 @@ fn voorvertonen<T>(
             break Err(e);
         };
         let beleid = beleid_laat_oordelen(&service, &term, &waar, on).is_some();
-        let zwijgt = beleid;
         // A judgement of the authority that shares its name with a term
         // of the cell elsewhere: give it back, as the real decision would.
-        if !gegeven.contains_key(&term) && bevindingen.contains_key(&term) && !zwijgt {
+        if !gegeven.contains_key(&term) && bevindingen.contains_key(&term) && !beleid {
             gegeven.insert(term.clone(), bevindingen[&term].clone());
             continue;
         }
-        if !zwijgt || stil.iter().any(|(t, _, _)| *t == term) {
+        if !beleid || stil.iter().any(|(t, _, _)| *t == term) {
             break Err(e);
         }
         stil.push((term.clone(), waar, beleid));

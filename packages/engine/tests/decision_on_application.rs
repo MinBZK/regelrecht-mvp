@@ -759,3 +759,26 @@ fn a_finding_on_a_policys_own_term_counts_where_the_policy_does_not_run() {
         "{e}"
     );
 }
+
+/// A finding on a term a regulation fills fails the execution also where
+/// the case never reads the term (RFC-048 §2).
+#[test]
+fn a_finding_on_a_filled_term_fails_where_the_case_does_not_read_it() {
+    let law = SPECIAL_LAW.replace(
+        "                - $grond_aanwezig\n                - {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 10}\n",
+        "                - {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 10}\n                - $grond_aanwezig\n",
+    );
+    let service = service(&[GENERAL_LAW, &law, POLICY]);
+    let e = service
+        .execute_stage_at_with_findings(
+            "wet_verlof",
+            "1",
+            "BESLUIT",
+            Some(&["verlof_verleend"]),
+            params(&[("dagen", Value::Int(20)), ("besluit_datum", date(DAY))]),
+            params(&[("grond_aanwezig", Value::Bool(true))]),
+            DAY,
+        )
+        .unwrap_err();
+    assert!(e.to_string().contains("'grond_aanwezig'"), "{e}");
+}

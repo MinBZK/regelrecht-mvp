@@ -520,7 +520,6 @@ articles:
           description: >-
             Het oordeel van het college zelf over ernstige beperkingen, andere
             dan loopbeperkingen (onder d), zonder advies.
-
       # Lid 3 (medische_grond_voor_kaart) is geen deel van het besluit:
       # artikel 49 leest de vier oordelen zelf, met wat de aanvrager vraagt.
       # Het zegt in één waarde of het advies een kaart draagt, los van de
@@ -713,7 +712,8 @@ articles:
       FICTIEF, eigen keuze in de modellering: geen bekendgemaakt beleid. Wat
       het advies dat voor de aanvraag telt over elk gegeven zegt (artikel 5),
       ontleent het college aan het antwoord van de cel van de GGD die het
-      onderzoek verricht.
+      onderzoek verricht. Geeft die cel geen antwoord, dan stelt het college
+      vast wat het schriftelijke advies opgeeft.
     url: https://wetten.overheid.nl/BWBR0012625/2013-01-01#Artikel3
     machine_readable:
       # De begrippen van artikel 5 noemen wie bevoegd is: de GGD of de

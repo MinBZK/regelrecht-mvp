@@ -2286,3 +2286,153 @@ fn the_execution_reports_a_term_of_an_article_it_calls() {
         })
     );
 }
+
+// --- A decision called anew, with a policy that judges per case ------------
+
+/// The head grants leave of at most ten days where the ground applies; the
+/// law reads the ground only for such a leave. Article 3 calls a decision
+/// value anew.
+const KORT: &str = r#"
+$id: wet_kort
+regulatory_layer: WET
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+articles:
+  - number: '1'
+    text: Het hoofd verleent verlof van ten hoogste tien dagen als de grond aanwezig is.
+    machine_readable:
+      open_terms:
+        - id: grond_aanwezig
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd
+      execution:
+        produces:
+          legal_character: BESCHIKKING
+        parameters:
+          - name: dagen
+            type: number
+        output:
+          - name: verleend
+            type: boolean
+        actions:
+          - output: verleend
+            value:
+              operation: AND
+              conditions:
+                - operation: LESS_THAN_OR_EQUAL
+                  subject: $dagen
+                  value: 10
+                - $grond_aanwezig
+  - number: '3'
+    text: Het besluit opnieuw.
+    machine_readable:
+      execution:
+        parameters:
+          - name: besluit
+            type: decision
+        input:
+          - name: opnieuw
+            type: decision
+            nullable: true
+            source:
+              article: $besluit
+        output:
+          - name: heroverwogen
+            type: decision
+            nullable: true
+        actions:
+          - output: heroverwogen
+            value: $opnieuw
+"#;
+
+/// A policy that fills the ground and leaves it to the head with an open
+/// term of its own (RFC-048 §2).
+const KORT_BELEID: &str = r#"
+$id: beleid_kort
+regulatory_layer: UITVOERINGSBELEID
+publication_date: '2025-01-01'
+valid_from: '2025-01-01'
+url: https://example.invalid/beleid-kort
+articles:
+  - number: '1'
+    text: Over de grond oordeelt het hoofd.
+    machine_readable:
+      open_terms:
+        - id: grond_volgens_hoofd
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd
+      implements:
+        - {law: wet_kort, article: '1', open_term: grond_aanwezig}
+      execution:
+        output:
+          - {name: grond_aanwezig, type: boolean}
+        actions:
+          - {output: grond_aanwezig, value: $grond_volgens_hoofd}
+"#;
+
+fn kort_besluit(dagen: i64, grond: bool) -> serde_json::Value {
+    json!({
+        "grondslag": "wet_kort#1",
+        "taken_on": "wet_kort#1",
+        "fields": {"dagen": dagen},
+        "findings": {"grond_volgens_hoofd": grond},
+        "outputs": {"verleend": dagen <= 10 && grond},
+    })
+}
+
+/// Article 3 of [`KORT`] on `besluit`, with the caller's `findings`: the
+/// decision value it gives back, and the trace.
+fn kort_anew(besluit: serde_json::Value, findings: serde_json::Value) -> (Value, String) {
+    let mut service = LawExecutionService::new();
+    service.load_law(KORT).unwrap();
+    service.load_law(KORT_BELEID).unwrap();
+    let result = service
+        .evaluate_law_with_trace_and_findings(
+            "wet_kort",
+            &["heroverwogen"],
+            params(json!({ "besluit": besluit })),
+            params(findings),
+            DATE,
+        )
+        .unwrap();
+    let trace = result.trace.as_ref().unwrap().render_box_drawing();
+    (result.outputs["heroverwogen"].clone(), trace)
+}
+
+fn findings_of(value: &Value) -> serde_json::Value {
+    serde_json::to_value(value).unwrap()["findings"].clone()
+}
+
+fn verleend(value: &Value) -> serde_json::Value {
+    serde_json::to_value(value).unwrap()["outputs"]["verleend"].clone()
+}
+
+#[test]
+fn a_decision_value_keeps_the_finding_on_its_policys_own_term() {
+    let (value, _) = kort_anew(kort_besluit(5, true), json!({}));
+    assert_eq!(verleend(&value), json!(true));
+    assert_eq!(findings_of(&value), json!({"grond_volgens_hoofd": true}));
+}
+
+#[test]
+fn a_finding_of_the_caller_on_the_policys_own_term_wins_and_is_kept() {
+    let (value, _) = kort_anew(kort_besluit(5, true), json!({"grond_volgens_hoofd": false}));
+    assert_eq!(verleend(&value), json!(false));
+    assert_eq!(findings_of(&value), json!({"grond_volgens_hoofd": false}));
+}
+
+#[test]
+fn a_finding_on_a_policys_own_term_the_call_does_not_reach_is_dropped_quietly() {
+    // Twenty days: the law does not read the ground, so the policy does not
+    // run. Its finding is not part of the new decision value, and is not
+    // traced as one the article does not declare.
+    let (value, trace) = kort_anew(kort_besluit(20, true), json!({}));
+    assert_eq!(verleend(&value), json!(false));
+    assert_eq!(findings_of(&value), json!({}));
+    assert!(
+        !trace.contains("does not declare grond_volgens_hoofd"),
+        "{trace}"
+    );
+}
