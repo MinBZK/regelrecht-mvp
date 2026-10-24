@@ -134,6 +134,6 @@ Listed only when a choice is still to be made, when it needs investigation first
 
 | Point | Why open |
 |---|---|
-| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages, and the cell runs `BESLUIT` and `BEKENDMAKING` by name. Should stages stay, as a free field that the law defining the procedure fills? | Choice; breaking schema change |
+| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages, and the cell runs `BESLUIT` and `BEKENDMAKING` by name. Should stages stay, as a free field that the law defining the procedure fills? A run without a stage, such as a scenario, counts as `BESLUIT`. A procedure without that stage, such as `beroep` (UITSPRAAK, TOEZENDING), then fires no stage hooks; no such hooks exist yet. | Choice; breaking schema change |
 | `decision_type` is fixed per article, while one article grants or refuses. The value says nothing about the outcome, and no hook in the corpus filters on it. [RFC-022](/rfcs/rfc-022) proposes an open vocabulary. Drop it, derive it from the outcome, or keep it as a free field? | Choice; breaking schema change |
 | The edge from 7:11 to the article it calls is known only at run time. The dependency graph, the editor and the type checker do not see it. | Large refactor |
