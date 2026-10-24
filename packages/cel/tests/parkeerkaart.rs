@@ -20,7 +20,7 @@
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
-use regelrecht_cel::{decision, shape, Cell, Error, Gram, Source};
+use regelrecht_cel::{decision, shape, Cell, Error, Gram, Reference, Source};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
 
@@ -568,7 +568,7 @@ fn object(
         &[&ggd()],
         AWB,
         OBJECTION,
-        Some(contested),
+        Some(Reference::Local(contested)),
         supplied,
         day(on),
     )

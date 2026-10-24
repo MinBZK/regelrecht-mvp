@@ -1068,10 +1068,59 @@ articles:
       kosteloos een afschrift van de uitspraak of van het proces-verbaal van de
       mondelinge uitspraak ter beschikking van partijen.
     url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel8:79
-    # Niet uitvoerbaar gemaakt. Het ter beschikking stellen van het afschrift
-    # is de fase TOEZENDING van de procedure beroep hierboven. De termijn van
-    # twee weken is niet gemodelleerd. Lid 2 en 3 (anderen dan partijen, de
-    # Europese Commissie) zijn hier niet opgenomen.
+    machine_readable:
+      # Het ter beschikking stellen van het afschrift is de fase TOEZENDING
+      # van de procedure beroep hierboven. Dat een partij het afschrift
+      # heeft, is een feit dat dit artikel omschrijft (requires, fact). Wat
+      # het bevat: waartoe de uitspraak strekt (artikel 8:70) en wat zij aan
+      # een gegrond beroep verbindt (artikelen 8:72 en 8:77, tweede lid),
+      # onder de namen van die uitkomsten. Wie vastlegt dat een partij het
+      # afschrift heeft, zegt de wet niet: het artikel laat de griffier het
+      # ter beschikking stellen. Daarom noemt het feit geen
+      # competent_authority (RFC-051); de partij die het ontvangt, legt het
+      # vast (eigen keuze). De termijn van twee weken is niet gemodelleerd.
+      # Lid 2 en 3 (anderen dan partijen, de Europese Commissie) zijn hier
+      # niet opgenomen.
+      requires:
+        - fact: afschrift_van_de_uitspraak
+          description: >-
+            Het afschrift van de uitspraak dat de griffier ter beschikking van
+            een partij stelt.
+          parameters:
+            - uitspraak_strekt_tot
+            - bestreden_besluit_vernietigd
+            - rechtsgevolgen_vernietigd
+            - opdracht_nieuw_besluit
+            - termijn_nieuw_besluit_einddatum
+            - geschonden_geoordeelde_rechtsregel
+      execution:
+        parameters:
+          - name: uitspraak_strekt_tot
+            type: string
+            description: Waartoe de uitspraak strekt (artikel 8:70).
+          - name: bestreden_besluit_vernietigd
+            type: boolean
+            description: Of de bestuursrechter het bestreden besluit vernietigde (artikel 8:72, eerste lid).
+          - name: rechtsgevolgen_vernietigd
+            type: boolean
+            description: >-
+              Of ook de rechtsgevolgen van het besluit vervielen (artikel 8:72,
+              tweede lid en derde lid, onder a).
+          - name: opdracht_nieuw_besluit
+            type: boolean
+            description: >-
+              Of de bestuursrechter het bestuursorgaan opdroeg een nieuw besluit
+              te nemen (artikel 8:72, vierde lid).
+          - name: termijn_nieuw_besluit_einddatum
+            type: date
+            nullable: true
+            required: false
+            description: De laatste dag van de termijn voor het nieuwe besluit (artikel 8:72, vierde lid, onder b).
+          - name: geschonden_geoordeelde_rechtsregel
+            type: string
+            nullable: true
+            required: false
+            description: De rechtsregel die de uitspraak geschonden oordeelde (artikel 8:77, tweede lid).
 
   - number: 8:104
     text: |-

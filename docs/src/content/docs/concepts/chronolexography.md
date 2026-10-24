@@ -34,8 +34,8 @@ The law names a role ([Competent Authority](/concepts/competent-authority)). The
 
 | Kind | Recorded by | Fields come from |
 |---|---|---|
-| Submission (`AANVRAAG`, `BEZWAAR`) | `Cell::record_submission` | The article's submission item and the hooks on it |
-| Decision (`BESCHIKKING`) | `Cell::decide` | The deciding article's inputs, findings included |
+| Submission (`AANVRAAG`, `BEZWAAR`, `BEROEP`) | `Cell::record_submission` | The article's submission item and the hooks on it |
+| Decision (`BESCHIKKING`, `UITSPRAAK`) | `Cell::decide`, `Cell::decide_after` | The deciding article's inputs, findings included |
 | Executogram (`EXECUTOGRAM`) | `Cell::record_executogram` | A fact an article `requires` ([RFC-051](/rfcs/rfc-051)) |
 
 ```json
@@ -109,6 +109,17 @@ execution:
 - How a cell reduces is up to the cell; the engine only asks it for an answer by name. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`) in the corpus, under the holder it names. It reads decisions (`source.decisions`) or facts (`source.facts`), and may call policy for a norm.
 - Wherever the binding runs, the engine asks the cell, which runs the reduction its catalogue names. The binding is policy, so the answer sets a finding aside ([order of precedence](/concepts/inversion-of-control#policy-that-fills-an-open-term-with-a-cells-answer)). Null on a term with a default or `decided_per_case_by` is silence, and the term falls back; on any other term null is the value.
 - The loader refuses `source.decisions` and `source.facts` outside a `REDUCTIE`, and `source.reduction` outside such a binding.
+
+## Documents between cells
+
+Each actor keeps its own chronicle, and the law sends documents between them: the copy of the contested decision with the beroepschrift (Awb 6:5 lid 2), and the copy of the judgment to the parties (Awb 8:79 lid 1). A cell takes in another cell's document as a copy, never by reading that cell's chronicle.
+
+- `Cell::afschrift` makes a copy of one of the cell's own decisions: the chronolexogram, its decision value from a replay in that cell, and `about`, what the submission it was taken on had received. Only the cell that took the decision makes a copy.
+- `record_submission` with `Reference::Received(&copy)` records a submission on a decision of another cell. The chronolexogram holds `received: {from, id}` instead of `refers_to`, and its field of type `decision` holds the decision value itself, because this cell cannot replay it.
+- `Cell::record_receipt` records that the cell received a copy, as an executogram of the fact the law requires for it. The receipt is the one executogram that refers to a decision: the cell's own decision that the copy concerns.
+- `Cell::decide_after` decides on a submission again after a later chronolexogram that refers to the last decision on it, such as a receipt. The new decision holds that chronolexogram as `after`. The rule names no article; whether the earlier decision still counts is for whoever reads the chronicle.
+
+The cell refuses a copy of what is no decision, a copy of its own decision offered back to it, a receipt for a decision the copy does not concern or dated before it, and a decision taken again without such a later chronolexogram. Opening a chronicle checks `after` and every receipt the same way. [RFC-053](/rfcs/rfc-053) gives the design, for the appeal to the administrative court.
 
 ## Answers of other cells
 

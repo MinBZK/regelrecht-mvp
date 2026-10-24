@@ -10,7 +10,7 @@
 use std::collections::BTreeMap;
 
 use chrono::NaiveDate;
-use regelrecht_cel::{Cell, Chronicle, Gram};
+use regelrecht_cel::{Cell, Chronicle, Gram, Reference};
 use regelrecht_engine::{LawExecutionService, Value};
 use regelrecht_law_model::stored;
 use serde_json::{json, Map};
@@ -424,7 +424,7 @@ fn a_decision_the_cell_reads_back_and_calls_anew_gives_no_false_difference() {
                 &[],
                 ID,
                 "5",
-                Some(&decided.id),
+                Some(Reference::Local(&decided.id)),
                 &Map::new(),
                 day(),
             )
@@ -555,6 +555,8 @@ fn a_gram_that_would_not_open_again_is_not_appended() {
         grondslag: format!("{ID}#1"),
         fact: None,
         refers_to: None,
+        received: None,
+        after: None,
         recording_actor: ACTOR.into(),
         recorded_on: day(),
         moment: None,

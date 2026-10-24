@@ -518,6 +518,8 @@ mod tests {
             grondslag: grondslag.into(),
             fact: None,
             refers_to: refers_to.map(str::to_string),
+            received: None,
+            after: None,
             recording_actor: ACTOR.into(),
             recorded_on: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
             moment: None,
