@@ -1,5 +1,5 @@
 ---
-$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.10/schema/v0.8.10/schema.json
+$schema: https://raw.githubusercontent.com/NederlandseDigitaleDienst/regelrecht/refs/tags/schema-v0.8.11/schema/v0.8.11/schema.json
 $id: reductie_algemene_wet_bestuursrecht
 regulatory_layer: REDUCTIE
 publication_date: '2025-12-01'
@@ -8,10 +8,12 @@ valid_from: '2026-01-01'
 # besluiten die herroepen of vernietigd zijn (Awb 7:11, tweede lid, en 8:72),
 # en over het besluit dat de uitspraak in de plaats stelt (Awb 8:72, derde
 # lid, onder b). Ze hoort bij geen bestuursorgaan: er is geen
-# competent_authority. Daarom geeft geen bestuursorgaan haar uitvoer als
-# antwoord; een andere reductie roept haar aan (source.regulation) en geeft
-# haar de rijen mee die zij zelf leest, als parameter. Er is geen bekendmaking; de url
-# wijst naar artikel 8:72.
+# competent_authority, en dus geen eigen kroniek. Daarom geeft geen
+# bestuursorgaan haar uitvoer als antwoord. Een andere reductie roept haar aan
+# (source.regulation) met het artikel waarvan zij de besluiten wil weten
+# (grondslag). De Awb-reductie leest dan uit de kroniek van de uitvoerder op
+# wiens kroniek ze wordt toegepast: de cel die de aanroepende reductie
+# draait. Er is geen bekendmaking; de url wijst naar artikel 8:72.
 url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel8:72
 name: Besluiten die nog gelden, naar de Algemene wet bestuursrecht (reductie)
 articles:
@@ -30,25 +32,37 @@ articles:
     machine_readable:
       execution:
         parameters:
-          # De besluiten waarvan de aanroeper wil weten welke nog gelden, één
-          # rij per besluit, met in elk geval het id van het besluit. De rij
+          - name: grondslag
+            type: string
+            description: >-
+              Het artikel waarop de gevraagde besluiten berusten, als
+              <wet>#<artikel>.
+        input:
+          # De besluiten onder het artikel grondslag, één rij per besluit,
+          # met de gegevens en de uitvoer van het besluit onder hun eigen
+          # naam, het artikel (grondslag) en het id van het besluit. De rij
           # komt terug zoals zij is.
           - name: besluiten
             type: array
-            description: De besluiten van het bestuursorgaan.
+            source:
+              decisions: $grondslag
           # De beslissingen op bezwaar (Awb 7:11): per beslissing het
           # bestreden besluit bij zijn id (bestreden_besluit), of zij het
           # herriep (bestreden_besluit_herroepen), en het besluit dat zij in
           # de plaats nam (nieuw_besluit), bij zijn id.
           - name: beslissingen_op_bezwaar
             type: array
-            description: De beslissingen op bezwaar van het bestuursorgaan.
+            source:
+              decisions: algemene_wet_bestuursrecht#7:11
           # De ontvangen afschriften van uitspraken van de bestuursrechter
           # (Awb 8:79): per uitspraak wat zij inhoudt, en het besluit van het
-          # bestuursorgaan waarover zij gaat (refers_to, RFC-053).
+          # bestuursorgaan waarover zij gaat (refers_to, RFC-053). Het besluit
+          # dat de uitspraak in de plaats stelt (uitspraak_in_de_plaats) is
+          # zelf een rij, met het id van de ontvangst.
           - name: uitspraken
             type: array
-            description: De ontvangen uitspraken van de bestuursrechter.
+            source:
+              facts: algemene_wet_bestuursrecht#8:79#afschrift_van_de_uitspraak
         output:
           - name: vernietigde_besluiten
             type: array
@@ -79,7 +93,7 @@ articles:
             type: array
             description: >-
               De besluiten die nog gelden: niet herroepen en niet met hun
-              rechtsgevolgen vernietigd, elk als de rij die de aanroeper gaf.
+              rechtsgevolgen vernietigd, elk als zijn rij uit de kroniek.
         actions:
           # De uitspraak noemt de vernietiging met de rechtsgevolgen samen in
           # rechtsgevolgen_vernietigd. De koppeling loopt via een lijst ids:
@@ -112,7 +126,8 @@ articles:
           # beslissing (refers_to) en staat zij er als beslissing op bezwaar
           # in (uitspraak_in_de_plaats). Herroept zij het bestreden besluit,
           # dan is dat besluit herroepen. Eerst de grondslag: een besluit van
-          # een ander artikel heeft die uitvoer niet.
+          # een ander artikel heeft die uitvoer niet, en AND stopt bij de
+          # eerste onwaar.
           - output: beslissingen_herroepen_bij_uitspraak
             value:
               operation: FOREACH
@@ -125,7 +140,7 @@ articles:
                     subject: $uitspraak.uitspraak_in_de_plaats.grondslag
                     value: algemene_wet_bestuursrecht#7:11
                   - operation: EQUALS
-                    subject: $uitspraak.uitspraak_in_de_plaats.outputs.bestreden_besluit_herroepen
+                    subject: $uitspraak.uitspraak_in_de_plaats.bestreden_besluit_herroepen
                     value: true
               body: $uitspraak.refers_to
           # Vernietigde de bestuursrechter de beslissing op bezwaar, dan
@@ -187,31 +202,43 @@ articles:
       derde lid, onder b), dan geldt het besluit dat zijn uitspraak in de
       plaats stelt als een besluit van het bestuursorgaan. Stelde hij een
       beslissing op bezwaar in de plaats, dan geldt het besluit dat die
-      beslissing in de plaats van het herroepen besluit nam.
+      beslissing in de plaats van het herroepen besluit nam. De besluiten die
+      gelden, zijn die welke nog gelden naar artikel 1, en die welke de
+      bestuursrechter zo in de plaats stelde.
     url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel8:72
     machine_readable:
       execution:
         parameters:
-          # Zoals bij artikel 1. Het besluit in de plaats staat in de uitspraak
-          # als besluitwaarde (uitspraak_in_de_plaats): met grondslag, fields
-          # en outputs, en zonder id, want het bestuursorgaan nam het niet.
-          - name: uitspraken
-            type: array
-            description: De ontvangen uitspraken van de bestuursrechter.
           - name: grondslag
             type: string
             description: >-
               Het artikel waarop de gevraagde besluiten berusten, als
               <wet>#<artikel>.
+        input:
+          # Zoals bij artikel 1.
+          - name: uitspraken
+            type: array
+            source:
+              facts: algemene_wet_bestuursrecht#8:79#afschrift_van_de_uitspraak
+          - name: besluiten_in_stand
+            type: array
+            source:
+              output: besluiten_in_stand
         output:
           - name: besluiten_in_de_plaats
             type: array
             description: >-
               De besluiten onder het artikel grondslag die de bestuursrechter
-              in de plaats stelde, elk als besluitwaarde.
+              in de plaats stelde, elk als rij.
+          - name: geldende_besluiten
+            type: array
+            description: >-
+              De besluiten onder het artikel grondslag die gelden: die welke
+              nog gelden naar artikel 1, en die welke de bestuursrechter in de
+              plaats stelde, elk als rij.
         actions:
-          # Eerst de grondslag: een besluitwaarde van een ander artikel heeft
-          # de uitvoer nieuw_besluit niet, en AND stopt bij de eerste onwaar.
+          # Eerst de grondslag: een besluit van een ander artikel heeft de
+          # uitvoer nieuw_besluit niet, en AND stopt bij de eerste onwaar.
           - output: besluiten_in_de_plaats
             value:
               operation: FOREACH
@@ -229,7 +256,7 @@ articles:
                         subject: $uitspraak.uitspraak_in_de_plaats.grondslag
                         value: algemene_wet_bestuursrecht#7:11
                       - operation: EQUALS
-                        subject: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit.grondslag
+                        subject: $uitspraak.uitspraak_in_de_plaats.nieuw_besluit.grondslag
                         value: $grondslag
               body:
                 operation: IF
@@ -239,4 +266,10 @@ articles:
                       subject: $uitspraak.uitspraak_in_de_plaats.grondslag
                       value: $grondslag
                     then: $uitspraak.uitspraak_in_de_plaats
-                default: $uitspraak.uitspraak_in_de_plaats.outputs.nieuw_besluit
+                default: $uitspraak.uitspraak_in_de_plaats.nieuw_besluit
+          - output: geldende_besluiten
+            value:
+              operation: ADD
+              values:
+                - $besluiten_in_stand
+                - $besluiten_in_de_plaats

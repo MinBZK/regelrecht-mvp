@@ -38,36 +38,17 @@ articles:
             type: string
             description: Burgerservicenummer van de gehandicapte die de kaart aanvraagt.
         input:
-          - name: besluiten
-            type: array
-            source:
-              decisions: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw#49
-          - name: beslissingen_op_bezwaar
-            type: array
-            source:
-              decisions: algemene_wet_bestuursrecht#7:11
-          - name: uitspraken
-            type: array
-            source:
-              facts: algemene_wet_bestuursrecht#8:79#afschrift_van_de_uitspraak
-          - name: besluiten_in_stand
+          # De besluiten onder artikel 49 die gelden, één rij per besluit,
+          # met de gegevens en de uitvoer van dat besluit onder hun eigen
+          # naam. Welke besluiten gelden, volgt uit de Awb (7:11 en 8:72):
+          # ook een besluit dat de bestuursrechter in de plaats stelde (Awb
+          # 8:72, derde lid, onder b).
+          - name: geldende_besluiten
             type: array
             source:
               regulation: reductie_algemene_wet_bestuursrecht
-              output: besluiten_in_stand
+              output: geldende_besluiten
               parameters:
-                besluiten: $besluiten
-                beslissingen_op_bezwaar: $beslissingen_op_bezwaar
-                uitspraken: $uitspraken
-          # De kaarten die de bestuursrechter zelf verstrekte, in het besluit
-          # dat hij in de plaats stelde (Awb 8:72, derde lid, onder b).
-          - name: besluiten_in_de_plaats
-            type: array
-            source:
-              regulation: reductie_algemene_wet_bestuursrecht
-              output: besluiten_in_de_plaats
-              parameters:
-                uitspraken: $uitspraken
                 grondslag: besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw#49
         output:
           - name: aanvrager_eerder_gehandicaptenparkeerkaart_verstrekt
@@ -83,35 +64,19 @@ articles:
               operation: IF
               cases:
                 - when:
-                    operation: OR
-                    conditions:
-                      - operation: FOREACH
-                        collection: $besluiten_in_stand
-                        as: besluit
-                        filter:
-                          operation: AND
-                          conditions:
-                            - operation: EQUALS
-                              subject: $besluit.gehandicaptenparkeerkaart_verstrekt
-                              value: true
-                            - operation: EQUALS
-                              subject: $besluit.bsn_aanvrager
-                              value: $bsn_aanvrager
-                        body: true
-                        combine: OR
-                      - operation: FOREACH
-                        collection: $besluiten_in_de_plaats
-                        as: besluit
-                        filter:
-                          operation: AND
-                          conditions:
-                            - operation: EQUALS
-                              subject: $besluit.outputs.gehandicaptenparkeerkaart_verstrekt
-                              value: true
-                            - operation: EQUALS
-                              subject: $besluit.fields.bsn_aanvrager
-                              value: $bsn_aanvrager
-                        body: true
-                        combine: OR
+                    operation: FOREACH
+                    collection: $geldende_besluiten
+                    as: besluit
+                    filter:
+                      operation: AND
+                      conditions:
+                        - operation: EQUALS
+                          subject: $besluit.gehandicaptenparkeerkaart_verstrekt
+                          value: true
+                        - operation: EQUALS
+                          subject: $besluit.bsn_aanvrager
+                          value: $bsn_aanvrager
+                    body: true
+                    combine: OR
                   then: true
               default: null

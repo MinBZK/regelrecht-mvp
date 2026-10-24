@@ -1197,8 +1197,10 @@ fn leest_uit(reduction: &regelrecht_engine::ArticleBasedLaw) -> Vec<(String, Str
 
 /// The articles that `reduction` calls for a norm (RFC-048): per regelwerk of
 /// `UITVOERINGSBELEID` or `REDUCTIE` it reads with `source.regulation`, the
-/// article that gives the output it reads, with that regelwerk. Any called
-/// reduction counts, with or without a holder; the one of the Awb has none.
+/// article that gives the output it reads, with that regelwerk, and the
+/// articles of that regelwerk this one reads in turn (`source.output`).
+/// Any called reduction counts, with or without a holder; the one of the
+/// Awb has none. Each article once.
 pub(crate) fn beleid_van<'s>(
     service: &'s LawExecutionService,
     reduction: &regelrecht_engine::ArticleBasedLaw,
@@ -1206,24 +1208,49 @@ pub(crate) fn beleid_van<'s>(
     &'s regelrecht_engine::ArticleBasedLaw,
     &'s regelrecht_engine::Article,
 )> {
-    leest_uit(reduction)
+    let mut uit: Vec<(
+        &'s regelrecht_engine::ArticleBasedLaw,
+        &'s regelrecht_engine::Article,
+    )> = Vec::new();
+    let mut te_doen: Vec<(&'s regelrecht_engine::ArticleBasedLaw, String)> = leest_uit(reduction)
         .into_iter()
         .filter_map(|(regelwerk, output)| {
             let law = service.resolver().get_law(&regelwerk)?;
-            if !matches!(
+            matches!(
                 law.regulatory_layer,
                 regelrecht_engine::RegulatoryLayer::Uitvoeringsbeleid
                     | regelrecht_engine::RegulatoryLayer::Reductie
-            ) {
-                return None;
-            }
-            let article = law
-                .articles
-                .iter()
-                .find(|a| a.get_outputs().iter().any(|o| o.name == output))?;
-            Some((law, article))
+            )
+            .then_some((law, output))
         })
-        .collect()
+        .collect();
+    te_doen.reverse();
+    while let Some((law, output)) = te_doen.pop() {
+        let Some(article) = law
+            .articles
+            .iter()
+            .find(|a| a.get_outputs().iter().any(|o| o.name == output))
+        else {
+            continue;
+        };
+        if uit
+            .iter()
+            .any(|(l, a)| l.id == law.id && a.number == article.number)
+        {
+            continue;
+        }
+        uit.push((law, article));
+        // What it reads from its own regelwerk, after it.
+        let eigen: Vec<String> = article
+            .get_inputs()
+            .iter()
+            .filter_map(|i| i.source.as_ref())
+            .filter(|s| s.regulation.is_none())
+            .filter_map(|s| s.output.clone())
+            .collect();
+        te_doen.extend(eigen.into_iter().rev().map(|o| (law, o)));
+    }
+    uit
 }
 
 /// The version of the reduction `id` in `service` valid from `valid_from`,
@@ -1835,6 +1862,86 @@ pub fn voorvertoning_op_bezwaar(
     })
 }
 
+/// What an input reads from the chronicle: the decisions under an article,
+/// or the executograms of a fact.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Bron {
+    Besluiten(String),
+    Feiten(String),
+}
+
+/// One input of a reduction that reads the chronicle: its name, the
+/// reduction it belongs to, and what it reads.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Lezing {
+    naam: String,
+    reductie: String,
+    bron: Bron,
+}
+
+/// The inputs of `reduction` that read the chronicle, and those of the
+/// reductions it calls (`source.regulation` naming a `REDUCTIE`), which
+/// read the same chronicle: that of the cell that runs it (RFC-048). A
+/// `decisions: $<parameter>` names the article `given` passes under that
+/// name, as the calling input writes it (`source.parameters`); a
+/// reference the PoC cannot resolve that way is left out. Each read once,
+/// in the order of the articles.
+fn kroniek_lezingen(
+    service: &LawExecutionService,
+    reduction: &regelrecht_engine::ArticleBasedLaw,
+    given: &BTreeMap<String, String>,
+    on: NaiveDate,
+) -> Vec<Lezing> {
+    let mut uit: Vec<Lezing> = Vec::new();
+    let zie = |lezing: Lezing, uit: &mut Vec<Lezing>| {
+        if !uit.contains(&lezing) {
+            uit.push(lezing);
+        }
+    };
+    for input in reduction.articles.iter().flat_map(|a| a.get_inputs()) {
+        let Some(source) = input.source.as_ref() else {
+            continue;
+        };
+        let bron = match (&source.decisions, &source.facts) {
+            (Some(grondslag), _) => match grondslag.strip_prefix('$') {
+                None => Some(Bron::Besluiten(grondslag.clone())),
+                Some(naam) => given.get(naam).cloned().map(Bron::Besluiten),
+            },
+            (None, Some(feit)) => Some(Bron::Feiten(feit.clone())),
+            (None, None) => None,
+        };
+        if let Some(bron) = bron {
+            let lezing = Lezing {
+                naam: input.name.clone(),
+                reductie: reduction.id.clone(),
+                bron,
+            };
+            zie(lezing, &mut uit);
+            continue;
+        }
+        let Some(called) = source
+            .regulation
+            .as_deref()
+            .filter(|id| *id != reduction.id)
+            .and_then(|id| service.resolver().get_law_for_date(id, Some(on)))
+            .filter(|law| law.regulatory_layer == regelrecht_engine::RegulatoryLayer::Reductie)
+        else {
+            continue;
+        };
+        let letterlijk: BTreeMap<String, String> = source
+            .parameters
+            .iter()
+            .flatten()
+            .filter(|(_, waarde)| !waarde.starts_with('$'))
+            .map(|(naam, waarde)| (naam.clone(), waarde.clone()))
+            .collect();
+        for lezing in kroniek_lezingen(service, called, &letterlijk, on) {
+            zie(lezing, &mut uit);
+        }
+    }
+    uit
+}
+
 /// The bindings of policy in force on `on` that take an answer of the cell
 /// (`antwoorden`, RFC-048), and the reductions its catalogue names
 /// ([`Cell::answers`]): per reduction its text and as written, the answers
@@ -1850,27 +1957,25 @@ pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value>
         &[&cell.eigen],
     ) {
         let mut invoer = Vec::new();
-        // Only a reduction reads a chronicle (RFC-048).
-        for input in reduction.articles.iter().flat_map(|a| a.get_inputs()) {
-            let Some(source) = input.source.as_ref() else {
-                continue;
-            };
-            let (bron, rijen) = if let Some(grondslag) = &source.decisions {
-                let kind = reading::decision_kind(&service, grondslag, on)?;
-                (
-                    json!({ "besluiten_onder": grondslag }),
-                    reading::rows(cell.grams(), grondslag, &kind)?,
-                )
-            } else if let Some(feit) = &source.facts {
-                (
+        // Only a reduction reads a chronicle (RFC-048): this one, and the
+        // reductions it calls, on the same chronicle.
+        for lezing in kroniek_lezingen(&service, reduction, &BTreeMap::new(), on) {
+            let (bron, rijen) = match &lezing.bron {
+                Bron::Besluiten(grondslag) => {
+                    let kind = reading::decision_kind(&service, grondslag, on)?;
+                    (
+                        json!({ "besluiten_onder": grondslag }),
+                        reading::rows(&service, cell.grams(), grondslag, &kind)?,
+                    )
+                }
+                Bron::Feiten(feit) => (
                     json!({ "executogrammen_van": feit }),
-                    reading::executogram_rows(cell.grams(), feit)?,
-                )
-            } else {
-                continue;
+                    reading::executogram_rows(&service, cell.grams(), feit)?,
+                ),
             };
             let mut rij = object(bron)?;
-            rij.insert("naam".into(), json!(input.name));
+            rij.insert("naam".into(), json!(lezing.naam));
+            rij.insert("reductie".into(), json!(lezing.reductie));
             rij.insert(
                 "rijen".into(),
                 serde_json::to_value(&rijen).map_err(|e| Error::Setup(e.to_string()))?,
@@ -2414,9 +2519,16 @@ mod tests {
                 .unwrap()
                 .len()
         };
-        // Lid 2 reads the decisions under 13a and those under 7:11.
+        // Lid 2 reads the decisions under 13a and those under 7:11, through
+        // the reduction of the Awb it calls, which names 13a by its
+        // parameter grondslag.
         let lid_2 = "reductie_verlof_al_verleend_in_schooljaar";
         assert_eq!(rijen(lid_2, "besluiten_onder", "leerplichtwet_1969#13a"), 2);
+        assert!(reductie(lid_2)["invoer"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|i| i["reductie"] == json!("reductie_algemene_wet_bestuursrecht")));
         assert_eq!(
             rijen(lid_2, "besluiten_onder", "algemene_wet_bestuursrecht#7:11"),
             1
@@ -2459,8 +2571,8 @@ mod tests {
         assert_eq!(
             reductie(lid_2)["normen"],
             json!([
-                { "regelwerk": awb, "laag": "REDUCTIE", "artikel": "1" },
                 { "regelwerk": awb, "laag": "REDUCTIE", "artikel": "2" },
+                { "regelwerk": awb, "laag": "REDUCTIE", "artikel": "1" },
                 { "regelwerk": beleid, "laag": "UITVOERINGSBELEID", "artikel": "1" }
             ])
         );

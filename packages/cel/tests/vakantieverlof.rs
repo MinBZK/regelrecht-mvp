@@ -1653,7 +1653,8 @@ fn a_revoked_grant_does_not_count_as_leave_granted() {
     // revoked it; the reduction leaves it out (RFC-050).
     let rows = |grondslag: &str| {
         serde_json::to_value(
-            regelrecht_cel::reading::rows(cell.grams(), grondslag, "BESCHIKKING").unwrap(),
+            regelrecht_cel::reading::rows(&service(), cell.grams(), grondslag, "BESCHIKKING")
+                .unwrap(),
         )
         .unwrap()
     };
@@ -1909,6 +1910,7 @@ fn a_reduction_reads_the_decisions_on_objection_with_their_own_outcome() {
     let decided = reconsider(&mut cell, &bezwaar.id, &profession(true), "2026-11-15").unwrap();
     let rows = serde_json::to_value(
         regelrecht_cel::reading::rows(
+            &service(),
             cell.grams(),
             "algemene_wet_bestuursrecht#7:11",
             "BESCHIKKING",
