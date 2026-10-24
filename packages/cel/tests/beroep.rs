@@ -7,9 +7,12 @@
 // a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod common;
+
+use common::{day, load_corpus, object_map};
+
 use std::path::{Path, PathBuf};
 
-use chrono::NaiveDate;
 use regelrecht_cel::{Afschrift, Cell, Error, Gram, Received, Reference};
 use regelrecht_engine::LawExecutionService;
 use serde_json::{json, Map, Value};
@@ -49,25 +52,18 @@ std::thread_local! {
 /// The Leerplichtwet, the Awb, the school's policies and its reduction for
 /// lid 2 from the corpus.
 fn service() -> LawExecutionService {
-    let regulation = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/regulation/nl");
     let mut service = LawExecutionService::new();
-    for law in [
-        format!("wet/{LAW}"),
-        format!("wet/{AWB}"),
-        format!("uitvoeringsbeleid/{POLICY}"),
-        format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
-        format!("uitvoeringsbeleid/{LEAVE_POLICY}"),
-        format!("reducties/{REDUCTION}"),
-    ] {
-        for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
-            let path = entry.unwrap().path();
-            if path.extension().is_some_and(|x| x == "yaml") {
-                service
-                    .load_law(&std::fs::read_to_string(&path).unwrap())
-                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-            }
-        }
-    }
+    load_corpus(
+        &mut service,
+        [
+            format!("wet/{LAW}"),
+            format!("wet/{AWB}"),
+            format!("uitvoeringsbeleid/{POLICY}"),
+            format!("uitvoeringsbeleid/{SCHOOL_YEAR}"),
+            format!("uitvoeringsbeleid/{LEAVE_POLICY}"),
+            format!("reducties/{REDUCTION}"),
+        ],
+    );
     service
 }
 
@@ -103,14 +99,6 @@ fn court() -> Cell {
     Cell::in_memory(COURT, cells().join(COURT)).unwrap()
 }
 
-fn day(s: &str) -> NaiveDate {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
-}
-
-fn map(value: Value) -> Map<String, Value> {
-    value.as_object().unwrap().clone()
-}
-
 /// The refusal of 14 October: leave from 1 to 5 February 2027, refused
 /// because the head judged that the profession of a parent is not of the
 /// kind art. 11, onder f, asks.
@@ -120,7 +108,7 @@ fn refused(school: &mut Cell) -> Gram {
 
 /// [`refused`] with what the head `findings`.
 fn refused_with(school: &mut Cell, findings: Value) -> Gram {
-    let application = map(json!({
+    let application = object_map(json!({
         "bsn_jongere": "999990019",
         "eerste_verlofdag": "2027-02-01",
         "laatste_verlofdag": "2027-02-05",
@@ -141,7 +129,7 @@ fn refused_with(school: &mut Cell, findings: Value) -> Gram {
             day("2026-10-12"),
         )
         .unwrap();
-    let findings = map(findings);
+    let findings = object_map(findings);
     let refused = school
         .decide(
             &mut service(),
@@ -161,7 +149,7 @@ fn refused_with(school: &mut Cell, findings: Value) -> Gram {
 
 /// What a bezwaar- or beroepschrift holds (Awb 6:5).
 fn grounds(dated: &str, against: &str, grounds: &str) -> Map<String, Value> {
-    map(json!({
+    object_map(json!({
         "bezwaar_of_beroepschrift_ondertekend": true,
         "naam_indiener": "J. Jansen",
         "adres_indiener": "Voorbeeldstraat 1",
@@ -198,7 +186,7 @@ fn objected(school: &mut Cell, refused: &Gram, findings: Value) -> (Gram, Vec<Gr
             OBJECTION,
             &objection.id,
             &Map::new(),
-            &map(findings),
+            &object_map(findings),
             day("2026-11-15"),
         )
         .unwrap();
@@ -232,7 +220,7 @@ fn appealed_on(court: &mut Cell, copy: &Afschrift, [dated, on]: [&str; 2]) -> Re
 /// The court's judgement on a well-founded appeal: Awb 7:12 lid 1 is
 /// breached, the legal effects do not stay, and the school gets two weeks.
 fn well_founded() -> Map<String, Value> {
-    map(json!({
+    object_map(json!({
         "indiener_is_belanghebbende": true,
         "rechtsregel_geschonden": true,
         "geschonden_rechtsregel": "artikel 7:12, eerste lid, van de Algemene wet bestuursrecht",
@@ -496,7 +484,7 @@ fn after_the_judgment_the_school_decides_on_the_objection_again() {
             &case.objection.id,
             &receipt.id,
             &Map::new(),
-            &map(json!({ PROFESSION: true })),
+            &object_map(json!({ PROFESSION: true })),
             day("2027-01-18"),
         )
         .unwrap();
@@ -542,7 +530,7 @@ fn a_chronicle_with_a_receipt_and_a_decision_taken_again_reads_back() {
             &case.objection.id,
             &receipt.id,
             &Map::new(),
-            &map(json!({ PROFESSION: true })),
+            &object_map(json!({ PROFESSION: true })),
             day("2027-01-18"),
         )
         .unwrap();
@@ -729,7 +717,7 @@ fn a_judgment_that_keeps_the_legal_effects_orders_nothing() {
 
 #[test]
 fn an_unfounded_appeal_is_received_too() {
-    let findings = map(json!({
+    let findings = object_map(json!({
         "indiener_is_belanghebbende": true,
         "rechtsregel_geschonden": false,
     }));
@@ -780,7 +768,7 @@ fn a_grant_on_objection_the_court_annulled_no_longer_counts() {
             &objection.id,
             &receipt.id,
             &Map::new(),
-            &map(json!({ PROFESSION: true })),
+            &object_map(json!({ PROFESSION: true })),
             day("2027-01-18"),
         )
         .unwrap();
@@ -820,7 +808,7 @@ fn a_grant_whose_legal_effects_the_court_kept_still_counts() {
             day("2027-01-12"),
         )
         .unwrap();
-    let application = map(json!({
+    let application = object_map(json!({
         "bsn_jongere": "999990019",
         "eerste_verlofdag": "2027-05-10",
         "laatste_verlofdag": "2027-05-14",
@@ -849,7 +837,7 @@ fn a_grant_whose_legal_effects_the_court_kept_still_counts() {
             ARTICLE,
             &later.id,
             &Map::new(),
-            &map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
+            &object_map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
             day("2027-02-02"),
         )
         .unwrap();
@@ -880,7 +868,7 @@ fn a_grant_on_objection_annulled_itself_no_longer_counts() {
     school
         .record_receipt(&service(), JUDGMENTS, &copy, &grant.id, day("2027-01-12"))
         .unwrap();
-    let application = map(json!({
+    let application = object_map(json!({
         "bsn_jongere": "999990019",
         "eerste_verlofdag": "2027-05-10",
         "laatste_verlofdag": "2027-05-14",
@@ -909,7 +897,7 @@ fn a_grant_on_objection_annulled_itself_no_longer_counts() {
             ARTICLE,
             &later.id,
             &Map::new(),
-            &map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
+            &object_map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
             day("2027-02-02"),
         )
         .unwrap();
@@ -976,7 +964,7 @@ fn annulled_twice(school: &mut Cell) -> (Vec<Gram>, Vec<Gram>) {
                 &objection.id,
                 &receipt.id,
                 &Map::new(),
-                &map(grant()),
+                &object_map(grant()),
                 day(days[2]),
             )
             .unwrap();
@@ -1124,7 +1112,7 @@ fn the_court_decides_the_case_itself_and_the_school_counts_its_grant() {
     assert_eq!(receipt.fields["uitspraak_in_de_plaats"], instead);
 
     // The grant counts: a second application in the school year is refused.
-    let application = map(json!({
+    let application = object_map(json!({
         "bsn_jongere": "999990019",
         "eerste_verlofdag": "2027-05-10",
         "laatste_verlofdag": "2027-05-14",
@@ -1155,7 +1143,7 @@ fn the_court_decides_the_case_itself_and_the_school_counts_its_grant() {
             ARTICLE,
             &later.id,
             &Map::new(),
-            &map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
+            &object_map(json!({ PROFESSION: true, OUTSIDE_HOLIDAYS: true })),
             day("2027-02-02"),
         )
         .unwrap();
