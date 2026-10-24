@@ -12,7 +12,10 @@
 // a failing fixture reports itself.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use chrono::NaiveDate;
+mod common;
+
+use common::{day, object_map};
+
 use regelrecht_cel::{Cell, Error, Gram};
 use regelrecht_engine::{FilledBy, LawExecutionService};
 use serde_json::{json, Map, Value};
@@ -206,10 +209,6 @@ fn service() -> LawExecutionService {
     service
 }
 
-fn day(s: &str) -> NaiveDate {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
-}
-
 /// The cell `actor`, named `name` in its `cel.yaml` (`category`
 /// optional), that gives the answer `eerder_verstrekt` from its reduction.
 fn cell(actor: &str, name: &str, category: Option<&str>) -> Cell {
@@ -244,10 +243,6 @@ fn ggd() -> Cell {
     )
 }
 
-fn object(value: Value) -> Map<String, Value> {
-    value.as_object().unwrap().clone()
-}
-
 /// Apply for a card in `cell` on `on` and decide on it with the cells of
 /// `sphere`, without a finding: the decision.
 fn issue(
@@ -272,7 +267,7 @@ fn first(
         cell,
         sphere,
         on,
-        object(json!({"eerder_verstrekt": false})),
+        object_map(json!({"eerder_verstrekt": false})),
     )
 }
 
@@ -289,7 +284,7 @@ fn issue_with(
         LAW,
         "1",
         None,
-        &object(json!({"bsn": BSN})),
+        &object_map(json!({"bsn": BSN})),
         day(on),
     )?;
     let mut taken = cell.decide(
@@ -490,7 +485,7 @@ fn an_output_beside_the_decision_is_not_recorded_with_it() {
 fn only_a_cell_the_fact_names_records_it() {
     let service = service();
     let fact = "wet_kaart_fictief#2#keuring";
-    let supplied = object(json!({ "bsn": BSN }));
+    let supplied = object_map(json!({ "bsn": BSN }));
     let mut ggd = ggd();
     ggd.record_executogram(&service, fact, &supplied, day("2026-10-05"))
         .unwrap();

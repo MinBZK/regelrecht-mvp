@@ -1637,8 +1637,13 @@ fn a_term_only_a_reduction_fills_is_no_finding_and_replays() {
         "{name: al_verleend, type: boolean}",
     );
     assert!(!never_absent.contains("nullable"));
-    let mut service =
-        common::service_of(&[PROCEDURE, &policy_only, HEROVERWEGING, &never_absent, REDUCTION]);
+    let mut service = common::service_of(&[
+        PROCEDURE,
+        &policy_only,
+        HEROVERWEGING,
+        &never_absent,
+        REDUCTION,
+    ]);
     let (mut cell, _dir) = cell();
     let application = apply(&mut cell, &mut service, 2, "2026-03-02");
     let granted = decide(
