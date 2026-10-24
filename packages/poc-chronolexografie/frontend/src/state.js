@@ -32,6 +32,9 @@ export const state = reactive({
   fout: '',
   // Het chronolexogram dat de kroniek bij openen kiest (een link uit het logboek).
   inKroniek: null,
+  // The name of the scenario the visitor began (`casus.scenarios[].naam`),
+  // which the guide beside the page follows; null in free play.
+  scenario: null,
 });
 
 /** Het artikel waaronder de casus op een aanvraag besluit, `<wet>#<artikel>`. */
@@ -55,7 +58,10 @@ async function bewaar() {
   try {
     // Met de speeldatum: de kroniek loopt alleen vooruit, dus een herlaad
     // die terugzet naar de eerste dag van de casus zou elke stap weigeren.
-    sessionStorage.setItem(SLEUTEL, JSON.stringify({ spel: bewaard, datum: state.datum }));
+    sessionStorage.setItem(
+      SLEUTEL,
+      JSON.stringify({ spel: bewaard, datum: state.datum, scenario: state.scenario }),
+    );
   } catch {
     // Geen opslag of een volle: dan ook geen ouder spel laten staan, anders
     // gaat een herlaad stil verder bij een eerdere stap.
@@ -86,8 +92,9 @@ export async function hervatten() {
   const spelTotNu = bewaard();
   if (!spelTotNu) return;
   try {
-    const { spel: bewaardSpel, datum } = JSON.parse(spelTotNu);
+    const { spel: bewaardSpel, datum, scenario = null } = JSON.parse(spelTotNu);
     await openen(await api.herstellen(bewaardSpel), datum);
+    state.scenario = scenario;
   } catch (e) {
     // Laadde de cel niet (het netwerk, een deploy), dan blijft het spel
     // bewaard voor de volgende herlaad; alleen een spel dat de cel weigert,
@@ -111,6 +118,7 @@ export async function kiezen(id) {
 }
 
 async function openen(casus, datum = casus.speeldatum) {
+  state.scenario = null;
   state.vormen = null;
   state.grammen = [];
   state.rechter = [];
@@ -123,7 +131,22 @@ async function openen(casus, datum = casus.speeldatum) {
 export function naarKeuze() {
   vergeet();
   state.casus = null;
+  state.scenario = null;
   state.fout = '';
+}
+
+/**
+ * Begin scenario `naam`: the chronicle goes back to what the cell records
+ * before the first scenario, the play date to the first day of the case, and
+ * the guide follows that scenario. Returns whether the cell took the reset.
+ */
+export async function beginScenario(naam) {
+  const ok = await stap(() => api.reset());
+  if (!ok) return false;
+  state.datum = state.casus.speeldatum;
+  state.scenario = naam;
+  await bewaar();
+  return true;
 }
 
 /** Haal de kroniek en de vormen op, voor de speeldatum, en bewaar het spel. */
@@ -255,6 +278,19 @@ export function geldendBesluit(aanvraag) {
     .filter((g) => g.grondslag === besluitGrondslag() && g.refers_to);
   return besluiten.filter((b) => !herroepen(b)).at(-1) ?? null;
 }
+
+/**
+ * A date as the page writes it: `2026-10-14` → `14 oktober 2026`. A date
+ * without a time is midnight UTC, so it is shown in UTC; west of Greenwich it
+ * would otherwise become the day before.
+ */
+export const longDate = (iso) =>
+  new Date(iso).toLocaleDateString('nl-NL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
 /** Een naam uit de wet leesbaar: `laatste_verlofdag` → `laatste verlofdag`. */
 export const leesbaar = (naam) => String(naam).replaceAll('_', ' ');

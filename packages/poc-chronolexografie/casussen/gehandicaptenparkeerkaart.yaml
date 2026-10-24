@@ -183,6 +183,9 @@ andere_cellen:
   - cel: rechtbank_wilgendaal
     cel_naam: Rechtbank Wilgendaal
 
+# The app shows these scenarios step by step in a guide beside the page
+# (frontend/src/scenarioGuides.js), which follows a scenario by its `naam`;
+# change a name or a step in both places.
 scenarios:
   - naam: De kaart wordt verstrekt op het advies van de GGD
     stappen:
