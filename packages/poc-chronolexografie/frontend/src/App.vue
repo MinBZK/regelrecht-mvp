@@ -180,7 +180,9 @@ function toTab(id) {
       <nldd-split-view-pane slot="main">
         <nldd-navigation-split-view ref="split" inspector-accessible-label="Uitleg bij het scenario">
           <nldd-split-view-pane slot="main" has-content>
-            <nldd-page landmarks="page">
+            <!-- One page per tab, as the editor gets one per route: a new tab
+                 starts at its top instead of where the last one was scrolled. -->
+            <nldd-page :key="tab" landmarks="page">
               <nldd-simple-section v-if="state.fout" padding-block="16">
                 <nldd-banner
                   variant="critical"
