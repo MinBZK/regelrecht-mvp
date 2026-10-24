@@ -5010,11 +5010,41 @@ impl LawExecutionService {
         }
     }
 
+    /// Refuse a call from `caller` to the rulework `target` when `target`
+    /// is a `REDUCTIE` and `caller` is not: a reduction reads the chronicle
+    /// of the cell that runs it, so only a reduction calls one (RFC-048), on
+    /// that same chronicle. Each in the version in force on the reference
+    /// date, or else its newest. A call to the decision of an article
+    /// (`source.article`) needs none: a reduction takes no decision.
+    fn refuse_reduction_call(
+        &self,
+        caller: &str,
+        target: &str,
+        res_ctx: &ResolutionContext<'_>,
+    ) -> Result<()> {
+        let layer = |id: &str| {
+            self.resolver
+                .get_law_for_date(id, res_ctx.reference_date())
+                .or_else(|| self.get_law(id))
+                .map(|law| law.regulatory_layer)
+        };
+        if layer(target) == Some(RegulatoryLayer::Reductie)
+            && layer(caller) != Some(RegulatoryLayer::Reductie)
+        {
+            return Err(EngineError::ResolutionError(format!(
+                "{caller} calls the reduction {target}; only a REDUCTIE calls a REDUCTIE (RFC-048)"
+            )));
+        }
+        Ok(())
+    }
+
     /// Resolve an input that reads a chronicle (`source.decisions`,
     /// `source.facts`, RFC-048) from the chronicle of the call. The article
     /// of `decisions: $<parameter>` is the value of that parameter, an
-    /// article reference (schema v0.8.11). Without a chronicle that
-    /// answers, the input is an error.
+    /// article reference (schema v0.8.11); any other value, null and
+    /// unknown included, is an error, since a read of no article would say
+    /// that no decision was taken. Without a chronicle that answers, the
+    /// input is an error too.
     fn resolve_chronicle_read(
         &self,
         law: &ArticleBasedLaw,
@@ -5059,8 +5089,12 @@ impl LawExecutionService {
                     provider: Some(keeper.clone()),
                     scope: Some(law.id.clone()),
                 });
+                let count = match &rows {
+                    Value::Array(rows) => rows.len(),
+                    _ => 0,
+                };
                 res_ctx.trace_set_message(format!(
-                    "Resolving from the chronicle of {keeper}: {read}: {rows}"
+                    "Resolving from the chronicle of {keeper}: {read}, {count} row(s)"
                 ));
                 return Ok(rows);
             }
@@ -5552,23 +5586,9 @@ impl LawExecutionService {
             PathNodeType::CrossLawReference,
         );
 
-        // A reduction reads the chronicle of the cell that runs it, so only
-        // a reduction calls one (RFC-048): it runs on that same chronicle.
-        let layer = |id: &str| {
-            self.resolver
-                .get_law_for_date(id, res_ctx.reference_date())
-                .or_else(|| self.get_law(id))
-                .map(|law| law.regulatory_layer)
-        };
-        if layer(regulation) == Some(RegulatoryLayer::Reductie)
-            && layer(context.law_id()) != Some(RegulatoryLayer::Reductie)
-        {
-            let message = format!(
-                "{} calls the reduction {regulation}; only a REDUCTIE calls a REDUCTIE (RFC-048)",
-                context.law_id()
-            );
-            res_ctx.trace_set_message(message.clone());
-            return Err(EngineError::ResolutionError(message));
+        if let Err(e) = self.refuse_reduction_call(context.law_id(), regulation, res_ctx) {
+            res_ctx.trace_set_message(e.to_string());
+            return Err(e);
         }
 
         // Build parameters for the target article

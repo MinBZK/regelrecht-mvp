@@ -7,8 +7,9 @@
 // beleid dat zij voor een norm aanroept, en per invoer de rijen die zij uit
 // de kroniek krijgt: de besluiten onder een artikel (zoals dat van de casus
 // of Awb 7:11) of de executogrammen van een feit dat een artikel vereist
-// (zoals de vestiging van een school). Ook de invoer van een reductie die zij
-// aanroept, zoals die van de Awb, staat erbij: die leest uit dezelfde kroniek. Wat de cel bij een besluit antwoordde
+// (zoals de vestiging van een school). Ook de invoer van een reductie die
+// zij aanroept, zoals die van de Awb, staat erbij: die leest uit dezelfde
+// kroniek. Wat de cel bij een besluit antwoordde
 // en waarom, staat bij dat besluit (tabblad Bestuursorgaan).
 import { onMounted, ref, watch } from 'vue';
 import { api } from '../api.js';

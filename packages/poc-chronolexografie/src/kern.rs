@@ -1197,10 +1197,9 @@ fn leest_uit(reduction: &regelrecht_engine::ArticleBasedLaw) -> Vec<(String, Str
 
 /// The articles that `reduction` calls for a norm (RFC-048): per regelwerk of
 /// `UITVOERINGSBELEID` or `REDUCTIE` it reads with `source.regulation`, the
-/// article that gives the output it reads, with that regelwerk, and the
-/// articles of that regelwerk this one reads in turn (`source.output`).
-/// Any called reduction counts, with or without a holder; the one of the
-/// Awb has none. Each article once.
+/// articles that give the output it reads ([`artikelen_voor`]), with that
+/// regelwerk. Any called reduction counts, with or without a holder; the
+/// one of the Awb has none. Each article once.
 pub(crate) fn beleid_van<'s>(
     service: &'s LawExecutionService,
     reduction: &regelrecht_engine::ArticleBasedLaw,
@@ -1212,20 +1211,38 @@ pub(crate) fn beleid_van<'s>(
         &'s regelrecht_engine::ArticleBasedLaw,
         &'s regelrecht_engine::Article,
     )> = Vec::new();
-    let mut te_doen: Vec<(&'s regelrecht_engine::ArticleBasedLaw, String)> = leest_uit(reduction)
-        .into_iter()
-        .filter_map(|(regelwerk, output)| {
-            let law = service.resolver().get_law(&regelwerk)?;
+    for (regelwerk, output) in leest_uit(reduction) {
+        let Some(law) = service.resolver().get_law(&regelwerk).filter(|law| {
             matches!(
                 law.regulatory_layer,
                 regelrecht_engine::RegulatoryLayer::Uitvoeringsbeleid
                     | regelrecht_engine::RegulatoryLayer::Reductie
             )
-            .then_some((law, output))
-        })
-        .collect();
-    te_doen.reverse();
-    while let Some((law, output)) = te_doen.pop() {
+        }) else {
+            continue;
+        };
+        for article in artikelen_voor(law, &output) {
+            if !uit
+                .iter()
+                .any(|(l, a)| l.id == law.id && a.number == article.number)
+            {
+                uit.push((law, article));
+            }
+        }
+    }
+    uit
+}
+
+/// The article of `law` that gives `output`, then the articles of `law` it
+/// reads in turn (`source.output` without `regulation`), each once, in the
+/// order they are reached.
+fn artikelen_voor<'l>(
+    law: &'l regelrecht_engine::ArticleBasedLaw,
+    output: &str,
+) -> Vec<&'l regelrecht_engine::Article> {
+    let mut uit: Vec<&regelrecht_engine::Article> = Vec::new();
+    let mut te_doen = vec![output.to_string()];
+    while let Some(output) = te_doen.pop() {
         let Some(article) = law
             .articles
             .iter()
@@ -1233,14 +1250,10 @@ pub(crate) fn beleid_van<'s>(
         else {
             continue;
         };
-        if uit
-            .iter()
-            .any(|(l, a)| l.id == law.id && a.number == article.number)
-        {
+        if uit.iter().any(|a| a.number == article.number) {
             continue;
         }
-        uit.push((law, article));
-        // What it reads from its own regelwerk, after it.
+        uit.push(article);
         let eigen: Vec<String> = article
             .get_inputs()
             .iter()
@@ -1248,7 +1261,7 @@ pub(crate) fn beleid_van<'s>(
             .filter(|s| s.regulation.is_none())
             .filter_map(|s| s.output.clone())
             .collect();
-        te_doen.extend(eigen.into_iter().rev().map(|o| (law, o)));
+        te_doen.extend(eigen.into_iter().rev());
     }
     uit
 }
@@ -1881,24 +1894,44 @@ struct Lezing {
 
 /// The inputs of `reduction` that read the chronicle, and those of the
 /// reductions it calls (`source.regulation` naming a `REDUCTIE`), which
-/// read the same chronicle: that of the cell that runs it (RFC-048). A
-/// `decisions: $<parameter>` names the article `given` passes under that
-/// name, as the calling input writes it (`source.parameters`); a
-/// reference the PoC cannot resolve that way is left out. Each read once,
-/// in the order of the articles.
+/// read the same chronicle: that of the cell that runs it (RFC-048). Of a
+/// called reduction only the articles that give the output it reads count
+/// ([`artikelen_voor`]). A `decisions: $<parameter>` names the article the
+/// calling input passes under that name (`source.parameters`), as written;
+/// a reference the PoC cannot resolve that way is left out. Each read
+/// once, in the order of the articles.
 fn kroniek_lezingen(
     service: &LawExecutionService,
     reduction: &regelrecht_engine::ArticleBasedLaw,
-    given: &BTreeMap<String, String>,
     on: NaiveDate,
 ) -> Vec<Lezing> {
-    let mut uit: Vec<Lezing> = Vec::new();
-    let zie = |lezing: Lezing, uit: &mut Vec<Lezing>| {
-        if !uit.contains(&lezing) {
-            uit.push(lezing);
-        }
-    };
-    for input in reduction.articles.iter().flat_map(|a| a.get_inputs()) {
+    let mut uit = Vec::new();
+    let articles: Vec<&regelrecht_engine::Article> = reduction.articles.iter().collect();
+    lezingen_van(
+        service,
+        reduction,
+        &articles,
+        &BTreeMap::new(),
+        &mut vec![reduction.id.clone()],
+        on,
+        &mut uit,
+    );
+    uit
+}
+
+/// [`kroniek_lezingen`] for `articles` of `reduction`, with `given` as the
+/// literal parameters of its caller. `bezig` holds the reductions being
+/// followed, so a reduction that calls back is not followed again.
+fn lezingen_van(
+    service: &LawExecutionService,
+    reduction: &regelrecht_engine::ArticleBasedLaw,
+    articles: &[&regelrecht_engine::Article],
+    given: &BTreeMap<String, String>,
+    bezig: &mut Vec<String>,
+    on: NaiveDate,
+    uit: &mut Vec<Lezing>,
+) {
+    for input in articles.iter().flat_map(|a| a.get_inputs()) {
         let Some(source) = input.source.as_ref() else {
             continue;
         };
@@ -1916,14 +1949,20 @@ fn kroniek_lezingen(
                 reductie: reduction.id.clone(),
                 bron,
             };
-            zie(lezing, &mut uit);
+            if !uit.contains(&lezing) {
+                uit.push(lezing);
+            }
             continue;
         }
-        let Some(called) = source
-            .regulation
-            .as_deref()
-            .filter(|id| *id != reduction.id)
-            .and_then(|id| service.resolver().get_law_for_date(id, Some(on)))
+        let (Some(regelwerk), Some(output)) = (&source.regulation, &source.output) else {
+            continue;
+        };
+        if bezig.contains(regelwerk) {
+            continue;
+        }
+        let Some(called) = service
+            .resolver()
+            .get_law_for_date(regelwerk, Some(on))
             .filter(|law| law.regulatory_layer == regelrecht_engine::RegulatoryLayer::Reductie)
         else {
             continue;
@@ -1935,11 +1974,18 @@ fn kroniek_lezingen(
             .filter(|(_, waarde)| !waarde.starts_with('$'))
             .map(|(naam, waarde)| (naam.clone(), waarde.clone()))
             .collect();
-        for lezing in kroniek_lezingen(service, called, &letterlijk, on) {
-            zie(lezing, &mut uit);
-        }
+        bezig.push(called.id.clone());
+        lezingen_van(
+            service,
+            called,
+            &artikelen_voor(called, output),
+            &letterlijk,
+            bezig,
+            on,
+            uit,
+        );
+        bezig.pop();
     }
-    uit
 }
 
 /// The bindings of policy in force on `on` that take an answer of the cell
@@ -1959,7 +2005,7 @@ pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value>
         let mut invoer = Vec::new();
         // Only a reduction reads a chronicle (RFC-048): this one, and the
         // reductions it calls, on the same chronicle.
-        for lezing in kroniek_lezingen(&service, reduction, &BTreeMap::new(), on) {
+        for lezing in kroniek_lezingen(&service, reduction, on) {
             let (bron, rijen) = match &lezing.bron {
                 Bron::Besluiten(grondslag) => {
                     let kind = reading::decision_kind(&service, grondslag, on)?;

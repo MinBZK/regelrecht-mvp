@@ -1582,3 +1582,42 @@ fn the_decisions_that_hold_are_those_in_force_and_those_set_in_place() {
         json!([a, with_id(grant, &id)])
     );
 }
+
+#[test]
+fn a_parameter_that_names_no_article_is_an_error_not_a_read() {
+    // `decisions: $grondslag` reads only under an article reference.
+    let chronicle = Kroniek::with(json!([]), json!([]));
+    for not_an_article in [json!("leerplichtwet_1969"), json!(7)] {
+        let parameters = BTreeMap::from([
+            ("grondslag".to_string(), Value::from(not_an_article.clone())),
+            (
+                "beslissingen_op_bezwaar".to_string(),
+                Value::from(json!([])),
+            ),
+            ("uitspraken".to_string(), Value::from(json!([]))),
+        ]);
+        let call = Call {
+            chronicle: Some(&chronicle),
+            ..Call::default()
+        };
+        let e = awb_service()
+            .evaluate_law_in(
+                AWB_REDUCTION,
+                &["besluiten_in_stand"],
+                parameters,
+                call,
+                "2027-03-01",
+            )
+            .unwrap_err();
+        assert!(
+            matches!(&e, EngineError::TypeMismatch { expected, .. }
+                if expected.contains("an article reference in $grondslag")),
+            "{not_an_article}: {e}"
+        );
+    }
+    assert!(chronicle
+        .asked
+        .borrow()
+        .iter()
+        .all(|(_, read)| !read.contains("leerplichtwet_1969")));
+}

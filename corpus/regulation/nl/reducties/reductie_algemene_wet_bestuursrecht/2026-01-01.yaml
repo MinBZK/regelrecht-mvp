@@ -93,7 +93,7 @@ articles:
             type: array
             description: >-
               De besluiten die nog gelden: niet herroepen en niet met hun
-              rechtsgevolgen vernietigd, elk als zijn rij uit de kroniek.
+              rechtsgevolgen vernietigd, elk als zijn rij.
         actions:
           # De uitspraak noemt de vernietiging met de rechtsgevolgen samen in
           # rechtsgevolgen_vernietigd. De koppeling loopt via een lijst ids:

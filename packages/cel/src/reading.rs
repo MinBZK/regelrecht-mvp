@@ -276,8 +276,14 @@ fn row(
     let mut row = Map::new();
     let named = [Some(parts.fields), parts.findings, Some(parts.outputs)];
     for (name, value) in named.into_iter().flatten().flatten() {
-        let value = match value.as_object().filter(|o| shape::is_decision_value(o)) {
-            Some(decision) => serde_json::Value::Object(decision_row(service, gram, decision)?),
+        let decision = value
+            .as_object()
+            .filter(|o| shape::is_decision_value(o))
+            .and_then(|o| Some((o, o.get("grondslag")?.as_str()?)));
+        let value = match decision {
+            Some((decision, grondslag)) => {
+                serde_json::Value::Object(decision_row(service, gram, decision, grondslag)?)
+            }
             None => value.clone(),
         };
         if [ROW_ID, ROW_GRONDSLAG].contains(&name.as_str()) {
@@ -311,18 +317,16 @@ fn row(
     Ok(row)
 }
 
-/// The row of the decision value `decision` that `gram` holds (`row`):
-/// every output the article of its `grondslag` declares in the version in
-/// force when `gram` was recorded, null where the value has none.
+/// The row of the decision value `decision` under `grondslag` that `gram`
+/// holds (`row`): every output the article of its `grondslag` declares in
+/// the version in force when `gram` was recorded, null where the value has
+/// none.
 fn decision_row(
     service: &LawExecutionService,
     gram: &Gram,
     decision: &Map<String, serde_json::Value>,
+    grondslag: &str,
 ) -> Result<Map<String, serde_json::Value>> {
-    let grondslag = decision
-        .get("grondslag")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or_default();
     let label = format!(
         "the decision under {grondslag} in chronolexogram '{}'",
         gram.id
@@ -417,9 +421,10 @@ pub struct Reader<'c> {
     /// whose rulework asks one of them again would answer itself without
     /// end; the cell refuses that instead.
     answering: RefCell<Vec<String>>,
-    /// The rows the reader gave, per read ([`ChronicleRead`], as text) and
-    /// day: the chronicle does not change while it reads.
-    read: RefCell<BTreeMap<(String, NaiveDate), Value>>,
+    /// The rows the reader gave, per read (whether decisions, and the
+    /// article or fact) and day: the chronicle does not change while it
+    /// reads.
+    read: RefCell<BTreeMap<(bool, String, NaiveDate), Value>>,
 }
 
 impl<'c> Reader<'c> {
@@ -586,7 +591,10 @@ impl Reader<'_> {
                 )));
             }
         }
-        let key = (read.to_string(), day);
+        let key = match read {
+            ChronicleRead::Decisions(grondslag) => (true, grondslag.to_string(), day),
+            ChronicleRead::Facts(fact) => (false, fact.to_string(), day),
+        };
         if let Some(rows) = self.read.borrow().get(&key) {
             return Ok(rows.clone());
         }
@@ -1152,6 +1160,27 @@ articles:
         assert_eq!(
             serde_json::to_value(&rows).unwrap()[0]["id"],
             json!("BESCHIKKING-wet_fictief#1")
+        );
+    }
+
+    #[test]
+    fn a_reduction_that_calls_one_of_another_holder_gets_no_rows() {
+        // reductie_a of the cell calls a reduction of another holder: the
+        // cell does not apply it to its chronicle, and the answer fails.
+        let calls_other = calling(ACTOR).replace("reductie_zonder_houder", "reductie_b");
+        let mut service = service_with(&calls_other);
+        let other = WITHOUT_HOLDER
+            .replace("$id: reductie_zonder_houder", "$id: reductie_b")
+            .replace(
+                "url: https://example.org/reductie\n",
+                "url: https://example.org/reductie\ncompetent_authority:\n  name: obs_het_anker\n",
+            );
+        service.load_law(&other).unwrap();
+        let reader = Reader::new(ACTOR, authority(), answers(), decisions(), None);
+        let e = granted(&service, &reader).unwrap_err().to_string();
+        assert!(
+            e.contains("reductie_b") && e.contains("its holder") && e.contains(ACTOR),
+            "{e}"
         );
     }
 
