@@ -1,11 +1,32 @@
 /*
- * De enige eigen CSS: nldd-shell vult zijn ouder, dus de ketting
- * html → body → #app moet de hoogte van het venster doorgeven. Dezelfde
- * regel als in de andere pocs (frontend-poc-nieuwkomersbekostiging).
+ * The only CSS of our own.
+ *
+ * nldd-shell fills its parent, so the chain html → body → #app has to pass on
+ * the height of the window. The same rule as in the other pocs
+ * (frontend-poc-nieuwkomersbekostiging).
  */
 html,
 body,
 #app {
   margin: 0;
   height: 100%;
+}
+
+/*
+ * The sticky header of nldd-page (title, tabs and play date) lies over the
+ * page as it scrolls, and two things got through it:
+ *
+ * - It covers 95%, and this header is tall, so the fields behind it read as
+ *   part of it. Its container gets the page's own surface colour.
+ * - The header has z-index 1 in the page. A field with a positioned layer of
+ *   its own at that level (the hidden input of nldd-switch) came later in
+ *   the page and took the clicks meant for the tabs. Each block of the page
+ *   isolates its layers, so they stay under the header.
+ */
+nldd-page > nldd-container[slot='header'] {
+  background-color: var(--semantics-surfaces-base-background-color);
+}
+
+nldd-page > :not([slot]) {
+  isolation: isolate;
 }
