@@ -1747,9 +1747,11 @@ pub struct DecisionTerm {
     /// judges; the engine does not read it ([`Self::answered_by`]).
     pub decided_per_case_by: Option<String>,
     /// Who answers the term: the authorities its own `competent_authority`
-    /// names, else the one the article names (RFC-002), else the holder of
-    /// the rulework (its root `competent_authority`). Empty when none of
-    /// them names one by name: then whoever executes the article answers it.
+    /// names; where the term has none, the one the article names (RFC-002);
+    /// where the article has none either, the holder of the rulework (its
+    /// root `competent_authority`). Empty when the first of these that is
+    /// present is a reference (`#...`), or when none is present: then
+    /// whoever executes the article answers it.
     pub answered_by: Vec<NamedAuthority>,
     /// The articles that fill the term (`implements`), as
     /// `<regulation>#<article>`, in force on the day. A term they fill takes

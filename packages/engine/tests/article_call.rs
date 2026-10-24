@@ -2385,20 +2385,25 @@ fn kort_besluit(dagen: i64, grond: bool) -> serde_json::Value {
 /// Article 3 of [`KORT`] on `besluit`, with the caller's `findings`: the
 /// decision value it gives back, and the trace.
 fn kort_anew(besluit: serde_json::Value, findings: serde_json::Value) -> (Value, String) {
+    let result = kort_anew_result(besluit, findings).unwrap();
+    let trace = result.trace.as_ref().unwrap().render_box_drawing();
+    (result.outputs["heroverwogen"].clone(), trace)
+}
+
+fn kort_anew_result(
+    besluit: serde_json::Value,
+    findings: serde_json::Value,
+) -> regelrecht_engine::Result<regelrecht_engine::ArticleResult> {
     let mut service = LawExecutionService::new();
     service.load_law(KORT).unwrap();
     service.load_law(KORT_BELEID).unwrap();
-    let result = service
-        .evaluate_law_with_trace_and_findings(
-            "wet_kort",
-            &["heroverwogen"],
-            params(json!({ "besluit": besluit })),
-            params(findings),
-            DATE,
-        )
-        .unwrap();
-    let trace = result.trace.as_ref().unwrap().render_box_drawing();
-    (result.outputs["heroverwogen"].clone(), trace)
+    service.evaluate_law_with_trace_and_findings(
+        "wet_kort",
+        &["heroverwogen"],
+        params(json!({ "besluit": besluit })),
+        params(findings),
+        DATE,
+    )
 }
 
 fn findings_of(value: &Value) -> serde_json::Value {
@@ -2411,9 +2416,21 @@ fn verleend(value: &Value) -> serde_json::Value {
 
 #[test]
 fn a_decision_value_keeps_the_finding_on_its_policys_own_term() {
-    let (value, _) = kort_anew(kort_besluit(5, true), json!({}));
+    let (value, trace) = kort_anew(kort_besluit(5, true), json!({}));
     assert_eq!(verleend(&value), json!(true));
     assert_eq!(findings_of(&value), json!({"grond_volgens_hoofd": true}));
+    assert!(
+        trace.contains("the finding on grond_volgens_hoofd applies to an article the call runs"),
+        "{trace}"
+    );
+}
+
+#[test]
+fn a_finding_of_the_caller_on_a_term_the_policy_fills_fails_a_call_anew() {
+    // Twenty days: the law does not read the ground, yet a finding on it
+    // is applied by no article, since the policy fills it (RFC-048 §2).
+    let e = kort_anew_result(kort_besluit(20, true), json!({"grond_aanwezig": true})).unwrap_err();
+    assert!(e.to_string().contains("'grond_aanwezig'"), "{e}");
 }
 
 #[test]
@@ -2433,6 +2450,10 @@ fn a_finding_on_a_policys_own_term_the_call_does_not_reach_is_dropped_quietly() 
     assert_eq!(findings_of(&value), json!({}));
     assert!(
         !trace.contains("does not declare grond_volgens_hoofd"),
+        "{trace}"
+    );
+    assert!(
+        !trace.contains("applies to an article the call runs"),
         "{trace}"
     );
 }

@@ -768,6 +768,7 @@ fn a_finding_on_a_filled_term_fails_where_the_case_does_not_read_it() {
         "                - $grond_aanwezig\n                - {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 10}\n",
         "                - {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 10}\n                - $grond_aanwezig\n",
     );
+    assert_ne!(law, SPECIAL_LAW);
     let service = service(&[GENERAL_LAW, &law, POLICY]);
     let e = service
         .execute_stage_at_with_findings(
