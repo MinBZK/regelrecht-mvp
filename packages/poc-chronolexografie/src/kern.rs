@@ -1409,8 +1409,9 @@ pub struct Voorvertoning<T> {
     /// What the cell refuses, in its own words: a finding not given yet.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub geweigerd: Option<String>,
-    /// The terms the cell implements but leaves silent (null) for this case,
-    /// as fields of the form: the authority judges them (RFC-051).
+    /// The terms the cell or a policy fills but leaves silent (null) for
+    /// this case, as fields of the form: the authority judges them (RFC-051).
+    /// A field the policy leaves silent says so (`beleid`).
     pub stil: Vec<Value>,
 }
 
@@ -1428,14 +1429,16 @@ fn zonder_oordeel(e: &Error) -> Option<(String, String)> {
 }
 
 /// Take a decision on a copy of the cell ([`Cell::sandbox`]) with
-/// `bevindingen`, and find which terms the cell implements but leaves silent
-/// for this case. The form hides a term the cell implements, since it
-/// answers it from its chronicle; for some cases its reduction answers null
-/// (the school's holiday rooster does not reach that school year), and then
-/// the authority judges. Which terms that are shows only by asking: the
-/// decision is taken without a finding for any of them, and each term the
-/// engine then misses is silent. With the authority's finding on it, the
-/// next one may surface; without, that is where it stops. Nothing is kept.
+/// `bevindingen`, and find which terms the cell or a policy fills but leaves
+/// silent for this case. The form hides a term the cell answers from its
+/// chronicle, and a judgement a policy fills first (`policy_first`,
+/// RFC-045). Either may give null for a case: the school's holiday rooster
+/// does not reach that school year, and without an advice of the GGD the
+/// parking card's policy does not fill the four criteria. Then the authority
+/// judges. Which terms that are shows only by asking: the decision is taken
+/// without a finding for any of them, and each term the engine then misses
+/// is silent. With the authority's finding on it, the next one may surface;
+/// without, that is where it stops. Nothing is kept.
 fn voorvertonen<T>(
     corpus: &Corpus,
     cell: &Cellen,
@@ -1443,20 +1446,53 @@ fn voorvertonen<T>(
     on: NaiveDate,
     neem: impl Fn(&mut Cellen, &Map<String, Value>) -> Result<T>,
 ) -> Result<Voorvertoning<T>> {
-    let beantwoord = cell.terms_on(&corpus.service()?, on);
+    let service = corpus.service()?;
+    let beantwoord = cell.terms_on(&service, on);
     let van_cel = |naam: &str| beantwoord.iter().any(|t| t.open_term == naam);
     let van_cel_op = |naam: &str, waar: &str| {
         beantwoord
             .iter()
             .any(|t| t.open_term == naam && format!("{}#{}", t.law, t.article) == waar)
     };
-    let mut gegeven: Map<String, Value> = bevindingen
-        .iter()
-        .filter(|(naam, _)| !van_cel(naam))
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
-    // Per silent term its name and the article it is open on.
-    let mut stil: Vec<(String, String)> = Vec::new();
+    // The judgements a policy fills first, per article that decides; the
+    // case's own article is asked always, another one when it surfaces.
+    let eigen = format!("{}#{}", corpus.law(), corpus.article());
+    let eerst = |shape: &decision::DecisionShape| -> Vec<String> {
+        shape
+            .inputs
+            .iter()
+            .filter(|i| i.policy_first)
+            .map(|i| i.field.name.clone())
+            .collect()
+    };
+    // The case's own article must derive: its error is the step's error.
+    let eigen_shape = decision::derive(&service, corpus.law(), corpus.article(), on)?;
+    let mut eerst_beleid: Vec<(String, Vec<String>)> = vec![(eigen.clone(), eerst(&eigen_shape))];
+    let mut van_beleid_op = |naam: &str, waar: &str| -> bool {
+        if !eerst_beleid.iter().any(|(w, _)| w == waar) {
+            // An article that takes no decision of its own (such as art. 3
+            // of the Regeling, where the examination is open) has no
+            // judgement a policy fills first: its shape does not derive.
+            let namen = waar
+                .split_once('#')
+                .and_then(|(law, article)| decision::derive(&service, law, article, on).ok())
+                .map(|shape| eerst(&shape))
+                .unwrap_or_default();
+            eerst_beleid.push((waar.to_string(), namen));
+        }
+        eerst_beleid
+            .iter()
+            .any(|(w, namen)| w == waar && namen.iter().any(|n| n == naam))
+    };
+    let mut gegeven: Map<String, Value> = Map::new();
+    for (naam, waarde) in bevindingen {
+        if !van_cel(naam) && !van_beleid_op(naam, &eigen) {
+            gegeven.insert(naam.clone(), waarde.clone());
+        }
+    }
+    // Per silent term its name, the article it is open on, and whether a
+    // policy (not the cell) is silent on it.
+    let mut stil: Vec<(String, String, bool)> = Vec::new();
     let uitkomst = loop {
         let e = match neem(&mut cell.sandbox(), &gegeven) {
             Ok(v) => break Ok(v),
@@ -1465,19 +1501,18 @@ fn voorvertonen<T>(
         let Some((term, waar)) = zonder_oordeel(&e) else {
             break Err(e);
         };
+        let beleid = van_beleid_op(&term, &waar);
+        let zwijgt = van_cel_op(&term, &waar) || beleid;
         // A judgement of the authority that shares its name with a term
         // of the cell elsewhere: give it back, as the real decision would.
-        if !gegeven.contains_key(&term)
-            && bevindingen.contains_key(&term)
-            && !van_cel_op(&term, &waar)
-        {
+        if !gegeven.contains_key(&term) && bevindingen.contains_key(&term) && !zwijgt {
             gegeven.insert(term.clone(), bevindingen[&term].clone());
             continue;
         }
-        if !van_cel_op(&term, &waar) || stil.iter().any(|(t, _)| *t == term) {
+        if !zwijgt || stil.iter().any(|(t, _, _)| *t == term) {
             break Err(e);
         }
-        stil.push((term.clone(), waar));
+        stil.push((term.clone(), waar, beleid));
         match bevindingen.get(&term) {
             Some(oordeel) => {
                 gegeven.insert(term, oordeel.clone());
@@ -1487,17 +1522,19 @@ fn voorvertonen<T>(
     };
     let (voorlopig, geweigerd) = match uitkomst {
         Ok(v) => (Some(v), None),
-        Err(e) if toont(&e, &stil, bevindingen) => (None, Some(geweigerd_om(&e))),
+        Err(e) if toont(&e, &stil, bevindingen) => (None, Some(geweigerd_om(&e, &stil))),
         Err(e) => return Err(e),
     };
-    let stil = if stil.is_empty() {
-        Vec::new()
-    } else {
-        let service = corpus.service()?;
-        stil.iter()
-            .map(|(term, waar)| stil_veld(&service, term, waar, on))
-            .collect()
-    };
+    let stil = stil
+        .iter()
+        .map(|(term, waar, beleid)| {
+            let mut veld = stil_veld(&service, term, waar, on);
+            if *beleid {
+                veld["beleid"] = json!(true);
+            }
+            veld
+        })
+        .collect();
     Ok(Voorvertoning {
         voorlopig,
         geweigerd,
@@ -1526,11 +1563,18 @@ fn stil_veld(service: &LawExecutionService, term: &str, waar: &str, on: NaiveDat
 }
 
 /// The refusal as the preview shows it. A judgement missing on a term the
-/// cell is silent on says so first, so the app does not take a missing
-/// judgement of another kind for the cell's silence.
-fn geweigerd_om(e: &Error) -> String {
+/// cell or a policy is silent on says so first, so the app does not take a
+/// missing judgement of another kind for that silence.
+fn geweigerd_om(e: &Error, stil: &[(String, String, bool)]) -> String {
     match zonder_oordeel(e) {
-        Some((term, _)) => format!("the cell is silent on '{term}' for this case: {e}"),
+        Some((term, _)) => {
+            let wie = if stil.iter().any(|(t, _, beleid)| *t == term && *beleid) {
+                "policy"
+            } else {
+                "cell"
+            };
+            format!("the {wie} is silent on '{term}' for this case: {e}")
+        }
         None => e.to_string(),
     }
 }
@@ -1538,11 +1582,11 @@ fn geweigerd_om(e: &Error) -> String {
 /// Whether the preview shows `e` as a refusal: the cell's own, or the
 /// engine missing the judgement on a term the cell is silent on, which the
 /// authority has not given yet.
-fn toont(e: &Error, stil: &[(String, String)], bevindingen: &Map<String, Value>) -> bool {
+fn toont(e: &Error, stil: &[(String, String, bool)], bevindingen: &Map<String, Value>) -> bool {
     match e {
         Error::Refused(_) => true,
         e => zonder_oordeel(e).is_some_and(|(term, _)| {
-            stil.iter().any(|(t, _)| *t == term) && !bevindingen.contains_key(&term)
+            stil.iter().any(|(t, _, _)| *t == term) && !bevindingen.contains_key(&term)
         }),
     }
 }
@@ -2625,9 +2669,11 @@ mod tests {
                 "algemene_wet_bestuursrecht",
                 "besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw",
                 "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal",
+                "fictief_beleid_geneeskundig_advies_ggd_wilgendaal",
                 "reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr",
                 "reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer",
                 "reductie_geldige_gehandicaptenparkeerkaart",
+                "reductie_geneeskundig_advies",
                 "reductie_geneeskundig_onderzoek",
                 "regeling_gehandicaptenparkeerkaart",
             ]
@@ -2837,6 +2883,104 @@ mod tests {
         bezwaren(corpus, cell, besluit, &velden, day(op)).unwrap()
     }
 
+    /// The fact of the advice (the municipality's fictitious policy, art.
+    /// 5), and the applicant of the case whose advice finds no criterion.
+    const ADVIES: &str =
+        "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal#5#geneeskundig_advies_uitgebracht";
+    const ZONDER_CRITERIUM: &str = "999990068";
+
+    /// An advice on `bsn` of an examination on `onderzocht`: only a
+    /// long-term walking limitation, or none.
+    fn advies(bsn: &str, onderzocht: &str, loopbeperking: bool) -> Map<String, Value> {
+        map(json!({
+            "bsn_aanvrager": bsn,
+            "datum_onderzoek": onderzocht,
+            "langdurige_loopbeperking": loopbeperking,
+            "continu_afhankelijk_van_hulp_bestuurder": false,
+            "permanent_rolstoelgebonden": false,
+            "ernstige_beperkingen_andere_dan_loopbeperkingen": false,
+        }))
+    }
+
+    #[test]
+    fn parkeerkaart_the_advice_of_the_ggd_decides_the_criteria() {
+        // Scenarios 1 and 2 of the case: the policy fills the four criteria
+        // from the GGD's advice, and the college's finding gives way.
+        let (corpus, mut cell) = kaart();
+        // The GGD offers the advice as an act of its own.
+        let vormen = vormen(&corpus, &cell, day("2026-10-13")).unwrap();
+        let ggd = vormen["andere_cellen"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["cel"] == json!("ggd_wilgendaal"))
+            .unwrap();
+        assert!(
+            ggd["handelingen"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|h| h["feit"] == json!(ADVIES)),
+            "{ggd}"
+        );
+
+        // 1: the example applicant; the advice finds the limitation, even
+        // where the college would not.
+        let kaart = kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", false);
+        assert_eq!(
+            kaart.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(true)
+        );
+        assert_eq!(
+            kaart.besluit.fields["langdurige_loopbeperking"],
+            json!(true)
+        );
+        let door = kaart
+            .waarom
+            .ingevuld
+            .iter()
+            .find(|f| f.term == "langdurige_loopbeperking")
+            .map(|f| f.filled_by.clone())
+            .unwrap();
+        assert_eq!(
+            door,
+            FilledBy::Regulation {
+                law_id: "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal".into(),
+                article: "6".into()
+            }
+        );
+        let antwoord = kaart
+            .waarom
+            .antwoorden
+            .iter()
+            .find(|a| a["antwoord"] == json!("advies_langdurige_loopbeperking"))
+            .unwrap_or_else(|| panic!("{:#?}", kaart.waarom.antwoorden));
+        assert_eq!(antwoord["reductie"], json!("reductie_geneeskundig_advies"));
+        assert_eq!(antwoord["door"], json!("ggd_wilgendaal"));
+        assert_eq!(antwoord["waarde"], json!(true));
+        // The preview asks the college nothing on the criteria.
+        let mut aanvraag = corpus.casus.voorbeeld.aanvraag.clone();
+        aanvraag.insert("bsn_aanvrager".into(), json!(ZONDER_CRITERIUM));
+        let app = aanvragen(&corpus, &mut cell, &aanvraag, day("2026-10-21")).unwrap();
+        let voor =
+            voorvertoning_besluit(&corpus, &cell, &app.id, &Map::new(), day("2026-10-21")).unwrap();
+        assert!(voor.stil.is_empty(), "{:?}", voor.stil);
+
+        // 2: the advice finds no criterion, and the card is refused.
+        let geweigerd = besluiten(
+            &corpus,
+            &mut cell,
+            &app.id,
+            &corpus.casus.voorbeeld.bevindingen,
+            day("2026-10-21"),
+        )
+        .unwrap();
+        assert_eq!(
+            geweigerd.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
+            json!(false)
+        );
+    }
+
     #[test]
     fn parkeerkaart_synthesis_the_other_cells_answer() {
         // Scenarios 1, 3 and 4 of the synthesis (RFC-052), through the app.
@@ -2924,9 +3068,10 @@ mod tests {
         assert_eq!(eerste.outputs[corpus.casus.uitkomst.as_str()], json!(true));
         assert_eq!(eerste.outputs["kaart_geldig_tot"], json!("2031-10-19"));
 
-        // The college is asked the four findings and the three of art. 2
-        // lid 2 of the Regeling, not the valid card, the earlier card or the
-        // examination.
+        // The college is asked the three of art. 2 lid 2 of the Regeling,
+        // not the valid card, the earlier card or the examination. Nor the
+        // four criteria: the policy fills them from the GGD's advice, and
+        // asks the college only where there is none (the preview).
         let vormen = vormen(&corpus, &cell, day("2027-03-01")).unwrap();
         let gevraagd: Vec<&str> = vormen["besluit"]["bevindingen"]
             .as_array()
@@ -2934,7 +3079,7 @@ mod tests {
             .iter()
             .map(|b| b["naam"].as_str().unwrap())
             .collect();
-        assert_eq!(gevraagd.len(), 7, "{gevraagd:?}");
+        assert_eq!(gevraagd.len(), 3, "{gevraagd:?}");
         assert!(gevraagd.contains(&"geneeskundig_onderzoek_achterwege_gelaten"));
 
         let tweede = kaart_besluit(&corpus, &mut cell, "2027-03-01", "2027-03-01", true);
@@ -2942,8 +3087,13 @@ mod tests {
             tweede.besluit.outputs["gehandicaptenparkeerkaart_verstrekt"],
             json!(false)
         );
-        let antwoord = &tweede.waarom.antwoorden[0];
         let begrip = "aanvrager_heeft_geldige_gehandicaptenparkeerkaart";
+        let antwoord = tweede
+            .waarom
+            .antwoorden
+            .iter()
+            .find(|a| a["begrip"] == json!(begrip))
+            .unwrap();
         assert_eq!(antwoord["begrip"], json!(begrip));
         assert_eq!(antwoord["waarde"], json!(true));
         assert_eq!(antwoord["door"], json!("gemeente_wilgendaal"));
@@ -2993,8 +3143,10 @@ mod tests {
             "{e}"
         );
         assert_eq!(cell.grams().len(), voor);
-        // The form asks the college about the examination, since the GGD,
-        // which the law makes competent, is silent for this application.
+        // The form asks the college the four criteria, since the GGD gave
+        // no advice and so the policy is silent, and about the
+        // examination, since the GGD, which the law makes competent, is
+        // silent for this application too.
         let voor = voorvertoning_besluit(
             &corpus,
             &cell,
@@ -3003,8 +3155,30 @@ mod tests {
             day("2026-10-20"),
         )
         .unwrap();
-        let stil: Vec<&Value> = voor.stil.iter().map(|v| &v["naam"]).collect();
-        assert_eq!(stil, [&json!("geneeskundig_onderzoek_heeft_plaatsgehad")]);
+        let stil: Vec<(&Value, &Value)> = voor
+            .stil
+            .iter()
+            .map(|v| (&v["naam"], &v["beleid"]))
+            .collect();
+        // Art. 49 passes all four criteria to art. 1 of the Regeling, so
+        // all four are asked, one by one, before the examination.
+        let beleid = json!(true);
+        assert_eq!(
+            stil,
+            [
+                (&json!("continu_afhankelijk_van_hulp_bestuurder"), &beleid),
+                (
+                    &json!("ernstige_beperkingen_andere_dan_loopbeperkingen"),
+                    &beleid
+                ),
+                (&json!("langdurige_loopbeperking"), &beleid),
+                (&json!("permanent_rolstoelgebonden"), &beleid),
+                (
+                    &json!("geneeskundig_onderzoek_heeft_plaatsgehad"),
+                    &Value::Null
+                )
+            ]
+        );
 
         // Scenario 7: after the card of 2026 expired, the college leaves the
         // examination out for an applicant it knows still qualifies (lid 2
@@ -3056,8 +3230,9 @@ mod tests {
         let bezwaar = kaart_bezwaar(&corpus, &mut cell, &verstrekt.id, "2026-11-01");
         let toets = heroverweging(&corpus, &cell, &bezwaar.id, day("2026-11-20")).unwrap();
         assert_eq!(toets["ontvankelijk"], json!(true));
-        // The four criteria and the three of art. 2 lid 2 of the Regeling.
-        assert_eq!(toets["bevindingen"].as_array().unwrap().len(), 7);
+        // The three of art. 2 lid 2 of the Regeling; the four criteria came
+        // from the advice, so they were no findings of the college.
+        assert_eq!(toets["bevindingen"].as_array().unwrap().len(), 3);
         let beslist = beslissen_op_bezwaar(
             &corpus,
             &mut cell,
@@ -3074,22 +3249,43 @@ mod tests {
         let bewaard = cell.grams().iter().find(|g| g.id == verstrekt.id).unwrap();
         assert_eq!(bewaard.outputs["kaart_geldig_tot"], json!("2031-10-19"));
 
-        // Scenario 5: on objection against a refusal, a new examination
-        // finds the walking limitation; the refusal is revoked and a card
-        // valid from the new decision takes its place.
+        // Scenario 5: the advice of the GGD finds no criterion, and the card
+        // is refused. On objection the GGD examines again and finds the
+        // walking limitation; at the heroverweging the new advice counts,
+        // the refusal is revoked and a card valid from the new decision
+        // takes its place.
         let (corpus, mut cell) = kaart();
-        let geweigerd =
-            kaart_besluit(&corpus, &mut cell, "2026-10-13", "2026-10-20", false).besluit;
+        let mut aanvraag = corpus.casus.voorbeeld.aanvraag.clone();
+        aanvraag.insert("bsn_aanvrager".into(), json!(ZONDER_CRITERIUM));
+        let app = aanvragen(&corpus, &mut cell, &aanvraag, day("2026-10-13")).unwrap();
+        let geweigerd = besluiten(
+            &corpus,
+            &mut cell,
+            &app.id,
+            &corpus.casus.voorbeeld.bevindingen,
+            day("2026-10-20"),
+        )
+        .unwrap()
+        .besluit;
         assert_eq!(
             geweigerd.outputs["gehandicaptenparkeerkaart_verstrekt"],
             json!(false)
         );
         let bezwaar = kaart_bezwaar(&corpus, &mut cell, &geweigerd.id, "2026-11-01");
+        vastleggen(
+            &corpus,
+            &mut cell,
+            "ggd_wilgendaal",
+            ADVIES,
+            &advies(ZONDER_CRITERIUM, "2026-11-10", true),
+            day("2026-11-10"),
+        )
+        .unwrap();
         let beslist = beslissen_op_bezwaar(
             &corpus,
             &mut cell,
             &bezwaar.id,
-            &map(json!({ "langdurige_loopbeperking": true })),
+            &Map::new(),
             day("2026-11-20"),
         )
         .unwrap();

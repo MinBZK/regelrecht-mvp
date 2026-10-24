@@ -7,7 +7,11 @@
 //!
 //! The medical examination is the GGD's (Regeling art. 3): a cell of its
 //! own records it, and the municipality's decisions take that cell along
-//! as their sphere (RFC-052). Each test has its own GGD ([`GGD`]).
+//! as their sphere (RFC-052). Each test has its own GGD ([`GGD`]). The GGD
+//! also records its advice, with per criterion whether the applicant meets
+//! it (the municipality's fictitious policy, art. 5); the policy fills the
+//! college's four judgements from it (art. 6), and without an advice the
+//! college judges.
 
 // Test helpers outside a `#[test]` fn may unwrap and panic too; that is how
 // a failing fixture reports itself.
@@ -52,6 +56,23 @@ const EXAMINATION: &str = "regeling_gehandicaptenparkeerkaart#3#geneeskundig_ond
 const REPORTS: &str = "reductie_geneeskundig_onderzoek";
 /// The fictitious GGD that examines for the municipality.
 const GGD_ACTOR: &str = "ggd_wilgendaal";
+/// The fact art. 5 of the municipality's policy requires: the advice of who
+/// examines, with per criterion of Regeling art. 1 whether the applicant
+/// meets it. The GGD records it, and its reduction gives the four answers
+/// art. 7 binds to the terms of that article (RFC-048); art. 6 of the
+/// municipality's policy fills the college's four judgements on art. 49
+/// from them.
+const ADVISED: &str =
+    "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal#5#geneeskundig_advies_uitgebracht";
+const ADVICE_REDUCTION: &str = "reductie_geneeskundig_advies";
+const ADVICE_POLICY: &str = "fictief_beleid_geneeskundig_advies_ggd_wilgendaal";
+/// The four terms of policy art. 5 the GGD answers.
+const ADVICE: [&str; 4] = [
+    "advies_langdurige_loopbeperking",
+    "advies_continu_afhankelijk_van_hulp_bestuurder",
+    "advies_permanent_rolstoelgebonden",
+    "advies_ernstige_beperkingen_andere_dan_loopbeperkingen",
+];
 
 thread_local! {
     /// The GGD's cell of this test: tests run on threads of their own.
@@ -102,6 +123,8 @@ fn service() -> LawExecutionService {
             .to_string(),
         "reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr".to_string(),
         format!("reducties/{REPORTS}"),
+        format!("reducties/{ADVICE_REDUCTION}"),
+        format!("uitvoeringsbeleid/{ADVICE_POLICY}"),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -304,10 +327,13 @@ fn the_decision_asks_from_the_application_the_college_the_policy_and_the_cell() 
             // for it from that day (art. 2 of the Regeling, own choice).
             ("dagtekening", &Source::Application, false),
             ("bekendmaking_datum", &Source::Cell, false),
-            (WALKING, &Source::Caller, false),
-            (HELP, &Source::Caller, false),
-            (WHEELCHAIR, &Source::Caller, false),
-            (OTHER, &Source::Caller, false),
+            // The four criteria: the municipality's policy fills them from
+            // the GGD's advice first, and where there is none the college
+            // judges (policy art. 6).
+            (WALKING, &Source::Caller, true),
+            (HELP, &Source::Caller, true),
+            (WHEELCHAIR, &Source::Caller, true),
+            (OTHER, &Source::Caller, true),
             // Art. 2 lid 2 of the Regeling: whether to leave the examination
             // out, and the judgements under a and b.
             (LEFT_OUT, &Source::Caller, false),
@@ -317,10 +343,7 @@ fn the_decision_asks_from_the_application_the_college_the_policy_and_the_cell() 
             (POWER, &Source::Caller, true),
         ]
     );
-    assert_eq!(
-        shape.judgements,
-        [WALKING, HELP, WHEELCHAIR, OTHER, LEFT_OUT, KNOWN, JUDGED]
-    );
+    assert_eq!(shape.judgements, [LEFT_OUT, KNOWN, JUDGED]);
     // The college may leave the three of lid 2 out: then it does not leave
     // the examination out.
     for name in [LEFT_OUT, KNOWN, JUDGED] {
@@ -386,9 +409,13 @@ fn the_college_judges_the_criteria_itself() {
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
     let mut partial = examined(true);
     partial.remove(OTHER);
+    // Without an advice the policy is silent, and the engine misses the
+    // college's judgement (policy art. 6 lid 2).
     let e = decide_with(&mut cell, &app.id, &partial, "2026-10-20").unwrap_err();
     assert!(
-        matches!(&e, Error::Refused(m) if m.contains(&format!("asks '{OTHER}'"))),
+        e.to_string()
+            .contains(&format!("Required open term '{OTHER}'"))
+            && e.to_string().contains("no judgement was given"),
         "{e}"
     );
     assert_eq!(cell.grams().len(), 1);
@@ -507,7 +534,9 @@ fn a_cell_lists_the_answers_it_gives_and_the_terms_they_fill() {
         .into_iter()
         .map(|t| t.open_term)
         .collect();
-    assert_eq!(ggd, [EXAMINED]);
+    let mut expected = vec![EXAMINED];
+    expected.extend(ADVICE);
+    assert_eq!(ggd, expected);
 }
 
 // ---------------------------------------------------------------------------
@@ -742,10 +771,13 @@ fn an_unfounded_objection_against_a_grant_leaves_the_decision_standing() {
 // The cell's answer in the trace (RFC-048 §5)
 // ---------------------------------------------------------------------------
 
-/// The nodes of `node` and below where the cell answered an open term.
+/// The nodes of `node` and below where a cell answered an open term,
+/// besides the GGD's advice. Every decision on the criteria asks the GGD for
+/// its advice (policy art. 5 and 6); the tests below are about the other
+/// terms, and the advice has tests of its own.
 fn answered(node: &regelrecht_engine::PathNode) -> Vec<&regelrecht_engine::PathNode> {
     let mut found: Vec<_> = node.children.iter().flat_map(answered).collect();
-    if node.answer.is_some() {
+    if node.answer.is_some() && !ADVICE.contains(&node.name.as_str()) {
         found.insert(0, node);
     }
     found
@@ -1318,4 +1350,273 @@ fn a_municipality_that_gives_the_examination_answer_is_not_asked_for_it() {
         e.to_string().contains(EXAMINED) && e.to_string().contains("no judgement was given"),
         "{e}"
     );
+}
+
+// ---------------------------------------------------------------------------
+// The advice of the GGD (fictitious policy of the municipality, art. 5 and 6)
+// ---------------------------------------------------------------------------
+
+/// The GGD records on `on` its advice on `bsn`, of an examination on
+/// `examined_on`: only a long-term walking limitation, or none.
+fn advised(bsn: &str, examined_on: &str, walking: bool, on: &str) -> Gram {
+    let supplied = object_map(json!({
+        "bsn_aanvrager": bsn,
+        "datum_onderzoek": examined_on,
+        WALKING: walking,
+        HELP: false,
+        WHEELCHAIR: false,
+        OTHER: false,
+    }));
+    GGD.with(|g| {
+        g.borrow_mut()
+            .record_executogram(&service(), ADVISED, &supplied, day(on))
+            .unwrap()
+    })
+}
+
+/// Who filled `term` of art. 49 in the decision `id`.
+fn filled_by(cell: &Cell, id: &str, term: &str) -> regelrecht_engine::FilledBy {
+    let result = cell.explain(&mut service(), &[&ggd()], id).unwrap();
+    result
+        .open_terms
+        .iter()
+        .find(|f| f.term == term && f.law_id == LAW)
+        .map(|f| f.filled_by.clone())
+        .unwrap_or_else(|| panic!("{term}: {:?}", result.open_terms))
+}
+
+#[test]
+fn an_advice_with_a_long_term_walking_limitation_grants_the_card() {
+    // The college finds no limitation, but the advice does. The policy
+    // fills the four judgements from the advice and wins over the college
+    // (RFC-045): it cannot deviate (Awb 4:84 is open).
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
+    advised(APPLICANT, "2026-10-16", true, "2026-10-19");
+    let gram = decide(&mut cell, &app.id, false, "2026-10-20");
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    // The decision holds what the engine used: the advice.
+    assert_eq!(gram.fields[WALKING], json!(true));
+    assert_eq!(gram.fields[OTHER], json!(false));
+    assert_eq!(
+        filled_by(&cell, &gram.id, WALKING),
+        regelrecht_engine::FilledBy::Regulation {
+            law_id: POLICY.into(),
+            article: "6".into()
+        }
+    );
+    // The college's finding was set aside, so the decision used none.
+    let found = cell.findings(&mut service(), &[&ggd()], &gram.id).unwrap();
+    assert!(!found.contains(&WALKING.to_string()), "{found:?}");
+    // Asked why: in the trace, art. 7 asks the GGD's cell for the answer,
+    // which its reduction gave from its advice.
+    let result = cell.explain(&mut service(), &[&ggd()], &gram.id).unwrap();
+    let root = result.trace.as_ref().unwrap();
+    fn find<'a>(
+        node: &'a regelrecht_engine::PathNode,
+        name: &str,
+    ) -> Option<&'a regelrecht_engine::PathNode> {
+        if node.name == name && node.answer.is_some() {
+            return Some(node);
+        }
+        node.children.iter().find_map(|c| find(c, name))
+    }
+    let node = find(root, ADVICE[0]).unwrap_or_else(|| panic!("{}", root.render_box_drawing()));
+    let by = node.answer.as_ref().unwrap();
+    assert_eq!(by.answerer, GGD_ACTOR);
+    assert_eq!(by.answer, ADVICE[0]);
+    assert_eq!(by.law_id, ADVICE_REDUCTION);
+}
+
+#[test]
+fn an_advice_without_a_criterion_refuses_the_card() {
+    // The college would find a limitation; the advice finds none, and the
+    // advice decides.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    advised(APPLICANT, "2026-10-16", false, "2026-10-19");
+    let gram = decide(&mut cell, &app.id, true, "2026-10-20");
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
+    );
+    assert_eq!(gram.fields[WALKING], json!(false));
+}
+
+#[test]
+fn without_an_advice_the_college_judges() {
+    // The GGD is silent for this application, so the policy is too (policy
+    // art. 6 lid 2), and the college's finding counts.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
+    let gram = decide(&mut cell, &app.id, true, "2026-10-20");
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    assert_eq!(
+        filled_by(&cell, &gram.id, WALKING),
+        regelrecht_engine::FilledBy::Finding
+    );
+    let found = cell.findings(&mut service(), &[&ggd()], &gram.id).unwrap();
+    assert!(found.contains(&WALKING.to_string()), "{found:?}");
+}
+
+#[test]
+fn only_the_last_advice_for_this_application_counts() {
+    // An advice from before the date of the application does not count, and
+    // of two in the term the later one does (policy art. 5 lid 3).
+    let mut cell = cell();
+    advised(APPLICANT, "2026-10-01", true, "2026-10-02");
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-14", "2026-10-15");
+    advised(APPLICANT, "2026-10-14", true, "2026-10-15");
+    advised(APPLICANT, "2026-10-16", false, "2026-10-17");
+    let gram = decide(&mut cell, &app.id, true, "2026-10-20");
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
+    );
+}
+
+#[test]
+fn an_advice_from_before_the_application_or_after_the_decision_does_not_count() {
+    // Policy art. 5 lid 3: only an examination between the date of the
+    // application and the day of the decision. Without one the policy is
+    // silent and the college's finding counts.
+    let mut cell = cell();
+    advised(APPLICANT, "2026-10-01", false, "2026-10-02");
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-14", "2026-10-15");
+    advised(APPLICANT, "2026-10-21", false, "2026-10-21");
+    let gram = decide(&mut cell, &app.id, true, "2026-10-20");
+    assert_eq!(
+        gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+    assert_eq!(
+        filled_by(&cell, &gram.id, WALKING),
+        regelrecht_engine::FilledBy::Finding
+    );
+}
+
+#[test]
+fn two_advices_from_the_same_day_are_an_error() {
+    // Which of two advices of one examination day counts, the policy does
+    // not say: the GGD's policy (art. 1) refuses to pick (FOREACH combine
+    // ONLY), and the decision is not taken.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
+    advised(APPLICANT, "2026-10-16", true, "2026-10-19");
+    advised(APPLICANT, "2026-10-16", false, "2026-10-19");
+    let e = decide_with(&mut cell, &app.id, &examined(true), "2026-10-20").unwrap_err();
+    assert!(e.to_string().contains("ONLY"), "{e}");
+    assert_eq!(cell.grams().len(), 1);
+}
+
+#[test]
+fn only_who_examines_records_the_advice() {
+    // The advice is a fact of who examines (policy art. 5): the
+    // municipality cannot record it, and so cannot give itself an advice.
+    let mut cell = cell();
+    let supplied = object_map(json!({
+        "bsn_aanvrager": APPLICANT,
+        "datum_onderzoek": "2026-10-16",
+        WALKING: true,
+        HELP: false,
+        WHEELCHAIR: false,
+        OTHER: false,
+    }));
+    let e = cell
+        .record_executogram(&service(), ADVISED, &supplied, day("2026-10-19"))
+        .unwrap_err();
+    assert!(
+        e.to_string().contains("is established by 'Gemeentelijke Gezondheidsdienst' or 'vanwege het gemeentelijk gezag aangewezen deskundige'"),
+        "{e}"
+    );
+    assert!(cell.grams().is_empty());
+}
+
+#[test]
+fn on_objection_a_new_advice_revokes_the_refusal() {
+    // The advice refuses; on objection the GGD examines again and finds the
+    // limitation. The new advice counts at the heroverweging, which falls
+    // later (policy art. 5 lid 3), and the refusal is revoked.
+    let mut cell = cell();
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    advised(APPLICANT, "2026-10-16", false, "2026-10-19");
+    let refused = decide(&mut cell, &app.id, true, "2026-10-20");
+    assert_eq!(
+        refused.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
+    );
+    let bezwaar = object(
+        &mut cell,
+        &refused.id,
+        &objection("ik kan niet verder lopen dan vijftig meter", &[]),
+        "2026-11-01",
+    )
+    .unwrap();
+    reported(&mut cell, APPLICANT, "2026-11-10", "2026-11-11");
+    advised(APPLICANT, "2026-11-10", true, "2026-11-11");
+    let decided = reconsider(&mut cell, &bezwaar.id, &Map::new(), "2026-11-20");
+    assert_eq!(decided[0].outputs[REVOKED], json!(true));
+    assert_eq!(
+        decided[1].outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(true)
+    );
+}
+
+#[test]
+fn a_municipality_that_gives_the_advice_answer_is_not_asked_for_it() {
+    // The advice is the GGD's (policy art. 5): its terms name who is
+    // competent, so the binding of art. 7 asks the GGD and not the
+    // municipality, even where its catalogue gives the answer (RFC-051).
+    // Without the GGD the college judges the criteria itself.
+    let dir = tempfile::tempdir().unwrap();
+    let identity = std::fs::read_to_string(cell_dir().join("cel.yaml")).unwrap();
+    std::fs::write(
+        dir.path().join("cel.yaml"),
+        format!("{identity}  {}: {ADVICE_REDUCTION}\n", ADVICE[0]),
+    )
+    .unwrap();
+    let mut cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
+    assert_eq!(cell.answers().len(), 3);
+    let app = applied(&mut cell, APPLICANT, "2026-10-13");
+    let mut findings = examined(true);
+    findings.insert(EXAMINED.into(), json!(true));
+    let gram = cell
+        .decide(
+            &mut service(),
+            &[],
+            LAW,
+            ARTICLE,
+            &app.id,
+            &Map::new(),
+            &findings,
+            day("2026-10-20"),
+        )
+        .unwrap();
+    let result = cell.explain(&mut service(), &[], &gram[0].id).unwrap();
+    let walking = result
+        .open_terms
+        .iter()
+        .find(|f| f.term == WALKING && f.law_id == LAW)
+        .unwrap();
+    assert_eq!(walking.filled_by, regelrecht_engine::FilledBy::Finding);
+    // Nowhere in the trace did the municipality give the advice.
+    fn by_municipality(node: &regelrecht_engine::PathNode) -> bool {
+        node.answer
+            .as_ref()
+            .is_some_and(|a| a.answer == ADVICE[0] && a.answerer == RECORDING_ACTOR)
+            || node.children.iter().any(by_municipality)
+    }
+    let root = result.trace.as_ref().unwrap();
+    assert!(!by_municipality(root), "{}", root.render_box_drawing());
 }

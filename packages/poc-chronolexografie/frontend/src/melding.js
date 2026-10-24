@@ -43,6 +43,13 @@ const vertalingen = [
     (begrip) =>
       `${hoofdletter(state.casus?.cel_naam ?? 'de cel')} weet "${leesbaar(begrip)}" niet voor deze aanvraag, dus ${state.casus?.rol ?? 'het bestuursorgaan'} oordeelt. Geef die bevinding.`,
   ],
+  // Een oordeel dat een beleid eerst invult, maar voor deze aanvraag niet:
+  // de parkeerkaart zonder advies van de GGD (kern::voorvertonen).
+  [
+    /the policy is silent on '([^']+)' for this case/,
+    (begrip) =>
+      `Het beleid vult "${leesbaar(begrip)}" voor deze aanvraag niet in, dus ${state.casus?.rol ?? 'het bestuursorgaan'} oordeelt. Geef die bevinding.`,
+  ],
   // Een bevinding die de wet per geval aan het bestuursorgaan laat, en die
   // het nog niet gaf (de engine).
   [

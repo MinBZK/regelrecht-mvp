@@ -186,11 +186,13 @@ pocs:
       - corpus/regulation/nl/reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr
       - corpus/regulation/nl/reducties/reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer
       - corpus/regulation/nl/reducties/reductie_geldige_gehandicaptenparkeerkaart
+      - corpus/regulation/nl/reducties/reductie_geneeskundig_advies
       - corpus/regulation/nl/reducties/reductie_geneeskundig_onderzoek
       - corpus/regulation/nl/reducties/reductie_plaats_van_vestiging
       - corpus/regulation/nl/reducties/reductie_verlof_al_verleend_in_schooljaar
       - corpus/regulation/nl/reducties/reductie_verlof_valt_buiten_schoolvakanties
       - corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
+      - corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_geneeskundig_advies_ggd_wilgendaal
       - corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaar_obs_de_klimop
       - corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_schooljaargrenzen_obs_de_klimop
       - corpus/regulation/nl/uitvoeringsbeleid/fictief_beleid_vakantierooster_obs_de_klimop
