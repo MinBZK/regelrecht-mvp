@@ -43,7 +43,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
     Given the following findings:
       | indiener_is_belanghebbende | true |
       | rechtsregel_geschonden | false |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "bezwaar_of_beroepschrift_tijdig_ingediend" is true
     Then output "bezwaar_of_beroepschrift_bevat_wat_artikel_6_5_eist" is true
@@ -59,7 +59,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
       | termijn_einddatum | 2026-12-27 |
       | bezwaar_of_beroepschrift_tijdig_ingediend | false |
       | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaar_of_beroepschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "bezwaar_of_beroepschrift_tijdig_ingediend" is false
     Then output "beroep_ontvankelijk" is false
@@ -77,7 +77,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
     Given the following findings:
       | indiener_is_belanghebbende | true |
       | rechtsregel_geschonden | false |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "beroep_ontvankelijk" is true
     Then output "beroep_gegrond" is false
@@ -89,7 +89,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
     Given the following parameters:
       | bezwaar_of_beroepschrift_tijdig_ingediend | true |
       | bestreden_besluit | {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05"}, "findings": {"verlof_al_verleend_in_schooljaar": false, "specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}} |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "beroep_ontvankelijk" is false
     Then output "uitspraak_strekt_tot" equals "niet-ontvankelijkverklaring van het beroep"
@@ -102,7 +102,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
       | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaar_of_beroepschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
     Given the following findings:
       | indiener_is_belanghebbende | false |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "beroep_ontvankelijk" is false
     Then output "uitspraak_strekt_tot" equals "niet-ontvankelijkverklaring van het beroep"
@@ -114,7 +114,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
     Given the following findings:
       | indiener_is_belanghebbende | true |
       | rechtsregel_geschonden | false |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "beroep_gegrond" is false
     Then output "uitspraak_strekt_tot" equals "ongegrondverklaring van het beroep"
@@ -136,8 +136,9 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
       | rechtsregel_geschonden | true |
       | geschonden_rechtsregel | artikel 7:12, eerste lid, van de Algemene wet bestuursrecht |
       | rechtsgevolgen_in_stand | false |
+      | uitspraak_treedt_in_de_plaats | false |
       | termijn_nieuw_besluit | 2027-01-25 |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "beroep_gegrond" is true
     Then output "uitspraak_strekt_tot" equals "gegrondverklaring van het beroep"
@@ -146,6 +147,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
     Then output "rechtsgevolgen_vernietigd" is true
     Then output "opdracht_nieuw_besluit" is true
     Then output "termijn_nieuw_besluit_einddatum" equals "2027-01-25"
+    Then output "uitspraak_in_de_plaats" is absent
 
   Scenario: Een gegrond beroep zonder termijn draagt een nieuw besluit op
     # Artikel 8:72, vierde lid, onder b: de bestuursrechter "kan" een termijn
@@ -158,7 +160,8 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
       | rechtsregel_geschonden | true |
       | geschonden_rechtsregel | artikel 7:12, eerste lid, van de Algemene wet bestuursrecht |
       | rechtsgevolgen_in_stand | false |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+      | uitspraak_treedt_in_de_plaats | false |
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "opdracht_nieuw_besluit" is true
     Then output "termijn_nieuw_besluit_einddatum" is absent
@@ -174,7 +177,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
       | rechtsregel_geschonden | true |
       | geschonden_rechtsregel | artikel 3:46 van de Algemene wet bestuursrecht |
       | rechtsgevolgen_in_stand | true |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution succeeds
     Then output "beroep_gegrond" is true
     Then output "bestreden_besluit_vernietigd" is true
@@ -190,7 +193,7 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
       | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bezwaar_of_beroepschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
     Given the following findings:
       | indiener_is_belanghebbende | true |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution fails with "rechtsregel_geschonden"
 
   Scenario: Zonder het oordeel over de rechtsgevolgen is er geen uitspraak op een gegrond beroep
@@ -200,5 +203,49 @@ Feature: Het beroep bij de bestuursrechter en de uitspraak erop
     Given the following findings:
       | indiener_is_belanghebbende | true |
       | rechtsregel_geschonden | true |
-    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum" of "algemene_wet_bestuursrecht"
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
     Then the execution fails with "rechtsgevolgen_in_stand"
+
+  Scenario: Een gegrond beroep waarin de bestuursrechter zelf in de zaak voorziet
+    # Artikel 8:72, derde lid, onder b. De uitspraak treedt in de plaats van
+    # de beslissing op bezwaar: de bestuursrechter neemt die beslissing zelf
+    # opnieuw, met zijn oordeel over het beroep van de ouder. Het bestreden
+    # besluit bevat de weigering waartegen het bezwaar ging als besluitwaarde,
+    # zoals de school haar in het afschrift meegeeft. Of het hoofd dit
+    # schooljaar al verlof verleende, stelt de bestuursrechter zelf vast. Er
+    # volgt geen opdracht (vierde lid).
+    Given the following parameters:
+      | bezwaar_of_beroepschrift_tijdig_ingediend | true |
+      | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bestreden_besluit": {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05"}, "findings": {"specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}}, "bezwaar_of_beroepschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
+    Given the following findings:
+      | indiener_is_belanghebbende | true |
+      | rechtsregel_geschonden | true |
+      | geschonden_rechtsregel | artikel 7:12, eerste lid, van de Algemene wet bestuursrecht |
+      | rechtsgevolgen_in_stand | false |
+      | uitspraak_treedt_in_de_plaats | true |
+      | specifieke_aard_beroep_ouder | true |
+      | verlof_al_verleend_in_schooljaar | false |
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
+    Then the execution succeeds
+    Then output "uitspraak_strekt_tot" equals "gegrondverklaring van het beroep"
+    Then output "bestreden_besluit_vernietigd" is true
+    Then output "rechtsgevolgen_vernietigd" is true
+    Then output "opdracht_nieuw_besluit" is false
+    Then output "termijn_nieuw_besluit_einddatum" is absent
+
+  Scenario: Wie zelf in de zaak voorziet, stelt ook vast wat het bestuursorgaan anders zelf invulde
+    # In de cel van de school vult haar reductie in of het hoofd dit
+    # schooljaar al verlof verleende; dat staat dus niet in de besluitwaarde.
+    # De bestuursrechter kan de feiten aanvullen (artikel 8:69, derde lid);
+    # zonder dat oordeel is er geen uitspraak.
+    Given the following parameters:
+      | bezwaar_of_beroepschrift_tijdig_ingediend | true |
+      | bestreden_besluit | {"grondslag": "algemene_wet_bestuursrecht#7:11", "taken_on": "algemene_wet_bestuursrecht#7:11", "fields": {"bestreden_besluit": {"grondslag": "leerplichtwet_1969#13a", "taken_on": "leerplichtwet_1969#13a", "fields": {"bsn_jongere": "999990019", "eerste_verlofdag": "2027-02-01", "laatste_verlofdag": "2027-02-05"}, "findings": {"specifieke_aard_beroep_ouder": false, "verlof_valt_buiten_schoolvakanties": true}, "outputs": {"verlofdagen": 5, "verlof_raakt_eerste_twee_lesweken": false, "verlof_verleend": false}}, "bezwaar_of_beroepschrift_tijdig_ingediend": true}, "findings": {}, "outputs": {"bezwaar_ontvankelijk": true, "heroverweging_geeft_aanleiding": false, "bestreden_besluit_herroepen": false, "nieuw_besluit": null}} |
+    Given the following findings:
+      | indiener_is_belanghebbende | true |
+      | rechtsregel_geschonden | true |
+      | rechtsgevolgen_in_stand | false |
+      | uitspraak_treedt_in_de_plaats | true |
+      | specifieke_aard_beroep_ouder | true |
+    When I evaluate outputs "uitspraak_strekt_tot, geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd, rechtsgevolgen_vernietigd, opdracht_nieuw_besluit, termijn_nieuw_besluit_einddatum, uitspraak_in_de_plaats" of "algemene_wet_bestuursrecht"
+    Then the execution fails with "verlof_al_verleend_in_schooljaar"

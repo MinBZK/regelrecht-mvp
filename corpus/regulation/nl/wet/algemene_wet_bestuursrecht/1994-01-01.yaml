@@ -772,6 +772,7 @@ articles:
               - rechtsgevolgen_vernietigd
               - opdracht_nieuw_besluit
               - termijn_nieuw_besluit_einddatum
+              - uitspraak_in_de_plaats
         parameters:
           # Artikel 8:1: beroep "tegen een besluit"; het beroepschrift
           # omschrijft het (artikel 6:5, eerste lid, onder c). Het is een
@@ -796,22 +797,38 @@ articles:
             source:
               regulation: algemene_wet_bestuursrecht
               output: vernietiging_bestreden_besluit
+              parameters:
+                bestreden_besluit: $bestreden_besluit
           - name: vernietiging_rechtsgevolgen
             type: boolean
             source:
               regulation: algemene_wet_bestuursrecht
               output: vernietiging_rechtsgevolgen
+              parameters:
+                bestreden_besluit: $bestreden_besluit
           - name: opdracht_tot_nieuw_besluit
             type: boolean
             source:
               regulation: algemene_wet_bestuursrecht
               output: opdracht_tot_nieuw_besluit
+              parameters:
+                bestreden_besluit: $bestreden_besluit
           - name: gestelde_termijn_nieuw_besluit
             type: date
             nullable: true
             source:
               regulation: algemene_wet_bestuursrecht
               output: gestelde_termijn_nieuw_besluit
+              parameters:
+                bestreden_besluit: $bestreden_besluit
+          - name: besluit_in_de_plaats
+            type: decision
+            nullable: true
+            source:
+              regulation: algemene_wet_bestuursrecht
+              output: in_de_plaats_gesteld_besluit
+              parameters:
+                bestreden_besluit: $bestreden_besluit
         output:
           - name: beroep_ontvankelijk
             type: boolean
@@ -855,6 +872,12 @@ articles:
             description: >-
               De laatste dag van de termijn die de bestuursrechter stelt voor
               het nieuwe besluit (artikel 8:72, vierde lid, onder b).
+          - name: uitspraak_in_de_plaats
+            type: decision
+            nullable: true
+            description: >-
+              Het besluit dat de uitspraak in de plaats van het vernietigde
+              stelt (artikel 8:72, derde lid, onder b).
         actions:
           # Eigen keuze: dit artikel zegt niet wanneer een beroep ontvankelijk
           # is. Hier de termijn (artikel 6:9); dat het bestreden besluit op
@@ -941,6 +964,13 @@ articles:
                 - when: $opdracht_nieuw_besluit
                   then: $gestelde_termijn_nieuw_besluit
               default: null
+          - output: uitspraak_in_de_plaats
+            value:
+              operation: IF
+              cases:
+                - when: $rechtsgevolgen_vernietigd
+                  then: $besluit_in_de_plaats
+              default: null
 
   - number: 8:72
     text: |-
@@ -975,10 +1005,9 @@ articles:
     url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel8:72
     machine_readable:
       # Lid 1 alleen voor een geheel besluit: gedeeltelijke vernietiging is
-      # niet gemodelleerd. Lid 3, onder b (zelf in de zaak voorzien), lid 4,
-      # onder a, en de leden 5 en 6 (voorlopige voorziening, dwangsom) zijn
-      # niet gemodelleerd. De aanwijzingen van lid 4 zijn geen gegeven dat de
-      # uitspraak overdraagt.
+      # niet gemodelleerd. Lid 4, onder a, en de leden 5 en 6 (voorlopige
+      # voorziening, dwangsom) zijn niet gemodelleerd. De aanwijzingen van
+      # lid 4 zijn geen gegeven dat de uitspraak overdraagt.
       open_terms:
         - id: rechtsgevolgen_in_stand
           type: boolean
@@ -987,6 +1016,16 @@ articles:
           description: >-
             Of de rechtsgevolgen van het vernietigde besluit geheel in stand
             blijven (lid 3, onder a).
+        # Lid 3, onder b: de bestuursrechter kan bepalen dat zijn uitspraak in
+        # de plaats treedt van het vernietigde besluit. Alleen gevraagd als
+        # de rechtsgevolgen niet in stand blijven: lid 3 noemt a "of" b.
+        - id: uitspraak_treedt_in_de_plaats
+          type: boolean
+          required: true
+          decided_per_case_by: de bestuursrechter (artikel 8:72, derde lid)
+          description: >-
+            Of de uitspraak in de plaats treedt van het vernietigde besluit
+            (lid 3, onder b).
         - id: termijn_nieuw_besluit
           type: date
           required: false
@@ -997,6 +1036,23 @@ articles:
       execution:
         # Dit artikel geldt voor een gegrond beroep (lid 1, aanhef); artikel
         # 8:70 leest het alleen dan.
+        parameters:
+          - name: bestreden_besluit
+            type: decision
+            description: Het besluit waartegen het beroep is gericht (artikel 8:70).
+        input:
+          # Lid 3, onder b: wat de bestuursrechter in de plaats van het
+          # vernietigde besluit stelt. Eigen keuze: dat is het bestreden
+          # besluit opnieuw genomen, onder het artikel waarop het berust, met
+          # zijn eigen gegevens en bevindingen en wat de bestuursrechter zelf
+          # vaststelt, ook waar de feiten aanvulling vragen (artikel 8:69,
+          # derde lid), zoals bij de heroverweging van artikel 7:11. Alleen
+          # gelezen als de uitspraak in de plaats treedt.
+          - name: besluit_van_de_bestuursrechter
+            type: decision
+            nullable: true
+            source:
+              article: $bestreden_besluit
         output:
           - name: vernietiging_bestreden_besluit
             type: boolean
@@ -1007,6 +1063,12 @@ articles:
           - name: opdracht_tot_nieuw_besluit
             type: boolean
             description: Of de bestuursrechter het bestuursorgaan opdraagt een nieuw besluit te nemen (lid 4).
+          - name: in_de_plaats_gesteld_besluit
+            type: decision
+            nullable: true
+            description: >-
+              Het besluit dat de uitspraak in de plaats van het vernietigde
+              stelt (lid 3, onder b).
           - name: gestelde_termijn_nieuw_besluit
             type: date
             nullable: true
@@ -1024,14 +1086,32 @@ articles:
             value:
               operation: NOT
               value: $rechtsgevolgen_in_stand
+          - output: in_de_plaats_gesteld_besluit
+            value:
+              operation: IF
+              cases:
+                - when:
+                    operation: AND
+                    conditions:
+                      - $vernietiging_rechtsgevolgen
+                      - $uitspraak_treedt_in_de_plaats
+                  then: $besluit_van_de_bestuursrechter
+              default: null
           # Lid 4: "indien toepassing van het derde lid niet mogelijk is".
           # Eigen keuze: de bestuursrechter draagt een nieuw besluit op zodra
-          # hij het besluit vernietigt en de rechtsgevolgen niet in stand
-          # laat; het "kan" van lid 4 geldt als de gewone gang. Het besluit
-          # waarop het beroep was gericht, is dan weg, en de bezwaren
+          # hij het besluit vernietigt en het derde lid niet toepast: de
+          # rechtsgevolgen blijven niet in stand en zijn uitspraak treedt niet
+          # in de plaats. Het "kan" van lid 4 geldt als de gewone gang. Het
+          # besluit waarop het beroep was gericht, is dan weg, en de bezwaren
           # liggen weer open.
           - output: opdracht_tot_nieuw_besluit
-            value: $vernietiging_rechtsgevolgen
+            value:
+              operation: AND
+              conditions:
+                - $vernietiging_rechtsgevolgen
+                - operation: EQUALS
+                  subject: $in_de_plaats_gesteld_besluit
+                  value: null
           - output: gestelde_termijn_nieuw_besluit
             value:
               operation: IF
@@ -1074,9 +1154,10 @@ articles:
       # heeft, is een feit dat dit artikel omschrijft (requires, fact). Wat
       # het bevat: waartoe de uitspraak strekt (artikel 8:70) en wat zij aan
       # een gegrond beroep verbindt (artikelen 8:72 en 8:77, tweede lid),
-      # onder de namen van die uitkomsten. Wie vastlegt dat een partij het
-      # afschrift heeft, zegt de wet niet: het artikel laat de griffier het
-      # ter beschikking stellen. Daarom noemt het feit geen
+      # onder de namen van die uitkomsten, ook het besluit dat de uitspraak
+      # in de plaats van het vernietigde stelt. Wie vastlegt dat een partij
+      # het afschrift heeft, zegt de wet niet: het artikel laat de griffier
+      # het ter beschikking stellen. Daarom noemt het feit geen
       # competent_authority (RFC-051); de partij die het ontvangt, legt het
       # vast (eigen keuze). De termijn van twee weken is niet gemodelleerd.
       # Lid 2 en 3 (anderen dan partijen, de Europese Commissie) zijn hier
@@ -1093,6 +1174,7 @@ articles:
             - opdracht_nieuw_besluit
             - termijn_nieuw_besluit_einddatum
             - geschonden_geoordeelde_rechtsregel
+            - uitspraak_in_de_plaats
       execution:
         parameters:
           - name: uitspraak_strekt_tot
@@ -1121,6 +1203,13 @@ articles:
             nullable: true
             required: false
             description: De rechtsregel die de uitspraak geschonden oordeelde (artikel 8:77, tweede lid).
+          - name: uitspraak_in_de_plaats
+            type: decision
+            nullable: true
+            required: false
+            description: >-
+              Het besluit dat de uitspraak in de plaats van het vernietigde
+              stelt (artikel 8:72, derde lid, onder b).
 
   - number: 8:104
     text: |-

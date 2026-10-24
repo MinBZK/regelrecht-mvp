@@ -116,7 +116,7 @@ produces:
 - Awb 6:5 and 6:9 hook onto the appeal as onto the objection; their text speaks of the "bezwaar- of beroepschrift", and so do their names: `termijn_einddatum`, `bezwaar_of_beroepschrift_tijdig_ingediend`. On a decision on objection, `termijn_einddatum` is the last day for lodging the appeal.
 - An appeal is admissible when it came in on time, when the contested decision was taken on objection (`taken_on` is 7:11, Awb 7:1 lid 1), and when the court finds the appellant an interested party (8:1).
 - Whether the appeal is well founded is the court's judgement: whether the decision breaches a rule of law, and which (8:77 lid 2). These are open terms with `decided_per_case_by`, given as findings.
-- When well founded, 8:70 reads 8:72. The court annuls the decision, and its legal effects go with it unless the court keeps them (lid 3 onder a). Otherwise it orders a new decision, within a term if it sets one (lid 4).
+- When well founded, 8:70 reads 8:72. The court annuls the decision, and its legal effects go with it unless the court keeps them (lid 3 onder a). It may also decide the case itself (lid 3 onder b): 8:72 then calls the contested decision anew with the court's findings, as 7:11 does, and 8:70 gives the result as `uitspraak_in_de_plaats`. Otherwise it orders a new decision, within a term if it sets one (lid 4).
 
 | Situation | Result |
 |---|---|
@@ -125,6 +125,7 @@ produces:
 | No rule breached | Unfounded; the decision stands |
 | A rule breached, effects not kept | Well founded: annulled, with an order for a new decision |
 | A rule breached, effects kept | Well founded: annulled, no new decision |
+| A rule breached, the court decides the case itself | Well founded: annulled, the judgment holds the decision in its place, no order |
 
 [RFC-053](/rfcs/rfc-053) gives the design. `corpus/regulation/nl/wet/algemene_wet_bestuursrecht/scenarios/beroep.feature` plays these cases.
 
@@ -138,4 +139,6 @@ Listed only when a choice is still to be made, when it needs investigation first
 | `decision_type` is fixed per article, while one article grants or refuses. The value says nothing about the outcome, and no hook in the corpus filters on it. [RFC-022](/rfcs/rfc-022) proposes an open vocabulary. Drop it, derive it from the outcome, or keep it as a free field? | Choice; breaking schema change |
 | Awb 8:72 lid 4 says the court "kan" order a new decision. The model orders one whenever the court annuls and keeps neither the legal effects nor decides the case itself, and it does not model the court's instructions. Should the order be a finding of the court instead? | Choice |
 | A party can appeal against the new decision that a decision on objection took in place of a revoked one. When the court annuls that new decision, the administrative body cannot yet decide on the objection again: deciding again (`Cell::decide_after`) needs a receipt that refers to the last decision on the objection itself. Should a receipt for the new decision count too? | Choice |
+| When the court decides the case itself, its decision may also undo an earlier grant of the administrative body. The reduction of the administrative body counts the court's decision, but it does not read whether that decision revokes anything. Should it? | Choice |
+| An appeal against the judgment (hoger beroep, Awb 8:104 and 8:105) is recorded as text only. How a higher court's judgment would reach the cells of the lower court and the administrative body is not designed yet. | Investigation |
 | The edge from 7:11 to the article it calls is known only at run time. The dependency graph, the editor and the type checker do not see it. | Large refactor |

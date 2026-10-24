@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { binnenTermijn, herkomst, openOntvangsten, ontvangstVan, uitspraakOp } from '../src/beroep.js';
-import { dossier, geldendBesluit, isBesluit, rol, state } from '../src/state.js';
+import { dossier, geldendBesluit, isBesluit, isBesluitwaarde, rol, state, waarde } from '../src/state.js';
 
 // Ids verzonnen, op de laatste acht tekens na herkenbaar; de vormen zoals de
 // cel ze vastlegt (RFC-053).
@@ -107,5 +107,36 @@ describe('het beroep in twee kronieken', () => {
     expect(herkomst(ontvangst)).toBe('verwijst naar 0000dddd · ontvangen van rechtbank 0000ffff');
     expect(herkomst(gegrond)).toBe('verwijst naar 0000cccc · na 00001111');
     expect(herkomst(aanvraag)).toBe('');
+  });
+});
+
+describe('waarde van een besluit in de uitspraak', () => {
+  // Voorziet de rechter zelf in de zaak (Awb 8:72, derde lid, onder b), dan
+  // houdt de uitspraak de beslissing op bezwaar als besluitwaarde, met het
+  // nieuwe besluit daarin.
+  const verlening = { grondslag: 'wet#1', fields: {}, findings: {}, outputs: { toegekend: true } };
+  const inDePlaats = {
+    grondslag: 'awb#7:11',
+    fields: { bestreden_besluit: verlening },
+    findings: {},
+    outputs: { bestreden_besluit_herroepen: true, nieuw_besluit: verlening },
+  };
+
+  it('toont de grondslag en de uitvoer, een besluit daarin tussen haakjes', () => {
+    expect(waarde(inDePlaats)).toBe(
+      'besluit onder awb#7:11; bestreden besluit herroepen: true; nieuw besluit: (besluit onder wet#1; toegekend: true)',
+    );
+  });
+
+  it('laat een gewone waarde JSON en een decimaal het getal', () => {
+    expect(waarde({ grondslag: 'wet#1', outputs: {} })).toBe('{"grondslag":"wet#1","outputs":{}}');
+    expect(waarde({ __decimal: '1.5' })).toBe('1.5');
+    expect(waarde(null)).toBe('null');
+  });
+
+  it('kent een besluitwaarde aan haar vier delen', () => {
+    expect(isBesluitwaarde(inDePlaats)).toBe(true);
+    expect(isBesluitwaarde({ ...inDePlaats, outputs: null })).toBe(false);
+    expect(isBesluitwaarde(null)).toBe(false);
   });
 });

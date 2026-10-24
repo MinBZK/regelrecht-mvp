@@ -343,24 +343,16 @@ impl<'a> ResolutionContext<'a> {
     /// Every finding the caller gave was asked by an article in the
     /// execution (RFC-050); otherwise an error naming those that were not.
     fn check_findings_asked(&self) -> Result<()> {
-        let unasked: Vec<&str> = self
+        let findings: Vec<String> = self
             .findings
             .keys()
             .filter(|id| !self.findings_asked.contains(*id))
-            .map(String::as_str)
+            .cloned()
             .collect();
-        if unasked.is_empty() {
+        if findings.is_empty() {
             return Ok(());
         }
-        Err(EngineError::InvalidOperation(format!(
-            "no article in this execution leaves {} to an authority per case \
-             (decided_per_case_by), so the finding is asked by none",
-            unasked
-                .iter()
-                .map(|id| format!("'{id}'"))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )))
+        Err(EngineError::FindingsNotAsked { findings })
     }
 
     /// Record that `filled_by` filled the open term `term` of `article` of

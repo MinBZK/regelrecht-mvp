@@ -15,8 +15,8 @@ use regelrecht_cel::{
     decision, reading, shape, Cell, Disk, Error, Files, Gram, Reference, Source, EXECUTOGRAM,
 };
 use regelrecht_engine::{
-    ArticleResult, FilledBy, LawExecutionService, OpenTermFilled, ParameterType, PathNode,
-    PathNodeType,
+    ArticleResult, EngineError, FilledBy, LawExecutionService, OpenTermFilled, ParameterType,
+    PathNode, PathNodeType,
 };
 use regelrecht_law_model::stored;
 use serde_json::{json, Map, Value};
@@ -525,6 +525,12 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     if let Some(b) = &corpus.afleiding.beroep {
         let beroep = shape::derive(&service, &b.law, &b.article, on)?;
         let uitspraak = decision::derive(&service, &b.law, &b.article, on)?;
+        let mut bevindingen = oordelen_van_de_rechter(&service, &uitspraak, on)?;
+        for field in opnieuw_te_beoordelen(corpus, &service, on)? {
+            if !bevindingen.iter().any(|v| v["naam"] == field.name) {
+                bevindingen.push(veld(&field));
+            }
+        }
         vormen["beroep"] = json!({
             "soort": beroep.kind,
             "grondslag": beroep.grondslag(),
@@ -534,11 +540,41 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
         vormen["uitspraak"] = json!({
             "soort": uitspraak.kind,
             "grondslag": uitspraak.grondslag(),
-            "bevindingen": oordelen_van_de_rechter(&service, &uitspraak, on)?,
+            "bevindingen": bevindingen,
             "uitvoer": uitspraak.outputs,
         });
     }
     Ok(vormen)
+}
+
+/// What the court judges when it decides the case itself (Awb 8:72 lid 3
+/// onder b): it calls the contested decision on objection anew, and that
+/// calls the case's decision anew. Their judgements are then the court's,
+/// also those the case's cell answers from its chronicle (the court has no
+/// such chronicle) and those a policy fills first (in the court's cell such
+/// a policy can be silent): the court supplements the facts itself (8:69
+/// lid 3).
+fn opnieuw_te_beoordelen(
+    corpus: &Corpus,
+    service: &LawExecutionService,
+    on: NaiveDate,
+) -> Result<Vec<shape::Field>> {
+    let mut uit: Vec<shape::Field> = Vec::new();
+    for shape in [
+        decision::derive(service, corpus.awb(), corpus.objection(), on)?,
+        decision::derive(service, corpus.law(), corpus.article(), on)?,
+    ] {
+        for i in shape
+            .inputs
+            .iter()
+            .filter(|i| shape.judgements.contains(&i.field.name) || i.policy_first)
+        {
+            if !uit.iter().any(|f| f.name == i.field.name) {
+                uit.push(i.field.clone());
+            }
+        }
+    }
+    Ok(uit)
 }
 
 /// What the court judges per case for the decision `shape`: the judgements
@@ -1910,9 +1946,10 @@ pub fn beroep_instellen(
 
 /// The court gives judgment on the appeal `beroep` with its `bevindingen`,
 /// as any decision. A finding on an article the judgment reads, such as
-/// Awb 8:72, is asked only when it reads that article: when the judgment
-/// comes out without it, it is not given, and the answer names it under
-/// `niet_gevraagd`. The judgment comes with why ([`waarom`]).
+/// Awb 8:72, or on a decision it calls anew (8:72 lid 3 onder b), is asked
+/// only when it reads that article: a finding the engine reports as asked
+/// by none is not given, and the answer names it under `niet_gevraagd`.
+/// The judgment comes with why ([`waarom`]).
 pub fn uitspraak_doen(
     corpus: &Corpus,
     cellen: &mut Cellen,
@@ -1921,12 +1958,6 @@ pub fn uitspraak_doen(
     on: NaiveDate,
 ) -> Result<Value> {
     let b = corpus.beroep()?;
-    let shape = decision::derive(&corpus.service()?, &b.law, &b.article, on)?;
-    let eigen: Map<String, Value> = bevindingen
-        .iter()
-        .filter(|(naam, _)| shape.input(naam).is_some())
-        .map(|(naam, v)| (naam.clone(), v.clone()))
-        .collect();
     let neem = |cellen: &mut Cellen, gegeven: &Map<String, Value>| -> Result<Vec<Gram>> {
         let (rechter, sfeer) = cellen.splits_op(&b.rechter)?;
         rechter.decide(
@@ -1940,8 +1971,22 @@ pub fn uitspraak_doen(
             on,
         )
     };
-    let zonder = eigen.len() < bevindingen.len() && neem(&mut cellen.sandbox(), &eigen).is_ok();
-    let gegeven = if zonder { &eigen } else { bevindingen };
+    // Leave out what the engine names as asked by none, until the judgment
+    // asks every finding it is given. Leaving out a finding nothing reads
+    // changes nothing else; any other refusal is the court's to see.
+    let mut gegeven = bevindingen.clone();
+    while let Err(Error::Engine(EngineError::FindingsNotAsked { findings })) =
+        neem(&mut cellen.sandbox(), &gegeven)
+    {
+        let voor = gegeven.len();
+        for k in &findings {
+            gegeven.remove(k);
+        }
+        if gegeven.len() == voor {
+            break;
+        }
+    }
+    let gegeven = &gegeven;
     let uitspraak = neem(cellen, gegeven)?.remove(0);
     let niet_gevraagd: Vec<&String> = bevindingen
         .keys()
@@ -3885,7 +3930,11 @@ mod tests {
                 "rechtsregel_geschonden",
                 "geschonden_rechtsregel",
                 "rechtsgevolgen_in_stand",
+                "uitspraak_treedt_in_de_plaats",
                 "termijn_nieuw_besluit",
+                "specifieke_aard_beroep_ouder",
+                "verlof_valt_buiten_schoolvakanties",
+                "verlof_al_verleend_in_schooljaar",
             ]
         );
 
@@ -3901,6 +3950,50 @@ mod tests {
         assert_eq!(
             ingesteld.outputs["bezwaar_of_beroepschrift_tijdig_ingediend"],
             json!(true)
+        );
+
+        // Had the court decided the case itself (8:72 lid 3 onder b), the
+        // form's findings on 13a would have been asked: the court grants
+        // the leave in place of the school.
+        let mut zelf = uitspraak_bevindingen(&corpus, &["termijn_nieuw_besluit"]);
+        zelf.insert("uitspraak_treedt_in_de_plaats".into(), json!(true));
+        zelf.insert("specifieke_aard_beroep_ouder".into(), json!(true));
+        zelf.insert("verlof_valt_buiten_schoolvakanties".into(), json!(true));
+        zelf.insert("verlof_al_verleend_in_schooljaar".into(), json!(false));
+        let in_de_plaats = uitspraak_doen(
+            &corpus,
+            &mut cell.sandbox(),
+            &ingesteld.id,
+            &zelf,
+            day("2027-01-11"),
+        )
+        .unwrap();
+        assert_eq!(in_de_plaats["niet_gevraagd"], json!([]));
+        assert_eq!(
+            in_de_plaats["uitspraak"]["outputs"]["opdracht_nieuw_besluit"],
+            json!(false)
+        );
+        assert_eq!(
+            in_de_plaats["uitspraak"]["outputs"]["uitspraak_in_de_plaats"]["outputs"]
+                ["nieuw_besluit"]["outputs"]["verlof_verleend"],
+            json!(true)
+        );
+
+        // Filled in, the findings on 13a are not asked when the court does
+        // not decide the case itself.
+        let mut niet_zelf = uitspraak_bevindingen(&corpus, &[]);
+        niet_zelf.insert("specifieke_aard_beroep_ouder".into(), json!(true));
+        let niet_in_de_plaats = uitspraak_doen(
+            &corpus,
+            &mut cell.sandbox(),
+            &ingesteld.id,
+            &niet_zelf,
+            day("2027-01-11"),
+        )
+        .unwrap();
+        assert_eq!(
+            niet_in_de_plaats["niet_gevraagd"],
+            json!(["specifieke_aard_beroep_ouder"])
         );
 
         let gedaan = uitspraak_doen(
