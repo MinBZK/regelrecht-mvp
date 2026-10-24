@@ -598,6 +598,7 @@ fn a_term_is_answered_by_its_own_authority_else_the_executing_one() {
     assert!(!term("grond_aanwezig").asks_finding());
     // The policy's own term: its holder.
     let own = term("grond_aanwezig_volgens_hoofd");
+    assert_eq!(own.declared_by(), "beleid_verlof_kort#1");
     assert_eq!(own.answered_by.len(), 1);
     assert!(own.is_finding(&head));
     assert!(!own.is_finding(&inspection));
@@ -726,4 +727,35 @@ articles:
     );
     let e = run(5, params(&[("grond_aanwezig", Value::Bool(true))])).unwrap_err();
     assert!(e.to_string().contains("asked by none"), "{e}");
+}
+
+/// The law reads the term only for a leave of at most ten days, so for a
+/// longer one the policy never runs. A finding on the policy's own term is
+/// then not reached, yet counts as asked, and its type is checked.
+#[test]
+fn a_finding_on_a_policys_own_term_counts_where_the_policy_does_not_run() {
+    let law = SPECIAL_LAW.replace(
+        "                - $grond_aanwezig\n                - {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 10}\n",
+        "                - {operation: LESS_THAN_OR_EQUAL, subject: $dagen, value: 10}\n                - $grond_aanwezig\n",
+    );
+    assert_ne!(law, SPECIAL_LAW);
+    let service = service(&[GENERAL_LAW, &law, SHORT_LEAVE_POLICY]);
+    let run = |finding: Value| {
+        service.execute_stage_at_with_findings(
+            "wet_verlof",
+            "1",
+            "BESLUIT",
+            Some(&["verlof_verleend"]),
+            params(&[("dagen", Value::Int(20)), ("besluit_datum", date(DAY))]),
+            params(&[("grond_aanwezig_volgens_hoofd", finding)]),
+            DAY,
+        )
+    };
+    let result = run(Value::Bool(true)).unwrap();
+    assert_eq!(result.outputs["verlof_verleend"], Value::Bool(false));
+    let e = run(Value::String("ja".into())).unwrap_err();
+    assert!(
+        e.to_string().contains("grond_aanwezig_volgens_hoofd"),
+        "{e}"
+    );
 }
