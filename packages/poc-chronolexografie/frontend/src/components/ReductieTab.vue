@@ -38,8 +38,11 @@ const pad = (r) => {
 const koppelingen = (r, naam) =>
   stand.value.antwoorden.filter((k) => k.reduction === r.id && k.antwoord === naam);
 
-/** Het beleid dat de reductie voor een norm aanroept, als tekst. */
-const normen = (r) => opsomming(r.normen.map((n) => `beleid ${n.beleid} art. ${n.artikel}`));
+/** Het beleid of de reductie die de reductie voor een norm aanroept, als tekst. */
+const normen = (r) =>
+  opsomming(
+    r.normen.map((n) => `${n.laag === 'REDUCTIE' ? 'reductie' : 'beleid'} ${n.regelwerk} art. ${n.artikel}`),
+  );
 </script>
 
 <template>

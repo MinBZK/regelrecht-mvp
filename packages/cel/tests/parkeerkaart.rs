@@ -125,6 +125,9 @@ fn service() -> LawExecutionService {
         format!("reducties/{REPORTS}"),
         format!("reducties/{ADVICE_REDUCTION}"),
         format!("uitvoeringsbeleid/{ADVICE_POLICY}"),
+        // Which decisions still stand after objection and appeal: the
+        // reduction of the Awb, which the reductions above call.
+        "reducties/reductie_algemene_wet_bestuursrecht".to_string(),
     ] {
         for entry in std::fs::read_dir(regulation.join(law)).unwrap() {
             let path = entry.unwrap().path();
@@ -715,6 +718,95 @@ fn a_revoked_card_does_not_count_as_a_valid_one() {
     assert_eq!(
         later.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
+    );
+}
+
+/// The fictional court, and the fact that a party holds the copy of its
+/// judgment (Awb 8:79).
+const COURT: &str = "rechtbank_wilgendaal";
+const JUDGMENTS: &str = "algemene_wet_bestuursrecht#8:79#afschrift_van_de_uitspraak";
+
+#[test]
+fn a_card_whose_revocation_the_court_annulled_counts_again() {
+    // As above, the grant is revoked on objection. The court annuls that
+    // decision on the objection with its legal effects (Awb 8:72): the
+    // revocation no longer holds, nor the refusal in its place, and the card
+    // is valid again.
+    let mut cell = cell();
+    let granted = apply_and_decide(&mut cell, APPLICANT, true, "2026-10-20");
+    let bezwaar = object(
+        &mut cell,
+        &granted.id,
+        &objection("de kaart vermeldt alleen de letter B", &[]),
+        "2026-11-01",
+    )
+    .unwrap();
+    let decided = reconsider(&mut cell, &bezwaar.id, &walking(false), "2026-11-20");
+    assert_eq!(decided[0].outputs[REVOKED], json!(true));
+
+    let mut court = Cell::in_memory(
+        COURT,
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../corpus/cells/{COURT}")),
+    )
+    .unwrap();
+    let copy = cell
+        .afschrift(&mut service(), &[&ggd()], &decided[0].id)
+        .unwrap();
+    let appeal = court
+        .record_submission(
+            &mut service(),
+            &[],
+            AWB,
+            "8:70",
+            Some(Reference::Received(&copy)),
+            &object_map(json!({
+                "bezwaar_of_beroepschrift_ondertekend": true,
+                "naam_indiener": "A. de Vries",
+                "adres_indiener": "Voorbeeldlaan 2",
+                "dagtekening_bezwaar_of_beroepschrift": "2026-11-30",
+                "omschrijving_bestreden_besluit": "beslissing op bezwaar tegen de kaart",
+                "gronden_bezwaar_of_beroep": "de beslissing is niet deugdelijk gemotiveerd",
+            })),
+            day("2026-12-01"),
+        )
+        .unwrap();
+    let judgment = court
+        .decide(
+            &mut service(),
+            &[],
+            AWB,
+            "8:70",
+            &appeal.id,
+            &Map::new(),
+            &object_map(json!({
+                "indiener_is_belanghebbende": true,
+                "rechtsregel_geschonden": true,
+                "geschonden_rechtsregel": "artikel 7:12, eerste lid, van de Algemene wet bestuursrecht",
+                "rechtsgevolgen_in_stand": false,
+                "uitspraak_treedt_in_de_plaats": false,
+                "termijn_nieuw_besluit": "2027-01-25",
+            })),
+            day("2027-01-11"),
+        )
+        .unwrap()
+        .remove(0);
+    assert_eq!(judgment.outputs["rechtsgevolgen_vernietigd"], json!(true));
+    let copy = court.afschrift(&mut service(), &[], &judgment.id).unwrap();
+    cell.record_receipt(
+        &service(),
+        JUDGMENTS,
+        &copy,
+        &decided[0].id,
+        day("2027-01-12"),
+    )
+    .unwrap();
+
+    // A second application while the revived card is valid is refused.
+    let later = apply_and_decide(&mut cell, APPLICANT, true, "2027-03-01");
+    assert_eq!(later.fields[POWER], json!(false));
+    assert_eq!(
+        later.outputs["gehandicaptenparkeerkaart_verstrekt"],
+        json!(false)
     );
 }
 

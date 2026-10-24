@@ -1195,8 +1195,10 @@ fn leest_uit(reduction: &regelrecht_engine::ArticleBasedLaw) -> Vec<(String, Str
         .collect()
 }
 
-/// The articles of policy that `reduction` calls for a norm (RFC-048): per regelwerk of `UITVOERINGSBELEID` it reads with
-/// `source.regulation`, the article that gives the output it reads.
+/// The articles that `reduction` calls for a norm (RFC-048): per regelwerk of
+/// `UITVOERINGSBELEID` or `REDUCTIE` it reads with `source.regulation`, the
+/// article that gives the output it reads. A reduction without a holder,
+/// such as the one of the Awb, is called like policy.
 pub(crate) fn beleid_van(
     service: &LawExecutionService,
     reduction: &regelrecht_engine::ArticleBasedLaw,
@@ -1205,7 +1207,11 @@ pub(crate) fn beleid_van(
         .into_iter()
         .filter_map(|(regelwerk, output)| {
             let law = service.resolver().get_law(&regelwerk)?;
-            if law.regulatory_layer != regelrecht_engine::RegulatoryLayer::Uitvoeringsbeleid {
+            if !matches!(
+                law.regulatory_layer,
+                regelrecht_engine::RegulatoryLayer::Uitvoeringsbeleid
+                    | regelrecht_engine::RegulatoryLayer::Reductie
+            ) {
                 return None;
             }
             let article = law
@@ -1867,10 +1873,15 @@ pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value>
             );
             invoer.push(Value::Object(rij));
         }
-        // The articles of policy it calls for a norm (RFC-048), each once.
+        // The articles of policy or of a reduction it calls for a norm
+        // (RFC-048), each once, with the layer of their regelwerk.
         let mut normen: Vec<Value> = Vec::new();
-        for (beleid, article) in beleid_van(&service, reduction) {
-            let norm = json!({ "beleid": beleid, "artikel": article.number });
+        for (regelwerk, article) in beleid_van(&service, reduction) {
+            let laag = service
+                .resolver()
+                .get_law(&regelwerk)
+                .map(|law| law.regulatory_layer.as_str());
+            let norm = json!({ "regelwerk": regelwerk, "laag": laag, "artikel": article.number });
             if !normen.contains(&norm) {
                 normen.push(norm);
             }
@@ -2440,11 +2451,13 @@ mod tests {
             ])
         );
         let beleid = "fictief_beleid_vakantieverlof_obs_de_klimop";
+        let awb = "reductie_algemene_wet_bestuursrecht";
         assert_eq!(
             reductie(lid_2)["normen"],
             json!([
-                { "beleid": beleid, "artikel": "1" },
-                { "beleid": beleid, "artikel": "2" }
+                { "regelwerk": awb, "laag": "REDUCTIE", "artikel": "1" },
+                { "regelwerk": awb, "laag": "REDUCTIE", "artikel": "2" },
+                { "regelwerk": beleid, "laag": "UITVOERINGSBELEID", "artikel": "1" }
             ])
         );
         assert!(reductie(lid_2)["tekst"][0]["tekst"]
@@ -2767,9 +2780,9 @@ mod tests {
                 && f["filled_by"]["answer"]["answers"][0]["law_id"]
                     == json!("reductie_verlof_al_verleend_in_schooljaar")));
 
-        // How the school answered: A is among the revoked decisions, and
-        // both rows under 13a that are not B (A, and the refusal in its
-        // place) are skipped.
+        // How the school answered: the reduction of the Awb counts A among
+        // the revoked decisions, and of the rows under 13a that are not B
+        // only the refusal in its place stands, which the filter skips.
         let hoe = hoe_beantwoord(
             &corpus,
             &cell,
@@ -2789,7 +2802,15 @@ mod tests {
             "{spoor}"
         );
         assert!(
-            spoor.contains("FOREACH over 0 element(s), 2 skipped by filter = False"),
+            !eerst["uitvoer"]["besluiten_in_stand"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|rij| rij["id"] == json!(a.id)),
+            "{spoor}"
+        );
+        assert!(
+            spoor.contains("FOREACH over 0 element(s), 1 skipped by filter = False"),
             "{spoor}"
         );
 
@@ -2833,14 +2854,14 @@ mod tests {
         .unwrap();
         assert_eq!(antwoord["soort"], json!("begrip"));
         assert_eq!(antwoord["waarde"], json!(false));
-        // The head's binding (art. 3 of his policy), with the school's
+        // The head's binding (art. 2 of his policy), with the school's
         // answer (RFC-048).
         let binding = &antwoord["ingevuld_door"]["answer"];
         assert_eq!(
             (&binding["law_id"], &binding["article"]),
             (
                 &json!("fictief_beleid_vakantieverlof_obs_de_klimop"),
-                &json!("3")
+                &json!("2")
             )
         );
         let door = &binding["answers"][0];
@@ -3059,9 +3080,9 @@ mod tests {
         // Vakantieverlof: the leave article, the policy that fills its open
         // term, the Awb with its hooks, the reductions the school's
         // catalogue names (RFC-048), what those read: the head's policy with
-        // its norms and its bindings, the regeling and the school's policy on
-        // its rooster, and the policy that requires the fact of its
-        // vestiging. The Wet op het primair onderwijs is only the regeling's
+        // its norm and its bindings, the reduction of the Awb, the regeling
+        // and the school's policy on its rooster, and the policy that
+        // requires the fact of its vestiging. The Wet op het primair onderwijs is only the regeling's
         // legal basis.
         let verlof = corpus();
         let a = &verlof.afleiding;
@@ -3096,6 +3117,7 @@ mod tests {
                 "fictief_beleid_vakantieverlof_obs_de_klimop",
                 "fictief_beleid_vestiging_obs_de_klimop",
                 LAW,
+                "reductie_algemene_wet_bestuursrecht",
                 "reductie_plaats_van_vestiging",
                 "reductie_verlof_al_verleend_in_schooljaar",
                 "reductie_verlof_valt_buiten_schoolvakanties",
@@ -3124,6 +3146,7 @@ mod tests {
                 "besluit_administratieve_bepalingen_inzake_het_wegverkeer_babw",
                 "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal",
                 "fictief_beleid_geneeskundig_advies_ggd_wilgendaal",
+                "reductie_algemene_wet_bestuursrecht",
                 "reductie_eerder_verstrekte_gehandicaptenparkeerkaart_cbr",
                 "reductie_eerder_verstrekte_gehandicaptenparkeerkaart_gemeente_oostmeer",
                 "reductie_geldige_gehandicaptenparkeerkaart",

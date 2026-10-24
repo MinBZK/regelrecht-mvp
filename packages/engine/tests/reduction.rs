@@ -23,8 +23,8 @@ use serde_json::json;
 
 const REDUCTION: &str = "reductie_verlof_al_verleend_in_schooljaar";
 const ONCE: &str = "verlof_al_verleend_in_schooljaar";
-/// The head's policy: the norms the reduction applies (art. 1 and 2) and
-/// the binding of the term of art. 13a to the cell's answer (art. 3).
+/// The head's policy: the norm the reduction applies (art. 1) and the
+/// binding of the term of art. 13a to the cell's answer (art. 2).
 const POLICY: &str = "fictief_beleid_vakantieverlof_obs_de_klimop";
 /// The policy the head's policy calls for the school year.
 const SCHOOL_YEAR: &str = "fictief_beleid_schooljaargrenzen_obs_de_klimop";
@@ -51,10 +51,11 @@ fn policy_yaml() -> String {
     ))
 }
 
-/// The reduction, and the school's policies it calls.
+/// The reduction, the Awb reduction and the school's policies it calls.
 fn service() -> LawExecutionService {
     let mut service = LawExecutionService::new();
     service.load_law(&reduction_yaml()).unwrap();
+    service.load_law(&awb_reduction_yaml()).unwrap();
     service.load_law(&policy_yaml()).unwrap();
     service
         .load_law(&corpus(&format!(
@@ -238,6 +239,7 @@ fn the_reduction_asks_the_policy_for_the_school_year_of_the_first_day() {
     // Without the policy the school year is not known, nor the answer.
     let mut alone = LawExecutionService::new();
     alone.load_law(&reduction_yaml()).unwrap();
+    alone.load_law(&awb_reduction_yaml()).unwrap();
     alone.load_law(&policy_yaml()).unwrap();
     supply(
         &mut alone,
@@ -424,12 +426,12 @@ fn a_reduction_fills_no_open_term() {
     refused(&unnamed, "a REDUCTIE fills no open term (implements)");
 }
 
-/// The head's policy with `from` replaced by `to` in its binding of art. 3.
+/// The head's policy with `from` replaced by `to` in its binding of art. 2.
 fn binding(from: &str, to: &str) -> String {
     changed(&policy_yaml(), from, to)
 }
 
-/// The source of the binding of art. 3.
+/// The source of the binding of art. 2.
 const BINDS: &str = "              reduction: verlof_al_verleend_in_schooljaar\n";
 
 #[test]
@@ -565,6 +567,7 @@ fn corpus_service(with_reduction: bool) -> LawExecutionService {
     }
     if with_reduction {
         service.load_law(&reduction_yaml()).unwrap();
+        service.load_law(&awb_reduction_yaml()).unwrap();
     }
     service
 }
@@ -707,7 +710,7 @@ fn granted_13a_with(
 fn bound() -> FilledBy {
     FilledBy::Answer {
         law_id: POLICY.to_string(),
-        article: "3".to_string(),
+        article: "2".to_string(),
         answers: vec![provenance()],
     }
 }
@@ -765,7 +768,7 @@ fn the_answerer_fills_the_term_of_13a_and_sets_the_heads_finding_aside() {
     );
     assert!(
         trace.contains(&format!(
-            "implemented by {POLICY} article 3, with the answer of een_cel"
+            "implemented by {POLICY} article 2, with the answer of een_cel"
         )),
         "{trace}"
     );
@@ -1016,4 +1019,225 @@ fn in_the_call_anew_without_an_answerer_the_finding_is_missing() {
         .evaluate_law_output(AWB, "bestreden_besluit_herroepen", parameters, "2026-12-01")
         .unwrap_err();
     assert!(e.to_string().contains(ONCE), "{e}");
+}
+
+// ---------------------------------------------------------------------------
+// The Awb reduction: which decisions still stand after objection and appeal
+// (Awb 7:11, 8:72), and the decisions the court set in place (8:72 lid 3
+// onder b). It has no holder, so it is no answer of a cell; another
+// reduction calls it and passes the rows it read.
+// ---------------------------------------------------------------------------
+
+const AWB_REDUCTION: &str = "reductie_algemene_wet_bestuursrecht";
+
+/// The Awb reduction from the corpus.
+fn awb_reduction_yaml() -> String {
+    corpus(&format!(
+        "regulation/nl/reducties/{AWB_REDUCTION}/2026-01-01.yaml"
+    ))
+}
+
+fn awb_service() -> LawExecutionService {
+    let mut service = LawExecutionService::new();
+    service.load_law(&awb_reduction_yaml()).unwrap();
+    service
+}
+
+/// A decision on an objection against `contested` that revoked it and took
+/// `instead` in its place, or upheld it (`instead` is None).
+fn revoked_for(
+    id: &str,
+    contested: &serde_json::Value,
+    instead: Option<&serde_json::Value>,
+) -> serde_json::Value {
+    json!({
+        "id": id,
+        "bestreden_besluit": contested["id"],
+        "bezwaar_ontvankelijk": true,
+        "bestreden_besluit_herroepen": instead.is_some(),
+        "nieuw_besluit": instead.map(|d| d["id"].clone()),
+    })
+}
+
+/// The receipt of a judgment about the decision `about`, that annulled it
+/// with its legal effects or not, and set `in_place` in its place.
+fn judgment(about: &str, annulled: bool, in_place: serde_json::Value) -> serde_json::Value {
+    json!({
+        "id": format!("uitspraak-{about}"),
+        "refers_to": about,
+        "bestreden_besluit_vernietigd": annulled,
+        "rechtsgevolgen_vernietigd": annulled,
+        "uitspraak_in_de_plaats": in_place,
+    })
+}
+
+/// A decision value under `grondslag`, as a judgment holds it: no id.
+fn value_under(grondslag: &str, outputs: serde_json::Value) -> serde_json::Value {
+    json!({
+        "grondslag": grondslag,
+        "fields": { "bsn_jongere": "999990019" },
+        "outputs": outputs,
+    })
+}
+
+/// The output `output` of article 1 of the Awb reduction on these rows.
+fn awb_output(
+    decisions: serde_json::Value,
+    on_objection: serde_json::Value,
+    judgments: serde_json::Value,
+    output: &str,
+) -> serde_json::Value {
+    let parameters = BTreeMap::from([
+        ("besluiten".to_string(), Value::from(decisions)),
+        (
+            "beslissingen_op_bezwaar".to_string(),
+            Value::from(on_objection),
+        ),
+        ("uitspraken".to_string(), Value::from(judgments)),
+    ]);
+    let result = awb_service()
+        .evaluate_law_output(AWB_REDUCTION, output, parameters, "2027-03-01")
+        .unwrap();
+    serde_json::to_value(&result.outputs[output]).unwrap()
+}
+
+/// The ids of the decisions that still stand.
+fn standing(
+    decisions: serde_json::Value,
+    on_objection: serde_json::Value,
+    judgments: serde_json::Value,
+) -> Vec<String> {
+    awb_output(decisions, on_objection, judgments, "besluiten_in_stand")
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| row["id"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[test]
+fn the_awb_reduction_drops_a_revoked_decision_and_keeps_the_one_in_its_place() {
+    let a = decision("999990019", "2026-10-05", false);
+    let b = decision("999990019", "2026-10-05", true);
+    let rows = standing(
+        json!([a, b]),
+        json!([revoked_for("x", &a, Some(&b))]),
+        json!([]),
+    );
+    assert_eq!(rows, [b["id"].as_str().unwrap()]);
+    // The row comes back as it was given.
+    let full = awb_output(json!([b]), json!([]), json!([]), "besluiten_in_stand");
+    assert_eq!(full, json!([b]));
+}
+
+#[test]
+fn an_annulled_decision_on_objection_revives_the_contested_decision() {
+    let a = decision("999990019", "2026-10-05", false);
+    let b = decision("999990019", "2026-10-05", true);
+    let on_objection = json!([revoked_for("x", &a, Some(&b))]);
+    // Annulled with its legal effects: its revocation no longer holds, nor
+    // the decision it took in place.
+    let rows = standing(
+        json!([a, b]),
+        on_objection.clone(),
+        json!([judgment("x", true, json!(null))]),
+    );
+    assert_eq!(rows, [a["id"].as_str().unwrap()]);
+    // Annulled with the legal effects left in place (8:72 lid 3 onder a):
+    // the revocation holds.
+    let rows = standing(
+        json!([a, b]),
+        on_objection,
+        json!([judgment("x", false, json!(null))]),
+    );
+    assert_eq!(rows, [b["id"].as_str().unwrap()]);
+}
+
+#[test]
+fn an_annulled_decision_drops_out() {
+    let a = decision("999990019", "2026-10-05", true);
+    let rows = standing(
+        json!([a]),
+        json!([]),
+        json!([judgment(a["id"].as_str().unwrap(), true, json!(null))]),
+    );
+    assert!(rows.is_empty(), "{rows:?}");
+}
+
+#[test]
+fn a_revocation_in_the_decision_the_court_set_in_place_holds() {
+    let a = decision("999990019", "2026-10-05", false);
+    let grant = value_under("leerplichtwet_1969#13a", json!({ "verlof_verleend": true }));
+    let in_place = value_under(
+        "algemene_wet_bestuursrecht#7:11",
+        json!({ "bestreden_besluit_herroepen": true, "nieuw_besluit": grant }),
+    );
+    let rows = json!([a]);
+    let on_objection = json!([revoked_for("x", &a, None)]);
+    let judgments = json!([judgment("x", true, in_place)]);
+    assert_eq!(
+        awb_output(
+            rows.clone(),
+            on_objection.clone(),
+            judgments.clone(),
+            "beslissingen_herroepen_bij_uitspraak"
+        ),
+        json!(["x"])
+    );
+    assert_eq!(
+        awb_output(
+            rows.clone(),
+            on_objection.clone(),
+            judgments.clone(),
+            "herroepen_besluiten"
+        ),
+        json!([a["id"]])
+    );
+    assert!(standing(rows, on_objection, judgments).is_empty());
+}
+
+/// Article 2 of the Awb reduction on `judgments`, for `grondslag`.
+fn in_place(judgments: serde_json::Value, grondslag: &str) -> serde_json::Value {
+    let parameters = BTreeMap::from([
+        ("uitspraken".to_string(), Value::from(judgments)),
+        ("grondslag".to_string(), Value::String(grondslag.into())),
+    ]);
+    let result = awb_service()
+        .evaluate_law_output(
+            AWB_REDUCTION,
+            "besluiten_in_de_plaats",
+            parameters,
+            "2027-03-01",
+        )
+        .unwrap();
+    serde_json::to_value(&result.outputs["besluiten_in_de_plaats"]).unwrap()
+}
+
+#[test]
+fn the_decisions_the_court_set_in_place_come_from_either_path() {
+    const LEAVE: &str = "leerplichtwet_1969#13a";
+    let direct = value_under(LEAVE, json!({ "verlof_verleend": true }));
+    let anew = value_under(LEAVE, json!({ "verlof_verleend": false }));
+    let on_objection = value_under(
+        "algemene_wet_bestuursrecht#7:11",
+        json!({ "bestreden_besluit_herroepen": true, "nieuw_besluit": anew }),
+    );
+    let upheld = value_under(
+        "algemene_wet_bestuursrecht#7:11",
+        json!({ "bestreden_besluit_herroepen": false, "nieuw_besluit": null }),
+    );
+    let other = value_under("een_andere_wet#1", json!({ "toegekend": true }));
+    let judgments = json!([
+        judgment("a", true, direct.clone()),
+        judgment("b", true, on_objection),
+        judgment("c", true, upheld),
+        judgment("d", true, other.clone()),
+        judgment("e", false, json!(null)),
+    ]);
+    assert_eq!(in_place(judgments.clone(), LEAVE), json!([direct, anew]));
+    assert_eq!(
+        in_place(judgments.clone(), "een_andere_wet#1"),
+        json!([other])
+    );
+    assert_eq!(in_place(judgments, "nog_een_wet#1"), json!([]));
 }
