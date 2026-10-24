@@ -194,6 +194,105 @@ fn a_saved_game_plays_on_where_it_was() {
 }
 
 #[test]
+fn the_appeal_from_the_objection_to_the_decision_taken_again() {
+    // The vakantieverlof scenario with the court, as the app plays it, on
+    // the case's own example values.
+    let mut spel = spel_met("vakantieverlof");
+    let casus = spel.casus().unwrap();
+    assert_eq!(casus["beroep"], json!("algemene_wet_bestuursrecht#8:70"));
+    assert_eq!(
+        casus["ontvangst"],
+        json!("algemene_wet_bestuursrecht#8:79#afschrift_van_de_uitspraak")
+    );
+    assert_eq!(casus["rechter"]["cel"], json!("rechtbank_wilgendaal"));
+    let voorbeeld = &casus["voorbeeld"];
+    let aanvraag = spel
+        .aanvragen(&map(&voorbeeld["aanvraag"]), dag("2026-10-14"))
+        .unwrap();
+    let besluit = spel
+        .besluiten(
+            aanvraag["id"].as_str().unwrap(),
+            &map(&json!({ "specifieke_aard_beroep_ouder": false })),
+            dag("2026-10-14"),
+        )
+        .unwrap();
+    let mut bezwaar = voorbeeld["bezwaar"].clone();
+    bezwaar["dagtekening_bezwaar_of_beroepschrift"] = json!("2026-11-01");
+    let bezwaar = spel
+        .bezwaren(
+            besluit["besluit"]["id"].as_str().unwrap(),
+            &map(&bezwaar),
+            dag("2026-11-01"),
+        )
+        .unwrap();
+    let ongegrond = spel
+        .beslissen_op_bezwaar(
+            bezwaar["id"].as_str().unwrap(),
+            &Map::new(),
+            dag("2026-11-15"),
+        )
+        .unwrap();
+    let mut beroep = voorbeeld["beroep"].clone();
+    beroep["dagtekening_bezwaar_of_beroepschrift"] = json!("2026-12-01");
+    let beroep = spel
+        .beroep_instellen(
+            ongegrond["beslissing"]["id"].as_str().unwrap(),
+            &map(&beroep),
+            dag("2026-12-01"),
+        )
+        .unwrap();
+    let beroep = beroep["id"].as_str().unwrap();
+    let bevindingen = map(&voorbeeld["uitspraak"]);
+    // The preview of a judgment is that judgment, and records nothing.
+    let voorlopig = spel
+        .voorvertoning_uitspraak(beroep, &bevindingen, dag("2027-01-11"))
+        .unwrap();
+    let gedaan = spel
+        .uitspraak_doen(beroep, &bevindingen, dag("2027-01-11"))
+        .unwrap();
+    assert_eq!(
+        voorlopig["voorlopig"]["uitspraak"]["outputs"],
+        gedaan["uitspraak"]["outputs"]
+    );
+    let uitspraak = gedaan["uitspraak"]["id"].as_str().unwrap().to_string();
+    spel.waarom_uitspraak(&uitspraak).unwrap();
+    let ontvangst = spel.toezenden(&uitspraak, dag("2027-01-11")).unwrap();
+    let ontvangst = ontvangst["id"].as_str().unwrap().to_string();
+    let toets = spel.heroverweging_na_uitspraak(&ontvangst).unwrap();
+    assert_eq!(toets["bezwaar"], bezwaar["id"]);
+    let bevindingen = map(&json!({ "specifieke_aard_beroep_ouder": true }));
+    let voorlopig = spel
+        .voorvertoning_na_uitspraak(&ontvangst, &bevindingen, dag("2027-01-18"))
+        .unwrap();
+    assert_eq!(
+        voorlopig["voorlopig"]["nieuw_besluit"]["outputs"]["verlof_verleend"],
+        json!(true)
+    );
+    let opnieuw = spel
+        .opnieuw_beslissen_op_bezwaar(&ontvangst, &bevindingen, dag("2027-01-18"))
+        .unwrap();
+    assert_eq!(
+        opnieuw["nieuw_besluit"]["outputs"]["verlof_verleend"],
+        json!(true)
+    );
+
+    // Both chronicles: the court's is that of another cell of the case. A
+    // reset empties it too.
+    let kroniek = spel.kroniek().unwrap();
+    assert_eq!(kroniek["grammen"].as_array().unwrap().len(), 8);
+    let rechter = &kroniek["andere"][0];
+    assert_eq!(rechter["cel"], json!("rechtbank_wilgendaal"));
+    assert_eq!(rechter["cel_naam"], json!("Rechtbank Wilgendaal"));
+    assert_eq!(soorten(rechter), ["BEROEP", "UITSPRAAK"]);
+    spel.reset().unwrap();
+    assert_eq!(spel.kroniek().unwrap()["andere"][0]["grammen"], json!([]));
+
+    // A judgment the court did not give is not sent.
+    let e = spel.toezenden(&uitspraak, dag("2027-01-20")).unwrap_err();
+    assert!(matches!(e, Fout::Cel(_)), "{e}");
+}
+
+#[test]
 fn parkeerkaart_a_second_card_next_to_a_valid_one() {
     // Scenario 3 of the parkeerkaart, as the app plays it: the case's own
     // example values, two applications and two decisions.
@@ -203,14 +302,24 @@ fn parkeerkaart_a_second_card_next_to_a_valid_one() {
         casus["rol"],
         json!("het college van burgemeester en wethouders")
     );
-    // The other cells of the sphere (RFC-052), from the case file.
+    // The other cells of the sphere (RFC-052), from the case file, the
+    // court among them (RFC-053).
     let andere: Vec<&str> = casus["andere_cellen"]
         .as_array()
         .unwrap()
         .iter()
         .map(|a| a["cel"].as_str().unwrap())
         .collect();
-    assert_eq!(andere, ["ggd_wilgendaal", "gemeente_oostmeer", "cbr"]);
+    assert_eq!(
+        andere,
+        [
+            "ggd_wilgendaal",
+            "gemeente_oostmeer",
+            "cbr",
+            "rechtbank_wilgendaal"
+        ]
+    );
+    assert_eq!(casus["rechter"]["cel"], json!("rechtbank_wilgendaal"));
     let aanvraag = map(&casus["voorbeeld"]["aanvraag"]);
     let bevindingen = map(&casus["voorbeeld"]["bevindingen"]);
     let uitkomst = casus["uitkomst"].as_str().unwrap().to_string();

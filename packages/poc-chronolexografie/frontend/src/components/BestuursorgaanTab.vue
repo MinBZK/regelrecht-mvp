@@ -12,23 +12,26 @@
 // bezwaar komen ze uit het bestreden besluit: de bevindingen die het
 // gebruikte, met wat het bestuursorgaan toen vond. De voorbeeldwaarden van de
 // bevindingen komen uit de casus.
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive } from 'vue';
 import { api } from '../api.js';
 import { artikelNaam } from '../logboek.js';
+import { stilBegrippen } from '../stil.js';
 import {
   aanvragen,
   besluitGrondslag,
   beslissingOp,
   besluitOp,
   alsJson,
-  hoofdletter,
+  jaNee,
   kort,
   samenvatting,
   state,
   stap,
+  zonderLeeg,
 } from '../state.js';
 import Uitkomst from './Uitkomst.vue';
 import OordeelKeuze from './OordeelKeuze.vue';
+import StilOordeel from './StilOordeel.vue';
 import Voorvertoning from './Voorvertoning.vue';
 import Waarom from './Waarom.vue';
 import VeldInvoer from './VeldInvoer.vue';
@@ -53,39 +56,6 @@ const openBezwaren = computed(() =>
 // Per aanvraag de oordelen van het bestuursorgaan.
 const oordeel = reactive({});
 const oordeelVoor = (id) => (oordeel[id] ??= standaard());
-
-// Per aanvraag of bezwaar de begrippen die de cel voor dit geval niet weet,
-// zoals de voorvertoning ze meldt. Wat eenmaal gevraagd is, blijft staan
-// zolang de speeldatum en de kroniek dezelfde zijn: of de cel het weet,
-// hangt af van de aanvraag, van wat op die dag geldt en van wat zij
-// vastlegde, niet van de bevindingen. Een voorvertoning vindt alleen het
-// eerste begrip dat het bestuursorgaan nog niet beoordeelde; zo verschijnen
-// ze een voor een. Verandert de dag of de kroniek, dan vraagt de
-// voorvertoning opnieuw, en gaat een oordeel dat niet meer gevraagd wordt
-// weg in plaats van onzichtbaar mee te gaan.
-const stil = reactive({});
-watch(
-  () => [state.datum, state.grammen.length],
-  () => {
-    for (const [id, velden] of Object.entries(stil)) {
-      for (const v of velden) {
-        if (oordeel[id]) delete oordeel[id][v.naam];
-        if (opnieuw[id]) delete opnieuw[id][v.naam];
-      }
-      delete stil[id];
-    }
-  },
-);
-function meldStil(id, velden) {
-  const lijst = (stil[id] ??= []);
-  for (const v of velden) if (!lijst.some((x) => x.naam === v.naam)) lijst.push(v);
-}
-// Wie zwijgt: de cel uit haar kroniek, of een beleid dat het oordeel eerst
-// invult (`beleid`), zoals het advies van de GGD bij de parkeerkaart.
-const nietGeweten = (v) =>
-  v.beleid
-    ? `${v.grondslag} · Het beleid vult dit voor deze aanvraag niet in; ${state.casus.rol} oordeelt.`
-    : `${v.grondslag} · ${hoofdletter(state.casus.cel_naam)} weet dit niet voor deze aanvraag; ${state.casus.rol} oordeelt.`;
 // Een oordeel op een begrip dat de cel niet weet: leeg is nog niet gegeven.
 function zetOordeel(id, naam, waarde) {
   if (waarde === undefined) delete oordeelVoor(id)[naam];
@@ -112,6 +82,8 @@ async function waarom(b) {
 // vond.
 const toetsen = reactive({});
 const opnieuw = reactive({});
+// Wat het bestuursorgaan oordeelt over begrippen die de cel niet weet (stil.js).
+const { stil, meldStil } = stilBegrippen(oordeel, opnieuw);
 const beslissingen = reactive({});
 
 async function toets(bz) {
@@ -122,16 +94,10 @@ async function toets(bz) {
   }
 }
 
-const jaNee = (v) => (v === true ? 'ja' : v === false ? 'nee' : String(v));
-
 // Wat het bestuursorgaan bij de heroverweging opnieuw vindt; 'Laat staan'
 // geeft niets.
 const gegevenOpBezwaar = (bz) =>
-  Object.fromEntries(
-    Object.entries(toetsen[bz.id]?.ontvankelijk ? (opnieuw[bz.id] ?? {}) : {}).filter(
-      ([, v]) => v !== undefined,
-    ),
-  );
+  zonderLeeg(toetsen[bz.id]?.ontvankelijk ? (opnieuw[bz.id] ?? {}) : {});
 // De begrippen die de cel bij dit bezwaar niet weet en die niet al onder de
 // bevindingen van het bestreden besluit staan.
 const stilBijBezwaar = (bz) =>
@@ -186,22 +152,13 @@ const uitkomstOpBezwaar = (uit) =>
               :veld="o"
               @update:model-value="oordeelVoor(a.id)[o.naam] = $event"
             />
-            <template v-for="v in stil[a.id] ?? []" :key="v.naam">
-              <OordeelKeuze
-                v-if="v.type === 'boolean'"
-                :veld="v"
-                :model-value="oordeel[a.id]?.[v.naam]"
-                leeg="Nog niet beoordeeld"
-                :toelichting="nietGeweten(v)"
-                @update:model-value="zetOordeel(a.id, v.naam, $event)"
-              />
-              <VeldInvoer
-                v-else
-                :veld="{ ...v, grondslag: nietGeweten(v) }"
-                :model-value="oordeel[a.id]?.[v.naam]"
-                @update:model-value="zetOordeel(a.id, v.naam, $event)"
-              />
-            </template>
+            <StilOordeel
+              v-for="v in stil[a.id] ?? []"
+              :key="v.naam"
+              :veld="v"
+              :model-value="oordeel[a.id]?.[v.naam]"
+              @update:model-value="zetOordeel(a.id, v.naam, $event)"
+            />
             <nldd-button appearance="primary" text="Besluit nemen" @click="besluit(a)"></nldd-button>
           </nldd-container>
           <Voorvertoning
@@ -275,22 +232,13 @@ const uitkomstOpBezwaar = (uit) =>
                 :toelichting="`${o.grondslag} · eerder: ${jaNee(o.eerder)}`"
                 @update:model-value="opnieuw[bz.id][o.naam] = $event"
               />
-              <template v-for="v in stilBijBezwaar(bz)" :key="v.naam">
-                <OordeelKeuze
-                  v-if="v.type === 'boolean'"
-                  :veld="v"
-                  :model-value="opnieuw[bz.id][v.naam]"
-                  leeg="Nog niet beoordeeld"
-                  :toelichting="nietGeweten(v)"
-                  @update:model-value="opnieuw[bz.id][v.naam] = $event"
-                />
-                <VeldInvoer
-                  v-else
-                  :veld="{ ...v, grondslag: nietGeweten(v) }"
-                  :model-value="opnieuw[bz.id][v.naam]"
-                  @update:model-value="opnieuw[bz.id][v.naam] = $event"
-                />
-              </template>
+              <StilOordeel
+                v-for="v in stilBijBezwaar(bz)"
+                :key="v.naam"
+                :veld="v"
+                :model-value="opnieuw[bz.id][v.naam]"
+                @update:model-value="opnieuw[bz.id][v.naam] = $event"
+              />
               <nldd-button appearance="primary" text="Beslissen op bezwaar" @click="beslisOpBezwaar(bz)"></nldd-button>
             </nldd-container>
             <Voorvertoning

@@ -35,8 +35,8 @@ articles: []
 "#;
 
 /// Article 3 requires the fact of where a school stands, since a day;
-/// article 4 requires none; article 5 a fact with a field `id`, which no row
-/// can hold.
+/// article 4 requires none; article 5 a fact with a field `id` and article 6
+/// one with a field `refers_to`, which no row can hold.
 const SPECIAL_LAW: &str = r#"
 $id: wet_vaststelling_fictief
 regulatory_layer: WET
@@ -73,6 +73,15 @@ articles:
       execution:
         parameters:
           - {name: id, type: string}
+  - number: '6'
+    text: Het bevoegd gezag legt een verwijzing vast.
+    machine_readable:
+      requires:
+        - fact: verwijzing
+          parameters: [refers_to]
+      execution:
+        parameters:
+          - {name: refers_to, type: string}
 "#;
 
 const GRONDSLAG: &str = "wet_vaststelling_fictief#3";
@@ -201,6 +210,20 @@ fn an_executogram_is_whole_or_not_recorded() {
     .unwrap_err();
     assert!(
         matches!(&e, Error::Setup(m) if m.contains("holds a field 'id'")),
+        "{e}"
+    );
+
+    // Nor one named `refers_to`: the row gives what the executogram refers
+    // to under it (RFC-053).
+    let e = record(
+        &mut cell,
+        "wet_vaststelling_fictief#6#verwijzing",
+        &map(json!({"refers_to": "x"})),
+        "2026-08-01",
+    )
+    .unwrap_err();
+    assert!(
+        matches!(&e, Error::Setup(m) if m.contains("holds a field 'refers_to'")),
         "{e}"
     );
 

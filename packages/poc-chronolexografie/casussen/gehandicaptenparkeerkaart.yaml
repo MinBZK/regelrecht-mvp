@@ -57,6 +57,17 @@ voorbeeld:
     adres_indiener: Voorbeeldlaan 2
     omschrijving_bestreden_besluit: besluit op de aanvraag om een gehandicaptenparkeerkaart
     gronden_bezwaar_of_beroep: ik kan niet verder lopen dan vijftig meter
+  # Het beroepschrift (Awb 6:5): dezelfde velden als het bezwaarschrift.
+  beroep:
+    bezwaar_of_beroepschrift_ondertekend: true
+    naam_indiener: A. de Vries
+    adres_indiener: Voorbeeldlaan 2
+    omschrijving_bestreden_besluit: beslissing op bezwaar over de gehandicaptenparkeerkaart
+    gronden_bezwaar_of_beroep: het geneeskundig onderzoek woog mijn loopafstand niet mee
+  # Wat de rechter vindt (Awb 8:70): de gemeente schond geen rechtsregel.
+  uitspraak:
+    indiener_is_belanghebbende: true
+    rechtsregel_geschonden: false
 
 # De andere cellen van de sfeer (RFC-052). Het open begrip zegt wie bevoegd
 # is: de GGD of de aangewezen deskundige voor het onderzoek (Regeling
@@ -164,6 +175,13 @@ andere_cellen:
             keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: false
             geneeskundig_onderzoek_heeft_plaatsgehad: true
             aanvrager_heeft_geldige_gehandicaptenparkeerkaart: false
+  # De bestuursrechter (RFC-053): ook een andere cel, met een eigen kroniek.
+  # Dat zij de rechter is, zegt haar cel.yaml (categorie "de
+  # bestuursrechter", wie volgens Awb 8:70 beslist). Het artikel van het
+  # beroep en het feit waarin de gemeente de ontvangst van een uitspraak
+  # vastlegt (Awb 8:79), leidt de app af uit de wet.
+  - cel: rechtbank_wilgendaal
+    cel_naam: Rechtbank Wilgendaal
 
 scenarios:
   - naam: De kaart wordt verstrekt op het advies van de GGD
@@ -354,3 +372,30 @@ scenarios:
       wet zegt hoe hun antwoorden één waarde worden: eerder een kaart
       verstrekt is waar als één verstrekkende instantie het zegt (combine:
       OR op artikel 2 van de regeling). Het Logboek noemt beide.
+  - naam: Beroep ongegrond
+    stappen:
+      - >-
+        Aanvrager, speeldatum 13 oktober 2026: verander het BSN in 999990068
+        en klik op Aanvraag indienen. Bestuursorgaan, speeldatum 20 oktober
+        2026: klik op Besluit nemen. Het advies van de GGD vindt geen
+        criterium, dus de kaart wordt geweigerd.
+      - >-
+        Aanvrager, speeldatum 1 november 2026: klik bij het besluit op Bezwaar
+        maken en dan op Bezwaar indienen.
+      - >-
+        Bestuursorgaan, speeldatum 20 november 2026: klik op Ontvankelijkheid
+        toetsen. Laat alle bevindingen staan en klik op Beslissen op bezwaar.
+        Ongegrond.
+      - >-
+        Aanvrager, speeldatum 1 december 2026: klik bij de beslissing op
+        bezwaar op Beroep instellen en dan op Beroepschrift indienen.
+      - >-
+        Andere cellen, Rechtbank Wilgendaal, speeldatum 11 januari 2027: de
+        voorbeeldbevindingen zeggen
+        dat de gemeente geen rechtsregel schond. Klik op Uitspraak doen en
+        dan op Toezenden.
+    eind: >-
+      Ongegrond: de rechter vernietigt niets en draagt niets op, en artikel
+      8:72 vroeg hij niets. De gemeente legt de ontvangst vast in haar eigen
+      kroniek, als het afschrift van de uitspraak dat Awb 8:79 vereist. Onder
+      Bestuursorgaan is er niets om opnieuw op te beslissen.

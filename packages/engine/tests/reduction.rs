@@ -154,6 +154,8 @@ fn supply_for(
         rows: BTreeMap::from([
             ("besluiten", Value::from(decisions)),
             ("beslissingen_op_bezwaar", Value::from(on_objection)),
+            // The judgments the school received (RFC-053): none here.
+            ("uitspraken", Value::from(json!([]))),
         ]),
     }));
 }
@@ -254,13 +256,44 @@ fn no_decisions_is_no_leave_granted() {
 
 #[test]
 fn decisions_nobody_supplies_are_an_error_not_an_empty_list() {
-    let service = service();
+    // The judgments are supplied (RFC-053), the decisions are not.
+    let mut service = service();
+    service.add_data_source(Box::new(Decisions {
+        law: REDUCTION.to_string(),
+        rows: BTreeMap::from([("uitspraken", Value::from(json!([])))]),
+    }));
     let e = evaluate(&service, "999990019", "2027-05-10").unwrap_err();
     let message = e.to_string();
     assert!(matches!(e, EngineError::DataSourceError(_)), "{message}");
     assert!(
         message.contains("reads the decisions taken under")
             && message.contains("no data source supplies them"),
+        "{message}"
+    );
+}
+
+#[test]
+fn judgments_nobody_supplies_are_an_error_not_an_empty_list() {
+    // The decisions are supplied, the judgments (RFC-053), which are
+    // executograms, are not.
+    let mut service = service();
+    service.add_data_source(Box::new(Decisions {
+        law: REDUCTION.to_string(),
+        rows: BTreeMap::from([
+            (
+                "besluiten",
+                Value::from(json!([decision("999990019", "2026-10-05", true)])),
+            ),
+            ("beslissingen_op_bezwaar", Value::from(json!([]))),
+        ]),
+    }));
+    let e = evaluate(&service, "999990019", "2027-05-10").unwrap_err();
+    let message = e.to_string();
+    assert!(matches!(e, EngineError::DataSourceError(_)), "{message}");
+    assert!(
+        message.contains(
+            "reads the recorded facts algemene_wet_bestuursrecht#8:79#afschrift_van_de_uitspraak"
+        ) && message.contains("no data source supplies them"),
         "{message}"
     );
 }

@@ -2,9 +2,10 @@
 // Eerst de keuze van een casus (CasusKeuze.vue). Daarna één pagina met zes
 // tabbladen: de scenario's, de aanvrager, het bestuursorgaan, de kroniek,
 // de reductie en het logboek, en bij een casus met andere cellen (RFC-052)
-// een zevende voor die cellen. Bovenaan de speeldatum, die voor elke stap
-// geldt, een knop die de kroniek terugzet op wat de cel vooraf vastlegde
-// (meestal niets) en een knop terug naar de keuze. Een weigering van de cel
+// een zevende voor die cellen, de rechtbank daaronder (RFC-053). Bovenaan
+// de speeldatum, die voor elke stap geldt, een knop die de kroniek terugzet
+// op wat de cel vooraf vastlegde (meestal niets) en een knop terug naar de
+// keuze. Een weigering van de cel
 // staat in een banner, in het Nederlands; de melding van de cel zelf onder
 // Details. Wat bij de casus hoort (de wet, de cel, wie beslist), komt uit
 // `api.casus`.
@@ -19,6 +20,7 @@ import BestuursorgaanTab from './components/BestuursorgaanTab.vue';
 import CasusKeuze from './components/CasusKeuze.vue';
 import KroniekTab from './components/KroniekTab.vue';
 import LogboekTab from './components/LogboekTab.vue';
+import NaUitspraak from './components/NaUitspraak.vue';
 import ReductieTab from './components/ReductieTab.vue';
 import ScenarioTab from './components/ScenarioTab.vue';
 
@@ -126,7 +128,10 @@ async function opnieuw() {
       <template v-else-if="state.vormen">
         <ScenarioTab v-if="tab === 'scenarios'" @start="tab = 'aanvrager'" />
         <AanvragerTab v-else-if="tab === 'aanvrager'" />
-        <BestuursorgaanTab v-else-if="tab === 'bestuursorgaan'" />
+        <template v-else-if="tab === 'bestuursorgaan'">
+          <NaUitspraak v-if="state.casus.beroep" />
+          <BestuursorgaanTab />
+        </template>
         <AndereCellenTab v-else-if="tab === 'andere'" />
         <KroniekTab v-else-if="tab === 'kroniek'" />
         <ReductieTab v-else-if="tab === 'reductie'" />
