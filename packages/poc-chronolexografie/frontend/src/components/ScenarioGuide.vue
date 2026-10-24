@@ -6,21 +6,22 @@
 // not a block. On a narrow screen the split view shows this as a sheet.
 import { computed } from 'vue';
 import { counts, progress } from '../scenarioProgress.js';
-import { beginScenario, longDate, state } from '../state.js';
+import { hoofdletter, longDate, state } from '../state.js';
 
 const props = defineProps({
   // The guide (scenarioGuides.js) and the scenario of the case YAML it follows.
   guide: { type: Object, required: true },
   scenario: { type: Object, required: true },
+  // Its number on the tab Scenario's.
+  number: { type: Number, required: true },
   // The tabs of the page, `{ id, tekst }`, to name the tab of a step, and
   // the one that is open.
   tabs: { type: Array, required: true },
   tab: { type: String, required: true },
 });
-const emit = defineEmits(['tab', 'hide', 'choose']);
+const emit = defineEmits(['tab', 'hide', 'choose', 'restart']);
 
 const p = computed(() => progress(props.guide, counts()));
-const number = computed(() => state.casus.scenarios.findIndex((s) => s.naam === props.scenario.naam) + 1);
 const total = computed(() => props.guide.steps.length);
 const current = computed(() => props.guide.steps[p.value.current] ?? null);
 // What the visitor sees now: what the last step done left behind.
@@ -42,8 +43,6 @@ function icon(i) {
   if (i === p.value.current) return { name: 'arrow-right', color: 'accent' };
   return { name: 'circle', color: 'secondary' };
 }
-
-const restart = () => beginScenario(props.scenario.naam);
 </script>
 
 <template>
@@ -78,14 +77,14 @@ const restart = () => beginScenario(props.scenario.naam);
       <nldd-banner
         variant="warning"
         text="Dit wijkt af van het scenario"
-        :supporting-text="`${p.warning.charAt(0).toUpperCase()}${p.warning.slice(1)}. Klik op Opnieuw beginnen om het scenario opnieuw te spelen.`"
+        :supporting-text="`${hoofdletter(p.warning)}. Klik op Opnieuw beginnen om het scenario opnieuw te spelen.`"
       >
         <nldd-button
           slot="actions"
           appearance="neutral-tinted"
           size="sm"
           text="Opnieuw beginnen"
-          @click="restart"
+          @click="emit('restart')"
         ></nldd-button>
       </nldd-banner>
     </nldd-simple-section>
@@ -95,7 +94,7 @@ const restart = () => beginScenario(props.scenario.naam);
       <nldd-container gap="16">
         <nldd-text>{{ scenario.eind }}</nldd-text>
         <nldd-button-group>
-          <nldd-button appearance="secondary" text="Opnieuw spelen" @click="restart"></nldd-button>
+          <nldd-button appearance="secondary" text="Opnieuw spelen" @click="emit('restart')"></nldd-button>
           <nldd-button appearance="neutral-transparent" text="Ander scenario" @click="emit('choose')"></nldd-button>
         </nldd-button-group>
       </nldd-container>

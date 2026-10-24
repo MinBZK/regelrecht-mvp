@@ -20,10 +20,11 @@ import { refused } from './scenarioProgress.js';
 
 // What the scenario expects of a decision, as warning text.
 const expectation = (check, text) => ({ check, text });
+// The n-th decision on an application grants, or rejects.
 const granted = (n = 1) =>
-  expectation((k) => k.toegewezen >= n, 'hier hoort het besluit toe te wijzen');
+  expectation((k) => k.beslist[n - 1] === true, 'hier hoort het besluit toe te wijzen');
 const rejected = (n = 1) =>
-  expectation((k) => k.afgewezen >= n, 'hier hoort het besluit af te wijzen');
+  expectation((k) => k.beslist[n - 1] === false, 'hier hoort het besluit af te wijzen');
 const upheld = (n = 1) =>
   expectation((k) => k.gegrond >= n, 'hier hoort het bezwaar gegrond te zijn');
 const dismissed = (n = 1) =>
@@ -44,12 +45,15 @@ const apply = ({ n = 1, ...o } = {}) => ({
   ...o,
 });
 
-const decide = ({ n = 1, ...o } = {}) => ({
+// `outcome` is what the scenario expects of this decision: 'granted' or
+// 'rejected'.
+const decide = ({ n = 1, outcome, ...o } = {}) => ({
   title: n === 1 ? 'Besluit nemen' : 'Besluiten op de tweede aanvraag',
   tab: 'bestuursorgaan',
+  expect: outcome && { granted, rejected }[outcome](n),
   todo: 'Klik onder Open aanvragen op Besluit nemen.',
   seen: 'Het besluit staat onder Besluiten. Bij Aanvrager staat de aanvraag niet meer op In behandeling.',
-  done: (k) => k.besluiten >= n,
+  done: (k) => k.beslist.length >= n,
   ...o,
 });
 
@@ -114,7 +118,7 @@ const vakantieverlof = [
       }),
       decide({
         todo: 'Laat "specifieke aard beroep ouder" aan staan en klik op Besluit nemen. Of het verlof buiten de schoolvakanties valt, vraagt het formulier niet: dat antwoordt de school zelf.',
-        expect: granted(),
+        outcome: 'granted',
       }),
     ],
   },
@@ -127,7 +131,7 @@ const vakantieverlof = [
       decide({
         todo: 'Zet "specifieke aard beroep ouder" uit: het hoofd vindt het beroep niet bijzonder genoeg. Klik op Besluit nemen.',
         seen: 'Onder Besluiten staat Afgewezen; bij Aanvrager staat de aanvraag op Afgewezen.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
       object({
         date: '2026-11-01',
@@ -149,7 +153,7 @@ const vakantieverlof = [
       decide({
         todo: 'Klik op Besluit nemen.',
         seen: 'Het verlof is verleend. Dit besluit leest de school straks terug.',
-        expect: granted(),
+        outcome: 'granted',
       }),
       apply({
         n: 2,
@@ -159,7 +163,7 @@ const vakantieverlof = [
         n: 2,
         todo: 'Klik bij de tweede aanvraag op Besluit nemen.',
         seen: 'Het verlof is geweigerd: de school antwoordt uit haar eigen kroniek dat de jongere dit schooljaar al verlof kreeg. Klik onder Besluiten op Waarom? voor het spoor.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
       object({
         date: '2026-11-01',
@@ -177,7 +181,7 @@ const vakantieverlof = [
     summary: 'De ouder maakt pas na de bezwaartermijn bezwaar, en dat wordt niet heroverwogen.',
     steps: [
       apply(),
-      decide({ todo: OFF, expect: rejected() }),
+      decide({ todo: OFF, outcome: 'rejected' }),
       object({
         date: '2026-12-01',
         todo: 'De bezwaartermijn van zes weken is voorbij. Klik bij het besluit op Bezwaar maken en dan op Bezwaar indienen.',
@@ -194,7 +198,7 @@ const vakantieverlof = [
     summary: 'Twee bezwaren tegen hetzelfde besluit: een besluit kan maar één keer worden vervangen.',
     steps: [
       apply(),
-      decide({ todo: 'Klik op Besluit nemen. Het verlof wordt verleend.', expect: granted() }),
+      decide({ todo: 'Klik op Besluit nemen. Het verlof wordt verleend.', outcome: 'granted' }),
       object({ date: '2026-11-01' }),
       object({
         n: 2,
@@ -225,7 +229,7 @@ const vakantieverlof = [
       apply({
         todo: 'Klik op Aanvraag indienen. Dit is verlof A, van 1 tot en met 5 februari 2027.',
       }),
-      decide({ todo: 'Klik op Besluit nemen. Verlof A wordt verleend.', expect: granted() }),
+      decide({ todo: 'Klik op Besluit nemen. Verlof A wordt verleend.', outcome: 'granted' }),
       apply({
         n: 2,
         todo: 'Vul als eerste verlofdag 10 mei 2027 en als laatste verlofdag 14 mei 2027 in en klik op Aanvraag indienen. Dit is verlof B.',
@@ -234,7 +238,7 @@ const vakantieverlof = [
         n: 2,
         todo: 'Klik op Besluit nemen.',
         seen: 'Verlof B is geweigerd: de school las A in haar kroniek, dus de jongere kreeg dit schooljaar al verlof.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
       object({
         date: '2026-11-01',
@@ -270,7 +274,7 @@ const vakantieverlof = [
       }),
       decide({
         todo: 'Het hoofd geeft alleen "specifieke aard beroep ouder". Laat die aan staan en klik op Besluit nemen.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
     ],
   },
@@ -283,7 +287,7 @@ const vakantieverlof = [
       }),
       decide({
         todo: 'Het vakantierooster van de school reikt nog niet tot schooljaar 2027–2028. De voorvertoning meldt dat, en het formulier vraagt het nu aan het hoofd. Kies bij "verlof valt buiten schoolvakanties" Nee en klik op Besluit nemen.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
     ],
   },
@@ -293,7 +297,7 @@ const vakantieverlof = [
       'Na een ongegrond bezwaar gaat de ouder in beroep; de rechter vernietigt en het hoofd beslist opnieuw.',
     steps: [
       apply(),
-      decide({ todo: OFF, expect: rejected() }),
+      decide({ todo: OFF, outcome: 'rejected' }),
       object({ date: '2026-11-01' }),
       decideObjection({
         date: '2026-11-15',
@@ -324,7 +328,7 @@ const vakantieverlof = [
 // Gehandicaptenparkeerkaart: the application on 13 October 2026, the
 // decision a week later.
 const pDecide = (o) => decide({ date: '2026-10-20', ...o });
-const bsn = (nummer, wat) => `Verander het BSN in ${nummer} en klik op Aanvraag indienen. ${wat}`;
+const withBsn = (number, note) => `Verander het BSN in ${number} en klik op Aanvraag indienen. ${note}`;
 const CRITERIA =
   'Er is geen advies, dus het formulier vraagt de vier criteria een voor een aan het college: kies Ja bij "langdurige loopbeperking" en Nee bij de andere drie. Zet "geneeskundig onderzoek achterwege gelaten" en "bekend dat aanvrager nog steeds voldoet" aan, en klik op Besluit nemen.';
 const NO_ADVICE = '999990068';
@@ -340,7 +344,7 @@ const gehandicaptenparkeerkaart = [
       }),
       pDecide({
         todo: 'Het formulier vraagt de vier criteria niet: het advies van de GGD geeft ze. Klik op Besluit nemen.',
-        expect: granted(),
+        outcome: 'granted',
       }),
     ],
   },
@@ -348,8 +352,8 @@ const gehandicaptenparkeerkaart = [
     name: 'Het advies vindt geen criterium',
     summary: 'Het advies van de GGD vindt geen enkel criterium, en de kaart wordt geweigerd.',
     steps: [
-      apply({ todo: bsn(NO_ADVICE, 'De GGD onderzocht deze aanvrager op 9 oktober en vond geen enkel criterium.') }),
-      pDecide({ todo: 'Klik op Besluit nemen.', expect: rejected() }),
+      apply({ todo: withBsn(NO_ADVICE, 'De GGD onderzocht deze aanvrager op 9 oktober en vond geen enkel criterium.') }),
+      pDecide({ todo: 'Klik op Besluit nemen.', outcome: 'rejected' }),
     ],
   },
   {
@@ -360,14 +364,14 @@ const gehandicaptenparkeerkaart = [
       pDecide({
         todo: 'Klik op Besluit nemen.',
         seen: 'De kaart is verstrekt, geldig tot en met 19 oktober 2031.',
-        expect: granted(),
+        outcome: 'granted',
       }),
       apply({ n: 2, date: '2027-03-01', todo: 'Klik nog een keer op Aanvraag indienen.' }),
       pDecide({
         n: 2,
         date: undefined,
         todo: 'Klik op Besluit nemen. Het beleid van de gemeente geeft geen tweede kaart naast een geldige.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
     ],
   },
@@ -379,7 +383,7 @@ const gehandicaptenparkeerkaart = [
       pDecide({
         todo: 'Klik op Besluit nemen.',
         seen: 'De kaart is verstrekt, geldig tot en met 19 oktober 2031.',
-        expect: granted(),
+        outcome: 'granted',
       }),
       object({ date: '2026-11-01' }),
       decideObjection({
@@ -393,11 +397,11 @@ const gehandicaptenparkeerkaart = [
     name: 'Gegrond bezwaar na een nieuw advies',
     summary: 'Na het bezwaar onderzoekt de GGD opnieuw, en op dat nieuwe advies komt er alsnog een kaart.',
     steps: [
-      apply({ todo: bsn(NO_ADVICE, 'Het advies van de GGD vindt geen criterium.') }),
+      apply({ todo: withBsn(NO_ADVICE, 'Het advies van de GGD vindt geen criterium.') }),
       pDecide({
         todo: 'Klik op Besluit nemen.',
         seen: 'De kaart is geweigerd: het advies vindt geen criterium.',
-        expect: rejected(),
+        outcome: 'rejected',
       }),
       object({ date: '2026-11-01' }),
       {
@@ -420,14 +424,14 @@ const gehandicaptenparkeerkaart = [
     name: 'Zonder advies oordeelt het college, en zonder onderzoek nog geen kaart',
     summary: 'Zonder advies oordeelt het college zelf, maar zonder onderzoek komt er nog geen kaart.',
     steps: [
-      apply({ todo: bsn('999990032', 'De GGD heeft deze aanvrager niet onderzocht.') }),
+      apply({ todo: withBsn('999990032', 'De GGD heeft deze aanvrager niet onderzocht.') }),
       {
         title: 'Besluit nemen zonder oordeel over het onderzoek',
         tab: 'bestuursorgaan',
         date: '2026-10-20',
         todo: 'Er is geen advies, dus het formulier vraagt de vier criteria een voor een aan het college. Kies Ja bij "langdurige loopbeperking" en Nee bij de andere drie. Laat "geneeskundig onderzoek heeft plaatsgehad" op Nog niet beoordeeld en klik op Besluit nemen.',
-        done: (k) => refused(/geneeskundig_onderzoek_heeft_plaatsgehad/)(k) || k.besluiten >= 1,
-        expect: expectation((k) => k.besluiten === 0, 'hier hoort de cel de stap te weigeren, zonder besluit'),
+        done: (k) => refused(/geneeskundig_onderzoek_heeft_plaatsgehad/)(k) || k.beslist.length >= 1,
+        expect: expectation((k) => k.beslist.length === 0, 'hier hoort de cel de stap te weigeren, zonder besluit'),
       },
     ],
   },
@@ -439,14 +443,14 @@ const gehandicaptenparkeerkaart = [
       pDecide({
         todo: 'Klik op Besluit nemen.',
         seen: 'De kaart is verstrekt, geldig tot en met 19 oktober 2031.',
-        expect: granted(),
+        outcome: 'granted',
       }),
       apply({
         n: 2,
         date: '2031-10-20',
         todo: 'Zet de dagtekening op 20 oktober 2031 en klik op Aanvraag indienen. Het onderzoek en het advies van 2026 tellen niet voor deze aanvraag.',
       }),
-      pDecide({ n: 2, date: undefined, todo: CRITERIA, expect: granted(2) }),
+      pDecide({ n: 2, date: undefined, todo: CRITERIA, outcome: 'granted' }),
     ],
   },
   {
@@ -454,17 +458,17 @@ const gehandicaptenparkeerkaart = [
     summary: 'Een eerdere kaart van een andere gemeente telt mee, dus het onderzoek mag achterwege blijven.',
     steps: [
       apply({
-        todo: bsn('999990044', 'Deze aanvrager kreeg in januari 2026 een kaart van de (fictieve) gemeente Oostmeer en woont nu in Wilgendaal.'),
+        todo: withBsn('999990044', 'Deze aanvrager kreeg in januari 2026 een kaart van de (fictieve) gemeente Oostmeer en woont nu in Wilgendaal.'),
       }),
-      pDecide({ todo: CRITERIA, expect: granted() }),
+      pDecide({ todo: CRITERIA, outcome: 'granted' }),
     ],
   },
   {
     name: 'Een kaart van het CBR telt ook',
     summary: 'Een eerdere kaart van het CBR telt net zo mee.',
     steps: [
-      apply({ todo: bsn('999990056', 'Het CBR gaf deze aanvrager in februari 2026 een kaart.') }),
-      pDecide({ todo: CRITERIA, expect: granted() }),
+      apply({ todo: withBsn('999990056', 'Het CBR gaf deze aanvrager in februari 2026 een kaart.') }),
+      pDecide({ todo: CRITERIA, outcome: 'granted' }),
     ],
   },
   {
@@ -472,23 +476,23 @@ const gehandicaptenparkeerkaart = [
     summary: 'Twee cellen zeggen dat er eerder een kaart was, en de wet maakt er één antwoord van.',
     steps: [
       apply({
-        todo: bsn('999990044', 'Deze aanvrager kreeg in januari 2026 een kaart van de gemeente Oostmeer.'),
+        todo: withBsn('999990044', 'Deze aanvrager kreeg in januari 2026 een kaart van de gemeente Oostmeer.'),
       }),
-      pDecide({ todo: CRITERIA, expect: granted() }),
+      pDecide({ todo: CRITERIA, outcome: 'granted' }),
       apply({
         n: 2,
         date: '2031-10-20',
         todo: 'De kaart van Wilgendaal is verlopen. Verander het BSN in 999990044, zet de dagtekening op 20 oktober 2031 en klik op Aanvraag indienen.',
       }),
-      pDecide({ n: 2, date: undefined, todo: CRITERIA, expect: granted(2) }),
+      pDecide({ n: 2, date: undefined, todo: CRITERIA, outcome: 'granted' }),
     ],
   },
   {
     name: 'Beroep ongegrond',
     summary: 'Na een ongegrond bezwaar gaat de aanvrager in beroep, en de rechter geeft de gemeente gelijk.',
     steps: [
-      apply({ todo: bsn(NO_ADVICE, 'Het advies van de GGD vindt geen criterium.') }),
-      pDecide({ todo: 'Klik op Besluit nemen.', expect: rejected() }),
+      apply({ todo: withBsn(NO_ADVICE, 'Het advies van de GGD vindt geen criterium.') }),
+      pDecide({ todo: 'Klik op Besluit nemen.', outcome: 'rejected' }),
       object({ date: '2026-11-01' }),
       decideObjection({
         date: '2026-11-20',

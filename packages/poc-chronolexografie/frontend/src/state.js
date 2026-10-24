@@ -35,6 +35,10 @@ export const state = reactive({
   // The name of the scenario the visitor began (`casus.scenarios[].naam`),
   // which the guide beside the page follows; null in free play.
   scenario: null,
+  // The cell's refusals of steps since that scenario began, in order. A
+  // refusal records nothing in a chronicle, yet a guide can end on one
+  // (scenarioGuides.js); a reset that shortens the chronicle forgets them.
+  refusals: [],
 });
 
 /** Het artikel waaronder de casus op een aanvraag besluit, `<wet>#<artikel>`. */
@@ -60,7 +64,12 @@ async function bewaar() {
     // die terugzet naar de eerste dag van de casus zou elke stap weigeren.
     sessionStorage.setItem(
       SLEUTEL,
-      JSON.stringify({ spel: bewaard, datum: state.datum, scenario: state.scenario }),
+      JSON.stringify({
+        spel: bewaard,
+        datum: state.datum,
+        scenario: state.scenario,
+        refusals: state.refusals,
+      }),
     );
   } catch {
     // Geen opslag of een volle: dan ook geen ouder spel laten staan, anders
@@ -92,9 +101,8 @@ export async function hervatten() {
   const spelTotNu = bewaard();
   if (!spelTotNu) return;
   try {
-    const { spel: bewaardSpel, datum, scenario = null } = JSON.parse(spelTotNu);
-    await openen(await api.herstellen(bewaardSpel), datum);
-    state.scenario = scenario;
+    const { spel: bewaardSpel, datum, scenario, refusals } = JSON.parse(spelTotNu);
+    await openen(await api.herstellen(bewaardSpel), datum, { scenario, refusals });
   } catch (e) {
     // Laadde de cel niet (het netwerk, een deploy), dan blijft het spel
     // bewaard voor de volgende herlaad; alleen een spel dat de cel weigert,
@@ -117,8 +125,9 @@ export async function kiezen(id) {
   }
 }
 
-async function openen(casus, datum = casus.speeldatum) {
-  state.scenario = null;
+async function openen(casus, datum = casus.speeldatum, { scenario = null, refusals = [] } = {}) {
+  state.scenario = scenario;
+  state.refusals = refusals;
   state.vormen = null;
   state.grammen = [];
   state.rechter = [];
@@ -145,6 +154,7 @@ export async function beginScenario(naam) {
   if (!ok) return false;
   state.datum = state.casus.speeldatum;
   state.scenario = naam;
+  state.refusals = [];
   await bewaar();
   return true;
 }
@@ -154,6 +164,7 @@ export async function verversen() {
   if (!state.casus) return;
   try {
     const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(state.datum)]);
+    if (kroniek.grammen.length < state.grammen.length) state.refusals = [];
     state.grammen = kroniek.grammen;
     state.andere = kroniek.andere ?? [];
     state.rechter = state.andere.find((a) => a.cel === state.casus.rechter?.cel)?.grammen ?? [];
@@ -177,6 +188,9 @@ export async function stap(actie) {
     return antwoord;
   } catch (e) {
     state.fout = e.message;
+    // Kept for the guide, and saved, so a reload still knows the step.
+    state.refusals.push(e.message);
+    await bewaar().catch(() => {});
     return null;
   }
 }

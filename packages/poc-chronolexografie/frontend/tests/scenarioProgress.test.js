@@ -1,15 +1,17 @@
-import { nextTick } from 'vue';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { guideFor } from '../src/scenarioGuides.js';
-import {
-  clearRefusals,
-  counts,
-  progress,
-  recordRefusal,
-  refusals,
-  trackRefusals,
-} from '../src/scenarioProgress.js';
-import { state } from '../src/state.js';
+import { counts, progress } from '../src/scenarioProgress.js';
+import { state, stap } from '../src/state.js';
+
+// stap() refreshes the chronicles through the API after a step; here the
+// cell is not loaded, so the API answers with what `state` already holds.
+vi.mock('../src/api.js', () => ({
+  api: {
+    kroniek: async () => ({ grammen: globalThis.chronicle ?? [], andere: [] }),
+    vormen: async () => ({}),
+    bewaren: async () => ({}),
+  },
+}));
 
 // Made-up ids, recognisable by their last characters; the shapes as the cell
 // records them (RFC-046, RFC-047, RFC-053).
@@ -45,7 +47,8 @@ beforeEach(() => {
   state.grammen = [];
   state.andere = [];
   state.rechter = [];
-  clearRefusals();
+  state.refusals = [];
+  globalThis.chronicle = [];
 });
 
 describe('counts', () => {
@@ -56,9 +59,7 @@ describe('counts', () => {
     const k = counts();
     expect(k).toMatchObject({
       aanvragen: 1,
-      besluiten: 2,
-      toegewezen: 1,
-      afgewezen: 1,
+      beslist: [false],
       bezwaren: 1,
       beslissingen: 2,
       gegrond: 1,
@@ -79,8 +80,8 @@ describe('counts', () => {
   });
 
   it('counts a late objection as inadmissible, not as dismissed', () => {
-    const laat = { ...ongegrond, outputs: { bezwaar_ontvankelijk: false, bestreden_besluit_herroepen: false } };
-    state.grammen = [aanvraag, weigering, bezwaar, laat];
+    const late = { ...ongegrond, outputs: { bezwaar_ontvankelijk: false, bestreden_besluit_herroepen: false } };
+    state.grammen = [aanvraag, weigering, bezwaar, late];
     expect(counts()).toMatchObject({ nietOntvankelijk: 1, ongegrond: 0 });
   });
 });
@@ -104,8 +105,8 @@ describe('progress', () => {
   });
 
   it('warns when a step departs from the scenario, without blocking', () => {
-    const verleend = { ...weigering, outputs: { verlof_verleend: true } };
-    state.grammen = [aanvraag, verleend];
+    const grant = { ...weigering, outputs: { verlof_verleend: true } };
+    state.grammen = [aanvraag, grant];
     const p = progress(guide(V2), counts());
     expect(p.current).toBe(2);
     expect(p.warning).toMatch(/af te wijzen/);
@@ -120,33 +121,36 @@ describe('progress', () => {
     expect(progress(guide(V9), counts()).current).toBe(7);
   });
 
-  it('counts a refusal of the cell as the last step of V5, and keeps it', async () => {
-    trackRefusals();
-    const verleend = { ...weigering, outputs: { verlof_verleend: true } };
-    const tweede = { ...bezwaar, id: id('00007777') };
-    const upheld = { ...ongegrond, outputs: { bezwaar_ontvankelijk: true, bestreden_besluit_herroepen: true } };
-    state.scenario = V5;
-    await nextTick();
-    state.grammen = [aanvraag, verleend, bezwaar, tweede, upheld, nieuw];
-    expect(progress(guide(V5), counts()).current).toBe(5);
-    state.fout = "in the place of 'x', which chronolexogram 'y' already replaces (taken by 'z')";
-    await nextTick();
-    // The banner goes away; the refusal stays.
-    state.fout = '';
-    await nextTick();
-    expect(refusals).toHaveLength(1);
-    expect(progress(guide(V5), counts()).finished).toBe(true);
-    // A reset makes the chronicle shorter and forgets it.
-    state.grammen = [];
-    await nextTick();
-    expect(refusals).toHaveLength(0);
+  it('checks the decision a step is about, not a total', () => {
+    // V3: the first leave is granted, the second refused. The other way
+    // round meets neither expectation of the two decisions.
+    const second = { ...aanvraag, id: id('00008888') };
+    const grant = { ...weigering, id: id('00009999'), outputs: { verlof_verleend: true } };
+    const refuse = { ...weigering, refers_to: second.id };
+    state.grammen = [aanvraag, second, grant, refuse];
+    const v3 = guide('Afwijzing, bezwaar en heroverweging: ongegrond');
+    expect(progress(v3, counts()).warning).toBeNull();
+    state.grammen = [aanvraag, second, { ...weigering }, { ...grant, refers_to: second.id }];
+    expect(progress(v3, counts()).warning).toMatch(/toe te wijzen/);
   });
 
-  it('forgets the refusals when another scenario begins', async () => {
-    trackRefusals();
-    recordRefusal('refused');
-    state.scenario = V2;
-    await nextTick();
-    expect(refusals).toHaveLength(0);
+  it('counts a refusal of the cell as the last step of V5, until a reset', async () => {
+    const grant = { ...weigering, outputs: { verlof_verleend: true } };
+    const second = { ...bezwaar, id: id('00007777') };
+    const upheld = { ...ongegrond, outputs: { bezwaar_ontvankelijk: true, bestreden_besluit_herroepen: true } };
+    globalThis.chronicle = [aanvraag, grant, bezwaar, second, upheld, nieuw];
+    state.grammen = globalThis.chronicle;
+    expect(progress(guide(V5), counts()).current).toBe(5);
+    await stap(async () => {
+      throw new Error("in the place of 'x', which chronolexogram 'y' already replaces (taken by 'z')");
+    });
+    // The banner goes away; the refusal stays.
+    state.fout = '';
+    expect(state.refusals).toHaveLength(1);
+    expect(progress(guide(V5), counts()).finished).toBe(true);
+    // A reset makes the chronicle shorter and forgets it.
+    globalThis.chronicle = [];
+    await stap(async () => ({}));
+    expect(state.refusals).toHaveLength(0);
   });
 });

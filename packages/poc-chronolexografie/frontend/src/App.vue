@@ -30,7 +30,6 @@ import ReductieTab from './components/ReductieTab.vue';
 import ScenarioGuide from './components/ScenarioGuide.vue';
 import ScenarioTab from './components/ScenarioTab.vue';
 import { guideFor } from './scenarioGuides.js';
-import { trackRefusals } from './scenarioProgress.js';
 
 // Het tabblad Andere cellen staat er alleen bij een casus met een sfeer
 // (RFC-052).
@@ -67,12 +66,12 @@ async function opnieuw() {
   else await stap(() => api.reset());
 }
 
-// The refusals count as progress in a guide even while it is hidden.
-trackRefusals();
-
 // The guide of the scenario that began, if it has one.
 const guide = computed(() => guideFor(state.casus, state.scenario));
-const scenario = computed(() => state.casus?.scenarios.find((s) => s.naam === state.scenario));
+const scenarioIndex = computed(
+  () => state.casus?.scenarios.findIndex((s) => s.naam === state.scenario) ?? -1,
+);
+const scenario = computed(() => state.casus?.scenarios[scenarioIndex.value]);
 const showGuide = ref(true);
 const split = ref(null);
 // Whether the split view put the inspector in a sheet, for lack of room.
@@ -83,6 +82,7 @@ onMounted(() => {
     asSheet.value = split.value?.hasAttribute('inspector-auto-hidden') ?? false;
   });
   observer.observe(split.value, { attributes: true, attributeFilter: ['inspector-auto-hidden'] });
+  asSheet.value = split.value.hasAttribute('inspector-auto-hidden');
 });
 onBeforeUnmount(() => observer?.disconnect());
 
@@ -107,6 +107,9 @@ function chooseScenario() {
 async function started() {
   tab.value = 'aanvrager';
   await openGuide();
+}
+async function restart() {
+  if (await beginScenario(state.scenario)) await started();
 }
 function toTab(id) {
   tab.value = id;
@@ -210,11 +213,13 @@ function toTab(id) {
         <ScenarioGuide
           :guide="guide"
           :scenario="scenario"
+          :number="scenarioIndex + 1"
           :tabs="tabs"
           :tab="tab"
           @tab="toTab"
           @hide="hideGuide"
           @choose="chooseScenario"
+          @restart="restart"
         />
       </nldd-split-view-pane>
     </nldd-navigation-split-view>

@@ -6,14 +6,12 @@
  * clicked: what counts is what the cell recorded. Two things are not in a
  * chronicle: checking admissibility (it stays on the page until the decision
  * on the objection, so a guide folds it into that step), and a step the cell
- * refuses. Refusals are therefore remembered here, from `state.fout`, until
- * the scenario changes or the chronicle gets shorter (a reset).
+ * refuses, which `state.refusals` keeps (state.js).
  */
-import { reactive, watch } from 'vue';
 import { isOntvangst } from './beroep.js';
 import {
   aanvragen,
-  besluitGrondslag,
+  besluitOp,
   bezwaarGrondslag,
   isBesluit,
   state,
@@ -22,9 +20,6 @@ import {
 
 /** What the chronicles hold, counted the way the guides ask for it. */
 export function counts() {
-  const besluiten = state.grammen.filter(
-    (g) => isBesluit(g) && g.grondslag === besluitGrondslag(),
-  );
   const beslissingen = state.grammen.filter(
     (g) => isBesluit(g) && g.grondslag === bezwaarGrondslag(),
   );
@@ -32,9 +27,11 @@ export function counts() {
   const andere = state.andere.flatMap((a) => a.grammen);
   return {
     aanvragen: aanvragen().length,
-    besluiten: besluiten.length,
-    toegewezen: besluiten.filter((g) => toegewezen(g)).length,
-    afgewezen: besluiten.filter((g) => !toegewezen(g)).length,
+    // Per application that has a decision, in order: whether it grants.
+    beslist: aanvragen()
+      .map((a) => besluitOp(a.id))
+      .filter(Boolean)
+      .map((g) => !!toegewezen(g)),
     bezwaren: state.grammen.filter((g) => g.kind === 'BEZWAAR').length,
     beslissingen: beslissingen.length,
     gegrond: beslissingen.filter((g) => uit(g).bestreden_besluit_herroepen === true).length,
@@ -55,33 +52,8 @@ export function counts() {
           g.fact === fact &&
           Object.entries(velden).every(([k, v]) => g.fields?.[k] === v),
       ).length,
+    refusals: state.refusals,
   };
-}
-
-// The cell's refusals since the scenario began, in the order they came.
-export const refusals = reactive([]);
-
-/** Remember a refusal of the cell; an empty message is none. */
-export function recordRefusal(message) {
-  if (message) refusals.push(message);
-}
-
-export function clearRefusals() {
-  refusals.splice(0);
-}
-
-/**
- * Keep `refusals` in step with the game: record every refusal, and forget
- * them when another scenario begins or the chronicle gets shorter. Called
- * once, by the app, so a hidden guide misses none.
- */
-export function trackRefusals() {
-  watch(() => state.fout, recordRefusal);
-  watch(() => state.scenario, clearRefusals);
-  watch(
-    () => state.grammen.length,
-    (n, before) => n < before && clearRefusals(),
-  );
 }
 
 /** A `done` test: the cell refused a step with a message matching `re`. */
@@ -93,11 +65,10 @@ export const refused = (re) => (k) => k.refusals.some((m) => re.test(m));
  * is done, and the first expectation a done step does not meet (its text), if
  * any.
  */
-export function progress(guide, k, weigeringen = refusals) {
-  const ctx = { ...k, refusals: weigeringen };
-  const done = guide.steps.map((s) => s.done(ctx));
+export function progress(guide, k) {
+  const done = guide.steps.map((s) => s.done(k));
   const current = done.indexOf(false);
-  const missed = guide.steps.find((s, i) => done[i] && s.expect && !s.expect.check(ctx));
+  const missed = guide.steps.find((s, i) => done[i] && s.expect && !s.expect.check(k));
   return {
     done,
     current: current === -1 ? guide.steps.length : current,
