@@ -48,8 +48,9 @@
 //!   parameters are known only at run time, any reference under
 //!   `parameters` that may be null, and any `parameters_from`, counts so.
 //!   An article that implements a required open term without a
-//!   default may not declare its output for the term nullable, unless the
-//!   law leaves the term to an authority per case (`decided_per_case_by`).
+//!   default may not declare its output for the term nullable, also where
+//!   the law leaves the term to an authority per case
+//!   (`decided_per_case_by`): the implementation's value is the term's.
 //! - **T1** Arithmetic and ordering operands are numbers (or amounts); `ADD`
 //!   also concatenates strings and arrays, ordering also compares dates.
 //! - **T2** Logical operands and `IF` conditions are booleans.
@@ -503,11 +504,12 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
     /// open term without a default promises the delegating law a value. The
     /// engine takes the implementation's output as the term's value, and the
     /// delegating law reads the term as never absent, so the output may not
-    /// be declared nullable. A term with a default is filled by the default
-    /// when the implementation is silent, a term the law leaves to an
-    /// authority per case (`decided_per_case_by`) by that authority's
-    /// judgement (RFC-047), and an optional term without one is nullable
-    /// itself; none of them needs this.
+    /// be declared nullable. That holds for a term the law leaves to an
+    /// authority per case (`decided_per_case_by`) too: where a regulation
+    /// fills it, no finding takes the place of a null (RFC-048 §2). A term
+    /// with a default is filled by the default when the implementation is
+    /// silent, and an optional term without one is nullable itself; neither
+    /// needs this.
     fn check_implements(&mut self) {
         let Some(implements) = self.article.get_implements() else {
             return;
@@ -527,7 +529,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
             else {
                 continue;
             };
-            if term.required && !term_has_default(term) && term.decided_per_case_by.is_none() {
+            if term.required && !term_has_default(term) {
                 self.location = format!("output '{}'", output.name);
                 self.report(
                     Rule::N5,

@@ -44,10 +44,10 @@ voorbeeld:
     dagtekening: '2026-10-05'
     gevraagde_beschikking: gehandicaptenparkeerkaart
   bevindingen:
-    langdurige_loopbeperking: true
-    continu_afhankelijk_van_hulp_bestuurder: false
-    permanent_rolstoelgebonden: false
-    ernstige_beperkingen_andere_dan_loopbeperkingen: false
+    langdurige_loopbeperking_volgens_college: true
+    continu_afhankelijk_van_hulp_bestuurder_volgens_college: false
+    permanent_rolstoelgebonden_volgens_college: false
+    ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college: false
     geneeskundig_onderzoek_achterwege_gelaten: false
     bekend_dat_aanvrager_nog_steeds_voldoet: false
     keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: false
@@ -141,15 +141,15 @@ andere_cellen:
             dagtekening: '2026-01-10'
             gevraagde_beschikking: gehandicaptenparkeerkaart
           bevindingen:
-            langdurige_loopbeperking: true
-            continu_afhankelijk_van_hulp_bestuurder: false
-            permanent_rolstoelgebonden: false
-            ernstige_beperkingen_andere_dan_loopbeperkingen: false
+            langdurige_loopbeperking_volgens_college: true
+            continu_afhankelijk_van_hulp_bestuurder_volgens_college: false
+            permanent_rolstoelgebonden_volgens_college: false
+            ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college: false
             geneeskundig_onderzoek_achterwege_gelaten: false
             bekend_dat_aanvrager_nog_steeds_voldoet: false
             keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: false
-            geneeskundig_onderzoek_heeft_plaatsgehad: true
-            aanvrager_heeft_geldige_gehandicaptenparkeerkaart: false
+            geneeskundig_onderzoek_heeft_plaatsgehad_volgens_college: true
+            aanvrager_heeft_geldige_gehandicaptenparkeerkaart_volgens_college: false
   - cel: cbr
     cel_naam: CBR
     begin:
@@ -166,15 +166,15 @@ andere_cellen:
             dagtekening: '2026-01-28'
             gevraagde_beschikking: gehandicaptenparkeerkaart
           bevindingen:
-            langdurige_loopbeperking: true
-            continu_afhankelijk_van_hulp_bestuurder: false
-            permanent_rolstoelgebonden: false
-            ernstige_beperkingen_andere_dan_loopbeperkingen: false
+            langdurige_loopbeperking_volgens_college: true
+            continu_afhankelijk_van_hulp_bestuurder_volgens_college: false
+            permanent_rolstoelgebonden_volgens_college: false
+            ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college: false
             geneeskundig_onderzoek_achterwege_gelaten: false
             bekend_dat_aanvrager_nog_steeds_voldoet: false
             keurende_instantie_oordeelt_dat_aanvrager_nog_steeds_voldoet: false
-            geneeskundig_onderzoek_heeft_plaatsgehad: true
-            aanvrager_heeft_geldige_gehandicaptenparkeerkaart: false
+            geneeskundig_onderzoek_heeft_plaatsgehad_volgens_college: true
+            aanvrager_heeft_geldige_gehandicaptenparkeerkaart_volgens_college: false
   # De bestuursrechter (RFC-053): ook een andere cel, met een eigen kroniek.
   # Dat zij de rechter is, zegt haar cel.yaml (categorie "de
   # bestuursrechter", wie volgens Awb 8:70 beslist). Het artikel van het
@@ -286,12 +286,13 @@ scenarios:
         onderzocht.
       - >-
         Bestuursorgaan, speeldatum 20 oktober 2026: er is geen advies, dus het
-        beleid zwijgt en het formulier vraagt de vier criteria een voor een
-        aan het college (artikel 6, tweede lid, van het fictieve beleid). Kies
-        bij "langdurige loopbeperking" Ja en bij de andere drie Nee. Dan
-        vraagt het ook "geneeskundig onderzoek heeft plaatsgehad",
-        want de GGD zwijgt ook daarover. Laat dat op "Nog niet beoordeeld" en
-        klik op Besluit nemen.
+        beleid laat de vier criteria aan het college (artikel 6, tweede lid,
+        van het fictieve beleid) en het formulier vraagt ze een voor een.
+        Kies bij "langdurige loopbeperking volgens college" Ja en bij de
+        andere drie Nee. Dan vraagt het ook "geneeskundig onderzoek heeft
+        plaatsgehad volgens college": de GGD zwijgt ook daarover, en het
+        beleid laat dat dan aan het college (artikel 4). Laat dat op "Nog niet
+        beoordeeld" en klik op Besluit nemen.
     eind: >-
       Er komt geen besluit, maar een melding: het college heeft niet
       beoordeeld of het geneeskundig onderzoek plaatsvond. De kaart "wordt
@@ -316,7 +317,7 @@ scenarios:
       - >-
         Bestuursorgaan: er is geen advies voor deze aanvraag, dus het
         college oordeelt over de vier criteria: Ja bij "langdurige
-        loopbeperking", Nee bij de andere drie. Zet "geneeskundig onderzoek
+        loopbeperking volgens college", Nee bij de andere drie. Zet "geneeskundig onderzoek
         achterwege gelaten" en "bekend dat aanvrager nog steeds voldoet" aan,
         en klik op Besluit nemen.
     eind: >-
@@ -333,7 +334,7 @@ scenarios:
       - >-
         Bestuursorgaan, speeldatum 20 oktober 2026: er is geen advies, dus
         het college oordeelt over de vier criteria: Ja bij "langdurige
-        loopbeperking", Nee bij de andere drie. Zet "geneeskundig onderzoek
+        loopbeperking volgens college", Nee bij de andere drie. Zet "geneeskundig onderzoek
         achterwege gelaten" en "bekend dat aanvrager nog steeds voldoet" aan,
         en klik op Besluit nemen.
     eind: >-
@@ -364,7 +365,7 @@ scenarios:
         indienen.
       - >-
         Bestuursorgaan: geef de vier criteria (Ja bij "langdurige
-        loopbeperking", Nee bij de andere drie), zet "geneeskundig
+        loopbeperking volgens college", Nee bij de andere drie), zet "geneeskundig
         onderzoek achterwege gelaten" en "bekend dat aanvrager nog steeds
         voldoet" aan, en klik op Besluit nemen.
     eind: >-

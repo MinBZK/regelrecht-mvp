@@ -113,24 +113,30 @@ articles:
           - {output: grond_aanwezig, value: true}
 "#;
 
-/// A regulation that says nothing for this case: it returns null.
-const SILENT_POLICY: &str = r#"
-$id: beleid_verlof_zwijgt
+/// A regulation that leaves the norm to the head per case, and says so
+/// itself: with an open term of its own (RFC-048 §2).
+const JUDGING_POLICY: &str = r#"
+$id: beleid_verlof_oordeel
 regulatory_layer: UITVOERINGSBELEID
 publication_date: '2026-01-01'
 valid_from: '2026-01-01'
-url: https://example.org/beleid-zwijgt
+url: https://example.org/beleid-oordeel
 articles:
   - number: '1'
-    text: Over de grond zegt dit beleid niets.
+    text: Over de grond oordeelt het hoofd per aanvraag.
     machine_readable:
+      open_terms:
+        - id: grond_aanwezig_volgens_hoofd
+          type: boolean
+          required: true
+          decided_per_case_by: het hoofd
       implements:
         - {law: wet_verlof, article: '1', open_term: grond_aanwezig}
       execution:
         output:
-          - {name: grond_aanwezig, type: boolean, nullable: true}
+          - {name: grond_aanwezig, type: boolean}
         actions:
-          - {output: grond_aanwezig, value: null}
+          - {output: grond_aanwezig, value: $grond_aanwezig_volgens_hoofd}
 "#;
 
 const DAY: &str = "2026-10-13";
@@ -366,9 +372,36 @@ fn a_norm_decided_per_case_without_a_judgement_is_an_error_that_says_so() {
 }
 
 #[test]
-fn a_regulation_that_fills_the_norm_wins_over_the_judgement() {
+fn a_regulation_that_fills_the_norm_takes_no_judgement() {
     let service = service(&[GENERAL_LAW, SPECIAL_LAW, POLICY]);
     let result = service
+        .execute_stage_at(
+            "wet_verlof",
+            "1",
+            "BESLUIT",
+            Some(&["verlof_verleend"]),
+            params(&[("dagen", Value::Int(5)), ("besluit_datum", date(DAY))]),
+            DAY,
+        )
+        .unwrap();
+    assert_eq!(result.outputs["verlof_verleend"], Value::Bool(true));
+    let traced = service
+        .evaluate_law_output_with_trace(
+            "wet_verlof",
+            "verlof_verleend",
+            params(&[("dagen", Value::Int(5))]),
+            DAY,
+        )
+        .unwrap();
+    let trace = traced.trace.as_ref().unwrap().render_box_drawing();
+    assert!(
+        trace.contains("implemented by beleid_verlof article 1"),
+        "{trace}"
+    );
+
+    // A judgement of the head on the norm the regulation fills is asked by
+    // none: the regulation's value is the norm's (RFC-048 §2).
+    let e = service
         .execute_stage_at(
             "wet_verlof",
             "1",
@@ -381,60 +414,24 @@ fn a_regulation_that_fills_the_norm_wins_over_the_judgement() {
             ]),
             DAY,
         )
-        .unwrap();
-    assert_eq!(result.outputs["verlof_verleend"], Value::Bool(true));
-
-    // The judgement is set aside, and the trace says by what.
-    let traced = service
-        .evaluate_law_output_with_trace(
-            "wet_verlof",
-            "verlof_verleend",
-            params(&[
-                ("dagen", Value::Int(5)),
-                ("grond_aanwezig", Value::Bool(false)),
-            ]),
-            DAY,
-        )
-        .unwrap();
-    let trace = traced.trace.as_ref().unwrap().render_box_drawing();
-    assert!(
-        trace.contains(
-            "the judgement of het hoofd for this case is set aside by beleid_verlof article 1"
-        ),
-        "{trace}"
-    );
-
-    // Without a judgement there is nothing to set aside, and the trace does
-    // not claim there was.
-    let traced = service
-        .evaluate_law_output_with_trace(
-            "wet_verlof",
-            "verlof_verleend",
-            params(&[("dagen", Value::Int(5))]),
-            DAY,
-        )
-        .unwrap();
-    let trace = traced.trace.as_ref().unwrap().render_box_drawing();
-    assert!(
-        trace.contains("implemented by beleid_verlof article 1") && !trace.contains("set aside"),
-        "{trace}"
-    );
+        .unwrap_err();
+    assert!(e.to_string().contains("is asked by none"), "{e}");
 }
 
 #[test]
-fn a_regulation_silent_for_the_case_leaves_the_norm_to_the_judgement() {
-    let service = service(&[GENERAL_LAW, SPECIAL_LAW, SILENT_POLICY]);
+fn a_regulation_that_leaves_the_norm_to_the_head_says_so_itself() {
+    let service = service(&[GENERAL_LAW, SPECIAL_LAW, JUDGING_POLICY]);
     let run = |judgement: Option<bool>| {
-        let mut p = params(&[("dagen", Value::Int(5)), ("besluit_datum", date(DAY))]);
-        if let Some(j) = judgement {
-            p.insert("grond_aanwezig".into(), Value::Bool(j));
-        }
-        service.execute_stage_at(
+        let findings = judgement
+            .map(|j| params(&[("grond_aanwezig_volgens_hoofd", Value::Bool(j))]))
+            .unwrap_or_default();
+        service.execute_stage_in(
             "wet_verlof",
             "1",
             "BESLUIT",
             Some(&["verlof_verleend"]),
-            p,
+            params(&[("dagen", Value::Int(5)), ("besluit_datum", date(DAY))]),
+            regelrecht_engine::Call::with_findings(findings),
             DAY,
         )
     };

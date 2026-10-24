@@ -324,8 +324,9 @@ articles:
         # dagtekening van de aanvraag plaatsvond, en uiterlijk op de dag van
         # afgifte; lid 2 onder a en b laten het onderzoek achterwege bij wie
         # eerder een kaart kreeg, dat veronderstelt een onderzoek per
-        # aanvraag. Zwijgt wie het onderzoek verricht, dan stelt het college
-        # het vast op het rapport dat het daarvan kreeg. Eigen keuze: stelt
+        # aanvraag. Het college stelt het vast op het rapport dat het kreeg;
+        # vult zijn beleid het begrip, dan zegt dat beleid ook wat geldt als
+        # wie het onderzoek verricht zwijgt. Eigen keuze: stelt
         # het college vast dat er geen onderzoek plaatsvond (false),
         # bijvoorbeeld omdat de aanvrager niet verschijnt, dan wordt de kaart
         # geweigerd.

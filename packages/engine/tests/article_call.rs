@@ -1536,14 +1536,17 @@ fn a_judgement_per_case_reaches_the_article_and_the_rest_is_dropped() {
 }
 
 #[test]
-fn an_implementation_of_the_term_wins_over_the_judgement_passed() {
+fn a_judgement_passed_on_a_term_an_implementation_fills_is_not_passed() {
+    // The implementation's value is the term's; no judgement steps in
+    // (RFC-048 §2). One the call passes is not passed on, and the trace
+    // says why.
     let (value, trace) = hoofd(&[HOOFD, HOOFD_BELEID], json!({"grond_aanwezig": true}));
     assert_eq!(
         value.as_object().unwrap()["outputs"],
         Value::from(json!({"verleend": false}))
     );
     assert!(
-        trace.contains("the judgement of het hoofd for this case is set aside by beleid_hoofd"),
+        trace.contains("a regulation in force fills grond_aanwezig, so the finding is not passed"),
         "{trace}"
     );
 }
@@ -1795,20 +1798,17 @@ fn a_finding_of_the_caller_wins_over_that_of_the_decision_value() {
 }
 
 #[test]
-fn an_implementation_still_wins_over_a_finding_of_the_caller() {
+fn a_finding_of_the_caller_on_a_term_an_implementation_fills_is_asked_by_none() {
     let mut service = anew_service();
     service.load_law(HOOFD_BELEID).unwrap();
-    let value = anew(
+    let e = anew(
         &service,
         hoofd_besluit(true),
         json!({"grond_aanwezig": true}),
         "heroverwogen",
     )
-    .unwrap();
-    assert_eq!(
-        value.as_object().unwrap()["outputs"],
-        Value::from(json!({"verleend": false}))
-    );
+    .unwrap_err();
+    assert!(e.to_string().contains("is asked by none"), "{e}");
 }
 
 #[test]
@@ -2205,14 +2205,13 @@ fn the_execution_reports_a_term_a_finding_filled() {
     assert_eq!(found, vec![grond_aanwezig(FilledBy::Finding)]);
 }
 
-/// A regulation that fills the term sets the finding aside, also where it
-/// gives the same value: the report names the regulation, not the finding.
+/// A regulation that fills the term: the report names the regulation.
 #[test]
 fn the_execution_reports_a_term_a_regulation_filled() {
     let gelijk = HOOFD_BELEID.replace("value: false", "value: true");
     assert_ne!(gelijk, HOOFD_BELEID);
     for beleid in [HOOFD_BELEID, gelijk.as_str()] {
-        let found = filled(&[beleid], json!({ "grond_aanwezig": true }));
+        let found = filled(&[beleid], json!({}));
         assert_eq!(
             found,
             vec![grond_aanwezig(FilledBy::Regulation {
@@ -2236,7 +2235,7 @@ fn a_term_a_regulation_filled_serializes_both_articles() {
             "wet_hoofd",
             &["verleend"],
             parameters.clone(),
-            params(json!({"grond_aanwezig": true})),
+            BTreeMap::new(),
             DATE,
         )
         .unwrap();

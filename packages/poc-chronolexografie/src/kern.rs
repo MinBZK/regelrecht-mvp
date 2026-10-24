@@ -453,6 +453,44 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
         .collect()
 }
 
+/// The findings the deciding article of `shape` leaves to the authority
+/// itself: not those of a policy that fills one of its terms.
+fn eigen_oordelen(
+    shape: &decision::DecisionShape,
+) -> impl Iterator<Item = &regelrecht_engine::DecisionTerm> {
+    shape
+        .terms
+        .iter()
+        .filter(|t| t.is_finding() && t.law_id == shape.law_id && t.article == shape.article)
+}
+
+/// Whether the open term `term` of the article `waar` (`<law>#<article>`)
+/// is one a policy leaves to the authority for a case: the article fills a
+/// term of another (`implements`) and leaves this one to an authority per
+/// case (RFC-048 §2).
+fn beleid_laat_oordelen(
+    service: &LawExecutionService,
+    term: &str,
+    waar: &str,
+    on: NaiveDate,
+) -> bool {
+    waar.split_once('#')
+        .and_then(|(law, article)| {
+            service
+                .resolver()
+                .get_law_for_date(law, Some(on))?
+                .find_article_by_number(article)
+        })
+        .is_some_and(|article| {
+            article.get_implements().is_some_and(|i| !i.is_empty())
+                && article
+                    .get_open_terms()
+                    .into_iter()
+                    .flatten()
+                    .any(|t| t.id == term && t.decided_per_case_by.is_some())
+        })
+}
+
 /// What the law asks on `on`: the fields of the application, the deciding
 /// authority's findings on it and the fields of the objection. All of it is
 /// derived from the law, for this cell: a term the cell answers from its
@@ -472,29 +510,42 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
             .as_ref()
             .map(|m| json!({ "parameter": m.parameter, "grondslag": m.declared_by }))
     };
-    let bevindingen: Vec<Value> = besluit
-        .inputs
-        .iter()
-        .filter(|i| besluit.judgements.contains(&i.field.name))
-        .map(|i| veld(&i.field))
+    // The form asks the findings of the deciding article itself. One that a
+    // policy leaves to the authority where its cell is silent, it asks only
+    // when the preview shows the case reaches it ([`voorvertonen`]).
+    let bevindingen: Vec<Value> = eigen_oordelen(&besluit)
+        .map(|t| veld(&decision::finding_field(t)))
         .collect();
-    let herkomst: Vec<Value> = besluit
+    let mut herkomst: Vec<Value> = besluit
         .inputs
         .iter()
         .map(|i| {
-            let door_cel = beantwoord.iter().any(|t| t.open_term == i.field.name);
             json!({
                 "naam": i.field.name,
                 "bron": match i.source {
-                    _ if door_cel => "kroniek van de cel",
                     Source::Application => "aanvraag",
-                    Source::Caller => "bestuursorgaan",
+                    Source::Supplied => "bestuursorgaan",
                     Source::Cell => "cel",
-                    Source::Policy => "beleid",
                 },
             })
         })
         .collect();
+    for t in besluit
+        .terms
+        .iter()
+        .filter(|t| t.law_id == besluit.law_id && t.article == besluit.article)
+    {
+        let bron = if beantwoord.iter().any(|b| b.open_term == t.id) {
+            "kroniek van de cel"
+        } else if !t.filled_by.is_empty() {
+            "beleid"
+        } else if t.is_finding() {
+            "bestuursorgaan"
+        } else {
+            continue;
+        };
+        herkomst.push(json!({ "naam": t.id, "bron": bron }));
+    }
     let mut vormen = json!({
         "aanvraag": {
             "soort": aanvraag.kind,
@@ -549,11 +600,10 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
 
 /// What the court judges when it decides the case itself (Awb 8:72 lid 3
 /// onder b): it calls the contested decision on objection anew, and that
-/// calls the case's decision anew. Their judgements are then the court's,
-/// also those the case's cell answers from its chronicle (the court has no
-/// such chronicle) and those a policy fills first (in the court's cell such
-/// a policy can be silent): the court supplements the facts itself (8:69
-/// lid 3).
+/// calls the case's decision anew. Their findings are then the court's,
+/// also those a policy leaves to the authority where its cell is silent:
+/// the court has no such chronicle, so there the policy's cell is silent,
+/// and the court supplements the facts itself (8:69 lid 3).
 fn opnieuw_te_beoordelen(
     corpus: &Corpus,
     service: &LawExecutionService,
@@ -564,13 +614,9 @@ fn opnieuw_te_beoordelen(
         decision::derive(service, corpus.awb(), corpus.objection(), on)?,
         decision::derive(service, corpus.law(), corpus.article(), on)?,
     ] {
-        for i in shape
-            .inputs
-            .iter()
-            .filter(|i| shape.judgements.contains(&i.field.name) || i.policy_first)
-        {
-            if !uit.iter().any(|f| f.name == i.field.name) {
-                uit.push(i.field.clone());
+        for t in shape.terms.iter().filter(|t| t.is_finding()) {
+            if !uit.iter().any(|f| f.name == t.id) {
+                uit.push(decision::finding_field(t));
             }
         }
     }
@@ -588,11 +634,8 @@ fn oordelen_van_de_rechter(
     shape: &decision::DecisionShape,
     on: NaiveDate,
 ) -> Result<Vec<Value>> {
-    let mut uit: Vec<Value> = shape
-        .inputs
-        .iter()
-        .filter(|i| shape.judgements.contains(&i.field.name))
-        .map(|i| veld(&i.field))
+    let mut uit: Vec<Value> = eigen_oordelen(shape)
+        .map(|t| veld(&decision::finding_field(t)))
         .collect();
     let resolver = service.resolver();
     let Some(deciding) = resolver
@@ -1554,10 +1597,10 @@ fn opnieuw_te_vinden(corpus: &Corpus, cell: &Cellen, bestreden: &Gram) -> Result
     let shape = decision::derive(&service, law_id, article, bestreden.recorded_on)?;
     let mut bevindingen = Vec::new();
     for naam in cell.findings(&mut service, &cell.sfeer(), &bestreden.id)? {
-        let Some(input) = shape.input(&naam) else {
+        let Some(term) = shape.finding(&naam) else {
             continue;
         };
-        let mut v = veld(&input.field);
+        let mut v = veld(&decision::finding_field(term));
         v["eerder"] = bestreden.fields.get(&naam).cloned().unwrap_or(Value::Null);
         bevindingen.push(v);
     }
@@ -1603,7 +1646,7 @@ fn op_bezwaar(corpus: &Corpus, cell: &Cellen, mut genomen: Vec<Gram>) -> Result<
 
 /// A preview of a decision ([`voorvertoning_besluit`]): what it would come
 /// to, or the cell's refusal, and the terms the authority must judge
-/// because the cell is silent on them for this case.
+/// because a policy leaves them to it for this case.
 #[derive(Debug, serde::Serialize)]
 pub struct Voorvertoning<T> {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1611,9 +1654,9 @@ pub struct Voorvertoning<T> {
     /// What the cell refuses, in its own words: a finding not given yet.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub geweigerd: Option<String>,
-    /// The terms the cell or a policy fills but leaves silent (null) for
-    /// this case, as fields of the form: the authority judges them (RFC-051).
-    /// A field the policy leaves silent says so (`beleid`).
+    /// The findings a policy leaves to the authority for this case, with an
+    /// open term of its own (RFC-048 §2), as fields of the form: the
+    /// authority judges them. Such a field says so (`beleid`).
     pub stil: Vec<Value>,
 }
 
@@ -1631,16 +1674,16 @@ fn zonder_oordeel(e: &Error) -> Option<(String, String)> {
 }
 
 /// Take a decision on a copy of the cell ([`Cell::sandbox`]) with
-/// `bevindingen`, and find which terms the cell or a policy fills but leaves
-/// silent for this case. The form hides a term the cell answers from its
-/// chronicle, and a judgement a policy fills first (`policy_first`,
-/// RFC-045). Either may give null for a case: the school's holiday rooster
-/// does not reach that school year, and without an advice of the GGD the
-/// parking card's policy does not fill the four criteria. Then the authority
-/// judges. Which terms that are shows only by asking: the decision is taken
-/// without a finding for any of them, and each term the engine then misses
-/// is silent. With the authority's finding on it, the next one may surface;
-/// without, that is where it stops. Nothing is kept.
+/// `bevindingen`, and find which findings a policy leaves to the authority
+/// for this case. The form asks the findings of the deciding article
+/// itself; a policy that fills a term may leave a case to the authority with
+/// an open term of its own (RFC-048 §2): the school's holiday rooster does
+/// not reach that school year, and without an advice of the GGD the parking
+/// card's policy leaves the four criteria to the college. Whether a case
+/// reaches such a term shows only by asking: the decision is taken without a
+/// finding on any of them, and each the engine then misses is asked. With
+/// the authority's finding on it, the next one may surface; without, that
+/// is where it stops. Nothing is kept.
 fn voorvertonen<T>(
     corpus: &Corpus,
     cell: &Cellen,
@@ -1651,49 +1694,24 @@ fn voorvertonen<T>(
     let service = corpus.service()?;
     let beantwoord = cell.terms_on(&service, on);
     let van_cel = |naam: &str| beantwoord.iter().any(|t| t.open_term == naam);
-    let van_cel_op = |naam: &str, waar: &str| {
-        beantwoord
-            .iter()
-            .any(|t| t.open_term == naam && format!("{}#{}", t.law, t.article) == waar)
-    };
-    // The judgements a policy fills first, per article that decides; the
-    // case's own article is asked always, another one when it surfaces.
-    let eigen = format!("{}#{}", corpus.law(), corpus.article());
-    let eerst = |shape: &decision::DecisionShape| -> Vec<String> {
-        shape
-            .inputs
-            .iter()
-            .filter(|i| i.policy_first)
-            .map(|i| i.field.name.clone())
-            .collect()
-    };
     // The case's own article must derive: its error is the step's error.
     let eigen_shape = decision::derive(&service, corpus.law(), corpus.article(), on)?;
-    let mut eerst_beleid: Vec<(String, Vec<String>)> = vec![(eigen.clone(), eerst(&eigen_shape))];
-    let mut van_beleid_op = |naam: &str, waar: &str| -> bool {
-        if !eerst_beleid.iter().any(|(w, _)| w == waar) {
-            // An article that takes no decision of its own (such as art. 3
-            // of the Regeling, where the examination is open) has no
-            // judgement a policy fills first: its shape does not derive.
-            let namen = waar
-                .split_once('#')
-                .and_then(|(law, article)| decision::derive(&service, law, article, on).ok())
-                .map(|shape| eerst(&shape))
-                .unwrap_or_default();
-            eerst_beleid.push((waar.to_string(), namen));
-        }
-        eerst_beleid
-            .iter()
-            .any(|(w, namen)| w == waar && namen.iter().any(|n| n == naam))
+    // A term the policy fills takes no finding; one a policy leaves to the
+    // authority is given once the case reaches it.
+    let van_beleid = |naam: &str| {
+        eigen_shape.filled(naam)
+            || eigen_shape.terms.iter().any(|t| {
+                t.id == naam && t.is_finding() && t.declared_by() != eigen_shape.grondslag()
+            })
     };
     let mut gegeven: Map<String, Value> = Map::new();
     for (naam, waarde) in bevindingen {
-        if !van_cel(naam) && !van_beleid_op(naam, &eigen) {
+        if !van_cel(naam) && !van_beleid(naam) {
             gegeven.insert(naam.clone(), waarde.clone());
         }
     }
-    // Per silent term its name, the article it is open on, and whether a
-    // policy (not the cell) is silent on it.
+    // Per term asked its name, the article it is open on, and whether a
+    // policy leaves it to the authority.
     let mut stil: Vec<(String, String, bool)> = Vec::new();
     let uitkomst = loop {
         let e = match neem(&mut cell.sandbox(), &gegeven) {
@@ -1703,8 +1721,8 @@ fn voorvertonen<T>(
         let Some((term, waar)) = zonder_oordeel(&e) else {
             break Err(e);
         };
-        let beleid = van_beleid_op(&term, &waar);
-        let zwijgt = van_cel_op(&term, &waar) || beleid;
+        let beleid = beleid_laat_oordelen(&service, &term, &waar, on);
+        let zwijgt = beleid;
         // A judgement of the authority that shares its name with a term
         // of the cell elsewhere: give it back, as the real decision would.
         if !gegeven.contains_key(&term) && bevindingen.contains_key(&term) && !zwijgt {
@@ -1764,26 +1782,21 @@ fn stil_veld(service: &LawExecutionService, term: &str, waar: &str, on: NaiveDat
         })
 }
 
-/// The refusal as the preview shows it. A judgement missing on a term the
-/// cell or a policy is silent on says so first, so the app does not take a
-/// missing judgement of another kind for that silence.
+/// The refusal as the preview shows it. A judgement missing on a term a
+/// policy leaves to the authority for this case says so first, so the app
+/// does not take a missing judgement of another kind for it.
 fn geweigerd_om(e: &Error, stil: &[(String, String, bool)]) -> String {
     match zonder_oordeel(e) {
-        Some((term, _)) => {
-            let wie = if stil.iter().any(|(t, _, beleid)| *t == term && *beleid) {
-                "policy"
-            } else {
-                "cell"
-            };
-            format!("the {wie} is silent on '{term}' for this case: {e}")
+        Some((term, _)) if stil.iter().any(|(t, _, _)| *t == term) => {
+            format!("the policy leaves '{term}' to the authority for this case: {e}")
         }
-        None => e.to_string(),
+        _ => e.to_string(),
     }
 }
 
 /// Whether the preview shows `e` as a refusal: the cell's own, or the
-/// engine missing the judgement on a term the cell is silent on, which the
-/// authority has not given yet.
+/// engine missing the judgement on a term a policy leaves to the authority,
+/// which it has not given yet.
 fn toont(e: &Error, stil: &[(String, String, bool)], bevindingen: &Map<String, Value>) -> bool {
     match e {
         Error::Refused(_) => true,
@@ -3233,19 +3246,23 @@ mod tests {
 
     #[test]
     fn a_term_the_cell_leaves_silent_is_asked_of_the_head() {
-        // The bug from production: the cell implements
+        // The bug from production: the cell answers
         // verlof_valt_buiten_schoolvakanties, so the form hid it, but for
-        // 2027–2028 its reduction answers null and the decision failed for
-        // want of a judgement the head could not give.
+        // 2027–2028 its reduction answers null. The head's policy then
+        // leaves the case to him (art. 4, RFC-048 §2), and the preview asks
+        // that judgement.
         let corpus = corpus();
         let mut cell = corpus.cell().unwrap();
         let app = kerst_2027(&corpus, &mut cell);
         let op = day("2026-10-14");
-        let term = "verlof_valt_buiten_schoolvakanties";
+        let term = "verlof_valt_buiten_schoolvakanties_volgens_hoofd";
 
         let zonder = voorvertoning_besluit(&corpus, &cell, &app.id, &beroep(true), op).unwrap();
         assert_eq!(namen(&zonder.stil), [term]);
-        assert_eq!(zonder.stil[0]["grondslag"], json!("leerplichtwet_1969#13a"));
+        assert_eq!(
+            zonder.stil[0]["grondslag"],
+            json!("fictief_beleid_vakantieverlof_obs_de_klimop#4")
+        );
         assert!(zonder.voorlopig.is_none());
         assert!(zonder.geweigerd.unwrap().contains(term));
 
@@ -3268,7 +3285,7 @@ mod tests {
     fn a_silent_term_is_asked_on_objection_too() {
         // Refused on the profession, so the decision never asked the cell. At
         // the heroverweging the head finds the profession anew; then art. 13a
-        // asks the term the cell is silent on.
+        // asks the term the cell is silent on, and the policy asks the head.
         let corpus = corpus();
         let mut cell = corpus.cell().unwrap();
         let app = kerst_2027(&corpus, &mut cell);
@@ -3290,7 +3307,7 @@ mod tests {
         )
         .unwrap();
         let op = day("2026-11-15");
-        let term = "verlof_valt_buiten_schoolvakanties";
+        let term = "verlof_valt_buiten_schoolvakanties_volgens_hoofd";
         let zonder =
             voorvertoning_op_bezwaar(&corpus, &cell, &bezwaar.id, &beroep(true), op).unwrap();
         assert_eq!(namen(&zonder.stil), [term]);
@@ -3368,11 +3385,14 @@ mod tests {
         .unwrap();
 
         let op = day("2027-01-18");
-        let term = "verlof_valt_buiten_schoolvakanties";
+        let term = "verlof_valt_buiten_schoolvakanties_volgens_hoofd";
         let zonder =
             voorvertoning_na_uitspraak(&corpus, &cell, &ontvangst.id, &beroep(true), op).unwrap();
         assert_eq!(namen(&zonder.stil), [term]);
-        assert_eq!(zonder.stil[0]["grondslag"], json!("leerplichtwet_1969#13a"));
+        assert_eq!(
+            zonder.stil[0]["grondslag"],
+            json!("fictief_beleid_vakantieverlof_obs_de_klimop#4")
+        );
         assert!(zonder.voorlopig.is_none());
         assert!(zonder.geweigerd.unwrap().contains(term));
 
@@ -3408,7 +3428,10 @@ mod tests {
         let voorbeeld = &corpus.casus.voorbeeld;
         let app = aanvragen(corpus, cell, &voorbeeld.aanvraag, day(aangevraagd)).unwrap();
         let mut bevindingen = voorbeeld.bevindingen.clone();
-        bevindingen.insert("langdurige_loopbeperking".into(), json!(loopbeperking));
+        bevindingen.insert(
+            "langdurige_loopbeperking_volgens_college".into(),
+            json!(loopbeperking),
+        );
         besluiten(corpus, cell, &app.id, &bevindingen, day(besloten)).unwrap()
     }
 
@@ -3680,9 +3703,10 @@ mod tests {
         );
         assert_eq!(cell.grams().len(), voor);
         // The form asks the college the four criteria, since the GGD gave
-        // no advice and so the policy is silent, and about the
-        // examination, since the GGD, which the law makes competent, is
-        // silent for this application too.
+        // no advice and the policy then leaves them to the college, and
+        // about the examination, since the GGD, which the law makes
+        // competent, is silent for this application too, and the policy
+        // leaves that to the college as well.
         let voor = voorvertoning_besluit(
             &corpus,
             &cell,
@@ -3702,16 +3726,22 @@ mod tests {
         assert_eq!(
             stil,
             [
-                (&json!("continu_afhankelijk_van_hulp_bestuurder"), &beleid),
                 (
-                    &json!("ernstige_beperkingen_andere_dan_loopbeperkingen"),
+                    &json!("continu_afhankelijk_van_hulp_bestuurder_volgens_college"),
                     &beleid
                 ),
-                (&json!("langdurige_loopbeperking"), &beleid),
-                (&json!("permanent_rolstoelgebonden"), &beleid),
                 (
-                    &json!("geneeskundig_onderzoek_heeft_plaatsgehad"),
-                    &Value::Null
+                    &json!("ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college"),
+                    &beleid
+                ),
+                (&json!("langdurige_loopbeperking_volgens_college"), &beleid),
+                (
+                    &json!("permanent_rolstoelgebonden_volgens_college"),
+                    &beleid
+                ),
+                (
+                    &json!("geneeskundig_onderzoek_heeft_plaatsgehad_volgens_college"),
+                    &beleid
                 )
             ]
         );
@@ -3933,8 +3963,8 @@ mod tests {
                 "uitspraak_treedt_in_de_plaats",
                 "termijn_nieuw_besluit",
                 "specifieke_aard_beroep_ouder",
-                "verlof_valt_buiten_schoolvakanties",
-                "verlof_al_verleend_in_schooljaar",
+                "verlof_valt_buiten_schoolvakanties_volgens_hoofd",
+                "verlof_al_verleend_in_schooljaar_volgens_hoofd",
             ]
         );
 
@@ -3958,8 +3988,14 @@ mod tests {
         let mut zelf = uitspraak_bevindingen(&corpus, &["termijn_nieuw_besluit"]);
         zelf.insert("uitspraak_treedt_in_de_plaats".into(), json!(true));
         zelf.insert("specifieke_aard_beroep_ouder".into(), json!(true));
-        zelf.insert("verlof_valt_buiten_schoolvakanties".into(), json!(true));
-        zelf.insert("verlof_al_verleend_in_schooljaar".into(), json!(false));
+        zelf.insert(
+            "verlof_valt_buiten_schoolvakanties_volgens_hoofd".into(),
+            json!(true),
+        );
+        zelf.insert(
+            "verlof_al_verleend_in_schooljaar_volgens_hoofd".into(),
+            json!(false),
+        );
         let in_de_plaats = uitspraak_doen(
             &corpus,
             &mut cell.sandbox(),
