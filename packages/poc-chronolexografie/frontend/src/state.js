@@ -32,6 +32,13 @@ export const state = reactive({
   fout: '',
   // Het chronolexogram dat de kroniek bij openen kiest (een link uit het logboek).
   inKroniek: null,
+  // The name of the scenario the visitor began (`casus.scenarios[].naam`),
+  // which the guide beside the page follows; null in free play.
+  scenario: null,
+  // The cell's refusals of steps since that scenario began, in order. A
+  // refusal records nothing in a chronicle, yet a guide can end on one
+  // (scenarioGuides.js); a reset that shortens the chronicle forgets them.
+  refusals: [],
 });
 
 /** Het artikel waaronder de casus op een aanvraag besluit, `<wet>#<artikel>`. */
@@ -55,7 +62,15 @@ async function bewaar() {
   try {
     // Met de speeldatum: de kroniek loopt alleen vooruit, dus een herlaad
     // die terugzet naar de eerste dag van de casus zou elke stap weigeren.
-    sessionStorage.setItem(SLEUTEL, JSON.stringify({ spel: bewaard, datum: state.datum }));
+    sessionStorage.setItem(
+      SLEUTEL,
+      JSON.stringify({
+        spel: bewaard,
+        datum: state.datum,
+        scenario: state.scenario,
+        refusals: state.refusals,
+      }),
+    );
   } catch {
     // Geen opslag of een volle: dan ook geen ouder spel laten staan, anders
     // gaat een herlaad stil verder bij een eerdere stap.
@@ -86,13 +101,13 @@ export async function hervatten() {
   const spelTotNu = bewaard();
   if (!spelTotNu) return;
   try {
-    const { spel: bewaardSpel, datum } = JSON.parse(spelTotNu);
-    await openen(await api.herstellen(bewaardSpel), datum);
+    const { spel: bewaardSpel, datum, scenario, refusals } = JSON.parse(spelTotNu);
+    await openen(await api.herstellen(bewaardSpel), datum, { scenario, refusals });
   } catch (e) {
     // Laadde de cel niet (het netwerk, een deploy), dan blijft het spel
     // bewaard voor de volgende herlaad; alleen een spel dat de cel weigert,
     // gaat weg.
-    if (!/the cell did not load/.test(e.message)) vergeet();
+    if (!CELL_NOT_LOADED.test(e.message)) vergeet();
     state.casus = null;
     state.fout = e.message;
   }
@@ -110,7 +125,9 @@ export async function kiezen(id) {
   }
 }
 
-async function openen(casus, datum = casus.speeldatum) {
+async function openen(casus, datum = casus.speeldatum, { scenario = null, refusals = [] } = {}) {
+  state.scenario = scenario;
+  state.refusals = refusals;
   state.vormen = null;
   state.grammen = [];
   state.rechter = [];
@@ -123,7 +140,23 @@ async function openen(casus, datum = casus.speeldatum) {
 export function naarKeuze() {
   vergeet();
   state.casus = null;
+  state.scenario = null;
   state.fout = '';
+}
+
+/**
+ * Begin scenario `naam`: the chronicle goes back to what the cell records
+ * before the first scenario, the play date to the first day of the case, and
+ * the guide follows that scenario. Returns whether the cell took the reset.
+ */
+export async function beginScenario(naam) {
+  const ok = await stap(() => api.reset());
+  if (!ok) return false;
+  state.datum = state.casus.speeldatum;
+  state.scenario = naam;
+  state.refusals = [];
+  await bewaar();
+  return true;
 }
 
 /** Haal de kroniek en de vormen op, voor de speeldatum, en bewaar het spel. */
@@ -131,6 +164,7 @@ export async function verversen() {
   if (!state.casus) return;
   try {
     const [kroniek, vormen] = await Promise.all([api.kroniek(), api.vormen(state.datum)]);
+    if (kroniek.grammen.length < state.grammen.length) state.refusals = [];
     state.grammen = kroniek.grammen;
     state.andere = kroniek.andere ?? [];
     state.rechter = state.andere.find((a) => a.cel === state.casus.rechter?.cel)?.grammen ?? [];
@@ -140,6 +174,10 @@ export async function verversen() {
     state.fout = e.message;
   }
 }
+
+// Errors api.js throws when the cell itself is down, not a refusal.
+const CELL_NOT_LOADED = /^the cell did not load/;
+const CELL_DOWN = /^the cell (did not load|stopped)/;
 
 /**
  * Doe een stap: `actie` is een functie die de API aanroept. Een weigering
@@ -154,6 +192,11 @@ export async function stap(actie) {
     return antwoord;
   } catch (e) {
     state.fout = e.message;
+    // In a scenario, a refusal of the cell is kept for the guide, and saved,
+    // so a reload still knows the step. Free play has no guide to keep it
+    // for. A cell that did not load or stopped (api.js) refused nothing.
+    if (state.scenario && !CELL_DOWN.test(e.message)) state.refusals.push(e.message);
+    await bewaar().catch(() => {});
     return null;
   }
 }
@@ -255,6 +298,19 @@ export function geldendBesluit(aanvraag) {
     .filter((g) => g.grondslag === besluitGrondslag() && g.refers_to);
   return besluiten.filter((b) => !herroepen(b)).at(-1) ?? null;
 }
+
+/**
+ * A date as the page writes it: `2026-10-14` → `14 oktober 2026`. A date
+ * without a time is midnight UTC, so it is shown in UTC; west of Greenwich it
+ * would otherwise become the day before.
+ */
+export const longDate = (iso) =>
+  new Date(iso).toLocaleDateString('nl-NL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
 /** Een naam uit de wet leesbaar: `laatste_verlofdag` → `laatste verlofdag`. */
 export const leesbaar = (naam) => String(naam).replaceAll('_', ' ');

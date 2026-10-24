@@ -35,7 +35,7 @@ export const uitspraakOp = (beroep) =>
   state.rechter.find((g) => g.refers_to === beroep && g.kind === 'UITSPRAAK') ?? null;
 
 /** Of `g` de ontvangst van een uitspraak is: een executogram van dat feit. */
-const isOntvangst = (g) =>
+export const isOntvangst = (g) =>
   g.kind === 'EXECUTOGRAM' && `${g.grondslag}#${g.fact}` === state.casus?.ontvangst;
 
 /** De ontvangsten van een uitspraak die naar besluit `id` verwijzen. */
