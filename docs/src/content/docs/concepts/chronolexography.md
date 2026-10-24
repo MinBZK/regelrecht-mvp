@@ -108,7 +108,7 @@ execution:
         parameters: {bsn_aanvrager: $bsn_aanvrager}
 ```
 
-- How a cell reduces is up to the cell; the engine only asks it for an answer by name. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`) in the corpus, under the holder it names. It reads decisions (`source.decisions`) or facts (`source.facts`), and may call policy for a norm. It may also call a reduction without a holder, which reads no chronicle and is no answer of any cell: the reduction of the Awb says which decisions still stand after objection and appeal.
+- How a cell reduces is up to the cell; the engine only asks it for an answer by name. The cell in `packages/cel` uses what the engine offers: rulework of its own kind (`REDUCTIE`) in the corpus, under the holder it names. It reads decisions (`source.decisions`) or facts (`source.facts`), and may call policy for a norm. It may also call a reduction without a holder. Such a reduction gets its rows from the reduction that calls it, and no cell gives it as an answer. The reduction of the Awb is one, and says which decisions still stand after objection and appeal.
 - Wherever the binding runs, the engine asks the cell, which runs the reduction its catalogue names. The binding is policy, so the answer sets a finding aside ([order of precedence](/concepts/inversion-of-control#policy-that-fills-an-open-term-with-a-cells-answer)). Null on a term with a default or `decided_per_case_by` is silence, and the term falls back; on any other term null is the value.
 - The loader refuses `source.decisions` and `source.facts` outside a `REDUCTIE`, and `source.reduction` outside such a binding.
 

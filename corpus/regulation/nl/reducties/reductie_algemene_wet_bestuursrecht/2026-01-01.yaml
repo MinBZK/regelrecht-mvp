@@ -8,10 +8,10 @@ valid_from: '2026-01-01'
 # besluiten die herroepen of vernietigd zijn (Awb 7:11, tweede lid, en 8:72),
 # en over het besluit dat de uitspraak in de plaats stelt (Awb 8:72, derde
 # lid, onder b). Ze hoort bij geen bestuursorgaan: er is geen
-# competent_authority. Daarom kan geen cel haar uitvoer als antwoord geven;
-# een andere reductie roept haar aan (source.regulation) en geeft haar mee
-# wat zij zelf uit de kroniek leest, als parameter. Er is geen bekendmaking;
-# de url wijst naar artikel 8:72.
+# competent_authority. Daarom geeft geen bestuursorgaan haar uitvoer als
+# antwoord; een andere reductie roept haar aan (source.regulation) en geeft
+# haar de rijen mee die zij zelf leest, als parameter. Er is geen bekendmaking; de url
+# wijst naar artikel 8:72.
 url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel8:72
 name: Besluiten die nog gelden, naar de Algemene wet bestuursrecht (reductie)
 articles:
@@ -22,9 +22,10 @@ articles:
       het met zijn rechtsgevolgen vernietigde (Awb 8:72, eerste en tweede
       lid). Vernietigde de bestuursrechter een beslissing op bezwaar met haar
       rechtsgevolgen, dan geldt haar herroeping niet, en ook niet het besluit
-      dat zij in de plaats nam. Herriep de bestuursrechter zelf het bestreden
-      besluit, in de beslissing op bezwaar die hij in de plaats stelde (Awb
-      8:72, derde lid, onder b), dan geldt dat besluit ook niet meer.
+      dat zij in de plaats nam. Treedt de uitspraak in de plaats van de
+      vernietigde beslissing op bezwaar (Awb 8:72, derde lid, onder b) en
+      herroept zij daarmee het bestreden besluit, dan geldt dat besluit ook
+      niet meer.
     url: https://wetten.overheid.nl/BWBR0005537/2024-01-01#Artikel8:72
     machine_readable:
       execution:
@@ -63,16 +64,17 @@ articles:
           - name: beslissingen_herroepen_bij_uitspraak
             type: array
             description: >-
-              De ids van de beslissingen op bezwaar waarvoor de uitspraak een
-              beslissing in de plaats stelde die het bestreden besluit herriep
-              (Awb 8:72, derde lid, onder b, met 7:11, tweede lid).
+              De ids van de beslissingen op bezwaar in wier plaats de
+              uitspraak trad en die het bestreden besluit herriep (Awb 8:72,
+              derde lid, onder b, met 7:11, tweede lid).
           - name: herroepen_besluiten
             type: array
             description: >-
               De ids van de besluiten die een beslissing op bezwaar herriep
               (Awb 7:11, tweede lid) en die niet herleefden doordat de
               bestuursrechter die beslissing vernietigde, en van de besluiten
-              die de bestuursrechter zelf herriep.
+              die een uitspraak van de bestuursrechter herriep die in de
+              plaats van de beslissing op bezwaar trad.
           - name: besluiten_in_stand
             type: array
             description: >-
@@ -105,12 +107,12 @@ articles:
                 subject: $beslissing.id
                 value: $vernietigde_besluiten
               body: $beslissing.nieuw_besluit
-          # Stelde de uitspraak een beslissing op bezwaar in de plaats van de
-          # vernietigde (Awb 8:72, derde lid, onder b), dan gaat zij over die
-          # beslissing (refers_to). Herriep de beslissing die de rechter nam
-          # het bestreden besluit, dan is dat besluit herroepen. Eerst de
-          # grondslag: een besluit van een ander artikel heeft die uitvoer
-          # niet.
+          # Treedt de uitspraak in de plaats van de vernietigde beslissing op
+          # bezwaar (Awb 8:72, derde lid, onder b), dan gaat zij over die
+          # beslissing (refers_to) en staat zij er als beslissing op bezwaar
+          # in (uitspraak_in_de_plaats). Herroept zij het bestreden besluit,
+          # dan is dat besluit herroepen. Eerst de grondslag: een besluit van
+          # een ander artikel heeft die uitvoer niet.
           - output: beslissingen_herroepen_bij_uitspraak
             value:
               operation: FOREACH
@@ -127,9 +129,9 @@ articles:
                     value: true
               body: $uitspraak.refers_to
           # Vernietigde de bestuursrechter de beslissing op bezwaar, dan
-          # herleeft het bezwaar en geldt de herroeping niet. Herriep hij het
-          # bestreden besluit zelf, in de beslissing die hij in de plaats
-          # stelde, dan geldt die herroeping.
+          # herleeft het bezwaar en geldt de herroeping niet. Herroept zijn
+          # uitspraak, die in de plaats van de beslissing treedt, het
+          # bestreden besluit, dan geldt die herroeping.
           - output: herroepen_besluiten
             value:
               operation: FOREACH

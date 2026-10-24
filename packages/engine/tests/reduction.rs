@@ -1199,6 +1199,43 @@ fn a_revocation_in_the_decision_the_court_set_in_place_holds() {
     assert!(standing(rows, on_objection, judgments).is_empty());
 }
 
+#[test]
+fn a_decision_on_objection_the_court_set_in_place_that_upholds_revokes_nothing() {
+    // The decision on objection revoked `a` and took `b` in its place; the
+    // court annulled it and set in place one that upholds `a`.
+    let a = decision("999990019", "2026-10-05", false);
+    let b = decision("999990019", "2026-10-05", true);
+    let upheld = value_under(
+        "algemene_wet_bestuursrecht#7:11",
+        json!({ "bestreden_besluit_herroepen": false, "nieuw_besluit": null }),
+    );
+    let rows = json!([a, b]);
+    let on_objection = json!([revoked_for("x", &a, Some(&b))]);
+    let judgments = json!([judgment("x", upheld)]);
+    assert_eq!(
+        awb_output(
+            rows.clone(),
+            on_objection.clone(),
+            judgments.clone(),
+            "beslissingen_herroepen_bij_uitspraak"
+        ),
+        json!([])
+    );
+    assert_eq!(
+        awb_output(
+            rows.clone(),
+            on_objection.clone(),
+            judgments.clone(),
+            "herroepen_besluiten"
+        ),
+        json!([])
+    );
+    assert_eq!(
+        standing(rows, on_objection, judgments),
+        [a["id"].as_str().unwrap()]
+    );
+}
+
 /// Article 2 of the Awb reduction on `judgments`, for `grondslag`.
 fn in_place(judgments: serde_json::Value, grondslag: &str) -> serde_json::Value {
     let parameters = BTreeMap::from([

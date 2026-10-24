@@ -1197,12 +1197,15 @@ fn leest_uit(reduction: &regelrecht_engine::ArticleBasedLaw) -> Vec<(String, Str
 
 /// The articles that `reduction` calls for a norm (RFC-048): per regelwerk of
 /// `UITVOERINGSBELEID` or `REDUCTIE` it reads with `source.regulation`, the
-/// article that gives the output it reads. A reduction without a holder,
-/// such as the one of the Awb, is called like policy.
-pub(crate) fn beleid_van(
-    service: &LawExecutionService,
+/// article that gives the output it reads, with that regelwerk. Any called
+/// reduction counts, with or without a holder; the one of the Awb has none.
+pub(crate) fn beleid_van<'s>(
+    service: &'s LawExecutionService,
     reduction: &regelrecht_engine::ArticleBasedLaw,
-) -> Vec<(String, regelrecht_engine::Article)> {
+) -> Vec<(
+    &'s regelrecht_engine::ArticleBasedLaw,
+    &'s regelrecht_engine::Article,
+)> {
     leest_uit(reduction)
         .into_iter()
         .filter_map(|(regelwerk, output)| {
@@ -1218,7 +1221,7 @@ pub(crate) fn beleid_van(
                 .articles
                 .iter()
                 .find(|a| a.get_outputs().iter().any(|o| o.name == output))?;
-            Some((law.id.clone(), article.clone()))
+            Some((law, article))
         })
         .collect()
 }
@@ -1246,11 +1249,12 @@ fn versies_van<'s>(
 fn uitvoer_van(service: &LawExecutionService, id: &str, valid_from: Option<&str>) -> Vec<String> {
     let mut namen = Vec::new();
     for reduction in versies_van(service, id, valid_from) {
-        let beleid: Vec<regelrecht_engine::Article> = beleid_van(service, reduction)
-            .into_iter()
-            .map(|(_, a)| a)
-            .collect();
-        for article in reduction.articles.iter().chain(&beleid) {
+        let beleid = beleid_van(service, reduction);
+        for article in reduction
+            .articles
+            .iter()
+            .chain(beleid.iter().map(|(_, a)| *a))
+        {
             for output in article.get_outputs() {
                 if !namen.contains(&output.name) {
                     namen.push(output.name.clone());
@@ -1277,13 +1281,13 @@ fn uit_regelgeving(
         let articles = reduction
             .articles
             .iter()
-            .chain(beleid.iter().map(|(_, a)| a));
+            .chain(beleid.iter().map(|(_, a)| *a));
         for input in articles.flat_map(|a| a.get_inputs()) {
             let Some(source) = input.source.as_ref() else {
                 continue;
             };
             if let (Some(regelwerk), Some(output)) = (&source.regulation, &source.output) {
-                if beleid.iter().any(|(b, _)| b == regelwerk) {
+                if beleid.iter().any(|(b, _)| &b.id == regelwerk) {
                     continue;
                 }
                 uit.push((input.name.clone(), regelwerk.clone(), output.clone()));
@@ -1877,11 +1881,11 @@ pub fn reducties(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value>
         // (RFC-048), each once, with the layer of their regelwerk.
         let mut normen: Vec<Value> = Vec::new();
         for (regelwerk, article) in beleid_van(&service, reduction) {
-            let laag = service
-                .resolver()
-                .get_law(&regelwerk)
-                .map(|law| law.regulatory_layer.as_str());
-            let norm = json!({ "regelwerk": regelwerk, "laag": laag, "artikel": article.number });
+            let norm = json!({
+                "regelwerk": regelwerk.id,
+                "laag": regelwerk.regulatory_layer.as_str(),
+                "artikel": article.number,
+            });
             if !normen.contains(&norm) {
                 normen.push(norm);
             }

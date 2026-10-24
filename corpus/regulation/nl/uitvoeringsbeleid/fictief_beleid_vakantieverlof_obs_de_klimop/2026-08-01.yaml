@@ -10,9 +10,9 @@ valid_from: '2026-08-01'
 # Artikel 1 is een norm die het hoofd hanteert bij artikel 13a, tweede lid
 # ("slechts eenmaal per schooljaar"): welk schooljaar dat van het verlof is.
 # De reductie van de school (reductie_verlof_al_verleend_in_schooljaar) leest
-# de besluiten in de kroniek en past deze norm toe; welke besluiten nog
-# gelden, volgt uit de Awb (reductie_algemene_wet_bestuursrecht). Dit beleid
-# leest zelf geen kroniek.
+# de besluiten en past deze norm toe; welke besluiten nog gelden, volgt uit de
+# Awb (reductie_algemene_wet_bestuursrecht). Dit beleid leest zelf geen
+# besluiten.
 # Artikel 2 tot en met 6 koppelen open begrippen aan de antwoorden van de cel
 # van de school (source.reduction, RFC-048): zo ontleent het hoofd wat hij
 # anders per aanvraag vaststelt aan wat zijn eigen cel uit de kroniek haalt.
